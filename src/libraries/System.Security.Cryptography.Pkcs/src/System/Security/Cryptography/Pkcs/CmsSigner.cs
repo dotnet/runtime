@@ -75,7 +75,7 @@ namespace System.Security.Cryptography.Pkcs
 
 #if NETCOREAPP
         [Obsolete(Obsoletions.CmsSignerCspParamsCtorMessage, DiagnosticId = Obsoletions.CmsSignerCspParamsCtorDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
- #endif
+#endif
         [EditorBrowsable(EditorBrowsableState.Never)]
         public CmsSigner(CspParameters parameters) => throw new PlatformNotSupportedException();
 
@@ -185,7 +185,18 @@ namespace System.Security.Cryptography.Pkcs
             newSignerInfo.DigestAlgorithm.Algorithm = DigestAlgorithm.Value!;
             byte[] dataHash;
 
-            using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithmName))
+            IncrementalHash hasher;
+
+            try
+            {
+                hasher = IncrementalHash.CreateHash(hashAlgorithmName);
+            }
+            catch (PlatformNotSupportedException ex)
+            {
+                throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmName), ex);
+            }
+
+            using (hasher)
             {
                 hasher.AppendData(data.Span);
                 dataHash = hasher.GetHashAndReset();

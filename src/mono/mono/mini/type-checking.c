@@ -110,11 +110,11 @@ mini_emit_isninst_cast_inst (MonoCompile *cfg, int klass_reg, MonoClass *klass, 
 	mono_class_setup_supertypes (klass);
 
 	if (m_class_get_idepth (klass) > MONO_DEFAULT_SUPERTABLE_SIZE) {
-		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU2_MEMBASE, idepth_reg, klass_reg, m_class_offsetof_idepth ());
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU2_MEMBASE, idepth_reg, klass_reg, GINTPTR_TO_TMREG (m_class_offsetof_idepth ()));
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, idepth_reg, m_class_get_idepth (klass));
 		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBLT_UN, false_target);
 	}
-	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, stypes_reg, klass_reg, m_class_offsetof_supertypes ());
+	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, stypes_reg, klass_reg, GINTPTR_TO_TMREG (m_class_offsetof_supertypes ()));
 	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, stype, stypes_reg, ((m_class_get_idepth (klass) - 1) * TARGET_SIZEOF_VOID_P));
 	if (klass_ins) {
 		MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, stype, klass_ins->dreg);
@@ -145,7 +145,7 @@ mini_emit_interface_bitmap_check (MonoCompile *cfg, int intf_bit_reg, int base_r
 #else
 	int ibitmap_byte_reg = alloc_preg (cfg);
 
-	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, ibitmap_reg, base_reg, offset);
+	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, ibitmap_reg, base_reg, GINTPTR_TO_TMREG (offset));
 
 	if (cfg->compile_aot) {
 		int iid_reg = alloc_preg (cfg);
@@ -228,7 +228,7 @@ mini_emit_max_iid_check_class (MonoCompile *cfg, int klass_reg, MonoClass *klass
 {
 	int max_iid_reg = alloc_preg (cfg);
 
-	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU4_MEMBASE, max_iid_reg, klass_reg, m_class_offsetof_max_interface_id ());
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU4_MEMBASE, max_iid_reg, klass_reg, GINTPTR_TO_TMREG (m_class_offsetof_max_interface_id ()));
 	mini_emit_max_iid_check (cfg, max_iid_reg, klass, false_target);
 }
 
@@ -296,12 +296,12 @@ mini_emit_castclass_inst (MonoCompile *cfg, int obj_reg, int klass_reg, MonoClas
 
 		g_assert (!klass_inst);
 
-		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, rank_reg, klass_reg, m_class_offsetof_rank ());
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, rank_reg, klass_reg, GINTPTR_TO_TMREG (m_class_offsetof_rank ()));
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, rank_reg, m_class_get_rank (klass));
 		MONO_EMIT_NEW_COND_EXC (cfg, NE_UN, "InvalidCastException");
 
 		//		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, eclass_reg, klass_reg, m_class_offsetof_cast_class ());
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, eclass_reg, klass_reg, GINTPTR_TO_TMREG (m_class_offsetof_cast_class ()));
 		if (m_class_is_array_special_interface (m_class_get_cast_class (klass))) {
 			MonoInst *src;
 
@@ -310,7 +310,7 @@ mini_emit_castclass_inst (MonoCompile *cfg, int obj_reg, int klass_reg, MonoClas
 			emit_castclass_with_cache_no_details (cfg, src, klass, 0);
 		} else if (m_class_get_cast_class (klass) == mono_defaults.object_class) {
 			int parent_reg = alloc_preg (cfg);
-			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, parent_reg, eclass_reg, m_class_offsetof_parent ());
+			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, parent_reg, eclass_reg, GINTPTR_TO_TMREG (m_class_offsetof_parent ()));
 			mini_emit_class_check_branch (cfg, parent_reg, m_class_get_parent (mono_defaults.enum_class), OP_PBNE_UN, object_is_null);
 			mini_emit_class_check (cfg, eclass_reg, mono_defaults.enum_class);
 		} else if (m_class_get_cast_class (klass) == m_class_get_parent (mono_defaults.enum_class)) {
@@ -340,11 +340,11 @@ mini_emit_castclass_inst (MonoCompile *cfg, int obj_reg, int klass_reg, MonoClas
 		mono_class_setup_supertypes (klass);
 
 		if (m_class_get_idepth (klass) > MONO_DEFAULT_SUPERTABLE_SIZE) {
-			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU2_MEMBASE, idepth_reg, klass_reg, m_class_offsetof_idepth ());
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU2_MEMBASE, idepth_reg, klass_reg, GINTPTR_TO_TMREG (m_class_offsetof_idepth ()));
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, idepth_reg, m_class_get_idepth (klass));
 			MONO_EMIT_NEW_COND_EXC (cfg, LT_UN, "InvalidCastException");
 		}
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, stypes_reg, klass_reg, m_class_offsetof_supertypes ());
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, stypes_reg, klass_reg, GINTPTR_TO_TMREG (m_class_offsetof_supertypes ()));
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, stype, stypes_reg, ((m_class_get_idepth (klass) - 1) * TARGET_SIZEOF_VOID_P));
 		mini_emit_class_check_inst (cfg, stype, klass, klass_inst);
 	}
@@ -532,7 +532,7 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, rank_reg, m_class_get_rank (klass));
 			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, false_bb);
 			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
-			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, eclass_reg, klass_reg, m_class_offsetof_cast_class ());
+			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, eclass_reg, klass_reg, GINTPTR_TO_TMREG (m_class_offsetof_cast_class ()));
 			if (m_class_is_array_special_interface (m_class_get_cast_class (klass))) {
 				MonoInst *move, *res_inst;
 
@@ -547,8 +547,8 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 
 				parent_reg = alloc_preg (cfg);
 				class_kind_reg = alloc_preg (cfg);
-				MONO_EMIT_NEW_LOAD_MEMBASE (cfg, parent_reg, eclass_reg, m_class_offsetof_parent ());
-				MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, class_kind_reg, eclass_reg, m_class_offsetof_class_kind ());
+				MONO_EMIT_NEW_LOAD_MEMBASE (cfg, parent_reg, eclass_reg, GINTPTR_TO_TMREG (m_class_offsetof_parent ()));
+				MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, class_kind_reg, eclass_reg, GINTPTR_TO_TMREG (m_class_offsetof_class_kind ()));
 
 				// Check if the parent class of the element is not System.ValueType
 				mini_emit_class_check_branch (cfg, parent_reg, m_class_get_parent (mono_defaults.enum_class), OP_PBNE_UN, pointer_check_bb);

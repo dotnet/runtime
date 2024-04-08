@@ -12,6 +12,7 @@ using Microsoft.Diagnostics.Tracing;
 using Tracing.Tests.Common;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.NETCore.Client;
+using Xunit;
 
 namespace Tracing.Tests.BigEventsValidation
 {
@@ -41,7 +42,8 @@ namespace Tracing.Tests.BigEventsValidation
 
     public class BigEventsValidation
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             // This test tries to send a big event (>100KB) and checks that the app does not crash
             // See https://github.com/dotnet/runtime/issues/50515 for the regression issue

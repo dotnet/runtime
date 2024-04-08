@@ -3128,8 +3128,15 @@ HRESULT MethodTableBuilder::LoaderFindMethodInClass(
 
         // Note instantiation info
         {
-            hr = MetaSig::CompareMethodSigsNT(*ppMemberSignature, *pcMemberSignature, pModule, NULL,
-                                                      pHashMethodSig, cHashMethodSig, entryDesc->GetModule(), pSubst);
+            hr = E_FAIL;
+            EX_TRY
+            {
+                hr = MetaSig::CompareMethodSigs(*ppMemberSignature, *pcMemberSignature, pModule, NULL,
+                                        pHashMethodSig, cHashMethodSig, entryDesc->GetModule(), pSubst, FALSE)
+                        ? S_OK
+                        : S_FALSE;
+            }
+            EX_CATCH_HRESULT_NO_ERRORINFO(hr);
 
             if (hr == S_OK)
             {   // Found a match

@@ -208,6 +208,11 @@ namespace System.Collections.Generic
 
         public int Count => _count - _freeCount;
 
+        /// <summary>
+        /// Gets the total numbers of elements the internal data structure can hold without resizing.
+        /// </summary>
+        public int Capacity => _entries?.Length ?? 0;
+
         public KeyCollection Keys => _keys ??= new KeyCollection(this);
 
         ICollection<TKey> IDictionary<TKey, TValue>.Keys => Keys;
@@ -647,13 +652,13 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// A helper class containing APIs exposed through <see cref="Runtime.InteropServices.CollectionsMarshal"/>.
+        /// A helper class containing APIs exposed through <see cref="CollectionsMarshal"/>.
         /// These methods are relatively niche and only used in specific scenarios, so adding them in a separate type avoids
         /// the additional overhead on each <see cref="Dictionary{TKey, TValue}"/> instantiation, especially in AOT scenarios.
         /// </summary>
         internal static class CollectionsMarshalHelper
         {
-            /// <inheritdoc cref="Runtime.InteropServices.CollectionsMarshal.GetValueRefOrAddDefault{TKey, TValue}(Dictionary{TKey, TValue}, TKey, out bool)"/>
+            /// <inheritdoc cref="CollectionsMarshal.GetValueRefOrAddDefault{TKey, TValue}(Dictionary{TKey, TValue}, TKey, out bool)"/>
             public static ref TValue? GetValueRefOrAddDefault(Dictionary<TKey, TValue> dictionary, TKey key, out bool exists)
             {
                 // NOTE: this method is mirrored by Dictionary<TKey, TValue>.TryInsert above.
@@ -1180,6 +1185,7 @@ namespace System.Collections.Generic
         /// This method can be used to minimize the memory overhead
         /// once it is known that no new elements will be added.
         /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">Passed capacity is lower than entries count.</exception>
         public void TrimExcess(int capacity)
         {
             if (capacity < Count)

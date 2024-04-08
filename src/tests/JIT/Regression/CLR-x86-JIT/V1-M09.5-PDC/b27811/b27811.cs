@@ -39,11 +39,10 @@ namespace Test
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             int N1 = 0;
             FailingFunc(ref N1);
-            return 100;
         }
     }
 }

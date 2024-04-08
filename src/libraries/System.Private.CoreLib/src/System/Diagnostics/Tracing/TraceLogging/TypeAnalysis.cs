@@ -19,7 +19,7 @@ namespace System.Diagnostics.Tracing
         internal readonly EventOpcode opcode = (EventOpcode)(-1);
         internal readonly EventTags tags;
 
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
+        [RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
         public TypeAnalysis(
             Type dataType,
             EventDataAttribute? eventAttrib,

@@ -8,6 +8,8 @@ if(ANDROID_NDK_MAJOR VERSION_LESS "23")
     message(FATAL_ERROR "Error: need at least Android NDK 23, got ${ANDROID_NDK_REVISION}!")
 endif()
 
+add_compile_options(-Werror=missing-prototypes -Werror=missing-declarations -Wall -std=c99)
+
 add_library(
     monodroid
     SHARED

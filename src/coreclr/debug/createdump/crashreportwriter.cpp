@@ -359,7 +359,7 @@ CrashReportWriter::WriteValue(const char* key, const char* value)
     WriteSeparator(text);
     text.append("\"");
     text.append(key);
-    text.append("\" : \"");
+    text.append("\": \"");
     text.append(value);
     text.append("\"");
     m_comma = true;
@@ -376,7 +376,7 @@ void
 CrashReportWriter::WriteValue32(const char* key, uint32_t value)
 {
     char buffer[16];
-    _snprintf_s(buffer, sizeof(buffer), sizeof(buffer), "0x%x", value);
+    snprintf(buffer, sizeof(buffer), "0x%x", value);
     WriteValue(key, buffer);
 }
 
@@ -384,7 +384,7 @@ void
 CrashReportWriter::WriteValue64(const char* key, uint64_t value)
 {
     char buffer[32];
-    _snprintf_s(buffer, sizeof(buffer), sizeof(buffer), "0x%" PRIx64, value);
+    snprintf(buffer, sizeof(buffer), "0x%" PRIx64, value);
     WriteValue(key, buffer);
 }
 

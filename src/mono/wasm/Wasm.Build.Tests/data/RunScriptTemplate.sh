@@ -47,7 +47,6 @@ function set_env_vars()
         _SDK_DIR=$BASE_DIR/$SDK_DIR_NAME
     fi
 
-    export PATH=$_SDK_DIR:$PATH
     export SDK_FOR_WORKLOAD_TESTING_PATH=$_SDK_DIR
 }
 

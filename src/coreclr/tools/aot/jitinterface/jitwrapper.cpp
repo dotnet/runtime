@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include <minipal/cpufeatures.h>
+
 #include "dllexport.h"
 #include "jitinterface_generated.h"
 
@@ -49,4 +51,9 @@ DLL_EXPORT void JitSetOs(ICorJitCompiler* pJit, CORINFO_OS os)
 DLL_EXPORT void JitProcessShutdownWork(ICorJitCompiler * pJit)
 {
     return pJit->ProcessShutdownWork(nullptr);
+}
+
+DLL_EXPORT int JitGetProcessorFeatures()
+{
+    return minipal_getcpufeatures();
 }

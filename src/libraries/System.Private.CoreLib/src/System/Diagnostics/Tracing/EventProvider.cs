@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -414,7 +414,7 @@ namespace System.Diagnostics.Tracing
             }
             else
             {
-                if (data is System.Enum)
+                if (data is Enum)
                 {
                     try
                     {
@@ -926,7 +926,7 @@ namespace System.Diagnostics.Tracing
         internal override unsafe IntPtr DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,
             uint level, byte* pMetadata, uint metadataLength)
         {
-            throw new System.NotSupportedException();
+            throw new NotSupportedException();
         }
 
 
@@ -1346,7 +1346,7 @@ namespace System.Diagnostics.Tracing
 
         protected static unsafe IDictionary<string, string?>? ParseFilterData(byte[]? data)
         {
-            IDictionary<string, string?>? args = null;
+            Dictionary<string, string?>? args = null;
 
             // data can be null if the filterArgs had a very large size which failed our sanity check
             if (data != null)
@@ -1360,8 +1360,8 @@ namespace System.Diagnostics.Tracing
                     int valueEnd = FindNull(data, valueIdx);
                     if (valueEnd < data.Length)
                     {
-                        string key = System.Text.Encoding.UTF8.GetString(data, dataStart, keyEnd - dataStart);
-                        string value = System.Text.Encoding.UTF8.GetString(data, valueIdx, valueEnd - valueIdx);
+                        string key = Text.Encoding.UTF8.GetString(data, dataStart, keyEnd - dataStart);
+                        string value = Text.Encoding.UTF8.GetString(data, valueIdx, valueEnd - valueIdx);
                         args[key] = value;
                     }
                     dataStart = valueEnd + 1;
@@ -1379,7 +1379,7 @@ namespace System.Diagnostics.Tracing
             // ETW limited filter data to 1024 bytes but EventPipe doesn't. DiagnosticSourceEventSource
             // can legitimately use large filter data buffers to encode a large set of events and properties
             // that should be gathered so I am bumping the limit from 1K -> 100K.
-            if (filterData->Ptr != 0 && 0 < filterData->Size && filterData->Size <= 100*1024)
+            if (filterData->Ptr != 0 && 0 < filterData->Size && filterData->Size <= 100 * 1024)
             {
                 data = new byte[filterData->Size];
                 Marshal.Copy((IntPtr)(void*)filterData->Ptr, data, 0, data.Length);

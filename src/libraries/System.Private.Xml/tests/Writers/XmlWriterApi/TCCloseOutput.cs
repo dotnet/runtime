@@ -49,7 +49,7 @@ namespace System.Xml.XmlWriterApiTests
                 return;
             }
             CError.WriteLine("Error: XmlWriter closed the stream when CloseOutput = false");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Theory]
@@ -84,7 +84,7 @@ namespace System.Xml.XmlWriterApiTests
             {
                 CError.WriteLineIgnore("Exception: " + e.ToString());
                 CError.WriteLine("Uri stream is not closed by writer");
-                Assert.True(false);
+                Assert.Fail();
             }
             finally
             {
@@ -131,7 +131,7 @@ namespace System.Xml.XmlWriterApiTests
             if (writerStream.CanWrite)
             {
                 writerStream.Dispose();
-                Assert.True(false);
+                Assert.Fail();
             }
         }
 

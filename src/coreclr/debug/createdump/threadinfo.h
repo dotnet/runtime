@@ -14,10 +14,10 @@ class CrashInfo;
 
 #if defined(__loongarch64)
 // See src/coreclr/pal/src/include/pal/context.h
-#define MCREG_Ra(mc)      ((mc).gpr[1])
-#define MCREG_Fp(mc)      ((mc).gpr[22])
-#define MCREG_Sp(mc)      ((mc).gpr[3])
-#define MCREG_Pc(mc)      ((mc).pc)
+#define MCREG_Ra(mc)      ((mc).regs[1])
+#define MCREG_Fp(mc)      ((mc).regs[22])
+#define MCREG_Sp(mc)      ((mc).regs[3])
+#define MCREG_Pc(mc)      ((mc).csr_era)
 #endif
 
 #if defined(__riscv)
@@ -35,19 +35,11 @@ class CrashInfo;
 #if defined(__arm__)
 #define user_regs_struct user_regs
 #define user_fpregs_struct user_fpregs
-#elif defined(__loongarch64)
-// struct user_regs_struct {} defined `/usr/include/loongarch64-linux-gnu/sys/user.h`
-
-struct user_fpregs_struct
-{
-  unsigned long long  fpregs[32];
-  unsigned long       fpscr;
-} __attribute__((__packed__));
 #elif defined(__riscv)
 struct user_fpregs_struct
 {
   unsigned long long  fpregs[32];
-  unsigned long       fpscr;
+  unsigned long       fcsr;
 } __attribute__((__packed__));
 #endif
 
@@ -61,6 +53,10 @@ struct user_vfpregs_struct
   unsigned long long  fpregs[32];
   unsigned long       fpscr;
 } __attribute__((__packed__));
+#endif
+
+#if defined(__loongarch64)
+#define user_fpregs_struct lasx_context
 #endif
 
 #define STACK_OVERFLOW_EXCEPTION    0x800703e9

@@ -22,15 +22,15 @@ public class Program
     public static bool s_25;
     public static short[] s_42;
     public static S0[][] s_43 = new S0[][]{new S0[]{new S0()}};
+
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         CollectibleALC alc = new CollectibleALC();
         System.Reflection.Assembly asm = alc.LoadFromAssemblyPath(System.Reflection.Assembly.GetExecutingAssembly().Location);
         System.Reflection.MethodInfo mi = asm.GetType(typeof(Program).FullName).GetMethod(nameof(MainInner));
         System.Type runtimeTy = asm.GetType(typeof(Runtime).FullName);
         mi.Invoke(null, new object[]{System.Activator.CreateInstance(runtimeTy)});
-        return 100;
     }
 
 #pragma warning disable xUnit1013

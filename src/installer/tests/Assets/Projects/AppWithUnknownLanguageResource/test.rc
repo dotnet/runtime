@@ -1,0 +1,9 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+LANGUAGE 0x041B, 0
+funny RCDATA { 1L }
+10 RCDATA { 3L }
+LANGUAGE 0x0405, 0
+funny RCDATA { 2L }
+10 RCDATA { 4L }

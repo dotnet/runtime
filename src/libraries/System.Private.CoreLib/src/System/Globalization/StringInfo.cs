@@ -45,7 +45,7 @@ namespace System.Globalization
             {
                 if (_indexes == null && String.Length > 0)
                 {
-                    _indexes = StringInfo.ParseCombiningCharacters(String);
+                    _indexes = ParseCombiningCharacters(String);
                 }
 
                 return _indexes;

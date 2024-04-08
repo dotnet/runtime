@@ -18,10 +18,9 @@ public class Program
     internal static sbyte s_4;
     internal static sbyte[] s_28;
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         M101(false);
-        return 100;
     }
 
     internal static void M101(bool arg0)

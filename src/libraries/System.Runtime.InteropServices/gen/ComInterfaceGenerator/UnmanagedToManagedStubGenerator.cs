@@ -4,8 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
@@ -14,31 +14,25 @@ namespace Microsoft.Interop
     internal sealed class UnmanagedToManagedStubGenerator
     {
         private const string ReturnIdentifier = "__retVal";
-        private const string InvokeSucceededIdentifier = "__invokeSucceeded";
 
         private readonly BoundGenerators _marshallers;
 
         private readonly NativeToManagedStubCodeContext _context;
 
         public UnmanagedToManagedStubGenerator(
-            TargetFramework targetFramework,
-            Version targetFrameworkVersion,
             ImmutableArray<TypePositionInfo> argTypes,
-            Action<TypePositionInfo, MarshallingNotSupportedException> marshallingNotSupportedCallback,
-            IMarshallingGeneratorFactory generatorFactory)
+            GeneratorDiagnosticsBag diagnosticsBag,
+            IMarshallingGeneratorResolver generatorResolver)
         {
-            _context = new NativeToManagedStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
-            _marshallers = BoundGenerators.Create(argTypes, generatorFactory, _context, new Forwarder(), out var bindingFailures);
+            _context = new NativeToManagedStubCodeContext(ReturnIdentifier, ReturnIdentifier);
+            _marshallers = BoundGenerators.Create(argTypes, generatorResolver, _context, new Forwarder(), out var bindingDiagnostics);
 
-            foreach (var failure in bindingFailures)
-            {
-                marshallingNotSupportedCallback(failure.Info, failure.Exception);
-            }
+            diagnosticsBag.ReportGeneratorDiagnostics(bindingDiagnostics);
 
             if (_marshallers.NativeReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.NativeReturnMarshaller.TypeInfo, _context))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                _context = new NativeToManagedStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");
+                _context = new NativeToManagedStubCodeContext(ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");
             }
         }
 
@@ -57,47 +51,34 @@ namespace Microsoft.Interop
                 _marshallers,
                 _context,
                 methodToInvoke);
+            Debug.Assert(statements.CleanupCalleeAllocated.IsEmpty);
+
             bool shouldInitializeVariables =
                 !statements.GuaranteedUnmarshal.IsEmpty
-                || !statements.Cleanup.IsEmpty
+                || !statements.CleanupCallerAllocated.IsEmpty
                 || !statements.ManagedExceptionCatchClauses.IsEmpty;
             VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForUnmanagedToManaged(_marshallers, _context, shouldInitializeVariables);
-
-            if (!statements.GuaranteedUnmarshal.IsEmpty)
-            {
-                setupStatements.Add(MarshallerHelpers.Declare(PredefinedType(Token(SyntaxKind.BoolKeyword)), InvokeSucceededIdentifier, initializeToDefault: true));
-            }
 
             setupStatements.AddRange(declarations.Initializations);
             setupStatements.AddRange(declarations.Variables);
             setupStatements.AddRange(statements.Setup);
 
             List<StatementSyntax> tryStatements = new();
+            tryStatements.AddRange(statements.GuaranteedUnmarshal);
             tryStatements.AddRange(statements.Unmarshal);
 
             tryStatements.Add(statements.InvokeStatement);
 
-            if (!statements.GuaranteedUnmarshal.IsEmpty)
-            {
-                tryStatements.Add(ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                    IdentifierName(InvokeSucceededIdentifier),
-                    LiteralExpression(SyntaxKind.TrueLiteralExpression))));
-            }
-
             tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
-            tryStatements.AddRange(statements.PinnedMarshal);
             tryStatements.AddRange(statements.Marshal);
+            tryStatements.AddRange(statements.PinnedMarshal);
 
             List<StatementSyntax> allStatements = setupStatements;
             List<StatementSyntax> finallyStatements = new();
-            if (!statements.GuaranteedUnmarshal.IsEmpty)
-            {
-                finallyStatements.Add(IfStatement(IdentifierName(InvokeSucceededIdentifier), Block(statements.GuaranteedUnmarshal)));
-            }
 
             SyntaxList<CatchClauseSyntax> catchClauses = List(statements.ManagedExceptionCatchClauses);
 
-            finallyStatements.AddRange(statements.Cleanup);
+            finallyStatements.AddRange(statements.CleanupCallerAllocated);
             if (finallyStatements.Count > 0)
             {
                 allStatements.Add(

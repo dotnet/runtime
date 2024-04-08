@@ -74,7 +74,18 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(items, nameof(items));
 
-            if (items.Length == 0)
+            return Create((ReadOnlySpan<T>)items);
+        }
+
+        /// <summary>
+        /// Creates a new immutable queue that contains the specified array of items.
+        /// </summary>
+        /// <typeparam name="T">The type of items in the immutable queue.</typeparam>
+        /// <param name="items">A span that contains the items to prepopulate the queue with.</param>
+        /// <returns>A new immutable queue that contains the specified items.</returns>
+        public static ImmutableQueue<T> Create<T>(ReadOnlySpan<T> items)
+        {
+            if (items.IsEmpty)
             {
                 return ImmutableQueue<T>.Empty;
             }

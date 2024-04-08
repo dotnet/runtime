@@ -42,6 +42,12 @@
 #include <sys/vmmeter.h>
 #endif
 
+#if defined (__FreeBSD__)
+#include <sys/param.h>
+#include <sys/sysctl.h>
+#include <sys/vmmeter.h>
+#include <vm/vm_param.h>
+#endif
 
 #if defined(TARGET_WIN32)
 #include <windows.h>
@@ -253,8 +259,8 @@ mono_determine_physical_ram_size (void)
 	memstat.dwLength = sizeof (memstat);
 	GlobalMemoryStatusEx (&memstat);
 	return (guint64)memstat.ullTotalPhys;
-#elif defined (__NetBSD__) || defined (__APPLE__)
-#ifdef __NetBSD__
+#elif defined (__NetBSD__) || defined (__APPLE__) || defined (__FreeBSD__)
+#if defined (__NetBSD__) || defined (__FreeBSD__) 
 	unsigned long value;
 #else
 	guint64 value;
@@ -263,6 +269,8 @@ mono_determine_physical_ram_size (void)
 		CTL_HW,
 #ifdef __NetBSD__
 		HW_PHYSMEM64
+#elif defined (__FreeBSD__)
+		HW_PHYSMEM
 #else
 		HW_MEMSIZE
 #endif
@@ -283,7 +291,7 @@ mono_determine_physical_ram_size (void)
 	page_size = (guint64)sysconf (_SC_PAGESIZE);
 #endif
 
-#ifdef _SC_PHYS_PAGES
+#ifdef _SC_PHYS_PAGES /* non-POSIX should work on: Linux, Solaris2, cygwin */
 	num_pages = (guint64)sysconf (_SC_PHYS_PAGES);
 #endif
 
@@ -343,7 +351,7 @@ mono_determine_physical_ram_available_size (void)
 	GlobalMemoryStatusEx (&memstat);
 	return (guint64)memstat.ullAvailPhys;
 
-#elif defined (__NetBSD__)
+#elif defined (__NetBSD__) || defined (__FreeBSD__)
 	struct vmtotal vm_total;
 	guint64 page_size;
 	int mib[2];
@@ -392,7 +400,7 @@ mono_determine_physical_ram_available_size (void)
 	page_size = (guint64)sysconf (_SC_PAGESIZE);
 #endif
 
-#ifdef _SC_AVPHYS_PAGES
+#ifdef _SC_AVPHYS_PAGES /* non-POSIX should work on: Linux, Solaris2, cygwin */
 	num_pages = (guint64)sysconf (_SC_AVPHYS_PAGES);
 #endif
 

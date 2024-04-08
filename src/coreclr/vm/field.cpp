@@ -180,8 +180,8 @@ void* FieldDesc::GetStaticAddress(void *base)
 
     void* ret = GetStaticAddressHandle(base);       // Get the handle
 
-        // For value classes, the handle points at an OBJECTREF
-        // which holds the boxed value class, so dereference and unbox.
+    // For value classes, the handle points at an OBJECTREF
+    // which holds the boxed value class, so dereference and unbox.
     if (GetFieldType() == ELEMENT_TYPE_VALUETYPE && !IsRVA())
     {
         OBJECTREF obj = ObjectToOBJECTREF(*(Object**) ret);
@@ -211,11 +211,10 @@ MethodTable * FieldDesc::GetExactDeclaringType(MethodTable * ownerOrSubType)
 
 #endif // #ifndef DACCESS_COMPILE
 
-    // static value classes are actually stored in their boxed form.
-    // this means that their address moves.
+// Static value classes are actually stored in their boxed form.
+// This means that their address moves.
 PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
 {
-
     CONTRACTL
     {
         INSTANCE_CHECK;
@@ -224,12 +223,11 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
         MODE_ANY;
         FORBID_FAULT;
         PRECONDITION(IsStatic());
-        PRECONDITION(GetEnclosingMethodTable()->IsRestored_NoLogging());
     }
     CONTRACTL_END
 
     _ASSERTE(IsStatic());
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     if (IsEnCNew())
     {
         EnCFieldDesc * pFD = dac_cast<PTR_EnCFieldDesc>(this);
@@ -254,8 +252,7 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
 #endif // !DACCESS_COMPILE
         return retVal;
     }
-#endif // EnC_SUPPORTED
-
+#endif // FEATURE_METADATA_UPDATER
 
     if (IsRVA())
     {
@@ -271,10 +268,8 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
 
     PTR_VOID ret = PTR_VOID(dac_cast<PTR_BYTE>(base) + GetOffset());
 
-
     return ret;
 }
-
 
 
 // These routines encapsulate the operation of getting and setting
@@ -443,14 +438,14 @@ PTR_VOID FieldDesc::GetAddress(PTR_VOID o)
                            // the field desc is for the EnCHelper, not the new EnC field
 #endif
 
-#if defined(EnC_SUPPORTED) && !defined(DACCESS_COMPILE)
+#if defined(FEATURE_METADATA_UPDATER) && !defined(DACCESS_COMPILE)
     // EnC added fields aren't at a simple offset like normal fields.
     if (IsEnCNew())
     {
         // We'll have to go through some effort to compute the address of this field.
         return ((EnCFieldDesc *)this)->GetAddress(o);
     }
-#endif //  defined(EnC_SUPPORTED) && !defined(DACCESS_COMPILE)
+#endif //  defined(FEATURE_METADATA_UPDATER) && !defined(DACCESS_COMPILE)
     return GetAddressNoThrowNoGC(o);
 }
 
@@ -465,7 +460,7 @@ void *FieldDesc::GetInstanceAddress(OBJECTREF o)
 
     DWORD dwOffset = m_dwOffset; // GetOffset()
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     // EnC added fields aren't at a simple offset like normal fields.
     if (dwOffset == FIELD_OFFSET_NEW_ENC) // IsEnCNew()
     {

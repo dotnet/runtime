@@ -293,7 +293,7 @@ namespace System.IO
         /// </summary>
         /// <remarks>
         /// Handles paths that use the alternate directory separator.  It is a frequent mistake to
-        /// assume that rooted paths <see cref="Path.IsPathRooted(string)"/> are not relative.  This isn't the case.
+        /// assume that rooted paths <see cref="IsPathRooted(string)"/> are not relative.  This isn't the case.
         /// "C:a" is drive relative- meaning that it will be resolved against the current directory
         /// for C: (rooted, but relative). "C:\a" is rooted and not relative (the current directory
         /// will not be used to modify the path).

@@ -10,7 +10,7 @@ namespace Test
     public class AA
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             int L = 2;
             while (1u > L)
@@ -18,7 +18,6 @@ namespace Test
                 GC.Collect();
                 break;
             }
-            return 100;
         }
     }
 }

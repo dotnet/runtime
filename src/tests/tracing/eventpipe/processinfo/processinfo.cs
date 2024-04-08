@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using Microsoft.Diagnostics.Tools.RuntimeClient;
 using Microsoft.Diagnostics.Tracing;
 using Tracing.Tests.Common;
+using Xunit;
 
 namespace Tracing.Tests.ProcessInfoValidation
 {
@@ -88,7 +89,8 @@ namespace Tracing.Tests.ProcessInfoValidation
             return normalizedCommandLine;
         }
 
-        public static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
 
             Process currentProcess = Process.GetCurrentProcess();
@@ -149,7 +151,9 @@ namespace Tracing.Tests.ProcessInfoValidation
                 // /path/to/corerun /path/to/processinfo.dll
                 // or
                 // "C:\path\to\CoreRun.exe" C:\path\to\processinfo.dll
-                string currentProcessCommandLine = $"{currentProcess.MainModule.FileName} {System.Reflection.Assembly.GetExecutingAssembly().Location}";
+                string currentProcessCommandLine = TestLibrary.Utilities.IsSingleFile
+                    ? currentProcess.MainModule.FileName
+                    : $"{currentProcess.MainModule.FileName} {System.Reflection.Assembly.GetExecutingAssembly().Location}";
                 string receivedCommandLine = NormalizeCommandLine(commandLine);
                 Utils.Assert(currentProcessCommandLine.Equals(receivedCommandLine, StringComparison.OrdinalIgnoreCase), $"CommandLine must match current process. Expected: {currentProcessCommandLine}, Received: {receivedCommandLine} (original: {commandLine})");
             }
@@ -185,9 +189,13 @@ namespace Tracing.Tests.ProcessInfoValidation
             {
                 expectedOSValue = "Android";
             }
-            else if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
+            else if (OperatingSystem.IsIOS())
             {
                 expectedOSValue = "iOS";
+            }
+            else if (OperatingSystem.IsTvOS())
+            {
+                expectedOSValue = "tvOS";
             }
             else
             {
@@ -224,8 +232,6 @@ namespace Tracing.Tests.ProcessInfoValidation
             Utils.Assert(end == totalSize, $"Full payload should have been read. Expected: {totalSize}, Received: {end}");
 
             Logger.logger.Log($"\n{{\n\tprocessId: {processId},\n\truntimeCookie: {runtimeCookie},\n\tcommandLine: {commandLine},\n\tOS: {OS},\n\tArch: {arch}\n}}");
-
-            return 100;
         }
     }
 }

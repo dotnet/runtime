@@ -167,4 +167,13 @@
     <value>Multiple constructors accepting all given argument types have been found in type '{0}'. There should only be one applicable constructor.</value>
     <comment>{0} = instance type</comment>
   </data>
+  <data name="KeyedServicesNotSupported" xml:space="preserve">
+    <value>This service provider doesn't support keyed services.</value>
+  </data>
+  <data name="KeyedDescriptorMisuse" xml:space="preserve">
+    <value>This service descriptor is keyed. Your service provider may not support keyed services.</value>
+  </data>
+  <data name="NonKeyedDescriptorMisuse" xml:space="preserve">
+    <value>This service descriptor is not keyed.</value>
+  </data>
 </root>

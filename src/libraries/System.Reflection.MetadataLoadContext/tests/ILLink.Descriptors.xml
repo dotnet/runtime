@@ -5,4 +5,5 @@
     ILLink completely trims it out. So, preserve it explicitly.
   -->
   <assembly fullname="mscorlib" />
+  <assembly fullname="TestILAssembly" />
 </linker>

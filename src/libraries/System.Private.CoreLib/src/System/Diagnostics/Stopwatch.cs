@@ -89,6 +89,14 @@ namespace System.Diagnostics
             _isRunning = true;
         }
 
+        /// <summary>
+        /// Returns the <see cref="Elapsed"/> time as a string.
+        /// </summary>
+        /// <returns>
+        /// Elapsed time string in the same format used by <see cref="TimeSpan.ToString()"/>.
+        /// </returns>
+        public override string ToString() => Elapsed.ToString();
+
         public bool IsRunning
         {
             get { return _isRunning; }

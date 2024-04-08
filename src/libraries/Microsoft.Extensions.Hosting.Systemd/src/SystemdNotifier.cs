@@ -7,6 +7,9 @@ using System.Runtime.Versioning;
 
 namespace Microsoft.Extensions.Hosting.Systemd
 {
+    /// <summary>
+    /// Provides support to notify systemd about the service status.
+    /// </summary>
     [UnsupportedOSPlatform("browser")]
     public class SystemdNotifier : ISystemdNotifier
     {

@@ -64,6 +64,20 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(@"{""MyInt"":1}", await Serializer.SerializeWrapper(obj));
         }
 
+        [Fact]
+        public async Task NullableStructWithInitOnlyProperty()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/86483
+
+            StructWithInitOnlyProperty? value = new StructWithInitOnlyProperty { MyInt = 42 };
+            string json = await Serializer.SerializeWrapper(value);
+
+            Assert.Equal("""{"MyInt":42}""", json);
+
+            StructWithInitOnlyProperty? deserializedValue = await Serializer.DeserializeWrapper<StructWithInitOnlyProperty?>(json);
+            Assert.Equal(deserializedValue, value);
+        }
+
         public class ClassWithInitOnlyProperty
         {
             public int MyInt { get; init; }

@@ -1055,7 +1055,7 @@ int fx_muxer_t::handle_cli(
         }
         else if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
         {
-            command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file_path());
+            command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file_path(), false /*skip_sdk_info_output*/);
             return StatusCode::Success;
         }
 
@@ -1070,13 +1070,8 @@ int fx_muxer_t::handle_cli(
         return StatusCode::LibHostSdkFindFailure;
     }
 
-    append_path(&sdk_dotnet, _X("dotnet.dll"));
-
-    if (!pal::file_exists(sdk_dotnet))
-    {
-        trace::error(_X("Found .NET SDK, but did not find dotnet.dll at [%s]"), sdk_dotnet.c_str());
-        return StatusCode::LibHostSdkFindFailure;
-    }
+    append_path(&sdk_dotnet, SDK_DOTNET_DLL);
+    assert(pal::file_exists(sdk_dotnet));
 
     // Transform dotnet [command] [args] -> dotnet dotnet.dll [command] [args]
 
@@ -1112,7 +1107,7 @@ int fx_muxer_t::handle_cli(
 
     if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
     {
-        command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file_path());
+        command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file_path(), result == 0 /*skip_sdk_info_output*/);
     }
 
     return result;

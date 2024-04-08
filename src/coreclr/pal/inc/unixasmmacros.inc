@@ -3,6 +3,11 @@
 
 #define INVALIDGCVALUE 0xCCCCCCCD
 
+// Enforce subsections via symbols to workaround bugs in Xcode 15 linker.
+#if defined(__APPLE__)
+.subsections_via_symbols
+#endif
+
 #if defined(__APPLE__)
 #define C_FUNC(name) _##name
 #define EXTERNAL_C_FUNC(name) C_FUNC(name)

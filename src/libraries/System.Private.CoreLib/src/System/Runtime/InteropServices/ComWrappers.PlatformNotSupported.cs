@@ -11,12 +11,14 @@ namespace System.Runtime.InteropServices
     {
         public static unsafe bool TryGetComInstance(object obj, out IntPtr unknown)
         {
-            throw new PlatformNotSupportedException();
+            unknown = default;
+            return false;
         }
 
         public static unsafe bool TryGetObject(IntPtr unknown, [NotNullWhen(true)] out object? obj)
         {
-            throw new PlatformNotSupportedException();
+            obj = default;
+            return false;
         }
 
         public partial struct ComInterfaceDispatch

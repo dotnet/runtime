@@ -59,6 +59,14 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             }
         }
 
+        public override TypeSystemEntity AssociatedTypeOrMethod
+        {
+            get
+            {
+                 return (_owningMethod != null) ? _owningMethod : _owningType;
+            }
+        }
+
         public override int Index
         {
             get

@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System.IO
 {
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class PathTooLongException : IOException
     {
         public PathTooLongException()
@@ -17,13 +18,13 @@ namespace System.IO
         }
 
         public PathTooLongException(string? message)
-            : base(message)
+            : base(message ?? SR.IO_PathTooLong)
         {
             HResult = HResults.COR_E_PATHTOOLONG;
         }
 
         public PathTooLongException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.IO_PathTooLong, innerException)
         {
             HResult = HResults.COR_E_PATHTOOLONG;
         }

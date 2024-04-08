@@ -94,7 +94,7 @@ public class Test_struct5_5
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         S sM = new S("test");
         S sM2 = new S("test2");
@@ -102,6 +102,5 @@ public class Test_struct5_5
         S sM4 = new S("test4");
 
         c(sM, sM2, sM3, sM4);
-        return 100;
     }
 }

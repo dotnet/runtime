@@ -19,7 +19,7 @@ public class Runtime_77968
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         for (int i = 0; i < 100; i++)
         {
@@ -33,6 +33,5 @@ public class Runtime_77968
             }
             Thread.Sleep(15);
         }
-        return 100;
     }
 }

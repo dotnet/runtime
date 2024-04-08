@@ -6,70 +6,65 @@
 
 
 using System;
+using Xunit;
 
 public class MyWaitForPendingFinalizersClass
 {
-	public MyWaitForPendingFinalizersClass()
-	{
-		Console.WriteLine("Inside MyWaitForPendingFinalizersClass cctor");
+    public MyWaitForPendingFinalizersClass()
+    {
+        Console.WriteLine("Inside MyWaitForPendingFinalizersClass cctor");
 
-		// Wait for all finalizers to complete before continuing.
-		// This is essentially a way to pump in CLR since we are suspending the
-		// current thread until the thread processing the finalization queue has 
-		// emptied that queue.
-		// For more info on this see cbrumme's blogg posting on Pumping in the CLR.
-		GC.WaitForPendingFinalizers();
+        // Wait for all finalizers to complete before continuing.
+        // This is essentially a way to pump in CLR since we are suspending the
+        // current thread until the thread processing the finalization queue has 
+        // emptied that queue.
+        // For more info on this see cbrumme's blogg posting on Pumping in the CLR.
+        GC.WaitForPendingFinalizers();
 
-		Console.WriteLine("End of MyWaitForPendingFinalizersClass cctor");
-	}
+        Console.WriteLine("End of MyWaitForPendingFinalizersClass cctor");
+    }
 }
 
 class MyFinalizeObject
 {
-	~MyFinalizeObject()
-	{
-		Console.WriteLine("Finalizing a MyFinalizeObject");
-	}
+    ~MyFinalizeObject()
+    {
+        Console.WriteLine("Finalizing a MyFinalizeObject");
+    }
 }
 
-class Test_pumpFromCctor
+public class Test_pumpFromCctor
 {
-	// We can increase this number to fill up more memory.
-	const int numMfos = 10;
-	// We can increase this number to cause more
-	// post-finalization work to be done.
-	const int maxIterations = 10;
+    // We can increase this number to fill up more memory.
+    const int numMfos = 10;
+    // We can increase this number to cause more
+    // post-finalization work to be done.
+    const int maxIterations = 10;
 
-	static int Main()
-	{
-		MyFinalizeObject mfo;
+    [Fact]
+    public static void TestEntryPoint()
+    {
+        MyFinalizeObject mfo;
 
-		// Create objects that require finalization.
-		for (int j = 0; j < numMfos; j++)
-		{
-			mfo = new MyFinalizeObject();
-		}
+        // Create objects that require finalization.
+        for (int j = 0; j < numMfos; j++)
+        {
+            mfo = new MyFinalizeObject();
+        }
 
-		//Force garbage collection.
-		// all finalizable objects will be placed in Finalization queue.
-		GC.Collect();
+        //Force garbage collection.
+        // all finalizable objects will be placed in Finalization queue.
+        GC.Collect();
 
-		MyWaitForPendingFinalizersClass cl = new MyWaitForPendingFinalizersClass();
+        MyWaitForPendingFinalizersClass cl = new MyWaitForPendingFinalizersClass();
 
-		// Worker loop to perform post-finalization code.
-		for (int i = 0; i < maxIterations; i++)
-		{
-			Console.WriteLine("Doing some post-finalize work");
-		}
+        // Worker loop to perform post-finalization code.
+        for (int i = 0; i < maxIterations; i++)
+        {
+            Console.WriteLine("Doing some post-finalize work");
+        }
 
-		// if we got to this point, the test passed since no deadlock happened 
-		// inside MyWaitForPendingFinalizersClass class constructor.
-		Console.WriteLine("PASS");
-		return 100;
-	}
+        // if we got to this point, the test passed since no deadlock happened 
+        // inside MyWaitForPendingFinalizersClass class constructor.
+    }
 }
-
-
-
-
-

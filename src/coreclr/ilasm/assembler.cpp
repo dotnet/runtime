@@ -250,7 +250,7 @@ mdToken Assembler::GetAsmRef(_In_ __nullterminated const char* szName)
         {
             // emit the AssemblyRef
             // if it's not self, try to get attributes with Autodetect
-            unsigned L = (unsigned)strlen(szName)+1;
+            size_t L = strlen(szName)+1;
             char *sz = new char[L];
             if(sz)
             {
@@ -421,7 +421,7 @@ void Assembler::StartClass(_In_ __nullterminated char* name, DWORD attr, TyParLi
 {
     Class *pEnclosingClass = m_pCurClass;
     char *szFQN;
-    ULONG LL;
+    size_t LL;
 
     m_TyParList = typars;
 
@@ -431,24 +431,24 @@ void Assembler::StartClass(_In_ __nullterminated char* name, DWORD attr, TyParLi
     }
     if(pEnclosingClass)
     {
-        LL = pEnclosingClass->m_dwFQN+(ULONG)strlen(name)+2;
-        if((szFQN = new char[LL]))
+        LL = pEnclosingClass->m_dwFQN+strlen(name)+2;
+        if((szFQN = new char[LL]) != nullptr)
             sprintf_s(szFQN,LL,"%s%c%s",pEnclosingClass->m_szFQN,NESTING_SEP,name);
         else
             report->error("\nOut of memory!\n");
     }
     else
     {
-        unsigned L = (unsigned)strlen(m_szFullNS);
-        unsigned LLL = (unsigned)strlen(name);
+        size_t L = strlen(m_szFullNS);
+        size_t LLL = strlen(name);
         LL = L + LLL + (L ? 2 : 1);
-        if((szFQN = new char[LL]))
+        if((szFQN = new char[LL]) != nullptr)
         {
             if(L) sprintf_s(szFQN,LL,"%s.%s",m_szFullNS,name);
             else memcpy(szFQN,name,LL);
             if(LL > MAX_CLASSNAME_LENGTH)
             {
-                report->error("Full class name too long (%d characters, %d allowed).\n",LL-1,MAX_CLASSNAME_LENGTH-1);
+                report->error("Full class name too long (%zd characters, %d allowed).\n",LL-1,MAX_CLASSNAME_LENGTH-1);
             }
         }
         else
@@ -625,7 +625,7 @@ void Assembler::StartMethod(_In_ __nullterminated char* name, BinStr* sig, CorMe
     {
         char c = name[MAX_CLASSNAME_LENGTH-1];
         name[MAX_CLASSNAME_LENGTH-1] = 0;
-        report->error("Method '%s...' -- name too long (%d characters).\n",name,namelen);
+        report->error("Method '%s...' -- name too long (%zd characters).\n",name,namelen);
         name[MAX_CLASSNAME_LENGTH-1] = c;
     }
     if (!(flags & mdStatic))
@@ -811,11 +811,12 @@ void Assembler::AddField(__inout_z __inout char* name, BinStr* sig, CorFieldAttr
     if (m_pCurMethod)
         report->error("Field cannot be declared within a method\n");
 
-    if(strlen(name) >= MAX_CLASSNAME_LENGTH)
+    size_t namelen = strlen(name);
+    if(namelen >= MAX_CLASSNAME_LENGTH)
     {
         char c = name[MAX_CLASSNAME_LENGTH-1];
         name[MAX_CLASSNAME_LENGTH-1] = 0;
-        report->error("Field '%s...' -- name too long (%d characters).\n",name,strlen(name));
+        report->error("Field '%s...' -- name too long (%zd characters).\n",name,namelen);
         name[MAX_CLASSNAME_LENGTH-1] = c;
     }
 
@@ -1879,11 +1880,12 @@ void Assembler::EndEvent(void)
 
 void Assembler::ResetEvent(__inout_z __inout char* szName, mdToken typeSpec, DWORD dwAttr)
 {
-    if(strlen(szName) >= MAX_CLASSNAME_LENGTH)
+    size_t namelen = strlen(szName);
+    if(namelen >= MAX_CLASSNAME_LENGTH)
     {
         char c = szName[MAX_CLASSNAME_LENGTH-1];
         szName[MAX_CLASSNAME_LENGTH-1] = 0;
-        report->error("Event '%s...' -- name too long (%d characters).\n",szName,strlen(szName));
+        report->error("Event '%s...' -- name too long (%zd characters).\n",szName,namelen);
         szName[MAX_CLASSNAME_LENGTH-1] = c;
     }
     if((m_pCurEvent = new (nothrow) EventDescriptor()))
@@ -1935,11 +1937,12 @@ void Assembler::ResetProp(__inout_z __inout char * szName, BinStr* bsType, DWORD
     DWORD           cSig = bsType->length();
     COR_SIGNATURE*  mySig = (COR_SIGNATURE *)(bsType->ptr());
 
-    if(strlen(szName) >= MAX_CLASSNAME_LENGTH)
+    size_t namelen = strlen(szName);
+    if(namelen >= MAX_CLASSNAME_LENGTH)
     {
         char c = szName[MAX_CLASSNAME_LENGTH-1];
         szName[MAX_CLASSNAME_LENGTH-1] = 0;
-        report->error("Property '%s...' -- name too long (%d characters).\n",szName,strlen(szName));
+        report->error("Property '%s...' -- name too long (%zd characters).\n",szName,namelen);
         szName[MAX_CLASSNAME_LENGTH-1] = c;
     }
     m_pCurProp = new (nothrow) PropDescriptor();
@@ -2279,10 +2282,10 @@ void Assembler::EmitSecurityInfo(mdToken            token,
                 uLength = CorSigCompressToken(tkTypeRef, pSig->getBuff(5));
                 pSig->remove(5 - uLength);
 
-                uLength = (unsigned)strlen(COR_CTOR_METHOD_NAME) + 1;
-                if((szMemberName = new char[uLength]))
+                size_t ctorNameLength = strlen(COR_CTOR_METHOD_NAME) + 1;
+                if((szMemberName = new char[ctorNameLength]) != nullptr)
                 {
-                    memcpy(szMemberName, COR_CTOR_METHOD_NAME, uLength);
+                    memcpy(szMemberName, COR_CTOR_METHOD_NAME, ctorNameLength);
                     pAttrs[i].tkCtor = MakeMemberRef(pPerm->m_TypeSpec, szMemberName, pSig);
                     pAttrs[i].pCustomAttribute = (const void *)pPerm->m_Blob;
                     pAttrs[i].cbCustomAttribute = pPerm->m_BlobLength;

@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Testing;
+using Microsoft.Interop;
 using Microsoft.Interop.UnitTests;
 using System.Collections.Generic;
 using System.Linq;
@@ -257,27 +259,41 @@ namespace LibraryImportGenerator.UnitTests
             private readonly string _typeName;
             private readonly string _methodName;
             private readonly string? _attributeName;
-            private readonly bool _expectSkipLocalsInit;
+            private readonly bool _expectAttributeAdded;
 
-            public AttributeAddedTest(string typeName, string methodName, string? attributeName, bool expectSkipLocalsInitOnMethod, TestTargetFramework targetFramework)
+            public AttributeAddedTest(string typeName, string methodName, string? attributeName, bool attributeAdded, TestTargetFramework targetFramework)
                 : base(targetFramework)
             {
                 _typeName = typeName;
                 _methodName = methodName;
                 _attributeName = attributeName;
-                _expectSkipLocalsInit = expectSkipLocalsInitOnMethod;
+                _expectAttributeAdded = attributeAdded;
             }
 
             protected override void VerifyFinalCompilation(Compilation compilation)
             {
                 ITypeSymbol c = compilation.GetTypeByMetadataName(_typeName)!;
                 IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == _methodName);
-                if (_expectSkipLocalsInit)
+                if (_expectAttributeAdded)
                 {
-                    Assert.Contains(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == _attributeName);
+                    Assert.Contains(stubMethod.GetAttributes(), ValidateAttribute);
+
+                    bool ValidateAttribute(AttributeData attr)
+                    {
+                        bool isTargetAttribute = attr.AttributeClass!.ToDisplayString() == _attributeName;
+                        if (!isTargetAttribute)
+                        {
+                            return false;
+                        }
+
+                        AttributeSyntax syntax = (AttributeSyntax)attr.ApplicationSyntaxReference!.GetSyntax();
+                        return syntax.Name.ToString().StartsWith(TypeNames.GlobalAlias);
+                    }
                 }
                 else
                 {
+                    // Only check the name here. We don't want to accidentally add the attribute and not fail the test due to the application
+                    // not having the correct syntax or other features we validate.
                     Assert.DoesNotContain(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == _attributeName);
                 }
             }

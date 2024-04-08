@@ -19,65 +19,12 @@ namespace System.Collections.Frozen
         /// <param name="comparer">The comparer implementation to use to compare values for equality. If null, <see cref="EqualityComparer{T}.Default"/> is used.</param>
         /// <typeparam name="T">The type of the values in the set.</typeparam>
         /// <returns>A frozen set.</returns>
-        public static FrozenSet<T> ToFrozenSet<T>(this IEnumerable<T> source, IEqualityComparer<T>? comparer = null)
-        {
-            GetUniqueValues(source, comparer, out FrozenSet<T>? existing, out HashSet<T>? uniqueValues);
-
-            // Trimming note:
-            // This avoids delegating to ToFrozenSet(..., bool optimizeForReading) to avoid rooting
-            // ChooseImplementationOptimizedForReading, which in turn references many different concrete implementations.
-            return existing ??
-                ChooseImplementationOptimizedForConstruction(uniqueValues!);
-        }
-
-        /// <summary>Creates a <see cref="FrozenSet{T}"/> with the specified values.</summary>
-        /// <param name="source">The values to use to populate the set.</param>
-        /// <param name="optimizeForReading">
-        /// <see langword="true"/> to do more work as part of set construction to optimize for subsequent reading of the data;
-        /// <see langword="false"/> to prefer making construction more efficient. The default is <see langword="false"/>.
-        /// </param>
-        /// <typeparam name="T">The type of the values in the set.</typeparam>
-        /// <returns>A frozen set.</returns>
-        /// <remarks>
-        /// Frozen collections are immutable and may be optimized for situations where a collection is created very infrequently but
-        /// is used very frequently at runtime. Setting <paramref name="optimizeForReading"/> to <see langword="true"/> will result in a
-        /// relatively high cost to create the collection in exchange for improved performance when subsequently using the collection.
-        /// Using <see langword="true"/> is ideal for collections that are created once, potentially at the startup of a service, and then
-        /// used throughout the remainder of the lifetime of the service. Because of the high cost of creation, frozen collections should
-        /// only be initialized with trusted input.
-        /// </remarks>
-        public static FrozenSet<T> ToFrozenSet<T>(this IEnumerable<T> source, bool optimizeForReading) =>
-            ToFrozenSet(source, null, optimizeForReading);
-
-        /// <summary>Creates a <see cref="FrozenSet{T}"/> with the specified values.</summary>
-        /// <param name="source">The values to use to populate the set.</param>
-        /// <param name="comparer">The comparer implementation to use to compare values for equality. If null, <see cref="EqualityComparer{T}.Default"/> is used.</param>
-        /// <param name="optimizeForReading">
-        /// <see langword="true"/> to do more work as part of set construction to optimize for subsequent reading of the data;
-        /// <see langword="false"/> to prefer making construction more efficient. The default is <see langword="false"/>.
-        /// </param>
-        /// <typeparam name="T">The type of the values in the set.</typeparam>
-        /// <returns>A frozen set.</returns>
-        /// <remarks>
-        /// Frozen collections are immutable and may be optimized for situations where a collection is created very infrequently but
-        /// is used very frequently at runtime. Setting <paramref name="optimizeForReading"/> to <see langword="true"/> will result in a
-        /// relatively high cost to create the collection in exchange for improved performance when subsequently using the collection.
-        /// Using <see langword="true"/> is ideal for collections that are created once, potentially at the startup of a service, and then
-        /// used throughout the remainder of the lifetime of the service. Because of the high cost of creation, frozen collections should
-        /// only be initialized with trusted input.
-        /// </remarks>
-        public static FrozenSet<T> ToFrozenSet<T>(this IEnumerable<T> source, IEqualityComparer<T>? comparer, bool optimizeForReading)
-        {
-            GetUniqueValues(source, comparer, out FrozenSet<T>? existing, out HashSet<T>? uniqueValues);
-            return existing ?? (optimizeForReading ?
-                ChooseImplementationOptimizedForReading(uniqueValues!) :
-                ChooseImplementationOptimizedForConstruction(uniqueValues!));
-        }
+        public static FrozenSet<T> ToFrozenSet<T>(this IEnumerable<T> source, IEqualityComparer<T>? comparer = null) =>
+            GetExistingFrozenOrNewSet(source, comparer, out HashSet<T>? newSet) ??
+            CreateFromSet(newSet!);
 
         /// <summary>Extracts from the source either an existing <see cref="FrozenSet{T}"/> instance or a <see cref="HashSet{T}"/> containing the values and the specified <paramref name="comparer"/>.</summary>
-        private static void GetUniqueValues<T>(
-            IEnumerable<T> source, IEqualityComparer<T>? comparer,
-            out FrozenSet<T>? existing, out HashSet<T>? uniqueValues)
+        private static FrozenSet<T>? GetExistingFrozenOrNewSet<T>(IEnumerable<T> source, IEqualityComparer<T>? comparer, out HashSet<T>? newSet)
         {
             ThrowHelper.ThrowIfNull(source);
             comparer ??= EqualityComparer<T>.Default;
@@ -85,42 +32,35 @@ namespace System.Collections.Frozen
             // If the source is already frozen with the same comparer, it can simply be returned.
             if (source is FrozenSet<T> fs && fs.Comparer.Equals(comparer))
             {
-                existing = fs;
-                uniqueValues = null;
-                return;
+                newSet = null;
+                return fs;
             }
 
             // Ensure we have a HashSet<> using the specified comparer such that all items
             // are non-null and unique according to that comparer.
-            uniqueValues = source as HashSet<T>;
-            if (uniqueValues is null ||
-                (uniqueValues.Count != 0 && !uniqueValues.Comparer.Equals(comparer)))
+            newSet = source as HashSet<T>;
+            if (newSet is null ||
+                (newSet.Count != 0 && !newSet.Comparer.Equals(comparer)))
             {
-                uniqueValues = new HashSet<T>(source, comparer);
+                newSet = new HashSet<T>(source, comparer);
             }
 
-            if (uniqueValues.Count == 0)
+            if (newSet.Count == 0)
             {
-                existing = ReferenceEquals(comparer, FrozenSet<T>.Empty.Comparer) ?
+                return ReferenceEquals(comparer, FrozenSet<T>.Empty.Comparer) ?
                     FrozenSet<T>.Empty :
                     new EmptyFrozenSet<T>(comparer);
-                uniqueValues = null;
-                return;
             }
 
-            Debug.Assert(uniqueValues is not null);
-            Debug.Assert(uniqueValues.Comparer.Equals(comparer));
-
-            existing = null;
+            Debug.Assert(newSet is not null);
+            Debug.Assert(newSet.Comparer.Equals(comparer));
+            return null;
         }
 
-        private static FrozenSet<T> ChooseImplementationOptimizedForConstruction<T>(HashSet<T> source)
+        private static FrozenSet<T> CreateFromSet<T>(HashSet<T> source)
         {
-            return new DefaultFrozenSet<T>(source, optimizeForReading: false);
-        }
+            Debug.Assert(source.Count > 0, "Empty sources should have been filtered out by caller");
 
-        private static FrozenSet<T> ChooseImplementationOptimizedForReading<T>(HashSet<T> source)
-        {
             IEqualityComparer<T> comparer = source.Comparer;
 
             // Optimize for value types when the default comparer is being used. In such a case, the implementation
@@ -160,17 +100,21 @@ namespace System.Collections.Frozen
                 !source.Contains(default!) &&
                 (ReferenceEquals(comparer, EqualityComparer<T>.Default) || ReferenceEquals(comparer, StringComparer.Ordinal) || ReferenceEquals(comparer, StringComparer.OrdinalIgnoreCase)))
             {
+                IEqualityComparer<string> stringComparer = (IEqualityComparer<string>)(object)comparer;
+
+                // Entries are needed for every strategy
                 HashSet<string> stringValues = (HashSet<string>)(object)source;
                 var entries = new string[stringValues.Count];
                 stringValues.CopyTo(entries);
-                IEqualityComparer<string> stringComparer = (IEqualityComparer<string>)(object)comparer;
 
                 // Calculate the minimum and maximum lengths of the strings in the set. Several of the analyses need this.
                 int minLength = int.MaxValue, maxLength = 0;
+                ulong lengthFilter = 0;
                 foreach (string s in entries)
                 {
                     if (s.Length < minLength) minLength = s.Length;
                     if (s.Length > maxLength) maxLength = s.Length;
+                    lengthFilter |= (1UL << (s.Length % 64));
                 }
                 Debug.Assert(minLength >= 0 && maxLength >= minLength);
 
@@ -221,12 +165,12 @@ namespace System.Collections.Frozen
                     if (analysis.IgnoreCase)
                     {
                         frozenSet = analysis.AllAsciiIfIgnoreCase
-                            ? new OrdinalStringFrozenSet_FullCaseInsensitiveAscii(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff)
-                            : new OrdinalStringFrozenSet_FullCaseInsensitive(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
+                            ? new OrdinalStringFrozenSet_FullCaseInsensitiveAscii(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, lengthFilter)
+                            : new OrdinalStringFrozenSet_FullCaseInsensitive(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, lengthFilter);
                     }
                     else
                     {
-                        frozenSet = new OrdinalStringFrozenSet_Full(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
+                        frozenSet = new OrdinalStringFrozenSet_Full(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, lengthFilter);
                     }
                 }
 
@@ -241,19 +185,19 @@ namespace System.Collections.Frozen
             }
 
             // No special-cases apply. Use the default frozen set.
-            return new DefaultFrozenSet<T>(source, optimizeForReading: true);
+            return new DefaultFrozenSet<T>(source);
         }
     }
 
     /// <summary>Provides an immutable, read-only set optimized for fast lookup and enumeration.</summary>
     /// <typeparam name="T">The type of the values in this set.</typeparam>
     /// <remarks>
-    /// Frozen collections are immutable and are optimized for situations where a collection
-    /// is created very infrequently but is used very frequently at runtime. They have a relatively high
-    /// cost to create but provide excellent lookup performance. Thus, these are ideal for cases
-    /// where a collection is created once, potentially at the startup of an application, and used throughout
-    /// the remainder of the life of the application. Frozen collections should only be initialized with
-    /// trusted input.
+    /// <see cref="FrozenSet{T}"/> is immutable and is optimized for situations where a set
+    /// is created very infrequently but is used very frequently at run-time. It has a relatively high
+    /// cost to create but provides excellent lookup performance. Thus, it is ideal for cases
+    /// where a set is created once, potentially at the startup of an application, and is used throughout
+    /// the remainder of the life of the application. <see cref="FrozenSet{T}"/> should only be initialized
+    /// with trusted elements, as the details of the elements impacts construction time.
     /// </remarks>
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
     [DebuggerDisplay("Count = {Count}")]

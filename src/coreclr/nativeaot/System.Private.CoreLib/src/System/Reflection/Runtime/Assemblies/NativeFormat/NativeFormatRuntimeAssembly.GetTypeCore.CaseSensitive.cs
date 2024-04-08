@@ -5,8 +5,8 @@ using System.Reflection;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 
-using Internal.Reflection.Core;
 using Internal.Metadata.NativeFormat;
+using Internal.Reflection.Core;
 
 namespace System.Reflection.Runtime.Assemblies.NativeFormat
 {

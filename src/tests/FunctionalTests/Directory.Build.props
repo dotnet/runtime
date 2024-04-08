@@ -5,6 +5,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsTestProject Condition="'$(IsTestProject)' == ''">true</IsTestProject>
     <IsFunctionalTest>true</IsFunctionalTest>
+    <HybridGlobalization Condition="'$(TargetsAppleMobile)' == 'true'">true</HybridGlobalization>
   </PropertyGroup>
 
   <!-- Available feature switches: https://github.com/dotnet/runtime/blob/master/docs/workflow/trimming/feature-switches.md -->
@@ -40,6 +41,7 @@
     <InvariantGlobalization Condition="'$(TargetOS)' == 'maccatalyst' and '$(InvariantGlobalization)' == ''">true</InvariantGlobalization>
     <StartupHookSupport Condition="'$(StartupHookSupport)' == ''">false</StartupHookSupport>
     <UseNativeHttpHandler Condition="'$(UseNativeHttpHandler)' == ''">false</UseNativeHttpHandler>
+    <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == '' and '$(MonoForceInterpreter)' != 'true'">false</DynamicCodeSupport>
   </PropertyGroup>
 
   <Import Project="..\..\libraries\Directory.Build.props" />

@@ -1,8 +1,6 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DynamicDependencies
 {
@@ -213,6 +211,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
 			[method: ExpectBodyModified]
+			[method: ExpectLocalsModified]
 			public event EventHandler PublicEvent;
 
 			event EventHandler NonPublicEvent;
@@ -226,6 +225,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
 			[method: ExpectBodyModified]
+			[method: ExpectLocalsModified]
 			event EventHandler NonPublicEvent;
 
 			public event EventHandler PublicEven;

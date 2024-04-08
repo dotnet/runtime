@@ -40,9 +40,6 @@
 gboolean mono_print_vtable = FALSE;
 gboolean mono_align_small_structs = FALSE;
 
-/* Set by the EE */
-gint32 mono_simd_register_size;
-
 /* Statistics */
 static gint32 classes_size;
 static gint32 inflated_classes_size;
@@ -304,18 +301,17 @@ mono_class_setup_fields (MonoClass *klass)
 		instance_size = MONO_ABI_SIZEOF (MonoObject);
 	}
 
-	if (m_class_is_inlinearray (klass) && m_class_inlinearray_value (klass) <= 0)
-		mono_class_set_type_load_failure (klass, "Inline array length property must be positive.");
+	if (m_class_is_inlinearray (klass) && m_class_inlinearray_value (klass) <= 0) {
+		if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback)
+			mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback (klass, "Inline array length property must be positive.");
+		else
+			mono_class_set_type_load_failure (klass, "Inline array length property must be positive.");
+	}
 
 	/* Get the real size */
 	explicit_size = mono_metadata_packing_from_typedef (klass->image, klass->type_token, &packing_size, &real_size);
 	if (explicit_size)
 		instance_size += real_size;
-
-	if (mono_is_corlib_image (klass->image) && !strcmp (klass->name_space, "System.Numerics") && !strcmp (klass->name, "Register")) {
-		if (mono_simd_register_size)
-			instance_size += mono_simd_register_size;
-	}
 
 	/*
 	 * This function can recursively call itself.
@@ -376,8 +372,15 @@ mono_class_setup_fields (MonoClass *klass)
 				break;
 			}
 			if (m_class_is_inlinearray (klass)) {
-				mono_class_set_type_load_failure (klass, "Inline array struct must not have explicit layout.");
-				break;
+				if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback) {
+					if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback (klass, "Inline array struct must not have explicit layout."))
+						break;
+					else
+						; // failure occured during AOT compilation, continue execution
+				} else {
+					mono_class_set_type_load_failure (klass, "Inline array struct must not have explicit layout.");
+					break;
+				}
 			}
 		}
 		if (mono_type_has_exceptions (field->type)) {
@@ -805,7 +808,7 @@ has_inline_array_attribute_value_func (MonoImage *image, uint32_t method_token, 
 		MonoDecodeCustomAttr *decoded_attr = mono_reflection_create_custom_attr_data_args_noalloc (image, ctor, (guchar*)data, data_size, &error);
 		mono_error_assert_ok (&error);
 		g_assert (decoded_attr->named_args_num == 0 && decoded_attr->typed_args_num == 1);
-		attr->value = *(gpointer*)decoded_attr->typed_args [0]->value.primitive;
+		attr->value = GUINT_TO_POINTER (*(guint32 *)decoded_attr->typed_args [0]->value.primitive);
 		g_free (decoded_attr);
 	} else {
 		g_warning ("Can't find custom attr constructor image: %s mtoken: 0x%08x due to: %s", image->name, method_token, mono_error_get_message (&error));
@@ -1159,12 +1162,8 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	klass->rank = GUINT32_TO_UINT8 (rank);
 	klass->element_class = eclass;
 
-	if (m_class_get_byval_arg (eclass)->type == MONO_TYPE_TYPEDBYREF) {
-		/*Arrays of those two types are invalid.*/
-		ERROR_DECL (prepared_error);
-		mono_error_set_invalid_program (prepared_error, "Arrays of System.TypedReference types are invalid.");
-		mono_class_set_failure (klass, mono_error_box (prepared_error, klass->image));
-		mono_error_cleanup (prepared_error);
+	if (MONO_TYPE_IS_VOID (m_class_get_byval_arg (eclass))) {
+		mono_class_set_type_load_failure (klass, "Arrays of System.Void types are invalid.");
 	} else if (m_class_is_byreflike (eclass)) {
 		/* .NET Core throws a type load exception: "Could not create array type 'fullname[]'" */
 		char *full_name = mono_type_get_full_name (eclass);
@@ -2273,15 +2272,24 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 				}
 
 				size = mono_type_size (field->type, &align);
+				// keep in sync with marshal.c mono_marshal_load_type_info
 				if (m_class_is_inlinearray (klass)) {
 					// Limit the max size of array instance to 1MiB
 					const guint32 struct_max_size = 1024 * 1024;
+					guint32 initial_size = size;
 					// If size overflows, it returns 0
 					size *= m_class_inlinearray_value (klass);
 					inlined_fields++;
 					if(size == 0 || size > struct_max_size) {
-						mono_class_set_type_load_failure (klass, "Inline array struct size out of bounds, abnormally large.");
-						break;
+						if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback) {
+							if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback (klass, "Inline array struct size out of bounds, abnormally large."))
+								break;
+							else
+								size = initial_size; // failure occured during AOT compilation, continue execution
+						} else {
+							mono_class_set_type_load_failure (klass, "Inline array struct size out of bounds, abnormally large.");
+							break;
+						}
 					}
 				}
 
@@ -2311,8 +2319,12 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 				instance_size &= ~(min_align - 1);
 			}
 		}
-		if (m_class_is_inlinearray (klass) && inlined_fields != 1)
-			mono_class_set_type_load_failure (klass, "Inline array struct must have a single field.");
+		if (m_class_is_inlinearray (klass) && inlined_fields != 1) {
+			if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback)
+				mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback (klass, "Inline array struct must have a single field.");
+			else
+   				mono_class_set_type_load_failure (klass, "Inline array struct must have a single field.");
+		}
 		break;
 	case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT: {
 		real_size = 0;
@@ -2561,6 +2573,10 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_GENERICINST:
 			field_class = mono_class_from_mono_type_internal (field->type);
+			if (mono_class_is_ginst (field_class) && !mono_verifier_class_is_valid_generic_instantiation (field_class)) {
+				mono_class_set_type_load_failure (klass, "Field '%s' is an invalid generic instantiation of type %s", field->name, mono_type_get_full_name (field_class));
+				return;
+			}
 			break;
 		default:
 			break;
@@ -2941,7 +2957,7 @@ mono_class_init_internal (MonoClass *klass)
 	if (klass->inited || mono_class_has_failure (klass))
 		return !mono_class_has_failure (klass);
 
-	/*g_print ("Init class %s\n", mono_type_get_full_name (klass));*/
+	// g_print ("Init class %s\n", mono_type_get_full_name (klass));
 
 	/*
 	 * This function can recursively call itself.
@@ -2992,6 +3008,14 @@ mono_class_init_internal (MonoClass *klass)
 		mono_class_init_internal (klass->parent);
 
 	has_cached_info = mono_class_get_cached_class_info (klass, &cached_info);
+
+	/*
+	 * If the class has a deferred failure, ignore the cached info and
+	 * let the runtime go on the slow path of trying to setup the class
+	 * layout at runtime.
+	*/
+	if (has_cached_info && cached_info.has_deferred_failure)
+		has_cached_info = FALSE;
 
 	/* Compute instance size etc. */
 	init_sizes_with_info (klass, has_cached_info ? &cached_info : NULL);
@@ -3169,20 +3193,6 @@ mono_class_init_checked (MonoClass *klass, MonoError *error)
 	return success;
 }
 
-#ifndef DISABLE_COM
-/*
- * COM initialization is delayed until needed.
- * However when a [ComImport] attribute is present on a type it will trigger
- * the initialization. This is not a problem unless the BCL being executed
- * lacks the types that COM depends on (e.g. Variant on Silverlight).
- */
-static void
-init_com_from_comimport (MonoClass *klass)
-{
-	/* FIXME : we should add an extra checks to ensure COM can be initialized properly before continuing */
-}
-#endif /*DISABLE_COM*/
-
 /*
  * LOCKING: this assumes the loader lock is held
  */
@@ -3207,14 +3217,6 @@ mono_class_setup_parent (MonoClass *klass, MonoClass *parent)
 	}
 
 	if (!MONO_CLASS_IS_INTERFACE_INTERNAL (klass)) {
-		/* Imported COM Objects always derive from __ComObject. */
-#ifndef DISABLE_COM
-		if (MONO_CLASS_IS_IMPORT (klass)) {
-			init_com_from_comimport (klass);
-			if (parent == mono_defaults.object_class)
-				parent = mono_class_get_com_object_class ();
-		}
-#endif
 		if (!parent) {
 			/* set the parent to something useful and safe, but mark the type as broken */
 			parent = mono_defaults.object_class;
@@ -3235,9 +3237,6 @@ mono_class_setup_parent (MonoClass *klass, MonoClass *parent)
 
 		klass->delegate  = parent->delegate;
 
-		if (MONO_CLASS_IS_IMPORT (klass) || mono_class_is_com_object (parent))
-			mono_class_set_is_com_object (klass);
-
 		if (system_namespace) {
 			if (klass->name [0] == 'D' && !strcmp (klass->name, "Delegate"))
 				klass->delegate  = 1;
@@ -3251,11 +3250,6 @@ mono_class_setup_parent (MonoClass *klass, MonoClass *parent)
 		}
 		/*klass->enumtype = klass->parent->enumtype; */
 	} else {
-		/* initialize com types if COM interfaces are present */
-#ifndef DISABLE_COM
-		if (MONO_CLASS_IS_IMPORT (klass))
-			init_com_from_comimport (klass);
-#endif
 		klass->parent = NULL;
 	}
 
@@ -3889,7 +3883,7 @@ mono_class_setup_interface_id (MonoClass *klass)
 /*
  * mono_class_setup_interfaces:
  *
- *   Initialize klass->interfaces/interfaces_count.
+ *   Initialize klass->interfaces/interface_count.
  * LOCKING: Acquires the loader lock.
  * This function can fail the type.
  */

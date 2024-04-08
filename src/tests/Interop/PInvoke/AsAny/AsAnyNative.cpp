@@ -4,13 +4,13 @@
 #include <xplatform.h>
 
 struct test1 {
-    LONG64 a;
-    LONG64 b;
+    int64_t a;
+    int64_t b;
 };
 
-extern "C" DLL_EXPORT LONG64 STDMETHODCALLTYPE PassLayout(test1* i) {
-    printf("PassLayout: i->a  = %lld\n", i->a);
-    printf("PassLayout: i->b = %lld\n", i->b);
+extern "C" DLL_EXPORT int64_t STDMETHODCALLTYPE PassLayout(test1* i) {
+    printf("PassLayout: i->a = %" PRIi64 "\n", i->a);
+    printf("PassLayout: i->b = %" PRIi64 "\n", i->b);
     return i->b;
 }
 
@@ -23,33 +23,33 @@ struct AsAnyField
 
 extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassUnicodeStr(LPCWSTR str)
 {
-	return (SHORT)str[0] == 0x0030 && (SHORT)str[1] == 0x7777 && (SHORT)str[2] == 0x000A;
+	return (int16_t)str[0] == 0x0030 && (int16_t)str[1] == 0x7777 && (int16_t)str[2] == 0x000A;
 }
 extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassAnsiStr(LPCSTR str , BOOL isIncludeUnMappableChar)
 {
 	if(isIncludeUnMappableChar)
-		return (BYTE)str[0] == 0x30 && (BYTE)str[1] == 0x3f && (BYTE)str[2] == 0x0A;
+		return (uint8_t)str[0] == 0x30 && (uint8_t)str[1] == 0x3f && (uint8_t)str[2] == 0x0A;
 	else
-		return (BYTE)str[0] == 0x30 && (BYTE)str[1] == 0x35 && (BYTE)str[2] == 0x0A;
+		return (uint8_t)str[0] == 0x30 && (uint8_t)str[1] == 0x35 && (uint8_t)str[2] == 0x0A;
 }
 
 extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassUnicodeStrbd(LPCWSTR str)
 {
-	return (SHORT)str[0] == 0x0030 && (SHORT)str[1] == 0x7777 && (SHORT)str[2] == 0x000A;
+	return (int16_t)str[0] == 0x0030 && (int16_t)str[1] == 0x7777 && (int16_t)str[2] == 0x000A;
 }
 extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassAnsiStrbd(LPCSTR str , BOOL isIncludeUnMappableChar)
 {
 	if(isIncludeUnMappableChar)
-		return (BYTE)str[0] == 0x30 && (BYTE)str[1] == 0x3f && (BYTE)str[2] == 0x0A;
+		return (uint8_t)str[0] == 0x30 && (uint8_t)str[1] == 0x3f && (uint8_t)str[2] == 0x0A;
 	else
-		return (BYTE)str[0] == 0x30 && (BYTE)str[1] == 0x35 && (BYTE)str[2] == 0x0A;
+		return (uint8_t)str[0] == 0x30 && (uint8_t)str[1] == 0x35 && (uint8_t)str[2] == 0x0A;
 }
 
 extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassUnicodeCharArray(WCHAR CharArray_In [], WCHAR CharArray_InOut [], WCHAR CharArray_Out [])
 {
 	BOOL ret = FALSE;
-	ret = (SHORT)CharArray_In[0] == 0x0030 && (SHORT)CharArray_In[1] == 0x7777 && (SHORT)CharArray_In[2] == 0x000A
-		&& (SHORT)CharArray_InOut[0] == 0x0030 && (SHORT)CharArray_InOut[1] == 0x7777 && (SHORT)CharArray_InOut[2] == 0x000A ;
+	ret = (int16_t)CharArray_In[0] == 0x0030 && (int16_t)CharArray_In[1] == 0x7777 && (int16_t)CharArray_In[2] == 0x000A
+		&& (int16_t)CharArray_InOut[0] == 0x0030 && (int16_t)CharArray_InOut[1] == 0x7777 && (int16_t)CharArray_InOut[2] == 0x000A ;
 
 	// revese the string for passing back
 	WCHAR temp = CharArray_InOut[0];
@@ -66,11 +66,11 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassAnsiCharArray(CHAR CharArray_In
 {
 	BOOL ret = FALSE;
 	if(isIncludeUnMappableChar)
-		ret = (BYTE)CharArray_In[0] == 0x30 && (BYTE)CharArray_In[1] == 0x3f && (BYTE)CharArray_In[2] == 0x0A
-			&& (BYTE)CharArray_InOut[0] == 0x30 && (BYTE)CharArray_InOut[1] == 0x3f && (BYTE)CharArray_InOut[2] == 0x0A;
+		ret = (uint8_t)CharArray_In[0] == 0x30 && (uint8_t)CharArray_In[1] == 0x3f && (uint8_t)CharArray_In[2] == 0x0A
+			&& (uint8_t)CharArray_InOut[0] == 0x30 && (uint8_t)CharArray_InOut[1] == 0x3f && (uint8_t)CharArray_InOut[2] == 0x0A;
 	else
-		ret = (BYTE)CharArray_In[0] == 0x30 && (BYTE)CharArray_In[1] == 0x35 && (BYTE)CharArray_In[2] == 0x0A
-			&& (BYTE)CharArray_InOut[0] == 0x30 && (BYTE)CharArray_InOut[1] == 0x35 && (BYTE)CharArray_InOut[2] == 0x0A;
+		ret = (uint8_t)CharArray_In[0] == 0x30 && (uint8_t)CharArray_In[1] == 0x35 && (uint8_t)CharArray_In[2] == 0x0A
+			&& (uint8_t)CharArray_InOut[0] == 0x30 && (uint8_t)CharArray_InOut[1] == 0x35 && (uint8_t)CharArray_InOut[2] == 0x0A;
 
 	// reverse the string for passing back
 	CHAR temp = CharArray_InOut[0];
@@ -85,7 +85,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassAnsiCharArray(CHAR CharArray_In
 }
 
 extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArraySbyte(
-			BYTE sbyteArray[], BYTE sbyteArray_In[], BYTE sbyteArray_InOut[], BYTE sbyteArray_Out[], BYTE expected[], int len){
+			uint8_t sbyteArray[], uint8_t sbyteArray_In[], uint8_t sbyteArray_InOut[], uint8_t sbyteArray_Out[], uint8_t expected[], int len){
 
 		for(int i = 0; i < len; i++)
 		{
@@ -102,7 +102,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArraySbyte(
 
 
 extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArrayByte(
-		BYTE byteArray[], BYTE byteArray_In[], BYTE byteArray_InOut[], BYTE byteArray_Out[], BYTE expected[], int len){
+		uint8_t byteArray[], uint8_t byteArray_In[], uint8_t byteArray_InOut[], uint8_t byteArray_Out[], uint8_t expected[], int len){
 
 		for(int i = 0; i < len; i++)
 		{
@@ -118,7 +118,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArrayByte(
 }
 
 extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArrayShort(
-		SHORT shortArray[], SHORT shortArray_In[], SHORT shortArray_InOut[], SHORT shortArray_Out[], SHORT expected[], int len){
+		int16_t shortArray[], int16_t shortArray_In[], int16_t shortArray_InOut[], int16_t shortArray_Out[], int16_t expected[], int len){
 
 		for(int i = 0; i < len; i++)
 		{
@@ -134,7 +134,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArrayShort(
 }
 
 extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArrayUshort(
-		USHORT ushortArray[], USHORT ushortArray_In[], USHORT ushortArray_InOut[], USHORT ushortArray_Out[], USHORT expected[], int len){
+		uint16_t ushortArray[], uint16_t ushortArray_In[], uint16_t ushortArray_InOut[], uint16_t ushortArray_Out[], uint16_t expected[], int len){
 
 		for(int i = 0; i < len; i++)
 		{
@@ -167,7 +167,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArrayInt(
 
 
 extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArrayUint(
-		UINT uintArray[], UINT uintArray_In[], UINT uintArray_InOut[], UINT uintArray_Out[], UINT expected[], int len){
+		uint32_t uintArray[], uint32_t uintArray_In[], uint32_t uintArray_InOut[], uint32_t uintArray_Out[], uint32_t expected[], int len){
 
 		for(int i = 0; i < len; i++)
 		{
@@ -183,7 +183,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArrayUint(
 }
 
 extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArrayLong(
-		LONG64 longArray[], LONG64 longArray_In[], LONG64 longArray_InOut[], LONG64 longArray_Out[], LONG64 expected[], int len){
+		int64_t longArray[], int64_t longArray_In[], int64_t longArray_InOut[], int64_t longArray_Out[], int64_t expected[], int len){
 
 		for(int i = 0; i < len; i++)
 		{
@@ -199,8 +199,8 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArrayLong(
 }
 
 extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArrayUlong(
-	LONG64 ulongArray[], LONG64 ulongArray_In[], LONG64 ulongArray_InOut[],
-	LONG64 ulongArray_Out[], LONG64 expected[], int len){
+	int64_t ulongArray[], int64_t ulongArray_In[], int64_t ulongArray_InOut[],
+	int64_t ulongArray_Out[], int64_t expected[], int len){
 
 		for(int i = 0; i < len; i++)
 		{

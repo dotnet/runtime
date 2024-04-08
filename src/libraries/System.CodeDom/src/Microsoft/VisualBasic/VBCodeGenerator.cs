@@ -765,7 +765,7 @@ namespace Microsoft.VisualBasic
             OutputType(typeRef);
         }
 
-        private string GetArrayPostfix(CodeTypeReference typeRef)
+        private static string GetArrayPostfix(CodeTypeReference typeRef)
         {
             string s = "";
             if (typeRef.ArrayElementType != null)

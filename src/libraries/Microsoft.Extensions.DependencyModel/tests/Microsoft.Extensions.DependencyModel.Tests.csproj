@@ -6,12 +6,13 @@
     <DefaultItemExcludes>$(DefaultItemExcludes);nonentrypointassembly\*</DefaultItemExcludes>
     <!-- Needed for .NET Framework. -->
     <GenerateDependencyFile>true</GenerateDependencyFile>
+
+    <!-- FluentAssertions library has a generic recursion and the warning breaks NativeAOT build -->
+    <NoWarn>$(NoWarn);IL3054</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="FluentAssertions" Version="$(FluentAssertionsVersion)" />
-    <PackageReference Include="Microsoft.DotNet.InternalAbstractions" Version="1.0.0" />
-    <PackageReference Include="Microsoft.DotNet.ProjectModel" Version="1.0.0-rc3-003121" />
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
     <ProjectReference Include="..\src\Microsoft.Extensions.DependencyModel.csproj" SkipUseReferenceAssembly="true" />
     <ProjectReference Include="nonentrypointassembly\nonentrypointassembly.csproj" />

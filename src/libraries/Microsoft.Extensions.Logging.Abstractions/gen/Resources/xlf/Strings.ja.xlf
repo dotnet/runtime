@@ -67,6 +67,16 @@
         <target state="translated">ログ メソッドは静的である必要があります</target>
         <note />
       </trans-unit>
+      <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
+        <source>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</source>
+        <target state="translated">ログ ソース ジェネレーターは、C# {0} では使用できません。言語バージョン {1} 以降を使用してください。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="translated">ソース ジェネレーターでサポートされていない C# 言語バージョン。</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
         <source>Logging method '{0}' contains malformed format strings</source>
         <target state="translated">ログ メソッド '{0}' に、形式の正しくない文字列が含まれています</target>

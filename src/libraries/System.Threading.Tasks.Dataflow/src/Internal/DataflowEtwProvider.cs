@@ -12,9 +12,9 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Security;
-using System.Diagnostics.Tracing;
 
 namespace System.Threading.Tasks.Dataflow.Internal
 {
@@ -101,9 +101,11 @@ namespace System.Threading.Tasks.Dataflow.Internal
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "WriteEvent Parameters are trimmer safe")]
         [Event(TASKLAUNCHED_EVENTID, Level = EventLevel.Informational)]
+#if !NET8_0_OR_GREATER
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                                      Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
+#endif
         private void TaskLaunchedForMessageHandling(int blockId, TaskLaunchedReason reason, int availableMessages, int taskId)
         {
             WriteEvent(TASKLAUNCHED_EVENTID, blockId, reason, availableMessages, taskId);
@@ -158,9 +160,11 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Canceled = (int)TaskStatus.Canceled
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "WriteEvent Parameters are trimmer safe")]
         [Event(BLOCKCOMPLETED_EVENTID, Level = EventLevel.Informational)]
+#if !NET8_0_OR_GREATER
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                                      Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
+#endif
         private void DataflowBlockCompleted(int blockId, BlockCompletionReason reason, string exceptionData)
         {
             WriteEvent(BLOCKCOMPLETED_EVENTID, blockId, reason, exceptionData);

@@ -15,7 +15,12 @@ namespace System
     /// int lastElement = someArray[^1]; // lastElement = 5
     /// </code>
     /// </remarks>
-    public readonly struct Index : IEquatable<Index>
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+    readonly struct Index : IEquatable<Index>
     {
         private readonly int _value;
 
@@ -30,7 +35,7 @@ namespace System
         {
             if (value < 0)
             {
-                ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
+                ThrowValueArgumentOutOfRange_NeedNonNegNumException();
             }
 
             if (fromEnd)
@@ -58,7 +63,7 @@ namespace System
         {
             if (value < 0)
             {
-                ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
+                ThrowValueArgumentOutOfRange_NeedNonNegNumException();
             }
 
             return new Index(value);
@@ -71,7 +76,7 @@ namespace System
         {
             if (value < 0)
             {
-                ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
+                ThrowValueArgumentOutOfRange_NeedNonNegNumException();
             }
 
             return new Index(~value);
@@ -136,6 +141,15 @@ namespace System
                 return ToStringFromEnd();
 
             return ((uint)Value).ToString();
+        }
+
+        private static void ThrowValueArgumentOutOfRange_NeedNonNegNumException()
+        {
+#if SYSTEM_PRIVATE_CORELIB
+            throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_NeedNonNegNum);
+#else
+            throw new ArgumentOutOfRangeException("value", "value must be non-negative");
+#endif
         }
 
         private string ToStringFromEnd()

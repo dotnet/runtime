@@ -807,6 +807,15 @@ namespace System.Formats.Asn1
             return encodedValue;
         }
 
+        /// <summary>
+        /// Clones the current reader.
+        /// </summary>
+        /// <returns>A clone of the current reader.</returns>
+        /// <remarks>
+        /// This does not create a clone of the ASN.1 data, only the reader's state is cloned.
+        /// </remarks>
+        public AsnReader Clone() => new AsnReader(_data, RuleSet, _options);
+
         private AsnReader CloneAtSlice(int start, int length)
         {
             return new AsnReader(_data.Slice(start, length), RuleSet, _options);

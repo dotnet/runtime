@@ -140,7 +140,7 @@ namespace Internal.Runtime.InteropServices
         [UnsupportedOSPlatform("tvos")]
         private static void LoadAssemblyImpl(string assemblyPath)
         {
-            lock(s_loadedInDefaultContext)
+            lock (s_loadedInDefaultContext)
             {
                 if (s_loadedInDefaultContext.Contains(assemblyPath))
                     return;

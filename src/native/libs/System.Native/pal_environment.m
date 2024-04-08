@@ -9,6 +9,10 @@
 #include <objc/runtime.h>
 #include <objc/message.h>
 
+#if __has_feature(objc_arc)
+#error This file uses manual memory management and must not use ARC, but ARC is enabled.
+#endif
+
 char* SystemNative_GetEnv(const char* variable)
 {
     return getenv(variable);

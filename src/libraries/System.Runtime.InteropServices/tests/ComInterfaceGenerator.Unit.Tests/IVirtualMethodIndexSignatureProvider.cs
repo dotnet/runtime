@@ -30,7 +30,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             [assembly:DisableRuntimeMarshalling]
             
             {{AttributeProvider.UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{AttributeProvider.GeneratedComInterface}}
+            {{AttributeProvider.GeneratedComInterface()}}
             partial interface INativeAPI
             {
                 {{AttributeProvider.VirtualMethodIndex(0, ImplicitThisParameter: ImplicitThisParameter, Direction: Direction)}}
@@ -47,7 +47,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             [assembly:DisableRuntimeMarshalling]
             
             {{AttributeProvider.UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{AttributeProvider.GeneratedComInterface}}
+            {{AttributeProvider.GeneratedComInterface()}}
             partial interface INativeAPI
             {
                 {{AttributeProvider.VirtualMethodIndex(0, ImplicitThisParameter: ImplicitThisParameter, Direction: Direction)}}
@@ -63,7 +63,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             {{preDeclaration}}
             
             {{AttributeProvider.UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{AttributeProvider.GeneratedComInterface}}
+            {{AttributeProvider.GeneratedComInterface()}}
             partial interface INativeAPI
             {
                 {{AttributeProvider.VirtualMethodIndex(0, ImplicitThisParameter: ImplicitThisParameter, Direction: Direction)}}
@@ -81,7 +81,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             [assembly:DisableRuntimeMarshalling]
             
             {{AttributeProvider.UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{AttributeProvider.GeneratedComInterface}}
+            {{AttributeProvider.GeneratedComInterface()}}
             partial interface INativeAPI
             {
                 {{AttributeProvider.VirtualMethodIndex(0, ImplicitThisParameter: ImplicitThisParameter, Direction: Direction)}}
@@ -96,7 +96,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             {{preDeclaration}}
             
             {{AttributeProvider.UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{AttributeProvider.GeneratedComInterface}}
+            {{AttributeProvider.GeneratedComInterface()}}
             partial interface INativeAPI
             {
                 {{AttributeProvider.VirtualMethodIndex(0, ImplicitThisParameter: ImplicitThisParameter, Direction: Direction)}}
@@ -111,7 +111,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             {{preDeclaration}}
             
             {{AttributeProvider.UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{AttributeProvider.GeneratedComInterface}}
+            {{AttributeProvider.GeneratedComInterface()}}
             partial interface INativeAPI
             {
                 {{AttributeProvider.VirtualMethodIndex(0, ImplicitThisParameter: ImplicitThisParameter, Direction: Direction)}}
@@ -131,7 +131,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             [assembly:DisableRuntimeMarshalling]
             
             {{AttributeProvider.UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{AttributeProvider.GeneratedComInterface}}
+            {{AttributeProvider.GeneratedComInterface()}}
             partial interface INativeAPI
             {
                 {{AttributeProvider.VirtualMethodIndex(0, ImplicitThisParameter: ImplicitThisParameter, Direction: Direction)}}
@@ -156,7 +156,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             [assembly:DisableRuntimeMarshalling]
             
             {{AttributeProvider.UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{AttributeProvider.GeneratedComInterface}}
+            {{AttributeProvider.GeneratedComInterface()}}
             partial interface INativeAPI
             {
                 {{AttributeProvider.VirtualMethodIndex(0, ImplicitThisParameter: ImplicitThisParameter, Direction: Direction)}}
@@ -182,7 +182,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             [assembly:DisableRuntimeMarshalling]
             
             {{AttributeProvider.UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{AttributeProvider.GeneratedComInterface}}
+            {{AttributeProvider.GeneratedComInterface()}}
             partial interface INativeAPI
             {
                 {{AttributeProvider.VirtualMethodIndex(0, ImplicitThisParameter: ImplicitThisParameter, Direction: Direction)}}
@@ -202,7 +202,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             [assembly:DisableRuntimeMarshalling]
             
             {{AttributeProvider.UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{AttributeProvider.GeneratedComInterface}}
+            {{AttributeProvider.GeneratedComInterface()}}
             partial interface INativeAPI
             {
                 {{AttributeProvider.VirtualMethodIndex(0, ImplicitThisParameter: ImplicitThisParameter, Direction: Direction)}}
@@ -221,7 +221,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             [assembly:DisableRuntimeMarshalling]
             
             {{AttributeProvider.UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{AttributeProvider.GeneratedComInterface}}
+            {{AttributeProvider.GeneratedComInterface()}}
             partial interface INativeAPI
             {
                 {{AttributeProvider.VirtualMethodIndex(0, ImplicitThisParameter: ImplicitThisParameter, Direction: Direction)}}
@@ -239,7 +239,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             [assembly:DisableRuntimeMarshalling]
             
             {{AttributeProvider.UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{AttributeProvider.GeneratedComInterface}}
+            {{AttributeProvider.GeneratedComInterface()}}
             partial interface INativeAPI
             {
                 {{AttributeProvider.VirtualMethodIndex(0, ImplicitThisParameter: ImplicitThisParameter, Direction: Direction)}}

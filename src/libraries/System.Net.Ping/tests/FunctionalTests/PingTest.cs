@@ -73,7 +73,7 @@ namespace System.Net.NetworkInformation.Tests
 
         private static byte[] GetPingPayload(AddressFamily addressFamily)
             // On Unix, Non-root processes cannot send arbitrary data in the ping packet payload
-            => Capability.CanUseRawSockets(addressFamily) || PlatformDetection.IsOSXLike
+            => Capability.CanUseRawSockets(addressFamily) || PlatformDetection.IsApplePlatform
                 ? TestSettings.PayloadAsBytes
                 : Array.Empty<byte>();
 
@@ -741,7 +741,7 @@ namespace System.Net.NetworkInformation.Tests
             options.Ttl = 1;
             // This should always fail unless host is one IP hop away.
             pingReply = await ping.SendPingAsync(host, TestSettings.PingTimeout, payload, options);
-            Assert.True(pingReply.Status == IPStatus.TimeExceeded || pingReply.Status == IPStatus.TtlExpired);
+            Assert.True(pingReply.Status == IPStatus.TimeExceeded || pingReply.Status == IPStatus.TtlExpired, $"pingReply.Status was {pingReply.Status} instead of TimeExceeded or TtlExpired");
             Assert.NotEqual(IPAddress.Any, pingReply.Address);
         }
 

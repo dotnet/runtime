@@ -26,6 +26,11 @@ namespace System.Security.Cryptography.X509Certificates
 
         internal static partial ILoaderPal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
+            return FromBlob(rawData, password, readingFromFile: false, keyStorageFlags);
+        }
+
+        private static ILoaderPal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, bool readingFromFile, X509KeyStorageFlags keyStorageFlags)
+        {
             Debug.Assert(password != null);
 
             X509ContentType contentType = X509Certificate2.GetCertContentType(rawData);
@@ -37,6 +42,7 @@ namespace System.Security.Cryptography.X509Certificates
                     throw new PlatformNotSupportedException(SR.Cryptography_X509_NoEphemeralPfx);
                 }
 
+                X509Certificate.EnforceIterationCountLimit(ref rawData, readingFromFile, password.PasswordProvided);
                 bool exportable = (keyStorageFlags & X509KeyStorageFlags.Exportable) == X509KeyStorageFlags.Exportable;
 
                 bool persist =
@@ -66,10 +72,11 @@ namespace System.Security.Cryptography.X509Certificates
             bool ephemeralSpecified,
             SafeKeychainHandle keychain)
         {
-            ApplePkcs12Reader reader = new ApplePkcs12Reader(rawData);
+            ApplePkcs12Reader reader = new ApplePkcs12Reader();
 
             try
             {
+                reader.ParsePkcs12(rawData);
                 reader.Decrypt(password, ephemeralSpecified);
                 return new ApplePkcs12CertLoader(reader, keychain, password, exportable);
             }
@@ -86,7 +93,7 @@ namespace System.Security.Cryptography.X509Certificates
             Debug.Assert(password != null);
 
             byte[] fileBytes = File.ReadAllBytes(fileName);
-            return FromBlob(fileBytes, password, keyStorageFlags);
+            return FromBlob(fileBytes, password, readingFromFile: true, keyStorageFlags);
         }
 
         internal static partial IExportPal FromCertificate(ICertificatePalCore cert)

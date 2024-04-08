@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.DirectoryServices.ActiveDirectory;
 using System.IO;
 using System.IO.Pipes;
@@ -244,7 +245,7 @@ namespace System.Diagnostics.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasWindowsShell))]
         [OuterLoop("Launches File Explorer")]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestRuntimes.Mono)]
         public void ProcessStart_UseShellExecute_OnWindows_OpenMissingFile_Throws()
         {
             string fileToOpen = Path.Combine(Environment.CurrentDirectory, "_no_such_file.TXT");
@@ -257,7 +258,7 @@ namespace System.Diagnostics.Tests
         [InlineData(true)]
         [InlineData(false)]
         [OuterLoop("Launches File Explorer")]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestRuntimes.Mono)]
         public void ProcessStart_UseShellExecute_OnWindows_DoesNotThrow(bool isFolder)
         {
             string fileToOpen;
@@ -889,25 +890,37 @@ namespace System.Diagnostics.Tests
         {
             CreateDefaultProcess();
 
-            DateTime startTime = DateTime.UtcNow;
+            Stopwatch timer = Stopwatch.StartNew();
             TimeSpan processorTimeBeforeSpin = Process.GetCurrentProcess().TotalProcessorTime;
 
             // Perform loop to occupy cpu, takes less than a second.
-            int i = int.MaxValue / 16;
+            int i = int.MaxValue / 8;
             while (i > 0)
             {
                 i--;
             }
 
             TimeSpan processorTimeAfterSpin = Process.GetCurrentProcess().TotalProcessorTime;
-            DateTime endTime = DateTime.UtcNow;
 
-            double timeDiff = (endTime - startTime).TotalMilliseconds;
+            double timeDiff = timer.Elapsed.TotalMilliseconds;
             double cpuTimeDiff = (processorTimeAfterSpin - processorTimeBeforeSpin).TotalMilliseconds;
 
             double cpuUsage = cpuTimeDiff / (timeDiff * Environment.ProcessorCount);
 
-            Assert.InRange(cpuUsage, 0, 1);
+            try
+            {
+                Assert.InRange(cpuUsage, 0, 1); // InRange is an inclusive test
+            }
+            catch (InRangeException)
+            {
+                string msg = $"Assertion failed. {cpuUsage} is not in range [0,1]. " +
+                             $"proc time before:{processorTimeBeforeSpin.TotalMilliseconds} " +
+                             $"proc time after:{processorTimeAfterSpin.TotalMilliseconds} " +
+                             $"timeDiff:{timeDiff} " +
+                             $"cpuTimeDiff:{cpuTimeDiff} " +
+                             $"Environment.ProcessorCount:{Environment.ProcessorCount}";
+                throw new XunitException(msg);
+            }
         }
 
         [Fact]
@@ -1275,7 +1288,7 @@ namespace System.Diagnostics.Tests
                 }
                 catch (NotEmptyException)
                 {
-                    throw new TrueException(PrintProcesses(currentProcess), false);
+                    throw TrueException.ForNonTrueValue(PrintProcesses(currentProcess), false);
                 }
 
                 Assert.All(processes, process => Assert.Equal(currentProcess.ProcessName, process.ProcessName));
@@ -2468,7 +2481,7 @@ namespace System.Diagnostics.Tests
             containingProcess.WaitForExit();
 
             if (containingProcess.ExitCode != 10)
-                Assert.True(false, "attempt to terminate a process tree containing the calling process did not throw the expected exception");
+                Assert.Fail("attempt to terminate a process tree containing the calling process did not throw the expected exception");
 
             int RunProcessAttemptingToKillEntireTreeOnParent()
             {

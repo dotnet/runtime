@@ -1,18 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <OutputType>Library</OutputType>
+    <CLRTestKind>SharedLibrary</CLRTestKind>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLRTestKind>BuildOnly</CLRTestKind>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="test22888resources.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="test22888.resx">
+    <EmbeddedResource Include="test22888.resx" LogicalName="test22888resources.test22888.resources">
       <Generator>ResXFileCodeGenerator</Generator>
     </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
 </Project>

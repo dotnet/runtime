@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -18,6 +20,8 @@ namespace ABIStress
         public Type Type { get; }
         public int Size { get; }
         public FieldInfo[] Fields { get; }
+        // Segments in the type that contain data, for hashing purposes
+        public (int Start, int End)[] DataSegments { get; }
         public ConstructorInfo Ctor { get; }
 
         public TypeEx(Type t)
@@ -27,10 +31,41 @@ namespace ABIStress
             // we use the workaround below.
             Size = Marshal.SizeOf(Activator.CreateInstance(t));
             if (!t.IsOurStructType())
+            {
+                DataSegments = new[] { (0, Size) };
                 return;
+            }
 
             Fields = Enumerable.Range(0, 10000).Select(i => t.GetField($"F{i}")).TakeWhile(fi => fi != null).ToArray();
             Ctor = t.GetConstructor(Fields.Select(f => f.FieldType).ToArray());
+
+            List<(int, int)> dataSegments = new();
+            void Add(int start, int end)
+            {
+                if (dataSegments.Count > 0)
+                {
+                     (int lastStart, int lastEnd) = dataSegments[^1];
+                     Trace.Assert(start >= lastEnd);
+
+                     if (start == lastEnd)
+                     {
+                        // merge
+                        dataSegments[^1] = (lastStart, end);
+                        return;
+                     }
+                }
+                
+                dataSegments.Add((start, end));
+             }
+
+             foreach (FieldInfo fi in Fields)
+             {
+                 int start = checked((int)Marshal.OffsetOf(t, fi.Name));
+                 int end = start + Marshal.SizeOf(fi.FieldType);
+                 Add(start, end);
+             }
+
+            DataSegments = dataSegments.ToArray();
         }
     }
 

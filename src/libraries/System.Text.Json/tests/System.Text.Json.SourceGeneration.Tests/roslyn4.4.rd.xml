@@ -1,0 +1,56 @@
+<Directives>
+  <Application>
+    <!-- NB Shared specializations must also be replicated in the roslyn3.11.rd.xml file -->
+    <Assembly Name="System.Text.Json.SourceGeneration.Roslyn4.4.Tests">
+      <Type Name="System.Text.Json.Serialization.Tests.CollectionTests">
+        <Method Name="WriteRootLevelAsyncEnumerable" Dynamic="Required All">
+          <GenericArgument Name="System.Int32" />
+        </Method>
+        <Method Name="WriteNestedAsyncEnumerable" Dynamic="Required All">
+          <GenericArgument Name="System.Int32" />
+        </Method>
+        <Method Name="WriteNestedAsyncEnumerable_Nullable" Dynamic="Required All">
+          <GenericArgument Name="System.Int32" />
+        </Method>
+        <Method Name="WriteSequentialNestedAsyncEnumerables" Dynamic="Required All">
+          <GenericArgument Name="System.Int32" />
+        </Method>
+        <Method Name="WriteAsyncEnumerableOfAsyncEnumerables" Dynamic="Required All">
+          <GenericArgument Name="System.Int32" />
+        </Method>
+      </Type>
+      <Type Name="System.Text.Json.Serialization.Tests.UnsupportedTypesTests">
+        <Method Name="DeserializeUnsupportedType" Dynamic="Required All">
+          <GenericArgument Name="System.IntPtr" />
+        </Method>
+        <Method Name="DeserializeUnsupportedType" Dynamic="Required All">
+          <GenericArgument Name="System.Nullable`1[[System.IntPtr]]" />
+        </Method>
+        <Method Name="DeserializeUnsupportedType" Dynamic="Required All">
+          <GenericArgument Name="System.UIntPtr" />
+        </Method>
+        <Method Name="DeserializeUnsupportedType" Dynamic="Required All">
+          <GenericArgument Name="System.Memory`1[[System.Byte]]" />
+        </Method>
+        <Method Name="DeserializeUnsupportedType" Dynamic="Required All">
+          <GenericArgument Name="System.ReadOnlyMemory`1[[System.Byte]]" />
+        </Method>
+        <Method Name="SerializeUnsupportedType" Dynamic="Required All">
+          <GenericArgument Name="System.IntPtr" />
+        </Method>
+        <Method Name="SerializeUnsupportedType" Dynamic="Required All">
+          <GenericArgument Name="System.Nullable`1[[System.IntPtr]]" />
+        </Method>
+        <Method Name="SerializeUnsupportedType" Dynamic="Required All">
+          <GenericArgument Name="System.UIntPtr" />
+        </Method>
+        <Method Name="SerializeUnsupportedType" Dynamic="Required All">
+          <GenericArgument Name="System.Memory`1[[System.Byte]]" />
+        </Method>
+        <Method Name="SerializeUnsupportedType" Dynamic="Required All">
+          <GenericArgument Name="System.ReadOnlyMemory`1[[System.Byte]]" />
+        </Method>
+      </Type>
+    </Assembly>
+  </Application>
+</Directives>

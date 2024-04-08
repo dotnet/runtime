@@ -63,7 +63,7 @@ namespace System.Net.Security.Tests
             using (X509Certificate2 clientCert = Configuration.Certificates.GetClientCertificate())
             {
                 yield return new object[] { new X509Certificate2(serverCert), new X509Certificate2(clientCert) };
-                yield return new object[] { new X509Certificate(serverCert.Export(X509ContentType.Pfx)), new X509Certificate(clientCert.Export(X509ContentType.Pfx)) };
+                yield return new object[] { new X509Certificate(serverCert.Export(X509ContentType.Pfx), (string)null), new X509Certificate(clientCert.Export(X509ContentType.Pfx), (string)null) };
             }
         }
 
@@ -263,7 +263,7 @@ namespace System.Net.Security.Tests
                 // We're inconsistent as to whether the ObjectDisposedException is thrown directly
                 // or wrapped in an IOException.  For Begin/End, it's always wrapped; for Async,
                 // it's only wrapped on .NET Framework.
-                if (this is SslStreamStreamToStreamTest_BeginEnd || PlatformDetection.IsNetFramework)
+                if (this is SslStreamStreamToStreamTest_BeginEnd)
                 {
                     await Assert.ThrowsAsync<ObjectDisposedException>(() => serverReadTask);
                 }

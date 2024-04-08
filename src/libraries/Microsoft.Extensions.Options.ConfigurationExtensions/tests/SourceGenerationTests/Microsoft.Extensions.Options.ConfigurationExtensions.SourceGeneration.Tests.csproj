@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <DefineConstants>$(DefineConstants);BUILDING_SOURCE_GENERATOR_TESTS;ROSLYN4_0_OR_GREATER;ROSLYN4_4_OR_GREATER</DefineConstants>
+    <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.Extensions.Configuration.Binder.SourceGeneration</InterceptorsPreviewNamespaces>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\src\Microsoft.Extensions.Configuration.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection\src\Microsoft.Extensions.DependencyInjection.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Options\src\Microsoft.Extensions.Options.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Microsoft.Extensions.Options.ConfigurationExtensions.csproj" SkipUseReferenceAssembly="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonPath)..\tests\SourceGenerators\RoslynTestUtils.cs" Link="SourceGenerators\RoslynTestUtils.cs" />
+    <Compile Include="..\Common\ConfigurationExtensionsTests.cs" Link="Common\ConfigurationExtensionsTests.cs" />
+    <Compile Include="..\Common\FakeConfigurationProvider.cs" Link="Common\FakeConfigurationProvider.cs" />
+    <Compile Include="..\Common\FakeConfigurationSource.cs" Link="Common\FakeConfigurationSource.cs" />
+    <Compile Include="..\Common\FakeOptions.cs" Link="Common\FakeOptions.cs" />
+    <Compile Include="..\Common\OptionsBuilderConfigurationExtensionsTests.cs" Link="Common\OptionsBuilderConfigurationExtensionsTests.cs" />
+    <Compile Include="ConfigurationExtensionsTest.Generator.cs" />
+  </ItemGroup>
+
+   <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="$(MicrosoftCodeAnalysisVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Binder\gen\Microsoft.Extensions.Configuration.Binder.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
+  </ItemGroup>
+
+  <Target Name="FixIncrementalCoreCompileWithAnalyzers" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <CustomAdditionalCompileInputs Include="@(Analyzer)" />
+    </ItemGroup>
+  </Target>
+</Project>

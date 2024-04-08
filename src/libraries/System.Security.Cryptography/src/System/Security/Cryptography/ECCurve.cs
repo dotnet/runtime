@@ -13,7 +13,7 @@ namespace System.Security.Cryptography
     /// The CurveType property determines whether the curve is a named curve or an explicit curve
     /// which is either a prime curve or a characteristic-2 curve.
     /// </remarks>
-    [DebuggerDisplay("ECCurve: {Oid}")]
+    [DebuggerDisplay("ECCurve = {Oid}")]
     public partial struct ECCurve
     {
         /// <summary>

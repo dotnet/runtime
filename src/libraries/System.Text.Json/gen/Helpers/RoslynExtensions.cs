@@ -8,12 +8,16 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
 namespace System.Text.Json.SourceGeneration
 {
     internal static class RoslynExtensions
     {
+        public static LanguageVersion? GetLanguageVersion(this Compilation compilation)
+            => compilation is CSharpCompilation csc ? csc.LanguageVersion : null;
+
         public static INamedTypeSymbol? GetBestTypeByMetadataName(this Compilation compilation, Type type)
         {
             Debug.Assert(!type.IsArray, "Resolution logic only capable of handling named types.");
@@ -21,17 +25,20 @@ namespace System.Text.Json.SourceGeneration
             return compilation.GetBestTypeByMetadataName(type.FullName);
         }
 
-        public static string GetFullyQualifiedName(this ITypeSymbol type) => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-
-        public static Location? GetDiagnosticLocation(this ISymbol typeSymbol)
+        public static Location? GetLocation(this ISymbol typeSymbol)
             => typeSymbol.Locations.Length > 0 ? typeSymbol.Locations[0] : null;
 
+        public static Location? GetLocation(this AttributeData attributeData)
+        {
+            SyntaxReference? reference = attributeData.ApplicationSyntaxReference;
+            return reference?.SyntaxTree.GetLocation(reference.Span);
+        }
+
         /// <summary>
-        /// Creates a copy of the Location instance that does not capture a reference to Compilation.
+        /// Returns true if the specified location is contained in one of the syntax trees in the compilation.
         /// </summary>
-        [return: NotNullIfNotNull(nameof(location))]
-        public static Location? GetTrimmedLocation(this Location? location)
-            => location is null ? null : Location.Create(location.SourceTree?.FilePath ?? "", location.SourceSpan, location.GetLineSpan().Span);
+        public static bool ContainsLocation(this Compilation compilation, Location location)
+            => location.SourceTree != null && compilation.ContainsSyntaxTree(location.SourceTree);
 
         /// <summary>
         /// Removes any type metadata that is erased at compile time, such as NRT annotations and tuple labels.
@@ -60,6 +67,11 @@ namespace System.Text.Json.SourceGeneration
                 }
                 else if (namedType.IsGenericType)
                 {
+                    if (namedType.IsUnboundGenericType)
+                    {
+                        return namedType;
+                    }
+
                     ImmutableArray<ITypeSymbol> typeArguments = namedType.TypeArguments;
                     INamedTypeSymbol? containingType = namedType.ContainingType;
 
@@ -98,17 +110,11 @@ namespace System.Text.Json.SourceGeneration
         public static IEnumerable<IMethodSymbol> GetExplicitlyDeclaredInstanceConstructors(this INamedTypeSymbol type)
             => type.Constructors.Where(ctor => !ctor.IsStatic && !(ctor.IsImplicitlyDeclared && type.IsValueType && ctor.Parameters.Length == 0));
 
-        public static bool ContainsAttribute(this ISymbol memberInfo, string attributeFullName)
-            => memberInfo.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == attributeFullName);
+        public static bool ContainsAttribute(this ISymbol memberInfo, INamedTypeSymbol? attributeType)
+            => attributeType != null && memberInfo.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, attributeType));
 
         public static bool IsVirtual(this ISymbol symbol)
             => symbol.IsVirtual || symbol.IsOverride || symbol.IsAbstract;
-
-        public static bool IsNestedPrivate(this ISymbol symbol)
-            => symbol.DeclaredAccessibility is Accessibility.Private && symbol.ContainingType != null;
-
-        public static bool IsPublic(this ITypeSymbol symbol)
-            => symbol.DeclaredAccessibility is Accessibility.Public && symbol.ContainingType is null;
 
         public static bool IsAssignableFrom(this ITypeSymbol? baseType, ITypeSymbol? type)
         {
@@ -195,32 +201,17 @@ namespace System.Text.Json.SourceGeneration
             return false;
         }
 
-        public static ITypeSymbol[] GetAllTypeArgumentsInScope(this INamedTypeSymbol type)
-        {
-            if (!type.IsGenericType)
-            {
-                return Array.Empty<ITypeSymbol>();
-            }
-
-            var args = new List<ITypeSymbol>();
-            TraverseContainingTypes(type);
-            return args.ToArray();
-
-            void TraverseContainingTypes(INamedTypeSymbol current)
-            {
-                if (current.ContainingType is INamedTypeSymbol parent)
-                {
-                    TraverseContainingTypes(parent);
-                }
-
-                args.AddRange(current.TypeArguments);
-            }
-        }
-
         public static ITypeSymbol GetMemberType(this ISymbol member)
         {
             Debug.Assert(member is IFieldSymbol or IPropertySymbol);
             return member is IFieldSymbol fs ? fs.Type : ((IPropertySymbol)member).Type;
+        }
+
+        public static bool IsOverriddenOrShadowedBy(this ISymbol member, ISymbol otherMember)
+        {
+            Debug.Assert(member is IFieldSymbol or IPropertySymbol);
+            Debug.Assert(otherMember is IFieldSymbol or IPropertySymbol);
+            return member.Name == otherMember.Name && member.ContainingType.IsAssignableFrom(otherMember.ContainingType);
         }
 
         public static bool MemberNameNeedsAtSign(this ISymbol symbol)
@@ -249,6 +240,33 @@ namespace System.Text.Json.SourceGeneration
                 // For consistency with class hierarchy resolution order,
                 // sort topologically from most derived to least derived.
                 return JsonHelpers.TraverseGraphWithTopologicalSort<INamedTypeSymbol>(namedType, static t => t.AllInterfaces, SymbolEqualityComparer.Default);
+            }
+        }
+
+        /// <summary>
+        /// Returns the kind keyword corresponding to the specified declaration syntax node.
+        /// </summary>
+        public static string GetTypeKindKeyword(this TypeDeclarationSyntax typeDeclaration)
+        {
+            switch (typeDeclaration.Kind())
+            {
+                case SyntaxKind.ClassDeclaration:
+                    return "class";
+                case SyntaxKind.InterfaceDeclaration:
+                    return "interface";
+                case SyntaxKind.StructDeclaration:
+                    return "struct";
+                case SyntaxKind.RecordDeclaration:
+                    return "record";
+                case SyntaxKind.RecordStructDeclaration:
+                    return "record struct";
+                case SyntaxKind.EnumDeclaration:
+                    return "enum";
+                case SyntaxKind.DelegateDeclaration:
+                    return "delegate";
+                default:
+                    Debug.Fail("unexpected syntax kind");
+                    return null;
             }
         }
     }

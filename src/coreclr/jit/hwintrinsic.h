@@ -58,6 +58,7 @@ enum HWIntrinsicCategory : uint8_t
     HW_Category_ShiftLeftByImmediate,
     HW_Category_ShiftRightByImmediate,
     HW_Category_SIMDByIndexedElement,
+    HW_Category_EnumPattern,
 
     // Helper intrinsics
     // - do not directly correspond to a instruction, such as Vector64.AllBitsSet
@@ -175,6 +176,21 @@ enum HWIntrinsicFlag : unsigned int
 
     // The intrinsic needs consecutive registers
     HW_Flag_NeedsConsecutiveRegisters = 0x4000,
+
+    // The intrinsic uses scalable registers
+    HW_Flag_Scalable = 0x8000,
+
+    // Returns Per-Element Mask
+    // the intrinsic returns a vector containing elements that are either "all bits set" or "all bits clear"
+    // this output can be used as a per-element mask
+    HW_Flag_ReturnsPerElementMask = 0x10000,
+
+    // The intrinsic uses a mask in arg1 to select elements present in the result
+    HW_Flag_MaskedOperation = 0x20000,
+
+    // The intrinsic uses a mask in arg1 to select elements present in the result, and must use a low register.
+    HW_Flag_LowMaskedOperation = 0x40000,
+
 #else
 #error Unsupported platform
 #endif
@@ -200,7 +216,18 @@ enum HWIntrinsicFlag : unsigned int
 
     // The intrinsic is a PermuteVar2x intrinsic
     HW_Flag_PermuteVar2x = 0x4000000,
+
+    // The intrinsic is an embedded broadcast compatible intrinsic
+    HW_Flag_EmbBroadcastCompatible = 0x8000000,
+
+    // The intrinsic is an embedded rounding compatible intrinsic
+    HW_Flag_EmbRoundingCompatible = 0x10000000,
+
+    // The intrinsic is an embedded masking incompatible intrinsic
+    HW_Flag_EmbMaskingIncompatible = 0x20000000,
 #endif // TARGET_XARCH
+
+    HW_Flag_CanBenefitFromConstantProp = 0x80000000,
 };
 
 #if defined(TARGET_XARCH)
@@ -328,6 +355,25 @@ enum class FloatRoundingMode : uint8_t
     NoException = 0x08,
 };
 
+enum class IntComparisonMode : uint8_t
+{
+    Equal           = 0,
+    LessThan        = 1,
+    LessThanOrEqual = 2,
+    False           = 3,
+
+    NotEqual           = 4,
+    GreaterThanOrEqual = 5,
+    GreaterThan        = 6,
+    True               = 7,
+
+    NotGreaterThanOrEqual = LessThan,
+    NotGreaterThan        = LessThanOrEqual,
+
+    NotLessThan        = GreaterThanOrEqual,
+    NotLessThanOrEqual = GreaterThan
+};
+
 enum class TernaryLogicUseFlags : uint8_t
 {
     // Indicates no flags are present
@@ -405,13 +451,13 @@ struct TernaryLogicInfo
     // We have 256 entries, so we compress as much as possible
     // This gives us 3-bytes per entry (21-bits)
 
-    TernaryLogicOperKind oper1 : 4;
+    TernaryLogicOperKind oper1    : 4;
     TernaryLogicUseFlags oper1Use : 3;
 
-    TernaryLogicOperKind oper2 : 4;
+    TernaryLogicOperKind oper2    : 4;
     TernaryLogicUseFlags oper2Use : 3;
 
-    TernaryLogicOperKind oper3 : 4;
+    TernaryLogicOperKind oper3    : 4;
     TernaryLogicUseFlags oper3Use : 3;
 
     static const TernaryLogicInfo& lookup(uint8_t control);
@@ -445,11 +491,11 @@ struct HWIntrinsicInfo
 
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
 
-    static NamedIntrinsic lookupId(Compiler*         comp,
-                                   CORINFO_SIG_INFO* sig,
-                                   const char*       className,
-                                   const char*       methodName,
-                                   const char*       enclosingClassName);
+    static NamedIntrinsic         lookupId(Compiler*         comp,
+                                           CORINFO_SIG_INFO* sig,
+                                           const char*       className,
+                                           const char*       methodName,
+                                           const char*       enclosingClassName);
     static CORINFO_InstructionSet lookupIsa(const char* className, const char* enclosingClassName);
 
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
@@ -468,7 +514,7 @@ struct HWIntrinsicInfo
     static bool isScalarIsa(CORINFO_InstructionSet isa);
 
 #ifdef TARGET_XARCH
-    static bool isAVX2GatherIntrinsic(NamedIntrinsic id);
+    static bool                isAVX2GatherIntrinsic(NamedIntrinsic id);
     static FloatComparisonMode lookupFloatComparisonModeForSwappedArgs(FloatComparisonMode comparison);
 #endif
 
@@ -491,217 +537,7 @@ struct HWIntrinsicInfo
     }
 
 #ifdef TARGET_XARCH
-    static int lookupIval(NamedIntrinsic id, bool opportunisticallyDependsOnAVX)
-    {
-        switch (id)
-        {
-            case NI_SSE_CompareEqual:
-            case NI_SSE_CompareScalarEqual:
-            case NI_SSE2_CompareEqual:
-            case NI_SSE2_CompareScalarEqual:
-            case NI_AVX_CompareEqual:
-            {
-                return static_cast<int>(FloatComparisonMode::OrderedEqualNonSignaling);
-            }
-
-            case NI_SSE_CompareGreaterThan:
-            case NI_SSE_CompareScalarGreaterThan:
-            case NI_SSE2_CompareGreaterThan:
-            case NI_SSE2_CompareScalarGreaterThan:
-            case NI_AVX_CompareGreaterThan:
-            {
-                if (opportunisticallyDependsOnAVX)
-                {
-                    return static_cast<int>(FloatComparisonMode::OrderedGreaterThanSignaling);
-                }
-
-                // CompareGreaterThan is not directly supported in hardware without AVX support.
-                // We will return the inverted case here and lowering will itself swap the ops
-                // to ensure the emitted code remains correct. This simplifies the overall logic
-                // here and for other use cases.
-
-                assert(id != NI_AVX_CompareGreaterThan);
-                return static_cast<int>(FloatComparisonMode::OrderedLessThanSignaling);
-            }
-
-            case NI_SSE_CompareLessThan:
-            case NI_SSE_CompareScalarLessThan:
-            case NI_SSE2_CompareLessThan:
-            case NI_SSE2_CompareScalarLessThan:
-            case NI_AVX_CompareLessThan:
-            {
-                return static_cast<int>(FloatComparisonMode::OrderedLessThanSignaling);
-            }
-
-            case NI_SSE_CompareGreaterThanOrEqual:
-            case NI_SSE_CompareScalarGreaterThanOrEqual:
-            case NI_SSE2_CompareGreaterThanOrEqual:
-            case NI_SSE2_CompareScalarGreaterThanOrEqual:
-            case NI_AVX_CompareGreaterThanOrEqual:
-            {
-                if (opportunisticallyDependsOnAVX)
-                {
-                    return static_cast<int>(FloatComparisonMode::OrderedGreaterThanOrEqualSignaling);
-                }
-
-                // CompareGreaterThanOrEqual is not directly supported in hardware without AVX support.
-                // We will return the inverted case here and lowering will itself swap the ops
-                // to ensure the emitted code remains correct. This simplifies the overall logic
-                // here and for other use cases.
-
-                assert(id != NI_AVX_CompareGreaterThanOrEqual);
-                return static_cast<int>(FloatComparisonMode::OrderedLessThanOrEqualSignaling);
-            }
-
-            case NI_SSE_CompareLessThanOrEqual:
-            case NI_SSE_CompareScalarLessThanOrEqual:
-            case NI_SSE2_CompareLessThanOrEqual:
-            case NI_SSE2_CompareScalarLessThanOrEqual:
-            case NI_AVX_CompareLessThanOrEqual:
-            {
-                return static_cast<int>(FloatComparisonMode::OrderedLessThanOrEqualSignaling);
-            }
-
-            case NI_SSE_CompareNotEqual:
-            case NI_SSE_CompareScalarNotEqual:
-            case NI_SSE2_CompareNotEqual:
-            case NI_SSE2_CompareScalarNotEqual:
-            case NI_AVX_CompareNotEqual:
-            {
-                return static_cast<int>(FloatComparisonMode::UnorderedNotEqualNonSignaling);
-            }
-
-            case NI_SSE_CompareNotGreaterThan:
-            case NI_SSE_CompareScalarNotGreaterThan:
-            case NI_SSE2_CompareNotGreaterThan:
-            case NI_SSE2_CompareScalarNotGreaterThan:
-            case NI_AVX_CompareNotGreaterThan:
-            {
-                if (opportunisticallyDependsOnAVX)
-                {
-                    return static_cast<int>(FloatComparisonMode::UnorderedNotGreaterThanSignaling);
-                }
-
-                // CompareNotGreaterThan is not directly supported in hardware without AVX support.
-                // We will return the inverted case here and lowering will itself swap the ops
-                // to ensure the emitted code remains correct. This simplifies the overall logic
-                // here and for other use cases.
-
-                assert(id != NI_AVX_CompareNotGreaterThan);
-                return static_cast<int>(FloatComparisonMode::UnorderedNotLessThanSignaling);
-            }
-
-            case NI_SSE_CompareNotLessThan:
-            case NI_SSE_CompareScalarNotLessThan:
-            case NI_SSE2_CompareNotLessThan:
-            case NI_SSE2_CompareScalarNotLessThan:
-            case NI_AVX_CompareNotLessThan:
-            {
-                return static_cast<int>(FloatComparisonMode::UnorderedNotLessThanSignaling);
-            }
-
-            case NI_SSE_CompareNotGreaterThanOrEqual:
-            case NI_SSE_CompareScalarNotGreaterThanOrEqual:
-            case NI_SSE2_CompareNotGreaterThanOrEqual:
-            case NI_SSE2_CompareScalarNotGreaterThanOrEqual:
-            case NI_AVX_CompareNotGreaterThanOrEqual:
-            {
-                if (opportunisticallyDependsOnAVX)
-                {
-                    return static_cast<int>(FloatComparisonMode::UnorderedNotGreaterThanOrEqualSignaling);
-                }
-
-                // CompareNotGreaterThanOrEqual is not directly supported in hardware without AVX support.
-                // We will return the inverted case here and lowering will itself swap the ops
-                // to ensure the emitted code remains correct. This simplifies the overall logic
-                // here and for other use cases.
-
-                assert(id != NI_AVX_CompareNotGreaterThanOrEqual);
-                return static_cast<int>(FloatComparisonMode::UnorderedNotLessThanOrEqualSignaling);
-            }
-
-            case NI_SSE_CompareNotLessThanOrEqual:
-            case NI_SSE_CompareScalarNotLessThanOrEqual:
-            case NI_SSE2_CompareNotLessThanOrEqual:
-            case NI_SSE2_CompareScalarNotLessThanOrEqual:
-            case NI_AVX_CompareNotLessThanOrEqual:
-            {
-                return static_cast<int>(FloatComparisonMode::UnorderedNotLessThanOrEqualSignaling);
-            }
-
-            case NI_SSE_CompareOrdered:
-            case NI_SSE_CompareScalarOrdered:
-            case NI_SSE2_CompareOrdered:
-            case NI_SSE2_CompareScalarOrdered:
-            case NI_AVX_CompareOrdered:
-            {
-                return static_cast<int>(FloatComparisonMode::OrderedNonSignaling);
-            }
-
-            case NI_SSE_CompareUnordered:
-            case NI_SSE_CompareScalarUnordered:
-            case NI_SSE2_CompareUnordered:
-            case NI_SSE2_CompareScalarUnordered:
-            case NI_AVX_CompareUnordered:
-            {
-                return static_cast<int>(FloatComparisonMode::UnorderedNonSignaling);
-            }
-
-            case NI_SSE41_Ceiling:
-            case NI_SSE41_CeilingScalar:
-            case NI_AVX_Ceiling:
-            {
-                FALLTHROUGH;
-            }
-
-            case NI_SSE41_RoundToPositiveInfinity:
-            case NI_SSE41_RoundToPositiveInfinityScalar:
-            case NI_AVX_RoundToPositiveInfinity:
-            {
-                return static_cast<int>(FloatRoundingMode::ToPositiveInfinity);
-            }
-
-            case NI_SSE41_Floor:
-            case NI_SSE41_FloorScalar:
-            case NI_AVX_Floor:
-            {
-                FALLTHROUGH;
-            }
-
-            case NI_SSE41_RoundToNegativeInfinity:
-            case NI_SSE41_RoundToNegativeInfinityScalar:
-            case NI_AVX_RoundToNegativeInfinity:
-            {
-                return static_cast<int>(FloatRoundingMode::ToNegativeInfinity);
-            }
-
-            case NI_SSE41_RoundCurrentDirection:
-            case NI_SSE41_RoundCurrentDirectionScalar:
-            case NI_AVX_RoundCurrentDirection:
-            {
-                return static_cast<int>(FloatRoundingMode::CurrentDirection);
-            }
-
-            case NI_SSE41_RoundToNearestInteger:
-            case NI_SSE41_RoundToNearestIntegerScalar:
-            case NI_AVX_RoundToNearestInteger:
-            {
-                return static_cast<int>(FloatRoundingMode::ToNearestInteger);
-            }
-
-            case NI_SSE41_RoundToZero:
-            case NI_SSE41_RoundToZeroScalar:
-            case NI_AVX_RoundToZero:
-            {
-                return static_cast<int>(FloatRoundingMode::ToZero);
-            }
-
-            default:
-            {
-                return -1;
-            }
-        }
-    }
+    static int lookupIval(Compiler* comp, NamedIntrinsic id, var_types simdBaseType);
 #endif
 
     static bool tryLookupSimdSize(NamedIntrinsic id, unsigned* pSimdSize)
@@ -769,6 +605,32 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_Commutative) != 0;
     }
 
+#if defined(TARGET_XARCH)
+    static bool IsEmbBroadcastCompatible(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_EmbBroadcastCompatible) != 0;
+    }
+
+    static bool IsEmbRoundingCompatible(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_EmbRoundingCompatible) != 0;
+    }
+
+    static bool IsEmbMaskingCompatible(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_EmbMaskingIncompatible) == 0;
+    }
+#endif // TARGET_XARCH
+
+    static bool CanBenefitFromConstantProp(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_CanBenefitFromConstantProp) != 0;
+    }
+
     static bool IsMaybeCommutative(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
@@ -808,10 +670,8 @@ struct HWIntrinsicInfo
     static bool ReturnsPerElementMask(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         return (flags & HW_Flag_ReturnsPerElementMask) != 0;
-#elif defined(TARGET_ARM64)
-        unreached();
 #else
 #error Unsupported platform
 #endif
@@ -942,14 +802,41 @@ struct HWIntrinsicInfo
         switch (id)
         {
 #ifdef TARGET_ARM64
-            // TODO-ARM64-NYI: Support hardware intrinsics operating on multiple contiguous registers.
             case NI_AdvSimd_Arm64_LoadPairScalarVector64:
             case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
             case NI_AdvSimd_Arm64_LoadPairVector64:
             case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
             case NI_AdvSimd_Arm64_LoadPairVector128:
             case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
+            case NI_AdvSimd_LoadVector64x2AndUnzip:
+            case NI_AdvSimd_Arm64_LoadVector128x2AndUnzip:
+            case NI_AdvSimd_LoadVector64x2:
+            case NI_AdvSimd_Arm64_LoadVector128x2:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+            case NI_AdvSimd_LoadAndReplicateToVector64x2:
+            case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x2:
                 return 2;
+
+            case NI_AdvSimd_LoadVector64x3AndUnzip:
+            case NI_AdvSimd_Arm64_LoadVector128x3AndUnzip:
+            case NI_AdvSimd_LoadVector64x3:
+            case NI_AdvSimd_Arm64_LoadVector128x3:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+            case NI_AdvSimd_LoadAndReplicateToVector64x3:
+            case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x3:
+                return 3;
+
+            case NI_AdvSimd_LoadVector64x4AndUnzip:
+            case NI_AdvSimd_Arm64_LoadVector128x4AndUnzip:
+            case NI_AdvSimd_LoadVector64x4:
+            case NI_AdvSimd_Arm64_LoadVector128x4:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
+            case NI_AdvSimd_LoadAndReplicateToVector64x4:
+            case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
+                return 4;
 #endif
 
 #ifdef TARGET_XARCH
@@ -975,6 +862,25 @@ struct HWIntrinsicInfo
         const HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_HasImmediateOperand) != 0;
     }
+
+    static bool IsScalable(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_Scalable) != 0;
+    }
+
+    static bool IsMaskedOperation(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return ((flags & HW_Flag_MaskedOperation) != 0) || IsLowMaskedOperation(id);
+    }
+
+    static bool IsLowMaskedOperation(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_LowMaskedOperation) != 0;
+    }
+
 #endif // TARGET_ARM64
 
     static bool HasSpecialSideEffect(NamedIntrinsic id)
@@ -1021,7 +927,12 @@ struct HWIntrinsicInfo
 struct HWIntrinsic final
 {
     HWIntrinsic(const GenTreeHWIntrinsic* node)
-        : op1(nullptr), op2(nullptr), op3(nullptr), op4(nullptr), numOperands(0), baseType(TYP_UNDEF)
+        : op1(nullptr)
+        , op2(nullptr)
+        , op3(nullptr)
+        , op4(nullptr)
+        , numOperands(0)
+        , baseType(TYP_UNDEF)
     {
         assert(node != nullptr);
 
@@ -1034,7 +945,7 @@ struct HWIntrinsic final
         InitializeBaseType(node);
     }
 
-    bool IsTableDriven() const
+    bool codeGenIsTableDriven() const
     {
         // TODO-Arm64-Cleanup - make more categories to the table-driven framework
         bool isTableDrivenCategory = category != HW_Category_Helper;

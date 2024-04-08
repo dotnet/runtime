@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
@@ -19,6 +19,71 @@ namespace System.Security.Cryptography
         {
             IntPtr algorithm = Interop.Crypto.HashAlgorithmToEvp(hashAlgorithmId);
             return new LiteHmac(algorithm, key);
+        }
+
+        internal static LiteXof CreateXof(string hashAlgorithmId)
+        {
+            IntPtr algorithm = Interop.Crypto.HashAlgorithmToEvp(hashAlgorithmId);
+            return new LiteXof(algorithm);
+        }
+    }
+
+    internal readonly struct LiteXof : ILiteHash
+    {
+        private readonly SafeEvpMdCtxHandle _ctx;
+        private readonly IntPtr _algorithm;
+
+        public int HashSizeInBytes => throw new NotSupportedException();
+
+        internal LiteXof(IntPtr algorithm)
+        {
+            Debug.Assert(algorithm != IntPtr.Zero);
+            _algorithm = algorithm;
+
+            _ctx = Interop.Crypto.EvpMdCtxCreate(algorithm);
+            Interop.Crypto.CheckValidOpenSslHandle(_ctx);
+        }
+
+        public void Append(ReadOnlySpan<byte> data)
+        {
+            if (data.IsEmpty)
+            {
+                return;
+            }
+
+            Check(Interop.Crypto.EvpDigestUpdate(_ctx, data, data.Length));
+        }
+
+        public void Reset()
+        {
+            Check(Interop.Crypto.EvpDigestReset(_ctx, _algorithm));
+        }
+
+        public int Finalize(Span<byte> destination)
+        {
+            Check(Interop.Crypto.EvpDigestFinalXOF(_ctx, destination));
+            return destination.Length;
+        }
+
+        public void Current(Span<byte> destination)
+        {
+            Check(Interop.Crypto.EvpDigestCurrentXOF(_ctx, destination));
+        }
+
+        public void Dispose()
+        {
+            _ctx.Dispose();
+        }
+
+        private static void Check(int result)
+        {
+            const int Success = 1;
+
+            if (result != Success)
+            {
+                Debug.Assert(result == 0);
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
         }
     }
 

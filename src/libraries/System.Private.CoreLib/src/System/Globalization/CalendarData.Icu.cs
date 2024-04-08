@@ -33,6 +33,7 @@ namespace System.Globalization
     {
         private bool IcuLoadCalendarDataFromSystem(string localeName, CalendarId calendarId)
         {
+            // ToDo: think if not to convert this function with multiple calls to JS into one call with multiple data requested at once
             Debug.Assert(!GlobalizationMode.UseNls);
 
             bool result = true;
@@ -61,7 +62,7 @@ namespace System.Globalization
 
                 // In Hebrew calendar, get the leap month name Adar II and override the non-leap month 7
                 Debug.Assert(calendarId == CalendarId.HEBREW && saMonthNames.Length == 13);
-                saLeapYearMonthNames = (string[]) saMonthNames.Clone();
+                saLeapYearMonthNames = (string[])saMonthNames.Clone();
                 saLeapYearMonthNames[6] = leapHebrewMonthName;
 
                 // The returned data from ICU has 6th month name as 'Adar I' and 7th month name as 'Adar'
@@ -88,7 +89,15 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.UseNls);
 
             // NOTE: there are no 'user overrides' on Linux
-            int count = Interop.Globalization.GetCalendars(localeName, calendars, calendars.Length);
+            int count;
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+                count = Interop.Globalization.GetCalendarsNative(localeName, calendars, calendars.Length);
+            else
+                count = Interop.Globalization.GetCalendars(localeName, calendars, calendars.Length);
+#else
+            count = Interop.Globalization.GetCalendars(localeName, calendars, calendars.Length);
+#endif
 
             // ensure there is at least 1 calendar returned
             if (count == 0 && calendars.Length > 0)
@@ -126,14 +135,16 @@ namespace System.Globalization
                 out calendarString);
         }
 
-        private static bool EnumDatePatterns(string localeName, CalendarId calendarId, CalendarDataType dataType, out string[]? datePatterns)
+        private static unsafe bool EnumDatePatterns(string localeName, CalendarId calendarId, CalendarDataType dataType, out string[]? datePatterns)
         {
             datePatterns = null;
 
             IcuEnumCalendarsData callbackContext = default;
             callbackContext.Results = new List<string>();
             callbackContext.DisallowDuplicates = true;
-            bool result = EnumCalendarInfo(localeName, calendarId, dataType, ref callbackContext);
+#pragma warning disable CS8500 // takes address of managed type
+            bool result = EnumCalendarInfo(localeName, calendarId, dataType, &callbackContext);
+#pragma warning restore CS8500
             if (result)
             {
                 List<string> datePatternsList = callbackContext.Results;
@@ -353,13 +364,15 @@ namespace System.Globalization
             return index - startIndex;
         }
 
-        private static bool EnumMonthNames(string localeName, CalendarId calendarId, CalendarDataType dataType, out string[]? monthNames, ref string? leapHebrewMonthName)
+        private static unsafe bool EnumMonthNames(string localeName, CalendarId calendarId, CalendarDataType dataType, out string[]? monthNames, ref string? leapHebrewMonthName)
         {
             monthNames = null;
 
             IcuEnumCalendarsData callbackContext = default;
             callbackContext.Results = new List<string>();
-            bool result = EnumCalendarInfo(localeName, calendarId, dataType, ref callbackContext);
+#pragma warning disable CS8500 // takes address of managed type
+            bool result = EnumCalendarInfo(localeName, calendarId, dataType, &callbackContext);
+#pragma warning restore CS8500
             if (result)
             {
                 // the month-name arrays are expected to have 13 elements.  If ICU only returns 12, add an
@@ -401,13 +414,15 @@ namespace System.Globalization
             return result;
         }
 
-        internal static bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, out string[]? calendarData)
+        internal static unsafe bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, out string[]? calendarData)
         {
             calendarData = null;
 
             IcuEnumCalendarsData callbackContext = default;
             callbackContext.Results = new List<string>();
-            bool result = EnumCalendarInfo(localeName, calendarId, dataType, ref callbackContext);
+#pragma warning disable CS8500 // takes address of managed type
+            bool result = EnumCalendarInfo(localeName, calendarId, dataType, &callbackContext);
+#pragma warning restore CS8500
             if (result)
             {
                 calendarData = callbackContext.Results.ToArray();
@@ -416,10 +431,12 @@ namespace System.Globalization
             return result;
         }
 
-        private static unsafe bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, ref IcuEnumCalendarsData callbackContext)
+#pragma warning disable CS8500 // takes address of managed type
+        private static unsafe bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, IcuEnumCalendarsData* callbackContext)
         {
-            return Interop.Globalization.EnumCalendarInfo(&EnumCalendarInfoCallback, localeName, calendarId, dataType, (IntPtr)Unsafe.AsPointer(ref callbackContext));
+            return Interop.Globalization.EnumCalendarInfo(&EnumCalendarInfoCallback, localeName, calendarId, dataType, (IntPtr)callbackContext);
         }
+#pragma warning restore CS8500
 
         [UnmanagedCallersOnly]
         private static unsafe void EnumCalendarInfoCallback(char* calendarStringPtr, IntPtr context)

@@ -16,46 +16,6 @@ typedef DPTR(SLOT) PTR_SLOT;
 
 typedef LPVOID  DictionaryEntry;
 
-/* Define the implementation dependent size types */
-
-#ifndef _INTPTR_T_DEFINED
-#ifdef  HOST_64BIT
-typedef __int64             intptr_t;
-#else
-typedef int                 intptr_t;
-#endif
-#define _INTPTR_T_DEFINED
-#endif
-
-#ifndef _UINTPTR_T_DEFINED
-#ifdef  HOST_64BIT
-typedef unsigned __int64    uintptr_t;
-#else
-typedef unsigned int        uintptr_t;
-#endif
-#define _UINTPTR_T_DEFINED
-#endif
-
-#ifndef _PTRDIFF_T_DEFINED
-#ifdef  HOST_64BIT
-typedef __int64             ptrdiff_t;
-#else
-typedef int                 ptrdiff_t;
-#endif
-#define _PTRDIFF_T_DEFINED
-#endif
-
-
-#ifndef _SIZE_T_DEFINED
-#ifdef  HOST_64BIT
-typedef unsigned __int64 size_t;
-#else
-typedef unsigned int     size_t;
-#endif
-#define _SIZE_T_DEFINED
-#endif
-
-
 #include "util.hpp"
 #include <corpriv.h>
 #include <cordbpriv.h>
@@ -389,6 +349,16 @@ GVAL_DECL(DWORD,            g_debuggerWordTLSIndex);
 #endif
 GVAL_DECL(DWORD,            g_TlsIndex);
 
+#ifdef FEATURE_EH_FUNCLETS
+GPTR_DECL(MethodTable,      g_pEHClass);
+GPTR_DECL(MethodTable,      g_pExceptionServicesInternalCallsClass);
+GPTR_DECL(MethodTable,      g_pStackFrameIteratorClass);
+GVAL_DECL(bool,             g_isNewExceptionHandlingEnabled);
+#endif
+
+// Full path to the managed entry assembly - stored for ease of identifying the entry asssembly for diagnostics
+GVAL_DECL(PTR_WSTR, g_EntryAssemblyPath);
+
 // Global System Information
 extern SYSTEM_INFO g_SystemInfo;
 
@@ -400,6 +370,8 @@ EXTERN OBJECTHANDLE         g_pPreallocatedExecutionEngineException;
 
 // we use this as a dummy object to indicate free space in the handle tables -- this object is never visible to the world
 EXTERN OBJECTHANDLE         g_pPreallocatedSentinelObject;
+
+EXTERN MethodTable*         g_pCastHelpers;
 
 GPTR_DECL(Thread,g_pFinalizerThread);
 GPTR_DECL(Thread,g_pSuspensionThread);
@@ -468,13 +440,11 @@ EXTERN BOOL g_fComStarted;
 GVAL_DECL(DWORD, g_fEEShutDown);
 EXTERN DWORD g_fFastExitProcess;
 EXTERN BOOL g_fFatalErrorOccurredOnGCThread;
-EXTERN Volatile<LONG> g_fForbidEnterEE;
 GVAL_DECL(bool, g_fProcessDetach);
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 GVAL_DECL(bool, g_metadataUpdatesApplied);
 #endif
 EXTERN bool g_fManagedAttach;
-EXTERN bool g_fNoExceptions;
 
 // Indicates whether we're executing shut down as a result of DllMain
 // (DLL_PROCESS_DETACH). See comments at code:EEShutDown for details.
@@ -496,11 +466,6 @@ extern Volatile<BOOL> g_TriggerHeapDump;
 #endif // TARGET_UNIX
 
 #ifndef DACCESS_COMPILE
-//
-// Allow use of native images?
-//
-extern bool g_fAllowNativeImages;
-
 //
 // Default install library
 //
@@ -680,15 +645,6 @@ PTR_GSCookie GetProcessGSCookiePtr() { return  PTR_GSCookie(&s_gsCookie); }
 
 inline
 GSCookie GetProcessGSCookie() { return *(RAW_KEYWORD(volatile) GSCookie *)(&s_gsCookie); }
-
-// Passed to JitManager APIs to determine whether to avoid calling into the host.
-// The profiling API stackwalking uses this to ensure to avoid re-entering the host
-// (particularly SQL) from a hijacked thread.
-enum HostCallPreference
-{
-    AllowHostCalls,
-    NoHostCalls,
-};
 
 #ifdef TARGET_WINDOWS
 typedef BOOL(WINAPI* PINITIALIZECONTEXT2)(PVOID Buffer, DWORD ContextFlags, PCONTEXT* Context, PDWORD ContextLength, ULONG64 XStateCompactionMask);

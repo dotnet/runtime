@@ -4,10 +4,13 @@
     <MonoLLVMHostOS Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">linux</MonoLLVMHostOS>
     <MonoLLVMHostOS Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">osx</MonoLLVMHostOS>
     <MonoLLVMHostOS Condition="'$(OS)' == 'Windows_NT'">win</MonoLLVMHostOS>
+    <MonoLLVMHostOS Condition="Exists('$(ROOTFS_DIR)/lib/ld-musl-aarch64.so.1') or Exists('$(ROOTFS_DIR)/lib/ld-musl-x86_64.so.1')">linux-musl</MonoLLVMHostOS>
     <MonoLLVMSDKVersion Condition="'$(MonoLLVMHostOS)' == 'linux'">$(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion)</MonoLLVMSDKVersion>
+    <MonoLLVMSDKVersion Condition="'$(MonoLLVMHostOS)' == 'linux-musl'">$(runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion)</MonoLLVMSDKVersion>
     <MonoLLVMSDKVersion Condition="'$(MonoLLVMHostOS)' == 'win'">$(runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion)</MonoLLVMSDKVersion>
     <MonoLLVMSDKVersion Condition="'$(MonoLLVMHostOS)' == 'osx'">$(runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion)</MonoLLVMSDKVersion>
     <MonoLLVMToolsVersion Condition="'$(MonoLLVMHostOS)' == 'linux'">$(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)</MonoLLVMToolsVersion>
+    <MonoLLVMToolsVersion Condition="'$(MonoLLVMHostOS)' == 'linux-musl'">$(runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)</MonoLLVMToolsVersion>
     <MonoLLVMToolsVersion Condition="'$(MonoLLVMHostOS)' == 'win'">$(runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)</MonoLLVMToolsVersion>
     <MonoLLVMToolsVersion Condition="'$(MonoLLVMHostOS)' == 'osx'">$(runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)</MonoLLVMToolsVersion>
   </PropertyGroup>
@@ -17,10 +20,10 @@
                       Version="$(MonoLLVMToolsVersion)"
                       PackageArch="$(TargetArchitecture)"
                       Condition="'$(TargetArchitecture)' != ''" />
-    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(RealTargetArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Tools"
+    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(AotHostArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Tools"
                       Version="$(MonoLLVMToolsVersion)"
-                      PackageArch="$(RealTargetArchitecture)"
-                      Condition="'$(RealTargetArchitecture)' != ''" />
+                      PackageArch="$(AotHostArchitecture)"
+                      Condition="'$(AotHostArchitecture)' != ''" />
     <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Tools"
                       Version="$(MonoLLVMToolsVersion)"
                       PackageArch="$(BuildArchitecture)"
@@ -29,10 +32,10 @@
                       Version="$(MonoLLVMSDKVersion)"
                       PackageArch="$(TargetArchitecture)"
                       Condition="'$(TargetArchitecture)' != ''" />
-    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(RealTargetArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
+    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(AotHostArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
                       Version="$(MonoLLVMSDKVersion)"
-                      PackageArch="$(RealTargetArchitecture)"
-                      Condition="'$(RealTargetArchitecture)' != ''" />
+                      PackageArch="$(AotHostArchitecture)"
+                      Condition="'$(AotHostArchitecture)' != ''" />
     <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
                       Version="$(MonoLLVMSDKVersion)"
                       PackageArch="$(BuildArchitecture)"

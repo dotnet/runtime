@@ -9,6 +9,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Threading;
 
+using Internal.Runtime;
+
 namespace System.Runtime.InteropServices
 {
     /// <summary>
@@ -27,15 +29,37 @@ namespace System.Runtime.InteropServices
         internal static IntPtr TaggedImplVftblPtr { get; } = CreateTaggedImplVftbl();
         internal static IntPtr DefaultIReferenceTrackerTargetVftblPtr { get; } = CreateDefaultIReferenceTrackerTargetVftbl();
 
-        internal static Guid IID_IUnknown = new Guid(0x00000000, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
-        internal static Guid IID_IReferenceTrackerTarget = new Guid(0x64bd43f8, 0xbfee, 0x4ec4, 0xb7, 0xeb, 0x29, 0x35, 0x15, 0x8d, 0xae, 0x21);
-        internal static Guid IID_TaggedImpl = new Guid(0x5c13e51c, 0x4f32, 0x4726, 0xa3, 0xfd, 0xf3, 0xed, 0xd6, 0x3d, 0xa3, 0xa0);
+        internal static readonly Guid IID_IUnknown = new Guid(0x00000000, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
+        internal static readonly Guid IID_IReferenceTrackerTarget = new Guid(0x64bd43f8, 0xbfee, 0x4ec4, 0xb7, 0xeb, 0x29, 0x35, 0x15, 0x8d, 0xae, 0x21);
+        internal static readonly Guid IID_TaggedImpl = new Guid(0x5c13e51c, 0x4f32, 0x4726, 0xa3, 0xfd, 0xf3, 0xed, 0xd6, 0x3d, 0xa3, 0xa0);
+        internal static readonly Guid IID_IReferenceTracker = new Guid(0x11D3B13A, 0x180E, 0x4789, 0xA8, 0xBE, 0x77, 0x12, 0x88, 0x28, 0x93, 0xE6);
+        internal static readonly Guid IID_IReferenceTrackerHost = new Guid(0x29a71c6a, 0x3c42, 0x4416, 0xa3, 0x9d, 0xe2, 0x82, 0x5a, 0x7, 0xa7, 0x73);
+        internal static readonly Guid IID_IReferenceTrackerManager = new Guid(0x3cf184b4, 0x7ccb, 0x4dda, 0x84, 0x55, 0x7e, 0x6c, 0xe9, 0x9a, 0x32, 0x98);
+        internal static readonly Guid IID_IFindReferenceTargetsCallback = new Guid(0x04b3486c, 0x4687, 0x4229, 0x8d, 0x14, 0x50, 0x5a, 0xb5, 0x84, 0xdd, 0x88);
+
+        private static readonly Guid IID_IInspectable = new Guid(0xAF86E2E0, 0xB12D, 0x4c6a, 0x9C, 0x5A, 0xD7, 0xAA, 0x65, 0x10, 0x1E, 0x90);
+        private static readonly Guid IID_IWeakReferenceSource = new Guid(0x00000038, 0, 0, 0xC0, 0, 0, 0, 0, 0, 0, 0x46);
 
         private static readonly ConditionalWeakTable<object, NativeObjectWrapper> s_rcwTable = new ConditionalWeakTable<object, NativeObjectWrapper>();
+        private static readonly List<GCHandle> s_referenceTrackerNativeObjectWrapperCache = new List<GCHandle>();
 
         private readonly ConditionalWeakTable<object, ManagedObjectWrapperHolder> _ccwTable = new ConditionalWeakTable<object, ManagedObjectWrapperHolder>();
-        private readonly Lock _lock = new Lock();
+        private readonly Lock _lock = new Lock(useTrivialWaits: true);
         private readonly Dictionary<IntPtr, GCHandle> _rcwCache = new Dictionary<IntPtr, GCHandle>();
+
+        internal static bool TryGetComInstanceForIID(object obj, Guid iid, out IntPtr unknown, out long wrapperId)
+        {
+            if (obj == null
+                || !s_rcwTable.TryGetValue(obj, out NativeObjectWrapper? wrapper))
+            {
+                unknown = IntPtr.Zero;
+                wrapperId = 0;
+                return false;
+            }
+
+            wrapperId = wrapper._comWrappers.id;
+            return Marshal.QueryInterface(wrapper._externalComObject, iid, out unknown) == HResults.S_OK;
+        }
 
         public static unsafe bool TryGetComInstance(object obj, out IntPtr unknown)
         {
@@ -46,7 +70,7 @@ namespace System.Runtime.InteropServices
                 return false;
             }
 
-            return Marshal.QueryInterface(wrapper._externalComObject, ref IID_IUnknown, out unknown) == 0;
+            return Marshal.QueryInterface(wrapper._externalComObject, IID_IUnknown, out unknown) == HResults.S_OK;
         }
 
         public static unsafe bool TryGetObject(IntPtr unknown, [NotNullWhen(true)] out object? obj)
@@ -58,7 +82,8 @@ namespace System.Runtime.InteropServices
             }
 
             ComInterfaceDispatch* comInterfaceDispatch = TryGetComInterfaceDispatch(unknown);
-            if (comInterfaceDispatch == null)
+            if (comInterfaceDispatch == null ||
+                ComInterfaceDispatch.ToManagedObjectWrapper(comInterfaceDispatch)->MarkedToDestroy)
             {
                 return false;
             }
@@ -144,9 +169,8 @@ namespace System.Runtime.InteropServices
                     bool rooted = GetComCount(refCount) > 0;
                     if (!rooted)
                     {
-                        // TODO: global pegging state
-                        // https://github.com/dotnet/runtime/issues/85137
-                        rooted = GetTrackerCount(refCount) > 0 && (Flags & CreateComInterfaceFlagsEx.IsPegged) != 0;
+                        rooted = GetTrackerCount(refCount) > 0 &&
+                            ((Flags & CreateComInterfaceFlagsEx.IsPegged) != 0 || TrackerObjectManager.s_isGlobalPeggingOn);
                     }
                     return rooted;
                 }
@@ -163,6 +187,8 @@ namespace System.Runtime.InteropServices
                         return Unsafe.As<ManagedObjectWrapperHolder>(GCHandle.FromIntPtr(handle).Target);
                 }
             }
+
+            public readonly bool MarkedToDestroy => IsMarkedToDestroy(RefCount);
 
             public uint AddRef()
             {
@@ -388,19 +414,19 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        internal unsafe class ManagedObjectWrapperHolder
+        internal sealed unsafe class ManagedObjectWrapperHolder
         {
             static ManagedObjectWrapperHolder()
             {
                 delegate* unmanaged<IntPtr, bool> callback = &IsRootedCallback;
-                if (!RuntimeImports.RhRegisterRefCountedHandleCallback((nint)callback, typeof(ManagedObjectWrapperHolder).GetEEType()))
+                if (!RuntimeImports.RhRegisterRefCountedHandleCallback((nint)callback, MethodTable.Of<ManagedObjectWrapperHolder>()))
                 {
                     throw new OutOfMemoryException();
                 }
             }
 
             [UnmanagedCallersOnly]
-            static bool IsRootedCallback(IntPtr pObj)
+            private static bool IsRootedCallback(IntPtr pObj)
             {
                 // We are paused in the GC, so this is safe.
 #pragma warning disable CS8500 // Takes a pointer to a managed type
@@ -409,23 +435,16 @@ namespace System.Runtime.InteropServices
 #pragma warning restore CS8500
             }
 
-            private ManagedObjectWrapper* _wrapper;
-            private object _wrappedObject;
+            private readonly ManagedObjectWrapper* _wrapper;
+            private readonly ManagedObjectWrapperReleaser _releaser;
+            private readonly object _wrappedObject;
 
             public ManagedObjectWrapperHolder(ManagedObjectWrapper* wrapper, object wrappedObject)
             {
                 _wrapper = wrapper;
                 _wrappedObject = wrappedObject;
-            }
-
-            public void InitializeHandle()
-            {
-                IntPtr handle = RuntimeImports.RhHandleAllocRefCounted(this);
-                IntPtr prev = Interlocked.CompareExchange(ref _wrapper->HolderHandle, handle, IntPtr.Zero);
-                if (prev != IntPtr.Zero)
-                {
-                    RuntimeImports.RhHandleFree(handle);
-                }
+                _releaser = new ManagedObjectWrapperReleaser(wrapper);
+                _wrapper->HolderHandle = RuntimeImports.RhHandleAllocRefCounted(this);
             }
 
             public unsafe IntPtr ComIp => _wrapper->As(in ComWrappers.IID_IUnknown);
@@ -433,13 +452,34 @@ namespace System.Runtime.InteropServices
             public object WrappedObject => _wrappedObject;
 
             public uint AddRef() => _wrapper->AddRef();
+        }
 
-            ~ManagedObjectWrapperHolder()
+        internal sealed unsafe class ManagedObjectWrapperReleaser
+        {
+            private ManagedObjectWrapper* _wrapper;
+
+            public ManagedObjectWrapperReleaser(ManagedObjectWrapper* wrapper)
             {
+                _wrapper = wrapper;
+            }
+
+            ~ManagedObjectWrapperReleaser()
+            {
+                IntPtr refCountedHandle = _wrapper->HolderHandle;
+                if (refCountedHandle != IntPtr.Zero && RuntimeImports.RhHandleGet(refCountedHandle) != null)
+                {
+                    // The ManagedObjectWrapperHolder has not been fully collected, so it is still
+                    // potentially reachable via the Conditional Weak Table.
+                    // Keep ourselves alive in case the wrapped object is resurrected.
+                    GC.ReRegisterForFinalize(this);
+                    return;
+                }
+
                 // Release GC handle created when MOW was built.
                 if (_wrapper->Destroy())
                 {
                     NativeMemory.Free(_wrapper);
+                    _wrapper = null;
                 }
                 else
                 {
@@ -457,18 +497,60 @@ namespace System.Runtime.InteropServices
         internal unsafe class NativeObjectWrapper
         {
             internal IntPtr _externalComObject;
-            private ComWrappers _comWrappers;
-            internal GCHandle _proxyHandle;
+            private IntPtr _inner;
+            internal ComWrappers _comWrappers;
+            internal readonly GCHandle _proxyHandle;
+            internal readonly GCHandle _proxyHandleTrackingResurrection;
+            internal readonly bool _aggregatedManagedObjectWrapper;
 
-            public NativeObjectWrapper(IntPtr externalComObject, ComWrappers comWrappers, object comProxy)
+            static NativeObjectWrapper()
             {
-                _externalComObject = externalComObject;
-                _comWrappers = comWrappers;
-                Marshal.AddRef(externalComObject);
-                _proxyHandle = GCHandle.Alloc(comProxy, GCHandleType.Weak);
+                // Registering the weak reference support callbacks to enable
+                // consulting ComWrappers when weak references are created
+                // for RCWs.
+                ComAwareWeakReference.InitializeCallbacks(&ComWeakRefToObject, &PossiblyComObject, &ObjectToComWeakRef);
             }
 
-            public void Release()
+            public static NativeObjectWrapper Create(IntPtr externalComObject, IntPtr inner, ComWrappers comWrappers, object comProxy, CreateObjectFlags flags)
+            {
+                if (flags.HasFlag(CreateObjectFlags.TrackerObject) &&
+                    Marshal.QueryInterface(externalComObject, IID_IReferenceTracker, out IntPtr trackerObject) == HResults.S_OK)
+                {
+                    return new ReferenceTrackerNativeObjectWrapper(externalComObject, inner, comWrappers, comProxy, flags, trackerObject);
+                }
+                else
+                {
+                    return new NativeObjectWrapper(externalComObject, inner, comWrappers, comProxy, flags);
+                }
+            }
+
+            public NativeObjectWrapper(IntPtr externalComObject, IntPtr inner, ComWrappers comWrappers, object comProxy, CreateObjectFlags flags)
+            {
+                _externalComObject = externalComObject;
+                _inner = inner;
+                _comWrappers = comWrappers;
+                _proxyHandle = GCHandle.Alloc(comProxy, GCHandleType.Weak);
+
+                // We have a separate handle tracking resurrection as we want to make sure
+                // we clean up the NativeObjectWrapper only after the RCW has been finalized
+                // due to it can access the native object in the finalizer. At the same time,
+                // we want other callers which are using _proxyHandle such as the RCW cache to
+                // see the object as not alive once it is eligible for finalization.
+                _proxyHandleTrackingResurrection = GCHandle.Alloc(comProxy, GCHandleType.WeakTrackResurrection);
+
+                // If this is an aggregation scenario and the identity object
+                // is a managed object wrapper, we need to call Release() to
+                // indicate this external object isn't rooted. In the event the
+                // object is passed out to native code an AddRef() must be called
+                // based on COM convention and will "fix" the count.
+                _aggregatedManagedObjectWrapper = flags.HasFlag(CreateObjectFlags.Aggregation) && TryGetComInterfaceDispatch(_externalComObject) != null;
+                if (_aggregatedManagedObjectWrapper)
+                {
+                    Marshal.Release(externalComObject);
+                }
+            }
+
+            public virtual void Release()
             {
                 if (_comWrappers != null)
                 {
@@ -481,16 +563,110 @@ namespace System.Runtime.InteropServices
                     _proxyHandle.Free();
                 }
 
-                if (_externalComObject != IntPtr.Zero)
+                if (_proxyHandleTrackingResurrection.IsAllocated)
                 {
-                    Marshal.Release(_externalComObject);
-                    _externalComObject = IntPtr.Zero;
+                    _proxyHandleTrackingResurrection.Free();
                 }
+
+                // If the inner was supplied, we need to release our reference.
+                if (_inner != IntPtr.Zero)
+                {
+                    Marshal.Release(_inner);
+                    _inner = IntPtr.Zero;
+                }
+
+                _externalComObject = IntPtr.Zero;
             }
 
             ~NativeObjectWrapper()
             {
+                if (_proxyHandleTrackingResurrection.IsAllocated && _proxyHandleTrackingResurrection.Target != null)
+                {
+                    // The RCW object has not been fully collected, so it still
+                    // can make calls on the native object in its finalizer.
+                    // Keep ourselves alive until it is finalized.
+                    GC.ReRegisterForFinalize(this);
+                    return;
+                }
+
                 Release();
+            }
+        }
+
+        internal sealed class ReferenceTrackerNativeObjectWrapper : NativeObjectWrapper
+        {
+            private IntPtr _trackerObject;
+            private readonly bool _releaseTrackerObject;
+            private int _trackerObjectDisconnected; // Atomic boolean, so using int.
+            internal readonly IntPtr _contextToken;
+            internal readonly GCHandle _nativeObjectWrapperWeakHandle;
+
+            public IntPtr TrackerObject => (_trackerObject == IntPtr.Zero || _trackerObjectDisconnected == 1) ? IntPtr.Zero : _trackerObject;
+
+            public ReferenceTrackerNativeObjectWrapper(
+                nint externalComObject,
+                nint inner,
+                ComWrappers comWrappers,
+                object comProxy,
+                CreateObjectFlags flags,
+                IntPtr trackerObject)
+                : base(externalComObject, inner, comWrappers, comProxy, flags)
+            {
+                Debug.Assert(flags.HasFlag(CreateObjectFlags.TrackerObject));
+                Debug.Assert(trackerObject != IntPtr.Zero);
+
+                _trackerObject = trackerObject;
+                _releaseTrackerObject = true;
+
+                TrackerObjectManager.OnIReferenceTrackerFound(_trackerObject);
+                TrackerObjectManager.AfterWrapperCreated(_trackerObject);
+
+                if (flags.HasFlag(CreateObjectFlags.Aggregation))
+                {
+                    // Aggregation with an IReferenceTracker instance creates an extra AddRef()
+                    // on the outer (e.g. MOW) so we clean up that issue here.
+                    _releaseTrackerObject = false;
+                    IReferenceTracker.ReleaseFromTrackerSource(_trackerObject); // IReferenceTracker
+                    Marshal.Release(_trackerObject);
+                }
+
+                _contextToken = GetContextToken();
+                _nativeObjectWrapperWeakHandle = GCHandle.Alloc(this, GCHandleType.Weak);
+            }
+
+            public override void Release()
+            {
+                // Remove the entry from the cache that keeps track of the active NativeObjectWrappers.
+                if (_nativeObjectWrapperWeakHandle.IsAllocated)
+                {
+                    s_referenceTrackerNativeObjectWrapperCache.Remove(_nativeObjectWrapperWeakHandle);
+                    _nativeObjectWrapperWeakHandle.Free();
+                }
+
+                DisconnectTracker();
+
+                base.Release();
+            }
+
+            public void DisconnectTracker()
+            {
+                // Return if already disconnected or the tracker isn't set.
+                if (_trackerObject == IntPtr.Zero || Interlocked.CompareExchange(ref _trackerObjectDisconnected, 1, 0) != 0)
+                {
+                    return;
+                }
+
+                // Always release the tracker source during a disconnect.
+                // This to account for the implied IUnknown ownership by the runtime.
+                IReferenceTracker.ReleaseFromTrackerSource(_trackerObject); // IUnknown
+
+                // Disconnect from the tracker.
+                if (_releaseTrackerObject)
+                {
+                    IReferenceTracker.ReleaseFromTrackerSource(_trackerObject); // IReferenceTracker
+                    Marshal.Release(_trackerObject);
+                    _trackerObject = IntPtr.Zero;
+                }
             }
         }
 
@@ -503,6 +679,25 @@ namespace System.Runtime.InteropServices
         /// Globally registered instance of the ComWrappers class for marshalling.
         /// </summary>
         private static ComWrappers? s_globalInstanceForMarshalling;
+
+        private static long s_instanceCounter;
+        private readonly long id = Interlocked.Increment(ref s_instanceCounter);
+
+        internal static object? GetOrCreateObjectFromWrapper(long wrapperId, IntPtr externalComObject)
+        {
+            if (s_globalInstanceForTrackerSupport != null && s_globalInstanceForTrackerSupport.id == wrapperId)
+            {
+                return s_globalInstanceForTrackerSupport.GetOrCreateObjectForComInstance(externalComObject, CreateObjectFlags.TrackerObject);
+            }
+            else if (s_globalInstanceForMarshalling != null && s_globalInstanceForMarshalling.id == wrapperId)
+            {
+                return ComObjectForInterface(externalComObject);
+            }
+            else
+            {
+                return null;
+            }
+        }
 
         /// <summary>
         /// Create a COM representation of the supplied object that can be passed to a non-managed environment.
@@ -531,7 +726,7 @@ namespace System.Runtime.InteropServices
                 ManagedObjectWrapper* value = CreateCCW(c, flags);
                 return new ManagedObjectWrapperHolder(value, c);
             });
-            ccwValue.InitializeHandle();
+            ccwValue.AddRef();
             return ccwValue.ComIp;
         }
 
@@ -581,7 +776,7 @@ namespace System.Runtime.InteropServices
             }
 
             mow->HolderHandle = IntPtr.Zero;
-            mow->RefCount = 1;
+            mow->RefCount = 0;
             mow->UserDefinedCount = userDefinedCount;
             mow->UserDefined = userDefined;
             mow->Flags = (CreateComInterfaceFlagsEx)flags;
@@ -661,7 +856,7 @@ namespace System.Runtime.InteropServices
             {
                 // It is possible the user has defined their own IUnknown impl so
                 // we fallback to the tagged interface approach to be sure.
-                if (0 != Marshal.QueryInterface(comObject, ref IID_TaggedImpl, out nint implMaybe))
+                if (0 != Marshal.QueryInterface(comObject, IID_TaggedImpl, out nint implMaybe))
                 {
                     return null;
                 }
@@ -676,6 +871,52 @@ namespace System.Runtime.InteropServices
             }
 
             return (ComInterfaceDispatch*)comObject;
+        }
+
+        private static void DetermineIdentityAndInner(
+            IntPtr externalComObject,
+            IntPtr innerMaybe,
+            CreateObjectFlags flags,
+            out IntPtr identity,
+            out IntPtr inner)
+        {
+            inner = innerMaybe;
+
+            IntPtr checkForIdentity = externalComObject;
+
+            // Check if the flags indicate we are creating
+            // an object for an external IReferenceTracker instance
+            // that we are aggregating with.
+            bool refTrackerInnerScenario = flags.HasFlag(CreateObjectFlags.TrackerObject)
+                && flags.HasFlag(CreateObjectFlags.Aggregation);
+            if (refTrackerInnerScenario &&
+                Marshal.QueryInterface(externalComObject, IID_IReferenceTracker, out IntPtr referenceTrackerPtr) == HResults.S_OK)
+            {
+                // We are checking the supplied external value
+                // for IReferenceTracker since in .NET 5 API usage scenarios
+                // this could actually be the inner and we want the true identity
+                // not the inner . This is a trick since the only way
+                // to get identity from an inner is through a non-IUnknown
+                // interface QI. Once we have the IReferenceTracker
+                // instance we can be sure the QI for IUnknown will really
+                // be the true identity.
+                using ComHolder referenceTracker = new ComHolder(referenceTrackerPtr);
+                checkForIdentity = referenceTrackerPtr;
+                Marshal.ThrowExceptionForHR(Marshal.QueryInterface(checkForIdentity, IID_IUnknown, out identity));
+            }
+            else
+            {
+                Marshal.ThrowExceptionForHR(Marshal.QueryInterface(externalComObject, IID_IUnknown, out identity));
+            }
+
+            // Set the inner if scenario dictates an update.
+            if (innerMaybe == IntPtr.Zero &&               // User didn't supply inner - .NET 5 API scenario sanity check.
+                checkForIdentity != externalComObject &&   // Target of check was changed - .NET 5 API scenario sanity check.
+                externalComObject != identity &&           // The supplied object doesn't match the computed identity.
+                refTrackerInnerScenario)                   // The appropriate flags were set.
+            {
+                inner = externalComObject;
+            }
         }
 
 #pragma warning disable IDE0060
@@ -701,48 +942,20 @@ namespace System.Runtime.InteropServices
             if (innerMaybe != IntPtr.Zero && !flags.HasFlag(CreateObjectFlags.Aggregation))
                 throw new InvalidOperationException(SR.InvalidOperation_SuppliedInnerMustBeMarkedAggregation);
 
-            if (flags.HasFlag(CreateObjectFlags.Aggregation))
-                throw new NotImplementedException();
+            DetermineIdentityAndInner(
+                externalComObject,
+                innerMaybe,
+                flags,
+                out IntPtr identity,
+                out IntPtr inner);
 
-            if (flags.HasFlag(CreateObjectFlags.Unwrap))
-            {
-                ComInterfaceDispatch* comInterfaceDispatch = TryGetComInterfaceDispatch(externalComObject);
-                if (comInterfaceDispatch != null)
-                {
-                    // If we found a managed object wrapper in this ComWrappers instance
-                    // and it's has the same identity pointer as the one we're creating a NativeObjectWrapper for,
-                    // unwrap it. We don't AddRef the wrapper as we don't take a reference to it.
-                    //
-                    // A managed object can have multiple managed object wrappers, with a max of one per context.
-                    // Let's say we have a managed object A and ComWrappers instances C1 and C2. Let B1 and B2 be the
-                    // managed object wrappers for A created with C1 and C2 respectively.
-                    // If we are asked to create an EOC for B1 with the unwrap flag on the C2 ComWrappers instance,
-                    // we will create a new wrapper. In this scenario, we'll only unwrap B2.
-                    object unwrapped = ComInterfaceDispatch.GetInstance<object>(comInterfaceDispatch);
-                    if (_ccwTable.TryGetValue(unwrapped, out ManagedObjectWrapperHolder? unwrappedWrapperInThisContext))
-                    {
-                        // The unwrapped object has a CCW in this context. Get the IUnknown for the externalComObject
-                        // so we can see if it's the CCW for the unwrapped object in this context.
-                        Guid iid = IID_IUnknown;
-                        int hr = Marshal.QueryInterface(externalComObject, ref iid, out IntPtr externalIUnknown);
-                        Debug.Assert(hr == 0); // An external COM object that came from a ComWrappers instance
-                                               // will always be well-formed.
-                        if (unwrappedWrapperInThisContext.ComIp == externalIUnknown)
-                        {
-                            Marshal.Release(externalIUnknown);
-                            retValue = unwrapped;
-                            return true;
-                        }
-                        Marshal.Release(externalIUnknown);
-                    }
-                }
-            }
+            using ComHolder releaseIdentity = new ComHolder(identity);
 
             if (!flags.HasFlag(CreateObjectFlags.UniqueInstance))
             {
-                using (LockHolder.Hold(_lock))
+                using (_lock.EnterScope())
                 {
-                    if (_rcwCache.TryGetValue(externalComObject, out GCHandle handle))
+                    if (_rcwCache.TryGetValue(identity, out GCHandle handle))
                     {
                         object? cachedWrapper = handle.Target;
                         if (cachedWrapper is not null)
@@ -754,29 +967,62 @@ namespace System.Runtime.InteropServices
                         {
                             // The GCHandle has been clear out but the NativeObjectWrapper
                             // finalizer has not yet run to remove the entry from _rcwCache
-                            _rcwCache.Remove(externalComObject);
+                            _rcwCache.Remove(identity);
                         }
                     }
 
                     if (wrapperMaybe is not null)
                     {
                         retValue = wrapperMaybe;
-                        NativeObjectWrapper wrapper = new NativeObjectWrapper(
-                            externalComObject,
+                        NativeObjectWrapper wrapper = NativeObjectWrapper.Create(
+                            identity,
+                            inner,
                             this,
-                            retValue);
+                            retValue,
+                            flags);
                         if (!s_rcwTable.TryAdd(retValue, wrapper))
                         {
                             wrapper.Release();
                             throw new NotSupportedException();
                         }
-                        _rcwCache.Add(externalComObject, wrapper._proxyHandle);
+                        _rcwCache.Add(identity, wrapper._proxyHandle);
+                        if (wrapper is ReferenceTrackerNativeObjectWrapper referenceTrackerNativeObjectWrapper)
+                        {
+                            s_referenceTrackerNativeObjectWrapperCache.Add(referenceTrackerNativeObjectWrapper._nativeObjectWrapperWeakHandle);
+                        }
                         return true;
+                    }
+                }
+                if (flags.HasFlag(CreateObjectFlags.Unwrap))
+                {
+                    ComInterfaceDispatch* comInterfaceDispatch = TryGetComInterfaceDispatch(identity);
+                    if (comInterfaceDispatch != null)
+                    {
+                        // If we found a managed object wrapper in this ComWrappers instance
+                        // and it's has the same identity pointer as the one we're creating a NativeObjectWrapper for,
+                        // unwrap it. We don't AddRef the wrapper as we don't take a reference to it.
+                        //
+                        // A managed object can have multiple managed object wrappers, with a max of one per context.
+                        // Let's say we have a managed object A and ComWrappers instances C1 and C2. Let B1 and B2 be the
+                        // managed object wrappers for A created with C1 and C2 respectively.
+                        // If we are asked to create an EOC for B1 with the unwrap flag on the C2 ComWrappers instance,
+                        // we will create a new wrapper. In this scenario, we'll only unwrap B2.
+                        object unwrapped = ComInterfaceDispatch.GetInstance<object>(comInterfaceDispatch);
+                        if (_ccwTable.TryGetValue(unwrapped, out ManagedObjectWrapperHolder? unwrappedWrapperInThisContext))
+                        {
+                            // The unwrapped object has a CCW in this context. Compare with identity
+                            // so we can see if it's the CCW for the unwrapped object in this context.
+                            if (unwrappedWrapperInThisContext.ComIp == identity)
+                            {
+                                retValue = unwrapped;
+                                return true;
+                            }
+                        }
                     }
                 }
             }
 
-            retValue = CreateObject(externalComObject, flags);
+            retValue = CreateObject(identity, flags);
             if (retValue == null)
             {
                 // If ComWrappers instance cannot create wrapper, we can do nothing here.
@@ -785,29 +1031,35 @@ namespace System.Runtime.InteropServices
 
             if (flags.HasFlag(CreateObjectFlags.UniqueInstance))
             {
-                NativeObjectWrapper wrapper = new NativeObjectWrapper(
-                    externalComObject,
+                NativeObjectWrapper wrapper = NativeObjectWrapper.Create(
+                    identity,
+                    inner,
                     null, // No need to cache NativeObjectWrapper for unique instances. They are not cached.
-                    retValue);
+                    retValue,
+                    flags);
                 if (!s_rcwTable.TryAdd(retValue, wrapper))
                 {
                     wrapper.Release();
                     throw new NotSupportedException();
                 }
+                if (wrapper is ReferenceTrackerNativeObjectWrapper referenceTrackerNativeObjectWrapper)
+                {
+                    s_referenceTrackerNativeObjectWrapperCache.Add(referenceTrackerNativeObjectWrapper._nativeObjectWrapperWeakHandle);
+                }
                 return true;
             }
 
-            using (LockHolder.Hold(_lock))
+            using (_lock.EnterScope())
             {
                 object? cachedWrapper = null;
-                if (_rcwCache.TryGetValue(externalComObject, out var existingHandle))
+                if (_rcwCache.TryGetValue(identity, out var existingHandle))
                 {
                     cachedWrapper = existingHandle.Target;
                     if (cachedWrapper is null)
                     {
                         // The GCHandle has been clear out but the NativeObjectWrapper
                         // finalizer has not yet run to remove the entry from _rcwCache
-                        _rcwCache.Remove(externalComObject);
+                        _rcwCache.Remove(identity);
                     }
                 }
 
@@ -817,16 +1069,22 @@ namespace System.Runtime.InteropServices
                 }
                 else
                 {
-                    NativeObjectWrapper wrapper = new NativeObjectWrapper(
-                        externalComObject,
+                    NativeObjectWrapper wrapper = NativeObjectWrapper.Create(
+                        identity,
+                        inner,
                         this,
-                        retValue);
+                        retValue,
+                        flags);
                     if (!s_rcwTable.TryAdd(retValue, wrapper))
                     {
                         wrapper.Release();
                         throw new NotSupportedException();
                     }
-                    _rcwCache.Add(externalComObject, wrapper._proxyHandle);
+                    _rcwCache.Add(identity, wrapper._proxyHandle);
+                    if (wrapper is ReferenceTrackerNativeObjectWrapper referenceTrackerNativeObjectWrapper)
+                    {
+                        s_referenceTrackerNativeObjectWrapperCache.Add(referenceTrackerNativeObjectWrapper._nativeObjectWrapperWeakHandle);
+                    }
                 }
             }
 
@@ -836,11 +1094,11 @@ namespace System.Runtime.InteropServices
 
         private void RemoveRCWFromCache(IntPtr comPointer, GCHandle expectedValue)
         {
-            using (LockHolder.Hold(_lock))
+            using (_lock.EnterScope())
             {
                 // TryGetOrCreateObjectForComInstanceInternal may have put a new entry into the cache
                 // in the time between the GC cleared the contents of the GC handle but before the
-                // NativeObjectWrapper finializer ran.
+                // NativeObjectWrapper finalizer ran.
                 if (_rcwCache.TryGetValue(comPointer, out GCHandle cachedValue) && expectedValue.Equals(cachedValue))
                 {
                     _rcwCache.Remove(comPointer);
@@ -939,7 +1197,92 @@ namespace System.Runtime.InteropServices
                 throw new NotSupportedException(SR.InvalidOperation_ComInteropRequireComWrapperInstance);
             }
 
-            return s_globalInstanceForMarshalling.GetOrCreateObjectForComInstance(externalComObject, CreateObjectFlags.Unwrap);
+            // TrackerObject support and unwrapping matches the built-in semantics that the global marshalling scenario mimics.
+            return s_globalInstanceForMarshalling.GetOrCreateObjectForComInstance(externalComObject, CreateObjectFlags.TrackerObject | CreateObjectFlags.Unwrap);
+        }
+
+        internal static IntPtr GetOrCreateTrackerTarget(IntPtr externalComObject)
+        {
+            if (s_globalInstanceForTrackerSupport == null)
+            {
+                throw new NotSupportedException(SR.InvalidOperation_ComInteropRequireComWrapperTrackerInstance);
+            }
+
+            object obj = s_globalInstanceForTrackerSupport.GetOrCreateObjectForComInstance(externalComObject, CreateObjectFlags.TrackerObject);
+            return s_globalInstanceForTrackerSupport.GetOrCreateComInterfaceForObject(obj, CreateComInterfaceFlags.TrackerSupport);
+        }
+
+        internal static void ReleaseExternalObjectsFromCurrentThread()
+        {
+            if (s_globalInstanceForTrackerSupport == null)
+            {
+                throw new NotSupportedException(SR.InvalidOperation_ComInteropRequireComWrapperTrackerInstance);
+            }
+
+            IntPtr contextToken = GetContextToken();
+
+            List<object> objects = new List<object>();
+            foreach (GCHandle weakNativeObjectWrapperHandle in s_referenceTrackerNativeObjectWrapperCache)
+            {
+                ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
+                if (nativeObjectWrapper != null &&
+                    nativeObjectWrapper._contextToken == contextToken)
+                {
+                    objects.Add(nativeObjectWrapper._proxyHandle.Target);
+
+                    // Separate the wrapper from the tracker runtime prior to
+                    // passing them.
+                    nativeObjectWrapper.DisconnectTracker();
+                }
+            }
+
+            s_globalInstanceForTrackerSupport.ReleaseObjects(objects);
+        }
+
+        // Used during GC callback
+        internal static unsafe void WalkExternalTrackerObjects()
+        {
+            bool walkFailed = false;
+
+            foreach (GCHandle weakNativeObjectWrapperHandle in s_referenceTrackerNativeObjectWrapperCache)
+            {
+                ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
+                if (nativeObjectWrapper != null &&
+                    nativeObjectWrapper.TrackerObject != IntPtr.Zero)
+                {
+                    FindReferenceTargetsCallback.s_currentRootObjectHandle = nativeObjectWrapper._proxyHandle;
+                    if (IReferenceTracker.FindTrackerTargets(nativeObjectWrapper.TrackerObject, TrackerObjectManager.s_findReferencesTargetCallback) != HResults.S_OK)
+                    {
+                        walkFailed = true;
+                        FindReferenceTargetsCallback.s_currentRootObjectHandle = default;
+                        break;
+                    }
+                    FindReferenceTargetsCallback.s_currentRootObjectHandle = default;
+                }
+            }
+
+            // Report whether walking failed or not.
+            if (walkFailed)
+            {
+                TrackerObjectManager.s_isGlobalPeggingOn = true;
+            }
+            IReferenceTrackerManager.FindTrackerTargetsCompleted(TrackerObjectManager.s_trackerManager, walkFailed);
+        }
+
+        // Used during GC callback
+        internal static void DetachNonPromotedObjects()
+        {
+            foreach (GCHandle weakNativeObjectWrapperHandle in s_referenceTrackerNativeObjectWrapperCache)
+            {
+                ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
+                if (nativeObjectWrapper != null &&
+                    nativeObjectWrapper.TrackerObject != IntPtr.Zero &&
+                    !RuntimeImports.RhIsPromoted(nativeObjectWrapper._proxyHandle.Target))
+                {
+                    // Notify the wrapper it was not promoted and is being collected.
+                    TrackerObjectManager.BeforeWrapperFinalized(nativeObjectWrapper.TrackerObject);
+                }
+            }
         }
 
         [UnmanagedCallersOnly]
@@ -1035,6 +1378,258 @@ namespace System.Runtime.InteropServices
             vftbl[5] = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.IReferenceTrackerTarget_Peg;
             vftbl[6] = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.IReferenceTrackerTarget_Unpeg;
             return (IntPtr)vftbl;
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe int IReferenceTrackerHost_DisconnectUnusedReferenceSources(IntPtr pThis, uint flags)
+        {
+            try
+            {
+                // Defined in windows.ui.xaml.hosting.referencetracker.h.
+                const uint XAML_REFERENCETRACKER_DISCONNECT_SUSPEND = 0x00000001;
+
+                if ((flags & XAML_REFERENCETRACKER_DISCONNECT_SUSPEND) != 0)
+                {
+                    RuntimeImports.RhCollect(2, InternalGCCollectionMode.Blocking | InternalGCCollectionMode.Optimized, true);
+                }
+                else
+                {
+                    GC.Collect();
+                }
+                return HResults.S_OK;
+            }
+            catch (Exception e)
+            {
+                return Marshal.GetHRForException(e);
+            }
+
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe int IReferenceTrackerHost_ReleaseDisconnectedReferenceSources(IntPtr pThis)
+        {
+            try
+            {
+                GC.WaitForPendingFinalizers();
+                return HResults.S_OK;
+            }
+            catch (Exception e)
+            {
+                return Marshal.GetHRForException(e);
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe int IReferenceTrackerHost_NotifyEndOfReferenceTrackingOnThread(IntPtr pThis)
+        {
+            try
+            {
+                ReleaseExternalObjectsFromCurrentThread();
+                return HResults.S_OK;
+            }
+            catch (Exception e)
+            {
+                return Marshal.GetHRForException(e);
+            }
+
+        }
+
+        // Creates a proxy object (managed object wrapper) that points to the given IUnknown.
+        // The proxy represents the following:
+        //   1. Has a managed reference pointing to the external object
+        //      and therefore forms a cycle that can be resolved by GC.
+        //   2. Forwards data binding requests.
+        //
+        // For example:
+        // NoCW = Native Object Com Wrapper also known as RCW
+        //
+        // Grid <---- NoCW             Grid <-------- NoCW
+        // | ^                         |              ^
+        // | |             Becomes     |              |
+        // v |                         v              |
+        // Rectangle                  Rectangle ----->Proxy
+        //
+        // Arguments
+        //   obj        - An IUnknown* where a NoCW points to (Grid, in this case)
+        //                    Notes:
+        //                    1. We can either create a new NoCW or get back an old one from the cache.
+        //                    2. This obj could be a regular tracker runtime object for data binding.
+        //  ppNewReference  - The IReferenceTrackerTarget* for the proxy created
+        //                    The tracker runtime will call IReferenceTrackerTarget to establish a reference.
+        //
+        [UnmanagedCallersOnly]
+        internal static unsafe int IReferenceTrackerHost_GetTrackerTarget(IntPtr pThis, IntPtr punk, IntPtr* ppNewReference)
+        {
+            if (punk == IntPtr.Zero)
+            {
+                return HResults.E_INVALIDARG;
+            }
+
+            if (Marshal.QueryInterface(punk, IID_IUnknown, out IntPtr ppv) != HResults.S_OK)
+            {
+                return HResults.COR_E_INVALIDCAST;
+            }
+
+            try
+            {
+                using ComHolder identity = new ComHolder(ppv);
+                using ComHolder trackerTarget = new ComHolder(GetOrCreateTrackerTarget(identity.Ptr));
+                return Marshal.QueryInterface(trackerTarget.Ptr, IID_IReferenceTrackerTarget, out *ppNewReference);
+            }
+            catch (Exception e)
+            {
+                return Marshal.GetHRForException(e);
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe int IReferenceTrackerHost_AddMemoryPressure(IntPtr pThis, long bytesAllocated)
+        {
+            try
+            {
+                GC.AddMemoryPressure(bytesAllocated);
+                return HResults.S_OK;
+            }
+            catch (Exception e)
+            {
+                return Marshal.GetHRForException(e);
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe int IReferenceTrackerHost_RemoveMemoryPressure(IntPtr pThis, long bytesAllocated)
+        {
+            try
+            {
+                GC.RemoveMemoryPressure(bytesAllocated);
+                return HResults.S_OK;
+            }
+            catch (Exception e)
+            {
+                return Marshal.GetHRForException(e);
+            }
+        }
+
+        // Lifetime maintained by stack - we don't care about ref counts
+        [UnmanagedCallersOnly]
+        internal static unsafe uint Untracked_AddRef(IntPtr pThis)
+        {
+            return 1;
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe uint Untracked_Release(IntPtr pThis)
+        {
+            return 1;
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe int IReferenceTrackerHost_QueryInterface(IntPtr pThis, Guid* guid, IntPtr* ppObject)
+        {
+            if (*guid == IID_IReferenceTrackerHost || *guid == IID_IUnknown)
+            {
+                *ppObject = pThis;
+                return 0;
+            }
+            else
+            {
+                return HResults.COR_E_INVALIDCAST;
+            }
+        }
+
+        internal static unsafe IntPtr CreateDefaultIReferenceTrackerHostVftbl()
+        {
+            IntPtr* vftbl = (IntPtr*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ComWrappers), 9 * sizeof(IntPtr));
+            vftbl[0] = (IntPtr)(delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>)&ComWrappers.IReferenceTrackerHost_QueryInterface;
+            vftbl[1] = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.Untracked_AddRef;
+            vftbl[2] = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.Untracked_Release;
+            vftbl[3] = (IntPtr)(delegate* unmanaged<IntPtr, uint, int>)&ComWrappers.IReferenceTrackerHost_DisconnectUnusedReferenceSources;
+            vftbl[4] = (IntPtr)(delegate* unmanaged<IntPtr, int>)&ComWrappers.IReferenceTrackerHost_ReleaseDisconnectedReferenceSources;
+            vftbl[5] = (IntPtr)(delegate* unmanaged<IntPtr, int>)&ComWrappers.IReferenceTrackerHost_NotifyEndOfReferenceTrackingOnThread;
+            vftbl[6] = (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr*, int>)&ComWrappers.IReferenceTrackerHost_GetTrackerTarget;
+            vftbl[7] = (IntPtr)(delegate* unmanaged<IntPtr, long, int>)&ComWrappers.IReferenceTrackerHost_AddMemoryPressure;
+            vftbl[8] = (IntPtr)(delegate* unmanaged<IntPtr, long, int>)&ComWrappers.IReferenceTrackerHost_RemoveMemoryPressure;
+            return (IntPtr)vftbl;
+        }
+
+        private static IntPtr GetContextToken()
+        {
+#if TARGET_WINDOWS
+            Interop.Ole32.CoGetContextToken(out IntPtr contextToken);
+            return contextToken;
+#else
+            return IntPtr.Zero;
+#endif
+        }
+
+        // Wrapper for IWeakReference
+        private static unsafe class IWeakReference
+        {
+            public static int Resolve(IntPtr pThis, Guid guid, out IntPtr inspectable)
+            {
+                fixed (IntPtr* inspectablePtr = &inspectable)
+                    return (*(delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>**)pThis)[3](pThis, &guid, inspectablePtr);
+            }
+        }
+
+        // Wrapper for IWeakReferenceSource
+        private static unsafe class IWeakReferenceSource
+        {
+            public static int GetWeakReference(IntPtr pThis, out IntPtr weakReference)
+            {
+                fixed (IntPtr* weakReferencePtr = &weakReference)
+                    return (*(delegate* unmanaged<IntPtr, IntPtr*, int>**)pThis)[3](pThis, weakReferencePtr);
+            }
+        }
+
+        private static object? ComWeakRefToObject(IntPtr pComWeakRef, long wrapperId)
+        {
+            if (wrapperId == 0)
+            {
+                return null;
+            }
+
+            // Using the IWeakReference*, get ahold of the target native COM object's IInspectable*.  If this resolve fails or
+            // returns null, then we assume that the underlying native COM object is no longer alive, and thus we cannot create a
+            // new RCW for it.
+            if (IWeakReference.Resolve(pComWeakRef, IID_IInspectable, out IntPtr targetPtr) == HResults.S_OK &&
+                targetPtr != IntPtr.Zero)
+            {
+                using ComHolder target = new ComHolder(targetPtr);
+                if (Marshal.QueryInterface(target.Ptr, IID_IUnknown, out IntPtr targetIdentityPtr) == HResults.S_OK)
+                {
+                    using ComHolder targetIdentity = new ComHolder(targetIdentityPtr);
+                    return GetOrCreateObjectFromWrapper(wrapperId, targetIdentity.Ptr);
+                }
+            }
+
+            return null;
+        }
+
+        private static unsafe bool PossiblyComObject(object target)
+        {
+            // If the RCW is an aggregated RCW, then the managed object cannot be recreated from the IUnknown
+            // as the outer IUnknown wraps the managed object. In this case, don't create a weak reference backed
+            // by a COM weak reference.
+            return s_rcwTable.TryGetValue(target, out NativeObjectWrapper? wrapper) && !wrapper._aggregatedManagedObjectWrapper;
+        }
+
+        private static unsafe IntPtr ObjectToComWeakRef(object target, out long wrapperId)
+        {
+            if (TryGetComInstanceForIID(
+                target,
+                IID_IWeakReferenceSource,
+                out IntPtr weakReferenceSourcePtr,
+                out wrapperId))
+            {
+                using ComHolder weakReferenceSource = new ComHolder(weakReferenceSourcePtr);
+                if (IWeakReferenceSource.GetWeakReference(weakReferenceSource.Ptr, out IntPtr weakReference) == HResults.S_OK)
+                {
+                    return weakReference;
+                }
+            }
+
+            return IntPtr.Zero;
         }
     }
 }

@@ -11,10 +11,9 @@ namespace Test
     public class App
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             "hello".CompareTo(null);
-            return 100;
         }
     }
 }

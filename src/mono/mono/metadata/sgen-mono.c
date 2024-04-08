@@ -98,7 +98,7 @@ ptr_on_stack (void *ptr)
 	} while (0)
 
 static void
-scan_object_for_binary_protocol_copy_wbarrier (gpointer dest, char *start, mword desc)
+scan_object_for_binary_protocol_copy_wbarrier (gpointer dest, char *start, SgenDescriptor desc)
 {
 #define SCAN_OBJECT_NOVTABLE
 #include "sgen/sgen-scan-object.h"
@@ -127,7 +127,7 @@ mono_gc_wbarrier_value_copy_internal (gpointer dest, gconstpointer src, int coun
 		for (i = 0; i < count; ++i) {
 			scan_object_for_binary_protocol_copy_wbarrier ((char*)dest + i * element_size,
 					(char*)src + i * element_size - MONO_ABI_SIZEOF (MonoObject),
-					(mword) m_class_get_gc_descr (klass));
+					m_class_get_gc_descr (klass));
 		}
 	}
 #endif
@@ -157,7 +157,7 @@ mono_gc_wbarrier_object_copy_internal (MonoObject* obj, MonoObject *src)
 
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL
 	if (sgen_binary_protocol_is_heavy_enabled ())
-		scan_object_for_binary_protocol_copy_wbarrier (obj, (char*)src, (mword) src->vtable->gc_descr);
+		scan_object_for_binary_protocol_copy_wbarrier (obj, (char*)src, src->vtable->gc_descr);
 #endif
 
 	sgen_get_remset ()->wbarrier_object_copy (obj, src);
@@ -232,7 +232,7 @@ sgen_has_critical_method (void)
 gboolean
 mono_gc_is_critical_method (MonoMethod *method)
 {
-#if defined(HOST_WASM) || defined(HOST_WASI)
+#if defined (DISABLE_THREADS) && (defined(HOST_WASM) || defined(HOST_WASI))
 	//methods can't be critical under wasm due to the single thread'ness of it
 	return FALSE;
 #else
@@ -982,7 +982,7 @@ sgen_client_cardtable_scan_object (GCObject *obj, guint8 *cards, ScanCopyContext
 		size_t card_count;
 		size_t extra_idx = 0;
 
-		mword desc = (mword)m_class_get_gc_descr (m_class_get_element_class (klass));
+		SgenDescriptor desc = m_class_get_gc_descr (m_class_get_element_class (klass));
 		int elem_size = mono_array_element_size (klass);
 
 #ifdef SGEN_OBJECT_LAYOUT_STATISTICS
@@ -1297,7 +1297,7 @@ two_args_report_root (void *address, MonoObject *obj, void *gc_data)
 }
 
 static void
-precisely_report_roots_from (GCRootReport *report, void** start_root, void** end_root, mword desc)
+precisely_report_roots_from (GCRootReport *report, void** start_root, void** end_root, SgenDescriptor desc)
 {
 	switch (desc & ROOT_DESC_TYPE_MASK) {
 	case ROOT_DESC_BITMAP:
@@ -1850,7 +1850,7 @@ static void
 collect_references (HeapWalkInfo *hwi, GCObject *obj, size_t size)
 {
 	char *start = (char*)obj;
-	mword desc = sgen_obj_get_descriptor (obj);
+	SgenDescriptor desc = sgen_obj_get_descriptor (obj);
 
 #include "sgen/sgen-scan-object.h"
 }
@@ -2893,11 +2893,11 @@ sgen_client_binary_protocol_collection_end (int minor_gc_count, int generation, 
 	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_END, generation, generation == GENERATION_OLD && sgen_concurrent_collection_in_progress));
 }
 
-#ifdef HOST_WASM
+#if defined(HOST_WASM) && defined(DISABLE_THREADS)
 void
 sgen_client_schedule_background_job (void (*cb)(void))
 {
-	mono_threads_schedule_background_job (cb);
+	mono_main_thread_schedule_background_job (cb);
 }
 
 #endif

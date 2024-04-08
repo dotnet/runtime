@@ -151,11 +151,12 @@ enum
 
     // Flags (combinable)
     // These numeric values are not defined by POSIX and vary across targets.
-    PAL_O_CLOEXEC = 0x0010, // Close-on-exec
-    PAL_O_CREAT = 0x0020,   // Create file if it doesn't already exist
-    PAL_O_EXCL = 0x0040,    // When combined with CREAT, fails if file already exists
-    PAL_O_TRUNC = 0x0080,   // Truncate file to length 0 if it already exists
-    PAL_O_SYNC = 0x0100,    // Block writes call will block until physically written
+    PAL_O_CLOEXEC = 0x0010,  // Close-on-exec
+    PAL_O_CREAT = 0x0020,    // Create file if it doesn't already exist
+    PAL_O_EXCL = 0x0040,     // When combined with CREAT, fails if file already exists
+    PAL_O_TRUNC = 0x0080,    // Truncate file to length 0 if it already exists
+    PAL_O_SYNC = 0x0100,     // Block writes call will block until physically written
+    PAL_O_NOFOLLOW = 0x0200, // Fails to open the target if it's a symlink, parent symlinks are allowed
 };
 
 /**
@@ -598,6 +599,13 @@ PALEXPORT void* SystemNative_MMap(void* address,
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
 PALEXPORT int32_t SystemNative_MUnmap(void* address, uint64_t length);
+
+/**
+ * Change the access protections for the specified memory pages.
+ *
+ * Returns 0 for success, -1 for failure. Sets errno on failure.
+ */
+PALEXPORT int32_t SystemNative_MProtect(void* address, uint64_t length, int32_t protection);
 
 /**
  * Give advice about use of memory. Implemented as shim to madvise(2).

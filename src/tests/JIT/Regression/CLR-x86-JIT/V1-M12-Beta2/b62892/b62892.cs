@@ -19,10 +19,9 @@ namespace Test
     public class BB
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             AA.Static1();
-            return 100;
         }
     }
 

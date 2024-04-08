@@ -7,15 +7,15 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.IO;
 using System.Reflection;
 using System.Text;
-using System.IO;
 using System.Xml.XPath;
 using System.Xml.Xsl.Qil;
 using ContextInfo = System.Xml.Xsl.Xslt.XsltInput.ContextInfo;
 using F = System.Xml.Xsl.Xslt.AstFactory;
-using TypeFactory = System.Xml.Xsl.XmlQueryTypeFactory;
 using QName = System.Xml.Xsl.Xslt.XsltInput.DelayedQName;
+using TypeFactory = System.Xml.Xsl.XmlQueryTypeFactory;
 using XsltAttribute = System.Xml.Xsl.Xslt.XsltInput.XsltAttribute;
 
 namespace System.Xml.Xsl.Xslt
@@ -71,7 +71,7 @@ namespace System.Xml.Xsl.Xslt
                     // for reads beyond the initial stylesheet read) will use a throwing resolver as its
                     // default, as shown at the very top of this method.
 
-                    origResolver ??= new XmlUrlResolver();
+                    origResolver ??= XmlReaderSettings.GetDefaultPermissiveResolver();
                     Uri resolvedUri = origResolver.ResolveUri(null, uri);
                     if (resolvedUri == null)
                     {

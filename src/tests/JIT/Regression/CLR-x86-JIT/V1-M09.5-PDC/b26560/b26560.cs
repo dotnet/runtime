@@ -10,7 +10,7 @@ namespace DefaultNamespace
     public class BB
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             int i = 10;
             bool f = false;
@@ -20,7 +20,6 @@ namespace DefaultNamespace
                 while (i > 39)
                     while (f)
                         GC.Collect();
-            return 100;
         }
     }
 }

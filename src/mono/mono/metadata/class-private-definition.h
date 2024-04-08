@@ -66,12 +66,7 @@ struct _MonoClass {
 	guint has_ref_fields  : 1; /* it has byref fields */
 	guint has_static_refs : 1; /* it has static fields that are GC-tracked */
 	guint no_special_static_fields : 1; /* has no thread/context static fields */
-	/* directly or indirectly derives from ComImport attributed class.
-	 * this means we need to create a proxy for instances of this class
-	 * for COM Interop. set this flag on loading so all we need is a quick check
-	 * during object creation rather than having to traverse supertypes
-	 */
-	guint is_com_object : 1;
+
 	guint nested_classes_inited : 1; /* Whenever nested_class is initialized */
 
 	/* next byte*/
@@ -83,6 +78,7 @@ struct _MonoClass {
 	guint has_weak_fields : 1; /* class has weak reference fields */
 	guint has_dim_conflicts : 1; /* Class has conflicting default interface methods */
 	guint any_field_has_auto_layout : 1; /* a field in this type's layout uses auto-layout */
+	guint has_deferred_failure : 1;
 
 	MonoClass  *parent;
 	MonoClass  *nested_in;

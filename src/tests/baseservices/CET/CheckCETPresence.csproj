@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <RequiresCodeFlowEnforcement>true</RequiresCodeFlowEnforcement>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x64' or '$(TargetOS)' != 'windows'">true</CLRTestTargetUnsupported>

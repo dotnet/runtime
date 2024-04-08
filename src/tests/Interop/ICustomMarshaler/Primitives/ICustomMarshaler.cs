@@ -8,6 +8,7 @@ using static TestLibrary.Utilities;
 
 namespace System.Runtime.InteropServices.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public class ICustomMarshalerTests
     {
         // To avoid having to create a native test library to reference in tests that
@@ -686,7 +687,8 @@ namespace System.Runtime.InteropServices.Tests
         {
             Assert.Throws<MarshalDirectiveException>(() => CustomMarshallerWithDelegateRef(84664, (ref int x) => x.ToString()));
         }
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

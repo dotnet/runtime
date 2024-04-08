@@ -1,8 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Runtime\Serialization\CollectionDataContractAttribute.cs" />
     <Compile Include="System\Runtime\Serialization\ContractNamespaceAttribute.cs" />
@@ -17,7 +20,9 @@
     <Compile Include="System.Runtime.Serialization.Primitives.TypeForwards.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Runtime" />
   </ItemGroup>
+
 </Project>

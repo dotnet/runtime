@@ -1,8 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <RestorePackages>true</RestorePackages>
-  </PropertyGroup>
-  <PropertyGroup>
     <Optimize>true</Optimize>
     <DebugType>None</DebugType>
   </PropertyGroup>

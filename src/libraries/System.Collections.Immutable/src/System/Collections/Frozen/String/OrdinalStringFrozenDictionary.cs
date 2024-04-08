@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -17,8 +18,8 @@ namespace System.Collections.Frozen
         private readonly int _maximumLengthDiff;
 
         internal OrdinalStringFrozenDictionary(
-            Dictionary<string, TValue> source,
             string[] keys,
+            TValue[] values,
             IEqualityComparer<string> comparer,
             int minimumLength,
             int maximumLengthDiff,
@@ -26,34 +27,44 @@ namespace System.Collections.Frozen
             int hashCount = -1) :
             base(comparer)
         {
-            Debug.Assert(source.Count != 0);
+            Debug.Assert(keys.Length != 0 && keys.Length == values.Length);
             Debug.Assert(comparer == EqualityComparer<string>.Default || comparer == StringComparer.Ordinal || comparer == StringComparer.OrdinalIgnoreCase);
 
-            var entries = new KeyValuePair<string, TValue>[source.Count];
-            ((ICollection<KeyValuePair<string, TValue>>)source).CopyTo(entries, 0);
+            // we need an extra copy, as the order of items will change
+            _keys = new string[keys.Length];
+            _values = new TValue[values.Length];
 
-            _keys = keys;
-            _values = new TValue[entries.Length];
             _minimumLength = minimumLength;
             _maximumLengthDiff = maximumLengthDiff;
 
             HashIndex = hashIndex;
             HashCount = hashCount;
 
-            _hashTable = FrozenHashTable.Create(
-                entries.Length,
-                index => GetHashCode(entries[index].Key),
-                (destIndex, srcIndex) =>
-                {
-                    _keys[destIndex] = entries[srcIndex].Key;
-                    _values[destIndex] = entries[srcIndex].Value;
-                });
+            int[] arrayPoolHashCodes = ArrayPool<int>.Shared.Rent(keys.Length);
+            Span<int> hashCodes = arrayPoolHashCodes.AsSpan(0, keys.Length);
+            for (int i = 0; i < keys.Length; i++)
+            {
+                hashCodes[i] = GetHashCode(keys[i]);
+            }
+
+            _hashTable = FrozenHashTable.Create(hashCodes);
+
+            for (int srcIndex = 0; srcIndex < hashCodes.Length; srcIndex++)
+            {
+                int destIndex = hashCodes[srcIndex];
+
+                _keys[destIndex] = keys[srcIndex];
+                _values[destIndex] = values[srcIndex];
+            }
+
+            ArrayPool<int>.Shared.Return(arrayPoolHashCodes);
         }
 
         private protected int HashIndex { get; }
         private protected int HashCount { get; }
         private protected abstract bool Equals(string? x, string? y);
         private protected abstract int GetHashCode(string s);
+        private protected virtual bool CheckLengthQuick(string key) => true;
         private protected override string[] KeysCore => _keys;
         private protected override TValue[] ValuesCore => _values;
         private protected override Enumerator GetEnumeratorCore() => new Enumerator(_keys, _values);
@@ -64,20 +75,23 @@ namespace System.Collections.Frozen
         {
             if ((uint)(key.Length - _minimumLength) <= (uint)_maximumLengthDiff)
             {
-                int hashCode = GetHashCode(key);
-                _hashTable.FindMatchingEntries(hashCode, out int index, out int endIndex);
-
-                while (index <= endIndex)
+                if (CheckLengthQuick(key))
                 {
-                    if (hashCode == _hashTable.HashCodes[index])
-                    {
-                        if (Equals(key, _keys[index]))
-                        {
-                            return ref _values[index];
-                        }
-                    }
+                    int hashCode = GetHashCode(key);
+                    _hashTable.FindMatchingEntries(hashCode, out int index, out int endIndex);
 
-                    index++;
+                    while (index <= endIndex)
+                    {
+                        if (hashCode == _hashTable.HashCodes[index])
+                        {
+                            if (Equals(key, _keys[index]))
+                            {
+                                return ref _values[index];
+                            }
+                        }
+
+                        index++;
+                    }
                 }
             }
 

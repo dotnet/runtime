@@ -4,6 +4,10 @@
       <Type Name="System.Collections.Generic.List`1" Dynamic="Required All" />
     </Assembly>
 
+    <Assembly Name="Xunit.Assert">
+      <Type Name="Xunit.Assert" Dynamic="Required All" />
+    </Assembly>
+
     <Assembly Name="System.Runtime">
       <Type Name="System.Decimal" Dynamic="Required All" />
       <Type Name="System.DateTimeOffset" Dynamic="Required All" />

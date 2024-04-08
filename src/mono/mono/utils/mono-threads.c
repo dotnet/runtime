@@ -281,6 +281,12 @@ mono_threads_end_global_suspend (void)
 static void
 dump_threads (void)
 {
+#ifdef HOST_BROWSER
+#ifndef DISABLE_THREADS
+	mono_wasm_dump_threads_async ();
+#endif
+#endif
+
 	MonoThreadInfo *cur = mono_thread_info_current ();
 
 	g_async_safe_printf ("STATE CUE CARD: (? means a positive number, usually 1 or 2, * means any number)\n");
@@ -515,7 +521,8 @@ register_thread (MonoThreadInfo *info)
 	/* for wasm, the stack can be placed at the start of the linear memory */
 #ifndef TARGET_WASM
 	g_assert (staddr);
-#endif
+#endif /* TARGET_WASM */
+
 	g_assert (stsize);
 	info->stack_start_limit = staddr;
 	info->stack_end = staddr + stsize;
@@ -557,7 +564,7 @@ register_thread (MonoThreadInfo *info)
 	mono_thread_info_suspend_unlock ();
 
 #ifdef HOST_BROWSER
-	mono_threads_wasm_on_thread_attached ();
+	mono_threads_wasm_on_thread_registered ();
 #endif
 
 	return TRUE;
@@ -640,6 +647,10 @@ unregister_thread (void *arg)
 	mono_threads_transition_detach (info);
 
 	mono_thread_info_suspend_unlock ();
+
+#ifdef HOST_BROWSER
+	mono_threads_wasm_on_thread_unregistered ();
+#endif
 
 	g_byte_array_free (info->stackdata, /*free_segment=*/TRUE);
 
@@ -1898,7 +1909,7 @@ mono_thread_info_uninstall_interrupt (gboolean *interrupted)
 	/* Common to uninstall interrupt handler around OS API's affecting last error. */
 	/* This method could call OS API's on some platforms that will reset last error so make sure to restore */
 	/* last error before exit. */
-	W32_DEFINE_LAST_ERROR_RESTORE_POINT;
+	MONO_DEFINE_LAST_ERROR_RESTORE_POINT;
 
 	g_assert (interrupted);
 	*interrupted = FALSE;
@@ -1921,7 +1932,7 @@ mono_thread_info_uninstall_interrupt (gboolean *interrupted)
 	THREADS_INTERRUPT_DEBUG ("interrupt uninstall  tid %p previous_token %p interrupted %s\n",
 		mono_thread_info_get_tid (info), previous_token, *interrupted ? "TRUE" : "FALSE");
 
-	W32_RESTORE_LAST_ERROR_FROM_RESTORE_POINT;
+	MONO_RESTORE_LAST_ERROR_FROM_RESTORE_POINT;
 }
 
 static MonoThreadInfoInterruptToken*

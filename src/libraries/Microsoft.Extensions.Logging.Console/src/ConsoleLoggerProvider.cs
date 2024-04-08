@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Logging.Console
     /// </summary>
     [UnsupportedOSPlatform("browser")]
     [ProviderAlias("Console")]
-    public class ConsoleLoggerProvider : ILoggerProvider, ISupportExternalScope
+    public partial class ConsoleLoggerProvider : ILoggerProvider, ISupportExternalScope
     {
         private readonly IOptionsMonitor<ConsoleLoggerOptions> _options;
         private readonly ConcurrentDictionary<string, ConsoleLogger> _loggers;
@@ -68,6 +68,13 @@ namespace Microsoft.Extensions.Logging.Console
         [UnsupportedOSPlatformGuard("windows")]
         private static bool DoesConsoleSupportAnsi()
         {
+            string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION");
+            if (envVar is not null && (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)))
+            {
+                // ANSI color support forcibly enabled via environment variable. This logic matches the behaviour
+                // found in System.ConsoleUtils.EmitAnsiColorCodes.
+                return true;
+            }
             if (
 #if NETFRAMEWORK
                 Environment.OSVersion.Platform != PlatformID.Win32NT

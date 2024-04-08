@@ -14,10 +14,10 @@ namespace Threading.Tests
         private static ulong[] s_threadIds = new ulong[NumThreads];
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             // The property to be tested is internal.
-            Type runtimeThreadType = typeof(object).Assembly.GetType("System.Threading.Thread");
+            Type runtimeThreadType = Type.GetType("System.Threading.Thread");
             Assert(runtimeThreadType != null);
             PropertyInfo osThreadIdProperty = runtimeThreadType.GetProperty("CurrentOSThreadId", BindingFlags.NonPublic | BindingFlags.Static);
             Assert(osThreadIdProperty != null);
@@ -60,8 +60,6 @@ namespace Threading.Tests
                     previousThreadId = s_threadIds[i];
                 }
             }
-
-            return 100;
         }
 
         private static ulong GetCurrentThreadId()

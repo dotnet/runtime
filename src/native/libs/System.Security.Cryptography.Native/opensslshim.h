@@ -17,6 +17,7 @@
 #include <openssl/dsa.h>
 #include <openssl/ec.h>
 #include <openssl/ecdsa.h>
+#include <openssl/engine.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
@@ -43,6 +44,8 @@
 
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
 #include <openssl/provider.h>
+#include <openssl/params.h>
+#include <openssl/core_names.h>
 #endif
 
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_1_RTM
@@ -54,6 +57,9 @@
 #if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
 
 // Remove problematic #defines
+#undef BN_abs_is_word
+#undef BN_is_odd
+#undef BN_is_one
 #undef BN_is_zero
 #undef SSL_get_state
 #undef SSL_is_init_finished
@@ -78,6 +84,14 @@ void ERR_put_error(int32_t lib, int32_t func, int32_t reason, const char* file, 
 // The value -1 has the correct meaning on 1.0.x, but the constant wasn't named.
 #ifndef RSA_PSS_SALTLEN_DIGEST
 #define RSA_PSS_SALTLEN_DIGEST -1
+#endif
+
+// ERR_R_UNSUPPORTED was introduced in OpenSSL 3. We need it for building with older OpenSSLs.
+// Add a static assert so we know if OpenSSL changes the value.
+#ifndef ERR_R_UNSUPPORTED
+#define ERR_R_UNSUPPORTED 0x8010C
+#else
+c_static_assert(ERR_R_UNSUPPORTED == 0x8010C);
 #endif
 
 #if defined FEATURE_DISTRO_AGNOSTIC_SSL || OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
@@ -153,6 +167,17 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
 #define EVP_CTRL_AEAD_SET_TAG 0x11
 #endif
 
+#if !HAVE_OPENSSL_SHA3
+#undef HAVE_OPENSSL_SHA3
+#define HAVE_OPENSSL_SHA3 1
+const EVP_MD *EVP_sha3_256(void);
+const EVP_MD *EVP_sha3_384(void);
+const EVP_MD *EVP_sha3_512(void);
+const EVP_MD *EVP_shake128(void);
+const EVP_MD *EVP_shake256(void);
+int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
+#endif
+
 #define API_EXISTS(fn) (fn != NULL)
 
 // List of all functions from the libssl that are used in the System.Security.Cryptography.Native.
@@ -188,15 +213,28 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     FALLBACK_FUNCTION(BIO_up_ref) \
     REQUIRED_FUNCTION(BIO_s_mem) \
     REQUIRED_FUNCTION(BIO_write) \
+    FALLBACK_FUNCTION(BN_abs_is_word) \
     REQUIRED_FUNCTION(BN_bin2bn) \
     REQUIRED_FUNCTION(BN_bn2bin) \
     REQUIRED_FUNCTION(BN_clear_free) \
+    REQUIRED_FUNCTION(BN_cmp) \
+    REQUIRED_FUNCTION(BN_div) \
     REQUIRED_FUNCTION(BN_dup) \
     REQUIRED_FUNCTION(BN_free) \
+    REQUIRED_FUNCTION(BN_gcd) \
+    FALLBACK_FUNCTION(BN_is_odd) \
+    FALLBACK_FUNCTION(BN_is_one) \
     FALLBACK_FUNCTION(BN_is_zero) \
+    REQUIRED_FUNCTION(BN_mod_inverse) \
+    REQUIRED_FUNCTION(BN_mod_mul) \
+    REQUIRED_FUNCTION(BN_mul) \
     REQUIRED_FUNCTION(BN_new) \
     REQUIRED_FUNCTION(BN_num_bits) \
     REQUIRED_FUNCTION(BN_set_word) \
+    REQUIRED_FUNCTION(BN_sub) \
+    REQUIRED_FUNCTION(BN_value_one) \
+    REQUIRED_FUNCTION(BN_CTX_new) \
+    REQUIRED_FUNCTION(BN_CTX_free) \
     LEGACY_FUNCTION(CRYPTO_add_lock) \
     REQUIRED_FUNCTION(CRYPTO_free) \
     REQUIRED_FUNCTION(CRYPTO_get_ex_new_index) \
@@ -270,6 +308,12 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(EC_POINT_mul) \
     REQUIRED_FUNCTION(EC_POINT_new) \
     REQUIRED_FUNCTION(EC_POINT_set_affine_coordinates_GFp) \
+    REQUIRED_FUNCTION(ENGINE_by_id) \
+    REQUIRED_FUNCTION(ENGINE_finish) \
+    REQUIRED_FUNCTION(ENGINE_free) \
+    REQUIRED_FUNCTION(ENGINE_init) \
+    REQUIRED_FUNCTION(ENGINE_load_public_key) \
+    REQUIRED_FUNCTION(ENGINE_load_private_key) \
     REQUIRED_FUNCTION(ERR_clear_error) \
     REQUIRED_FUNCTION(ERR_error_string_n) \
     REQUIRED_FUNCTION(ERR_get_error) \
@@ -278,8 +322,10 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(ERR_peek_error) \
     REQUIRED_FUNCTION(ERR_peek_error_line) \
     REQUIRED_FUNCTION(ERR_peek_last_error) \
+    REQUIRED_FUNCTION(ERR_pop_to_mark) \
     FALLBACK_FUNCTION(ERR_put_error) \
     REQUIRED_FUNCTION(ERR_reason_error_string) \
+    REQUIRED_FUNCTION(ERR_set_mark) \
     LIGHTUP_FUNCTION(ERR_set_debug) \
     LIGHTUP_FUNCTION(ERR_set_error) \
     REQUIRED_FUNCTION(EVP_aes_128_cbc) \
@@ -321,17 +367,30 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(EVP_des_ede3_cfb8) \
     REQUIRED_FUNCTION(EVP_des_ede3_cfb64) \
     REQUIRED_FUNCTION(EVP_DigestFinal_ex) \
+    LIGHTUP_FUNCTION(EVP_DigestFinalXOF) \
     REQUIRED_FUNCTION(EVP_DigestInit_ex) \
     REQUIRED_FUNCTION(EVP_DigestUpdate) \
     REQUIRED_FUNCTION(EVP_get_digestbyname) \
+    LIGHTUP_FUNCTION(EVP_MAC_fetch) \
+    LIGHTUP_FUNCTION(EVP_MAC_final) \
+    LIGHTUP_FUNCTION(EVP_MAC_free) \
+    LIGHTUP_FUNCTION(EVP_MAC_CTX_new) \
+    LIGHTUP_FUNCTION(EVP_MAC_CTX_free) \
+    LIGHTUP_FUNCTION(EVP_MAC_CTX_set_params) \
+    LIGHTUP_FUNCTION(EVP_MAC_CTX_dup) \
+    LIGHTUP_FUNCTION(EVP_MAC_init) \
+    LIGHTUP_FUNCTION(EVP_MAC_update) \
     REQUIRED_FUNCTION(EVP_md5) \
     REQUIRED_FUNCTION(EVP_MD_CTX_copy_ex) \
     RENAMED_FUNCTION(EVP_MD_CTX_free, EVP_MD_CTX_destroy) \
     RENAMED_FUNCTION(EVP_MD_CTX_new, EVP_MD_CTX_create) \
+    REQUIRED_FUNCTION(EVP_MD_CTX_set_flags) \
+    LIGHTUP_FUNCTION(EVP_MD_fetch) \
     RENAMED_FUNCTION(EVP_MD_get_size, EVP_MD_size) \
     REQUIRED_FUNCTION(EVP_PKCS82PKEY) \
     REQUIRED_FUNCTION(EVP_PKEY2PKCS8) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_ctrl) \
+    REQUIRED_FUNCTION(EVP_PKEY_CTX_ctrl_str) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_free) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_get0_pkey) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_new) \
@@ -374,6 +433,11 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(EVP_sha256) \
     REQUIRED_FUNCTION(EVP_sha384) \
     REQUIRED_FUNCTION(EVP_sha512) \
+    LIGHTUP_FUNCTION(EVP_sha3_256) \
+    LIGHTUP_FUNCTION(EVP_sha3_384) \
+    LIGHTUP_FUNCTION(EVP_sha3_512) \
+    LIGHTUP_FUNCTION(EVP_shake128) \
+    LIGHTUP_FUNCTION(EVP_shake256) \
     REQUIRED_FUNCTION(EXTENDED_KEY_USAGE_free) \
     REQUIRED_FUNCTION(GENERAL_NAMES_free) \
     REQUIRED_FUNCTION(HMAC) \
@@ -428,6 +492,9 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     RENAMED_FUNCTION(OPENSSL_sk_value, sk_value) \
     FALLBACK_FUNCTION(OpenSSL_version_num) \
     LIGHTUP_FUNCTION(OSSL_PROVIDER_try_load) \
+    LIGHTUP_FUNCTION(OSSL_PARAM_construct_octet_string) \
+    LIGHTUP_FUNCTION(OSSL_PARAM_construct_int32) \
+    LIGHTUP_FUNCTION(OSSL_PARAM_construct_end) \
     REQUIRED_FUNCTION(PKCS8_PRIV_KEY_INFO_free) \
     REQUIRED_FUNCTION(PEM_read_bio_PKCS7) \
     REQUIRED_FUNCTION(PEM_read_bio_X509) \
@@ -445,6 +512,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(RSA_free) \
     REQUIRED_FUNCTION(RSA_generate_key_ex) \
     REQUIRED_FUNCTION(RSA_get_method) \
+    FALLBACK_FUNCTION(RSA_get_multi_prime_extra_count) \
     FALLBACK_FUNCTION(RSA_get0_crt_params) \
     FALLBACK_FUNCTION(RSA_get0_factors) \
     FALLBACK_FUNCTION(RSA_get0_key) \
@@ -485,6 +553,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     LIGHTUP_FUNCTION(SSL_CTX_set_ciphersuites) \
     REQUIRED_FUNCTION(SSL_CTX_set_client_cert_cb) \
     REQUIRED_FUNCTION(SSL_CTX_set_ex_data) \
+    FALLBACK_FUNCTION(SSL_CTX_set_keylog_callback) \
     REQUIRED_FUNCTION(SSL_CTX_set_quiet_shutdown) \
     FALLBACK_FUNCTION(SSL_CTX_set_options) \
     FALLBACK_FUNCTION(SSL_CTX_set_security_level) \
@@ -670,15 +739,28 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define BIO_up_ref BIO_up_ref_ptr
 #define BIO_s_mem BIO_s_mem_ptr
 #define BIO_write BIO_write_ptr
+#define BN_abs_is_word BN_abs_is_word_ptr
 #define BN_bin2bn BN_bin2bn_ptr
 #define BN_bn2bin BN_bn2bin_ptr
 #define BN_clear_free BN_clear_free_ptr
+#define BN_cmp BN_cmp_ptr
+#define BN_div BN_div_ptr
 #define BN_dup BN_dup_ptr
 #define BN_free BN_free_ptr
+#define BN_gcd BN_gcd_ptr
+#define BN_is_odd BN_is_odd_ptr
+#define BN_is_one BN_is_one_ptr
 #define BN_is_zero BN_is_zero_ptr
+#define BN_mod_inverse BN_mod_inverse_ptr
+#define BN_mod_mul BN_mod_mul_ptr
+#define BN_mul BN_mul_ptr
 #define BN_new BN_new_ptr
 #define BN_num_bits BN_num_bits_ptr
 #define BN_set_word BN_set_word_ptr
+#define BN_sub BN_sub_ptr
+#define BN_value_one BN_value_one_ptr
+#define BN_CTX_free BN_CTX_free_ptr
+#define BN_CTX_new BN_CTX_new_ptr
 #define CRYPTO_add_lock CRYPTO_add_lock_ptr
 #define CRYPTO_free CRYPTO_free_ptr
 #define CRYPTO_get_ex_new_index CRYPTO_get_ex_new_index_ptr
@@ -752,6 +834,12 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EC_POINT_mul EC_POINT_mul_ptr
 #define EC_POINT_new EC_POINT_new_ptr
 #define EC_POINT_set_affine_coordinates_GFp EC_POINT_set_affine_coordinates_GFp_ptr
+#define ENGINE_by_id ENGINE_by_id_ptr
+#define ENGINE_finish ENGINE_finish_ptr
+#define ENGINE_free ENGINE_free_ptr
+#define ENGINE_init ENGINE_init_ptr
+#define ENGINE_load_public_key ENGINE_load_public_key_ptr
+#define ENGINE_load_private_key ENGINE_load_private_key_ptr
 #define ERR_clear_error ERR_clear_error_ptr
 #define ERR_error_string_n ERR_error_string_n_ptr
 #define ERR_get_error ERR_get_error_ptr
@@ -761,8 +849,10 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define ERR_peek_error_line ERR_peek_error_line_ptr
 #define ERR_peek_last_error ERR_peek_last_error_ptr
 #define ERR_put_error ERR_put_error_ptr
+#define ERR_pop_to_mark ERR_pop_to_mark_ptr
 #define ERR_reason_error_string ERR_reason_error_string_ptr
 #define ERR_set_debug ERR_set_debug_ptr
+#define ERR_set_mark ERR_set_mark_ptr
 #define ERR_set_error ERR_set_error_ptr
 #define EVP_aes_128_cbc EVP_aes_128_cbc_ptr
 #define EVP_aes_128_cfb8 EVP_aes_128_cfb8_ptr
@@ -803,17 +893,30 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_des_ede3_cfb64 EVP_des_ede3_cfb64_ptr
 #define EVP_des_ede3_cbc EVP_des_ede3_cbc_ptr
 #define EVP_DigestFinal_ex EVP_DigestFinal_ex_ptr
+#define EVP_DigestFinalXOF EVP_DigestFinalXOF_ptr
 #define EVP_DigestInit_ex EVP_DigestInit_ex_ptr
 #define EVP_DigestUpdate EVP_DigestUpdate_ptr
 #define EVP_get_digestbyname EVP_get_digestbyname_ptr
 #define EVP_md5 EVP_md5_ptr
+#define EVP_MAC_fetch EVP_MAC_fetch_ptr
+#define EVP_MAC_final EVP_MAC_final_ptr
+#define EVP_MAC_free EVP_MAC_free_ptr
+#define EVP_MAC_CTX_new EVP_MAC_CTX_new_ptr
+#define EVP_MAC_CTX_free EVP_MAC_CTX_free_ptr
+#define EVP_MAC_CTX_set_params EVP_MAC_CTX_set_params_ptr
+#define EVP_MAC_CTX_dup EVP_MAC_CTX_dup_ptr
+#define EVP_MAC_init EVP_MAC_init_ptr
+#define EVP_MAC_update EVP_MAC_update_ptr
 #define EVP_MD_CTX_copy_ex EVP_MD_CTX_copy_ex_ptr
 #define EVP_MD_CTX_free EVP_MD_CTX_free_ptr
 #define EVP_MD_CTX_new EVP_MD_CTX_new_ptr
+#define EVP_MD_CTX_set_flags EVP_MD_CTX_set_flags_ptr
+#define EVP_MD_fetch EVP_MD_fetch_ptr
 #define EVP_MD_get_size EVP_MD_get_size_ptr
 #define EVP_PKCS82PKEY EVP_PKCS82PKEY_ptr
 #define EVP_PKEY2PKCS8 EVP_PKEY2PKCS8_ptr
 #define EVP_PKEY_CTX_ctrl EVP_PKEY_CTX_ctrl_ptr
+#define EVP_PKEY_CTX_ctrl_str EVP_PKEY_CTX_ctrl_str_ptr
 #define EVP_PKEY_CTX_free EVP_PKEY_CTX_free_ptr
 #define EVP_PKEY_CTX_get0_pkey EVP_PKEY_CTX_get0_pkey_ptr
 #define EVP_PKEY_CTX_new EVP_PKEY_CTX_new_ptr
@@ -856,6 +959,11 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_sha256 EVP_sha256_ptr
 #define EVP_sha384 EVP_sha384_ptr
 #define EVP_sha512 EVP_sha512_ptr
+#define EVP_sha3_256 EVP_sha3_256_ptr
+#define EVP_sha3_384 EVP_sha3_384_ptr
+#define EVP_sha3_512 EVP_sha3_512_ptr
+#define EVP_shake128 EVP_shake128_ptr
+#define EVP_shake256 EVP_shake256_ptr
 #define EXTENDED_KEY_USAGE_free EXTENDED_KEY_USAGE_free_ptr
 #define GENERAL_NAMES_free GENERAL_NAMES_free_ptr
 #define HMAC HMAC_ptr
@@ -910,6 +1018,9 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define OPENSSL_sk_value OPENSSL_sk_value_ptr
 #define OpenSSL_version_num OpenSSL_version_num_ptr
 #define OSSL_PROVIDER_try_load OSSL_PROVIDER_try_load_ptr
+#define OSSL_PARAM_construct_octet_string OSSL_PARAM_construct_octet_string_ptr
+#define OSSL_PARAM_construct_int32 OSSL_PARAM_construct_int32_ptr
+#define OSSL_PARAM_construct_end OSSL_PARAM_construct_end_ptr
 #define PKCS8_PRIV_KEY_INFO_free PKCS8_PRIV_KEY_INFO_free_ptr
 #define PEM_read_bio_PKCS7 PEM_read_bio_PKCS7_ptr
 #define PEM_read_bio_X509 PEM_read_bio_X509_ptr
@@ -930,6 +1041,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define RSA_get0_factors RSA_get0_factors_ptr
 #define RSA_get0_key RSA_get0_key_ptr
 #define RSA_get_method RSA_get_method_ptr
+#define RSA_get_multi_prime_extra_count RSA_get_multi_prime_extra_count_ptr
 #define RSA_meth_get_flags RSA_meth_get_flags_ptr
 #define RSA_new RSA_new_ptr
 #define RSA_pkey_ctx_ctrl RSA_pkey_ctx_ctrl_ptr
@@ -969,6 +1081,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_CTX_set_client_cert_cb SSL_CTX_set_client_cert_cb_ptr
 #define SSL_CTX_set_ex_data SSL_CTX_set_ex_data_ptr
 #define SSL_CTX_set_options SSL_CTX_set_options_ptr
+#define SSL_CTX_set_keylog_callback SSL_CTX_set_keylog_callback_ptr
 #define SSL_CTX_set_quiet_shutdown SSL_CTX_set_quiet_shutdown_ptr
 #define SSL_CTX_set_security_level SSL_CTX_set_security_level_ptr
 #define SSL_CTX_set_session_id_context SSL_CTX_set_session_id_context_ptr
@@ -1188,6 +1301,9 @@ FOR_ALL_OPENSSL_FUNCTIONS
 
 // Alias "future" API to the local_ version.
 #define ASN1_TIME_to_tm local_ASN1_TIME_to_tm
+#define BN_abs_is_word local_BN_abs_is_word
+#define BN_is_odd local_BN_is_odd
+#define BN_is_one local_BN_is_one
 #define BN_is_zero local_BN_is_zero
 #define BIO_up_ref local_BIO_up_ref
 #define DSA_get0_key local_DSA_get0_key
@@ -1205,6 +1321,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define HMAC_CTX_free local_HMAC_CTX_free
 #define HMAC_CTX_new local_HMAC_CTX_new
 #define OpenSSL_version_num local_OpenSSL_version_num
+#define RSA_get_multi_prime_extra_count local_RSA_get_multi_prime_extra_count
 #define RSA_get0_crt_params local_RSA_get0_crt_params
 #define RSA_get0_factors local_RSA_get0_factors
 #define RSA_get0_key local_RSA_get0_key
@@ -1232,6 +1349,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define X509_get_X509_PUBKEY local_X509_get_X509_PUBKEY
 #define X509_get_version local_X509_get_version
 #define X509_up_ref local_X509_up_ref
+#define SSL_CTX_set_keylog_callback local_SSL_CTX_set_keylog_callback
 
 #if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_0_2_RTM
 

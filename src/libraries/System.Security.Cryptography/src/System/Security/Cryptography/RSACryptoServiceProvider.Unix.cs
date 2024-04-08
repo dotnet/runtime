@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Cryptography;
 using System.IO;
 using System.Runtime.Versioning;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -96,7 +96,7 @@ namespace System.Security.Cryptography
 
             return
                 padding == RSAEncryptionPadding.Pkcs1 ? Encrypt(data, fOAEP: false) :
-                padding == RSAEncryptionPadding.OaepSHA1 ?  Encrypt(data, fOAEP: true) : // For compat, this prevents OaepSHA2 options as fOAEP==true will cause Decrypt to use OaepSHA1
+                padding == RSAEncryptionPadding.OaepSHA1 ? Encrypt(data, fOAEP: true) : // For compat, this prevents OaepSHA2 options as fOAEP==true will cause Decrypt to use OaepSHA1
                 throw PaddingModeNotSupported();
         }
 
@@ -183,6 +183,8 @@ namespace System.Security.Cryptography
                 throw PaddingModeNotSupported();
             }
 
+            CheckSHA3HashAlgorithm(hashAlgorithm);
+
             return _impl.SignData(data, hashAlgorithm, padding);
         }
 
@@ -195,6 +197,8 @@ namespace System.Security.Cryptography
                 throw PaddingModeNotSupported();
             }
 
+            CheckSHA3HashAlgorithm(hashAlgorithm);
+
             return _impl.SignData(data, offset, count, hashAlgorithm, padding);
         }
 
@@ -206,6 +210,8 @@ namespace System.Security.Cryptography
             {
                 throw PaddingModeNotSupported();
             }
+
+            CheckSHA3HashAlgorithm(hashAlgorithm);
 
             return _impl.TrySignData(data, destination, hashAlgorithm, padding, out bytesWritten);
         }
@@ -228,6 +234,8 @@ namespace System.Security.Cryptography
                 throw PaddingModeNotSupported();
             }
 
+            CheckSHA3HashAlgorithm(hashAlgorithm);
+
             return _impl.SignHash(hash, hashAlgorithm, padding);
         }
 
@@ -239,6 +247,8 @@ namespace System.Security.Cryptography
             {
                 throw PaddingModeNotSupported();
             }
+
+            CheckSHA3HashAlgorithm(hashAlgorithm);
 
             return _impl.TrySignHash(hash, destination, hashAlgorithm, padding, out bytesWritten);
         }
@@ -268,6 +278,8 @@ namespace System.Security.Cryptography
                 throw PaddingModeNotSupported();
             }
 
+            CheckSHA3HashAlgorithm(hashAlgorithm);
+
             return _impl.VerifyData(data, offset, count, signature, hashAlgorithm, padding);
         }
 
@@ -279,6 +291,8 @@ namespace System.Security.Cryptography
             {
                 throw PaddingModeNotSupported();
             }
+
+            CheckSHA3HashAlgorithm(hashAlgorithm);
 
             return _impl.VerifyData(data, signature, hashAlgorithm, padding);
         }
@@ -299,6 +313,8 @@ namespace System.Security.Cryptography
             {
                 throw PaddingModeNotSupported();
             }
+
+            CheckSHA3HashAlgorithm(hashAlgorithm);
 
             return _impl.VerifyHash(hash, signature, hashAlgorithm, padding);
         }
@@ -344,6 +360,17 @@ namespace System.Security.Cryptography
             }
 
             return true;
+        }
+
+        private static void CheckSHA3HashAlgorithm(HashAlgorithmName hashAlgorithm)
+        {
+            if (hashAlgorithm == HashAlgorithmName.SHA3_256 ||
+                hashAlgorithm == HashAlgorithmName.SHA3_384 ||
+                hashAlgorithm == HashAlgorithmName.SHA3_512)
+            {
+                // Compat: Windows throws CryptographicException for SHA-3 HashAlgorithmName. So we will here, too.
+                throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
+            }
         }
     }
 }

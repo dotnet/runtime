@@ -5,15 +5,26 @@
 // This API need to be exposed to implement the COM source generator in one form or another.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Runtime.InteropServices.Marshalling
 {
     /// <summary>
     /// Base class for all COM source generated Runtime Callable Wrapper (RCWs).
     /// </summary>
-    public sealed unsafe class ComObject : IDynamicInterfaceCastable, IUnmanagedVirtualMethodTableProvider
+    public sealed unsafe class ComObject : IDynamicInterfaceCastable, IUnmanagedVirtualMethodTableProvider, ComImportInteropInterfaceDetailsStrategy.IComImportAdapter
     {
+        internal static bool BuiltInComSupported { get; } = AppContext.TryGetSwitch("System.Runtime.InteropServices.BuiltInComInterop.IsSupported", out bool supported) ? supported : true;
+        internal static bool ComImportInteropEnabled { get; } = AppContext.TryGetSwitch("System.Runtime.InteropServices.Marshalling.EnableGeneratedComInterfaceComImportInterop", out bool enabled) ? enabled : false;
+
         private readonly void* _instancePointer;
+
+        private readonly object? _runtimeCallableWrapper;
+
+        // This is an int so we can use the Interlocked APIs to update it.
+        private volatile int _released;
 
         /// <summary>
         /// Initialize ComObject instance.
@@ -28,8 +39,16 @@ namespace System.Runtime.InteropServices.Marshalling
             IUnknownStrategy = iunknownStrategy;
             CacheStrategy = cacheStrategy;
             _instancePointer = IUnknownStrategy.CreateInstancePointer(thisPointer);
+            if (OperatingSystem.IsWindows() && BuiltInComSupported && ComImportInteropEnabled)
+            {
+                _runtimeCallableWrapper = Marshal.GetObjectForIUnknown((nint)thisPointer);
+                Debug.Assert(Marshal.IsComObject(_runtimeCallableWrapper));
+            }
         }
 
+        /// <summary>
+        /// Release all references to the underlying COM object.
+        /// </summary>
         ~ComObject()
         {
             CacheStrategy.Clear(IUnknownStrategy);
@@ -54,16 +73,17 @@ namespace System.Runtime.InteropServices.Marshalling
         internal bool UniqueInstance { get; init; }
 
         /// <summary>
-        /// Releases all references owned by this ComObject if it is a unique instance.
+        /// Releases all references owned by this <see cref="ComObject" /> if it is a unique instance.
         /// </summary>
         /// <remarks>
-        /// This method does nothing if the ComObject was not created with
-        /// CreateObjectFlags.UniqueInstance.
+        /// This method does nothing if the <see cref="ComObject" /> was not created with
+        /// <see cref="CreateObjectFlags.UniqueInstance" />.
         /// </remarks>
         public void FinalRelease()
         {
-            if (UniqueInstance)
+            if (UniqueInstance && Interlocked.CompareExchange(ref _released, 1, 0) == 0)
             {
+                GC.SuppressFinalize(this);
                 CacheStrategy.Clear(IUnknownStrategy);
                 IUnknownStrategy.Release(_instancePointer);
             }
@@ -95,6 +115,8 @@ namespace System.Runtime.InteropServices.Marshalling
 
         private bool LookUpVTableInfo(RuntimeTypeHandle handle, out IIUnknownCacheStrategy.TableInfo result, out int qiHResult)
         {
+            ObjectDisposedException.ThrowIf(_released != 0, this);
+
             qiHResult = 0;
             if (!CacheStrategy.TryGetTableInfo(handle, out result))
             {
@@ -134,6 +156,12 @@ namespace System.Runtime.InteropServices.Marshalling
             }
 
             return new(result.ThisPtr, result.Table);
+        }
+
+        object ComImportInteropInterfaceDetailsStrategy.IComImportAdapter.GetRuntimeCallableWrapper()
+        {
+            Debug.Assert(_runtimeCallableWrapper != null);
+            return _runtimeCallableWrapper;
         }
     }
 }

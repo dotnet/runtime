@@ -4,11 +4,11 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
 using System.Xml;
 using System.Xml.Linq;
-using System.Runtime.Versioning;
-using System.Diagnostics;
 
 namespace System.Xml.Schema
 {
@@ -22,7 +22,7 @@ namespace System.Xml.Schema
         private XmlNamespaceManager? namespaceManager;
         private XmlSchemaValidator? validator;
 
-        private Dictionary<XmlSchemaInfo, XmlSchemaInfo>? schemaInfos;
+        private HashSet<XmlSchemaInfo>? schemaInfos;
         private ArrayList? defaultAttributes;
         private readonly XName xsiTypeName;
         private readonly XName xsiNilName;
@@ -153,20 +153,17 @@ namespace System.Xml.Schema
 
         private void ReplaceSchemaInfo(XObject o, XmlSchemaInfo schemaInfo)
         {
-            schemaInfos ??= new Dictionary<XmlSchemaInfo, XmlSchemaInfo>(new XmlSchemaInfoEqualityComparer());
+            schemaInfos ??= new HashSet<XmlSchemaInfo>(new XmlSchemaInfoEqualityComparer());
             XmlSchemaInfo? si = o.Annotation<XmlSchemaInfo>();
             if (si != null)
             {
-                if (!schemaInfos.ContainsKey(si))
-                {
-                    schemaInfos.Add(si, si);
-                }
+                schemaInfos.Add(si);
                 o.RemoveAnnotations<XmlSchemaInfo>();
             }
             if (!schemaInfos.TryGetValue(schemaInfo, out si))
             {
                 si = schemaInfo;
-                schemaInfos.Add(si, si);
+                schemaInfos.Add(si);
             }
             o.AddAnnotation(si);
         }

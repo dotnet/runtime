@@ -18,7 +18,7 @@ namespace System.IO.Compression
     {
         private ZipArchive _archive;
         private readonly bool _originallyInArchive;
-        private readonly int _diskNumberStart;
+        private readonly uint _diskNumberStart;
         private readonly ZipVersionMadeByPlatform _versionMadeByPlatform;
         private ZipVersionNeededValues _versionMadeBySpecification;
         internal ZipVersionNeededValues _versionToExtract;
@@ -1309,8 +1309,20 @@ namespace System.IO.Compression
         }
 
         [Flags]
-        internal enum BitFlagValues : ushort { IsEncrypted = 0x1, DataDescriptor = 0x8, UnicodeFileNameAndComment = 0x800 }
+        internal enum BitFlagValues : ushort
+        {
+            IsEncrypted = 0x1,
+            DataDescriptor = 0x8,
+            UnicodeFileNameAndComment = 0x800
+        }
 
-        internal enum CompressionMethodValues : ushort { Stored = 0x0, Deflate = 0x8, Deflate64 = 0x9, BZip2 = 0xC, LZMA = 0xE }
+        internal enum CompressionMethodValues : ushort
+        {
+            Stored = 0x0,
+            Deflate = 0x8,
+            Deflate64 = 0x9,
+            BZip2 = 0xC,
+            LZMA = 0xE
+        }
     }
 }

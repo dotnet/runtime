@@ -17,7 +17,6 @@ using Xunit;
 
 namespace LibraryImportGenerator.UnitTests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
     public class ShapeBreakingDiagnosticSuppressorTests
     {
         [Fact]

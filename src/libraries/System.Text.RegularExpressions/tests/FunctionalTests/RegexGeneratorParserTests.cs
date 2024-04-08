@@ -713,17 +713,17 @@ namespace System.Text.RegularExpressions.Tests
                 string[] typeModifiers = type switch
                 {
                     "class" => new[] { "", "public", "public sealed", "internal abstract", "internal static" },
-                    _ => new[] { "", "public", "internal" }
+                    _ => ["", "public", "internal"]
                 };
 
                 foreach (string typeModifier in typeModifiers)
                 {
-                    foreach (bool instance in typeModifier.Contains("static") ? new[] { false } : new[] { false, true })
+                    foreach (bool instance in typeModifier.Contains("static") ? new[] { false } : [false, true])
                     {
                         string[] methodVisibilities = type switch
                         {
                             "class" when !typeModifier.Contains("sealed") && !typeModifier.Contains("static") => new[] { "public", "internal", "private protected", "protected internal", "private" },
-                            _ => new[] { "public", "internal", "private" }
+                            _ => ["public", "internal", "private"]
                         };
 
                         foreach (string methodVisibility in methodVisibilities)

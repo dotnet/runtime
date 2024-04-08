@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,11 +33,11 @@ namespace Wasm.Build.NativeRebuild.Tests
         {
             buildArgs = buildArgs with { ProjectName = $"rebuild_flags_{buildArgs.Config}" };
             (buildArgs, BuildPaths paths) = FirstNativeBuild(s_mainReturns42, nativeRelink: true, invariant: false, buildArgs, id);
-            var pathsDict = GetFilesTable(buildArgs, paths, unchanged: true);
+            var pathsDict = _provider.GetFilesTable(buildArgs, paths, unchanged: true);
             if (extraLDFlags.Length > 0)
                 pathsDict.UpdateTo(unchanged: false, "dotnet.native.wasm", "dotnet.native.js");
 
-            var originalStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            var originalStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
             // Rebuild
 
@@ -46,15 +45,15 @@ namespace Wasm.Build.NativeRebuild.Tests
             string extraBuildArgs = $" {extraCFlags} {extraLDFlags}";
             string output = Rebuild(nativeRelink: true, invariant: false, buildArgs, id, extraBuildArgs: extraBuildArgs, verbosity: "normal");
 
-            var newStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
-            CompareStat(originalStat, newStat, pathsDict.Values);
+            var newStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            _provider.CompareStat(originalStat, newStat, pathsDict.Values);
 
             // cflags: pinvoke get's compiled, but doesn't overwrite pinvoke.o
             // and thus doesn't cause relinking
-            AssertSubstring("pinvoke.c -> pinvoke.o", output, contains: extraCFlags.Length > 0);
+            TestUtils.AssertSubstring("pinvoke.c -> pinvoke.o", output, contains: extraCFlags.Length > 0);
 
             // ldflags: link step args change, so it should trigger relink
-            AssertSubstring("Linking with emcc", output, contains: extraLDFlags.Length > 0);
+            TestUtils.AssertSubstring("Linking with emcc", output, contains: extraLDFlags.Length > 0);
 
             if (buildArgs.AOT)
             {
@@ -63,7 +62,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             }
 
             string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
-            AssertSubstring($"Found statically linked AOT module '{Path.GetFileNameWithoutExtension(mainAssembly)}'", runOutput,
+            TestUtils.AssertSubstring($"Found statically linked AOT module '{Path.GetFileNameWithoutExtension(mainAssembly)}'", runOutput,
                                 contains: buildArgs.AOT);
         }
     }

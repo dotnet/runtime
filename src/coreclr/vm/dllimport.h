@@ -16,9 +16,9 @@ struct StubSigDesc
 {
 public:
     StubSigDesc(MethodDesc* pMD);
-    StubSigDesc(MethodDesc*  pMD, const Signature& sig, Module* m_pModule);
-    StubSigDesc(MethodTable* pMT, const Signature& sig, Module* m_pModule);
-    StubSigDesc(const Signature& sig, Module* m_pModule);
+    StubSigDesc(MethodDesc*  pMD, const Signature& sig, Module* pModule, Module* pLoaderModule = NULL);
+    StubSigDesc(MethodTable* pMT, const Signature& sig, Module* pModule);
+    StubSigDesc(const Signature& sig, Module* pModule);
 
     MethodDesc        *m_pMD;
     MethodTable       *m_pMT;
@@ -56,6 +56,17 @@ public:
         }
     }
 #endif // _DEBUG
+
+#ifndef DACCESS_COMPILE
+    void InitTypeContext(Instantiation classInst, Instantiation methodInst)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(m_typeContext.IsEmpty());
+
+        m_typeContext = SigTypeContext(classInst, methodInst);
+    }
+#endif
 };
 
 //=======================================================================
@@ -92,6 +103,7 @@ public:
         _In_opt_ MethodDesc* pMD,
         _In_opt_ PCCOR_SIGNATURE pSig = NULL,
         _In_opt_ Module* pModule = NULL,
+        _In_opt_ SigTypeContext* pTypeContext = NULL,
         _In_ bool unmanagedCallersOnlyRequiresMarshalling = true);
 
     static void PopulateNDirectMethodDesc(_Inout_ NDirectMethodDesc* pNMD);
@@ -194,6 +206,7 @@ enum ILStubTypes
     ILSTUB_WRAPPERDELEGATE_INVOKE        = 0x80000007,
     ILSTUB_TAILCALL_STOREARGS            = 0x80000008,
     ILSTUB_TAILCALL_CALLTARGET           = 0x80000009,
+    ILSTUB_STATIC_VIRTUAL_DISPATCH_STUB  = 0x8000000A,
 };
 
 #ifdef FEATURE_COMINTEROP
@@ -213,6 +226,8 @@ inline bool SF_IsCALLIStub             (DWORD dwStubFlags) { LIMITED_METHOD_CONT
 inline bool SF_IsForNumParamBytes      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_FOR_NUMPARAMBYTES)); }
 inline bool SF_IsStructMarshalStub     (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_STRUCT_MARSHAL)); }
 inline bool SF_IsCheckPendingException (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_CHECK_PENDING_EXCEPTION)); }
+
+inline bool SF_IsVirtualStaticMethodDispatchStub(DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return dwStubFlags == ILSTUB_STATIC_VIRTUAL_DISPATCH_STUB; }
 
 #ifdef FEATURE_ARRAYSTUB_AS_IL
 inline bool SF_IsArrayOpStub           (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return ((dwStubFlags == ILSTUB_ARRAYOP_GET) ||
@@ -481,6 +496,9 @@ public:
     DWORD   GetCleanupWorkListLocalNum();
     DWORD   GetThreadLocalNum();
     DWORD   GetReturnValueLocalNum();
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+    DWORD   GetCopyCtorChainLocalNum();
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
     void    SetCleanupNeeded();
     void    SetExceptionCleanupNeeded();
     BOOL    IsCleanupWorkListSetup();
@@ -549,6 +567,10 @@ protected:
     DWORD               m_dwTargetInterfacePointerLocalNum;
     DWORD               m_dwTargetEntryPointLocalNum;
 #endif // FEATURE_COMINTEROP
+
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+    DWORD               m_dwCopyCtorChainLocalNum;
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
 
     BOOL                m_fHasCleanupCode;
     BOOL                m_fHasExceptionCleanupCode;

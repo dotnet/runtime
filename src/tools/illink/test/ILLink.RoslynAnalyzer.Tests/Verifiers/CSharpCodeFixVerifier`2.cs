@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ILLink.Shared;
@@ -9,7 +11,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
-using Microsoft.CodeAnalysis.Testing.Verifiers;
 
 namespace ILLink.RoslynAnalyzer.Tests
 {
@@ -23,10 +24,15 @@ namespace ILLink.RoslynAnalyzer.Tests
 		   where TAnalyzer : DiagnosticAnalyzer, new()
 		   where TCodeFix : Microsoft.CodeAnalysis.CodeFixes.CodeFixProvider, new()
 	{
-		public class Test : CSharpCodeFixTest<TAnalyzer, TCodeFix, XUnitVerifier>
+		public class Test : CSharpCodeFixTest<TAnalyzer, TCodeFix, DefaultVerifier>
 		{
 			public Test ()
 			{
+				// Clear out the default reference assemblies. We explicitly add references from the live ref pack,
+				// so we don't want the Roslyn test infrastructure to resolve/add any default reference assemblies
+				ReferenceAssemblies = new ReferenceAssemblies(string.Empty);
+				TestState.AdditionalReferences.AddRange(SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences());
+
 				SolutionTransforms.Add ((solution, projectId) => {
 					var compilationOptions = solution.GetProject (projectId)!.CompilationOptions;
 					compilationOptions = compilationOptions!.WithSpecificDiagnosticOptions (
@@ -35,6 +41,15 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 					return solution;
 				});
+			}
+
+			protected override ImmutableArray<(Project project, Diagnostic diagnostic)> SortDistinctDiagnostics (IEnumerable<(Project project, Diagnostic diagnostic)> diagnostics)
+			{
+				// Only include non-suppressed diagnostics in the result. Our tests suppress diagnostics
+				// with 'UnconditionalSuppressMessageAttribute', and expect them not to be reported.
+				return base.SortDistinctDiagnostics (diagnostics)
+					.Where (diagnostic => !diagnostic.diagnostic.IsSuppressed)
+					.ToImmutableArray ();
 			}
 		}
 
@@ -54,8 +69,13 @@ namespace ILLink.RoslynAnalyzer.Tests
 			=> CSharpAnalyzerVerifier<TAnalyzer>.Diagnostic (descriptor);
 
 		/// <inheritdoc cref="AnalyzerVerifier{TAnalyzer, TTest}.VerifyAnalyzerAsync(string, DiagnosticResult[])"/>
-		public static Task VerifyAnalyzerAsync (string source, (string, string)[]? analyzerOptions = null, IEnumerable<MetadataReference>? additionalReferences = null, params DiagnosticResult[] expected)
-			=> CSharpAnalyzerVerifier<TAnalyzer>.VerifyAnalyzerAsync (source, analyzerOptions, additionalReferences, expected);
+		public static Task VerifyAnalyzerAsync (
+			string source,
+			bool consoleApplication,
+			(string, string)[]? analyzerOptions = null,
+			IEnumerable<MetadataReference>? additionalReferences = null,
+			params DiagnosticResult[] expected)
+			=> CSharpAnalyzerVerifier<TAnalyzer>.VerifyAnalyzerAsync (source, consoleApplication, analyzerOptions, additionalReferences, expected);
 
 		/// <summary>
 		/// Verifies the analyzer provides diagnostics which, in combination with the code fix, produce the expected

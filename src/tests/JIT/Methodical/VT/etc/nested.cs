@@ -30,7 +30,7 @@ namespace JitTest_nested_etc_cs
     public class Test
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Struct1 str1 = new Struct1();
             TypedReference _ref = __makeref(str1);
@@ -39,7 +39,6 @@ namespace JitTest_nested_etc_cs
             _ref = __makeref(str1.m_str2);
             Struct1.Struct2 str2 = __refvalue(_ref, Struct1.Struct2);
             str2.Verify();
-            return 100;
         }
     }
 }

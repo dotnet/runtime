@@ -28,6 +28,7 @@ typedef struct {
 	GHashTable *jump_trampoline_hash;
 	GHashTable *jit_trampoline_hash;
 	GHashTable *delegate_info_hash;
+	GHashTable *dyn_delegate_info_hash;
 	/* Maps ClassMethodPair -> MonoDelegateTrampInfo */
 	GHashTable *static_rgctx_trampoline_hash;
 	/* maps MonoMethod -> MonoJitDynamicMethodInfo */
@@ -620,6 +621,7 @@ void mono_jit_dump_cleanup (void);
 gpointer mini_alloc_generic_virtual_trampoline (MonoVTable *vtable, int size);
 MonoException* mini_get_stack_overflow_ex (void);
 MonoJitInfo* mini_alloc_jinfo (MonoJitMemoryManager *jit_mm, int size);
+void* mono_dyn_method_alloc0 (MonoMethod *method, guint size);
 
 /*
  * Per-OS implementation functions.
@@ -656,6 +658,9 @@ mono_post_native_crash_handler (const char *signal, MonoContext *mctx, MONO_SIG_
 
 gboolean
 mono_is_addr_implicit_null_check (void *addr);
+
+gboolean
+mono_jit_call_can_be_supported_by_interp (MonoMethod *method, MonoMethodSignature *sig, gboolean is_llvm_only);
 
 /*
  * Signal handling

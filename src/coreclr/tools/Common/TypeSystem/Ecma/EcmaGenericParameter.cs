@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 using System.Reflection.Metadata;
-
+using System.Threading;
 using Debug = System.Diagnostics.Debug;
 using GenericParameterAttributes = System.Reflection.GenericParameterAttributes;
 
@@ -78,6 +78,16 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        public override TypeSystemEntity AssociatedTypeOrMethod
+        {
+            get
+            {
+                GenericParameter parameter = _module.MetadataReader.GetGenericParameter(_handle);
+
+                return (TypeSystemEntity)_module.GetObject(parameter.Parent);
+            }
+        }
+
         public override int Index
         {
             get
@@ -103,7 +113,7 @@ namespace Internal.TypeSystem.Ecma
             {
                 Debug.Assert((int)GenericConstraints.DefaultConstructorConstraint == (int)GenericParameterAttributes.DefaultConstructorConstraint);
                 GenericParameter parameter = _module.MetadataReader.GetGenericParameter(_handle);
-                const GenericParameterAttributes mask = GenericParameterAttributes.SpecialConstraintMask | (GenericParameterAttributes)GenericConstraints.AcceptByRefLike;
+                const GenericParameterAttributes mask = GenericParameterAttributes.SpecialConstraintMask | (GenericParameterAttributes)GenericConstraints.AllowByRefLike;
                 return (GenericConstraints)(parameter.Attributes & mask);
             }
         }

@@ -76,13 +76,6 @@ public:
     DomainAssembly() {LIMITED_METHOD_CONTRACT;};
 #endif
 
-    PTR_AppDomain GetAppDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-        return m_pDomain;
-    }
-
     PEAssembly *GetPEAssembly()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -159,12 +152,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_fCollectible;
-    }
-
-    ULONG HashIdentity()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetPEAssembly()->HashIdentity();
     }
 
     // ------------------------------------------------------------
@@ -322,7 +309,7 @@ public:
     friend class Module;
     friend class FileLoadLock;
 
-    DomainAssembly(AppDomain* pDomain, PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator);
+    DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator);
 
     BOOL DoIncrementalLoad(FileLoadLevel targetLevel);
     void ClearLoading() { LIMITED_METHOD_CONTRACT; m_loading = FALSE; }
@@ -435,7 +422,6 @@ private:
     // ------------------------------------------------------------
 
     PTR_Assembly                m_pAssembly;
-    PTR_AppDomain               m_pDomain;
     PTR_PEAssembly              m_pPEAssembly;
     PTR_Module                  m_pModule;
 

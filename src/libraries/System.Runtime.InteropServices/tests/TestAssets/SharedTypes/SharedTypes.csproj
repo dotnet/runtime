@@ -6,7 +6,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\Ancillary.Interop\Ancillary.Interop.csproj" />
+    <!-- This project just has shared types, but shouldn't generate code for the types --> 
+    <EnabledGenerators Remove="@(EnabledGenerators)" />
   </ItemGroup>
 
 </Project>

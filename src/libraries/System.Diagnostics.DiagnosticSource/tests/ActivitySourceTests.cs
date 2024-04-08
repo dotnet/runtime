@@ -764,7 +764,7 @@ namespace System.Diagnostics.Tests
                 listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
                 {
                     activityOptions.SamplingTags.Add("tag1", "value1");
-                    Assert.False(true, "This callback shouldn't be called at all.");
+                    Assert.Fail("This callback shouldn't be called at all.");
                     return ActivitySamplingResult.AllData;
                 };
 

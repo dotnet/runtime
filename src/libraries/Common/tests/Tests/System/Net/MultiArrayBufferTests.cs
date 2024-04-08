@@ -16,7 +16,7 @@ namespace Tests.System.Net
         [Fact]
         public void BasicTest()
         {
-            MultiArrayBuffer buffer = new MultiArrayBuffer(0);
+            using MultiArrayBuffer buffer = new MultiArrayBuffer(0);
 
             Assert.True(buffer.IsEmpty);
             Assert.True(buffer.ActiveMemory.IsEmpty);
@@ -98,7 +98,7 @@ namespace Tests.System.Net
         {
             const int Size = 64 * 1024 + 1;
 
-            MultiArrayBuffer buffer = new MultiArrayBuffer(0);
+            using MultiArrayBuffer buffer = new MultiArrayBuffer(0);
 
             for (int i = 0; i < Size; i++)
             {
@@ -124,7 +124,7 @@ namespace Tests.System.Net
             const int ByteCount = 7;
             const int RepeatCount = 8 * 1024;       // enough to ensure we cross several block boundaries
 
-            MultiArrayBuffer buffer = new MultiArrayBuffer(0);
+            using MultiArrayBuffer buffer = new MultiArrayBuffer(0);
 
             for (int i = 0; i < RepeatCount; i++)
             {
@@ -156,7 +156,7 @@ namespace Tests.System.Net
             const int ByteCount = 7;
             const int RepeatCount = 8 * 1024;       // enough to ensure we cross several block boundaries
 
-            MultiArrayBuffer buffer = new MultiArrayBuffer(0);
+            using MultiArrayBuffer buffer = new MultiArrayBuffer(0);
 
             for (int i = 0; i < RepeatCount; i++)
             {
@@ -188,7 +188,7 @@ namespace Tests.System.Net
             const int ByteCount = 7;
             const int RepeatCount = 8 * 1024;       // enough to ensure we cross several block boundaries
 
-            MultiArrayBuffer buffer = new MultiArrayBuffer(0);
+            using MultiArrayBuffer buffer = new MultiArrayBuffer(0);
 
             for (int i = 0; i < RepeatCount; i++)
             {
@@ -221,7 +221,7 @@ namespace Tests.System.Net
 
             const int RepeatCount = 8 * 1024;       // enough to ensure we cross several block boundaries
 
-            MultiArrayBuffer buffer = new MultiArrayBuffer(0);
+            using MultiArrayBuffer buffer = new MultiArrayBuffer(0);
 
             for (int i = 0; i < RepeatCount; i++)
             {
@@ -250,7 +250,7 @@ namespace Tests.System.Net
 
             const int RepeatCount = 13;
 
-            MultiArrayBuffer buffer = new MultiArrayBuffer(0);
+            using MultiArrayBuffer buffer = new MultiArrayBuffer(0);
 
             for (int i = 0; i < RepeatCount; i++)
             {
@@ -291,7 +291,7 @@ namespace Tests.System.Net
         [Fact]
         public void EnsureAvailableSpaceTest()
         {
-            MultiArrayBuffer buffer = new MultiArrayBuffer(0);
+            using MultiArrayBuffer buffer = new MultiArrayBuffer(0);
 
             Assert.Equal(0, buffer.ActiveMemory.Length);
             Assert.Equal(0, buffer.AvailableMemory.Length);
@@ -423,7 +423,7 @@ namespace Tests.System.Net
         [Fact]
         public void EnsureAvailableSpaceUpToLimitTest()
         {
-            MultiArrayBuffer buffer = new MultiArrayBuffer(0);
+            using MultiArrayBuffer buffer = new MultiArrayBuffer(0);
 
             Assert.Equal(0, buffer.ActiveMemory.Length);
             Assert.Equal(0, buffer.AvailableMemory.Length);

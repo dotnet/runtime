@@ -43,20 +43,20 @@ namespace System.Text.Json.Reflection
         private static bool HasJsonConstructorAttribute(ConstructorInfo constructorInfo)
             => constructorInfo.GetCustomAttribute<JsonConstructorAttribute>() != null;
 
-        public static bool HasRequiredMemberAttribute(this ICustomAttributeProvider memberInfo)
+        public static bool HasRequiredMemberAttribute(this MemberInfo memberInfo)
         {
             // For compiler related attributes we should only look at full type name rather than trying to do something different for version when attribute was introduced.
             // I.e. library is targeting netstandard2.0 with polyfilled attributes and is being consumed by an app targeting net7.0 or greater.
-            return memberInfo.HasCustomAttributeWithName("System.Runtime.CompilerServices.RequiredMemberAttribute", inherit: true);
+            return memberInfo.HasCustomAttributeWithName("System.Runtime.CompilerServices.RequiredMemberAttribute", inherit: false);
         }
 
-        public static bool HasSetsRequiredMembersAttribute(this ICustomAttributeProvider memberInfo)
+        public static bool HasSetsRequiredMembersAttribute(this MemberInfo memberInfo)
         {
             // See comment for HasRequiredMemberAttribute for why we need to always only look at full name
-            return memberInfo.HasCustomAttributeWithName("System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute", inherit: true);
+            return memberInfo.HasCustomAttributeWithName("System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute", inherit: false);
         }
 
-        private static bool HasCustomAttributeWithName(this ICustomAttributeProvider memberInfo, string fullName, bool inherit)
+        private static bool HasCustomAttributeWithName(this MemberInfo memberInfo, string fullName, bool inherit)
         {
             foreach (object attribute in memberInfo.GetCustomAttributes(inherit))
             {

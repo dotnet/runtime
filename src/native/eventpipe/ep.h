@@ -106,6 +106,42 @@ ep_volatile_store_allow_write (uint64_t allow_write)
 }
 
 /*
+* EventPipeSessionOptions.
+*/
+
+typedef struct EventPipeSessionOptions {
+	const EventPipeProviderConfiguration *providers;
+	IpcStream *stream;
+	const ep_char8_t *output_path;
+	void *callback_additional_data;
+	EventPipeSessionSynchronousCallback sync_callback;
+	uint32_t circular_buffer_size_in_mb;
+	uint32_t providers_len;
+	EventPipeSessionType session_type;
+	EventPipeSerializationFormat format;
+	bool rundown_requested;
+	bool stackwalk_requested;
+} EventPipeSessionOptions;
+
+void
+ep_session_options_init (
+	EventPipeSessionOptions *options,
+	const ep_char8_t *output_path,
+	uint32_t circular_buffer_size_in_mb,
+	const EventPipeProviderConfiguration *providers,
+	uint32_t providers_len,
+	EventPipeSessionType session_type,
+	EventPipeSerializationFormat format,
+	bool rundown_requested,
+	bool stackwalk_requested,
+	IpcStream *stream,
+	EventPipeSessionSynchronousCallback sync_callback,
+	void *callback_additional_data);
+
+void
+ep_session_options_fini (EventPipeSessionOptions* options);
+
+/*
  * EventPipe.
  */
 
@@ -144,6 +180,11 @@ ep_enable_2 (
 	IpcStream *stream,
 	EventPipeSessionSynchronousCallback sync_callback,
 	void *callback_additional_data);
+
+EventPipeSessionID
+ep_enable_3 (
+	const EventPipeSessionOptions *options
+);
 
 void
 ep_disable (EventPipeSessionID id);
@@ -336,32 +377,20 @@ ep_write_buffer_uintptr_t (uint8_t **buffer, uintptr_t value)
 static
 inline
 uint32_t
-ep_write_buffer_string_utf8_to_utf16_t (uint8_t **buf, const ep_char8_t *str, uint32_t len)
-{
-	if (len == 0) {
-		(*buf)[0] = 0;
-		(*buf)[1] = 0;
-		*buf += sizeof (ep_char16_t);
-		return sizeof (ep_char16_t);
-	}
-	ep_char16_t *str_utf16 = ep_rt_utf8_to_utf16le_string (str, len);
-	uint32_t num_bytes_utf16_str = 0;
-	while (str_utf16[num_bytes_utf16_str] != 0)
-		++num_bytes_utf16_str;
-	num_bytes_utf16_str = (num_bytes_utf16_str + 1) * sizeof (ep_char16_t);
-	memcpy (*buf, str_utf16, num_bytes_utf16_str);
-	*buf += num_bytes_utf16_str;
-	ep_rt_utf16_string_free (str_utf16);
-	return num_bytes_utf16_str;
-}
-
-static
-inline
-uint32_t
 ep_write_buffer_string_utf16_t (uint8_t **buf, const ep_char16_t *str, uint32_t len)
 {
-	uint32_t num_bytes = (len + 1) * sizeof (ep_char16_t);
-	memcpy (*buf, str, num_bytes);
+	uint32_t num_bytes = 0;
+	if (str && len != 0) {
+		num_bytes = len * sizeof (ep_char16_t);
+		memcpy (*buf, str, num_bytes);
+	}
+
+	(*buf) [num_bytes] = 0;
+	num_bytes++;
+
+	(*buf) [num_bytes] = 0;
+	num_bytes++;
+
 	*buf += num_bytes;
 	return num_bytes;
 }

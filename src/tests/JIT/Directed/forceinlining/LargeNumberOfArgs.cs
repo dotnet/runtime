@@ -14,12 +14,11 @@ public class My
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Console.WriteLine("A bug was discovered during feature development and is covered by this test.");
         Console.WriteLine("If this test does not crash terribly, it is assumed to have passed... :-/");
         sum(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
         Console.WriteLine("PASS");
-        return 100;
     }
 }

@@ -3231,6 +3231,10 @@ ClrDataAccess::QueryInterface(THIS_
     {
         ifaceRet = static_cast<ISOSDacInterface13*>(this);
     }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface14)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface14*>(this);
+    }
     else
     {
         *iface = NULL;
@@ -4389,20 +4393,8 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
 
             if(DACNotify::ParseJITNotification(exInfo, methodDescPtr, nativeCodeLocation))
             {
-                // Try and find the right appdomain
                 MethodDesc* methodDesc = PTR_MethodDesc(methodDescPtr);
-                BaseDomain* baseDomain = methodDesc->GetDomain();
-                AppDomain* appDomain = NULL;
-
-                if (baseDomain->IsAppDomain())
-                {
-                    appDomain = PTR_AppDomain(PTR_HOST_TO_TADDR(baseDomain));
-                }
-                else
-                {
-                    // Find a likely domain, because it's the shared domain.
-                    appDomain = AppDomain::GetCurrentDomain();
-                }
+                AppDomain* appDomain = AppDomain::GetCurrentDomain();
 
                 pubMethodInst =
                     new (nothrow) ClrDataMethodInstance(this,
@@ -4453,20 +4445,8 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
             TADDR methodDescPtr;
             if (DACNotify::ParseExceptionCatcherEnterNotification(exInfo, methodDescPtr, catcherNativeOffset))
             {
-                // Try and find the right appdomain
                 MethodDesc* methodDesc = PTR_MethodDesc(methodDescPtr);
-                BaseDomain* baseDomain = methodDesc->GetDomain();
-                AppDomain* appDomain = NULL;
-
-                if (baseDomain->IsAppDomain())
-                {
-                    appDomain = PTR_AppDomain(PTR_HOST_TO_TADDR(baseDomain));
-                }
-                else
-                {
-                    // Find a likely domain, because it's the shared domain.
-                    appDomain = AppDomain::GetCurrentDomain();
-                }
+                AppDomain* appDomain = AppDomain::GetCurrentDomain();
 
                 pubMethodInst =
                     new (nothrow) ClrDataMethodInstance(this,
@@ -5813,7 +5793,7 @@ ClrDataAccess::RawGetMethodName(
             SIZE_T maxPrecodeSize = sizeof(StubPrecode);
 
 #ifdef HAS_THISPTR_RETBUF_PRECODE
-            maxPrecodeSize = max(maxPrecodeSize, sizeof(ThisPtrRetBufPrecode));
+            maxPrecodeSize = max((size_t)maxPrecodeSize, sizeof(ThisPtrRetBufPrecode));
 #endif
 
             for (SIZE_T i = 0; i < maxPrecodeSize / PRECODE_ALIGNMENT; i++)
@@ -7979,9 +7959,14 @@ void DacStackReferenceWalker::GCEnumCallback(LPVOID hCallback, OBJECTREF *pObjec
         CORDB_ADDRESS fixed_obj = 0;
         HRESULT hr = dsc->pWalker->mHeap.ListNearObjects((CORDB_ADDRESS)obj, NULL, &fixed_obj, NULL);
 
-        // If we failed...oh well, SOS won't mind.  We'll just report the interior pointer as is.
-        if (SUCCEEDED(hr))
-            obj = TO_TADDR(fixed_obj);
+        // Interior pointers need not lie on the manage heap at all.  When this happens, ListNearObjects
+        // will return E_FAIL.  In this case, we need to be sure to not include this stack slot in our
+        // enumeration because ICorDebug expects every location enumerated by this API to point to a
+        // valid object.
+        if (FAILED(hr))
+            return;
+
+        obj = TO_TADDR(fixed_obj);
     }
 
     // Report the object and where it was found.

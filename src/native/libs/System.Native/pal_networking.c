@@ -659,15 +659,17 @@ static bool IsInBounds(const void* void_baseAddr, size_t len, const void* void_v
     return valueAddr >= baseAddr && (valueAddr + valueSize) <= (baseAddr + len);
 }
 
-int32_t SystemNative_GetIPSocketAddressSizes(int32_t* ipv4SocketAddressSize, int32_t* ipv6SocketAddressSize)
+int32_t SystemNative_GetSocketAddressSizes(int32_t* ipv4SocketAddressSize, int32_t* ipv6SocketAddressSize, int32_t* udsSocketAddressSize, int32_t* maxSocketAddressSize)
 {
-    if (ipv4SocketAddressSize == NULL || ipv6SocketAddressSize == NULL)
+    if (ipv4SocketAddressSize == NULL || ipv6SocketAddressSize == NULL || udsSocketAddressSize == NULL || maxSocketAddressSize == NULL)
     {
         return Error_EFAULT;
     }
 
     *ipv4SocketAddressSize = sizeof(struct sockaddr_in);
     *ipv6SocketAddressSize = sizeof(struct sockaddr_in6);
+    *udsSocketAddressSize = sizeof(struct sockaddr_un);
+    *maxSocketAddressSize = sizeof(struct sockaddr_storage);
     return Error_SUCCESS;
 }
 
@@ -1790,6 +1792,12 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionLevel, int32_t socket
 #ifdef IP_MTU_DISCOVER
                 case SocketOptionName_SO_IP_DONTFRAGMENT:
                     *optName = IP_MTU_DISCOVER; // option values will also need to be translated
+                    return true;
+#endif
+
+#ifdef IP_DONTFRAG
+                case SocketOptionName_SO_IP_DONTFRAGMENT:
+                    *optName = IP_DONTFRAG;
                     return true;
 #endif
 
@@ -3034,51 +3042,6 @@ int32_t SystemNative_PlatformSupportsDualModeIPv4PacketInfo(void)
 #else
     return 0;
 #endif
-}
-
-static char* GetNameFromUid(uid_t uid)
-{
-    size_t bufferLength = 512;
-    while (1)
-    {
-        char *buffer = (char*)malloc(bufferLength);
-        if (buffer == NULL)
-            return NULL;
-
-        struct passwd pw;
-        struct passwd* result;
-        if (getpwuid_r(uid, &pw, buffer, bufferLength, &result) == 0)
-        {
-            if (result == NULL)
-            {
-                errno = ENOENT;
-                free(buffer);
-                return NULL;
-            }
-            else
-            {
-                char* name = strdup(pw.pw_name);
-                free(buffer);
-                return name;
-            }
-        }
-
-        free(buffer);
-        size_t tmpBufferLength;
-        if (errno != ERANGE || !multiply_s(bufferLength, (size_t)2, &tmpBufferLength))
-        {
-            return NULL;
-        }
-        bufferLength = tmpBufferLength;
-    }
-}
-
-char* SystemNative_GetPeerUserName(intptr_t socket)
-{
-    uid_t euid;
-    return SystemNative_GetPeerID(socket, &euid) == 0 ?
-        GetNameFromUid(euid) :
-        NULL;
 }
 
 void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* pathSize, int32_t* addressSize)

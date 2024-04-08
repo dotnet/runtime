@@ -48,6 +48,10 @@ check_include_files(semaphore.h HAVE_SEMAPHORE_H)
 check_include_files(sys/prctl.h HAVE_PRCTL_H)
 check_include_files("sys/auxv.h;asm/hwcap.h" HAVE_AUXV_HWCAP_H)
 check_include_files("sys/ptrace.h" HAVE_SYS_PTRACE_H)
+check_include_files("sys/ucontext.h" HAVE_SYS_UCONTEXT_H)
+check_include_files("sys/user.h" HAVE_SYS_USER_H)
+check_include_files("sys/mount.h" HAVE_SYS_MOUNT_H)
+check_include_files(ucontext.h HAVE_UCONTEXT_H)
 check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)
 
 set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_DL_LIBS})
@@ -79,7 +83,12 @@ set(CMAKE_REQUIRED_LIBRARIES)
 check_function_exists(sysctlbyname HAVE_SYSCTLBYNAME)
 check_include_files(gnu/lib-names.h HAVE_GNU_LIBNAMES_H)
 
-check_function_exists(kqueue HAVE_KQUEUE)
+if(CLR_CMAKE_TARGET_HAIKU)
+  # kqueue is broken on Haiku and does not provide the required information in the data field.
+  set(HAVE_KQUEUE 0)
+else()
+  check_function_exists(kqueue HAVE_KQUEUE)
+endif()
 
 check_library_exists(c sched_getaffinity "" HAVE_SCHED_GETAFFINITY)
 check_library_exists(c sched_setaffinity "" HAVE_SCHED_SETAFFINITY)
@@ -117,7 +126,6 @@ if(CLR_CMAKE_TARGET_LINUX)
 else()
   check_function_exists(sysctl HAVE_SYSCTL)
 endif()
-check_function_exists(sysinfo HAVE_SYSINFO)
 check_function_exists(sysconf HAVE_SYSCONF)
 check_function_exists(gmtime_r HAVE_GMTIME_R)
 check_function_exists(timegm HAVE_TIMEGM)
@@ -134,6 +142,7 @@ check_function_exists(semget HAS_SYSV_SEMAPHORES)
 check_function_exists(pthread_mutex_init HAS_PTHREAD_MUTEXES)
 check_function_exists(ttrace HAVE_TTRACE)
 check_function_exists(pipe2 HAVE_PIPE2)
+check_function_exists(strerrorname_np HAVE_STRERRORNAME_NP)
 
 check_cxx_source_compiles("
 #include <pthread_np.h>
@@ -150,8 +159,6 @@ check_struct_has_member ("struct tm" tm_gmtoff time.h HAVE_TM_GMTOFF)
 check_struct_has_member ("ucontext_t" uc_mcontext.gregs[0] ucontext.h HAVE_GREGSET_T)
 check_struct_has_member ("ucontext_t" uc_mcontext.__gregs[0] ucontext.h HAVE___GREGSET_T)
 check_struct_has_member ("ucontext_t" uc_mcontext.fpregs->__glibc_reserved1[0] ucontext.h HAVE_FPSTATE_GLIBC_RESERVED1)
-check_struct_has_member ("struct sysinfo" mem_unit "sys/sysinfo.h" HAVE_SYSINFO_WITH_MEM_UNIT)
-check_struct_has_member ("struct dirent" d_type dirent.h HAVE_DIRENT_D_TYPE)
 check_struct_has_member ("struct _fpchip_state" cw sys/ucontext.h HAVE_FPREGS_WITH_CW)
 
 set(CMAKE_EXTRA_INCLUDE_FILES machine/reg.h)
@@ -160,9 +167,11 @@ set(CMAKE_EXTRA_INCLUDE_FILES)
 set(CMAKE_EXTRA_INCLUDE_FILES asm/ptrace.h)
 check_type_size("struct pt_regs" PT_REGS)
 set(CMAKE_EXTRA_INCLUDE_FILES)
-set(CMAKE_EXTRA_INCLUDE_FILES signal.h)
-set(CMAKE_EXTRA_INCLUDE_FILES)
-set(CMAKE_EXTRA_INCLUDE_FILES ucontext.h)
+if(HAVE_UCONTEXT_H)
+  set(CMAKE_EXTRA_INCLUDE_FILES ucontext.h)
+else()
+  set(CMAKE_EXTRA_INCLUDE_FILES signal.h)
+endif()
 check_type_size(ucontext_t UCONTEXT_T)
 set(CMAKE_EXTRA_INCLUDE_FILES)
 set(CMAKE_EXTRA_INCLUDE_FILES pthread.h)
@@ -179,7 +188,6 @@ check_cxx_symbol_exists(CHAR_BIT limits.h HAVE_CHAR_BIT)
 check_cxx_symbol_exists(_DEBUG sys/user.h USER_H_DEFINES_DEBUG)
 check_cxx_symbol_exists(_SC_PHYS_PAGES unistd.h HAVE__SC_PHYS_PAGES)
 check_cxx_symbol_exists(_SC_AVPHYS_PAGES unistd.h HAVE__SC_AVPHYS_PAGES)
-check_cxx_symbol_exists(swapctl sys/swap.h HAVE_SWAPCTL)
 
 check_cxx_source_runs("
 #include <sys/param.h>
@@ -636,214 +644,6 @@ int main(void) {
   exit(0);
 }" HAVE_PROCFS_STAT)
 set(CMAKE_REQUIRED_LIBRARIES)
-set(CMAKE_REQUIRED_LIBRARIES m)
-check_cxx_source_runs("
-#include <math.h>
-#include <stdlib.h>
-
-int main(void) {
-  volatile double x = 10;
-  if (!isnan(acos(x))) {
-    exit(1);
-  }
-  exit(0);
-}" HAVE_COMPATIBLE_ACOS)
-set(CMAKE_REQUIRED_LIBRARIES)
-set(CMAKE_REQUIRED_LIBRARIES m)
-check_cxx_source_runs("
-#include <math.h>
-#include <stdlib.h>
-
-int main(void) {
-  volatile double arg = 10;
-  if (!isnan(asin(arg))) {
-    exit(1);
-  }
-  exit(0);
-}" HAVE_COMPATIBLE_ASIN)
-set(CMAKE_REQUIRED_LIBRARIES)
-set(CMAKE_REQUIRED_LIBRARIES m)
-check_cxx_source_runs("
-#include <math.h>
-#include <stdlib.h>
-
-int main(void) {
-  volatile double base = 1.0;
-  volatile double infinity = 1.0 / 0.0;
-  if (pow(base, infinity) != 1.0 || pow(base, -infinity) != 1.0) {
-    exit(1);
-  }
-  if (pow(-base, infinity) != 1.0 || pow(-base, -infinity) != 1.0) {
-    exit(1);
-  }
-
-  base = 0.0;
-  if (pow(base, infinity) != 0.0) {
-    exit(1);
-  }
-  if (pow(base, -infinity) != infinity) {
-    exit(1);
-  }
-
-  base = 1.1;
-  if (pow(-base, infinity) != infinity || pow(base, infinity) != infinity) {
-    exit(1);
-  }
-  if (pow(-base, -infinity) != 0.0 || pow(base, -infinity) != 0.0) {
-    exit(1);
-  }
-
-  base = 0.0;
-  volatile int iexp = 1;
-  if (pow(-base, -iexp) != -infinity) {
-    exit(1);
-  }
-  if (pow(base, -iexp) != infinity) {
-    exit(1);
-  }
-  exit(0);
-}" HAVE_COMPATIBLE_POW)
-set(CMAKE_REQUIRED_LIBRARIES)
-set(CMAKE_REQUIRED_LIBRARIES m)
-check_cxx_source_runs("
-#include <math.h>
-#include <stdlib.h>
-
-int main(int argc, char **argv) {
-  double result;
-  volatile double base = 3.2e-10;
-  volatile double exp = 1 - 5e14;
-
-  result = pow(-base, exp);
-  if (result != -1.0 / 0.0) {
-    exit(1);
-  }
-  exit(0);
-}" HAVE_VALID_NEGATIVE_INF_POW)
-set(CMAKE_REQUIRED_LIBRARIES)
-set(CMAKE_REQUIRED_LIBRARIES m)
-check_cxx_source_runs("
-#include <math.h>
-#include <stdlib.h>
-
-int main(int argc, char **argv) {
-    double result;
-    volatile double base = 3.5;
-    volatile double exp = 3e100;
-
-    result = pow(-base, exp);
-    if (result != 1.0 / 0.0) {
-        exit(1);
-    }
-    exit(0);
-}" HAVE_VALID_POSITIVE_INF_POW)
-set(CMAKE_REQUIRED_LIBRARIES)
-set(CMAKE_REQUIRED_LIBRARIES m)
-check_cxx_source_runs("
-#include <math.h>
-#include <stdlib.h>
-
-int main(void) {
-  double pi = 3.14159265358979323846;
-  double result;
-  volatile double y = 0.0;
-  volatile double x = 0.0;
-
-  result = atan2(y, -x);
-  if (fabs(pi - result) > 0.0000001) {
-    exit(1);
-  }
-
-  result = atan2(-y, -x);
-  if (fabs(-pi - result) > 0.0000001) {
-    exit(1);
-  }
-
-  result = atan2 (-y, x);
-  if (result != 0.0 || copysign (1.0, result) > 0) {
-    exit(1);
-  }
-
-  result = atan2 (y, x);
-  if (result != 0.0 || copysign (1.0, result) < 0) {
-    exit(1);
-  }
-
-  exit (0);
-}" HAVE_COMPATIBLE_ATAN2)
-set(CMAKE_REQUIRED_LIBRARIES)
-set(CMAKE_REQUIRED_LIBRARIES m)
-check_cxx_source_runs("
-#include <math.h>
-#include <stdlib.h>
-
-int main(void) {
-  double d = exp(1.0), e = M_E;
-
-  /* Used memcmp rather than == to test that the doubles are equal to
-   prevent gcc's optimizer from using its 80 bit internal long
-   doubles. If you use ==, then on BSD you get a false negative since
-   exp(1.0) == M_E to 64 bits, but not 80.
-  */
-
-  if (memcmp (&d, &e, sizeof (double)) == 0) {
-    exit(0);
-  }
-  exit(1);
-}" HAVE_COMPATIBLE_EXP)
-set(CMAKE_REQUIRED_LIBRARIES)
-set(CMAKE_REQUIRED_LIBRARIES m)
-check_cxx_source_runs("
-#include <math.h>
-#include <stdlib.h>
-
-int main(void) {
-  if (FP_ILOGB0 != -2147483648) {
-    exit(1);
-  }
-
-  exit(0);
-}" HAVE_COMPATIBLE_ILOGB0)
-set(CMAKE_REQUIRED_LIBRARIES)
-set(CMAKE_REQUIRED_LIBRARIES m)
-check_cxx_source_runs("
-#include <math.h>
-#include <stdlib.h>
-
-int main(void) {
-  if (FP_ILOGBNAN != 2147483647) {
-    exit(1);
-  }
-
-  exit(0);
-}" HAVE_COMPATIBLE_ILOGBNAN)
-set(CMAKE_REQUIRED_LIBRARIES)
-set(CMAKE_REQUIRED_LIBRARIES m)
-check_cxx_source_runs("
-#include <math.h>
-#include <stdlib.h>
-
-int main(void) {
-  volatile int arg = 10000;
-  if (!isnan(log(-arg))) {
-    exit(1);
-  }
-  exit(0);
-}" HAVE_COMPATIBLE_LOG)
-set(CMAKE_REQUIRED_LIBRARIES)
-set(CMAKE_REQUIRED_LIBRARIES m)
-check_cxx_source_runs("
-#include <math.h>
-#include <stdlib.h>
-
-int main(void) {
-  volatile int arg = 10000;
-  if (!isnan(log10(-arg))) {
-    exit(1);
-  }
-  exit(0);
-}" HAVE_COMPATIBLE_LOG10)
-set(CMAKE_REQUIRED_LIBRARIES)
 check_cxx_source_runs("
 #include <stdio.h>
 #include <stdlib.h>
@@ -954,29 +754,6 @@ int main(int argc, char **argv)
 if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   list(REMOVE_AT CMAKE_REQUIRED_INCLUDES 0 1)
 endif()
-
-check_cxx_source_compiles("
-#include <sys/param.h>
-#include <sys/sysctl.h>
-#include <vm/vm_param.h>
-
-int main(int argc, char **argv)
-{
-    struct xswdev xsw;
-
-    return 0;
-}" HAVE_XSWDEV)
-
-check_cxx_source_compiles("
-#include <sys/param.h>
-#include <sys/sysctl.h>
-
-int main(int argc, char **argv)
-{
-    struct xsw_usage xsu;
-
-    return 0;
-}" HAVE_XSW_USAGE)
 
 check_cxx_source_compiles("
 #include <signal.h>
@@ -1271,6 +1048,11 @@ elseif(CLR_CMAKE_TARGET_SUNOS)
   set(PAL_PT_READ_D PT_READ_D)
   set(PAL_PT_WRITE_D PT_WRITE_D)
   set(HAS_FTRUNCATE_LENGTH_ISSUE 0)
+elseif(CLR_CMAKE_TARGET_HAIKU)
+  # Haiku does not have ptrace.
+  set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
+  set(HAS_FTRUNCATE_LENGTH_ISSUE 0)
+  set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 else() # Anything else is Linux
   if(NOT HAVE_LTTNG_TRACEPOINT_H AND FEATURE_EVENT_TRACE)
     unset(HAVE_LTTNG_TRACEPOINT_H CACHE)

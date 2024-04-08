@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
-        private void GetChildKeys_CanChainEmptyKeys()
+        public void GetChildKeys_CanChainEmptyKeys()
         {
             var input = new Dictionary<string, string>() { };
             for (int i = 0; i < 1000; i++)
@@ -90,7 +90,7 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
-        private void GetChildKeys_CanChainKeyWithNoDelimiter()
+        public void GetChildKeys_CanChainKeyWithNoDelimiter()
         {
             var input = new Dictionary<string, string>() { };
             for (int i = 1000; i < 2000; i++)

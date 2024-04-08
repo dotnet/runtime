@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
@@ -36,6 +37,24 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_GetMaxMdSize")]
         private static partial int GetMaxMdSize();
+
+        internal static unsafe int EvpDigestFinalXOF(SafeEvpMdCtxHandle ctx, Span<byte> destination)
+        {
+            // The partial needs to match the OpenSSL parameters.
+            _ = ctx;
+            _ = destination;
+            Debug.Fail("Should have validated that XOF is not supported before getting here.");
+            throw new UnreachableException();
+        }
+
+        internal static unsafe int EvpDigestCurrentXOF(SafeEvpMdCtxHandle ctx, Span<byte> destination)
+        {
+            // The partial needs to match the OpenSSL parameters.
+            _ = ctx;
+            _ = destination;
+            Debug.Fail("Should have validated that XOF is not supported before getting here.");
+            throw new UnreachableException();
+        }
 
         internal static readonly int EVP_MAX_MD_SIZE = GetMaxMdSize();
     }

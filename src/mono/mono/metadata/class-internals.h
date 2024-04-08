@@ -26,7 +26,6 @@
 
 extern gboolean mono_print_vtable;
 extern gboolean mono_align_small_structs;
-extern gint32 mono_simd_register_size;
 
 typedef struct _MonoMethodWrapper MonoMethodWrapper;
 typedef struct _MonoMethodInflated MonoMethodInflated;
@@ -102,6 +101,7 @@ struct _MonoMethodWrapper {
 struct _MonoDynamicMethod {
 	MonoMethodWrapper method;
 	MonoAssembly *assembly;
+	MonoMemPool *mp;
 };
 
 struct _MonoMethodPInvoke {
@@ -222,7 +222,7 @@ enum {
 	/* added by metadata-update after class was created;
 	 * not in MonoClassEventInfo array - don't do ptr arithmetic */
 	MONO_EVENT_META_FLAG_FROM_UPDATE = 0x00010000,
-	
+
 	MONO_EVENT_META_FLAG_MASK = 0x00010000,
 };
 
@@ -330,13 +330,6 @@ int mono_class_interface_match (const uint8_t *bitmap, int id);
 #define MONO_CLASS_IMPLEMENTS_INTERFACE(k,uiid) (((uiid) <= m_class_get_max_interface_id (k)) && mono_class_interface_match (m_class_get_interface_bitmap (k), (uiid)))
 
 #define MONO_VTABLE_AVAILABLE_GC_BITS 4
-
-#ifdef DISABLE_COM
-#define mono_class_is_com_object(klass) (FALSE)
-#else
-#define mono_class_is_com_object(klass) (m_class_is_com_object (klass))
-#endif
-
 
 MONO_API int mono_class_interface_offset (MonoClass *klass, MonoClass *itf);
 MONO_COMPONENT_API int mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gboolean *non_exact_match);
@@ -503,11 +496,11 @@ struct _MonoGenericContainer {
 	int type_argc    : 29; // Per the ECMA spec, this value is capped at 16 bits
 	/* If true, we're a generic method, otherwise a generic type definition. */
 	/* Invariant: parent != NULL => is_method */
-	int is_method     : 1;
+	guint is_method     : 1;
 	/* If true, this container has no associated class/method and only the image is known. This can happen:
 	   1. For the special anonymous containers kept by MonoImage.
 	   2. When user code creates a generic parameter via SRE, but has not yet set an owner. */
-	int is_anonymous : 1;
+	guint is_anonymous : 1;
 	/* Our type parameters. If this is a special anonymous container (case 1, above), this field is not valid, use mono_metadata_create_anon_gparam ()  */
 	MonoGenericParamFull *type_params;
 };
@@ -578,6 +571,7 @@ typedef struct MonoCachedClassInfo {
 	guint no_special_static_fields : 1;
 	guint is_generic_container : 1;
 	guint has_weak_fields : 1;
+	guint has_deferred_failure : 1;
 	guint32 cctor_token;
 	MonoImage *finalize_image;
 	guint32 finalize_token;
@@ -978,16 +972,6 @@ mono_class_try_get_##shortname##_class (void)	\
 
 GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (safehandle)
 
-#ifndef DISABLE_COM
-
-GENERATE_GET_CLASS_WITH_CACHE_DECL (interop_proxy)
-GENERATE_GET_CLASS_WITH_CACHE_DECL (idispatch)
-GENERATE_GET_CLASS_WITH_CACHE_DECL (iunknown)
-GENERATE_GET_CLASS_WITH_CACHE_DECL (com_object)
-GENERATE_GET_CLASS_WITH_CACHE_DECL (variant)
-
-#endif
-
 MonoClass* mono_class_get_appdomain_class (void);
 
 GENERATE_GET_CLASS_WITH_CACHE_DECL (appdomain_unloaded_exception)
@@ -1060,10 +1044,7 @@ mono_register_jit_icall_info (MonoJitICallInfo *info, T func, const char *name, 
 }
 #endif // __cplusplus
 
-#define mono_register_jit_icall(func, sig, no_wrapper) (mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, #func, (sig), (no_wrapper), NULL))
-
-gboolean
-mono_class_set_type_load_failure (MonoClass *klass, const char * fmt, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
+#define mono_register_jit_icall(func, sig, no_wrapper) (mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, (gconstpointer)func, #func, (sig), (no_wrapper), NULL))
 
 MonoException*
 mono_class_get_exception_for_failure (MonoClass *klass);
@@ -1268,6 +1249,9 @@ mono_error_set_for_class_failure (MonoError *orerror, const MonoClass *klass);
 gboolean
 mono_class_has_failure (const MonoClass *klass);
 
+gboolean
+mono_class_has_deferred_failure (const MonoClass *klass);
+
 /* Kind specific accessors */
 MONO_COMPONENT_API MonoGenericClass*
 mono_class_get_generic_class (MonoClass *klass);
@@ -1370,9 +1354,6 @@ void
 mono_class_set_declsec_flags (MonoClass *klass, guint32 value);
 
 void
-mono_class_set_is_com_object (MonoClass *klass);
-
-void
 mono_class_set_weak_bitmap (MonoClass *klass, int nbits, gsize *bits);
 
 gsize*
@@ -1420,6 +1401,9 @@ mono_method_has_no_body (MonoMethod *method);
 MONO_COMPONENT_API MonoMethodHeader*
 mono_method_get_header_internal (MonoMethod *method, MonoError *error);
 
+gboolean
+mono_method_metadata_has_header (MonoMethod *method);
+
 MONO_COMPONENT_API void
 mono_method_get_param_names_internal (MonoMethod *method, const char **names);
 
@@ -1428,6 +1412,9 @@ mono_class_find_enum_basetype (MonoClass *klass, MonoError *error);
 
 gboolean
 mono_class_set_failure (MonoClass *klass, MonoErrorBoxed *boxed_error);
+
+void
+mono_class_set_deferred_failure (MonoClass *klass);
 
 gboolean
 mono_class_set_type_load_failure_causedby_class (MonoClass *klass, const MonoClass *caused_by, const gchar* msg);
@@ -1442,7 +1429,7 @@ mono_class_get_object_finalize_slot (void);
 MonoMethod *
 mono_class_get_default_finalize_method (void);
 
-const char *
+MONO_COMPONENT_API const char *
 mono_field_get_rva (MonoClassField *field, int swizzle);
 
 MONO_COMPONENT_API void

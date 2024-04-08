@@ -69,15 +69,12 @@ namespace JitTest.HFA
 
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
-
             HFA12 hfa11;
             Init(out hfa11);
             Print0(hfa11);
             Print1(11, hfa11);
-
-            return 100;
         }
     }
 }

@@ -147,10 +147,10 @@ void    AsmMan::SetModuleName(__inout_opt __nullterminated char* szName)
     {
         if(szName && *szName)
         {
-            ULONG L = (ULONG)strlen(szName);
+            size_t L = strlen(szName);
             if(L >= MAX_SCOPE_LENGTH)
             {
-                ((Assembler*)m_pAssembler)->report->warn("Module name too long (%d chars, max.allowed: %d chars), truncated\n",L,MAX_SCOPE_LENGTH-1);
+                ((Assembler*)m_pAssembler)->report->warn("Module name too long (%zd chars, max.allowed: %d chars), truncated\n",L,MAX_SCOPE_LENGTH-1);
                 szName[MAX_SCOPE_LENGTH-1] = 0;
             }
             m_szScopeName = szName;

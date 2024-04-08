@@ -50,9 +50,9 @@ namespace Microsoft.Extensions.Http.Logging
         private Task<HttpResponseMessage> SendCoreAsync(HttpRequestMessage request, bool useAsync, CancellationToken cancellationToken)
         {
             ThrowHelper.ThrowIfNull(request);
-            return Core(request, cancellationToken);
+            return Core(request, useAsync, cancellationToken);
 
-            async Task<HttpResponseMessage> Core(HttpRequestMessage request, CancellationToken cancellationToken)
+            async Task<HttpResponseMessage> Core(HttpRequestMessage request, bool useAsync, CancellationToken cancellationToken)
             {
                 var stopwatch = ValueStopwatch.StartNew();
 

@@ -44,7 +44,7 @@ namespace DefaultNamespace
     public class bug
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
 
             int size = 32;
@@ -56,9 +56,6 @@ namespace DefaultNamespace
             for (int i = 0; i < size; i++)
                 if (!tmpV3Array[i].Validate())
                     throw new Exception("tmpV3Array[" + i + "] didn't validate correctly!  got: " + tmpV3Array[i] + "  expected: " + VarArray[i]);
-
-            return 100;
-
         }
     }
 }

@@ -64,22 +64,22 @@ namespace System.Reflection
         public override bool IsSecuritySafeCritical => DeclaringType!.IsSecuritySafeCritical;
         public override bool IsSecurityTransparent => DeclaringType!.IsSecurityTransparent;
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override object? GetValueDirect(TypedReference obj)
         {
             return GetValue(null);
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override void SetValueDirect(TypedReference obj, object value)
         {
             throw new FieldAccessException(SR.Acc_ReadOnly);
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override object? GetValue(object? obj)
         {
             return GetValue(false);
@@ -99,8 +99,8 @@ namespace System.Reflection
             return value;
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture)
         {
             throw new FieldAccessException(SR.Acc_ReadOnly);

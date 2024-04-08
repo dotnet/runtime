@@ -4,6 +4,7 @@
     <EventSourceSupport>true</EventSourceSupport>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="AdditionalCacheTests\AdditionalCacheTests.cs" />
     <Compile Include="Common\PokerChangeMonitor.cs" />
     <Compile Include="Common\PokerMemoryCache.cs" />

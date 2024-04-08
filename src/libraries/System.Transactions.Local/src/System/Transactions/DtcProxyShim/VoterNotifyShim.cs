@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Transactions.DtcProxyShim.DtcInterfaces;
 using System.Transactions.Oletx;
 
 namespace System.Transactions.DtcProxyShim;
 
-internal sealed class VoterNotifyShim : NotificationShimBase, ITransactionVoterNotifyAsync2
+[GeneratedComClass]
+internal sealed partial class VoterNotifyShim : NotificationShimBase, ITransactionVoterNotifyAsync2
 {
     internal VoterNotifyShim(DtcProxyShimFactory shimFactory, object enlistmentIdentifier)
         : base(shimFactory, enlistmentIdentifier)

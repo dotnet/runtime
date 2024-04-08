@@ -1,23 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*=============================================================================
-**
-** Class: DllNotFoundException
-**
-**
-** Purpose: The exception class for some failed P/Invoke calls.
-**
-**
-=============================================================================*/
-
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System
 {
+    /// <summary>
+    /// The exception that is thrown when a DLL specified in a DLL import cannot be found.
+    /// </summary>
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class DllNotFoundException : TypeLoadException
     {
         public DllNotFoundException()
@@ -27,13 +21,13 @@ namespace System
         }
 
         public DllNotFoundException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_DllNotFoundException)
         {
             HResult = HResults.COR_E_DLLNOTFOUND;
         }
 
         public DllNotFoundException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_DllNotFoundException, inner)
         {
             HResult = HResults.COR_E_DLLNOTFOUND;
         }

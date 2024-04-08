@@ -159,6 +159,7 @@ End
 Crst DebuggerMutex
     AcquiredBefore AvailableParamTypes
                    DynamicIL LoaderHeap ModuleLookupTable
+                   MethodDescBackpatchInfoTracker JitInlineTrackingMap CodeVersioning
 
     // Disabled per bug 581892
     // AcquiredBefore DebuggerController
@@ -366,7 +367,7 @@ Crst PendingTypeLoadEntry
                    DomainLocalBlock Exception ExecuteManRangeLock FuncPtrStubs
                    FusionAppCtx GlobalStrLiteralMap HandleTable IbcProfile
                    IJWFixupData IJWHash ISymUnmanagedReader Jit JumpStubCache LoaderHeap
-                   Module ModuleLookupTable PEImage SecurityStackwalkCache
+                   Module ModuleLookupTable PEImage
                    SigConvert SingleUseLock StubDispatchCache StubUnwindInfoHeapSegments
                    SyncBlockCache SystemDomain ThreadIdDispenser ThreadStore TypeIDMap UnresolvedClassLock
     SameLevelAs PendingTypeLoadEntry
@@ -391,9 +392,6 @@ Crst RCWCache
 End
 
 Crst RCWCleanupList
-End
-
-Crst ExternalObjectContextCache
 End
 
 Crst Reflection
@@ -426,9 +424,6 @@ Crst SavedExceptionInfo
 End
 
 Crst SaveModuleProfileData
-End
-
-Crst SecurityStackwalkCache
 End
 
 Crst SigConvert
@@ -489,6 +484,7 @@ Crst ThreadStore
                    DebuggerHeapLock DebuggerJitInfo DynamicIL ExecuteManRangeLock HandleTable IbcProfile
                    JitGenericHandleCache JumpStubCache LoaderHeap ModuleLookupTable ProfilerGCRefDataFreeList
                    SingleUseLock SyncBlockCache SystemDomainDelayedUnloadList ThreadIdDispenser DebuggerMutex
+                   JitInlineTrackingMap
 End
 
 Crst TypeIDMap
@@ -540,7 +536,7 @@ Crst InlineTrackingMap
 End
 
 Crst JitInlineTrackingMap
-    AcquiredBefore CodeVersioning ThreadStore MethodDescBackpatchInfoTracker
+    AcquiredBefore CodeVersioning MethodDescBackpatchInfoTracker
 End
 
 Crst EventPipe

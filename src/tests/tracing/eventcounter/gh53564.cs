@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using Xunit;
 
 namespace gh53564Tests
 {
@@ -80,7 +81,8 @@ namespace gh53564Tests
 
     public partial class TestRuntimeEventCounter
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             // Create an EventListener.
             using (RuntimeCounterListener myListener = new RuntimeCounterListener())

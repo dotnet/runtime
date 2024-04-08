@@ -6,11 +6,15 @@
     <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
     <!-- Target reference assemblies instead of implementation assemblies. -->
     <CompileUsingReferenceAssemblies>true</CompileUsingReferenceAssemblies>
-    <TrimOutPrivateAssembliesFromReferencePath>true</TrimOutPrivateAssembliesFromReferencePath>
 
     <ApiCompatNetCoreAppLatestStableBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.NetCoreAppLatestStable.xml</ApiCompatNetCoreAppLatestStableBaselineFile>
     <ApiCompatNetStandard21BaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netstandard2.1.xml</ApiCompatNetStandard21BaselineFile>
     <ApiCompatNetStandard20BaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netstandard2.0.xml</ApiCompatNetStandard20BaselineFile>
+  </PropertyGroup>
+
+  <!-- In servicing, the live targeting pack is compared against the GA version in strict mode. -->
+  <PropertyGroup Condition="'$(DotNetFinalVersionKind)' == 'servicing'">
+    <ApiCompatEnableStrictMode>true</ApiCompatEnableStrictMode>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,68 +24,111 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ApiCompatNetCoreAppLatestStableLeftAssembliesTransformationPattern Include=".+%5C$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="$(NetCoreAppPrevious)/$1" />
+    <ApiCompatNetCoreAppLatestStableLeftAssembliesTransformationPattern Include=".+%5C$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="$(ApiCompatNetCoreAppBaselineTFM)/$1" />
     <ApiCompatNetStandard21LeftAssembliesTransformationPattern Include=".+%5C$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="netstandard2.1/$1" />
     <ApiCompatNetStandard20LeftAssembliesTransformationPattern Include=".+%5C$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="netstandard2.0/$1" />
     <ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern Include=".+%5C$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="$(NetCoreAppCurrent)/$1" />
   </ItemGroup>
 
-  <!-- For API comparison, ApiCompat needs both the inbox and the out-of-band assemblies plus the shims to be built. -->
+  <!-- For API comparison, ApiCompat needs the inbox assemblies (including shims) and to resolve type forwards, the out-of-band assemblies. -->
   <ItemGroup>
-    <ProjectReference Include="..\sfx-src.proj;
-                               ..\oob-src.proj;
-                               ..\shims.proj" />
+    <ProjectReference Include="..\sfx-src.proj" OutputItemType="SharedFrameworkAssembly" />
+    <ProjectReference Include="..\oob-src.proj" OutputItemType="OOBAssembly" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageDownload Include="Microsoft.NETCore.App.Ref" Version="[$(NetCoreAppPreviousPackageBaselineVersion)]" />
+    <PackageDownload Include="Microsoft.NETCore.App.Ref" Version="[$(ApiCompatNetCoreAppBaselineVersion)]" />
     <PackageDownload Include="NETStandard.Library.Ref" Version="[$(NETStandardLibraryRefVersion)]" />
     <PackageDownload Include="NETStandard.Library" Version="[$(NetStandardLibraryVersion)]" />
     <PackageReference Include="Microsoft.DotNet.ApiCompat.Task" Version="$(MicrosoftDotNetApiCompatTaskVersion)" IsImplicitlyDefined="true" />
+
+    <!-- Restore and reference assemblies not built in runtime anymore, required for resolving type forward on both comparison sides. -->
+    <ApiCompatTypeForwardDestinationPackage Include="System.Data.SqlClient" PackageVersion="$(SystemDataSqlClientVersion)" TargetFramework="netcoreapp2.1" />
+    <ApiCompatTypeForwardDestinationPackage Include="System.Drawing.Common" PackageVersion="$(SystemDrawingCommonVersion)" TargetFramework="net8.0" />
+
+    <!-- Restore and reference assemblies required for resolving type forwards on the baseline (left) side. -->
+    <ApiCompatLeftTypeForwardDestinationPackage Include="@(ApiCompatTypeForwardDestinationPackage)"  />
+    <ApiCompatLeftTypeForwardDestinationPackage
+      Include="
+        Microsoft.Win32.SystemEvents;
+        System.CodeDom;
+        System.Configuration.ConfigurationManager;
+        System.Data.Odbc;
+        System.Data.OleDb;
+        System.Diagnostics.EventLog;
+        System.Diagnostics.PerformanceCounter;
+        System.IO.Packaging;
+        System.IO.Ports;
+        System.Runtime.Serialization.Schema;
+        System.Security.Cryptography.Pkcs;
+        System.Security.Cryptography.ProtectedData;
+        System.Security.Cryptography.Xml;
+        System.Security.Permissions;
+        System.ServiceModel.Syndication;
+        System.ServiceProcess.ServiceController;
+        System.Threading.AccessControl;
+        System.Windows.Extensions"
+      PackageVersion="$(ApiCompatNetCoreAppBaselineVersion)"
+      TargetFramework="$(ApiCompatNetCoreAppBaselineTFM)" />
+    <PackageDownload Include="@(ApiCompatLeftTypeForwardDestinationPackage)" Version="[%(PackageVersion)]" />
   </ItemGroup>
 
   <Target Name="RunApiCompat"
           DependsOnTargets="FindReferenceAssembliesForReferences;CollectApiCompatInputs"
           AfterTargets="Build"
-          Inputs="@(ReferencePathWithRefAssemblies);$(ApiCompatNetStandard20BaselineFile);$(ApiCompatNetStandard21BaselineFile);$(ApiCompatNetCoreAppLatestStableBaselineFile);@(ApiCompatExcludeAttributesFile)"
+          Inputs="$(MSBuildThisFileFullPath);@(ReferencePathWithRefAssemblies);$(ApiCompatNetStandard20BaselineFile);$(ApiCompatNetStandard21BaselineFile);$(ApiCompatNetCoreAppLatestStableBaselineFile);@(ApiCompatExcludeAttributesFile)"
           Outputs="$(IntermediateOutputPath)$(TargetArchitecture)-marker.txt">
-    <Message Text="ApiCompat -> Comparing $(NetCoreAppCurrent) reference assemblies against .NETStandard2.x and $(NetCoreAppPrevious)..." Importance="high"  />
+    <Message Text="ApiCompat -> Comparing $(NetCoreAppCurrent) reference assemblies against .NETStandard 2.x and .NETCoreApp $(ApiCompatNetCoreAppBaselineVersion)..." Importance="high"  />
 
-    <!-- ApiCompat: NetCoreAppCurrent <-> NetCoreAppPrevious -->
+    <ItemGroup>
+      <ApiCompatNetCoreAppLatestStableAssemblyReference Include="@(ApiCompatLeftTypeForwardDestinationPackage->'$(NuGetPackageRoot)$([System.String]::new('%(ApiCompatLeftTypeForwardDestinationPackage.Identity)').ToLowerInvariant())\%(ApiCompatLeftTypeForwardDestinationPackage.PackageVersion)\lib\%(ApiCompatLeftTypeForwardDestinationPackage.TargetFramework)\%(ApiCompatLeftTypeForwardDestinationPackage.Identity).dll')" />
+
+      <ApiCompatRightAssembly Include="@(ReferencePathWithRefAssemblies->WithMetadataValue('IsPrivateAssembly', 'false')->WithMetadataValue('OutputItemType', 'SharedFrameworkAssembly'))" />
+      <ApiCompatRightAssemblyReferenceFromPackage Include="@(ApiCompatTypeForwardDestinationPackage->'$(NuGetPackageRoot)$([System.String]::new('%(ApiCompatTypeForwardDestinationPackage.Identity)').ToLowerInvariant())\%(ApiCompatTypeForwardDestinationPackage.PackageVersion)\lib\%(ApiCompatTypeForwardDestinationPackage.TargetFramework)\%(ApiCompatTypeForwardDestinationPackage.Identity).dll')" />
+      <ApiCompatRightAssemblyReference Include="@(ReferencePathWithRefAssemblies->WithMetadataValue('IsPrivateAssembly', 'false')->WithMetadataValue('OutputItemType', 'OOBAssembly'));
+                                                @(ApiCompatRightAssemblyReferenceFromPackage)" />
+    </ItemGroup>
+
+    <!-- ApiCompat: NetCoreAppCurrent <-> .NETCoreApp ApiCompatNetCoreAppBaselineVersion -->
     <Microsoft.DotNet.ApiCompat.Task.ValidateAssembliesTask
-      LeftAssemblies="$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.netcore.app.ref', '$(NetCoreAppPreviousPackageBaselineVersion)', 'ref', '$(NetCoreAppPrevious)'))"
-      RightAssemblies="@(ReferencePathWithRefAssemblies)"
+      LeftAssemblies="$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.netcore.app.ref', '$(ApiCompatNetCoreAppBaselineVersion)', 'ref', '$(ApiCompatNetCoreAppBaselineTFM)'))"
+      RightAssemblies="@(ApiCompatRightAssembly)"
       RoslynAssembliesPath="$(RoslynAssembliesPath)"
       GenerateSuppressionFile="$(ApiCompatGenerateSuppressionFile)"
       SuppressionFiles="$(ApiCompatNetCoreAppLatestStableBaselineFile)"
+      EnableStrictMode="$(ApiCompatEnableStrictMode)"
       EnableRuleAttributesMustMatch="true"
       ExcludeAttributesFiles="@(ApiCompatExcludeAttributesFile)"
       LeftAssembliesTransformationPattern="@(ApiCompatNetCoreAppLatestStableLeftAssembliesTransformationPattern)"
-      RightAssembliesTransformationPattern="@(ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern)" />
+      RightAssembliesTransformationPattern="@(ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern)"
+      LeftAssembliesReferences="@(ApiCompatNetCoreAppLatestStableAssemblyReference, ',')"
+      RightAssembliesReferences="@(ApiCompatRightAssemblyReference, ',')" />
 
     <!-- ApiCompat: NetCoreAppCurrent <-> netstandard2.1 -->
     <Microsoft.DotNet.ApiCompat.Task.ValidateAssembliesTask
       LeftAssemblies="$(NETStandard21RefPath)netstandard.dll"
-      RightAssemblies="@(ReferencePathWithRefAssemblies)"
+      RightAssemblies="@(ApiCompatRightAssembly)"
       RoslynAssembliesPath="$(RoslynAssembliesPath)"
       GenerateSuppressionFile="$(ApiCompatGenerateSuppressionFile)"
       SuppressionFiles="$(ApiCompatNetStandard21BaselineFile)"
       EnableRuleAttributesMustMatch="true"
       ExcludeAttributesFiles="@(ApiCompatExcludeAttributesFile)"
       LeftAssembliesTransformationPattern="@(ApiCompatNetStandard21LeftAssembliesTransformationPattern)"
-      RightAssembliesTransformationPattern="@(ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern)" />
+      RightAssembliesTransformationPattern="@(ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern)"
+      RightAssembliesReferences="@(ApiCompatRightAssemblyReference, ',')" />
 
     <!-- ApiCompat: NetCoreAppCurrent <-> netstandard2.0 -->
     <Microsoft.DotNet.ApiCompat.Task.ValidateAssembliesTask
       LeftAssemblies="$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'netstandard.library', '$(NetStandardLibraryVersion)', 'build', 'netstandard2.0', 'ref'))"
-      RightAssemblies="@(ReferencePathWithRefAssemblies)"
+      RightAssemblies="@(ApiCompatRightAssembly)"
       RoslynAssembliesPath="$(RoslynAssembliesPath)"
       GenerateSuppressionFile="$(ApiCompatGenerateSuppressionFile)"
       SuppressionFiles="$(ApiCompatNetStandard20BaselineFile)"
       EnableRuleAttributesMustMatch="true"
       ExcludeAttributesFiles="@(ApiCompatExcludeAttributesFile)"
       LeftAssembliesTransformationPattern="@(ApiCompatNetStandard20LeftAssembliesTransformationPattern)"
-      RightAssembliesTransformationPattern="@(ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern)" />
+      RightAssembliesTransformationPattern="@(ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern)"
+      RightAssembliesReferences="@(ApiCompatRightAssemblyReference, ',')" />
 
     <!-- Create a marker file which serves as the target's output to enable incremental builds. -->
     <Touch Files="$(IntermediateOutputPath)$(TargetArchitecture)-marker.txt"

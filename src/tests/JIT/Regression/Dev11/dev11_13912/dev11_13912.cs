@@ -8,7 +8,7 @@ using Xunit;
 public class P
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         // This bug is caused by a broken flowgraph due to a return from
         // a try inside a catch block
@@ -16,7 +16,6 @@ public class P
         TestCatchReturn();
 
         // Successfully jitted a return from a try inside a catch block
-        return 100;
     }
 
     internal static void TestCatchReturn()

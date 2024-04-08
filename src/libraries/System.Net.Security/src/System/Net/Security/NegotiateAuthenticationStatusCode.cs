@@ -25,7 +25,7 @@ namespace System.Net.Security
         BadBinding,
 
         /// <summary>Unsupported authentication package was requested.</summary>
-        /// <remarks>Maps to GSS_S_BAD_MECH status in GSSAPI.</remarks>
+        /// <remarks>Maps to GSS_S_BAD_MECH or GSS_S_UNAVAILABLE status in GSSAPI.</remarks>
         Unsupported,
 
         /// <summary>Message was altered and failed an integrity check validation.</summary>

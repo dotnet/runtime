@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using System.Runtime;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
 using System.Diagnostics;
+using System.Runtime;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 
 using Internal.Runtime;
 using Internal.Runtime.Augments;
@@ -16,20 +16,13 @@ namespace System
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct RuntimeTypeHandle : IEquatable<RuntimeTypeHandle>, ISerializable
     {
-        //
-        // Caution: There can be and are multiple MethodTable for the "same" type (e.g. int[]). That means
-        // you can't use the raw IntPtr value for comparisons.
-        //
+        private IntPtr _value;
 
-        internal RuntimeTypeHandle(EETypePtr pEEType)
-            : this(pEEType.RawValue)
-        {
-        }
+        internal unsafe RuntimeTypeHandle(MethodTable* pEEType)
+            => _value = (IntPtr)pEEType;
 
         private RuntimeTypeHandle(IntPtr value)
-        {
-            _value = value;
-        }
+            => _value = value;
 
         public override bool Equals(object? obj)
         {
@@ -40,12 +33,12 @@ namespace System
             return false;
         }
 
-        public override int GetHashCode()
+        public override unsafe int GetHashCode()
         {
             if (IsNull)
                 return 0;
 
-            return this.ToEETypePtr().GetHashCode();
+            return (int)this.ToMethodTable()->HashCode;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -105,12 +98,6 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal EETypePtr ToEETypePtr()
-        {
-            return new EETypePtr(_value);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal MethodTable* ToMethodTable()
         {
             return (MethodTable*)_value;
@@ -123,7 +110,5 @@ namespace System
                 return _value == new IntPtr(0);
             }
         }
-
-        private IntPtr _value;
     }
 }

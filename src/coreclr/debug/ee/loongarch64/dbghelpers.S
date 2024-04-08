@@ -8,7 +8,7 @@
 // hijacking stub used to perform a func-eval, see Debugger::FuncEvalSetup() for use.
 //
 // on entry:
-//   x0  : pointer to DebuggerEval object
+//   a0  : pointer to DebuggerEval object
 //
 
 // @dbgtodo- once we port Funceval, use the ExceptionHijack stub instead of this func-eval stub.
@@ -17,16 +17,16 @@ NESTED_ENTRY FuncEvalHijack, _TEXT, UnhandledExceptionHandlerUnix
     //       you change the prolog you will also need to update the personality routine.
 
     // push arg to the stack so our personality routine can find it
-    // push lr to get good stacktrace in debugger
+    // push ra to get good stacktrace in debugger
     //                            $fp,$ra
-    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, -32
+    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 32
     st.d  $a0, $sp, 16
 
     // FuncEvalHijackWorker returns the address we should jump to.
     bl C_FUNC(FuncEvalHijackWorker)
 
     EPILOG_STACK_FREE  32
-    EPILOG_BRANCH_REG  $v0
+    EPILOG_BRANCH_REG  $a0
 NESTED_END FuncEvalHijack
 
 // This is the general purpose hijacking stub. The DacDbi Hijack primitive will

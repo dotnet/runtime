@@ -1813,13 +1813,12 @@ class TestNon2PowerStructs
 public class TestStructs
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         TestStructReturns.Test();
         TestUnsafeCasts.Test();
         TestMergeReturnBlocks.Test();
         TestHFAandHVA.Test();
         TestNon2PowerStructs.Test();
-        return 100;
     }
 }

@@ -203,7 +203,7 @@ internal static partial class Interop
 
             /// <summary>
             /// Open if exists or fail if doesn't exist. Equivalent to OPEN_EXISTING or
-            /// <see cref="System.IO.FileMode.Open"/>.
+            /// <see cref="FileMode.Open"/>.
             /// </summary>
             /// <remarks>
             /// TruncateExisting also uses Open and then manually truncates the file
@@ -214,25 +214,25 @@ internal static partial class Interop
 
             /// <summary>
             /// Create if doesn't exist or fail if does exist. Equivalent to CREATE_NEW
-            /// or <see cref="System.IO.FileMode.CreateNew"/>.
+            /// or <see cref="FileMode.CreateNew"/>.
             /// </summary>
             FILE_CREATE = 2,
 
             /// <summary>
             /// Open if exists or create if doesn't exist. Equivalent to OPEN_ALWAYS or
-            /// <see cref="System.IO.FileMode.OpenOrCreate"/>.
+            /// <see cref="FileMode.OpenOrCreate"/>.
             /// </summary>
             FILE_OPEN_IF = 3,
 
             /// <summary>
             /// Open and overwrite if exists or fail if doesn't exist. Equivalent to
-            /// TRUNCATE_EXISTING or <see cref="System.IO.FileMode.Truncate"/>.
+            /// TRUNCATE_EXISTING or <see cref="FileMode.Truncate"/>.
             /// </summary>
             FILE_OVERWRITE = 4,
 
             /// <summary>
             /// Open and overwrite if exists or create if doesn't exist. Equivalent to
-            /// CREATE_ALWAYS or <see cref="System.IO.FileMode.Create"/>.
+            /// CREATE_ALWAYS or <see cref="FileMode.Create"/>.
             /// </summary>
             FILE_OVERWRITE_IF = 5
         }

@@ -930,7 +930,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options1 = new JsonSerializerOptions
             {
-                PropertyNamingPolicy = new SimpleSnakeCasePolicy()
+                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
             };
 
             string json = @"{""x_VaLUE"":1,""Y_vALue"":2}";
@@ -942,7 +942,7 @@ namespace System.Text.Json.Serialization.Tests
 
             var options2 = new JsonSerializerOptions
             {
-                PropertyNamingPolicy = new SimpleSnakeCasePolicy(),
+                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
                 PropertyNameCaseInsensitive = true,
             };
 
@@ -1049,23 +1049,24 @@ namespace System.Text.Json.Serialization.Tests
             await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Point_2D_Struct>("{true"));
         }
 
+#if !BUILDING_SOURCE_GENERATOR_TESTS // Anonymous types not supported in source gen
         [Fact]
-        public void AnonymousObject()
+        public async Task AnonymousObject()
         {
             var obj = new { Prop = 5 };
             Type objType = obj.GetType();
 
             // 'Prop' property binds with a ctor arg called 'Prop'.
 
-            object newObj = JsonSerializer.Deserialize("{}", objType);
+            object newObj = await Serializer.DeserializeWrapper("{}", objType);
             Assert.Equal(0, objType.GetProperty("Prop").GetValue(newObj));
 
-            newObj = JsonSerializer.Deserialize(@"{""Prop"":5}", objType);
+            newObj = await Serializer.DeserializeWrapper(@"{""Prop"":5}", objType);
             Assert.Equal(5, objType.GetProperty("Prop").GetValue(newObj));
         }
 
         [Fact]
-        public void AnonymousObject_NamingPolicy()
+        public async Task AnonymousObject_NamingPolicy()
         {
             const string Json = @"{""prop"":5}";
 
@@ -1074,7 +1075,7 @@ namespace System.Text.Json.Serialization.Tests
 
             // 'Prop' property binds with a ctor arg called 'Prop'.
 
-            object newObj = JsonSerializer.Deserialize(Json, objType);
+            object newObj = await Serializer.DeserializeWrapper(Json, objType);
             // Verify no match if no naming policy
             Assert.Equal(0, objType.GetProperty("Prop").GetValue(newObj));
 
@@ -1083,10 +1084,11 @@ namespace System.Text.Json.Serialization.Tests
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             };
 
-            newObj = JsonSerializer.Deserialize(Json, objType, options);
+            newObj = await Serializer.DeserializeWrapper(Json, objType, options);
             // Verify match with naming policy
             Assert.Equal(5, objType.GetProperty("Prop").GetValue(newObj));
         }
+#endif
 
         public record MyRecord(int Prop);
 
@@ -1329,29 +1331,29 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void StructWithPropertyInit_DeseralizeEmptyObject()
+        public async Task StructWithPropertyInit_DeseralizeEmptyObject()
         {
             string json = @"{}";
-            var obj = JsonSerializer.Deserialize<StructWithPropertyInit>(json);
+            var obj = await Serializer.DeserializeWrapper<StructWithPropertyInit>(json);
             Assert.Equal(42, obj.A);
             Assert.Equal(0, obj.B);
         }
 
         [Fact]
-        public void StructWithPropertyInit_OverrideInitedProperty()
+        public async Task StructWithPropertyInit_OverrideInitedProperty()
         {
             string json = @"{""A"":43}";
-            var obj = JsonSerializer.Deserialize<StructWithPropertyInit>(json);
+            var obj = await Serializer.DeserializeWrapper<StructWithPropertyInit>(json);
             Assert.Equal(43, obj.A);
             Assert.Equal(0, obj.B);
 
             json = @"{""A"":0,""B"":44}";
-            obj = JsonSerializer.Deserialize<StructWithPropertyInit>(json);
+            obj = await Serializer.DeserializeWrapper<StructWithPropertyInit>(json);
             Assert.Equal(0, obj.A);
             Assert.Equal(44, obj.B);
 
             json = @"{""B"":45}";
-            obj = JsonSerializer.Deserialize<StructWithPropertyInit>(json);
+            obj = await Serializer.DeserializeWrapper<StructWithPropertyInit>(json);
             Assert.Equal(42, obj.A); // JSON doesn't set A property so it's expected to be 42
             Assert.Equal(45, obj.B);
         }
@@ -1364,10 +1366,10 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void StructWithFieldInit_DeseralizeEmptyObject()
+        public async Task StructWithFieldInit_DeseralizeEmptyObject()
         {
             string json = @"{}";
-            var obj = JsonSerializer.Deserialize<StructWithFieldInit>(json);
+            var obj = await Serializer.DeserializeWrapper<StructWithFieldInit>(json);
             Assert.Equal(0, obj.A);
             Assert.Equal(42, obj.B);
         }
@@ -1380,10 +1382,10 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void StructWithExplicitParameterlessCtor_DeseralizeEmptyObject()
+        public async Task StructWithExplicitParameterlessCtor_DeseralizeEmptyObject()
         {
             string json = @"{}";
-            var obj = JsonSerializer.Deserialize<StructWithExplicitParameterlessCtor>(json);
+            var obj = await Serializer.DeserializeWrapper<StructWithExplicitParameterlessCtor>(json);
             Assert.Equal(42, obj.A);
         }
 
@@ -1431,18 +1433,17 @@ namespace System.Text.Json.Serialization.Tests
             JsonTestHelper.AssertJsonEqual(json, await Serializer.SerializeWrapper(obj));
         }
 
-#if FIXED // https://github.com/dotnet/roslyn/issues/66900
         [Fact]
         public async Task TestClassWithManyConstructorParameters()
         {
             ClassWithManyConstructorParameters value = ClassWithManyConstructorParameters.Create();
-            string json = JsonSerializer.Serialize(value);
+            string json = await Serializer.SerializeWrapper(value);
 
             ClassWithManyConstructorParameters result = await Serializer.DeserializeWrapper<ClassWithManyConstructorParameters>(json);
 
             Assert.Equal(value, result); // Type is C# record that implements structural equality.
         }
-#endif
+
         public class ClassWithDefaultCtorParams
         {
             public Point_2D_Struct_WithAttribute Struct { get; }
@@ -1574,7 +1575,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        [JsonConverter(typeof(JsonStringEnumConverter))]
+        [JsonConverter(typeof(JsonStringEnumConverter<MyEnum>))]
         public enum MyEnum
         {
             One = 1,
@@ -1599,6 +1600,41 @@ namespace System.Text.Json.Serialization.Tests
             public int Y { get; }
 
             public ClassWithIgnoredPropertyDefaultParam(int x, int y = 5) => (X, Y) = (x, y);
+        }
+
+        [Fact]
+        public async Task TestClassWithManyDefaultParams()
+        {
+            string json = "{}";
+            Class_With_Parameters_Default_Values result = await Serializer.DeserializeWrapper<Class_With_Parameters_Default_Values>(json);
+            result.Verify();
+        }
+        
+        [Fact]
+        public async Task TestClassWithCustomConverterOnCtorParameter_ShouldPassCorrectTypeToConvertParameter()
+        {
+            ClassWithCustomConverterOnCtorParameter result = await Serializer.DeserializeWrapper<ClassWithCustomConverterOnCtorParameter>("""{"Id":"id"}""");
+            Assert.Equal("id", result.Id);
+        }
+
+        public class ClassWithCustomConverterOnCtorParameter
+        {
+            public ClassWithCustomConverterOnCtorParameter(string id) => Id = id;
+
+            [JsonConverter(typeof(CustomCtorParameterConverter))]
+            public string Id { get; }
+        }
+
+        public class CustomCtorParameterConverter : JsonConverter<string>
+        {
+            public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                Assert.Equal(typeof(string), typeToConvert);
+                return reader.GetString();
+            }
+
+            public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options)
+                => writer.WriteStringValue(value);
         }
     }
 }

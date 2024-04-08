@@ -1018,7 +1018,7 @@ namespace System.Reflection.Metadata
         public MetadataStringComparer StringComparer => new MetadataStringComparer(this);
 
         /// <summary>
-        /// The decoder used by the reader to produce <see cref="string"/> instances from UTF8 encoded byte sequences.
+        /// The decoder used by the reader to produce <see cref="string"/> instances from UTF-8 encoded byte sequences.
         /// </summary>
         public MetadataStringDecoder UTF8Decoder { get; }
 

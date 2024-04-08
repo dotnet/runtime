@@ -25,7 +25,7 @@ namespace JitTest
         public extern static void GetSystemInfo(ref SYSTEM_INFO si);
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             SYSTEM_INFO si = new SYSTEM_INFO();
             try
@@ -37,7 +37,6 @@ namespace JitTest
                 Console.WriteLine(si._dwNumberOfProcessors.ToString() + " processor(s) found");
                 Console.WriteLine("Allocation granularity is " + si._dwAllocationGranularity.ToString() + " for this system.");
             }
-            return 100;
         }
     }
 }

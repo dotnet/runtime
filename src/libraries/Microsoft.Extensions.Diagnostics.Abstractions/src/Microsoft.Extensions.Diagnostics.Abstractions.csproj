@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
+    <IsPackable>true</IsPackable>
+    <!-- Disabling baseline validation since this is a brand new package.
+       Once this package has shipped a stable version, the following line
+       should be removed in order to re-enable validation. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+    <PackageDescription>Diagnostic abstractions for Microsoft.Extensions.Diagnostics.
+
+Commonly Used Types:
+Microsoft.Extensions.Diagnostics.Metrics.IMetricsBuilder
+Microsoft.Extensions.Diagnostics.Metrics.IMetricsListener
+Microsoft.Extensions.Diagnostics.Metrics.InstrumentRule
+Microsoft.Extensions.Diagnostics.Metrics.MeterScope
+Microsoft.Extensions.Diagnostics.Metrics.MetricsBuilderExtensions
+Microsoft.Extensions.Diagnostics.Metrics.MetricsOptions</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonPath)Extensions\TypeNameHelper\TypeNameHelper.cs" Link="Common\src\Extensions\TypeNameHelper\TypeNameHelper.cs" />
+    <Compile Include="$(CommonPath)System\ThrowHelper.cs" Link="Common\System\ThrowHelper.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.DiagnosticSource\src\System.Diagnostics.DiagnosticSource.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\src\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Options\src\Microsoft.Extensions.Options.csproj" />
+  </ItemGroup>
+
+</Project>

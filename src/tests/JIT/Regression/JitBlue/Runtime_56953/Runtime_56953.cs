@@ -62,7 +62,7 @@ public class TestClass13
         }
     }
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         try
         {
@@ -73,6 +73,5 @@ public class TestClass13
         {
             // ignore exceptions
         }
-        return 100;
     }
 }

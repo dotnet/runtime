@@ -20,7 +20,7 @@ namespace System.ComponentModel.Composition.Registration
         private static readonly ReflectionContext s_inner = new InnerRC();
         private static readonly List<object> s_emptyList = new List<object>();
 
-        private readonly Lock _lock = new Lock();
+        private readonly ReadWriteLock _lock = new ReadWriteLock();
         private readonly List<PartBuilder> _conventions = new List<PartBuilder>();
 
         private readonly Dictionary<MemberInfo, List<Attribute>> _memberInfos = new Dictionary<MemberInfo, List<Attribute>>();

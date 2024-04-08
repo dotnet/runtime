@@ -34,7 +34,7 @@ namespace System
         // What are the consequences of making this an enum?
         ///////////////////////////////////////////////////////////////////////
         // If you update this, update the corresponding stuff in OAVariantLib.cs,
-        // COMOAVariant.cpp (2 tables, forwards and reverse), and perhaps OleVariant.h
+        // OAVariant.cpp (2 tables, forwards and reverse), and perhaps OleVariant.h
         ///////////////////////////////////////////////////////////////////////
         internal const int CV_EMPTY = 0x0;
         internal const int CV_VOID = 0x1;
@@ -67,8 +67,8 @@ namespace System
         internal const int ArrayBitMask = 0x10000;
 
         internal static Variant Empty => default;
-        internal static Variant Missing => new Variant(Variant.CV_MISSING, Type.Missing, 0);
-        internal static Variant DBNull => new Variant(Variant.CV_NULL, System.DBNull.Value, 0);
+        internal static Variant Missing => new Variant(CV_MISSING, Type.Missing, 0);
+        internal static Variant DBNull => new Variant(CV_NULL, System.DBNull.Value, 0);
 
         //
         // Native Methods

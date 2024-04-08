@@ -64,12 +64,6 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 
         switch (parentNode->OperGet())
         {
-            case GT_CMPXCHG:
-            case GT_LOCKADD:
-            case GT_XADD:
-                NYI_RISCV64("GT_CMPXCHG,GT_LOCKADD,GT_XADD");
-                break;
-
             case GT_ADD:
             case GT_EQ:
             case GT_NE:
@@ -140,7 +134,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 
     if (op->OperIsCompare() && !varTypeIsFloating(op->gtGetOp1()))
     {
-        // We do not expect any other relops on LA64
+        // We do not expect any other relops on RISCV64
         assert(op->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT));
 
         cond = GenCondition::FromRelop(op);
@@ -251,7 +245,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             src = src->AsUnOp()->gtGetOp1();
         }
 
-        if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= INITBLK_UNROLL_LIMIT) && src->OperIs(GT_CNS_INT))
+        if ((size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memset)) && src->OperIs(GT_CNS_INT))
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
@@ -280,9 +274,16 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
             ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
         }
+        else if (blkNode->IsZeroingGcPointersOnHeap())
+        {
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+            // We're going to use REG_R0 for zero
+            src->SetContained();
+        }
         else
         {
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
+            LowerBlockStoreAsHelperCall(blkNode);
+            return;
         }
     }
     else
@@ -297,14 +298,22 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
         }
 
-        bool doCpObj = !blkNode->OperIs(GT_STORE_DYN_BLK) && blkNode->GetLayout()->HasGCPtr();
-        if (doCpObj && dstAddr->OperIs(GT_LCL_ADDR) && (size <= CPBLK_UNROLL_LIMIT))
+        ClassLayout* layout               = blkNode->GetLayout();
+        bool         doCpObj              = layout->HasGCPtr();
+        unsigned     copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
+
+        if (doCpObj && (size <= copyBlockUnrollLimit))
         {
-            // If the size is small enough to unroll then we need to mark the block as non-interruptible
-            // to actually allow unrolling. The generated code does not report GC references loaded in the
-            // temporary register(s) used for copying.
-            doCpObj                  = false;
-            blkNode->gtBlkOpGcUnsafe = true;
+            // No write barriers are needed on the stack.
+            // If the layout contains a byref, then we know it must live on the stack.
+            if (dstAddr->OperIs(GT_LCL_ADDR) || layout->HasGCByRef())
+            {
+                // If the size is small enough to unroll then we need to mark the block as non-interruptible
+                // to actually allow unrolling. The generated code does not report GC references loaded in the
+                // temporary register(s) used for copying.
+                doCpObj                  = false;
+                blkNode->gtBlkOpGcUnsafe = true;
+            }
         }
 
         // CopyObj or CopyBlk
@@ -313,7 +322,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             assert((dstAddr->TypeGet() == TYP_BYREF) || (dstAddr->TypeGet() == TYP_I_IMPL));
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
         }
-        else if (blkNode->OperIs(GT_STORE_BLK) && (size <= CPBLK_UNROLL_LIMIT))
+        else if (blkNode->OperIs(GT_STORE_BLK) && (size <= copyBlockUnrollLimit))
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
@@ -326,9 +335,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         }
         else
         {
-            assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
-
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
+            assert(blkNode->OperIs(GT_STORE_BLK));
+            LowerBlockStoreAsHelperCall(blkNode);
         }
     }
 }
@@ -347,7 +355,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
     assert(size < INT32_MAX);
 
-    if (addr->OperIs(GT_LCL_ADDR))
+    if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), size))
     {
         addr->SetContained();
         return;
@@ -393,42 +401,14 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 
     if (src->TypeIs(TYP_STRUCT))
     {
-        // STRUCT args (FIELD_LIST / OBJ) will always be contained.
+        // STRUCT args (FIELD_LIST / BLK / LCL_VAR / LCL_FLD) will always be contained.
         MakeSrcContained(putArgNode, src);
 
-        // Currently, codegen does not support LCL_VAR/LCL_FLD sources, so we morph them to OBJs.
-        // TODO-ADDR: support the local nodes in codegen and remove this code.
-        if (src->OperIsLocalRead())
+        if (src->OperIs(GT_LCL_VAR))
         {
-            unsigned     lclNum  = src->AsLclVarCommon()->GetLclNum();
-            ClassLayout* layout  = nullptr;
-            GenTree*     lclAddr = nullptr;
-
-            if (src->OperIs(GT_LCL_VAR))
-            {
-                layout  = comp->lvaGetDesc(lclNum)->GetLayout();
-                lclAddr = comp->gtNewLclVarAddrNode(lclNum);
-
-                comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::IsStructArg));
-            }
-            else
-            {
-                layout  = src->AsLclFld()->GetLayout();
-                lclAddr = comp->gtNewLclAddrNode(lclNum, src->AsLclFld()->GetLclOffs());
-            }
-
-            src->ChangeOper(GT_BLK);
-            src->AsBlk()->SetAddr(lclAddr);
-            src->AsBlk()->Initialize(layout);
-
-            BlockRange().InsertBefore(src, lclAddr);
-        }
-
-        // Codegen supports containment of local addresses under OBJs.
-        if (src->OperIs(GT_BLK) && src->AsBlk()->Addr()->IsLclVarAddr())
-        {
-            // TODO-RISCV64-CQ: support containment of LCL_ADDR with non-zero offset too.
-            MakeSrcContained(src, src->AsBlk()->Addr());
+            // TODO-1stClassStructs: support struct enregistration here by retyping "src" to its register type for
+            // the non-split case.
+            comp->lvaSetVarDoNotEnregister(src->AsLclVar()->GetLclNum() DEBUGARG(DoNotEnregisterReason::IsStructArg));
         }
     }
 }
@@ -454,7 +434,7 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 //    i) GT_CAST(float/double, int type with overflow detection)
 //
 
-void Lowering::LowerCast(GenTree* tree)
+GenTree* Lowering::LowerCast(GenTree* tree)
 {
     assert(tree->OperGet() == GT_CAST);
 
@@ -477,6 +457,8 @@ void Lowering::LowerCast(GenTree* tree)
 
     // Now determine if we have operands that should be contained.
     ContainCheckCast(tree->AsCast());
+
+    return nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -636,17 +618,10 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
     {
         MakeSrcContained(indirNode, addr);
     }
-    else if (addr->OperIs(GT_LCL_ADDR))
+    else if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), indirNode->Size()))
     {
         // These nodes go into an addr mode:
         // - GT_LCL_ADDR is a stack addr mode.
-        MakeSrcContained(indirNode, addr);
-    }
-    else if (addr->OperIs(GT_CLS_VAR_ADDR))
-    {
-        // These nodes go into an addr mode:
-        // - GT_CLS_VAR_ADDR turns into a constant.
-        // make this contained, it turns into a constant that goes into an addr mode
         MakeSrcContained(indirNode, addr);
     }
 }

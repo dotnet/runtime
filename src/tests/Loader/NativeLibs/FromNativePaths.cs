@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public class FromNativePaths
 {
@@ -117,7 +118,8 @@ public class FromNativePaths
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return Test() ? 100 : 101;
     }

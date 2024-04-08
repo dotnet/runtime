@@ -1,7 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
+    <TargetFramework Condition="'$(WasmEnableThreads)' != 'true'">$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFrameworks Condition="'$(WasmEnableThreads)' == 'true'">$(NetCoreAppCurrent);$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <FeatureWasmManagedThreads Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableThreads)' == 'true'">true</FeatureWasmManagedThreads>
+    <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'" >$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
   </PropertyGroup>
   <!-- Compiled Source Files -->
   <ItemGroup>
@@ -143,12 +151,15 @@
     <Compile Include="System\Linq\Parallel\Utils\Wrapper.cs" />
     <Compile Include="System\Linq\Parallel\Utils\WrapperEqualityComparer.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading" Condition="'$(WasmEnableThreads)' != 'true'" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.WebAssembly.Threading\ref\System.Threading.WebAssembly.Threading.csproj" Condition="'$(WasmEnableThreads)' == 'true'" />
   </ItemGroup>
+
 </Project>

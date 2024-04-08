@@ -6,13 +6,12 @@ using Xunit;
 public struct AA
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         bool local3 = false;
         do
         {
             while (local3) { }
         } while (local3);
-        return 100;
     }
 }

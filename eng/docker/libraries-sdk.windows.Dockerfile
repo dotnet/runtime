@@ -1,11 +1,11 @@
 # escape=`
 # Simple Dockerfile which copies clr and library build artifacts into target dotnet sdk image
-ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:7.0-nanoserver-ltsc2022
+ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:8.0-nanoserver-ltsc2022
 FROM $SDK_BASE_IMAGE as target
 
 SHELL ["pwsh", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
-ARG VERSION=8.0
+ARG VERSION=9.0
 ENV _DOTNET_INSTALL_CHANNEL="$VERSION.1xx"
 ARG CONFIGURATION=Release
 

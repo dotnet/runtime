@@ -92,7 +92,7 @@ namespace Prog
     public class Program
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Callback obj = new Callback();
 
@@ -103,7 +103,6 @@ namespace Prog
             obj.unregister();
 
             Console.WriteLine("end");
-            return 100;
         }
     }
 }

@@ -3,10 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Xml;                   //Required for Content Type File manipulation
 using System.Diagnostics;
-using System.IO.Compression;
 using System.Diagnostics.CodeAnalysis;
+using System.IO.Compression;
+using System.Xml;                   //Required for Content Type File manipulation
 
 namespace System.IO.Packaging
 {
@@ -258,7 +258,7 @@ namespace System.IO.Packaging
                 else if (packageFileAccess == FileAccess.ReadWrite)
                     zipArchiveMode = ZipArchiveMode.Update;
 
-                zipArchive = new ZipArchive(_containerStream, zipArchiveMode, true, Text.Encoding.UTF8);
+                zipArchive = new ZipArchive(_containerStream, zipArchiveMode, true);
                 _zipStreamManager = new ZipStreamManager(zipArchive, _packageFileMode, _packageFileAccess);
                 contentTypeHelper = new ContentTypeHelper(zipArchive, _packageFileMode, _packageFileAccess, _zipStreamManager);
             }
@@ -325,7 +325,7 @@ namespace System.IO.Packaging
                 else if (packageFileAccess == FileAccess.ReadWrite)
                     zipArchiveMode = ZipArchiveMode.Update;
 
-                zipArchive = new ZipArchive(s, zipArchiveMode, true, Text.Encoding.UTF8);
+                zipArchive = new ZipArchive(s, zipArchiveMode, true);
 
                 _zipStreamManager = new ZipStreamManager(zipArchive, packageFileMode, packageFileAccess);
                 contentTypeHelper = new ContentTypeHelper(zipArchive, packageFileMode, packageFileAccess, _zipStreamManager);
@@ -501,7 +501,7 @@ namespace System.IO.Packaging
                 //with the rules for comparing/normalizing partnames.
                 //Refer to PackUriHelper.ValidatedPartUri.GetNormalizedPartUri method.
                 //Currently normalization just involves upper-casing ASCII and hence the simplification.
-                return extensionA.ToUpperInvariant() == extensionB.ToUpperInvariant();
+                return extensionA.Equals(extensionB, StringComparison.InvariantCultureIgnoreCase);
             }
 
             int IEqualityComparer<string>.GetHashCode(string extension)

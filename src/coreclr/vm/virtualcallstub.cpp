@@ -823,6 +823,8 @@ void VirtualCallStubManager::ReclaimAll()
     g_reclaim_counter++;
 }
 
+const UINT32 VirtualCallStubManager::counter_block::MAX_COUNTER_ENTRIES;
+
 /* reclaim/rearrange any structures that can only be done during a gc sync point
 i.e. need to be serialized and non-concurrant. */
 void VirtualCallStubManager::Reclaim()
@@ -1756,15 +1758,6 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                 {
                     insertKind = DispatchCache::IK_RESOLVE;
                 }
-            }
-
-            if (insertKind != DispatchCache::IK_NONE)
-            {
-                // Because the TransparentProxy MT is process-global, we cannot cache targets for
-                // unshared interfaces because there is the possibility of caching a
-                // <token, TPMT, target> entry where target is in AD1, and then matching against
-                // this entry from AD2 which happens to be using the same token, perhaps for a
-                // completely different interface.
             }
 
             if (insertKind != DispatchCache::IK_NONE)

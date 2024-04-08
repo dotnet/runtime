@@ -3,139 +3,57 @@
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <TargetOS Condition="'$(TargetOS)' == ''">ios</TargetOS>
-    <TargetOS Condition="'$(TargetsiOSSimulator)' == 'true'">iossimulator</TargetOS>
-    <DeployAndRun Condition="'$(DeployAndRun)' == ''">true</DeployAndRun>
-    <iOSLikeDedup Condition="'$(TargetOS)' == 'ios'">true</iOSLikeDedup>
+    <TargetOS Condition="'$(TargetOS)' == ''">iossimulator</TargetOS>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
     <AppName>HelloiOS</AppName>
-    <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''">false</StripDebugSymbols>
-  </PropertyGroup>
+    <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
+    <SelfContained>true</SelfContained>
 
-  <PropertyGroup>
+    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>Link</TrimMode>
+    <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
+    <ShouldILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</ShouldILStrip>
+
+    <EnableDefaultAssembliesToBundle>true</EnableDefaultAssembliesToBundle>
+    <AppleGenerateAppBundle>true</AppleGenerateAppBundle>
+    <GenerateXcodeProject>true</GenerateXcodeProject>
+    <UseConsoleUITemplate>false</UseConsoleUITemplate>
+
+    <BuildAppBundleAfterTargets Condition="'$(ArchiveTests)' != 'true'">CopyFilesToPublishDirectory</BuildAppBundleAfterTargets>
+    <BuildAppBundleAfterTargets Condition="'$(ArchiveTests)' == 'true'">CopyFilesToPublishDirectory;Build</BuildAppBundleAfterTargets>
+    <BuildAppBundleDependsOnTargets Condition="'$(ArchiveTests)' == 'true'">Publish</BuildAppBundleDependsOnTargets>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'maccatalyst'">
-    <DevTeamProvisioning Condition="'$(TargetOS)' == 'maccatalyst' and '$(DevTeamProvisioning)' == ''">adhoc</DevTeamProvisioning>
-    <EnableAppSandbox Condition="'$(EnableAppSandbox)' == ''">false</EnableAppSandbox>
-  </PropertyGroup>
+  <ItemGroup>
+    <RuntimeComponents Condition="'$(DiagnosticPorts)' != ''" Include="diagnostics_tracing" />
+  </ItemGroup>
 
-  <Import Project="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.props" />
-  <UsingTask TaskName="AppleAppBuilderTask"
-             AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
+  <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.props" />
+  <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.InTree.targets" />
 
-  <UsingTask TaskName="MonoAOTCompiler"
-             AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
-
-  <UsingTask TaskName="ILStrip"
-             AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
-
-  <Target Name="BuildAppBundle" AfterTargets="CopyFilesToPublishDirectory">
-    <PropertyGroup>
-      <AppDir>$(MSBuildThisFileDirectory)$(PublishDir)\app</AppDir>
-      <IosSimulator Condition="'$(TargetsiOSSimulator)' == 'true'">iPhone 11</IosSimulator>
-      <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
-      <RunAOTCompilation Condition="('$(TargetsMacCatalyst)' == 'false' and '$(IosSimulator)' == '') or '$(ForceAOT)' == 'true'">true</RunAOTCompilation>
-    </PropertyGroup>
-
-    <RemoveDir Directories="$(AppDir)" />
-
-    <PropertyGroup Condition="'$(iOSLikeDedup)' == 'true'">
-      <_iOSLikeDedupAssembly>$(MSBuildThisFileDirectory)$(PublishDir)\aot-instances.dll</_iOSLikeDedupAssembly>
-    </PropertyGroup>
-    <WriteLinesToFile Condition="'$(iOSLikeDedup)' == 'true'" File="$(MSBuildThisFileDirectory)$(PublishDir)/aot-instances.cs" Overwrite="true" Lines="" WriteOnlyWhenDifferent="true" />
-    <Csc Condition="'$(iOSLikeDedup)' == 'true'"
-      Sources="$(MSBuildThisFileDirectory)$(PublishDir)\aot-instances.cs"
-      OutputAssembly="$(_iOSLikeDedupAssembly)"
-      TargetType="library"
-      Deterministic="true"
-      References="@(ReferencePath)"
-      ToolExe="$(CscToolExe)"
-      ToolPath="$(CscToolPath)" />
-
+  <Target Name="BuildAppBundle" AfterTargets="$(BuildAppBundleAfterTargets)" DependsOnTargets="$(BuildAppBundleDependsOnTargets)"/>
+  <Target Name="_SetAppleGenerateAppBundleProps" Condition="'$(TargetOS)' != 'ios' and '$(ArchiveTests)' != 'true'" BeforeTargets="_AppleGenerateAppBundle">
     <ItemGroup>
-      <BundleAssemblies Condition="'$(RunAOTCompilation)' != 'true'" Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll" />
-      <AotInputAssemblies Condition="'$(RunAOTCompilation)' == 'true'" Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll">
-        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
-        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
-      </AotInputAssemblies>
+      <RuntimeComponents Include="diagnostics_tracing" KeepDuplicates="false" />
     </ItemGroup>
-
-    <PropertyGroup>
-      <AOTMode Condition="'$(TargetOS)' != 'maccatalyst'">Full</AOTMode>
-      <AOTMode Condition="'$(TargetOS)' == 'maccatalyst' and '$(MonoForceInterpreter)' != 'true'">Full</AOTMode>
-      <AOTMode Condition="'$(TargetOS)' == 'maccatalyst' and '$(MonoForceInterpreter)' == 'true'">JustInterp</AOTMode>
-    </PropertyGroup>
-
-    <MonoAOTCompiler
-        Condition="'$(RunAOTCompilation)' == 'true'"
-        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())'))"
-        Mode="$(AOTMode)"
-        OutputType="AsmOnly"
-        Assemblies="@(AotInputAssemblies)"
-        DedupAssembly="$(_iOSLikeDedupAssembly)"
-        AotModulesTablePath="$(AppDir)\modules.m"
-        AotModulesTableLanguage="ObjC"
-        OutputDir="$(PublishDir)"
-        IntermediateOutputPath="$(IntermediateOutputPath)"
-        UseLLVM="$(UseLLVM)"
-        LLVMPath="$(MonoAotCrossDir)">
-        <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
-    </MonoAOTCompiler>
-
-    <ILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(AOTMode)' == 'Full'" Assemblies="@(BundleAssemblies)" />
-    <PropertyGroup>
-      <RuntimeComponents Condition="'$(RuntimeComponents)' == ''">marshal-ilgen</RuntimeComponents>
-    </PropertyGroup>
-
-    <AppleAppBuilderTask
-        TargetOS="$(TargetOS)"
-        Arch="$(TargetArchitecture)"
-        ProjectName="$(AppName)"
-        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)runtimes\$(TargetOS)-$(TargetArchitecture)\native\include\mono-2.0"
-        Assemblies="@(BundleAssemblies)"
-        MainLibraryFileName="Program.dll"
-        GenerateXcodeProject="True"
-        BuildAppBundle="True"
-        DevTeamProvisioning="$(DevTeamProvisioning)"
-        OutputDirectory="$(AppDir)"
-        Optimized="$(Optimized)"
-        ForceAOT="$(RunAOTCompilation)"
-        ForceInterpreter="$(MonoForceInterpreter)"
-        RuntimeComponents="$(RuntimeComponents)"
-        EnableAppSandbox="$(EnableAppSandbox)"
-        DiagnosticPorts="$(DiagnosticPorts)"
-        StripSymbolTable="$(StripDebugSymbols)"
-        AppDir="$(MSBuildThisFileDirectory)$(PublishDir)">
-        <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
-        <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
-    </AppleAppBuilderTask>
-
-    <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
-    <Message Importance="High" Text="App:   $(AppBundlePath)"/>
   </Target>
 
   <Target Name="RunAppBundle"
-          AfterTargets="BuildAppBundle"
+          AfterTargets="_AppleGenerateAppBundle"
           Condition="'$(ArchiveTests)' != 'true' and '$(DeployAndRun)' == 'true'">
-    <!-- FIXME: only run if the TargetArchitecture matches the current architecture -->
-
-    <!-- install and run on ios simulator or device -->
+    <!-- Install and run on a device or simulator -->
     <Exec Condition="'$(TargetOS)' == 'iossimulator'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-simulator-64 --output-directory=/tmp/out" />
     <Exec Condition="'$(TargetOS)' == 'ios'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-device --output-directory=/tmp/out" />
 
-    <!-- run on MacCatalyst -->
+    <!-- run on maccatalyst -->
     <Exec Condition="'$(TargetOS)' == 'maccatalyst'" Command="open -W $(AppBundlePath)" />
-
   </Target>
 
   <Target Name="CopySampleAppToHelixTestDir"
           Condition="'$(ArchiveTests)' == 'true'"
-          AfterTargets="Build"
-          DependsOnTargets="Publish;BuildAppBundle" >
+          AfterTargets="_AppleGenerateAppBundle" >
     <PropertyGroup>
       <!-- Helix properties -->
       <!-- AnyCPU as Platform-->

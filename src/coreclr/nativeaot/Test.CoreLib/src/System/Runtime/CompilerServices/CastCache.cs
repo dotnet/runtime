@@ -8,14 +8,18 @@ namespace System.Runtime.CompilerServices
     }
 
     // trivial implementation of the cast cache
-    internal static unsafe class CastCache
+    internal unsafe struct CastCache
     {
-        internal static CastResult TryGet(nuint source, nuint target)
+        public CastCache(int initialCacheSize, int maxCacheSize)
+        {
+        }
+
+        internal CastResult TryGet(nuint source, nuint target)
         {
             return CastResult.MaybeCast;
         }
 
-        internal static void TrySet(nuint source, nuint target, bool result)
+        internal void TrySet(nuint source, nuint target, bool result)
         {
         }
     }

@@ -27,7 +27,7 @@ namespace Test
     public class App
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             try
             {
@@ -40,7 +40,6 @@ namespace Test
                     );
             }
             catch (Exception) { }
-            return 100;
         }
 
         static object m_o;

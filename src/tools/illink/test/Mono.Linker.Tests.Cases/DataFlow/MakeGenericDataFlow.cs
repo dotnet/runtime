@@ -2,8 +2,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
-using Mono.Linker.Tests.Cases.Expectations.Helpers;
-using BindingFlags = System.Reflection.BindingFlags;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
@@ -83,8 +81,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				inputType.MakeGenericType (typeof (TestType));
 			}
 
-			// https://github.com/dotnet/linker/issues/2755
-			[ExpectedWarning ("IL2055", nameof (Type.MakeGenericType), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2055", nameof (Type.MakeGenericType))]
 			static void TestWithUnknownTypeArray (Type[] types)
 			{
 				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (types);
@@ -98,8 +95,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (types);
 			}
 
-			// https://github.com/dotnet/linker/issues/2755
-			[ExpectedWarning ("IL2055", nameof (Type.MakeGenericType), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2055", nameof (Type.MakeGenericType))]
 			static void TestWithArrayUnknownLengthSet (int arrayLen)
 			{
 				Type[] types = new Type[arrayLen];
@@ -422,15 +418,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (TestType).GetRuntimeMethod ("NoSuchMethod", new Type[] { }).MakeGenericMethod (unknownType);
 			}
 
-			// https://github.com/dotnet/linker/issues/2755
-			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod))]
 			static void TestUnknownMethod (MethodInfo mi)
 			{
 				mi.MakeGenericMethod (typeof (TestType));
 			}
 
-			// https://github.com/dotnet/linker/issues/2755
-			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod))]
 			static void TestUnknownMethodButNoTypeArguments (MethodInfo mi)
 			{
 				// Technically trimming could figure this out, but it's not worth the complexity - such call will always fail at runtime.
@@ -540,8 +534,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					.MakeGenericMethod (noValue);
 			}
 
-			// https://github.com/dotnet/linker/issues/2755
-			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod))]
 			static void TestWithUnknownTypeArray (Type[] types)
 			{
 				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements), BindingFlags.Static)
@@ -569,8 +562,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					.MakeGenericMethod (types);
 			}
 
-			// https://github.com/dotnet/linker/issues/2755
-			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod))]
 			static void TestWithArrayUnknownLengthSet (int arrayLen)
 			{
 				Type[] types = new Type[arrayLen];

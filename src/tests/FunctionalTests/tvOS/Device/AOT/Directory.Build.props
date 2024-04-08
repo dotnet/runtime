@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <RunAnalyzers>false</RunAnalyzers>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsTestProject Condition="'$(IsTestProject)' == ''">true</IsTestProject>
+  </PropertyGroup>
+
+  <Import Project="..\..\..\..\..\libraries\Directory.Build.props" />
+</Project>

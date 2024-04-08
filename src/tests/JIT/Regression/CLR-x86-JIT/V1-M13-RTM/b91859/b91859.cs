@@ -7,11 +7,10 @@ using Xunit;
 public class AA
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         bool b = false;
         b = (b ? (object)b : (object)new AA()) ==
             (b ? new AA() : (b ? new AA() : null));
-        return 100;
     }
 }

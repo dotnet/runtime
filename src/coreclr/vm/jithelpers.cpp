@@ -56,6 +56,11 @@
 #include "excep.h"
 #endif
 
+#include "exinfo.h"
+
+using std::isfinite;
+using std::isnan;
+
 //========================================================================
 //
 // This file contains implementation of all JIT helpers. The helpers are
@@ -262,7 +267,7 @@ HCIMPL2(INT32, JIT_Div, INT32 dividend, INT32 divisor)
         }
         else if (divisor == -1)
         {
-            if (dividend == _I32_MIN)
+            if (dividend == INT32_MIN)
             {
                 ehKind = kOverflowException;
                 goto ThrowExcep;
@@ -294,7 +299,7 @@ HCIMPL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor)
         }
         else if (divisor == -1)
         {
-            if (dividend == _I32_MIN)
+            if (dividend == INT32_MIN)
             {
                 ehKind = kOverflowException;
                 goto ThrowExcep;
@@ -486,178 +491,65 @@ HCIMPLEND
 #include <optsmallperfcritical.h>
 
 /*********************************************************************/
-//
-HCIMPL1_V(double, JIT_ULng2Dbl, UINT64 val)
+HCIMPL1_V(double, JIT_ULng2Dbl, uint64_t val)
 {
     FCALL_CONTRACT;
-
-    double conv = (double) ((INT64) val);
-    if (conv < 0)
-        conv += (4294967296.0 * 4294967296.0);  // add 2^64
-    _ASSERTE(conv >= 0);
-    return(conv);
+    return (double)val;
 }
 HCIMPLEND
 
 /*********************************************************************/
-// needed for ARM and RyuJIT-x86
-HCIMPL1_V(double, JIT_Lng2Dbl, INT64 val)
+HCIMPL1_V(double, JIT_Lng2Dbl, int64_t val)
 {
     FCALL_CONTRACT;
-    return double(val);
-}
-HCIMPLEND
-
-//--------------------------------------------------------------------------
-template <class ftype>
-ftype modftype(ftype value, ftype *iptr);
-template <> float modftype(float value, float *iptr) { return modff(value, iptr); }
-template <> double modftype(double value, double *iptr) { return modf(value, iptr); }
-
-// round to nearest, round to even if tied
-template <class ftype>
-ftype BankersRound(ftype value)
-{
-    if (value < 0.0) return -BankersRound <ftype> (-value);
-
-    ftype integerPart;
-    modftype( value, &integerPart );
-
-    // if decimal part is exactly .5
-    if ((value -(integerPart +0.5)) == 0.0)
-    {
-        // round to even
-        if (fmod(ftype(integerPart), ftype(2.0)) == 0.0)
-            return integerPart;
-
-        // Else return the nearest even integer
-        return (ftype)_copysign(ceil(fabs(value+0.5)),
-                         value);
-    }
-
-    // Otherwise round to closest
-    return (ftype)_copysign(floor(fabs(value)+0.5),
-                     value);
-}
-
-
-/*********************************************************************/
-// round double to nearest int (as double)
-HCIMPL1_V(double, JIT_DoubleRound, double val)
-{
-    FCALL_CONTRACT;
-    return BankersRound(val);
+    return (double)val;
 }
 HCIMPLEND
 
 /*********************************************************************/
-// round float to nearest int (as float)
-HCIMPL1_V(float, JIT_FloatRound, float val)
+HCIMPL1_V(int64_t, JIT_Dbl2Lng, double val)
 {
     FCALL_CONTRACT;
-    return BankersRound(val);
-}
-HCIMPLEND
 
-/*********************************************************************/
-// Call fast Dbl2Lng conversion - used by functions below
-FORCEINLINE INT64 FastDbl2Lng(double val)
-{
-#ifdef TARGET_X86
-    FCALL_CONTRACT;
-    return HCCALL1_V(JIT_Dbl2Lng, val);
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM)
+    const double int64_min = -2147483648.0 * 4294967296.0;
+    const double int64_max = 2147483648.0 * 4294967296.0;
+    return (val != val) ? 0 : (val <= int64_min) ? INT64_MIN : (val >= int64_max) ? INT64_MAX : (int64_t)val;
 #else
-    FCALL_CONTRACT;
-    return((__int64) val);
+    return (int64_t)val;
 #endif
 }
+HCIMPLEND
 
 /*********************************************************************/
-HCIMPL1_V(UINT32, JIT_Dbl2UIntOvf, double val)
+HCIMPL1_V(uint32_t, JIT_Dbl2UIntOvf, double val)
 {
     FCALL_CONTRACT;
 
-        // Note that this expression also works properly for val = NaN case
+    // Note that this expression also works properly for val = NaN case
     if (val > -1.0 && val < 4294967296.0)
-        return((UINT32)FastDbl2Lng(val));
+        return (uint32_t)val;
 
     FCThrow(kOverflowException);
 }
 HCIMPLEND
 
 /*********************************************************************/
-HCIMPL1_V(UINT64, JIT_Dbl2ULng, double val)
-{
-    FCALL_CONTRACT;
-
-    const double two63  = 2147483648.0 * 4294967296.0;
-    UINT64 ret;
-    if (val < two63) {
-        ret = FastDbl2Lng(val);
-    }
-    else {
-        // subtract 0x8000000000000000, do the convert then add it back again
-        ret = FastDbl2Lng(val - two63) + I64(0x8000000000000000);
-    }
-    return ret;
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1_V(UINT64, JIT_Dbl2ULngOvf, double val)
-{
-    FCALL_CONTRACT;
-
-    const double two64  = 4294967296.0 * 4294967296.0;
-        // Note that this expression also works properly for val = NaN case
-    if (val > -1.0 && val < two64) {
-        const double two63  = 2147483648.0 * 4294967296.0;
-        UINT64 ret;
-        if (val < two63) {
-            ret = FastDbl2Lng(val);
-        }
-        else {
-            // subtract 0x8000000000000000, do the convert then add it back again
-            ret = FastDbl2Lng(val - two63) + I64(0x8000000000000000);
-        }
-#ifdef _DEBUG
-        // since no overflow can occur, the value always has to be within 1
-        double roundTripVal = HCCALL1_V(JIT_ULng2Dbl, ret);
-        _ASSERTE(val - 1.0 <= roundTripVal && roundTripVal <= val + 1.0);
-#endif // _DEBUG
-        return ret;
-    }
-
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
-
-
-#if !defined(TARGET_X86) || defined(TARGET_UNIX)
-
-HCIMPL1_V(INT64, JIT_Dbl2Lng, double val)
-{
-    FCALL_CONTRACT;
-
-    return((INT64)val);
-}
-HCIMPLEND
-
 HCIMPL1_V(int, JIT_Dbl2IntOvf, double val)
 {
     FCALL_CONTRACT;
 
     const double two31 = 2147483648.0;
-
-        // Note that this expression also works properly for val = NaN case
+    // Note that this expression also works properly for val = NaN case
     if (val > -two31 - 1 && val < two31)
-        return((INT32)val);
+        return (int32_t)val;
 
     FCThrow(kOverflowException);
 }
 HCIMPLEND
 
-HCIMPL1_V(INT64, JIT_Dbl2LngOvf, double val)
+/*********************************************************************/
+HCIMPL1_V(int64_t, JIT_Dbl2LngOvf, double val)
 {
     FCALL_CONTRACT;
 
@@ -666,75 +558,87 @@ HCIMPL1_V(INT64, JIT_Dbl2LngOvf, double val)
     // Note that this expression also works properly for val = NaN case
     // We need to compare with the very next double to two63. 0x402 is epsilon to get us there.
     if (val > -two63 - 0x402 && val < two63)
-        return((INT64)val);
+        return (int64_t)val;
 
     FCThrow(kOverflowException);
 }
 HCIMPLEND
 
-HCIMPL2_VV(float, JIT_FltRem, float dividend, float divisor)
+/*********************************************************************/
+HCIMPL1_V(uint64_t, JIT_Dbl2ULngOvf, double val)
 {
     FCALL_CONTRACT;
 
-    //
-    // From the ECMA standard:
-    //
-    // If [divisor] is zero or [dividend] is infinity
-    //   the result is NaN.
-    // If [divisor] is infinity,
-    //   the result is [dividend] (negated for -infinity***).
-    //
-    // ***"negated for -infinity" has been removed from the spec
-    //
+    const double two64  = 4294967296.0 * 4294967296.0;
+    // Note that this expression also works properly for val = NaN case
+    if (val > -1.0 && val < two64)
+        return (uint64_t)val;
 
-    if (divisor==0 || !_finite(dividend))
-    {
-        UINT32 NaN = CLR_NAN_32;
-        return *(float *)(&NaN);
-    }
-    else if (!_finite(divisor) && !_isnan(divisor))
-    {
-        return dividend;
-    }
-    // else...
-#if 0
-    // COMPILER BUG WITH FMODF() + /Oi, USE FMOD() INSTEAD
-    return fmodf(dividend,divisor);
+    FCThrow(kOverflowException);
+}
+HCIMPLEND
+
+HCIMPL1_V(uint32_t, JIT_Dbl2UInt, double val)
+{
+    FCALL_CONTRACT;
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    const double uint_max = 4294967295.0;
+    // Note that this expression also works properly for val = NaN case
+    return (val >= 0) ? ((val >= uint_max) ? UINT32_MAX : (uint32_t)val) : 0;
 #else
-    return (float)fmod((double)dividend,(double)divisor);
+    return (uint32_t)val;
 #endif
 }
 HCIMPLEND
 
+/*********************************************************************/
+HCIMPL1_V(int32_t, JIT_Dbl2Int, double val)
+{
+    FCALL_CONTRACT;
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    const double int32_min = -2147483648.0;
+    const double int32_max_plus_1 = 2147483648.0;
+    return (val != val) ? 0 : (val <= int32_min) ? INT32_MIN : (val >= int32_max_plus_1) ? INT32_MAX : (int32_t)val;
+#else
+    return (int32_t)val;
+#endif
+}
+HCIMPLEND
+
+/*********************************************************************/
+HCIMPL1_V(uint64_t, JIT_Dbl2ULng, double val)
+{
+    FCALL_CONTRACT;
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    const double uint64_max_plus_1 = 4294967296.0 * 4294967296.0;
+    // Note that this expression also works properly for val = NaN case
+    return (val >= 0) ? ((val >= uint64_max_plus_1) ? UINT64_MAX : (uint64_t)val) : 0;
+#else
+    return (uint64_t)val;
+#endif
+}
+HCIMPLEND
+
+/*********************************************************************/
+HCIMPL2_VV(float, JIT_FltRem, float dividend, float divisor)
+{
+    FCALL_CONTRACT;
+
+    return fmodf(dividend, divisor);
+}
+HCIMPLEND
+
+/*********************************************************************/
 HCIMPL2_VV(double, JIT_DblRem, double dividend, double divisor)
 {
     FCALL_CONTRACT;
 
-    //
-    // From the ECMA standard:
-    //
-    // If [divisor] is zero or [dividend] is infinity
-    //   the result is NaN.
-    // If [divisor] is infinity,
-    //   the result is [dividend] (negated for -infinity***).
-    //
-    // ***"negated for -infinity" has been removed from the spec
-    //
-    if (divisor==0 || !_finite(dividend))
-    {
-        UINT64 NaN = CLR_NAN_64;
-        return *(double *)(&NaN);
-    }
-    else if (!_finite(divisor) && !_isnan(divisor))
-    {
-        return dividend;
-    }
-    // else...
-    return(fmod(dividend,divisor));
+    return fmod(dividend, divisor);
 }
 HCIMPLEND
-
-#endif // !TARGET_X86 || TARGET_UNIX
 
 #include <optdefault.h>
 
@@ -1278,7 +1182,7 @@ NOINLINE HCIMPL1(void, JIT_InitClass_Framed, MethodTable* pMT)
     // already have initialized the Global Class <Module>
     CONSISTENCY_CHECK(!pMT->IsGlobalClass());
 
-    pMT->CheckRestore();
+    _ASSERTE(pMT->IsFullyLoaded());
     pMT->CheckRunClassInitThrowing();
 
     HELPER_METHOD_FRAME_END();
@@ -1331,7 +1235,7 @@ HCIMPL2(void, JIT_InitInstantiatedClass, CORINFO_CLASS_HANDLE typeHnd_, CORINFO_
         pMT = pTemplateMT;
     }
 
-    pMT->CheckRestore();
+    _ASSERTE(pMT->IsFullyLoaded());
     pMT->EnsureInstanceActive();
     pMT->CheckRunClassInitThrowing();
     HELPER_METHOD_FRAME_END();
@@ -1583,7 +1487,7 @@ NOINLINE HCIMPL1(void*, JIT_GetGenericsGCStaticBase_Framed, MethodTable *pMT)
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    pMT->CheckRestore();
+    _ASSERTE(pMT->IsFullyLoaded());
 
     pMT->CheckRunClassInitThrowing();
 
@@ -1644,7 +1548,7 @@ NOINLINE HCIMPL1(void*, JIT_GetGenericsNonGCStaticBase_Framed, MethodTable *pMT)
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    pMT->CheckRestore();
+    _ASSERTE(pMT->IsFullyLoaded());
 
     // If pMT refers to a method table that requires some initialization work,
     // then pMT cannot to a method table that is shared by generic instantiations,
@@ -1724,9 +1628,7 @@ HCIMPL1(void*, JIT_GetNonGCThreadStaticBase_Helper, MethodTable * pMT)
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    // For generics, we need to call CheckRestore() for some reason
-    if (pMT->HasGenericsStaticsInfo())
-        pMT->CheckRestore();
+    _ASSERTE(pMT->IsFullyLoaded());
 
     // Get the TLM
     ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLM(pMT);
@@ -1756,9 +1658,7 @@ HCIMPL1(void*, JIT_GetGCThreadStaticBase_Helper, MethodTable * pMT)
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    // For generics, we need to call CheckRestore() for some reason
-    if (pMT->HasGenericsStaticsInfo())
-        pMT->CheckRestore();
+    _ASSERTE(pMT->IsFullyLoaded());
 
     // Get the TLM
     ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLM(pMT);
@@ -1777,26 +1677,13 @@ HCIMPL1(void*, JIT_GetGCThreadStaticBase_Helper, MethodTable * pMT)
 }
 HCIMPLEND
 
-
 #ifdef _MSC_VER
-__declspec(selectany) __declspec(thread) uint32_t t_NonGCMaxThreadStaticBlocks;
-__declspec(selectany) __declspec(thread) uint32_t t_GCMaxThreadStaticBlocks;
-
-__declspec(selectany) __declspec(thread) uint32_t t_NonGCThreadStaticBlocksSize;
-__declspec(selectany) __declspec(thread) uint32_t t_GCThreadStaticBlocksSize;
-
-__declspec(selectany) __declspec(thread) void** t_NonGCThreadStaticBlocks;
-__declspec(selectany) __declspec(thread) void** t_GCThreadStaticBlocks;
+__declspec(thread)  uint32_t t_NonGCThreadStaticBlocksSize;
+__declspec(thread)  uint32_t t_GCThreadStaticBlocksSize;
 #else
-EXTERN_C __thread uint32_t t_NonGCMaxThreadStaticBlocks;
-EXTERN_C __thread uint32_t t_GCMaxThreadStaticBlocks;
-
-EXTERN_C __thread uint32_t t_NonGCThreadStaticBlocksSize;
-EXTERN_C __thread uint32_t t_GCThreadStaticBlocksSize;
-
-EXTERN_C __thread void** t_NonGCThreadStaticBlocks;
-EXTERN_C __thread void** t_GCThreadStaticBlocks;
-#endif
+__thread uint32_t t_NonGCThreadStaticBlocksSize;
+__thread uint32_t t_GCThreadStaticBlocksSize;
+#endif // !_MSC_VER
 
 // *** This helper corresponds to both CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE and
 //     CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR. Even though we always check
@@ -1840,7 +1727,6 @@ HCIMPL1(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, UINT32 staticBlockIn
 {
     void* staticBlock = nullptr;
 
-#ifdef HOST_WINDOWS
     FCALL_CONTRACT;
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
@@ -1867,27 +1753,24 @@ HCIMPL1(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, UINT32 staticBlockIn
 
         if (t_NonGCThreadStaticBlocksSize > 0)
         {
-            memcpy(newThreadStaticBlocks, t_NonGCThreadStaticBlocks, t_NonGCThreadStaticBlocksSize * sizeof(PTR_BYTE));
-            delete t_NonGCThreadStaticBlocks;
+            memcpy(newThreadStaticBlocks, t_ThreadStatics.NonGCThreadStaticBlocks, t_NonGCThreadStaticBlocksSize * sizeof(PTR_BYTE));
+            delete[] t_ThreadStatics.NonGCThreadStaticBlocks;
         }
 
         t_NonGCThreadStaticBlocksSize = newThreadStaticBlocksSize;
-        t_NonGCThreadStaticBlocks = newThreadStaticBlocks;
+        t_ThreadStatics.NonGCThreadStaticBlocks = newThreadStaticBlocks;
     }
 
-    void* currentEntry = t_NonGCThreadStaticBlocks[staticBlockIndex];
+    void* currentEntry = t_ThreadStatics.NonGCThreadStaticBlocks[staticBlockIndex];
     // We could be coming here 2nd time after running the ctor when we try to get the static block.
     // In such case, just avoid adding the same entry.
     if (currentEntry != staticBlock)
     {
         _ASSERTE(currentEntry == nullptr);
-        t_NonGCThreadStaticBlocks[staticBlockIndex] = staticBlock;
-        t_NonGCMaxThreadStaticBlocks = max(t_NonGCMaxThreadStaticBlocks, staticBlockIndex);
+        t_ThreadStatics.NonGCThreadStaticBlocks[staticBlockIndex] = staticBlock;
+        t_ThreadStatics.NonGCMaxThreadStaticBlocks = max(t_ThreadStatics.NonGCMaxThreadStaticBlocks, staticBlockIndex);
     }
     HELPER_METHOD_FRAME_END();
-#else
-    _ASSERTE(!"JIT_GetSharedNonGCThreadStaticBaseOptimized not supported on non-windows.");
-#endif // HOST_WINDOWS
 
     return staticBlock;
 }
@@ -1938,7 +1821,6 @@ HCIMPL1(void*, JIT_GetSharedGCThreadStaticBaseOptimized, UINT32 staticBlockIndex
 {
     void* staticBlock = nullptr;
 
-#ifdef HOST_WINDOWS
     FCALL_CONTRACT;
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
@@ -1965,31 +1847,28 @@ HCIMPL1(void*, JIT_GetSharedGCThreadStaticBaseOptimized, UINT32 staticBlockIndex
 
         if (t_GCThreadStaticBlocksSize > 0)
         {
-            memcpy(newThreadStaticBlocks, t_GCThreadStaticBlocks, t_GCThreadStaticBlocksSize * sizeof(PTR_BYTE));
-            delete t_GCThreadStaticBlocks;
+            memcpy(newThreadStaticBlocks, t_ThreadStatics.GCThreadStaticBlocks, t_GCThreadStaticBlocksSize * sizeof(PTR_BYTE));
+            delete[] t_ThreadStatics.GCThreadStaticBlocks;
         }
 
         t_GCThreadStaticBlocksSize = newThreadStaticBlocksSize;
-        t_GCThreadStaticBlocks = newThreadStaticBlocks;
+        t_ThreadStatics.GCThreadStaticBlocks = newThreadStaticBlocks;
     }
 
-    void* currentEntry = t_GCThreadStaticBlocks[staticBlockIndex];
+    void* currentEntry = t_ThreadStatics.GCThreadStaticBlocks[staticBlockIndex];
     // We could be coming here 2nd time after running the ctor when we try to get the static block.
     // In such case, just avoid adding the same entry.
     if (currentEntry != staticBlock)
     {
         _ASSERTE(currentEntry == nullptr);
-        t_GCThreadStaticBlocks[staticBlockIndex] = staticBlock;
-        t_GCMaxThreadStaticBlocks = max(t_GCMaxThreadStaticBlocks, staticBlockIndex);
+        t_ThreadStatics.GCThreadStaticBlocks[staticBlockIndex] = staticBlock;
+        t_ThreadStatics.GCMaxThreadStaticBlocks = max(t_ThreadStatics.GCMaxThreadStaticBlocks, staticBlockIndex);
     }
 
     // Get the data pointer of static block
     staticBlock = (void*) pMT->GetGCThreadStaticsBasePointer();
 
     HELPER_METHOD_FRAME_END();
-#else
-    _ASSERTE(!"JIT_GetSharedGCThreadStaticBaseOptimized not supported on non-windows.");
-#endif // HOST_WINDOWS
 
     return staticBlock;
 }
@@ -2464,7 +2343,6 @@ HCIMPL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_)
 
     _ASSERTE(!typeHnd.IsTypeDesc());  // heap objects must have method tables
     MethodTable *pMT = typeHnd.AsMethodTable();
-    _ASSERTE(pMT->IsRestored_NoLogging());
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {
@@ -2491,7 +2369,6 @@ HCIMPL1(Object*, JIT_NewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_)
 
     _ASSERTE(!typeHnd.IsTypeDesc());  // heap objects must have method tables
     MethodTable* pMT = typeHnd.AsMethodTable();
-    _ASSERTE(pMT->IsRestored_NoLogging());
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {
@@ -2881,7 +2758,7 @@ HCIMPL3(Object*, JIT_NewMDArr, CORINFO_CLASS_HANDLE classHnd, unsigned dwNumArgs
     HELPER_METHOD_FRAME_BEGIN_RET_1(ret);    // Set up a frame
 
     TypeHandle typeHnd(classHnd);
-    typeHnd.CheckRestore();
+    _ASSERTE(typeHnd.IsFullyLoaded());
     _ASSERTE(typeHnd.GetMethodTable()->IsArray());
 
     ret = AllocateArrayEx(typeHnd, pArgList, dwNumArgs);
@@ -2944,7 +2821,7 @@ HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
 
     MethodTable *pMT = clsHnd.AsMethodTable();
 
-    pMT->CheckRestore();
+    _ASSERTE(pMT->IsFullyLoaded());
 
     _ASSERTE (pMT->IsValueType() && !pMT->IsByRefLike());
 
@@ -3145,48 +3022,32 @@ HCIMPLEND
 
 struct JitGenericHandleCacheKey
 {
-    JitGenericHandleCacheKey(CORINFO_CLASS_HANDLE classHnd, CORINFO_METHOD_HANDLE methodHnd, void *signature, BaseDomain* pDomain=NULL)
+    JitGenericHandleCacheKey(CORINFO_CLASS_HANDLE classHnd, CORINFO_METHOD_HANDLE methodHnd, void *signature)
     {
         LIMITED_METHOD_CONTRACT;
         m_Data1 = (size_t)classHnd;
         m_Data2 = (size_t)methodHnd;
         m_Data3 = (size_t)signature;
-        m_pDomainAndType = 0 | (size_t)pDomain;
+        m_type = 0;
     }
 
-    JitGenericHandleCacheKey(MethodTable* pMT, CORINFO_CLASS_HANDLE classHnd, CORINFO_METHOD_HANDLE methodHnd, BaseDomain* pDomain=NULL)
+    JitGenericHandleCacheKey(MethodTable* pMT, CORINFO_CLASS_HANDLE classHnd, CORINFO_METHOD_HANDLE methodHnd)
     {
         LIMITED_METHOD_CONTRACT;
         m_Data1 = (size_t)pMT;
         m_Data2 = (size_t)classHnd;
         m_Data3 = (size_t)methodHnd;
-        m_pDomainAndType = 1 | (size_t)pDomain;
-    }
-
-    size_t GetType() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_pDomainAndType & 1);
-    }
-
-    BaseDomain* GetDomain() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (BaseDomain*)(m_pDomainAndType & ~1);
+        m_type = 1;
     }
 
     size_t  m_Data1;
     size_t  m_Data2;
     size_t  m_Data3;
 
-    size_t  m_pDomainAndType; // Which domain the entry belongs to. Not actually part of the key.
-                        // Used only so we can scrape the table on AppDomain termination.
-                        // NULL appdomain means that the entry should be scratched
-                        // on any appdomain unload.
-                        //
-                        // The lowest bit is used to indicate the type of the entry:
-                        //  0 - JIT_GenericHandle entry
-                        //  1 - JIT_VirtualFunctionPointer entry
+    // The type of the entry:
+    //  0 - JIT_GenericHandle entry
+    //  1 - JIT_VirtualFunctionPointer entry
+    unsigned char m_type;
 };
 
 class JitGenericHandleCacheTraits
@@ -3213,9 +3074,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         const JitGenericHandleCacheKey *e1 = (const JitGenericHandleCacheKey*)&pEntry->Key;
         return (e1->m_Data1 == e2->m_Data1) && (e1->m_Data2 == e2->m_Data2) && (e1->m_Data3 == e2->m_Data3) &&
-            (e1->GetType() == e2->GetType()) &&
-            // Any domain will work if the lookup key does not specify it
-            ((e2->GetDomain() == NULL) || (e1->GetDomain() == e2->GetDomain()));
+            (e1->m_type == e2->m_type);
     }
 
     static DWORD Hash(const JitGenericHandleCacheKey *k)
@@ -3263,7 +3122,7 @@ void AddToGenericHandleCache(JitGenericHandleCacheKey* pKey, HashDatum datum)
 }
 
 /* static */
-void ClearJitGenericHandleCache(AppDomain *pDomain)
+void ClearJitGenericHandleCache()
 {
     CONTRACTL {
         NOTHROW;
@@ -3271,8 +3130,8 @@ void ClearJitGenericHandleCache(AppDomain *pDomain)
     } CONTRACTL_END;
 
 
-    // We call this on every AppDomain unload, because entries in the cache might include
-    // pointers into the AppDomain being unloaded.  We would prefer to
+    // We call this on every ALC unload, because entries in the cache might include
+    // pointers into the ALC being unloaded.  We would prefer to
     // only flush entries that have that are no longer valid, but the entries don't yet contain
     // enough information to do that.  However everything in the cache can be found again by calling
     // loader functions, and the total number of entries in the cache is typically very small (indeed
@@ -3289,17 +3148,9 @@ void ClearJitGenericHandleCache(AppDomain *pDomain)
         while(keepGoing)
         {
             const JitGenericHandleCacheKey *key = g_pJitGenericHandleCache->IterateGetKey(&iter);
-            BaseDomain* pKeyDomain = key->GetDomain();
-            if (pKeyDomain == pDomain || pKeyDomain == NULL)
-            {
-                // Advance the iterator before we delete!!  See notes in EEHash.h
-                keepGoing = g_pJitGenericHandleCache->IterateNext(&iter);
-                g_pJitGenericHandleCache->DeleteValue(key);
-            }
-            else
-            {
-                keepGoing = g_pJitGenericHandleCache->IterateNext(&iter);
-            }
+            // Advance the iterator before we delete!!  See notes in EEHash.h
+            keepGoing = g_pJitGenericHandleCache->IterateNext(&iter);
+            g_pJitGenericHandleCache->DeleteValue(key);
         }
     }
 }
@@ -3375,20 +3226,9 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
     if (pSlot == NULL)
     {
         // If we've overflowed the dictionary write the result to the cache.
-        BaseDomain *pDictDomain = NULL;
-
-        if (pMT != NULL)
-        {
-            pDictDomain = pDeclaringMT->GetDomain();
-        }
-        else
-        {
-            pDictDomain = pMD->GetDomain();
-        }
-
         // Add the normalized key (pDeclaringMT) here so that future lookups of any
         // inherited types are faster next time rather than just just for this specific pMT.
-        JitGenericHandleCacheKey key((CORINFO_CLASS_HANDLE)pDeclaringMT, (CORINFO_METHOD_HANDLE)pMD, signature, pDictDomain);
+        JitGenericHandleCacheKey key((CORINFO_CLASS_HANDLE)pDeclaringMT, (CORINFO_METHOD_HANDLE)pMD, signature);
         AddToGenericHandleCache(&key, (HashDatum)result);
     }
 
@@ -3513,7 +3353,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClass, CORINFO_CLASS_HANDLE cla
      CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(classHnd));
-        PRECONDITION(TypeHandle(classHnd).IsRestored());
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
 
@@ -3533,7 +3372,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassWithSlotAndModule, CORINFO
     CONTRACTL{
         FCALL_CHECK;
         PRECONDITION(CheckPointer(classHnd));
-        PRECONDITION(TypeHandle(classHnd).IsRestored());
         PRECONDITION(CheckPointer(pArgs));
     } CONTRACTL_END;
 
@@ -3555,7 +3393,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassLogging, CORINFO_CLASS_HAN
      CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(classHnd));
-        PRECONDITION(TypeHandle(classHnd).IsRestored());
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
 
@@ -3628,6 +3465,14 @@ NOINLINE HCIMPL3(CORINFO_MethodPtr, JIT_VirtualFunctionPointer_Framed, Object * 
     HELPER_METHOD_FRAME_END();
 
     return addr;
+}
+HCIMPLEND
+
+HCIMPL3(void, Jit_NativeMemSet, void* pDest, int value, size_t length)
+{
+    _ASSERTE(pDest != nullptr);
+    FCALL_CONTRACT;
+    memset(pDest, value, length);
 }
 HCIMPLEND
 
@@ -4224,6 +4069,39 @@ HCIMPLEND
 
 /*************************************************************/
 
+#ifdef FEATURE_EH_FUNCLETS
+void ThrowNew(OBJECTREF oref)
+{
+    if (oref == 0)
+        DispatchManagedException(kNullReferenceException);
+    else
+    if (!IsException(oref->GetMethodTable()))
+    {
+        GCPROTECT_BEGIN(oref);
+
+        WrapNonCompliantException(&oref);
+
+        GCPROTECT_END();
+    }
+    else
+    {   // We know that the object derives from System.Exception
+
+        // If the flag indicating ForeignExceptionRaise has been set,
+        // then do not clear the "_stackTrace" field of the exception object.
+        if (GetThread()->GetExceptionState()->IsRaisingForeignException())
+        {
+            ((EXCEPTIONREF)oref)->SetStackTraceString(NULL);
+        }
+        else
+        {
+            ((EXCEPTIONREF)oref)->ClearStackTracePreservingRemoteStackTrace();
+        }
+    }
+
+    DispatchManagedException(oref, /* preserveStackTrace */ false);
+}
+#endif // FEATURE_EH_FUNCLETS
+
 HCIMPL1(void, IL_Throw,  Object* obj)
 {
     FCALL_CONTRACT;
@@ -4242,6 +4120,13 @@ HCIMPL1(void, IL_Throw,  Object* obj)
     g_ExceptionEIP = (LPVOID)__helperframe.GetReturnAddress();
 #endif // defined(_DEBUG) && defined(TARGET_X86)
 
+#ifdef FEATURE_EH_FUNCLETS
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        ThrowNew(oref);
+        UNREACHABLE();
+    }
+#endif
 
     if (oref == 0)
         COMPlusThrow(kNullReferenceException);
@@ -4277,6 +4162,33 @@ HCIMPLEND
 
 /*************************************************************/
 
+#ifdef FEATURE_EH_FUNCLETS
+void RethrowNew()
+{
+    Thread *pThread = GetThread();
+
+    ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
+
+    CONTEXT exceptionContext;
+    RtlCaptureContext(&exceptionContext);
+
+    ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, &exceptionContext, ExKind::None);
+
+    GCPROTECT_BEGIN(exInfo.m_exception);
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
+    DECLARE_ARGHOLDER_ARRAY(args, 2);
+
+    args[ARGNUM_0] = PTR_TO_ARGHOLDER(pActiveExInfo);
+    args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+
+    pThread->IncPreventAbort();
+
+    //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
+    CALL_MANAGED_METHOD_NORET(args)
+    GCPROTECT_END();
+}
+#endif // FEATURE_EH_FUNCLETS
+
 HCIMPL0(void, IL_Rethrow)
 {
     FCALL_CONTRACT;
@@ -4284,6 +4196,14 @@ HCIMPL0(void, IL_Rethrow)
     FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
 
     HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
+
+#ifdef FEATURE_EH_FUNCLETS
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        RethrowNew();
+        UNREACHABLE();
+    }
+#endif
 
     OBJECTREF throwable = GetThread()->GetThrowable();
     if (throwable != NULL)
@@ -4435,6 +4355,38 @@ HCIMPL3(void, JIT_ThrowAmbiguousResolutionException,
         strMethodName,
         strInterfaceName,
         strTargetClassName);
+}
+HCIMPLEND
+
+/*********************************************************************/
+HCIMPL3(void, JIT_ThrowEntryPointNotFoundException,
+    MethodDesc *method,
+    MethodTable *interfaceType,
+    MethodTable *targetType)
+{
+    FCALL_CONTRACT;
+
+    HELPER_METHOD_FRAME_BEGIN_0();    // Set up a frame
+
+    SString strMethodName;
+    SString strInterfaceName;
+    SString strTargetClassName;
+    SString assemblyName;
+
+    targetType->GetAssembly()->GetDisplayName(assemblyName);
+    TypeString::AppendMethod(strMethodName, method, method->GetMethodInstantiation());
+    TypeString::AppendType(strInterfaceName, TypeHandle(interfaceType));
+    TypeString::AppendType(strTargetClassName, targetType);
+
+    COMPlusThrow(
+        kEntryPointNotFoundException,
+        IDS_CLASSLOAD_METHOD_NOT_IMPLEMENTED,
+        strMethodName,
+        strInterfaceName,
+        strTargetClassName,
+        assemblyName);
+
+    HELPER_METHOD_FRAME_END();    // Set up a frame
 }
 HCIMPLEND
 
@@ -4912,8 +4864,6 @@ HCIMPL0(void, JIT_PInvokeEndRarePath)
     HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
     thread->HandleThreadAbort();
     HELPER_METHOD_FRAME_END();
-
-    InlinedCallFrame* frame = (InlinedCallFrame*)thread->m_pFrame;
 
     thread->m_pFrame->Pop(thread);
 
@@ -5636,6 +5586,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
     ::SetLastError(dwLastError);
 
     // Transition!
+    __asan_handle_no_return();
     RtlRestoreContext(&frameContext, NULL);
 }
 HCIMPLEND
@@ -5722,6 +5673,46 @@ FORCEINLINE static bool CheckSample(T* pIndex, size_t* sampleIndex)
     *sampleIndex = static_cast<size_t>(x % S);
     return true;
 }
+
+HCIMPL2(void, JIT_ValueProfile32, intptr_t val, ICorJitInfo::ValueHistogram32* valueProfile)
+{
+    FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();
+
+    size_t sampleIndex;
+    if (!CheckSample(&valueProfile->Count, &sampleIndex))
+    {
+        return;
+    }
+
+#ifdef _DEBUG
+    PgoManager::VerifyAddress(valueProfile);
+    PgoManager::VerifyAddress(valueProfile + 1);
+#endif
+
+    valueProfile->ValueTable[sampleIndex] = val;
+}
+HCIMPLEND
+
+HCIMPL2(void, JIT_ValueProfile64, intptr_t val, ICorJitInfo::ValueHistogram64* valueProfile)
+{
+    FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();
+
+    size_t sampleIndex;
+    if (!CheckSample(&valueProfile->Count, &sampleIndex))
+    {
+        return;
+    }
+
+#ifdef _DEBUG
+    PgoManager::VerifyAddress(valueProfile);
+    PgoManager::VerifyAddress(valueProfile + 1);
+#endif
+
+    valueProfile->ValueTable[sampleIndex] = val;
+}
+HCIMPLEND
 
 HCIMPL2(void, JIT_ClassProfile32, Object *obj, ICorJitInfo::HandleHistogram32* classProfile)
 {
@@ -5981,8 +5972,8 @@ HCIMPLEND
 
 // Helpers for scalable approximate counters
 //
-// Here 13 means we count accurately up to 2^13 = 8192 and
-// then start counting probabialistically.
+// Here threshold = 13 means we count accurately up to 2^13 = 8192 and
+// then start counting probabilistically.
 //
 // See docs/design/features/ScalableApproximateCounting.md
 //
@@ -5993,22 +5984,22 @@ HCIMPL1(void, JIT_CountProfile32, volatile LONG* pCounter)
 
     LONG count = *pCounter;
     LONG delta = 1;
+    DWORD threshold = g_pConfig->TieredPGO_ScalableCountThreshold();
 
     if (count > 0)
     {
         DWORD logCount = 0;
         BitScanReverse(&logCount, count);
 
-        if (logCount >= 13)
+        if (logCount >= threshold)
         {
-            delta = 1 << (logCount - 12);
+            delta = 1 << (logCount - (threshold - 1));
             const unsigned rand = HandleHistogramProfileRand();
             const bool update = (rand & (delta - 1)) == 0;
             if (!update)
             {
                 return;
             }
-
         }
     }
 
@@ -6023,15 +6014,16 @@ HCIMPL1(void, JIT_CountProfile64, volatile LONG64* pCounter)
 
     LONG64 count = *pCounter;
     LONG64 delta = 1;
+    DWORD threshold = g_pConfig->TieredPGO_ScalableCountThreshold();
 
     if (count > 0)
     {
         DWORD logCount = 0;
         BitScanReverse64(&logCount, count);
 
-        if (logCount >= 13)
+        if (logCount >= threshold)
         {
-            delta = 1LL << (logCount - 12);
+            delta = 1LL << (logCount - (threshold - 1));
             const unsigned rand = HandleHistogramProfileRand();
             const bool update = (rand & (delta - 1)) == 0;
             if (!update)

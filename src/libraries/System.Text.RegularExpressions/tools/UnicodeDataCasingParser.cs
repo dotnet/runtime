@@ -30,7 +30,7 @@ namespace GenerateRegexCasingTable
             // Parse each line. The format has one line per character, with semicolon separated properties. The only
             // values we care about is the one in position 0 which is the hex representation of the character, and the
             // property at position 13 which is the lowercase mapping with a hex value pointing to the lower case character.
-            while((line = reader.ReadLine()) != null)
+            while ((line = reader.ReadLine()) != null)
             {
                 string[] split = line.Split(';');
                 Debug.Assert(split.Length == 15);

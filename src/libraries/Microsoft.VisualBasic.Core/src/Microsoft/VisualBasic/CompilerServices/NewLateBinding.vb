@@ -47,6 +47,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 baseReference = New Container(Instance)
             End If
 
+            If baseReference.IsCOMObject AndAlso Not baseReference.IsWindowsRuntimeObject Then
+                Return LateBinding.InternalLateCall(Instance, Type, MemberName, Arguments, ArgumentNames, CopyBack, IgnoreReturn)
+            End If
+
             Dim idmop As IDynamicMetaObjectProvider = IDOUtils.TryCastToIDMOP(Instance)
             If idmop IsNot Nothing AndAlso TypeArguments Is NoTypeArguments Then
                 Return IDOBinder.IDOCall(idmop, MemberName, Arguments, ArgumentNames, CopyBack, IgnoreReturn)
@@ -139,7 +143,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         ' LateCallInvokeDefault is used to optionally invoke the default action on a call target.
         ' If the arguments are non-empty, then it isn't optional, and is treated
         ' as an error if there is no default action.
-        ' Currently we can get here only in the process of execution of NewLateBinding.LateCall. 
+        ' Currently we can get here only in the process of execution of NewLateBinding.LateCall.
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
         <RequiresUnreferencedCode(LateBindingTrimMessage)>
@@ -155,7 +159,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         ' LateGetInvokeDefault is used to optionally invoke the default action.
         ' If the arguments are non-empty, then it isn't optional, and is treated
         ' as an error if there is no default action.
-        ' Currently we can get here only in the process of execution of NewLateBinding.LateGet. 
+        ' Currently we can get here only in the process of execution of NewLateBinding.LateGet.
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
         <RequiresUnreferencedCode(LateBindingTrimMessage)>
@@ -167,7 +171,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
             ' According to a comment in VBGetBinder.FallbackInvoke, this function is called when
             ' "The DLR was able to resolve o.member, but not o.member(args)"
-            ' When NewLateBinding.LateGet is evaluating similar expression itself, it never tries to invoke default action 
+            ' When NewLateBinding.LateGet is evaluating similar expression itself, it never tries to invoke default action
             ' if arguments are not empty. It simply returns result of evaluating o.member. I believe, it makes sense
             ' to follow the same logic here. I.e., if there are no arguments, simply return the instance unless it is an IDO.
 
@@ -278,6 +282,9 @@ Namespace Microsoft.VisualBasic.CompilerServices
             If argumentNames Is Nothing Then argumentNames = NoArgumentNames
 
             Dim baseReference As Container = New Container(instance)
+            If baseReference.IsCOMObject AndAlso Not baseReference.IsWindowsRuntimeObject Then
+                Return LateBinding.LateIndexGet(instance, arguments, argumentNames)
+            End If
 
             'An r-value expression o(a) has two possible forms:
             '    1: o(a)    array lookup--where o is an array object and a is a set of indices
@@ -370,6 +377,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 baseReference = New Container(Type)
             Else
                 baseReference = New Container(Instance)
+            End If
+
+            If baseReference.IsCOMObject AndAlso Not baseReference.IsWindowsRuntimeObject Then
+                Return LateBinding.LateGet(Instance, Type, MemberName, Arguments, ArgumentNames, CopyBack)
             End If
 
             Dim invocationFlags As BindingFlags = BindingFlagsInvokeMethod Or BindingFlagsGetProperty
@@ -653,6 +664,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End If
 
             Dim methodName As String = ""
+            If baseReference.IsCOMObject AndAlso Not baseReference.IsWindowsRuntimeObject Then
+                LateBinding.LateIndexSetComplex(instance, arguments, argumentNames, optimisticSet, rValueBase)
+                Return
+            End If
 
             Dim invocationFlags As BindingFlags = BindingFlagsSetProperty
 
@@ -925,6 +940,18 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 baseReference = New Container(Type)
             Else
                 baseReference = New Container(Instance)
+            End If
+
+            If baseReference.IsCOMObject AndAlso Not baseReference.IsWindowsRuntimeObject Then
+                Try
+                    LateBinding.InternalLateSet(Instance, Type, MemberName, Arguments, ArgumentNames, OptimisticSet, CallType)
+                    If RValueBase And Type.IsValueType Then
+                        Throw New Exception(Utils.GetResourceString(SR.RValueBaseForValueType, baseReference.VBFriendlyName, baseReference.VBFriendlyName))
+                    End If
+                    Return
+                Catch ex As MissingMemberException When OptimisticSet
+                    Return
+                End Try
             End If
 
             Dim invocationFlags As BindingFlags

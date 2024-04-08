@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System.Runtime.InteropServices
@@ -11,7 +12,7 @@ namespace System.Runtime.InteropServices
     /// runtime is invalid.
     /// </summary>
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class InvalidOleVariantTypeException : SystemException
     {
         public InvalidOleVariantTypeException()
@@ -21,13 +22,13 @@ namespace System.Runtime.InteropServices
         }
 
         public InvalidOleVariantTypeException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_InvalidOleVariantTypeException)
         {
             HResult = HResults.COR_E_INVALIDOLEVARIANTTYPE;
         }
 
         public InvalidOleVariantTypeException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_InvalidOleVariantTypeException, inner)
         {
             HResult = HResults.COR_E_INVALIDOLEVARIANTTYPE;
         }

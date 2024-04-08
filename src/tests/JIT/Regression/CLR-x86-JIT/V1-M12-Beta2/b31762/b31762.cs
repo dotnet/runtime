@@ -13,7 +13,7 @@ namespace Test
         public static uint[] Method2() { return null; }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             bool local3 = true;
             if (local3)
@@ -25,7 +25,6 @@ namespace Test
                 catch (Exception)
                 {
                 }
-            return 100;
         }
     }
 }

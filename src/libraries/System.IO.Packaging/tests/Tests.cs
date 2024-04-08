@@ -12,9 +12,9 @@ namespace System.IO.Packaging.Tests
 {
     public class Tests : FileCleanupTestBase
     {
-        private const string Mime_MediaTypeNames_Text_Xml = "text/xml";
+        internal const string Mime_MediaTypeNames_Text_Xml = "text/xml";
         private const string Mime_MediaTypeNames_Image_Jpeg = "image/jpeg"; // System.Net.Mime.MediaTypeNames.Image.Jpeg
-        private const string s_DocumentXml = @"<Hello>Test</Hello>";
+        internal const string s_DocumentXml = @"<Hello>Test</Hello>";
         private const string s_ResourceXml = @"<Resource>Test</Resource>";
 
         private FileInfo GetTempFileInfoFromExistingFile(string existingFileName, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)

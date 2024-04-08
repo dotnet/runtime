@@ -10,12 +10,11 @@ namespace JitTest
     public class Test
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             ulong A = 0x3bbde5b000000000;
             uint B = 0xaeb84648;
             ulong C = checked(A + B);
-            return 100;
         }
     }
 }

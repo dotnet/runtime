@@ -3426,6 +3426,9 @@ Usage: dotnet {0} [--assembly &lt;assembly file path&gt;] [--type &lt;type name&
   <data name="GenerateSerializerNotFound" xml:space="preserve">
     <value>Method 'System.Xml.Serialization.XmlSerializer.GenerateSerializer' was not found. This is likely because you are using an older version of the framework. Please update to .NET Core v2.1 or later.</value>
   </data>
+  <data name="CodeGenConvertError" xml:space="preserve">
+    <value>CodeGenError({0}): Cannot convert source type [{1}] to target type [{2}].</value>
+  </data>
   <data name="CompilingScriptsNotSupported" xml:space="preserve">
     <value>Compiling JScript/CSharp scripts is not supported</value>
   </data>

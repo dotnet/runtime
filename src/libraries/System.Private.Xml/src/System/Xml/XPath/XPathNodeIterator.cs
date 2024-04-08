@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Xml.XPath
 {
-    [DebuggerDisplay("Position={CurrentPosition}, Current={debuggerDisplayProxy}")]
+    [DebuggerDisplay("Position = {CurrentPosition}, Current = {debuggerDisplayProxy}")]
     public abstract class XPathNodeIterator : ICloneable, IEnumerable
     {
         internal int count = -1;

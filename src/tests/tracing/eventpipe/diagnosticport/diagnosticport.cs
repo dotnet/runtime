@@ -109,67 +109,29 @@ namespace Tracing.Tests.DiagnosticPortValidation
                 duringExecution: async (int pid) =>
                 {
                     subprocessId = pid;
-                    // Create an eventpipe session that will tell us when
-                    // the EEStartupStarted event happens.  This will tell us
-                    // the runtime has been resumed.  This should only happen
-                    // AFTER all suspend ports have sent the resume command.
-                    var config = new SessionConfiguration(
-                        circularBufferSizeMB: 1000,
-                        format: EventPipeSerializationFormat.NetTrace,
-                        providers: new List<Provider> {
-                            new Provider("Microsoft-Windows-DotNETRuntimePrivate", 0x80000000, EventLevel.Verbose),
-                            // workaround for https://github.com/dotnet/runtime/issues/44072 which happens because the
-                            // above provider only sends 2 events and that can cause EventPipeEventSource (from TraceEvent)
-                            // to not dispatch the events if the EventBlock is a size not divisible by 8 (the reading alignment in TraceEvent).
-                            // Adding this provider keeps data flowing over the pipe so the reader doesn't get stuck waiting for data
-                            // that won't come otherwise.
-                            new Provider("Microsoft-DotNETCore-SampleProfiler")
-                        });
-                    Logger.logger.Log("Starting EventPipeSession over standard connection");
-                    using Stream eventStream = EventPipeClient.CollectTracing(pid, config, out var sessionId);
-                    Logger.logger.Log($"Started EventPipeSession over standard connection with session id: 0x{sessionId:x}");
 
                     var mre = new ManualResetEvent(false);
-
-                    Task readerTask = Task.Run(async () =>
+                    await ConfigureAndWaitForResumeSignal(pid, mre, async () =>
                     {
-                        Logger.logger.Log($"Creating EventPipeEventSource");
-                        using var source = new EventPipeEventSource(eventStream);
-                        var parser = new ClrPrivateTraceEventParser(source);
-                        parser.StartupEEStartupStart += (eventData) => mre.Set();
-                        Logger.logger.Log($"Created EventPipeEventSource");
-                        Logger.logger.Log($"Starting processing");
-                        await Task.Run(() => source.Process());
-                        Logger.logger.Log($"Finished processing");
+                        for (int i = 0; i < s_NumberOfPorts; i++)
+                        {
+                            fSuccess &= !mre.WaitOne(0);
+                            Logger.logger.Log($"Runtime HAS NOT resumed (expects: true): {fSuccess}");
+                            var (server, _) = serverAndNames[i];
+                            int serverIndex = i;
+                            Stream stream = await server.AcceptAsync();
+                            IpcAdvertise advertise = IpcAdvertise.Parse(stream);
+                            lock(sync)
+                                advertisements.Add(advertise);
+                            Logger.logger.Log($"Server {serverIndex} got advertise {advertise.ToString()}");
+
+                            // send resume command on this connection
+                            var message = new IpcMessage(0x04,0x01);
+                            Logger.logger.Log($"Port {serverIndex} sent: {message.ToString()}");
+                            IpcMessage response = IpcClient.SendMessage(stream, message);
+                            Logger.logger.Log($"Port {serverIndex} received: {response.ToString()}");
+                        }
                     });
-
-                    for (int i = 0; i < s_NumberOfPorts; i++)
-                    {
-                        fSuccess &= !mre.WaitOne(0);
-                        Logger.logger.Log($"Runtime HAS NOT resumed (expects: true): {fSuccess}");
-                        var (server, _) = serverAndNames[i];
-                        int serverIndex = i;
-                        Stream stream = await server.AcceptAsync();
-                        IpcAdvertise advertise = IpcAdvertise.Parse(stream);
-                        lock(sync)
-                            advertisements.Add(advertise);
-                        Logger.logger.Log($"Server {serverIndex} got advertise {advertise.ToString()}");
-
-                        // send resume command on this connection
-                        var message = new IpcMessage(0x04,0x01);
-                        Logger.logger.Log($"Port {serverIndex} sent: {message.ToString()}");
-                        IpcMessage response = IpcClient.SendMessage(stream, message);
-                        Logger.logger.Log($"Port {serverIndex} received: {response.ToString()}");
-                    }
-
-                    Logger.logger.Log($"Waiting on EEStartupStarted event");
-                    mre.WaitOne();
-                    Logger.logger.Log($"Saw EEStartupStarted Event");
-
-                    Logger.logger.Log($"Stopping EventPipeSession");
-                    EventPipeClient.StopTracing(pid, sessionId);
-                    await readerTask;
-                    Logger.logger.Log($"Stopped EventPipeSession");
 
                     // runtime should have resumed now
                     fSuccess &= mre.WaitOne(0);
@@ -204,7 +166,6 @@ namespace Tracing.Tests.DiagnosticPortValidation
         {
             bool fSuccess = true;
 
-            int subprocessId = -1;
             Task<bool> subprocessTask = Utils.RunSubprocess(
                 currentAssembly: Assembly.GetExecutingAssembly(),
                 environment: new Dictionary<string,string>
@@ -213,71 +174,98 @@ namespace Tracing.Tests.DiagnosticPortValidation
                 },
                 duringExecution: async (int pid) =>
                 {
-                    subprocessId = pid;
-                    // Create an eventpipe session that will tell us when
-                    // the EEStartupStarted event happens.  This will tell us
-                    // the runtime has been resumed.  This should only happen
-                    // AFTER all suspend ports have sent the resume command.
-                    var config = new SessionConfiguration(
-                        circularBufferSizeMB: 1000,
-                        format: EventPipeSerializationFormat.NetTrace,
-                        providers: new List<Provider> {
-                            new Provider("Microsoft-Windows-DotNETRuntimePrivate", 0x80000000, EventLevel.Verbose),
-                            // workaround for https://github.com/dotnet/runtime/issues/44072 which happens because the
-                            // above provider only sends 2 events and that can cause EventPipeEventSource (from TraceEvent)
-                            // to not dispatch the events if the EventBlock is a size not divisible by 8 (the reading alignment in TraceEvent).
-                            // Adding this provider keeps data flowing over the pipe so the reader doesn't get stuck waiting for data
-                            // that won't come otherwise.
-                            new Provider("Microsoft-DotNETCore-SampleProfiler")
-                        });
-                    Logger.logger.Log("Starting EventPipeSession over standard connection");
-                    using Stream eventStream = EventPipeClient.CollectTracing(pid, config, out var sessionId);
-                    Logger.logger.Log($"Started EventPipeSession over standard connection with session id: 0x{sessionId:x}");
-
                     var mre = new ManualResetEvent(false);
-
-                    Task readerTask = Task.Run(async () =>
+                    await ConfigureAndWaitForResumeSignal(pid, mre, () =>
                     {
-                        Logger.logger.Log($"Creating EventPipeEventSource");
-                        using var source = new EventPipeEventSource(eventStream);
-                        var parser = new ClrPrivateTraceEventParser(source);
-                        parser.StartupEEStartupStart += (eventData) => mre.Set();
-                        Logger.logger.Log($"Created EventPipeEventSource");
-                        Logger.logger.Log($"Starting processing");
-                        await Task.Run(() => source.Process());
-                        Logger.logger.Log($"Finished processing");
+                        fSuccess &= !mre.WaitOne(0);
+                        Logger.logger.Log($"Runtime HAS NOT resumed (expects: true): {fSuccess}");
+
+                        // send resume command on this connection
+                        var message = new IpcMessage(0x04,0x01);
+                        Logger.logger.Log($"Sent: {message.ToString()}");
+                        IpcMessage response = IpcClient.SendMessage(ConnectionHelper.GetStandardTransport(pid), message);
+                        Logger.logger.Log($"Received: {response.ToString()}");
+                        return Task.CompletedTask;
                     });
-
-
-                    fSuccess &= !mre.WaitOne(0);
-                    Logger.logger.Log($"Runtime HAS NOT resumed (expects: true): {fSuccess}");
-
-                    // send resume command on this connection
-                    var message = new IpcMessage(0x04,0x01);
-                    Logger.logger.Log($"Sent: {message.ToString()}");
-                    IpcMessage response = IpcClient.SendMessage(ConnectionHelper.GetStandardTransport(pid), message);
-                    Logger.logger.Log($"Received: {response.ToString()}");
-
-                    Logger.logger.Log($"Waiting for EEStartupStarted event");
-                    mre.WaitOne();
-                    Logger.logger.Log($"Saw EEStartupStarted event!");
-
-                    Logger.logger.Log($"Stopping EventPipeSession");
-                    EventPipeClient.StopTracing(pid, sessionId);
-                    await readerTask;
-                    Logger.logger.Log($"Stopped EventPipeSession");
 
                     // runtime should have resumed now
                     fSuccess &= mre.WaitOne(0);
                     Logger.logger.Log($"Runtime HAS resumed (expects: true): {fSuccess}");
-
                 }
             );
-
 
             fSuccess &= await subprocessTask;
 
             return fSuccess;
+        }
+
+        private static async Task ConfigureAndWaitForResumeSignal(int pid, ManualResetEvent mre, Func<Task> resumeRuntime)
+        {
+            var providers = new List<Provider>(2);
+            if (TestLibrary.Utilities.IsNativeAot)
+            {
+                // Native AOT doesn't use the private provider / EEStartupStart event, so the subprocess
+                // writes a sentinel event to signal that the runtime has resumed and run the application 
+                providers.Add(new Provider(nameof(SentinelEventSource)));
+            }
+            else
+            {
+                providers.Add(new Provider("Microsoft-Windows-DotNETRuntimePrivate", 0x80000000, EventLevel.Verbose));
+            }
+
+            // workaround for https://github.com/dotnet/runtime/issues/44072 which happens because the
+            // above provider only sends 2 events and that can cause EventPipeEventSource (from TraceEvent)
+            // to not dispatch the events if the EventBlock is a size not divisible by 8 (the reading alignment in TraceEvent).
+            // Adding this provider keeps data flowing over the pipe so the reader doesn't get stuck waiting for data
+            // that won't come otherwise.
+            providers.Add(new Provider("Microsoft-DotNETCore-SampleProfiler"));
+
+            // Create an eventpipe session with prodiers that tell us
+            // the runtime has been resumed.  This should only happen
+            // AFTER all suspend ports have sent the resume command.
+            var config = new SessionConfiguration(
+                circularBufferSizeMB: 1000,
+                format: EventPipeSerializationFormat.NetTrace,
+                providers: providers);
+            Logger.logger.Log("Starting EventPipeSession over standard connection");
+            using Stream eventStream = EventPipeClient.CollectTracing(pid, config, out var sessionId);
+            Logger.logger.Log($"Started EventPipeSession over standard connection with session id: 0x{sessionId:x}");
+
+            Task readerTask = Task.Run(async () =>
+            {
+                Logger.logger.Log($"Creating EventPipeEventSource");
+                using var source = new EventPipeEventSource(eventStream);
+                ClrPrivateTraceEventParser parser;
+                if (TestLibrary.Utilities.IsNativeAot)
+                {
+                    source.Dynamic.All += (eventData) =>
+                    {
+                        if (eventData.ProviderName == nameof(SentinelEventSource))
+                            mre.Set();
+                    };
+                }
+                else
+                {
+                    parser = new ClrPrivateTraceEventParser(source);
+                    parser.StartupEEStartupStart += (eventData) => mre.Set();
+                }
+
+                Logger.logger.Log($"Starting processing");
+                await Task.Run(() => source.Process());
+                Logger.logger.Log($"Finished processing");
+            });
+
+            await resumeRuntime();
+
+            string resumeEventName = TestLibrary.Utilities.IsNativeAot ? nameof(SentinelEventSource) : "EEStartupStart";
+            Logger.logger.Log($"Waiting for runtime resume signal event ({resumeEventName})");
+            mre.WaitOne();
+            Logger.logger.Log($"Saw runtime resume signal event!");
+
+            Logger.logger.Log($"Stopping EventPipeSession");
+            EventPipeClient.StopTracing(pid, sessionId);
+            await readerTask;
+            Logger.logger.Log($"Stopped EventPipeSession");
         }
 
         public static async Task<bool> TEST_AdvertiseAndProcessInfoCookiesMatch()
@@ -408,10 +396,16 @@ namespace Tracing.Tests.DiagnosticPortValidation
                     Logger.logger.Log($"Received: [{response.Payload.Select(b => b.ToString("X2") + " ").Aggregate(string.Concat)}]");
                     ProcessInfo2 processInfo2 = ProcessInfo2.TryParse(response.Payload);
 
-                    if (Type.GetType("Mono.RuntimeStructs") != null)
+                    if (TestLibrary.Utilities.IsMonoRuntime)
                     {
                         // Mono currently returns empty string if the runtime is suspended before an assembly is loaded
                         Utils.Assert(string.IsNullOrEmpty(processInfo2.ManagedEntrypointAssemblyName));
+                    }
+                    else if (TestLibrary.Utilities.IsNativeAot)
+                    {
+                        string expectedName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+                        Utils.Assert(expectedName.Equals(processInfo2.ManagedEntrypointAssemblyName),
+                            $"ManagedEntrypointAssemblyName must match. Expected: {expectedName}, Received: {processInfo2.ManagedEntrypointAssemblyName}");
                     }
                     else
                     {
@@ -436,10 +430,21 @@ namespace Tracing.Tests.DiagnosticPortValidation
             return fSuccess;
         }
 
+        public sealed class SentinelEventSource : EventSource
+        {
+            private SentinelEventSource() {}
+            public static SentinelEventSource Log = new SentinelEventSource();
+            public void SentinelEvent() { WriteEvent(1, nameof(SentinelEvent)); }
+        }
+
         public static async Task<int> Main(string[] args)
         {
             if (args.Length >= 1)
             {
+                // Native AOT test uses this event source as a signal that the runtime has resumed and gone on to run the application 
+                if (TestLibrary.Utilities.IsNativeAot)
+                    SentinelEventSource.Log.SentinelEvent();
+
                 Console.Out.WriteLine("Subprocess started!  Waiting for input...");
                 var input = Console.In.ReadLine(); // will block until data is sent across stdin
                 Console.Out.WriteLine($"Received '{input}'.  Exiting...");

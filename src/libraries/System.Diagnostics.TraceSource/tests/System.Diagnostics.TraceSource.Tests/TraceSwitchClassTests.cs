@@ -75,5 +75,25 @@ namespace System.Diagnostics.TraceSourceTests
             item.SetSwitchSetting((int)TraceLevel.Verbose + 1);
             Assert.Equal(TraceLevel.Verbose, item.Level);
         }
+
+        [Fact]
+        public void EnsureValueSynchronizedWIthLevel()
+        {
+            TraceSwitch ts = new TraceSwitch("Name", "Description");
+            Assert.Equal(TraceLevel.Off, ts.Level);
+            Assert.Equal("Off", ts.Value);
+
+            ts.Value = "1";
+            Assert.Equal(TraceLevel.Error, ts.Level);
+            Assert.Equal("Error", ts.Value);
+
+            ts.Level = TraceLevel.Warning;
+            Assert.Equal(TraceLevel.Warning, ts.Level);
+            Assert.Equal("Warning", ts.Value);
+
+            ts.Value = "Verbose";
+            Assert.Equal(TraceLevel.Verbose, ts.Level);
+            Assert.Equal("Verbose", ts.Value);
+        }
     }
 }

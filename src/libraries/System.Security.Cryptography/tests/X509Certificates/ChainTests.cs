@@ -1253,6 +1253,76 @@ LjCvFGJ+RiZCbxIZfUZEuJ5vAH5WOa2S0tYoEAeyfzuLMIqY9xK74nlZ/vzz1cY=");
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsSha3))]
+        [SkipOnPlatform(~TestPlatforms.Linux, "Only Linux SHA3 supports chain building.")]
+        public static void BuildChainForSelfSignedSha3Certificate()
+        {
+            using (ChainHolder chainHolder = new ChainHolder())
+            using (X509Certificate2 cert = new X509Certificate2(TestData.RsaSha3_256SignedCertificate))
+            {
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = cert.NotBefore.AddHours(2);
+                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                chain.ChainPolicy.CustomTrustStore.Add(cert);
+                Assert.True(chain.Build(cert), AllStatusFlags(chain).ToString());
+            }
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/100224", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.IsArmOrArm64Process))]
+        public static void BuildChainForSelfSignedCertificate_WithSha256RsaSignature()
+        {
+            using (ChainHolder chainHolder = new ChainHolder())
+            using (X509Certificate2 cert = new X509Certificate2(TestData.SelfSignedCertSha256RsaBytes))
+            {
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = cert.NotBefore.AddHours(2);
+
+                // No custom root of trust store means that this self-signed cert will at
+                // minimum be marked UntrustedRoot.
+
+                Assert.False(chain.Build(cert));
+                AssertExtensions.HasFlag(X509ChainStatusFlags.UntrustedRoot, chain.AllStatusFlags());
+            }
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/100224", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.IsArmOrArm64Process))]
+        public static void BuildChainForSelfSignedCertificate_WithUnknownOidSignature()
+        {
+            using (ChainHolder chainHolder = new ChainHolder())
+            using (X509Certificate2 cert = new X509Certificate2(TestData.SelfSignedCertDummyOidBytes))
+            {
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = cert.NotBefore.AddHours(2);
+
+                // This tests a self-signed cert whose signature block contains a garbage signing alg OID.
+                // Some platforms return NotSignatureValid to indicate that they cannot understand the
+                // signature block. Other platforms return PartialChain to indicate that they think the
+                // bad signature block might correspond to some unknown, untrusted signer. Yet other
+                // platforms simply fail the operation; e.g., Windows's CertGetCertificateChain API returns
+                // NTE_BAD_ALGID, which we bubble up as CryptographicException.
+
+                if (PlatformDetection.UsesAppleCrypto)
+                {
+                    Assert.False(chain.Build(cert));
+                    AssertExtensions.HasFlag(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
+                }
+                else if (PlatformDetection.IsOpenSslSupported)
+                {
+                    Assert.False(chain.Build(cert));
+                    AssertExtensions.HasFlag(X509ChainStatusFlags.NotSignatureValid, chain.AllStatusFlags());
+                }
+                else
+                {
+                    Assert.ThrowsAny<CryptographicException>(() => chain.Build(cert));
+                }
+            }
+        }
+
         internal static X509ChainStatusFlags AllStatusFlags(this X509Chain chain)
         {
             return chain.ChainStatus.Aggregate(
@@ -1286,7 +1356,7 @@ LjCvFGJ+RiZCbxIZfUZEuJ5vAH5WOa2S0tYoEAeyfzuLMIqY9xK74nlZ/vzz1cY=");
             }
             else
             {
-                Assert.True(false, "Could not configure chain policy to handle unknown certificate authority");
+                Assert.Fail("Could not configure chain policy to handle unknown certificate authority");
             }
         }
     }

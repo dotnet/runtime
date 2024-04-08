@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using static Interop.SspiCli;
 
 namespace System.Net.Security
 {
@@ -66,6 +67,16 @@ namespace System.Net.Security
             TlsCipherSuite = cipherSuite;
 
             ApplicationProtocol = GetNegotiatedApplicationProtocol(securityContext);
+
+#if DEBUG
+            SecPkgContext_SessionInfo info = default;
+            TlsResumed = SSPIWrapper.QueryBlittableContextAttributes(
+                                    GlobalSSPI.SSPISecureChannel,
+                                    securityContext,
+                                    Interop.SspiCli.ContextAttribute.SECPKG_ATTR_SESSION_INFO,
+                                    ref info) &&
+               ((SecPkgContext_SessionInfo.Flags)info.dwFlags).HasFlag(SecPkgContext_SessionInfo.Flags.SSL_SESSION_RECONNECT);
+#endif
         }
     }
 }

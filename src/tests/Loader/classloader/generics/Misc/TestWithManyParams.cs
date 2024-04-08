@@ -5,6 +5,7 @@
 //test large number of nested generic type isntantiations
 
 using System;
+using Xunit;
 
 
 public class Test_TestWithManyParams
@@ -12,7 +13,8 @@ public class Test_TestWithManyParams
 	public static int i = 0;
 
 
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		int ret1, ret2;
 	 	try

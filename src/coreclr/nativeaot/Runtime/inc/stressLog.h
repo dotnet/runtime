@@ -462,6 +462,20 @@ public:
         LogMsg(LF_GC, 12, format, (void*)(size_t)data1, (void*)(size_t)data2, (void*)(size_t)data3, (void*)(size_t)data4, (void*)(size_t)data5, (void*)(size_t)data6, (void*)(size_t)data7, (void*)(size_t)data8, (void*)(size_t)data9, (void*)(size_t)data10, (void*)(size_t)data11, (void*)(size_t)data12);
     }
 
+    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13 >
+    static void LogMsgOL(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7, T8 data8, T9 data9, T10 data10, T11 data11, T12 data12, T13 data13)
+    {
+        C_ASSERT(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*) && sizeof(T8) <= sizeof(void*) && sizeof(T9) <= sizeof(void*) && sizeof(T10) <= sizeof(void*) && sizeof(T11) <= sizeof(void*) && sizeof(T12) <= sizeof(void*) && sizeof(T13) <= sizeof(void*));
+        LogMsg(LF_GC, 13, format, (void*)(size_t)data1, (void*)(size_t)data2, (void*)(size_t)data3, (void*)(size_t)data4, (void*)(size_t)data5, (void*)(size_t)data6, (void*)(size_t)data7, (void*)(size_t)data8, (void*)(size_t)data9, (void*)(size_t)data10, (void*)(size_t)data11, (void*)(size_t)data12, (void*)(size_t)data13);
+    }
+
+    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13, typename T14 >
+    static void LogMsgOL(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7, T8 data8, T9 data9, T10 data10, T11 data11, T12 data12, T13 data13, T14 data14)
+    {
+        C_ASSERT(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*) && sizeof(T8) <= sizeof(void*) && sizeof(T9) <= sizeof(void*) && sizeof(T10) <= sizeof(void*) && sizeof(T11) <= sizeof(void*) && sizeof(T12) <= sizeof(void*) && sizeof(T13) <= sizeof(void*) && sizeof(T14) <= sizeof(void*));
+        LogMsg(LF_GC, 14, format, (void*)(size_t)data1, (void*)(size_t)data2, (void*)(size_t)data3, (void*)(size_t)data4, (void*)(size_t)data5, (void*)(size_t)data6, (void*)(size_t)data7, (void*)(size_t)data8, (void*)(size_t)data9, (void*)(size_t)data10, (void*)(size_t)data11, (void*)(size_t)data12, (void*)(size_t)data13, (void*)(size_t)data14);
+    }
+
     #ifdef _MSC_VER
     #pragma warning( pop )
     #endif
@@ -488,35 +502,75 @@ public:
 #endif
 
 //==========================================================================================
-// StressMsg
-//
-// The order of fields is important.  Keep the prefix length as the first field.
-// And make sure the timeStamp field is naturally aligned, so we don't waste
-// space on 32-bit platforms
-//
-struct StressMsg {
-    static const size_t formatOffsetBits = 26;
-    union {
-        struct {
-            uint32_t numberOfArgs  : 3;   // at most 7 arguments
-            uint32_t formatOffset  : formatOffsetBits;    // offset of string in mscorwks
-            uint32_t numberOfArgsX : 3;                   // extend number of args in a backward compat way
-        };
-        uint32_t fmtOffsCArgs;            // for optimized access
-    };
-    uint32_t     facility;                // facility used to log the entry
-    unsigned __int64 timeStamp;         // time when mssg was logged
-    void*     args[0];                  // size given by numberOfArgs
+// The order of fields is important.  Ensure that we minimize padding
+// to fit more messages in a chunk.
+struct StressMsg
+{
+private:
+    static const size_t formatOffsetLowBits = 26;
+    static const size_t formatOffsetHighBits = 13;
+
+    // We split the format offset to ensure that we utilize every bit and that
+    // the compiler does not align the format offset to a new 64-bit boundary.
+    uint64_t facility: 32;                           // facility used to log the entry
+    uint64_t numberOfArgs : 6;                       // number of arguments
+    uint64_t formatOffsetLow: formatOffsetLowBits;   // offset of format string in modules
+    uint64_t formatOffsetHigh: formatOffsetHighBits; // offset of format string in modules
+    uint64_t timeStamp: 51;                          // time when msg was logged (100ns ticks since runtime start)
+
+public:
+    void*     args[0];                               // size given by numberOfArgs
+
+    void SetFormatOffset(uint64_t offset)
+    {
+        formatOffsetLow = (uint32_t)(offset & ((1 << formatOffsetLowBits) - 1));
+        formatOffsetHigh = offset >> formatOffsetLowBits;
+    }
+
+    uint64_t GetFormatOffset()
+    {
+        return (formatOffsetHigh << formatOffsetLowBits) | formatOffsetLow;
+    }
+
+    void SetNumberOfArgs(uint32_t num)
+    {
+        numberOfArgs = num;
+    }
+
+    uint32_t GetNumberOfArgs()
+    {
+        return numberOfArgs;
+    }
+
+    void SetFacility(uint32_t fac)
+    {
+        facility = fac;
+    }
+
+    uint32_t GetFacility()
+    {
+        return facility;
+    }
+
+    uint64_t GetTimeStamp()
+    {
+        return timeStamp;
+    }
+
+    void SetTimeStamp(uint64_t time)
+    {
+        timeStamp = time;
+    }
 
     static const size_t maxArgCnt = 63;
-    static const size_t maxOffset = 1 << formatOffsetBits;
+    static const int64_t maxOffset = (int64_t)1 << (formatOffsetLowBits + formatOffsetHighBits);
     static size_t maxMsgSize ()
     { return sizeof(StressMsg) + maxArgCnt*sizeof(void*); }
 
     friend void PopulateDebugHeaders();
-    friend class ThreadStressLog;
-    friend class StressLog;
 };
+
+static_assert(sizeof(StressMsg) == sizeof(uint64_t) * 2, "StressMsg bitfields aren't aligned correctly");
 
 #ifdef _WIN64
 #define STRESSLOG_CHUNK_SIZE (32 * 1024)
@@ -624,7 +678,7 @@ public:
 
 private:
     FORCEINLINE bool IsReadyForRead()       { return readPtr != NULL; }
-    FORCEINLINE StressMsg* AdvanceRead();
+    FORCEINLINE StressMsg* AdvanceRead(uint32_t cArgs);
     inline StressMsg* AdvReadPastBoundary();
 #endif //!DACCESS_COMPILE
 
@@ -662,9 +716,9 @@ FORCEINLINE bool ThreadStressLog::CompletedDump ()
 //------------------------------------------------------------------------------------------
 // Called when dumping the log (by StressLog::Dump())
 // Updates readPtr to point to next stress messaage to be dumped
-inline StressMsg* ThreadStressLog::AdvanceRead() {
+inline StressMsg* ThreadStressLog::AdvanceRead(uint32_t cArgs) {
     // advance the marker
-    readPtr = (StressMsg*)((char*)readPtr + sizeof(StressMsg) + readPtr->numberOfArgs*sizeof(void*));
+    readPtr = (StressMsg*)((char*)readPtr + sizeof(StressMsg) + cArgs * sizeof(void*));
     // wrap around if we need to
     if (readPtr >= (StressMsg *)curReadChunk->EndPtr ())
     {

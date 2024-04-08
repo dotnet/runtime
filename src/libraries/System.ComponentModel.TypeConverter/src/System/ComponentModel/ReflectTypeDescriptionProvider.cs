@@ -193,24 +193,16 @@ namespace System.ComponentModel
                     //
                     [typeof(Array)] = new IntrinsicTypeConverterData((type) => new ArrayConverter()),
                     [typeof(ICollection)] = new IntrinsicTypeConverterData((type) => new CollectionConverter()),
-                    [typeof(Enum)] = new IntrinsicTypeConverterData((type) => CreateEnumConverter(type), cacheConverterInstance: false),
+                    [typeof(Enum)] = new IntrinsicTypeConverterData((type) => new EnumConverter(type), cacheConverterInstance: false),
                     [s_intrinsicNullableKey] = new IntrinsicTypeConverterData((type) => CreateNullableConverter(type), cacheConverterInstance: false),
                     [s_intrinsicReferenceKey] = new IntrinsicTypeConverterData((type) => new ReferenceConverter(type), cacheConverterInstance: false),
-               });
+                });
             }
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "IntrinsicTypeConverters is marked with RequiresUnreferencedCode. It is the only place that should call this.")]
         private static NullableConverter CreateNullableConverter(Type type) => new NullableConverter(type);
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
-            Justification = "Trimmer does not trim enums")]
-        private static EnumConverter CreateEnumConverter(Type type)
-        {
-            Debug.Assert(type.IsEnum || type == typeof(Enum));
-            return new EnumConverter(type);
-        }
 
         private static Hashtable PropertyCache => LazyInitializer.EnsureInitialized(ref s_propertyCache, () => new Hashtable());
 
@@ -398,7 +390,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the editor for the given base type.
         /// </summary>
-        [RequiresUnreferencedCode(TypeDescriptor.EditorRequiresUnreferencedCode + " The Type of instance cannot be statically discovered.")]
+        [RequiresUnreferencedCode(TypeDescriptor.DesignTimeAttributeTrimmed + " The Type of instance cannot be statically discovered.")]
         internal object? GetEditor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object? instance, Type editorBaseType)
         {
             ReflectedTypeData td = GetTypeData(type, true)!;
@@ -518,7 +510,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the editor for the given base type.
         /// </summary>
-        [RequiresUnreferencedCode(TypeDescriptor.EditorRequiresUnreferencedCode + " The Type of instance cannot be statically discovered.")]
+        [RequiresUnreferencedCode(TypeDescriptor.DesignTimeAttributeTrimmed  + " The Type of instance cannot be statically discovered.")]
         internal object? GetExtendedEditor(object instance, Type editorBaseType)
         {
             return GetEditor(instance.GetType(), instance, editorBaseType);
@@ -1330,7 +1322,7 @@ namespace System.ComponentModel
         /// for types as needed. These instances are stored back into the table
         /// for the base type, and for the original component type, for fast access.
         /// </summary>
-        [RequiresUnreferencedCode(TypeDescriptor.EditorRequiresUnreferencedCode)]
+        [RequiresUnreferencedCode(TypeDescriptor.DesignTimeAttributeTrimmed)]
         private static object? GetIntrinsicTypeEditor(Hashtable table, Type callingType)
         {
             object? hashEntry = null;

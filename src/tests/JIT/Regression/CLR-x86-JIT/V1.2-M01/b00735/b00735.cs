@@ -19,9 +19,8 @@ public struct AA
         do { } while (flag);
     }
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         f();
-        return 100;
     }
 }

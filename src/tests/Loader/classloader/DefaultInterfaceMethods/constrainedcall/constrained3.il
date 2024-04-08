@@ -41,29 +41,33 @@
   }
 }
 
-.class value Adder`1<T, U> implements class IFrobber`1<!T>, class IRobber`1<!U>, class IGrabber`1<!U[]>
+.class public value Adder`1<T, U> implements class IFrobber`1<!T>, class IRobber`1<!U>, class IGrabber`1<!U[]>
 {
 }
 
-.method public hidebysig static int32 Main()
+.class public auto ansi abstract sealed beforefieldinit constrained3
+    extends [mscorlib]System.Object
 {
-    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-        01 00 00 00
-    )
-    .entrypoint
+  .method public hidebysig static int32 Main()
+  {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
+      .entrypoint
 
-    .locals init (
-      valuetype Adder`1<object, string>
-    )
+      .locals init (
+        valuetype Adder`1<object, string>
+      )
 
-    ldloca.s 0
-    constrained. valuetype Adder`1<object, string>
-    callvirt instance int32 class IFrobber`1<object>::Frob()
+      ldloca.s 0
+      constrained. valuetype Adder`1<object, string>
+      callvirt instance int32 class IFrobber`1<object>::Frob()
 
-    ldloca.s 0
-    constrained. valuetype Adder`1<object, string>
-    callvirt instance int32 class IFrobber`1<string>::Frob()
-    add
+      ldloca.s 0
+      constrained. valuetype Adder`1<object, string>
+      callvirt instance int32 class IFrobber`1<string>::Frob()
+      add
 
-    ret
+      ret
+  }
 }

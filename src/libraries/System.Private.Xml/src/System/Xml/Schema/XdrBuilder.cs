@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.ComponentModel;
-using System.Globalization;
-using System.Runtime.Versioning;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
+using System.Runtime.Versioning;
 
 namespace System.Xml.Schema
 {
@@ -1051,11 +1051,7 @@ namespace System.Xml.Schema
                 // Global AttributeTypes are URN qualified so that we can look them up across schemas.
                 qname = new XmlQualifiedName(qname.Name, builder._TargetNamespace);
                 builder._AttributeDef._AttDef.Name = qname;
-                if (!builder._SchemaInfo.AttributeDecls.ContainsKey(qname))
-                {
-                    builder._SchemaInfo.AttributeDecls.Add(qname, builder._AttributeDef._AttDef);
-                }
-                else
+                if (!builder._SchemaInfo.AttributeDecls.TryAdd(qname, builder._AttributeDef._AttDef))
                 {
                     builder.SendValidationEvent(SR.Sch_DupAttribute, XmlQualifiedName.ToString(qname.Name, prefix));
                 }

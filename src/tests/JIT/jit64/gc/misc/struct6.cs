@@ -18,7 +18,7 @@ public class Test_struct6
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         S sM1, sM2, sM3, sM4, sM5;
 
@@ -28,6 +28,5 @@ public class Test_struct6
         sM4.str = "test4";
         sM5.str = "test5";
         c(sM1, sM2, sM3, sM4, sM5);
-        return 100;
     }
 }

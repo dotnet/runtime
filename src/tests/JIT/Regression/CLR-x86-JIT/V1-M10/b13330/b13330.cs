@@ -17,10 +17,9 @@ namespace D
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             f(123);
-            return 100;
         }
     }
 }

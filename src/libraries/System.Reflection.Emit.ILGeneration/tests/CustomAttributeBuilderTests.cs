@@ -600,7 +600,6 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Netfx doesn't support Enum.GetEnumName for float or double enums.")]
         [MemberData(nameof(FloatEnum_DoubleEnum_TestData))]
         public void ConstructorArgsContainsFloatEnumOrDoubleEnum_ThrowsArgumentException(object value)
         {
@@ -658,7 +657,6 @@ namespace System.Reflection.Emit.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Coreclr fixed an issue where IntPtr/UIntPtr in constructorParameters causes a corrupt created binary.")]
         [MemberData(nameof(IntPtrAttributeTypes_TestData))]
         public void ConstructorParametersContainsIntPtrOrUIntPtrArgument_ThrowsArgumentException(Type type, object value)
         {
@@ -682,7 +680,6 @@ namespace System.Reflection.Emit.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Used to throw a NullReferenceException, see https://github.com/dotnet/runtime/issues/18552.")]
         public void NullValueForPrimitiveTypeInConstructorArgs_ThrowsArgumentNullException()
         {
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[] { typeof(int) });
@@ -702,7 +699,6 @@ namespace System.Reflection.Emit.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Coreclr fixed an issue where IntPtr/UIntPtr in constructorArgs causes a corrupt created binary.")]
         [MemberData(nameof(NotSupportedPrimitives_TestData))]
         public static void NotSupportedPrimitiveInConstructorArgs_ThrowsArgumentException(object value)
         {
@@ -856,7 +852,6 @@ namespace System.Reflection.Emit.Tests
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         [MemberData(nameof(NotSupportedPrimitives_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Coreclr fixed an issue where IntPtr/UIntPtr in fieldValues causes a corrupt created binary.")]
         public static void NotSupportedPrimitiveInFieldValues_ThrowsArgumentException(object value)
         {
             // Used to assert in CustomAttributeBuilder.EmitType(), not writing any CustomAttributeEncoding.
@@ -1026,7 +1021,6 @@ namespace System.Reflection.Emit.Tests
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         [MemberData(nameof(NotSupportedPrimitives_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Coreclr fixed an issue where IntPtr/UIntPtr in propertyValues causes a corrupt created binary.")]
         public static void NotSupportedPrimitiveInPropertyValues_ThrowsArgumentException(object value)
         {
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[0]);

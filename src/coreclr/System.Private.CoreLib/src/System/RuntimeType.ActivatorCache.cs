@@ -11,7 +11,7 @@ namespace System
     {
         /// <summary>
         /// A cache which allows optimizing <see cref="Activator.CreateInstance"/>,
-        /// <see cref="RuntimeType.CreateInstanceDefaultCtor"/>, and related APIs.
+        /// <see cref="CreateInstanceDefaultCtor"/>, and related APIs.
         /// </summary>
         private sealed unsafe class ActivatorCache
         {
@@ -23,6 +23,8 @@ namespace System
             // The managed calli to the parameterless ctor, taking "this" (as object) as its first argument.
             private readonly delegate*<object?, void> _pfnCtor;
             private readonly bool _ctorIsPublic;
+
+            private CreateUninitializedCache? _createUninitializedCache;
 
 #if DEBUG
             private readonly RuntimeType _originalRuntimeType;
@@ -110,14 +112,8 @@ namespace System
                 // as the object itself will keep the type alive.
 
 #if DEBUG
-                if (_originalRuntimeType != rt)
-                {
-                    Debug.Fail("Caller passed the wrong RuntimeType to this routine."
-                        + Environment.NewLineConst + "Expected: " + (_originalRuntimeType ?? (object)"<null>")
-                        + Environment.NewLineConst + "Actual: " + (rt ?? (object)"<null>"));
-                }
+                CheckOriginalRuntimeType(rt);
 #endif
-
                 object? retVal = _pfnAllocator(_allocatorFirstArg);
                 GC.KeepAlive(rt);
                 return retVal;
@@ -125,6 +121,27 @@ namespace System
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             internal void CallConstructor(object? uninitializedObject) => _pfnCtor(uninitializedObject);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            internal CreateUninitializedCache GetCreateUninitializedCache(RuntimeType rt)
+            {
+#if DEBUG
+                CheckOriginalRuntimeType(rt);
+#endif
+                return _createUninitializedCache ??= new CreateUninitializedCache(rt);
+            }
+
+#if DEBUG
+            private void CheckOriginalRuntimeType(RuntimeType rt)
+            {
+                if (_originalRuntimeType != rt)
+                {
+                    Debug.Fail("Caller passed the wrong RuntimeType to this routine."
+                        + Environment.NewLineConst + "Expected: " + (_originalRuntimeType ?? (object)"<null>")
+                        + Environment.NewLineConst + "Actual: " + (rt ?? (object)"<null>"));
+                }
+            }
+#endif
         }
     }
 }

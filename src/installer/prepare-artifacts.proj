@@ -23,6 +23,8 @@
   </PropertyGroup>
   <Import Project="../tools/Sign.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
 
+  <Import Project="$(RepositoryEngineeringDir)Publishing.props" Condition="Exists('$(RepositoryEngineeringDir)Publishing.props')" />
+
   <UsingTask TaskName="GenerateChecksums" AssemblyFile="$(InstallerTasksAssemblyPath)" />
 
   <PropertyGroup>
@@ -56,6 +58,16 @@
     <ManifestBuildData Include="AzureDevOpsBranch=$(BUILD_SOURCEBRANCH)" />
   </ItemGroup>
 
+  <!-- 
+    Set metadata for assets that are not marked as NonShipping. 
+    This is used to determine if the asset should be shipped as part of .NET release.
+  -->
+  <ItemDefinitionGroup>
+    <ItemsToPush>
+      <ManifestArtifactData Condition="'$(ProducesDotNetReleaseShippingAssets)' == 'true'">DotNetReleaseShipping=true</ManifestArtifactData>
+    </ItemsToPush>
+  </ItemDefinitionGroup>
+
   <!--
     Run Arcade's signing project directly. The 'eng/Signing.props' extensibility props file checks
     if '$(<StageName>)' == 'true' and points Arcade to the correct files.
@@ -80,9 +92,6 @@
     <PropertyGroup>
       <AssetManifestFilename>Manifest.xml</AssetManifestFilename>
       <AssetManifestFile>$(ArtifactsLogDir)AssetManifest/$(AssetManifestFilename)</AssetManifestFile>
-
-      <!-- Create temp dir to store generated asset manifest, per Arcade guidance. -->
-      <TempWorkingDir>$(ArtifactsObjDir)TempWorkingDir\$([System.Guid]::NewGuid())\</TempWorkingDir>
 
       <ProductVersionTxtContents Condition="'$(StabilizePackageVersion)'=='true'">$(ProductionVersion)</ProductVersionTxtContents>
       <ProductVersionTxtContents Condition="'$(StabilizePackageVersion)'!='true'">$(ProductVersion)</ProductVersionTxtContents>
@@ -143,7 +152,7 @@
     </ItemGroup>
 
     <!-- Push items to AzDO as build artifacts, generating the asset manifest as a side effect. -->
-    <PushToAzureDevOpsArtifacts
+    <PushToBuildStorage
       AzureDevOpsCollectionUri="$(SYSTEM_TEAMFOUNDATIONCOLLECTIONURI)"
       AzureDevOpsProject="$(SYSTEM_TEAMPROJECT)"
       AzureDevOpsBuildId="$(BUILD_BUILDID)"
@@ -158,17 +167,7 @@
       ManifestBuildId="$(BUILD_BUILDNUMBER)"
       ManifestCommit="$(BUILD_SOURCEVERSION)"
       IsStableBuild="$(IsStableBuild)"
-      AssetManifestPath="$(AssetManifestFile)"
-      AssetsTemporaryDirectory="$(TempWorkingDir)"
-      PublishingVersion ="3" />
-
-    <!-- Copy the generated manifest to the build's artifacts -->
-    <Copy SourceFiles="$(AssetManifestFile)" DestinationFolder="$(TempWorkingDir)" />
-
-    <Message Importance="High" Text="Uploading $(AssetManifestFilename) to pipeline" />
-    <Message
-      Text="##vso[artifact.upload containerfolder=AssetManifests;artifactname=AssetManifests]$(TempWorkingDir)$(AssetManifestFilename)"
-      Importance="High" />
+      AssetManifestPath="$(AssetManifestFile)" />
 
     <Message Importance="High" Text="Complete!" />
   </Target>
@@ -193,6 +192,7 @@
 
       <DownloadedSymbolNupkgFile Include="$(DownloadDirectory)**\*.symbols.nupkg" />
       <DownloadedWixPdbFile Include="$(DownloadDirectory)**\*.wixpdb" />
+      <DownloadedWixpackFile Include="$(DownloadDirectory)**\*.wixpack.zip" Condition="'$(PostBuildSign)' != 'true'" />
       <DownloadedWorkloadsVSInsertionFile Include="$(DownloadDirectory)*\workloads-vs\**\*" />
       <DownloadedNupkgFile
         Include="$(DownloadDirectory)**\*.nupkg"
@@ -201,7 +201,7 @@
       <!-- Add files that are not affected by filtering. -->
       <UploadToBlobStorageFile
         Include="@(DownloadedArtifactFile)"
-        Exclude="@(DownloadedSymbolNupkgFile);@(DownloadedNupkgFile);@(DownloadedWixPdbFile);@(DownloadedWorkloadsVSInsertionFile)" />
+        Exclude="@(DownloadedSymbolNupkgFile);@(DownloadedNupkgFile);@(DownloadedWixPdbFile);@(DownloadedWorkloadsVSInsertionFile);@(DownloadedWixpackFile)" />
 
       <!--
         Filter out the RID-specific (Runtime) nupkgs and RID-agnostic nupkgs. RID-specific packages

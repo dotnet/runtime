@@ -464,6 +464,22 @@ void Frame::PopIfChained()
 }
 #endif // TARGET_UNIX && !DACCESS_COMPILE
 
+#if !defined(TARGET_X86) || defined(TARGET_UNIX)
+/* static */
+void Frame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD)
+{
+    _ASSERTE(!ExecutionManager::IsManagedCode(::GetIP(pRD->pCurrentContext)));
+    while (!ExecutionManager::IsManagedCode(::GetIP(pRD->pCurrentContext)))
+    {
+#ifdef TARGET_UNIX
+        PAL_VirtualUnwind(pRD->pCurrentContext, NULL);
+#else
+        Thread::VirtualUnwindCallFrame(pRD);
+#endif
+    }
+}
+#endif // !TARGET_X86 || TARGET_UNIX
+
 //-----------------------------------------------------------------------
 #endif // #ifndef DACCESS_COMPILE
 //---------------------------------------------------------------
@@ -1020,6 +1036,50 @@ void GCFrame::Pop()
         Thread::ObjectRefNew(&m_pObjRefs[i]);       // Unprotect them
 #endif
 }
+
+void GCFrame::Remove()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        PRECONDITION(m_pCurThread != NULL);
+    }
+    CONTRACTL_END;
+
+    GCFrame *pPrevFrame = NULL;
+    GCFrame *pFrame = m_pCurThread->GetGCFrame();
+    while (pFrame != NULL)
+    {
+        if (pFrame == this)
+        {
+            if (pPrevFrame)
+            {
+                pPrevFrame->m_Next = m_Next;
+            }
+            else
+            {
+                m_pCurThread->SetGCFrame(m_Next);
+            }
+
+            m_Next = NULL;
+
+#ifdef _DEBUG
+            m_pCurThread->EnableStressHeap();
+            for(UINT i = 0; i < m_numObjRefs; i++)
+                Thread::ObjectRefNew(&m_pObjRefs[i]);       // Unprotect them
+#endif
+            break;
+        }
+
+        pPrevFrame = pFrame;
+        pFrame = pFrame->m_Next;
+    }
+
+    _ASSERTE_MSG(pFrame != NULL, "GCFrame not found in the current thread's stack");
+}
+
 #endif // !DACCESS_COMPILE
 
 //
@@ -1304,10 +1364,10 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
     {
         VASigCookie *varArgSig = GetVASigCookie();
 
-        //Note: no instantiations needed for varargs
+        SigTypeContext typeContext(varArgSig->classInst, varArgSig->methodInst);
         MetaSig msig(varArgSig->signature,
                      varArgSig->pModule,
-                     NULL);
+                     &typeContext);
         PromoteCallerStackHelper (fn, sc, pFunction, &msig);
     }
 }
@@ -1438,10 +1498,10 @@ void TransitionFrame::PromoteCallerStackUsingGCRefMap(promote_func* fn, ScanCont
             {
                 VASigCookie *varArgSig = dac_cast<PTR_VASigCookie>(*ppObj);
 
-                //Note: no instantiations needed for varargs
+                SigTypeContext typeContext(varArgSig->classInst, varArgSig->methodInst);
                 MetaSig msig(varArgSig->signature,
                                 varArgSig->pModule,
-                                NULL);
+                                &typeContext);
                 PromoteCallerStackHelper (fn, sc, NULL, &msig);
             }
             break;
@@ -1465,10 +1525,10 @@ void PInvokeCalliFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
         return;
     }
 
-    // no instantiations needed for varargs
+    SigTypeContext typeContext(varArgSig->classInst, varArgSig->methodInst);
     MetaSig msig(varArgSig->signature,
                  varArgSig->pModule,
-                 NULL);
+                 &typeContext);
     PromoteCallerStackHelper(fn, sc, NULL, &msig);
 }
 
@@ -1751,27 +1811,18 @@ MethodDesc* HelperMethodFrame::GetFunction()
 //             This is used when the HelperMethodFrame is first created.
 //         * false: complete any initialization that was left to do, if any.
 //      * unwindState - [out] DAC builds use this to return the unwound machine state.
-//      * hostCallPreference - (See code:HelperMethodFrame::HostCallPreference.)
 //
 // Return Value:
 //     Normally, the function always returns TRUE meaning the initialization succeeded.
 //
-//     However, if hostCallPreference is NoHostCalls, AND if a callee (like
-//     LazyMachState::unwindLazyState) needed to acquire a JIT reader lock and was unable
-//     to do so (lest it re-enter the host), then InsureInit will abort and return FALSE.
-//     So any callers that specify hostCallPreference = NoHostCalls (which is not the
-//     default), should check for FALSE return, and refuse to use the HMF in that case.
-//     Currently only asynchronous calls made by profilers use that code path.
 //
 
 BOOL HelperMethodFrame::InsureInit(bool initialInit,
-                                    MachState * unwindState,
-                                    HostCallPreference hostCallPreference /* = AllowHostCalls */)
+                                    MachState * unwindState)
 {
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        if ((hostCallPreference == AllowHostCalls) && !m_MachState.isValid()) { HOST_CALLS; } else { HOST_NOCALLS; }
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -1812,8 +1863,7 @@ BOOL HelperMethodFrame::InsureInit(bool initialInit,
             lazy,
             &unwound,
             threadId,
-            0,
-            hostCallPreference);
+            0);
 
 #if !defined(DACCESS_COMPILE)
         if (!unwound.isValid())
@@ -1830,7 +1880,6 @@ BOOL HelperMethodFrame::InsureInit(bool initialInit,
             // will commonly return an unwound state with _pRetAddr==NULL (which counts
             // as an "invalid" MachState). So have DAC builds deliberately fall through
             // rather than aborting when unwound is invalid.
-            _ASSERTE(hostCallPreference == NoHostCalls);
             return FALSE;
         }
 #endif // !defined(DACCESS_COMPILE)
@@ -1925,7 +1974,7 @@ BOOL MulticastFrame::TraceFrame(Thread *thread, BOOL fromPatch,
                            ((ArrayBase *)pbDelInvocationList)->GetComponentSize()*delegateCount);
 
         _ASSERTE(pbDel);
-        return DelegateInvokeStubManager::TraceDelegateObject(pbDel, trace);
+        return StubLinkStubManager::TraceDelegateObject(pbDel, trace);
     }
 #endif // !DACCESS_COMPILE
 }
@@ -2200,7 +2249,7 @@ void ComputeCallRefMap(MethodDesc* pMD,
     // an instantiation argument. But if we're in a situation where we haven't resolved the method yet
     // we need to pretent that unresolved default interface methods are like any other interface
     // methods and don't have an instantiation argument.
-    // See code:CEEInfo::getMethodSigInternal
+    // See code:getMethodSigInternal
     //
     assert(!isDispatchCell || !pMD->RequiresInstArg() || pMD->GetMethodTable()->IsInterface());
     if (pMD->RequiresInstArg() && !isDispatchCell)

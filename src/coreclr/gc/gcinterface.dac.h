@@ -190,22 +190,9 @@ public:
 #undef DEFINE_DPTR_FIELD
 #undef DEFINE_FIELD
 #undef ALL_FIELDS
-
-    // The generation table must always be last, because the size of this array
-    // (stored inline in the gc_heap class) can vary.
-    //
-    // The size of the generation class is not part of the GC-DAC interface,
-    // despite being embedded by-value into the gc_heap class. The DAC variable
-    // "generation_size" stores the size of the generation class, so the DAC can
-    // use it and pointer arithmetic to calculate correct offsets into the generation
-    // table. (See "GenerationTableIndex" function in the DAC for details)
-    //
-    // Also note that this array has length 1 because the C++ standard doesn't allow
-    // for 0-length arrays, although every major compiler is willing to tolerate it.
-    dac_generation generation_table[1];
 };
 
-#define GENERATION_TABLE_FIELD_INDEX 21
+#define GENERATION_TABLE_FIELD_INDEX 18
 
 // Unlike other DACized structures, these types are loaded manually in the debugger.
 // To avoid misuse, pointers to them are explicitly casted to these unused type.
@@ -242,13 +229,7 @@ struct unused_generation
 // this structure contains __DPtrs for every DAC variable that will marshal values
 // from the debugee process to the debugger process when dereferenced.
 struct GcDacVars {
-  uint8_t major_version_number;
-  uint8_t minor_version_number;
-  size_t generation_size;
-  size_t total_generation_count;
-  int total_bookkeeping_elements;
-  int count_free_region_kinds;
-  size_t card_table_info_size;
+#define GC_DAC_VAL(type, name)       type name;
 #ifdef DACCESS_COMPILE
  #define GC_DAC_VAR(type, name)       DPTR(type) name;
  #define GC_DAC_PTR_VAR(type, name)   DPTR(type*) name;
@@ -257,6 +238,7 @@ struct GcDacVars {
  #define GC_DAC_VAR(type, name) type *name;
 #endif
 #include "gcinterface.dacvars.def"
+#undef GC_DAC_VAL
 };
 
 #endif // _GC_INTERFACE_DAC_H_

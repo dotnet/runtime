@@ -12,6 +12,10 @@
   <Import Project="System.Text.Json.SourceGeneration.Tests.targets" />
 
   <ItemGroup>
+    <RdXmlFile Include="roslyn4.4.rd.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- The Roslyn4.4 project uses multi-targeting to enable nullability annotations,
          so we need to explicitly reference the ns2.0 TFM used by the production source generator -->
     <ProjectReference Include="..\..\gen\System.Text.Json.SourceGeneration.Roslyn4.4.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" SetTargetFramework="TargetFramework=netstandard2.0" />

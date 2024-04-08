@@ -282,7 +282,7 @@ public:
           m_counters(NULL),
           m_cur_counter_block(NULL),
           m_cur_counter_block_for_reclaim(NULL),
-          m_cur_counter_block_for_reclaim_index(NULL),
+          m_cur_counter_block_for_reclaim_index(0),
           m_pNext(NULL)
     {
         LIMITED_METHOD_CONTRACT;

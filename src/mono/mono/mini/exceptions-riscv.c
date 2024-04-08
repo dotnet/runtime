@@ -6,6 +6,7 @@
 #include "mini-runtime.h"
 
 #include <mono/metadata/abi-details.h>
+#include <mono/metadata/tokentype.h>
 #include <mono/utils/mono-sigcontext.h>
 #include "mono/utils/mono-tls-inline.h"
 
@@ -67,39 +68,274 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	return start;
 }
 
+void
+mono_riscv_throw_exception (gpointer arg, host_mgreg_t pc, host_mgreg_t *int_regs, gdouble *fp_regs, gboolean corlib, gboolean rethrow, gboolean preserve_ips){
+	ERROR_DECL (error);
+	MonoContext ctx;
+	MonoObject *exc = NULL;
+	guint32 ex_token_index, ex_token;
+	if (!corlib)
+		exc = (MonoObject *)arg;
+	else {
+		ex_token_index = (guint64)arg;
+		ex_token = MONO_TOKEN_TYPE_DEF | ex_token_index;
+		exc = (MonoObject *)mono_exception_from_token (mono_defaults.corlib, ex_token);
+	}
+
+	/* Adjust pc so it points into the call instruction */
+	pc--;
+
+	/* Initialize a ctx based on the arguments */
+	memset (&ctx, 0, sizeof (MonoContext));
+	memcpy (&(ctx.gregs [0]), int_regs, sizeof (host_mgreg_t) * RISCV_N_GREGS);
+	memcpy (&(ctx.fregs [0]), fp_regs, sizeof (host_mgreg_t) * RISCV_N_FREGS);
+
+	ctx.gregs [0] = pc;
+
+	if (mono_object_isinst_checked (exc, mono_defaults.exception_class, error)) {
+		MonoException *mono_ex = (MonoException *)exc;
+		if (!rethrow && !mono_ex->caught_in_unmanaged) {
+			mono_ex->stack_trace = NULL;
+			mono_ex->trace_ips = NULL;
+		} else if (preserve_ips) {
+			mono_ex->caught_in_unmanaged = TRUE;
+		}
+	}
+
+	mono_error_assert_ok (error);
+
+	mono_handle_exception (&ctx, exc);
+
+	mono_restore_context (&ctx);
+}
+
 gpointer
 mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 {
-	*info = NULL;
-	return nop_stub (0x37);
+	guint8 *code;
+	guint8 *start;
+	int size, offset, gregs_offset, fregs_offset, ctx_offset, frame_size;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
+
+	size = 632;
+	start = code = mono_global_codeman_reserve (size);
+
+	/* Compute stack frame size and offsets */
+	offset = 0;
+	/* ra & fp */
+	offset += 2 * sizeof (host_mgreg_t);
+
+	/* gregs */
+	offset += RISCV_N_GREGS * sizeof (host_mgreg_t);
+	gregs_offset = offset;
+
+	/* fregs */
+	offset += RISCV_N_FREGS * sizeof (host_mgreg_t);
+	fregs_offset = offset;
+
+	/* ctx */
+	offset += sizeof (host_mgreg_t);
+	ctx_offset = offset;
+	frame_size = ALIGN_TO (offset, MONO_ARCH_FRAME_ALIGNMENT);
+
+	/*
+	 * We are being called from C code, ctx is in a0, the address to call is in a1.
+	 * We need to save state, restore ctx, make the call, then restore the previous state,
+	 * returning the value returned by the call.
+	 */
+
+	MINI_BEGIN_CODEGEN ();
+
+	// riscv_ebreak (code);
+
+	/* Setup a frame */
+	g_assert (RISCV_VALID_I_IMM (-frame_size));
+	riscv_addi (code, RISCV_SP, RISCV_SP, -frame_size);
+	code = mono_riscv_emit_store (code, RISCV_RA, RISCV_SP, frame_size - sizeof (host_mgreg_t), 0);
+	code = mono_riscv_emit_store (code, RISCV_FP, RISCV_SP, frame_size - 2 * sizeof (host_mgreg_t), 0);
+	riscv_addi (code, RISCV_FP, RISCV_SP, frame_size);
+
+	/* Save ctx */
+	code = mono_riscv_emit_store (code, RISCV_A0, RISCV_FP, -ctx_offset, 0);
+	/* Save gregs */
+	code = mono_riscv_emit_store_stack (code, MONO_ARCH_CALLEE_SAVED_REGS, RISCV_FP, -gregs_offset, FALSE);
+	/* Save fregs */
+	if (riscv_stdext_f || riscv_stdext_d)
+		code = mono_riscv_emit_store_stack (code, 0xffffffff, RISCV_FP, -fregs_offset, TRUE);
+
+	/* Load regs from ctx */
+	code = mono_riscv_emit_load_regarray (code, MONO_ARCH_CALLEE_SAVED_REGS, RISCV_A0,
+	                                      MONO_STRUCT_OFFSET (MonoContext, gregs), FALSE);
+
+	/* Load fregs */
+	if (riscv_stdext_f || riscv_stdext_d)
+		code =
+		    mono_riscv_emit_load_regarray (code, 0xffffffff, RISCV_A0, MONO_STRUCT_OFFSET (MonoContext, fregs), TRUE);
+
+	/* Load fp */
+	// code = mono_riscv_emit_load (code, RISCV_FP, RISCV_A0, MONO_STRUCT_OFFSET (MonoContext, gregs) + (RISCV_FP *
+	// sizeof (host_mgreg_t)), 0);
+
+	/* Make the call */
+	riscv_jalr (code, RISCV_RA, RISCV_A1, 0);
+	/* For filters, the result is in R0 */
+
+	/* Restore fp */
+	riscv_addi (code, RISCV_FP, RISCV_SP, frame_size);
+
+	/* Load ctx */
+	code = mono_riscv_emit_load (code, RISCV_T0, RISCV_FP, -ctx_offset, 0);
+	/* Save registers back to ctx, except FP*/
+	/* This isn't strictly necessary since we don't allocate variables used in eh clauses to registers */
+	code = mono_riscv_emit_store_regarray (code, MONO_ARCH_CALLEE_SAVED_REGS ^ (1 << RISCV_FP), RISCV_T0,
+	                                       MONO_STRUCT_OFFSET (MonoContext, gregs), FALSE);
+
+	/* Restore regs */
+	code = mono_riscv_emit_load_stack (code, MONO_ARCH_CALLEE_SAVED_REGS, RISCV_FP, -gregs_offset, FALSE);
+	/* Restore fregs */
+	if (riscv_stdext_f || riscv_stdext_d)
+		code = mono_riscv_emit_load_stack (code, 0xffffffff, RISCV_FP, -fregs_offset, TRUE);
+
+	/* Destroy frame */
+	code = mono_riscv_emit_destroy_frame (code);
+
+	riscv_jalr (code, RISCV_X0, RISCV_RA, 0);
+
+	g_assert ((code - start) < size);
+
+	MINI_END_CODEGEN (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL);
+
+	if (info)
+		*info = mono_tramp_info_create ("call_filter", start, code - start, ji, unwind_ops);
+
+	return MINI_ADDR_TO_FTNPTR (start);
+}
+
+static gpointer
+get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm, gboolean resume_unwind, const char *tramp_name, MonoTrampInfo **info, gboolean aot, gboolean preserve_ips){
+	guint8 *start, *code;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
+	int offset, gregs_offset, fregs_offset, frame_size, num_fregs;
+
+	code = start = mono_global_codeman_reserve (size);
+
+	/* This will being called by JITted code, the exception object/type token is in A0 */
+
+	/* Compute stack frame size and offsets */
+	offset = 0;
+	/* ra & fp */
+	offset += 2 * sizeof (host_mgreg_t);
+
+	/* gregs */
+	offset += RISCV_N_GREGS * sizeof (host_mgreg_t);
+	gregs_offset = offset;
+
+	/* fregs */
+	num_fregs = RISCV_N_FREGS;
+	offset += num_fregs * sizeof (host_mgreg_t);
+	fregs_offset = offset;
+	frame_size = ALIGN_TO (offset, MONO_ARCH_FRAME_ALIGNMENT);
+
+	MINI_BEGIN_CODEGEN ();
+
+	/* Setup a frame */
+	g_assert (RISCV_VALID_I_IMM (-frame_size));
+	riscv_addi (code, RISCV_SP, RISCV_SP, -frame_size);
+	code = mono_riscv_emit_store (code, RISCV_RA, RISCV_SP, frame_size - sizeof (host_mgreg_t), 0);
+	code = mono_riscv_emit_store (code, RISCV_FP, RISCV_SP, frame_size - 2 * sizeof (host_mgreg_t), 0);
+	riscv_addi (code, RISCV_FP, RISCV_SP, frame_size);
+
+	/* Save gregs */
+	code = mono_riscv_emit_store_stack (code, 0xffffffff, RISCV_FP, -gregs_offset, FALSE);
+	if (corlib && !llvm)
+		/* The real ra is in A1 */
+		code = mono_riscv_emit_store (code, RISCV_A1, RISCV_FP, -gregs_offset + (RISCV_RA * sizeof (host_mgreg_t)), 0);
+
+	/* Save previous fp/sp */
+	code = mono_riscv_emit_load (code, RISCV_T0, RISCV_FP, -2 * (gint32)sizeof (host_mgreg_t), 0);
+	code = mono_riscv_emit_store (code, RISCV_T0, RISCV_FP, -gregs_offset + (RISCV_FP * sizeof (host_mgreg_t)), 0);
+	// current fp is previous sp
+	code = mono_riscv_emit_store (code, RISCV_FP, RISCV_FP, -gregs_offset + (RISCV_SP * sizeof (host_mgreg_t)), 0);
+
+	/* Save fregs */
+	if (riscv_stdext_f || riscv_stdext_d)
+		code = mono_riscv_emit_store_stack (code, 0xffffffff, RISCV_FP, -fregs_offset, TRUE);
+
+	/* Call the C trampoline function */
+	/* Arg1 =  exception object/type token */
+	// riscv_addi (code, RISCV_A0, RISCV_A0, 0);
+	/* Arg2 = caller ip, should be return address in this case */
+	if (corlib) {
+		// caller ip are set to A1 already
+		if (llvm)
+			NOT_IMPLEMENTED;
+	} else
+		code = mono_riscv_emit_load (code, RISCV_A1, RISCV_FP, -(gint32)sizeof (host_mgreg_t), 0);
+	/* Arg 3 = gregs */
+	riscv_addi (code, RISCV_A2, RISCV_FP, -gregs_offset);
+	/* Arg 4 = fregs */
+	riscv_addi (code, RISCV_A3, RISCV_FP, -fregs_offset);
+	/* Arg 5 = corlib */
+	riscv_addi (code, RISCV_A4, RISCV_ZERO, corlib ? 1 : 0);
+	/* Arg 6 = rethrow */
+	riscv_addi (code, RISCV_A5, RISCV_ZERO, rethrow ? 1 : 0);
+	if (!resume_unwind) {
+		/* Arg 7 = preserve_ips */
+		riscv_addi (code, RISCV_A6, RISCV_ZERO, preserve_ips ? 1 : 0);
+	}
+
+	/* Call the function */
+	if (aot) {
+		NOT_IMPLEMENTED;
+	} else {
+		gpointer icall_func;
+
+		if (resume_unwind)
+			// icall_func = (gpointer)mono_riscv_resume_unwind;
+			NOT_IMPLEMENTED;
+		else
+			icall_func = (gpointer)mono_riscv_throw_exception;
+
+		code = mono_riscv_emit_imm (code, RISCV_RA, (guint64)icall_func);
+	}
+	riscv_jalr (code, RISCV_ZERO, RISCV_RA, 0);
+	/* This shouldn't return */
+	/* hang in debugger */
+	riscv_ebreak (code);
+
+	g_assert ((code - start) < size);
+	MINI_END_CODEGEN (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL);
+
+	if (info)
+		*info = mono_tramp_info_create (tramp_name, start, code - start, ji, unwind_ops);
+
+	return MINI_ADDR_TO_FTNPTR (start);
 }
 
 gpointer
 mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 {
-	*info = NULL;
-	return nop_stub (0x77);
+	return get_throw_trampoline (384, FALSE, FALSE, FALSE, FALSE, "throw_exception", info, aot, FALSE);
 }
 
 gpointer
 mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 {
-	*info = NULL;
-	return nop_stub (0x88);
+	return get_throw_trampoline (384, FALSE, TRUE, FALSE, FALSE, "rethrow_exception", info, aot, FALSE);
 }
 
 gpointer
 mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
 {
-	*info = NULL;
-	return nop_stub (0x99);
+	return get_throw_trampoline (384, FALSE, TRUE, FALSE, FALSE, "rethrow_preserve_exception", info, aot, TRUE);
 }
 
 gpointer
 mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 {
-	*info = NULL;
-	return nop_stub (0xaa);
+	return get_throw_trampoline (384, TRUE, FALSE, FALSE, FALSE, "throw_corlib_exception", info, aot, FALSE);
 }
 
 #else
@@ -160,8 +396,6 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls, MonoJitInfo *ji,
                         MonoContext *ctx, MonoContext *new_ctx, MonoLMF **lmf,
                         host_mgreg_t **save_locations, StackFrameInfo *frame)
 {
-	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
-
 	memset (frame, 0, sizeof (StackFrameInfo));
 	frame->ji = ji;
 
@@ -173,7 +407,6 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls, MonoJitInfo *ji,
 		guint8 *cfa;
 		guint32 unwind_info_len;
 		guint8 *unwind_info;
-
 
 		if (ji->is_trampoline)
 			frame->type = FRAME_TYPE_TRAMPOLINE;
@@ -190,6 +423,11 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls, MonoJitInfo *ji,
 		for (int i = 0; i < 10; i++)
 			(regs + MONO_MAX_IREGS) [i] = *((host_mgreg_t*)&new_ctx->fregs [RISCV_F18 + i]);
 
+		gpointer ip = MINI_FTNPTR_TO_ADDR (MONO_CONTEXT_GET_IP (ctx));
+
+		// printf ("%s %p %p\n", ji->d.method->name, ji->code_start, ip);
+		// mono_print_unwind_info (unwind_info, unwind_info_len);
+
 		gboolean success = mono_unwind_frame (unwind_info, unwind_info_len, (guint8 *)ji->code_start,
 		                                      (guint8 *)ji->code_start + ji->code_size, (guint8 *)ip, NULL, regs,
 		                                      MONO_MAX_IREGS + 12 + 1, save_locations, MONO_MAX_IREGS, (guint8 **)&cfa);
@@ -197,21 +435,23 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls, MonoJitInfo *ji,
 		if (!success)
 			return FALSE;
 
-		memcpy (&new_ctx->gregs, regs, sizeof (host_mgreg_t) * 32);
+		memcpy (new_ctx->gregs, regs, sizeof (host_mgreg_t) * MONO_MAX_IREGS);
 		for (int i = 0; i < 2; i++)
 			*((host_mgreg_t*)&new_ctx->fregs [RISCV_F8 + i]) = (regs + MONO_MAX_IREGS) [i];
 		for (int i = 0; i < 10; i++)
-			*((host_mgreg_t*)&new_ctx->fregs [RISCV_F18 + i]) = (regs + MONO_MAX_IREGS) [i];
+			*((host_mgreg_t *)&new_ctx->fregs [RISCV_F18 + i]) = (regs + MONO_MAX_IREGS) [2 + i];
 
+		new_ctx->gregs [0] = regs [RISCV_RA];
 		new_ctx->gregs [RISCV_SP] = (host_mgreg_t)(gsize)cfa;
 
-		if (*lmf && (*lmf)->gregs [RISCV_FP] && (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->gregs [RISCV_SP])) {
+		if (*lmf && (*lmf)->gregs [MONO_ARCH_LMF_REG_SP] &&
+		    (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->gregs [MONO_ARCH_LMF_REG_SP])) {
 			/* remove any unused lmf */
-			*lmf = (MonoLMF *)(((gsize)(*lmf)->previous_lmf) & ~(TARGET_SIZEOF_VOID_P - 1));
+			*lmf = (MonoLMF *)(((gsize)(*lmf)->previous_lmf) & ~3);
 		}
 
-		/* we substract 1, so that the pc points into the call instruction */
-		new_ctx->gregs [RISCV_ZERO]--;
+		/* we subtract 1, so that the PC points into the call instruction */
+		new_ctx->gregs [0]--;
 
 		return TRUE;
 	} else if (*lmf) {
@@ -223,13 +463,22 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls, MonoJitInfo *ji,
 		if (!ji)
 			return FALSE;
 
-		memcpy (&new_ctx->gregs, (*lmf)->gregs, sizeof (host_mgreg_t) * RISCV_N_GREGS);
+		g_assert (MONO_ARCH_LMF_REGS == ((MONO_ARCH_CALLEE_SAVED_REGS) | (1 << RISCV_SP)));
+
+		memcpy (&new_ctx->gregs [0], &(*lmf)->gregs [0], sizeof (host_mgreg_t) * RISCV_N_GREGS);
+		for (int i = 0; i < RISCV_N_GREGS; i++) {
+			if (!(MONO_ARCH_LMF_REGS & (1 << i))) {
+				new_ctx->gregs [i] = ctx->gregs [i];
+			}
+		}
+		// new_ctx->gregs [RISCV_FP] = (*lmf)->gregs [MONO_ARCH_LMF_REG_FP];
+		// new_ctx->gregs [RISCV_SP] = (*lmf)->gregs [MONO_ARCH_LMF_REG_SP];
 		new_ctx->gregs [0] = (*lmf)->pc; // use [0] as pc reg since x0 is hard-wired zero
 
-		/* we substract 1, so that the IP points into the call instruction */
+		/* we subtract 1, so that the PC points into the call instruction */
 		new_ctx->gregs [0]--;
 
-		*lmf = (MonoLMF *)(((gsize)(*lmf)->previous_lmf) & ~(TARGET_SIZEOF_VOID_P - 1));
+		*lmf = (MonoLMF *)(((gsize)(*lmf)->previous_lmf) & ~3);
 
 		return TRUE;
 	}
@@ -243,7 +492,12 @@ handle_signal_exception (gpointer obj)
 	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
 	MonoContext ctx = jit_tls->ex_ctx;
 
+	MONO_ENTER_GC_UNSAFE_UNBALANCED;
+
 	mono_handle_exception (&ctx, obj);
+
+	MONO_EXIT_GC_UNSAFE_UNBALANCED;
+
 	mono_restore_context (&ctx);
 }
 

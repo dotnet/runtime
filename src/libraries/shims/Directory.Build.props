@@ -17,6 +17,7 @@
     <ILLinkTrimAssembly>false</ILLinkTrimAssembly>
     <AddOSPlatformAttributes>false</AddOSPlatformAttributes>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <SkipLocalsInit>false</SkipLocalsInit>
     <!-- Allow shim ref projects to reference source projects which is required for referencing shared
         framework dependencies. -->
     <SkipValidateReferenceAssemblyProjectReferences Condition="'$(IsReferenceAssemblyProject)' == 'true'">true</SkipValidateReferenceAssemblyProjectReferences>

@@ -9,7 +9,7 @@ using Xunit;
 public class StaticReadonlyStructWithGC
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         // Pre-initialize host type
         RuntimeHelpers.RunClassConstructor(typeof(StaticReadonlyStructWithGC).TypeHandle);
@@ -23,7 +23,6 @@ public class StaticReadonlyStructWithGC
         if (!Test7()) throw new Exception("Test7 failed");
         if (!Test8()) throw new Exception("Test8 failed");
         if (!Test9()) throw new Exception("Test9 failed");
-        return 100;
     }
 
     static readonly MyStruct MyStructFld = new()

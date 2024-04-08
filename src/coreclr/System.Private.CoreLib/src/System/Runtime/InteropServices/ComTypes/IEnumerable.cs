@@ -15,6 +15,6 @@ namespace System.Runtime.InteropServices.ComTypes
     internal interface IEnumerable
     {
         [DispId(-4)]
-        System.Collections.IEnumerator GetEnumerator();
+        Collections.IEnumerator GetEnumerator();
     }
 }

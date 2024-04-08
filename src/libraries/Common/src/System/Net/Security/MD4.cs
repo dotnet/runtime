@@ -67,7 +67,7 @@ namespace System.Net.Security
             Span<byte> buffer = stackalloc byte[64];
             buffer.Clear();
             // Initialize the context
-            Span<uint> state = stackalloc uint[4] { 0x67452301, 0xefcdab89,  0x98badcfe, 0x10325476 };
+            Span<uint> state = stackalloc uint[4] { 0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476 };
             Span<uint> count = stackalloc uint[2] { 0, 0 };
 
             HashCore(source, state, count, buffer);
@@ -117,7 +117,7 @@ namespace System.Net.Security
                 }
                 else
                 {
-                    partLen  = 0;
+                    partLen = 0;
                 }
 
                 for (i = partLen; i + 63 < input.Length; i += 64)

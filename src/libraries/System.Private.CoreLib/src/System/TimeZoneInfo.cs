@@ -6,7 +6,9 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
+using System.Security;
 using System.Threading;
 
 namespace System
@@ -28,7 +30,7 @@ namespace System
     }
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed partial class TimeZoneInfo : IEquatable<TimeZoneInfo?>, ISerializable, IDeserializationCallback
     {
         private enum TimeZoneInfoResult
@@ -39,10 +41,12 @@ namespace System
             SecurityException = 3
         }
 
+        private const int MaxKeyLength = 255;
+
         private readonly string _id;
-        private readonly string? _displayName;
-        private readonly string? _standardDisplayName;
-        private readonly string? _daylightDisplayName;
+        private string? _displayName;
+        private string? _standardDisplayName;
+        private string? _daylightDisplayName;
         private readonly TimeSpan _baseUtcOffset;
         private readonly bool _supportsDaylightSavingTime;
         private readonly AdjustmentRule[]? _adjustmentRules;
@@ -81,9 +85,9 @@ namespace System
                         timeZone = new TimeZoneInfo(
                                             timeZone._id,
                                             timeZone._baseUtcOffset,
-                                            timeZone._displayName,
-                                            timeZone._standardDisplayName,
-                                            timeZone._daylightDisplayName,
+                                            timeZone.DisplayName,
+                                            timeZone.StandardName,
+                                            timeZone.DaylightName,
                                             timeZone._adjustmentRules,
                                             disableDaylightSavingTime: false,
                                             timeZone.HasIanaId);
@@ -104,7 +108,7 @@ namespace System
                 // We check reference equality to see if 'this' is the same as
                 // TimeZoneInfo.Local or TimeZoneInfo.Utc.  This check is needed to
                 // support setting the DateTime Kind property to 'Local' or
-                // 'Utc' on the ConverTime(...) return value.
+                // 'Utc' on the ConvertTime(...) return value.
                 //
                 // Using reference equality instead of value equality was a
                 // performance based design compromise.  The reference equality
@@ -127,6 +131,7 @@ namespace System
 
             public Dictionary<string, TimeZoneInfo>? _systemTimeZones;
             public ReadOnlyCollection<TimeZoneInfo>? _readOnlySystemTimeZones;
+            public ReadOnlyCollection<TimeZoneInfo>? _readOnlyUnsortedSystemTimeZones;
             public Dictionary<string, TimeZoneInfo>? _timeZonesUsingAlternativeIds;
             public bool _allSystemTimeZonesRead;
         }
@@ -142,11 +147,38 @@ namespace System
         /// </summary>
         public bool HasIanaId { get; }
 
-        public string DisplayName => _displayName ?? string.Empty;
+        public string DisplayName
+        {
+            get
+            {
+                if (_displayName == null)
+                    Interlocked.CompareExchange(ref _displayName, PopulateDisplayName(), null);
 
-        public string StandardName => _standardDisplayName ?? string.Empty;
+                return _displayName ?? string.Empty;
+            }
+        }
 
-        public string DaylightName => _daylightDisplayName ?? string.Empty;
+        public string StandardName
+        {
+            get
+            {
+                if (_standardDisplayName == null)
+                    Interlocked.CompareExchange(ref _standardDisplayName, PopulateStandardDisplayName(), null);
+
+                return _standardDisplayName ?? string.Empty;
+            }
+        }
+
+        public string DaylightName
+        {
+            get
+            {
+                if (_daylightDisplayName == null)
+                    Interlocked.CompareExchange(ref _daylightDisplayName, PopulateDaylightDisplayName(), null);
+
+                return _daylightDisplayName ?? string.Empty;
+            }
+        }
 
         public TimeSpan BaseUtcOffset => _baseUtcOffset;
 
@@ -556,6 +588,90 @@ namespace System
             ConvertTime(dateTime, FindSystemTimeZoneById(destinationTimeZoneId));
 
         /// <summary>
+        /// Helper function for retrieving a <see cref="TimeZoneInfo"/> object by time zone name.
+        /// This function wraps the logic necessary to keep the private
+        /// SystemTimeZones cache in working order.
+        ///
+        /// This function will either return a valid <see cref="TimeZoneInfo"/> instance or
+        /// it will throw <see cref="InvalidTimeZoneException"/> / <see cref="TimeZoneNotFoundException"/> /
+        /// <see cref="SecurityException"/>
+        /// </summary>
+        /// <param name="id">Time zone name.</param>
+        /// <returns>Valid <see cref="TimeZoneInfo"/> instance.</returns>
+        public static TimeZoneInfo FindSystemTimeZoneById(string id)
+        {
+            TimeZoneInfo? value;
+            Exception? e;
+
+            TimeZoneInfoResult result = TryFindSystemTimeZoneById(id, out value, out e);
+            switch (result)
+            {
+                case TimeZoneInfoResult.Success:
+                    return value!;
+                case TimeZoneInfoResult.InvalidTimeZoneException:
+                    Debug.Assert(e is InvalidTimeZoneException,
+                        "TryGetTimeZone must create an InvalidTimeZoneException when it returns TimeZoneInfoResult.InvalidTimeZoneException");
+                    throw e;
+                case TimeZoneInfoResult.SecurityException:
+                    throw new SecurityException(SR.Format(SR.Security_CannotReadFileData, id), e);
+                default:
+                    throw new TimeZoneNotFoundException(SR.Format(SR.TimeZoneNotFound_MissingData, id), e);
+            }
+        }
+
+        /// <summary>
+        /// Helper function for retrieving a <see cref="TimeZoneInfo"/> object by time zone name.
+        /// This function wraps the logic necessary to keep the private
+        /// SystemTimeZones cache in working order.
+        ///
+        /// This function will either return <c>true</c> and a valid <see cref="TimeZoneInfo"/>
+        /// instance or return <c>false</c> and <c>null</c>.
+        /// </summary>
+        /// <param name="id">Time zone name.</param>
+        /// <param name="timeZoneInfo">A valid retrieved <see cref="TimeZoneInfo"/> or <c>null</c>.</param>
+        /// <returns><c>true</c> if the <see cref="TimeZoneInfo"/> object was successfully retrieved, <c>false</c> otherwise.</returns>
+        public static bool TryFindSystemTimeZoneById(string id, [NotNullWhenAttribute(true)] out TimeZoneInfo? timeZoneInfo)
+            => TryFindSystemTimeZoneById(id, out timeZoneInfo, out _) == TimeZoneInfoResult.Success;
+
+        /// <summary>
+        /// Helper function for retrieving a TimeZoneInfo object by time_zone_name.
+        /// This function wraps the logic necessary to keep the private
+        /// SystemTimeZones cache in working order.
+        ///
+        /// This function will either return:
+        /// <c>TimeZoneInfoResult.Success</c> and a valid <see cref="TimeZoneInfo"/>instance and <c>null</c> Exception or
+        /// <c>TimeZoneInfoResult.TimeZoneNotFoundException</c> and <c>null</c> <see cref="TimeZoneInfo"/> and Exception (can be null) or
+        /// other <c>TimeZoneInfoResult</c> and <c>null</c> <see cref="TimeZoneInfo"/> and valid Exception.
+        /// </summary>
+        private static TimeZoneInfoResult TryFindSystemTimeZoneById(string id, out TimeZoneInfo? timeZone, out Exception? e)
+        {
+            // Special case for Utc as it will not exist in the dictionary with the rest
+            // of the system time zones.  There is no need to do this check for Local.Id
+            // since Local is a real time zone that exists in the dictionary cache
+            if (string.Equals(id, UtcId, StringComparison.OrdinalIgnoreCase))
+            {
+                timeZone = Utc;
+                e = default;
+                return TimeZoneInfoResult.Success;
+            }
+
+            ArgumentNullException.ThrowIfNull(id);
+            if (id.Length == 0 || id.Length > MaxKeyLength || id.Contains('\0'))
+            {
+                timeZone = default;
+                e = default;
+                return TimeZoneInfoResult.TimeZoneNotFoundException;
+            }
+
+            CachedData cachedData = s_cachedData;
+
+            lock (cachedData)
+            {
+                return TryGetTimeZone(id, out timeZone, out e, cachedData);
+            }
+        }
+
+        /// <summary>
         /// Converts the value of a DateTime object from sourceTimeZone to destinationTimeZone.
         /// </summary>
         public static DateTime ConvertTimeBySystemTimeZoneId(DateTime dateTime, string sourceTimeZoneId, string destinationTimeZoneId)
@@ -765,16 +881,28 @@ namespace System
         /// <see cref="DisplayName"/>.
         /// This method does *not* throw TimeZoneNotFoundException or InvalidTimeZoneException.
         /// </summary>
-        public static ReadOnlyCollection<TimeZoneInfo> GetSystemTimeZones()
+        public static ReadOnlyCollection<TimeZoneInfo> GetSystemTimeZones() => GetSystemTimeZones(skipSorting: false);
+
+        /// <summary>
+        /// Returns a <see cref="ReadOnlyCollection{TimeZoneInfo}"/> containing all valid TimeZone's from the local machine.
+        /// This method does *not* throw TimeZoneNotFoundException or InvalidTimeZoneException.
+        /// </summary>
+        /// <param name="skipSorting">If true, The collection returned may not necessarily be sorted.</param>
+        /// <remarks>By setting the skipSorting parameter to true, the method will attempt to avoid sorting the returned collection.
+        /// This option can be beneficial when the caller does not require a sorted list and aims to enhance the performance. </remarks>
+        public static ReadOnlyCollection<TimeZoneInfo> GetSystemTimeZones(bool skipSorting)
         {
             CachedData cachedData = s_cachedData;
 
             lock (cachedData)
             {
-                if (cachedData._readOnlySystemTimeZones == null)
+                if ((skipSorting ? cachedData._readOnlyUnsortedSystemTimeZones : cachedData._readOnlySystemTimeZones) is null)
                 {
-                    PopulateAllSystemTimeZones(cachedData);
-                    cachedData._allSystemTimeZonesRead = true;
+                    if (!cachedData._allSystemTimeZonesRead)
+                    {
+                        PopulateAllSystemTimeZones(cachedData);
+                        cachedData._allSystemTimeZonesRead = true;
+                    }
 
                     if (cachedData._systemTimeZones != null)
                     {
@@ -782,24 +910,33 @@ namespace System
                         TimeZoneInfo[] array = new TimeZoneInfo[cachedData._systemTimeZones.Count];
                         cachedData._systemTimeZones.Values.CopyTo(array, 0);
 
-                        // sort and copy the TimeZoneInfo's into a ReadOnlyCollection for the user
-                        Array.Sort(array, static (x, y) =>
+                        if (!skipSorting)
                         {
-                            // sort by BaseUtcOffset first and by DisplayName second - this is similar to the Windows Date/Time control panel
-                            int comparison = x.BaseUtcOffset.CompareTo(y.BaseUtcOffset);
-                            return comparison == 0 ? string.CompareOrdinal(x.DisplayName, y.DisplayName) : comparison;
-                        });
+                            // sort and copy the TimeZoneInfo's into a ReadOnlyCollection for the user
+                            Array.Sort(array, static (x, y) =>
+                            {
+                                // sort by BaseUtcOffset first and by DisplayName second - this is similar to the Windows Date/Time control panel
+                                int comparison = x.BaseUtcOffset.CompareTo(y.BaseUtcOffset);
+                                return comparison == 0 ? string.CompareOrdinal(x.DisplayName, y.DisplayName) : comparison;
+                            });
 
-                        cachedData._readOnlySystemTimeZones = new ReadOnlyCollection<TimeZoneInfo>(array);
+                            // Always reset _readOnlyUnsortedSystemTimeZones even if it was initialized before. This prevents the need to maintain two separate cache lists in memory
+                            // and guarantees that if _readOnlySystemTimeZones is initialized, _readOnlyUnsortedSystemTimeZones is also initialized.
+                            cachedData._readOnlySystemTimeZones = cachedData._readOnlyUnsortedSystemTimeZones = new ReadOnlyCollection<TimeZoneInfo>(array);
+                        }
+                        else
+                        {
+                            cachedData._readOnlyUnsortedSystemTimeZones = new ReadOnlyCollection<TimeZoneInfo>(array);
+                        }
                     }
                     else
                     {
-                        cachedData._readOnlySystemTimeZones = ReadOnlyCollection<TimeZoneInfo>.Empty;
+                        cachedData._readOnlySystemTimeZones = cachedData._readOnlyUnsortedSystemTimeZones = ReadOnlyCollection<TimeZoneInfo>.Empty;
                     }
                 }
             }
 
-            return cachedData._readOnlySystemTimeZones;
+            return skipSorting ? cachedData._readOnlyUnsortedSystemTimeZones! : cachedData._readOnlySystemTimeZones!;
         }
 
         /// <summary>
@@ -819,9 +956,9 @@ namespace System
             AdjustmentRule[]? currentRules = _adjustmentRules;
             AdjustmentRule[]? otherRules = other._adjustmentRules;
 
-            if (currentRules is null || otherRules is null)
+            if (currentRules is null && otherRules is null)
             {
-                return currentRules == otherRules;
+                return true;
             }
 
             return currentRules.AsSpan().SequenceEqual(otherRules);
@@ -892,12 +1029,14 @@ namespace System
             string? displayName,
             string? standardDisplayName)
         {
-            bool hasIanaId = TimeZoneInfo.TryConvertIanaIdToWindowsId(id, allocate: false, out _);
+            bool hasIanaId = TryConvertIanaIdToWindowsId(id, allocate: false, out _);
+
+            standardDisplayName ??= string.Empty;
 
             return new TimeZoneInfo(
                 id,
                 baseUtcOffset,
-                displayName,
+                displayName ?? string.Empty,
                 standardDisplayName,
                 standardDisplayName,
                 adjustmentRules: null,
@@ -943,14 +1082,14 @@ namespace System
                 adjustmentRules = (AdjustmentRule[])adjustmentRules.Clone();
             }
 
-            bool hasIanaId = TimeZoneInfo.TryConvertIanaIdToWindowsId(id, allocate: false, out _);
+            bool hasIanaId = TryConvertIanaIdToWindowsId(id, allocate: false, out _);
 
             return new TimeZoneInfo(
                 id,
                 baseUtcOffset,
-                displayName,
-                standardDisplayName,
-                daylightDisplayName,
+                displayName ?? string.Empty,
+                standardDisplayName ?? string.Empty,
+                daylightDisplayName ?? string.Empty,
                 adjustmentRules,
                 disableDaylightSavingTime,
                 hasIanaId);
@@ -970,7 +1109,7 @@ namespace System
         /// <param name="windowsId">The Windows time zone ID.</param>
         /// <param name="ianaId">String object holding the IANA ID which resulted from the Windows ID conversion.</param>
         /// <returns>True if the ID conversion succeeded, false otherwise.</returns>
-        public static bool TryConvertWindowsIdToIanaId(string windowsId, [NotNullWhen(true)] out string? ianaId) =>  TryConvertWindowsIdToIanaId(windowsId, region: null, allocate: true, out ianaId);
+        public static bool TryConvertWindowsIdToIanaId(string windowsId, [NotNullWhen(true)] out string? ianaId) => TryConvertWindowsIdToIanaId(windowsId, region: null, allocate: true, out ianaId);
 
         /// <summary>
         /// Tries to convert a Windows time zone ID to an IANA ID.
@@ -1472,7 +1611,7 @@ namespace System
             if (nextdaylightTime.End < nextdaylightTime.Start && !nextYearRule.IsEndDateMarkerForEndOfYear())
             {
                 // It is the Southern sphere time zone. The year is started with DST on. Use the DST end to get the when DST ends that year.
-                dstEnd =  nextdaylightTime.End - utc - nextYearRule.BaseUtcOffsetDelta - nextYearRule.DaylightDelta;
+                dstEnd = nextdaylightTime.End - utc - nextYearRule.BaseUtcOffsetDelta - nextYearRule.DaylightDelta;
                 return true;
             }
 

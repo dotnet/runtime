@@ -19,7 +19,7 @@ using Xunit;
 public class MyClass
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
 
         float f1 = float.Epsilon;
@@ -32,8 +32,6 @@ public class MyClass
         {
             Console.WriteLine("epsilon * 0.5 failed");
         }
-
-        return 100;
     }
 }
 // </Code>

@@ -55,11 +55,47 @@ Packages can include a Markdown Readme file with a short usage documentation. To
 The package Readme is displayed on the package details page on [NuGet gallery](https://nuget.org/). You can include the following content in it:
 
 - A description of the package purpose.
+- A list of package key features
+- A code example that demostrates how to use the package.
 - Information when package should be used. For example, if the library is included in the shared framework in .NET, but needs to be installed via NuGet on .NET Framework, it should be mentioned.
-- Information on how to get started with the package.
-- Links to related documentation.
 - A list of common entry-point types for the package, with links to their API docs under [.NET API Browser](https://learn.microsoft.com/dotnet/api/).
-- A short code example that demostrates the package usage.
+- Links to related documentation.
+- Information about how to provide feedback on the package and contribute to it.
+
+Use the following Markdown template for a package Readme:
+
+```
+## About
+
+<!-- A description of the package and where one can find more documentation -->
+
+## Key Features
+
+<!-- The key features of this package -->
+
+## How to Use
+
+<!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
+
+## Main Types
+
+<!-- The main types provided in this library -->
+
+## Additional Documentation
+
+* [Conceptual documentation](...)
+* [API documentation](...)
+
+## Related Packages
+
+<!-- The related packages associated with this package -->
+
+## Feedback & Contributing
+
+<!-- How to provide feedback on this package and contribute to it -->
+
+ExamplePackage is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/dotnet/runtime).
+```
 
 For a list of supported Markdown features, see [NuGet documentation](https://learn.microsoft.com/nuget/nuget-org/package-readme-on-nuget-org#supported-markdown-features).
 

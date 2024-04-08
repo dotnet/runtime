@@ -132,14 +132,14 @@ namespace System.Tests
 
             PosixSignalRegistration.Create(signal, ctx =>
             {
-                Assert.False(true, "Signal handler was called.");
+                Assert.Fail("Signal handler was called.");
             }).Dispose();
 
             kill(signal);
             Thread.Sleep(100);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsPreciseGcSupported))]
         public void SignalHandlerNotCalledWhenFinalized()
         {
             PosixSignal signal = PosixSignal.SIGCONT;
@@ -156,7 +156,7 @@ namespace System.Tests
             {
                 PosixSignalRegistration.Create(signal, ctx =>
                 {
-                    Assert.False(true, "Signal handler was called.");
+                    Assert.Fail("Signal handler was called.");
                 });
             }
         }

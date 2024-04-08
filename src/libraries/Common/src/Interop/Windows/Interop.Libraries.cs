@@ -12,7 +12,6 @@ internal static partial class Interop
         internal const string Credui = "credui.dll";
         internal const string Crypt32 = "crypt32.dll";
         internal const string CryptUI = "cryptui.dll";
-        internal const string Dnsapi = "dnsapi.dll";
         internal const string Dsrole = "dsrole.dll";
         internal const string Gdi32 = "gdi32.dll";
         internal const string HttpApi = "httpapi.dll";

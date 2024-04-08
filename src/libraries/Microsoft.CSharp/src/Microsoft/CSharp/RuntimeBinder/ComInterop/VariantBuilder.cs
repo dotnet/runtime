@@ -4,12 +4,14 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
     /// <summary>
-    /// VariantBuilder handles packaging of arguments into a Variant for a call to IDispatch.Invoke
+    /// VariantBuilder handles packaging of arguments into an ComVariant for a call to IDispatch.Invoke
     /// </summary>
     internal sealed class VariantBuilder
     {
@@ -49,8 +51,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 return Expression.Block(
                     Expression.Assign(TempVariable, argExpr),
                     Expression.Call(
+                        DynamicVariantExtensions.GetByrefSetter(_targetComType & ~VarEnum.VT_BYREF),
                         variant,
-                        Variant.GetByrefSetter(_targetComType & ~VarEnum.VT_BYREF),
                         TempVariable
                     )
                 );
@@ -63,13 +65,13 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             if (_argBuilder is ConvertibleArgBuilder)
             {
                 return Expression.Call(
+                    typeof(DynamicVariantExtensions).GetMethod(nameof(DynamicVariantExtensions.SetAsIConvertible)),
                     variant,
-                    typeof(Variant).GetMethod(nameof(Variant.SetAsIConvertible)),
                     argument
                 );
             }
 
-            if (Variant.IsPrimitiveType(_targetComType) ||
+            if (_targetComType.IsPrimitiveType() ||
                (_targetComType == VarEnum.VT_DISPATCH) ||
                (_targetComType == VarEnum.VT_UNKNOWN) ||
                (_targetComType == VarEnum.VT_VARIANT) ||
@@ -77,13 +79,10 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                (_targetComType == VarEnum.VT_ARRAY))
             {
                 // paramVariants._elementN.AsT = (cast)argN
-                return Expression.Assign(
-                    Expression.Property(
-                        variant,
-                        Variant.GetAccessor(_targetComType)
-                    ),
-                    argument
-                );
+                return Expression.Call(null,
+                    DynamicVariantExtensions.GetSetter(_targetComType),
+                    variant,
+                    argument);
             }
 
             switch (_targetComType)
@@ -92,8 +91,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                     return null;
 
                 case VarEnum.VT_NULL:
-                    // paramVariants._elementN.SetAsNull();
-                    return Expression.Call(variant, typeof(Variant).GetMethod(nameof(Variant.SetAsNULL)));
+                    // paramVariants._elementN = ComVariant.Null;
+                    return Expression.Assign(variant, Expression.Property(null, typeof(ComVariant).GetProperty(nameof(ComVariant.Null), BindingFlags.Public | BindingFlags.Static)));
 
                 default:
                     Debug.Assert(false, "Unexpected VarEnum");
@@ -131,7 +130,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 if (_argBuilder is VariantArgBuilder)
                 {
                     Debug.Assert(TempVariable != null);
-                    return Expression.Call(TempVariable, typeof(Variant).GetMethod(nameof(Variant.Clear)));
+                    return Expression.Call(TempVariable, typeof(ComVariant).GetMethod(nameof(ComVariant.Dispose)));
                 }
                 return null;
             }
@@ -148,11 +147,11 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 case VarEnum.VT_ARRAY:
                 case VarEnum.VT_RECORD:
                 case VarEnum.VT_VARIANT:
-                    // paramVariants._elementN.Clear()
-                    return Expression.Call(_variant, typeof(Variant).GetMethod(nameof(Variant.Clear)));
+                    // paramVariants._elementN.Dispose()
+                    return Expression.Call(_variant, typeof(ComVariant).GetMethod(nameof(ComVariant.Dispose)));
 
                 default:
-                    Debug.Assert(Variant.IsPrimitiveType(_targetComType), "Unexpected VarEnum");
+                    Debug.Assert(_targetComType.IsPrimitiveType(), "Unexpected VarEnum");
                     return null;
             }
         }

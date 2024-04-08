@@ -104,7 +104,7 @@ namespace System.Reflection
                 if (modifiedType.IsOptional == required)
                     continue;
 
-                builder.Add(modifiedType.ModifierType.Resolve(reader, new TypeContext(null, null)));
+                builder.Add(modifiedType.ModifierType.Resolve(reader, new TypeContext(null, null)).ToType());
             }
 
             Type[] result = builder.ToArray();

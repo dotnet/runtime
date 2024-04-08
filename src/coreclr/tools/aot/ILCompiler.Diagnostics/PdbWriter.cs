@@ -7,6 +7,7 @@ using System.IO;
 using System.Reflection;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 
 using Internal.TypeSystem;
@@ -73,7 +74,7 @@ namespace ILCompiler.Diagnostics
         }
     }
 
-    public class PdbWriter
+    public partial class PdbWriter
     {
         private const string DiaSymReaderLibrary = "Microsoft.DiaSymReader.Native";
 
@@ -89,7 +90,7 @@ namespace ILCompiler.Diagnostics
         Dictionary<SymDocument,int> _documentToChecksumOffsetMapping;
 
         UIntPtr _pdbMod;
-        SymNgenWriterWrapper _ngenWriter;
+        ISymNGenWriter2 _ngenWriter;
 
         static PdbWriter()
         {
@@ -112,10 +113,10 @@ namespace ILCompiler.Diagnostics
         }
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.SafeDirectories)]
-        [DllImport(DiaSymReaderLibrary, PreserveSig = false)]
-        private extern static void CreateNGenPdbWriter(
-            [MarshalAs(UnmanagedType.LPWStr)] string ngenImagePath,
-            [MarshalAs(UnmanagedType.LPWStr)] string pdbPath,
+        [LibraryImport(DiaSymReaderLibrary, StringMarshalling = StringMarshalling.Utf16)]
+        private static partial void CreateNGenPdbWriter(
+            string ngenImagePath,
+            string pdbPath,
             out IntPtr ngenPdbWriterPtr);
 
         public PdbWriter(string pdbPath, PDBExtraData pdbExtraData, TargetDetails target)
@@ -142,10 +143,14 @@ namespace ILCompiler.Diagnostics
                 }
                 finally
                 {
-                    if ((_ngenWriter != null) && (_pdbMod != UIntPtr.Zero))
+                    if (_ngenWriter != null)
                     {
-                        _ngenWriter.CloseMod(_pdbMod);
-                        _ngenWriter?.Dispose();
+                        if (_pdbMod != UIntPtr.Zero)
+                        {
+                            _ngenWriter.CloseMod(_pdbMod);
+                        }
+                        ComObject ngenWriterComObject = (ComObject)(object)_ngenWriter;
+                        ngenWriterComObject.FinalRelease();
                     }
                 }
 
@@ -208,9 +213,10 @@ namespace ILCompiler.Diagnostics
             // Delete any preexisting PDB file upfront, otherwise CreateNGenPdbWriter silently opens it
             File.Delete(_pdbFilePath);
 
-            var comWrapper = new ILCompilerComWrappers();
+            var comWrapper = new StrategyBasedComWrappers();
             CreateNGenPdbWriter(dllPath, _pdbFilePath, out var pdbWriterInst);
-            _ngenWriter = (SymNgenWriterWrapper)comWrapper.GetOrCreateObjectForComInstance(pdbWriterInst, CreateObjectFlags.UniqueInstance);
+            _ngenWriter = (ISymNGenWriter2)comWrapper.GetOrCreateObjectForComInstance(pdbWriterInst, CreateObjectFlags.UniqueInstance);
+            Marshal.Release(pdbWriterInst);
 
             {
                 // PDB file is now created. Get its path and update _pdbFilePath so the PDB file

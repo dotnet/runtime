@@ -115,6 +115,9 @@ namespace System
         /// </summary>
         /// <param name="value">The number of days to add. To subtract days, specify a negative number.</param>
         /// <returns>An instance whose value is the sum of the date represented by this instance and the number of days represented by value.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown if the resulting value would be greater than <see cref="MaxValue"/>.
+        /// </exception>
         public DateOnly AddDays(int value)
         {
             int newDayNumber = _dayNumber + value;
@@ -159,7 +162,7 @@ namespace System
         public static bool operator !=(DateOnly left, DateOnly right) => left._dayNumber != right._dayNumber;
 
         /// <summary>
-        /// Determines whether one specified DateOnly is later than another specified DateTime.
+        /// Determines whether one specified DateOnly is later than another specified DateOnly.
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>

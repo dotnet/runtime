@@ -2740,7 +2740,7 @@ extern gboolean mono_wasm_enable_gc;
 void
 sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason, gboolean forced_serial, gboolean stw)
 {
-#ifdef HOST_BROWSER
+#if defined(HOST_BROWSER) && defined(DISABLE_THREADS)
 	if (!mono_wasm_enable_gc) {
 		g_assert (stw); //can't handle non-stw mode (IE, domain unload)
 		//we ignore forced_serial
@@ -3897,7 +3897,7 @@ sgen_gc_init (void)
 
 	sgen_card_table_init (&remset);
 
-	sgen_register_root (NULL, 0, sgen_make_user_root_descriptor (sgen_mark_normal_gc_handles), ROOT_TYPE_NORMAL, MONO_ROOT_SOURCE_GC_HANDLE, NULL, "GC Handles (SGen, Normal)");
+	sgen_register_root (NULL, 0, sgen_make_user_root_descriptor (sgen_mark_normal_gc_handles), ROOT_TYPE_NORMAL, MONO_ROOT_SOURCE_GC_HANDLE, GINT_TO_POINTER (ROOT_TYPE_NORMAL), "GC Handles (SGen, Normal)");
 
 	gc_initialized = 1;
 

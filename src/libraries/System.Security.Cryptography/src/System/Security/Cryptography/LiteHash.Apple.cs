@@ -21,6 +21,27 @@ namespace System.Security.Cryptography
             PAL_HashAlgorithm algorithm = HashAlgorithmNames.HashAlgorithmToPal(hashAlgorithmId);
             return new LiteHmac(algorithm, key, preinitialize: true);
         }
+
+        internal static LiteXof CreateXof(string hashAlgorithmId)
+        {
+            _ = hashAlgorithmId;
+            throw new PlatformNotSupportedException();
+        }
+    }
+
+    internal readonly struct LiteXof : ILiteHash
+    {
+        // Nothing uses this for Apple but we need the type.
+#pragma warning disable CA1822 // Member does not access instance data
+#pragma warning disable IDE0060 // Remove unused parameter
+        public int HashSizeInBytes => throw new UnreachableException();
+        public void Append(ReadOnlySpan<byte> data) => throw new UnreachableException();
+        public int Finalize(Span<byte> destination) => throw new UnreachableException();
+        public void Current(Span<byte> destination) => throw new UnreachableException();
+        public int Reset() => throw new UnreachableException();
+        public void Dispose() => throw new UnreachableException();
+#pragma warning restore IDE0060
+#pragma warning restore CA1822
     }
 
     internal readonly struct LiteHash : ILiteHash
@@ -43,7 +64,7 @@ namespace System.Security.Cryptography
                 throw new PlatformNotSupportedException(
                     SR.Format(
                         SR.Cryptography_UnknownHashAlgorithm,
-                        Enum.GetName(typeof(PAL_HashAlgorithm), algorithm)));
+                        Enum.GetName(algorithm)));
             }
 
             if (_ctx.IsInvalid)
@@ -138,7 +159,7 @@ namespace System.Security.Cryptography
                 throw new PlatformNotSupportedException(
                     SR.Format(
                         SR.Cryptography_UnknownHashAlgorithm,
-                        Enum.GetName(typeof(Interop.AppleCrypto.PAL_HashAlgorithm), algorithm)));
+                        Enum.GetName(algorithm)));
             }
 
             if (_ctx.IsInvalid)

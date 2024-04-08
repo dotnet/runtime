@@ -7,6 +7,16 @@
         <target state="translated">コレクション型はサポートされていません: '{0}'。</target>
         <note />
       </trans-unit>
+      <trans-unit id="CouldNotDetermineTypeInfoMessageFormat">
+        <source>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls, passing boxed objects, and passing types that are not 'public' or 'internal'.</source>
+        <target state="translated">バインダー呼び出しのバインド ロジックが生成されませんでした。サポートされていない入力パターンには、ジェネリック呼び出し、ボックス化されたオブジェクトの受け渡し、および 'public' または 'internal' ではない型の受け渡しが含まれます。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CouldNotDetermineTypeInfoTitle">
+        <source>The target type for a binder call could not be determined</source>
+        <target state="translated">バインダー呼び出しの対象の型を特定できませんでした</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DictionaryKeyNotSupported">
         <source>The dictionary key type is not supported: '{0}'.</source>
         <target state="translated">辞書キー型はサポートされていません: '{0}'。</target>
@@ -17,14 +27,19 @@
         <target state="translated">コレクション要素型はサポートされていません: '{0}'。</target>
         <note />
       </trans-unit>
-      <trans-unit id="Language VersionIsNotSupportedMessageFormat">
-        <source>The project's language version has to be at least 'C# 11'.</source>
-        <target state="translated">プロジェクトの言語バージョンは少なくとも 'C# 11' である必要があります。</target>
+      <trans-unit id="LanguageVersionIsNotSupportedMessageFormat">
+        <source>The project's language version has to be at least 'C# 12'.</source>
+        <target state="new">The project's language version has to be at least 'C# 12'.</target>
         <note />
       </trans-unit>
       <trans-unit id="LanguageVersionIsNotSupportedTitle">
-        <source>Language version is required to be at least C# 11</source>
-        <target state="translated">言語バージョンは少なくとも C# 11 である必要があります</target>
+        <source>Language version is required to be at least C# 12</source>
+        <target state="translated">言語バージョンは少なくとも C# 12 である必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MissingPublicInstanceConstructor">
+        <source>Cannot create instance of type '{0}' because it is missing a public instance constructor.</source>
+        <target state="translated">パブリック インスタンス コンストラクターがないため、型 '{0}' のインスタンスを作成できません。</target>
         <note />
       </trans-unit>
       <trans-unit id="MultiDimArraysNotSupported">
@@ -32,9 +47,9 @@
         <target state="translated">多次元配列はサポートされていません: '{0}'.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NeedPublicParameterlessConstructor">
-        <source>Only objects with public parameterless constructors are supported: '{0}'.</source>
-        <target state="translated">パラメーターなしのパブリック コンストラクターを持つオブジェクトのみがサポートされています: '{0}'。</target>
+      <trans-unit id="MultipleParameterizedConstructors">
+        <source>Cannot create instance of type '{0}' because it has multiple public parameterized constructors.</source>
+        <target state="translated">複数のパブリック パラメーター化コンストラクターがあるため、型 '{0}' のインスタンスを作成できません。</target>
         <note />
       </trans-unit>
       <trans-unit id="NullableUnderlyingTypeNotSupported">
@@ -60,6 +75,16 @@
       <trans-unit id="TypeNotSupportedTitle">
         <source>Did not generate binding logic for a type</source>
         <target state="translated">型のバインディング ロジックを生成しませんでした</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueTypesInvalidForBindMessageFormat">
+        <source>Binding logic was not generated for a binder call with target type '{0}'. Value types are invalid inputs to configuration 'Bind' methods.</source>
+        <target state="translated">対象の型が '{0}' のバインダー呼び出しについてバインド ロジックが生成されませんでした。値の型が、構成の 'Bind' メソッドへの入力として正しくありません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueTypesInvalidForBindTitle">
+        <source>Value types are invalid inputs to configuration 'Bind' methods</source>
+        <target state="translated">値の型が、構成の 'Bind' メソッドへの入力として正しくありません</target>
         <note />
       </trans-unit>
     </body>

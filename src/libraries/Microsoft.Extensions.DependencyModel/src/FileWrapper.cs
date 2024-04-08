@@ -7,7 +7,7 @@ using System.IO;
 
 namespace Microsoft.Extensions.DependencyModel
 {
-    internal sealed class FileWrapper: IFile
+    internal sealed class FileWrapper : IFile
     {
         public bool Exists([NotNullWhen(true)] string? path)
         {

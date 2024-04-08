@@ -97,7 +97,7 @@ void DECLSPEC_NORETURN MemberLoader::ThrowMissingMethodException(MethodTable* pM
     LPCUTF8 szClassName;
 
     DefineFullyQualifiedNameForClass();
-    if (pMT)
+    if (pMT != NULL)
     {
         szClassName = GetFullyQualifiedNameForClass(pMT);
     }
@@ -106,16 +106,21 @@ void DECLSPEC_NORETURN MemberLoader::ThrowMissingMethodException(MethodTable* pM
         szClassName = "?";
     };
 
+    if (szMember == NULL)
+        szMember = "?";
+
     if (pSig && cSig && pModule && pModule->IsFullModule())
     {
         MetaSig tmp(pSig, cSig, static_cast<Module*>(pModule), pTypeContext);
-        SigFormat sf(tmp, szMember ? szMember : "?", szClassName, NULL);
+        SigFormat sf(tmp, szMember, szClassName, NULL);
         MAKE_WIDEPTR_FROMUTF8(szwFullName, sf.GetCString());
         EX_THROW(EEMessageException, (kMissingMethodException, IDS_EE_MISSING_METHOD, szwFullName));
     }
     else
     {
-        EX_THROW(EEMessageException, (kMissingMethodException, IDS_EE_MISSING_METHOD, W("?")));
+        SString typeName;
+        typeName.Printf("%s.%s", szClassName, szMember);
+        EX_THROW(EEMessageException, (kMissingMethodException, IDS_EE_MISSING_METHOD, typeName.GetUnicode()));
     }
 }
 
@@ -360,18 +365,9 @@ void MemberLoader::GetDescFromMemberRef(ModuleBase * pModule,
 
         if (pFD->IsStatic() && pMT->HasGenericsStaticsInfo())
         {
-            //
-            // <NICE> this is duplicated logic GetFieldDescByIndex </NICE>
-            //
-            INDEBUG(mdFieldDef token = pFD->GetMemberDef();)
-
-            DWORD pos = static_cast<DWORD>(pFD - (pMT->GetApproxFieldDescListRaw() + pMT->GetNumIntroducedInstanceFields()));
-            _ASSERTE(pos >= 0 && pos < pMT->GetNumStaticFields());
-
-            pFD = pMT->GetGenericsStaticFieldDescs() + pos;
-            _ASSERTE(pFD->GetMemberDef() == token);
-            _ASSERTE(!pFD->IsSharedByGenericInstantiations());
-            _ASSERTE(pFD->GetEnclosingMethodTable() == pMT);
+           MethodTable* pFieldMT = pFD->GetApproxEnclosingMethodTable();
+           DWORD index = pFieldMT->GetIndexForFieldDesc(pFD);
+           pFD = pMT->GetFieldDescByIndex(index);
         }
 
         *ppFD = pFD;
@@ -697,7 +693,7 @@ FieldDesc* MemberLoader::GetFieldDescFromFieldDef(Module *pModule,
 
     pFD->GetApproxEnclosingMethodTable()->CheckRestore();
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     if (pModule->IsEditAndContinueEnabled() && pFD->IsEnCNew())
     {
         EnCFieldDesc *pEnCFD = (EnCFieldDesc*)pFD;
@@ -709,7 +705,7 @@ FieldDesc* MemberLoader::GetFieldDescFromFieldDef(Module *pModule,
             pEnCFD->Fixup(fieldDef);
         }
     }
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     return pFD;
 }
@@ -1171,7 +1167,7 @@ MemberLoader::FindMethod(
         }
     }
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     // In the event the method wasn't found and the current module has
     // EnC enabled, try the slow path and go through all available methods.
     if (md == NULL
@@ -1206,7 +1202,7 @@ MemberLoader::FindMethod(
             }
         }
     }
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     RETURN md;
 }
@@ -1289,10 +1285,6 @@ MemberLoader::FindMethodByName(MethodTable * pMT, LPCUTF8 pszName, FM_Flags flag
         PRECONDITION(!pMT->IsArray());
         MODE_ANY;
     } CONTRACTL_END;
-
-    // Caching of MethodDescs (impl and decl) for MethodTable slots provided significant
-    // performance gain in some reflection emit scenarios.
-    MethodTable::AllowMethodDataCaching();
 
     // Retrieve the right comparison function to use.
     UTF8StringCompareFuncPtr StrCompFunc = FM_GetStrCompFunc(flags);
@@ -1570,7 +1562,7 @@ MemberLoader::FindField(MethodTable* pMT, LPCUTF8 pszName, PCCOR_SIGNATURE pSign
         return pFD;
     }
 
-#if defined(EnC_SUPPORTED) && !defined(DACCESS_COMPILE)
+#if defined(FEATURE_METADATA_UPDATER) && !defined(DACCESS_COMPILE)
     if (pModule != NULL
         && pModule->IsFullModule()
         && ((Module*)pModule)->IsEditAndContinueEnabled())
@@ -1615,7 +1607,7 @@ MemberLoader::FindField(MethodTable* pMT, LPCUTF8 pszName, PCCOR_SIGNATURE pSign
             return pCurrentFD;
         }
     }
-#endif // defined(EnC_SUPPORTED) && !defined(DACCESS_COMPILE)
+#endif // defined(FEATURE_METADATA_UPDATER) && !defined(DACCESS_COMPILE)
 
     return NULL;
 }

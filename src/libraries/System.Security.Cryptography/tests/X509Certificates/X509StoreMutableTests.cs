@@ -153,7 +153,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
             }
 
-            Assert.True(false, $"Certificate ({forCert.Subject}) exists in the store");
+            Assert.Fail($"Certificate ({forCert.Subject}) exists in the store");
             return false;
         }
 

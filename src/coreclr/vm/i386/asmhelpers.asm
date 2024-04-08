@@ -41,6 +41,7 @@ EXTERN _NDirectImportWorker@4:PROC
 
 EXTERN _VarargPInvokeStubWorker@12:PROC
 EXTERN _GenericPInvokeCalliStubWorker@12:PROC
+EXTERN _CallCopyConstructorsWorker@4:PROC
 
 EXTERN _PreStubWorker@8:PROC
 EXTERN _TheUMEntryPrestubWorker@4:PROC
@@ -251,6 +252,10 @@ COMPlusFrameHandlerRevCom proto c
 .safeseh COMPlusFrameHandlerRevCom
 endif
 
+ifdef HAS_ADDRESS_SANITIZER
+EXTERN ___asan_handle_no_return:PROC
+endif
+
 ; Note that RtlUnwind trashes EBX, ESI and EDI, so this wrapper preserves them
 CallRtlUnwind PROC stdcall public USES ebx esi edi, pEstablisherFrame :DWORD, callback :DWORD, pExceptionRecord :DWORD, retVal :DWORD
 
@@ -268,6 +273,10 @@ CallRtlUnwind PROC stdcall public USES ebx esi edi, pEstablisherFrame :DWORD, ca
 CallRtlUnwind ENDP
 
 _ResumeAtJitEHHelper@4 PROC public
+        ; Call ___asan_handle_no_return here as we are not going to return.
+ifdef HAS_ADDRESS_SANITIZER
+        call    ___asan_handle_no_return
+endif
         mov     edx, [esp+4]     ; edx = pContext (EHContext*)
 
         mov     ebx, [edx+EHContext_Ebx]
@@ -293,6 +302,10 @@ _ResumeAtJitEHHelper@4 ENDP
 ; int __stdcall CallJitEHFilterHelper(size_t *pShadowSP, EHContext *pContext);
 ;   on entry, only the pContext->Esp, Ebx, Esi, Edi, Ebp, and Eip are initialized
 _CallJitEHFilterHelper@8 PROC public
+        ; Call ___asan_handle_no_return here as we touch registers that ASAN uses.
+ifdef HAS_ADDRESS_SANITIZER
+        call    ___asan_handle_no_return
+endif
         push    ebp
         mov     ebp, esp
         push    ebx
@@ -334,6 +347,10 @@ _CallJitEHFilterHelper@8 ENDP
 ; void __stdcall CallJITEHFinallyHelper(size_t *pShadowSP, EHContext *pContext);
 ;   on entry, only the pContext->Esp, Ebx, Esi, Edi, Ebp, and Eip are initialized
 _CallJitEHFinallyHelper@8 PROC public
+        ; Call ___asan_handle_no_return here as we touch registers that ASAN uses.
+ifdef HAS_ADDRESS_SANITIZER
+        call    ___asan_handle_no_return
+endif
         push    ebp
         mov     ebp, esp
         push    ebx
@@ -1045,6 +1062,29 @@ GoCallCalliWorker:
     jmp _GenericPInvokeCalliHelper@0
 
 _GenericPInvokeCalliHelper@0 endp
+
+;==========================================================================
+; This is small stub whose purpose is to record current stack pointer and
+; call CallCopyConstructorsWorker to invoke copy constructors and destructors
+; as appropriate. This stub operates on arguments already pushed to the
+; stack by JITted IL stub and must not create a new frame, i.e. it must tail
+; call to the target for it to see the arguments that copy ctors have been
+; called on.
+;
+_CopyConstructorCallStub@0 proc public
+    ; there may be an argument in ecx - save it
+    push    ecx
+    
+    ; push pointer to arguments
+    lea     edx, [esp + 8]
+    push    edx
+    
+    call    _CallCopyConstructorsWorker@4
+
+    ; restore ecx and tail call to the target
+    pop     ecx
+    jmp     eax
+_CopyConstructorCallStub@0 endp
 
 ifdef FEATURE_COMINTEROP
 

@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -12,9 +15,11 @@ namespace Microsoft.Extensions.Logging
     /// <summary>
     /// Produces instances of <see cref="ILogger"/> classes based on the given providers.
     /// </summary>
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
+    [DebuggerTypeProxy(typeof(LoggerFactoryDebugView))]
     public class LoggerFactory : ILoggerFactory
     {
-        private readonly Dictionary<string, Logger> _loggers = new Dictionary<string, Logger>(StringComparer.Ordinal);
+        private readonly ConcurrentDictionary<string, Logger> _loggers = new ConcurrentDictionary<string, Logger>(StringComparer.Ordinal);
         private readonly List<ProviderRegistration> _providerRegistrations = new List<ProviderRegistration>();
         private readonly object _sync = new object();
         private volatile bool _disposed;
@@ -138,19 +143,22 @@ namespace Microsoft.Extensions.Logging
                 throw new ObjectDisposedException(nameof(LoggerFactory));
             }
 
-            lock (_sync)
+            if (!_loggers.TryGetValue(categoryName, out Logger? logger))
             {
-                if (!_loggers.TryGetValue(categoryName, out Logger? logger))
+                lock (_sync)
                 {
-                    logger = new Logger(CreateLoggers(categoryName));
+                    if (!_loggers.TryGetValue(categoryName, out logger))
+                    {
+                        logger = new Logger(categoryName, CreateLoggers(categoryName));
 
-                    (logger.MessageLoggers, logger.ScopeLoggers) = ApplyFilters(logger.Loggers);
+                        (logger.MessageLoggers, logger.ScopeLoggers) = ApplyFilters(logger.Loggers);
 
-                    _loggers[categoryName] = logger;
+                        _loggers[categoryName] = logger;
+                    }
                 }
-
-                return logger;
             }
+
+            return logger;
         }
 
         /// <summary>
@@ -309,6 +317,18 @@ namespace Microsoft.Extensions.Logging
             {
                 _loggerFactory.AddProvider(provider);
             }
+        }
+
+        private string DebuggerToString()
+        {
+            return $"Providers = {_providerRegistrations.Count}, {_filterOptions.DebuggerToString()}";
+        }
+
+        private sealed class LoggerFactoryDebugView(LoggerFactory loggerFactory)
+        {
+            public List<ILoggerProvider> Providers => loggerFactory._providerRegistrations.Select(r => r.Provider).ToList();
+            public bool Disposed => loggerFactory._disposed;
+            public LoggerFilterOptions FilterOptions => loggerFactory._filterOptions;
         }
     }
 }

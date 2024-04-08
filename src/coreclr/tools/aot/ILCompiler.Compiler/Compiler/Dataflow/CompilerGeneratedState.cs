@@ -73,12 +73,13 @@ namespace ILCompiler.Dataflow
             internal TypeCache(MetadataType type, Logger? logger, ILProvider ilProvider)
             {
                 Debug.Assert(type == type.GetTypeDefinition());
-                Debug.Assert(!CompilerGeneratedNames.IsGeneratedMemberName(type.Name));
+                Debug.Assert(!CompilerGeneratedNames.IsStateMachineOrDisplayClass(type.Name));
 
                 Type = type;
 
                 var callGraph = new CompilerGeneratedCallGraph();
                 var userDefinedMethods = new HashSet<MethodDesc>();
+                var generatedTypeToTypeArgs = new Dictionary<MetadataType, TypeArgumentInfo>();
 
                 void ProcessMethod(MethodDesc method)
                 {
@@ -124,6 +125,7 @@ namespace ILCompiler.Dataflow
 
                                         referencedMethod = referencedMethod.GetTypicalMethodDefinition();
 
+                                        // Find calls to state machine constructors that occur outside the type
                                         if (referencedMethod.IsConstructor &&
                                             referencedMethod.OwningType is MetadataType generatedType &&
                                             // Don't consider calls in the same type, like inside a static constructor
@@ -133,11 +135,9 @@ namespace ILCompiler.Dataflow
                                             Debug.Assert(generatedType.IsTypeDefinition);
 
                                             // fill in null for now, attribute providers will be filled in later
-                                            _generatedTypeToTypeArgumentInfo ??= new Dictionary<MetadataType, TypeArgumentInfo>();
-
-                                            if (!_generatedTypeToTypeArgumentInfo.TryAdd(generatedType, new TypeArgumentInfo(method, null)))
+                                            if (!generatedTypeToTypeArgs.TryAdd(generatedType, new TypeArgumentInfo(method, null)))
                                             {
-                                                var alreadyAssociatedMethod = _generatedTypeToTypeArgumentInfo[generatedType].CreatingMethod;
+                                                var alreadyAssociatedMethod = generatedTypeToTypeArgs[generatedType].CreatingMethod;
                                                 logger?.LogWarning(new MessageOrigin(method), DiagnosticId.MethodsAreAssociatedWithUserMethod, method.GetDisplayName(), alreadyAssociatedMethod.GetDisplayName(), generatedType.GetDisplayName());
                                             }
                                             continue;
@@ -158,8 +158,10 @@ namespace ILCompiler.Dataflow
                                     break;
 
                                 case ILOpcode.stsfld:
+                                case ILOpcode.ldsfld:
                                     {
                                         // Same as above, but stsfld instead of a call to the constructor
+                                        // Ldsfld may also trigger a cctor that creates a closure environment
                                         FieldDesc? field = methodBody.GetObject(reader.ReadILToken()) as FieldDesc;
                                         if (field == null)
                                             continue;
@@ -173,9 +175,7 @@ namespace ILCompiler.Dataflow
                                         {
                                             Debug.Assert(generatedType.IsTypeDefinition);
 
-                                            _generatedTypeToTypeArgumentInfo ??= new Dictionary<MetadataType, TypeArgumentInfo>();
-
-                                            if (!_generatedTypeToTypeArgumentInfo.TryAdd(generatedType, new TypeArgumentInfo(method, null)))
+                                            if (!generatedTypeToTypeArgs.TryAdd(generatedType, new TypeArgumentInfo(method, null)))
                                             {
                                                 // It's expected that there may be multiple methods associated with the same static closure environment.
                                                 // All of these methods will substitute the same type arguments into the closure environment
@@ -196,7 +196,7 @@ namespace ILCompiler.Dataflow
                     if (TryGetStateMachineType(method, out MetadataType? stateMachineType))
                     {
                         Debug.Assert(stateMachineType.ContainingType == type ||
-                            (CompilerGeneratedNames.IsGeneratedMemberName(stateMachineType.ContainingType.Name) &&
+                            (CompilerGeneratedNames.IsStateMachineOrDisplayClass(stateMachineType.ContainingType.Name) &&
                              stateMachineType.ContainingType.ContainingType == type));
                         Debug.Assert(stateMachineType == stateMachineType.GetTypeDefinition());
 
@@ -210,8 +210,7 @@ namespace ILCompiler.Dataflow
                         }
                         // Already warned above if multiple methods map to the same type
                         // Fill in null for argument providers now, the real providers will be filled in later
-                        _generatedTypeToTypeArgumentInfo ??= new Dictionary<MetadataType, TypeArgumentInfo>();
-                        _generatedTypeToTypeArgumentInfo[stateMachineType] = new TypeArgumentInfo(method, null);
+                        generatedTypeToTypeArgs[stateMachineType] = new TypeArgumentInfo(method, null);
                     }
                 }
 
@@ -282,23 +281,52 @@ namespace ILCompiler.Dataflow
 
                 // Now that we have instantiating methods fully filled out, walk the generated types and fill in the attribute
                 // providers
-                if (_generatedTypeToTypeArgumentInfo != null)
+                foreach (var generatedType in generatedTypeToTypeArgs.Keys)
                 {
-                    foreach (var generatedType in _generatedTypeToTypeArgumentInfo.Keys)
-                    {
-                        Debug.Assert(generatedType == generatedType.GetTypeDefinition());
+                    Debug.Assert(generatedType == generatedType.GetTypeDefinition());
 
-                        if (generatedType.HasInstantiation)
-                            MapGeneratedTypeTypeParameters(generatedType);
+                    if (generatedType.HasInstantiation) {
+                        MapGeneratedTypeTypeParameters(generatedType, generatedTypeToTypeArgs);
+                        // Finally, add resolved type arguments to the cache
+                        var info = generatedTypeToTypeArgs[generatedType];
+                        _generatedTypeToTypeArgumentInfo ??= new Dictionary<MetadataType, TypeArgumentInfo>();
+                        if (!_generatedTypeToTypeArgumentInfo.TryAdd(generatedType, info))
+                        {
+                            var method = info.CreatingMethod;
+                            var alreadyAssociatedMethod = _generatedTypeToTypeArgumentInfo[generatedType].CreatingMethod;
+                            logger?.LogWarning(new MessageOrigin(method), DiagnosticId.MethodsAreAssociatedWithUserMethod, method.GetDisplayName(), alreadyAssociatedMethod.GetDisplayName(), generatedType.GetDisplayName());
+                        }
                     }
                 }
 
-                void MapGeneratedTypeTypeParameters(MetadataType generatedType)
+                /// Attempts to reverse the process of the compiler's alpha renaming. So if the original code was
+                /// something like this:
+                /// <code>
+                /// void M&lt;T&gt; () {
+                ///     Action a = () => { Console.WriteLine (typeof (T)); };
+                /// }
+                /// </code>
+                /// The compiler will generate a nested class like this:
+                /// <code>
+                /// class &lt;&gt;c__DisplayClass0&lt;T&gt; {
+                ///     public void &lt;M&gt;b__0 () {
+                ///         Console.WriteLine (typeof (T));
+                ///     }
+                /// }
+                /// </code>
+                /// The task of this method is to figure out that the type parameter T in the nested class is the same
+                /// as the type parameter T in the parent method M.
+                /// <paramref name="generatedTypeToTypeArgs"/> acts as a memoization table to avoid recalculating the
+                /// mapping multiple times.
+                /// </summary>
+                void MapGeneratedTypeTypeParameters(
+                    MetadataType generatedType,
+                    Dictionary<MetadataType, TypeArgumentInfo> generatedTypeToTypeArgs)
                 {
-                    Debug.Assert(CompilerGeneratedNames.IsGeneratedType(generatedType.Name));
+                    Debug.Assert(CompilerGeneratedNames.IsStateMachineOrDisplayClass(generatedType.Name));
                     Debug.Assert(generatedType == generatedType.GetTypeDefinition());
 
-                    var typeInfo = _generatedTypeToTypeArgumentInfo[generatedType];
+                    var typeInfo = generatedTypeToTypeArgs[generatedType];
                     if (typeInfo.OriginalAttributes is not null)
                     {
                         return;
@@ -335,15 +363,15 @@ namespace ILCompiler.Dataflow
                             else
                             {
                                 // Must be a type ref
-                                if (method.OwningType is not MetadataType owningType || !CompilerGeneratedNames.IsGeneratedType(owningType.Name))
+                                if (method.OwningType is not MetadataType owningType || !CompilerGeneratedNames.IsStateMachineOrDisplayClass(owningType.Name))
                                 {
                                     userAttrs = param;
                                 }
                                 else
                                 {
                                     owningType = (MetadataType)owningType.GetTypeDefinition();
-                                    MapGeneratedTypeTypeParameters(owningType);
-                                    if (_generatedTypeToTypeArgumentInfo[owningType].OriginalAttributes is { } owningAttrs)
+                                    MapGeneratedTypeTypeParameters(owningType, generatedTypeToTypeArgs);
+                                    if (generatedTypeToTypeArgs[owningType].OriginalAttributes is { } owningAttrs)
                                     {
                                         userAttrs = owningAttrs[param.Index];
                                     }
@@ -358,10 +386,10 @@ namespace ILCompiler.Dataflow
                         typeArgs[i] = userAttrs;
                     }
 
-                    _generatedTypeToTypeArgumentInfo[generatedType] = typeInfo with { OriginalAttributes = typeArgs };
+                    generatedTypeToTypeArgs[generatedType] = typeInfo with { OriginalAttributes = typeArgs };
                 }
 
-                MetadataType? ScanForInit(MetadataType compilerGeneratedType, MethodIL body)
+                static MetadataType? ScanForInit(MetadataType compilerGeneratedType, MethodIL body)
                 {
                     ILReader reader = new ILReader(body.GetILBytes());
                     while (reader.HasNext)
@@ -391,6 +419,7 @@ namespace ILCompiler.Dataflow
                                 break;
 
                             case ILOpcode.stsfld:
+                            case ILOpcode.ldsfld:
                                 {
                                     if (body.GetObject(reader.ReadILToken()) is FieldDesc { OwningType: MetadataType owningType }
                                         && compilerGeneratedType == owningType.GetTypeDefinition())
@@ -475,7 +504,7 @@ namespace ILCompiler.Dataflow
         {
             foreach (var nestedType in type.GetNestedTypes())
             {
-                if (!CompilerGeneratedNames.IsGeneratedMemberName(nestedType.Name))
+                if (!CompilerGeneratedNames.IsStateMachineOrDisplayClass(nestedType.Name))
                     continue;
 
                 yield return nestedType;
@@ -539,7 +568,7 @@ namespace ILCompiler.Dataflow
             // State machines can be emitted into display classes, so we may also need to go one more level up.
             // To avoid depending on implementation details, we go up until we see a non-compiler-generated type.
             // This is the counterpart to GetCompilerGeneratedNestedTypes.
-            while (userType != null && CompilerGeneratedNames.IsGeneratedMemberName(userType.Name))
+            while (userType != null && CompilerGeneratedNames.IsStateMachineOrDisplayClass(userType.Name))
                 userType = userType.ContainingType as MetadataType;
 
             if (userType is null)
@@ -581,7 +610,7 @@ namespace ILCompiler.Dataflow
         public IReadOnlyList<GenericParameterDesc?>? GetGeneratedTypeAttributes(MetadataType type)
         {
             MetadataType generatedType = (MetadataType)type.GetTypeDefinition();
-            Debug.Assert(CompilerGeneratedNames.IsGeneratedType(generatedType.Name));
+            Debug.Assert(CompilerGeneratedNames.IsStateMachineOrDisplayClass(generatedType.Name));
 
             var typeCache = GetCompilerGeneratedStateForType(generatedType);
             if (typeCache is null)

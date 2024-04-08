@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Metrics;
 using System.IO;
 using System.Net.Security;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics;
 
 namespace System.Net.Http
 {
@@ -86,6 +87,13 @@ namespace System.Net.Http
         }
 
         public int MaxResponseDrainSize
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        [CLSCompliant(false)]
+        public IMeterFactory? MeterFactory
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();

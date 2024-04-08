@@ -7,15 +7,16 @@ namespace System.Security.Cryptography.X509Certificates
 {
     internal sealed partial class AppleCertificatePal : ICertificatePal
     {
-        private static SafePasswordHandle s_passwordExportHandle = new SafePasswordHandle("DotnetExportPassphrase");
+        private static SafePasswordHandle s_passwordExportHandle = new SafePasswordHandle("DotnetExportPassphrase", passwordProvided: true);
 
         private static AppleCertificatePal ImportPkcs12(
             ReadOnlySpan<byte> rawData,
             SafePasswordHandle password,
             bool ephemeralSpecified)
         {
-            using (ApplePkcs12Reader reader = new ApplePkcs12Reader(rawData))
+            using (ApplePkcs12Reader reader = new ApplePkcs12Reader())
             {
+                reader.ParsePkcs12(rawData);
                 reader.Decrypt(password, ephemeralSpecified);
                 return ImportPkcs12(reader.GetSingleCert());
             }

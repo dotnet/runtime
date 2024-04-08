@@ -64,11 +64,10 @@ public class Program
     internal static long[] s_138 = new long[] { 0 };
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         s_32 = s_32;
         M64(new C3(0));
-        return 100;
     }
 
     internal static S0 M64(C3 argThis)

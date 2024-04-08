@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -208,7 +210,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task HonorNamingPolicy()
         {
-            var options = new JsonSerializerOptions { PropertyNamingPolicy = new SimpleSnakeCasePolicy() };
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
 
             string json = @"{""my_string"":""Hello""}";
             Assert.Null((await Serializer.DeserializeWrapper<MyStruct_WithNonPublicAccessors_WithTypeAttribute>(json)).MyString);
@@ -316,28 +318,43 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData(typeof(ClassWithPrivateProperty_WithJsonIncludeProperty))]
-        [InlineData(typeof(ClassWithInternalProperty_WithJsonIncludeProperty))]
-        [InlineData(typeof(ClassWithProtectedProperty_WithJsonIncludeProperty))]
-        [InlineData(typeof(ClassWithPrivateField_WithJsonIncludeProperty))]
-        [InlineData(typeof(ClassWithInternalField_WithJsonIncludeProperty))]
-        [InlineData(typeof(ClassWithProtectedField_WithJsonIncludeProperty))]
-        [InlineData(typeof(ClassWithPrivate_InitOnlyProperty_WithJsonIncludeProperty))]
-        [InlineData(typeof(ClassWithInternal_InitOnlyProperty_WithJsonIncludeProperty))]
-        [InlineData(typeof(ClassWithProtected_InitOnlyProperty_WithJsonIncludeProperty))]
-        public virtual async Task NonPublicProperty_WithJsonInclude_Invalid(Type type)
+        [InlineData(typeof(ClassWithPrivateProperty_WithJsonIncludeProperty), false)]
+        [InlineData(typeof(ClassWithInternalProperty_WithJsonIncludeProperty), true)]
+        [InlineData(typeof(ClassWithProtectedProperty_WithJsonIncludeProperty), false)]
+        [InlineData(typeof(ClassWithPrivateField_WithJsonIncludeProperty), false)]
+        [InlineData(typeof(ClassWithInternalField_WithJsonIncludeProperty), true)]
+        [InlineData(typeof(ClassWithProtectedField_WithJsonIncludeProperty), false)]
+        [InlineData(typeof(ClassWithPrivate_InitOnlyProperty_WithJsonIncludeProperty), false)]
+        [InlineData(typeof(ClassWithInternal_InitOnlyProperty_WithJsonIncludeProperty), true)]
+        [InlineData(typeof(ClassWithProtected_InitOnlyProperty_WithJsonIncludeProperty), false)]
+        public virtual async Task NonPublicProperty_JsonInclude_WorksAsExpected(Type type, bool isAccessibleBySourceGen)
         {
-            InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper("{}", type));
-            string exAsStr = ex.ToString();
-            Assert.Contains("MyString", exAsStr);
-            Assert.Contains(type.ToString(), exAsStr);
-            Assert.Contains("JsonIncludeAttribute", exAsStr);
+            if (!Serializer.IsSourceGeneratedSerializer || isAccessibleBySourceGen)
+            {
+                string json = """{"MyString":"value"}""";
+                MemberInfo memberInfo = type.GetMember("MyString", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)[0];
 
-            ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(Activator.CreateInstance(type), type));
-            exAsStr = ex.ToString();
-            Assert.Contains("MyString", exAsStr);
-            Assert.Contains(type.ToString(), exAsStr);
-            Assert.Contains("JsonIncludeAttribute", exAsStr);
+                object result = await Serializer.DeserializeWrapper("""{"MyString":"value"}""", type);
+                Assert.IsType(type, result);
+                Assert.Equal(memberInfo is PropertyInfo p ? p.GetValue(result) : ((FieldInfo)memberInfo).GetValue(result), "value");
+
+                string actualJson = await Serializer.SerializeWrapper(result, type);
+                Assert.Equal(json, actualJson);
+            }
+            else
+            {
+                InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper("{}", type));
+                string exAsStr = ex.ToString();
+                Assert.Contains("MyString", exAsStr);
+                Assert.Contains(type.ToString(), exAsStr);
+                Assert.Contains("JsonIncludeAttribute", exAsStr);
+
+                ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(Activator.CreateInstance(type), type));
+                exAsStr = ex.ToString();
+                Assert.Contains("MyString", exAsStr);
+                Assert.Contains(type.ToString(), exAsStr);
+                Assert.Contains("JsonIncludeAttribute", exAsStr);
+            }
         }
 
         public class ClassWithPrivateProperty_WithJsonIncludeProperty
@@ -349,7 +366,7 @@ namespace System.Text.Json.Serialization.Tests
         public class ClassWithInternalProperty_WithJsonIncludeProperty
         {
             [JsonInclude]
-            internal string MyString { get; }
+            internal string MyString { get; set; }
         }
 
         public class ClassWithProtectedProperty_WithJsonIncludeProperty
@@ -394,6 +411,67 @@ namespace System.Text.Json.Serialization.Tests
         {
             [JsonInclude]
             protected string MyString { get; init; }
+        }
+
+        [Fact]
+        public async Task CanAlwaysRoundtripInternalJsonIncludeProperties()
+        {
+            // Internal JsonInclude properties should be honored
+            // by both reflection and the source generator.
+
+            var value = new ClassWithInternalJsonIncludeProperties { X = 1, Y = 2 };
+            string json = await Serializer.SerializeWrapper(value);
+            Assert.Equal("""{"X":1,"Y":2}""", json);
+
+            value = await Serializer.DeserializeWrapper<ClassWithInternalJsonIncludeProperties>(json);
+            Assert.Equal(1, value.X);
+            Assert.Equal(2, value.Y);
+        }
+
+        public class ClassWithInternalJsonIncludeProperties
+        {
+            [JsonInclude]
+            public int X { get; internal set; }
+            [JsonInclude]
+            public int Y { internal get; set; }
+        }
+
+        [Fact]
+        public virtual async Task ClassWithIgnoredAndPrivateMembers_DoesNotIncludeIgnoredMetadata()
+        {
+            JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true);
+
+            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(ClassWithIgnoredAndPrivateMembers));
+
+            // The contract surfaces the ignored properties but not the private ones
+            Assert.Equal(2, typeInfo.Properties.Count);
+            Assert.Contains(typeInfo.Properties, prop => prop.Name == "PublicIgnoredField");
+            Assert.Contains(typeInfo.Properties, prop => prop.Name == "PublicIgnoredProperty");
+
+            // The ignored properties included in the contract do not specify any accessor delegates.
+            Assert.All(typeInfo.Properties, prop => Assert.True(prop.Get is null));
+            Assert.All(typeInfo.Properties, prop => Assert.True(prop.Set is null));
+
+            string json = await Serializer.SerializeWrapper(new ClassWithIgnoredAndPrivateMembers(), options);
+            Assert.Equal("{}", json);
+        }
+
+        public class ClassWithIgnoredAndPrivateMembers
+        {
+            [JsonIgnore]
+            public TypeThatShouldNotBeGenerated PublicIgnoredField = new();
+
+            private TypeThatShouldNotBeGenerated PrivateField = new();
+
+            [JsonIgnore]
+            public TypeThatShouldNotBeGenerated PublicIgnoredProperty { get; set; } = new();
+
+            private TypeThatShouldNotBeGenerated PrivateProperty { get; set; } = new();
+        }
+
+        public class TypeThatShouldNotBeGenerated
+        {
+            private protected object _thisLock = new object();
         }
     }
 }

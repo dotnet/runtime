@@ -41,11 +41,10 @@ namespace Test
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             double[] arg = null;
             Static4(ref arg);
-            return 100;
         }
     }
 }

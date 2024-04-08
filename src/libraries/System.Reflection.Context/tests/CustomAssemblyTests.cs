@@ -114,7 +114,7 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void GetSatelliteAssemblyTest()
         {
             Assert.Throws<FileNotFoundException>(() => _customAssembly.GetSatelliteAssembly(CultureInfo.InvariantCulture));

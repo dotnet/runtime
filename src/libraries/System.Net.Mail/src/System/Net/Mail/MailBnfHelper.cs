@@ -146,7 +146,7 @@ namespace System.Net.Mime
 
         internal static void ValidateHeaderName(string data)
         {
-            if (data.Length == 0 || data.AsSpan().IndexOfAnyExcept(s_charactersAllowedInHeaderNames) >= 0)
+            if (data.Length == 0 || data.AsSpan().ContainsAnyExcept(s_charactersAllowedInHeaderNames))
             {
                 throw new FormatException(SR.InvalidHeaderName);
             }
@@ -354,7 +354,7 @@ namespace System.Net.Mime
             c == Tab || c == Space || c == CR || c == LF;
 
         internal static bool HasCROrLF(string data) =>
-            data.AsSpan().IndexOfAny(CR, LF) >= 0;
+            data.AsSpan().ContainsAny(CR, LF);
 
         // Is there a FWS ("\r\n " or "\r\n\t") starting at the given index?
         internal static bool IsFWSAt(string data, int index)

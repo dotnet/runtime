@@ -669,9 +669,12 @@ namespace System.Security.Cryptography.Tests
         public static void GetString_RandomDistribution()
         {
             const string Choices = "abcdefghijklmnopqrstuvwxyz";
-            string generated = RandomNumberGenerator.GetString(Choices, 10_000);
-            VerifyDistribution<char>(generated, 1f / 26);
-            VerifyAllInRange(generated, 'a', (char)('z' + 1));
+            for (int i = 1; i <= Choices.Length; i++)
+            {
+                string generated = RandomNumberGenerator.GetString(Choices.AsSpan(0, i), 10_000);
+                VerifyDistribution<char>(generated, 1f / i);
+                VerifyAllInRange(generated, 'a', (char)('a' + i));
+            }
         }
 
         [Fact]

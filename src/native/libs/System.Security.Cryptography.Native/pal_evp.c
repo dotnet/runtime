@@ -1,11 +1,40 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "openssl.h"
 #include "pal_evp.h"
+#include "pal_utilities.h"
 
 #include <assert.h>
+#include <pthread.h>
 
 #define SUCCESS 1
+
+static const EVP_MD* g_evpFetchMd5 = NULL;
+static pthread_once_t g_evpFetch = PTHREAD_ONCE_INIT;
+
+static void EnsureFetchEvpMdAlgorithms(void)
+{
+    // This is called from a pthread_once - this method should not be called directly.
+
+#ifdef NEED_OPENSSL_3_0
+    if (API_EXISTS(EVP_MD_fetch))
+    {
+        ERR_clear_error();
+
+        // Try to fetch an MD5 implementation that will work regardless if
+        // FIPS is enforced or not.
+        g_evpFetchMd5 = EVP_MD_fetch(NULL, "MD5", "-fips");
+    }
+#endif
+
+    // No error queue impact.
+    // If EVP_MD_fetch is unavailable, use the implicit loader. If it failed, use the implicit loader as a last resort.
+    if (g_evpFetchMd5 == NULL)
+    {
+        g_evpFetchMd5 = EVP_md5();
+    }
+}
 
 EVP_MD_CTX* CryptoNative_EvpMdCtxCreate(const EVP_MD* type)
 {
@@ -20,6 +49,13 @@ EVP_MD_CTX* CryptoNative_EvpMdCtxCreate(const EVP_MD* type)
         // we'll do it here.
         ERR_put_error(ERR_LIB_EVP, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
         return NULL;
+    }
+
+    // For OpenSSL 1.x, set the non-FIPS allow flag for MD5. OpenSSL 3 does this differently with EVP_MD_fetch
+    // and no longer has this flag.
+    if (CryptoNative_OpenSslVersionNumber() < OPENSSL_VERSION_3_0_RTM && type == EVP_md5())
+    {
+        EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
     }
 
     int ret = EVP_DigestInit_ex(ctx, type, NULL);
@@ -66,6 +102,47 @@ int32_t CryptoNative_EvpDigestFinalEx(EVP_MD_CTX* ctx, uint8_t* md, uint32_t* s)
     return ret;
 }
 
+int32_t CryptoNative_EvpDigestFinalXOF(EVP_MD_CTX* ctx, uint8_t* md, uint32_t len)
+{
+    #if HAVE_OPENSSL_SHA3
+        if (API_EXISTS(EVP_DigestFinalXOF))
+        {
+            ERR_clear_error();
+
+            // https://github.com/openssl/openssl/issues/9431
+            // EVP_DigestFinalXOF has a bug in some arch-optimized code paths where it cannot tolerate a zero length
+            // digest.
+            // If the caller asked for no bytes, use a temporary buffer to ask for 1 byte, then throw away the result.
+            // We don't want to skip calling FinalXOF entirely because we want to make sure the EVP_MD_CTX is in a
+            // finalized state regardless of the length of the digest.
+            // We can remove this work around when OpenSSL 3.0 is the minimum OpenSSL requirement.
+            if (len == 0)
+            {
+                uint8_t single[1] = { 0 };
+                int result = EVP_DigestFinalXOF(ctx, single, 1);
+                OPENSSL_cleanse(single, sizeof(single));
+                return result;
+            }
+            else if (!md)
+            {
+                // Length is not zero but we don't have a buffer to write to.
+                return -1;
+            }
+            else
+            {
+                return EVP_DigestFinalXOF(ctx, md, len);
+            }
+        }
+    #else
+        // Use each parameter to avoid unused parameter warnings.
+        (void)(ctx);
+        (void)(md);
+        (void)(len);
+    #endif
+
+    return 0;
+}
+
 static EVP_MD_CTX* EvpDup(const EVP_MD_CTX* ctx)
 {
     if (ctx == NULL)
@@ -109,6 +186,22 @@ int32_t CryptoNative_EvpDigestCurrent(const EVP_MD_CTX* ctx, uint8_t* md, uint32
     return 0;
 }
 
+int32_t CryptoNative_EvpDigestCurrentXOF(const EVP_MD_CTX* ctx, uint8_t* md, uint32_t len)
+{
+    ERR_clear_error();
+
+    EVP_MD_CTX* dup = EvpDup(ctx);
+
+    if (dup != NULL)
+    {
+        int ret = CryptoNative_EvpDigestFinalXOF(dup, md, len);
+        EVP_MD_CTX_free(dup);
+        return ret;
+    }
+
+    return 0;
+}
+
 int32_t CryptoNative_EvpDigestOneShot(const EVP_MD* type, const void* source, int32_t sourceSize, uint8_t* md, uint32_t* mdSize)
 {
     ERR_clear_error();
@@ -139,6 +232,36 @@ int32_t CryptoNative_EvpDigestOneShot(const EVP_MD* type, const void* source, in
     return ret;
 }
 
+int32_t CryptoNative_EvpDigestXOFOneShot(const EVP_MD* type, const void* source, int32_t sourceSize, uint8_t* md, uint32_t len)
+{
+    ERR_clear_error();
+
+    if (type == NULL || sourceSize < 0 || (md == NULL && len > 0))
+    {
+        return 0;
+    }
+
+    EVP_MD_CTX* ctx = CryptoNative_EvpMdCtxCreate(type);
+
+    if (ctx == NULL)
+    {
+        return 0;
+    }
+
+    int32_t ret = EVP_DigestUpdate(ctx, source, Int32ToSizeT(sourceSize));
+
+    if (ret != SUCCESS)
+    {
+        CryptoNative_EvpMdCtxDestroy(ctx);
+        return 0;
+    }
+
+    ret = CryptoNative_EvpDigestFinalXOF(ctx, md, len);
+
+    CryptoNative_EvpMdCtxDestroy(ctx);
+    return ret;
+}
+
 int32_t CryptoNative_EvpMdSize(const EVP_MD* md)
 {
     // No error queue impact.
@@ -147,8 +270,8 @@ int32_t CryptoNative_EvpMdSize(const EVP_MD* md)
 
 const EVP_MD* CryptoNative_EvpMd5(void)
 {
-    // No error queue impact.
-    return EVP_md5();
+    pthread_once(&g_evpFetch, EnsureFetchEvpMdAlgorithms);
+    return g_evpFetchMd5;
 }
 
 const EVP_MD* CryptoNative_EvpSha1(void)
@@ -173,6 +296,71 @@ const EVP_MD* CryptoNative_EvpSha512(void)
 {
     // No error queue impact.
     return EVP_sha512();
+}
+
+const EVP_MD* CryptoNative_EvpSha3_256(void)
+{
+    // No error queue impact.
+#if HAVE_OPENSSL_SHA3
+    if (API_EXISTS(EVP_sha3_256))
+    {
+        return EVP_sha3_256();
+    }
+#endif
+
+    return NULL;
+}
+
+const EVP_MD* CryptoNative_EvpSha3_384(void)
+{
+    // No error queue impact.
+#if HAVE_OPENSSL_SHA3
+    if (API_EXISTS(EVP_sha3_384))
+    {
+        return EVP_sha3_384();
+    }
+#endif
+
+    return NULL;
+}
+
+const EVP_MD* CryptoNative_EvpSha3_512(void)
+{
+    // No error queue impact.
+#if HAVE_OPENSSL_SHA3
+    if (API_EXISTS(EVP_sha3_512))
+    {
+        return EVP_sha3_512();
+    }
+#endif
+
+    return NULL;
+}
+
+const EVP_MD* CryptoNative_EvpShake128(void)
+{
+    // No error queue impact.
+#if HAVE_OPENSSL_SHA3
+    if (API_EXISTS(EVP_shake128))
+    {
+        return EVP_shake128();
+    }
+#endif
+
+    return NULL;
+}
+
+const EVP_MD* CryptoNative_EvpShake256(void)
+{
+    // No error queue impact.
+#if HAVE_OPENSSL_SHA3
+    if (API_EXISTS(EVP_shake256))
+    {
+        return EVP_shake256();
+    }
+#endif
+
+    return NULL;
 }
 
 int32_t CryptoNative_GetMaxMdSize(void)

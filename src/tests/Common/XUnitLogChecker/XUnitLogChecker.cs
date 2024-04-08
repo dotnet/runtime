@@ -30,41 +30,115 @@ public class XUnitLogChecker
         public TagCategory Category { get; init; }
     }
 
+    private struct LogCheckerConfigParameters
+    {
+        public LogCheckerConfigParameters()
+        {
+            ResultsPath = string.Empty;
+            TestWrapperName = string.Empty;
+            DumpsPath = string.Empty;
+        }
+
+        public string ResultsPath { get; set; }
+        public string TestWrapperName { get; set; }
+        public string DumpsPath { get; set; }
+
+        public bool HasResultsPath() => !string.IsNullOrEmpty(ResultsPath);
+        public bool HasTestWrapper() => !string.IsNullOrEmpty(TestWrapperName);
+        public bool HasDumpsPath()   => !string.IsNullOrEmpty(DumpsPath);
+    }
+
     private enum TagCategory { OPENING, CLOSING }
 
     private const int SUCCESS = 0;
     private const int MISSING_ARGS = -1;
     private const int FAILURE = -2;
 
+    private static LogCheckerConfigParameters s_configuration;
+
     static int Main(string[] args)
     {
-        if (args.Length < 2)
+        s_configuration = new LogCheckerConfigParameters();
+
+        // We start with a 'FAILURE' exit code because if something goes wrong
+        // later on and the log checker fails, we want to know it.
+        int exitCode = FAILURE;
+
+        ParseCommandLineArgs(args);
+
+        // In CoreCLR tests, we record each test's results in an XML file, which
+        // is stored in the same directory as said test's script. So, the
+        // XUnitLogChecker looks there for said results log to do its job of
+        // fixing it if necessary. Afterwards, it checks if there are any dumps
+        // to read and display. This is the log checker's full run.
+        //
+        // In the Libraries tests however, the test logs are stored and created
+        // in a different way, currently outside the scope of the XUnitLogChecker,
+        // and therefore only the dump checking functionality is required in
+        // those cases, so we skip directly to that step.
+
+        if (s_configuration.HasResultsPath() && s_configuration.HasTestWrapper())
         {
-            Console.WriteLine("[XUnitLogChecker]: The path to the log file and"
-                              + " the name of the wrapper are required for an"
-                              + " accurate check and fixing.");
-            return MISSING_ARGS;
+            WriteLineTimestamp("The full run will be done.");
+            exitCode = DoFullRun();
+        }
+        else
+        {
+            WriteLineTimestamp("Only dumps checking will be done.");
+            DoDumpsCheck(string.Empty);
+            exitCode = SUCCESS;
         }
 
-        // Creating variables for code clarity and ease of understanding.
+        return exitCode;
+    }
 
-        string resultsDir = args[0];
-        string wrapperName = args[1];
+    private static void ParseCommandLineArgs(string[] args)
+    {
+        // The command-line arguments will always come in pairs of '--flag value'.
+        // Hence, we process two elements of the args array at a time.
 
-        string tempLogName = $"{wrapperName}.tempLog.xml";
-        string finalLogName = $"{wrapperName}.testResults.xml";
-        string statsCsvName = $"{wrapperName}.testStats.csv";
+        for (int i = 0; i < args.Length; i+=2)
+        {
+            string nextOption = args[i];
+            string nextValue = (i+1) < args.Length ? args[i+1] : string.Empty;
 
-        string tempLogPath = Path.Combine(resultsDir, tempLogName);
-        string finalLogPath = Path.Combine(resultsDir, finalLogName);
-        string statsCsvPath = Path.Combine(resultsDir, statsCsvName);
+            switch (nextOption)
+            {
+                case "--results-path":
+                    s_configuration.ResultsPath = nextValue;
+                    break;
+
+                case "--test-wrapper":
+                    s_configuration.TestWrapperName = nextValue;
+                    break;
+
+                case "--dumps-path":
+                    s_configuration.DumpsPath = nextValue;
+                    break;
+
+                default:
+                    throw new ArgumentException($"Unrecognized option {nextOption}.");
+                    break;
+            }
+        }
+    }
+
+    private static int DoFullRun()
+    {
+        string tempLogName = $"{s_configuration.TestWrapperName}.tempLog.xml";
+        string finalLogName = $"{s_configuration.TestWrapperName}.testResults.xml";
+        string statsCsvName = $"{s_configuration.TestWrapperName}.testStats.csv";
+
+        string tempLogPath = Path.Combine(s_configuration.ResultsPath, tempLogName);
+        string finalLogPath = Path.Combine(s_configuration.ResultsPath, finalLogName);
+        string statsCsvPath = Path.Combine(s_configuration.ResultsPath, statsCsvName);
 
         // If the final results log file is present, then we can assume everything
         // went fine, and it's ready to go without any further processing.
 
         if (File.Exists(finalLogPath))
         {
-            Console.WriteLine($"[XUnitLogChecker]: Item '{wrapperName}' did"
+            WriteLineTimestamp($"Item '{s_configuration.TestWrapperName}' did"
                               + " complete successfully!");
             return SUCCESS;
         }
@@ -80,11 +154,12 @@ public class XUnitLogChecker
 
         if (!File.Exists(tempLogPath))
         {
-            Console.WriteLine("[XUnitLogChecker]: No logs were found. This work"
-                              + " item was skipped.");
-            Console.WriteLine($"[XUnitLogChecker]: If this is a mistake, then"
-                              + " something went very wrong. The expected temp"
-                              + $" log name would be: '{tempLogName}'");
+            WriteLineTimestamp("No logs were found. This work"
+                               + " item was skipped.");
+
+            WriteLineTimestamp($"If this is a mistake, then"
+                               + " something went very wrong. The expected temp"
+                               + $" log name would be: '{tempLogName}'");
             return SUCCESS;
         }
 
@@ -95,8 +170,8 @@ public class XUnitLogChecker
 
         if (!File.Exists(statsCsvPath))
         {
-            Console.WriteLine("[XUnitLogChecker]: An error occurred. No stats csv"
-                            + $" was found. The expected name would be '{statsCsvPath}'.");
+            WriteLineTimestamp("An error occurred. No stats csv"
+                             + $" was found. The expected name would be '{statsCsvPath}'.");
             return FAILURE;
         }
 
@@ -105,8 +180,8 @@ public class XUnitLogChecker
 
         if (workItemStats is null)
         {
-            Console.WriteLine("[XUnitLogChecker]: Timed out trying to read the"
-                            + $" stats file '{statsCsvPath}'.");
+            WriteLineTimestamp("Timed out trying to read the"
+                             + $" stats file '{statsCsvPath}'.");
             return FAILURE;
         }
 
@@ -127,51 +202,58 @@ public class XUnitLogChecker
                                                .Select(x => Int32.Parse(x))
                                                .ToArray();
 
-        // Here goes the main core of the XUnit Log Checker :)
-        Console.WriteLine($"[XUnitLogChecker]: Item '{wrapperName}' did not"
-                        + " finish running. Checking and fixing the log...");
+        WriteLineTimestamp($"Item '{s_configuration.TestWrapperName}' did not"
+                          + " finish running. Checking and fixing the log...");
 
         bool success = FixTheXml(tempLogPath);
         if (!success)
         {
-            Console.WriteLine("[XUnitLogChecker]: Fixing the log failed.");
+            WriteLineTimestamp("Fixing the log failed.");
             return FAILURE;
         }
 
         PrintWorkItemSummary(numExpectedTests, workItemEndStatus);
 
-        // The third command-line argument is an optional path where dumps would
-        // be located. If passed, then search that path accordingly. Otherwise,
-        // just skip and finish running.
-
-        if (args.Length > 2)
-        {
-            string dumpsPath = args[2];
-
-            if (Directory.Exists(dumpsPath))
-            {
-                PrintStackTracesFromDumps(dumpsPath, tempLogPath);
-            }
-            else
-            {
-                Console.WriteLine("[XUnitLogChecker]: The provided dumps path"
-                                + $" '{dumpsPath}' was not able to be read or"
-                                + " found. Skipping stack traces search...");
-            }
-        }
+        if (s_configuration.HasDumpsPath())
+            DoDumpsCheck(tempLogPath);
 
         // Rename the temp log to the final log, so that Helix can use it without
         // knowing what transpired here.
         File.Move(tempLogPath, finalLogPath);
-        Console.WriteLine("[XUnitLogChecker]: Finished!");
+        WriteLineTimestamp("Finished!");
         return SUCCESS;
     }
+
+    private static void DoDumpsCheck(string testLogPath)
+    {
+        // If we received a dumps path, then search it accordingly. Otherwise,
+        // just skip this function and return.
+        //
+        // NOTE: In the case of the libraries test, 'testLogPath' will always
+        //       be empty.
+
+        if (s_configuration.HasDumpsPath()
+            && Directory.Exists(s_configuration.DumpsPath))
+        {
+            PrintStackTracesFromDumps(testLogPath);
+        }
+        else
+        {
+            WriteLineTimestamp($"The provided dumps path '{s_configuration.DumpsPath}'"
+                             + " was not found or was not able to be read. Skipping"
+                             + " traces search...");
+        }
+    }
+
+    static void WriteLineTimestamp(string message) =>
+        Console.WriteLine($"[XUnitLogChecker]: {System.DateTime.Now:HH:mm:ss.ff}: {message}");
 
     static IEnumerable<string> TryReadFile(string filePath)
     {
         // Declaring the enumerable to contain the log lines first because we
         // might not be able to read on the first try due to locked resources
         // on Windows. We will retry for up to one minute when this case happens.
+
         IEnumerable<string>? fileContents = null;
         Stopwatch fileReadStopwatch = Stopwatch.StartNew();
 
@@ -187,8 +269,8 @@ public class XUnitLogChecker
             }
             catch (IOException ioEx)
             {
-                Console.WriteLine("[XUnitLogChecker]: Could not read the"
-                                + $" file {filePath}. Retrying...");
+                WriteLineTimestamp("Could not read the"
+                                 + $" file {filePath}. Retrying...");
 
                 // Give it a couple seconds before trying again.
                 Thread.Sleep(2000);
@@ -213,8 +295,8 @@ public class XUnitLogChecker
 
         if (logLines is null)
         {
-            Console.WriteLine("[XUnitLogChecker]: Timed out trying to read the"
-                            + $" log file '{xFile}'.");
+            WriteLineTimestamp("Timed out trying to read the"
+                             + $" log file '{xFile}'.");
             return false;
         }
 
@@ -303,7 +385,7 @@ public class XUnitLogChecker
 
         if (tags.Count == 0)
         {
-            Console.WriteLine($"[XUnitLogChecker]: XUnit log file '{xFile}' was A-OK!");
+            WriteLineTimestamp($"XUnit log file '{xFile}' was A-OK!");
             return true;
         }
 
@@ -318,7 +400,7 @@ public class XUnitLogChecker
                 xsw.WriteLine($"</{tag}>");
         }
 
-        Console.WriteLine("[XUnitLogChecker]: XUnit log file has been fixed!");
+        WriteLineTimestamp("XUnit log file has been fixed!");
         return true;
     }
 
@@ -377,31 +459,49 @@ public class XUnitLogChecker
         return result;
     }
 
-    static void PrintStackTracesFromDumps(string dumpsPath, string tempLogPath)
+    static void PrintStackTracesFromDumps(string testLogPath)
     {
-        Console.WriteLine("[XUnitLogChecker]: Checking for dumps...");
+        WriteLineTimestamp("Checking for dumps...");
+        IEnumerable<string>? dumpsFound = null;
 
-        // Read our newly fixed log to retrieve the time and date when the
-        // test was run. This is to exclude potentially existing older dumps
-        // that are not related to this test run.
-        XElement fixedLogTree = XElement.Load(tempLogPath);
+        // In CoreCLR, the test results log has the test's run time recorded.
+        // We extract it and use it to only retrieve the dumps that were created
+        // after that point in time. Any other dump present there is certainly
+        // unrelated to the currently being analyzed test.
+        //
+        // In Libraries, since we can't get said timestamp, we just retrieve
+        // all of the dumps.
 
-        // We know from the XUnitWrapperGenerator that the top element
-        // is the 'assembly' tag we're looking for.
-        var testRunDateTime = DateTime.ParseExact
-        (
-            fixedLogTree.Attribute("run-date-time").Value,
-            "yyyy-MM-dd HH:mm:ss",
-            System.Globalization.CultureInfo.InvariantCulture
-        );
+        if (!string.IsNullOrEmpty(testLogPath))
+        {
+            // Read our newly fixed log to retrieve the time and date when the
+            // test was run. This is to exclude potentially existing older dumps
+            // that are not related to this test run.
+            XElement fixedLogTree = XElement.Load(testLogPath);
 
-        IEnumerable<string> dumpsFound =
-            Directory.GetFiles(dumpsPath, "*coredump*.dmp")
-                     .Where(dmp => DateTime.Compare(File.GetCreationTime(dmp), testRunDateTime) >= 0);
+            // We know from the XUnitWrapperGenerator that the top element
+            // is the 'assembly' tag we're looking for.
+            var testRunDateTime = DateTime.ParseExact
+            (
+                fixedLogTree.Attribute("run-date-time").Value,
+                "yyyy-MM-dd HH:mm:ss",
+                System.Globalization.CultureInfo.InvariantCulture
+            );
+
+            dumpsFound = Directory
+                         .GetFiles(s_configuration.DumpsPath, "*.dmp")
+                         .Where(dmp =>
+                                    DateTime.Compare(File.GetCreationTime(dmp),
+                                                     testRunDateTime) >= 0);
+        }
+        else
+        {
+            dumpsFound = Directory.GetFiles(s_configuration.DumpsPath, "*.dmp");
+        }
 
         if (dumpsFound.Count() == 0)
         {
-            Console.WriteLine("[XUnitLogChecker]: No crash dumps found. Continuing...");
+            WriteLineTimestamp("No crash dumps found. Continuing...");
             return ;
         }
 
@@ -409,9 +509,8 @@ public class XUnitLogChecker
         {
             if (OperatingSystem.IsWindows())
             {
-                Console.WriteLine("[XUnitLogChecker]: Reading crash dump"
-                                + $" '{dumpPath}'...");
-                Console.WriteLine("[XUnitLogChecker]: Stack Trace Found:\n");
+                WriteLineTimestamp($"Reading crash dump '{dumpPath}'...");
+                WriteLineTimestamp("Stack Trace Found:\n");
 
                 CoreclrTestWrapperLib.TryPrintStackTraceFromDmp(dumpPath,
                                                                 Console.Out);
@@ -422,14 +521,13 @@ public class XUnitLogChecker
 
                 if (!File.Exists(crashReportPath))
                 {
-                    Console.WriteLine("[XUnitLogChecker]: There was no crash"
-                                    + $" report for dump '{dumpPath}'. Skipping...");
+                    WriteLineTimestamp("There was no crash report for the"
+                                    + $" dump '{dumpPath}'. Skipping...");
                     continue;
                 }
 
-                Console.WriteLine("[XUnitLogChecker]: Reading crash report"
-                                + $" '{crashReportPath}'...");
-                Console.WriteLine("[XUnitLogChecker]: Stack Trace Found:\n");
+                WriteLineTimestamp($"Reading crash report '{crashReportPath}'...");
+                WriteLineTimestamp("Stack Trace Found:\n");
 
                 CoreclrTestWrapperLib.TryPrintStackTraceFromCrashReport(crashReportPath,
                                                                         Console.Out);

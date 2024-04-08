@@ -286,7 +286,8 @@ interface ICorDebugDataTarget : IUnknown
         CORDB_PLATFORM_POSIX_X86,         // Posix supporting OS on Intel x86
         CORDB_PLATFORM_POSIX_ARM,         // Posix supporting OS on ARM32
         CORDB_PLATFORM_POSIX_ARM64,       // Posix supporting OS on ARM64
-        CORDB_PLATFORM_POSIX_LOONGARCH64  // Posix supporting OS on LoongArch64
+        CORDB_PLATFORM_POSIX_LOONGARCH64, // Posix supporting OS on LoongArch64
+        CORDB_PLATFORM_POSIX_RISCV64      // Posix supporting OS on RISC64
     } CorDebugPlatform;
 
     HRESULT GetPlatform([out] CorDebugPlatform * pTargetPlatform);
@@ -2512,6 +2513,7 @@ typedef enum CorDebugGenerationTypes
     CorDebug_Gen2 = 2,
     CorDebug_LOH  = 3,
     CorDebug_POH  = 4,
+    CorDebug_NonGC = 0x7FFFFFFF,
 } CorDebugGenerationTypes;
 
 typedef struct _COR_SEGMENT
@@ -3984,6 +3986,71 @@ interface ICorDebugRegisterSet : IUnknown
         REGISTER_LOONGARCH64_F29,
         REGISTER_LOONGARCH64_F30,
         REGISTER_LOONGARCH64_F31,
+
+        REGISTER_RISCV64_PC = 0,
+        REGISTER_RISCV64_SP,
+        REGISTER_RISCV64_FP,
+        REGISTER_RISCV64_RA,
+        REGISTER_RISCV64_GP,
+        REGISTER_RISCV64_TP,
+        REGISTER_RISCV64_T0,
+        REGISTER_RISCV64_T1,
+        REGISTER_RISCV64_T2,
+        REGISTER_RISCV64_S1,
+        REGISTER_RISCV64_A0,
+        REGISTER_RISCV64_A1,
+        REGISTER_RISCV64_A2,
+        REGISTER_RISCV64_A3,
+        REGISTER_RISCV64_A4,
+        REGISTER_RISCV64_A5,
+        REGISTER_RISCV64_A6,
+        REGISTER_RISCV64_A7,
+        REGISTER_RISCV64_S2,
+        REGISTER_RISCV64_S3,
+        REGISTER_RISCV64_S4,
+        REGISTER_RISCV64_S5,
+        REGISTER_RISCV64_S6,
+        REGISTER_RISCV64_S7,
+        REGISTER_RISCV64_S8,
+        REGISTER_RISCV64_S9,
+        REGISTER_RISCV64_S10,
+        REGISTER_RISCV64_S11,
+        REGISTER_RISCV64_T3,
+        REGISTER_RISCV64_T4,
+        REGISTER_RISCV64_T5,
+        REGISTER_RISCV64_T6,
+        REGISTER_RISCV64_F0,
+        REGISTER_RISCV64_F1,
+        REGISTER_RISCV64_F2,
+        REGISTER_RISCV64_F3,
+        REGISTER_RISCV64_F4,
+        REGISTER_RISCV64_F5,
+        REGISTER_RISCV64_F6,
+        REGISTER_RISCV64_F7,
+        REGISTER_RISCV64_F8,
+        REGISTER_RISCV64_F9,
+        REGISTER_RISCV64_F10,
+        REGISTER_RISCV64_F11,
+        REGISTER_RISCV64_F12,
+        REGISTER_RISCV64_F13,
+        REGISTER_RISCV64_F14,
+        REGISTER_RISCV64_F15,
+        REGISTER_RISCV64_F16,
+        REGISTER_RISCV64_F17,
+        REGISTER_RISCV64_F18,
+        REGISTER_RISCV64_F19,
+        REGISTER_RISCV64_F20,
+        REGISTER_RISCV64_F21,
+        REGISTER_RISCV64_F22,
+        REGISTER_RISCV64_F23,
+        REGISTER_RISCV64_F24,
+        REGISTER_RISCV64_F25,
+        REGISTER_RISCV64_F26,
+        REGISTER_RISCV64_F27,
+        REGISTER_RISCV64_F28,
+        REGISTER_RISCV64_F29,
+        REGISTER_RISCV64_F30,
+        REGISTER_RISCV64_F31
 
         // other architectures here
 
@@ -5704,6 +5771,29 @@ interface ICorDebugFunction4 : IUnknown
      * Sets a breakpoint at offset 0 of any current or future jitted methods.
      */
     HRESULT CreateNativeBreakpoint(ICorDebugFunctionBreakpoint **ppBreakpoint);
+};
+
+/*
+ICorDebugFunction5 is a logical extension to ICorDebugFunction.
+*/
+[
+    object,
+    local,
+    uuid(9D4DAB7B-3401-4F37-BD08-CA09F3FDF10F),
+    pointer_default(unique)
+]
+interface ICorDebugFunction5 : IUnknown
+{
+    /*
+     * Triggers a new JIT so the next time the function is called, it will be unoptimized. Will
+     * trigger a JIT even for R2R code.
+     */
+    HRESULT DisableOptimizations();
+
+    /*
+     * Indicates whether this method had optimizations disabled already.
+     */
+    HRESULT AreOptimizationsDisabled(BOOL *pOptimizationsDisabled);
 };
 
 /*

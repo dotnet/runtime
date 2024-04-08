@@ -9,25 +9,25 @@
 #include "helper.h"
 
 //Func Pointer
-typedef BOOL (__cdecl *DelByteArrByOutAsCdeclCaller)(BYTE** arrByte, BYTE* arraySize);
+typedef BOOL (__cdecl *DelByteArrByOutAsCdeclCaller)(uint8_t** arrByte, uint8_t* arraySize);
 typedef BOOL (__cdecl *DelSbyteArrByOutAsCdeclCaller)(CHAR* arraySize, CHAR** arrSbyte);
-typedef BOOL (__cdecl *DelShortArrByOutAsCdeclCaller)(SHORT** arrShort, SHORT* arraySize);
-typedef BOOL (__cdecl *DelUshortArrByOutAsCdeclCaller)(USHORT** arrUshort, USHORT* arraySize);
-typedef BOOL (__cdecl *DelInt32ArrByOutAsCdeclCaller)(LONG** arrInt32, LONG* arraySize);
-typedef BOOL (__cdecl *DelUint32ArrByOutAsCdeclCaller)(ULONG** arrUint32, ULONG* arraySize);
-typedef BOOL (__cdecl *DelLongArrByOutAsCdeclCaller)(LONGLONG** arrLong, LONGLONG* arraySize);
-typedef BOOL (__cdecl *DelUlongArrByOutAsCdeclCaller)(ULONGLONG** arrUlong, ULONGLONG* arraySize);
-typedef BOOL (__cdecl *DelStringArrByOutAsCdeclCaller)(BSTR** arrString, LONG* arraySize);
+typedef BOOL (__cdecl *DelShortArrByOutAsCdeclCaller)(int16_t** arrShort, int16_t* arraySize);
+typedef BOOL (__cdecl *DelUshortArrByOutAsCdeclCaller)(uint16_t** arrUshort, uint16_t* arraySize);
+typedef BOOL (__cdecl *DelInt32ArrByOutAsCdeclCaller)(int32_t** arrInt32, int32_t* arraySize);
+typedef BOOL (__cdecl *DelUint32ArrByOutAsCdeclCaller)(uint32_t** arrUint32, uint32_t* arraySize);
+typedef BOOL (__cdecl *DelLongArrByOutAsCdeclCaller)(int64_t** arrLong, int64_t* arraySize);
+typedef BOOL (__cdecl *DelUlongArrByOutAsCdeclCaller)(uint64_t** arrUlong, uint64_t* arraySize);
+typedef BOOL (__cdecl *DelStringArrByOutAsCdeclCaller)(BSTR** arrString, int32_t* arraySize);
 
 //#######################################################
 //Test Method
 //#######################################################
 
-//BYTE 0 ==> 20 size Array
+//uint8_t 0 ==> 20 size Array
 extern "C" DLL_EXPORT BOOL __cdecl DoCallBack_MarshalByteArray_AsParam_AsByOut(DelByteArrByOutAsCdeclCaller caller)
 {
-    BYTE arrSize = 0;
-    BYTE* arrByte = InitArray<BYTE>(arrSize);
+    uint8_t arrSize = 0;
+    uint8_t* arrByte = InitArray<uint8_t>(arrSize);
 
     if(!caller(&arrByte, &arrSize))
     {
@@ -36,7 +36,7 @@ extern "C" DLL_EXPORT BOOL __cdecl DoCallBack_MarshalByteArray_AsParam_AsByOut(D
         return FALSE;
     }
 
-    return CheckArray(arrByte, arrSize, (BYTE)20);
+    return CheckArray(arrByte, arrSize, (uint8_t)20);
 }
 
 //CHAR 1 ==> CHAR.Max size Array
@@ -55,11 +55,11 @@ extern "C" DLL_EXPORT BOOL __cdecl DoCallBack_MarshalSbyteArray_AsParam_AsByOut(
     return CheckArray(arrSbyte, (size_t)arrSize, (CHAR)127);
 }
 
-//SHORT -1 ==> 20 size Array(Actual: 10 ==> 20)
+//int16_t -1 ==> 20 size Array(Actual: 10 ==> 20)
 extern "C" DLL_EXPORT BOOL __cdecl DoCallBack_MarshalShortArray_AsParam_AsByOut(DelShortArrByOutAsCdeclCaller caller)
 {
-    SHORT arrSize = -1;
-    SHORT* arrShort = InitArray<SHORT>(SHORT(10));
+    int16_t arrSize = -1;
+    int16_t* arrShort = InitArray<int16_t>(int16_t(10));
 
     if(!caller(&arrShort, &arrSize))
     {
@@ -68,14 +68,14 @@ extern "C" DLL_EXPORT BOOL __cdecl DoCallBack_MarshalShortArray_AsParam_AsByOut(
         return FALSE;
     }
 
-    return CheckArray(arrShort, (size_t)arrSize, (SHORT)20);
+    return CheckArray(arrShort, (size_t)arrSize, (int16_t)20);
 }
 
-//SHORT 10 ==> -1 size Array(Actual: 10 ==> 20)
+//int16_t 10 ==> -1 size Array(Actual: 10 ==> 20)
 extern "C" DLL_EXPORT BOOL __cdecl DoCallBack_MarshalShortArrayReturnNegativeSize_AsParam_AsByOut(DelShortArrByOutAsCdeclCaller caller)
 {
-    SHORT arrSize = 10;
-    SHORT* arrShort = InitArray<SHORT>((size_t)arrSize);
+    int16_t arrSize = 10;
+    int16_t* arrShort = InitArray<int16_t>((size_t)arrSize);
 
     if(!caller(&arrShort, &arrSize))
     {
@@ -85,16 +85,16 @@ extern "C" DLL_EXPORT BOOL __cdecl DoCallBack_MarshalShortArrayReturnNegativeSiz
     }
 
     if(arrSize == -1)
-        return CheckArray(arrShort, (SHORT)20, (SHORT)20);
+        return CheckArray(arrShort, (int16_t)20, (int16_t)20);
     else
         return FALSE;
 }
 
-//USHORT ushort.Max ==> 20 size Array
+//uint16_t ushort.Max ==> 20 size Array
 extern "C" DLL_EXPORT BOOL __cdecl DoCallBack_MarshalUshortArray_AsParam_AsByOut(DelUshortArrByOutAsCdeclCaller caller)
 {
-    USHORT arrSize = 65535;
-    USHORT* arrUshort = InitArray<USHORT>(arrSize);
+    uint16_t arrSize = 65535;
+    uint16_t* arrUshort = InitArray<uint16_t>(arrSize);
 
     if(!caller(&arrUshort, &arrSize))
     {
@@ -103,14 +103,14 @@ extern "C" DLL_EXPORT BOOL __cdecl DoCallBack_MarshalUshortArray_AsParam_AsByOut
         return FALSE;
     }
 
-    return CheckArray(arrUshort, arrSize, (USHORT)20);
+    return CheckArray(arrUshort, arrSize, (uint16_t)20);
 }
 
 //Int32 10 ==> 20 size Array
 extern "C" DLL_EXPORT BOOL __cdecl DoCallBack_MarshalInt32Array_AsParam_AsByOut(DelInt32ArrByOutAsCdeclCaller caller)
 {
-    LONG arrSize = 10;
-    LONG* arrInt32 = InitArray<LONG>((size_t)arrSize);
+    int32_t arrSize = 10;
+    int32_t* arrInt32 = InitArray<int32_t>((size_t)arrSize);
 
     if(!caller(&arrInt32, &arrSize))
     {
@@ -119,14 +119,14 @@ extern "C" DLL_EXPORT BOOL __cdecl DoCallBack_MarshalInt32Array_AsParam_AsByOut(
         return FALSE;
     }
 
-    return CheckArray(arrInt32, (size_t)arrSize, (LONG)20);
+    return CheckArray(arrInt32, (size_t)arrSize, (int32_t)20);
 }
 
 //UInt32 10 ==> 20 size Array
 extern "C" DLL_EXPORT BOOL __cdecl DoCallBack_MarshalUint32Array_AsParam_AsByOut(DelUint32ArrByOutAsCdeclCaller caller)
 {
-    ULONG arrSize = 10;
-    ULONG* arrUint32 = InitArray<ULONG>(arrSize);
+    uint32_t arrSize = 10;
+    uint32_t* arrUint32 = InitArray<uint32_t>(arrSize);
 
     if(!caller(&arrUint32, &arrSize))
     {
@@ -135,14 +135,14 @@ extern "C" DLL_EXPORT BOOL __cdecl DoCallBack_MarshalUint32Array_AsParam_AsByOut
         return FALSE;
     }
 
-    return CheckArray(arrUint32, arrSize, (ULONG)20);
+    return CheckArray(arrUint32, arrSize, (uint32_t)20);
 }
 
-//LONGLONG 10 ==> 20 size Array
+//int64_t 10 ==> 20 size Array
 extern "C" DLL_EXPORT BOOL __cdecl DoCallBack_MarshalLongArray_AsParam_AsByOut(DelLongArrByOutAsCdeclCaller caller)
 {
-    LONGLONG arrSize = 10;
-    LONGLONG* arrLong = InitArray<LONGLONG>((SIZE_T)arrSize);
+    int64_t arrSize = 10;
+    int64_t* arrLong = InitArray<int64_t>((SIZE_T)arrSize);
 
     if(!caller(&arrLong, &arrSize))
     {
@@ -154,11 +154,11 @@ extern "C" DLL_EXPORT BOOL __cdecl DoCallBack_MarshalLongArray_AsParam_AsByOut(D
     return CheckArray(arrLong, (SIZE_T)arrSize, 20);
 }
 
-//ULONGLONG 10 ==> 20 size Array
+//uint64_t 10 ==> 20 size Array
 extern "C" DLL_EXPORT BOOL __cdecl DoCallBack_MarshalUlongArray_AsParam_AsByOut(DelUlongArrByOutAsCdeclCaller caller)
 {
-    ULONGLONG arrSize = 10;
-    ULONGLONG* arrUlong = InitArray<ULONGLONG>((SIZE_T)arrSize);
+    uint64_t arrSize = 10;
+    uint64_t* arrUlong = InitArray<uint64_t>((SIZE_T)arrSize);
 
     if(!caller(&arrUlong, &arrSize))
     {
@@ -174,7 +174,7 @@ extern "C" DLL_EXPORT BOOL __cdecl DoCallBack_MarshalUlongArray_AsParam_AsByOut(
 //BSTR 10 ==> 20 size Array
 extern "C" DLL_EXPORT BOOL __cdecl DoCallBack_MarshalStringArray_AsParam_AsByOut(DelStringArrByOutAsCdeclCaller caller)
 {
-    LONG arrSize = 10;
+    int32_t arrSize = 10;
     BSTR* arrString = InitArrayBSTR(arrSize);
 
     if(!caller(&arrString, &arrSize))
@@ -184,9 +184,9 @@ extern "C" DLL_EXPORT BOOL __cdecl DoCallBack_MarshalStringArray_AsParam_AsByOut
         return FALSE;
     }
 
-    LONG ExpectedArraySize = 20;
+    int32_t ExpectedArraySize = 20;
     BSTR* pExpectedArr = (BSTR*)CoreClrAlloc(sizeof(BSTR)*ExpectedArraySize);
-    for(LONG i = 0; i < ExpectedArraySize; ++i)
+    for(int32_t i = 0; i < ExpectedArraySize; ++i)
     {
         pExpectedArr[i] = ToBSTR(ExpectedArraySize - 1 - i);
     }

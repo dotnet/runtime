@@ -10,8 +10,7 @@ using Xunit;
 public class bug
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
-        return 100;
     }
 }

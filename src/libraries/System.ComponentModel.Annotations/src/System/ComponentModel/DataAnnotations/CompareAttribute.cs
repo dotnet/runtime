@@ -64,7 +64,7 @@ namespace System.ComponentModel.DataAnnotations
             {
                 if (attribute is DisplayAttribute display)
                 {
-                   return display.GetName();
+                    return display.GetName();
                 }
             }
 

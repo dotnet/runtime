@@ -114,13 +114,13 @@ namespace System.Collections.Concurrent.Tests
                     uint hash1 = (5381 << 16) + 5381;
                     uint hash2 = BitOperations.RotateLeft(hash1, 5) + hash1;
 
-                    MemoryMarshal.Write(asBytes, ref seed);
-                    MemoryMarshal.Write(asBytes.Slice(4), ref hash2); // set hash2 := 0 (for Ordinal)
+                    MemoryMarshal.Write(asBytes, in seed);
+                    MemoryMarshal.Write(asBytes.Slice(4), in hash2); // set hash2 := 0 (for Ordinal)
 
                     hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (uint)seed;
                     hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1);
 
-                    MemoryMarshal.Write(asBytes.Slice(8), ref hash1); // set hash1 := 0 (for Ordinal)
+                    MemoryMarshal.Write(asBytes.Slice(8), in hash1); // set hash1 := 0 (for Ordinal)
                 });
 
                 int ordinalHashCode = nonRandomizedOrdinal(candidate);

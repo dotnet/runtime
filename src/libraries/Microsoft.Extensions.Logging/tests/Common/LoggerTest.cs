@@ -254,6 +254,25 @@ namespace Microsoft.Extensions.Logging.Test
             }
         }
 
+        [Fact]
+        public void LoggerDebuggerToString()
+        {
+            // Arrange
+            var loggerFactory = new LoggerFactory();
+            var logger = (Logger<LoggerTest>)loggerFactory.CreateLogger<LoggerTest>();
+
+            // Act
+            var beforeProvider = logger.DebuggerToString();
+
+            loggerFactory.AddProvider(new CustomLoggerProvider("provider1", ThrowExceptionAt.None, new List<string>()));
+
+            var afterProvider = logger.DebuggerToString();
+
+            // Assert
+            Assert.Equal(@"Name = ""Microsoft.Extensions.Logging.Test.LoggerTest"", Enabled = false", beforeProvider);
+            Assert.Equal(@"Name = ""Microsoft.Extensions.Logging.Test.LoggerTest"", MinLevel = Trace", afterProvider);
+        }
+
         private class CustomLoggerProvider : ILoggerProvider
         {
             private readonly string _providerName;

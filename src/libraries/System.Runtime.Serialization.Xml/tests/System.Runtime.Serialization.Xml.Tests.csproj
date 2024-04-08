@@ -3,8 +3,12 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Microsoft.XmlSerializer.Generator\tests\SerializableAssembly.csproj" />
+    <TrimmerRootAssembly Include="SerializableAssembly" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="$(TestSourceFolder)DataContractSerializerStressTests.cs" />
-    <Compile Include="$(TestSourceFolder)SerializationTypes.cs" />
+    <None Include="$(TestSourceFolder)SerializationTypes.cs" />
     <Compile Include="$(TestSourceFolder)SerializationTypes.RuntimeOnly.cs" />
     <Compile Include="$(TestSourceFolder)DataContractSerializer.cs" />
     <Compile Include="$(TestSourceFolder)MyResolver.cs" />

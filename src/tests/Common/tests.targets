@@ -80,7 +80,7 @@
 
   <Target Name="RunSingleMergedTest">
     <Exec Command="chmod +x $(TestWrapperScript)" WorkingDirectory="$(BaseOutputPathWithConfig)" EchoOff="true" Condition="'$(TargetOS)' != 'windows'" />
-    <Exec Command="$(TestWrapperScript) &gt;$(RedirectOutputToFile)" WorkingDirectory="$(BaseOutputPathWithConfig)" Timeout="$(__TestTimeout)" IgnoreExitCode="true">
+    <Exec Command="$(TestWrapperScript) &gt;$(RedirectOutputToFile) 2&gt;&amp;1" WorkingDirectory="$(BaseOutputPathWithConfig)" Timeout="$(__TestTimeout)" IgnoreExitCode="true">
       <Output TaskParameter="ExitCode" PropertyName="MergedTestExitCode" />
     </Exec>
     <Copy SourceFiles="$(TestResultsXmlFile)" DestinationFiles="$(TestResultsCopyTo)" Condition="'$(MergedTestExitCode)' == '0'" />

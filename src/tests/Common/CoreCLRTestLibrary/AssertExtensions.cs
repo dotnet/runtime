@@ -41,14 +41,11 @@ namespace Xunit
         /// <summary>
         ///     Asserts that the given delegate throws an <see cref="ArgumentException"/> of type <typeparamref name="T"/> with the given parameter name.
         /// </summary>
-        /// <param name="action">
-        ///     The delegate of type <see cref="Action"/> to execute.
-        /// </param>
-        /// <param name="message">
-        ///     A <see cref="String"/> containing additional information for when the assertion fails.
-        /// </param>
         /// <param name="parameterName">
         ///     A <see cref="String"/> containing the parameter of name to check, <see langword="null"/> to skip parameter validation.
+        /// </param>
+        /// <param name="action">
+        ///     The delegate of type <see cref="Action"/> to execute.
         /// </param>
         /// <returns>
         ///     The thrown <see cref="Exception"/>.
@@ -70,6 +67,36 @@ namespace Xunit
             if (parameterName != null)
                 Assert.Equal(parameterName, exception.ParamName);
 #endif
+
+            return exception;
+        }
+
+        /// <summary>
+        ///     Asserts that the given delegate throws an <see cref="MissingMemberException"/> of type <typeparamref name="T"/> with the given parameter name.
+        /// </summary>
+        /// <param name="memberName">
+        ///     A <see cref="String"/> containing the parameter of name to check, <see langword="null"/> to skip parameter validation.
+        /// </param>
+        /// <param name="action">
+        ///     The delegate of type <see cref="Action"/> to execute.
+        /// </param>
+        /// <returns>
+        ///     The thrown <see cref="Exception"/>.
+        /// </returns>
+        /// <exception cref="AssertFailedException">
+        ///     <see cref="Exception"/> of type <typeparam name="T"/> was not thrown.
+        ///     <para>
+        ///         -or-
+        ///     </para>
+        ///     <see cref="MissingMemberException.Message"/> does not contain <paramref name="memberName"/> .
+        /// </exception>
+        public static T ThrowsMissingMemberException<T>(string memberName, Action action)
+            where T : MissingMemberException
+        {
+            T exception = Assert.Throws<T>(action);
+
+            if (memberName != null)
+                Assert.True(exception.Message.Contains(memberName));
 
             return exception;
         }
@@ -104,10 +131,10 @@ namespace Xunit
             T outerException = Assert.Throws<T>(action);
 
             if (outerException.InnerException == null)
-                Assert.True(false, string.Format("Expected '{0}.InnerException' to be '{1}', however it is null.", typeof(T), typeof(TInner)));
+                Assert.Fail(string.Format("Expected '{0}.InnerException' to be '{1}', however it is null.", typeof(T), typeof(TInner)));
 
             if (outerException.InnerException is not TInner)
-                Assert.True(false, string.Format("Expected '{0}.InnerException', to be '{1}', however, '{2}' is.", typeof(T), typeof(TInner), outerException.InnerException.GetType()));
+                Assert.Fail(string.Format("Expected '{0}.InnerException', to be '{1}', however, '{2}' is.", typeof(T), typeof(TInner), outerException.InnerException.GetType()));
 
             return (TInner)outerException.InnerException;
         }

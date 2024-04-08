@@ -18,6 +18,8 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
 #if WINHTTPHANDLER_TEST
     using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
 #endif
@@ -168,7 +170,7 @@ namespace System.Net.Http.Functional.Tests
             using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
             using HttpClient client = CreateHttpClient(handler);
 
-            var options = new GenericLoopbackOptions { Address = TestHelper.GetIPv6LinkLocalAddress() };
+            var options = new GenericLoopbackOptions { Address = Configuration.Sockets.LinkLocalAddress };
             if (options.Address == null)
             {
                 throw new SkipTestException("Unable to find valid IPv6 LL address.");
@@ -185,7 +187,6 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalTheory]
         [MemberData(nameof(GetAsync_IPBasedUri_Success_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86326", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task GetAsync_IPBasedUri_Success(IPAddress address)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -202,11 +203,6 @@ namespace System.Net.Http.Functional.Tests
             using HttpClient client = CreateHttpClient(handler);
 
             var options = new GenericLoopbackOptions { Address = address };
-
-            if (PlatformDetection.IsAndroid && options.UseSsl && address == IPAddress.IPv6Loopback)
-            {
-                throw new SkipTestException("TargetHost cannot be set to an IPv6 address on Android because the string doesn't conform to the STD 3 ASCII rules");
-            }
 
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
@@ -286,11 +282,6 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (PlatformDetection.IsAndroid && useSsl && address == IPAddress.IPv6Loopback)
-            {
-                throw new SkipTestException("TargetHost cannot be set to an IPv6 address on Android because the string doesn't conform to the STD 3 ASCII rules");
-            }
-
             var options = new LoopbackServer.Options { Address = address, UseSsl = useSsl };
             bool connectionAccepted = false;
             string host = "";
@@ -361,7 +352,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("nocolon")]
         [InlineData("no colon")]
         [InlineData("Content-Length      ")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser is relaxed about validating HTTP headers")]
         public async Task GetAsync_InvalidHeaderNameValue_ThrowsHttpRequestException(string invalidHeader)
         {
             if (UseVersion == HttpVersion30)
@@ -383,7 +374,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true, false)]
         [InlineData(false, true)]
         [InlineData(true, true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86317", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task GetAsync_IncompleteData_ThrowsHttpRequestException(bool failDuringHeaders, bool getString)
         {
             if (IsWinHttpHandler)
@@ -394,6 +385,11 @@ namespace System.Net.Http.Functional.Tests
             if (UseVersion != HttpVersion.Version11)
             {
                 return;
+            }
+
+            if (PlatformDetection.IsBrowser && failDuringHeaders)
+            {
+                return; // chrome browser doesn't validate this
             }
 
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -773,7 +769,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "TypeError: Failed to fetch on a Browser")]
         public async Task GetAsync_NonTraditionalChunkSizes_Accepted()
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value)
@@ -826,7 +822,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("xyz")] // non-hex
         [InlineData("7gibberish")] // valid size then gibberish
         [InlineData("7\v\f")] // unacceptable whitespace
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86317", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task GetAsync_InvalidChunkSize_ThrowsHttpRequestException(string chunkSize)
         {
             if (UseVersion != HttpVersion.Version11)
@@ -859,7 +855,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86317", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task GetAsync_InvalidChunkTerminator_ThrowsHttpRequestException()
         {
             if (UseVersion != HttpVersion.Version11)
@@ -888,7 +884,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86317", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task GetAsync_InfiniteChunkSize_ThrowsHttpRequestException()
         {
             if (UseVersion != HttpVersion.Version11)
@@ -1234,7 +1230,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86326", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsStreamAsync_EmptyResponseBody_HandlerProducesWellBehavedResponseStream()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1396,15 +1391,26 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await connection.ReadRequestDataAsync();
                     tcs2.SetResult(true);
-                    await connection.SendResponseAsync(HttpStatusCode.OK, headers: new HttpHeaderData[] { new HttpHeaderData("Transfer-Encoding", "chunked") }, isFinal: false);
-                    await connection.SendResponseBodyAsync("1\r\nh\r\n", false);
+                    try
+                    {
+                        await connection.SendResponseAsync(HttpStatusCode.OK, headers: new HttpHeaderData[] { new HttpHeaderData("Transfer-Encoding", "chunked") }, isFinal: false);
+                        await connection.SendResponseBodyAsync("1\r\nh\r\n", false);
+                    }
+                    catch (IOException ex)
+                    {
+                        // when testing in the browser, we are using the WebSocket for the loopback
+                        // it could get disconnected after the cancellation above, earlier than the server-side gets chance to write the response
+                        if (!(ex.InnerException is InvalidOperationException ivd) || !ivd.Message.Contains("The WebSocket is not connected"))
+                        {
+                            throw;
+                        }
+                    }
                     await tcs.Task;
                 });
             });
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86326", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task Dispose_DisposingHandlerCancelsActiveOperationsWithoutResponses()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1478,7 +1484,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(99)]
         [InlineData(1000)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser is relaxed about validating HTTP headers")]
         public async Task GetAsync_StatusCodeOutOfRange_ExpectedException(int statusCode)
         {
             if (UseVersion == HttpVersion30)
@@ -1652,7 +1658,6 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(Interim1xxStatusCode))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86326", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task SendAsync_Unexpected1xxResponses_DropAllInterimResponses(HttpStatusCode responseStatusCode)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1753,7 +1758,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "ExpectContinue not supported on Browser")]
         public async Task SendAsync_Expect100Continue_RequestBodyFails_ThrowsContentException()
         {
             if (IsWinHttpHandler)
@@ -1893,14 +1898,27 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
-        public async Task PostAsync_ThrowFromContentCopy_RequestFails(bool syncFailure)
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task PostAsync_ThrowFromContentCopy_RequestFails(bool syncFailure, bool enableWasmStreaming)
         {
             if (UseVersion == HttpVersion30)
             {
                 // TODO: Make this version-indepdendent
+                return;
+            }
+
+            if (enableWasmStreaming && !PlatformDetection.IsBrowser)
+            {
+                // enableWasmStreaming makes only sense on Browser platform
+                return;
+            }
+
+            if (enableWasmStreaming && PlatformDetection.IsBrowser && UseVersion < HttpVersion20.Value)
+            {
+                // Browser request streaming is only supported on HTTP/2 or higher
                 return;
             }
 
@@ -1922,8 +1940,20 @@ namespace System.Net.Http.Functional.Tests
                         canReadFunc: () => true,
                         readFunc: (buffer, offset, count) => throw error,
                         readAsyncFunc: (buffer, offset, count, cancellationToken) => syncFailure ? throw error : Task.Delay(1).ContinueWith<int>(_ => throw error)));
+                    var request = new HttpRequestMessage(HttpMethod.Post, uri);
+                    request.Content = content;
 
-                    Assert.Same(error, await Assert.ThrowsAsync<FormatException>(() => client.PostAsync(uri, content)));
+                    if (PlatformDetection.IsBrowser)
+                    {
+                        if (enableWasmStreaming)
+                        {
+#if !NETFRAMEWORK
+                            request.Options.Set(new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest"), true);
+#endif
+                        }
+                    }
+
+                    Assert.Same(error, await Assert.ThrowsAsync<FormatException>(() => client.SendAsync(request)));
                 }
             });
         }
@@ -2026,7 +2056,7 @@ namespace System.Net.Http.Functional.Tests
                     }
                     else
                     {
-                        Assert.True(false, "Invalid HTTP request version");
+                        Assert.Fail("Invalid HTTP request version");
                     }
                 }
             });
@@ -2035,7 +2065,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86326", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task SendAsync_RequestVersion20_HttpNotHttps_NoUpgradeRequest()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -2071,7 +2100,6 @@ namespace System.Net.Http.Functional.Tests
 
         #region Uri wire transmission encoding tests
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86326", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task SendRequest_UriPathHasReservedChars_ServerReceivedExpectedPath()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)

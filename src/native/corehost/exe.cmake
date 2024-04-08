@@ -3,8 +3,6 @@
 
 project (${DOTNET_PROJECT_NAME})
 
-cmake_policy(SET CMP0011 NEW)
-
 include(${CMAKE_CURRENT_LIST_DIR}/common.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/hostmisc/hostmisc.cmake)
 
@@ -21,6 +19,8 @@ list(APPEND HEADERS
 )
 
 add_executable(${DOTNET_PROJECT_NAME} ${SOURCES} ${RESOURCES})
+
+add_sanitizer_runtime_support(${DOTNET_PROJECT_NAME})
 
 if(NOT CLR_CMAKE_TARGET_WIN32)
     disable_pax_mprotect(${DOTNET_PROJECT_NAME})

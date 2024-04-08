@@ -510,14 +510,6 @@ typedef struct {
 TYPED_HANDLE_DECL (MonoComObject);
 
 typedef struct {
-	MonoRealProxy real_proxy;
-	MonoComObject *com_object;
-	gint32 ref_count;
-} MonoComInteropProxy;
-
-TYPED_HANDLE_DECL (MonoComInteropProxy);
-
-typedef struct {
 	MonoObject	 object;
 	MonoRealProxy	*rp;
 	MonoRemoteClass *remote_class;
@@ -742,6 +734,19 @@ typedef struct {
 	gboolean (*get_class_from_name) (MonoImage *image, const char *name_space, const char *name, MonoClass **res);
 	gpointer (*build_imt_trampoline) (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count, gpointer fail_trunk);
 	MonoJitInfo *(*find_jit_info_in_aot) (MonoImage *image, gpointer addr);
+	/**
+	 * mono_class_set_deferred_type_load_failure_callback:
+	 * @param klass: Class in which the failure was detected.
+	 * @param fmt: printf-style error message string.
+	 *
+	 * The callback is responsible for processing the failure information provided by the @klass parameter and the error message format string @fmt.
+	 * If a deferred failure occurs, the callback should return FALSE to let the AOT compiler proceed with the class layout setup.
+	 * Otherwise, if the callback returns TRUE, it indicates that the failure should be reported.
+	 *
+	 * @returns: TRUE if the failure is handled and the runtime should not proceed with class setup, FALSE if the failure should be deferred for runtime class setup.
+	 * 
+	 */
+	gboolean (*mono_class_set_deferred_type_load_failure_callback) (MonoClass *klass, const char * fmt, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
 } MonoRuntimeCallbacks;
 
 typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);
@@ -1434,16 +1439,17 @@ typedef struct {
 
 /* Keep in sync with System.GenericParameterAttributes */
 typedef enum {
-	GENERIC_PARAMETER_ATTRIBUTE_NON_VARIANT		= 0,
-	GENERIC_PARAMETER_ATTRIBUTE_COVARIANT		= 1,
-	GENERIC_PARAMETER_ATTRIBUTE_CONTRAVARIANT	= 2,
-	GENERIC_PARAMETER_ATTRIBUTE_VARIANCE_MASK	= 3,
+	GENERIC_PARAMETER_ATTRIBUTE_NON_VARIANT		= 0x0000,
+	GENERIC_PARAMETER_ATTRIBUTE_COVARIANT		= 0x0001,
+	GENERIC_PARAMETER_ATTRIBUTE_CONTRAVARIANT	= 0x0002,
+	GENERIC_PARAMETER_ATTRIBUTE_VARIANCE_MASK	= 0x0003,
 
-	GENERIC_PARAMETER_ATTRIBUTE_NO_SPECIAL_CONSTRAINT	= 0,
-	GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT	= 4,
-	GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT	= 8,
-	GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT	= 16,
-	GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK	= 28
+	GENERIC_PARAMETER_ATTRIBUTE_NO_SPECIAL_CONSTRAINT			= 0x0000,
+	GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT		= 0x0004,
+	GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT			= 0x0008,
+	GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT			= 0x0010,
+	GENERIC_PARAMETER_ATTRIBUTE_ACCEPT_BYREFLIKE_CONSTRAINTS	= 0x0020,	// type argument can be ByRefLike
+	GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK		= 0x003c
 } GenericParameterAttributes;
 
 typedef struct {
@@ -2147,5 +2153,8 @@ mono_method_get_unmanaged_wrapper_ftnptr_internal (MonoMethod *method, gboolean 
 
 void
 mono_runtime_run_startup_hooks (void);
+
+MONO_COMPONENT_API gpointer
+mono_get_span_data_from_field (MonoClassField *field_handle, MonoType *field_type, MonoType *target_type, gint32 *count);
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */

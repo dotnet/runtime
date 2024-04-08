@@ -9,11 +9,10 @@ namespace Test
     {
         private static void Method1(TypedReference param1, object obj) { }
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             int[] an = { 0 };
             Method1(__makeref(an[0]), 1);
-            return 100;
         }
     }
 }

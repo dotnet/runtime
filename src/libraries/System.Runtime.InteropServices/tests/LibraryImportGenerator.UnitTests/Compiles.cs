@@ -1,25 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Interop.UnitTests;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
-using Xunit;
-using SourceGenerators.Tests;
-
-using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.LibraryImportGenerator>;
-using Microsoft.CodeAnalysis.Testing;
-using System.Collections.Immutable;
-using System.Threading;
-using Microsoft.CodeAnalysis.Text;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Testing;
+using Microsoft.CodeAnalysis.Text;
+using Microsoft.DotNet.XUnitExtensions.Attributes;
+using Microsoft.Interop.UnitTests;
+using Xunit;
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.LibraryImportGenerator>;
 
 namespace LibraryImportGenerator.UnitTests
 {
@@ -42,6 +41,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.AllLibraryImportNamedArguments };
             yield return new[] { ID(), CodeSnippets.DefaultParameters };
             yield return new[] { ID(), CodeSnippets.UseCSharpFeaturesForConstants };
+            yield return new[] { ID(), CodeSnippets.LibraryImportInRefStruct };
 
             // Parameter / return types
             yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<byte>() };
@@ -56,6 +56,12 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<double>() };
             yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<IntPtr>() };
             yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<UIntPtr>() };
+
+            // Parameter / return types for specially considered "strictly blittable" types.
+            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<CLong>() };
+            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<CULong>() };
+            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<NFloat>() };
+            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<Guid>() };
 
             // Arrays
             yield return new[] { ID(), CodeSnippets.MarshalAsArrayParametersAndModifiers<byte>() };
@@ -248,6 +254,10 @@ namespace LibraryImportGenerator.UnitTests
 
             // Type-level interop generator trigger attributes
             yield return new[] { ID(), CodeSnippets.GeneratedComInterface };
+
+            // Parameter modifiers
+            yield return new[] { ID(), CodeSnippets.SingleParameterWithModifier("int", "scoped ref") };
+            yield return new[] { ID(), CodeSnippets.SingleParameterWithModifier("int", "ref readonly") };
         }
 
         public static IEnumerable<object[]> CustomCollections()
@@ -470,7 +480,7 @@ namespace LibraryImportGenerator.UnitTests
             private readonly IEnumerable<string> _preprocessorSymbols;
 
             public PreprocessorTest(IEnumerable<string> preprocessorSymbols)
-                :base(referenceAncillaryInterop: false)
+                : base(referenceAncillaryInterop: false)
             {
                 _preprocessorSymbols = preprocessorSymbols;
             }
@@ -540,7 +550,7 @@ namespace LibraryImportGenerator.UnitTests
             private readonly bool _expectFallbackForwarder;
 
             public FallbackForwarderTest(TestTargetFramework targetFramework, bool expectFallbackForwarder)
-                :base(targetFramework)
+                : base(targetFramework)
             {
                 _expectFallbackForwarder = expectFallbackForwarder;
             }
@@ -583,7 +593,7 @@ namespace LibraryImportGenerator.UnitTests
         class BlittableAutoForwarderTest : VerifyCS.Test
         {
             public BlittableAutoForwarderTest()
-                :base(referenceAncillaryInterop: false)
+                : base(referenceAncillaryInterop: false)
             {
             }
 
@@ -647,8 +657,8 @@ namespace LibraryImportGenerator.UnitTests
         }
 
 #pragma warning disable xUnit1004 // Test methods should not be skipped.
-                                  // If we have any new experimental APIs that we are implementing that have not been approved,
-                                  // we will add new scenarios for this test.
+        // If we have any new experimental APIs that we are implementing that have not been approved,
+        // we will add new scenarios for this test.
         [Theory(Skip = "No current scenarios to test.")]
 #pragma warning restore xUnit1004
         [MemberData(nameof(CodeSnippetsToCompileWithMarshalType))]
@@ -724,11 +734,11 @@ namespace LibraryImportGenerator.UnitTests
         class NoChangeTest : VerifyCS.Test
         {
             public NoChangeTest(TestTargetFramework framework)
-                :base(framework)
+                : base(framework)
             {
             }
 
-            protected async override Task<(Compilation compilation, ImmutableArray<Diagnostic> generatorDiagnostics)> GetProjectCompilationAsync(Project project, IVerifier verifier, CancellationToken cancellationToken)
+            protected override async Task<(Compilation compilation, ImmutableArray<Diagnostic> generatorDiagnostics)> GetProjectCompilationAsync(Project project, IVerifier verifier, CancellationToken cancellationToken)
             {
                 var originalCompilation = await project.GetCompilationAsync(cancellationToken);
                 var (newCompilation, diagnostics) = await base.GetProjectCompilationAsync(project, verifier, cancellationToken);

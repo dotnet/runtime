@@ -8,11 +8,9 @@ using Xunit;
 public class Program
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Test();
-
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

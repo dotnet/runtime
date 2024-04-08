@@ -19,14 +19,13 @@ public class Runtime_64883
 {
     public static uint s_29;
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         // This needs an ALC because the "static access" helper is different in ALCs.
         CollectibleALC alc = new CollectibleALC();
         Assembly asm = alc.LoadFromAssemblyPath(Assembly.GetExecutingAssembly().Location);
         MethodInfo mi = asm.GetType(nameof(Runtime_64883)).GetMethod(nameof(MainT));
         mi.Invoke(null, new object[0]);
-        return 100;
     }
 
 // Allow reflection lookup on public method

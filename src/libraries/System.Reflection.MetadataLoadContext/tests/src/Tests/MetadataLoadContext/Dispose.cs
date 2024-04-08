@@ -24,7 +24,7 @@ namespace System.Reflection.Tests
                 }
                 catch (Exception)
                 {
-                    Assert.True(false, "PE image file still locked after disposing MetadataLoadContext: " + tf.Path);
+                    Assert.Fail("PE image file still locked after disposing MetadataLoadContext: " + tf.Path);
                 }
             }
         }

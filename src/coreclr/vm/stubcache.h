@@ -67,13 +67,9 @@ protected:
     // This method should compile into the provided stublinker (but
     // not call the Link method.)
     //
-    // It should return the chosen compilation mode.
-    //
-    // If the method fails for some reason, it should return
-    // INTERPRETED so that the EE can fall back on the already
-    // created ML code.
+    // It can return flags that will be passed to StubLinker::Link().
     //---------------------------------------------------------
-    virtual void CompileStub(const BYTE *pRawStub,
+    virtual DWORD CompileStub(const BYTE *pRawStub,
                              StubLinker *psl) = 0;
 
     //---------------------------------------------------------

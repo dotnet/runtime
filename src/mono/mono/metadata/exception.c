@@ -1219,31 +1219,41 @@ mono_invoke_unhandled_exception_hook (MonoObject *exc)
 		unhandled_exception_hook (exc, unhandled_exception_hook_data);
 	} else {
 		ERROR_DECL (inner_error);
-		MonoObject *other = NULL;
-		MonoString *str = mono_object_try_to_string (exc, &other, inner_error);
 		char *msg = NULL;
 
-		if (str && is_ok (inner_error)) {
-			msg = mono_string_to_utf8_checked_internal (str, inner_error);
-			if (!is_ok (inner_error)) {
-				msg = g_strdup_printf ("Nested exception while formatting original exception");
-				mono_error_cleanup (inner_error);
-			}
-		} else if (other) {
-			char *original_backtrace = mono_exception_get_managed_backtrace ((MonoException*)exc);
-			char *nested_backtrace = mono_exception_get_managed_backtrace ((MonoException*)other);
+		if (exc == (MonoObject*)mono_domain_get ()->stack_overflow_ex) {
+			// Build stack trace directly instead of calling ToString so we don't put
+			// additional pressure on the limited stack
+			char *backtrace = mono_exception_get_managed_backtrace ((MonoException*)exc);
 
-			msg = g_strdup_printf ("Nested exception detected.\nOriginal Exception: %s\nNested exception:%s\n",
-				original_backtrace, nested_backtrace);
-
-			g_free (original_backtrace);
-			g_free (nested_backtrace);
+			msg = g_strdup_printf ("System.StackOverflowException: The requested operation caused a stack overflow.\n%s\n",
+				backtrace);
 		} else {
-			msg = g_strdup ("Nested exception trying to figure out what went wrong");
+			MonoObject *other = NULL;
+			MonoString *str = mono_object_try_to_string (exc, &other, inner_error);
+
+			if (str && is_ok (inner_error)) {
+				msg = mono_string_to_utf8_checked_internal (str, inner_error);
+				if (!is_ok (inner_error)) {
+					msg = g_strdup_printf ("Nested exception while formatting original exception");
+					mono_error_cleanup (inner_error);
+				}
+			} else if (other) {
+				char *original_backtrace = mono_exception_get_managed_backtrace ((MonoException*)exc);
+				char *nested_backtrace = mono_exception_get_managed_backtrace ((MonoException*)other);
+
+				msg = g_strdup_printf ("Nested exception detected.\nOriginal Exception: %s\nNested exception:%s\n",
+					original_backtrace, nested_backtrace);
+
+				g_free (original_backtrace);
+				g_free (nested_backtrace);
+			} else {
+				msg = g_strdup ("Nested exception trying to figure out what went wrong");
+			}
 		}
 		mono_runtime_printf_err ("[ERROR] FATAL UNHANDLED EXCEPTION: %s", msg);
 		g_free (msg);
-#if defined(HOST_IOS)
+#if defined(HOST_IOS) || defined(HOST_TVOS)
 		g_assertion_message ("Terminating runtime due to unhandled exception");
 #else
 		exit (mono_environment_exitcode_get ());

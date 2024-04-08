@@ -4,9 +4,9 @@
 using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json
 {
@@ -200,7 +200,7 @@ namespace System.Text.Json
 
         internal ReadOnlyMemory<byte> GetRootRawValue()
         {
-            return GetRawValue(0, includeQuotes : true);
+            return GetRawValue(0, includeQuotes: true);
         }
 
         internal ReadOnlyMemory<byte> GetRawValue(int index, bool includeQuotes)
@@ -286,8 +286,6 @@ namespace System.Text.Json
         internal bool TextEquals(int index, ReadOnlySpan<char> otherText, bool isPropertyName)
         {
             CheckNotDisposed();
-
-            int matchIndex = isPropertyName ? index - DbRow.Size : index;
 
             byte[]? otherUtf8TextArray = null;
 
@@ -874,6 +872,15 @@ namespace System.Text.Json
                 rented.AsSpan().Clear();
                 ArrayPool<byte>.Shared.Return(rented.Array);
             }
+        }
+
+        internal void WritePropertyName(int index, Utf8JsonWriter writer)
+        {
+            CheckNotDisposed();
+
+            DbRow row = _parsedData.Get(index - DbRow.Size);
+            Debug.Assert(row.TokenType == JsonTokenType.PropertyName);
+            WritePropertyName(row, writer);
         }
 
         private void WritePropertyName(in DbRow row, Utf8JsonWriter writer)

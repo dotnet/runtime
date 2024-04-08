@@ -16,7 +16,7 @@ namespace GCTest_gcarr_cs
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Test[] arr = new Test[97];
             for (int i = 0; i < 97; i++)
@@ -31,7 +31,6 @@ namespace GCTest_gcarr_cs
             GC.WaitForPendingFinalizers();
             GC.Collect();
             Console.WriteLine("Test passed.");
-            return 100;
         }
     }
 }

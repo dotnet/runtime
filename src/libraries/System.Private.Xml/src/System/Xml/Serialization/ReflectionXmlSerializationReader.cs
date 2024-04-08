@@ -89,7 +89,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
-        private object GenerateMembersElement(XmlMembersMapping xmlMembersMapping)
+        private object?[] GenerateMembersElement(XmlMembersMapping xmlMembersMapping)
         {
             if (xmlMembersMapping.Accessor.IsSoap)
             {
@@ -102,7 +102,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
-        private object GenerateLiteralMembersElement(XmlMembersMapping xmlMembersMapping)
+        private object[] GenerateLiteralMembersElement(XmlMembersMapping xmlMembersMapping)
         {
             ElementAccessor element = xmlMembersMapping.Accessor;
             MemberMapping[] mappings = ((MembersMapping)element.Mapping!).Members!;
@@ -322,7 +322,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
-        private object GenerateEncodedMembersElement(XmlMembersMapping xmlMembersMapping)
+        private object?[] GenerateEncodedMembersElement(XmlMembersMapping xmlMembersMapping)
         {
             ElementAccessor element = xmlMembersMapping.Accessor;
             var membersMapping = (MembersMapping)element.Mapping!;
@@ -572,8 +572,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    Type elementType = collectionType.GetElementType()!;
-                    a = Array.CreateInstance(elementType, collectionMember.Count);
+                    a = Array.CreateInstanceFromArrayType(collectionType, collectionMember.Count);
                 }
 
                 for (int i = 0; i < collectionMember.Count; i++)
@@ -652,7 +651,7 @@ namespace System.Xml.Serialization
 
                         MethodInfo getSetMemberValueDelegateWithTypeGenericMi = typeof(ReflectionXmlSerializationReaderHelper).GetMethod("GetSetMemberValueDelegateWithType", BindingFlags.Static | BindingFlags.Public)!;
                         MethodInfo getSetMemberValueDelegateWithTypeMi = getSetMemberValueDelegateWithTypeGenericMi.MakeGenericMethod(o.GetType(), memberType);
-                        var getSetMemberValueDelegateWithType = (Func<MemberInfo, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>)getSetMemberValueDelegateWithTypeMi.CreateDelegate(typeof(Func<MemberInfo, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>));
+                        var getSetMemberValueDelegateWithType = getSetMemberValueDelegateWithTypeMi.CreateDelegate<Func<MemberInfo, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>>();
                         result = getSetMemberValueDelegateWithType(memberInfo);
                         delegateCacheForType[memberName] = result;
                     }
@@ -2122,7 +2121,7 @@ namespace System.Xml.Serialization
                         return propInfo.SetValue;
                     }
 
-                    setTypedDelegate = (Action<TObj, TParam>)setMethod.CreateDelegate(typeof(Action<TObj, TParam>));
+                    setTypedDelegate = setMethod.CreateDelegate<Action<TObj, TParam>>();
                 }
                 else if (memberInfo is FieldInfo fieldInfo)
                 {

@@ -1,21 +1,21 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime;
-using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime;
+using System.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
     internal static class InvokeUtils
     {
         // This method is similar to the NativeAot method ConvertOrWidenPrimitivesEnumsAndPointersIfPossible().
-        public static object ConvertOrWiden(Type srcType, object srcObject, Type dstType, CorElementType dstElementType)
+        public static object ConvertOrWiden(RuntimeType srcType, object srcObject, RuntimeType dstType, CorElementType dstElementType)
         {
             object dstObject;
 
-            if (dstType.IsPointer)
+            if (dstType.IsPointer || dstType.IsFunctionPointer)
             {
                 if (TryConvertPointer(srcObject, out object? dstPtr))
                 {

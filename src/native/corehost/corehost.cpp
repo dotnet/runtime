@@ -19,7 +19,6 @@
 #endif
 
 #define CURHOST_TYPE    _X("apphost")
-#define CUREXE_PKG_VER  COMMON_HOST_PKG_VER
 #define CURHOST_EXE
 
 /**
@@ -80,7 +79,6 @@ bool is_exe_enabled_for_execution(pal::string_t* app_dll)
 
 #elif !defined(FEATURE_LIBHOST)
 #define CURHOST_TYPE    _X("dotnet")
-#define CUREXE_PKG_VER  HOST_PKG_VER
 #define CURHOST_EXE
 #endif
 
@@ -91,10 +89,10 @@ void need_newer_framework_error(const pal::string_t& dotnet_root, const pal::str
         INSTALL_OR_UPDATE_NET_ERROR_MESSAGE,
         host_path.c_str(),
         get_current_arch_name(),
-        _STRINGIFY(COMMON_HOST_PKG_VER),
+        _STRINGIFY(HOST_VERSION),
         dotnet_root.c_str(),
         get_download_url().c_str(),
-        _STRINGIFY(COMMON_HOST_PKG_VER));
+        _STRINGIFY(HOST_VERSION));
 }
 
 #if defined(CURHOST_EXE)
@@ -294,7 +292,7 @@ int main(const int argc, const pal::char_t* argv[])
 
     if (trace::is_enabled())
     {
-        trace::info(_X("--- Invoked %s [version: %s, commit hash: %s] main = {"), CURHOST_TYPE, _STRINGIFY(CUREXE_PKG_VER), _STRINGIFY(REPO_COMMIT_HASH));
+        trace::info(_X("--- Invoked %s [version: %s] main = {"), CURHOST_TYPE, get_host_version_description().c_str());
         for (int i = 0; i < argc; ++i)
         {
             trace::info(_X("%s"), argv[i]);

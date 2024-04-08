@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Diagnostics;
+using ILCompiler;
 using Internal.TypeSystem;
 
 namespace Internal.JitInterface
@@ -28,32 +29,14 @@ namespace Internal.JitInterface
                 return (uint)StructFloatFieldInfoFlags.STRUCT_NO_FLOAT_FIELD;
             }
 
-            //// The SIMD Intrinsic types are meant to be handled specially and should not be passed as struct registers
-            if (typeDesc.IsIntrinsic)
-            {
-                throw new NotImplementedException("For RISCV64, SIMD would be implemented later");
-            }
-
             MetadataType mdType = typeDesc as MetadataType;
             Debug.Assert(mdType != null);
 
             TypeDesc firstFieldElementType = firstField.FieldType;
             int firstFieldSize = firstFieldElementType.GetElementSize().AsInt;
+            bool hasImpliedRepeatedFields = mdType.HasImpliedRepeatedFields();
 
-            // A fixed buffer type is always a value type that has exactly one value type field at offset 0
-            // and who's size is an exact multiple of the size of the field.
-            // It is possible that we catch a false positive with this check, but that chance is extremely slim
-            // and the user can always change their structure to something more descriptive of what they want
-            // instead of adding additional padding at the end of a one-field structure.
-            // We do this check here to save looking up the FixedBufferAttribute when loading the field
-            // from metadata.
-            bool isFixedBuffer = numIntroducedFields == 1
-                                    && firstFieldElementType.IsValueType
-                                    && firstField.Offset.AsInt == 0
-                                    && mdType.HasLayout()
-                                    && ((typeDesc.GetElementSize().AsInt % firstFieldSize) == 0);
-
-            if (isFixedBuffer)
+            if (hasImpliedRepeatedFields)
             {
                 numIntroducedFields = typeDesc.GetElementSize().AsInt / firstFieldSize;
                 if (numIntroducedFields > 2)
@@ -96,6 +79,16 @@ namespace Internal.JitInterface
                         {
                             floatFieldFlags |= (uint)StructFloatFieldInfoFlags.STRUCT_SECOND_FIELD_DOUBLE;
                         }
+
+                        // Pass with two integer registers in `struct {int a, int b, float/double c}` cases
+                        if (fieldIndex == 1 &&
+                                (floatFieldFlags |
+                                 (uint)StructFloatFieldInfoFlags.STRUCT_FIRST_FIELD_SIZE_IS8 |
+                                 (uint)StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_SECOND) ==
+                                floatFieldFlags)
+                        {
+                            floatFieldFlags = (uint)StructFloatFieldInfoFlags.STRUCT_NO_FLOAT_FIELD;
+                        }
                     }
                     break;
 
@@ -116,6 +109,16 @@ namespace Internal.JitInterface
                         else
                         {
                             floatFieldFlags |= (uint)StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_SECOND;
+                        }
+
+                        // Pass with two integer registers in `struct {int a, int b, float/double c}` cases
+                        if (fieldIndex == 1 &&
+                                (floatFieldFlags |
+                                 (uint)StructFloatFieldInfoFlags.STRUCT_FIRST_FIELD_SIZE_IS8 |
+                                 (uint)StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_SECOND) ==
+                                floatFieldFlags)
+                        {
+                            floatFieldFlags = (uint)StructFloatFieldInfoFlags.STRUCT_NO_FLOAT_FIELD;
                         }
                     }
                     break;

@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Xml;
-using System.Runtime.Serialization;
-using System.Globalization;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Runtime.Serialization;
+using System.Xml;
 
 namespace System.Runtime.Serialization.Json
 {
@@ -153,37 +153,29 @@ namespace System.Runtime.Serialization.Json
                 throw new FormatException(SR.Format(SR.JsonInvalidDateTimeString, originalDateTimeValue, JsonGlobals.DateTimeStartGuardWriter, JsonGlobals.DateTimeEndGuardWriter));
             }
 
-            string ticksvalue = dateTimeValue.Substring(6, dateTimeValue.Length - 8);
+            ReadOnlySpan<char> ticksvalue = dateTimeValue.AsSpan(6, dateTimeValue.Length - 8);
             long millisecondsSinceUnixEpoch;
             DateTimeKind dateTimeKind = DateTimeKind.Utc;
-            int indexOfTimeZoneOffset = ticksvalue.IndexOf('+', 1);
+            int indexOfTimeZoneOffset = ticksvalue.Slice(1).IndexOf('+');
 
             if (indexOfTimeZoneOffset == -1)
             {
-                indexOfTimeZoneOffset = ticksvalue.IndexOf('-', 1);
+                indexOfTimeZoneOffset = ticksvalue.Slice(1).IndexOf('-');
             }
 
-            if (indexOfTimeZoneOffset != -1)
+            if (indexOfTimeZoneOffset >= 0)
             {
                 dateTimeKind = DateTimeKind.Local;
-                ticksvalue = ticksvalue.Substring(0, indexOfTimeZoneOffset);
+                ticksvalue = ticksvalue.Slice(0, indexOfTimeZoneOffset + 1); // +1 for Slice above
             }
 
             try
             {
                 millisecondsSinceUnixEpoch = long.Parse(ticksvalue, CultureInfo.InvariantCulture);
             }
-            catch (ArgumentException exception)
+            catch (Exception exception) when (exception is ArgumentException or FormatException or OverflowException)
             {
-                throw XmlExceptionHelper.CreateConversionException(ticksvalue, "Int64", exception);
-            }
-            catch (FormatException exception)
-            {
-                throw XmlExceptionHelper.CreateConversionException(ticksvalue, "Int64", exception);
-            }
-            catch (OverflowException exception)
-            {
-                throw XmlExceptionHelper.CreateConversionException(ticksvalue, "Int64", exception);
+                throw XmlExceptionHelper.CreateConversionException(ticksvalue.ToString(), "Int64", exception);
             }
 
             // Convert from # milliseconds since epoch to # of 100-nanosecond units, which is what DateTime understands
@@ -205,7 +197,7 @@ namespace System.Runtime.Serialization.Json
             }
             catch (ArgumentException exception)
             {
-                throw XmlExceptionHelper.CreateConversionException(ticksvalue, "DateTime", exception);
+                throw XmlExceptionHelper.CreateConversionException(ticksvalue.ToString(), "DateTime", exception);
             }
         }
 

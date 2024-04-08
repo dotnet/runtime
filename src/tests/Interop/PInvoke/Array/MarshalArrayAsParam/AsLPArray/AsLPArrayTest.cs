@@ -6,6 +6,8 @@ using System.Runtime.InteropServices;
 using TestLibrary;
 using Xunit;
 
+namespace MarshalArrayAsParam.LPArray;
+
 public class ArrayMarshal
 {
     private static int NumArrOfStructElements1 = 10;
@@ -374,7 +376,7 @@ public class ArrayMarshal
 
         int[] iArrLength0 = InitArray<int>(0);
         Assert.True(CStyle_Array_Int_InOut_ZeroLength(iArrLength0));
-        Assert.Equal(0, iArrLength0.Length);
+        Assert.Empty(iArrLength0);
 
         uint[] uiArr = InitArray<uint>(ARRAY_SIZE);
         Assert.True(CStyle_Array_Uint_InOut(uiArr, ARRAY_SIZE));
@@ -503,7 +505,7 @@ public class ArrayMarshal
 
         int[] iArrLength0 = new int[0];
         Assert.True(CStyle_Array_Int_Out_ZeroLength(iArrLength0));
-        Assert.Equal(0, iArrLength0.Length);
+        Assert.Empty(iArrLength0);
 
         uint[] uiArr = new uint[ARRAY_SIZE];
         Assert.True(CStyle_Array_Uint_Out(uiArr, ARRAY_SIZE));
@@ -630,7 +632,11 @@ public class ArrayMarshal
     }
     #endregion
 
-    public static int Main()
+    [Fact]
+    [SkipOnMono("needs triage")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/81674", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    public static int TestEntryPoint()
     {
         try{
             TestMarshalByVal_NoAttributes();

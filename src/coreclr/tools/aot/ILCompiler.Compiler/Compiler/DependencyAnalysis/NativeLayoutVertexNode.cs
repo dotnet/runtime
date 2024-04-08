@@ -909,6 +909,15 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
+            foreach (GenericParameterDesc genericParam in _method.GetTypicalMethodDefinition().Instantiation)
+            {
+                foreach (TypeDesc typeConstraint in genericParam.TypeConstraints)
+                {
+                    if (typeConstraint.IsInterface)
+                        yield return new DependencyListEntry(context.InterfaceUse(typeConstraint.GetTypeDefinition()), "Used as constraint");
+                }
+            }
+
             yield return new DependencyListEntry(context.GenericDictionaryLayout(_method), "Dictionary layout");
         }
 
@@ -1024,6 +1033,15 @@ namespace ILCompiler.DependencyAnalysis
             if (context.PreinitializationManager.HasLazyStaticConstructor(_type.ConvertToCanonForm(CanonicalFormKind.Specific)))
             {
                 yield return new DependencyListEntry(context.MethodEntrypoint(_type.GetStaticConstructor().GetCanonMethodTarget(CanonicalFormKind.Specific)), "cctor for template");
+            }
+
+            foreach (GenericParameterDesc genericParam in _type.GetTypeDefinition().Instantiation)
+            {
+                foreach (TypeDesc typeConstraint in genericParam.TypeConstraints)
+                {
+                    if (typeConstraint.IsInterface)
+                        yield return new DependencyListEntry(context.InterfaceUse(typeConstraint.GetTypeDefinition()), "Used as constraint");
+                }
             }
 
             if (!_isUniversalCanon)
@@ -1359,7 +1377,7 @@ namespace ILCompiler.DependencyAnalysis
         /// Do not adjust vtable index for generic dictionary slot
         /// The vtable index is only actually valid if whichEntries is set to VTableEntriesToProcess.AllInVTable
         /// </summary>
-        private void ProcessVTableEntriesForCallingConventionSignatureGeneration(NodeFactory factory, VTableEntriesToProcess whichEntries, ref int currentVTableIndex, Action<int, bool, MethodDesc, MethodDesc> operation, TypeDesc implType, TypeDesc declType, TypeDesc templateType)
+        private static void ProcessVTableEntriesForCallingConventionSignatureGeneration(NodeFactory factory, VTableEntriesToProcess whichEntries, ref int currentVTableIndex, Action<int, bool, MethodDesc, MethodDesc> operation, TypeDesc implType, TypeDesc declType, TypeDesc templateType)
         {
             if (implType.IsInterface)
                 return;
@@ -1387,7 +1405,7 @@ namespace ILCompiler.DependencyAnalysis
                         break;
 
                     case VTableEntriesToProcess.AllOnTypesThatShouldProduceFullVTables:
-                        if (factory.VTable(declType).HasFixedSlots)
+                        if (factory.VTable(declType).HasKnownVirtualMethodUse)
                         {
                             vtableEntriesToProcess = factory.VTable(declType).Slots;
                         }
@@ -1398,7 +1416,7 @@ namespace ILCompiler.DependencyAnalysis
                         break;
 
                     case VTableEntriesToProcess.AllOnTypesThatProducePartialVTables:
-                        if (factory.VTable(declType).HasFixedSlots)
+                        if (factory.VTable(declType).HasKnownVirtualMethodUse)
                         {
                             vtableEntriesToProcess = Array.Empty<MethodDesc>();
                         }
@@ -1433,7 +1451,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 MethodDesc implMethod = closestDefType.FindVirtualFunctionTargetMethodOnObjectType(declMethod);
 
-                if (implMethod.CanMethodBeInSealedVTable() && !implType.IsArrayTypeWithoutGenericInterfaces())
+                if (implMethod.CanMethodBeInSealedVTable(factory) && !implType.IsArrayTypeWithoutGenericInterfaces())
                 {
                     // Sealed vtable entries on other types in the hierarchy should not be reported (types read entries
                     // from their own sealed vtables, and not from the sealed vtables of base types).
@@ -1621,7 +1639,7 @@ namespace ILCompiler.DependencyAnalysis
             if (method.IsRuntimeDeterminedExactMethod)
                 method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            if (!factory.VTable(method.OwningType).HasFixedSlots)
+            if (!factory.VTable(method.OwningType).HasKnownVirtualMethodUse)
             {
                 yield return new DependencyListEntry(factory.VirtualMethodUse(method), "Slot number");
             }

@@ -84,7 +84,7 @@ namespace System.Net
             }
 
             _method = req[parts[0]];
-            if (_method.AsSpan().IndexOfAnyExcept(s_validMethodChars) >= 0)
+            if (_method.AsSpan().ContainsAnyExcept(s_validMethodChars))
             {
                 _context.ErrorMessage = "(Invalid verb)";
                 return;
@@ -125,45 +125,23 @@ namespace System.Net
         private static bool MaybeUri(string s)
         {
             int p = s.IndexOf(':');
-            if (p == -1)
-                return false;
-
-            if (p >= 10)
-                return false;
-
-            return IsPredefinedScheme(s.Substring(0, p));
-        }
-
-        private static bool IsPredefinedScheme(string scheme)
-        {
-            if (scheme == null || scheme.Length < 3)
-                return false;
-
-            char c = scheme[0];
-            if (c == 'h')
-                return (scheme == UriScheme.Http ||  scheme == UriScheme.Https);
-            if (c == 'f')
-                return (scheme == UriScheme.File || scheme == UriScheme.Ftp);
-
-            if (c == 'n')
-            {
-                c = scheme[1];
-                if (c == 'e')
-                    return (scheme == UriScheme.News || scheme == UriScheme.NetPipe || scheme == UriScheme.NetTcp);
-                if (scheme == UriScheme.Nntp)
-                    return true;
-                return false;
-            }
-            if ((c == 'g' && scheme == UriScheme.Gopher) || (c == 'm' && scheme == UriScheme.Mailto))
-                return true;
-
-            return false;
+            return (uint)p < 10 && s.AsSpan(0, p) is
+                UriScheme.Http or
+                UriScheme.Https or
+                UriScheme.File or
+                UriScheme.Ftp or
+                UriScheme.News or
+                UriScheme.NetPipe or
+                UriScheme.NetTcp or
+                UriScheme.Nntp or
+                UriScheme.Gopher or
+                UriScheme.Mailto;
         }
 
         internal void FinishInitialization()
         {
-            string host = UserHostName;
-            if (_version > HttpVersion.Version10 && string.IsNullOrEmpty(host))
+            ReadOnlySpan<char> host = UserHostName;
+            if (_version > HttpVersion.Version10 && host.IsEmpty)
             {
                 _context.ErrorMessage = "Invalid host name";
                 return;
@@ -177,7 +155,7 @@ namespace System.Net
             else
                 path = _rawUrl;
 
-            if (string.IsNullOrEmpty(host))
+            if (host.IsEmpty)
                 host = UserHostAddress;
 
             if (raw_uri != null)
@@ -185,7 +163,7 @@ namespace System.Net
 
             int colon = host.IndexOf(':');
             if (colon >= 0)
-                host = host.Substring(0, colon);
+                host = host.Slice(0, colon);
 
             string base_uri = $"{RequestScheme}://{host}:{LocalEndPoint!.Port}";
 

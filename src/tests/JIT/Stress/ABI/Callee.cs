@@ -52,13 +52,23 @@ namespace ABIStress
             for (int i = 0; i < Parameters.Count; i++)
             {
                 TypeEx pm = Parameters[i];
-                g.Emit(OpCodes.Ldloca, hashCode);
+                foreach ((int start, int end) in pm.DataSegments)
+                {
+                    g.Emit(OpCodes.Ldloca, hashCode);
 
-                g.Emit(OpCodes.Ldarga, checked((short)i));
-                g.Emit(OpCodes.Ldc_I4, pm.Size);
-                g.Emit(OpCodes.Call, s_memoryMarshalCreateReadOnlySpanMethod);
+                    g.Emit(OpCodes.Ldarga, checked((short)i));
+                    if (start > 0)
+                    {
+                        g.Emit(OpCodes.Ldc_I4, start);
+                        g.Emit(OpCodes.Conv_I);
+                        g.Emit(OpCodes.Add);
+                    }
 
-                g.Emit(OpCodes.Call, s_hashCodeAddBytesMethod);
+                    g.Emit(OpCodes.Ldc_I4, end - start);
+                    g.Emit(OpCodes.Call, s_memoryMarshalCreateReadOnlySpanMethod);
+
+                    g.Emit(OpCodes.Call, s_hashCodeAddBytesMethod);
+                }
             }
 
             g.Emit(OpCodes.Ldloca, hashCode);

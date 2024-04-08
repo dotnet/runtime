@@ -60,7 +60,7 @@ public unsafe class Runtime_76194
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         nuint pageSize = (nuint)Environment.SystemPageSize;
         for (int i = 0; i < 100; i++)
@@ -84,7 +84,6 @@ public unsafe class Runtime_76194
 
             CrossplatVirtualAlloc.Free(ptr, pageSize);
         }
-        return 100;
     }
 }
 

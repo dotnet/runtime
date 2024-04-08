@@ -3,10 +3,6 @@
 
 /*
 * Regression test for Dev11 243742 [Triton]
-* precommands:
-* set DOTNET_ZAPREQUIRE=2
-* set CORECLR_PREJITType=MDIL
-* del /q nitype.signal
 *
 * Execute:
 * %CORE_ROOT%\fxprun.exe App.exe
@@ -56,14 +52,13 @@ namespace BadOverride1
     public static class App
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Dll.Apis.RunDllCode();
             Console.Write("\r\n");
             var derivedType = new DerivedType();
             derivedType.RunGenericMethod<int, string>(22);
             Console.Write("Call completed successfully.\r\n");
-            return 100;
         }
     }
 }

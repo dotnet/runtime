@@ -7,9 +7,9 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
+using System.Security;
 using System.Text;
 using System.Threading;
-using System.Security;
 using Microsoft.Win32.SafeHandles;
 
 namespace System
@@ -18,19 +18,36 @@ namespace System
     {
         private const string DefaultTimeZoneDirectory = "/usr/share/zoneinfo/";
 
-        // UTC aliases per https://github.com/unicode-org/cldr/blob/master/common/bcp47/timezone.xml
+        // Set fallback values using abbreviations, base offset, and id
+        // These are expected in environments without time zone globalization data
+        private string? _standardAbbrevName;
+        private string? _daylightAbbrevName;
+
+        // Handle UTC and its aliases per https://github.com/unicode-org/cldr/blob/master/common/bcp47/timezone.xml
         // Hard-coded because we need to treat all aliases of UTC the same even when globalization data is not available.
         // (This list is not likely to change.)
-        private static readonly string[] s_UtcAliases = new[] {
-            "Etc/UTC",
-            "Etc/UCT",
-            "Etc/Universal",
-            "Etc/Zulu",
-            "UCT",
-            "UTC",
-            "Universal",
-            "Zulu"
-        };
+        private static bool IsUtcAlias(string id)
+        {
+            switch ((ushort)id[0])
+            {
+                case 69: // e
+                case 101: // E
+                    return string.Equals(id, "Etc/UTC", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(id, "Etc/UCT", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(id, "Etc/Universal", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(id, "Etc/Zulu", StringComparison.OrdinalIgnoreCase);
+                case 85: // u
+                case 117: // U
+                    return string.Equals(id, "UCT", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(id, "UTC", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(id, "Universal", StringComparison.OrdinalIgnoreCase);
+                case 90: // z
+                case 122: // Z
+                    return string.Equals(id, "Zulu", StringComparison.OrdinalIgnoreCase);
+            }
+
+            return false;
+        }
 
         private TimeZoneInfo(byte[] data, string id, bool dstDisabled)
         {
@@ -38,28 +55,21 @@ namespace System
 
             HasIanaId = true;
 
-            // Handle UTC and its aliases
-            if (StringArrayContains(_id, s_UtcAliases, StringComparison.OrdinalIgnoreCase))
+            if (IsUtcAlias(id))
             {
-                _standardDisplayName = GetUtcStandardDisplayName();
-                _daylightDisplayName = _standardDisplayName;
-                _displayName = GetUtcFullDisplayName(_id, _standardDisplayName);
                 _baseUtcOffset = TimeSpan.Zero;
                 _adjustmentRules = Array.Empty<AdjustmentRule>();
                 return;
             }
 
-            TZifHead t;
             DateTime[] dts;
             byte[] typeOfLocalTime;
             TZifType[] transitionType;
             string zoneAbbreviations;
             string? futureTransitionsPosixFormat;
-            string? standardAbbrevName = null;
-            string? daylightAbbrevName = null;
 
             // parse the raw TZif bytes; this method can throw ArgumentException when the data is malformed.
-            TZif_ParseRaw(data, out t, out dts, out typeOfLocalTime, out transitionType, out zoneAbbreviations, out futureTransitionsPosixFormat);
+            TZif_ParseRaw(data, out dts, out typeOfLocalTime, out transitionType, out zoneAbbreviations, out futureTransitionsPosixFormat);
 
             // find the best matching baseUtcOffset and display strings based on the current utcNow value.
             // NOTE: read the Standard and Daylight display strings from the tzfile now in case they can't be loaded later
@@ -71,11 +81,11 @@ namespace System
                 if (!transitionType[type].IsDst)
                 {
                     _baseUtcOffset = transitionType[type].UtcOffset;
-                    standardAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[type].AbbreviationIndex);
+                    _standardAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[type].AbbreviationIndex);
                 }
                 else
                 {
-                    daylightAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[type].AbbreviationIndex);
+                    _daylightAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[type].AbbreviationIndex);
                 }
             }
 
@@ -88,23 +98,14 @@ namespace System
                     if (!transitionType[i].IsDst)
                     {
                         _baseUtcOffset = transitionType[i].UtcOffset;
-                        standardAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[i].AbbreviationIndex);
+                        _standardAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[i].AbbreviationIndex);
                     }
                     else
                     {
-                        daylightAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[i].AbbreviationIndex);
+                        _daylightAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[i].AbbreviationIndex);
                     }
                 }
             }
-
-            // Set fallback values using abbreviations, base offset, and id
-            // These are expected in environments without time zone globalization data
-            _standardDisplayName = standardAbbrevName;
-            _daylightDisplayName = daylightAbbrevName ?? standardAbbrevName;
-            _displayName = string.Create(null, stackalloc char[256], $"(UTC{(_baseUtcOffset >= TimeSpan.Zero ? '+' : '-')}{_baseUtcOffset:hh\\:mm}) {_id}");
-
-            // Try to populate the display names from the globalization data
-            TryPopulateTimeZoneDisplayNamesFromGlobalizationData(_id, _baseUtcOffset, ref _standardDisplayName, ref _daylightDisplayName, ref _displayName);
 
             // TZif supports seconds-level granularity with offsets but TimeZoneInfo only supports minutes since it aligns
             // with DateTimeOffset, SQL Server, and the W3C XML Specification
@@ -219,6 +220,62 @@ namespace System
             return rulesList.ToArray();
         }
 
+        private string? PopulateDisplayName()
+        {
+            if (IsUtcAlias(Id))
+                return GetUtcFullDisplayName(Id, StandardName);
+
+            // Set fallback value using abbreviations, base offset, and id
+            // These are expected in environments without time zone globalization data
+            string? displayName = string.Create(null, stackalloc char[256], $"(UTC{(_baseUtcOffset >= TimeSpan.Zero ? '+' : '-')}{_baseUtcOffset:hh\\:mm}) {_id}");
+            if (GlobalizationMode.Invariant)
+                return displayName;
+
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (!GlobalizationMode.Hybrid)
+                return displayName;
+#endif
+            GetFullValueForDisplayNameField(Id, BaseUtcOffset, ref displayName);
+
+            return displayName;
+        }
+
+        private string? PopulateStandardDisplayName()
+        {
+            if (IsUtcAlias(Id))
+                return GetUtcStandardDisplayName();
+
+            string? standardDisplayName = _standardAbbrevName;
+            if (GlobalizationMode.Invariant)
+                return standardDisplayName;
+
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (!GlobalizationMode.Hybrid)
+                return standardDisplayName;
+#endif
+            GetStandardDisplayName(Id, ref standardDisplayName);
+
+            return standardDisplayName;
+        }
+
+        private string? PopulateDaylightDisplayName()
+        {
+            if (IsUtcAlias(Id))
+                return StandardName;
+
+            string? daylightDisplayName = _daylightAbbrevName ?? _standardAbbrevName;
+            if (GlobalizationMode.Invariant)
+                return daylightDisplayName;
+
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (!GlobalizationMode.Hybrid)
+                return daylightDisplayName;
+#endif
+            GetDaylightDisplayName(Id, ref daylightDisplayName);
+
+            return daylightDisplayName;
+        }
+
         private static void PopulateAllSystemTimeZones(CachedData cachedData)
         {
             Debug.Assert(Monitor.IsEntered(cachedData));
@@ -271,59 +328,13 @@ namespace System
 
         /// <summary>
         /// Helper function for retrieving a TimeZoneInfo object by time_zone_name.
-        /// This function wraps the logic necessary to keep the private
-        /// SystemTimeZones cache in working order
         ///
-        /// This function will either return a valid TimeZoneInfo instance or
-        /// it will throw 'InvalidTimeZoneException' / 'TimeZoneNotFoundException'.
+        /// This function may return null.
+        ///
+        /// assumes cachedData lock is taken
         /// </summary>
-        public static TimeZoneInfo FindSystemTimeZoneById(string id)
-        {
-            // Special case for Utc as it will not exist in the dictionary with the rest
-            // of the system time zones.  There is no need to do this check for Local.Id
-            // since Local is a real time zone that exists in the dictionary cache
-            if (string.Equals(id, UtcId, StringComparison.OrdinalIgnoreCase))
-            {
-                return Utc;
-            }
-
-            ArgumentNullException.ThrowIfNull(id);
-            if (id.Length == 0 || id.Contains('\0'))
-            {
-                throw new TimeZoneNotFoundException(SR.Format(SR.TimeZoneNotFound_MissingData, id));
-            }
-
-            TimeZoneInfo? value;
-            Exception? e;
-
-            TimeZoneInfoResult result;
-
-            CachedData cachedData = s_cachedData;
-
-            lock (cachedData)
-            {
-                result = TryGetTimeZone(id, false, out value, out e, cachedData, alwaysFallbackToLocalMachine: true);
-            }
-
-            if (result == TimeZoneInfoResult.Success)
-            {
-                return value!;
-            }
-            else if (result == TimeZoneInfoResult.InvalidTimeZoneException)
-            {
-                Debug.Assert(e is InvalidTimeZoneException,
-                    "TryGetTimeZone must create an InvalidTimeZoneException when it returns TimeZoneInfoResult.InvalidTimeZoneException");
-                throw e;
-            }
-            else if (result == TimeZoneInfoResult.SecurityException)
-            {
-                throw new SecurityException(SR.Format(SR.Security_CannotReadFileData, id), e);
-            }
-            else
-            {
-                throw new TimeZoneNotFoundException(SR.Format(SR.TimeZoneNotFound_MissingData, id), e);
-            }
-        }
+        private static TimeZoneInfoResult TryGetTimeZone(string id, out TimeZoneInfo? timeZone, out Exception? e, CachedData cachedData)
+            => TryGetTimeZone(id, false, out timeZone, out e, cachedData, alwaysFallbackToLocalMachine: true);
 
         // DateTime.Now fast path that avoids allocating an historically accurate TimeZoneInfo.Local and just creates a 1-year (current year) accurate time zone
         internal static TimeSpan GetDateTimeNowUtcOffsetFromUtc(DateTime time, out bool isAmbiguousLocalDst)
@@ -1111,7 +1122,7 @@ namespace System
             unixTime > DateTimeOffset.UnixMaxSeconds ? DateTime.MaxValue :
             DateTimeOffset.FromUnixTimeSeconds(unixTime).UtcDateTime;
 
-        private static void TZif_ParseRaw(byte[] data, out TZifHead t, out DateTime[] dts, out byte[] typeOfLocalTime, out TZifType[] transitionType,
+        private static void TZif_ParseRaw(byte[] data, out DateTime[] dts, out byte[] typeOfLocalTime, out TZifType[] transitionType,
                                           out string zoneAbbreviations, out string? futureTransitionsPosixFormat)
         {
             futureTransitionsPosixFormat = null;
@@ -1119,7 +1130,7 @@ namespace System
             // read in the 44-byte TZ header containing the count/length fields
             //
             int index = 0;
-            t = new TZifHead(data, index);
+            TZifHead t = new TZifHead(data, index);
             index += TZifHead.Length;
 
             int timeValuesLength = 4; // the first version uses 4-bytes to specify times

@@ -7,6 +7,16 @@
         <target state="translated">不支持此集合类型 '{0}'。</target>
         <note />
       </trans-unit>
+      <trans-unit id="CouldNotDetermineTypeInfoMessageFormat">
+        <source>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls, passing boxed objects, and passing types that are not 'public' or 'internal'.</source>
+        <target state="translated">没有为绑定器调用生成绑定逻辑。不支持的输入模式包括泛型调用、传递装箱对象和传递不是“public”或“internal”的类型。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CouldNotDetermineTypeInfoTitle">
+        <source>The target type for a binder call could not be determined</source>
+        <target state="translated">联编程序调用的目标类型无法确定</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DictionaryKeyNotSupported">
         <source>The dictionary key type is not supported: '{0}'.</source>
         <target state="translated">不支持此字典密钥类型: '{0}'。</target>
@@ -17,14 +27,19 @@
         <target state="translated">不支持此集合元素类型: '{0}'。</target>
         <note />
       </trans-unit>
-      <trans-unit id="Language VersionIsNotSupportedMessageFormat">
-        <source>The project's language version has to be at least 'C# 11'.</source>
-        <target state="translated">项目的语言版本必须至少为 "C# 11"。</target>
+      <trans-unit id="LanguageVersionIsNotSupportedMessageFormat">
+        <source>The project's language version has to be at least 'C# 12'.</source>
+        <target state="new">The project's language version has to be at least 'C# 12'.</target>
         <note />
       </trans-unit>
       <trans-unit id="LanguageVersionIsNotSupportedTitle">
-        <source>Language version is required to be at least C# 11</source>
-        <target state="translated">语言版本必须至少为 C# 11</target>
+        <source>Language version is required to be at least C# 12</source>
+        <target state="translated">语言版本必须至少为 C# 12</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MissingPublicInstanceConstructor">
+        <source>Cannot create instance of type '{0}' because it is missing a public instance constructor.</source>
+        <target state="translated">无法创建类型“{0}”的实例，因为它缺少公共实例构造函数。</target>
         <note />
       </trans-unit>
       <trans-unit id="MultiDimArraysNotSupported">
@@ -32,9 +47,9 @@
         <target state="translated">不支持多维数组: '{0}'。</target>
         <note />
       </trans-unit>
-      <trans-unit id="NeedPublicParameterlessConstructor">
-        <source>Only objects with public parameterless constructors are supported: '{0}'.</source>
-        <target state="translated">仅支持具有公共无参数构造函数的对象: '{0}'。</target>
+      <trans-unit id="MultipleParameterizedConstructors">
+        <source>Cannot create instance of type '{0}' because it has multiple public parameterized constructors.</source>
+        <target state="translated">无法创建类型“{0}”的实例，因为它具有多个公共参数化构造函数。</target>
         <note />
       </trans-unit>
       <trans-unit id="NullableUnderlyingTypeNotSupported">
@@ -60,6 +75,16 @@
       <trans-unit id="TypeNotSupportedTitle">
         <source>Did not generate binding logic for a type</source>
         <target state="translated">没有为类型生成绑定逻辑</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueTypesInvalidForBindMessageFormat">
+        <source>Binding logic was not generated for a binder call with target type '{0}'. Value types are invalid inputs to configuration 'Bind' methods.</source>
+        <target state="translated">没有为目标类型为“{0}”的绑定器调用生成绑定逻辑。值类型是配置“Bind”方法的无效输入。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueTypesInvalidForBindTitle">
+        <source>Value types are invalid inputs to configuration 'Bind' methods</source>
+        <target state="translated">值类型是配置“Bind”方法的无效输入</target>
         <note />
       </trans-unit>
     </body>

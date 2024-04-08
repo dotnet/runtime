@@ -184,7 +184,7 @@ public class Test_DelegatePInvokeTest
                 break;
 
             default:
-                Assert.True(false, "TestMethod_DelegatePInvoke_MarshalByRef_Cdecl:The structid (Managed Side) is wrong");
+                Assert.Fail("TestMethod_DelegatePInvoke_MarshalByRef_Cdecl:The structid (Managed Side) is wrong");
                 break;
         }
     }
@@ -349,7 +349,7 @@ public class Test_DelegatePInvokeTest
                 break;
 
             default:
-                Assert.True(false, "TestMethod_DelegatePInvoke_MarshalByRef_Stdcall:The structid (Managed Side) is wrong");
+                Assert.Fail("TestMethod_DelegatePInvoke_MarshalByRef_Stdcall:The structid (Managed Side) is wrong");
                 break;
         }
     }
@@ -514,7 +514,7 @@ public class Test_DelegatePInvokeTest
                 break;
 
             default:
-                Assert.True(false, "TestMethod_DelegatePInvoke_MarshalByRef_Cdecl:The structid (Managed Side) is wrong");
+                Assert.Fail("TestMethod_DelegatePInvoke_MarshalByRef_Cdecl:The structid (Managed Side) is wrong");
                 break;
         }
     }
@@ -679,7 +679,7 @@ public class Test_DelegatePInvokeTest
                 break;
 
             default:
-                Assert.True(false, "TestMethod_DelegatePInvoke_MarshalByRef_Stdcall:The structid (Managed Side) is wrong");
+                Assert.Fail("TestMethod_DelegatePInvoke_MarshalByRef_Stdcall:The structid (Managed Side) is wrong");
                 break;
         }
     }
@@ -688,7 +688,9 @@ public class Test_DelegatePInvokeTest
 
     #endregion
 
-    static int Main()
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    public static int TestEntryPoint()
     {
         try
         {

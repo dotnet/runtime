@@ -67,6 +67,16 @@
         <target state="translated">로깅 메서드는 정적이어야 함</target>
         <note />
       </trans-unit>
+      <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
+        <source>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</source>
+        <target state="translated">로깅 원본 생성기는 C# {0}에서 사용할 수 없습니다. {1} 이상의 언어 버전을 사용하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="translated">원본 생성기에서 지원되지 않는 C# 언어 버전입니다.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
         <source>Logging method '{0}' contains malformed format strings</source>
         <target state="translated">로깅 메서드 '{0}'에 잘못된 형식의 문자열이 포함되어 있습니다.</target>

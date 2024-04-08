@@ -347,13 +347,13 @@ namespace System.Reflection.Tests
                 Type[] types = upper.GetTypes().OrderBy(t => t.FullName).ToArray();
                 string[] fullNames = types.Select(t => t.FullName).ToArray();
 
-                string[] expected = {
-                    "Outer1", "Outer1+Inner1", "Outer1+Inner2", "Outer1+Inner3" ,"Outer1+Inner4" ,"Outer1+Inner5",
-                    "Outer2", "Outer2+Inner1", "Outer2+Inner2", "Outer2+Inner3" ,"Outer2+Inner4" ,"Outer2+Inner5",
+                string[] expected = [
+                    "Outer1", "Outer1+Inner1", "Outer1+Inner2", "Outer1+Inner3", "Outer1+Inner4", "Outer1+Inner5",
+                    "Outer2", "Outer2+Inner1", "Outer2+Inner2", "Outer2+Inner3", "Outer2+Inner4", "Outer2+Inner5",
                     "Upper1", "Upper4"
-                };
+                ];
 
-                Assert.Equal<string>(expected, fullNames);
+                Assert.Equal(expected, fullNames);
             }
         }
 
@@ -366,8 +366,8 @@ namespace System.Reflection.Tests
                 Type[] types = upper.GetExportedTypes().OrderBy(t => t.FullName).ToArray();
                 string[] fullNames = types.Select(t => t.FullName).ToArray();
 
-                string[] expected = { "Outer1", "Outer1+Inner1", "Upper1" };
-                Assert.Equal<string>(expected, fullNames);
+                string[] expected = [ "Outer1", "Outer1+Inner1", "Upper1" ];
+                Assert.Equal(expected, fullNames);
             }
         }
 
@@ -384,8 +384,8 @@ namespace System.Reflection.Tests
                 Type[] types = upper.GetForwardedTypesThunk().OrderBy(t => t.FullName).ToArray();
                 string[] fullNames = types.Select(t => t.FullName).ToArray();
 
-                string[] expected = { "Middle2", "Upper2", "Upper3", "Upper3+Upper3a" };
-                Assert.Equal<string>(expected, fullNames);
+                string[] expected = [ "Middle2", "Upper2", "Upper3", "Upper3+Upper3a" ];
+                Assert.Equal(expected, fullNames);
             }
         }
 
@@ -441,7 +441,7 @@ namespace System.Reflection.Tests
                 Assembly a = lc.LoadFromByteArray(TestData.s_AssemblyWithEmbeddedResourcesImage);
 
                 string[] names = a.GetManifestResourceNames().OrderBy(s => s).ToArray();
-                Assert.Equal<string>(new string[] { "MyRes1", "MyRes2", "MyRes3" }, names);
+                Assert.Equal<string>([ "MyRes1", "MyRes2", "MyRes3" ], names);
                 foreach (string name in names)
                 {
                     ManifestResourceInfo mri = a.GetManifestResourceInfo(name);
@@ -491,7 +491,7 @@ namespace System.Reflection.Tests
                     Assembly a = lc.LoadFromAssemblyPath(assemblyPath);
 
                     string[] names = a.GetManifestResourceNames().OrderBy(s => s).ToArray();
-                    Assert.Equal<string>(new string[] { "MyRes1", "MyRes2", "MyRes3" }, names);
+                    Assert.Equal<string>([ "MyRes1", "MyRes2", "MyRes3" ], names);
                     foreach (string name in names)
                     {
                         ManifestResourceInfo mri = a.GetManifestResourceInfo(name);
@@ -536,7 +536,7 @@ namespace System.Reflection.Tests
                     Assembly a = lc.LoadFromAssemblyPath(assemblyPath);
 
                     string[] names = a.GetManifestResourceNames().OrderBy(s => s).ToArray();
-                    Assert.Equal<string>(new string[] { "MyRes1", "MyRes2", "MyRes3" }, names);
+                    Assert.Equal<string>([ "MyRes1", "MyRes2", "MyRes3" ], names);
                     foreach (string name in names)
                     {
                         ManifestResourceInfo mri = a.GetManifestResourceInfo(name);

@@ -109,10 +109,6 @@ namespace System.IO.Tests
             from mode in Enum.GetValues<SeekMode>()
             select new object[] { mode };
 
-        public static IEnumerable<object[]> AllSeekModesAndValue(object value) =>
-            from mode in Enum.GetValues<SeekMode>()
-            select new object[] { mode, value };
-
         public static async Task<int> ReadAsync(ReadWriteMode mode, Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
         {
             if (mode == ReadWriteMode.SyncByte)
@@ -603,15 +599,6 @@ namespace System.IO.Tests
             protected override IEnumerable<Task> GetScheduledTasks() => new Task[0];
         }
 
-        protected readonly struct JumpToThreadPoolAwaiter : ICriticalNotifyCompletion
-        {
-            public JumpToThreadPoolAwaiter GetAwaiter() => this;
-            public bool IsCompleted => false;
-            public void OnCompleted(Action continuation) => ThreadPool.QueueUserWorkItem(_ => continuation());
-            public void UnsafeOnCompleted(Action continuation) => ThreadPool.UnsafeQueueUserWorkItem(_ => continuation(), null);
-            public void GetResult() { }
-        }
-
         protected sealed unsafe class NativeMemoryManager : MemoryManager<byte>
         {
             private readonly int _length;
@@ -621,7 +608,7 @@ namespace System.IO.Tests
 
             public NativeMemoryManager(int length) => _ptr = Marshal.AllocHGlobal(_length = length);
 
-            ~NativeMemoryManager() => Assert.False(true, $"{nameof(NativeMemoryManager)} being finalized. Created at {_ctorStack}");
+            ~NativeMemoryManager() => Assert.Fail($"{nameof(NativeMemoryManager)} being finalized. Created at {_ctorStack}");
 
             public override Memory<byte> Memory => CreateMemory(_length);
 
@@ -1801,7 +1788,7 @@ namespace System.IO.Tests
                     int n = 0;
                     while (n < readerBytes.Length)
                     {
-                        int r = await ReadAsync(mode, readable, readerBytes, n, readerBytes.Length - n);
+                        int r = await ReadAsync(mode, readable, readerBytes, n, readerBytes.Length - n).WaitAsync(TimeSpan.FromSeconds(30));
                         Assert.InRange(r, 1, readerBytes.Length - n);
                         n += r;
                     }
@@ -2046,9 +2033,7 @@ namespace System.IO.Tests
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task ReadAsync_ContinuesOnCurrentSynchronizationContextIfDesired(bool flowExecutionContext, bool? continueOnCapturedContext)
         {
-            await default(JumpToThreadPoolAwaiter); // escape xunit sync ctx
-
-            using StreamPair streams = await CreateConnectedStreamsAsync();
+            using StreamPair streams = await CreateConnectedStreamsAsync().ConfigureAwait(ConfigureAwaitOptions.ForceYielding /* escape xunit sync ctx */);
             foreach ((Stream writeable, Stream readable) in GetReadWritePairs(streams))
             {
                 Assert.Null(SynchronizationContext.Current);
@@ -2130,9 +2115,7 @@ namespace System.IO.Tests
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task ReadAsync_ContinuesOnCurrentTaskSchedulerIfDesired(bool flowExecutionContext, bool? continueOnCapturedContext)
         {
-            await default(JumpToThreadPoolAwaiter); // escape xunit sync ctx
-
-            using StreamPair streams = await CreateConnectedStreamsAsync();
+            using StreamPair streams = await CreateConnectedStreamsAsync().ConfigureAwait(ConfigureAwaitOptions.ForceYielding /* escape xunit sync ctx */);
             foreach ((Stream writeable, Stream readable) in GetReadWritePairs(streams))
             {
                 Assert.Null(SynchronizationContext.Current);
@@ -2752,6 +2735,8 @@ namespace System.IO.Tests
         /// </summary>
         protected virtual bool ZeroByteReadPerformsZeroByteReadOnUnderlyingStream => false;
 
+        protected virtual bool ExtraZeroByteReadsAllowed => false;
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -2951,7 +2936,7 @@ namespace System.IO.Tests
             using StreamPair innerStreams = ConnectedStreams.CreateBidirectional();
             (Stream innerWriteable, Stream innerReadable) = GetReadWritePair(innerStreams);
 
-            var tracker = new ZeroByteReadTrackingStream(innerReadable);
+            var tracker = new ZeroByteReadTrackingStream(innerReadable, ExtraZeroByteReadsAllowed);
             using StreamPair streams = await CreateWrappedConnectedStreamsAsync((innerWriteable, tracker));
 
             (Stream writeable, Stream readable) = GetReadWritePair(streams);
@@ -3006,9 +2991,11 @@ namespace System.IO.Tests
         private sealed class ZeroByteReadTrackingStream : DelegatingStream
         {
             private TaskCompletionSource? _signal;
+            private bool _extraZeroByteReadsAllowed;
 
-            public ZeroByteReadTrackingStream(Stream innerStream) : base(innerStream)
+            public ZeroByteReadTrackingStream(Stream innerStream, bool extraZeroByteReadsAllowed = false) : base(innerStream)
             {
+                _extraZeroByteReadsAllowed = extraZeroByteReadsAllowed;
             }
 
             public Task WaitForZeroByteReadAsync()
@@ -3027,13 +3014,13 @@ namespace System.IO.Tests
                 if (bufferLength == 0)
                 {
                     var signal = _signal;
-                    if (signal is null)
+                    if (signal is null && !_extraZeroByteReadsAllowed)
                     {
                         throw new Exception("Unexpected zero byte read");
                     }
 
                     _signal = null;
-                    signal.SetResult();
+                    signal?.SetResult();
                 }
             }
 

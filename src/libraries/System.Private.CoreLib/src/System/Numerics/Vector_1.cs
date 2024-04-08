@@ -9,9 +9,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Text;
 
-// We use sizeof(Vector<T>) in a few places and want to ignore the warning that it could be a managed type
-#pragma warning disable 8500
-
 namespace System.Numerics
 {
     /* Note: The following patterns are used throughout the code here and are described here
@@ -32,7 +29,6 @@ namespace System.Numerics
     [DebuggerDisplay("{DisplayString,nq}")]
     [DebuggerTypeProxy(typeof(VectorDebugView<>))]
     public readonly struct Vector<T> : IEquatable<Vector<T>>, IFormattable
-        where T : struct
     {
         // These fields exist to ensure the alignment is 8, rather than 1.
         internal readonly ulong _00;
@@ -116,7 +112,7 @@ namespace System.Numerics
             // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
-            if (values.Length < sizeof(Vector<T>))
+            if (values.Length < Vector<byte>.Count)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.values);
             }
@@ -146,6 +142,7 @@ namespace System.Numerics
             }
         }
 
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Gets the number of <typeparamref name="T" /> that are in a <see cref="Vector{T}" />.</summary>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public static unsafe int Count
@@ -158,11 +155,33 @@ namespace System.Numerics
                 return sizeof(Vector<T>) / sizeof(T);
             }
         }
+#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
+
+        /// <summary>Gets a new <see cref="Vector{T}" /> with the elements set to their index.</summary>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
+        public static Vector<T> Indices
+        {
+            [Intrinsic]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
+                Unsafe.SkipInit(out Vector<T> result);
+
+                for (int i = 0; i < Count; i++)
+                {
+                    result.SetElementUnsafe(i, Scalar<T>.Convert(i));
+                }
+
+                return result;
+            }
+        }
 
         /// <summary>Gets <c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</summary>
         /// <returns><c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</returns>
         public static bool IsSupported
         {
+            [Intrinsic]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => (typeof(T) == typeof(byte)) ||
                    (typeof(T) == typeof(double)) ||
@@ -701,7 +720,7 @@ namespace System.Numerics
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
-            if (destination.Length < sizeof(Vector<T>))
+            if (destination.Length < Vector<byte>.Count)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
@@ -823,7 +842,7 @@ namespace System.Numerics
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
-            if (destination.Length < sizeof(Vector<T>))
+            if (destination.Length < Vector<byte>.Count)
             {
                 return false;
             }
@@ -848,5 +867,3 @@ namespace System.Numerics
         }
     }
 }
-
-#pragma warning restore CS8500

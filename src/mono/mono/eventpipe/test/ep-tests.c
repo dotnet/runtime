@@ -360,7 +360,7 @@ test_enable_disable_default_provider_config (void)
 
 	test_location = 2;
 
-	result = validate_default_provider_config ((EventPipeSession *)session_id);
+	result = validate_default_provider_config ((EventPipeSession *)(uintptr_t)session_id);
 	ep_raise_error_if_nok (result == NULL);
 
 	test_location = 3;
@@ -409,7 +409,7 @@ test_enable_disable_multiple_default_provider_config (void)
 
 	test_location = 2;
 
-	result = validate_default_provider_config ((EventPipeSession *)session_id_1);
+	result = validate_default_provider_config ((EventPipeSession *)(uintptr_t)session_id_1);
 	ep_raise_error_if_nok (result == NULL);
 
 	test_location = 3;
@@ -441,7 +441,7 @@ test_enable_disable_multiple_default_provider_config (void)
 
 	test_location = 5;
 
-	result = validate_default_provider_config ((EventPipeSession *)session_id_2);
+	result = validate_default_provider_config ((EventPipeSession *)(uintptr_t)session_id_2);
 	ep_raise_error_if_nok (result == NULL);
 
 	test_location = 6;
@@ -491,7 +491,7 @@ test_enable_disable_provider_config (void)
 
 	test_location = 2;
 
-	EventPipeSessionProviderList *provider_list = ep_session_get_providers ((EventPipeSession *)session_id);
+	EventPipeSessionProviderList *provider_list = ep_session_get_providers ((EventPipeSession *)(uintptr_t)session_id);
 	EventPipeSessionProvider *session_provider = ep_session_provider_list_find_by_name (ep_session_provider_list_get_providers (provider_list), TEST_PROVIDER_NAME);
 	ep_raise_error_if_nok (session_provider != NULL);
 
@@ -572,7 +572,7 @@ test_enable_disable_provider_parse_default_config (void)
 
 	test_location = 2;
 
-	result = validate_default_provider_config ((EventPipeSession *)session_id);
+	result = validate_default_provider_config ((EventPipeSession *)(uintptr_t)session_id);
 	ep_raise_error_if_nok (result == NULL);
 
 	test_location = 3;
@@ -598,6 +598,7 @@ static bool provider_callback_data;
 
 static
 void
+EP_CALLBACK_CALLTYPE
 provider_callback (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
@@ -795,7 +796,7 @@ test_session_write_event (void)
 
 	EventPipeEventPayload payload;;
 	ep_event_payload_init (&payload, NULL, 0);
-	write_result = ep_session_write_event ((EventPipeSession *)session_id, ep_rt_thread_get_handle (), ep_event, &payload, NULL, NULL, NULL, NULL);
+	write_result = ep_session_write_event ((EventPipeSession *)(uintptr_t)session_id, ep_rt_thread_get_handle (), ep_event, &payload, NULL, NULL, NULL, NULL);
 	ep_event_payload_fini (&payload);
 
 	ep_raise_error_if_nok (write_result == true);
@@ -848,14 +849,14 @@ test_session_write_event_seq_point (void)
 
 	EventPipeEventPayload payload;;
 	ep_event_payload_init (&payload, NULL, 0);
-	write_result = ep_session_write_event ((EventPipeSession *)session_id, ep_rt_thread_get_handle (), ep_event, &payload, NULL, NULL, NULL, NULL);
+	write_result = ep_session_write_event ((EventPipeSession *)(uintptr_t)session_id, ep_rt_thread_get_handle (), ep_event, &payload, NULL, NULL, NULL, NULL);
 	ep_event_payload_fini (&payload);
 
 	ep_raise_error_if_nok (write_result == true);
 
 	test_location = 5;
 
-	ep_session_write_sequence_point_unbuffered ((EventPipeSession *)session_id);
+	ep_session_write_sequence_point_unbuffered ((EventPipeSession *)(uintptr_t)session_id);
 
 ep_on_exit:
 	ep_disable (session_id);
@@ -905,20 +906,20 @@ test_session_write_wait_get_next_event (void)
 
 	EventPipeEventPayload payload;;
 	ep_event_payload_init (&payload, NULL, 0);
-	write_result = ep_session_write_event ((EventPipeSession *)session_id, ep_rt_thread_get_handle (), ep_event, &payload, NULL, NULL, NULL, NULL);
+	write_result = ep_session_write_event ((EventPipeSession *)(uintptr_t)session_id, ep_rt_thread_get_handle (), ep_event, &payload, NULL, NULL, NULL, NULL);
 	ep_event_payload_fini (&payload);
 
 	ep_raise_error_if_nok (write_result == true);
 
 	test_location = 5;
 
-	EventPipeEventInstance *event_instance = ep_session_get_next_event ((EventPipeSession *)session_id);
+	EventPipeEventInstance *event_instance = ep_session_get_next_event ((EventPipeSession *)(uintptr_t)session_id);
 
 	ep_raise_error_if_nok (event_instance != NULL);
 
 	test_location = 6;
 
-	event_instance = ep_session_get_next_event ((EventPipeSession *)session_id);
+	event_instance = ep_session_get_next_event ((EventPipeSession *)(uintptr_t)session_id);
 
 	ep_raise_error_if_nok (event_instance == NULL);
 
@@ -970,14 +971,14 @@ test_session_write_get_next_event (void)
 
 	// Starts as signaled.
 	// TODO: Is this expected behavior, just a way to notify observer that we are up and running?
-	uint32_t test = ep_rt_wait_event_wait ((ep_rt_wait_event_handle_t *)ep_session_get_wait_event ((EventPipeSession *)session_id), 0, false);
+	uint32_t test = ep_rt_wait_event_wait ((ep_rt_wait_event_handle_t *)ep_session_get_wait_event ((EventPipeSession *)(uintptr_t)session_id), 0, false);
 	ep_raise_error_if_nok (test == 0);
 
 	test_location = 5;
 
 	EventPipeEventPayload payload;;
 	ep_event_payload_init (&payload, NULL, 0);
-	write_result = ep_session_write_event ((EventPipeSession *)session_id, ep_rt_thread_get_handle (), ep_event, &payload, NULL, NULL, NULL, NULL);
+	write_result = ep_session_write_event ((EventPipeSession *)(uintptr_t)session_id, ep_rt_thread_get_handle (), ep_event, &payload, NULL, NULL, NULL, NULL);
 	ep_event_payload_fini (&payload);
 
 	ep_raise_error_if_nok (write_result == true);
@@ -986,17 +987,17 @@ test_session_write_get_next_event (void)
 
 	// TODO: Is this really the correct behavior, first write signals event, meaning that buffer will converted to read only
 	// with just one event in it.
-	test = ep_rt_wait_event_wait ((ep_rt_wait_event_handle_t *)ep_session_get_wait_event ((EventPipeSession *)session_id), 0, false);
+	test = ep_rt_wait_event_wait ((ep_rt_wait_event_handle_t *)ep_session_get_wait_event ((EventPipeSession *)(uintptr_t)session_id), 0, false);
 	ep_raise_error_if_nok (test == 0);
 
 	test_location = 7;
 
-	EventPipeEventInstance *event_instance = ep_session_get_next_event ((EventPipeSession *)session_id);
+	EventPipeEventInstance *event_instance = ep_session_get_next_event ((EventPipeSession *)(uintptr_t)session_id);
 	ep_raise_error_if_nok (event_instance != NULL);
 
 	test_location = 8;
 
-	event_instance = ep_session_get_next_event ((EventPipeSession *)session_id);
+	event_instance = ep_session_get_next_event ((EventPipeSession *)(uintptr_t)session_id);
 	ep_raise_error_if_nok (event_instance == NULL);
 
 ep_on_exit:
@@ -1047,7 +1048,7 @@ test_session_write_suspend_event (void)
 
 	EventPipeEventPayload payload;;
 	ep_event_payload_init (&payload, NULL, 0);
-	write_result = ep_session_write_event ((EventPipeSession *)session_id, ep_rt_thread_get_handle (), ep_event, &payload, NULL, NULL, NULL, NULL);
+	write_result = ep_session_write_event ((EventPipeSession *)(uintptr_t)session_id, ep_rt_thread_get_handle (), ep_event, &payload, NULL, NULL, NULL, NULL);
 	ep_event_payload_fini (&payload);
 
 	ep_raise_error_if_nok (write_result == true);

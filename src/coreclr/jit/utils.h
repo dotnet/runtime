@@ -16,7 +16,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define _UTILS_H_
 
 #include "safemath.h"
-#include "clr_std/type_traits"
+#include <type_traits>
 #include "iallocator.h"
 #include "hostallocator.h"
 #include "cycletimer.h"
@@ -88,7 +88,9 @@ class IteratorPair
     TIterator m_end;
 
 public:
-    IteratorPair(TIterator begin, TIterator end) : m_begin(begin), m_end(end)
+    IteratorPair(TIterator begin, TIterator end)
+        : m_begin(begin)
+        , m_end(end)
     {
     }
 
@@ -116,7 +118,8 @@ struct ConstLog2
 {
     enum
     {
-        value = ConstLog2<val / 2, acc + 1>::value
+        value = ConstLog2 < val / 2,
+        acc + 1 > ::value
     };
 };
 
@@ -160,7 +163,7 @@ int signum(T val)
     }
 }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
 // ConfigMethodRange describes a set of methods, specified via their
 // hash codes. This can be used for binary search and/or specifying an
@@ -241,7 +244,79 @@ private:
     Range*   m_ranges;    // ranges of functions to include
 };
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+// ConfigInArray is an integer-valued array
+//
+class ConfigIntArray
+{
+public:
+    ConfigIntArray()
+        : m_values(nullptr)
+        , m_length(0)
+    {
+    }
+
+    // Ensure the string has been parsed.
+    void EnsureInit(const WCHAR* str)
+    {
+        if (m_values == nullptr)
+        {
+            Init(str);
+        }
+    }
+
+    void Dump();
+    int* GetData() const
+    {
+        return m_values;
+    }
+    unsigned GetLength() const
+    {
+        return m_length;
+    }
+
+private:
+    void     Init(const WCHAR* str);
+    int*     m_values;
+    unsigned m_length;
+};
+
+// ConfigDoubleArray is an double-valued array
+//
+class ConfigDoubleArray
+{
+public:
+    ConfigDoubleArray()
+        : m_values(nullptr)
+        , m_length(0)
+    {
+    }
+
+    // Ensure the string has been parsed.
+    void EnsureInit(const WCHAR* str)
+    {
+        if (m_values == nullptr)
+        {
+            Init(str);
+        }
+    }
+
+    void    Dump();
+    double* GetData() const
+    {
+        return m_values;
+    }
+    unsigned GetLength() const
+    {
+        return m_length;
+    }
+
+private:
+    void     Init(const WCHAR* str);
+    double*  m_values;
+    unsigned m_length;
+};
+
+#endif // defined(DEBUG)
 
 class Compiler;
 
@@ -321,7 +396,7 @@ int SimpleSprintf_s(_In_reads_(cbBufSize - (pWriteStart - pBufStart)) char* pWri
                     ...);
 
 #ifdef DEBUG
-void hexDump(FILE* dmpf, const char* name, BYTE* addr, size_t size);
+void hexDump(FILE* dmpf, BYTE* addr, size_t size);
 #endif // DEBUG
 
 /******************************************************************************
@@ -336,7 +411,8 @@ template <typename T>
 class ScopedSetVariable
 {
 public:
-    ScopedSetVariable(T* pVariable, T value) : m_pVariable(pVariable)
+    ScopedSetVariable(T* pVariable, T value)
+        : m_pVariable(pVariable)
     {
         m_oldValue   = *m_pVariable;
         *m_pVariable = value;
@@ -374,7 +450,8 @@ class PhasedVar
 public:
     PhasedVar()
 #ifdef DEBUG
-        : m_initialized(false), m_writePhase(true)
+        : m_initialized(false)
+        , m_writePhase(true)
 #endif // DEBUG
     {
     }
@@ -636,7 +713,9 @@ class MethodSet
         MethodInfo* m_next;
 
         MethodInfo(char* methodName, int methodHash)
-            : m_MethodName(methodName), m_MethodHash(methodHash), m_next(nullptr)
+            : m_MethodName(methodName)
+            , m_MethodHash(methodHash)
+            , m_next(nullptr)
         {
         }
     };
@@ -718,8 +797,8 @@ unsigned CountDigits(double num, unsigned base = 10);
 #endif // DEBUG
 
 /*****************************************************************************
-* Floating point utility class
-*/
+ * Floating point utility class
+ */
 class FloatingPointUtils
 {
 public:
@@ -728,6 +807,10 @@ public:
     static float convertUInt64ToFloat(unsigned __int64 u64);
 
     static unsigned __int64 convertDoubleToUInt64(double d);
+
+    static double convertToDouble(float f);
+
+    static float convertToSingle(double d);
 
     static double round(double x);
 
@@ -749,6 +832,10 @@ public:
 
     static bool isAllBitsSet(double val);
 
+    static bool isFinite(float val);
+
+    static bool isFinite(double val);
+
     static bool isNegative(float val);
 
     static bool isNegative(double val);
@@ -763,21 +850,105 @@ public:
 
     static double maximum(double val1, double val2);
 
+    static double maximumMagnitude(double val1, double val2);
+
+    static double maximumMagnitudeNumber(double val1, double val2);
+
+    static double maximumNumber(double val1, double val2);
+
     static float maximum(float val1, float val2);
+
+    static float maximumMagnitude(float val1, float val2);
+
+    static float maximumMagnitudeNumber(float val1, float val2);
+
+    static float maximumNumber(float val1, float val2);
 
     static double minimum(double val1, double val2);
 
+    static double minimumMagnitude(double val1, double val2);
+
+    static double minimumMagnitudeNumber(double val1, double val2);
+
+    static double minimumNumber(double val1, double val2);
+
     static float minimum(float val1, float val2);
 
+    static float minimumMagnitude(float val1, float val2);
+
+    static float minimumMagnitudeNumber(float val1, float val2);
+
+    static float minimumNumber(float val1, float val2);
+
     static double normalize(double x);
+
+    static int ilogb(double x);
+
+    static int ilogb(float f);
 };
 
 class BitOperations
 {
 public:
-    static uint32_t BitScanForward(uint32_t value);
+    //------------------------------------------------------------------------
+    // BitOperations::BitScanForward: Search the mask data from least significant bit (LSB) to the most significant bit
+    // (MSB) for a set bit (1)
+    //
+    // Arguments:
+    //    value - the value
+    //
+    // Return Value:
+    //    0 if the mask is zero; nonzero otherwise.
+    //
+    FORCEINLINE static uint32_t BitScanForward(uint32_t value)
+    {
+        assert(value != 0);
 
-    static uint32_t BitScanForward(uint64_t value);
+#if defined(_MSC_VER)
+        unsigned long result;
+        ::_BitScanForward(&result, value);
+        return static_cast<uint32_t>(result);
+#else
+        int32_t result = __builtin_ctz(value);
+        return static_cast<uint32_t>(result);
+#endif
+    }
+
+    //------------------------------------------------------------------------
+    // BitOperations::BitScanForward: Search the mask data from least significant bit (LSB) to the most significant bit
+    // (MSB) for a set bit (1)
+    //
+    // Arguments:
+    //    value - the value
+    //
+    // Return Value:
+    //    0 if the mask is zero; nonzero otherwise.
+    //
+    FORCEINLINE static uint32_t BitScanForward(uint64_t value)
+    {
+        assert(value != 0);
+
+#if defined(_MSC_VER)
+#if defined(HOST_64BIT)
+        unsigned long result;
+        ::_BitScanForward64(&result, value);
+        return static_cast<uint32_t>(result);
+#else
+        uint32_t lower = static_cast<uint32_t>(value);
+
+        if (lower == 0)
+        {
+            uint32_t upper = static_cast<uint32_t>(value >> 32);
+            return 32 + BitScanForward(upper);
+        }
+
+        return BitScanForward(lower);
+#endif // HOST_64BIT
+#else
+        int32_t result = __builtin_ctzll(value);
+        return static_cast<uint32_t>(result);
+#endif
+    }
 
     static uint32_t BitScanReverse(uint32_t value);
 
@@ -859,7 +1030,7 @@ private:
     CRITSEC_COOKIE m_pCs;
 
     // No copying or assignment allowed.
-    CritSecObject(const CritSecObject&) = delete;
+    CritSecObject(const CritSecObject&)            = delete;
     CritSecObject& operator=(const CritSecObject&) = delete;
 };
 
@@ -869,7 +1040,8 @@ private:
 class CritSecHolder
 {
 public:
-    CritSecHolder(CritSecObject& critSec) : m_CritSec(critSec)
+    CritSecHolder(CritSecObject& critSec)
+        : m_CritSec(critSec)
     {
         ClrEnterCriticalSection(m_CritSec.Val());
     }
@@ -883,7 +1055,7 @@ private:
     CritSecObject& m_CritSec;
 
     // No copying or assignment allowed.
-    CritSecHolder(const CritSecHolder&) = delete;
+    CritSecHolder(const CritSecHolder&)            = delete;
     CritSecHolder& operator=(const CritSecHolder&) = delete;
 };
 
@@ -899,7 +1071,7 @@ int32_t GetSigned32Magic(int32_t d, int* shift /*out*/);
 #ifdef TARGET_64BIT
 int64_t GetSigned64Magic(int64_t d, int* shift /*out*/);
 #endif
-}
+} // namespace MagicDivide
 
 //
 // Profiling helpers
@@ -918,7 +1090,6 @@ bool FitsIn(var_types type, T value)
     {
         case TYP_BYTE:
             return FitsIn<int8_t>(value);
-        case TYP_BOOL:
         case TYP_UBYTE:
             return FitsIn<uint8_t>(value);
         case TYP_SHORT:
@@ -1001,6 +1172,6 @@ bool CastFromIntOverflows(int32_t fromValue, var_types toType, bool fromUnsigned
 bool CastFromLongOverflows(int64_t fromValue, var_types toType, bool fromUnsigned);
 bool CastFromFloatOverflows(float fromValue, var_types toType);
 bool CastFromDoubleOverflows(double fromValue, var_types toType);
-}
+} // namespace CheckedOps
 
 #endif // _UTILS_H_

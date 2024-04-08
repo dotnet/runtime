@@ -454,9 +454,9 @@ namespace System.Security.Cryptography.Rsa.Tests
 
                 return true;
             }
-            catch (CryptographicException)
+            catch (Exception e) when (e is CryptographicException or PlatformNotSupportedException)
             {
-                // The key is too big for this platform.
+                // The key is too big for this platform or the platform is not supported.
                 return false;
             }
         }

@@ -1,22 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*=============================================================================
-**
-**
-**
-** Purpose: For methods that should be implemented on subclasses.
-**
-**
-=============================================================================*/
-
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System
 {
+    /// <summary>
+    /// The exception that is thrown when an invoked method is not supported,
+    /// typically because it should have been implemented on a subclass.
+    /// </summary>
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class NotSupportedException : SystemException
     {
         public NotSupportedException()
@@ -26,13 +22,13 @@ namespace System
         }
 
         public NotSupportedException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_NotSupportedException)
         {
             HResult = HResults.COR_E_NOTSUPPORTED;
         }
 
         public NotSupportedException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_NotSupportedException, innerException)
         {
             HResult = HResults.COR_E_NOTSUPPORTED;
         }

@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Collections;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime.Versioning;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Sockets
 {
@@ -26,12 +26,12 @@ namespace System.Net.Sockets
         private sealed class CachedSerializedEndPoint
         {
             public readonly IPEndPoint IPEndPoint;
-            public readonly Internals.SocketAddress SocketAddress;
+            public readonly SocketAddress SocketAddress;
 
             public CachedSerializedEndPoint(IPAddress address)
             {
                 IPEndPoint = new IPEndPoint(address, 0);
-                SocketAddress = IPEndPointExtensions.Serialize(IPEndPoint);
+                SocketAddress = IPEndPoint.Serialize();
             }
         }
 
@@ -70,18 +70,19 @@ namespace System.Net.Sockets
             IPAddress tempAddress = _addressFamily == AddressFamily.InterNetwork ? IPAddress.Any : IPAddress.IPv6Any;
             IPEndPoint ep = new IPEndPoint(tempAddress, 0);
 
-            Internals.SocketAddress socketAddress = IPEndPointExtensions.Serialize(ep);
+            SocketAddress socketAddress = ep.Serialize();
+            int size = socketAddress.Buffer.Length;
             unsafe
             {
-                fixed (byte* bufferPtr = socketAddress.Buffer)
-                fixed (int* sizePtr = &socketAddress.InternalSize)
+                fixed (byte* bufferPtr = socketAddress.Buffer.Span)
                 {
-                    errorCode = SocketPal.GetSockName(_handle, bufferPtr, sizePtr);
+                    errorCode = SocketPal.GetSockName(_handle, bufferPtr, &size);
                 }
             }
 
             if (errorCode == SocketError.Success)
             {
+                socketAddress.Size = size;
                 _rightEndPoint = ep.Create(socketAddress);
             }
             else if (errorCode == SocketError.InvalidArgument)

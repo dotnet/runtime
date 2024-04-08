@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.Versioning;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices.ObjectiveC
 {
@@ -22,7 +22,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_TrySetGlobalMessageSendCallback")]
-        [return:MarshalAs(UnmanagedType.Bool)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool TrySetGlobalMessageSendCallback(
             MessageSendFunction msgSendFunction,
             IntPtr func);

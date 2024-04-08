@@ -384,7 +384,7 @@ namespace System.Drawing
         // against best practices as the current project language parses the string with
         // language specific heuristics.
 
-        private string NameAndARGBValue => $"{{Name={Name}, ARGB=({A}, {R}, {G}, {B})}}";
+        private string NameAndARGBValue => $"{{Name = {Name}, ARGB = ({A}, {R}, {G}, {B})}}";
 
         public string Name
         {
@@ -570,7 +570,7 @@ namespace System.Drawing
         public KnownColor ToKnownColor() => (KnownColor)knownColor;
 
         public override string ToString() =>
-            IsNamedColor ? $"{nameof(Color)} [{Name}]":
+            IsNamedColor ? $"{nameof(Color)} [{Name}]" :
             (state & StateValueMask) != 0 ? $"{nameof(Color)} [A={A}, R={R}, G={G}, B={B}]" :
             $"{nameof(Color)} [Empty]";
 

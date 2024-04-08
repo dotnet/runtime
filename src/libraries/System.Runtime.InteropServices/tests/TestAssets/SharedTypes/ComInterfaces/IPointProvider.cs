@@ -2,13 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SharedTypes.ComInterfaces
 {
@@ -19,6 +15,14 @@ namespace SharedTypes.ComInterfaces
         [PreserveSig]
         Point GetPoint();
 
-        void SetPoint(Point point);
+        [PreserveSig]
+        [return:MarshalAs(UnmanagedType.Error)]
+        HResult SetPoint(Point point);
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct HResult
+    {
+        public int Value;
     }
 }

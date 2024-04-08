@@ -1921,11 +1921,6 @@ HRESULT GetFunctionInfoInternal(LPCBYTE ip, EECodeInfo * pCodeInfo)
         EE_THREAD_NOT_REQUIRED;
         CAN_TAKE_LOCK;
         CANNOT_RETAKE_LOCK;
-
-
-        // If this is called asynchronously (from a hijacked thread, as with F1), it must not re-enter the
-        // host (SQL).  Corners will be cut to ensure this is the case
-        if (ShouldAvoidHostCalls()) { HOST_NOCALLS; } else { HOST_CALLS; }
     }
     CONTRACTL_END;
 
@@ -1936,21 +1931,7 @@ HRESULT GetFunctionInfoInternal(LPCBYTE ip, EECodeInfo * pCodeInfo)
         return CORPROF_E_NOT_YET_AVAILABLE;
     }
 
-    if (ShouldAvoidHostCalls())
-    {
-        ExecutionManager::ReaderLockHolder rlh(NoHostCalls);
-        if (!rlh.Acquired())
-        {
-            // Couldn't get the info.  Try again later
-            return CORPROF_E_ASYNCHRONOUS_UNSAFE;
-        }
-
-        pCodeInfo->Init((PCODE)ip, ExecutionManager::ScanNoReaderLock);
-    }
-    else
-    {
-        pCodeInfo->Init((PCODE)ip);
-    }
+    pCodeInfo->Init((PCODE)ip);
 
     if (!pCodeInfo->IsValid())
     {
@@ -2019,11 +2000,6 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromIP(LPCBYTE ip, FunctionID * pFunct
         // This contract detects any attempts to reenter locks held at the time
         // this function was called.
         CANNOT_RETAKE_LOCK;
-
-
-        // If this is called asynchronously (from a hijacked thread, as with F1), it must not re-enter the
-        // host (SQL).  Corners will be cut to ensure this is the case
-        if (ShouldAvoidHostCalls()) { HOST_NOCALLS; } else { HOST_CALLS; }
     }
     CONTRACTL_END;
 
@@ -2237,11 +2213,6 @@ HRESULT GetCodeInfoFromCodeStart(
         // We need to take the ExecutionManager reader lock to find the
         // appropriate jit manager.
         CAN_TAKE_LOCK;
-
-
-        // If this is called asynchronously (from a hijacked thread, as with F1), it must not re-enter the
-        // host (SQL).  Corners will be cut to ensure this is the case
-        if (ShouldAvoidHostCalls()) { HOST_NOCALLS; } else { HOST_CALLS; }
     }
     CONTRACTL_END;
 
@@ -2299,7 +2270,6 @@ HRESULT GetCodeInfoFromCodeStart(
         &codeInfo);
     if (hr == CORPROF_E_ASYNCHRONOUS_UNSAFE)
     {
-        _ASSERTE(ShouldAvoidHostCalls());
         return hr;
     }
     if (FAILED(hr))
@@ -2395,11 +2365,6 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo(FunctionID functionId, LPCBYTE * pSta
 
         // (See locking contract comment in GetCodeInfoHelper.)
         CANNOT_RETAKE_LOCK;
-
-
-        // If this is called asynchronously (from a hijacked thread, as with F1), it must not re-enter the
-        // host (SQL).  Corners will be cut to ensure this is the case
-        if (ShouldAvoidHostCalls()) { HOST_NOCALLS; } else { HOST_CALLS; }
     }
     CONTRACTL_END;
 
@@ -2481,11 +2446,6 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo2(FunctionID functionId,
 
         // (See locking contract comment in GetCodeInfoHelper.)
         CANNOT_RETAKE_LOCK;
-
-
-        // If this is called asynchronously (from a hijacked thread, as with F1), it must not re-enter the
-        // host (SQL).  Corners will be cut to ensure this is the case
-        if (ShouldAvoidHostCalls()) { HOST_NOCALLS; } else { HOST_CALLS; }
 
         PRECONDITION(CheckPointer(pcCodeInfos, NULL_OK));
         PRECONDITION(CheckPointer(codeInfos, NULL_OK));
@@ -3079,14 +3039,6 @@ HRESULT ProfToEEInterfaceImpl::GetRVAStaticAddress(ClassID classId,
     TypeHandle typeHandle = TypeHandle::FromPtr((void *)classId);
 
     //
-    // If this class is not fully restored, that is all the information we can get at this time.
-    //
-    if (!typeHandle.IsRestored())
-    {
-        return CORPROF_E_DATAINCOMPLETE;
-    }
-
-    //
     // Get the field descriptor object
     //
     FieldDesc *pFieldDesc = typeHandle.GetModule()->LookupFieldDef(fieldToken);
@@ -3200,14 +3152,6 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainStaticAddress(ClassID classId,
     }
 
     TypeHandle typeHandle = TypeHandle::FromPtr((void *)classId);
-
-    //
-    // If this class is not fully restored, that is all the information we can get at this time.
-    //
-    if (!typeHandle.IsRestored())
-    {
-        return CORPROF_E_DATAINCOMPLETE;
-    }
 
     // We might have caught a collectible assembly in the middle of being collected
     Module *pModule = typeHandle.GetModule();
@@ -3444,14 +3388,6 @@ HRESULT ProfToEEInterfaceImpl::GetThreadStaticAddress2(ClassID classId,
     TypeHandle typeHandle = TypeHandle::FromPtr((void *)classId);
 
     //
-    // If this class is not fully restored, that is all the information we can get at this time.
-    //
-    if (!typeHandle.IsRestored())
-    {
-        return CORPROF_E_DATAINCOMPLETE;
-    }
-
-    //
     // Get the field descriptor object
     //
     FieldDesc *pFieldDesc = typeHandle.GetModule()->LookupFieldDef(fieldToken);
@@ -3686,14 +3622,6 @@ HRESULT ProfToEEInterfaceImpl::GetStaticFieldInfo(ClassID classId,
     TypeHandle typeHandle = TypeHandle::FromPtr((void *)classId);
 
     //
-    // If this class is not fully restored, that is all the information we can get at this time.
-    //
-    if (!typeHandle.IsRestored())
-    {
-        return CORPROF_E_DATAINCOMPLETE;
-    }
-
-    //
     // Get the field descriptor object
     //
     FieldDesc *pFieldDesc = typeHandle.GetModule()->LookupFieldDef(fieldToken);
@@ -3800,14 +3728,6 @@ HRESULT ProfToEEInterfaceImpl::GetClassIDInfo2(ClassID classId,
     }
 
     TypeHandle typeHandle = TypeHandle::FromPtr((void *)classId);
-
-    //
-    // If this class is not fully restored, that is all the information we can get at this time.
-    //
-    if (!typeHandle.IsRestored())
-    {
-        return CORPROF_E_DATAINCOMPLETE;
-    }
 
     //
     // Handle globals which don't have the instances.
@@ -4337,13 +4257,13 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBody(ModuleID    moduleId,
 
     PEAssembly *pPEAssembly = pModule->GetPEAssembly();
 
-    if (!pPEAssembly->HasLoadedPEImage())
+    if (!pPEAssembly->IsLoaded())
         return (CORPROF_E_DATAINCOMPLETE);
 
     LPCBYTE pbMethod = NULL;
 
     // Don't return rewritten IL, use the new API to get that.
-    pbMethod = (LPCBYTE) pModule->GetDynamicIL(methodId, FALSE);
+    pbMethod = (LPCBYTE) pModule->GetDynamicIL(methodId);
 
     // Method not overridden - get the original copy of the IL by going to metadata
     if (pbMethod == NULL)
@@ -4447,7 +4367,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBodyAllocator(ModuleID         modul
     Module * pModule = (Module *) moduleId;
 
     if (pModule->IsBeingUnloaded() ||
-        !pModule->GetPEAssembly()->HasLoadedPEImage())
+        !pModule->GetPEAssembly()->IsLoaded())
     {
         return (CORPROF_E_DATAINCOMPLETE);
     }
@@ -4528,7 +4448,7 @@ HRESULT ProfToEEInterfaceImpl::SetILFunctionBody(ModuleID    moduleId,
     // This action is not temporary!
     // If the profiler want to be able to revert, they need to use
     // the new ReJIT APIs.
-    pModule->SetDynamicIL(methodId, (TADDR)pbNewILMethodHeader, FALSE);
+    pModule->SetDynamicIL(methodId, (TADDR)pbNewILMethodHeader);
 
     return (hr);
 }
@@ -4815,29 +4735,18 @@ HRESULT ProfToEEInterfaceImpl::GetClassIDInfo(ClassID classId,
     {
         TypeHandle th = TypeHandle::FromPtr((void *)classId);
 
-        if (!th.IsTypeDesc())
+        if (!th.IsTypeDesc() && !th.IsArray())
         {
-            if (!th.IsArray())
+            if (pModuleId != NULL)
             {
-                //
-                // If this class is not fully restored, that is all the information we can get at this time.
-                //
-                if (!th.IsRestored())
-                {
-                    return CORPROF_E_DATAINCOMPLETE;
-                }
+                *pModuleId = (ModuleID) th.GetModule();
+                _ASSERTE(*pModuleId != NULL);
+            }
 
-                if (pModuleId != NULL)
-                {
-                    *pModuleId = (ModuleID) th.GetModule();
-                    _ASSERTE(*pModuleId != NULL);
-                }
-
-                if (pTypeDefToken != NULL)
-                {
-                    *pTypeDefToken = th.GetCl();
-                    _ASSERTE(*pTypeDefToken != NULL);
-                }
+            if (pTypeDefToken != NULL)
+            {
+                *pTypeDefToken = th.GetCl();
+                _ASSERTE(*pTypeDefToken != NULL);
             }
         }
     }
@@ -4884,11 +4793,6 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo(FunctionID functionId,
 
     MethodDesc *pMDesc = (MethodDesc *) functionId;
     MethodTable *pMT = pMDesc->GetMethodTable();
-    if (!pMT->IsRestored())
-    {
-        return CORPROF_E_DATAINCOMPLETE;
-    }
-
     ClassID classId = PROFILER_GLOBAL_CLASS;
 
     if (pMT != NULL)
@@ -5494,8 +5398,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromTokenAndTypeArgs(ModuleID moduleID
 
     MethodTable* pMethodTable = typeHandle.GetMethodTable();
 
-    if (pMethodTable == NULL || !pMethodTable->IsRestored() ||
-        pMethodDesc == NULL)
+    if (pMethodTable == NULL || pMethodDesc == NULL)
     {
         return CORPROF_E_DATAINCOMPLETE;
     }
@@ -5702,7 +5605,7 @@ HRESULT ProfToEEInterfaceImpl::GetAssemblyInfo(AssemblyID    assemblyId,
 
         if ((NULL != szName) && (cchName > 0))
         {
-            wcsncpy_s(szName, cchName, name.GetUnicode(), min(nameLength, cchName - 1));
+            wcsncpy_s(szName, cchName, name.GetUnicode(), min((size_t)nameLength, (size_t)(cchName - 1)));
         }
 
         if (NULL != pcchName)
@@ -5714,7 +5617,7 @@ HRESULT ProfToEEInterfaceImpl::GetAssemblyInfo(AssemblyID    assemblyId,
     // Get the parent application domain.
     if (pAppDomainId)
     {
-        *pAppDomainId = (AppDomainID) pAssembly->GetDomain();
+        *pAppDomainId = (AppDomainID)AppDomain::GetCurrentDomain();
         _ASSERTE(*pAppDomainId != NULL);
     }
 
@@ -6929,7 +6832,7 @@ HRESULT ProfToEEInterfaceImpl::GetLOHObjectSizeThreshold(DWORD *pThreshold)
         return E_INVALIDARG;
     }
 
-    *pThreshold = g_pConfig->GetGCLOHThreshold();
+    *pThreshold = (DWORD)GCHeapUtilities::GetGCHeap()->GetLOHThreshold();
 
     return S_OK;
 }
@@ -7672,7 +7575,12 @@ HRESULT ProfToEEInterfaceImpl::GetNonGCHeapBounds(ULONG cObjectRanges,
         return E_INVALIDARG;
     }
 
-    FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
+    FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManagerNoThrow();
+    if (foh == nullptr)
+    {
+        *pcObjectRanges = 0;
+        return S_OK;
+    }
     CrstHolder ch(&foh->m_Crst);
 
     const unsigned segmentsCount = foh->m_FrozenSegments.GetCount();
@@ -7689,7 +7597,7 @@ HRESULT ProfToEEInterfaceImpl::GetNonGCHeapBounds(ULONG cObjectRanges,
             ranges[segIdx].rangeStart = (ObjectID)firstObj;
 
             // Total size reserved for a segment
-            ranges[segIdx].rangeLengthReserved = (UINT_PTR)segments[segIdx]->m_Size;
+            ranges[segIdx].rangeLengthReserved = (UINT_PTR)segments[segIdx]->m_Size - sizeof(ObjHeader);
 
             // Size of the segment that is currently in use
             ranges[segIdx].rangeLength = (UINT_PTR)(segments[segIdx]->m_pCurrent - firstObj);
@@ -7954,24 +7862,12 @@ HRESULT ProfToEEInterfaceImpl::GetClassLayout(ClassID classID,
         return E_INVALIDARG;
     }
 
-    //
-    // If this class is not fully restored, that is all the information we can get at this time.
-    //
-    if (!typeHandle.IsRestored())
-    {
-        return CORPROF_E_DATAINCOMPLETE;
-    }
-
     // !IsValueType = IsArray || IsReferenceType   Since IsArry has been ruled out above, it must
     // be a reference type if !IsValueType.
     BOOL fReferenceType = !typeHandle.IsValueType();
 
     //
     // Fill in class size now
-    //
-    // Move after the check for typeHandle.GetMethodTable()->IsRestored()
-    // because an unrestored MethodTable may have a bad EE class pointer
-    // which will be used by MethodTable::GetNumInstanceFieldBytes
     //
     if (pulClassSize != NULL)
     {
@@ -8068,6 +7964,19 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
     CONTEXT builtContext;
 #endif
 
+#ifdef FEATURE_EH_FUNCLETS
+    //
+    // Skip all managed exception handling functions
+    //
+    if (pFunc != NULL && (
+        (pFunc->GetMethodTable() == g_pEHClass) ||
+        (pFunc->GetMethodTable() == g_pExceptionServicesInternalCallsClass) ||
+        (pFunc->GetMethodTable() == g_pStackFrameIteratorClass)))
+    {
+        return SWA_CONTINUE;
+    }
+#endif // FEATURE_EH_FUNCLETS
+
     //
     // For Unmanaged-to-managed transitions we get a NativeMarker back, which we want
     // to return to the profiler as the context seed if it wants to walk the unmanaged
@@ -8085,6 +7994,20 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
     {
         return SWA_CONTINUE;
     }
+
+#ifdef FEATURE_EH_FUNCLETS
+    if (g_isNewExceptionHandlingEnabled && !pCf->IsFrameless() && InlinedCallFrame::FrameHasActiveCall(pCf->GetFrame()))
+    {
+        // Skip new exception handling helpers
+        InlinedCallFrame *pInlinedCallFrame = (InlinedCallFrame *)pCf->GetFrame();
+        PTR_NDirectMethodDesc pMD = pInlinedCallFrame->m_Datum;
+        TADDR datum = dac_cast<TADDR>(pMD);
+        if ((datum & (TADDR)InlinedCallFrameMarker::Mask) == (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper)
+        {
+            return SWA_CONTINUE;
+        }
+    }
+#endif // FEATURE_EH_FUNCLETS
 
     //
     // If this is not a transition of any sort and not a managed
@@ -8176,11 +8099,6 @@ static BOOL EnsureFrameInitialized(Frame * pFrame)
     {
         NOTHROW;
         GC_NOTRIGGER;
-
-        // If this is called asynchronously (from a hijacked thread, as with F1), it must not re-enter the
-        // host (SQL).  Corners will be cut to ensure this is the case
-        if (ShouldAvoidHostCalls()) { HOST_NOCALLS; } else { HOST_CALLS; }
-
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -8196,19 +8114,14 @@ static BOOL EnsureFrameInitialized(Frame * pFrame)
 
     if (pHMF->InsureInit(
         false,                      // initialInit
-        NULL,                       // unwindState
-        (ShouldAvoidHostCalls() ?
-            NoHostCalls :
-            AllowHostCalls)
+        NULL                        // unwindState
         ) != NULL)
     {
         // InsureInit() succeeded and found the return address
         return TRUE;
     }
 
-    // No return address was found. It must be because we asked InsureInit() to bail if
-    // it would have entered the host
-    _ASSERTE(ShouldAvoidHostCalls());
+    // No return address was found
     return FALSE;
 }
 
@@ -8239,10 +8152,6 @@ HRESULT ProfToEEInterfaceImpl::ProfilerEbpWalker(
         NOTHROW;
         MODE_ANY;
         EE_THREAD_NOT_REQUIRED;
-
-        // If this is called asynchronously (from a hijacked thread, as with F1), it must not re-enter the
-        // host (SQL).  Corners will be cut to ensure this is the case
-        if (ShouldAvoidHostCalls()) { HOST_NOCALLS; } else { HOST_CALLS; }
     }
     CONTRACTL_END;
 
@@ -8293,7 +8202,6 @@ HRESULT ProfToEEInterfaceImpl::ProfilerEbpWalker(
                 &codeInfo);
             if (hr == CORPROF_E_ASYNCHRONOUS_UNSAFE)
             {
-                _ASSERTE(ShouldAvoidHostCalls());
                 return hr;
             }
             if (SUCCEEDED(hr))
@@ -8448,8 +8356,7 @@ Loop:
                     &rd,
                     &codeInfo,
                     SpeculativeStackwalk,
-                    &codeManState,
-                    NULL);
+                    &codeManState);
 
                 ctxCur.Ebp = *rd.GetEbpLocation();
                 ctxCur.Esp = rd.SP;
@@ -8523,27 +8430,18 @@ HRESULT ProfToEEInterfaceImpl::ProfilerStackWalkFramesWrapper(Thread * pThreadTo
 //
 // Arguments:
 //      pCtx - Context to look at
-//      hostCallPreference - Describes how to acquire the reader lock--either AllowHostCalls
-//          or NoHostCalls (see code:HostCallPreference).
 //
 // Return Value:
 //      S_OK: The context is in managed code
 //      S_FALSE: The context is not in managed code.
-//      Error: Unable to determine (typically because hostCallPreference was NoHostCalls
-//         and the reader lock was unattainable without yielding)
 //
 
-HRESULT IsContextInManagedCode(const CONTEXT * pCtx, HostCallPreference hostCallPreference)
+HRESULT IsContextInManagedCode(const CONTEXT * pCtx)
 {
     WRAPPER_NO_CONTRACT;
-    BOOL fFailedReaderLock = FALSE;
 
     // if there's no Jit Manager for the IP, it's not managed code.
-    BOOL fIsManagedCode = ExecutionManager::IsManagedCode(GetIP(pCtx), hostCallPreference, &fFailedReaderLock);
-    if (fFailedReaderLock)
-    {
-        return CORPROF_E_ASYNCHRONOUS_UNSAFE;
-    }
+    BOOL fIsManagedCode = ExecutionManager::IsManagedCode(GetIP(pCtx));
 
     return fIsManagedCode ? S_OK : S_FALSE;
 }
@@ -8718,8 +8616,6 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
         goto Cleanup;
     }
 
-    HostCallPreference hostCallPreference;
-
     // First, check "1) Target thread to walk == current thread OR Target thread is suspended"
     if (pThreadToSnapshot != pCurrentThread && !g_profControlBlock.fProfilerRequestedRuntimeSuspend)
     {
@@ -8765,11 +8661,6 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
 #endif // !PLATFORM_SUPPORTS_SAFE_THREADSUSPEND
     }
 
-    hostCallPreference =
-        ShouldAvoidHostCalls() ?
-            NoHostCalls :       // Async call: Ensure this thread won't yield & re-enter host
-            AllowHostCalls;     // Synchronous calls may re-enter host just fine
-
     // If target thread is in pre-emptive mode, the profiler's seed context is unnecessary
     // because our frame chain is good enough: it will give us at least as accurate a
     // starting point as the profiler could.  Also, since profiler contexts cannot be
@@ -8806,11 +8697,10 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
             goto Cleanup;
         }
 
-        hrCurrentContextIsManaged = IsContextInManagedCode(&ctxCurrent, hostCallPreference);
+        hrCurrentContextIsManaged = IsContextInManagedCode(&ctxCurrent);
         if (FAILED(hrCurrentContextIsManaged))
         {
             // Couldn't get the info.  Try again later
-            _ASSERTE(ShouldAvoidHostCalls());
             hr = CORPROF_E_ASYNCHRONOUS_UNSAFE;
             goto Cleanup;
         }
@@ -8878,7 +8768,7 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
         }
         else
         {
-            hr = IsContextInManagedCode(pctxSeed, hostCallPreference);
+            hr = IsContextInManagedCode(pctxSeed);
             if (FAILED(hr))
             {
                 hr = CORPROF_E_ASYNCHRONOUS_UNSAFE;
@@ -8914,16 +8804,12 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
         {
             if (pThreadToSnapshot->GetSafelyRedirectableThreadContext(Thread::kDefaultChecks, &ctxCurrent, &rd))
             {
-                BOOL fFailedReaderLock = FALSE;
-                BOOL fIsManagedCode = ExecutionManager::IsManagedCode(GetIP(&ctxCurrent), hostCallPreference, &fFailedReaderLock);
+                BOOL fIsManagedCode = ExecutionManager::IsManagedCode(GetIP(&ctxCurrent));
 
-                if (!fFailedReaderLock)
-                {
-                    // not in jitted or ngend code or inside an inlined P/Invoke (the leaf-most EE Frame is
-                    // an InlinedCallFrame with an active call)
-                    _ASSERTE(!fIsManagedCode ||
-                             (InlinedCallFrame::FrameHasActiveCall(pThreadToSnapshot->GetFrame())));
-                }
+                // not in jitted or ngend code or inside an inlined P/Invoke (the leaf-most EE Frame is
+                // an InlinedCallFrame with an active call)
+                _ASSERTE(!fIsManagedCode ||
+                            (InlinedCallFrame::FrameHasActiveCall(pThreadToSnapshot->GetFrame())));
             }
         }
 #endif // !PLATFORM_SUPPORTS_SAFE_THREADSUSPEND
@@ -10754,9 +10640,22 @@ void __stdcall ProfilerUnmanagedToManagedTransitionMD(MethodDesc *pMD,
 // These do a lot of work for us, setting up Frames, gathering arg info and resolving generics.
   //*******************************************************************************************
 
-HCIMPL2(EXTERN_C void, ProfileEnter, UINT_PTR clientData, void * platformSpecificHandle)
+HCIMPL2_RAW(EXTERN_C void, ProfileEnter, UINT_PTR clientData, void * platformSpecificHandle)
+GCX_COOP_THREAD_EXISTS(GET_THREAD());
+HCIMPL_PROLOG(ProfileEnter)
 {
     FCALL_CONTRACT;
+
+    if (GetThreadNULLOk() == NULL)
+    {
+        Thread *pThread = SetupThreadNoThrow();
+        if (pThread == NULL)
+        {
+            return;
+        }
+    }
+
+    GCX_COOP();
 
 #ifdef PROFILING_SUPPORTED
 
@@ -10924,7 +10823,9 @@ LExit:
 }
 HCIMPLEND
 
-HCIMPL2(EXTERN_C void, ProfileLeave, UINT_PTR clientData, void * platformSpecificHandle)
+HCIMPL2_RAW(EXTERN_C void, ProfileLeave, UINT_PTR clientData, void * platformSpecificHandle)
+GCX_COOP();
+HCIMPL_PROLOG(ProfileLeave)
 {
     FCALL_CONTRACT;
 

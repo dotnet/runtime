@@ -3,7 +3,12 @@
 
 namespace System.Runtime
 {
-    public enum ExceptionIDs
+#if NATIVEAOT
+    public
+#else
+    internal
+#endif
+    enum ExceptionIDs
     {
         OutOfMemory = 1,
         Arithmetic = 2,

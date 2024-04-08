@@ -9,7 +9,7 @@ using System.Xml;
 namespace System.Speech.Recognition.SrgsGrammar
 {
     [Serializable]
-    [DebuggerDisplay("{DebuggerDisplayString ()}")]
+    [DebuggerDisplay("{DebuggerDisplayString()}")]
     public class SrgsText : SrgsElement, IElementText
     {
         #region Constructors

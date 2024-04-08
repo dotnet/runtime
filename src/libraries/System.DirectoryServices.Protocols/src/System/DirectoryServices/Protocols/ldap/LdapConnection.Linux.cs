@@ -3,8 +3,8 @@
 
 using System.Diagnostics;
 using System.Net;
-using System.Text;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.DirectoryServices.Protocols
 {
@@ -60,8 +60,11 @@ namespace System.DirectoryServices.Protocols
                     }
                     temp.Append(scheme);
                     temp.Append(servers[i]);
-                    temp.Append(':');
-                    temp.Append(directoryIdentifier.PortNumber);
+                    if (!servers[i].Contains(':'))
+                    {
+                        temp.Append(':');
+                        temp.Append(directoryIdentifier.PortNumber);
+                    }
                 }
                 if (temp.Length != 0)
                 {
@@ -88,7 +91,7 @@ namespace System.DirectoryServices.Protocols
                 }
                 else
                 {
-                     error = LdapPal.BindToDirectory(_ldapHandle, cred.user, cred.password);
+                    error = LdapPal.BindToDirectory(_ldapHandle, cred.user, cred.password);
                 }
             }
             else

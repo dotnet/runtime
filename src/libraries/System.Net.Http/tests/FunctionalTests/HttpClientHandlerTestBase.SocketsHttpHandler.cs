@@ -3,14 +3,31 @@
 
 using System.IO;
 using System.Net.Quic;
+using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http.Functional.Tests
 {
     public abstract partial class HttpClientHandlerTestBase : FileCleanupTestBase
     {
+        protected static async Task<Stream> DefaultConnectCallback(EndPoint endPoint, CancellationToken cancellationToken)
+        {
+            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+            try
+            {
+                await socket.ConnectAsync(endPoint, cancellationToken);
+                return new NetworkStream(socket, ownsSocket: true);
+            }
+            catch
+            {
+                socket.Dispose();
+                throw;
+            }
+        }
+
         protected static bool IsWinHttpHandler => false;
 
         public static bool IsQuicSupported

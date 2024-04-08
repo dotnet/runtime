@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
-using System.IO;
-using System.IO.Packaging;
 using System.Collections;
 using System.Collections.Generic;
-using System.Xml;
-using System.Globalization;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
+using System.IO.Packaging;
+using System.Xml;
 
 namespace System.IO.Packaging
 {
@@ -379,7 +379,9 @@ namespace System.IO.Packaging
                 _package.ThrowIfReadOnly();
 
             // Case of an existing property.
+#pragma warning disable CA1864 // Prefer the 'IDictionary.TryAdd(TKey, TValue)' method
             if (_propertyDictionary.ContainsKey(propertyenum))
+#pragma warning restore CA1864 // Cannot use TryAdd because if the value is null it is not added if
             {
                 // Parsing should detect redundant entries.
                 if (initializing)

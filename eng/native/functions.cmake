@@ -1,8 +1,8 @@
 function(clr_unknown_arch)
     if (WIN32)
-        message(FATAL_ERROR "Only AMD64, ARM64, ARM and I386 are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
+        message(FATAL_ERROR "Only AMD64, ARM64, ARM and I386 hosts are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
     elseif(CLR_CROSS_COMPONENTS_BUILD)
-        message(FATAL_ERROR "Only AMD64, I386 host are supported for linux cross-architecture component. Found: ${CMAKE_SYSTEM_PROCESSOR}")
+        message(FATAL_ERROR "Only AMD64, ARM64 and I386 hosts are supported for linux cross-architecture component. Found: ${CMAKE_SYSTEM_PROCESSOR}")
     else()
         message(FATAL_ERROR "'${CMAKE_SYSTEM_PROCESSOR}' is an unsupported architecture.")
     endif()
@@ -89,9 +89,11 @@ function(get_compile_definitions DefinitionName)
     set(LastGeneratorExpression "")
     foreach(DEFINITION IN LISTS COMPILE_DEFINITIONS_LIST)
       # If there is a definition that uses the $<TARGET_PROPERTY:prop> generator expression
+      # or the $<COMPILE_LANGUAGE:lang> generator expression,
       # we need to remove it since that generator expression is only valid on binary targets.
       # Assume that the value is 0.
       string(REGEX REPLACE "\\$<TARGET_PROPERTY:[^,>]+>" "0" DEFINITION "${DEFINITION}")
+      string(REGEX REPLACE "\\$<COMPILE_LANGUAGE:[^>]+(,[^>]+)*>" "0" DEFINITION "${DEFINITION}")
 
       if (${DEFINITION} MATCHES "^\\$<(.+):([^>]+)(>?)$")
         if("${CMAKE_MATCH_3}" STREQUAL "")
@@ -218,6 +220,12 @@ endfunction(convert_to_absolute_path)
 function(preprocess_file inputFilename outputFilename)
   get_compile_definitions(PREPROCESS_DEFINITIONS)
   get_include_directories(PREPROCESS_INCLUDE_DIRECTORIES)
+  get_source_file_property(SOURCE_FILE_DEFINITIONS ${inputFilename} COMPILE_DEFINITIONS)
+  
+  foreach(DEFINITION IN LISTS SOURCE_FILE_DEFINITIONS)
+    list(APPEND PREPROCESS_DEFINITIONS -D${DEFINITION})
+  endforeach()
+
   if (MSVC)
     add_custom_command(
         OUTPUT ${outputFilename}
@@ -226,9 +234,12 @@ function(preprocess_file inputFilename outputFilename)
         COMMENT "Preprocessing ${inputFilename}. Outputting to ${outputFilename}"
     )
   else()
+    if (CMAKE_CXX_COMPILER_TARGET AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+      set(_LOCAL_CROSS_TARGET "--target=${CMAKE_CXX_COMPILER_TARGET}")
+    endif()
     add_custom_command(
         OUTPUT ${outputFilename}
-        COMMAND ${CMAKE_CXX_COMPILER} -E -P ${PREPROCESS_DEFINITIONS} ${PREPROCESS_INCLUDE_DIRECTORIES} -o ${outputFilename} -x c ${inputFilename}
+        COMMAND ${CMAKE_CXX_COMPILER} ${_LOCAL_CROSS_TARGET} -E -P ${PREPROCESS_DEFINITIONS} ${PREPROCESS_INCLUDE_DIRECTORIES} -o ${outputFilename} -x c ${inputFilename}
         DEPENDS ${inputFilename}
         COMMENT "Preprocessing ${inputFilename}. Outputting to ${outputFilename}"
     )
@@ -367,7 +378,11 @@ endfunction()
 function (get_symbol_file_name targetName outputSymbolFilename)
   if (CLR_CMAKE_HOST_UNIX)
     if (CLR_CMAKE_TARGET_APPLE)
-      set(strip_destination_file $<TARGET_FILE:${targetName}>.dwarf)
+      if (CLR_CMAKE_APPLE_DSYM)
+        set(strip_destination_file $<TARGET_FILE:${targetName}>.dSYM)
+      else ()
+        set(strip_destination_file $<TARGET_FILE:${targetName}>.dwarf)
+      endif ()
     else ()
       set(strip_destination_file $<TARGET_FILE:${targetName}>.dbg)
     endif ()
@@ -414,7 +429,9 @@ function(strip_symbols targetName outputFilename)
         OUTPUT_VARIABLE DSYMUTIL_HELP_OUTPUT
       )
 
-      set(DSYMUTIL_OPTS "--flat")
+      if (NOT CLR_CMAKE_APPLE_DSYM)
+        set(DSYMUTIL_OPTS "--flat")
+      endif ()
       if ("${DSYMUTIL_HELP_OUTPUT}" MATCHES "--minimize")
         list(APPEND DSYMUTIL_OPTS "--minimize")
       endif ()
@@ -586,21 +603,6 @@ function(disable_pax_mprotect targetName)
   endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
 endfunction()
 
-if (CMAKE_VERSION VERSION_LESS "3.12")
-  # Polyfill add_compile_definitions when it is unavailable
-  function(add_compile_definitions)
-    get_directory_property(DIR_COMPILE_DEFINITIONS COMPILE_DEFINITIONS)
-    list(APPEND DIR_COMPILE_DEFINITIONS ${ARGV})
-    set_directory_properties(PROPERTIES COMPILE_DEFINITIONS "${DIR_COMPILE_DEFINITIONS}")
-  endfunction()
-endif()
-
-if (CMAKE_VERSION VERSION_LESS "3.16")
-  # Provide a no-op polyfill for precompiled headers on old CMake versions
-  function(target_precompile_headers)
-  endfunction()
-endif()
-
 # add_linker_flag(Flag [Config1 Config2 ...])
 function(add_linker_flag Flag)
   if (ARGN STREQUAL "")
@@ -631,25 +633,47 @@ function(link_natvis_sources_for_target targetName linkKind)
     endforeach()
 endfunction()
 
+# Add sanitizer runtime support code to the target.
+function(add_sanitizer_runtime_support targetName)
+  # Add sanitizer support functions.
+  if (CLR_CMAKE_ENABLE_ASAN)
+    target_sources(${targetName} PRIVATE "$<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:${CLR_SRC_NATIVE_DIR}/minipal/asansupport.cpp>")
+  endif()
+endfunction()
+
 function(add_executable_clr targetName)
-    if(NOT WIN32)
-      add_executable(${ARGV} ${VERSION_FILE_PATH})
-      disable_pax_mprotect(${ARGV})
-    else()
-      add_executable(${ARGV})
-    endif(NOT WIN32)
-    if(NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
-      strip_symbols(${ARGV0} symbolFile)
-    endif()
+  if(NOT WIN32)
+    add_executable(${ARGV} ${VERSION_FILE_PATH})
+    disable_pax_mprotect(${ARGV})
+  else()
+    add_executable(${ARGV})
+  endif(NOT WIN32)
+  add_sanitizer_runtime_support(${targetName})
+  if(NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
+    strip_symbols(${ARGV0} symbolFile)
+  endif()
 endfunction()
 
 function(add_library_clr targetName kind)
-    if(NOT WIN32 AND "${kind}" STREQUAL "SHARED")
-      add_library(${ARGV} ${VERSION_FILE_PATH})
-    else()
-      add_library(${ARGV})
-    endif()
-    if("${kind}" STREQUAL "SHARED" AND NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
-      strip_symbols(${ARGV0} symbolFile)
-    endif()
+  if(NOT WIN32 AND "${kind}" STREQUAL "SHARED")
+    add_library(${ARGV} ${VERSION_FILE_PATH})
+  else()
+    add_library(${ARGV})
+  endif()
+  if("${kind}" STREQUAL "SHARED" AND NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
+    strip_symbols(${ARGV0} symbolFile)
+  endif()
+endfunction()
+
+# Adhoc sign targetName with the entitlements in entitlementsFile.
+function(adhoc_sign_with_entitlements targetName entitlementsFile)
+    # Add a dependency from a source file for the target on the entitlements file to ensure that the target is rebuilt if only the entitlements file changes.
+    get_target_property(sources ${targetName} SOURCES)
+    list(GET sources 0 firstSource)
+    set_source_files_properties(${firstSource} PROPERTIES OBJECT_DEPENDS ${entitlementsFile})
+
+    add_custom_command(
+        TARGET ${targetName}
+        POST_BUILD
+        COMMAND codesign -s - -f --entitlements ${entitlementsFile} $<TARGET_FILE:${targetName}>)
 endfunction()

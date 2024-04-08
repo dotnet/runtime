@@ -80,7 +80,15 @@ void Phase::PrePhase()
         }
         else
         {
-            printf("\n*************** Starting PHASE %s\n", m_name);
+            if (comp->opts.optRepeatActive)
+            {
+                printf("\n*************** Starting PHASE %s (OptRepeat iteration %d of %d)\n", m_name,
+                       comp->opts.optRepeatIteration, comp->opts.optRepeatCount);
+            }
+            else
+            {
+                printf("\n*************** Starting PHASE %s\n", m_name);
+            }
         }
     }
 #endif // DEBUG
@@ -124,7 +132,15 @@ void Phase::PostPhase(PhaseStatus status)
         }
         else
         {
-            printf("\n*************** Finishing PHASE %s%s\n", m_name, statusMessage);
+            if (comp->opts.optRepeatActive)
+            {
+                printf("\n*************** Finishing PHASE %s%s (OptRepeat iteration %d of %d)\n", m_name, statusMessage,
+                       comp->opts.optRepeatIteration, comp->opts.optRepeatCount);
+            }
+            else
+            {
+                printf("\n*************** Finishing PHASE %s%s\n", m_name, statusMessage);
+            }
         }
 
         if (doPostPhase && doPostPhaseDumps)
@@ -158,7 +174,7 @@ void Phase::PostPhase(PhaseStatus status)
 
         if ((comp->activePhaseChecks & PhaseChecks::CHECK_LOOPS) == PhaseChecks::CHECK_LOOPS)
         {
-            comp->fgDebugCheckLoopTable();
+            comp->fgDebugCheckLoops();
         }
 
         if ((comp->activePhaseChecks & PhaseChecks::CHECK_PROFILE) == PhaseChecks::CHECK_PROFILE)
@@ -170,6 +186,8 @@ void Phase::PostPhase(PhaseStatus status)
         {
             comp->fgDebugCheckLinkedLocals();
         }
+
+        comp->fgDebugCheckFlowGraphAnnotations();
     }
 #endif // DEBUG
 }

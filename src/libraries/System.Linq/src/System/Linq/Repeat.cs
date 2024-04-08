@@ -17,7 +17,7 @@ namespace System.Linq
 
             if (count == 0)
             {
-                return Empty<TResult>();
+                return [];
             }
 
             return new RepeatIterator<TResult>(element, count);
@@ -39,7 +39,7 @@ namespace System.Linq
                 _count = count;
             }
 
-            public override Iterator<TResult> Clone()
+            private protected override Iterator<TResult> Clone()
             {
                 return new RepeatIterator<TResult>(_current, _count);
             }

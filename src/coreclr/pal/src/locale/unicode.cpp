@@ -24,7 +24,7 @@ Revision History:
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
 #include "pal/file.h"
-#include "pal/utf8.h"
+#include <minipal/utf8.h>
 #include "pal/cruntime.h"
 #include "pal/stackstring.hpp"
 #include "pal/unicodedata.h"
@@ -109,9 +109,9 @@ BOOL GetUnicodeData(INT nUnicodeValue, UnicodeDataRec *pDataRec)
     return bRet;
 }
 
-wchar_16
+char16_t
 __cdecl
-PAL_ToUpperInvariant( wchar_16 c )
+PAL_ToUpperInvariant( char16_t c )
 {
     UnicodeDataRec dataRec;
 
@@ -140,9 +140,9 @@ PAL_ToUpperInvariant( wchar_16 c )
     }
 }
 
-wchar_16
+char16_t
 __cdecl
-PAL_ToLowerInvariant( wchar_16 c )
+PAL_ToLowerInvariant( char16_t c )
 {
     UnicodeDataRec dataRec;
 
@@ -253,16 +253,20 @@ MultiByteToWideChar(
         goto EXIT;
     }
 
-    // Use UTF8ToUnicode on all systems, since it replaces
-    // invalid characters and Core Foundation doesn't do that.
     if (CodePage == CP_UTF8 || CodePage == CP_ACP)
     {
-        if (cbMultiByte <= -1)
+        if (cbMultiByte < 0)
+            cbMultiByte = strlen(lpMultiByteStr) + 1;
+
+        if (!lpWideCharStr || cchWideChar == 0)
+            retval = minipal_get_length_utf8_to_utf16(lpMultiByteStr, cbMultiByte, dwFlags);
+
+        if (lpWideCharStr)
         {
-        cbMultiByte = strlen(lpMultiByteStr) + 1;
+            if (cchWideChar == 0) cchWideChar = retval;
+            retval = minipal_convert_utf8_to_utf16(lpMultiByteStr, cbMultiByte, (CHAR16_T*)lpWideCharStr, cchWideChar, dwFlags);
         }
 
-        retval = UTF8ToUnicode(lpMultiByteStr, cbMultiByte, lpWideCharStr, cchWideChar, dwFlags);
         goto EXIT;
     }
 
@@ -338,15 +342,20 @@ WideCharToMultiByte(
         defaultChar = *lpDefaultChar;
     }
 
-    // Use UnicodeToUTF8 on all systems because we use
-    // UTF8ToUnicode in MultiByteToWideChar() on all systems.
     if (CodePage == CP_UTF8 || CodePage == CP_ACP)
     {
-        if (cchWideChar == -1)
-        {
+        if (cchWideChar < 0)
             cchWideChar = PAL_wcslen(lpWideCharStr) + 1;
+
+        if (!lpMultiByteStr || cbMultiByte == 0)
+            retval = minipal_get_length_utf16_to_utf8((CHAR16_T*)lpWideCharStr, cchWideChar, dwFlags);
+
+        if (lpMultiByteStr)
+        {
+            if (cbMultiByte == 0) cbMultiByte = retval;
+            retval = minipal_convert_utf16_to_utf8((CHAR16_T*)lpWideCharStr, cchWideChar, lpMultiByteStr, cbMultiByte, dwFlags);
         }
-        retval = UnicodeToUTF8(lpWideCharStr, cchWideChar, lpMultiByteStr, cbMultiByte);
+
         goto EXIT;
     }
 

@@ -8,7 +8,7 @@ public class a
 {
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         try
         {
@@ -16,6 +16,5 @@ public class a
         finally
         {
         }
-        return 100;
     }
 }

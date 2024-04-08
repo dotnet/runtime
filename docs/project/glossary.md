@@ -25,6 +25,7 @@ terminology.
 | EE | [Execution Engine](https://docs.microsoft.com/dotnet/standard/managed-execution-process#running_code). |
 | GC | [Garbage Collector](https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/botr/garbage-collection.md). |
 | IBC | Instrumented Block Counts - used as extension (`*.ibc`) for old PGO files. |
+| IJW | "It Just Works" - Codename for [C++/CLI](https://learn.microsoft.com/cpp/dotnet/dotnet-programming-with-cpp-cli-visual-cpp) managed/native interop |
 | IPC | Inter-Process Communication. |
 | IL | Intermediate Language. Equivalent to CIL, also equivalent to [MSIL](https://docs.microsoft.com/dotnet/standard/managed-execution-process#compiling-to-msil). |
 | JIT | [Just-in-Time](https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/jit/ryujit-overview.md) compiler. RyuJIT is the code name for the next generation Just-in-Time(aka "JIT") for the .NET runtime. |
@@ -299,7 +300,7 @@ and enabling support for running WPF on .NET Core (Windows Only).
 [mono-winforms]: http://www.mono-project.com/docs/gui/winforms/
 [xunit]: https://github.com/xunit
 [mc.dot.net]: https://mc.dot.net/
-[ECMA-355]: http://www.ecma-international.org/publications/standards/Ecma-335.htm
+[ECMA-355]: https://www.ecma-international.org/publications-and-standards/standards/ecma-335
 [dotnet-tooling]: https://docs.microsoft.com/en-us/dotnet/core/tools/
 [dlr-architecture]: https://docs.microsoft.com/en-us/dotnet/framework/reflection-and-codedom/dynamic-language-runtime-overview#dlr-architecture
 [dlr-source]: https://github.com/IronLanguages/dlr

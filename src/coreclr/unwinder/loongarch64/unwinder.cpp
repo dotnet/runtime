@@ -72,9 +72,10 @@ typedef struct _LOONGARCH64_KTRAP_FRAME {
 
 typedef struct _LOONGARCH64_VFP_STATE
 {
-    struct _LOONGARCH64_VFP_STATE *Link;          // link to next state entry
+    struct _LOONGARCH64_VFP_STATE *Link;     // link to next state entry
     ULONG Fcsr;                              // FCSR register
-    ULONG64 F[32];                           // All F registers (0-31)
+    ULONG64 Fcc;                             // Fcc flags.
+    ULONG64 F[32];                           // All FPR64 (0-31)
 } LOONGARCH64_VFP_STATE, *PLOONGARCH64_VFP_STATE, KLOONGARCH64_VFP_STATE, *PKLOONGARCH64_VFP_STATE;
 
 //
@@ -105,7 +106,9 @@ do {                                                                            
     if (ARGUMENT_PRESENT(Params)) {                                                   \
         PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers = (Params)->ContextPointers; \
         if (ARGUMENT_PRESENT(ContextPointers)) {                                      \
-            if (RegisterNumber ==  22)                                                \
+            if (RegisterNumber == 1)                                                  \
+                ContextPointers->Ra = (PDWORD64)Address;                              \
+            else if (RegisterNumber == 22)                                            \
                 ContextPointers->Fp = (PDWORD64)Address;                              \
             else if (RegisterNumber >=  23 && RegisterNumber <= 31) {                 \
                 (&ContextPointers->S0)[RegisterNumber - 23] = (PDWORD64)Address;      \
@@ -184,6 +187,7 @@ Return Value:
 
 {
     ULONG Fcsr;
+    ULONG Fcc;
     ULONG RegIndex;
     ULONG_PTR SourceAddress;
     ULONG_PTR StartingSp;
@@ -238,6 +242,9 @@ Return Value:
             if (Fcsr != (ULONG)-1) {
 
                 ContextRecord->Fcsr = Fcsr;
+                SourceAddress = VfpStateAddress + offsetof(KLOONGARCH64_VFP_STATE, Fcc);
+                Fcc = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
+                ContextRecord->Fcc = Fcc;
 
                 SourceAddress = VfpStateAddress + offsetof(KLOONGARCH64_VFP_STATE, F);
                 for (RegIndex = 0; RegIndex < 32; RegIndex++) {
@@ -327,6 +334,9 @@ Return Value:
 
         SourceAddress = StartingSp + offsetof(T_CONTEXT, Fcsr);
         ContextRecord->Fcsr = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
+
+        SourceAddress = StartingSp + offsetof(T_CONTEXT, Fcc);
+        ContextRecord->Fcc = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
 
         //
         // Inherit the unwound-to-call flag from this context

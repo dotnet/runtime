@@ -5,24 +5,22 @@ using System.Collections.Generic;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public interface IHasStartSymbol
-    {
-        ObjectAndOffsetSymbolNode StartSymbol { get; }
-    }
-
     /// <summary>
     /// Represents an array of <typeparamref name="TEmbedded"/> nodes. The contents of this node will be emitted
     /// by placing a starting symbol, followed by contents of <typeparamref name="TEmbedded"/> nodes (optionally
     /// sorted using provided comparer), followed by ending symbol.
     /// </summary>
-    public class ArrayOfEmbeddedDataNode<TEmbedded> : EmbeddedDataContainerNode, IHasStartSymbol
+    public class ArrayOfEmbeddedDataNode<TEmbedded> : EmbeddedDataContainerNode, INodeWithSize
         where TEmbedded : EmbeddedObjectNode
     {
+        private int? _size;
         private HashSet<TEmbedded> _nestedNodes = new HashSet<TEmbedded>();
         private List<TEmbedded> _nestedNodesList = new List<TEmbedded>();
         private IComparer<TEmbedded> _sorter;
 
-        public ArrayOfEmbeddedDataNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<TEmbedded> nodeSorter) : base(startSymbolMangledName, endSymbolMangledName)
+        int INodeWithSize.Size => _size.Value;
+
+        public ArrayOfEmbeddedDataNode(string mangledName, IComparer<TEmbedded> nodeSorter) : base(mangledName)
         {
             _sorter = nodeSorter;
         }
@@ -35,11 +33,10 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     _nestedNodesList.Add(symbol);
                 }
-                symbol.ContainingNode = this;
             }
         }
 
-        protected override string GetName(NodeFactory factory) => $"Region {StartSymbol.GetMangledName(factory.NameMangler)}";
+        protected override string GetName(NodeFactory factory) => $"Region {this.GetMangledName(factory.NameMangler)}";
 
         public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.DataSection;
         public override bool IsShareable => false;
@@ -84,12 +81,11 @@ namespace ILCompiler.DependencyAnalysis
             if (_sorter != null)
                 _nestedNodesList.Sort(_sorter);
 
-            builder.AddSymbol(StartSymbol);
+            builder.AddSymbol(this);
 
             GetElementDataForNodes(ref builder, factory, relocsOnly);
 
-            EndSymbol.SetSymbolOffset(builder.CountBytes);
-            builder.AddSymbol(EndSymbol);
+            _size = builder.CountBytes;
 
             ObjectData objData = builder.ToObjectData();
             return objData;
@@ -98,15 +94,6 @@ namespace ILCompiler.DependencyAnalysis
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
         {
             return _nestedNodesList.Count == 0;
-        }
-
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
-        {
-            DependencyList dependencies = new DependencyList();
-            dependencies.Add(StartSymbol, "StartSymbol");
-            dependencies.Add(EndSymbol, "EndSymbol");
-
-            return dependencies;
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;

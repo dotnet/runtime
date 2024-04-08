@@ -2,15 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
 using System.Collections;
-using System.Text;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
+using System.Text;
 using System.Xml.Schema;
 using System.Xml.XPath;
 using MS.Internal.Xml.XPath;
-using System.Globalization;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -828,6 +828,7 @@ namespace System.Xml
         }
 
         // Gets or sets the namespace prefix of this node.
+        [AllowNull]
         public virtual string Prefix
         {
             get { return string.Empty; }

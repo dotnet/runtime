@@ -1,8 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Linq.Expressions.Interpreter
 {
+    [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
     internal sealed class NewArrayInitInstruction : Instruction
     {
         private readonly Type _elementType;
@@ -30,6 +33,7 @@ namespace System.Linq.Expressions.Interpreter
         }
     }
 
+    [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
     internal sealed class NewArrayInstruction : Instruction
     {
         private readonly Type _elementType;
@@ -54,6 +58,7 @@ namespace System.Linq.Expressions.Interpreter
         }
     }
 
+    [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
     internal sealed class NewArrayBoundsInstruction : Instruction
     {
         private readonly Type _elementType;

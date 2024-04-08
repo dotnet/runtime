@@ -137,9 +137,10 @@ namespace System
                     ambig = false;
                 }
             }
+            MethodBase bestMatch = candidates[currentMin];
             if (ambig)
-                throw new AmbiguousMatchException();
-            return candidates[currentMin];
+                throw ThrowHelper.GetAmbiguousMatchException(bestMatch);
+            return bestMatch;
         }
 
         // Given a set of properties that match the base criteria, select one.
@@ -256,9 +257,10 @@ namespace System
                 }
             }
 
+            PropertyInfo bestMatch = candidates[currentMin];
             if (ambig)
-                throw new AmbiguousMatchException();
-            return candidates[currentMin];
+                throw ThrowHelper.GetAmbiguousMatchException(bestMatch);
+            return bestMatch;
         }
 
         // The default binder doesn't support any change type functionality.
@@ -341,7 +343,7 @@ namespace System
                     continue;
 
                 if (bestMatch != null)
-                    throw new AmbiguousMatchException();
+                    throw ThrowHelper.GetAmbiguousMatchException(bestMatch);
 
                 bestMatch = match[i];
             }
@@ -606,7 +608,7 @@ namespace System
                 // This can only happen if at least one is vararg or generic.
                 if (currentHierarchyDepth == deepestHierarchy)
                 {
-                    throw new AmbiguousMatchException();
+                    throw ThrowHelper.GetAmbiguousMatchException(methWithDeepestHierarchy!);
                 }
 
                 // Check to see if this method is on the most derived class.

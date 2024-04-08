@@ -5,7 +5,6 @@ using EventMetadata = System.Diagnostics.Tracing.EventSource.EventMetadata;
 
 namespace System.Diagnostics.Tracing
 {
-#if FEATURE_PERFTRACING
     internal sealed class EventPipeMetadataGenerator
     {
         private enum MetadataTag
@@ -395,7 +394,7 @@ namespace System.Diagnostics.Tracing
             // Write the property name.
             fixed (char *pPropertyName = name)
             {
-                EventPipeMetadataGenerator.WriteToBuffer(pMetadataBlob, blobSize, ref offset, (byte *)pPropertyName, ((uint)name.Length + 1) * 2);
+                EventPipeMetadataGenerator.WriteToBuffer(pMetadataBlob, blobSize, ref offset, (byte*)pPropertyName, ((uint)name.Length + 1) * 2);
             }
 
             return GenerateMetadataForTypeV2(typeInfo, pMetadataBlob, ref offset, blobSize);
@@ -761,6 +760,4 @@ namespace System.Diagnostics.Tracing
             return true;
         }
     }
-
-#endif // FEATURE_PERFTRACING
 }

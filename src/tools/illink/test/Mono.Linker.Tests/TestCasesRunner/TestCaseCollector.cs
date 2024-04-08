@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Mono.Cecil;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Extensions;
@@ -14,17 +15,17 @@ namespace Mono.Linker.Tests.TestCasesRunner
 	public class TestCaseCollector
 	{
 		private readonly NPath _rootDirectory;
-		private readonly NPath _testCaseAssemblyPath;
+		private readonly NPath _testCaseAssemblyRoot;
 
-		public TestCaseCollector (string rootDirectory, string testCaseAssemblyPath)
-			: this (rootDirectory.ToNPath (), testCaseAssemblyPath.ToNPath ())
+		public TestCaseCollector (string rootDirectory, string testCaseAssemblyRoot)
+			: this (rootDirectory.ToNPath (), testCaseAssemblyRoot.ToNPath ())
 		{
 		}
 
-		public TestCaseCollector (NPath rootDirectory, NPath testCaseAssemblyPath)
+		public TestCaseCollector (NPath rootDirectory, NPath testCaseAssemblyRoot)
 		{
 			_rootDirectory = rootDirectory;
-			_testCaseAssemblyPath = testCaseAssemblyPath;
+			_testCaseAssemblyRoot = testCaseAssemblyRoot;
 		}
 
 		public IEnumerable<TestCase> Collect ()
@@ -40,14 +41,35 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public IEnumerable<TestCase> Collect (IEnumerable<NPath> sourceFiles)
 		{
 			_rootDirectory.DirectoryMustExist ();
-			_testCaseAssemblyPath.FileMustExist ();
+			_testCaseAssemblyRoot.DirectoryMustExist ();
 
-			using (var caseAssemblyDefinition = AssemblyDefinition.ReadAssembly (_testCaseAssemblyPath.ToString ())) {
-				foreach (var file in sourceFiles) {
-					if (CreateCase (caseAssemblyDefinition, file, out TestCase testCase))
-						yield return testCase;
+			foreach (var file in sourceFiles) {
+				var testCaseAssemblyPath = FindTestCaseAssembly (file);
+				testCaseAssemblyPath.FileMustExist ();
+				if (CreateCase (testCaseAssemblyPath, file, out TestCase testCase)) {
+					yield return testCase;
 				}
 			}
+		}
+
+		NPath FindTestCaseAssembly (NPath sourceFile)
+		{
+			if (!sourceFile.IsChildOf (_rootDirectory))
+				throw new ArgumentException ($"{sourceFile} is not a child of {_rootDirectory}");
+			
+			var current = sourceFile;
+			do {
+				// Find nearest .csproj in the test root source directory
+				if (current.Parent.Files ("*.csproj").FirstOrDefault () is NPath csproj) {
+					// Expect testcase assembly in the output with the same relative path as the csproj
+					var relative = csproj.Parent.RelativeTo (_rootDirectory);
+					return _testCaseAssemblyRoot.Combine (relative).Combine (csproj.ChangeExtension ("dll").FileName);
+				}
+
+				current = current.Parent;
+			} while (current != _rootDirectory);
+
+			throw new InvalidOperationException ($"Could not find a .csproj file for {sourceFile}");
 		}
 
 		public IEnumerable<NPath> AllSourceFiles ()
@@ -84,24 +106,24 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public TestCase CreateIndividualCase (Type testCaseType)
 		{
 			_rootDirectory.DirectoryMustExist ();
-			_testCaseAssemblyPath.FileMustExist ();
+			_testCaseAssemblyRoot.DirectoryMustExist ();
 
 			var pathRelativeToAssembly = $"{testCaseType.FullName.Substring (testCaseType.Module.Name.Length - 3).Replace ('.', '/')}.cs";
 			var fullSourcePath = _rootDirectory.Combine (pathRelativeToAssembly).FileMustExist ();
+			var testCaseAssemblyPath = FindTestCaseAssembly (fullSourcePath);
 
-			using (var caseAssemblyDefinition = AssemblyDefinition.ReadAssembly (_testCaseAssemblyPath.ToString ())) {
-				if (!CreateCase (caseAssemblyDefinition, fullSourcePath, out TestCase testCase))
-					throw new ArgumentException ($"Could not create a test case for `{testCaseType}`.  Ensure the namespace matches it's location on disk");
+			if (!CreateCase (testCaseAssemblyPath, fullSourcePath, out TestCase testCase))
+				throw new ArgumentException ($"Could not create a test case for `{testCaseType}`.  Ensure the namespace matches it's location on disk");
 
-				return testCase;
-			}
+			return testCase;
 		}
 
-		private bool CreateCase (AssemblyDefinition caseAssemblyDefinition, NPath sourceFile, out TestCase testCase)
+		private bool CreateCase (NPath caseAssemblyPath, NPath sourceFile, out TestCase testCase)
 		{
-			var potentialCase = new TestCase (sourceFile, _rootDirectory, _testCaseAssemblyPath);
+			using AssemblyDefinition caseAssemblyDefinition = AssemblyDefinition.ReadAssembly (caseAssemblyPath.ToString ());
+			var potentialCase = new TestCase (sourceFile, _rootDirectory, caseAssemblyPath);
 
-			var typeDefinition = FindTypeDefinition (caseAssemblyDefinition, potentialCase);
+			var typeDefinition = potentialCase.FindTypeDefinition (caseAssemblyDefinition);
 
 			testCase = null;
 
@@ -115,7 +137,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			// Verify the class as a static main method
-			var mainMethod = typeDefinition.Methods.FirstOrDefault (m => m.Name == "Main");
+			MethodDefinition mainMethod = typeDefinition.Methods.FirstOrDefault (m => m.Name ==
+				(typeDefinition.FullName == "Program"
+					? "<Main>$" // Compiler-generated Main for top-level statements
+					: "Main"));
 
 			if (mainMethod == null) {
 				Console.WriteLine ($"{typeDefinition} in {sourceFile} is missing a Main() method");
@@ -129,37 +154,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			testCase = potentialCase;
 			return true;
-		}
-
-		private static TypeDefinition FindTypeDefinition (AssemblyDefinition caseAssemblyDefinition, TestCase testCase)
-		{
-			var typeDefinition = caseAssemblyDefinition.MainModule.GetType (testCase.ReconstructedFullTypeName);
-
-			// For all of the Test Cases, the full type name we constructed from the directory structure will be correct and we can successfully find
-			// the type from GetType.
-			if (typeDefinition != null)
-				return typeDefinition;
-
-			// However, some of types are supporting types rather than test cases.  and may not follow the standardized naming scheme of the test cases
-			// We still need to be able to locate these type defs so that we can parse some of the metadata on them.
-			// One example, Unity run's into this with it's tests that require a type UnityEngine.MonoBehaviours to exist.  This tpe is defined in it's own
-			// file and it cannot follow our standardized naming directory & namespace naming scheme since the namespace must be UnityEngine
-			foreach (var type in caseAssemblyDefinition.MainModule.Types) {
-				//  Let's assume we should never have to search for a test case that has no namespace.  If we don't find the type from GetType, then o well, that's not a test case.
-				if (string.IsNullOrEmpty (type.Namespace))
-					continue;
-
-				if (type.Name == testCase.Name) {
-					// This isn't foolproof, but let's do a little extra vetting to make sure the type we found corresponds to the source file we are
-					// processing.
-					if (!testCase.SourceFile.ReadAllText ().Contains ($"namespace {type.Namespace}"))
-						continue;
-
-					return type;
-				}
-			}
-
-			return null;
 		}
 	}
 }

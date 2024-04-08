@@ -75,7 +75,8 @@ namespace System.Net.WebSockets.Client.Tests
                     Task t = cws.ConnectAsync(uri, GetInvoker(), cts.Token);
 
                     var ex = await Assert.ThrowsAnyAsync<WebSocketException>(() => t);
-                    Assert.IsType<HttpRequestException>(ex.InnerException);
+                    HttpRequestException inner = Assert.IsType<HttpRequestException>(ex.InnerException);
+                    Assert.Equal(HttpRequestError.ExtendedConnectNotSupported, inner.HttpRequestError);
                     Assert.True(ex.InnerException.Data.Contains("SETTINGS_ENABLE_CONNECT_PROTOCOL"));
                 }
             },
@@ -100,7 +101,8 @@ namespace System.Net.WebSockets.Client.Tests
                     Task t = cws.ConnectAsync(uri, GetInvoker(), cts.Token);
 
                     var ex = await Assert.ThrowsAnyAsync<WebSocketException>(() => t);
-                    Assert.IsType<HttpRequestException>(ex.InnerException);
+                    HttpRequestException inner = Assert.IsType<HttpRequestException>(ex.InnerException);
+                    Assert.Equal(HttpRequestError.ExtendedConnectNotSupported, inner.HttpRequestError);
                     Assert.True(ex.InnerException.Data.Contains("SETTINGS_ENABLE_CONNECT_PROTOCOL"));
                 }
             },
@@ -124,8 +126,12 @@ namespace System.Net.WebSockets.Client.Tests
                 Task t = cws.ConnectAsync(Test.Common.Configuration.WebSockets.SecureRemoteEchoServer, GetInvoker(), cts.Token);
 
                 var ex = await Assert.ThrowsAnyAsync<WebSocketException>(() => t);
-                Assert.IsType<HttpRequestException>(ex.InnerException);
                 Assert.True(ex.InnerException.Data.Contains("HTTP2_ENABLED"));
+                HttpRequestException inner = Assert.IsType<HttpRequestException>(ex.InnerException);
+                HttpRequestError expectedError = PlatformDetection.SupportsAlpn ?
+                    HttpRequestError.SecureConnectionError :
+                    HttpRequestError.VersionNegotiationError;
+                Assert.Equal(expectedError, inner.HttpRequestError);
                 Assert.Equal(WebSocketState.Closed, cws.State);
             }
         }

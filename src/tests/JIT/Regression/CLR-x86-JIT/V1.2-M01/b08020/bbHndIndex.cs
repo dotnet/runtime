@@ -26,11 +26,10 @@ public class AA
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         f(ref m_arr);
         Console.WriteLine("Passed.");
-        return 100;
     }
 
     static Array m_arr;

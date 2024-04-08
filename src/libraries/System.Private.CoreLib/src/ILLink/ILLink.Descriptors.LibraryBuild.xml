@@ -8,6 +8,10 @@
       <!-- Used by VS4Mac via reflection to symbolize stack traces -->
       <method name="GetMethodFromNativeIP" />
     </type>
+    <type fullname="System.Reflection.Emit.AssemblyBuilder">
+      <!-- Used by System.Linq.Expressions via reflection -->
+      <method name="ForceAllowDynamicCode" />
+    </type>
     <type fullname="System.Runtime.Serialization.SerializationInfo">
       <!-- Used by System.Runtime.Serialization.Formatters via reflection -->
       <method name="UpdateValue" />

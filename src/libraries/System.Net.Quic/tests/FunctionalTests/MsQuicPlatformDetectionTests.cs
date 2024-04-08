@@ -8,6 +8,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
+    [Collection(nameof(QuicTestCollection))]
     public class MsQuicPlatformDetectionTests : QuicTestBase
     {
         public MsQuicPlatformDetectionTests(ITestOutputHelper output) : base(output) { }
@@ -15,10 +16,12 @@ namespace System.Net.Quic.Tests
         public static bool IsQuicUnsupported => !IsSupported;
 
         [ConditionalFact(nameof(IsQuicUnsupported))]
-        public void UnsupportedPlatforms_ThrowsPlatformNotSupportedException()
+        public async Task UnsupportedPlatforms_ThrowsPlatformNotSupportedException()
         {
-            Assert.ThrowsAsync<PlatformNotSupportedException>(async () => await CreateQuicListener());
-            Assert.ThrowsAsync<PlatformNotSupportedException>(async () => await CreateQuicConnection(new IPEndPoint(IPAddress.Loopback, 0)));
+            PlatformNotSupportedException listenerEx = await Assert.ThrowsAsync<PlatformNotSupportedException>(async () => await CreateQuicListener());
+            PlatformNotSupportedException connectionEx = await Assert.ThrowsAsync<PlatformNotSupportedException>(async () => await CreateQuicConnection(new IPEndPoint(IPAddress.Loopback, 0)));
+            Assert.Equal(listenerEx.Message, connectionEx.Message);
+            _output.WriteLine(listenerEx.Message);
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73290", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
@@ -55,8 +58,9 @@ namespace System.Net.Quic.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/82154", typeof(PlatformDetection), nameof(PlatformDetection.IsRaspbian10), nameof(PlatformDetection.IsArmv6Process), nameof(PlatformDetection.IsInContainer))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/82154", typeof(PlatformDetection), nameof(PlatformDetection.IsUbuntu2004), nameof(PlatformDetection.IsPpc64leProcess))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/82154", typeof(PlatformDetection), nameof(PlatformDetection.IsPpc64leProcess))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/82154", typeof(PlatformDetection), nameof(PlatformDetection.IsUbuntu2004), nameof(PlatformDetection.IsS390xProcess))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91757", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine), nameof(PlatformDetection.IsArmProcess))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsInHelix))]
         [PlatformSpecific(TestPlatforms.Linux)]
         public void SupportedLinuxPlatforms_IsSupportedIsTrue()

@@ -62,14 +62,6 @@ namespace System.Net
         [NonEvent]
         public long BeforeResolution(object hostNameOrAddress)
         {
-            Debug.Assert(hostNameOrAddress != null);
-            Debug.Assert(
-                hostNameOrAddress is string ||
-                hostNameOrAddress is IPAddress ||
-                hostNameOrAddress is KeyValuePair<string, AddressFamily> ||
-                hostNameOrAddress is KeyValuePair<IPAddress, AddressFamily>,
-                $"Unknown hostNameOrAddress type: {hostNameOrAddress.GetType().Name}");
-
             if (IsEnabled())
             {
                 Interlocked.Increment(ref _lookupsRequested);
@@ -77,35 +69,37 @@ namespace System.Net
 
                 if (IsEnabled(EventLevel.Informational, EventKeywords.None))
                 {
-                    string host = hostNameOrAddress switch
-                    {
-                        string h => h,
-                        KeyValuePair<string, AddressFamily> t => t.Key,
-                        IPAddress a => a.ToString(),
-                        KeyValuePair<IPAddress, AddressFamily> t => t.Key.ToString(),
-                        _ => null!
-                    };
+                    string host = GetHostnameFromStateObject(hostNameOrAddress);
+
                     ResolutionStart(host);
                 }
 
                 return Stopwatch.GetTimestamp();
             }
 
-            return 0;
+            return NameResolutionMetrics.IsEnabled() ? Stopwatch.GetTimestamp() : 0;
         }
 
         [NonEvent]
-        public void AfterResolution(long startingTimestamp, bool successful)
+        public void AfterResolution(object hostNameOrAddress, long? startingTimestamp, Exception? exception = null)
         {
-            if (startingTimestamp != 0)
+            Debug.Assert(startingTimestamp.HasValue);
+            if (startingTimestamp == 0)
+            {
+                return;
+            }
+
+            TimeSpan duration = Stopwatch.GetElapsedTime(startingTimestamp.Value);
+
+            if (IsEnabled())
             {
                 Interlocked.Decrement(ref _currentLookups);
 
-                _lookupsDuration?.WriteMetric(Stopwatch.GetElapsedTime(startingTimestamp).TotalMilliseconds);
+                _lookupsDuration?.WriteMetric(duration.TotalMilliseconds);
 
                 if (IsEnabled(EventLevel.Informational, EventKeywords.None))
                 {
-                    if (!successful)
+                    if (exception is not null)
                     {
                         ResolutionFailed();
                     }
@@ -113,6 +107,29 @@ namespace System.Net
                     ResolutionStop();
                 }
             }
+
+            if (NameResolutionMetrics.IsEnabled())
+            {
+                NameResolutionMetrics.AfterResolution(duration, GetHostnameFromStateObject(hostNameOrAddress), exception);
+            }
+        }
+
+        private static string GetHostnameFromStateObject(object hostNameOrAddress)
+        {
+            Debug.Assert(hostNameOrAddress is not null);
+
+            string host = hostNameOrAddress switch
+            {
+                string h => h,
+                KeyValuePair<string, AddressFamily> t => t.Key,
+                IPAddress a => a.ToString(),
+                KeyValuePair<IPAddress, AddressFamily> t => t.Key.ToString(),
+                _ => null!
+            };
+
+            Debug.Assert(host is not null, $"Unknown hostNameOrAddress type: {hostNameOrAddress.GetType().Name}");
+
+            return host;
         }
     }
 }

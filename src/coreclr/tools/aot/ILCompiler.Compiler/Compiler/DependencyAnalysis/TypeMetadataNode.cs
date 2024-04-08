@@ -45,6 +45,10 @@ namespace ILCompiler.DependencyAnalysis
             else
                 dependencies.Add(factory.ModuleMetadata(_type.Module), "Containing module of a reflectable type");
 
+            MetadataType baseType = _type.MetadataBaseType;
+            if (baseType != null)
+                GetMetadataDependencies(ref dependencies, factory, baseType, "Base type of a reflectable type");
+
             var mdManager = (UsageBasedMetadataManager)factory.MetadataManager;
 
             if (_type.IsEnum)

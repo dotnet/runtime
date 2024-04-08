@@ -304,5 +304,28 @@ namespace System.Net.NetworkInformation.Tests
                     ipv6 ? NetworkInterface.IPv6LoopbackInterfaceIndex : NetworkInterface.LoopbackInterfaceIndex);
             }
         }
+
+        [ConditionalFact]
+        public void NetworkInterface_UnicastLLA_ScopeIdSet()
+        {
+            bool foundLla = false;
+            foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                IPInterfaceProperties prop = nic.GetIPProperties();
+                foreach (UnicastIPAddressInformation info in prop.UnicastAddresses)
+                {
+                    if (info.Address.IsIPv6LinkLocal)
+                    {
+                        foundLla = true;
+                        Assert.NotEqual(0, info.Address.ScopeId);
+                    }
+                }
+            }
+
+            if (!foundLla)
+            {
+                throw new SkipTestException("Did not find any LLA");
+            }
+        }
     }
 }

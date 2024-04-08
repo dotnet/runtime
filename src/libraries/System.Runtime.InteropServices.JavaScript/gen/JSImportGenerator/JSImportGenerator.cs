@@ -24,8 +24,7 @@ namespace Microsoft.Interop.JavaScript
             ContainingSyntax StubMethodSyntaxTemplate,
             MethodSignatureDiagnosticLocations DiagnosticLocation,
             JSImportData JSImportData,
-            MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion, JSGeneratorOptions)> GeneratorFactoryKey,
-            SequenceEqualImmutableArray<Diagnostic> Diagnostics);
+            SequenceEqualImmutableArray<DiagnosticInfo> Diagnostics);
 
         public static class StepNames
         {
@@ -57,10 +56,6 @@ namespace Microsoft.Interop.JavaScript
                 context.ReportDiagnostic(invalidMethod.Diagnostic);
             });
 
-            // Compute generator options
-            IncrementalValueProvider<JSGeneratorOptions> stubOptions = context.AnalyzerConfigOptionsProvider
-                .Select(static (options, ct) => new JSGeneratorOptions(options.GlobalOptions));
-
             IncrementalValueProvider<StubEnvironment> stubEnvironment = context.CreateStubEnvironmentProvider();
 
             // Validate environment that is being used to generate stubs.
@@ -69,29 +64,26 @@ namespace Microsoft.Interop.JavaScript
                 if (data.Right.IsEmpty // no attributed methods
                     || data.Left.Compilation.Options is CSharpCompilationOptions { AllowUnsafe: true }) // Unsafe code enabled
                 {
-                    return ImmutableArray<Diagnostic>.Empty;
+                    return ImmutableArray<DiagnosticInfo>.Empty;
                 }
 
-                return ImmutableArray.Create(Diagnostic.Create(GeneratorDiagnostics.JSImportRequiresAllowUnsafeBlocks, null));
+                return ImmutableArray.Create(DiagnosticInfo.Create(GeneratorDiagnostics.JSImportRequiresAllowUnsafeBlocks, null));
             }));
 
-            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<Diagnostic>)> generateSingleStub = methodsToGenerate
+            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>)> generateSingleStub = methodsToGenerate
                 .Combine(stubEnvironment)
-                .Combine(stubOptions)
                 .Select(static (data, ct) => new
                 {
-                    data.Left.Left.Syntax,
-                    data.Left.Left.Symbol,
-                    Environment = data.Left.Right,
-                    Options = data.Right
+                    data.Left.Syntax,
+                    data.Left.Symbol,
+                    Environment = data.Right,
                 })
                 .Select(
-                    static (data, ct) => CalculateStubInformation(data.Syntax, data.Symbol, data.Environment, data.Options, ct)
+                    static (data, ct) => CalculateStubInformation(data.Syntax, data.Symbol, data.Environment, ct)
                 )
                 .WithTrackingName(StepNames.CalculateStubInformation)
-                .Combine(stubOptions)
                 .Select(
-                    static (data, ct) => GenerateSource(data.Left)
+                    static (data, ct) => GenerateSource(data)
                 )
                 .WithComparer(Comparers.GeneratedSyntax)
                 .WithTrackingName(StepNames.GenerateSingleStub);
@@ -128,9 +120,7 @@ namespace Microsoft.Interop.JavaScript
 
             FieldDeclarationSyntax sigField = FieldDeclaration(VariableDeclaration(IdentifierName(Constants.JSFunctionSignatureGlobal))
                 .WithVariables(SingletonSeparatedList(VariableDeclarator(Identifier(stub.BindingName)))))
-                .AddModifiers(Token(SyntaxKind.StaticKeyword))
-                .WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(
-                    Attribute(IdentifierName(Constants.ThreadStaticGlobal))))));
+                .AddModifiers(Token(SyntaxKind.StaticKeyword));
 
             MemberDeclarationSyntax toPrint = containingSyntaxContext.WrapMembersInContainingSyntaxWithUnsafeModifier(stubMethod, sigField);
             return toPrint;
@@ -160,7 +150,6 @@ namespace Microsoft.Interop.JavaScript
             MethodDeclarationSyntax originalSyntax,
             IMethodSymbol symbol,
             StubEnvironment environment,
-            JSGeneratorOptions options,
             CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
@@ -177,7 +166,8 @@ namespace Microsoft.Interop.JavaScript
 
             Debug.Assert(jsImportAttr is not null);
 
-            var generatorDiagnostics = new GeneratorDiagnostics();
+            var locations = new MethodSignatureDiagnosticLocations(originalSyntax);
+            var generatorDiagnostics = new GeneratorDiagnosticsBag(new DescriptorProvider(), locations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
 
             // Process the JSImport attribute
             JSImportData? jsImportData = ProcessJSImportAttribute(jsImportAttr!);
@@ -193,41 +183,28 @@ namespace Microsoft.Interop.JavaScript
 
             var containingTypeContext = new ContainingSyntaxContext(originalSyntax);
 
-            var methodSyntaxTemplate = new ContainingSyntax(originalSyntax.Modifiers.StripTriviaFromTokens(), SyntaxKind.MethodDeclaration, originalSyntax.Identifier, originalSyntax.TypeParameterList);
+            var methodSyntaxTemplate = new ContainingSyntax(originalSyntax.Modifiers, SyntaxKind.MethodDeclaration, originalSyntax.Identifier, originalSyntax.TypeParameterList);
             return new IncrementalStubGenerationContext(
                 signatureContext,
                 containingTypeContext,
                 methodSyntaxTemplate,
-                new MethodSignatureDiagnosticLocations(originalSyntax),
+                locations,
                 jsImportData,
-                CreateGeneratorFactory(environment, options),
-                new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray()));
+                new SequenceEqualImmutableArray<DiagnosticInfo>(generatorDiagnostics.Diagnostics.ToImmutableArray()));
         }
 
-        private static MarshallingGeneratorFactoryKey<(TargetFramework, Version, JSGeneratorOptions)> CreateGeneratorFactory(StubEnvironment env, JSGeneratorOptions options)
-        {
-            JSGeneratorFactory jsGeneratorFactory = new JSGeneratorFactory();
-
-            return MarshallingGeneratorFactoryKey.Create((env.TargetFramework, env.TargetFrameworkVersion, options), jsGeneratorFactory);
-        }
-
-        private static (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateSource(
+        private static (MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateSource(
             IncrementalStubGenerationContext incrementalContext)
         {
-            var diagnostics = new GeneratorDiagnostics();
+            var diagnostics = new GeneratorDiagnosticsBag(new DescriptorProvider(), incrementalContext.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
 
             // Generate stub code
             var stubGenerator = new JSImportCodeGenerator(
-            incrementalContext.GeneratorFactoryKey.Key.TargetFramework,
-            incrementalContext.GeneratorFactoryKey.Key.TargetFrameworkVersion,
-            incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation,
-            incrementalContext.JSImportData,
-            incrementalContext.SignatureContext,
-            (elementInfo, ex) =>
-            {
-                diagnostics.ReportMarshallingNotSupported(incrementalContext.DiagnosticLocation, elementInfo, ex.NotSupportedDetails, ex.DiagnosticProperties ?? ImmutableDictionary<string, string>.Empty);
-            },
-            incrementalContext.GeneratorFactoryKey.GeneratorFactory);
+                incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation,
+                incrementalContext.JSImportData,
+                incrementalContext.SignatureContext,
+                diagnostics,
+                new JSGeneratorResolver());
 
             BlockSyntax code = stubGenerator.GenerateJSImportBody();
 

@@ -12,6 +12,10 @@ namespace Microsoft.Extensions.Logging.Console
     /// </summary>
     public abstract class ConsoleFormatter
     {
+        /// <summary>
+        /// Initializes a new instance of <see cref="ConsoleFormatter"/>.
+        /// </summary>
+        /// <param name="name"></param>
         protected ConsoleFormatter(string name)
         {
             ThrowHelper.ThrowIfNull(name);

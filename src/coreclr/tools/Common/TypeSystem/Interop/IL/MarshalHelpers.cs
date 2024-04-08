@@ -231,7 +231,8 @@ namespace Internal.TypeSystem.Interop
             if (marshalAs != null)
                 nativeType = marshalAs.Type;
 
-            if (type.IsByRef)
+            bool isByRef = type.IsByRef;
+            if (isByRef)
             {
                 type = type.GetParameterType();
 
@@ -416,9 +417,15 @@ namespace Internal.TypeSystem.Interop
                     return MarshallerKind.Invalid;
                 }
 
-                if (!isField && ((DefType)type).IsInt128OrHasInt128Fields)
+                if (!isField && ((DefType)type).IsInt128OrHasInt128Fields && !isByRef)
                 {
                     // Int128 types or structs that contain them cannot be passed by value
+                    return MarshallerKind.Invalid;
+                }
+
+                if (!isField && ((DefType)type).IsVectorTOrHasVectorTFields)
+                {
+                    // Vector<T> types or structs that contain them cannot be passed by value
                     return MarshallerKind.Invalid;
                 }
 
@@ -927,7 +934,7 @@ namespace Internal.TypeSystem.Interop
 
         internal static bool ShouldCheckForPendingException(TargetDetails target, PInvokeMetadata metadata)
         {
-            if (!target.IsOSXLike)
+            if (!target.IsApplePlatform)
                 return false;
 
             const string ObjectiveCMsgSend = "objc_msgSend";
@@ -942,19 +949,19 @@ namespace Internal.TypeSystem.Interop
                 && metadata.Name.StartsWith(ObjectiveCMsgSend);
         }
 
-        internal static int? GetObjectiveCMessageSendFunction(TargetDetails target, string pinvokeModule, string pinvokeFunction)
+        internal static uint? GetObjectiveCMessageSendFunction(TargetDetails target, string pinvokeModule, string pinvokeFunction)
         {
-            if (!target.IsOSXLike || pinvokeModule != ObjectiveCLibrary)
+            if (!target.IsApplePlatform || pinvokeModule != ObjectiveCLibrary)
                 return null;
 
 #pragma warning disable CA1416
             return pinvokeFunction switch
             {
-                "objc_msgSend" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSend,
-                "objc_msgSend_fpret" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSendFpret,
-                "objc_msgSend_stret" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSendStret,
-                "objc_msgSendSuper" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSendSuper,
-                "objc_msgSendSuper_stret" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSendSuperStret,
+                "objc_msgSend" => (uint)ObjectiveCMarshal.MessageSendFunction.MsgSend,
+                "objc_msgSend_fpret" => (uint)ObjectiveCMarshal.MessageSendFunction.MsgSendFpret,
+                "objc_msgSend_stret" => (uint)ObjectiveCMarshal.MessageSendFunction.MsgSendStret,
+                "objc_msgSendSuper" => (uint)ObjectiveCMarshal.MessageSendFunction.MsgSendSuper,
+                "objc_msgSendSuper_stret" => (uint)ObjectiveCMarshal.MessageSendFunction.MsgSendSuperStret,
                 _ => null,
             };
 #pragma warning restore CA1416

@@ -1,7 +1,7 @@
-include(FindPythonInterp)
+include(FindPython)
 set (GENERATE_SCRIPT ${CLR_DIR}/scripts/genLttngProvider.py)
 
-set(GENERATE_COMMAND ${PYTHON_EXECUTABLE} ${GENERATE_SCRIPT} --man ${EVENT_MANIFEST} --intermediate ${CMAKE_CURRENT_BINARY_DIR})
+set(GENERATE_COMMAND ${Python_EXECUTABLE} ${GENERATE_SCRIPT} --man ${EVENT_MANIFEST} --intermediate ${CMAKE_CURRENT_BINARY_DIR})
 
 execute_process(
   COMMAND ${GENERATE_COMMAND} --dry-run
@@ -30,7 +30,6 @@ foreach(LTTNG_PROVIDER_FILE ${LTTNG_PROVIDER_OUTPUT})
   endif()
 endforeach()
 
-add_definitions(-DPAL_STDCPP_COMPAT=1)
 include_directories(${COREPAL_SOURCE_DIR}/inc/rt)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/lttng)
 

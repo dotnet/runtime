@@ -8,12 +8,11 @@ using Xunit;
 public struct AA
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         sbyte local2 = 0;
         while (
             (new bool[5, 5])[Math.Max(local2, local2), local2]
             ) { }
-        return 100;
     }
 }

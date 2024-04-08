@@ -79,49 +79,11 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         /// <summary>
-        /// Creating a queue JsonTypeInfo from within the DeserializeAsyncEnumerable method
-        /// triggers generic recursion warnings from the AOT compiler so we instead
-        /// have the caller do it for us externally (cf. https://github.com/dotnet/runtime/issues/85184)
+        /// Caches a JsonTypeInfo&lt;Queue&lt;T&gt;&gt; instance used by the DeserializeAsyncEnumerable method.
+        /// Store as a non-generic type to avoid triggering generic recursion in the AOT compiler.
+        /// cf. https://github.com/dotnet/runtime/issues/85184
         /// </summary>
-        internal JsonTypeInfo<Queue<T>>? _asyncEnumerableQueueTypeInfo;
-
-        internal async IAsyncEnumerable<T> DeserializeAsyncEnumerable(Stream utf8Json, [EnumeratorCancellation] CancellationToken cancellationToken)
-        {
-            Debug.Assert(_asyncEnumerableQueueTypeInfo?.IsConfigured == true, "must be populated before calling the method.");
-            JsonTypeInfo<Queue<T>> queueTypeInfo = _asyncEnumerableQueueTypeInfo;
-            JsonSerializerOptions options = queueTypeInfo.Options;
-            var bufferState = new ReadBufferState(options.DefaultBufferSize);
-            ReadStack readStack = default;
-            readStack.Initialize(queueTypeInfo, supportContinuation: true);
-
-            var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
-
-            try
-            {
-                do
-                {
-                    bufferState = await bufferState.ReadFromStreamAsync(utf8Json, cancellationToken, fillBuffer: false).ConfigureAwait(false);
-                    queueTypeInfo.ContinueDeserialize(
-                        ref bufferState,
-                        ref jsonReaderState,
-                        ref readStack);
-
-                    if (readStack.Current.ReturnValue is { } returnValue)
-                    {
-                        var queue = (Queue<T>)returnValue!;
-                        while (queue.Count > 0)
-                        {
-                            yield return queue.Dequeue();
-                        }
-                    }
-                }
-                while (!bufferState.IsFinalBlock);
-            }
-            finally
-            {
-                bufferState.Dispose();
-            }
-        }
+        internal JsonTypeInfo? _asyncEnumerableQueueTypeInfo;
 
         internal sealed override object? DeserializeAsObject(ref Utf8JsonReader reader, ref ReadStack state)
             => Deserialize(ref reader, ref state);
@@ -135,23 +97,16 @@ namespace System.Text.Json.Serialization.Metadata
         internal sealed override object? DeserializeAsObject(Stream utf8Json)
             => Deserialize(utf8Json);
 
-        private T? ContinueDeserialize(
+        internal T? ContinueDeserialize(
             ref ReadBufferState bufferState,
             ref JsonReaderState jsonReaderState,
             ref ReadStack readStack)
         {
             var reader = new Utf8JsonReader(bufferState.Bytes, bufferState.IsFinalBlock, jsonReaderState);
 
-            // If we haven't read in the entire stream's payload we'll need to signify that we want
-            // to enable read ahead behaviors to ensure we have complete json objects and arrays
-            // ({}, []) when needed. (Notably to successfully parse JsonElement via JsonDocument
-            // to assign to object and JsonElement properties in the constructed .NET object.)
-            readStack.ReadAhead = !bufferState.IsFinalBlock;
-            readStack.BytesConsumed = 0;
-
             T? value = EffectiveConverter.ReadCore(ref reader, Options, ref readStack);
-            Debug.Assert(readStack.BytesConsumed <= bufferState.Bytes.Length);
-            bufferState.AdvanceBuffer((int)readStack.BytesConsumed);
+            Debug.Assert(reader.BytesConsumed <= bufferState.Bytes.Length);
+            bufferState.AdvanceBuffer((int)reader.BytesConsumed);
             jsonReaderState = reader.CurrentState;
             return value;
         }

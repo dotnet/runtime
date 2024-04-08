@@ -97,6 +97,9 @@ namespace Microsoft.Extensions.Hosting
             },
             applicationLifetime);
 
+#if NET8_0_OR_GREATER
+            await Task.Delay(Timeout.Infinite, applicationLifetime.ApplicationStopping).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+#else
             var waitForStop = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
             applicationLifetime.ApplicationStopping.Register(obj =>
             {
@@ -105,6 +108,7 @@ namespace Microsoft.Extensions.Hosting
             }, waitForStop);
 
             await waitForStop.Task.ConfigureAwait(false);
+#endif
 
             // Host will use its default ShutdownTimeout if none is specified.
             // The cancellation token may have been triggered to unblock waitForStop. Don't pass it here because that would trigger an abortive shutdown.

@@ -3975,9 +3975,9 @@ public:
 
     // CORDB_ADDRESS's are UINT_PTR's (64 bit under HOST_64BIT, 32 bit otherwise)
 #if defined(TARGET_64BIT)
-#define MAX_ADDRESS     (_UI64_MAX)
+#define MAX_ADDRESS     (UINT64_MAX)
 #else
-#define MAX_ADDRESS     (_UI32_MAX)
+#define MAX_ADDRESS     (UINT32_MAX)
 #endif
 #define MIN_ADDRESS     (0x0)
     CORDB_ADDRESS       m_minPatchAddr; //smallest patch in table
@@ -5120,13 +5120,13 @@ public:
                                mdFieldDef fieldDef);
     mdTypeDef GetTypeDef() { return (mdTypeDef)m_id; }
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     // when we get an added field or method, mark the class to force re-init when we access it
     void MakeOld()
     {
         m_loadLevel = Constructed;
     }
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     //-----------------------------------------------------------
     // Data members
@@ -5349,7 +5349,8 @@ class CordbFunction : public CordbBase,
                       public ICorDebugFunction,
                       public ICorDebugFunction2,
                       public ICorDebugFunction3,
-                      public ICorDebugFunction4
+                      public ICorDebugFunction4,
+                      public ICorDebugFunction5
 {
 public:
     //-----------------------------------------------------------
@@ -5413,6 +5414,12 @@ public:
     COM_METHOD CreateNativeBreakpoint(ICorDebugFunctionBreakpoint **ppBreakpoint);
 
     //-----------------------------------------------------------
+    // ICorDebugFunction5
+    //-----------------------------------------------------------
+    COM_METHOD AreOptimizationsDisabled(BOOL *pOptimizationsDisabled);
+    COM_METHOD DisableOptimizations();
+
+    //-----------------------------------------------------------
     // Internal members
     //-----------------------------------------------------------
 protected:
@@ -5451,7 +5458,7 @@ public:
                                       CordbReJitILCode** ppILCode);
 
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     void MakeOld();
 #endif
 
@@ -5748,9 +5755,9 @@ public:
     // get total size of the IL code
     ULONG32 GetSize() { return m_codeRegionInfo.cbSize; }
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     void MakeOld();
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     HRESULT GetLocalVarSig(SigParser *pLocalsSigParser, ULONG *pLocalVarCount);
     HRESULT GetLocalVariableType(DWORD dwIndex, const Instantiation * pInst, CordbType ** ppResultType);
@@ -5768,7 +5775,7 @@ private:
     //-----------------------------------------------------------
 
 private:
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     UINT m_fIsOld : 1;           // marks this instance as an old EnC version
     bool m_encBreakpointsApplied;
 #endif
@@ -7318,7 +7325,8 @@ public:
                     GENERICS_TYPE_TOKEN   exactGenericArgsToken,
                     DWORD                 dwExactGenericArgsTokenIndex,
                     bool                  fVarArgFnx,
-                    CordbReJitILCode *    pReJitCode);
+                    CordbReJitILCode *    pReJitCode,
+                    bool                  fAdjustedIP);
     HRESULT Init();
     virtual ~CordbJITILFrame();
     virtual void Neuter();
@@ -7429,6 +7437,7 @@ public:
 
     CordbILCode* GetOriginalILCode();
     CordbReJitILCode* GetReJitILCode();
+    void AdjustIPAfterException();
 
 private:
     void    RefreshCachedVarArgSigParserIfNeeded();
@@ -7496,6 +7505,7 @@ public:
 
     // if this frame is instrumented with rejit, this will point to the instrumented IL code
     RSSmartPtr<CordbReJitILCode> m_pReJitCode;
+    BOOL m_adjustedIP;
 };
 
 /* ------------------------------------------------------------------------- *

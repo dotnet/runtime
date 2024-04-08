@@ -1,26 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-**
-** Purpose: Provides a fast, AV free, cross-language way of
-**          accessing unmanaged memory in a random fashion.
-**
-**
-===========================================================*/
-
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.IO
 {
-    /// Perf notes: ReadXXX, WriteXXX (for basic types) acquire and release the
-    /// SafeBuffer pointer rather than relying on generic Read(T) from SafeBuffer because
-    /// this gives better throughput; benchmarks showed about 12-15% better.
+    /// <summary>
+    /// Provides random access to unmanaged blocks of memory from managed code.
+    /// </summary>
+    // Perf notes: ReadXXX, WriteXXX (for basic types) acquire and release the
+    // SafeBuffer pointer rather than relying on generic Read(T) from SafeBuffer because
+    // this gives better throughput; benchmarks showed about 12-15% better.
     public class UnmanagedMemoryAccessor : IDisposable
     {
         private SafeBuffer _buffer = null!; // initialized in helper called by ctor, but also not initialized by protected ctor
@@ -361,7 +353,7 @@ namespace System.IO
                 }
             }
 
-            _buffer.ReadArray<T>((ulong)(_offset + position), array, offset, n);
+            _buffer.ReadArray((ulong)(_offset + position), array, offset, n);
 
             return n;
         }
@@ -406,7 +398,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    Unsafe.WriteUnaligned<short>(pointer + _offset + position, value);
+                    Unsafe.WriteUnaligned(pointer + _offset + position, value);
                 }
                 finally
                 {
@@ -429,7 +421,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    Unsafe.WriteUnaligned<int>(pointer + _offset + position, value);
+                    Unsafe.WriteUnaligned(pointer + _offset + position, value);
                 }
                 finally
                 {
@@ -452,7 +444,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    Unsafe.WriteUnaligned<long>(pointer + _offset + position, value);
+                    Unsafe.WriteUnaligned(pointer + _offset + position, value);
                 }
                 finally
                 {
@@ -480,10 +472,10 @@ namespace System.IO
                     _buffer.AcquirePointer(ref pointer);
                     pointer += (_offset + position);
 
-                    Unsafe.WriteUnaligned<int>(pointer, bits[0]);
-                    Unsafe.WriteUnaligned<int>(pointer + 4, bits[1]);
-                    Unsafe.WriteUnaligned<int>(pointer + 8, bits[2]);
-                    Unsafe.WriteUnaligned<int>(pointer + 12, bits[3]);
+                    Unsafe.WriteUnaligned(pointer, bits[0]);
+                    Unsafe.WriteUnaligned(pointer + 4, bits[1]);
+                    Unsafe.WriteUnaligned(pointer + 8, bits[2]);
+                    Unsafe.WriteUnaligned(pointer + 12, bits[3]);
                 }
                 finally
                 {
@@ -540,7 +532,7 @@ namespace System.IO
                 }
             }
 
-            _buffer.Write<T>((ulong)(_offset + position), structure);
+            _buffer.Write((ulong)(_offset + position), structure);
         }
 
         // Writes 'count' structs of type T from 'array' (starting at 'offset') into unmanaged memory.
@@ -569,7 +561,7 @@ namespace System.IO
                 throw new NotSupportedException(SR.NotSupported_Writing);
             }
 
-            _buffer.WriteArray<T>((ulong)(_offset + position), array, offset, count);
+            _buffer.WriteArray((ulong)(_offset + position), array, offset, count);
         }
 
         private void EnsureSafeToRead(long position, int sizeOfType)

@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime.Versioning;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Pipes
 {
@@ -202,14 +202,14 @@ namespace System.IO.Pipes
             // cross-platform with Windows (which has only '\' as an invalid char).
             if (Path.IsPathRooted(pipeName))
             {
-                if (pipeName.IndexOfAny(s_invalidPathNameChars) >= 0 || pipeName.EndsWith(Path.DirectorySeparatorChar))
+                if (pipeName.AsSpan().ContainsAny(s_invalidPathNameChars) || pipeName.EndsWith(Path.DirectorySeparatorChar))
                     throw new PlatformNotSupportedException(SR.PlatformNotSupported_InvalidPipeNameChars);
 
                 // Caller is in full control of file location.
                 return pipeName;
             }
 
-            if (pipeName.IndexOfAny(s_invalidFileNameChars) >= 0)
+            if (pipeName.AsSpan().ContainsAny(s_invalidFileNameChars))
             {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_InvalidPipeNameChars);
             }

@@ -4,6 +4,9 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <GCStressIncompatible>true</GCStressIncompatible>
     <CLRTestPriority>1</CLRTestPriority>
+    <!-- This test generates a lot of codegen and doesn't play nice with JitStress modes for ARM32 due to size limitations.
+         See https://github.com/dotnet/runtime/issues/88621 -->
+    <JitOptimizationSensitive Condition="'$(TargetArchitecture)' == 'arm'">true</JitOptimizationSensitive>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>

@@ -550,7 +550,17 @@ namespace System.Security.Cryptography.Pkcs
         {
             HashAlgorithmName hashAlgorithmName = GetDigestAlgorithm();
 
-            IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithmName);
+
+            IncrementalHash hasher;
+
+            try
+            {
+                hasher = IncrementalHash.CreateHash(hashAlgorithmName);
+            }
+            catch (PlatformNotSupportedException ex)
+            {
+                throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmName), ex);
+            }
 
             if (_parentSignerInfo == null)
             {

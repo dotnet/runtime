@@ -148,44 +148,6 @@ HRESULT PESectionMan::newSection(const char* name, PESection **section,
     return S_OK;
 }
 
-//Clone each of our sections.  This will cause a deep copy of the sections
-HRESULT PESectionMan::cloneInstance(PESectionMan *destination) {
-    _ASSERTE(destination);
-    PESection       *pSection;
-    PESection       **destPtr;
-    HRESULT         hr = NOERROR;
-
-    //Copy each of the sections
-    for (PESection** ptr = sectStart; ptr < sectCur; ptr++) {
-        destPtr = destination->sectStart;
-        pSection = NULL;
-
-        // try to find the matching section by name
-        for (; destPtr < destination->sectCur; destPtr++)
-        {
-            if (strcmp((*destPtr)->m_name, (*ptr)->m_name) == 0)
-            {
-                pSection = *destPtr;
-                break;
-            }
-        }
-        if (destPtr >= destination->sectCur)
-        {
-            // cannot find a section in the destination with matching name
-            // so create one!
-            IfFailRet( destination->getSectionCreate((*ptr)->m_name,
-                                                     (*ptr)->flags(),
-                                                     &pSection) );
-        }
-        if (pSection)
-            IfFailRet( (*ptr)->cloneInstance(pSection) );
-    }
-
-    //destination->sectEnd=destination->sectStart + (sectEnd-sectStart);
-    return S_OK;
-}
-
-
 //*****************************************************************************
 // Implementation for PESection
 //*****************************************************************************
@@ -378,47 +340,6 @@ HRESULT PESection::applyRelocs(CeeGenTokenMapper *pTokenMapper)
 
     } // End relocs
     return S_OK;
-}
-
-HRESULT PESection::cloneInstance(PESection *destination) {
-    PESectionReloc *cur;
-    INT32 newSize;
-    HRESULT hr = NOERROR;
-
-    _ASSERTE(destination);
-
-    destination->dirEntry = dirEntry;
-
-    //Merge the information currently in the BlobFetcher into
-    //out current blob fetcher
-    m_blobFetcher.Merge(&(destination->m_blobFetcher));
-
-    //Copy the name.
-    strncpy_s(destination->m_name, sizeof(destination->m_name), m_name, sizeof(m_name) - 1);
-
-    //Clone the relocs
-    //If the arrays aren't the same size, reallocate as necessary.
-    //<REVISIT_TODO>@FUTURE:  Make this a ref-counted structure and don't copy it.</REVISIT_TODO>
-
-    newSize = (INT32)(m_relocCur-m_relocStart);
-
-    if (newSize>(destination->m_relocEnd - destination->m_relocStart)) {
-        delete[] destination->m_relocStart;
-
-        destination->m_relocStart = new (nothrow) PESectionReloc[newSize];
-        if (destination->m_relocStart == NULL)
-            IfFailGo( E_OUTOFMEMORY );
-        destination->m_relocEnd = destination->m_relocStart+(newSize);
-    }
-
-    //copy the correct data over into our new array.
-    memcpy(destination->m_relocStart, m_relocStart, sizeof(PESectionReloc)*(newSize));
-    destination->m_relocCur = destination->m_relocStart + (newSize);
-    for (cur=destination->m_relocStart; cur<destination->m_relocCur; cur++) {
-        cur->section=destination;
-    }
-ErrExit:
-    return hr;
 }
 
 void PESection::SetInitialGrowth(unsigned growth)

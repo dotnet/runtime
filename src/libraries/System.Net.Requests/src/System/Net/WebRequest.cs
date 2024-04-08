@@ -513,29 +513,26 @@ namespace System.Net
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
 
-        public virtual Task<Stream> GetRequestStreamAsync()
+        public virtual async Task<Stream> GetRequestStreamAsync()
         {
             // Offload to a different thread to avoid blocking the caller during request submission.
-            // We use Task.Run rather than Task.Factory.StartNew even though StartNew would let us pass 'this'
-            // as a state argument to avoid the closure to capture 'this' and the associated delegate.
-            // This is because the task needs to call FromAsync and marshal the inner Task out, and
-            // Task.Run's implementation of this is sufficiently more efficient than what we can do with
-            // Unwrap() that it's worth it to just rely on Task.Run and accept the closure/delegate.
-            return Task.Run(() =>
-                Task<Stream>.Factory.FromAsync(
-                    (callback, state) => ((WebRequest)state!).BeginGetRequestStream(callback, state),
-                    iar => ((WebRequest)iar.AsyncState!).EndGetRequestStream(iar),
-                    this));
+            await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+
+            return await Task<Stream>.Factory.FromAsync(
+                (callback, state) => ((WebRequest)state!).BeginGetRequestStream(callback, state),
+                iar => ((WebRequest)iar.AsyncState!).EndGetRequestStream(iar),
+                this).ConfigureAwait(false);
         }
 
-        public virtual Task<WebResponse> GetResponseAsync()
+        public virtual async Task<WebResponse> GetResponseAsync()
         {
-            // See comment in GetRequestStreamAsync().  Same logic applies here.
-            return Task.Run(() =>
-                Task<WebResponse>.Factory.FromAsync(
-                    (callback, state) => ((WebRequest)state!).BeginGetResponse(callback, state),
-                    iar => ((WebRequest)iar.AsyncState!).EndGetResponse(iar),
-                    this));
+            // Offload to a different thread to avoid blocking the caller during request submission.
+            await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+
+            return await Task<WebResponse>.Factory.FromAsync(
+                (callback, state) => ((WebRequest)state!).BeginGetResponse(callback, state),
+                iar => ((WebRequest)iar.AsyncState!).EndGetResponse(iar),
+                this).ConfigureAwait(false);
         }
 
         public virtual void Abort()

@@ -26,8 +26,6 @@ struct fx_ver_t
     bool is_empty() const { return m_major == -1; }
 
     pal::string_t as_str() const;
-    pal::string_t prerelease_glob() const;
-    pal::string_t patch_glob() const;
 
     bool operator ==(const fx_ver_t& b) const;
     bool operator !=(const fx_ver_t& b) const;

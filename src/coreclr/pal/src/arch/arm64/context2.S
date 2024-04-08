@@ -135,7 +135,7 @@ LEAF_END RtlCaptureContext, _TEXT
 //
 LEAF_ENTRY RtlRestoreContext, _TEXT
 
-#ifdef HAS_ASAN
+#ifdef HAS_ADDRESS_SANITIZER
     ldr w17, [x0, #(CONTEXT_ContextFlags)]
     tbz w17, #CONTEXT_CONTROL_BIT, LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT)
 
@@ -220,7 +220,7 @@ LEAF_END RtlRestoreContext, _TEXT
 //  x1: Exception*
 //
 LEAF_ENTRY RestoreCompleteContext, _TEXT
-    // We cannot restore all registers in the user mode code, so we rely on a help from kernel here. 
+    // We cannot restore all registers in the user mode code, so we rely on a help from kernel here.
     // The following instruction is an undefined instruction. In the hardware exception handler, we check
     // if the faulting address is the RtlRestoreContext and in case it is, we update the context of
     // the faulting thread using the CONTEXT pointed to by the x0 register.

@@ -16,7 +16,8 @@ public class DeadThreads
     ///     set DOTNET_Thread_DeadThreadCountThresholdForGCTrigger=8
     ///     set DOTNET_Thread_DeadThreadGCTriggerPeriodMilliseconds=3e8 // 1000
     /// </summary>
-    private static void GCTriggerSanityTest()
+    [Fact]
+    public static void GCTriggerSanityTest()
     {
         var testDuration = TimeSpan.FromSeconds(8);
         var startTime = DateTime.UtcNow;
@@ -33,12 +34,5 @@ public class DeadThreads
         var t = new Thread(() => { });
         t.IsBackground = true;
         t.Start();
-    }
-
-    [Fact]
-    public static int TestEntryPoint()
-    {
-        GCTriggerSanityTest();
-        return 100;
     }
 }

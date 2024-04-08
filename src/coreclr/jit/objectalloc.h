@@ -47,28 +47,26 @@ protected:
     virtual PhaseStatus DoPhase() override;
 
 private:
-    bool CanAllocateLclVarOnStack(unsigned int lclNum, CORINFO_CLASS_HANDLE clsHnd);
-    bool CanLclVarEscape(unsigned int lclNum);
-    void MarkLclVarAsPossiblyStackPointing(unsigned int lclNum);
-    void MarkLclVarAsDefinitelyStackPointing(unsigned int lclNum);
-    bool MayLclVarPointToStack(unsigned int lclNum);
-    bool DoesLclVarPointToStack(unsigned int lclNum);
-    void DoAnalysis();
-    void MarkLclVarAsEscaping(unsigned int lclNum);
-    void MarkEscapingVarsAndBuildConnGraph();
-    void AddConnGraphEdge(unsigned int sourceLclNum, unsigned int targetLclNum);
-    void ComputeEscapingNodes(BitVecTraits* bitVecTraits, BitVec& escapingNodes);
-    void ComputeStackObjectPointers(BitVecTraits* bitVecTraits);
-    bool     MorphAllocObjNodes();
-    void     RewriteUses();
-    GenTree* MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* allocObj);
+    bool         CanAllocateLclVarOnStack(unsigned int lclNum, CORINFO_CLASS_HANDLE clsHnd);
+    bool         CanLclVarEscape(unsigned int lclNum);
+    void         MarkLclVarAsPossiblyStackPointing(unsigned int lclNum);
+    void         MarkLclVarAsDefinitelyStackPointing(unsigned int lclNum);
+    bool         MayLclVarPointToStack(unsigned int lclNum);
+    bool         DoesLclVarPointToStack(unsigned int lclNum);
+    void         DoAnalysis();
+    void         MarkLclVarAsEscaping(unsigned int lclNum);
+    void         MarkEscapingVarsAndBuildConnGraph();
+    void         AddConnGraphEdge(unsigned int sourceLclNum, unsigned int targetLclNum);
+    void         ComputeEscapingNodes(BitVecTraits* bitVecTraits, BitVec& escapingNodes);
+    void         ComputeStackObjectPointers(BitVecTraits* bitVecTraits);
+    bool         MorphAllocObjNodes();
+    void         RewriteUses();
+    GenTree*     MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* allocObj);
     unsigned int MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* allocObj, BasicBlock* block, Statement* stmt);
     struct BuildConnGraphVisitorCallbackData;
     bool CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum);
     void UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType);
-#ifdef DEBUG
-    static Compiler::fgWalkResult AssertWhenAllocObjFoundVisitor(GenTree** pTree, Compiler::fgWalkData* data);
-#endif // DEBUG
+
     static const unsigned int s_StackAllocMaxSize = 0x2000U;
 };
 

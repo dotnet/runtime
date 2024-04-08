@@ -255,7 +255,7 @@ namespace System.Xml.Linq.Tests
                 return;
             }
 
-            Assert.True(false, "Expected exception not thrown");
+            Assert.Fail("Expected exception not thrown");
         }
 
         /// <summary>

@@ -14,7 +14,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
-#include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/unlocked.h>
@@ -128,6 +128,16 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 		res = mono_aot_get_static_rgctx_trampoline (ctx, addr);
 	else
 		res = mono_arch_get_static_rgctx_trampoline (jit_mm->mem_manager, ctx, addr);
+
+	/* This address might be passed to mini_init_delegate () which needs to look up the method */
+	MonoJitInfo *ji;
+
+	ji = mini_alloc_jinfo (jit_mm, MONO_SIZEOF_JIT_INFO);
+	ji->code_start = MINI_FTNPTR_TO_ADDR (res);
+	/* Doesn't matter, just need to be able to look up the exact address */
+	ji->code_size = 4;
+	ji->d.method = m;
+	mono_jit_info_table_add (ji);
 
 	jit_mm_lock (jit_mm);
 	/* Duplicates inserted while we didn't hold the lock are OK */
@@ -409,7 +419,7 @@ mini_add_method_trampoline (MonoMethod *m, gpointer compiled_method, gboolean ad
 	if (mono_llvm_only)
 		add_static_rgctx_tramp = FALSE;
 
-	if (add_static_rgctx_tramp)
+	if (add_static_rgctx_tramp && !(ji && ji->no_mrgctx))
 		addr = mono_create_static_rgctx_trampoline (m, addr);
 
 	return addr;
@@ -647,12 +657,13 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 	if (!code) {
 		mini_patch_jump_sites (m, mono_get_addr_from_ftnptr (addr));
 
+		MonoJitMemoryManager *jit_mm;
+
 		/* Patch the got entries pointing to this method */
 		/*
 		 * We do this here instead of in mono_codegen () to cover the case when m
 		 * was loaded from an aot image.
 		 */
-		MonoJitMemoryManager *jit_mm;
 		GSList *list, *tmp;
 		MonoMethod *shared_method = mini_method_to_shared (m);
 		m = shared_method ? shared_method : m;
@@ -671,6 +682,18 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 			}
 			jit_mm_unlock (jit_mm);
 		}
+
+		/* Patch the jump trampoline if possible */
+#ifdef MONO_ARCH_HAVE_PATCH_JUMP_TRAMPOLINE
+		if (!mono_aot_only) {
+			jit_mm_lock (jit_mm);
+			gpointer jump_tramp = g_hash_table_lookup (jit_mm->jump_trampoline_hash, m);
+			jit_mm_unlock (jit_mm);
+
+			if (jump_tramp)
+				mono_arch_patch_jump_trampoline ((guint8*)jump_tramp, (guint8*)addr);
+		}
+#endif
 
 		return addr;
 	}
@@ -1415,7 +1438,11 @@ mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method, gboo
 	invoke = mono_get_delegate_invoke_internal (klass);
 	g_assert (invoke);
 
-	tramp_info = (MonoDelegateTrampInfo *)mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (MonoDelegateTrampInfo));
+	if (method && method->dynamic)
+		// FIXME: Can the dynamic method outlive the delegate class if its unloadable ?
+		tramp_info = (MonoDelegateTrampInfo *)mono_dyn_method_alloc0 (method, sizeof (MonoDelegateTrampInfo));
+	else
+		tramp_info = (MonoDelegateTrampInfo *)mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (MonoDelegateTrampInfo));
 	tramp_info->klass = klass;
 	tramp_info->invoke = invoke;
 	tramp_info->invoke_sig = mono_method_signature_internal (invoke);
@@ -1446,13 +1473,27 @@ mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method, gboo
 	}
 #endif
 
-	dpair = (MonoDelegateClassMethodPair *)mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (MonoDelegateClassMethodPair));
+	if (method && method->dynamic)
+		dpair = (MonoDelegateClassMethodPair *)mono_dyn_method_alloc0 (method, sizeof (MonoDelegateClassMethodPair));
+	else
+		dpair = (MonoDelegateClassMethodPair *)mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (MonoDelegateClassMethodPair));
 	memcpy (dpair, &pair, sizeof (MonoDelegateClassMethodPair));
 
 	/* store trampoline address */
 	jit_mm_lock (jit_mm);
 	g_hash_table_insert (jit_mm->delegate_info_hash, dpair, tramp_info);
 	jit_mm_unlock (jit_mm);
+
+	if (method && method->dynamic) {
+		jit_mm = jit_mm_for_method (method);
+		jit_mm_lock (jit_mm);
+		if (!jit_mm->dyn_delegate_info_hash)
+			jit_mm->dyn_delegate_info_hash = g_hash_table_new (NULL, NULL);
+		GSList *l = g_hash_table_lookup (jit_mm->dyn_delegate_info_hash, method);
+		l = g_slist_prepend (l, dpair);
+		g_hash_table_insert (jit_mm->dyn_delegate_info_hash, method, l);
+		jit_mm_unlock (jit_mm);
+	}
 
 	return tramp_info;
 }

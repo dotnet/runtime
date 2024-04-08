@@ -36,14 +36,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (!relocsOnly)
             {
+                ReadyToRunFixupKind fixupKind = _fixupKind;
                 dataBuilder.AddSymbol(this);
 
+                if ((fixupKind == ReadyToRunFixupKind.Verify_TypeLayout) && ((MetadataType)_typeDesc).IsVectorTOrHasVectorTFields)
+                {
+                    fixupKind = ReadyToRunFixupKind.Check_TypeLayout;
+                }
+
                 IEcmaModule targetModule = factory.SignatureContext.GetTargetModule(_typeDesc);
-                SignatureContext innerContext = dataBuilder.EmitFixup(factory, _fixupKind, targetModule, factory.SignatureContext);
+                SignatureContext innerContext = dataBuilder.EmitFixup(factory, fixupKind, targetModule, factory.SignatureContext);
                 dataBuilder.EmitTypeSignature(_typeDesc, innerContext);
 
-                if ((_fixupKind == ReadyToRunFixupKind.Check_TypeLayout) ||
-                    (_fixupKind == ReadyToRunFixupKind.Verify_TypeLayout))
+                if ((fixupKind == ReadyToRunFixupKind.Check_TypeLayout) ||
+                    (fixupKind == ReadyToRunFixupKind.Verify_TypeLayout))
                 {
                     EncodeTypeLayout(dataBuilder, _typeDesc);
                 }
@@ -92,7 +98,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 };
                 dataBuilder.EmitUInt((uint)hfaElementType);
             }
-            
+
             if (alignment != pointerSize)
             {
                 dataBuilder.EmitUInt((uint)alignment);
@@ -176,7 +182,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         {
                             case "MoveNext":
                             case ".cctor":
-                                dependencies.Add(factory.CompiledMethodNode(method), $"AsyncStateMachineBox Method on type {type.ToString()}");
+                                try
+                                {
+                                    factory.DetectGenericCycles(type, method);
+                                    dependencies.Add(factory.CompiledMethodNode(method), $"AsyncStateMachineBox Method on type {type.ToString()}");
+                                }
+                                catch (TypeSystemException)
+                                {
+                                }
                                 break;
                         }
                     }

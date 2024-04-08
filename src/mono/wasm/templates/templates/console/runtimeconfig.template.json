@@ -4,11 +4,7 @@
             {
                 "name": "node",
                 "js-path": "main.mjs",
-                "Host": "nodejs",
-                "host-args": [
-                    "--experimental-wasm-simd",
-                    "--experimental-wasm-eh"
-                ]
+                "host": "nodejs"
             }
         ]
     }

@@ -12,7 +12,7 @@ namespace test
     {
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
 
             System.Int32
@@ -527,7 +527,6 @@ namespace test
                 i9960, i9961, i9962, i9963, i9964, i9965, i9966, i9967, i9968, i9969, i9970, i9971, i9972, i9973, i9974, i9975, i9976, i9977, i9978, i9979,
                 i9980, i9981, i9982, i9983, i9984, i9985, i9986, i9987, i9988, i9989, i9990, i9991, i9992, i9993, i9994, i9995, i9996, i9997, i9998, i9999;
 
-            return 100;
         }
     }
 }

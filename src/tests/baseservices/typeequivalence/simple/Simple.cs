@@ -7,10 +7,18 @@ using System.Text;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 using Xunit;
 using TypeEquivalenceTypes;
 
+[TypeIdentifier("MyScope", "MyTypeId")]
+public struct EquivalentValueType
+{
+    public int A;
+}
+
+[PlatformSpecific(TestPlatforms.Windows)]
 public class Simple
 {
     private class EmptyType2 : IEmptyType
@@ -24,7 +32,8 @@ public class Simple
         }
     }
 
-    private static void InterfaceTypesFromDifferentAssembliesAreEquivalent()
+    [Fact]
+    public static void InterfaceTypesFromDifferentAssembliesAreEquivalent()
     {
         Console.WriteLine($"{nameof(InterfaceTypesFromDifferentAssembliesAreEquivalent)}");
         var inAsm = EmptyType.Create();
@@ -38,9 +47,10 @@ public class Simple
         }
     }
 
-    private static void ValidateTypeInstanceEquality()
+    [Fact]
+    public static void TypeInstanceEquality()
     {
-        Console.WriteLine($"{nameof(ValidateTypeInstanceEquality)}");
+        Console.WriteLine($"{nameof(TypeInstanceEquality)}");
         var inAsm = EmptyType.Create();
         var otherAsm = EmptyType2.Create();
 
@@ -104,7 +114,8 @@ public class Simple
         }
     }
 
-    private static void InterfaceTypesMethodOperations()
+    [Fact]
+    public static void InterfaceTypesMethodOperations()
     {
         Console.WriteLine($"{nameof(InterfaceTypesMethodOperations)}");
 
@@ -135,7 +146,8 @@ public class Simple
         }
     }
 
-    private static void CallSparseInterface()
+    [Fact]
+    public static void CallSparseInterface()
     {
         Console.WriteLine($"{nameof(CallSparseInterface)}");
 
@@ -150,9 +162,10 @@ public class Simple
         Assert.Equal(input * 18, sparseType.MultiplyBy18(input));
     }
 
-    private static void TestArrayEquivalence()
+    [Fact]
+    public static void ArrayEquivalence()
     {
-        Console.WriteLine($"{nameof(TestArrayEquivalence)}");
+        Console.WriteLine($"{nameof(ArrayEquivalence)}");
         var inAsm = EmptyType.Create();
         var otherAsm = EmptyType2.Create();
 
@@ -167,9 +180,10 @@ public class Simple
         Assert.False(inAsmInterfaceType.MakeArrayType(1).IsEquivalentTo(otherAsmInterfaceType.MakeArrayType(2)));
     }
 
-    private static void TestByRefEquivalence()
+    [Fact]
+    public static void ByRefEquivalence()
     {
-        Console.WriteLine($"{nameof(TestByRefEquivalence)}");
+        Console.WriteLine($"{nameof(ByRefEquivalence)}");
         var inAsm = EmptyType.Create();
         var otherAsm = EmptyType2.Create();
 
@@ -191,9 +205,10 @@ public class Simple
         }
     }
 
-    private static void TestGenericClassNonEquivalence()
+    [Fact]
+    public static void GenericClassNonEquivalence()
     {
-        Console.WriteLine($"{nameof(TestGenericClassNonEquivalence)}");
+        Console.WriteLine($"{nameof(GenericClassNonEquivalence)}");
         var inAsm = EmptyType.Create();
         var otherAsm = EmptyType2.Create();
 
@@ -203,9 +218,10 @@ public class Simple
         Assert.False(typeof(Generic<>).MakeGenericType(inAsmInterfaceType).IsEquivalentTo(typeof(Generic<>).MakeGenericType(otherAsmInterfaceType)));
     }
 
-    private static void TestGenericInterfaceEquivalence()
+    [Fact]
+    public static void GenericInterfaceEquivalence()
     {
-        Console.WriteLine($"{nameof(TestGenericInterfaceEquivalence)}");
+        Console.WriteLine($"{nameof(GenericInterfaceEquivalence)}");
         var inAsm = EmptyType.Create();
         var otherAsm = EmptyType2.Create();
 
@@ -215,9 +231,10 @@ public class Simple
         Assert.True(typeof(IGeneric<>).MakeGenericType(inAsmInterfaceType).IsEquivalentTo(typeof(IGeneric<>).MakeGenericType(otherAsmInterfaceType)));
     }
 
-    private static unsafe void TestTypeEquivalenceWithTypePunning()
+    [Fact]
+    public static unsafe void TypeEquivalenceWithTypePunning()
     {
-        Console.WriteLine($"{nameof(TestTypeEquivalenceWithTypePunning)}");
+        Console.WriteLine($"{nameof(TypeEquivalenceWithTypePunning)}");
 
         {
             Console.WriteLine($"-- GetFunctionPointer()");
@@ -254,10 +271,11 @@ public class Simple
         }
     }
 
+    [Fact]
     [MethodImpl (MethodImplOptions.NoInlining)]
-    private static void TestLoadingValueTypesWithMethod() 
+    public static void LoadValueTypesWithMethod()
     {
-        Console.WriteLine($"{nameof(TestLoadingValueTypesWithMethod)}");
+        Console.WriteLine($"{nameof(LoadValueTypesWithMethod)}");
         Console.WriteLine($"-- {typeof(ValueTypeWithStaticMethod).Name}");
         Assert.Throws<TypeLoadException>(() => LoadInvalidType());
     }
@@ -268,31 +286,41 @@ public class Simple
         Console.WriteLine($"-- {typeof(ValueTypeWithInstanceMethod).Name}");
     }
 
-    public static int Main()
+    [Fact]
+    public static void CastsOptimizations()
     {
-        if (!OperatingSystem.IsWindows())
-        {
-            return 100;
-        }
-        try
-        {
-            InterfaceTypesFromDifferentAssembliesAreEquivalent();
-            ValidateTypeInstanceEquality();
-            InterfaceTypesMethodOperations();
-            CallSparseInterface();
-            TestByRefEquivalence();
-            TestArrayEquivalence();
-            TestGenericClassNonEquivalence();
-            TestGenericInterfaceEquivalence();
-            TestTypeEquivalenceWithTypePunning();
-            TestLoadingValueTypesWithMethod();
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine($"Test Failure: {e}");
-            return 101;
-        }
+        string otherTypeName = $"{typeof(EquivalentValueType).FullName},{typeof(EmptyType).Assembly.GetName().Name}";
+        Type otherEquivalentValueType = Type.GetType(otherTypeName);
 
-        return 100;
+        // ensure that an instance of otherEquivalentValueType can cast to EquivalentValueType
+        object otherEquivalentValueTypeInstance = Activator.CreateInstance(otherEquivalentValueType);
+        Assert.True(otherEquivalentValueTypeInstance is EquivalentValueType);
+        EquivalentValueType inst = (EquivalentValueType)otherEquivalentValueTypeInstance;
+    }
+
+    [Fact]
+    public static void ExactTypeOptimizations()
+    {
+        TestsExactTypeOptimizationsHelper.s_arrayInstance = new TestValueType[1];
+        Thread.Yield();
+        Assert.True(typeof(TestValueType[]) == TestsExactTypeOptimizationsHelper.s_arrayInstance.GetType());
+    }
+
+    [Fact]
+    public static void MethodCallSignature()
+    {
+        Console.WriteLine($"{nameof(MethodCallSignature)}");
+
+        Console.WriteLine($"-- {nameof(MethodCall.InterfaceAfterGeneric)}");
+        MethodCall.InterfaceAfterGeneric((IEmptyType)EmptyType2.Create());
+
+        Console.WriteLine($"-- {nameof(MethodCall.ValueTypeAfterGeneric)}");
+        MethodCall.ValueTypeAfterGeneric(new TestValueType());
+
+        Console.WriteLine($"-- {nameof(MethodCall.InterfaceBeforeGeneric)}");
+        MethodCall.InterfaceBeforeGeneric((IEmptyType)EmptyType2.Create(), null);
+
+        Console.WriteLine($"-- {nameof(MethodCall.ValueTypeBeforeGeneric)}");
+        MethodCall.ValueTypeBeforeGeneric(new TestValueType(), null);
     }
 }

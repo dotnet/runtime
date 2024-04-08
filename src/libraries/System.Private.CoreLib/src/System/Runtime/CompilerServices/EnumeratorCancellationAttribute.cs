@@ -3,9 +3,11 @@
 
 namespace System.Runtime.CompilerServices
 {
-    [System.AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
+    /// <summary>Allows users of async-enumerable methods to mark the parameter that should receive the cancellation token value from <see cref="M:System.Collections.Generic.IAsyncEnumerable`1.GetAsyncEnumerator(System.Threading.CancellationToken)" />.</summary>
+    [AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
     public sealed class EnumeratorCancellationAttribute : Attribute
     {
+        /// <summary>Initializes a new instance of the <see cref="T:System.Runtime.CompilerServices.EnumeratorCancellationAttribute" /> class.</summary>
         public EnumeratorCancellationAttribute()
         {
         }

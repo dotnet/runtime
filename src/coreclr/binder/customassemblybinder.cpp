@@ -119,7 +119,7 @@ HRESULT CustomAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
         // Validate architecture
         if (!AssemblyBinderCommon::IsValidArchitecture(pAssemblyName->GetArchitecture()))
         {
-            IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_BAD_FORMAT));
+            IF_FAIL_GO(CLR_E_BIND_ARCHITECTURE_MISMATCH);
         }
 
         // Disallow attempt to bind to the core library. Aside from that,

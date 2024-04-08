@@ -102,12 +102,12 @@ DumpDataTarget::GetImageBase(
     *baseAddress = 0;
 
     char tempModuleName[MAX_PATH];
-    int length = WideCharToMultiByte(CP_ACP, 0, moduleName, -1, tempModuleName, sizeof(tempModuleName), NULL, NULL);
+    size_t cch = u16_strlen(moduleName) + 1;
+    int length = minipal_convert_utf16_to_utf8((CHAR16_T*)moduleName, cch, tempModuleName, sizeof(tempModuleName), 0);
     if (length > 0)
     {
         *baseAddress = m_crashInfo.GetBaseAddressFromName(tempModuleName);
     }
-
     return *baseAddress != 0 ? S_OK : E_FAIL;
 }
 
@@ -118,8 +118,9 @@ DumpDataTarget::ReadVirtual(
     /* [in] */ ULONG32 size,
     /* [optional][out] */ ULONG32 *done)
 {
+    address = CONVERT_FROM_SIGN_EXTENDED(address);
     size_t read = 0;
-    if (!m_crashInfo.ReadProcessMemory((void*)(ULONG_PTR)address, buffer, size, &read))
+    if (!m_crashInfo.ReadProcessMemory(address, buffer, size, &read))
     {
         TRACE("DumpDataTarget::ReadVirtual %p %d FAILED\n", (void*)address, size);
         *done = 0;

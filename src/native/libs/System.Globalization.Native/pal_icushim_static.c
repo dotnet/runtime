@@ -10,7 +10,10 @@
 #include <unicode/putil.h>
 #include <unicode/uversion.h>
 #include <unicode/localpointer.h>
+
+#if !defined(APPLE_HYBRID_GLOBALIZATION)
 #include <unicode/utrace.h>
+#endif
 
 #if defined(TARGET_UNIX)
 #include <strings.h>
@@ -18,7 +21,7 @@
 #define strcasecmp _stricmp
 #define strncasecmp _strnicmp
 #endif
-
+#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 static int32_t isLoaded = 0;
 static int32_t isDataSet = 0;
 
@@ -171,9 +174,14 @@ int32_t
 GlobalizationNative_LoadICUData(const char* path)
 {
 #if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+    if (path && path[0] != '/')
+    {
+        // if the path is relative, prepend the app bundle root
+        path = GlobalizationNative_GetICUDataPathRelativeToAppBundleRoot(path);
+    }
     if (!path)
     {
-        // fallback to icudt.dat in the app bundle root in case the path isn't set
+        // fallback to icudt.dat in the app bundle resources in case the path isn't set
         path = GlobalizationNative_GetICUDataPathFallback();
     }
 #endif
@@ -242,3 +250,5 @@ int32_t GlobalizationNative_GetICUVersion(void)
 
     return (versionInfo[0] << 24) + (versionInfo[1] << 16) + (versionInfo[2] << 8) + versionInfo[3];
 }
+#endif
+

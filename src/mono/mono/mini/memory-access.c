@@ -210,7 +210,16 @@ mini_emit_memcpy_internal (MonoCompile *cfg, MonoInst *dest, MonoInst *src, Mono
 		if (!size_ins)
 			EMIT_NEW_ICONST (cfg, size_ins, size);
 		iargs [2] = size_ins;
-		mono_emit_method_call (cfg, mini_get_memcpy_method (), iargs, NULL);
+		if (COMPILE_LLVM (cfg)) {
+			MonoInst *ins;
+			MONO_INST_NEW (cfg, ins, OP_MEMMOVE);
+			ins->sreg1 = iargs [0]->dreg;
+			ins->sreg2 = iargs [1]->dreg;
+			ins->sreg3 = iargs [2]->dreg;
+			MONO_ADD_INS (cfg->cbb, ins);
+		} else {
+			mono_emit_method_call (cfg, mini_get_memcpy_method (), iargs, NULL);
+		}
 	} else {
 		mini_emit_memcpy (cfg, dest->dreg, 0, src->dreg, 0, size, align);
 	}
@@ -472,6 +481,7 @@ mini_emit_memory_load (MonoCompile *cfg, MonoType *type, MonoInst *src, int offs
 	/* LLVM can handle unaligned loads and stores, so there's no reason to
 	 * manually decompose an unaligned load here into a memcpy if we're
 	 * using LLVM. */
+#ifdef NO_UNALIGNED_ACCESS
 	if ((ins_flag & MONO_INST_UNALIGNED) && !COMPILE_LLVM (cfg)) {
 		MonoInst *addr, *tmp_var;
 		int align;
@@ -489,9 +499,10 @@ mini_emit_memory_load (MonoCompile *cfg, MonoType *type, MonoInst *src, int offs
 
 		mini_emit_memcpy_const_size (cfg, addr, src, size, 1);
 		EMIT_NEW_TEMPLOAD (cfg, ins, tmp_var->inst_c0);
-	} else {
+	} else 
+#endif
 		EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, type, src->dreg, offset);
-	}
+	
 	ins->flags |= ins_flag;
 
 	if (ins_flag & MONO_INST_VOLATILE) {
@@ -515,6 +526,7 @@ mini_emit_memory_store (MonoCompile *cfg, MonoType *type, MonoInst *dest, MonoIn
 	if (!(ins_flag & MONO_INST_NONULLCHECK))
 		MONO_EMIT_NULL_CHECK (cfg, dest->dreg, FALSE);
 
+#ifdef NO_UNALIGNED_ACCESS
 	if ((ins_flag & MONO_INST_UNALIGNED) && !COMPILE_LLVM (cfg)) {
 		MonoInst *addr, *mov, *tmp_var;
 
@@ -522,7 +534,9 @@ mini_emit_memory_store (MonoCompile *cfg, MonoType *type, MonoInst *dest, MonoIn
 		EMIT_NEW_TEMPSTORE (cfg, mov, tmp_var->inst_c0, value);
 		EMIT_NEW_VARLOADA (cfg, addr, tmp_var, tmp_var->inst_vtype);
 		mini_emit_memory_copy_internal (cfg, dest, addr, mono_class_from_mono_type_internal (type), 1, FALSE, (ins_flag & MONO_INST_STACK_STORE) != 0);
-	} else {
+	} else 
+#endif
+	{
 		MonoInst *ins;
 
 		/* FIXME: should check item at sp [1] is compatible with the type of the store. */

@@ -2,6 +2,8 @@
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <!-- ActiveIssue in AssemblyInfo.cs for Mono -->
+    <IgnoreForCI Condition="'$(RuntimeFlavor)' == 'Mono'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"

@@ -54,7 +54,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList result = new DependencyList();
 
-            if (!factory.VTable(_targetMethod.OwningType).HasFixedSlots)
+            if (!factory.VTable(_targetMethod.OwningType).HasKnownVirtualMethodUse)
             {
                 result.Add(factory.VirtualMethodUse(_targetMethod), "Interface method use");
             }
@@ -71,7 +71,10 @@ namespace ILCompiler.DependencyAnalysis
                 result.Add(factory.ExternSymbol("RhpInitialDynamicInterfaceDispatch"), "Initial interface dispatch stub");
             }
 
-            result.Add(factory.NecessaryTypeSymbol(_targetMethod.OwningType), "Interface type");
+            // We counter-intuitively ask for a constructed type symbol. This is needed due to IDynamicInterfaceCastable.
+            // If this dispatch cell is ever used with an object that implements IDynamicIntefaceCastable, user code will
+            // see a RuntimeTypeHandle representing this interface.
+            result.Add(factory.ConstructedTypeSymbol(_targetMethod.OwningType), "Interface type");
 
             return result;
         }
@@ -88,7 +91,10 @@ namespace ILCompiler.DependencyAnalysis
                 objData.EmitPointerReloc(factory.ExternSymbol("RhpInitialDynamicInterfaceDispatch"));
             }
 
-            IEETypeNode interfaceType = factory.NecessaryTypeSymbol(_targetMethod.OwningType);
+            // We counter-intuitively ask for a constructed type symbol. This is needed due to IDynamicInterfaceCastable.
+            // If this dispatch cell is ever used with an object that implements IDynamicIntefaceCastable, user code will
+            // see a RuntimeTypeHandle representing this interface.
+            IEETypeNode interfaceType = factory.ConstructedTypeSymbol(_targetMethod.OwningType);
             if (factory.Target.SupportsRelativePointers)
             {
                 if (interfaceType.RepresentsIndirectionCell)

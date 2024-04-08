@@ -12,8 +12,8 @@ namespace Internal.ReadyToRunConstants
     public enum ReadyToRunFlags
     {
         READYTORUN_FLAG_PlatformNeutralSource = 0x00000001,     // Set if the original IL assembly was platform-neutral
-        READYTORUN_FLAG_SkipTypeValidation = 0x00000002,        // Set of methods with native code was determined using profile data
-        READYTORUN_FLAG_Partial = 0x00000004,
+        READYTORUN_FLAG_SkipTypeValidation = 0x00000002,        // Runtime should trust that the metadata for the types defined in this module is correct
+        READYTORUN_FLAG_Partial = 0x00000004,                   // Set of methods with native code was determined using profile data
         READYTORUN_FLAG_NonSharedPInvokeStubs = 0x00000008,     // PInvoke stubs compiled into image are non-shareable (no secret parameter)
         READYTORUN_FLAG_EmbeddedMSIL = 0x00000010,              // MSIL is embedded in the composite R2R executable
         READYTORUN_FLAG_Component = 0x00000020,                 // This is the header describing a component assembly of composite R2R
@@ -57,7 +57,6 @@ namespace Internal.ReadyToRunConstants
     [Flags]
     public enum ReadyToRunFieldSigFlags : byte
     {
-        READYTORUN_FIELD_SIG_IndexInsteadOfToken = 0x08,
         READYTORUN_FIELD_SIG_MemberRefToken = 0x10,
         READYTORUN_FIELD_SIG_OwnerType = 0x40,
     }
@@ -88,6 +87,27 @@ namespace Internal.ReadyToRunConstants
         InlinerRidHasModule = 0x1,
         InlinerRidShift = 1,
     };
+
+    [Flags]
+    public enum ReadyToRunTypeGenericInfo : byte
+    {
+        GenericCountMask = 0x3,
+        HasConstraints = 0x4,
+        HasVariance = 0x8,
+    }
+
+    public enum ReadyToRunGenericInfoGenericCount : uint
+    {
+        Zero = 0,
+        One = 1,
+        Two = 2,
+        MoreThanTwo = 3
+    }
+
+    public enum ReadyToRunEnclosingTypeMap : uint
+    {
+        MaxTypeCount = 0xFFFE
+    }
 
     public enum DictionaryEntryKind
     {
@@ -218,7 +238,9 @@ namespace Internal.ReadyToRunConstants
         Stelem_Ref                  = 0x38,
         Ldelema_Ref                 = 0x39,
 
-        MemSet                      = 0x40,
+        MemZero                     = 0x3E,
+        MemSet                      = 0x3F,
+        NativeMemSet                = 0x40,
         MemCpy                      = 0x41,
 
         // P/Invoke support
@@ -342,13 +364,11 @@ namespace Internal.ReadyToRunConstants
 
         GetRuntimeType,
 
+        CheckCastInterface,
         CheckCastClass,
         CheckCastClassSpecial,
-        CheckInstanceClass,
-        CheckCastArray,
-        CheckInstanceArray,
-        CheckCastInterface,
         CheckInstanceInterface,
+        CheckInstanceClass,
 
         MonitorEnterStatic,
         MonitorExitStatic,

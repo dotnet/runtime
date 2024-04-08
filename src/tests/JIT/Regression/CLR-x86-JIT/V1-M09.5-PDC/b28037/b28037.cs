@@ -30,14 +30,13 @@ namespace Test
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             try
             {
                 Method1(null);
             }
             catch (Exception) { }
-            return 100;
         }
     }
 }

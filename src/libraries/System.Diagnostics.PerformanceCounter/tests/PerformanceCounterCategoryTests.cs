@@ -271,7 +271,7 @@ namespace System.Diagnostics.Tests
             PerformanceCounterCategory pcc = new PerformanceCounterCategory("Processor");
 
             string[] instances = Helpers.RetryOnAllPlatformsWithClosingResources(() => pcc.GetInstanceNames());
-            Assert.True(instances.Length > 0);
+            AssertExtensions.GreaterThan(instances.Length, 0, "PerformanceCounterCategory.GetInstanceNames() returned 0.");
 
             foreach (string instance in instances)
             {

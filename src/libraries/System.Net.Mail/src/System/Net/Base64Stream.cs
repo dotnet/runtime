@@ -12,8 +12,8 @@ namespace System.Net
 {
     internal sealed class Base64Stream : DelegatedStream, IEncodableStream
     {
-        private static ReadOnlySpan<byte> Base64DecodeMap => new byte[] // rely on C# compiler optimization to eliminate allocation
-        {
+        private static ReadOnlySpan<byte> Base64DecodeMap =>
+        [
             //0   1   2    3    4    5    6    7    8    9    A    B     C    D    E    F
             255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,  255, 255, 255, 255, // 0
             255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,  255, 255, 255, 255, // 1
@@ -31,7 +31,7 @@ namespace System.Net
             255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,  255, 255, 255, 255, // D
             255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,  255, 255, 255, 255, // E
             255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,  255, 255, 255, 255, // F
-        };
+        ];
 
         private readonly Base64WriteStateInfo _writeState;
         private ReadStateInfo? _readState;

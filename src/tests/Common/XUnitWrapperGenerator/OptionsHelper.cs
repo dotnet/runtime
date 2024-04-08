@@ -6,6 +6,7 @@ namespace XUnitWrapperGenerator;
 
 public static class OptionsHelper
 {
+    private const string InMergedTestDirectoryOption = "build_property.InMergedTestDirectory";
     private const string IsMergedTestRunnerAssemblyOption = "build_property.IsMergedTestRunnerAssembly";
     private const string PriorityOption = "build_property.Priority";
     private const string RuntimeFlavorOption = "build_property.RuntimeFlavor";
@@ -28,6 +29,8 @@ public static class OptionsHelper
             && int.TryParse(value, out int result)
                 ? result : 0;
     }
+
+    internal static bool InMergedTestDirectory(this AnalyzerConfigOptions options) => options.GetBoolOption(InMergedTestDirectoryOption);
 
     internal static bool IsMergedTestRunnerAssembly(this AnalyzerConfigOptions options) => options.GetBoolOption(IsMergedTestRunnerAssemblyOption);
 

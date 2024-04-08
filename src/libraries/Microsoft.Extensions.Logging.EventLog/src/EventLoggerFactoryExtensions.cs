@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.ComponentModel;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging.EventLog;
@@ -13,6 +14,40 @@ namespace Microsoft.Extensions.Logging
     /// </summary>
     public static class EventLoggerFactoryExtensions
     {
+        /// <summary>
+        /// Adds an event logger. Use <paramref name="settings"/> to enable logging for specific <see cref="LogLevel"/>s.
+        /// </summary>
+        /// <param name="factory">The extension method argument.</param>
+        /// <param name="settings">The <see cref="EventLogSettings"/>.</param>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("This method is retained only for compatibility. The recommended alternative is AddEventLog(this ILoggingBuilder builder).", error: true)]
+        public static ILoggerFactory AddEventLog(this ILoggerFactory factory, EventLog.EventLogSettings settings)
+        {
+            ThrowHelper.ThrowIfNull(factory);
+            ThrowHelper.ThrowIfNull(settings);
+
+            factory.AddProvider(new EventLogLoggerProvider(settings));
+            return factory;
+        }
+
+        /// <summary>
+        /// Adds an event logger that is enabled for <see cref="LogLevel"/>s of minLevel or higher.
+        /// </summary>
+        /// <param name="factory">The extension method argument.</param>
+        /// <param name="minLevel">The minimum <see cref="LogLevel"/> to be logged</param>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("This method is retained only for compatibility. The recommended alternative is AddEventLog(this ILoggingBuilder builder).", error: true)]
+        public static ILoggerFactory AddEventLog(this ILoggerFactory factory, LogLevel minLevel) =>
+            AddEventLog(factory, new EventLogSettings() { Filter = (_, logLevel) => logLevel >= minLevel });
+
+        /// <summary>
+        /// Adds an event logger that is enabled for <see cref="LogLevel"/>.Information or higher.
+        /// </summary>
+        /// <param name="factory">The extension method argument.</param>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("This method is retained only for compatibility. The recommended alternative is AddEventLog(this ILoggingBuilder builder).", error: true)]
+        public static ILoggerFactory AddEventLog(this ILoggerFactory factory) => AddEventLog(factory, LogLevel.Information);
+
         /// <summary>
         /// Adds an event logger named 'EventLog' to the factory.
         /// </summary>

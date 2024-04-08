@@ -24,8 +24,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		{
 			var test = new VerifyCS.Test {
 				TestCode = source,
-				FixedCode = fixedSource,
-				ReferenceAssemblies = TestCaseUtils.Net6PreviewAssemblies
+				FixedCode = fixedSource
 			};
 			test.ExpectedDiagnostics.AddRange (baselineExpected);
 			test.TestState.AnalyzerConfigFiles.Add (
@@ -2529,7 +2528,7 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
 					// The generic parameter 'S' of 'C.M2<S>()' does not have matching annotations.
 					// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
 					VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter)
-						.WithSpan(16, 3, 16, 8)
+						.WithSpan(16, 3, 16, 10)
 						.WithSpan(14, 25, 14, 26)
 						.WithArguments("T",
 							"C.M1<T>()",
@@ -2541,7 +2540,7 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
 		}
 
 		[Fact]
-		public async Task CodeFix_IL2091_AttrbuteTurnsOffCodeFix ()
+		public async Task CodeFix_IL2091_AttributeTurnsOffCodeFix ()
 		{
 			var test = $$"""
 			using System.Diagnostics.CodeAnalysis;
@@ -2568,7 +2567,7 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
 				// The generic parameter 'S' of 'C.M2<S>()' does not have matching annotations.
 				// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
 				VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter)
-					.WithSpan(16, 3, 16, 8)
+					.WithSpan(16, 3, 16, 10)
 					.WithArguments("T",
 						"C.M1<T>()",
 						"S",

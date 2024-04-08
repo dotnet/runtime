@@ -19,12 +19,11 @@ struct X<T> : IPrint
 public class Y
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         var s = new X<string>("hello, world!");
         // Jit should devirtualize, remove box,
         // change to call unboxed entry, then inline.
         ((IPrint)s).Print();
-        return 100;
     }
 }

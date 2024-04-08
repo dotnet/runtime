@@ -793,6 +793,10 @@ my and Ximian's copyright to this code. ;)
 #define ppc_fcfid(c,D,B)  ppc_fcfidx(c,D,B,0)
 #define ppc_fcfidd(c,D,B) ppc_fcfidx(c,D,B,1)
 
+#define ppc_fcfidsx(c,D,B,Rc) ppc_emit32(c, (59 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (846 << 1) | (Rc))
+#define ppc_fcfids(c,D,B)  ppc_fcfidsx(c,D,B,0)
+#define ppc_fcfidsd(c,D,B) ppc_fcfidsx(c,D,B,1)
+
 #define ppc_fctidx(c,D,B,Rc) ppc_emit32(c, (63 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (814 << 1) | (Rc))
 #define ppc_fctid(c,D,B)  ppc_fctidx(c,D,B,0)
 #define ppc_fctidd(c,D,B) ppc_fctidx(c,D,B,1)

@@ -2,19 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Runtime.InteropServices;
-using System.Net;
-using System.Security.Principal;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.DirectoryServices;
+using System.DirectoryServices.ActiveDirectory;
+using System.Globalization;
+using System.Net;
+using System.Runtime.InteropServices;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Text;
 using MACLPrinc = System.Security.Principal;
-using System.Security.AccessControl;
-using System.DirectoryServices.ActiveDirectory;
 
 namespace System.DirectoryServices.AccountManagement
 {
@@ -494,7 +494,7 @@ namespace System.DirectoryServices.AccountManagement
             // even before we call ObjectSecurity to see if it would return null, because once ObjectSecurity returns null the
             // first time, it'll keep returning null even if we refresh the cache.
             if (!de.Properties.Contains("nTSecurityDescriptor"))
-                de.RefreshCache(new string[] { "nTSecurityDescriptor" });
+                de.RefreshCache(s_nTSecurityDescriptor);
             ActiveDirectorySecurity adsSecurity = de.ObjectSecurity;
 
             bool denySelfFound;
@@ -829,7 +829,7 @@ namespace System.DirectoryServices.AccountManagement
                 DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
                 Debug.Assert(de != null);
 
-                de.RefreshCache(new string[] { "msDS-User-Account-Control-Computed", "lockoutTime" });
+                de.RefreshCache(s_msDSUACCLockoutTime);
 
                 if (de.Properties["msDS-User-Account-Control-Computed"].Count > 0)
                 {
@@ -992,31 +992,31 @@ namespace System.DirectoryServices.AccountManagement
         internal override ResultSet FindByLockoutTime(
             DateTime dt, MatchType matchType, Type principalType)
         {
-            return FindByDate(principalType, new string[] { "lockoutTime" }, matchType, dt);
+            return FindByDate(principalType, s_lockoutTime, matchType, dt);
         }
 
         internal override ResultSet FindByLogonTime(
             DateTime dt, MatchType matchType, Type principalType)
         {
-            return FindByDate(principalType, new string[] { "lastLogon", "lastLogonTimestamp" }, matchType, dt);
+            return FindByDate(principalType, s_lastLogonTime, matchType, dt);
         }
 
         internal override ResultSet FindByPasswordSetTime(
             DateTime dt, MatchType matchType, Type principalType)
         {
-            return FindByDate(principalType, new string[] { "pwdLastSet" }, matchType, dt);
+            return FindByDate(principalType, s_pwdLastSet, matchType, dt);
         }
 
         internal override ResultSet FindByBadPasswordAttempt(
             DateTime dt, MatchType matchType, Type principalType)
         {
-            return FindByDate(principalType, new string[] { "badPasswordTime" }, matchType, dt);
+            return FindByDate(principalType, s_badPasswordTime, matchType, dt);
         }
 
         internal override ResultSet FindByExpirationTime(
             DateTime dt, MatchType matchType, Type principalType)
         {
-            return FindByDate(principalType, new string[] { "accountExpires" }, matchType, dt);
+            return FindByDate(principalType, s_accountExpires, matchType, dt);
         }
 
         private ADEntriesSet FindByDate(Type subtype, string[] ldapAttributes, MatchType matchType, DateTime value)
@@ -1300,7 +1300,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "GetGroupsMemberOf: principalDN={0}", principalDN);
 
-                principalDE.RefreshCache(new string[] { "memberOf", "primaryGroupID" });
+                principalDE.RefreshCache(s_memberOfPrimaryGroupId);
 
                 if ((principalDE.Properties["primaryGroupID"].Count > 0) &&
                     (principalDE.Properties["objectSid"].Count > 0))
@@ -2386,6 +2386,16 @@ namespace System.DirectoryServices.AccountManagement
         protected string contextBasePartitionDN; //contains the DN of the Partition to which the user supplied context base (this.ctxBase) belongs.
         protected string dnsHostName;
         protected ulong lockoutDuration;
+        private static readonly string[] s_lockoutTime = new string[] { "lockoutTime" };
+        private static readonly string[] s_lastLogonTime = new string[] { "lastLogon", "lastLogonTimestamp" };
+        private static readonly string[] s_pwdLastSet = new string[] { "pwdLastSet" };
+        private static readonly string[] s_badPasswordTime = new string[] { "badPasswordTime" };
+        private static readonly string[] s_accountExpires = new string[] { "accountExpires" };
+        private static readonly string[] s_nTSecurityDescriptor = new string[] { "nTSecurityDescriptor" };
+        private static readonly string[] s_msDSUACCLockoutTime = new string[] { "msDS-User-Account-Control-Computed", "lockoutTime" };
+        private static readonly string[] s_memberOfPrimaryGroupId = new string[] { "memberOf", "primaryGroupID" };
+        private static readonly string[] s_lockoutDuration = new string[] { "lockoutDuration" };
+        internal static readonly char[] s_comma = new char[] { ',' };
 
         protected enum StoreCapabilityMap
         {
@@ -2407,15 +2417,19 @@ namespace System.DirectoryServices.AccountManagement
             // From that, we can build the DNS Domain Name
             this.dnsHostName = ADUtils.GetServerName(this.ctxBase);
 
+            // Pull the requested port number
+            Uri ldapUri = new Uri(this.ctxBase.Path);
+            int port = ldapUri.Port != -1 ? ldapUri.Port : (ldapUri.Scheme.ToUpperInvariant() == "LDAPS" ? 636 : 389);
+
             string dnsDomainName = "";
 
-            using (DirectoryEntry rootDse = new DirectoryEntry("LDAP://" + this.dnsHostName + "/rootDse", "", "", AuthenticationTypes.Anonymous))
+            using (DirectoryEntry rootDse = new DirectoryEntry("LDAP://" + this.dnsHostName + ":" + port + "/rootDse", "", "", AuthenticationTypes.Anonymous))
             {
                 this.defaultNamingContext = (string)rootDse.Properties["defaultNamingContext"][0];
                 this.contextBasePartitionDN = this.defaultNamingContext;
 
                 // Split the naming context's DN into its RDNs
-                string[] ncComponents = defaultNamingContext.Split(new char[] { ',' });
+                string[] ncComponents = defaultNamingContext.Split(s_comma);
 
                 StringBuilder sb = new StringBuilder();
 
@@ -2492,7 +2506,7 @@ namespace System.DirectoryServices.AccountManagement
                                                     this.authTypes);
 
             // So we don't load every property
-            domainNC.RefreshCache(new string[] { "lockoutDuration" });
+            domainNC.RefreshCache(s_lockoutDuration);
 
             if (domainNC.Properties["lockoutDuration"].Count > 0)
             {

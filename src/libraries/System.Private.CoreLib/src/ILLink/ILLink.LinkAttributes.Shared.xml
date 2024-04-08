@@ -141,6 +141,9 @@
     <type fullname="System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.ExperimentalAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
 
     <!-- System.Reflection -->
     <type fullname="System.Reflection.AssemblyCompanyAttribute">
@@ -247,6 +250,12 @@
     <type fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.FeatureGuardAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.FeatureSwitchDefinitionAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
     <type fullname="System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
@@ -317,6 +326,9 @@
     <type fullname="System.Runtime.CompilerServices.ScopedRefAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
+    <type fullname="System.Runtime.CompilerServices.RefSafetyRulesAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
 
     <!-- Microsoft.CodeAnalysis -->
     <type fullname="Microsoft.CodeAnalysis.EmbeddedAttribute">
@@ -335,13 +347,6 @@
       <attribute internal="RemoveAttributeInstances">
         <argument type="System.Object">
           <argument>PreferInbox</argument>
-        </argument>
-      </attribute>
-    </type>
-    <type fullname="System.Reflection.AssemblyMetadataAttribute">
-      <attribute internal="RemoveAttributeInstances">
-        <argument type="System.Object">
-          <argument>.NETFrameworkAssembly</argument>
         </argument>
       </attribute>
     </type>

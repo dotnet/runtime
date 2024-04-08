@@ -1,6 +1,5 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
@@ -16,7 +15,10 @@
 
   <ItemGroup>
     <Compile Include="ZipFile.Create.cs" />
+    <Compile Include="ZipFile.Create.Stream.cs" />
     <Compile Include="ZipFile.Extract.cs" />
+    <Compile Include="ZipFile.Extract.Stream.cs" />
+    <Compile Include="ZipFile.Open.cs" />
     <Compile Include="ZipFileExtensions.ZipArchive.Create.cs" />
     <Compile Include="ZipFileExtensions.ZipArchiveEntry.Extract.cs" />
     <Compile Include="ZipFileExtensions.ZipArchive.Extract.cs" />
@@ -26,6 +28,8 @@
              Link="Common\System\IO\TempFile.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"
              Link="Common\System\IO\TempDirectory.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\WrappedStream.cs"
+             Link="Common\System\IO\WrappedStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\Compression\CRC.cs"
              Link="Common\System\IO\Compression\CRC.cs" />
     <Compile Include="$(CommonTestPath)System\IO\Compression\FileData.cs"

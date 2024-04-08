@@ -12,10 +12,22 @@ namespace System.Runtime.InteropServices.Marshalling
     [CLSCompliant(false)]
     public unsafe interface IIUnknownCacheStrategy
     {
+        /// <summary>
+        /// A structure that contains information about a COM interface and its virtual method table.
+        /// </summary>
         public readonly struct TableInfo
         {
+            /// <summary>
+            /// The <c>this</c> pointer of the unmanaged interface.
+            /// </summary>
             public void* ThisPtr { get; init; }
+            /// <summary>
+            /// A pointer to the virtual method table for this unmanaged interface.
+            /// </summary>
             public void** Table { get; init; }
+            /// <summary>
+            /// The managed type that provides a managed projection of the unmanaged interface.
+            /// </summary>
             public RuntimeTypeHandle ManagedType { get; init; }
         }
 

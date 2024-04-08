@@ -46,6 +46,10 @@ void NativeCodeVersion::SetGCCoverageInfo(PTR_GCCoverageInfo gcCover)
 
 #else // FEATURE_CODE_VERSIONING
 
+// This is just used as a unique id. Overflow is OK. If we happen to have more than 4+Billion rejits
+// and somehow manage to not run out of memory, we'll just have to redefine ReJITID as size_t.
+/* static */
+static ReJITID s_GlobalReJitId = 1;
 
 #ifndef DACCESS_COMPILE
 NativeCodeVersionNode::NativeCodeVersionNode(
@@ -553,20 +557,22 @@ ILCodeVersionNode::ILCodeVersionNode() :
     m_pNextILVersionNode(dac_cast<PTR_ILCodeVersionNode>(nullptr)),
     m_rejitState(ILCodeVersion::kStateRequested),
     m_pIL(),
-    m_jitFlags(0)
+    m_jitFlags(0),
+    m_deoptimized(FALSE)
 {
     m_pIL.Store(dac_cast<PTR_COR_ILMETHOD>(nullptr));
 }
 
 #ifndef DACCESS_COMPILE
-ILCodeVersionNode::ILCodeVersionNode(Module* pModule, mdMethodDef methodDef, ReJITID id) :
+ILCodeVersionNode::ILCodeVersionNode(Module* pModule, mdMethodDef methodDef, ReJITID id, BOOL isDeoptimized) :
     m_pModule(pModule),
     m_methodDef(methodDef),
     m_rejitId(id),
     m_pNextILVersionNode(dac_cast<PTR_ILCodeVersionNode>(nullptr)),
     m_rejitState(ILCodeVersion::kStateRequested),
     m_pIL(nullptr),
-    m_jitFlags(0)
+    m_jitFlags(0),
+    m_deoptimized(isDeoptimized)
 {}
 #endif
 
@@ -625,6 +631,12 @@ PTR_ILCodeVersionNode ILCodeVersionNode::GetNextILVersionNode() const
     LIMITED_METHOD_DAC_CONTRACT;
     _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
     return m_pNextILVersionNode;
+}
+
+BOOL ILCodeVersionNode::IsDeoptimized() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return m_deoptimized;
 }
 
 #ifndef DACCESS_COMPILE
@@ -908,7 +920,7 @@ PTR_COR_ILMETHOD ILCodeVersion::GetIL() const
         PTR_MethodDesc pMethodDesc = dac_cast<PTR_MethodDesc>(pModule->LookupMethodDef(GetMethodDef()));
         if (pMethodDesc != NULL)
         {
-            pIL = dac_cast<PTR_COR_ILMETHOD>(pMethodDesc->GetILHeader(TRUE));
+            pIL = dac_cast<PTR_COR_ILMETHOD>(pMethodDesc->GetILHeader());
         }
     }
 
@@ -938,6 +950,19 @@ const InstrumentedILOffsetMapping* ILCodeVersion::GetInstrumentedILMap() const
     else
     {
         return NULL;
+    }
+}
+
+BOOL ILCodeVersion::IsDeoptimized() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    if (m_storageKind == StorageKind::Explicit)
+    {
+        return AsNode()->IsDeoptimized();
+    }
+    else
+    {
+        return FALSE;
     }
 }
 
@@ -1448,7 +1473,7 @@ NativeCodeVersion CodeVersionManager::GetNativeCodeVersion(PTR_MethodDesc pMetho
 }
 
 #ifndef DACCESS_COMPILE
-HRESULT CodeVersionManager::AddILCodeVersion(Module* pModule, mdMethodDef methodDef, ReJITID rejitId, ILCodeVersion* pILCodeVersion)
+HRESULT CodeVersionManager::AddILCodeVersion(Module* pModule, mdMethodDef methodDef, ILCodeVersion* pILCodeVersion, BOOL isDeoptimized)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(IsLockOwnedByCurrentThread());
@@ -1461,7 +1486,7 @@ HRESULT CodeVersionManager::AddILCodeVersion(Module* pModule, mdMethodDef method
         return hr;
     }
 
-    ILCodeVersionNode* pILCodeVersionNode = new (nothrow) ILCodeVersionNode(pModule, methodDef, rejitId);
+    ILCodeVersionNode* pILCodeVersionNode = new (nothrow) ILCodeVersionNode(pModule, methodDef, InterlockedIncrement(reinterpret_cast<LONG*>(&s_GlobalReJitId)), isDeoptimized);
     if (pILCodeVersionNode == NULL)
     {
         return E_OUTOFMEMORY;
@@ -1746,8 +1771,9 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
             }
             else
             {
+            #ifdef FEATURE_TIERED_COMPILATION
                 _ASSERTE(!config->ShouldCountCalls());
-
+            #endif
                 // The thread that generated or loaded the new code will publish the code and backpatch if necessary
                 doPublish = false;
             }
@@ -1965,12 +1991,10 @@ HRESULT CodeVersionManager::EnumerateClosedMethodDescs(
     // It's impossible to get to any other kind of domain from the profiling API
     Module* pModule = pMD->GetModule();
     mdMethodDef methodDef = pMD->GetMemberDef();
-    BaseDomain * pBaseDomainFromModule = pModule->GetDomain();
-    _ASSERTE(pBaseDomainFromModule->IsAppDomain());
 
     // Module is unshared, so just use the module's domain to find instantiations.
     hr = EnumerateDomainClosedMethodDescs(
-        pBaseDomainFromModule->AsAppDomain(),
+        AppDomain::GetCurrentDomain(),
         pModule,
         methodDef,
         pClosedMethodDescs,
@@ -2010,15 +2034,7 @@ HRESULT CodeVersionManager::EnumerateDomainClosedMethodDescs(
 
     HRESULT hr;
 
-    BaseDomain * pDomainContainingGenericDefinition = pModuleContainingMethodDef->GetDomain();
-
-#ifdef _DEBUG
-    // If the generic definition is not loaded domain-neutral, then all its
-    // instantiations will also be non-domain-neutral and loaded into the same
-    // domain as the generic definition.  So the caller may only pass the
-    // domain containing the generic definition as pAppDomainToSearch
-    _ASSERTE(pDomainContainingGenericDefinition == pAppDomainToSearch);
-#endif //_DEBUG
+    _ASSERTE(AppDomain::GetCurrentDomain() == pAppDomainToSearch);
 
     // these are the default flags which won't actually be used in shared mode other than
     // asserting they were specified with their default values
@@ -2052,12 +2068,6 @@ HRESULT CodeVersionManager::EnumerateDomainClosedMethodDescs(
             }
             continue;
         }
-
-#ifdef _DEBUG
-        // Method's instantiation must be defined in the AD we're iterating over (pAppDomainToSearch, which, as
-        // asserted above, must be the same domain as the generic's definition)
-        _ASSERTE(pLoadedMD->GetDomain() == pAppDomainToSearch);
-#endif // _DEBUG
 
         MethodDesc ** ppMD = pClosedMethodDescs->Append();
         if (ppMD == NULL)

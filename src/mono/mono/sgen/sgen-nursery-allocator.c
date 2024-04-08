@@ -55,7 +55,7 @@
 #include "mono/sgen/sgen-memory-governor.h"
 #include "mono/sgen/sgen-pinning.h"
 #include "mono/sgen/sgen-client.h"
-#include "mono/utils/mono-membar.h"
+#include "mono/utils/mono-memory-model.h"
 
 /* Enable it so nursery allocation diagnostic data is collected */
 //#define NALLOC_DEBUG 1

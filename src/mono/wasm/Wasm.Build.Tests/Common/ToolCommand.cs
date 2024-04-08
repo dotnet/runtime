@@ -95,7 +95,7 @@ namespace Wasm.Build.Tests
         {
             if (CurrentProcess is not null && !CurrentProcess.HasExited)
             {
-                CurrentProcess.KillTree();
+                CurrentProcess.Kill(entireProcessTree: true);
                 CurrentProcess.Dispose();
                 CurrentProcess = null;
             }
@@ -115,8 +115,6 @@ namespace Wasm.Build.Tests
                 string msg = $"[{_label}] {e.Data}";
                 output.Add(msg);
                 _testOutput.WriteLine(msg);
-                if (EnvironmentVariables.ShowBuildOutput)
-                    Console.WriteLine(msg);
                 ErrorDataReceived?.Invoke(s, e);
             };
 
@@ -128,8 +126,6 @@ namespace Wasm.Build.Tests
                 string msg = $"[{_label}] {e.Data}";
                 output.Add(msg);
                 _testOutput.WriteLine(msg);
-                if (EnvironmentVariables.ShowBuildOutput)
-                    Console.WriteLine(msg);
                 OutputDataReceived?.Invoke(s, e);
             };
 

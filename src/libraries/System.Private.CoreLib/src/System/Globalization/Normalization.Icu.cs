@@ -20,7 +20,14 @@ namespace System.Globalization
             int ret;
             fixed (char* pInput = strInput)
             {
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                    ret = Interop.Globalization.IsNormalizedNative(normalizationForm, pInput, strInput.Length);
+                else
+                    ret = Interop.Globalization.IsNormalized(normalizationForm, pInput, strInput.Length);
+#else
                 ret = Interop.Globalization.IsNormalized(normalizationForm, pInput, strInput.Length);
+#endif
             }
 
             if (ret == -1)
@@ -53,7 +60,14 @@ namespace System.Globalization
                     fixed (char* pInput = strInput)
                     fixed (char* pDest = &MemoryMarshal.GetReference(buffer))
                     {
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                    if (GlobalizationMode.Hybrid)
+                        realLen = Interop.Globalization.NormalizeStringNative(normalizationForm, pInput, strInput.Length, pDest, buffer.Length);
+                    else
                         realLen = Interop.Globalization.NormalizeString(normalizationForm, pInput, strInput.Length, pDest, buffer.Length);
+#else
+                        realLen = Interop.Globalization.NormalizeString(normalizationForm, pInput, strInput.Length, pDest, buffer.Length);
+#endif
                     }
 
                     if (realLen == -1)
@@ -99,7 +113,6 @@ namespace System.Globalization
         private static void ValidateArguments(string strInput, NormalizationForm normalizationForm)
         {
             Debug.Assert(strInput != null);
-
 
             if (OperatingSystem.IsBrowser() && (normalizationForm == NormalizationForm.FormKC || normalizationForm == NormalizationForm.FormKD))
             {

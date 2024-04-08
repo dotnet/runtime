@@ -4,6 +4,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
 using System.Collections.Generic;
+using System.Runtime.InteropServices.Marshalling;
 using System.Threading.Tasks;
 using Xunit;
 using static Microsoft.Interop.Analyzers.CustomMarshallerAttributeAnalyzer;
@@ -14,7 +15,6 @@ using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpCodeFixVerifier<
 
 namespace LibraryImportGenerator.UnitTests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
     public class CustomMarshallerAttributeAnalyzerTests_AttributeUsage
     {
         [Fact]
@@ -29,6 +29,41 @@ namespace LibraryImportGenerator.UnitTests
 
             await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(ManagedTypeMustBeNonNullRule).WithLocation(0).WithArguments("MarshallerType"));
+        }
+        [Fact]
+        public async Task UsingMarshalModeAsFlags_ReportsDiagnostic()
+        {
+            string source = """
+                    using System.Collections.Generic;
+                    using System.Runtime.InteropServices;
+                    using System.Runtime.InteropServices.Marshalling;
+                    [CustomMarshaller(typeof(int), {|#0:MarshalMode.ElementIn | MarshalMode.ElementOut | MarshalMode.Default|}, typeof(MyMarshaller))]
+                    public static class MyMarshaller
+                    {
+
+                    }
+            """;
+
+            await VerifyCS.VerifyAnalyzerAsync(source,
+                VerifyCS.Diagnostic(MarshalModeMustBeValidValue).WithLocation(0));
+        }
+
+        [Fact]
+        public async Task UsingInvalidMarshalMode_ReportsDiagnostic()
+        {
+            string source = """
+                    using System.Collections.Generic;
+                    using System.Runtime.InteropServices;
+                    using System.Runtime.InteropServices.Marshalling;
+                    [CustomMarshaller(typeof(int), {|#0:(MarshalMode)10|}, typeof(MyMarshaller))]
+                    public static class MyMarshaller
+                    {
+
+                    }
+            """;
+
+            await VerifyCS.VerifyAnalyzerAsync(source,
+                VerifyCS.Diagnostic(MarshalModeMustBeValidValue).WithLocation(0));
         }
 
         [Fact]

@@ -79,8 +79,7 @@ namespace ILLink.Shared
 			var values = new HashSet<DynamicallyAccessedMemberTypes> (
 								Enum.GetValues (typeof (DynamicallyAccessedMemberTypes))
 								.Cast<DynamicallyAccessedMemberTypes> ());
-			if (!values.Contains (DynamicallyAccessedMemberTypes.Interfaces))
-				values.Add (DynamicallyAccessedMemberTypes.Interfaces);
+			values.Add (DynamicallyAccessedMemberTypes.Interfaces);
 			return values.ToArray ();
 		}
 

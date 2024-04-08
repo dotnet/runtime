@@ -8,7 +8,7 @@ using Xunit;
 public class Hello1
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         int i, j, k, l, m, t;
 
@@ -58,6 +58,5 @@ public class Hello1
         t = m;
         System.Console.WriteLine("m is {0}", t);
 
-        return 100;
     }
 }

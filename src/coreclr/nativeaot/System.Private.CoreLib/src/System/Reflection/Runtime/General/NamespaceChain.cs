@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Text;
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
+using System.Text;
 
 using Internal.Metadata.NativeFormat;
 
@@ -23,7 +23,7 @@ namespace System.Reflection.Runtime.General
             ConstantStringValueHandle currentNameHandle = currentNamespaceDefinition.Name;
             Handle currentNamespaceHandle;
             LowLevelList<string> names = new LowLevelList<string>();
-            for (;;)
+            for (; ; )
             {
                 string name = currentNameHandle.GetStringOrNull(reader);
                 names.Add(name);

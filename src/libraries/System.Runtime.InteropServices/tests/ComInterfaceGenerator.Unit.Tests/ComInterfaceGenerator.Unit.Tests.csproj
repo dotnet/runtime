@@ -6,43 +6,39 @@
     <LangVersion>Preview</LangVersion>
     <Nullable>enable</Nullable>
     <TestRunRequiresLiveRefPack>true</TestRunRequiresLiveRefPack>
+    <StringResourcesPath>../../gen/Common/Resources/Strings.resx</StringResourcesPath>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)SourceGenerators\LiveReferencePack.cs"
-            Link="Common\SourceGenerators\LiveReferencePack.cs" />
-    <Compile Include="$(CommonTestPath)SourceGenerators\GlobalOptionsOnlyProvider.cs"
-            Link="Common\SourceGenerators\GlobalOptionsOnlyProvider.cs" />
-    <Compile Include="..\Common\TestUtils.cs"
-            Link="Common\TestUtils.cs" />
-    <Compile Include="..\Common\TargetFrameworkOptions.cs"
-            Link="Common\TargetFrameworkOptions.cs" />
-    <Compile Include="..\Common\CustomCollectionMarshallingCodeSnippets.cs"
-            Link="Common\CustomCollectionMarshallingCodeSnippets.cs" />
-    <Compile Include="..\Common\CustomStructMarshallingCodeSnippets.cs"
-            Link="Common\CustomStructMarshallingCodeSnippets.cs" />
-    <Compile Include="..\Common\ICustomMarshallingSignatureTestProvider.cs"
-            Link="ICustomMarshallingSignatureTestProvider.cs" />
-    <Compile Include="..\Common\Verifiers\CSharpAnalyzerVerifier.cs"
-            Link="Verifiers\CSharpAnalyzerVerifier.cs"/>
-    <Compile Include="..\Common\Verifiers\CSharpCodeFixVerifier.cs"
-            Link="Verifiers\CSharpCodeFixVerifier.cs"/>
-    <Compile Include="..\Common\Verifiers\CSharpSourceGeneratorVerifier.cs"
-            Link="Verifiers\CSharpSourceGeneratorVerifier.cs"/>
-    <Compile Include="..\Common\Verifiers\CSharpVerifierHelper.cs"
-            Link="Verifiers\CSharpVerifierHelper.cs"/>
+    <Compile Include="$(CommonTestPath)SourceGenerators\LiveReferencePack.cs" Link="Common\SourceGenerators\LiveReferencePack.cs" />
+    <Compile Include="$(CommonTestPath)SourceGenerators\GlobalOptionsOnlyProvider.cs" Link="Common\SourceGenerators\GlobalOptionsOnlyProvider.cs" />
+    <Compile Include="..\Common\TestUtils.cs" Link="Common\TestUtils.cs" />
+    <Compile Include="..\Common\TargetFrameworkOptions.cs" Link="Common\TargetFrameworkOptions.cs" />
+    <Compile Include="..\Common\CustomCollectionMarshallingCodeSnippets.cs" Link="Common\CustomCollectionMarshallingCodeSnippets.cs" />
+    <Compile Include="..\Common\CustomStructMarshallingCodeSnippets.cs" Link="Common\CustomStructMarshallingCodeSnippets.cs" />
+    <Compile Include="..\Common\ICustomMarshallingSignatureTestProvider.cs" Link="ICustomMarshallingSignatureTestProvider.cs" />
+    <Compile Include="..\Common\Verifiers\CSharpAnalyzerVerifier.cs" Link="Verifiers\CSharpAnalyzerVerifier.cs" />
+    <Compile Include="..\Common\Verifiers\CSharpCodeFixVerifier.cs" Link="Verifiers\CSharpCodeFixVerifier.cs" />
+    <Compile Include="..\Common\Verifiers\CSharpSourceGeneratorVerifier.cs" Link="Verifiers\CSharpSourceGeneratorVerifier.cs" />
+    <Compile Include="..\Common\Verifiers\CSharpVerifierHelper.cs" Link="Verifiers\CSharpVerifierHelper.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion)" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.SourceGenerators.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing" Version="$(CompilerPlatformTestingVersion)" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" Version="$(CompilerPlatformTestingVersion)" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.SourceGenerators.Testing" Version="$(CompilerPlatformTestingVersion)" />
+
+    <!-- Upgrade transitive references of Microsoft.CodeAnalysis.Analyzer.Testing which bring in NS 1.x deps -->
+    <PackageReference Include="DiffPlex" Version="$(CompilerPlatformTestingDiffPlexVersion)" />
+    <PackageReference Include="Microsoft.VisualBasic" Version="$(CompilerPlatformTestingMicrosoftVisualBasicVersion)" />
+    <PackageReference Include="Microsoft.VisualStudio.Composition" Version="$(CompilerPlatformTestingMicrosoftVisualStudioCompositionVersion)" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Ancillary.Interop\Ancillary.Interop.csproj" />
     <ProjectReference Include="..\..\gen\ComInterfaceGenerator\ComInterfaceGenerator.csproj" />
+    <EnabledGenerators Include="ComInterfaceGenerator" />
   </ItemGroup>
 
   <ItemGroup>

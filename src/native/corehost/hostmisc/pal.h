@@ -27,6 +27,7 @@
 #define xerr std::wcerr
 #define xout std::wcout
 #define DIR_SEPARATOR L'\\'
+#define DIR_SEPARATOR_STR L"\\"
 #define PATH_SEPARATOR L';'
 #define PATH_MAX MAX_PATH
 #define _X(s) L ## s
@@ -44,6 +45,7 @@
 #define xerr std::cerr
 #define xout std::cout
 #define DIR_SEPARATOR '/'
+#define DIR_SEPARATOR_STR "/"
 #define PATH_SEPARATOR ':'
 #undef _X
 #define _X(s) s
@@ -90,6 +92,15 @@
 #define PATH_MAX    4096
 #endif
 
+#if defined(TARGET_WINDOWS)
+    #define HOST_RID_PLATFORM "win"
+#elif defined(TARGET_OSX)
+    #define HOST_RID_PLATFORM "osx"
+#elif defined(TARGET_ANDROID)
+    #define HOST_RID_PLATFORM "linux-bionic"
+#else
+    #define HOST_RID_PLATFORM FALLBACK_HOST_OS
+#endif
 
 namespace pal
 {
@@ -134,7 +145,7 @@ namespace pal
         CRITICAL_SECTION _impl;
     };
 
-    inline string_t exe_suffix() { return _X(".exe"); }
+    inline const pal::char_t* exe_suffix() { return _X(".exe"); }
 
     inline int cstrcasecmp(const char* str1, const char* str2) { return ::_stricmp(str1, str2); }
     inline int strcmp(const char_t* str1, const char_t* str2) { return ::wcscmp(str1, str2); }
@@ -202,7 +213,7 @@ namespace pal
     typedef void* proc_t;
     typedef std::mutex mutex_t;
 
-    inline string_t exe_suffix() { return _X(""); }
+    inline const pal::char_t* exe_suffix() { return nullptr; }
 
     inline int cstrcasecmp(const char* str1, const char* str2) { return ::strcasecmp(str1, str2); }
     inline int strcmp(const char_t* str1, const char_t* str2) { return ::strcmp(str1, str2); }

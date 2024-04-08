@@ -32,7 +32,7 @@ namespace System.Runtime.Intrinsics.X86
             /// </summary>
             /// <remarks>
             /// This method is to remain internal.
-            /// Its functionality is exposed in the public <see cref="System.Numerics.BitOperations" /> class.
+            /// Its functionality is exposed in the public <see cref="Numerics.BitOperations" /> class.
             /// </remarks>
             internal static ulong BitScanForward(ulong value) => BitScanForward(value);
 
@@ -43,7 +43,7 @@ namespace System.Runtime.Intrinsics.X86
             /// </summary>
             /// <remarks>
             /// This method is to remain internal.
-            /// Its functionality is exposed in the public <see cref="System.Numerics.BitOperations" /> class.
+            /// Its functionality is exposed in the public <see cref="Numerics.BitOperations" /> class.
             /// </remarks>
             internal static ulong BitScanReverse(ulong value) => BitScanReverse(value);
 
@@ -69,7 +69,7 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         /// <remarks>
         /// This method is to remain internal.
-        /// Its functionality is exposed in the public <see cref="System.Numerics.BitOperations" /> class.
+        /// Its functionality is exposed in the public <see cref="Numerics.BitOperations" /> class.
         /// </remarks>
         internal static uint BitScanForward(uint value) => BitScanForward(value);
 
@@ -80,7 +80,7 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         /// <remarks>
         /// This method is to remain internal.
-        /// Its functionality is exposed in the public <see cref="System.Numerics.BitOperations" /> class.
+        /// Its functionality is exposed in the public <see cref="Numerics.BitOperations" /> class.
         /// </remarks>
         internal static uint BitScanReverse(uint value) => BitScanReverse(value);
 

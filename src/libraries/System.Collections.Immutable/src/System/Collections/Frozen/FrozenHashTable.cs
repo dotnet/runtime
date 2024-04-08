@@ -36,34 +36,20 @@ namespace System.Collections.Frozen
         }
 
         /// <summary>Initializes a frozen hash table.</summary>
-        /// <param name="entriesLength">The number of entries to track from the hash table.</param>
-        /// <param name="hashAtIndex">A delegate that produces a hash code for a given entry. It's passed the index of the entry and returns that entry's hash code.</param>
-        /// <param name="storeDestIndexFromSrcIndex">A delegate that assigns the index to a specific entry. It's passed the destination and source indices.</param>
-        /// <param name="optimizeForReading">true to spend additional effort tuning for subsequent read speed on the table; false to prioritize construction time.</param>
+        /// <param name="hashCodes">Pre-calculated hash codes. When the method finishes, it assigns each value to destination index.</param>
+        /// <param name="hashCodesAreUnique">True when the input hash codes are already unique (provided from a dictionary of integers for example).</param>
         /// <remarks>
-        /// This method will iterate through the incoming entries and will invoke the hasher on each once.
         /// It will then determine the optimal number of hash buckets to allocate and will populate the
-        /// bucket table. In the process of doing so, it calls out to the <paramref name="storeDestIndexFromSrcIndex"/> to indicate
-        /// the resulting index for that entry. <see cref="FindMatchingEntries(int, out int, out int)"/>
-        /// then uses this index to reference individual entries by indexing into <see cref="HashCodes"/>.
+        /// bucket table. The caller is responsible to consume the values written to <paramref name="hashCodes"/> and update the destination (if desired).
+        /// <see cref="FindMatchingEntries(int, out int, out int)"/> then uses this index to reference individual entries by indexing into <see cref="HashCodes"/>.
         /// </remarks>
         /// <returns>A frozen hash table.</returns>
-        public static FrozenHashTable Create(int entriesLength, Func<int, int> hashAtIndex, Action<int, int> storeDestIndexFromSrcIndex, bool optimizeForReading = true)
+        public static FrozenHashTable Create(Span<int> hashCodes, bool hashCodesAreUnique = false)
         {
-            Debug.Assert(entriesLength != 0);
-
-            // Calculate the hashcodes for every entry.
-            int[] arrayPoolHashCodes = ArrayPool<int>.Shared.Rent(entriesLength);
-            Span<int> hashCodes = arrayPoolHashCodes.AsSpan(0, entriesLength);
-            for (int i = 0; i < entriesLength; i++)
-            {
-                hashCodes[i] = hashAtIndex(i);
-            }
-
             // Determine how many buckets to use.  This might be fewer than the number of entries
             // if any entries have identical hashcodes (not just different hashcodes that might
             // map to the same bucket).
-            int numBuckets = CalcNumBuckets(hashCodes, optimizeForReading);
+            int numBuckets = CalcNumBuckets(hashCodes, hashCodesAreUnique);
             ulong fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)numBuckets);
 
             // Create two spans:
@@ -111,8 +97,10 @@ namespace System.Collections.Frozen
                 bucketStart = count;
                 while (index >= 0)
                 {
-                    hashtableHashcodes[count] = hashCodes[index];
-                    storeDestIndexFromSrcIndex(count, index);
+                    ref int hashCode = ref hashCodes[index];
+                    hashtableHashcodes[count] = hashCode;
+                    // we have used the hash code for the last time, now we re-use the buffer to store destination index
+                    hashCode = count;
                     count++;
                     bucketCount++;
 
@@ -124,7 +112,6 @@ namespace System.Collections.Frozen
             Debug.Assert(count == hashtableHashcodes.Length);
 
             ArrayPool<int>.Shared.Return(arrayPoolBuckets);
-            ArrayPool<int>.Shared.Return(arrayPoolHashCodes);
 
             return new FrozenHashTable(hashtableHashcodes, hashtableBuckets, fastModMultiplier);
         }
@@ -156,53 +143,59 @@ namespace System.Collections.Frozen
         /// sizes, starting at the exact number of hash codes and incrementing the bucket count by 1 per trial,
         /// this is a trade-off between speed of determining a good number of buckets and maximal density.
         /// </remarks>
-        private static int CalcNumBuckets(ReadOnlySpan<int> hashCodes, bool optimizeForReading)
+        private static int CalcNumBuckets(ReadOnlySpan<int> hashCodes, bool hashCodesAreUnique)
         {
             Debug.Assert(hashCodes.Length != 0);
+            Debug.Assert(!hashCodesAreUnique || new HashSet<int>(hashCodes.ToArray()).Count == hashCodes.Length);
 
             const double AcceptableCollisionRate = 0.05;  // What is a satisfactory rate of hash collisions?
             const int LargeInputSizeThreshold = 1000;     // What is the limit for an input to be considered "small"?
             const int MaxSmallBucketTableMultiplier = 16; // How large a bucket table should be allowed for small inputs?
             const int MaxLargeBucketTableMultiplier = 3;  // How large a bucket table should be allowed for large inputs?
 
-            if (!optimizeForReading)
-            {
-                return HashHelpers.GetPrime(hashCodes.Length);
-            }
-
             // Filter out duplicate codes, since no increase in buckets will avoid collisions from duplicate input hash codes.
-            var codes =
-#if NETCOREAPP2_0_OR_GREATER
-                new HashSet<int>(hashCodes.Length);
-#else
-                new HashSet<int>();
-#endif
-            foreach (int hashCode in hashCodes)
+            HashSet<int>? codes = null;
+            int uniqueCodesCount = hashCodes.Length;
+            if (!hashCodesAreUnique)
             {
-                codes.Add(hashCode);
+                codes =
+#if NETCOREAPP2_0_OR_GREATER
+                    new HashSet<int>(hashCodes.Length);
+#else
+                    new HashSet<int>();
+#endif
+                foreach (int hashCode in hashCodes)
+                {
+                    codes.Add(hashCode);
+                }
+                uniqueCodesCount = codes.Count;
             }
-            Debug.Assert(codes.Count != 0);
+            Debug.Assert(uniqueCodesCount != 0);
+
+            // Based on our observations, in more than 99.5% of cases the number of buckets that meets our criteria is
+            // at least twice as big as the number of unique hash codes.
+            int minNumBuckets = uniqueCodesCount * 2;
 
             // In our precomputed primes table, find the index of the smallest prime that's at least as large as our number of
             // hash codes. If there are more codes than in our precomputed primes table, which accommodates millions of values,
             // give up and just use the next prime.
             ReadOnlySpan<int> primes = HashHelpers.Primes;
             int minPrimeIndexInclusive = 0;
-            while ((uint)minPrimeIndexInclusive < (uint)primes.Length && codes.Count > primes[minPrimeIndexInclusive])
+            while ((uint)minPrimeIndexInclusive < (uint)primes.Length && minNumBuckets > primes[minPrimeIndexInclusive])
             {
                 minPrimeIndexInclusive++;
             }
 
             if (minPrimeIndexInclusive >= primes.Length)
             {
-                return HashHelpers.GetPrime(codes.Count);
+                return HashHelpers.GetPrime(uniqueCodesCount);
             }
 
             // Determine the largest number of buckets we're willing to use, based on a multiple of the number of inputs.
             // For smaller inputs, we allow for a larger multiplier.
             int maxNumBuckets =
-                codes.Count *
-                (codes.Count >= LargeInputSizeThreshold ? MaxLargeBucketTableMultiplier : MaxSmallBucketTableMultiplier);
+                uniqueCodesCount *
+                (uniqueCodesCount >= LargeInputSizeThreshold ? MaxLargeBucketTableMultiplier : MaxSmallBucketTableMultiplier);
 
             // Find the index of the smallest prime that accommodates our max buckets.
             int maxPrimeIndexExclusive = minPrimeIndexInclusive;
@@ -221,35 +214,40 @@ namespace System.Collections.Frozen
             int[] seenBuckets = ArrayPool<int>.Shared.Rent((maxNumBuckets / BitsPerInt32) + 1);
 
             int bestNumBuckets = maxNumBuckets;
-            int bestNumCollisions = codes.Count;
+            int bestNumCollisions = uniqueCodesCount;
+            int numBuckets = 0, numCollisions = 0;
 
             // Iterate through each available prime between the min and max discovered. For each, compute
             // the collision ratio.
             for (int primeIndex = minPrimeIndexInclusive; primeIndex < maxPrimeIndexExclusive; primeIndex++)
             {
                 // Get the number of buckets to try, and clear our seen bucket bitmap.
-                int numBuckets = primes[primeIndex];
+                numBuckets = primes[primeIndex];
                 Array.Clear(seenBuckets, 0, Math.Min(numBuckets, seenBuckets.Length));
 
                 // Determine the bucket for each hash code and mark it as seen. If it was already seen,
                 // track it as a collision.
-                int numCollisions = 0;
-                foreach (int code in codes)
+                numCollisions = 0;
+
+                if (codes is not null && uniqueCodesCount != hashCodes.Length)
                 {
-                    uint bucketNum = (uint)code % (uint)numBuckets;
-                    if ((seenBuckets[bucketNum / BitsPerInt32] & (1 << (int)bucketNum)) != 0)
+                    foreach (int code in codes)
                     {
-                        numCollisions++;
-                        if (numCollisions >= bestNumCollisions)
+                        if (!IsBucketFirstVisit(code))
                         {
-                            // If we've already hit the previously known best number of collisions,
-                            // there's no point in continuing as worst case we'd just use that.
                             break;
                         }
                     }
-                    else
+                }
+                else
+                {
+                    // All of the hash codes in hashCodes are unique. In such scenario, it's faster to iterate over a span.
+                    foreach (int code in hashCodes)
                     {
-                        seenBuckets[bucketNum / BitsPerInt32] |= 1 << (int)bucketNum;
+                        if (!IsBucketFirstVisit(code))
+                        {
+                            break;
+                        }
                     }
                 }
 
@@ -259,7 +257,7 @@ namespace System.Collections.Frozen
                 {
                     bestNumBuckets = numBuckets;
 
-                    if (numCollisions / (double)codes.Count <= AcceptableCollisionRate)
+                    if (numCollisions / (double)uniqueCodesCount <= AcceptableCollisionRate)
                     {
                         break;
                     }
@@ -271,6 +269,28 @@ namespace System.Collections.Frozen
             ArrayPool<int>.Shared.Return(seenBuckets);
 
             return bestNumBuckets;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            bool IsBucketFirstVisit(int code)
+            {
+                uint bucketNum = (uint)code % (uint)numBuckets;
+                if ((seenBuckets[bucketNum / BitsPerInt32] & (1 << (int)bucketNum)) != 0)
+                {
+                    numCollisions++;
+                    if (numCollisions >= bestNumCollisions)
+                    {
+                        // If we've already hit the previously known best number of collisions,
+                        // there's no point in continuing as worst case we'd just use that.
+                        return false;
+                    }
+                }
+                else
+                {
+                    seenBuckets[bucketNum / BitsPerInt32] |= 1 << (int)bucketNum;
+                }
+
+                return true;
+            }
         }
 
         private readonly struct Bucket

@@ -101,10 +101,10 @@ namespace System.Security.Cryptography.X509Certificates
             ArraySegment<byte> encodedAuthSafe = default;
 
             bool gotRef = false;
-            password.DangerousAddRef(ref gotRef);
 
             try
             {
+                password.DangerousAddRef(ref gotRef);
                 ReadOnlySpan<char> passwordSpan = password.DangerousGetSpan();
 
                 int keyIdx = 0;
@@ -151,7 +151,11 @@ namespace System.Security.Cryptography.X509Certificates
             }
             finally
             {
-                password.DangerousRelease();
+                if (gotRef)
+                {
+                    password.DangerousRelease();
+                }
+
                 certAttrs.AsSpan(0, certCount).Clear();
                 certBags.AsSpan(0, certCount).Clear();
                 keyBags.AsSpan(0, certCount).Clear();
@@ -191,7 +195,7 @@ namespace System.Security.Cryptography.X509Certificates
                 byte[] attrBytes = new byte[6];
                 attrBytes[0] = (byte)UniversalTagNumber.OctetString;
                 attrBytes[1] = sizeof(int);
-                MemoryMarshal.Write(attrBytes.AsSpan(2), ref keyIdx);
+                MemoryMarshal.Write(attrBytes.AsSpan(2), in keyIdx);
 
                 AttributeAsn attribute = new AttributeAsn
                 {

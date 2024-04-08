@@ -3,17 +3,11 @@
 
 #include "pal_autoreleasepool.h"
 #include <Foundation/Foundation.h>
+#include <objc/runtime.h>
 
-@interface PlaceholderObject : NSObject
-- (void)noop:(id)_;
-@end
-
-@implementation PlaceholderObject : NSObject
-- (void)noop:(id)_
-{
-    [self release];
-}
-@end
+#if __has_feature(objc_arc)
+#error This file uses manual memory management and must not use ARC, but ARC is enabled.
+#endif
 
 void EnsureNSThreadIsMultiThreaded(void)
 {
@@ -22,12 +16,13 @@ void EnsureNSThreadIsMultiThreaded(void)
         // Start another no-op thread with the NSThread APIs to get NSThread into multithreaded mode.
         // The NSAutoReleasePool APIs can't be used on secondary threads until NSThread is in multithreaded mode.
         // See https://developer.apple.com/documentation/foundation/nsautoreleasepool for more information.
-        PlaceholderObject* placeholderObject = [[PlaceholderObject alloc] init];
-
+        //
         // We need to use detachNewThreadSelector to put NSThread into multithreaded mode.
         // We can't use detachNewThreadWithBlock since it doesn't change NSThread into multithreaded mode for some reason.
         // See https://developer.apple.com/documentation/foundation/nswillbecomemultithreadednotification for more information.
-        [NSThread detachNewThreadSelector:@selector(noop:) toTarget:placeholderObject withObject:nil];
+        id placeholderObject = [[NSMutableString alloc] init];		
+        [NSThread detachNewThreadSelector:@selector(appendString:) toTarget:placeholderObject withObject:@""];
+        [placeholderObject release];
     }
     assert([NSThread isMultiThreaded]);
 }

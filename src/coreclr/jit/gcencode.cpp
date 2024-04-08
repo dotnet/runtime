@@ -62,8 +62,6 @@ ReturnKind GCInfo::getReturnKind()
     }
 }
 
-#if !defined(JIT32_GCENCODER) || defined(FEATURE_EH_FUNCLETS)
-
 // gcMarkFilterVarsPinned - Walk all lifetimes and make it so that anything
 //     live in a filter is marked as pinned (often by splitting the lifetime
 //     so that *only* the filter region is pinned).  This should only be
@@ -86,6 +84,7 @@ ReturnKind GCInfo::getReturnKind()
 //
 void GCInfo::gcMarkFilterVarsPinned()
 {
+    assert(compiler->UsesFunclets());
     assert(compiler->ehAnyFunclets());
 
     for (EHblkDsc* const HBtab : EHClauses(compiler))
@@ -134,7 +133,6 @@ void GCInfo::gcMarkFilterVarsPinned()
                         //     (2) a regular one for after the filter
                         // and then adjust the original lifetime to end before
                         // the filter.
-                        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
                         if (compiler->verbose)
@@ -177,7 +175,6 @@ void GCInfo::gcMarkFilterVarsPinned()
                         // somewhere inside it, so we only create 1 new lifetime,
                         // and then adjust the original lifetime to end before
                         // the filter.
-                        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
                         if (compiler->verbose)
@@ -216,7 +213,6 @@ void GCInfo::gcMarkFilterVarsPinned()
                         // lifetime for the part inside the filter and adjust
                         // the start of the original lifetime to be the end
                         // of the filter
-                        CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef DEBUG
                         if (compiler->verbose)
                         {
@@ -259,7 +255,6 @@ void GCInfo::gcMarkFilterVarsPinned()
                     {
                         // The variable lifetime is completely within the filter,
                         // so just add the pinned flag.
-                        CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef DEBUG
                         if (compiler->verbose)
                         {
@@ -297,6 +292,8 @@ void GCInfo::gcMarkFilterVarsPinned()
 
 void GCInfo::gcInsertVarPtrDscSplit(varPtrDsc* desc, varPtrDsc* begin)
 {
+    assert(compiler->UsesFunclets());
+
 #ifndef JIT32_GCENCODER
     (void)begin;
     desc->vpdNext = gcVarPtrList;
@@ -335,24 +332,24 @@ void GCInfo::gcDumpVarPtrDsc(varPtrDsc* desc)
     const GCtype gcType = (desc->vpdVarNum & byref_OFFSET_FLAG) ? GCT_BYREF : GCT_GCREF;
     const bool   isPin  = (desc->vpdVarNum & pinned_OFFSET_FLAG) != 0;
 
+    assert(compiler->UsesFunclets());
+
     printf("[%08X] %s%s var at [%s", dspPtr(desc), GCtypeStr(gcType), isPin ? "pinned-ptr" : "",
            compiler->isFramePointerUsed() ? STR_FPBASE : STR_SPBASE);
 
     if (offs < 0)
     {
-        printf("-%02XH", -offs);
+        printf("-0x%02X", -offs);
     }
     else if (offs > 0)
     {
-        printf("+%02XH", +offs);
+        printf("+0x%02X", +offs);
     }
 
     printf("] live from %04X to %04X\n", desc->vpdBegOfs, desc->vpdEndOfs);
 }
 
 #endif // DEBUG
-
-#endif // !defined(JIT32_GCENCODER) || defined(FEATURE_EH_FUNCLETS)
 
 #ifdef JIT32_GCENCODER
 
@@ -433,12 +430,13 @@ static void regenLog(unsigned encoding, InfoHdr* header, InfoHdr* state)
 
     EnterCriticalSection(&logFileLock);
 
-    fprintf(logFile, "InfoHdr( %2d, %2d, %1d, %1d, %1d,"
-                     " %1d, %1d, %1d, %1d, %1d,"
-                     " %1d, %1d, %1d, %1d, %1d, %1d,"
-                     " %1d, %1d, %1d,"
-                     " %1d, %2d, %2d,"
-                     " %2d, %2d, %2d, %2d, %2d, %2d), \n",
+    fprintf(logFile,
+            "InfoHdr( %2d, %2d, %1d, %1d, %1d,"
+            " %1d, %1d, %1d, %1d, %1d,"
+            " %1d, %1d, %1d, %1d, %1d, %1d,"
+            " %1d, %1d, %1d,"
+            " %1d, %2d, %2d,"
+            " %2d, %2d, %2d, %2d, %2d, %2d), \n",
             state->prologSize, state->epilogSize, state->epilogCount, state->epilogAtEnd, state->ediSaved,
             state->esiSaved, state->ebxSaved, state->ebpSaved, state->ebpFrame, state->interruptible,
             state->doubleAlign, state->security, state->handlers, state->localloc, state->editNcontinue, state->varargs,
@@ -1462,7 +1460,6 @@ size_t GCInfo::gcInfoBlockHdrSave(
 #endif
 
     /* Write the method size first (using between 1 and 5 bytes) */
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     if (compiler->verbose)
@@ -1563,15 +1560,16 @@ size_t GCInfo::gcInfoBlockHdrSave(
 
     header->syncStartOffset = INVALID_SYNC_OFFSET;
     header->syncEndOffset   = INVALID_SYNC_OFFSET;
-#ifndef UNIX_X86_ABI
+
+#if defined(FEATURE_EH_WINDOWS_X86)
     // JIT is responsible for synchronization on funclet-based EH model that x86/Linux uses.
-    if (compiler->info.compFlags & CORINFO_FLG_SYNCH)
+    if (!compiler->UsesFunclets() && compiler->info.compFlags & CORINFO_FLG_SYNCH)
     {
-        assert(compiler->syncStartEmitCookie != NULL);
+        assert(compiler->syncStartEmitCookie != nullptr);
         header->syncStartOffset = compiler->GetEmitter()->emitCodeOffset(compiler->syncStartEmitCookie, 0);
         assert(header->syncStartOffset != INVALID_SYNC_OFFSET);
 
-        assert(compiler->syncEndEmitCookie != NULL);
+        assert(compiler->syncEndEmitCookie != nullptr);
         header->syncEndOffset = compiler->GetEmitter()->emitCodeOffset(compiler->syncEndEmitCookie, 0);
         assert(header->syncEndOffset != INVALID_SYNC_OFFSET);
 
@@ -1816,7 +1814,7 @@ static int (*zeroFunc)() = zeroFN;
  */
 
 typedef unsigned pasMaskType;
-#define BITS_IN_pasMask (BITS_IN_BYTE * sizeof(pasMaskType))
+#define BITS_IN_pasMask     (BITS_PER_BYTE * sizeof(pasMaskType))
 #define HIGHEST_pasMask_BIT (((pasMaskType)0x1) << (BITS_IN_pasMask - 1))
 
 //-----------------------------------------------------------------------------
@@ -1849,8 +1847,8 @@ public:
     // Use these in the case where there actually are more ptrs than pasArgMask
     unsigned pasEnumGCoffsCount();
 #define pasENUM_START ((unsigned)-1)
-#define pasENUM_LAST ((unsigned)-2)
-#define pasENUM_END ((unsigned)-3)
+#define pasENUM_LAST  ((unsigned)-2)
+#define pasENUM_END   ((unsigned)-3)
     unsigned pasEnumGCoffs(unsigned iter, unsigned* offs);
 
 protected:
@@ -2318,8 +2316,8 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
     if (header.varPtrTableSize != 0)
     {
-#if !defined(FEATURE_EH_FUNCLETS)
-        if (keepThisAlive)
+#if defined(FEATURE_EH_WINDOWS_X86)
+        if (!compiler->UsesFunclets() && keepThisAlive)
         {
             // Encoding of untracked variables does not support reporting
             // "this". So report it as a tracked variable with a liveness
@@ -2330,7 +2328,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
             unsigned varOffs = compiler->lvaTable[compiler->info.compThisArg].GetStackOffset();
 
             /* For negative stack offsets we must reset the low bits,
-                * take abs and then set them back */
+             * take abs and then set them back */
 
             varOffs = abs(static_cast<int>(varOffs));
             varOffs |= this_OFFSET_FLAG;
@@ -2343,7 +2341,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
             dest += (sz & mask);
             totalSize += sz;
         }
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
 
         /* We'll use a delta encoding for the lifetime offsets */
 
@@ -3284,7 +3282,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
                     assert(regMask || argMask || callArgCnt || pasStk.pasCurDepth());
 
-// Emit IPtrMask if needed
+                    // Emit IPtrMask if needed
 
 #define CHK_NON_INTRPT_ESP_IPtrMask                                                                                    \
                                                                                                                        \
@@ -3570,7 +3568,7 @@ size_t GCInfo::gcInfoBlockHdrDump(const BYTE* table, InfoHdr* header, unsigned* 
 #ifdef DEBUG
     gcDump.gcPrintf = gcDump_logf; // use my printf (which logs to VM)
 #else
-    gcDump.gcPrintf       = printf;
+    gcDump.gcPrintf = printf;
 #endif
 
     printf("Method info block:\n");
@@ -3589,7 +3587,7 @@ size_t GCInfo::gcDumpPtrTable(const BYTE* table, const InfoHdr& header, unsigned
 #ifdef DEBUG
     gcDump.gcPrintf = gcDump_logf; // use my printf (which logs to VM)
 #else
-    gcDump.gcPrintf       = printf;
+    gcDump.gcPrintf = printf;
 #endif
 
     return gcDump.DumpGCTable(table, header, methodSize, verifyGCTables);
@@ -3607,7 +3605,7 @@ void GCInfo::gcFindPtrsInFrame(const void* infoBlock, const void* codeBlock, uns
 #ifdef DEBUG
     gcDump.gcPrintf = gcDump_logf; // use my printf (which logs to VM)
 #else
-    gcDump.gcPrintf       = printf;
+    gcDump.gcPrintf = printf;
 #endif
 
     gcDump.DumpPtrsInFrame((PTR_CBYTE)infoBlock, (const BYTE*)codeBlock, offs, verifyGCTables);
@@ -3645,7 +3643,8 @@ class GcInfoEncoderWithLogging
 
 public:
     GcInfoEncoderWithLogging(GcInfoEncoder* gcInfoEncoder, bool verbose)
-        : m_gcInfoEncoder(gcInfoEncoder), m_doLogging(verbose INDEBUG(|| JitConfig.JitGCInfoLogging() != 0))
+        : m_gcInfoEncoder(gcInfoEncoder)
+        , m_doLogging(verbose INDEBUG(|| JitConfig.JitGCInfoLogging() != 0))
     {
     }
 
@@ -3887,7 +3886,7 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
             //
             const int osrOffset = ppInfo->GenericContextArgOffset() - 2 * REGSIZE_BYTES;
             assert(offset == osrOffset);
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             // PP info has virtual offset. This is also the caller SP offset.
             //
             const int osrOffset = ppInfo->GenericContextArgOffset();
@@ -3930,7 +3929,7 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
             //
             const int osrOffset = ppInfo->KeptAliveThisOffset() - 2 * REGSIZE_BYTES;
             assert(offset == osrOffset);
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             // PP info has virtual offset. This is also the caller SP offset.
             //
             const int osrOffset = ppInfo->KeptAliveThisOffset();
@@ -3959,7 +3958,6 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
         gcInfoEncoderWithLog->SetPrologSize(prologSize);
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
     if (compiler->lvaPSPSym != BAD_VAR_NUM)
     {
 #ifdef TARGET_AMD64
@@ -3977,8 +3975,6 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
         gcInfoEncoderWithLog->SetWantsReportOnlyLeaf();
     }
 #endif // TARGET_AMD64
-
-#endif // FEATURE_EH_FUNCLETS
 
 #ifdef TARGET_ARMARCH
     if (compiler->codeGen->GetHasTailCalls())
@@ -4023,7 +4019,8 @@ struct InterruptibleRangeReporter
     Encoder* gcInfoEncoderWithLog;
 
     InterruptibleRangeReporter(unsigned _prevStart, Encoder* _gcInfo)
-        : prevStart(_prevStart), gcInfoEncoderWithLog(_gcInfo)
+        : prevStart(_prevStart)
+        , gcInfoEncoderWithLog(_gcInfo)
     {
     }
 
@@ -4108,7 +4105,6 @@ void GCInfo::gcMakeRegPtrTable(
                 // pointers" section of the GC info even if lvTracked==true
 
                 // Has this argument been fully enregistered?
-                CLANG_FORMAT_COMMENT_ANCHOR;
 
                 if (!varDsc->lvOnFrame)
                 {
@@ -4137,7 +4133,6 @@ void GCInfo::gcMakeRegPtrTable(
             }
 
             // If we haven't continued to the next variable, we should report this as an untracked local.
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
             GcSlotFlags flags = GC_SLOT_UNTRACKED;
 
@@ -4697,8 +4692,8 @@ void GCInfo::gcMakeVarPtrTable(GcInfoEncoder* gcInfoEncoder, MakeRegPtrMode mode
     // unused by alignment
     C_ASSERT((OFFSET_MASK + 1) <= sizeof(int));
 
-#ifdef DEBUG
-    if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
+#if defined(DEBUG) && defined(JIT32_GCENCODER) && defined(FEATURE_EH_WINDOWS_X86)
+    if (!compiler->UsesFunclets() && mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
     {
         // Tracked variables can't be pinned, and the encoding takes
         // advantage of that by using the same bit for 'pinned' and 'this'
@@ -4711,7 +4706,7 @@ void GCInfo::gcMakeVarPtrTable(GcInfoEncoder* gcInfoEncoder, MakeRegPtrMode mode
             assert((flags & this_OFFSET_FLAG) == 0);
         }
     }
-#endif // DEBUG
+#endif
 
     // Only need to do this once, and only if we have EH.
     if ((mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS) && compiler->ehAnyFunclets())
@@ -4792,7 +4787,7 @@ void GCInfo::gcInfoRecordGCStackArgLive(GcInfoEncoder* gcInfoEncoder, MakeRegPtr
 
     StackSlotIdKey sskey(genStackPtr->rpdPtrArg, false,
                          GcSlotFlags(genStackPtr->rpdGCtypeGet() == GCT_BYREF ? GC_SLOT_INTERIOR : GC_SLOT_BASE));
-    GcSlotId varSlotId;
+    GcSlotId       varSlotId;
     if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
     {
         if (!m_stackSlotMap->Lookup(sskey, &varSlotId))
@@ -4840,8 +4835,8 @@ void GCInfo::gcInfoRecordGCStackArgsDead(GcInfoEncoder* gcInfoEncoder,
 
         StackSlotIdKey sskey(genRegPtrTemp->rpdPtrArg, false,
                              genRegPtrTemp->rpdGCtypeGet() == GCT_BYREF ? GC_SLOT_INTERIOR : GC_SLOT_BASE);
-        GcSlotId varSlotId;
-        bool     b = m_stackSlotMap->Lookup(sskey, &varSlotId);
+        GcSlotId       varSlotId;
+        bool           b = m_stackSlotMap->Lookup(sskey, &varSlotId);
         assert(b); // Should have been added in the first pass.
         // Live until the call.
         gcInfoEncoderWithLog->SetSlotState(instrOffset, varSlotId, GC_SLOT_DEAD);

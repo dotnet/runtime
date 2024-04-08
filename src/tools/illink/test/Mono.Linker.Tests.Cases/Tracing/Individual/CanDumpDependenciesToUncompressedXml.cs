@@ -1,5 +1,4 @@
-﻿using System;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
+﻿using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Tracing.Individual
 {

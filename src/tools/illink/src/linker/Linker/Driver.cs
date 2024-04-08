@@ -83,7 +83,13 @@ namespace Mono.Linker
 				Debug.Assert (context != null);
 				return context;
 			}
+			set {
+				Debug.Assert (context == null);
+				context = value;
+			}
 		}
+
+		private static readonly char[] s_separators = new char[] { ',', ';', ' ' };
 
 		public Driver (Queue<string> arguments)
 		{
@@ -94,7 +100,7 @@ namespace Mono.Linker
 		{
 			result = new Queue<string> ();
 			foreach (string arg in args) {
-				if (arg.StartsWith ("@")) {
+				if (arg.StartsWith ('@')) {
 					try {
 						string responseFileName = arg.Substring (1);
 						using (var responseFileText = new StreamReader (responseFileName))
@@ -168,7 +174,11 @@ namespace Mono.Linker
 			Context.LogError (null, DiagnosticId.MissingArgumentForCommanLineOptionName, optionName);
 		}
 
-		public enum DependenciesFileFormat { Xml, Dgml };
+		public enum DependenciesFileFormat
+		{
+			Xml,
+			Dgml
+		};
 
 		// Perform setup of the LinkContext and parse the arguments.
 		// Return values:
@@ -852,7 +862,7 @@ namespace Mono.Linker
 			}
 
 			value = Unquote (value);
-			string[] values = value.Split (new char[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+			string[] values = value.Split (s_separators, StringSplitOptions.RemoveEmptyEntries);
 			foreach (string v in values) {
 				var id = v.Trim ();
 				if (!id.StartsWith ("IL", StringComparison.Ordinal) || !ushort.TryParse (id.AsSpan (2), out ushort code))
@@ -892,7 +902,7 @@ namespace Mono.Linker
 			pipeline.AddStepBefore (typeof (MarkStep), new LinkAttributesStep (File.OpenRead (file), file));
 		}
 
-		static void AddBodySubstituterStep (Pipeline pipeline, string file)
+		protected virtual void AddBodySubstituterStep (Pipeline pipeline, string file)
 		{
 			pipeline.AddStepBefore (typeof (MarkStep), new BodySubstituterStep (File.OpenRead (file), file));
 		}
@@ -923,7 +933,7 @@ namespace Mono.Linker
 		bool TryGetCustomAssembly (ref string arg, [NotNullWhen (true)] out Assembly? assembly)
 		{
 			assembly = null;
-			int pos = arg.IndexOf (",");
+			int pos = arg.IndexOf (',');
 			if (pos == -1)
 				return false;
 
@@ -953,7 +963,7 @@ namespace Mono.Linker
 				}
 				customStepName = parts[1];
 
-				if (!parts[0].StartsWith ("-") && !parts[0].StartsWith ("+")) {
+				if (!parts[0].StartsWith ('-') && !parts[0].StartsWith ('+')) {
 					Context.LogError (null, DiagnosticId.ExpectedSignToControlNewStepInsertion);
 					return false;
 				}
@@ -1169,6 +1179,9 @@ namespace Mono.Linker
 			case "sealer":
 				optimization = CodeOptimizations.Sealer;
 				return true;
+			case "substitutefeatureguards":
+				optimization = CodeOptimizations.SubstituteFeatureGuards;
+				return true;
 			}
 
 			Context.LogError (null, DiagnosticId.InvalidOptimizationValue, text);
@@ -1226,7 +1239,7 @@ namespace Mono.Linker
 				return true;
 			}
 
-			if (arg.StartsWith ("-") || arg.StartsWith ("/")) {
+			if (arg.StartsWith ('-') || arg.StartsWith ('/')) {
 				action (true);
 				return true;
 			}
@@ -1259,7 +1272,7 @@ namespace Mono.Linker
 				return null;
 
 			var arg = arguments.Peek ();
-			if (arg.StartsWith ("-") || arg.StartsWith ("/"))
+			if (arg.StartsWith ('-') || arg.StartsWith ('/'))
 				return null;
 
 			arguments.Dequeue ();
@@ -1330,7 +1343,7 @@ namespace Mono.Linker
 			Console.WriteLine ("  --custom-data KEY=VALUE   Populates context data set with user specified key-value pair");
 			Console.WriteLine ("  --deterministic           Produce a deterministic output for modified assemblies");
 			Console.WriteLine ("  --ignore-descriptors      Skips reading embedded descriptors (short -z). Defaults to false");
-			Console.WriteLine ("  --skip-unresolved         Ignore unresolved types, methods, and assemblies. Defaults to false");
+			Console.WriteLine ("  --skip-unresolved         Ignore unresolved types, methods, and assemblies. Defaults to true");
 			Console.WriteLine ("  --output-pinvokes PATH    Output a JSON file with all modules and entry points of the P/Invokes found");
 			Console.WriteLine ("  --verbose                 Log messages indicating progress and warnings");
 			Console.WriteLine ("  --nowarn WARN             Disable specific warning messages");
@@ -1351,6 +1364,7 @@ namespace Mono.Linker
 			Console.WriteLine ("                               unreachablebodies: Instance methods that are marked but not executed are converted to throws");
 			Console.WriteLine ("                               unusedinterfaces: Removes interface types from declaration when not used");
 			Console.WriteLine ("                               unusedtypechecks: Inlines never successful type checks");
+			Console.WriteLine ("                               substitutefeatureguards: Substitutes properties annotated as FeatureGuard(typeof(RequiresUnreferencedCodeAttribute)) to false");
 			Console.WriteLine ("  --enable-opt NAME [ASM]    Enable one of the additional optimizations globaly or for a specific assembly name");
 			Console.WriteLine ("                               sealer: Any method or type which does not have override is marked as sealed");
 			Console.WriteLine ("  --explicit-reflection      Adds to members never used through reflection DisablePrivateReflection attribute. Defaults to false");

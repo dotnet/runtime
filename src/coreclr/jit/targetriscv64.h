@@ -12,8 +12,6 @@
   #define ROUND_FLOAT              0       // Do not round intermed float expression results
   #define CPU_HAS_BYTE_REGS        0
 
-  #define CPBLK_UNROLL_LIMIT       64     // Upper bound to let the code generator to loop unroll CpBlk
-  #define INITBLK_UNROLL_LIMIT     64     // Upper bound to let the code generator to loop unroll InitBlk
 
 #ifdef FEATURE_SIMD
 #pragma error("SIMD Unimplemented yet RISCV64")
@@ -44,7 +42,6 @@
                                            // need to track stack depth, but this is currently necessary to get GC information reported at call sites.
   #define TARGET_POINTER_SIZE      8       // equal to sizeof(void*) and the managed pointer size in bytes for this target
   #define FEATURE_EH               1       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter, filter-handler, fault) and directly execute 'finally' clauses.
-  #define FEATURE_EH_CALLFINALLY_THUNKS 1  // Generate call-to-finally code in "thunks" in the enclosing EH region, protected by "cloned finally" clauses.
   #define ETW_EBP_FRAMED           1       // if 1 we cannot use REG_FP as a scratch register and must setup the frame pointer for most methods
   #define CSE_CONSTS               1       // Enable if we want to CSE constants
 
@@ -157,8 +154,8 @@
   #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF RBM_CALLEE_TRASH_NOGC
 
   // GenericPInvokeCalliHelper VASigCookie Parameter
-  #define REG_PINVOKE_COOKIE_PARAM          REG_T0
-  #define RBM_PINVOKE_COOKIE_PARAM          RBM_T0
+  #define REG_PINVOKE_COOKIE_PARAM          REG_T3
+  #define RBM_PINVOKE_COOKIE_PARAM          RBM_T3
 
   // GenericPInvokeCalliHelper unmanaged target Parameter
   #define REG_PINVOKE_TARGET_PARAM          REG_T2
@@ -192,18 +189,18 @@
   #define REG_PREV(reg)           ((regNumber)((unsigned)(reg) - 1))
 
   // The following registers are used in emitting Enter/Leave/Tailcall profiler callbacks
-  #define REG_PROFILER_ENTER_ARG_FUNC_ID    REG_R16
-  #define RBM_PROFILER_ENTER_ARG_FUNC_ID    RBM_R16
-  #define REG_PROFILER_ENTER_ARG_CALLER_SP  REG_R17
-  #define RBM_PROFILER_ENTER_ARG_CALLER_SP  RBM_R17
-  #define REG_PROFILER_LEAVE_ARG_FUNC_ID    REG_R16
-  #define RBM_PROFILER_LEAVE_ARG_FUNC_ID    RBM_R16
-  #define REG_PROFILER_LEAVE_ARG_CALLER_SP  REG_R17
-  #define RBM_PROFILER_LEAVE_ARG_CALLER_SP  RBM_R17
+  #define REG_PROFILER_ENTER_ARG_FUNC_ID    REG_T0
+  #define RBM_PROFILER_ENTER_ARG_FUNC_ID    RBM_T0
+  #define REG_PROFILER_ENTER_ARG_CALLER_SP  REG_T1
+  #define RBM_PROFILER_ENTER_ARG_CALLER_SP  RBM_T1
+  #define REG_PROFILER_LEAVE_ARG_FUNC_ID    REG_PROFILER_ENTER_ARG_FUNC_ID
+  #define RBM_PROFILER_LEAVE_ARG_FUNC_ID    RBM_PROFILER_ENTER_ARG_FUNC_ID
+  #define REG_PROFILER_LEAVE_ARG_CALLER_SP  REG_PROFILER_ENTER_ARG_CALLER_SP
+  #define RBM_PROFILER_LEAVE_ARG_CALLER_SP  RBM_PROFILER_ENTER_ARG_CALLER_SP
 
   // The registers trashed by profiler enter/leave/tailcall hook
   #define RBM_PROFILER_ENTER_TRASH     (RBM_CALLEE_TRASH & ~(RBM_ARG_REGS|RBM_FLTARG_REGS|RBM_FP))
-  #define RBM_PROFILER_LEAVE_TRASH     (RBM_CALLEE_TRASH & ~(RBM_ARG_REGS|RBM_FLTARG_REGS|RBM_FP))
+  #define RBM_PROFILER_LEAVE_TRASH     RBM_PROFILER_ENTER_TRASH
   #define RBM_PROFILER_TAILCALL_TRASH  RBM_PROFILER_LEAVE_TRASH
 
   // Which register are int and long values returned in ?
@@ -295,12 +292,12 @@
   extern const regNumber fltArgRegs [MAX_FLOAT_REG_ARG];
   extern const regMaskTP fltArgMasks[MAX_FLOAT_REG_ARG];
 
-  #define B_DIST_SMALL_MAX_NEG  (-131072)
-  #define B_DIST_SMALL_MAX_POS  (+131071)
+  #define B_DIST_SMALL_MAX_NEG  (-4096)
+  #define B_DIST_SMALL_MAX_POS  (+4095)
 
-  #define OFFSET_DIST_SMALL_MAX_NEG   (-2048)
-  #define OFFSET_DIST_SMALL_MAX_POS   (+2047)
-
+  // The number of bytes from the end the last probed page that must also be probed, to allow for some
+  // small SP adjustments without probes. If zero, then the stack pointer can point to the last byte/word
+  // on the stack guard page, and must be touched before any further "SUB SP".
   #define STACK_PROBE_BOUNDARY_THRESHOLD_BYTES 0
 
 // clang-format on

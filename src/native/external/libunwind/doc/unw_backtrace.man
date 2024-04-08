@@ -1,5 +1,7 @@
+.\" *********************************** start of \input{common.tex}
+.\" *********************************** end of \input{common.tex}
 '\" t
-.\" Manual page created with latex2man on Fri Aug 31 13:39:04 EEST 2012
+.\" Manual page created with latex2man on Tue Aug 29 12:09:48 2023
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -10,7 +12,7 @@
 
 .fi
 ..
-.TH "UNW\\_BACKTRACE" "3" "31 August 2012" "Programming Library " "Programming Library "
+.TH "UNW\\_BACKTRACE" "3libunwind" "29 August 2023" "Programming Library " "Programming Library "
 .SH NAME
 unw_backtrace
 \-\- return backtrace for the calling program 
@@ -24,6 +26,12 @@ unw_backtrace
 int
 unw_backtrace(void **buffer,
 int size);
+.br
+int
+unw_backtrace2(void **buffer,
+int size,
+unw_context_t *ctxt,
+int flag);
 .br
 .PP
 #include <execinfo.h>
@@ -44,7 +52,7 @@ addresses in the array
 pointed by buffer\&.
 The routine is only available for local unwinding. 
 .PP
-Note that many (but not all) systems provide practically identical function 
+Note that many (but not all) systems provide a practically identical function 
 called backtrace().
 The prototype for this function is usually obtained 
 by including the <execinfo.h>
@@ -61,6 +69,17 @@ is linked against libunwind,
 it may end up 
 calling unw_backtrace().
 .PP
+In case you want to obtain the backtrace from a specific unw_context_t,
+you can call unw_backtrace2
+with that context passing 0
+for flag. 
+If the unw_context_t
+is known to be a signal frame (i.e., from the third argument 
+in a sigaction handler on linux), unw_backtrace2
+can be used to collect 
+only the frames before the signal frame passing the UNW_INIT_SIGNAL_FRAME
+flag. 
+.PP
 .SH RETURN VALUE
 
 .PP
@@ -72,8 +91,8 @@ stored.
 .SH SEE ALSO
 
 .PP
-libunwind(3),
-unw_step(3)
+libunwind(3libunwind),
+unw_step(3libunwind)
 .PP
 .SH AUTHOR
 

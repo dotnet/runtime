@@ -1,17 +1,17 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!--
-    Microsoft ResX Schema
-
+  <!-- 
+    Microsoft ResX Schema 
+    
     Version 2.0
-
-    The primary goals of this format is to allow a simple XML format
-    that is mostly human readable. The generation and parsing of the
-    various data types are done through the TypeConverter classes
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
     associated with the data types.
-
+    
     Example:
-
+    
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-
-    There are any number of "resheader" rows that contain simple
+                
+    There are any number of "resheader" rows that contain simple 
     name/value pairs.
-
-    Each data row contains a name, and value. The row also contains a
-    type or mimetype. Type corresponds to a .NET class that support
-    text/value conversion through the TypeConverter architecture.
-    Classes that don't support this are serialized and stored with the
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
     mimetype set.
-
-    The mimetype is used for serialized objects, and tells the
-    ResXResourceReader how to depersist the object. This is currently not
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
     extensible. For a given mimetype the value must be set accordingly:
-
-    Note - application/x-microsoft.net.object.binary.base64 is the format
-    that the ResXResourceWriter will generate, however the reader can
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
     read any of the formats listed below.
-
+    
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with
+    value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-
+    
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with
+    value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array
+    value   : The object must be serialized into a byte array 
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -179,6 +179,9 @@
   </data>
   <data name="InstructionSetInvalidImplication" xml:space="preserve">
     <value>Instruction set '{0}' implies support for instruction set '{1}'</value>
+  </data>
+  <data name="MaxVectorTBitWidths" xml:space="preserve">
+    <value>The maximum width, in bits, for System.Numerics.Vector&lt;T&gt;. For example '128', '256', or '512'.</value>
   </data>
   <data name="UnrootedInputFilesToCompile" xml:space="preserve">
     <value>Input files without automatic rooting of all methods</value>
@@ -310,10 +313,13 @@
     <value>Error: multiple input files are only supported in composite build mode: {0}</value>
   </data>
   <data name="MethodLayoutOption" xml:space="preserve">
-    <value>Layout algorithm used by profile-driven optimization for arranging methods in a file: DefaultSort, ExclusiveWeight, HotCold, or HotWarmCold). The default value is DefaultSort, which indicates that complex layout is disabled.</value>
+    <value>Layout algorithm used by profile-driven optimization for arranging methods in a file.</value>
   </data>
   <data name="FileLayoutOption" xml:space="preserve">
-    <value>Layout algorithm used by profile-driven optimization for arranging non-method contents in a file: DefaultSort or MethodOrder. The default value is DefaultSort, which indicates that complex layout is disabled.</value>
+    <value>Layout algorithm used by profile-driven optimization for arranging non-method contents in a file.</value>
+  </data>
+  <data name="LayoutOptionExtraHelp" xml:space="preserve">
+    <value>Note for {0}: Valid options are {1}. The default value is DefaultSort, which indicates that complex layout is disabled.</value>
   </data>
   <data name="CompositeRootPath" xml:space="preserve">
     <value>Logical root folder for composite builds; defaults to directory of 1st input file.</value>
@@ -379,13 +385,19 @@
     <value>Hexadecimal value to set target PE-file ImageBase field</value>
   </data>
   <data name="CrossModuleInlining" xml:space="preserve">
-    <value>Allow inclusion of code from the specified module into the module being compiled. In addition to specifying an assembly by name, the special value of "*" is recognized as indicating that code from all modules may be included. Any module specified in this way MUST be loadable from the first moment the R2R module is loaded, as loads of these modules may be triggered unpredictably.</value>
+    <value>Allow inclusion of code from the specified module into the module being compiled.</value>
+  </data>
+  <data name="CrossModuleInliningExtraHelp" xml:space="preserve">
+    <value>Note for --opt-cross-module: In addition to specifying an assembly by name, the special value of "*" is recognized as indicating that code from all modules may be included. Any module specified in this way MUST be loadable from the first moment the R2R module is loaded, as loads of these modules may be triggered unpredictably.</value>
   </data>
   <data name="AsyncModuleOptimization" xml:space="preserve">
     <value>Attempt to compile as much async infrastructure as possible for async methods. Defaults to enabled. To disable, specify false to this flag explicitly.</value>
   </data>
   <data name="NonLocalGenericsModule" xml:space="preserve">
-    <value>Specify the module which is permitted to contain generics defined or instantiated in any other module. Specify "*" to indicate that any module may hold arbitrary generics.</value>
+    <value>Specify "*" to indicate that any module may hold arbitrary generics.</value>
+  </data>
+  <data name="NonLocalGenericsModuleExtraHelp" xml:space="preserve">
+    <value>Note for --non-local-generics-module: Specify "*" to indicate that any module may hold arbitrary generics.</value>
   </data>
   <data name="ErrorNonLocalGenericsModule" xml:space="preserve">
     <value>"{0}" was specified to the --non-local-generics-module switch, but was not in the set of modules associated with the compile</value>
@@ -398,5 +410,17 @@
   </data>
   <data name="Crossgen2BannerText" xml:space="preserve">
     <value>.NET Crossgen2 Compiler</value>
+  </data>
+  <data name="TypeValidation" xml:space="preserve">
+    <value>Configure the runtime's behavior around validating the correctness of types defined in assemblies compiled via crossgen2</value>
+  </data>
+  <data name="EnableGenericCycleDetection" xml:space="preserve">
+    <value>Perform generic cycle detection during compilation (incurs longer compilation time)</value>
+  </data>
+  <data name="GenericCycleBreadthCutoff" xml:space="preserve">
+    <value>Total number of occurrences of potentially cyclic generic types within a generic type to cut off</value>
+  </data>
+  <data name="GenericCycleDepthCutoff" xml:space="preserve">
+    <value>Number of nested occurrences of a potentially cyclic generic type to cut off</value>
   </data>
 </root>

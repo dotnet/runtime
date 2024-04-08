@@ -58,7 +58,6 @@ namespace BasicEventSourceTests
         /// For NuGet EventSources we validate both "runtime" and "validation" behavior
         /// </summary>
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/runtime/issues/21421")]
         public void Test_GenerateManifest_InvalidEventSources()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
@@ -94,11 +93,6 @@ namespace BasicEventSourceTests
                     GetResourceString("EventSource_IllegalKeywordsValue", "Kwd1", "0x100000000000"),
                     GetResourceString("EventSource_KeywordCollision", "Session3", "Kwd1", "0x100000000000")),
                 e);
-
-#if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-            e = AssertExtensions.Throws<ArgumentException>(GetResourceString("EventSource_MaxChannelExceeded"),
-                () => EventSource.GenerateManifest(typeof(Sdt.TooManyChannelsEventSource), string.Empty));
-#endif
 
             if (PlatformDetection.IsWindows)
             {

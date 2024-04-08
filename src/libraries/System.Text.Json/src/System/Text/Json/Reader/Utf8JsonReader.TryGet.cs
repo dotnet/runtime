@@ -73,6 +73,14 @@ namespace System.Text.Json
                 ThrowHelper.ThrowInvalidOperationException_ExpectedString(_tokenType);
             }
 
+            return CopyValue(utf8Destination);
+        }
+
+        internal readonly int CopyValue(Span<byte> utf8Destination)
+        {
+            Debug.Assert(_tokenType is JsonTokenType.String or JsonTokenType.PropertyName or JsonTokenType.Number);
+            Debug.Assert(_tokenType != JsonTokenType.Number || !ValueIsEscaped, "Numbers can't contain escape characters.");
+
             int bytesWritten;
 
             if (ValueIsEscaped)
@@ -128,6 +136,14 @@ namespace System.Text.Json
             {
                 ThrowHelper.ThrowInvalidOperationException_ExpectedString(_tokenType);
             }
+
+            return CopyValue(destination);
+        }
+
+        internal readonly int CopyValue(Span<char> destination)
+        {
+            Debug.Assert(_tokenType is JsonTokenType.String or JsonTokenType.PropertyName or JsonTokenType.Number);
+            Debug.Assert(_tokenType != JsonTokenType.Number || !ValueIsEscaped, "Numbers can't contain escape characters.");
 
             scoped ReadOnlySpan<byte> unescapedSource;
             byte[]? rentedBuffer = null;

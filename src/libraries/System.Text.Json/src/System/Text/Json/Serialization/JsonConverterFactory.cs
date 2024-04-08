@@ -22,9 +22,9 @@ namespace System.Text.Json.Serialization
         private protected override ConverterStrategy GetDefaultConverterStrategy() => ConverterStrategy.None;
 
         /// <summary>
-        /// Create a converter for the provided <see cref="Type"/>.
+        /// Create a converter for the provided <see cref="System.Type"/>.
         /// </summary>
-        /// <param name="typeToConvert">The <see cref="Type"/> being converted.</param>
+        /// <param name="typeToConvert">The <see cref="System.Type"/> being converted.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
         /// <returns>
         /// An instance of a <see cref="JsonConverter{T}"/> where T is compatible with <paramref name="typeToConvert"/>.
@@ -142,7 +142,8 @@ namespace System.Text.Json.Serialization
             throw new InvalidOperationException();
         }
 
-        internal sealed override Type TypeToConvert => null!;
+        /// <inheritdoc/>
+        public sealed override Type? Type => null;
 
         internal sealed override void WriteAsPropertyNameCoreAsObject(
             Utf8JsonWriter writer,
@@ -160,12 +161,6 @@ namespace System.Text.Json.Serialization
             Debug.Fail("We should never get here.");
 
             throw new InvalidOperationException();
-        }
-
-        internal sealed override JsonConverter<TTarget> CreateCastingConverter<TTarget>()
-        {
-            ThrowHelper.ThrowInvalidOperationException_ConverterCanConvertMultipleTypes(typeof(TTarget), this);
-            return null!;
         }
     }
 }

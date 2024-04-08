@@ -240,7 +240,7 @@ namespace System.Security.Cryptography
 
             if (_whitespaces == FromBase64TransformMode.DoNotIgnoreWhiteSpaces)
             {
-                if (inputBuffer.IndexOfAny(s_whiteSpace) >= 0)
+                if (inputBuffer.ContainsAny(s_whiteSpace))
                 {
                     ThrowHelper.ThrowBase64FormatException();
                 }

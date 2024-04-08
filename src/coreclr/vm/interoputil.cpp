@@ -919,9 +919,9 @@ int InternalWideToAnsi(_In_reads_(iNumWideChars) LPCWSTR szWideString, int iNumW
 
         if (retval == 0)
         {
-            INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
             COMPlusThrowHR(HRESULT_FROM_WIN32(lastError));
-            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(true);
         }
 
         if (DefaultCharUsed)
@@ -952,9 +952,9 @@ int InternalWideToAnsi(_In_reads_(iNumWideChars) LPCWSTR szWideString, int iNumW
 
         if (retval == 0)
         {
-            INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
             COMPlusThrowHR(HRESULT_FROM_WIN32(lastError));
-            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(true);
         }
     }
 
@@ -2558,7 +2558,7 @@ BOOL IsMethodVisibleFromCom(MethodDesc *pMD)
     mdMethodDef md = pMD->GetMemberDef();
 
     // See if there is property information for this member.
-    hr = pMD->GetModule()->GetPropertyInfoForMethodDef(md, &pd, &pPropName, &uSemantic);
+    hr = pMD->GetMDImport()->GetPropertyInfoForMethodDef(md, &pd, &pPropName, &uSemantic);
     IfFailThrow(hr);
 
     if (hr == S_OK)
@@ -3114,7 +3114,7 @@ void IUInvokeDispMethod(
 
     // Validate that the target is valid for the specified type.
     if (!IsComTargetValidForType(pRefClassObj, pTarget))
-        COMPlusThrow(kTargetException, W("RFLCT.Targ_ITargMismatch"));
+        COMPlusThrow(kTargetException, W("RFLCT_Targ_ITargMismatch"));
 
     // If the invoked type is an interface, make sure it is IDispatch based.
     if (pInvokedMT->IsInterface())

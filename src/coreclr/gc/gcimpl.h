@@ -160,7 +160,6 @@ public:
     void    ValidateObjectMember (Object *obj);
 
     PER_HEAP    size_t  ApproxTotalBytesInUse(BOOL small_heap_only = FALSE);
-    PER_HEAP    size_t  ApproxFreeBytes();
 
     unsigned GetCondemnedGeneration();
 
@@ -204,13 +203,13 @@ public:
     int EndNoGCRegion();
     enable_no_gc_region_callback_status EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, uint64_t callback_threshold);
     FinalizerWorkItem* GetExtraWorkForFinalization();
+    uint64_t GetGenerationBudget(int generation);
+    size_t GetLOHThreshold();
 
     unsigned GetGcCount();
 
     Object* GetNextFinalizable() { return GetNextFinalizableObject(); };
     size_t GetNumberOfFinalizable() { return GetNumberFinalizableObjects(); }
-
-    PER_HEAP_ISOLATED HRESULT GetGcCounters(int gen, gc_counters* counters);
 
     size_t GetValidSegmentSize(bool large_seg = false);
 

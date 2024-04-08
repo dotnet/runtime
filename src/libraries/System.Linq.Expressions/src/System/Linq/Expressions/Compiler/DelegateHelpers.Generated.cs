@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions.Compiler
@@ -14,6 +15,7 @@ namespace System.Linq.Expressions.Compiler
         /// We use the cache to avoid copying the array, and to cache the
         /// created delegate type
         /// </summary>
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         internal static Type MakeDelegateType(Type[] types)
         {
             lock (_DelegateCache)
@@ -90,6 +92,7 @@ namespace System.Linq.Expressions.Compiler
         public delegate object VBCallSiteDelegate6<T>(T callSite, object instance, ref object arg1, ref object arg2, ref object arg3, ref object arg4, ref object arg5, ref object arg6);
         public delegate object VBCallSiteDelegate7<T>(T callSite, object instance, ref object arg1, ref object arg2, ref object arg3, ref object arg4, ref object arg5, ref object arg6, ref object arg7);
 
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         private static Type TryMakeVBStyledCallSite(Type[] types)
         {
             // Shape of VB CallSiteDelegates is CallSite * (instance : obj) * [arg-n : byref obj] -> obj
@@ -127,6 +130,7 @@ namespace System.Linq.Expressions.Compiler
         /// Creates a new delegate, or uses a func/action
         /// Note: this method does not cache
         /// </summary>
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         internal static Type MakeNewDelegate(Type[] types)
         {
             Debug.Assert(types != null && types.Length > 0);
@@ -180,6 +184,7 @@ namespace System.Linq.Expressions.Compiler
             return result;
         }
 
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         internal static Type GetFuncType(Type[] types)
         {
             switch (types.Length)
@@ -224,6 +229,7 @@ namespace System.Linq.Expressions.Compiler
             }
         }
 
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         internal static Type GetActionType(Type[] types)
         {
             switch (types.Length)

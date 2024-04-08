@@ -91,7 +91,7 @@ namespace System
 
             // Return the value properly signed.
             if ((ulong)result == 0x8000000000000000 && sign == 1 && r == 10 && ((flags & TreatAsUnsigned) == 0))
-                Number.ThrowOverflowException(TypeCode.Int64);
+                Number.ThrowOverflowException<long>();
 
             if (r == 10)
             {
@@ -182,16 +182,16 @@ namespace System
             if ((flags & TreatAsI1) != 0)
             {
                 if ((uint)result > 0xFF)
-                    Number.ThrowOverflowException(TypeCode.SByte);
+                    Number.ThrowOverflowException<sbyte>();
             }
             else if ((flags & TreatAsI2) != 0)
             {
                 if ((uint)result > 0xFFFF)
-                    Number.ThrowOverflowException(TypeCode.Int16);
+                    Number.ThrowOverflowException<short>();
             }
             else if ((uint)result == 0x80000000 && sign == 1 && r == 10 && ((flags & TreatAsUnsigned) == 0))
             {
-                Number.ThrowOverflowException(TypeCode.Int32);
+                Number.ThrowOverflowException<int>();
             }
 
             if (r == 10)
@@ -225,7 +225,7 @@ namespace System
                     // Check for overflows - this is sufficient & correct.
                     if (result > maxVal || ((long)result) < 0)
                     {
-                        Number.ThrowOverflowException(TypeCode.Int64);
+                        Number.ThrowOverflowException<long>();
                     }
 
                     result = result * (ulong)radix + (ulong)value;
@@ -234,7 +234,7 @@ namespace System
 
                 if ((long)result < 0 && result != 0x8000000000000000)
                 {
-                    Number.ThrowOverflowException(TypeCode.Int64);
+                    Number.ThrowOverflowException<long>();
                 }
             }
             else
@@ -252,14 +252,14 @@ namespace System
                     // Check for overflows - this is sufficient & correct.
                     if (result > maxVal)
                     {
-                        Number.ThrowOverflowException(TypeCode.UInt64);
+                        Number.ThrowOverflowException<ulong>();
                     }
 
                     ulong temp = result * (ulong)radix + (ulong)value;
 
                     if (temp < result) // this means overflow as well
                     {
-                        Number.ThrowOverflowException(TypeCode.UInt64);
+                        Number.ThrowOverflowException<ulong>();
                     }
 
                     result = temp;
@@ -286,14 +286,14 @@ namespace System
                     // Check for overflows - this is sufficient & correct.
                     if (result > maxVal || (int)result < 0)
                     {
-                        Number.ThrowOverflowException(TypeCode.Int32);
+                        Number.ThrowOverflowException<int>();
                     }
                     result = result * (uint)radix + (uint)value;
                     i++;
                 }
                 if ((int)result < 0 && result != 0x80000000)
                 {
-                    Number.ThrowOverflowException(TypeCode.Int32);
+                    Number.ThrowOverflowException<int>();
                 }
             }
             else
@@ -311,14 +311,14 @@ namespace System
                     // Check for overflows - this is sufficient & correct.
                     if (result > maxVal)
                     {
-                        Number.ThrowOverflowException(TypeCode.UInt32);
+                        Number.ThrowOverflowException<uint>();
                     }
 
                     uint temp = result * (uint)radix + (uint)value;
 
                     if (temp < result) // this means overflow as well
                     {
-                        Number.ThrowOverflowException(TypeCode.UInt32);
+                        Number.ThrowOverflowException<uint>();
                     }
 
                     result = temp;

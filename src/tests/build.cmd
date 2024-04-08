@@ -57,6 +57,7 @@ set __SkipGenerateLayout=0
 set __GenerateLayoutOnly=0
 set __Ninja=1
 set __CMakeArgs=
+set __EnableNativeSanitizers=
 set __Priority=0
 
 set __BuildNeedTargetArg=
@@ -121,6 +122,7 @@ if /i "%arg%" == "tree"                  (set __BuildTestTree=!__BuildTestTree!%
 if /i "%arg%" == "log"                   (set __BuildLogRootName=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%arg%" == "exclude"               (set __Exclude=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%arg%" == "priority"              (set __Priority=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%arg%" == "fsanitize"             (set __CMakeArgs=%__CMakeArgs% "-DCLR_CMAKE_ENABLE_SANITIZERS=%2"&set __EnableNativeSanitizers=%2&set processedArgs=!processedArgs! %1=%2&shift&shift&goto Arg_Loop)
 
 @REM The following arguments also consume two subsequent arguments
 if /i "%arg%" == "CMakeArgs"             (set __CMakeArgs="%2=%3" %__CMakeArgs%&set "processedArgs=!processedArgs! %1 %2 %3"&shift&shift&shift&goto Arg_Loop)
@@ -175,6 +177,7 @@ if defined __TestArgParsing (
     echo.__Ninja=%__Ninja%
     echo.__CMakeArgs=%__CMakeArgs%
     echo.__Priority=%__Priority%
+    echo.__EnableNativeSanitizers=%__EnableNativeSanitizers%
     echo.
 )
 
@@ -276,7 +279,7 @@ echo %__MsgPrefix%Number of processor cores %NumberOfCores%
 set __ExtraCmakeArgs=
 
 if %__Ninja% EQU 1 (
-    set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0 -DCMAKE_BUILD_TYPE=!__BuildType!"
+    set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0" "-DCMAKE_BUILD_TYPE=!__BuildType!"
 ) else (
     set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0"
 )
@@ -405,6 +408,7 @@ echo -Log ^<xxx^>: Base file name to use for log files (used in lab pipelines th
 echo.
 echo -CMakeArgs ^<arg^>=^<value^>: Specify argument values to pass directly to CMake.
 echo     Can be used multiple times to provide multiple CMake arguments.
+echo -fsanitize ^<sanitizer^>: Build the native test components with the specified native sanitizers.
 echo.
 echo -- : All arguments following this tag will be passed directly to MSBuild.
 echo.     Any unrecognized arguments will also be passed directly to MSBuild.

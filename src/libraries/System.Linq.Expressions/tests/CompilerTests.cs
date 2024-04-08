@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Microsoft.DotNet.RemoteExecutor;
@@ -442,16 +443,51 @@ namespace System.Linq.Expressions.Tests
 
             using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(static () =>
             {
-                ParameterExpression param = Expression.Parameter(typeof(int));
-
-                Func<int, int> typedDel =
-                    Expression.Lambda<Func<int, int>>(Expression.Add(param, Expression.Constant(4)), param).Compile();
-                Assert.Equal(304, typedDel(300));
-
-                Delegate del =
-                    Expression.Lambda(Expression.Add(param, Expression.Constant(5)), param).Compile();
-                Assert.Equal(305, del.DynamicInvoke(300));
+                CompileWorksWhenDynamicCodeNotSupportedInner();
             }, options);
+        }
+
+        // run the same test code as the above CompileWorksWhenDynamicCodeNotSupported test
+        // to ensure this test works correctly on all platforms - even if RemoteExecutor is not supported
+        [Fact]
+        public static void CompileWorksWhenDynamicCodeNotSupportedInner()
+        {
+            ParameterExpression param = Expression.Parameter(typeof(int));
+
+            Func<int, int> typedDel =
+                Expression.Lambda<Func<int, int>>(Expression.Add(param, Expression.Constant(4)), param).Compile();
+            Assert.Equal(304, typedDel(300));
+
+            Delegate del =
+                Expression.Lambda(Expression.Add(param, Expression.Constant(5)), param).Compile();
+            Assert.Equal(305, del.DynamicInvoke(300));
+
+            // testing more than 2 parameters is important because because it follows a different code path in Compile.
+            Expression<Func<int, int, int, int, int, int>> fiveParameterExpression = (a, b, c, d, e) => a + b + c + d + e;
+            Func<int, int, int, int, int, int> fiveParameterFunc = fiveParameterExpression.Compile();
+            Assert.Equal(6, fiveParameterFunc(2, 2, 1, 1, 0));
+
+            Expression<Func<int, int, int>> callExpression = (a, b) => Add(a, b);
+            Func<int, int, int> callFunc = callExpression.Compile();
+            Assert.Equal(29, callFunc(20, 9));
+
+            MethodCallExpression methodCallExpression = Expression.Call(
+                instance: null,
+                typeof(CompilerTests).GetMethod("Add4", BindingFlags.NonPublic | BindingFlags.Static),
+                Expression.Constant(5), Expression.Constant(6), Expression.Constant(7), Expression.Constant(8));
+
+            Func<int> methodCallDelegate = Expression.Lambda<Func<int>>(methodCallExpression).Compile();
+            Assert.Equal(26, methodCallDelegate());
+        }
+
+        private static int Add(int a, int b)
+        {
+            return a + b;
+        }
+
+        private static int Add4(int a, int b, int c, int d)
+        {
+            return a + b + c + d;
         }
     }
 

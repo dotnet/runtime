@@ -3,6 +3,7 @@
 
 #pragma warning disable IDE0060 // implementations provided as intrinsics
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 
@@ -228,7 +229,7 @@ namespace System.Runtime.CompilerServices
         // Mono:AreSame
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool AreSame<T>([AllowNull] ref T left, [AllowNull] ref T right)
+        public static bool AreSame<T>([AllowNull] ref readonly T left, [AllowNull] ref readonly T right)
         {
             throw new PlatformNotSupportedException();
 
@@ -253,7 +254,7 @@ namespace System.Runtime.CompilerServices
             {
                 ThrowHelper.ThrowNotSupportedException();
             }
-            return As<TFrom, TTo>(ref source);
+            return ReadUnaligned<TTo>(ref As<TFrom, byte>(ref source));
         }
 
         /// <summary>
@@ -264,7 +265,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Copy<T>(void* destination, ref T source)
+        public static void Copy<T>(void* destination, ref readonly T source)
         {
             throw new PlatformNotSupportedException();
 
@@ -321,7 +322,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void CopyBlock(ref byte destination, ref byte source, uint byteCount)
+        public static void CopyBlock(ref byte destination, ref readonly byte source, uint byteCount)
         {
             throw new PlatformNotSupportedException();
 
@@ -360,7 +361,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void CopyBlockUnaligned(ref byte destination, ref byte source, uint byteCount)
+        public static void CopyBlockUnaligned(ref byte destination, ref readonly byte source, uint byteCount)
         {
             throw new PlatformNotSupportedException();
 
@@ -385,7 +386,7 @@ namespace System.Runtime.CompilerServices
         // Mono:IsAddressGreaterThan
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsAddressGreaterThan<T>([AllowNull] ref T left, [AllowNull] ref T right)
+        public static bool IsAddressGreaterThan<T>([AllowNull] ref readonly T left, [AllowNull] ref readonly T right)
         {
             throw new PlatformNotSupportedException();
 
@@ -408,7 +409,7 @@ namespace System.Runtime.CompilerServices
         // Mono:IsAddressLessThan
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsAddressLessThan<T>([AllowNull] ref T left, [AllowNull] ref T right)
+        public static bool IsAddressLessThan<T>([AllowNull] ref readonly T left, [AllowNull] ref readonly T right)
         {
             throw new PlatformNotSupportedException();
 
@@ -537,13 +538,13 @@ namespace System.Runtime.CompilerServices
         // Mono:ReadUnaligned
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T ReadUnaligned<T>(ref byte source)
+        public static T ReadUnaligned<T>(ref readonly byte source)
         {
 #if CORECLR
             typeof(T).ToString(); // Type token used by the actual method body
             throw new PlatformNotSupportedException();
 #else
-            return As<byte, T>(ref source);
+            return As<byte, T>(ref Unsafe.AsRef(in source));
 #endif
 
             // ldarg.0
@@ -626,6 +627,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Reads a value of type <typeparamref name="T"/> from the given location.
         /// </summary>
+        [Intrinsic]
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -637,6 +639,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Writes a value of type <typeparamref name="T"/> to the given location.
         /// </summary>
+        [Intrinsic]
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -667,7 +670,7 @@ namespace System.Runtime.CompilerServices
         // Mono:AsRef
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref T AsRef<T>(scoped in T source)
+        public static ref T AsRef<T>(scoped ref readonly T source)
         {
             throw new PlatformNotSupportedException();
 
@@ -684,7 +687,7 @@ namespace System.Runtime.CompilerServices
         // Mono:ByteOffset
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IntPtr ByteOffset<T>([AllowNull] ref T origin, [AllowNull] ref T target)
+        public static IntPtr ByteOffset<T>([AllowNull] ref readonly T origin, [AllowNull] ref readonly T target)
         {
             throw new PlatformNotSupportedException();
 
@@ -722,9 +725,9 @@ namespace System.Runtime.CompilerServices
         // AOT: IsNullRef
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsNullRef<T>(ref T source)
+        public static bool IsNullRef<T>(ref readonly T source)
         {
-            return AsPointer(ref source) == null;
+            return AsPointer(ref Unsafe.AsRef(in source)) == null;
 
             // ldarg.0
             // ldc.i4.0
@@ -904,6 +907,33 @@ namespace System.Runtime.CompilerServices
             // ldarg .0
             // unbox !!T
             // ret
+        }
+
+
+        // Internal helper methods:
+
+        // Determines if the address is aligned at least to `alignment` bytes.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsOpportunisticallyAligned<T>(ref readonly T address, nuint alignment)
+        {
+            // `alignment` is expected to be a power of 2 in bytes.
+            // We use Unsafe.AsPointer to convert to a pointer,
+            // GC will keep alignment when moving objects (up to sizeof(void*)),
+            // otherwise alignment should be considered a hint if not pinned.
+            Debug.Assert(nuint.IsPow2(alignment));
+            return ((nuint)AsPointer(ref AsRef(in address)) & (alignment - 1)) == 0;
+        }
+
+        // Determines the misalignment of the address with respect to the specified `alignment`.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static nuint OpportunisticMisalignment<T>(ref readonly T address, nuint alignment)
+        {
+            // `alignment` is expected to be a power of 2 in bytes.
+            // We use Unsafe.AsPointer to convert to a pointer,
+            // GC will keep alignment when moving objects (up to sizeof(void*)),
+            // otherwise alignment should be considered a hint if not pinned.
+            Debug.Assert(nuint.IsPow2(alignment));
+            return (nuint)AsPointer(ref AsRef(in address)) & (alignment - 1);
         }
     }
 }

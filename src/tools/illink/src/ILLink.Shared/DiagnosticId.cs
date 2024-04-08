@@ -202,6 +202,10 @@ namespace ILLink.Shared
 		GenericRecursionCycle = 3054,
 		CorrectnessOfAbstractDelegatesCannotBeGuaranteed = 3055,
 		RequiresDynamicCodeOnStaticConstructor = 3056,
+
+		// Feature guard diagnostic ids.
+		ReturnValueDoesNotMatchFeatureGuards = 4000,
+		InvalidFeatureGuard = 4001
 	}
 
 	public static class DiagnosticIdExtensions
@@ -234,6 +238,14 @@ namespace ILLink.Shared
 				>= 3000 and < 3050 => DiagnosticCategory.SingleFile,
 				>= 3050 and <= 6000 => DiagnosticCategory.AOT,
 				_ => throw new ArgumentException ($"The provided diagnostic id '{diagnosticId}' does not fall into the range of supported warning codes 2001 to 6000 (inclusive).")
+			};
+
+		public static string? GetHelpUri(this DiagnosticId diagnosticId) =>
+			diagnosticId.GetDiagnosticCategory() switch {
+				DiagnosticCategory.Trimming => $"https://learn.microsoft.com/dotnet/core/deploying/trimming/trim-warnings/il{(int) diagnosticId}",
+				DiagnosticCategory.SingleFile => $"https://learn.microsoft.com/dotnet/core/deploying/single-file/warnings/il{(int) diagnosticId}",
+				DiagnosticCategory.AOT =>$"https://learn.microsoft.com/dotnet/core/deploying/native-aot/warnings/il{(int) diagnosticId}",
+				_ => null
 			};
 	}
 }

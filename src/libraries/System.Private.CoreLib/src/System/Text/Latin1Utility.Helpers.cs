@@ -57,7 +57,7 @@ namespace System.Text
 
                 Vector128<short> vecWide = Sse2.X64.ConvertScalarToVector128UInt64(value).AsInt16();
                 Vector128<uint> vecNarrow = Sse2.PackUnsignedSaturate(vecWide, vecWide).AsUInt32();
-                Unsafe.WriteUnaligned<uint>(ref outputBuffer, Sse2.ConvertToUInt32(vecNarrow));
+                Unsafe.WriteUnaligned(ref outputBuffer, Sse2.ConvertToUInt32(vecNarrow));
             }
             else
             {

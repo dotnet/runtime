@@ -14,6 +14,7 @@
 ################################################################################
 
 import argparse
+import html
 import os
 import re
 from coreclr_arguments import *
@@ -169,7 +170,7 @@ def main(main_args):
             any_asmdiffs_found = False
             for dirpath, _, files in os.walk(diff_summary_dir):
                 for file_name in files:
-                    if file_name.startswith("superpmi_asmdiffs") and file_name.endswith(".md"):
+                    if file_name.startswith("superpmi_asmdiffs") and file_name.endswith(".md") and "_short_" not in file_name:
                         full_file_path = os.path.join(dirpath, file_name)
                         if append_diff_file(f, file_name, full_file_path):
                             any_asmdiffs_found = True
@@ -213,7 +214,7 @@ def main(main_args):
             inside_diff = False
             new_lines.append(html_color_diff(cur_diff_lines))
         elif inside_diff:
-            cur_diff_lines.append(line)
+            cur_diff_lines.append(html.escape(line, False))
         else:
             new_lines.append(line)
 

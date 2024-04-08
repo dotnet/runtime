@@ -14,45 +14,45 @@ using Xunit;
 
 public class TestReadIntAsDouble
 {
-	private struct Dec
-	{
-		public int uflags;
-		public int uhi;
-		public int ulo;
-		public int umid;
-	}
+    private struct Dec
+    {
+        public int uflags;
+        public int uhi;
+        public int ulo;
+        public int umid;
+    }
 
-	[StructLayout(LayoutKind.Explicit)]
-	private struct DecCalc1
-	{
-		[FieldOffset(0)]
-		public int uflags;
-		[FieldOffset(4)]
-		public int uhi;
-		[FieldOffset(8)]
-		public int ulo;
-		[FieldOffset(12)]
-		public int umid;
-		[FieldOffset(8)]
-		public double ulomidLE;
-	}
+    [StructLayout(LayoutKind.Explicit)]
+    private struct DecCalc1
+    {
+        [FieldOffset(0)]
+        public int uflags;
+        [FieldOffset(4)]
+        public int uhi;
+        [FieldOffset(8)]
+        public int ulo;
+        [FieldOffset(12)]
+        public int umid;
+        [FieldOffset(8)]
+        public double ulomidLE;
+    }
 
-	public struct Data
-	{
-		public int x, y, z;
-		public double m;
-	}
+    public struct Data
+    {
+        public int x, y, z;
+        public double m;
+    }
 
 
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	internal static void TestDoubleAssignment(Data d)
-	{
-		Dec p = default;
-		p.ulo = d.x;
-		p.umid = d.y;
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal static void TestDoubleAssignment(Data d)
+    {
+        Dec p = default;
+        p.ulo = d.x;
+        p.umid = d.y;
         // The jit gets field's type based on offset, so it will return `ulo` as int.
         d.m = Unsafe.As<Dec, DecCalc1>(ref p).ulomidLE;
-	}
+    }
 
     [StructLayout(LayoutKind.Explicit)]
     private struct DecCalc2
@@ -81,10 +81,9 @@ public class TestReadIntAsDouble
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         TestDoubleAssignment(default);
         TestIntAssignment(default);
-		return 100;
     }
 }

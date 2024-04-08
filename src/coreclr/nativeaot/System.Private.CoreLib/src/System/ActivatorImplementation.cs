@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Reflection.Runtime.General;
+using System.Reflection;
 using System.Reflection.Runtime.BindingFlagSupport;
+using System.Reflection.Runtime.General;
 
 using Internal.Runtime.Augments;
 
@@ -31,7 +31,14 @@ namespace System
             if (constructor == null)
             {
                 if (type.IsValueType)
-                    return RuntimeAugments.NewObject(type.TypeHandle);
+                {
+                    RuntimeTypeHandle typeHandle = type.TypeHandle;
+
+                    if (RuntimeAugments.IsNullable(typeHandle))
+                        return null;
+
+                    return RuntimeAugments.RawNewObject(typeHandle);
+                }
 
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, type));
             }
@@ -77,7 +84,14 @@ namespace System
             if (matches.Count == 0)
             {
                 if (numArgs == 0 && type.IsValueType)
-                    return RuntimeAugments.NewObject(type.TypeHandle);
+                {
+                    RuntimeTypeHandle typeHandle = type.TypeHandle;
+
+                    if (RuntimeAugments.IsNullable(typeHandle))
+                        return null;
+
+                    return RuntimeAugments.RawNewObject(typeHandle);
+                }
 
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, type));
             }
@@ -85,7 +99,7 @@ namespace System
             binder ??= Type.DefaultBinder;
 
             MethodBase invokeMethod = binder.BindToMethod(bindingAttr, matches.ToArray(), ref args, null, culture, null, out object? state);
-            if (invokeMethod.GetParametersNoCopy().Length == 0)
+            if (invokeMethod.GetParametersAsSpan().Length == 0)
             {
                 if (args.Length != 0)
                 {

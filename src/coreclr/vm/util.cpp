@@ -912,13 +912,12 @@ static HMODULE CLRLoadLibraryWorker(LPCWSTR lpLibFileName, DWORD *pLastError)
     STATIC_CONTRACT_FAULT;
 
     HMODULE hMod;
-    UINT last = SetErrorMode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
+    ErrorModeHolder errorMode{};
     {
         INDEBUG(PEDecoder::ForceRelocForDLL(lpLibFileName));
         hMod = WszLoadLibrary(lpLibFileName);
         *pLastError = GetLastError();
     }
-    SetErrorMode(last);
     return hMod;
 }
 
@@ -949,13 +948,12 @@ static HMODULE CLRLoadLibraryExWorker(LPCWSTR lpLibFileName, HANDLE hFile, DWORD
     STATIC_CONTRACT_FAULT;
 
     HMODULE hMod;
-    UINT last = SetErrorMode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
+    ErrorModeHolder errorMode{};
     {
         INDEBUG(PEDecoder::ForceRelocForDLL(lpLibFileName));
-        hMod = WszLoadLibraryEx(lpLibFileName, hFile, dwFlags);
+        hMod = WszLoadLibrary(lpLibFileName, hFile, dwFlags);
         *pLastError = GetLastError();
     }
-    SetErrorMode(last);
     return hMod;
 }
 
@@ -1776,21 +1774,19 @@ static BOOL TrustMeIAmSafe(void *pLock)
 
 LockOwner g_lockTrustMeIAmThreadSafe = { NULL, TrustMeIAmSafe };
 
-static DangerousNonHostedSpinLock g_randomLock;
-static CLRRandom g_random;
+namespace
+{
+    DangerousNonHostedSpinLock g_randomLock;
+    CLRRandom g_random;
+}
 
 int GetRandomInt(int maxVal)
 {
-    // Use the thread-local Random instance if possible
-    Thread* pThread = GetThreadNULLOk();
-    if (pThread)
-        return pThread->GetRandom()->Next(maxVal);
-
-    // No Thread object - need to fall back to the global generator.
     // In DAC builds we don't need the lock (DAC is single-threaded) and can't get it anyway (DNHSL isn't supported)
 #ifndef DACCESS_COMPILE
-    DangerousNonHostedSpinLockHolder lh(&g_randomLock);
+    DangerousNonHostedSpinLockHolder lockHolder(&g_randomLock);
 #endif
+    // Use the thread-local Random instance
     if (!g_random.IsInitialized())
         g_random.Init();
     return g_random.Next(maxVal);

@@ -133,15 +133,6 @@ mono_threads_platform_exit (gsize exit_code)
 	pthread_exit ((gpointer) exit_code);
 }
 
-gboolean
-mono_thread_platform_external_eventloop_keepalive_check (void)
-{
-	/* vanilla POSIX thread creation doesn't support an external eventloop: when the thread main
-	   function returns, the thread is done.
-	*/
-	return FALSE;
-}
-
 #if HOST_FUCHSIA
 int
 mono_thread_info_get_system_max_stack_size (void)
@@ -180,18 +171,7 @@ mono_threads_pthread_kill (MonoThreadInfo *info, int signum)
 redo:
 #endif
 
-#ifdef USE_TKILL_ON_ANDROID
-	{
-		int old_errno = errno;
-
-		result = tkill (info->native_handle, signum);
-
-		if (result < 0) {
-			result = errno;
-			mono_set_errno (old_errno);
-		}
-	}
-#elif defined (HAVE_PTHREAD_KILL)
+#if defined (HAVE_PTHREAD_KILL)
 	result = pthread_kill (mono_thread_info_get_tid (info), signum);
 #else
 	result = -1;

@@ -9,6 +9,8 @@ include(${CMAKE_CURRENT_LIST_DIR}/../common.cmake)
 
 add_executable(${DOTNET_PROJECT_NAME} ${SOURCES})
 
+add_sanitizer_runtime_support(${DOTNET_PROJECT_NAME})
+
 install_with_stripped_symbols(${DOTNET_PROJECT_NAME} TARGETS corehost_test)
 
 set_common_libs("exe")

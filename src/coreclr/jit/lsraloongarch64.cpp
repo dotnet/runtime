@@ -188,19 +188,9 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_NOP:
-            // A GT_NOP is either a passthrough (if it is void, or if it has
-            // a child), but must be considered to produce a dummy value if it
-            // has a type but no child.
             srcCount = 0;
-            if (tree->TypeGet() != TYP_VOID && tree->gtGetOp1() == nullptr)
-            {
-                assert(dstCount == 1);
-                BuildDef(tree);
-            }
-            else
-            {
-                assert(dstCount == 0);
-            }
+            assert(tree->TypeIs(TYP_VOID));
+            assert(dstCount == 0);
             break;
 
         case GT_KEEPALIVE:
@@ -235,11 +225,6 @@ int LinearScan::BuildNode(GenTree* tree)
             buildInternalIntRegisterDefForNode(tree);
             srcCount = BuildBinaryUses(tree->AsOp());
             assert(dstCount == 0);
-            break;
-
-        case GT_ASG:
-            noway_assert(!"We should never hit any assignment operator in lowering");
-            srcCount = 0;
             break;
 
         case GT_ADD:
@@ -409,7 +394,6 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_STORE_BLK:
-        case GT_STORE_DYN_BLK:
             srcCount = BuildBlockStore(tree->AsBlk());
             break;
 
@@ -446,7 +430,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 if (sizeVal != 0)
                 {
                     // Compute the amount of memory to properly STACK_ALIGN.
-                    // Note: The Gentree node is not updated here as it is cheap to recompute stack aligned size.
+                    // Note: The GenTree node is not updated here as it is cheap to recompute stack aligned size.
                     // This should also help in debugging as we can examine the original size specified with
                     // localloc.
                     sizeVal = AlignUp(sizeVal, STACK_ALIGN);
@@ -624,7 +608,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 //                       of an indirection operation.
 //
 // Arguments:
-//    indirTree - GT_IND, GT_STOREIND or block gentree node
+//    indirTree - GT_IND, GT_STOREIND or block GenTree node
 //
 // Return Value:
 //    The number of sources consumed by this node.
@@ -659,11 +643,6 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
                 // This offset can't be contained in the ldr/str instruction, so we need an internal register
                 buildInternalIntRegisterDefForNode(indirTree);
             }
-        }
-        else if (addr->OperGet() == GT_CLS_VAR_ADDR)
-        {
-            // Reserve int to load constant from memory (IF_LARGELDC)
-            buildInternalIntRegisterDefForNode(indirTree);
         }
     }
 
@@ -769,7 +748,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     if (hasMultiRegRetVal)
     {
         assert(retTypeDesc != nullptr);
-        dstCandidates = retTypeDesc->GetABIReturnRegs();
+        dstCandidates = retTypeDesc->GetABIReturnRegs(call->GetUnmanagedCallConv());
     }
     else if (varTypeUsesFloatArgReg(registerType))
     {
@@ -1119,11 +1098,9 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
             }
             break;
 
-            case GenTreeBlk::BlkOpKindHelper:
-                assert(!src->isContained());
-                dstAddrRegMask = RBM_ARG_0;
-                srcRegMask     = RBM_ARG_1;
-                sizeRegMask    = RBM_ARG_2;
+            case GenTreeBlk::BlkOpKindLoop:
+                // Needed for offsetReg
+                buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
                 break;
 
             default:
@@ -1174,22 +1151,12 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 buildInternalIntRegisterDefForNode(blkNode);
                 break;
 
-            case GenTreeBlk::BlkOpKindHelper:
-                dstAddrRegMask = RBM_ARG_0;
-                if (srcAddrOrFill != nullptr)
-                {
-                    assert(!srcAddrOrFill->isContained());
-                    srcRegMask = RBM_ARG_1;
-                }
-                sizeRegMask = RBM_ARG_2;
-                break;
-
             default:
                 unreached();
         }
     }
 
-    if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (sizeRegMask != RBM_NONE))
+    if (sizeRegMask != RBM_NONE)
     {
         // Reserve a temp register for the block size argument.
         buildInternalIntRegisterDefForNode(blkNode, sizeRegMask);
@@ -1218,12 +1185,6 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         {
             useCount += BuildAddrUses(srcAddrOrFill->AsAddrMode()->Base());
         }
-    }
-
-    if (blkNode->OperIs(GT_STORE_DYN_BLK))
-    {
-        useCount++;
-        BuildUse(blkNode->AsStoreDynBlk()->gtDynamicSize, sizeRegMask);
     }
 
     buildInternalRegisterUses();

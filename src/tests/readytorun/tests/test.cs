@@ -175,6 +175,12 @@ public class MyClass : IMyInterface
    }
 #endif
 
+    public static void ThrowIOE()
+    {
+#if !V2
+        throw new InvalidOperationException();
+#endif
+    }
 }
 
 public class MyChildClass : MyClass
@@ -436,6 +442,24 @@ static class OpenClosedDelegateExtensionTest
     {
         return x + ", " + foo;
     }
+}
+
+public interface IDefaultVsExactStaticVirtual
+{
+    static virtual string Method() =>
+#if V2
+        "Error - IDefaultVsExactStaticVirtual.Method shouldn't be used in V2"
+#else
+        "DefaultVsExactStaticVirtualMethod"
+#endif
+    ;
+}
+
+public class DefaultVsExactStaticVirtualClass : IDefaultVsExactStaticVirtual
+{
+#if V2
+    static string IDefaultVsExactStaticVirtual.Method() => "DefaultVsExactStaticVirtualMethod";
+#endif
 }
 
 // Test dependent versioning details

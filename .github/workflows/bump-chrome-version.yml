@@ -1,0 +1,75 @@
+name: Update Chrome Version used for wasm testing
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'
+
+  workflow_dispatch:
+
+jobs:
+  update:
+    if: github.repository == 'dotnet/runtime'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Branch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email github-actions[bot]@users.noreply.github.com
+          git checkout -b update-chrome-version-${{ github.run_id }}
+
+      - name: Run UpdateToLatestVersion
+        run: >-
+          make -C src/mono/wasm build-tasks &&
+          PATH=$PWD/.dotnet:$PATH dotnet build eng/testing/bump-chrome-version.proj -p:Configuration=Release &&
+          git add eng/testing/ChromeVersions.props &&
+          cat eng/testing/bump-chrome-pr.env >> "$GITHUB_ENV"
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          echo "has_changes=$(git diff-index --quiet HEAD && echo false || echo true)" >> $GITHUB_OUTPUT
+
+      - name: Commit Update
+        run: |
+          echo steps.check_changes.outputs.has_changes=${{steps.check_changes.outputs.has_changes}}
+          if ${{steps.check_changes.outputs.has_changes}} == 'true'; then
+            git commit -m "Automated bump of chrome version"
+            git push --set-upstream origin update-chrome-version-${{ github.run_id }}
+          else
+            echo "No changes detected."
+          fi
+
+      - name: Create PR
+        if: steps.check_changes.outputs.has_changes == 'true'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { CHROME_LINUX_VER, CHROME_WIN_VER } = process.env;
+            const title = `[wasm] Bump chrome for testing - linux: ${CHROME_LINUX_VER}, windows: ${CHROME_WIN_VER}`;
+            const { data: pullRequest } = await github.rest.pulls.create({
+              base: context.ref,
+              head: "update-chrome-version-${{ github.run_id }}",
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: ''
+            });
+            await github.rest.issues.setLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pullRequest.number,
+              labels: ['arch-wasm', 'area-infrastructure-mono']
+            });
+            await github.rest.pulls.requestReviewers({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pullRequest.number,
+              reviewers: ["lewing", "pavelsavara", "maraf", "ilonatommy", "radical"]
+            });
+            return pullRequest.number;

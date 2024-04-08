@@ -10,6 +10,16 @@ namespace System.Text.Json.SourceGeneration.Tests.NETStandard
         public string Value { get; set; }
     }
 
+    public class ClassFromOtherAssemblyWithNonPublicMembers
+    {
+        public int PublicValue { get; set; } = 1;
+        internal int InternalValue { get; set; } = 2;
+        private int PrivateValue { get; set; } = 4;
+        protected int ProtectedValue { get; set; } = 8;
+        private protected int PrivateProtectedValue { get; set; } = 16;
+        internal protected int InternalProtectedValue { get; set; } = 32;
+    }
+
     [JsonSerializable(typeof(MyPoco))]
     public partial class NETStandardSerializerContext : JsonSerializerContext
     {

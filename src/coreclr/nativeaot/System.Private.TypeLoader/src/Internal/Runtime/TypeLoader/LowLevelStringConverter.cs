@@ -3,9 +3,8 @@
 
 
 using System;
-using System.Text;
-
 using System.Reflection.Runtime.General;
+using System.Text;
 
 using Internal.Metadata.NativeFormat;
 using Internal.Runtime.Augments;
@@ -120,7 +119,7 @@ namespace Internal.Runtime.TypeLoader
             MetadataReader reader;
 
             // Try to get the name from metadata
-            if (TypeLoaderEnvironment.Instance.TryGetMetadataForNamedType(rtth, out qTypeDefinition))
+            if (TypeLoaderEnvironment.TryGetMetadataForNamedType(rtth, out qTypeDefinition))
             {
                 reader = qTypeDefinition.NativeFormatReader;
                 TypeDefinitionHandle typeDefHandle = qTypeDefinition.NativeFormatHandle;

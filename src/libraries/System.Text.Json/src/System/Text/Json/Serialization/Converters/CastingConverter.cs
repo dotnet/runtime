@@ -19,9 +19,9 @@ namespace System.Text.Json.Serialization.Converters
         public override bool HandleNull { get; }
         internal override bool SupportsCreateObjectDelegate => _sourceConverter.SupportsCreateObjectDelegate;
 
-        internal CastingConverter(JsonConverter sourceConverter, bool handleNull, bool handleNullOnRead, bool handleNullOnWrite)
+        internal CastingConverter(JsonConverter sourceConverter)
         {
-            Debug.Assert(typeof(T).IsInSubtypeRelationshipWith(sourceConverter.TypeToConvert));
+            Debug.Assert(typeof(T).IsInSubtypeRelationshipWith(sourceConverter.Type!));
             Debug.Assert(sourceConverter.SourceConverterForCastingConverter is null, "casting converters should not be layered.");
 
             _sourceConverter = sourceConverter;
@@ -31,9 +31,9 @@ namespace System.Text.Json.Serialization.Converters
             CanBePolymorphic = sourceConverter.CanBePolymorphic;
 
             // Ensure HandleNull values reflect the exact configuration of the source converter
-            HandleNullOnRead = handleNullOnRead;
-            HandleNullOnWrite = handleNullOnWrite;
-            HandleNull = handleNull;
+            HandleNullOnRead = sourceConverter.HandleNullOnRead;
+            HandleNullOnWrite = sourceConverter.HandleNullOnWrite;
+            HandleNull = sourceConverter.HandleNullOnWrite;
         }
 
         internal override JsonConverter? SourceConverterForCastingConverter => _sourceConverter;

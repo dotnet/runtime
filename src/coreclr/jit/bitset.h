@@ -59,7 +59,10 @@ public:
         FILE*       OpOutputFile;
 
     public:
-        BitSetOpCounter(const char* fileName) : TotalOps(0), m_fileName(fileName), OpOutputFile(nullptr)
+        BitSetOpCounter(const char* fileName)
+            : TotalOps(0)
+            , m_fileName(fileName)
+            , OpOutputFile(nullptr)
         {
             for (unsigned i = 0; i < BSOP_NUMOPS; i++)
             {
@@ -172,11 +175,11 @@ class BitSetOps
     // Returns "true" iff "bs" may be the uninit value.
     static bool MayBeUninit(BitSetValueArgType bs);
 
-    // Returns the a new BitSet that is empty.  Uses the Allocator of "env" to allocate memory for
+    // Returns a new BitSet that is empty.  Uses the Allocator of "env" to allocate memory for
     // the representation, if necessary.
     static BitSetValueRetType MakeEmpty(Env env);
 
-    // Returns the a new BitSet that is "full" -- represents all the integers in the current range.
+    // Returns a new BitSet that is "full" -- represents all the integers in the current range.
     // Uses the Allocator of "env" to allocate memory for the representation, if necessary.
     static BitSetValueRetType MakeFull(Env env);
 
@@ -435,7 +438,9 @@ public:
         Env      m_env;
 
     public:
-        Iter(Env env, BitSetValueArgType bs) : m_iter(env, bs), m_env(env)
+        Iter(Env env, BitSetValueArgType bs)
+            : m_iter(env, bs)
+            , m_env(env)
         {
         }
 
@@ -449,8 +454,8 @@ public:
 
 // We define symbolic names for the various bitset implementations available, to allow choices between them.
 
-#define BSUInt64 0
-#define BSShortLong 1
+#define BSUInt64      0
+#define BSShortLong   1
 #define BSUInt64Class 2
 
 /*****************************************************************************/

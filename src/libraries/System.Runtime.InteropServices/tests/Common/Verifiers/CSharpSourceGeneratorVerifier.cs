@@ -4,17 +4,13 @@
 using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Testing;
-using Microsoft.CodeAnalysis.CSharp.Testing.XUnit;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
-using Microsoft.CodeAnalysis.Testing.Verifiers;
 
 namespace Microsoft.Interop.UnitTests.Verifiers
 {
@@ -49,6 +45,7 @@ namespace Microsoft.Interop.UnitTests.Verifiers
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
             };
 
+            test.DisabledDiagnostics.Add(GeneratorDiagnostics.Ids.NotRecommendedGeneratedComInterfaceUsage);
             test.ExpectedDiagnostics.AddRange(expected);
             await test.RunAsync(CancellationToken.None);
         }
@@ -81,7 +78,7 @@ namespace Microsoft.Interop.UnitTests.Verifiers
             await test.RunAsync(CancellationToken.None);
         }
 
-        internal class Test : CSharpSourceGeneratorTest<TSourceGenerator, XUnitVerifier>
+        internal class Test : CSharpSourceGeneratorTest<TSourceGenerator, DefaultVerifier>
         {
             public Test(TestTargetFramework targetFramework)
             {
@@ -106,12 +103,13 @@ namespace Microsoft.Interop.UnitTests.Verifiers
                 SolutionTransforms.Add(CSharpVerifierHelper.GetTargetFrameworkAnalyzerOptionsProviderTransform(targetFramework));
             }
             public Test(bool referenceAncillaryInterop)
-                :this(TestTargetFramework.Net)
+                : this(TestTargetFramework.Net)
             {
                 if (referenceAncillaryInterop)
                 {
                     TestState.AdditionalReferences.Add(TestUtils.GetAncillaryReference());
                 }
+                DisabledDiagnostics.Add(GeneratorDiagnostics.Ids.NotRecommendedGeneratedComInterfaceUsage);
 
                 SolutionTransforms.Add(CSharpVerifierHelper.GetAllDiagonsticsEnabledTransform(GetDiagnosticAnalyzers()));
             }

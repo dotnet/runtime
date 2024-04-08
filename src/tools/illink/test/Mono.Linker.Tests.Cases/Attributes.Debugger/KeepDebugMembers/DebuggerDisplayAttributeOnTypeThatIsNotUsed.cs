@@ -8,8 +8,6 @@ namespace Mono.Linker.Tests.Cases.Attributes.Debugger.KeepDebugMembers
 	[SetupLinkerKeepDebugMembers ("true")]
 #endif
 
-	// Can be removed once this bug is fixed https://bugzilla.xamarin.com/show_bug.cgi?id=58168
-	[SkipPeVerify (SkipPeVerifyForToolchian.Pedump)]
 	public class DebuggerDisplayAttributeOnTypeThatIsNotUsed
 	{
 		public static void Main ()

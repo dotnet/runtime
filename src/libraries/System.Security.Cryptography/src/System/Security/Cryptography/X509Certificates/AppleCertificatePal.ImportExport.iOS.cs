@@ -4,8 +4,8 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Asn1;
-using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Security.Cryptography.Asn1.Pkcs12;
+using System.Security.Cryptography.Asn1.Pkcs7;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -22,7 +22,9 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         using (var manager = new PointerMemoryManager<byte>(pin, rawData.Length))
                         {
-                            PfxAsn.Decode(manager.Memory, AsnEncodingRules.BER);
+                            // Permit trailing data after the PKCS12.
+                            AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.BER);
+                            PfxAsn.Decode(ref reader, manager.Memory, out _);
                         }
 
                         return true;
@@ -91,6 +93,7 @@ namespace System.Security.Cryptography.X509Certificates
             ReadOnlySpan<byte> rawData,
             X509ContentType contentType,
             SafePasswordHandle password,
+            bool readingFromFile,
             X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(password != null);
@@ -116,6 +119,7 @@ namespace System.Security.Cryptography.X509Certificates
                     throw new PlatformNotSupportedException(SR.Cryptography_X509_PKCS12_PersistKeySetNotSupported);
                 }
 
+                X509Certificate.EnforceIterationCountLimit(ref rawData, readingFromFile, password.PasswordProvided);
                 return ImportPkcs12(rawData, password, ephemeralSpecified);
             }
 
@@ -144,6 +148,15 @@ namespace System.Security.Cryptography.X509Certificates
             SafePasswordHandle password,
             X509KeyStorageFlags keyStorageFlags)
         {
+            return FromBlob(rawData, password, readingFromFile: false, keyStorageFlags);
+        }
+
+        private static ICertificatePal FromBlob(
+            ReadOnlySpan<byte> rawData,
+            SafePasswordHandle password,
+            bool readingFromFile,
+            X509KeyStorageFlags keyStorageFlags)
+        {
             Debug.Assert(password != null);
 
             ICertificatePal? result = null;
@@ -151,11 +164,11 @@ namespace System.Security.Cryptography.X509Certificates
                 rawData,
                 (derData, contentType) =>
                 {
-                    result = FromDerBlob(derData, contentType, password, keyStorageFlags);
+                    result = FromDerBlob(derData, contentType, password, readingFromFile, keyStorageFlags);
                     return false;
                 });
 
-            return result ?? FromDerBlob(rawData, GetDerCertContentType(rawData), password, keyStorageFlags);
+            return result ?? FromDerBlob(rawData, GetDerCertContentType(rawData), password, readingFromFile, keyStorageFlags);
         }
     }
 }

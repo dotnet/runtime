@@ -19,7 +19,7 @@ namespace System.Diagnostics.Tracing
         private readonly string name;
 
         /// <summary>
-        /// The number of bytes in the UTF8 Encoding of 'name' INCLUDING a null terminator.
+        /// The number of bytes in the UTF-8 Encoding of 'name' INCLUDING a null terminator.
         /// </summary>
         private readonly int nameSize;
         private readonly EventFieldTags tags;

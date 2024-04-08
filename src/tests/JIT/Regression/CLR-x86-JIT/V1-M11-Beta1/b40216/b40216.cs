@@ -30,7 +30,7 @@ namespace Test
         long Method4(long p1) { return 0; }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             try
             {
@@ -54,7 +54,6 @@ namespace Test
                         0)));
             }
             catch (NullReferenceException) { }
-            return 100;
         }
     }
 }

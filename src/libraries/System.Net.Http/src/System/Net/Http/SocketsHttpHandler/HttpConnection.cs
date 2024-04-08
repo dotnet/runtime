@@ -43,7 +43,7 @@ namespace System.Net.Http
         private static readonly ulong s_http11Bytes = BitConverter.ToUInt64("HTTP/1.1"u8);
 
         private readonly HttpConnectionPool _pool;
-        private readonly Stream _stream;
+        internal readonly Stream _stream;
         private readonly TransportContext? _transportContext;
 
         private HttpRequestMessage? _currentRequest;
@@ -61,22 +61,21 @@ namespace System.Net.Http
         private ValueTask<int> _readAheadTask;
         private ArrayBuffer _readBuffer;
 
-        private long _idleSinceTickCount;
         private int _keepAliveTimeoutSeconds; // 0 == no timeout
         private bool _inUse;
         private bool _detachedFromPool;
         private bool _canRetry;
-        private bool _startedSendingRequestBody;
         private bool _connectionClose; // Connection: close was seen on last response
 
         private const int Status_Disposed = 1;
-        private const int Status_NotDisposedAndTrackedByTelemetry = 2;
         private int _disposed;
 
         public HttpConnection(
             HttpConnectionPool pool,
             Stream stream,
-            TransportContext? transportContext)
+            TransportContext? transportContext,
+            IPEndPoint? remoteEndPoint)
+            : base(pool, remoteEndPoint)
         {
             Debug.Assert(pool != null);
             Debug.Assert(stream != null);
@@ -89,14 +88,6 @@ namespace System.Net.Http
             _writeBuffer = new ArrayBuffer(InitialWriteBufferSize, usePool: false);
             _readBuffer = new ArrayBuffer(InitialReadBufferSize, usePool: false);
 
-            _idleSinceTickCount = Environment.TickCount64;
-
-            if (HttpTelemetry.Log.IsEnabled())
-            {
-                HttpTelemetry.Log.Http11ConnectionEstablished();
-                _disposed = Status_NotDisposedAndTrackedByTelemetry;
-            }
-
             if (NetEventSource.Log.IsEnabled()) TraceConnection(_stream);
         }
 
@@ -108,16 +99,11 @@ namespace System.Net.Http
         {
             // Ensure we're only disposed once.  Dispose could be called concurrently, for example,
             // if the request and the response were running concurrently and both incurred an exception.
-            int previousValue = Interlocked.Exchange(ref _disposed, Status_Disposed);
-            if (previousValue != Status_Disposed)
+            if (Interlocked.Exchange(ref _disposed, Status_Disposed) != Status_Disposed)
             {
                 if (NetEventSource.Log.IsEnabled()) Trace("Connection closing.");
 
-                // Only decrement the connection count if we counted this connection
-                if (HttpTelemetry.Log.IsEnabled() && previousValue == Status_NotDisposedAndTrackedByTelemetry)
-                {
-                    HttpTelemetry.Log.Http11ConnectionClosed();
-                }
+                MarkConnectionAsClosed();
 
                 if (!_detachedFromPool)
                 {
@@ -270,8 +256,6 @@ namespace System.Net.Http
                 GetIdleTicks(Environment.TickCount64) >= _keepAliveTimeoutSeconds * 1000;
         }
 
-        public override long GetIdleTicks(long nowTicks) => nowTicks - _idleSinceTickCount;
-
         public TransportContext? TransportContext => _transportContext;
 
         public HttpConnectionKind Kind => _pool.Kind;
@@ -286,17 +270,14 @@ namespace System.Net.Http
             _readBuffer.Discard(bytesToConsume);
         }
 
-        private void WriteHeaders(HttpRequestMessage request, HttpMethod normalizedMethod)
+        private void WriteHeaders(HttpRequestMessage request)
         {
             Debug.Assert(request.RequestUri is not null);
 
             // Write the request line
-            WriteAsciiString(normalizedMethod.Method);
-            _writeBuffer.EnsureAvailableSpace(1);
-            _writeBuffer.AvailableSpan[0] = (byte)' ';
-            _writeBuffer.Commit(1);
+            WriteBytes(request.Method.Http1EncodedBytes);
 
-            if (ReferenceEquals(normalizedMethod, HttpMethod.Connect))
+            if (request.Method.IsConnect)
             {
                 // RFC 7231 #section-4.3.6.
                 // Write only CONNECT foo.com:345 HTTP/1.1
@@ -369,7 +350,7 @@ namespace System.Net.Http
             {
                 // Write out Content-Length: 0 header to indicate no body,
                 // unless this is a method that never has a body.
-                if (normalizedMethod.MustHaveRequestBody)
+                if (request.Method.MustHaveRequestBody)
                 {
                     WriteBytes("Content-Length: 0\r\n"u8);
                 }
@@ -390,7 +371,7 @@ namespace System.Net.Http
                     _writeBuffer.EnsureAvailableSpace(6);
                     Span<byte> buffer = _writeBuffer.AvailableSpan;
                     buffer[0] = (byte)':';
-                    bool success = Utf8Formatter.TryFormat(requestUri.Port, buffer.Slice(1), out int bytesWritten);
+                    bool success = ((uint)requestUri.Port).TryFormat(buffer.Slice(1), out int bytesWritten);
                     Debug.Assert(success);
                     _writeBuffer.Commit(bytesWritten + 1);
                 }
@@ -433,16 +414,11 @@ namespace System.Net.Http
                 // Some headers such as User-Agent and Server use space as a separator (see: ProductInfoHeaderParser)
                 if (headerValuesCount > 1)
                 {
-                    HttpHeaderParser? parser = header.Key.Parser;
-                    string separator = HttpHeaderParser.DefaultSeparator;
-                    if (parser != null && parser.SupportsMultipleValues)
-                    {
-                        separator = parser.Separator!;
-                    }
+                    byte[] separator = header.Key.SeparatorBytes;
 
                     for (int i = 1; i < headerValuesCount; i++)
                     {
-                        WriteAsciiString(separator);
+                        WriteBytes(separator);
                         WriteString(headerValues[i], valueEncoding);
                     }
                 }
@@ -476,11 +452,15 @@ namespace System.Net.Http
 
         private void WriteAsciiString(string s)
         {
+            Debug.Assert(Ascii.IsValid(s));
+
             _writeBuffer.EnsureAvailableSpace(s.Length);
-            int length = Encoding.ASCII.GetBytes(s, _writeBuffer.AvailableSpan);
-            Debug.Assert(length == s.Length);
-            Debug.Assert(Encoding.ASCII.GetString(_writeBuffer.AvailableSpan.Slice(0, length)) == s);
-            _writeBuffer.Commit(length);
+
+            OperationStatus status = Ascii.FromUtf16(s, _writeBuffer.AvailableSpan, out int bytesWritten);
+            Debug.Assert(status == OperationStatus.Done);
+            Debug.Assert(bytesWritten == s.Length);
+
+            _writeBuffer.Commit(s.Length);
         }
 
         private void WriteString(string s, Encoding? encoding)
@@ -489,15 +469,17 @@ namespace System.Net.Http
             {
                 _writeBuffer.EnsureAvailableSpace(s.Length);
                 Span<byte> buffer = _writeBuffer.AvailableSpan;
-                for (int i = 0; i < s.Length; i++)
+
+                OperationStatus status = Ascii.FromUtf16(s, buffer, out int bytesWritten);
+
+                if (status == OperationStatus.InvalidData)
                 {
-                    char c = s[i];
-                    if (!char.IsAscii(c))
-                    {
-                        ThrowForInvalidCharEncoding();
-                    }
-                    buffer[i] = (byte)c;
+                    ThrowForInvalidCharEncoding();
                 }
+
+                Debug.Assert(status == OperationStatus.Done);
+                Debug.Assert(bytesWritten == s.Length);
+
                 _writeBuffer.Commit(s.Length);
             }
             else
@@ -517,23 +499,23 @@ namespace System.Net.Http
             Debug.Assert(_readBuffer.ActiveLength == 0, "Unexpected data in read buffer");
             Debug.Assert(_readAheadTaskStatus != ReadAheadTask_Started);
 
+            MarkConnectionAsNotIdle();
+
             TaskCompletionSource<bool>? allowExpect100ToContinue = null;
             Task? sendRequestContentTask = null;
 
             _currentRequest = request;
-            HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
 
             _canRetry = false;
-            _startedSendingRequestBody = false;
 
             // Send the request.
             if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
             CancellationTokenRegistration cancellationRegistration = RegisterCancellation(cancellationToken);
             try
             {
-                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart();
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart(Id);
 
-                WriteHeaders(request, normalizedMethod);
+                WriteHeaders(request);
 
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStop();
 
@@ -630,12 +612,12 @@ namespace System.Net.Http
                     // The server shutdown the connection on their end, likely because of an idle timeout.
                     // If we haven't started sending the request body yet (or there is no request body),
                     // then we allow the request to be retried.
-                    if (!_startedSendingRequestBody)
+                    if (request.Content is null || allowExpect100ToContinue is not null)
                     {
                         _canRetry = true;
                     }
 
-                    throw new IOException(SR.net_http_invalid_response_premature_eof);
+                    throw new HttpIOException(HttpRequestError.ResponseEnded, SR.net_http_invalid_response_premature_eof);
                 }
 
 
@@ -757,12 +739,12 @@ namespace System.Net.Http
 
                 // Create the response stream.
                 Stream responseStream;
-                if (ReferenceEquals(normalizedMethod, HttpMethod.Head) || response.StatusCode == HttpStatusCode.NoContent || response.StatusCode == HttpStatusCode.NotModified)
+                if (request.Method.IsHead || response.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.NotModified)
                 {
                     responseStream = EmptyReadStream.Instance;
                     CompleteResponse();
                 }
-                else if (ReferenceEquals(normalizedMethod, HttpMethod.Connect) && response.StatusCode == HttpStatusCode.OK)
+                else if (request.Method.IsConnect && response.StatusCode == HttpStatusCode.OK)
                 {
                     // Successful response to CONNECT does not have body.
                     // What ever comes next should be opaque.
@@ -825,7 +807,11 @@ namespace System.Net.Http
                 cancellationRegistration.Dispose();
 
                 // Make sure to complete the allowExpect100ToContinue task if it exists.
-                allowExpect100ToContinue?.TrySetResult(false);
+                if (allowExpect100ToContinue is not null && !allowExpect100ToContinue.TrySetResult(false))
+                {
+                    // allowExpect100ToContinue was already signaled and we may have started sending the request body.
+                    _canRetry = false;
+                }
 
                 if (_readAheadTask != default)
                 {
@@ -893,19 +879,23 @@ namespace System.Net.Http
                 mappedException = CancellationHelper.CreateOperationCanceledException(exception, cancellationToken);
                 return true;
             }
+
             if (exception is InvalidOperationException)
             {
                 // For consistency with other handlers we wrap the exception in an HttpRequestException.
                 mappedException = new HttpRequestException(SR.net_http_client_execution_error, exception);
                 return true;
             }
+
             if (exception is IOException ioe)
             {
                 // For consistency with other handlers we wrap the exception in an HttpRequestException.
                 // If the request is retryable, indicate that on the exception.
-                mappedException = new HttpRequestException(SR.net_http_client_execution_error, ioe, _canRetry ? RequestRetryType.RetryOnConnectionFailure : RequestRetryType.NoRetry);
+                HttpRequestError error = ioe is HttpIOException httpIoe ? httpIoe.HttpRequestError : HttpRequestError.Unknown;
+                mappedException = new HttpRequestException(error, SR.net_http_client_execution_error, ioe, _canRetry ? RequestRetryType.RetryOnConnectionFailure : RequestRetryType.NoRetry);
                 return true;
             }
+
             // Otherwise, just allow the original exception to propagate.
             mappedException = exception;
             return false;
@@ -939,9 +929,6 @@ namespace System.Net.Http
 
         private async ValueTask SendRequestContentAsync(HttpRequestMessage request, HttpContentWriteStream stream, bool async, CancellationToken cancellationToken)
         {
-            // Now that we're sending content, prohibit retries of this request by setting this flag.
-            _startedSendingRequestBody = true;
-
             Debug.Assert(stream.BytesWritten == 0);
             if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStart();
 
@@ -1037,7 +1024,7 @@ namespace System.Net.Http
             const int MinStatusLineLength = 12; // "HTTP/1.x 123"
             if (line.Length < MinStatusLineLength || line[8] != ' ')
             {
-                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_line, Encoding.ASCII.GetString(line)));
+                throw new HttpRequestException(HttpRequestError.InvalidResponse, SR.Format(SR.net_http_invalid_response_status_line, Encoding.ASCII.GetString(line)));
             }
 
             ulong first8Bytes = BitConverter.ToUInt64(line);
@@ -1058,7 +1045,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_line, Encoding.ASCII.GetString(line)));
+                    throw new HttpRequestException(HttpRequestError.InvalidResponse, SR.Format(SR.net_http_invalid_response_status_line, Encoding.ASCII.GetString(line)));
                 }
             }
 
@@ -1066,7 +1053,7 @@ namespace System.Net.Http
             byte status1 = line[9], status2 = line[10], status3 = line[11];
             if (!IsDigit(status1) || !IsDigit(status2) || !IsDigit(status3))
             {
-                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_code, Encoding.ASCII.GetString(line.Slice(9, 3))));
+                throw new HttpRequestException(HttpRequestError.InvalidResponse, SR.Format(SR.net_http_invalid_response_status_code, Encoding.ASCII.GetString(line.Slice(9, 3))));
             }
             response.SetStatusCodeWithoutValidation((HttpStatusCode)(100 * (status1 - '0') + 10 * (status2 - '0') + (status3 - '0')));
 
@@ -1089,15 +1076,15 @@ namespace System.Net.Http
                     {
                         response.ReasonPhrase = HttpRuleParser.DefaultHttpEncoding.GetString(reasonBytes);
                     }
-                    catch (FormatException error)
+                    catch (FormatException formatEx)
                     {
-                        throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_reason, Encoding.ASCII.GetString(reasonBytes.ToArray())), error);
+                        throw new HttpRequestException(HttpRequestError.InvalidResponse, SR.Format(SR.net_http_invalid_response_status_reason, Encoding.ASCII.GetString(reasonBytes.ToArray())), formatEx);
                     }
                 }
             }
             else
             {
-                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_line, Encoding.ASCII.GetString(line)));
+                throw new HttpRequestException(HttpRequestError.InvalidResponse, SR.Format(SR.net_http_invalid_response_status_line, Encoding.ASCII.GetString(line)));
             }
         }
 
@@ -1196,7 +1183,7 @@ namespace System.Net.Http
             }
 
             static void ThrowForInvalidHeaderLine(ReadOnlySpan<byte> buffer, int newLineIndex) =>
-                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_line, Encoding.ASCII.GetString(buffer.Slice(0, newLineIndex))));
+                throw new HttpRequestException(HttpRequestError.InvalidResponse, SR.Format(SR.net_http_invalid_response_header_line, Encoding.ASCII.GetString(buffer.Slice(0, newLineIndex))));
         }
 
         private void AddResponseHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value, HttpResponseMessage response, bool isFromTrailer)
@@ -1295,14 +1282,14 @@ namespace System.Net.Http
             Debug.Assert(added);
 
             static void ThrowForEmptyHeaderName() =>
-                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, ""));
+                throw new HttpRequestException(HttpRequestError.InvalidResponse, SR.Format(SR.net_http_invalid_response_header_name, ""));
 
             static void ThrowForInvalidHeaderName(ReadOnlySpan<byte> name) =>
-                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)));
+                throw new HttpRequestException(HttpRequestError.InvalidResponse, SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)));
         }
 
         private void ThrowExceededAllowedReadLineBytes() =>
-            throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _pool.Settings.MaxResponseHeadersByteLength));
+            throw new HttpRequestException(HttpRequestError.ConfigurationLimitExceeded, SR.Format(SR.net_http_response_headers_exceeded_length, _pool.Settings.MaxResponseHeadersByteLength));
 
         private void ProcessKeepAliveHeader(string keepAlive)
         {
@@ -1493,7 +1480,7 @@ namespace System.Net.Http
         private ValueTask WriteHexInt32Async(int value, bool async)
         {
             // Try to format into our output buffer directly.
-            if (Utf8Formatter.TryFormat(value, _writeBuffer.AvailableSpan, out int bytesWritten, 'X'))
+            if (value.TryFormat(_writeBuffer.AvailableSpan, out int bytesWritten, "X"))
             {
                 _writeBuffer.Commit(bytesWritten);
                 return default;
@@ -1502,7 +1489,10 @@ namespace System.Net.Http
             // If we don't have enough room, do it the slow way.
             if (async)
             {
-                return WriteAsync(Encoding.ASCII.GetBytes(value.ToString("X", CultureInfo.InvariantCulture)));
+                Span<byte> temp = stackalloc byte[8]; // max length of Int32 as hex
+                bool formatted = value.TryFormat(temp, out bytesWritten, "X");
+                Debug.Assert(formatted);
+                return WriteAsync(temp.Slice(0, bytesWritten).ToArray());
             }
             else
             {
@@ -1622,7 +1612,7 @@ namespace System.Net.Http
             if (NetEventSource.Log.IsEnabled()) Trace($"Received {bytesRead} bytes.");
             if (bytesRead == 0)
             {
-                throw new IOException(SR.net_http_invalid_response_premature_eof);
+                throw new HttpIOException(HttpRequestError.ResponseEnded, SR.net_http_invalid_response_premature_eof);
             }
         }
 
@@ -1742,22 +1732,30 @@ namespace System.Net.Http
             return count;
         }
 
-        private async ValueTask<int> ReadAsync(Memory<byte> destination)
+        private ValueTask<int> ReadAsync(Memory<byte> destination)
         {
             // This is called when reading the response body.
 
             if (_readBuffer.ActiveLength > 0)
             {
                 // We have data in the read buffer.  Return it to the caller.
-                return ReadFromBuffer(destination.Span);
+                return new ValueTask<int>(ReadFromBuffer(destination.Span));
             }
 
             // No data in read buffer.
             // Do an unbuffered read directly against the underlying stream.
             Debug.Assert(_readAheadTask == default, "Read ahead task should have been consumed as part of the headers.");
-            int count = await _stream.ReadAsync(destination).ConfigureAwait(false);
-            if (NetEventSource.Log.IsEnabled()) Trace($"Received {count} bytes.");
-            return count;
+
+            return NetEventSource.Log.IsEnabled()
+                ? ReadAndLogBytesReadAsync(destination)
+                : _stream.ReadAsync(destination);
+
+            async ValueTask<int> ReadAndLogBytesReadAsync(Memory<byte> destination)
+            {
+                int count = await _stream.ReadAsync(destination).ConfigureAwait(false);
+                if (NetEventSource.Log.IsEnabled()) Trace($"Received {count} bytes.");
+                return count;
+            }
         }
 
         private int ReadBuffered(Span<byte> destination)
@@ -2034,7 +2032,7 @@ namespace System.Net.Http
 
             if (_connectionClose)
             {
-                throw new HttpRequestException(SR.net_http_authconnectionfailure);
+                throw new HttpRequestException(HttpRequestError.UserAuthenticationError, SR.net_http_authconnectionfailure);
             }
 
             Debug.Assert(response.Content != null);
@@ -2050,7 +2048,7 @@ namespace System.Net.Http
                 if (!await responseStream.DrainAsync(_pool.Settings._maxResponseDrainSize).ConfigureAwait(false) ||
                     _connectionClose)       // Draining may have set this
                 {
-                    throw new HttpRequestException(SR.net_http_authconnectionfailure);
+                    throw new HttpRequestException(HttpRequestError.UserAuthenticationError, SR.net_http_authconnectionfailure);
                 }
             }
 
@@ -2082,8 +2080,6 @@ namespace System.Net.Http
             else
             {
                 Debug.Assert(!_detachedFromPool, "Should not be detached from pool unless _connectionClose is true");
-
-                _idleSinceTickCount = Environment.TickCount64;
 
                 // Put connection back in the pool.
                 _pool.RecycleHttp11Connection(this);

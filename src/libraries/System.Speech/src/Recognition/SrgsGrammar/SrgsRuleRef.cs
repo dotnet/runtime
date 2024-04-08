@@ -220,13 +220,13 @@ namespace System.Speech.Recognition.SrgsGrammar
             StringBuilder sb = new("SrgsRuleRef");
             if (_uri != null)
             {
-                sb.Append(" uri='");
+                sb.Append(" uri = '");
                 sb.Append(_uri.ToString());
                 sb.Append('\'');
             }
             else
             {
-                sb.Append(" special='");
+                sb.Append(" special = '");
                 sb.Append(_type.ToString());
                 sb.Append('\'');
             }

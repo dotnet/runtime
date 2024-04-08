@@ -62,14 +62,19 @@ namespace Microsoft.DotNet.Build.Tasks
         {
             bool isUnix = extension == ".sh";
             string lineFeed = isUnix ? "\n" : "\r\n";
+            string[] newlineSeparator = new string[] { Environment.NewLine };
 
             var setCommandsBuilder = new StringBuilder();
             for (int i = 0; i < SetCommands.Length; i++)
             {
-                setCommandsBuilder.Append(SetCommands[i]);
-                if (i < SetCommands.Length - 1)
+                string[] setCommandsSplit = SetCommands[i].Split(newlineSeparator, StringSplitOptions.None);
+                for (int j = 0; j < setCommandsSplit.Length; j++)
                 {
-                    setCommandsBuilder.Append(lineFeed);
+                    setCommandsBuilder.Append(setCommandsSplit[j]);
+                    if ((j < setCommandsSplit.Length - 1) || (i < SetCommands.Length - 1))
+                    {
+                        setCommandsBuilder.Append(lineFeed);
+                    }
                 }
             }
             templateContent = templateContent.Replace("[[SetCommands]]", setCommandsBuilder.ToString());
@@ -77,10 +82,14 @@ namespace Microsoft.DotNet.Build.Tasks
             var runCommandsBuilder = new StringBuilder();
             for (int i = 0; i < RunCommands.Length; i++)
             {
-                runCommandsBuilder.Append(RunCommands[i]);
-                if (i < RunCommands.Length - 1)
+                string[] runCommandsSplit = RunCommands[i].Split(newlineSeparator, StringSplitOptions.None);
+                for (int j = 0; j < runCommandsSplit.Length; j++)
                 {
-                    runCommandsBuilder.Append(lineFeed);
+                    runCommandsBuilder.Append(runCommandsSplit[j]);
+                    if ((j < runCommandsSplit.Length - 1) || (i < RunCommands.Length - 1))
+                    {
+                        runCommandsBuilder.Append(lineFeed);
+                    }
                 }
             }
             templateContent = templateContent.Replace("[[RunCommands]]", runCommandsBuilder.ToString());
@@ -89,14 +98,20 @@ namespace Microsoft.DotNet.Build.Tasks
             var setCommandEchoesBuilder = new StringBuilder();
             foreach (string setCommand in SetCommands)
             {
-                setCommandEchoesBuilder.Append($"echo {SanitizeEcho(setCommand,isUnix)}{lineFeed}");
+                foreach (string setCommandOneLine in setCommand.Split(newlineSeparator, StringSplitOptions.None))
+                {
+                    setCommandEchoesBuilder.Append($"echo {SanitizeEcho(setCommandOneLine,isUnix)}{lineFeed}");
+                }
             }
             templateContent = templateContent.Replace("[[SetCommandsEcho]]", setCommandEchoesBuilder.ToString());
 
             var runCommandEchoesBuilder = new StringBuilder();
             foreach (string runCommand in RunCommands)
             {
-                runCommandEchoesBuilder.Append($"echo {SanitizeEcho(runCommand,isUnix)}{lineFeed}");
+                foreach (string runCommandOneLine in runCommand.Split(newlineSeparator, StringSplitOptions.None))
+                {
+                    runCommandEchoesBuilder.Append($"echo {SanitizeEcho(runCommandOneLine,isUnix)}{lineFeed}");
+                }
             }
             templateContent = templateContent.Replace("[[RunCommandsEcho]]", runCommandEchoesBuilder.ToString());
 

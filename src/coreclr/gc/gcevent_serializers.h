@@ -39,9 +39,11 @@
  */
 
 #ifdef _MSC_VER
+#define ByteSwap16 _byteswap_ushort
 #define ByteSwap32 _byteswap_ulong
 #define ByteSwap64 _byteswap_uint64
 #else
+#define ByteSwap16 __bulitin_bswap16
 #define ByteSwap32 __bulitin_bswap32
 #define ByteSwap64 __builtin_bswap64
 #endif // MSC_VER
@@ -72,12 +74,31 @@ struct EventSerializationTraits
 };
 
 /*
- * EventSerializationTraits implementation for uint32_t. Other integral types
+ * EventSerializationTraits implementation for uint16_t. Other integral types
  * can follow this pattern.
  *
  * The convention here is that integral types are always serialized as
  * little-endian.
  */
+template<>
+struct EventSerializationTraits<uint16_t>
+{
+    static void Serialize(const uint16_t& value, uint8_t** buffer)
+    {
+#if defined(BIGENDIAN)
+        **((uint16_t**)buffer) = ByteSwap16(value);
+#else
+        **((uint16_t**)buffer) = value;
+#endif // BIGENDIAN
+        *buffer += sizeof(uint16_t);
+    }
+
+    static size_t SerializedSize(const uint16_t& value)
+    {
+        return sizeof(uint16_t);
+    }
+};
+
 template<>
 struct EventSerializationTraits<uint32_t>
 {
@@ -94,6 +115,40 @@ struct EventSerializationTraits<uint32_t>
     static size_t SerializedSize(const uint32_t& value)
     {
         return sizeof(uint32_t);
+    }
+};
+
+template<>
+struct EventSerializationTraits<uint64_t>
+{
+    static void Serialize(const uint64_t& value, uint8_t** buffer)
+    {
+#if defined(BIGENDIAN)
+        **((uint32_t**)buffer) = ByteSwap64(value);
+#else
+        **((uint64_t**)buffer) = value;
+#endif // BIGENDIAN
+        *buffer += sizeof(uint64_t);
+    }
+
+    static size_t SerializedSize(const uint64_t& value)
+    {
+        return sizeof(uint64_t);
+    }
+};
+
+template<>
+struct EventSerializationTraits<float>
+{
+    static void Serialize(const float& value, uint8_t** buffer)
+    {
+        **((float**)buffer) = value;
+        *buffer += sizeof(float);
+    }
+
+    static size_t SerializedSize(const float& value)
+    {
+        return sizeof(float);
     }
 };
 

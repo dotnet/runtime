@@ -19,7 +19,7 @@ namespace System.ComponentModel.Composition.Hosting
     /// </summary>
     internal sealed class ComposablePartCatalogCollection : ICollection<ComposablePartCatalog>, INotifyComposablePartCatalogChanged, IDisposable
     {
-        private readonly Lock _lock = new Lock();
+        private readonly ReadWriteLock _lock = new ReadWriteLock();
         private readonly Action<ComposablePartCatalogChangeEventArgs>? _onChanged;
         private readonly Action<ComposablePartCatalogChangeEventArgs>? _onChanging;
         private List<ComposablePartCatalog> _catalogs = new List<ComposablePartCatalog>();

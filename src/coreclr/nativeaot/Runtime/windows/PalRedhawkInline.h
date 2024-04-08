@@ -1,6 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if defined(HOST_ARM64)
+#include <arm64intr.h>
+#endif
+
 // Implementation of Redhawk PAL inline functions
 
 EXTERN_C long __cdecl _InterlockedIncrement(long volatile *);
@@ -121,21 +125,6 @@ EXTERN_C void __faststorefence();
 #pragma intrinsic(__faststorefence)
 #define PalMemoryBarrier() __faststorefence()
 
-
-#elif defined(HOST_ARM)
-
-EXTERN_C void __yield(void);
-#pragma intrinsic(__yield)
-EXTERN_C void __dmb(unsigned int _Type);
-#pragma intrinsic(__dmb)
-FORCEINLINE void PalYieldProcessor()
-{
-    __dmb(0xA /* _ARM_BARRIER_ISHST */);
-    __yield();
-}
-
-#define PalMemoryBarrier() __dmb(0xF /* _ARM_BARRIER_SY */)
-
 #elif defined(HOST_ARM64)
 
 EXTERN_C void __yield(void);
@@ -144,14 +133,19 @@ EXTERN_C void __dmb(unsigned int _Type);
 #pragma intrinsic(__dmb)
 FORCEINLINE void PalYieldProcessor()
 {
-    __dmb(0xA /* _ARM64_BARRIER_ISHST */);
+    __dmb(_ARM64_BARRIER_ISHST);
     __yield();
 }
 
-#define PalMemoryBarrier() __dmb(0xF /* _ARM64_BARRIER_SY */)
+#define PalMemoryBarrier() __dmb(_ARM64_BARRIER_ISH)
 
 #else
 #error Unsupported architecture
 #endif
 
 #define PalDebugBreak() __debugbreak()
+
+FORCEINLINE int32_t PalOsPageSize()
+{
+    return 0x1000;
+}

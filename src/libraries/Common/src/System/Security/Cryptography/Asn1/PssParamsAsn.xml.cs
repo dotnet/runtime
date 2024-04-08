@@ -11,13 +11,13 @@ namespace System.Security.Cryptography.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct PssParamsAsn
     {
-        private static ReadOnlySpan<byte> DefaultHashAlgorithm => new byte[] { 0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00 };
+        private static ReadOnlySpan<byte> DefaultHashAlgorithm => [0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00];
 
-        private static ReadOnlySpan<byte> DefaultMaskGenAlgorithm => new byte[] { 0x30, 0x16, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x08, 0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00 };
+        private static ReadOnlySpan<byte> DefaultMaskGenAlgorithm => [0x30, 0x16, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x08, 0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00];
 
-        private static ReadOnlySpan<byte> DefaultSaltLength => new byte[] { 0x02, 0x01, 0x14 };
+        private static ReadOnlySpan<byte> DefaultSaltLength => [0x02, 0x01, 0x14];
 
-        private static ReadOnlySpan<byte> DefaultTrailerField => new byte[] { 0x02, 0x01, 0x01 };
+        private static ReadOnlySpan<byte> DefaultTrailerField => [0x02, 0x01, 0x01];
 
         internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn HashAlgorithm;
         internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn MaskGenAlgorithm;
@@ -59,12 +59,12 @@ namespace System.Security.Cryptography.Asn1
         }
 #endif
 
-        internal void Encode(AsnWriter writer)
+        internal readonly void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
 
-        internal void Encode(AsnWriter writer, Asn1Tag tag)
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
 

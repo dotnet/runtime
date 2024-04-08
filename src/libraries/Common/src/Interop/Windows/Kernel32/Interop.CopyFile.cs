@@ -10,14 +10,14 @@ internal static partial class Interop
     {
         internal static int CopyFile(string src, string dst, bool failIfExists)
         {
-            int copyFlags = failIfExists ? Interop.Kernel32.FileOperations.COPY_FILE_FAIL_IF_EXISTS : 0;
+            int copyFlags = failIfExists ? FileOperations.COPY_FILE_FAIL_IF_EXISTS : 0;
             int cancel = 0;
-            if (!Interop.Kernel32.CopyFileEx(src, dst, IntPtr.Zero, IntPtr.Zero, ref cancel, copyFlags))
+            if (!CopyFileEx(src, dst, IntPtr.Zero, IntPtr.Zero, ref cancel, copyFlags))
             {
                 return Marshal.GetLastPInvokeError();
             }
 
-            return Interop.Errors.ERROR_SUCCESS;
+            return Errors.ERROR_SUCCESS;
         }
     }
 }

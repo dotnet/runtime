@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -18,12 +19,12 @@ namespace Microsoft.Extensions.Http
     internal class DefaultHttpClientFactory : IHttpClientFactory, IHttpMessageHandlerFactory
     {
         private static readonly TimerCallback _cleanupCallback = (s) => ((DefaultHttpClientFactory)s!).CleanupTimer_Tick();
-        private readonly ILogger _logger;
         private readonly IServiceProvider _services;
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IOptionsMonitor<HttpClientFactoryOptions> _optionsMonitor;
         private readonly IHttpMessageHandlerBuilderFilter[] _filters;
         private readonly Func<string, Lazy<ActiveHandlerTrackingEntry>> _entryFactory;
+        private readonly Lazy<ILogger> _logger;
 
         // Default time of 10s for cleanup seems reasonable.
         // Quick math:
@@ -61,13 +62,11 @@ namespace Microsoft.Extensions.Http
         public DefaultHttpClientFactory(
             IServiceProvider services,
             IServiceScopeFactory scopeFactory,
-            ILoggerFactory loggerFactory,
             IOptionsMonitor<HttpClientFactoryOptions> optionsMonitor,
             IEnumerable<IHttpMessageHandlerBuilderFilter> filters)
         {
             ThrowHelper.ThrowIfNull(services);
             ThrowHelper.ThrowIfNull(scopeFactory);
-            ThrowHelper.ThrowIfNull(loggerFactory);
             ThrowHelper.ThrowIfNull(optionsMonitor);
             ThrowHelper.ThrowIfNull(filters);
 
@@ -75,8 +74,6 @@ namespace Microsoft.Extensions.Http
             _scopeFactory = scopeFactory;
             _optionsMonitor = optionsMonitor;
             _filters = filters.ToArray();
-
-            _logger = loggerFactory.CreateLogger<DefaultHttpClientFactory>();
 
             // case-sensitive because named options is.
             _activeHandlers = new ConcurrentDictionary<string, Lazy<ActiveHandlerTrackingEntry>>(StringComparer.Ordinal);
@@ -93,6 +90,14 @@ namespace Microsoft.Extensions.Http
 
             _cleanupTimerLock = new object();
             _cleanupActiveLock = new object();
+
+            // We want to prevent a circular dependency between ILoggerFactory and IHttpClientFactory, in case
+            // any of ILoggerProvider instances use IHttpClientFactory to send logs to an external server.
+            // Logger will be created during the first ExpiryTimer_Tick execution. Lazy guarantees thread safety
+            // to prevent creation of unnecessary ILogger objects in case several handlers expired at the same time.
+            _logger = new Lazy<ILogger>(
+                () => _services.GetRequiredService<ILoggerFactory>().CreateLogger<DefaultHttpClientFactory>(),
+                LazyThreadSafetyMode.ExecutionAndPublication);
         }
 
         public HttpClient CreateClient(string name)
@@ -167,6 +172,12 @@ namespace Microsoft.Extensions.Http
                     for (int i = 0; i < options.HttpMessageHandlerBuilderActions.Count; i++)
                     {
                         options.HttpMessageHandlerBuilderActions[i](b);
+                    }
+
+                    // Logging is added separately in the end. But for now it should be still possible to override it via filters...
+                    foreach (Action<HttpMessageHandlerBuilder> action in options.LoggingBuilderActions)
+                    {
+                        action(b);
                     }
                 }
             }
@@ -333,24 +344,48 @@ namespace Microsoft.Extensions.Http
                 "HttpMessageHandler expired after {HandlerLifetime}ms for client '{ClientName}'");
 
 
-            public static void CleanupCycleStart(ILogger logger, int initialCount)
+            public static void CleanupCycleStart(Lazy<ILogger> loggerLazy, int initialCount)
             {
-                _cleanupCycleStart(logger, initialCount, null);
+                if (TryGetLogger(loggerLazy, out ILogger? logger))
+                {
+                    _cleanupCycleStart(logger, initialCount, null);
+                }
             }
 
-            public static void CleanupCycleEnd(ILogger logger, TimeSpan duration, int disposedCount, int finalCount)
+            public static void CleanupCycleEnd(Lazy<ILogger> loggerLazy, TimeSpan duration, int disposedCount, int finalCount)
             {
-                _cleanupCycleEnd(logger, duration.TotalMilliseconds, disposedCount, finalCount, null);
+                if (TryGetLogger(loggerLazy, out ILogger? logger))
+                {
+                    _cleanupCycleEnd(logger, duration.TotalMilliseconds, disposedCount, finalCount, null);
+                }
             }
 
-            public static void CleanupItemFailed(ILogger logger, string clientName, Exception exception)
+            public static void CleanupItemFailed(Lazy<ILogger> loggerLazy, string clientName, Exception exception)
             {
-                _cleanupItemFailed(logger, clientName, exception);
+                if (TryGetLogger(loggerLazy, out ILogger? logger))
+                {
+                    _cleanupItemFailed(logger, clientName, exception);
+                }
             }
 
-            public static void HandlerExpired(ILogger logger, string clientName, TimeSpan lifetime)
+            public static void HandlerExpired(Lazy<ILogger> loggerLazy, string clientName, TimeSpan lifetime)
             {
-                _handlerExpired(logger, lifetime.TotalMilliseconds, clientName, null);
+                if (TryGetLogger(loggerLazy, out ILogger? logger))
+                {
+                    _handlerExpired(logger, lifetime.TotalMilliseconds, clientName, null);
+                }
+            }
+
+            private static bool TryGetLogger(Lazy<ILogger> loggerLazy, [NotNullWhen(true)] out ILogger? logger)
+            {
+                logger = null;
+                try
+                {
+                    logger = loggerLazy.Value;
+                }
+                catch { } // not throwing in logs
+
+                return logger is not null;
             }
         }
     }

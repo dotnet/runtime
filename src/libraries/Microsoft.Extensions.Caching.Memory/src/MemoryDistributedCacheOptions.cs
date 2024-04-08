@@ -3,8 +3,14 @@
 
 namespace Microsoft.Extensions.Caching.Memory
 {
+    /// <summary>
+    /// Options class for <see cref="MemoryDistributedCacheOptions"/>.
+    /// </summary>
     public class MemoryDistributedCacheOptions : MemoryCacheOptions
     {
+        /// <summary>
+        /// Initializes a new instance of <see cref="MemoryDistributedCacheOptions"/>.
+        /// </summary>
         public MemoryDistributedCacheOptions()
             : base()
         {

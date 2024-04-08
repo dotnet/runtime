@@ -91,7 +91,7 @@ namespace Microsoft.NET.HostModel.Bundle
         /// startOffset: offset of the start 'file' within 'bundle'
         /// compressedSize: size of the compressed data, if entry was compressed, otherwise 0
         /// </returns>
-        private (long startOffset, long compressedSize) AddToBundle(Stream bundle, Stream file, FileType type)
+        private (long startOffset, long compressedSize) AddToBundle(Stream bundle, FileStream file, FileType type)
         {
             long startOffset = bundle.Position;
             if (ShouldCompress(type))

@@ -236,6 +236,11 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task IgnoreCycles_DoesNotSupportPreserveSemantics()
         {
+            if (StreamingSerializer is null)
+            {
+                return;
+            }
+
             // Object
             var node = new NodeWithExtensionData();
             node.Next = node;
@@ -246,7 +251,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.True(node.Next.MyOverflow.ContainsKey("$ref"));
 
             using var ms = new MemoryStream(Encoding.UTF8.GetBytes(json));
-            node = await JsonSerializer.DeserializeAsync<NodeWithExtensionData>(ms, s_optionsIgnoreCycles);
+            node = await StreamingSerializer.DeserializeWrapper<NodeWithExtensionData>(ms, s_optionsIgnoreCycles);
             Assert.True(node.MyOverflow.ContainsKey("$id"));
             Assert.True(node.Next.MyOverflow.ContainsKey("$ref"));
 
@@ -257,7 +262,7 @@ namespace System.Text.Json.Serialization.Tests
 
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<RecursiveDictionary>(json, s_optionsIgnoreCycles));
             using var ms2 = new MemoryStream(Encoding.UTF8.GetBytes(json));
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializer.DeserializeAsync<RecursiveDictionary>(ms2, s_optionsIgnoreCycles).AsTask());
+            await Assert.ThrowsAsync<JsonException>(() => StreamingSerializer.DeserializeWrapper<RecursiveDictionary>(ms2, s_optionsIgnoreCycles));
 
             // List
             var list = new RecursiveList();
@@ -266,12 +271,17 @@ namespace System.Text.Json.Serialization.Tests
 
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<RecursiveList>(json, s_optionsIgnoreCycles));
             using var ms3 = new MemoryStream(Encoding.UTF8.GetBytes(json));
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializer.DeserializeAsync<RecursiveList>(ms3, s_optionsIgnoreCycles).AsTask());
+            await Assert.ThrowsAsync<JsonException>(() => StreamingSerializer.DeserializeWrapper<RecursiveList>(ms3, s_optionsIgnoreCycles));
         }
 
         [Fact]
         public async Task IgnoreCycles_DoesNotSupportPreserveSemantics_Polymorphic()
         {
+            if (StreamingSerializer is null)
+            {
+                return;
+            }
+
             // Object
             var node = new NodeWithObjectProperty();
             node.Next = node;
@@ -282,7 +292,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.True(nodeAsJsonElement.GetProperty("$ref").GetString() == "1");
 
             using var ms = new MemoryStream(Encoding.UTF8.GetBytes(json));
-            node = await JsonSerializer.DeserializeAsync<NodeWithObjectProperty>(ms, s_optionsIgnoreCycles);
+            node = await StreamingSerializer.DeserializeWrapper<NodeWithObjectProperty>(ms, s_optionsIgnoreCycles);
             nodeAsJsonElement = Assert.IsType<JsonElement>(node.Next);
             Assert.True(nodeAsJsonElement.GetProperty("$ref").GetString() == "1");
 

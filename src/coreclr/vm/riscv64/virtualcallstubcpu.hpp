@@ -3,8 +3,8 @@
 //
 // VirtualCallStubCpu.hpp
 //
-#ifndef _VIRTUAL_CALL_STUB_ARM_H
-#define _VIRTUAL_CALL_STUB_ARM_H
+#ifndef _VIRTUAL_CALL_STUB_RISCV64_H
+#define _VIRTUAL_CALL_STUB_RISCV64_H
 
 #define DISPATCH_STUB_FIRST_DWORD 0x00000e97
 #define RESOLVE_STUB_FIRST_DWORD 0x00053e03
@@ -44,7 +44,7 @@ public:
         // _resolveWorkerTarget
         // _token
 
-        _stub._entryPoint[0] = LOOKUP_STUB_FIRST_DWORD; // auipc t6, 0  //0x00000097
+        _stub._entryPoint[0] = LOOKUP_STUB_FIRST_DWORD; // auipc t6, 0  //0x00000f97
         _stub._entryPoint[1] = 0x018fb383; //ld   t2, 24(t6)
         _stub._entryPoint[2] = 0x010fbf83; //ld   t6, 16(t6)
         _stub._entryPoint[3] = 0x000f8067; //jalr x0, t6, 0
@@ -82,8 +82,7 @@ struct DispatchStub
 private:
     friend struct DispatchHolder;
 
-    DWORD _entryPoint[9];
-    DWORD _pad;
+    DWORD _entryPoint[8];
     size_t  _expectedMT;
     PCODE _implTarget;
     PCODE _failTarget;
@@ -102,14 +101,13 @@ struct DispatchHolder
     void  Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTarget, PCODE failTarget, size_t expectedMT)
     {
         // auipc t4,0
-        // addi  t4, t4, 36 
-        // ld  t0,0(a0) ; methodTable from object in $a0
-        // ld  t6,0(t4)    // t6 _expectedMT
-        // bne  t6, t0, failLabel
-        // ld  t4, 8(t4)    // t4 _implTarget
+        // ld    t0, 0(a0)     // methodTable from object in $a0
+        // ld    t6, 32(t4)    // t6 _expectedMT
+        // bne   t6, t0, failLabel
+        // ld    t4, 40(t4)    // t4 _implTarget
         // jalr  x0, t4, 0
         // failLabel:
-        // ld  t4, 16(t4)    // t4 _failTarget
+        // ld    t4, 48(t4)    // t4 _failTarget
         // jalr  x0, t4, 0
         //
         //
@@ -117,15 +115,14 @@ struct DispatchHolder
         // _implTarget
         // _failTarget
 
-        _stub._entryPoint[0] = DISPATCH_STUB_FIRST_DWORD; // auipc  t4,0 // 0x00000e97
-        _stub._entryPoint[1] = 0x028e8e93; // addi  t4, t4, 40
-        _stub._entryPoint[2] = 0x00053283; // ld  t0, 0(a0)    //; methodTable from object in $a0
-        _stub._entryPoint[3] = 0x000ebf83; // ld  r6, 0(t4)    // t6 _expectedMT
-        _stub._entryPoint[4] = 0x005f9663; // bne  t6, t0, failLabel
-        _stub._entryPoint[5] = 0x008ebe83; // ld  t4, 8(t4)    // t4 _implTarget
-        _stub._entryPoint[6] = 0x000e8067; // jalr x0, t4, 0
-        _stub._entryPoint[7] = 0x010ebe83; // ld  t4, 16(t4)    // t4 _failTarget
-        _stub._entryPoint[8] = 0x000e8067; // jalr x0, t4, 0
+        _stub._entryPoint[0] = DISPATCH_STUB_FIRST_DWORD; // auipc t4,0  // 0x00000e97
+        _stub._entryPoint[1] = 0x00053283; // ld    t0, 0(a0)     // methodTable from object in $a0
+        _stub._entryPoint[2] = 0x020ebf83; // ld    t6, 32(t4)    // t6 _expectedMT
+        _stub._entryPoint[3] = 0x005f9663; // bne   t6, t0, failLabel
+        _stub._entryPoint[4] = 0x028ebe83; // ld    t4, 40(t4)    // t4 _implTarget
+        _stub._entryPoint[5] = 0x000e8067; // jalr  x0, t4, 0
+        _stub._entryPoint[6] = 0x030ebe83; // ld    t4, 48(t4)    // t4 _failTarget
+        _stub._entryPoint[7] = 0x000e8067; // jalr  x0, t4, 0
 
         _stub._expectedMT = expectedMT;
         _stub._implTarget = implTarget;
@@ -226,7 +223,7 @@ struct ResolveHolder
         _stub._resolveEntryPoint[n++] = 0x005e0333;
         // 	auipc t0, 0
         _stub._resolveEntryPoint[n++] = 0x00000297;
-        //  addi t0, t0, -16
+        //  addi t0, t0, -12
         _stub._resolveEntryPoint[n++] = 0xff428293;
 
         // 	lw  t6, 0(t0)  #t6 = this._hashedToken
@@ -375,8 +372,30 @@ struct VTableCallStub
 
     inline size_t size()
     {
-        _ASSERTE(!"RISCV64:NYI");
-        return 0;
+        LIMITED_METHOD_CONTRACT;
+
+        BYTE* pStubCode = (BYTE *)this;
+
+
+        if ((*(DWORD*)(&pStubCode[12])) == 0x000e8067)
+        {
+            // jalr x0, t4, 0
+            return 20;//4*ins + slot = 4*4 + 4;
+        }
+
+        //auipc t1, 0
+        assert((*(DWORD*)(&pStubCode[4])) == 0x00000317);
+
+        size_t cbSize = 36;
+
+        // ld t4, 0(t4)
+        if ((*(DWORD*)(&pStubCode[16])) == 0x000ebe83)
+        {
+            if ((*(DWORD*)(&pStubCode[28])) == 0x000ebe83)
+                cbSize += 12;
+        }
+
+        return cbSize;
     }
 
     inline PCODE        entryPoint()        const { LIMITED_METHOD_CONTRACT;  return (PCODE)&_entryPoint[0]; }
@@ -405,8 +424,8 @@ struct VTableCallHolder
         STATIC_CONTRACT_WRAPPER;
         unsigned offsetOfIndirection = MethodTable::GetVtableOffset() + MethodTable::GetIndexOfVtableIndirection(slot) * TARGET_POINTER_SIZE;
         unsigned offsetAfterIndirection = MethodTable::GetIndexAfterVtableIndirection(slot) * TARGET_POINTER_SIZE;
-        int indirectionsCodeSize = (offsetOfIndirection >= 0x1000 ? 12 : 4) + (offsetAfterIndirection >= 0x1000 ? 12 : 4);
-        int indirectionsDataSize = (offsetOfIndirection >= 0x1000 ? 4 : 0) + (offsetAfterIndirection >= 0x1000 ? 4 : 0);
+        int indirectionsCodeSize = (offsetOfIndirection > 2047 ? 12 : 4) + (offsetAfterIndirection > 2047 ? 12 : 4);
+        int indirectionsDataSize = (offsetOfIndirection > 2047 ? 4 : 0) + (offsetAfterIndirection > 2047 ? 4 : 0);
         return 12 + indirectionsCodeSize + ((indirectionsDataSize > 0) ? (indirectionsDataSize + 4) : 0);
     }
 
@@ -447,36 +466,17 @@ void VTableCallHolder::Initialize(unsigned slot)
     *(UINT32*)p = 0x00053e83; // VTABLECALL_STUB_FIRST_DWORD
     p += 4;
 
-    if ((offsetOfIndirection >= 0x1000) || (offsetAfterIndirection >= 0x1000))
+    if ((offsetOfIndirection > 2047) || (offsetAfterIndirection > 2047))
     {
         *(UINT32*)p = 0x00000317; // auipc t1, 0
         p += 4;
     }
 
-    if (offsetOfIndirection >= 0x1000)
+    if (offsetOfIndirection > 2047)
     {
-        uint dataOffset = 20 + (offsetAfterIndirection >= 0x1000 ? 12 : 4);
+        uint dataOffset = 20 + (offsetAfterIndirection > 2047 ? 12 : 4);
 
         // lwu t3,dataOffset(t1)
-        *(DWORD*)p = 0x00036e03 | ((UINT32)dataOffset << 20); p += 4;
-        // add t4, t4, t3
-        *(DWORD*)p = 0x01ce8eb3; p += 4;
-        // ld t4, offsetOfIndirection(t4)
-        *(DWORD*)p = 0x000ebe83; p += 4;
-    }
-    else
-    {
-        // ld t4, offsetOfIndirection(t4)
-        *(DWORD*)p = 0x000ebe83 | ((UINT32)offsetOfIndirection << 20); p += 4;
-    }
-
-    if (offsetAfterIndirection >= 0x1000)
-    {
-        uint indirectionsCodeSize = (offsetOfIndirection >= 0x1000 ? 12 : 4);
-        uint indirectionsDataSize = (offsetOfIndirection >= 0x1000 ? 4 : 0);
-        uint dataOffset = 20 + indirectionsCodeSize + indirectionsDataSize;
-
-        // ldw t3,dataOffset(t1)
         *(DWORD*)p = 0x00036e03 | ((UINT32)dataOffset << 20); p += 4;
         // add t4, t4, t3
         *(DWORD*)p = 0x01ce8eb3; p += 4;
@@ -486,6 +486,25 @@ void VTableCallHolder::Initialize(unsigned slot)
     else
     {
         // ld t4, offsetOfIndirection(t4)
+        *(DWORD*)p = 0x000ebe83 | ((UINT32)offsetOfIndirection << 20); p += 4;
+    }
+
+    if (offsetAfterIndirection > 2047)
+    {
+        uint indirectionsCodeSize = (offsetOfIndirection > 2047 ? 12 : 4);
+        uint indirectionsDataSize = (offsetOfIndirection > 2047 ? 4 : 0);
+        uint dataOffset = 20 + indirectionsCodeSize + indirectionsDataSize;
+
+        // lwu t3,dataOffset(t1)
+        *(DWORD*)p = 0x00036e03 | ((UINT32)dataOffset << 20); p += 4;
+        // add t4, t4, t3
+        *(DWORD*)p = 0x01ce8eb3; p += 4;
+        // ld t4, 0(t4)
+        *(DWORD*)p = 0x000ebe83; p += 4;
+    }
+    else
+    {
+        // ld t4, offsetAfterIndirection(t4)
         *(DWORD*)p = 0x000ebe83 | ((UINT32)offsetAfterIndirection << 20); p += 4;
     }
 
@@ -493,12 +512,12 @@ void VTableCallHolder::Initialize(unsigned slot)
     *(UINT32*)p = 0x000e8067; p += 4;
 
     // data labels:
-    if (offsetOfIndirection >= 0x1000)
+    if (offsetOfIndirection > 2047)
     {
         *(UINT32*)p = (UINT32)offsetOfIndirection;
         p += 4;
     }
-    if (offsetAfterIndirection >= 0x1000)
+    if (offsetAfterIndirection > 2047)
     {
         *(UINT32*)p = (UINT32)offsetAfterIndirection;
         p += 4;
@@ -516,4 +535,4 @@ void VTableCallHolder::Initialize(unsigned slot)
 
 #endif //DECLARE_DATA
 
-#endif // _VIRTUAL_CALL_STUB_ARM_H
+#endif // _VIRTUAL_CALL_STUB_RISCV64_H

@@ -237,8 +237,8 @@ namespace System.Reflection.Tests
             }
 
             names.Sort();
-            string[] expected = { "Item", nameof(Base.MyInstanceThenStaticProp), nameof(Base.MyStaticThenInstanceProp), nameof(Base.MyStringThenDoubleProp) };
-            Assert.Equal<string>(expected, names.ToArray());
+            string[] expected = [ "Item", nameof(Base.MyInstanceThenStaticProp), nameof(Base.MyStaticThenInstanceProp), nameof(Base.MyStringThenDoubleProp) ];
+            Assert.Equal(expected, names.ToArray());
         }
 
         private abstract class Base

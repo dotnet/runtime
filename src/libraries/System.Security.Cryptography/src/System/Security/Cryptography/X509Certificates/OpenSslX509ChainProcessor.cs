@@ -11,9 +11,8 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates.Asn1;
 using System.Text;
-using Microsoft.Win32.SafeHandles;
 using Internal.Cryptography;
-
+using Microsoft.Win32.SafeHandles;
 using X509VerifyStatusCodeUniversal = Interop.Crypto.X509VerifyStatusCodeUniversal;
 
 #pragma warning disable 8500 // taking address of managed type

@@ -1,5 +1,6 @@
 /* Copyright (C) 2022 Hewlett-Packard Co.
      Contributed by David Mosberger-Tang <davidm@hpl.hp.com>.
+
 This file is part of libunwind.
 
 Permission is hereby granted, free of charge, to any person obtaining
@@ -72,4 +73,10 @@ int
 UNW_OBJ(handle_signal_frame) (unw_cursor_t *cursor)
 {
   return -UNW_EBADFRAME;
+}
+
+int
+UNW_OBJ(os_step) (struct cursor *c)
+{
+  return 0;
 }

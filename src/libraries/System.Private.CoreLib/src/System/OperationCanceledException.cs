@@ -1,23 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-** Purpose: Exception for cancelled IO requests.
-**
-**
-===========================================================*/
-
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Threading;
 
 namespace System
 {
+    /// <summary>
+    /// The exception that is thrown in a thread upon cancellation of an operation that the thread was executing.
+    /// </summary>
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class OperationCanceledException : SystemException
     {
         [NonSerialized]
@@ -36,13 +31,13 @@ namespace System
         }
 
         public OperationCanceledException(string? message)
-            : base(message)
+            : base(message ?? SR.OperationCanceled)
         {
             HResult = HResults.COR_E_OPERATIONCANCELED;
         }
 
         public OperationCanceledException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.OperationCanceled, innerException)
         {
             HResult = HResults.COR_E_OPERATIONCANCELED;
         }

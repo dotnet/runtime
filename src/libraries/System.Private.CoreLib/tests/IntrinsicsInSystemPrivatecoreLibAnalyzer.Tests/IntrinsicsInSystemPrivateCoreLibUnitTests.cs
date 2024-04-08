@@ -5,7 +5,6 @@ using VerifyCS = IntrinsicsInSystemPrivateCoreLib.Test.CSharpAnalyzerVerifier<
 
 namespace IntrinsicsInSystemPrivateCoreLib.Test
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
     public class IntrinsicsInSystemPrivateCoreLibUnitTest
     {
         string BoilerPlate = @"

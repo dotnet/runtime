@@ -113,7 +113,7 @@ StubSigDesc::StubSigDesc(MethodDesc *pMD)
     INDEBUG(InitDebugNames());
 }
 
-StubSigDesc::StubSigDesc(MethodDesc* pMD, const Signature& sig, Module* pModule)
+StubSigDesc::StubSigDesc(MethodDesc* pMD, const Signature& sig, Module* pModule, Module* pLoaderModule)
 {
     CONTRACTL
     {
@@ -135,13 +135,13 @@ StubSigDesc::StubSigDesc(MethodDesc* pMD, const Signature& sig, Module* pModule)
         m_tkMethodDef = pMD->GetMemberDef();
         SigTypeContext::InitTypeContext(pMD, &m_typeContext);
         m_pMetadataModule = pMD->GetModule();
-        m_pLoaderModule = pMD->GetLoaderModule();   // Used for ILStubCache selection and MethodTable creation.
+        m_pLoaderModule = pLoaderModule == NULL ? pMD->GetLoaderModule() : pLoaderModule;   // Used for ILStubCache selection and MethodTable creation.
     }
     else
     {
         m_tkMethodDef = mdMethodDefNil;
         m_pMetadataModule = m_pModule;
-        m_pLoaderModule = m_pModule;
+        m_pLoaderModule = pLoaderModule == NULL ? m_pModule : pLoaderModule;
     }
 
     INDEBUG(InitDebugNames());
@@ -544,6 +544,13 @@ public:
                 pcsExceptionHandler->EmitLDLOCA(retvalLocalNum);
                 pcsExceptionHandler->EmitINITOBJ(m_slIL.GetDispatchCodeStream()->GetToken(returnTypeHnd));
             }
+            break;
+        case ELEMENT_TYPE_PTR:
+            pcsExceptionHandler->EmitPOP();
+            pcsExceptionHandler->EmitLDC(0);
+            pcsExceptionHandler->EmitCONV_U();
+            _ASSERTE(retvalLocalNum != (DWORD)-1);
+            pcsExceptionHandler->EmitSTLOC(retvalLocalNum);
             break;
         case ELEMENT_TYPE_BOOLEAN:
         case ELEMENT_TYPE_CHAR:
@@ -964,7 +971,7 @@ public:
         if (pTargetMD)
         {
             pTargetMD->GetMethodInfoWithNewSig(strNamespaceOrClassName, strMethodName, strMethodSignature);
-            uModuleId = (UINT64)(TADDR)pTargetMD->GetModule_NoLogging();
+            uModuleId = (UINT64)(TADDR)pTargetMD->GetModule();
         }
 
         //
@@ -1623,6 +1630,10 @@ NDirectStubLinker::NDirectStubLinker(
         m_pcsSetup->EmitSTLOC(m_dwTargetInterfacePointerLocalNum);
     }
 #endif // FEATURE_COMINTEROP
+
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+    m_dwCopyCtorChainLocalNum = (DWORD)-1;
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
 }
 
 void NDirectStubLinker::SetCallingConvention(CorInfoCallConvExtension unmngCallConv, BOOL fIsVarArg)
@@ -1834,6 +1845,23 @@ DWORD NDirectStubLinker::GetReturnValueLocalNum()
     LIMITED_METHOD_CONTRACT;
     return m_dwRetValLocalNum;
 }
+
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+DWORD NDirectStubLinker::GetCopyCtorChainLocalNum()
+{
+    STANDARD_VM_CONTRACT;
+
+    if (m_dwCopyCtorChainLocalNum == (DWORD)-1)
+    {
+        // The local is created and initialized lazily when first asked.
+        m_dwCopyCtorChainLocalNum = NewLocal(CoreLibBinder::GetClass(CLASS__COPY_CONSTRUCTOR_CHAIN));
+        m_pcsSetup->EmitLDLOCA(m_dwCopyCtorChainLocalNum);
+        m_pcsSetup->EmitINITOBJ(m_pcsSetup->GetToken(CoreLibBinder::GetClass(CLASS__COPY_CONSTRUCTOR_CHAIN)));
+    }
+
+    return m_dwCopyCtorChainLocalNum;
+}
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
 
 BOOL NDirectStubLinker::IsCleanupNeeded()
 {
@@ -2064,6 +2092,10 @@ void NDirectStubLinker::End(DWORD dwStubFlags)
     }
 }
 
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+EXTERN_C void STDCALL CopyConstructorCallStub(void);
+#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
+
 void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, MethodDesc * pStubMD)
 {
     STANDARD_VM_CONTRACT;
@@ -2103,11 +2135,8 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             {
                 EmitLoadStubContext(pcsEmit, dwStubFlags);
 
-                pcsEmit->EmitLDC(offsetof(NDirectMethodDesc, ndirect.m_pWriteableData));
+                pcsEmit->EmitLDC(offsetof(NDirectMethodDesc, ndirect.m_pNDirectTarget));
                 pcsEmit->EmitADD();
-
-                pcsEmit->EmitLDIND_I();
-
                 pcsEmit->EmitLDIND_I();
             }
 #ifdef FEATURE_COMINTEROP
@@ -2149,6 +2178,21 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             pcsEmit->EmitLDIND_I();  // Get UMEntryThunk::m_pManagedTarget
         }
     }
+
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+    if (m_dwCopyCtorChainLocalNum != (DWORD)-1)
+    {
+        // If we have a copy constructor chain local, we need to call the copy constructor stub
+        // to ensure that the chain is called correctly.
+        // Let's install the stub chain here and redirect the call to the stub.
+        DWORD targetLoc = NewLocal(ELEMENT_TYPE_I);
+        pcsEmit->EmitSTLOC(targetLoc);
+        pcsEmit->EmitLDLOCA(m_dwCopyCtorChainLocalNum);
+        pcsEmit->EmitLDLOC(targetLoc);
+        pcsEmit->EmitCALL(METHOD__COPY_CONSTRUCTOR_CHAIN__INSTALL, 2, 0);
+        pcsEmit->EmitLDC((DWORD_PTR)&CopyConstructorCallStub);
+    }
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
 
     // For managed-to-native calls, the rest of the work is done by the JIT. It will
     // erect InlinedCallFrame, flip GC mode, and use the specified calling convention
@@ -2823,6 +2867,7 @@ static LPBYTE FollowIndirect(LPBYTE pTarget)
 }
 #endif // !TARGET_UNIX
 
+#ifdef FEATURE_IJW
 BOOL HeuristicDoesThisLookLikeAGetLastErrorCall(LPBYTE pTarget)
 {
     CONTRACTL
@@ -2833,7 +2878,6 @@ BOOL HeuristicDoesThisLookLikeAGetLastErrorCall(LPBYTE pTarget)
     }
     CONTRACTL_END;
 
-#if !defined(TARGET_UNIX)
     static LPBYTE pGetLastError = NULL;
     if (!pGetLastError)
     {
@@ -2868,18 +2912,10 @@ BOOL HeuristicDoesThisLookLikeAGetLastErrorCall(LPBYTE pTarget)
         // jmp [xxxx] - could be an import thunk
         return pTarget2 == pGetLastError;
     }
-#endif // !TARGET_UNIX
 
     return FALSE;
 }
-
-DWORD STDMETHODCALLTYPE FalseGetLastError()
-{
-    WRAPPER_NO_CONTRACT;
-
-    return GetThread()->m_dwLastError;
-}
-
+#endif // FEATURE_IJW
 
 CorInfoCallConvExtension GetDefaultCallConv(BOOL bIsVarArg)
 {
@@ -3170,13 +3206,13 @@ HRESULT NDirect::HasNAT_LAttribute(IMDInternalImport *pInternalImport, mdToken t
     return S_FALSE;
 }
 
-
 // Either MD or signature & module must be given.
 /*static*/
 BOOL NDirect::MarshalingRequired(
     _In_opt_ MethodDesc* pMD,
     _In_opt_ PCCOR_SIGNATURE pSig,
     _In_opt_ Module* pModule,
+    _In_opt_ SigTypeContext* pTypeContext,
     _In_ bool unmanagedCallersOnlyRequiresMarshalling)
 {
     CONTRACTL
@@ -3257,8 +3293,6 @@ BOOL NDirect::MarshalingRequired(
     mdParamDef *pParamTokenArray = (mdParamDef *)_alloca(numArgs * sizeof(mdParamDef));
     IMDInternalImport *pMDImport = pModule->GetMDImport();
 
-    SigTypeContext emptyTypeContext;
-
     mdMethodDef methodToken = mdMethodDefNil;
     if (pMD != NULL)
     {
@@ -3316,8 +3350,12 @@ BOOL NDirect::MarshalingRequired(
                 FALLTHROUGH;
 
             case ELEMENT_TYPE_VALUETYPE:
+            case ELEMENT_TYPE_GENERICINST:
             {
-                TypeHandle hndArgType = arg.GetTypeHandleThrowing(pModule, &emptyTypeContext);
+                TypeHandle hndArgType = arg.GetTypeHandleThrowing(pModule, pTypeContext);
+                bool isValidGeneric = IsValidForGenericMarshalling(hndArgType.GetMethodTable(), false, runtimeMarshallingEnabled);
+                if(!hndArgType.IsValueType() ||  !isValidGeneric)
+                    return true;
 
                 if (hndArgType.GetMethodTable()->IsInt128OrHasInt128Fields())
                 {
@@ -3881,20 +3919,22 @@ static void CreateStructStub(ILStubState* pss,
     EEClassNativeLayoutInfo const* pNativeLayoutInfo = pMT->GetNativeLayoutInfo();
 
     int numFields = pNativeLayoutInfo->GetNumFields();
-    // Build up marshaling information for each of the method's parameters
-    SIZE_T cbFieldMarshalInfo;
-    if (!ClrSafeInt<SIZE_T>::multiply(sizeof(MarshalInfo), numFields, cbFieldMarshalInfo))
-    {
-        COMPlusThrowHR(COR_E_OVERFLOW);
-    }
 
     CorNativeLinkType nlType = pMT->GetCharSet();
 
     NativeFieldDescriptor const* pFieldDescriptors = pNativeLayoutInfo->GetNativeFieldDescriptors();
 
+    const bool isInlineArray = pMT->GetClass()->IsInlineArray();
+    if (isInlineArray)
+    {
+        _ASSERTE(pNativeLayoutInfo->GetSize() % pFieldDescriptors[0].NativeSize() == 0);
+        numFields = pNativeLayoutInfo->GetSize() / pFieldDescriptors[0].NativeSize();
+    }
+
     for (int i = 0; i < numFields; ++i)
     {
-        NativeFieldDescriptor const& nativeFieldDescriptor = pFieldDescriptors[i];
+        // For inline arrays, we only have one field descriptor that we need to reuse for each field.
+        NativeFieldDescriptor const& nativeFieldDescriptor = isInlineArray ? pFieldDescriptors[0] : pFieldDescriptors[i];
         PTR_FieldDesc pFD = nativeFieldDescriptor.GetFieldDesc();
         SigPointer fieldSig = pFD->GetSigPointer();
         // The first byte in a field signature is always 0x6 per ECMA 335. Skip over this byte to get to the rest of the signature for the MarshalInfo constructor.
@@ -3920,7 +3960,12 @@ static void CreateStructStub(ILStubState* pss,
             DEBUG_ARG(pSigDesc->m_pDebugClassName)
             DEBUG_ARG(-1 /* field */));
 
-        pss->MarshalField(&mlInfo, pFD->GetOffset(), nativeFieldDescriptor.GetExternalOffset(), pFD);
+        // When we have an inline array, we need to calculate the offset based on how many elements we've already seen.
+        // Otherwise, we have a specific field descriptor for the given field that contains the correct offset info.
+        UINT32 managedOffset = isInlineArray ? (i * pFD->GetSize()) : pFD->GetOffset();
+        UINT32 externalOffset = isInlineArray ? (i * nativeFieldDescriptor.NativeSize()) : nativeFieldDescriptor.GetExternalOffset();
+
+        pss->MarshalField(&mlInfo, managedOffset, externalOffset, pFD);
     }
 
     if (pMD->IsDynamicMethod())
@@ -4178,8 +4223,10 @@ namespace
                                         pHashParams,
                                         pParams->m_dwStubFlags,
                                         pParams->m_pModule,
+                                        pParams->m_pLoaderModule,
                                         pParams->m_sig.GetRawSig(),
                                         pParams->m_sig.GetRawSigLen(),
+                                        pParams->m_pTypeContext,
                                         pamTracker,
                                         bILStubCreator,
                                         pLastMD);
@@ -4887,7 +4934,7 @@ namespace
             ILStubCreatorHelper ilStubCreatorHelper(pTargetMD, &params);
 
             // take the domain level lock
-            ListLockHolder pILStubLock(pLoaderModule->GetDomain()->GetILStubGenLock());
+            ListLockHolder pILStubLock(AppDomain::GetCurrentDomain()->GetILStubGenLock());
 
             {
                 ilStubCreatorHelper.GetStubMethodDesc();
@@ -5026,6 +5073,21 @@ namespace
                                 }
                                 else
                                 {
+                                    if (!pSigDesc->m_typeContext.IsEmpty())
+                                    {
+                                        // For generic calli, we only support blittable types
+                                        if (SF_IsCALLIStub(dwStubFlags)
+                                            && NDirect::MarshalingRequired(NULL, pStubMD->GetSig(), pSigDesc->m_pModule, &pSigDesc->m_typeContext))
+                                        {
+                                            COMPlusThrow(kMarshalDirectiveException, IDS_EE_BADMARSHAL_GENERICS_RESTRICTION);
+                                        }
+                                        // We don't want to support generic varargs, so block it
+                                        else if (SF_IsVarArgStub(dwStubFlags))
+                                        {
+                                            COMPlusThrow(kNotSupportedException, BFA_GENCODE_NOT_BE_VARARG);
+                                        }
+                                    }
+
                                     CreateNDirectStubWorker(pss,
                                                             pSigDesc,
                                                             nlType,
@@ -5775,8 +5837,7 @@ VOID NDirectMethodDesc::SetNDirectTarget(LPVOID pTarget)
     }
     CONTRACTL_END;
 
-    NDirectWriteableData* pWriteableData = GetWriteableData();
-    pWriteableData->m_pNDirectTarget = pTarget;
+    ndirect.m_pNDirectTarget = pTarget;
 }
 
 void MarshalStructViaILStub(MethodDesc* pStubMD, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList /* = nullptr */)
@@ -5858,7 +5919,7 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
         //
         INDEBUG(Thread *pThread = GetThread());
         {
-            _ASSERTE(pThread->GetFrame()->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr()
+            _ASSERTE((pThread->GetFrame() != FRAME_TOP && pThread->GetFrame()->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())
                 || pMD->ShouldSuppressGCTransition());
 
             CONSISTENCY_CHECK(pMD->IsNDirect());
@@ -6013,7 +6074,7 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
             }
         }
 
-        LoaderHeap *pHeap = pVASigCookie->pModule->GetLoaderAllocator()->GetHighFrequencyHeap();
+        LoaderHeap *pHeap = pVASigCookie->pLoaderModule->GetLoaderAllocator()->GetHighFrequencyHeap();
         PCOR_SIGNATURE new_sig = (PCOR_SIGNATURE)(void *)pHeap->AllocMem(S_SIZE_T(signature.GetRawSigLen()));
         CopyMemory(new_sig, signature.GetRawSig(), signature.GetRawSigLen());
 
@@ -6051,7 +6112,8 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
         nlType  = nltAnsi;
     }
 
-    StubSigDesc sigDesc(pMD, signature, pVASigCookie->pModule);
+    StubSigDesc sigDesc(pMD, signature, pVASigCookie->pModule, pVASigCookie->pLoaderModule);
+    sigDesc.InitTypeContext(pVASigCookie->classInst, pVASigCookie->methodInst);
 
     MethodDesc* pStubMD = NDirect::CreateCLRToNativeILStub(&sigDesc,
                                     nlType,
@@ -6071,5 +6133,21 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
     RETURN pVASigCookie->pNDirectILStub;
 }
 
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+// Copy constructor support for C++/CLI
+EXTERN_C void* STDCALL CallCopyConstructorsWorker(void* esp)
+{
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_PREEMPTIVE; // we've already switched to preemptive
+
+    using ExecuteCallback = void*(STDMETHODCALLTYPE*)(void*);
+
+    MethodDesc* pMD = CoreLibBinder::GetMethod(METHOD__COPY_CONSTRUCTOR_CHAIN__EXECUTE_CURRENT_COPIES_AND_GET_TARGET);
+    ExecuteCallback pExecute = (ExecuteCallback)pMD->GetMultiCallableAddrOfCode();
+
+    return pExecute(esp);
+}
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
 
 #endif // #ifndef DACCESS_COMPILE

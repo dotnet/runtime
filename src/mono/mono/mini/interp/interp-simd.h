@@ -3,6 +3,8 @@
 
 #include <glib.h>
 
+extern gboolean interp_simd_enabled;
+
 typedef void (*PP_SIMD_Method) (gpointer, gpointer);
 typedef void (*PPP_SIMD_Method) (gpointer, gpointer, gpointer);
 typedef void (*PPPP_SIMD_Method) (gpointer, gpointer, gpointer, gpointer);

@@ -62,11 +62,14 @@ namespace Microsoft.Interop
         public string InstanceIdentifier { get; init; } = string.Empty;
 
         public RefKind RefKind { get; init; } = RefKind.None;
-        public SyntaxKind RefKindSyntax { get; init; } = SyntaxKind.None;
 
         public bool IsByRef => RefKind != RefKind.None;
 
+        public ScopedKind ScopedKind { get; init; } = ScopedKind.None;
+
         public ByValueContentsMarshalKind ByValueContentsMarshalKind { get; init; }
+
+        public (Location? InLocation, Location? OutLocation) ByValueMarshalAttributeLocations { get; init; }
 
         public bool IsManagedReturnPosition { get => ManagedIndex == ReturnIndex; }
         public bool IsNativeReturnPosition { get => NativeIndex == ReturnIndex; }
@@ -77,49 +80,55 @@ namespace Microsoft.Interop
 
         public static TypePositionInfo CreateForParameter(IParameterSymbol paramSymbol, MarshallingInfo marshallingInfo, Compilation compilation)
         {
+            var (byValueContentsMarshalKind, inLocation, outLocation) = GetByValueContentsMarshalKind(paramSymbol.GetAttributes(), compilation);
+
             var typeInfo = new TypePositionInfo(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(paramSymbol.Type), marshallingInfo)
             {
                 InstanceIdentifier = ParseToken(paramSymbol.Name).IsReservedKeyword() ? $"@{paramSymbol.Name}" : paramSymbol.Name,
                 RefKind = paramSymbol.RefKind,
-                RefKindSyntax = RefKindToSyntax(paramSymbol.RefKind),
-                ByValueContentsMarshalKind = GetByValueContentsMarshalKind(paramSymbol.GetAttributes(), compilation)
+                ByValueContentsMarshalKind = byValueContentsMarshalKind,
+                ByValueMarshalAttributeLocations = (inLocation, outLocation),
+                ScopedKind = paramSymbol.ScopedKind
             };
 
             return typeInfo;
         }
 
-        private static ByValueContentsMarshalKind GetByValueContentsMarshalKind(IEnumerable<AttributeData> attributes, Compilation compilation)
+        public static Location GetLocation(TypePositionInfo info, IMethodSymbol methodSymbol)
+        {
+            if (info.ManagedIndex is UnsetIndex)
+                return Location.None;
+
+            if (info.ManagedIndex is ReturnIndex or ExceptionIndex)
+                return methodSymbol.Locations[0];
+
+            return methodSymbol.Parameters[info.ManagedIndex].Locations[0];
+        }
+
+        private static (ByValueContentsMarshalKind, Location? inAttribute, Location? outAttribute) GetByValueContentsMarshalKind(IEnumerable<AttributeData> attributes, Compilation compilation)
         {
             INamedTypeSymbol outAttributeType = compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_OutAttribute)!;
             INamedTypeSymbol inAttributeType = compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_InAttribute)!;
 
             ByValueContentsMarshalKind marshalKind = ByValueContentsMarshalKind.Default;
+            Location? inAttributeLocation = null;
+            Location? outAttributeLocation = null;
 
             foreach (AttributeData attr in attributes)
             {
                 if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, outAttributeType))
                 {
                     marshalKind |= ByValueContentsMarshalKind.Out;
+                    outAttributeLocation = attr.ApplicationSyntaxReference.SyntaxTree.GetLocation(attr.ApplicationSyntaxReference.Span);
                 }
                 else if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, inAttributeType))
                 {
                     marshalKind |= ByValueContentsMarshalKind.In;
+                    inAttributeLocation = attr.ApplicationSyntaxReference.SyntaxTree.GetLocation(attr.ApplicationSyntaxReference.Span);
                 }
             }
 
-            return marshalKind;
-        }
-
-        private static SyntaxKind RefKindToSyntax(RefKind refKind)
-        {
-            return refKind switch
-            {
-                RefKind.In => SyntaxKind.InKeyword,
-                RefKind.Ref => SyntaxKind.RefKeyword,
-                RefKind.Out => SyntaxKind.OutKeyword,
-                RefKind.None => SyntaxKind.None,
-                _ => throw new NotImplementedException("Support for some RefKind"),
-            };
+            return (marshalKind, inAttributeLocation, outAttributeLocation);
         }
     }
 }

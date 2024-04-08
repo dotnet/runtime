@@ -15,7 +15,7 @@ namespace Microsoft.Interop
     {
         private readonly ImmutableDictionary<int, UseSiteAttributeData> _useSiteAttributesByIndirectionDepth;
         private readonly int _maxIndirectionLevelDataProvided;
-        private readonly IGeneratorDiagnostics _diagnostics;
+        private readonly GeneratorDiagnosticsBag _diagnostics;
         private int _maxIndirectionLevelUsed;
 
         /// <summary>
@@ -30,7 +30,7 @@ namespace Microsoft.Interop
             ImmutableArray<IUseSiteAttributeParser> useSiteAttributeParsers,
             IEnumerable<AttributeData> useSiteAttributes,
             IElementInfoProvider elementInfoProvider,
-            IGeneratorDiagnostics diagnostics,
+            GeneratorDiagnosticsBag diagnostics,
             GetMarshallingInfoCallback getMarshallingInfoCallback)
         {
             ImmutableDictionary<int, UseSiteAttributeData>.Builder useSiteAttributesByIndirectionDepth = ImmutableDictionary.CreateBuilder<int, UseSiteAttributeData>();

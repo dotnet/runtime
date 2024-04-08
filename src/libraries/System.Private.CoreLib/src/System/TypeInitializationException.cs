@@ -1,25 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*=============================================================================
-**
-**
-**
-** Purpose: The exception class to wrap exceptions thrown by
-**          a type's class initializer (.cctor).  This is sufficiently
-**          distinct from a TypeLoadException, which means we couldn't
-**          find the type.
-**
-**
-=============================================================================*/
-
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System
 {
+    /// <summary>
+    /// The exception that is thrown as a wrapper around the exception thrown by the class initializer.
+    /// </summary>
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class TypeInitializationException : SystemException
     {
         private readonly string? _typeName;
@@ -40,13 +32,13 @@ namespace System
 
         // This is called from within the runtime.  I believe this is necessary
         // for Interop only, though it's not particularly useful.
-        internal TypeInitializationException(string? message) : base(message)
+        internal TypeInitializationException(string? message) : base(message ?? SR.TypeInitialization_Default)
         {
             HResult = HResults.COR_E_TYPEINITIALIZATION;
         }
 
         internal TypeInitializationException(string? fullTypeName, string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.TypeInitialization_Default, innerException)
         {
             _typeName = fullTypeName;
             HResult = HResults.COR_E_TYPEINITIALIZATION;

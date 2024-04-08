@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Text.Json.Reflection;
+using System.Threading;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -163,17 +163,39 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public ICustomAttributeProvider? AttributeProvider
         {
-            get => _attributeProvider;
+            get
+            {
+                ICustomAttributeProvider attributeProvider = _attributeProvider ?? InitializeAttributeProvider();
+                return ReferenceEquals(attributeProvider, s_nullAttributeProvider) ? null : attributeProvider;
+            }
             set
             {
                 VerifyMutable();
 
-                _attributeProvider = value;
+                _attributeProvider = value ?? s_nullAttributeProvider;
             }
         }
 
-        private JsonObjectCreationHandling? _objectCreationHandling;
-        internal JsonObjectCreationHandling EffectiveObjectCreationHandling { get; private set; }
+        // Because the getter can initialize its own backing field, we want to avoid races between the getter and setter.
+        // This is done using CAS on the single _attributeProvider field which employs the following encoding:
+        // null: not initialized, s_nullAttributeProvider: null, otherwise: _attributeProvider
+        private ICustomAttributeProvider? _attributeProvider;
+        private static readonly ICustomAttributeProvider s_nullAttributeProvider = typeof(NullAttributeProviderPlaceholder);
+        private sealed class NullAttributeProviderPlaceholder;
+
+        [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+            Justification = "Looks up members that are already being referenced by the source generator.")]
+        private ICustomAttributeProvider InitializeAttributeProvider()
+        {
+            // If the property is source generated, perform a reflection lookup of its MemberInfo.
+            // Avoids overhead of reflection at startup and makes this method trimmable if unused.
+            ICustomAttributeProvider? provider = IsSourceGenerated && MemberName != null
+                ? DefaultJsonTypeInfoResolver.LookupMemberInfo(DeclaringType, MemberType, MemberName)
+                : null;
+
+            provider ??= s_nullAttributeProvider;
+            return Interlocked.CompareExchange(ref _attributeProvider, provider, null) ?? provider;
+        }
 
         /// <summary>
         /// Gets or sets a value indicating if the property or field should be replaced or populated during deserialization.
@@ -203,10 +225,13 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        private ICustomAttributeProvider? _attributeProvider;
+        private JsonObjectCreationHandling? _objectCreationHandling;
+        internal JsonObjectCreationHandling EffectiveObjectCreationHandling { get; private set; }
+
         internal string? MemberName { get; set; }
         internal MemberTypes MemberType { get; set; }
         internal bool IsVirtual { get; set; }
+        internal bool IsSourceGenerated { get; set; }
 
         /// <summary>
         /// Specifies whether the current property is a special extension data property.
@@ -268,7 +293,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal JsonPropertyInfo(Type declaringType, Type propertyType, JsonTypeInfo? declaringTypeInfo, JsonSerializerOptions options)
         {
-            Debug.Assert(declaringTypeInfo is null || declaringTypeInfo.Type == declaringType);
+            Debug.Assert(declaringTypeInfo is null || declaringType.IsAssignableFrom(declaringTypeInfo.Type));
 
             DeclaringType = declaringType;
             PropertyType = propertyType;
@@ -356,7 +381,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        internal abstract void  DetermineReflectionPropertyAccessors(MemberInfo memberInfo);
+        internal abstract void DetermineReflectionPropertyAccessors(MemberInfo memberInfo, bool useNonPublicAccessors);
 
         private void CacheNameAsUtf8BytesAndEscapedNameSection()
         {
@@ -496,9 +521,17 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(ParentTypeInfo != null, "We should have ensured parent is assigned in JsonTypeInfo");
             Debug.Assert(!IsConfigured, "Should not be called post-configuration.");
 
+            JsonObjectCreationHandling effectiveObjectCreationHandling = JsonObjectCreationHandling.Replace;
             if (ObjectCreationHandling == null)
             {
-                JsonObjectCreationHandling preferredCreationHandling = ParentTypeInfo.PreferredPropertyObjectCreationHandling ?? Options.PreferredObjectCreationHandling;
+                // Consult type-level configuration, then global configuration.
+                // Ignore global configuration if we're using a parameterized constructor.
+                JsonObjectCreationHandling preferredCreationHandling =
+                    ParentTypeInfo.PreferredPropertyObjectCreationHandling
+                    ?? (ParentTypeInfo.DetermineUsesParameterizedConstructor()
+                        ? JsonObjectCreationHandling.Replace
+                        : Options.PreferredObjectCreationHandling);
+
                 bool canPopulate =
                     preferredCreationHandling == JsonObjectCreationHandling.Populate &&
                     EffectiveConverter.CanPopulate &&
@@ -507,7 +540,7 @@ namespace System.Text.Json.Serialization.Metadata
                     !ParentTypeInfo.SupportsPolymorphicDeserialization &&
                     !(Set == null && IgnoreReadOnlyMember);
 
-                EffectiveObjectCreationHandling = canPopulate ? JsonObjectCreationHandling.Populate : JsonObjectCreationHandling.Replace;
+                effectiveObjectCreationHandling = canPopulate ? JsonObjectCreationHandling.Populate : JsonObjectCreationHandling.Replace;
             }
             else if (ObjectCreationHandling == JsonObjectCreationHandling.Populate)
             {
@@ -538,18 +571,24 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_ObjectCreationHandlingPropertyCannotAllowReadOnlyMember(this);
                 }
 
-                EffectiveObjectCreationHandling = JsonObjectCreationHandling.Populate;
-            }
-            else
-            {
-                Debug.Assert(EffectiveObjectCreationHandling == JsonObjectCreationHandling.Replace);
+                effectiveObjectCreationHandling = JsonObjectCreationHandling.Populate;
             }
 
-            if (EffectiveObjectCreationHandling == JsonObjectCreationHandling.Populate &&
-                Options.ReferenceHandlingStrategy != ReferenceHandlingStrategy.None)
+            if (effectiveObjectCreationHandling is JsonObjectCreationHandling.Populate)
             {
-                ThrowHelper.ThrowInvalidOperationException_ObjectCreationHandlingPropertyCannotAllowReferenceHandling();
+                if (ParentTypeInfo.DetermineUsesParameterizedConstructor())
+                {
+                    ThrowHelper.ThrowNotSupportedException_ObjectCreationHandlingPropertyDoesNotSupportParameterizedConstructors();
+                }
+
+                if (Options.ReferenceHandlingStrategy != ReferenceHandlingStrategy.None)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_ObjectCreationHandlingPropertyCannotAllowReferenceHandling();
+                }
             }
+
+            // Validation complete, commit configuration.
+            EffectiveObjectCreationHandling = effectiveObjectCreationHandling;
         }
 
         private bool NumberHandingIsApplicable()
@@ -584,6 +623,13 @@ namespace System.Text.Json.Serialization.Metadata
                 potentialNumberType == typeof(ushort) ||
                 potentialNumberType == typeof(uint) ||
                 potentialNumberType == typeof(ulong) ||
+#if NETCOREAPP
+                potentialNumberType == typeof(Half) ||
+#endif
+#if NET7_0_OR_GREATER
+                potentialNumberType == typeof(Int128) ||
+                potentialNumberType == typeof(UInt128) ||
+#endif
                 potentialNumberType == JsonTypeInfo.ObjectType;
         }
 
@@ -924,6 +970,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// It is set just before property is configured and does not change afterward.
         /// It is not equivalent to index on the properties list
         /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal int RequiredPropertyIndex
         {
             get
@@ -941,7 +988,10 @@ namespace System.Text.Json.Serialization.Metadata
 
         private int _index;
 
+        internal bool IsOverriddenOrShadowedBy(JsonPropertyInfo other)
+            => MemberName == other.MemberName && DeclaringType.IsAssignableFrom(other.DeclaringType);
+
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay => $"PropertyType = {PropertyType}, Name = {Name}, DeclaringType = {DeclaringType}";
+        private string DebuggerDisplay => $"Name = {Name}, PropertyType = {PropertyType}";
     }
 }

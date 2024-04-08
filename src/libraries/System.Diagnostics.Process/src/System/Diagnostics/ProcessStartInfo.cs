@@ -16,7 +16,7 @@ namespace System.Diagnostics
     ///     used in conjunction with the <see cref='System.Diagnostics.Process'/>
     ///     component.
     /// </devdoc>
-    [DebuggerDisplay("FileName={FileName}, Arguments={BuildArguments()}, WorkingDirectory={WorkingDirectory}")]
+    [DebuggerDisplay("FileName = {FileName}, Arguments = {BuildArguments()}, WorkingDirectory = {WorkingDirectory}")]
     public sealed partial class ProcessStartInfo
     {
         private string? _fileName;

@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Collections.Generic;
+using System.Reflection;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.ParameterInfos;
+using System.Reflection.Runtime.TypeInfos;
 
 using Internal.Reflection.Core.Execution;
 
@@ -71,24 +71,19 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return _common.DeclaringType;
+                return _common.DeclaringType.ToType();
             }
         }
 
         [DebuggerGuidedStepThrough]
         public sealed override object Invoke(BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
-            // Most objects are allocated by NewObject and their constructors return "void". But in many frameworks,
-            // there are "weird" cases (e.g. String) where the constructor must do both the allocation and initialization.
-            // Reflection.Core does not hardcode these special cases. It's up to the ExecutionEnvironment to steer
-            // us the right way by coordinating the implementation of NewObject and MethodInvoker.
-            object newObject = ReflectionCoreExecution.ExecutionEnvironment.NewObject(this.DeclaringType.TypeHandle);
-            object ctorAllocatedObject = this.MethodInvoker.Invoke(newObject, parameters, binder, invokeAttr, culture)!;
+            object ctorAllocatedObject = this.MethodInvoker.CreateInstance(parameters, binder, invokeAttr, culture);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-            return newObject ?? ctorAllocatedObject;
+            return ctorAllocatedObject;
         }
 
-        public sealed override MethodBase MetadataDefinitionMethod
+        internal sealed override MethodBase MetadataDefinitionMethod
         {
             get
             {
@@ -157,7 +152,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        protected sealed override MethodInvoker UncachedMethodInvoker
+        protected sealed override MethodBaseInvoker UncachedMethodInvoker
         {
             get
             {
@@ -167,7 +162,7 @@ namespace System.Reflection.Runtime.MethodInfos
                 if (this.IsStatic)
                     throw new MemberAccessException(SR.Acc_NotClassInit);
 
-                MethodInvoker invoker = this.GetCustomMethodInvokerIfNeeded();
+                MethodBaseInvoker invoker = this.GetCustomMethodInvokerIfNeeded();
                 if (invoker != null)
                     return invoker;
 

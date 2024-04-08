@@ -136,9 +136,8 @@ public class TestClass_Loops
         }
     }
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         new TestClass_Loops().Method0();
-        return 100;
     }
 }

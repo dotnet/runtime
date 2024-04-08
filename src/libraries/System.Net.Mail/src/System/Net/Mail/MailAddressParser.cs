@@ -40,13 +40,14 @@ namespace System.Net.Mail
             int index = data.Length - 1;
             while (index >= 0)
             {
-                // Because we're parsing in reverse, we must make an effort to preserve the order of the addresses.
                 TryParseAddress(data, true, ref index, out ParseAddressInfo parsedAddress, throwExceptionIfFail: true);
-                results.Insert(0, new MailAddress(parsedAddress.DisplayName, parsedAddress.User, parsedAddress.Host, null));
+                results.Add(new MailAddress(parsedAddress.DisplayName, parsedAddress.User, parsedAddress.Host, null));
                 Debug.Assert(index == -1 || data[index] == MailBnfHelper.Comma,
                     "separator not found while parsing multiple addresses");
                 index--;
             }
+            // Because we're parsing in reverse, we must make an effort to preserve the order of the addresses.
+            results.Reverse();
             return results;
         }
 
@@ -421,7 +422,7 @@ namespace System.Net.Mail
 
                 // Do not include the Comma (if any), and because there were no bounding quotes,
                 // trim extra whitespace.
-                displayName = data.SubstringTrim(index + 1, startingIndex - index);
+                displayName = data.AsSpan(index + 1, startingIndex - index).Trim().ToString();
             }
 
             if (!TryNormalizeOrThrow(displayName, out displayName, throwExceptionIfFail))

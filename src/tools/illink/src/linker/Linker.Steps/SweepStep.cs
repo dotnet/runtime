@@ -58,7 +58,7 @@ namespace Mono.Linker.Steps
 			foreach (var assembly in assemblies)
 				RemoveUnmarkedAssembly (assembly);
 
-			// Look for references (included to previously unresolved assemblies) marked for deletion
+			// Look for references (including to previously unresolved assemblies) marked for deletion
 			foreach (var assembly in assemblies)
 				UpdateAssemblyReferencesToRemovedAssemblies (assembly);
 
@@ -69,7 +69,7 @@ namespace Mono.Linker.Steps
 				case AssemblyAction.CopyUsed:
 				case AssemblyAction.Link:
 				case AssemblyAction.Save:
-					bool changed = AssemblyReferencesCorrector.SweepAssemblyReferences (assembly);
+					bool changed = SweepAssemblyReferences (assembly);
 					if (changed && action == AssemblyAction.CopyUsed)
 						Annotations.SetAction (assembly, AssemblyAction.Save);
 					break;
@@ -174,7 +174,7 @@ namespace Mono.Linker.Steps
 				AssemblyAction assemblyAction = AssemblyAction.Copy;
 				if (SweepTypeForwarders (assembly)) {
 					// Need to sweep references, in case sweeping type forwarders removed any
-					AssemblyReferencesCorrector.SweepAssemblyReferences (assembly);
+					SweepAssemblyReferences (assembly);
 					assemblyAction = AssemblyAction.Save;
 				}
 
@@ -194,7 +194,7 @@ namespace Mono.Linker.Steps
 			case AssemblyAction.Save:
 				if (SweepTypeForwarders (assembly)) {
 					// Need to sweep references, in case sweeping type forwarders removed any
-					AssemblyReferencesCorrector.SweepAssemblyReferences (assembly);
+					SweepAssemblyReferences (assembly);
 				}
 				break;
 			}
@@ -242,7 +242,7 @@ namespace Mono.Linker.Steps
 			}
 
 			if (SweepTypeForwarders (assembly) || updateScopes)
-				AssemblyReferencesCorrector.SweepAssemblyReferences (assembly);
+				SweepAssemblyReferences (assembly);
 		}
 
 		bool IsMarkedAssembly (AssemblyDefinition assembly)
@@ -568,32 +568,32 @@ namespace Mono.Linker.Steps
 		{
 		}
 
+		bool SweepAssemblyReferences (AssemblyDefinition assembly)
+		{
+			//
+			// We used to run over list returned by GetTypeReferences but
+			// that returns typeref(s) of original assembly and we don't track
+			// which types are needed for which assembly which left us
+			// with dangling assembly references
+			//
+			assembly.MainModule.AssemblyReferences.Clear ();
+
+			var arc = new AssemblyReferencesCorrector (assembly, walkSymbols: Context.LinkSymbols);
+			arc.Process ();
+
+			return arc.ChangedAnyScopes;
+		}
+
 		sealed class AssemblyReferencesCorrector : TypeReferenceWalker
 		{
 			readonly DefaultMetadataImporter importer;
 
-			bool changedAnyScopes;
+			public bool ChangedAnyScopes { get; private set; }
 
-			AssemblyReferencesCorrector (AssemblyDefinition assembly) : base (assembly)
+			public AssemblyReferencesCorrector (AssemblyDefinition assembly, bool walkSymbols) : base (assembly, walkSymbols)
 			{
 				this.importer = new DefaultMetadataImporter (assembly.MainModule);
-				changedAnyScopes = false;
-			}
-
-			public static bool SweepAssemblyReferences (AssemblyDefinition assembly)
-			{
-				//
-				// We used to run over list returned by GetTypeReferences but
-				// that returns typeref(s) of original assembly and we don't track
-				// which types are needed for which assembly which left us
-				// with dangling assembly references
-				//
-				assembly.MainModule.AssemblyReferences.Clear ();
-
-				var arc = new AssemblyReferencesCorrector (assembly);
-				arc.Process ();
-
-				return arc.changedAnyScopes;
+				ChangedAnyScopes = false;
 			}
 
 			protected override void ProcessTypeReference (TypeReference type)
@@ -626,7 +626,7 @@ namespace Mono.Linker.Steps
 					return;
 
 				type.Scope = tr.Scope;
-				changedAnyScopes = true;
+				ChangedAnyScopes = true;
 			}
 
 			protected override void ProcessExportedType (ExportedType exportedType)
@@ -647,7 +647,7 @@ namespace Mono.Linker.Steps
 					return;
 
 				exportedType.Scope = tr.Scope;
-				changedAnyScopes = true;
+				ChangedAnyScopes = true;
 			}
 		}
 	}

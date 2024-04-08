@@ -45,7 +45,7 @@ namespace Test
                 new AA().Method1(param1, new long[4], new ulong[4], new BB().m_uField2));
         }
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             try
             {
@@ -53,7 +53,6 @@ namespace Test
                 Static1(ref au);
             }
             catch (Exception) { }
-            return 100;
         }
     }
 }

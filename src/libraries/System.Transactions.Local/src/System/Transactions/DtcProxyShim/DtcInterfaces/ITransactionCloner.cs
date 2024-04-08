@@ -2,16 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace System.Transactions.DtcProxyShim.DtcInterfaces;
 
 // https://docs.microsoft.com/previous-versions/windows/desktop/ms684377(v=vs.85)
-[ComImport, Guid("02656950-2152-11d0-944C-00A0C905416E"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-internal interface ITransactionCloner
+[GeneratedComInterface, Guid("02656950-2152-11d0-944C-00A0C905416E"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+internal partial interface ITransactionCloner
 {
     void Commit(
         [MarshalAs(UnmanagedType.Bool)] bool fRetainingt,
-        [MarshalAs(UnmanagedType.U4)] OletxXacttc grfTC,
+        OletxXacttc grfTC,
         uint grfRM);
 
     void Abort(

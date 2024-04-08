@@ -18,18 +18,18 @@ public static class Program
         MyPoco valueToSerialize = new MyPoco { Value = 42 };
 
         // The default resolver should not surface DefaultJsonTypeInfoResolver.
-        if (JsonSerializerOptions.Default.TypeInfoResolver is not IList<IJsonTypeInfoResolver> { Count: 0 })
+        if (JsonSerializerOptions.Default.TypeInfoResolver is DefaultJsonTypeInfoResolver)
         {
             return -1;
         }
 
-        // Serializing with options unset should throw NotSupportedException.
+        // Serializing with options unset should throw InvalidOperationException.
         try
         {
             JsonSerializer.Serialize(valueToSerialize);
             return -2;
         }
-        catch (NotSupportedException)
+        catch (InvalidOperationException)
         {
         }
 
@@ -44,18 +44,41 @@ public static class Program
         {
         }
 
+        // Calling GetConverter should throw NotSupportedException.
+        try
+        {
+            _ = options.GetConverter(typeof(MyPoco));
+            return -4;
+        }
+        catch (NotSupportedException)
+        {
+        }
+
+        // Calling MakeReadOnly(populateMissingResolver: true) should throw InvalidOperationException.
+        try
+        {
+            options.MakeReadOnly(populateMissingResolver: true);
+            return -5;
+        }
+        catch (InvalidOperationException)
+        {
+        }
+
         // Serializing with a custom resolver should work as expected.
         options.TypeInfoResolver = new MyJsonResolver();
+        options.MakeReadOnly(populateMissingResolver: true);
+        options.GetConverter(typeof(MyPoco));
+        
         if (JsonSerializer.Serialize(valueToSerialize, options) != "{\"Value\":42}")
         {
-            return -4;
+            return -6;
         }
 
         // The Default resolver should have been trimmed from the application.
         Type? reflectionResolver = GetJsonType("System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver");
         if (reflectionResolver != null)
         {
-            return -5;
+            return -7;
         }
 
         return 100;

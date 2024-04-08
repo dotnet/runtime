@@ -438,16 +438,6 @@ mono_class_set_declsec_flags (MonoClass *klass, guint32 value)
 }
 
 void
-mono_class_set_is_com_object (MonoClass *klass)
-{
-#ifndef DISABLE_COM
-	mono_loader_lock ();
-	klass->is_com_object = 1;
-	mono_loader_unlock ();
-#endif
-}
-
-void
 mono_class_set_is_simd_type (MonoClass *klass, gboolean is_simd)
 {
 	klass->simd_type = is_simd;
@@ -576,6 +566,23 @@ mono_class_set_failure (MonoClass *klass, MonoErrorBoxed *boxed_error)
 	mono_loader_unlock ();
 
 	return TRUE;
+}
+
+/**
+ * mono_class_set_deferred_failure:
+ * \param klass class in which the failure was detected
+ 
+ * This method marks the class with a deferred failure, indicating that a failure was detected but it will be processed during AOT runtime..
+ * Note that only the first failure is kept.
+ *
+ * LOCKING: Acquires the loader lock.
+ */
+void
+mono_class_set_deferred_failure (MonoClass *klass)
+{
+	mono_loader_lock ();
+	klass->has_deferred_failure = 1;
+	mono_loader_unlock ();
 }
 
 /**

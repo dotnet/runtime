@@ -18,14 +18,12 @@ public class C0
 public class Runtime_61037
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         if (0 == (27452 + (-2147483647 * M1())))
         {
             var vr3 = new C0();
         }
-
-        return 100;
     }
 
     public static long M1()

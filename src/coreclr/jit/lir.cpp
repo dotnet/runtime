@@ -9,7 +9,10 @@
 #pragma hdrstop
 #endif
 
-LIR::Use::Use() : m_range(nullptr), m_edge(nullptr), m_user(nullptr)
+LIR::Use::Use()
+    : m_range(nullptr)
+    , m_edge(nullptr)
+    , m_user(nullptr)
 {
 }
 
@@ -30,7 +33,10 @@ LIR::Use::Use(const Use& other)
 //
 // Return Value:
 //
-LIR::Use::Use(Range& range, GenTree** edge, GenTree* user) : m_range(&range), m_edge(edge), m_user(user)
+LIR::Use::Use(Range& range, GenTree** edge, GenTree* user)
+    : m_range(&range)
+    , m_edge(edge)
+    , m_user(user)
 {
     AssertIsValid();
 }
@@ -241,11 +247,11 @@ void LIR::Use::ReplaceWith(GenTree* replacement)
 //    lclNum - The local to use for temporary storage. If BAD_VAR_NUM (the
 //             default) is provided, this method will create and use a new
 //             local var.
-//    assign - On return, if non null, contains the created assignment node
+//    pStore - On return, if non null, contains the created store node
 //
 // Return Value: The number of the local var used for temporary storage.
 //
-unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned lclNum, GenTree** assign)
+unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned lclNum, GenTree** pStore)
 {
     assert(IsInitialized());
     assert(compiler != nullptr);
@@ -259,7 +265,7 @@ unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned lclNum, GenTre
         lclNum = compiler->lvaGrabTemp(true DEBUGARG("ReplaceWithLclVar is creating a new local variable"));
     }
 
-    GenTreeLclVar* const store = compiler->gtNewTempAssign(lclNum, node)->AsLclVar();
+    GenTreeLclVar* const store = compiler->gtNewTempStore(lclNum, node)->AsLclVar();
     assert(store != nullptr);
     assert(store->gtOp1 == node);
 
@@ -273,18 +279,22 @@ unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned lclNum, GenTre
     JITDUMP("ReplaceWithLclVar created store :\n");
     DISPNODE(store);
 
-    if (assign != nullptr)
+    if (pStore != nullptr)
     {
-        *assign = store;
+        *pStore = store;
     }
     return lclNum;
 }
 
-LIR::ReadOnlyRange::ReadOnlyRange() : m_firstNode(nullptr), m_lastNode(nullptr)
+LIR::ReadOnlyRange::ReadOnlyRange()
+    : m_firstNode(nullptr)
+    , m_lastNode(nullptr)
 {
 }
 
-LIR::ReadOnlyRange::ReadOnlyRange(ReadOnlyRange&& other) : m_firstNode(other.m_firstNode), m_lastNode(other.m_lastNode)
+LIR::ReadOnlyRange::ReadOnlyRange(ReadOnlyRange&& other)
+    : m_firstNode(other.m_firstNode)
+    , m_lastNode(other.m_lastNode)
 {
 #ifdef DEBUG
     other.m_firstNode = nullptr;
@@ -301,7 +311,9 @@ LIR::ReadOnlyRange::ReadOnlyRange(ReadOnlyRange&& other) : m_firstNode(other.m_f
 //    firstNode - The first node in the range.
 //    lastNode  - The last node in the range.
 //
-LIR::ReadOnlyRange::ReadOnlyRange(GenTree* firstNode, GenTree* lastNode) : m_firstNode(firstNode), m_lastNode(lastNode)
+LIR::ReadOnlyRange::ReadOnlyRange(GenTree* firstNode, GenTree* lastNode)
+    : m_firstNode(firstNode)
+    , m_lastNode(lastNode)
 {
     assert((m_firstNode == nullptr) == (m_lastNode == nullptr));
     assert((m_firstNode == m_lastNode) || (Contains(m_lastNode)));
@@ -426,11 +438,13 @@ bool LIR::ReadOnlyRange::Contains(GenTree* node) const
 
 #endif
 
-LIR::Range::Range() : ReadOnlyRange()
+LIR::Range::Range()
+    : ReadOnlyRange()
 {
 }
 
-LIR::Range::Range(Range&& other) : ReadOnlyRange(std::move(other))
+LIR::Range::Range(Range&& other)
+    : ReadOnlyRange(std::move(other))
 {
 }
 
@@ -442,7 +456,8 @@ LIR::Range::Range(Range&& other) : ReadOnlyRange(std::move(other))
 //    firstNode - The first node in the range.
 //    lastNode  - The last node in the range.
 //
-LIR::Range::Range(GenTree* firstNode, GenTree* lastNode) : ReadOnlyRange(firstNode, lastNode)
+LIR::Range::Range(GenTree* firstNode, GenTree* lastNode)
+    : ReadOnlyRange(firstNode, lastNode)
 {
 }
 
@@ -1186,7 +1201,7 @@ bool LIR::Range::TryGetUse(GenTree* node, Use* use)
 // Returns:
 //    The computed subrange.
 //
-template <bool     markFlagsOperands>
+template <bool markFlagsOperands>
 LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
                                               GenTree*  start,
                                               bool*     isClosed,
@@ -1406,8 +1421,8 @@ public:
     //    range - a range to do the check.
     //    unusedDefs - map of defs that do no have users.
     //
-    CheckLclVarSemanticsHelper(Compiler*         compiler,
-                               const LIR::Range* range,
+    CheckLclVarSemanticsHelper(Compiler*                            compiler,
+                               const LIR::Range*                    range,
                                SmallHashTable<GenTree*, bool, 32U>& unusedDefs)
         : compiler(compiler)
         , range(range)
@@ -1438,7 +1453,7 @@ public:
 
             if (nodeInfo.IsLclVarWrite())
             {
-                // If this node is a lclVar write, it must be not alias a lclVar with an outstanding read
+                // If this node is a lclVar write, it must not alias a lclVar with an outstanding read
                 SmallHashTable<GenTree*, GenTree*>* reads;
                 if (unusedLclVarReads.TryGetValue(nodeInfo.LclNum(), &reads))
                 {
@@ -1554,7 +1569,7 @@ private:
     void PopLclVarRead(const AliasSet::NodeInfo& defInfo)
     {
         SmallHashTable<GenTree*, GenTree*>* reads;
-        const bool foundReads = unusedLclVarReads.TryGetValue(defInfo.LclNum(), &reads);
+        const bool                          foundReads = unusedLclVarReads.TryGetValue(defInfo.LclNum(), &reads);
         assert(foundReads);
 
         bool found = reads->TryRemove(defInfo.Node());
@@ -1569,11 +1584,11 @@ private:
     }
 
 private:
-    Compiler*         compiler;
-    const LIR::Range* range;
-    SmallHashTable<GenTree*, bool, 32U>& unusedDefs;
+    Compiler*                                                     compiler;
+    const LIR::Range*                                             range;
+    SmallHashTable<GenTree*, bool, 32U>&                          unusedDefs;
     SmallHashTable<int, SmallHashTable<GenTree*, GenTree*>*, 16U> unusedLclVarReads;
-    ArrayStack<SmallHashTable<GenTree*, GenTree*>*> lclVarReadsMapsCache;
+    ArrayStack<SmallHashTable<GenTree*, GenTree*>*>               lclVarReadsMapsCache;
 };
 
 //------------------------------------------------------------------------
@@ -1770,7 +1785,7 @@ void LIR::InsertBeforeTerminator(BasicBlock* block, LIR::Range&& range)
         assert(insertionPoint != nullptr);
 
 #if DEBUG
-        switch (block->bbJumpKind)
+        switch (block->GetKind())
         {
             case BBJ_COND:
                 assert(insertionPoint->OperIsConditionalJump());
@@ -1792,6 +1807,70 @@ void LIR::InsertBeforeTerminator(BasicBlock* block, LIR::Range&& range)
     }
 
     blockRange.InsertBefore(insertionPoint, std::move(range));
+}
+
+//------------------------------------------------------------------------
+// LIR::LastNode:
+//    Given two nodes in the same block range, find which node appears last.
+//
+// Arguments:
+//    node1 - The first node
+//    node2 - The second node
+//
+// Returns:
+//    Node that appears last.
+//
+GenTree* LIR::LastNode(GenTree* node1, GenTree* node2)
+{
+    assert(node1 != nullptr);
+    assert(node2 != nullptr);
+
+    if (node1 == node2)
+    {
+        return node1;
+    }
+
+    GenTree* cursor1 = node1->gtNext;
+    GenTree* cursor2 = node2->gtNext;
+
+    while (true)
+    {
+        if ((cursor1 == node2) || (cursor2 == nullptr))
+        {
+            return node2;
+        }
+
+        if ((cursor2 == node1) || (cursor1 == nullptr))
+        {
+            return node1;
+        }
+
+        cursor1 = cursor1->gtNext;
+        cursor2 = cursor2->gtNext;
+    }
+}
+
+//------------------------------------------------------------------------
+// LIR::LastNode:
+//    Given an array of nodes in a block range, find the last one.
+//
+// Arguments:
+//    nodes    - Pointer to nodes
+//    numNodes - Number of nodes
+//
+// Returns:
+//    Node that appears last.
+//
+GenTree* LIR::LastNode(GenTree** nodes, size_t numNodes)
+{
+    assert(numNodes > 0);
+    GenTree* lastNode = nodes[0];
+    for (size_t i = 1; i < numNodes; i++)
+    {
+        lastNode = LastNode(lastNode, nodes[i]);
+    }
+
+    return lastNode;
 }
 
 #ifdef DEBUG

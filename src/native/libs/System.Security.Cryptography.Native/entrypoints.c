@@ -15,6 +15,7 @@
 #include "pal_err.h"
 #include "pal_evp.h"
 #include "pal_evp_cipher.h"
+#include "pal_evp_mac.h"
 #include "pal_evp_pkey.h"
 #include "pal_evp_pkey_dsa.h"
 #include "pal_evp_pkey_ecdh.h"
@@ -136,10 +137,23 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_EvpDesCfb8)
     DllImportEntry(CryptoNative_EvpDesEcb)
     DllImportEntry(CryptoNative_EvpDigestCurrent)
+    DllImportEntry(CryptoNative_EvpDigestCurrentXOF)
     DllImportEntry(CryptoNative_EvpDigestFinalEx)
+    DllImportEntry(CryptoNative_EvpDigestFinalXOF)
     DllImportEntry(CryptoNative_EvpDigestOneShot)
     DllImportEntry(CryptoNative_EvpDigestReset)
     DllImportEntry(CryptoNative_EvpDigestUpdate)
+    DllImportEntry(CryptoNative_EvpDigestXOFOneShot)
+    DllImportEntry(CryptoNative_EvpMacFetch)
+    DllImportEntry(CryptoNative_EvpMacFree)
+    DllImportEntry(CryptoNative_EvpMacCtxNew)
+    DllImportEntry(CryptoNative_EvpMacCtxFree)
+    DllImportEntry(CryptoNative_EvpMacCurrent)
+    DllImportEntry(CryptoNative_EvpMacInit)
+    DllImportEntry(CryptoNative_EvpMacUpdate)
+    DllImportEntry(CryptoNative_EvpMacFinal)
+    DllImportEntry(CryptoNative_EvpMacOneShot)
+    DllImportEntry(CryptoNative_EvpMacReset)
     DllImportEntry(CryptoNative_EvpMd5)
     DllImportEntry(CryptoNative_EvpMdCtxCreate)
     DllImportEntry(CryptoNative_EvpMdCtxDestroy)
@@ -162,6 +176,11 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_EvpSha256)
     DllImportEntry(CryptoNative_EvpSha384)
     DllImportEntry(CryptoNative_EvpSha512)
+    DllImportEntry(CryptoNative_EvpSha3_256)
+    DllImportEntry(CryptoNative_EvpSha3_384)
+    DllImportEntry(CryptoNative_EvpSha3_512)
+    DllImportEntry(CryptoNative_EvpShake128)
+    DllImportEntry(CryptoNative_EvpShake256)
     DllImportEntry(CryptoNative_ExtendedKeyUsageDestroy)
     DllImportEntry(CryptoNative_GetAsn1IntegerDerSize)
     DllImportEntry(CryptoNative_GetAsn1StringBytes)
@@ -207,6 +226,8 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_HmacOneShot)
     DllImportEntry(CryptoNative_HmacReset)
     DllImportEntry(CryptoNative_HmacUpdate)
+    DllImportEntry(CryptoNative_LoadPrivateKeyFromEngine)
+    DllImportEntry(CryptoNative_LoadPublicKeyFromEngine)
     DllImportEntry(CryptoNative_LookupFriendlyNameByOid)
     DllImportEntry(CryptoNative_NewX509Stack)
     DllImportEntry(CryptoNative_ObjNid2Obj)
@@ -292,6 +313,7 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_SslCtxSetCiphers)
     DllImportEntry(CryptoNative_SslCtxSetDefaultOcspCallback)
     DllImportEntry(CryptoNative_SslCtxSetEncryptionPolicy)
+    DllImportEntry(CryptoNative_SslCtxSetKeylogCallback)
     DllImportEntry(CryptoNative_SetCiphers)
     DllImportEntry(CryptoNative_SslCreate)
     DllImportEntry(CryptoNative_SslCtxCheckPrivateKey)

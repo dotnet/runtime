@@ -217,6 +217,10 @@ namespace System.Collections.Immutable.Tests
             Assert.False(queue.IsEmpty);
             Assert.Equal(new[] { 1, 2 }, queue);
 
+            queue = ImmutableQueue.Create((ReadOnlySpan<int>)new[] { 1, 2 });
+            Assert.False(queue.IsEmpty);
+            Assert.Equal(new[] { 1, 2 }, queue);
+
             queue = ImmutableQueue.CreateRange((IEnumerable<int>)new[] { 1, 2 });
             Assert.False(queue.IsEmpty);
             Assert.Equal(new[] { 1, 2 }, queue);
@@ -264,7 +268,7 @@ namespace System.Collections.Immutable.Tests
                 .Enqueue(3);
 
             ref readonly int safeRef = ref queue.PeekRef();
-            ref int unsafeRef = ref Unsafe.AsRef(safeRef);
+            ref int unsafeRef = ref Unsafe.AsRef(in safeRef);
 
             Assert.Equal(1, queue.PeekRef());
 

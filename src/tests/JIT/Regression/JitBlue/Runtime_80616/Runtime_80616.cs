@@ -8,11 +8,10 @@ using Xunit;
 public class Runtime_80616
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Vector<uint> foo = default;
         FooBar(ref foo, default);
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

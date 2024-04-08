@@ -4,7 +4,6 @@
   * [Runtime pipeline](#runtime-pipeline)
   * [Runtime-dev-inner loop pipeline](#runtime-dev-inner-loop-pipeline)
   * [Dotnet-linker-tests](#dotnet-linker-tests)
-  * [Runtime-staging](#runtime-staging)
   * [Runtime-extra-platforms](#runtime-extra-platforms)
   * [Outer loop pipelines](#outer-loop-pipelines)
 * [Running of different runtime-level tests and their orchestration in Helix](#running-of-different-runtime-level-tests-and-their-orchestration-in-helix)
@@ -70,12 +69,6 @@ This pipeline is also required, and its intent is to cover developer inner loop 
 ### Dotnet-linker-tests
 
 This is also a required pipeline. The purpose of this pipeline is to test that the libraries code is ILLink friendly. Meaning that when we trim our libraries using the ILLink, we don't have any trimming bugs, like a required method on a specific scenario is trimmed away by accident.
-
-### Runtime-staging
-
-This pipeline runs on every change; however it behaves a little different than the other pipelines. This pipeline will not fail if there are test failures, however it will fail if there is a timeout or a build failure. We fail on build failures is because we want to protect the developer inner loop (building the repository) for this platform.
-
-The tests will not fail because this pipeline is for staging new platforms where the test infrastructure is new, and we need to test if we have enough capacity to include that new platform on the "main" runtime pipeline without causing flakiness. Once we analyze data and a platform is stable when running on PRs in this pipeline for at least a week, it can be promoted either to the `runtime-extra-platforms` pipeline or to the `runtime` pipeline.
 
 ### Runtime-extra-platforms
 

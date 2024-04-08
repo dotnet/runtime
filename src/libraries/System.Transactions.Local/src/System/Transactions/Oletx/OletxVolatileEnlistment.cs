@@ -389,7 +389,7 @@ internal sealed class OletxPhase0VolatileEnlistmentContainer : OletxVolatileEnli
             localCount = EnlistmentList.Count;
         }
 
-        for (int i = 0; i < localCount; i++ )
+        for (int i = 0; i < localCount; i++)
         {
             enlistment = EnlistmentList[i] as OletxVolatileEnlistment;
             if (enlistment == null)
@@ -401,7 +401,7 @@ internal sealed class OletxPhase0VolatileEnlistmentContainer : OletxVolatileEnli
                 }
 
                 Debug.Fail("OletxPhase1VolatileEnlistmentContainer.InDoubt, enlistmentList element is not an OletxVolatileEnlistment.");
-                throw new InvalidOperationException( SR.InternalError);
+                throw new InvalidOperationException(SR.InternalError);
             }
 
             enlistment.InDoubt();
@@ -497,7 +497,7 @@ internal sealed class OletxPhase0VolatileEnlistmentContainer : OletxVolatileEnli
                 }
 
                 Debug.Fail("OletxPhase0VolatileEnlistmentContainer.Phase0Request, phase != -1");
-                throw new InvalidOperationException( SR.InternalError);
+                throw new InvalidOperationException(SR.InternalError);
             }
         }
 
@@ -521,7 +521,7 @@ internal sealed class OletxPhase0VolatileEnlistmentContainer : OletxVolatileEnli
                     }
 
                     Debug.Fail("OletxPhase0VolatileEnlistmentContainer.Phase0Request, enlistmentList element is not an OletxVolatileEnlistment.");
-                    throw new InvalidOperationException( SR.InternalError);
+                    throw new InvalidOperationException(SR.InternalError);
                 }
 
                 // Do the notification outside any locks.
@@ -575,7 +575,7 @@ internal sealed class OletxPhase1VolatileEnlistmentContainer : OletxVolatileEnli
                 throw TransactionException.Create(SR.TooLate, null);
             }
 
-            EnlistmentList.Add( enlistment );
+            EnlistmentList.Add(enlistment);
         }
     }
 
@@ -828,7 +828,7 @@ internal sealed class OletxPhase1VolatileEnlistmentContainer : OletxVolatileEnli
             localPhase1Count = EnlistmentList.Count;
         }
 
-        for ( int i = 0; i < localPhase1Count; i++ )
+        for (int i = 0; i < localPhase1Count; i++)
         {
             enlistment = EnlistmentList[i] as OletxVolatileEnlistment;
             if (enlistment == null)
@@ -870,7 +870,7 @@ internal sealed class OletxPhase1VolatileEnlistmentContainer : OletxVolatileEnli
                 }
 
                 Debug.Fail("OletxPhase1VolatileEnlistmentContainer.Aborted, enlistmentList element is not an OletxVolatileEnlistment.");
-                throw new InvalidOperationException( SR.InternalError);
+                throw new InvalidOperationException(SR.InternalError);
             }
 
             enlistment.Rollback();
@@ -900,7 +900,7 @@ internal sealed class OletxPhase1VolatileEnlistmentContainer : OletxVolatileEnli
                 }
 
                 Debug.Fail("OletxPhase1VolatileEnlistmentContainer.InDoubt, enlistmentList element is not an OletxVolatileEnlistment.");
-                throw new InvalidOperationException( SR.InternalError);
+                throw new InvalidOperationException(SR.InternalError);
             }
 
             enlistment.InDoubt();
@@ -948,11 +948,11 @@ internal sealed class OletxPhase1VolatileEnlistmentContainer : OletxVolatileEnli
 
         if (voteNo)
         {
-            DecrementOutstandingNotifications( false );
+            DecrementOutstandingNotifications(false);
         }
         else if (localPhase1Count == 0)
         {
-            DecrementOutstandingNotifications( true );
+            DecrementOutstandingNotifications(true);
         }
         else
         {
@@ -967,7 +967,7 @@ internal sealed class OletxPhase1VolatileEnlistmentContainer : OletxVolatileEnli
                     }
 
                     Debug.Fail("OletxPhase1VolatileEnlistmentContainer.VoteRequest, enlistmentList element is not an OletxVolatileEnlistment.");
-                    throw new InvalidOperationException( SR.InternalError);
+                    throw new InvalidOperationException(SR.InternalError);
                 }
 
                 enlistment.Prepare(this);
@@ -1079,7 +1079,7 @@ internal sealed class OletxVolatileEnlistment : OletxBaseEnlistment, IPromotedEn
         else if (localState == OletxVolatileEnlistmentState.Done)
         {
             // Voting yes because it was an early read-only vote.
-            container.DecrementOutstandingNotifications( true );
+            container.DecrementOutstandingNotifications(true);
 
             // We must have had a race between EnlistmentDone and the proxy telling
             // us Phase0Request.  Just return.
@@ -1108,7 +1108,7 @@ internal sealed class OletxVolatileEnlistment : OletxBaseEnlistment, IPromotedEn
             }
 
             Debug.Fail("OletxVolatileEnlistment.Prepare, invalid state.");
-            throw new InvalidOperationException( SR.InternalError);
+            throw new InvalidOperationException(SR.InternalError);
         }
     }
 
@@ -1183,7 +1183,7 @@ internal sealed class OletxVolatileEnlistment : OletxBaseEnlistment, IPromotedEn
         {
             // The app may have already called EnlistmentDone.  If this occurs, don't bother sending
             // the notification to the app and we don't need to tell the proxy.
-            if ( _state is OletxVolatileEnlistmentState.Prepared or OletxVolatileEnlistmentState.Active)
+            if (_state is OletxVolatileEnlistmentState.Prepared or OletxVolatileEnlistmentState.Active)
             {
                 localState = _state = OletxVolatileEnlistmentState.Aborting;
                 localEnlistmentNotification = _iEnlistmentNotification;
@@ -1305,7 +1305,7 @@ internal sealed class OletxVolatileEnlistment : OletxBaseEnlistment, IPromotedEn
                     }
 
                     Debug.Fail("OletxVolatileEnlistment.InDoubt, invalid state.");
-                    throw new InvalidOperationException( SR.InternalError);
+                    throw new InvalidOperationException(SR.InternalError);
                 }
         }
     }

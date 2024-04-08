@@ -47,10 +47,6 @@ namespace Microsoft.Extensions.Logging
         public static Microsoft.Extensions.Logging.LoggerFilterOptions AddFilter<T>(this Microsoft.Extensions.Logging.LoggerFilterOptions builder, string? category, System.Func<Microsoft.Extensions.Logging.LogLevel, bool> levelFilter) where T : Microsoft.Extensions.Logging.ILoggerProvider { throw null; }
         public static Microsoft.Extensions.Logging.LoggerFilterOptions AddFilter<T>(this Microsoft.Extensions.Logging.LoggerFilterOptions builder, string? category, Microsoft.Extensions.Logging.LogLevel level) where T : Microsoft.Extensions.Logging.ILoggerProvider { throw null; }
     }
-    public partial interface ILoggingBuilder
-    {
-        Microsoft.Extensions.DependencyInjection.IServiceCollection Services { get; }
-    }
     public partial class LoggerFactory : Microsoft.Extensions.Logging.ILoggerFactory, System.IDisposable
     {
         public LoggerFactory() { }

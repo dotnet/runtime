@@ -8,6 +8,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System
@@ -15,7 +16,7 @@ namespace System
     // The MemberAccessException is thrown when trying to access a class
     // member fails.
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class MemberAccessException : SystemException
     {
         // Creates a new MemberAccessException with its message string set to
@@ -32,13 +33,13 @@ namespace System
         // and its ExceptionInfo reference set to null.
         //
         public MemberAccessException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_AccessException)
         {
             HResult = HResults.COR_E_MEMBERACCESS;
         }
 
         public MemberAccessException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_AccessException, inner)
         {
             HResult = HResults.COR_E_MEMBERACCESS;
         }

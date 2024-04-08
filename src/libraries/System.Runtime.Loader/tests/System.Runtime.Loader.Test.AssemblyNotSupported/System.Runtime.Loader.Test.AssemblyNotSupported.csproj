@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0</TargetFrameworks>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="TestClassNotSupported.cs" />
-  </ItemGroup>
-</Project>

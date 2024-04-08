@@ -5,7 +5,7 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
-        internal enum CertStoreSaveAs :  int
+        internal enum CertStoreSaveAs : int
         {
             CERT_STORE_SAVE_AS_STORE = 1,
             CERT_STORE_SAVE_AS_PKCS7 = 2,

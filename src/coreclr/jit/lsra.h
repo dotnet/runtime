@@ -30,13 +30,13 @@ const unsigned int MaxInternalRegisters = 8;
 const unsigned int RegisterTypeCount    = 2;
 
 /*****************************************************************************
-* Register types
-*****************************************************************************/
+ * Register types
+ *****************************************************************************/
 typedef var_types RegisterType;
 
-#define IntRegisterType TYP_INT
+#define IntRegisterType   TYP_INT
 #define FloatRegisterType TYP_FLOAT
-#define MaskRegisterType TYP_MASK
+#define MaskRegisterType  TYP_MASK
 
 //------------------------------------------------------------------------
 // regType: Return the RegisterType to use for a given type
@@ -51,12 +51,12 @@ RegisterType regType(T type)
     {
         return IntRegisterType;
     }
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if (defined(TARGET_XARCH) || defined(TARGET_ARM64)) && defined(FEATURE_SIMD)
     else if (varTypeUsesMaskReg(type))
     {
         return MaskRegisterType;
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // (TARGET_XARCH || TARGET_ARM64) && FEATURE_SIMD
     else
     {
         assert(varTypeUsesFloatReg(type));
@@ -73,14 +73,6 @@ inline bool useFloatReg(var_types type)
 }
 
 //------------------------------------------------------------------------
-// registerTypesEquivalent: Check to see if two RegisterTypes are equivalent
-//
-inline bool registerTypesEquivalent(RegisterType a, RegisterType b)
-{
-    return varTypeIsIntegralOrI(a) == varTypeIsIntegralOrI(b);
-}
-
-//------------------------------------------------------------------------
 // RefInfo: Captures the necessary information for a definition that is "in-flight"
 //          during `buildIntervals` (i.e. a tree-node definition has been encountered,
 //          but not its use). This includes the RefPosition and its associated
@@ -91,7 +83,9 @@ struct RefInfo
     RefPosition* ref;
     GenTree*     treeNode;
 
-    RefInfo(RefPosition* r, GenTree* t) : ref(r), treeNode(t)
+    RefInfo(RefPosition* r, GenTree* t)
+        : ref(r)
+        , treeNode(t)
     {
     }
 
@@ -115,7 +109,8 @@ class RefInfoListNode final : public RefInfo
     RefInfoListNode* m_next; // The next node in the list
 
 public:
-    RefInfoListNode(RefPosition* r, GenTree* t) : RefInfo(r, t)
+    RefInfoListNode(RefPosition* r, GenTree* t)
+        : RefInfo(r, t)
     {
     }
 
@@ -142,11 +137,15 @@ class RefInfoList final
     RefInfoListNode* m_tail; // The tail of the list
 
 public:
-    RefInfoList() : m_head(nullptr), m_tail(nullptr)
+    RefInfoList()
+        : m_head(nullptr)
+        , m_tail(nullptr)
     {
     }
 
-    RefInfoList(RefInfoListNode* node) : m_head(node), m_tail(node)
+    RefInfoList(RefInfoListNode* node)
+        : m_head(node)
+        , m_tail(node)
     {
         assert(m_head->m_next == nullptr);
     }
@@ -373,7 +372,7 @@ class RefInfoListNodePool final
 public:
     RefInfoListNodePool(Compiler* compiler, unsigned preallocate = defaultPreallocation);
     RefInfoListNode* GetNode(RefPosition* r, GenTree* t);
-    void ReturnNode(RefInfoListNode* listNode);
+    void             ReturnNode(RefInfoListNode* listNode);
 };
 
 #if TRACK_LSRA_STATS
@@ -382,7 +381,7 @@ enum LsraStat
 #define LSRA_STAT_DEF(enum_name, enum_str) enum_name,
 #include "lsra_stats.h"
 #undef LSRA_STAT_DEF
-#define REG_SEL_DEF(enum_name, value, short_str, orderSeqId) STAT_##enum_name,
+#define REG_SEL_DEF(enum_name, value, short_str, orderSeqId)      STAT_##enum_name,
 #define BUSY_REG_SEL_DEF(enum_name, value, short_str, orderSeqId) REG_SEL_DEF(enum_name, value, short_str, orderSeqId)
 #include "lsra_score.h"
     COUNT
@@ -395,11 +394,11 @@ struct LsraBlockInfo
     // 0 for fgFirstBB.
     unsigned int predBBNum;
     weight_t     weight;
-    bool         hasCriticalInEdge : 1;
+    bool         hasCriticalInEdge  : 1;
     bool         hasCriticalOutEdge : 1;
-    bool         hasEHBoundaryIn : 1;
-    bool         hasEHBoundaryOut : 1;
-    bool         hasEHPred : 1;
+    bool         hasEHBoundaryIn    : 1;
+    bool         hasEHBoundaryOut   : 1;
+    bool         hasEHPred          : 1;
 
 #if TRACK_LSRA_STATS
     // Per block maintained LSRA statistics.
@@ -409,7 +408,7 @@ struct LsraBlockInfo
 
 enum RegisterScore
 {
-#define REG_SEL_DEF(enum_name, value, short_str, orderSeqId) enum_name = value,
+#define REG_SEL_DEF(enum_name, value, short_str, orderSeqId)      enum_name = value,
 #define BUSY_REG_SEL_DEF(enum_name, value, short_str, orderSeqId) REG_SEL_DEF(enum_name, value, short_str, orderSeqId)
 #include "lsra_score.h"
     NONE = 0
@@ -643,17 +642,20 @@ public:
 
     // This does the dataflow analysis and builds the intervals
     template <bool localVarsEnregistered>
-    void           buildIntervals();
+    void buildIntervals();
+
+    // This is where the actual assignment is done for scenarios where
+    // no local var enregistration is done.
+    void allocateRegistersMinimal();
 
 // This is where the actual assignment is done
 #ifdef TARGET_ARM64
     template <bool hasConsecutiveRegister = false>
 #endif
     void allocateRegisters();
-
     // This is the resolution phase, where cross-block mismatches are fixed up
     template <bool localVarsEnregistered>
-    void           resolveRegisters();
+    void resolveRegisters();
 
     void writeRegisters(RefPosition* currentRefPosition, GenTree* tree);
 
@@ -663,7 +665,7 @@ public:
     void insertCopyOrReload(BasicBlock* block, GenTree* tree, unsigned multiRegIdx, RefPosition* refPosition);
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    void makeUpperVectorInterval(unsigned varIndex);
+    void      makeUpperVectorInterval(unsigned varIndex);
     Interval* getUpperVectorInterval(unsigned varIndex);
 
     // Save the upper half of a vector that lives in a callee-save register at the point of a call.
@@ -698,20 +700,20 @@ public:
     };
 
 #ifdef TARGET_ARM
-    void addResolutionForDouble(BasicBlock*     block,
-                                GenTree*        insertionPoint,
-                                Interval**      sourceIntervals,
-                                regNumberSmall* location,
-                                regNumber       toReg,
-                                regNumber       fromReg,
+    void addResolutionForDouble(BasicBlock*             block,
+                                GenTree*                insertionPoint,
+                                Interval**              sourceIntervals,
+                                regNumberSmall*         location,
+                                regNumber               toReg,
+                                regNumber               fromReg,
                                 ResolveType resolveType DEBUG_ARG(BasicBlock* fromBlock)
                                     DEBUG_ARG(BasicBlock* toBlock));
 #endif
 
-    void addResolution(BasicBlock* block,
-                       GenTree*    insertionPoint,
-                       Interval*   interval,
-                       regNumber   outReg,
+    void addResolution(BasicBlock*     block,
+                       GenTree*        insertionPoint,
+                       Interval*       interval,
+                       regNumber       outReg,
                        regNumber inReg DEBUG_ARG(BasicBlock* fromBlock) DEBUG_ARG(BasicBlock* toBlock)
                            DEBUG_ARG(const char* reason));
 
@@ -771,7 +773,6 @@ private:
     // At least for x86 and AMD64, and potentially other architecture that will support SIMD,
     // we need a minimum of 5 fp regs in order to support the InitN intrinsic for Vector4.
     // Hence the "SmallFPSet" has 5 elements.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_AMD64)
 #ifdef UNIX_AMD64_ABI
@@ -821,8 +822,14 @@ private:
 
     // This controls the heuristics used to select registers
     // These can be combined.
-    enum LsraSelect{LSRA_SELECT_DEFAULT = 0, LSRA_SELECT_REVERSE_HEURISTICS = 0x04,
-                    LSRA_SELECT_REVERSE_CALLER_CALLEE = 0x08, LSRA_SELECT_NEAREST = 0x10, LSRA_SELECT_MASK = 0x1c};
+    enum LsraSelect
+    {
+        LSRA_SELECT_DEFAULT               = 0,
+        LSRA_SELECT_REVERSE_HEURISTICS    = 0x04,
+        LSRA_SELECT_REVERSE_CALLER_CALLEE = 0x08,
+        LSRA_SELECT_NEAREST               = 0x10,
+        LSRA_SELECT_MASK                  = 0x1c
+    };
     LsraSelect getSelectionHeuristics()
     {
         return (LsraSelect)(lsraStressMask & LSRA_SELECT_MASK);
@@ -841,9 +848,14 @@ private:
     }
 
     // This controls the order in which basic blocks are visited during allocation
-    enum LsraTraversalOrder{LSRA_TRAVERSE_LAYOUT = 0x20, LSRA_TRAVERSE_PRED_FIRST = 0x40,
-                            LSRA_TRAVERSE_RANDOM  = 0x60, // NYI
-                            LSRA_TRAVERSE_DEFAULT = LSRA_TRAVERSE_PRED_FIRST, LSRA_TRAVERSE_MASK = 0x60};
+    enum LsraTraversalOrder
+    {
+        LSRA_TRAVERSE_LAYOUT     = 0x20,
+        LSRA_TRAVERSE_PRED_FIRST = 0x40,
+        LSRA_TRAVERSE_RANDOM     = 0x60, // NYI
+        LSRA_TRAVERSE_DEFAULT    = LSRA_TRAVERSE_PRED_FIRST,
+        LSRA_TRAVERSE_MASK       = 0x60
+    };
     LsraTraversalOrder getLsraTraversalOrder()
     {
         if ((lsraStressMask & LSRA_TRAVERSE_MASK) == 0)
@@ -863,7 +875,12 @@ private:
 
     // This controls whether lifetimes should be extended to the entire method.
     // Note that this has no effect under MinOpts
-    enum LsraExtendLifetimes{LSRA_DONT_EXTEND = 0, LSRA_EXTEND_LIFETIMES = 0x80, LSRA_EXTEND_LIFETIMES_MASK = 0x80};
+    enum LsraExtendLifetimes
+    {
+        LSRA_DONT_EXTEND           = 0,
+        LSRA_EXTEND_LIFETIMES      = 0x80,
+        LSRA_EXTEND_LIFETIMES_MASK = 0x80
+    };
     LsraExtendLifetimes getLsraExtendLifeTimes()
     {
         return (LsraExtendLifetimes)(lsraStressMask & LSRA_EXTEND_LIFETIMES_MASK);
@@ -876,8 +893,13 @@ private:
     // This controls whether variables locations should be set to the previous block in layout order
     // (LSRA_BLOCK_BOUNDARY_LAYOUT), or to that of the highest-weight predecessor (LSRA_BLOCK_BOUNDARY_PRED -
     // the default), or rotated (LSRA_BLOCK_BOUNDARY_ROTATE).
-    enum LsraBlockBoundaryLocations{LSRA_BLOCK_BOUNDARY_PRED = 0, LSRA_BLOCK_BOUNDARY_LAYOUT = 0x100,
-                                    LSRA_BLOCK_BOUNDARY_ROTATE = 0x200, LSRA_BLOCK_BOUNDARY_MASK = 0x300};
+    enum LsraBlockBoundaryLocations
+    {
+        LSRA_BLOCK_BOUNDARY_PRED   = 0,
+        LSRA_BLOCK_BOUNDARY_LAYOUT = 0x100,
+        LSRA_BLOCK_BOUNDARY_ROTATE = 0x200,
+        LSRA_BLOCK_BOUNDARY_MASK   = 0x300
+    };
     LsraBlockBoundaryLocations getLsraBlockBoundaryLocations()
     {
         return (LsraBlockBoundaryLocations)(lsraStressMask & LSRA_BLOCK_BOUNDARY_MASK);
@@ -886,7 +908,12 @@ private:
 
     // This controls whether we always insert a GT_RELOAD instruction after a spill
     // Note that this can be combined with LSRA_SPILL_ALWAYS (or not)
-    enum LsraReload{LSRA_NO_RELOAD_IF_SAME = 0, LSRA_ALWAYS_INSERT_RELOAD = 0x400, LSRA_RELOAD_MASK = 0x400};
+    enum LsraReload
+    {
+        LSRA_NO_RELOAD_IF_SAME    = 0,
+        LSRA_ALWAYS_INSERT_RELOAD = 0x400,
+        LSRA_RELOAD_MASK          = 0x400
+    };
     LsraReload getLsraReload()
     {
         return (LsraReload)(lsraStressMask & LSRA_RELOAD_MASK);
@@ -897,7 +924,12 @@ private:
     }
 
     // This controls whether we spill everywhere
-    enum LsraSpill{LSRA_DONT_SPILL_ALWAYS = 0, LSRA_SPILL_ALWAYS = 0x800, LSRA_SPILL_MASK = 0x800};
+    enum LsraSpill
+    {
+        LSRA_DONT_SPILL_ALWAYS = 0,
+        LSRA_SPILL_ALWAYS      = 0x800,
+        LSRA_SPILL_MASK        = 0x800
+    };
     LsraSpill getLsraSpill()
     {
         return (LsraSpill)(lsraStressMask & LSRA_SPILL_MASK);
@@ -909,8 +941,12 @@ private:
 
     // This controls whether RefPositions that lower/codegen indicated as reg optional be
     // allocated a reg at all.
-    enum LsraRegOptionalControl{LSRA_REG_OPTIONAL_DEFAULT = 0, LSRA_REG_OPTIONAL_NO_ALLOC = 0x1000,
-                                LSRA_REG_OPTIONAL_MASK = 0x1000};
+    enum LsraRegOptionalControl
+    {
+        LSRA_REG_OPTIONAL_DEFAULT  = 0,
+        LSRA_REG_OPTIONAL_NO_ALLOC = 0x1000,
+        LSRA_REG_OPTIONAL_MASK     = 0x1000
+    };
 
     LsraRegOptionalControl getLsraRegOptionalControl()
     {
@@ -945,6 +981,7 @@ private:
     static bool IsResolutionMove(GenTree* node);
     static bool IsResolutionNode(LIR::Range& containingRange, GenTree* node);
 
+    void verifyFreeRegisters(regMaskTP regsToFree);
     void verifyFinalAllocation();
     void verifyResolutionMove(GenTree* resolutionNode, LsraLocation currentLocation);
 #else  // !DEBUG
@@ -992,7 +1029,7 @@ public:
 private:
     // Determine which locals are candidates for allocation
     template <bool localVarsEnregistered>
-    void           identifyCandidates();
+    void identifyCandidates();
 
     // determine which locals are used in EH constructs we don't want to deal with
     void identifyCandidatesExceptionDataflow();
@@ -1001,14 +1038,15 @@ private:
 
 #ifdef DEBUG
     void checkLastUses(BasicBlock* block);
-    int ComputeOperandDstCount(GenTree* operand);
-    int ComputeAvailableSrcCount(GenTree* node);
+    int  ComputeOperandDstCount(GenTree* operand);
+    int  ComputeAvailableSrcCount(GenTree* node);
 #endif // DEBUG
 
     void setFrameType();
 
     // Update allocations at start/end of block
     void unassignIntervalBlockStart(RegRecord* regRecord, VarToRegMap inVarToRegMap);
+    template <bool localVarsEnregistered>
     void processBlockEndAllocation(BasicBlock* current);
 
     // Record variable locations at start/end of block
@@ -1017,20 +1055,20 @@ private:
     void resetAllRegistersState();
 
 #ifdef TARGET_ARM
-    bool isSecondHalfReg(RegRecord* regRec, Interval* interval);
+    bool       isSecondHalfReg(RegRecord* regRec, Interval* interval);
     RegRecord* getSecondHalfRegRec(RegRecord* regRec);
     RegRecord* findAnotherHalfRegRec(RegRecord* regRec);
-    regNumber findAnotherHalfRegNum(regNumber regNum);
-    bool canSpillDoubleReg(RegRecord* physRegRecord, LsraLocation refLocation);
-    void unassignDoublePhysReg(RegRecord* doubleRegRecord);
+    regNumber  findAnotherHalfRegNum(regNumber regNum);
+    bool       canSpillDoubleReg(RegRecord* physRegRecord, LsraLocation refLocation);
+    void       unassignDoublePhysReg(RegRecord* doubleRegRecord);
 #endif
-    void clearAssignedInterval(RegRecord* reg ARM_ARG(RegisterType regType));
-    void updateAssignedInterval(RegRecord* reg, Interval* interval ARM_ARG(RegisterType regType));
-    void updatePreviousInterval(RegRecord* reg, Interval* interval ARM_ARG(RegisterType regType));
-    bool canRestorePreviousInterval(RegRecord* regRec, Interval* assignedInterval);
-    bool isAssignedToInterval(Interval* interval, RegRecord* regRec);
-    bool isRefPositionActive(RefPosition* refPosition, LsraLocation refLocation);
-    bool canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation);
+    void     clearAssignedInterval(RegRecord* reg ARM_ARG(RegisterType regType));
+    void     updateAssignedInterval(RegRecord* reg, Interval* interval ARM_ARG(RegisterType regType));
+    void     updatePreviousInterval(RegRecord* reg, Interval* interval ARM_ARG(RegisterType regType));
+    bool     canRestorePreviousInterval(RegRecord* regRec, Interval* assignedInterval);
+    bool     isAssignedToInterval(Interval* interval, RegRecord* regRec);
+    bool     isRefPositionActive(RefPosition* refPosition, LsraLocation refLocation);
+    bool     canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation);
     weight_t getSpillWeight(RegRecord* physRegRecord);
 
     // insert refpositions representing prolog zero-inits which will be added later
@@ -1045,10 +1083,8 @@ private:
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     void buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc, regMaskTP fpCalleeKillSet);
-    void buildUpperVectorRestoreRefPosition(Interval*    lclVarInterval,
-                                            LsraLocation currentLoc,
-                                            GenTree*     node,
-                                            bool         isUse);
+    void buildUpperVectorRestoreRefPosition(
+        Interval* lclVarInterval, LsraLocation currentLoc, GenTree* node, bool isUse, unsigned multiRegIdx);
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
 #if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -1168,13 +1204,6 @@ private:
                                 regMaskTP    mask,
                                 unsigned     multiRegIdx = 0);
 
-    // This creates a RefTypeUse at currentLoc. It sets the treeNode to nullptr if it is not a
-    // lclVar interval.
-    RefPosition* newUseRefPosition(Interval* theInterval,
-                                   GenTree*  theTreeNode,
-                                   regMaskTP mask,
-                                   unsigned  multiRegIdx = 0);
-
     RefPosition* newRefPosition(
         regNumber reg, LsraLocation theLocation, RefType theRefType, GenTree* theTreeNode, regMaskTP mask);
 
@@ -1196,8 +1225,10 @@ private:
 #endif
     template <bool needsConsecutiveRegisters = false>
     regNumber allocateReg(Interval* current, RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
+    regNumber allocateRegMinimal(Interval* current, RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
     template <bool needsConsecutiveRegisters = false>
     regNumber assignCopyReg(RefPosition* refPosition);
+    regNumber assignCopyRegMinimal(RefPosition* refPosition);
 
     bool isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPosition);
     bool isSpillCandidate(Interval* current, RefPosition* refPosition, RegRecord* physRegRecord);
@@ -1224,13 +1255,13 @@ private:
 
     void spillGCRefs(RefPosition* killRefPosition);
 
-/*****************************************************************************
-* Register selection
-****************************************************************************/
+    /*****************************************************************************
+     * Register selection
+     ****************************************************************************/
 
 #if defined(TARGET_ARM64)
-    bool canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
-    void assignConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
+    bool      canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
+    void      assignConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
     regMaskTP getConsecutiveCandidates(regMaskTP candidates, RefPosition* refPosition, regMaskTP* busyCandidates);
     regMaskTP filterConsecutiveCandidates(regMaskTP    candidates,
                                           unsigned int registersNeeded,
@@ -1268,8 +1299,11 @@ private:
 
         // Perform register selection and update currentInterval or refPosition
         template <bool hasConsecutiveRegister = false>
-        FORCEINLINE regMaskTP select(Interval*    currentInterval,
+        FORCEINLINE regMaskTP select(Interval*                currentInterval,
                                      RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
+
+        FORCEINLINE regMaskTP selectMinimal(Interval*                currentInterval,
+                                            RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
 
         // If the register is from unassigned set such that it was not already
         // assigned to the current interval
@@ -1351,12 +1385,14 @@ private:
             return (prevRegBit & preferences) == foundRegBit;
         }
 
-        bool applySelection(int selectionScore, regMaskTP selectionCandidates);
-        bool applySingleRegSelection(int selectionScore, regMaskTP selectionCandidate);
+        bool             applySelection(int selectionScore, regMaskTP selectionCandidates);
+        bool             applySingleRegSelection(int selectionScore, regMaskTP selectionCandidate);
         FORCEINLINE void calculateCoversSets();
+        FORCEINLINE void calculateUnassignedSets();
         FORCEINLINE void reset(Interval* interval, RefPosition* refPosition);
+        FORCEINLINE void resetMinimal(Interval* interval, RefPosition* refPosition);
 
-#define REG_SEL_DEF(stat, value, shortname, orderSeqId) FORCEINLINE void try_##stat();
+#define REG_SEL_DEF(stat, value, shortname, orderSeqId)      FORCEINLINE void try_##stat();
 #define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
     };
@@ -1384,8 +1420,8 @@ private:
         unsigned toBBNum;
     };
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, SplitEdgeInfo> SplitBBNumToTargetBBNumMap;
-    SplitBBNumToTargetBBNumMap* splitBBNumToTargetBBNumMap;
-    SplitBBNumToTargetBBNumMap* getSplitBBNumToTargetBBNumMap()
+    SplitBBNumToTargetBBNumMap*                                                        splitBBNumToTargetBBNumMap;
+    SplitBBNumToTargetBBNumMap*                                                        getSplitBBNumToTargetBBNumMap()
     {
         if (splitBBNumToTargetBBNumMap == nullptr)
         {
@@ -1396,13 +1432,13 @@ private:
     }
     SplitEdgeInfo getSplitEdgeInfo(unsigned int bbNum);
 
-    void initVarRegMaps();
-    void setInVarRegForBB(unsigned int bbNum, unsigned int varNum, regNumber reg);
-    void setOutVarRegForBB(unsigned int bbNum, unsigned int varNum, regNumber reg);
+    void        initVarRegMaps();
+    void        setInVarRegForBB(unsigned int bbNum, unsigned int varNum, regNumber reg);
+    void        setOutVarRegForBB(unsigned int bbNum, unsigned int varNum, regNumber reg);
     VarToRegMap getInVarToRegMap(unsigned int bbNum);
     VarToRegMap getOutVarToRegMap(unsigned int bbNum);
-    void setVarReg(VarToRegMap map, unsigned int trackedVarIndex, regNumber reg);
-    regNumber getVarReg(VarToRegMap map, unsigned int trackedVarIndex);
+    void        setVarReg(VarToRegMap map, unsigned int trackedVarIndex, regNumber reg);
+    regNumber   getVarReg(VarToRegMap map, unsigned int trackedVarIndex);
     // Initialize the incoming VarToRegMap to the given map values (generally a predecessor of
     // the block)
     VarToRegMap setInVarToRegMap(unsigned int bbNum, VarToRegMap srcVarToRegMap);
@@ -1415,8 +1451,8 @@ private:
 
 #ifdef TARGET_ARM64
     typedef JitHashTable<RefPosition*, JitPtrKeyFuncs<RefPosition>, RefPosition*> NextConsecutiveRefPositionsMap;
-    NextConsecutiveRefPositionsMap* nextConsecutiveRefPositionMap;
-    NextConsecutiveRefPositionsMap* getNextConsecutiveRefPositionsMap()
+    NextConsecutiveRefPositionsMap*                                               nextConsecutiveRefPositionMap;
+    NextConsecutiveRefPositionsMap*                                               getNextConsecutiveRefPositionsMap()
     {
         if (nextConsecutiveRefPositionMap == nullptr)
         {
@@ -1444,7 +1480,12 @@ private:
     //   - In LSRA_DUMP_POST, which is after register allocation, the registers are
     //     shown.
 
-    enum LsraTupleDumpMode{LSRA_DUMP_PRE, LSRA_DUMP_REFPOS, LSRA_DUMP_POST};
+    enum LsraTupleDumpMode
+    {
+        LSRA_DUMP_PRE,
+        LSRA_DUMP_REFPOS,
+        LSRA_DUMP_POST
+    };
     void lsraGetOperandString(GenTree* tree, LsraTupleDumpMode mode, char* operandString, unsigned operandStringLength);
     void lsraDispNode(GenTree* tree, LsraTupleDumpMode mode, bool hasDest);
     void DumpOperandDefs(
@@ -1466,6 +1507,7 @@ private:
 
     static const int MAX_FORMAT_CHARS = 12;
     char             intervalNameFormat[MAX_FORMAT_CHARS];
+    char             smallLocalsIntervalNameFormat[MAX_FORMAT_CHARS]; // used for V01 to V09 (to match V%02u format)
     char             regNameFormat[MAX_FORMAT_CHARS];
     char             shortRefPositionFormat[MAX_FORMAT_CHARS];
     char             emptyRefPositionFormat[MAX_FORMAT_CHARS];
@@ -1481,7 +1523,7 @@ private:
     regMaskTP lastDumpedRegisters;
     regMaskTP registersToDump;
     int       lastUsedRegNumIndex;
-    bool shouldDumpReg(regNumber regNum)
+    bool      shouldDumpReg(regNumber regNum)
     {
         return (registersToDump & genRegMask(regNum)) != 0;
     }
@@ -1502,29 +1544,54 @@ private:
     void dumpIntervalName(Interval* interval);
 
     // Events during the allocation phase that cause some dump output
-    enum LsraDumpEvent{
+    enum LsraDumpEvent
+    {
         // Conflicting def/use
-        LSRA_EVENT_DEFUSE_CONFLICT, LSRA_EVENT_DEFUSE_FIXED_DELAY_USE, LSRA_EVENT_DEFUSE_CASE1, LSRA_EVENT_DEFUSE_CASE2,
-        LSRA_EVENT_DEFUSE_CASE3, LSRA_EVENT_DEFUSE_CASE4, LSRA_EVENT_DEFUSE_CASE5, LSRA_EVENT_DEFUSE_CASE6,
+        LSRA_EVENT_DEFUSE_CONFLICT,
+        LSRA_EVENT_DEFUSE_FIXED_DELAY_USE,
+        LSRA_EVENT_DEFUSE_CASE1,
+        LSRA_EVENT_DEFUSE_CASE2,
+        LSRA_EVENT_DEFUSE_CASE3,
+        LSRA_EVENT_DEFUSE_CASE4,
+        LSRA_EVENT_DEFUSE_CASE5,
+        LSRA_EVENT_DEFUSE_CASE6,
 
         // Spilling
-        LSRA_EVENT_SPILL, LSRA_EVENT_SPILL_EXTENDED_LIFETIME, LSRA_EVENT_RESTORE_PREVIOUS_INTERVAL,
-        LSRA_EVENT_RESTORE_PREVIOUS_INTERVAL_AFTER_SPILL, LSRA_EVENT_DONE_KILL_GC_REFS, LSRA_EVENT_NO_GC_KILLS,
+        LSRA_EVENT_SPILL,
+        LSRA_EVENT_SPILL_EXTENDED_LIFETIME,
+        LSRA_EVENT_RESTORE_PREVIOUS_INTERVAL,
+        LSRA_EVENT_RESTORE_PREVIOUS_INTERVAL_AFTER_SPILL,
+        LSRA_EVENT_DONE_KILL_GC_REFS,
+        LSRA_EVENT_NO_GC_KILLS,
 
         // Block boundaries
-        LSRA_EVENT_START_BB, LSRA_EVENT_END_BB,
+        LSRA_EVENT_START_BB,
+        LSRA_EVENT_END_BB,
 
         // Miscellaneous
-        LSRA_EVENT_FREE_REGS, LSRA_EVENT_UPPER_VECTOR_SAVE, LSRA_EVENT_UPPER_VECTOR_RESTORE,
+        LSRA_EVENT_FREE_REGS,
+        LSRA_EVENT_UPPER_VECTOR_SAVE,
+        LSRA_EVENT_UPPER_VECTOR_RESTORE,
 
         // Characteristics of the current RefPosition
         LSRA_EVENT_INCREMENT_RANGE_END, // ???
-        LSRA_EVENT_LAST_USE, LSRA_EVENT_LAST_USE_DELAYED, LSRA_EVENT_NEEDS_NEW_REG,
+        LSRA_EVENT_LAST_USE,
+        LSRA_EVENT_LAST_USE_DELAYED,
+        LSRA_EVENT_NEEDS_NEW_REG,
 
         // Allocation decisions
-        LSRA_EVENT_FIXED_REG, LSRA_EVENT_EXP_USE, LSRA_EVENT_ZERO_REF, LSRA_EVENT_NO_ENTRY_REG_ALLOCATED,
-        LSRA_EVENT_KEPT_ALLOCATION, LSRA_EVENT_COPY_REG, LSRA_EVENT_MOVE_REG, LSRA_EVENT_ALLOC_REG,
-        LSRA_EVENT_NO_REG_ALLOCATED, LSRA_EVENT_RELOAD, LSRA_EVENT_SPECIAL_PUTARG, LSRA_EVENT_REUSE_REG,
+        LSRA_EVENT_FIXED_REG,
+        LSRA_EVENT_EXP_USE,
+        LSRA_EVENT_ZERO_REF,
+        LSRA_EVENT_NO_ENTRY_REG_ALLOCATED,
+        LSRA_EVENT_KEPT_ALLOCATION,
+        LSRA_EVENT_COPY_REG,
+        LSRA_EVENT_MOVE_REG,
+        LSRA_EVENT_ALLOC_REG,
+        LSRA_EVENT_NO_REG_ALLOCATED,
+        LSRA_EVENT_RELOAD,
+        LSRA_EVENT_SPECIAL_PUTARG,
+        LSRA_EVENT_REUSE_REG,
     };
     void dumpLsraAllocationEvent(LsraDumpEvent event,
                                  Interval*     interval      = nullptr,
@@ -1537,14 +1604,14 @@ private:
 
 #if TRACK_LSRA_STATS
     unsigned regCandidateVarCount;
-    void updateLsraStat(LsraStat stat, unsigned currentBBNum);
-    void dumpLsraStats(FILE* file);
+    void     updateLsraStat(LsraStat stat, unsigned currentBBNum);
+    void     dumpLsraStats(FILE* file);
     LsraStat getLsraStatFromScore(RegisterScore registerScore);
     LsraStat firstRegSelStat = STAT_FREE;
 
 public:
-    virtual void dumpLsraStatsCsv(FILE* file);
-    virtual void dumpLsraStatsSummary(FILE* file);
+    virtual void       dumpLsraStatsCsv(FILE* file);
+    virtual void       dumpLsraStatsSummary(FILE* file);
     static const char* getStatName(unsigned stat);
 
 #define INTRACK_STATS(x) x
@@ -1580,7 +1647,7 @@ private:
 
     // Set of blocks that have been visited.
     BlockSet bbVisitedSet;
-    void markBlockVisited(BasicBlock* block)
+    void     markBlockVisited(BasicBlock* block)
     {
         BlockSetOps::AddElemD(compiler, bbVisitedSet, block->bbNum);
     }
@@ -1607,17 +1674,17 @@ private:
     BasicBlock** blockSequence;
     // The verifiedAllBBs flag indicates whether we have verified that all BBs have been
     // included in the blockSeuqence above, during setBlockSequence().
-    bool verifiedAllBBs;
-    void setBlockSequence();
-    int compareBlocksForSequencing(BasicBlock* block1, BasicBlock* block2, bool useBlockWeights);
+    bool            verifiedAllBBs;
+    void            setBlockSequence();
+    int             compareBlocksForSequencing(BasicBlock* block1, BasicBlock* block2, bool useBlockWeights);
     BasicBlockList* blockSequenceWorkList;
     bool            blockSequencingDone;
 #ifdef DEBUG
     // LSRA must not change number of blocks and blockEpoch that it initializes at start.
     unsigned blockEpoch;
 #endif // DEBUG
-    void addToBlockSequenceWorkList(BlockSet sequencedBlockSet, BasicBlock* block, BlockSet& predSet);
-    void removeFromBlockSequenceWorkList(BasicBlockList* listNode, BasicBlockList* prevNode);
+    void        addToBlockSequenceWorkList(BlockSet sequencedBlockSet, BasicBlock* block, BlockSet& predSet);
+    void        removeFromBlockSequenceWorkList(BasicBlockList* listNode, BasicBlockList* prevNode);
     BasicBlock* getNextCandidateFromWorkList();
 
     // Indicates whether the allocation pass has been completed.
@@ -1661,17 +1728,17 @@ private:
     VarToRegMap* outVarToRegMaps;
 
     // A temporary VarToRegMap used during the resolution of critical edges.
-    VarToRegMap sharedCriticalVarToRegMap;
-
+    VarToRegMap          sharedCriticalVarToRegMap;
+    PhasedVar<regMaskTP> actualRegistersMask;
     PhasedVar<regMaskTP> availableIntRegs;
     PhasedVar<regMaskTP> availableFloatRegs;
     PhasedVar<regMaskTP> availableDoubleRegs;
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     PhasedVar<regMaskTP> availableMaskRegs;
 #endif
     PhasedVar<regMaskTP>* availableRegs[TYP_COUNT];
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
 #define allAvailableRegs (availableIntRegs | availableFloatRegs | availableMaskRegs)
 #else
 #define allAvailableRegs (availableIntRegs | availableFloatRegs)
@@ -1718,7 +1785,7 @@ private:
 #if defined(TARGET_AMD64)
     static const var_types LargeVectorSaveType = TYP_SIMD16;
 #elif defined(TARGET_ARM64)
-    static const var_types LargeVectorSaveType  = TYP_DOUBLE;
+    static const var_types LargeVectorSaveType = TYP_DOUBLE;
 #endif // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
     // Set of large vector (TYP_SIMD32 on AVX) variables.
     VARSET_TP largeVectorVars;
@@ -1786,20 +1853,22 @@ private:
         makeRegsAvailable(regMask);
     }
 
+    void clearAllNextIntervalRef();
     void clearNextIntervalRef(regNumber reg, var_types regType);
     void updateNextIntervalRef(regNumber reg, Interval* interval);
 
+    void clearAllSpillCost();
     void clearSpillCost(regNumber reg, var_types regType);
     void updateSpillCost(regNumber reg, Interval* interval);
 
-    FORCEINLINE void updateRegsFreeBusyState(RefPosition& refPosition,
-                                             regMaskTP    regsBusy,
-                                             regMaskTP*   regsToFree,
+    FORCEINLINE void updateRegsFreeBusyState(RefPosition&               refPosition,
+                                             regMaskTP                  regsBusy,
+                                             regMaskTP*                 regsToFree,
                                              regMaskTP* delayRegsToFree DEBUG_ARG(Interval* interval)
                                                  DEBUG_ARG(regNumber assignedReg));
 
     regMaskTP m_RegistersWithConstants;
-    void clearConstantReg(regNumber reg, var_types regType)
+    void      clearConstantReg(regNumber reg, var_types regType)
     {
         m_RegistersWithConstants &= ~getRegMask(reg, regType);
     }
@@ -1817,7 +1886,7 @@ private:
 
     regMaskTP    fixedRegs;
     LsraLocation nextFixedRef[REG_COUNT];
-    void updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition);
+    void         updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition);
     LsraLocation getNextFixedRef(regNumber regNum, var_types regType)
     {
         LsraLocation loc = nextFixedRef[regNum];
@@ -1934,11 +2003,11 @@ private:
     bool checkContainedOrCandidateLclVar(GenTreeLclVar* lclNode);
 
     RefPosition* BuildUse(GenTree* operand, regMaskTP candidates = RBM_NONE, int multiRegIdx = 0);
-    void setDelayFree(RefPosition* use);
-    int BuildBinaryUses(GenTreeOp* node, regMaskTP candidates = RBM_NONE);
-    int BuildCastUses(GenTreeCast* cast, regMaskTP candidates);
+    void         setDelayFree(RefPosition* use);
+    int          BuildBinaryUses(GenTreeOp* node, regMaskTP candidates = RBM_NONE);
+    int          BuildCastUses(GenTreeCast* cast, regMaskTP candidates);
 #ifdef TARGET_XARCH
-    int BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, regMaskTP candidates = RBM_NONE);
+    int              BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, regMaskTP candidates = RBM_NONE);
     inline regMaskTP BuildEvexIncompatibleMask(GenTree* tree);
 #endif // !TARGET_XARCH
     int BuildSelect(GenTreeOp* select);
@@ -1950,19 +2019,19 @@ private:
     void getTgtPrefOperands(GenTree* tree, GenTree* op1, GenTree* op2, bool* prefOp1, bool* prefOp2);
     bool supportsSpecialPutArg();
 
-    int BuildSimple(GenTree* tree);
-    int BuildOperandUses(GenTree* node, regMaskTP candidates = RBM_NONE);
-    void AddDelayFreeUses(RefPosition* refPosition, GenTree* rmwNode);
-    int BuildDelayFreeUses(GenTree*      node,
-                           GenTree*      rmwNode        = nullptr,
-                           regMaskTP     candidates     = RBM_NONE,
-                           RefPosition** useRefPosition = nullptr);
-    int BuildIndirUses(GenTreeIndir* indirTree, regMaskTP candidates = RBM_NONE);
-    int BuildAddrUses(GenTree* addr, regMaskTP candidates = RBM_NONE);
-    void HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs);
+    int          BuildSimple(GenTree* tree);
+    int          BuildOperandUses(GenTree* node, regMaskTP candidates = RBM_NONE);
+    void         AddDelayFreeUses(RefPosition* refPosition, GenTree* rmwNode);
+    int          BuildDelayFreeUses(GenTree*      node,
+                                    GenTree*      rmwNode        = nullptr,
+                                    regMaskTP     candidates     = RBM_NONE,
+                                    RefPosition** useRefPosition = nullptr);
+    int          BuildIndirUses(GenTreeIndir* indirTree, regMaskTP candidates = RBM_NONE);
+    int          BuildAddrUses(GenTree* addr, regMaskTP candidates = RBM_NONE);
+    void         HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs);
     RefPosition* BuildDef(GenTree* tree, regMaskTP dstCandidates = RBM_NONE, int multiRegIdx = 0);
-    void BuildDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates = RBM_NONE);
-    void BuildDefsWithKills(GenTree* tree, int dstCount, regMaskTP dstCandidates, regMaskTP killMask);
+    void         BuildDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates = RBM_NONE);
+    void         BuildDefsWithKills(GenTree* tree, int dstCount, regMaskTP dstCandidates, regMaskTP killMask);
 
     int BuildReturn(GenTree* tree);
 #ifdef TARGET_XARCH
@@ -1973,24 +2042,24 @@ private:
 #ifdef TARGET_ARM
     int BuildShiftLongCarry(GenTree* tree);
 #endif
-    int BuildPutArgReg(GenTreeUnOp* node);
-    int BuildCall(GenTreeCall* call);
-    int BuildCmp(GenTree* tree);
-    int BuildCmpOperands(GenTree* tree);
-    int BuildBlockStore(GenTreeBlk* blkNode);
-    int BuildModDiv(GenTree* tree);
-    int BuildIntrinsic(GenTree* tree);
+    int  BuildPutArgReg(GenTreeUnOp* node);
+    int  BuildCall(GenTreeCall* call);
+    int  BuildCmp(GenTree* tree);
+    int  BuildCmpOperands(GenTree* tree);
+    int  BuildBlockStore(GenTreeBlk* blkNode);
+    int  BuildModDiv(GenTree* tree);
+    int  BuildIntrinsic(GenTree* tree);
     void BuildStoreLocDef(GenTreeLclVarCommon* storeLoc, LclVarDsc* varDsc, RefPosition* singleUseRef, int index);
-    int BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc);
-    int BuildStoreLoc(GenTreeLclVarCommon* tree);
-    int BuildIndir(GenTreeIndir* indirTree);
-    int BuildGCWriteBarrier(GenTree* tree);
-    int BuildCast(GenTreeCast* cast);
+    int  BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc);
+    int  BuildStoreLoc(GenTreeLclVarCommon* tree);
+    int  BuildIndir(GenTreeIndir* indirTree);
+    int  BuildGCWriteBarrier(GenTree* tree);
+    int  BuildCast(GenTreeCast* cast);
 
 #if defined(TARGET_XARCH)
     // returns true if the tree can use the read-modify-write memory instruction form
     bool isRMWRegOper(GenTree* tree);
-    int BuildMul(GenTree* tree);
+    int  BuildMul(GenTree* tree);
     void SetContainsAVXFlags(unsigned sizeOfSIMDVector = 0);
 #endif // defined(TARGET_XARCH)
 
@@ -2019,7 +2088,8 @@ private:
 #ifdef FEATURE_HW_INTRINSICS
     int BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCount);
 #ifdef TARGET_ARM64
-    int BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwNode = nullptr);
+    int  BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwNode = nullptr);
+    void BuildConsecutiveRegistersForDef(GenTree* treeNode, int fieldCount);
 #endif // TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
 
@@ -2033,27 +2103,37 @@ private:
 #endif // FEATURE_ARG_SPLIT
     int BuildLclHeap(GenTree* tree);
 
-#if defined(TARGET_XARCH)
-
 #if defined(TARGET_AMD64)
     regMaskTP rbmAllFloat;
     regMaskTP rbmFltCalleeTrash;
 
-    regMaskTP get_RBM_ALLFLOAT() const
+    FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
     {
         return this->rbmAllFloat;
     }
-    regMaskTP get_RBM_FLT_CALLEE_TRASH() const
+    FORCEINLINE regMaskTP get_RBM_FLT_CALLEE_TRASH() const
     {
         return this->rbmFltCalleeTrash;
     }
 #endif // TARGET_AMD64
 
+#if defined(TARGET_XARCH)
+    regMaskTP rbmAllMask;
+    regMaskTP rbmMskCalleeTrash;
+
+    FORCEINLINE regMaskTP get_RBM_ALLMASK() const
+    {
+        return this->rbmAllMask;
+    }
+    FORCEINLINE regMaskTP get_RBM_MSK_CALLEE_TRASH() const
+    {
+        return this->rbmMskCalleeTrash;
+    }
 #endif // TARGET_XARCH
 
     unsigned availableRegCount;
 
-    unsigned get_AVAILABLE_REG_COUNT() const
+    FORCEINLINE unsigned get_AVAILABLE_REG_COUNT() const
     {
         return this->availableRegCount;
     }
@@ -2064,17 +2144,40 @@ private:
     // NOTE: we currently don't need a LinearScan `this` pointer for this definition, and some callers
     // don't have one available, so make is static.
     //
-    static regMaskTP calleeSaveRegs(RegisterType rt)
+    static FORCEINLINE regMaskTP calleeSaveRegs(RegisterType rt)
     {
-        return varTypeIsIntegralOrI(rt) ? RBM_INT_CALLEE_SAVED : RBM_FLT_CALLEE_SAVED;
+        static const regMaskTP varTypeCalleeSaveRegs[] = {
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) csr,
+#include "typelist.h"
+#undef DEF_TP
+        };
+
+        assert((unsigned)rt < ArrLen(varTypeCalleeSaveRegs));
+        return varTypeCalleeSaveRegs[rt];
     }
+
+#if defined(TARGET_XARCH)
+    // Not all of the callee trash values are constant, so don't declare this as a method local static
+    // doing so results in significantly more complex codegen and we'd rather just initialize this once
+    // as part of initializing LSRA instead
+    regMaskTP varTypeCalleeTrashRegs[TYP_COUNT];
+#endif // TARGET_XARCH
 
     //------------------------------------------------------------------------
     // callerSaveRegs: Get the set of caller-save registers of the given RegisterType
     //
-    regMaskTP callerSaveRegs(RegisterType rt) const
+    FORCEINLINE regMaskTP callerSaveRegs(RegisterType rt) const
     {
-        return varTypeIsIntegralOrI(rt) ? RBM_INT_CALLEE_TRASH : RBM_FLT_CALLEE_TRASH;
+#if !defined(TARGET_XARCH)
+        static const regMaskTP varTypeCalleeTrashRegs[] = {
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) ctr,
+#include "typelist.h"
+#undef DEF_TP
+        };
+#endif // !TARGET_XARCH
+
+        assert((unsigned)rt < ArrLen(varTypeCalleeTrashRegs));
+        return varTypeCalleeTrashRegs[rt];
     }
 };
 
@@ -2095,6 +2198,7 @@ class Interval : public Referenceable
 public:
     Interval(RegisterType registerType, regMaskTP registerPreferences)
         : registerPreferences(registerPreferences)
+        , registerAversion(RBM_NONE)
         , relatedInterval(nullptr)
         , assignedReg(nullptr)
         , varNum(0)
@@ -2138,12 +2242,15 @@ public:
     // Fixed registers for which this Interval has a preference
     regMaskTP registerPreferences;
 
+    // Registers that should be avoided for this interval
+    regMaskTP registerAversion;
+
     // The relatedInterval is:
     //  - for any other interval, it is the interval to which this interval
     //    is currently preferenced (e.g. because they are related by a copy)
     Interval* relatedInterval;
 
-    // The assignedReg is the RecRecord for the register to which this interval
+    // The assignedReg is the RegRecord for the register to which this interval
     // has been assigned at some point - if the interval is active, this is the
     // register it currently occupies.
     RegRecord* assignedReg;
@@ -2297,6 +2404,14 @@ public:
         // It is invalid to update with empty preferences
         assert(preferences != RBM_NONE);
 
+        preferences &= ~registerAversion;
+        if (preferences == RBM_NONE)
+        {
+            // Do not include the preferences if all they contain
+            // are the registers we recorded as want to avoid.
+            return;
+        }
+
         regMaskTP commonPreferences = (registerPreferences & preferences);
         if (commonPreferences != RBM_NONE)
         {
@@ -2443,8 +2558,8 @@ public:
     //    we need an explicit move.
     //  - copyReg and moveReg must not exist with each other.
 
-    unsigned char reload : 1;
-    unsigned char spillAfter : 1;
+    unsigned char reload         : 1;
+    unsigned char spillAfter     : 1;
     unsigned char singleDefSpill : 1;
     unsigned char writeThru : 1; // true if this var is defined in a register and also spilled. spillAfter must NOT be
                                  // set.
@@ -2452,7 +2567,7 @@ public:
     unsigned char copyReg : 1;
     unsigned char moveReg : 1; // true if this var is moved to a new register
 
-    unsigned char isPhysRegRef : 1; // true if 'referent' points of a RegRecord, false if it points to an Interval
+    unsigned char isPhysRegRef  : 1; // true if 'referent' points of a RegRecord, false if it points to an Interval
     unsigned char isFixedRegRef : 1;
     unsigned char isLocalDefUse : 1;
 
@@ -2473,6 +2588,10 @@ public:
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     // If upper vector save/restore can be avoided.
     unsigned char skipSaveRestore : 1;
+    // If upper vector save is related to live var
+    // or created just based on bbLiveIn/bbDefs and
+    // whose liveness is not entirely know.
+    unsigned char liveVarUpperSave : 1;
 #endif
 
 #ifdef DEBUG
@@ -2490,9 +2609,9 @@ public:
     GenTree* buildNode;
 #endif // DEBUG
 
-    RefPosition(unsigned int bbNum,
-                LsraLocation nodeLocation,
-                GenTree*     treeNode,
+    RefPosition(unsigned int    bbNum,
+                LsraLocation    nodeLocation,
+                GenTree*        treeNode,
                 RefType refType DEBUG_ARG(GenTree* buildNode))
         : referent(nullptr)
         , nextRefPosition(nullptr)
@@ -2559,7 +2678,7 @@ public:
         return genRegNumFromMask(registerAssignment);
     }
 
-    // Returns true if it is a reference on a gentree node.
+    // Returns true if it is a reference on a GenTree node.
     bool IsActualRef()
     {
         switch (refType)
@@ -2676,6 +2795,11 @@ public:
 #endif
 #endif // TARGET_ARM64
 
+    FORCEINLINE bool IsExtraUpperVectorSave() const
+    {
+        assert(refType == RefTypeUpperVectorSave);
+        return (nextRefPosition == nullptr) || (nextRefPosition->refType != RefTypeUpperVectorRestore);
+    }
 #ifdef DEBUG
     // operator= copies everything except 'rpNum', which must remain unique
     RefPosition& operator=(const RefPosition& rp)

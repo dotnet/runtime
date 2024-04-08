@@ -27,7 +27,7 @@ public class Runtime_81675
     public static C0 s_26;
     public static short[] s_42;
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         short vr7 = default(short);
         for (int vr8 = 0; vr8 < 0; vr8++)
@@ -66,7 +66,5 @@ public class Runtime_81675
                 }
             }
         }
-
-        return 100;
     }
 }

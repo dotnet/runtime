@@ -27,14 +27,14 @@
 //
 
 using System.Collections.Generic;
-using System.Globalization;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Reflection.Emit;
-using System.Text;
-using System.Threading;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
 using InteropServicesCallingConvention = System.Runtime.InteropServices.CallingConvention;
 
 namespace System.Reflection
@@ -150,29 +150,25 @@ namespace System.Reflection
 #endregion
         private string? toString;
         private RuntimeType[]? parameterTypes;
-        private InvocationFlags invocationFlags;
-        private MethodInvoker? invoker;
+        private MethodBaseInvoker? invoker;
 
         internal InvocationFlags InvocationFlags
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                InvocationFlags flags = invocationFlags;
-                if ((flags & InvocationFlags.Initialized) == 0)
-                {
-                    flags = ComputeAndUpdateInvocationFlags(this, ref invocationFlags);
-                }
+                InvocationFlags flags = Invoker._invocationFlags;
+                Debug.Assert((flags & InvocationFlags.Initialized) == InvocationFlags.Initialized);
                 return flags;
             }
         }
 
-        private MethodInvoker Invoker
+        private MethodBaseInvoker Invoker
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                invoker ??= new MethodInvoker(this);
+                invoker ??= new MethodBaseInvoker(this);
                 return invoker;
             }
         }
@@ -194,7 +190,7 @@ namespace System.Reflection
                 sbName.Append(RuntimeMethodHandle.ConstructInstantiation(this));
 
             sbName.Append('(');
-            RuntimeParameterInfo.FormatParameters(sbName, GetParametersNoCopy(), CallingConvention);
+            RuntimeParameterInfo.FormatParameters(sbName, GetParametersAsSpan(), CallingConvention);
             sbName.Append(')');
 
             return sbName.ToString();
@@ -340,7 +336,7 @@ namespace System.Reflection
 
             // Have to clone because GetParametersInfo icall returns cached value
             var dest = new ParameterInfo[src.Length];
-            Array.FastCopy(ObjectHandleOnStack.Create (ref src), 0, ObjectHandleOnStack.Create (ref dest), 0, src.Length);
+            Array.FastCopy(ObjectHandleOnStack.Create(ref src), 0, ObjectHandleOnStack.Create(ref dest), 0, src.Length);
             return dest;
         }
 
@@ -720,29 +716,25 @@ namespace System.Reflection
 #endregion
         private string? toString;
         private RuntimeType[]? parameterTypes;
-        private InvocationFlags invocationFlags;
-        private ConstructorInvoker? invoker;
+        private MethodBaseInvoker? invoker;
 
         internal InvocationFlags InvocationFlags
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                InvocationFlags flags = invocationFlags;
-                if ((flags & InvocationFlags.Initialized) == 0)
-                {
-                    flags = ComputeAndUpdateInvocationFlags(this, ref invocationFlags);
-                }
+                InvocationFlags flags = Invoker._invocationFlags;
+                Debug.Assert((flags & InvocationFlags.Initialized) == InvocationFlags.Initialized);
                 return flags;
             }
         }
 
-        internal ConstructorInvoker Invoker
+        internal MethodBaseInvoker Invoker
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                invoker ??= new ConstructorInvoker(this);
+                invoker ??= new MethodBaseInvoker(this);
                 return invoker;
             }
         }
@@ -816,7 +808,7 @@ namespace System.Reflection
          * to match the types of the method signature.
          */
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern object InternalInvoke(object? obj, IntPtr *args, out Exception exc);
+        internal extern object InternalInvoke(object? obj, IntPtr *args, out Exception? exc);
 
         public override RuntimeMethodHandle MethodHandle
         {

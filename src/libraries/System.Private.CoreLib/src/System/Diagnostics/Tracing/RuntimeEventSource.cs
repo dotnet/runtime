@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Threading;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.Diagnostics.Tracing
 {
@@ -27,6 +27,7 @@ namespace System.Diagnostics.Tracing
         private IncrementingPollingCounter? _gen0GCCounter;
         private IncrementingPollingCounter? _gen1GCCounter;
         private IncrementingPollingCounter? _gen2GCCounter;
+        private PollingCounter? _gen0BudgetCounter;
         private PollingCounter? _cpuTimeCounter;
         private PollingCounter? _workingSetCounter;
         private PollingCounter? _threadPoolThreadCounter;
@@ -39,6 +40,7 @@ namespace System.Diagnostics.Tracing
         private PollingCounter? _committedCounter;
         private IncrementingPollingCounter? _exceptionCounter;
         private PollingCounter? _gcTimeCounter;
+        private IncrementingPollingCounter? _totalGcPauseTimeCounter;
         private PollingCounter? _gen0SizeCounter;
         private PollingCounter? _gen1SizeCounter;
         private PollingCounter? _gen2SizeCounter;
@@ -60,7 +62,7 @@ namespace System.Diagnostics.Tracing
         {
             // initializing more than once may lead to missing events
             Debug.Assert(s_RuntimeEventSource == null);
-            if (EventSource.IsSupported)
+            if (IsSupported)
                 s_RuntimeEventSource = new RuntimeEventSource();
         }
 
@@ -77,13 +79,13 @@ namespace System.Diagnostics.Tracing
         [Event((int)EventId.AppContextSwitch, Level = EventLevel.Informational, Keywords = Keywords.AppContext)]
         internal void LogAppContextSwitch(string switchName, int value)
         {
-            base.WriteEvent((int)EventId.AppContextSwitch, switchName, value);
+            WriteEvent((int)EventId.AppContextSwitch, switchName, value);
         }
 
         [Event((int)EventId.ProcessorCount, Level = EventLevel.Informational, Keywords = Keywords.ProcessorCount)]
         internal void ProcessorCount(int processorCount)
         {
-            base.WriteEvent((int)EventId.ProcessorCount, processorCount);
+            WriteEvent((int)EventId.ProcessorCount, processorCount);
         }
 
         protected override void OnEventCommand(EventCommandEventArgs command)
@@ -101,6 +103,7 @@ namespace System.Diagnostics.Tracing
                 _gen0GCCounter ??= new IncrementingPollingCounter("gen-0-gc-count", this, () => GC.CollectionCount(0)) { DisplayName = "Gen 0 GC Count", DisplayRateTimeScale = new TimeSpan(0, 1, 0) };
                 _gen1GCCounter ??= new IncrementingPollingCounter("gen-1-gc-count", this, () => GC.CollectionCount(1)) { DisplayName = "Gen 1 GC Count", DisplayRateTimeScale = new TimeSpan(0, 1, 0) };
                 _gen2GCCounter ??= new IncrementingPollingCounter("gen-2-gc-count", this, () => GC.CollectionCount(2)) { DisplayName = "Gen 2 GC Count", DisplayRateTimeScale = new TimeSpan(0, 1, 0) };
+                _gen0BudgetCounter ??= new PollingCounter("gen-0-gc-budget", this, () => GC.GetGenerationBudget(0) / 1_000_000) { DisplayName = "Gen 0 GC Budget", DisplayUnits = "MB" };
                 _threadPoolThreadCounter ??= new PollingCounter("threadpool-thread-count", this, () => ThreadPool.ThreadCount) { DisplayName = "ThreadPool Thread Count" };
                 _monitorContentionCounter ??= new IncrementingPollingCounter("monitor-lock-contention-count", this, () => Monitor.LockContentionCount) { DisplayName = "Monitor Lock Contention Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _threadPoolQueueCounter ??= new PollingCounter("threadpool-queue-length", this, () => ThreadPool.PendingWorkItemCount) { DisplayName = "ThreadPool Queue Length" };
@@ -115,16 +118,17 @@ namespace System.Diagnostics.Tracing
                 _committedCounter ??= new PollingCounter("gc-committed", this, () => ((double)GC.GetGCMemoryInfo().TotalCommittedBytes / 1_000_000)) { DisplayName = "GC Committed Bytes", DisplayUnits = "MB" };
                 _exceptionCounter ??= new IncrementingPollingCounter("exception-count", this, () => Exception.GetExceptionCount()) { DisplayName = "Exception Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _gcTimeCounter ??= new PollingCounter("time-in-gc", this, () => GC.GetLastGCPercentTimeInGC()) { DisplayName = "% Time in GC since last GC", DisplayUnits = "%" };
+                _totalGcPauseTimeCounter ??= new IncrementingPollingCounter("total-pause-time-by-gc", this, () => GC.GetTotalPauseDuration().TotalMilliseconds) { DisplayName = "Time paused by GC", DisplayUnits = "ms" };
                 _gen0SizeCounter ??= new PollingCounter("gen-0-size", this, () => GC.GetGenerationSize(0)) { DisplayName = "Gen 0 Size", DisplayUnits = "B" };
                 _gen1SizeCounter ??= new PollingCounter("gen-1-size", this, () => GC.GetGenerationSize(1)) { DisplayName = "Gen 1 Size", DisplayUnits = "B" };
                 _gen2SizeCounter ??= new PollingCounter("gen-2-size", this, () => GC.GetGenerationSize(2)) { DisplayName = "Gen 2 Size", DisplayUnits = "B" };
                 _lohSizeCounter ??= new PollingCounter("loh-size", this, () => GC.GetGenerationSize(3)) { DisplayName = "LOH Size", DisplayUnits = "B" };
                 _pohSizeCounter ??= new PollingCounter("poh-size", this, () => GC.GetGenerationSize(4)) { DisplayName = "POH (Pinned Object Heap) Size", DisplayUnits = "B" };
-                _assemblyCounter ??= new PollingCounter("assembly-count", this, () => System.Reflection.Assembly.GetAssemblyCount()) { DisplayName = "Number of Assemblies Loaded" };
+                _assemblyCounter ??= new PollingCounter("assembly-count", this, () => Reflection.Assembly.GetAssemblyCount()) { DisplayName = "Number of Assemblies Loaded" };
 
-                _ilBytesJittedCounter ??= new PollingCounter("il-bytes-jitted", this, () => System.Runtime.JitInfo.GetCompiledILBytes()) { DisplayName = "IL Bytes Jitted", DisplayUnits = "B" };
-                _methodsJittedCounter ??= new PollingCounter("methods-jitted-count", this, () => System.Runtime.JitInfo.GetCompiledMethodCount()) { DisplayName = "Number of Methods Jitted" };
-                _jitTimeCounter ??= new IncrementingPollingCounter("time-in-jit", this, () => System.Runtime.JitInfo.GetCompilationTime().TotalMilliseconds) { DisplayName = "Time spent in JIT", DisplayUnits = "ms", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
+                _ilBytesJittedCounter ??= new PollingCounter("il-bytes-jitted", this, () => Runtime.JitInfo.GetCompiledILBytes()) { DisplayName = "IL Bytes Jitted", DisplayUnits = "B" };
+                _methodsJittedCounter ??= new PollingCounter("methods-jitted-count", this, () => Runtime.JitInfo.GetCompiledMethodCount()) { DisplayName = "Number of Methods Jitted" };
+                _jitTimeCounter ??= new IncrementingPollingCounter("time-in-jit", this, () => Runtime.JitInfo.GetCompilationTime().TotalMilliseconds) { DisplayName = "Time spent in JIT", DisplayUnits = "ms", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
 
                 AppContext.LogSwitchValues(this);
                 ProcessorCount(Environment.ProcessorCount);

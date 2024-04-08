@@ -17,12 +17,12 @@ namespace System.Net.Http.Json
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         private static Task<object?> FromJsonAsyncCore(Func<HttpClient, Uri?, CancellationToken, Task<HttpResponseMessage>> getMethod, HttpClient client, Uri? requestUri, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken = default) =>
-            FromJsonAsyncCore(getMethod, client, requestUri, static (stream, options, cancellation) => JsonSerializer.DeserializeAsync(stream, options.type, options.options ?? JsonHelpers.s_defaultSerializerOptions, cancellation), (type, options), cancellationToken);
+            FromJsonAsyncCore(getMethod, client, requestUri, static (stream, options, cancellation) => JsonSerializer.DeserializeAsync(stream, options.type, options.options ?? JsonSerializerOptions.Web, cancellation), (type, options), cancellationToken);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         private static Task<TValue?> FromJsonAsyncCore<TValue>(Func<HttpClient, Uri?, CancellationToken, Task<HttpResponseMessage>> getMethod, HttpClient client, Uri? requestUri, JsonSerializerOptions? options, CancellationToken cancellationToken = default) =>
-            FromJsonAsyncCore(getMethod, client, requestUri, static (stream, options, cancellation) => JsonSerializer.DeserializeAsync<TValue>(stream, options ?? JsonHelpers.s_defaultSerializerOptions, cancellation), options, cancellationToken);
+            FromJsonAsyncCore(getMethod, client, requestUri, static (stream, options, cancellation) => JsonSerializer.DeserializeAsync<TValue>(stream, options ?? JsonSerializerOptions.Web, cancellation), options, cancellationToken);
 
         private static Task<object?> FromJsonAsyncCore(Func<HttpClient, Uri?, CancellationToken, Task<HttpResponseMessage>> getMethod, HttpClient client, Uri? requestUri, Type type, JsonSerializerContext context, CancellationToken cancellationToken = default) =>
             FromJsonAsyncCore(getMethod, client, requestUri, static (stream, options, cancellation) => JsonSerializer.DeserializeAsync(stream, options.type, options.context, cancellation), (type, context), cancellationToken);
@@ -84,22 +84,10 @@ namespace System.Net.Http.Json
                     using HttpResponseMessage response = await responseTask.ConfigureAwait(false);
                     response.EnsureSuccessStatusCode();
 
-                    Debug.Assert(client.MaxResponseContentBufferSize is > 0 and <= int.MaxValue);
-                    int contentLengthLimit = (int)client.MaxResponseContentBufferSize;
-
-                    if (response.Content.Headers.ContentLength is long contentLength && contentLength > contentLengthLimit)
-                    {
-                        LengthLimitReadStream.ThrowExceededBufferLimit(contentLengthLimit);
-                    }
-
                     try
                     {
-                        using Stream contentStream = await HttpContentJsonExtensions.GetContentStreamAsync(response.Content, linkedCTS?.Token ?? cancellationToken).ConfigureAwait(false);
-
-                        // If ResponseHeadersRead wasn't used, HttpClient will have already buffered the whole response upfront. No need to check the limit again.
-                        Stream readStream = usingResponseHeadersRead
-                            ? new LengthLimitReadStream(contentStream, (int)client.MaxResponseContentBufferSize)
-                            : contentStream;
+                        using Stream readStream = await GetHttpResponseStreamAsync(client, response, usingResponseHeadersRead, cancellationToken)
+                            .ConfigureAwait(false);
 
                         return await deserializeMethod(readStream, jsonOptions, linkedCTS?.Token ?? cancellationToken).ConfigureAwait(false);
                     }
@@ -123,5 +111,32 @@ namespace System.Net.Http.Json
 
         private static Uri? CreateUri(string? uri) =>
             string.IsNullOrEmpty(uri) ? null : new Uri(uri, UriKind.RelativeOrAbsolute);
+
+        private static ValueTask<Stream> GetHttpResponseStreamAsync(
+            HttpClient client,
+            HttpResponseMessage response,
+            bool usingResponseHeadersRead,
+            CancellationToken cancellationToken)
+        {
+            Debug.Assert(client.MaxResponseContentBufferSize is > 0 and <= int.MaxValue);
+            int contentLengthLimit = (int)client.MaxResponseContentBufferSize;
+
+            if (response.Content.Headers.ContentLength is long contentLength && contentLength > contentLengthLimit)
+            {
+                LengthLimitReadStream.ThrowExceededBufferLimit(contentLengthLimit);
+            }
+
+            ValueTask<Stream> task = HttpContentJsonExtensions.GetContentStreamAsync(response.Content, cancellationToken);
+
+            // If ResponseHeadersRead wasn't used, HttpClient will have already buffered the whole response upfront.
+            // No need to check the limit again.
+            return usingResponseHeadersRead ? GetLengthLimitReadStreamAsync(client, task) : task;
+        }
+
+        private static async ValueTask<Stream> GetLengthLimitReadStreamAsync(HttpClient client, ValueTask<Stream> task)
+        {
+            Stream contentStream = await task.ConfigureAwait(false);
+            return new LengthLimitReadStream(contentStream, (int)client.MaxResponseContentBufferSize);
+        }
     }
 }

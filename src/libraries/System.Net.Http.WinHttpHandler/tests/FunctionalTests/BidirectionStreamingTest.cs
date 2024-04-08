@@ -143,7 +143,17 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                 // Server sends RST_STREAM.
                 await connection.WriteFrameAsync(new RstStreamFrame(FrameFlags.EndStream, 0, streamId));
 
-                await Assert.ThrowsAsync<IOException>(() => requestStream.WriteAsync(new byte[50]).AsTask());
+                await Assert.ThrowsAsync<IOException>(async () =>
+                {
+                    for (int i = 0; i < 10; i++)
+                    {
+                        await requestStream.WriteAsync(new byte[50]);
+
+                        // WriteAsync succeeded because handler hasn't processed RST_STREAM yet.
+                        // Small wait before trying again.
+                        await Task.Delay(50);
+                    }
+                });
             }
         }
 

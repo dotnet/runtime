@@ -21,7 +21,7 @@ namespace System.Xml.Serialization
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
         // It's OK to suppress the SxS warning.
         [RequiresUnreferencedCode("Reflects against input Type DeclaringType")]
-        internal void AddImport(Type? type, Hashtable types)
+        internal static void AddImport(Type? type, Hashtable types)
         {
             if (type == null)
                 return;

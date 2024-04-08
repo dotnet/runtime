@@ -16,7 +16,6 @@
 #include <fcntl.h>
 #include <fnmatch.h>
 #include <ctime>
-#include <locale>
 #include <pwd.h>
 #include "config.h"
 #include <minipal/getexepath.h>

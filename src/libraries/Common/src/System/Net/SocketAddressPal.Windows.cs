@@ -10,13 +10,15 @@ namespace System.Net
     {
         public const int IPv6AddressSize = 28;
         public const int IPv4AddressSize = 16;
+        public const int UdsAddressSize = 110;
+        public const int MaxAddressSize = 128;
 
         public static AddressFamily GetAddressFamily(ReadOnlySpan<byte> buffer)
         {
             return (AddressFamily)BitConverter.ToInt16(buffer);
         }
 
-        public static void SetAddressFamily(byte[] buffer, AddressFamily family)
+        public static void SetAddressFamily(Span<byte> buffer, AddressFamily family)
         {
             if ((int)(family) > ushort.MaxValue)
             {
@@ -36,8 +38,8 @@ namespace System.Net
         public static ushort GetPort(ReadOnlySpan<byte> buffer)
             => BinaryPrimitives.ReadUInt16BigEndian(buffer.Slice(2));
 
-        public static void SetPort(byte[] buffer, ushort port)
-            => BinaryPrimitives.WriteUInt16BigEndian(buffer.AsSpan(2), port);
+        public static void SetPort(Span<byte> buffer, ushort port)
+            => BinaryPrimitives.WriteUInt16BigEndian(buffer.Slice(2), port);
 
         public static uint GetIPv4Address(ReadOnlySpan<byte> buffer)
             => BinaryPrimitives.ReadUInt32LittleEndian(buffer.Slice(4));
@@ -49,22 +51,29 @@ namespace System.Net
             scope = BinaryPrimitives.ReadUInt32LittleEndian(buffer.Slice(24));
         }
 
-        public static void SetIPv4Address(byte[] buffer, uint address)
+        public static void SetIPv4Address(Span<byte> buffer, uint address)
         {
             // IPv4 Address serialization
-            BinaryPrimitives.WriteUInt32LittleEndian(buffer.AsSpan(4), address);
+            BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(4), address);
         }
 
-        public static void SetIPv6Address(byte[] buffer, Span<byte> address, uint scope)
+        public static void SetIPv6Address(Span<byte> buffer, Span<byte> address, uint scope)
         {
             // No handling for Flow Information
-            BinaryPrimitives.WriteUInt32LittleEndian(buffer.AsSpan(4), 0);
+            BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(4), 0);
 
             // Scope serialization
-            BinaryPrimitives.WriteUInt32LittleEndian(buffer.AsSpan(24), scope);
+            BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(24), scope);
 
             // Address serialization
-            address.CopyTo(buffer.AsSpan(8));
+            address.CopyTo(buffer.Slice(8));
+        }
+
+        public static unsafe void Clear(Span<byte> buffer)
+        {
+            AddressFamily family = GetAddressFamily(buffer);
+            buffer.Clear();
+            SetAddressFamily(buffer, family);
         }
     }
 }

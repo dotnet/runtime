@@ -6,7 +6,7 @@ using System.IO;
 
 namespace System.IO.Enumeration
 {
-    /// <summary>Provides a lower level view of <see cref="System.IO.FileSystemInfo" /> to help process and filter find results.</summary>
+    /// <summary>Provides a lower level view of <see cref="FileSystemInfo" /> to help process and filter find results.</summary>
     public unsafe ref partial struct FileSystemEntry
     {
         internal static void Initialize(
@@ -66,8 +66,8 @@ namespace System.IO.Enumeration
         /// <value><see langword="true" /> if the file has the hidden attribute; otherwise, <see langword="false" />.</value>
         public bool IsHidden => (Attributes & FileAttributes.Hidden) != 0;
 
-        /// <summary>Converts the value of this instance to a <see cref="System.IO.FileSystemInfo" />.</summary>
-        /// <returns>The value of this instance as a <see cref="System.IO.FileSystemInfo" />.</returns>
+        /// <summary>Converts the value of this instance to a <see cref="FileSystemInfo" />.</summary>
+        /// <returns>The value of this instance as a <see cref="FileSystemInfo" />.</returns>
         public FileSystemInfo ToFileSystemInfo()
             => FileSystemInfo.Create(Path.Join(Directory, FileName), ref this);
 
@@ -75,5 +75,18 @@ namespace System.IO.Enumeration
         /// <returns>A string representing the full path.</returns>
         public string ToFullPath() =>
             Path.Join(Directory, FileName);
+
+        private static string Join(
+            ReadOnlySpan<char> originalRootDirectory,
+            ReadOnlySpan<char> relativePath,
+            ReadOnlySpan<char> fileName)
+        {
+            if (originalRootDirectory.Length == 2 && originalRootDirectory[1] == Path.VolumeSeparatorChar)
+            {
+                return string.Concat(originalRootDirectory, Path.Join(relativePath, fileName));
+            }
+
+            return Path.Join(originalRootDirectory, relativePath, fileName);
+        }
     }
 }

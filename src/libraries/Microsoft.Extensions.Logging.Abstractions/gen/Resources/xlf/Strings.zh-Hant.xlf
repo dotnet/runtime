@@ -67,6 +67,16 @@
         <target state="translated">記錄方法必須是靜態</target>
         <note />
       </trans-unit>
+      <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
+        <source>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</source>
+        <target state="translated">記錄來源產生器在 C# {0} 中不可用。請使用語言版本 {1} 或更新版本。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="translated">來源產生器不支援 C# 語言版本。</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
         <source>Logging method '{0}' contains malformed format strings</source>
         <target state="translated">記錄方法 '{0}' 包含格式錯誤的格式字串</target>

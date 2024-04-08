@@ -11,12 +11,11 @@ namespace Test
         private static void Func(TypedReference tr) { }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             bool b = false;
             TypedReference tr = __makeref(b);
             Func(b ? tr : __makeref(b));
-            return 100;
         }
     }
 }

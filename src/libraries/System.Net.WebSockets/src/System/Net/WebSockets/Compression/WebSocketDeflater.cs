@@ -26,11 +26,7 @@ namespace System.Net.WebSockets.Compression
 
         public void Dispose()
         {
-            if (_stream is not null)
-            {
-                _stream.Dispose();
-                _stream = null;
-            }
+            _stream?.Dispose();
         }
 
         public void ReleaseBuffer()

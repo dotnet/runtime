@@ -1,4 +1,4 @@
-﻿<Project>
+<Project>
   <ItemGroup>
     <!-- Mibc data to use when exact architecture match is available -->
     <MIBCPackageDef Include="optimization.windows_nt-x86.mibc.runtime" Version="$(optimizationwindows_ntx86MIBCRuntimeVersion)" MibcArchitecture="windows/x86"/>
@@ -25,13 +25,17 @@
   <Target Name="GetMIBCData"
           AfterTargets="Restore">
 
+    <PropertyGroup>
+      <_MergeMibcFilesCacheFile>$(MibcOptimizationDataDir)/$(TargetOS)/$(TargetArchitecture)/merge_mibc_files.cache</_MergeMibcFilesCacheFile>
+    </PropertyGroup>
     <ItemGroup>
       <MIBCPackage>
         <PackagePath>$(NuGetPackageRoot)%(MIBCPackage.Identity)/%(MIBCPackage.Version)</PackagePath>
       </MIBCPackage>
       <_optimizationMibcFile Include="%(MIBCPackage.PackagePath)/**/*.mibc" SubdirectoryName="$(TargetOS)/$(TargetArchitecture)" />
+      <_optimizationMibcDestinationFile Include="@(_optimizationMibcFile->'$(MibcOptimizationDataDir)%(SubdirectoryName)/%(RecursiveDir)%(Filename)%(Extension)')" />
       <ExcessFilesCurrentlyPresent Include="$(MibcOptimizationDataDir)/**" 
-                                   Exclude="@(_optimizationMibcFile->'$(MibcOptimizationDataDir)%(SubdirectoryName)/%(RecursiveDir)%(Filename)%(Extension)')"/>
+                                   Exclude="@(_optimizationMibcDestinationFile);$(_MergeMibcFilesCacheFile)"/>
     </ItemGroup>
 
     <Error Condition="'@(_optimizationMibcFile)' == ''" Text="Failed to restore Mibc optimization data" />
@@ -41,7 +45,7 @@
 
     <!-- Copy the correct mibc files into place -->
     <Copy SourceFiles="@(_optimizationMibcFile)"
-          DestinationFiles="@(_optimizationMibcFile->'$(MibcOptimizationDataDir)%(SubdirectoryName)/%(RecursiveDir)%(Filename)%(Extension)')"
+          DestinationFiles="@(_optimizationMibcDestinationFile)"
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="true" />
 

@@ -1,17 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection.Runtime.EventInfos.NativeFormat;
+using System.Reflection.Runtime.FieldInfos.NativeFormat;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.MethodInfos.NativeFormat;
-using System.Reflection.Runtime.FieldInfos.NativeFormat;
 using System.Reflection.Runtime.PropertyInfos.NativeFormat;
-using System.Reflection.Runtime.EventInfos.NativeFormat;
-using NameFilter = System.Reflection.Runtime.BindingFlagSupport.NameFilter;
 
 using Internal.Metadata.NativeFormat;
+
+using NameFilter = System.Reflection.Runtime.BindingFlagSupport.NameFilter;
 
 namespace System.Reflection.Runtime.TypeInfos.NativeFormat
 {
@@ -87,7 +88,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             foreach (TypeDefinitionHandle nestedTypeHandle in _typeDefinition.NestedTypes)
             {
                 if (optionalNameFilter == null || optionalNameFilter.Matches(nestedTypeHandle.GetTypeDefinition(_reader).Name, _reader))
-                    yield return nestedTypeHandle.GetNamedType(_reader);
+                    yield return nestedTypeHandle.GetNamedType(_reader).ToType();
             }
         }
     }

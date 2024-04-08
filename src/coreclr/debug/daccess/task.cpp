@@ -2497,14 +2497,9 @@ ClrDataModule::GetFlags(
         }
 
         PTR_Assembly pAssembly = m_module->GetAssembly();
-        PTR_BaseDomain pBaseDomain = pAssembly->GetDomain();
-        if (pBaseDomain->IsAppDomain())
+        if (pAssembly == AppDomain::GetCurrentDomain()->GetRootAssembly())
         {
-            AppDomain* pAppDomain = pBaseDomain->AsAppDomain();
-            if (pAssembly == pAppDomain->GetRootAssembly())
-            {
-                (*flags) |= CLRDATA_MODULE_IS_MAIN_MODULE;
-            }
+            (*flags) |= CLRDATA_MODULE_IS_MAIN_MODULE;
         }
         status = S_OK;
     }
@@ -5225,7 +5220,7 @@ EnumMethodInstances::Next(ClrDataAccess* dac,
         }
     }
 
-    if (!m_methodIter.Current()->HasNativeCode())
+    if (!m_methodIter.Current()->HasNativeCodeAnyVersion())
     {
         goto NextMethod;
     }
@@ -5243,7 +5238,7 @@ EnumMethodInstances::CdStart(MethodDesc* methodDesc,
                              CLRDATA_ENUM* handle)
 {
     if (!methodDesc->HasClassOrMethodInstantiation() &&
-        !methodDesc->HasNativeCode())
+        !(methodDesc->HasNativeCodeAnyVersion()))
     {
         *handle = 0;
         return S_FALSE;

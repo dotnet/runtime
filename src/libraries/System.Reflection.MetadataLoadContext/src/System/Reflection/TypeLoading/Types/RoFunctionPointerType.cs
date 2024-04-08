@@ -147,7 +147,23 @@ namespace System.Reflection.TypeLoading
         public sealed override bool IsGenericParameter => false;
         public sealed override bool IsGenericTypeParameter => false;
         public sealed override bool IsGenericMethodParameter => false;
-        public sealed override bool ContainsGenericParameters => IsGenericTypeDefinition;
+
+        public sealed override bool ContainsGenericParameters
+        {
+            get
+            {
+                if (_returnType.ContainsGenericParameters)
+                    return true;
+
+                foreach (Type parameterType in _parameterTypes)
+                {
+                    if (parameterType.ContainsGenericParameters)
+                        return true;
+                }
+
+                return false;
+            }
+        }
 
         protected sealed override TypeCode GetTypeCodeImpl() => TypeCode.Object;
 

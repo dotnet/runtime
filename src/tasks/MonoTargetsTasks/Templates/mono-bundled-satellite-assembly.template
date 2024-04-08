@@ -1,0 +1,8 @@
+const MonoBundledSatelliteAssemblyResource %ResourceName% = {
+    .resource = { .type = MONO_BUNDLED_SATELLITE_ASSEMBLY,
+                  .id = "%ResourceID%" },
+    .satellite_assembly = { .name = "%RegisteredFilename%",
+                            .culture = "%Culture%",
+                            .data = %ResourceDataSymbol%_data,
+                            .size = %Len% }
+};

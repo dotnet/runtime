@@ -8,7 +8,8 @@ namespace System.Buffers
 {
     /// <summary>
     /// Provides an immutable, read-only set of values optimized for efficient searching.
-    /// Instances are created by <see cref="SearchValues.Create(ReadOnlySpan{byte})"/> or <see cref="SearchValues.Create(ReadOnlySpan{char})"/>.
+    /// Instances are created by <see cref="SearchValues.Create(ReadOnlySpan{byte})"/>, <see cref="SearchValues.Create(ReadOnlySpan{char})"/>, or
+    /// <see cref="SearchValues.Create(ReadOnlySpan{string}, StringComparison)"/>.
     /// </summary>
     /// <typeparam name="T">The type of the values to search for.</typeparam>
     /// <remarks>
@@ -38,49 +39,11 @@ namespace System.Buffers
         internal virtual int LastIndexOfAny(ReadOnlySpan<T> span) => throw new UnreachableException();
         internal virtual int LastIndexOfAnyExcept(ReadOnlySpan<T> span) => throw new UnreachableException();
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int IndexOfAny(ReadOnlySpan<T> span, SearchValues<T> values)
-        {
-            if (values is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
-            }
+        internal virtual bool ContainsAny(ReadOnlySpan<T> span) => IndexOfAny(span) >= 0;
+        internal virtual bool ContainsAnyExcept(ReadOnlySpan<T> span) => IndexOfAnyExcept(span) >= 0;
 
-            return values.IndexOfAny(span);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int IndexOfAnyExcept(ReadOnlySpan<T> span, SearchValues<T> values)
-        {
-            if (values is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
-            }
-
-            return values.IndexOfAnyExcept(span);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LastIndexOfAny(ReadOnlySpan<T> span, SearchValues<T> values)
-        {
-            if (values is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
-            }
-
-            return values.LastIndexOfAny(span);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LastIndexOfAnyExcept(ReadOnlySpan<T> span, SearchValues<T> values)
-        {
-            if (values is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
-            }
-
-            return values.LastIndexOfAnyExcept(span);
-        }
+        // This is only implemented and used by SearchValues<string>.
+        internal virtual int IndexOfAnyMultiString(ReadOnlySpan<char> span) => throw new UnreachableException();
 
         private string DebuggerDisplay
         {
@@ -88,10 +51,10 @@ namespace System.Buffers
             {
                 T[] values = GetValues();
 
-                string display = $"{GetType().Name}, Count={values.Length}";
+                string display = $"{GetType().Name}, Count = {values.Length}";
                 if (values.Length > 0)
                 {
-                    display += ", Values=";
+                    display += ", Values = ";
                     display += typeof(T) == typeof(char) ?
                         "\"" + new string(Unsafe.As<T[], char[]>(ref values)) + "\"" :
                         string.Join(",", values);

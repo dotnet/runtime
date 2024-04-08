@@ -35,5 +35,20 @@ namespace System.Net.Http.Tests
             var exception = new HttpRequestException("message", null, statusCode);
             Assert.Equal(statusCode, exception.StatusCode);
         }
+
+        [Fact]
+        public void DefaultsToRequestErrorUnknown()
+        {
+            Assert.Equal(HttpRequestError.Unknown, new HttpRequestException().HttpRequestError);
+        }
+
+        [Fact]
+        public void StoresNonStandardRequestError()
+        {
+            var requestError = (HttpRequestError)999;
+
+            var exception = new HttpRequestException(requestError);
+            Assert.Equal(requestError, exception.HttpRequestError);
+        }
     }
 }

@@ -7,6 +7,16 @@
         <target state="translated">O tipo de coleção não é compatível: '{0}'.</target>
         <note />
       </trans-unit>
+      <trans-unit id="CouldNotDetermineTypeInfoMessageFormat">
+        <source>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls, passing boxed objects, and passing types that are not 'public' or 'internal'.</source>
+        <target state="translated">A lógica de associação não foi gerada para uma chamada de fichário. Padrões de entrada sem suporte incluem chamadas genéricas, passagem de objetos em caixa e passagem de tipos que não são 'públicos' ou 'internos'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CouldNotDetermineTypeInfoTitle">
+        <source>The target type for a binder call could not be determined</source>
+        <target state="translated">Não foi possível determinar o tipo de destino de uma chamada de associador</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DictionaryKeyNotSupported">
         <source>The dictionary key type is not supported: '{0}'.</source>
         <target state="translated">O tipo de chave do dicionário não é suportado: '{0}'.</target>
@@ -17,14 +27,19 @@
         <target state="translated">O tipo de elemento da coleção não é suportado: '{0}'.</target>
         <note />
       </trans-unit>
-      <trans-unit id="Language VersionIsNotSupportedMessageFormat">
-        <source>The project's language version has to be at least 'C# 11'.</source>
-        <target state="translated">A versão do idioma do projeto deve ser no mínimo 'C# 11'.</target>
+      <trans-unit id="LanguageVersionIsNotSupportedMessageFormat">
+        <source>The project's language version has to be at least 'C# 12'.</source>
+        <target state="new">The project's language version has to be at least 'C# 12'.</target>
         <note />
       </trans-unit>
       <trans-unit id="LanguageVersionIsNotSupportedTitle">
-        <source>Language version is required to be at least C# 11</source>
-        <target state="translated">A versão do idioma deve ser pelo menos C# 11</target>
+        <source>Language version is required to be at least C# 12</source>
+        <target state="translated">A versão do idioma deve ser pelo menos C# 12</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MissingPublicInstanceConstructor">
+        <source>Cannot create instance of type '{0}' because it is missing a public instance constructor.</source>
+        <target state="translated">Não é possível criar instância do tipo ''{0}'' porque falta um construtor de instância pública.</target>
         <note />
       </trans-unit>
       <trans-unit id="MultiDimArraysNotSupported">
@@ -32,9 +47,9 @@
         <target state="translated">Matrizes multidimensionais não são suportadas: '{0}'.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NeedPublicParameterlessConstructor">
-        <source>Only objects with public parameterless constructors are supported: '{0}'.</source>
-        <target state="translated">Somente objetos com construtores públicos sem parâmetros são suportados: '{0}'.</target>
+      <trans-unit id="MultipleParameterizedConstructors">
+        <source>Cannot create instance of type '{0}' because it has multiple public parameterized constructors.</source>
+        <target state="translated">Não é possível criar instância do tipo ''{0}'' porque ela tem vários construtores parametrizados públicos.</target>
         <note />
       </trans-unit>
       <trans-unit id="NullableUnderlyingTypeNotSupported">
@@ -60,6 +75,16 @@
       <trans-unit id="TypeNotSupportedTitle">
         <source>Did not generate binding logic for a type</source>
         <target state="translated">Não gerou lógica de ligação para um tipo</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueTypesInvalidForBindMessageFormat">
+        <source>Binding logic was not generated for a binder call with target type '{0}'. Value types are invalid inputs to configuration 'Bind' methods.</source>
+        <target state="translated">A lógica de associação não foi gerada para uma chamada de associador com o tipo de destino "{0}". Tipos de valor são entradas inválidas para métodos de configuração 'Bind'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueTypesInvalidForBindTitle">
+        <source>Value types are invalid inputs to configuration 'Bind' methods</source>
+        <target state="translated">Tipos de valor são entradas inválidas para métodos de configuração "Associar"</target>
         <note />
       </trans-unit>
     </body>

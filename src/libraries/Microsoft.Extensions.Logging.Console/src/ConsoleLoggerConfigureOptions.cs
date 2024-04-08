@@ -26,6 +26,6 @@ namespace Microsoft.Extensions.Logging
             _configuration = providerConfiguration.Configuration;
         }
 
-        public void Configure(ConsoleLoggerOptions options) => options.Configure(_configuration);
+        public void Configure(ConsoleLoggerOptions options) => _configuration.Bind(options);
     }
 }

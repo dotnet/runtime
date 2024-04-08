@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
-using System.Diagnostics;
-using System.Xml.XPath;
-using System.Xml.Schema;
 using System.Collections;
-
+using System.Diagnostics;
+using System.IO;
 using System.Threading.Tasks;
+using System.Xml.Schema;
+using System.Xml.XPath;
 
 namespace System.Xml
 {
@@ -118,8 +117,7 @@ namespace System.Xml
         // Forward call to WriteString(string).
         public override Task WriteSurrogateCharEntityAsync(char lowChar, char highChar)
         {
-            ReadOnlySpan<char> entity = stackalloc char[] { lowChar, highChar };
-            return WriteStringAsync(new string(entity));
+            return WriteStringAsync(new string([lowChar, highChar]));
         }
 
         // Forward call to WriteString(string).

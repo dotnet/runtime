@@ -32,7 +32,7 @@ namespace System.Text.Json
         // UTF-8 representation for them is E2, 80, A8/A9
         public const byte StartingByteOfNonStandardSeparator = 0xE2;
 
-        public static ReadOnlySpan<byte> Utf8Bom => new byte[] { 0xEF, 0xBB, 0xBF };
+        public static ReadOnlySpan<byte> Utf8Bom => [0xEF, 0xBB, 0xBF];
         public static ReadOnlySpan<byte> TrueValue => "true"u8;
         public static ReadOnlySpan<byte> FalseValue => "false"u8;
         public static ReadOnlySpan<byte> NullValue => "null"u8;
@@ -47,7 +47,6 @@ namespace System.Text.Json
         // Explicitly skipping ReverseSolidus since that is handled separately
         public static ReadOnlySpan<byte> EscapableChars => "\"nrt/ubf"u8;
 
-        public const int SpacesPerIndent = 2;
         public const int RemoveFlagsBitMask = 0x7FFFFFFF;
 
         // In the worst case, an ASCII character represented as a single utf-8 byte could expand 6x when escaped.
@@ -62,7 +61,12 @@ namespace System.Text.Json
         public const int MaxExpansionFactorWhileTranscoding = 3;
 
         // When transcoding from UTF8 -> UTF16, the byte count threshold where we rent from the array pool before performing a normal alloc.
-        public const long ArrayPoolMaxSizeBeforeUsingNormalAlloc = 1024 * 1024;
+        public const long ArrayPoolMaxSizeBeforeUsingNormalAlloc =
+#if NET6_0_OR_GREATER
+            1024 * 1024 * 1024; // ArrayPool limit increased in .NET 6
+#else
+            1024 * 1024;
+#endif
 
         // The maximum number of characters allowed when writing raw UTF-16 JSON. This is the maximum length that we can guarantee can
         // be safely transcoded to UTF-8 and fit within an integer-length span, given the max expansion factor of a single character (3).
@@ -74,6 +78,7 @@ namespace System.Text.Json
 
         public const int MaximumFormatBooleanLength = 5;
         public const int MaximumFormatInt64Length = 20;   // 19 + sign (i.e. -9223372036854775808)
+        public const int MaximumFormatUInt32Length = 10;  // i.e. 4294967295
         public const int MaximumFormatUInt64Length = 20;  // i.e. 18446744073709551615
         public const int MaximumFormatDoubleLength = 128;  // default (i.e. 'G'), using 128 (rather than say 32) to be future-proof.
         public const int MaximumFormatSingleLength = 128;  // default (i.e. 'G'), using 128 (rather than say 32) to be future-proof.
@@ -109,5 +114,13 @@ namespace System.Text.Json
         // The maximum number of parameters a constructor can have where it can be considered
         // for a path on deserialization where we don't box the constructor arguments.
         public const int UnboxedParameterCountThreshold = 4;
+
+        // Two space characters is the default indentation.
+        public const char DefaultIndentCharacter = ' ';
+        public const char TabIndentCharacter = '\t';
+        public const int DefaultIndentSize = 2;
+        public const int MinimumIndentSize = 0;
+        public const int MaximumIndentSize = 127; // If this value is changed, the impact on the options masking used in the JsonWriterOptions struct must be checked carefully.
+
     }
 }

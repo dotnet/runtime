@@ -2,6 +2,9 @@
   <PropertyGroup>
     <AssemblyName>X86_Serialize_ro</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- Would have to translate Illegal instruction to PNSE -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>

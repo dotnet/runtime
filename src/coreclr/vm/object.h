@@ -116,14 +116,14 @@ struct RCW;
     (((size) + PTRALIGNCONST) & (~PTRALIGNCONST))
 #endif //!PtrAlign
 
-// code:Object is the respesentation of an managed object on the GC heap.
+// code:Object is the representation of an managed object on the GC heap.
 //
 // See  code:#ObjectModel for some important subclasses of code:Object
 //
 // The only fields mandated by all objects are
 //
 //     * a pointer to the code:MethodTable at offset 0
-//     * a poiner to a code:ObjHeader at a negative offset. This is often zero.  It holds information that
+//     * a pointer to a code:ObjHeader at a negative offset. This is often zero.  It holds information that
 //         any addition information that we might need to attach to arbitrary objects.
 //
 class Object
@@ -740,39 +740,6 @@ public:
 
 #define OFFSETOF__PtrArray__m_Array_              ARRAYBASE_SIZE
 
-/* Corresponds to the managed Span<T> and ReadOnlySpan<T> types.
-   This should only ever be passed from the managed to the unmanaged world byref,
-   as any copies of this struct made within the unmanaged world will not observe
-   potential GC relocations of the source data. */
-template < class KIND >
-class Span
-{
-private:
-    /* Keep fields below in sync with managed Span / ReadOnlySpan layout. */
-    KIND* _reference;
-    unsigned int _length;
-
-public:
-    // !! CAUTION !!
-    // Caller must take care not to reassign returned reference if this span corresponds
-    // to a managed ReadOnlySpan<T>. If KIND is a reference type, caller must use a
-    // helper like SetObjectReference instead of assigning values directly to the
-    // reference location.
-    KIND& GetAt(SIZE_T index)
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-        _ASSERTE(index < GetLength());
-        return _reference[index];
-    }
-
-    // Gets the length (in elements) of this span.
-    __inline SIZE_T GetLength() const
-    {
-        return _length;
-    }
-};
-
 /* a TypedByRef is a structure that is used to implement VB's BYREF variants.
    it is basically a tuple of an address of some data along with a TypeHandle
    that indicates the type of the address */
@@ -1163,6 +1130,7 @@ protected:
     INT32               m_empty2;
     OBJECTREF           m_empty3;
     OBJECTREF           m_empty4;
+    OBJECTREF           m_empty5;
     FieldDesc *         m_pFD;
 
 public:
@@ -1201,10 +1169,7 @@ class ReflectModuleBaseObject : public Object
     //  classlib class definition of this object.
     OBJECTREF          m_runtimeType;
     OBJECTREF          m_runtimeAssembly;
-    void*              m_ReflectClass;  // Pointer to the ReflectClass structure
     Module*            m_pData;         // Pointer to the Module
-    void*              m_pGlobals;      // Global values....
-    void*              m_pGlobalsFlds;  // Global Fields....
 
   protected:
     ReflectModuleBaseObject() {LIMITED_METHOD_CONTRACT;}
@@ -1229,15 +1194,7 @@ class ReflectModuleBaseObject : public Object
 NOINLINE ReflectModuleBaseObject* GetRuntimeModuleHelper(LPVOID __me, Module *pModule, OBJECTREF keepAlive);
 #define FC_RETURN_MODULE_OBJECT(pModule, refKeepAlive) FC_INNER_RETURN(ReflectModuleBaseObject*, GetRuntimeModuleHelper(__me, pModule, refKeepAlive))
 
-class SafeHandle;
 
-#ifdef USE_CHECKED_OBJECTREFS
-typedef REF<SafeHandle> SAFEHANDLE;
-typedef REF<SafeHandle> SAFEHANDLEREF;
-#else // USE_CHECKED_OBJECTREFS
-typedef SafeHandle * SAFEHANDLE;
-typedef SafeHandle * SAFEHANDLEREF;
-#endif // USE_CHECKED_OBJECTREFS
 
 
 
@@ -1277,19 +1234,6 @@ typedef CultureInfoBaseObject*     CULTUREINFOBASEREF;
 typedef PTR_ArrayBase ARRAYBASEREF;
 #endif
 
-// Note that the name must always be "" or "en-US".  Other cases and nulls
-// aren't allowed (we already checked.)
-__inline bool IsCultureEnglishOrInvariant(LPCWSTR localeName)
-{
-    LIMITED_METHOD_CONTRACT;
-    if (localeName != NULL &&
-        (localeName[0] == W('\0') ||
-         u16_strcmp(localeName, W("en-US")) == 0))
-    {
-        return true;
-    }
-    return false;
-    }
 
 class CultureInfoBaseObject : public Object
 {
@@ -1375,12 +1319,6 @@ public:
 
     void SetInternal(Thread *it);
     void ClearInternal();
-
-    INT32 GetManagedThreadId()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_ManagedThreadId;
-    }
 
     void SetManagedThreadId(INT32 id)
     {
@@ -1907,110 +1845,6 @@ typedef BStrWrapper*     BSTRWRAPPEROBJECTREF;
 
 #endif // FEATURE_COMINTEROP
 
-class SafeHandle : public Object
-{
-    friend class CoreLibBinder;
-
-  private:
-    // READ ME:
-    //   Modifying the order or fields of this object may require
-    //   other changes to the classlib class definition of this
-    //   object or special handling when loading this system class.
-#if DEBUG
-    STRINGREF m_ctorStackTrace; // Debug-only stack trace captured when the SafeHandle was constructed
-#endif
-    Volatile<LPVOID> m_handle;
-    Volatile<INT32> m_state;        // Combined ref count and closed/disposed state (for atomicity)
-    Volatile<CLR_BOOL> m_ownsHandle;
-    Volatile<CLR_BOOL> m_fullyInitialized;  // Did constructor finish?
-
-    // Describe the bits in the m_state field above.
-    enum StateBits
-    {
-        SH_State_Closed     = 0x00000001,
-        SH_State_Disposed   = 0x00000002,
-        SH_State_RefCount   = 0xfffffffc,
-        SH_RefCountOne      = 4,            // Amount to increment state field to yield a ref count increment of 1
-    };
-
-    static WORD s_IsInvalidHandleMethodSlot;
-    static WORD s_ReleaseHandleMethodSlot;
-
-    static void RunReleaseMethod(SafeHandle* psh);
-    BOOL IsFullyInitialized() const { LIMITED_METHOD_CONTRACT; return m_fullyInitialized; }
-
-  public:
-    static void Init();
-
-    // To use the SafeHandle from native, look at the SafeHandleHolder, which
-    // will do the AddRef & Release for you.
-    LPVOID GetHandle() const {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(((unsigned int) m_state) >= SH_RefCountOne);
-        return m_handle;
-    }
-
-    void AddRef();
-    void Release(bool fDispose = false);
-    void SetHandle(LPVOID handle);
-};
-
-void AcquireSafeHandle(SAFEHANDLEREF* s);
-void ReleaseSafeHandle(SAFEHANDLEREF* s);
-
-typedef Holder<SAFEHANDLEREF*, AcquireSafeHandle, ReleaseSafeHandle> SafeHandleHolder;
-
-class CriticalHandle : public Object
-{
-    friend class CoreLibBinder;
-
-  private:
-    // READ ME:
-    //   Modifying the order or fields of this object may require
-    //   other changes to the classlib class definition of this
-    //   object or special handling when loading this system class.
-    Volatile<LPVOID> m_handle;
-    Volatile<CLR_BOOL> m_isClosed;
-
-  public:
-    LPVOID GetHandle() const { LIMITED_METHOD_CONTRACT; return m_handle; }
-    static size_t GetHandleOffset() { LIMITED_METHOD_CONTRACT; return offsetof(CriticalHandle, m_handle); }
-
-    void SetHandle(LPVOID handle) { LIMITED_METHOD_CONTRACT; m_handle = handle; }
-};
-
-
-#ifdef USE_CHECKED_OBJECTREFS
-typedef REF<CriticalHandle> CRITICALHANDLE;
-typedef REF<CriticalHandle> CRITICALHANDLEREF;
-#else // USE_CHECKED_OBJECTREFS
-typedef CriticalHandle * CRITICALHANDLE;
-typedef CriticalHandle * CRITICALHANDLEREF;
-#endif // USE_CHECKED_OBJECTREFS
-
-// WaitHandleBase
-// Base class for WaitHandle
-class WaitHandleBase :public MarshalByRefObjectBaseObject
-{
-    friend class CoreLibBinder;
-
-public:
-    __inline LPVOID GetWaitHandle() {
-        LIMITED_METHOD_CONTRACT;
-        SAFEHANDLEREF safeHandle = (SAFEHANDLEREF)m_safeHandle.LoadWithoutBarrier();
-        return safeHandle != NULL ? safeHandle->GetHandle() : INVALID_HANDLE_VALUE;
-    }
-    __inline SAFEHANDLEREF GetSafeHandle() {LIMITED_METHOD_CONTRACT; return (SAFEHANDLEREF)m_safeHandle.LoadWithoutBarrier();}
-
-private:
-    Volatile<SafeHandle*> m_safeHandle;
-};
-
-#ifdef USE_CHECKED_OBJECTREFS
-typedef REF<WaitHandleBase> WAITHANDLEREF;
-#else // USE_CHECKED_OBJECTREFS
-typedef WaitHandleBase* WAITHANDLEREF;
-#endif // USE_CHECKED_OBJECTREFS
 
 // This class corresponds to System.MulticastDelegate on the managed side.
 class DelegateObject : public Object

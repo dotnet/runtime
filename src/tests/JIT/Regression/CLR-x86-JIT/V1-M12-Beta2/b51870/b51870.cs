@@ -12,7 +12,7 @@ namespace Test
         int m_iField4;
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             BB local3 = new BB();
             bool b = false;
@@ -23,7 +23,6 @@ namespace Test
                     while (b) { }
                 }
             }
-            return 100;
         }
     }
 }

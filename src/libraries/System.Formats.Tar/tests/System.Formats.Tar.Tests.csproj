@@ -3,7 +3,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>$(MSBuildProjectDirectory)\..\src\Resources\Strings.resx</StringResourcesPath>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
   <ItemGroup>
@@ -13,6 +12,7 @@
     <Compile Include="SimulatedDataStream.cs" />
     <Compile Include="TarEntry\TarEntry.ExtractToFile.Tests.cs" />
     <Compile Include="TarEntry\TarEntry.ExtractToFileAsync.Tests.cs" />
+    <Compile Include="TarFile\TarFile.ExtractToDirectory.Base.cs" />
     <Compile Include="TarFile\TarFile.CreateFromDirectoryAsync.File.Roundtrip.cs" />
     <Compile Include="TarFile\TarFile.ExtractToDirectoryAsync.Stream.Tests.cs" />
     <Compile Include="TarFile\TarFile.ExtractToDirectoryAsync.File.Tests.cs" />
@@ -52,10 +52,8 @@
     <Compile Include="TarTestsBase.Ustar.cs" />
     <Compile Include="TarTestsBase.V7.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntry.Entry.Roundtrip.Tests.cs" />
-    <Compile Include="TarWriter\TarWriter.WriteEntry.LongFile.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntryAsync.File.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntry.Base.cs" />
-    <Compile Include="TarWriter\TarWriter.WriteEntryAsync.LongFile.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntryAsync.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntryAsync.Entry.Roundtrip.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntryAsync.Entry.Ustar.Tests.cs" />
@@ -73,7 +71,6 @@
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonTestPath)System\IO\ReparsePointUtilities.cs" Link="Common\System\IO\ReparsePointUtilities.cs" />
     <Compile Include="$(CommonTestPath)System\IO\WrappedStream.cs" Link="Common\System\IO\WrappedStream.cs" />
-    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
   </ItemGroup>
   <!-- Windows specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">

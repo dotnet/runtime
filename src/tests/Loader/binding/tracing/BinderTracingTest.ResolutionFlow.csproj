@@ -2,6 +2,10 @@
   <PropertyGroup>
     <!-- Test creates non-collectible AssemblyLoadContext -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <!-- Dynamic assembly loads -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BinderTracingTest.EventHandlers.cs" />

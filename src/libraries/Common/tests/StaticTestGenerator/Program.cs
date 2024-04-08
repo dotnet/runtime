@@ -1128,7 +1128,7 @@ public static class Test
 }
 ";
 
-        private string GetCsprojTemplate(string targetFramework) =>
+        private static string GetCsprojTemplate(string targetFramework) =>
 $@"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
     <OutputType>Exe</OutputType>

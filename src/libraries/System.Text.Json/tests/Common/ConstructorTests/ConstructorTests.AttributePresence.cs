@@ -8,24 +8,53 @@ namespace System.Text.Json.Serialization.Tests
 {
     public abstract partial class ConstructorTests
     {
-        [Fact]
-        public async Task NonPublicCtors_NotSupported()
+        [Theory]
+        [InlineData(typeof(PrivateParameterlessCtor))]
+        [InlineData(typeof(InternalParameterlessCtor))]
+        [InlineData(typeof(ProtectedParameterlessCtor))]
+        [InlineData(typeof(PrivateParameterizedCtor))]
+        [InlineData(typeof(InternalParameterizedCtor))]
+        [InlineData(typeof(ProtectedParameterizedCtor))]
+        public async Task NonPublicCtors_NotSupported(Type type)
         {
-            async Task RunTestAsync<T>()
+            NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper("{}", type));
+            Assert.Contains("JsonConstructorAttribute", ex.ToString());
+        }
+
+        [Theory]
+        [InlineData(typeof(PrivateParameterizedCtor_WithAttribute), false)]
+        [InlineData(typeof(InternalParameterizedCtor_WithAttribute), true)]
+        [InlineData(typeof(ProtectedParameterizedCtor_WithAttribute), false)]
+        public async Task NonPublicCtors_WithJsonConstructorAttribute_WorksAsExpected(Type type, bool isAccessibleBySourceGen)
+        {
+            if (!Serializer.IsSourceGeneratedSerializer || isAccessibleBySourceGen)
             {
-                NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<T>("{}"));
+                object? result = await Serializer.DeserializeWrapper("{}", type);
+                Assert.IsType(type, result);
+            }
+            else
+            {
+                NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper("{}", type));
                 Assert.Contains("JsonConstructorAttribute", ex.ToString());
             }
+        }
 
-            await RunTestAsync<PrivateParameterlessCtor>();
-            await RunTestAsync<InternalParameterlessCtor>();
-            await RunTestAsync<ProtectedParameterlessCtor>();
-            await RunTestAsync<PrivateParameterizedCtor>();
-            await RunTestAsync<InternalParameterizedCtor>();
-            await RunTestAsync<ProtectedParameterizedCtor>();
-            await RunTestAsync<PrivateParameterizedCtor_WithAttribute>();
-            await RunTestAsync<InternalParameterizedCtor_WithAttribute>();
-            await RunTestAsync<ProtectedParameterizedCtor_WithAttribute>();
+        [Theory]
+        [InlineData(typeof(PrivateParameterlessCtor_WithAttribute), false)]
+        [InlineData(typeof(InternalParameterlessCtor_WithAttribute), true)]
+        [InlineData(typeof(ProtectedParameterlessCtor_WithAttribute), false)]
+        public async Task NonPublicParameterlessCtors_WithJsonConstructorAttribute_WorksAsExpected(Type type, bool isAccessibleBySourceGen)
+        {
+            if (!Serializer.IsSourceGeneratedSerializer || isAccessibleBySourceGen)
+            {
+                object? result = await Serializer.DeserializeWrapper("{}", type);
+                Assert.IsType(type, result);
+            }
+            else
+            {
+                NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper("{}", type));
+                Assert.Contains("JsonConstructorAttribute", ex.ToString());
+            }
         }
 
         [Fact]
@@ -159,6 +188,17 @@ namespace System.Text.Json.Serialization.Tests
             var point2 = await Serializer.DeserializeWrapper<Point_2D_Struct_WithAttribute>(json);
             Assert.Equal(1, point2.X);
             Assert.Equal(2, point2.Y);
+        }
+
+        [Fact]
+        public async Task CanDeserializeNullableStructWithCtor()
+        {
+            string json = @"{""X"":1,""Y"":2}";
+
+            Point_2D_Struct_WithAttribute? point2 = await Serializer.DeserializeWrapper<Point_2D_Struct_WithAttribute?>(json);
+            Assert.NotNull(point2);
+            Assert.Equal(1, point2.Value.X);
+            Assert.Equal(2, point2.Value.Y);
         }
     }
 }

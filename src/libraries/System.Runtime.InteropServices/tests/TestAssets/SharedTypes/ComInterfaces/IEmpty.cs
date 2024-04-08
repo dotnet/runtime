@@ -8,9 +8,9 @@ using System.Runtime.InteropServices.Marshalling;
 namespace SharedTypes.ComInterfaces
 {
     [GeneratedComInterface]
-    [Guid(_guid)]
+    [Guid(IID)]
     internal partial interface IEmpty
     {
-        public const string _guid = "95D19F50-F2D8-4E61-884B-0A9162EA4646";
+        public const string IID = "95D19F50-F2D8-4E61-884B-0A9162EA4646";
     }
 }

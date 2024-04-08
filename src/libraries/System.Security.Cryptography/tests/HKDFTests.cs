@@ -15,25 +15,25 @@ namespace System.Security.Cryptography.Tests
         protected abstract byte[] DeriveKey(HashAlgorithmName hash, byte[] ikm, int outputLength, byte[] salt, byte[] info);
 
         [Theory]
-        [MemberData(nameof(GetRfc5869TestCases))]
-        public void Rfc5869ExtractTests(Rfc5869TestCase test)
+        [MemberData(nameof(GetHkdfTestCases))]
+        public void ExtractTests(HkdfTestCase test)
         {
             byte[] prk = Extract(test.Hash, test.Prk.Length, test.Ikm, test.Salt);
             Assert.Equal(test.Prk, prk);
         }
 
         [Theory]
-        [MemberData(nameof(GetRfc5869TestCases))]
+        [MemberData(nameof(GetHkdfTestCases))]
         [SkipOnPlatform(TestPlatforms.Browser, "MD5 is not supported on Browser")]
-        public void Rfc5869ExtractTamperHashTests(Rfc5869TestCase test)
+        public void ExtractTamperHashTests(HkdfTestCase test)
         {
             byte[] prk = Extract(HashAlgorithmName.MD5, 128 / 8, test.Ikm, test.Salt);
             Assert.NotEqual(test.Prk, prk);
         }
 
         [Theory]
-        [MemberData(nameof(GetRfc5869TestCases))]
-        public void Rfc5869ExtractTamperIkmTests(Rfc5869TestCase test)
+        [MemberData(nameof(GetHkdfTestCases))]
+        public void ExtractTamperIkmTests(HkdfTestCase test)
         {
             byte[] ikm = test.Ikm.ToArray();
             ikm[0] ^= 1;
@@ -42,8 +42,8 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GetRfc5869TestCasesWithNonEmptySalt))]
-        public void Rfc5869ExtractTamperSaltTests(Rfc5869TestCase test)
+        [MemberData(nameof(GetHkdfTestCasesWithNonEmptySalt))]
+        public void ExtractTamperSaltTests(HkdfTestCase test)
         {
             byte[] salt = test.Salt.ToArray();
             salt[0] ^= 1;
@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void Rfc5869ExtractDefaultHash()
+        public void ExtractDefaultHash()
         {
             byte[] ikm = new byte[20];
             byte[] salt = new byte[20];
@@ -62,7 +62,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void Rfc5869ExtractNonsensicalHash()
+        public void ExtractNonsensicalHash()
         {
             byte[] ikm = new byte[20];
             byte[] salt = new byte[20];
@@ -72,7 +72,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void Rfc5869ExtractEmptyIkm()
+        public void ExtractEmptyIkm()
         {
             byte[] salt = new byte[20];
             byte[] ikm = Array.Empty<byte>();
@@ -83,7 +83,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void Rfc5869ExtractEmptySalt()
+        public void ExtractEmptySalt()
         {
             byte[] ikm = new byte[20];
             byte[] salt = Array.Empty<byte>();
@@ -92,15 +92,15 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GetRfc5869TestCases))]
-        public void Rfc5869ExpandTests(Rfc5869TestCase test)
+        [MemberData(nameof(GetHkdfTestCases))]
+        public void ExpandTests(HkdfTestCase test)
         {
             byte[] okm = Expand(test.Hash, test.Prk, test.Okm.Length, test.Info);
             Assert.Equal(test.Okm, okm);
         }
 
         [Fact]
-        public void Rfc5869ExpandDefaultHash()
+        public void ExpandDefaultHash()
         {
             byte[] prk = new byte[20];
             AssertExtensions.Throws<ArgumentOutOfRangeException>(
@@ -109,7 +109,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void Rfc5869ExpandNonsensicalHash()
+        public void ExpandNonsensicalHash()
         {
             byte[] prk = new byte[20];
             AssertExtensions.Throws<ArgumentOutOfRangeException>(
@@ -118,8 +118,8 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GetRfc5869TestCases))]
-        public void Rfc5869ExpandTamperPrkTests(Rfc5869TestCase test)
+        [MemberData(nameof(GetHkdfTestCases))]
+        public void ExpandTamperPrkTests(HkdfTestCase test)
         {
             byte[] prk = test.Prk.ToArray();
             prk[0] ^= 1;
@@ -129,7 +129,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(GetPrkTooShortTestCases))]
-        public void Rfc5869ExpandPrkTooShort(HashAlgorithmName hash, int prkSize)
+        public void ExpandPrkTooShort(HashAlgorithmName hash, int prkSize)
         {
             byte[] prk = new byte[prkSize];
             AssertExtensions.Throws<ArgumentException>(
@@ -138,7 +138,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void Rfc5869ExpandOkmMaxSize()
+        public void ExpandOkmMaxSize()
         {
             byte[] prk = new byte[20];
 
@@ -148,15 +148,15 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GetRfc5869TestCases))]
-        public void Rfc5869DeriveKeyTests(Rfc5869TestCase test)
+        [MemberData(nameof(GetHkdfTestCases))]
+        public void DeriveKeyTests(HkdfTestCase test)
         {
             byte[] okm = DeriveKey(test.Hash, test.Ikm, test.Okm.Length, test.Salt, test.Info);
             Assert.Equal(test.Okm, okm);
         }
 
         [Fact]
-        public void Rfc5869DeriveKeyDefaultHash()
+        public void DeriveKeyDefaultHash()
         {
             byte[] ikm = new byte[20];
             AssertExtensions.Throws<ArgumentOutOfRangeException>(
@@ -165,7 +165,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void Rfc5869DeriveKeyNonSensicalHash()
+        public void DeriveKeyNonSensicalHash()
         {
             byte[] ikm = new byte[20];
             AssertExtensions.Throws<ArgumentOutOfRangeException>(
@@ -174,8 +174,8 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GetRfc5869TestCases))]
-        public void Rfc5869DeriveKeyTamperIkmTests(Rfc5869TestCase test)
+        [MemberData(nameof(GetHkdfTestCases))]
+        public void DeriveKeyTamperIkmTests(HkdfTestCase test)
         {
             byte[] ikm = test.Ikm.ToArray();
             ikm[0] ^= 1;
@@ -184,8 +184,8 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GetRfc5869TestCasesWithNonEmptySalt))]
-        public void Rfc5869DeriveKeyTamperSaltTests(Rfc5869TestCase test)
+        [MemberData(nameof(GetHkdfTestCasesWithNonEmptySalt))]
+        public void DeriveKeyTamperSaltTests(HkdfTestCase test)
         {
             byte[] salt = test.Salt.ToArray();
             salt[0] ^= 1;
@@ -194,8 +194,8 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GetRfc5869TestCasesWithNonEmptyInfo))]
-        public void Rfc5869DeriveKeyTamperInfoTests(Rfc5869TestCase test)
+        [MemberData(nameof(GetHkdfTestCasesWithNonEmptyInfo))]
+        public void DeriveKeyTamperInfoTests(HkdfTestCase test)
         {
             byte[] info = test.Info.ToArray();
             info[0] ^= 1;
@@ -203,17 +203,33 @@ namespace System.Security.Cryptography.Tests
             Assert.NotEqual(test.Okm, okm);
         }
 
-        public static IEnumerable<object[]> GetRfc5869TestCases()
+        [Theory]
+        [MemberData(nameof(Sha3TestCases))]
+        public void Sha3Tests(HkdfTestCase test)
         {
-            foreach (Rfc5869TestCase test in Rfc5869TestCases)
+            if (PlatformDetection.SupportsSha3)
+            {
+                byte[] okm = DeriveKey(test.Hash, test.Ikm, test.Okm.Length, test.Salt, test.Info);
+                Assert.Equal(test.Okm, okm);
+            }
+            else
+            {
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                    DeriveKey(test.Hash, test.Ikm, test.Okm.Length, test.Salt, test.Info));
+            }
+        }
+
+        public static IEnumerable<object[]> GetHkdfTestCases()
+        {
+            foreach (HkdfTestCase test in Rfc5869TestCases)
             {
                 yield return new object[] { test };
             }
         }
 
-        public static IEnumerable<object[]> GetRfc5869TestCasesWithNonEmptySalt()
+        public static IEnumerable<object[]> GetHkdfTestCasesWithNonEmptySalt()
         {
-            foreach (Rfc5869TestCase test in Rfc5869TestCases)
+            foreach (HkdfTestCase test in Rfc5869TestCases)
             {
                 if (test.Salt != null && test.Salt.Length != 0)
                 {
@@ -222,9 +238,9 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        public static IEnumerable<object[]> GetRfc5869TestCasesWithNonEmptyInfo()
+        public static IEnumerable<object[]> GetHkdfTestCasesWithNonEmptyInfo()
         {
-            foreach (Rfc5869TestCase test in Rfc5869TestCases)
+            foreach (HkdfTestCase test in Rfc5869TestCases)
             {
                 if (test.Info != null && test.Info.Length != 0)
                 {
@@ -245,11 +261,18 @@ namespace System.Security.Cryptography.Tests
             {
                 yield return new object[] { HashAlgorithmName.MD5, 128 / 8 - 1 };
             }
+
+            if (PlatformDetection.SupportsSha3)
+            {
+                yield return new object[] { HashAlgorithmName.SHA3_256, SHA3_256.HashSizeInBytes - 1 };
+                yield return new object[] { HashAlgorithmName.SHA3_384, SHA3_384.HashSizeInBytes - 1 };
+                yield return new object[] { HashAlgorithmName.SHA3_512, SHA3_512.HashSizeInBytes - 1 };
+            }
         }
 
-        private static Rfc5869TestCase[] Rfc5869TestCases { get; } = new Rfc5869TestCase[7]
+        private static HkdfTestCase[] Rfc5869TestCases { get; } = new HkdfTestCase[7]
         {
-            new Rfc5869TestCase()
+            new HkdfTestCase()
             {
                 Name = "Basic test case with SHA-256",
                 Hash = HashAlgorithmName.SHA256,
@@ -264,7 +287,7 @@ namespace System.Security.Cryptography.Tests
                     "2d2d0a90cf1a5a4c5db02d56ecc4c5bf" +
                     "34007208d5b887185865").HexToByteArray(),
             },
-            new Rfc5869TestCase()
+            new HkdfTestCase()
             {
                 Name = "Test with SHA-256 and longer inputs/outputs",
                 Hash = HashAlgorithmName.SHA256,
@@ -297,7 +320,7 @@ namespace System.Security.Cryptography.Tests
                     "cc30c58179ec3e87c14c01d5c1f3434f" +
                     "1d87").HexToByteArray(),
             },
-            new Rfc5869TestCase()
+            new HkdfTestCase()
             {
                 Name = "Test with SHA-256 and zero-length salt/info",
                 Hash = HashAlgorithmName.SHA256,
@@ -312,7 +335,7 @@ namespace System.Security.Cryptography.Tests
                     "b8a11f5c5ee1879ec3454e5f3c738d2d" +
                     "9d201395faa4b61a96c8").HexToByteArray(),
             },
-            new Rfc5869TestCase()
+            new HkdfTestCase()
             {
                 Name = "Basic test case with SHA-1",
                 Hash = HashAlgorithmName.SHA1,
@@ -325,7 +348,7 @@ namespace System.Security.Cryptography.Tests
                     "a4f14b822f5b091568a9cdd4f155fda2" +
                     "c22e422478d305f3f896").HexToByteArray(),
             },
-            new Rfc5869TestCase()
+            new HkdfTestCase()
             {
                 Name = "Test with SHA-1 and longer inputs/outputs",
                 Hash = HashAlgorithmName.SHA1,
@@ -356,7 +379,7 @@ namespace System.Security.Cryptography.Tests
                     "927336d0441f4c4300e2cff0d0900b52" +
                     "d3b4").HexToByteArray(),
             },
-            new Rfc5869TestCase()
+            new HkdfTestCase()
             {
                 Name = "Test with SHA-1 and zero-length salt/info",
                 Hash = HashAlgorithmName.SHA1,
@@ -369,7 +392,7 @@ namespace System.Security.Cryptography.Tests
                     "b9ae52057220a306e07b6b87e8df21d0" +
                     "ea00033de03984d34918").HexToByteArray(),
             },
-            new Rfc5869TestCase()
+            new HkdfTestCase()
             {
                 Name = "Test with SHA-1, salt not provided (defaults to HashLen zero octets), zero-length info",
                 Hash = HashAlgorithmName.SHA1,
@@ -384,7 +407,55 @@ namespace System.Security.Cryptography.Tests
             },
         };
 
-        public struct Rfc5869TestCase
+        public static IEnumerable<object[]> Sha3TestCases
+        {
+            // These cases were generated from the openssl kdf command.
+            // openssl kdf -keylen 8 -kdfopt digest:SHA3-256 -kdfopt hexkey:000102030405060708090A0B0C0D0E0F \
+            //     -kdfopt salt:mysalt -kdfopt info:myinfo -binary HKDF | xxd -p
+            get
+            {
+                yield return new object[]
+                {
+                    new HkdfTestCase
+                    {
+                        Name = "SHA3-256 with salt and info",
+                        Hash = HashAlgorithmName.SHA3_256,
+                        Ikm = "000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F".HexToByteArray(),
+                        Salt = "mysalt"u8.ToArray(),
+                        Info = "myinfo"u8.ToArray(),
+                        Okm = "35bd9d1c75cf7e30".HexToByteArray(),
+                    }
+                };
+
+                yield return new object[]
+                {
+                    new HkdfTestCase
+                    {
+                        Name = "SHA3-384 with salt and info",
+                        Hash = HashAlgorithmName.SHA3_384,
+                        Ikm = "000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F".HexToByteArray(),
+                        Salt = "mysalt"u8.ToArray(),
+                        Info = "myinfo"u8.ToArray(),
+                        Okm = "323a8ab50c7190c8".HexToByteArray(),
+                    }
+                };
+
+                yield return new object[]
+                {
+                    new HkdfTestCase
+                    {
+                        Name = "SHA3-512 with salt and info",
+                        Hash = HashAlgorithmName.SHA3_512,
+                        Ikm = "000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F".HexToByteArray(),
+                        Salt = "mysalt"u8.ToArray(),
+                        Info = "myinfo"u8.ToArray(),
+                        Okm = "27693b36a489e9f1".HexToByteArray(),
+                    }
+                };
+            }
+        }
+
+        public struct HkdfTestCase
         {
             public string Name { get; set; }
             public HashAlgorithmName Hash { get; set; }
@@ -415,7 +486,7 @@ namespace System.Security.Cryptography.Tests
             }
 
             [Fact]
-            public void Rfc5869ExtractNullIkm()
+            public void ExtractNullIkm()
             {
                 byte[] salt = new byte[20];
                 AssertExtensions.Throws<ArgumentNullException>(
@@ -424,7 +495,7 @@ namespace System.Security.Cryptography.Tests
             }
 
             [Fact]
-            public void Rfc5869ExpandOkmMaxSizePlusOne()
+            public void ExpandOkmMaxSizePlusOne()
             {
                 byte[] prk = new byte[20];
                 AssertExtensions.Throws<ArgumentOutOfRangeException>(
@@ -433,7 +504,7 @@ namespace System.Security.Cryptography.Tests
             }
 
             [Fact]
-            public void Rfc5869ExpandOkmPotentiallyOverflowingValue()
+            public void ExpandOkmPotentiallyOverflowingValue()
             {
                 byte[] prk = new byte[20];
                 AssertExtensions.Throws<ArgumentOutOfRangeException>(
@@ -442,7 +513,7 @@ namespace System.Security.Cryptography.Tests
             }
 
             [Fact]
-            public void Rfc5869ExpandOutputLengthZero()
+            public void ExpandOutputLengthZero()
             {
                 byte[] prk = new byte[20];
                 AssertExtensions.Throws<ArgumentOutOfRangeException>(
@@ -451,7 +522,7 @@ namespace System.Security.Cryptography.Tests
             }
 
             [Fact]
-            public void Rfc5869ExpandOutputLengthLessThanZero()
+            public void ExpandOutputLengthLessThanZero()
             {
                 byte[] prk = new byte[20];
                 AssertExtensions.Throws<ArgumentOutOfRangeException>(
@@ -460,7 +531,7 @@ namespace System.Security.Cryptography.Tests
             }
 
             [Fact]
-            public void Rfc5869DeriveKeyNullIkm()
+            public void DeriveKeyNullIkm()
             {
                 AssertExtensions.Throws<ArgumentNullException>(
                     "ikm",
@@ -468,7 +539,7 @@ namespace System.Security.Cryptography.Tests
             }
 
             [Fact]
-            public void Rfc5869DeriveKeyOkmMaxSizePlusOne()
+            public void DeriveKeyOkmMaxSizePlusOne()
             {
                 byte[] ikm = new byte[20];
                 AssertExtensions.Throws<ArgumentOutOfRangeException>(
@@ -477,7 +548,7 @@ namespace System.Security.Cryptography.Tests
             }
 
             [Fact]
-            public void Rfc5869DeriveKeyOkmPotentiallyOverflowingValue()
+            public void DeriveKeyOkmPotentiallyOverflowingValue()
             {
                 byte[] ikm = new byte[20];
                 AssertExtensions.Throws<ArgumentOutOfRangeException>(
@@ -486,7 +557,7 @@ namespace System.Security.Cryptography.Tests
             }
 
             [Fact]
-            public void Rfc5869DeriveOutputLengthZero()
+            public void DeriveOutputLengthZero()
             {
                 byte[] ikm = new byte[20];
                 AssertExtensions.Throws<ArgumentOutOfRangeException>(
@@ -495,7 +566,7 @@ namespace System.Security.Cryptography.Tests
             }
 
             [Fact]
-            public void Rfc5869DeriveOutputLengthLessThanZero()
+            public void DeriveOutputLengthLessThanZero()
             {
                 byte[] ikm = new byte[20];
                 AssertExtensions.Throws<ArgumentOutOfRangeException>(
@@ -528,7 +599,7 @@ namespace System.Security.Cryptography.Tests
             }
 
             [Fact]
-            public void Rfc5869ExtractPrkTooLong()
+            public void ExtractPrkTooLong()
             {
                 byte[] prk = new byte[24];
 
@@ -550,7 +621,7 @@ namespace System.Security.Cryptography.Tests
             }
 
             [Fact]
-            public void Rfc5869OkmMaxSizePlusOne()
+            public void OkmMaxSizePlusOne()
             {
                 byte[] prk = new byte[20];
                 byte[] okm = new byte[20 * 255 + 1];
@@ -560,7 +631,7 @@ namespace System.Security.Cryptography.Tests
             }
 
             [Fact]
-            public void Rfc5869OkmMaxSizePotentiallyOverflowingValue()
+            public void OkmMaxSizePotentiallyOverflowingValue()
             {
                 byte[] prk = new byte[20];
                 byte[] okm = new byte[8421505];
@@ -570,7 +641,7 @@ namespace System.Security.Cryptography.Tests
             }
 
             [Fact]
-            public void Rfc5869ExpandOutputLengthZero()
+            public void ExpandOutputLengthZero()
             {
                 byte[] prk = new byte[20];
                 byte[] okm = new byte[0];
@@ -581,7 +652,7 @@ namespace System.Security.Cryptography.Tests
             }
 
             [Fact]
-            public void Rfc5869DeriveKeySpanOkmMaxSizePlusOne()
+            public void DeriveKeySpanOkmMaxSizePlusOne()
             {
                 byte[] ikm = new byte[20];
                 byte[] okm = new byte[20 * 255 + 1];
@@ -591,7 +662,7 @@ namespace System.Security.Cryptography.Tests
             }
 
             [Fact]
-            public void Rfc5869DeriveKeySpanOkmPotentiallyOverflowingValue()
+            public void DeriveKeySpanOkmPotentiallyOverflowingValue()
             {
                 byte[] ikm = new byte[20];
                 byte[] okm = new byte[8421505];
@@ -601,7 +672,7 @@ namespace System.Security.Cryptography.Tests
             }
 
             [Fact]
-            public void Rfc5869DeriveKeyOutputLengthZero()
+            public void DeriveKeyOutputLengthZero()
             {
                 byte[] ikm = new byte[20];
                 byte[] okm = new byte[0];
@@ -616,7 +687,7 @@ namespace System.Security.Cryptography.Tests
             [InlineData(0, 10)] // Output +10 offset over ikm
             [InlineData(10, 0)] // ikm +10 offset over output
             [InlineData(10, 20)] // Both offset, output +10 over ikm
-            public void Rfc5869ExtractOverlapsPrkOverKeyMaterial(int ikmOffset, int outputOffset)
+            public void ExtractOverlapsPrkOverKeyMaterial(int ikmOffset, int outputOffset)
             {
                 ReadOnlySpan<byte> ikm = "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b".HexToByteArray();
                 ReadOnlySpan<byte> salt = "000102030405060708090a0b0c".HexToByteArray();
@@ -637,7 +708,7 @@ namespace System.Security.Cryptography.Tests
             [InlineData(0, 10)] // Output +10 offset over salt
             [InlineData(10, 0)] // salt +10 offset over output
             [InlineData(10, 20)] // Both offset, output +10 over salt
-            public void Rfc5869ExtractOverlapsPrkOverSalt(int saltOffset, int outputOffset)
+            public void ExtractOverlapsPrkOverSalt(int saltOffset, int outputOffset)
             {
                 ReadOnlySpan<byte> ikm = "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b".HexToByteArray();
                 ReadOnlySpan<byte> salt = "000102030405060708090a0b0c".HexToByteArray();
@@ -658,7 +729,7 @@ namespace System.Security.Cryptography.Tests
             [InlineData(0, 10)] // Output +10 offset over info
             [InlineData(10, 0)] // Info +10 offset over output
             [InlineData(10, 20)] // Both offset, output +10 over info
-            public void Rfc5869ExpandOverlapsOutputOverInfo(int infoOffset, int outputOffset)
+            public void ExpandOverlapsOutputOverInfo(int infoOffset, int outputOffset)
             {
                 ReadOnlySpan<byte> info = (
                     "b0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecf" +
@@ -686,7 +757,7 @@ namespace System.Security.Cryptography.Tests
             [InlineData(0, 10)] // Output +10 offset over info
             [InlineData(10, 0)] // Info +10 offset over output
             [InlineData(10, 20)] // Both offset, output +10 over info
-            public void Rfc5869ExpandOverlapsOutputOverInfoShortOkm(int infoOffset, int outputOffset)
+            public void ExpandOverlapsOutputOverInfoShortOkm(int infoOffset, int outputOffset)
             {
                 ReadOnlySpan<byte> info = (
                     "b0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecf" +
@@ -712,7 +783,7 @@ namespace System.Security.Cryptography.Tests
             [InlineData(0, 10)] // Output +10 offset over prk
             [InlineData(10, 0)] // Prk +10 offset over output
             [InlineData(10, 20)] // Both offset, output +10 over prk
-            public void Rfc5869ExpandOverlapsOutputOverPrk(int prkOffset, int outputOffset)
+            public void ExpandOverlapsOutputOverPrk(int prkOffset, int outputOffset)
             {
                 ReadOnlySpan<byte> info = (
                     "b0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecf" +

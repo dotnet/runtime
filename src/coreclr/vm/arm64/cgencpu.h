@@ -17,6 +17,28 @@
 #define USE_REDIRECT_FOR_GCSTRESS
 #endif // TARGET_UNIX
 
+#define ENUM_CALLEE_SAVED_REGISTERS() \
+    CALLEE_SAVED_REGISTER(Fp) \
+    CALLEE_SAVED_REGISTER(Lr) \
+    CALLEE_SAVED_REGISTER(X19) \
+    CALLEE_SAVED_REGISTER(X20) \
+    CALLEE_SAVED_REGISTER(X21) \
+    CALLEE_SAVED_REGISTER(X22) \
+    CALLEE_SAVED_REGISTER(X23) \
+    CALLEE_SAVED_REGISTER(X24) \
+    CALLEE_SAVED_REGISTER(X25) \
+    CALLEE_SAVED_REGISTER(X26)
+
+#define ENUM_FP_CALLEE_SAVED_REGISTERS() \
+    CALLEE_SAVED_REGISTER(V[8].Low) \
+    CALLEE_SAVED_REGISTER(V[9].Low) \
+    CALLEE_SAVED_REGISTER(V[10].Low) \
+    CALLEE_SAVED_REGISTER(V[11].Low) \
+    CALLEE_SAVED_REGISTER(V[12].Low) \
+    CALLEE_SAVED_REGISTER(V[13].Low) \
+    CALLEE_SAVED_REGISTER(V[14].Low) \
+    CALLEE_SAVED_REGISTER(V[15].Low)
+
 EXTERN_C void getFPReturn(int fpSize, INT64 *pRetVal);
 EXTERN_C void setFPReturn(int fpSize, INT64 retVal);
 
@@ -37,8 +59,6 @@ extern PCODE GetPreStubEntryPoint();
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         16  // # bytes to allocate for a back to back jump instruction
 
 #define HAS_NDIRECT_IMPORT_PRECODE              1
-
-#define USE_INDIRECT_CODEHEADER
 
 #define HAS_FIXUP_PRECODE                       1
 
@@ -164,6 +184,33 @@ struct FloatArgumentRegisters {
 };
 
 #define NUM_FLOAT_ARGUMENT_REGISTERS 8
+
+//**********************************************************************
+// Profiling
+//**********************************************************************
+
+#ifdef PROFILING_SUPPORTED
+
+#define PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE (NUM_FLOAT_ARGUMENT_REGISTERS * sizeof(double))
+
+typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
+{
+    void*                  Fp;
+    void*                  Pc;
+    void*                  x8;
+    ArgumentRegisters      argumentRegisters;
+    FunctionID             functionId;
+    FloatArgumentRegisters floatArgumentRegisters;
+    void*                  probeSp;
+    void*                  profiledSp;
+    void*                  hiddenArg;
+    UINT32                 flags;
+    UINT32                 unused;
+    BYTE                   buffer[PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE];
+} PROFILE_PLATFORM_SPECIFIC_DATA, *PPROFILE_PLATFORM_SPECIFIC_DATA;
+
+#endif  // PROFILING_SUPPORTED
+
 
 //**********************************************************************
 // Exception handling
@@ -315,24 +362,6 @@ inline PCODE decodeJump(PCODE pCode)
     TADDR pInstr = PCODEToPINSTR(pCode);
 
     return *dac_cast<PTR_PCODE>(pInstr + 2*sizeof(DWORD));
-}
-
-//------------------------------------------------------------------------
-inline BOOL isJump(PCODE pCode)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    TADDR pInstr = PCODEToPINSTR(pCode);
-
-    return *dac_cast<PTR_DWORD>(pInstr) == 0x58000050;
-}
-
-//------------------------------------------------------------------------
-inline BOOL isBackToBackJump(PCODE pBuffer)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-    return isJump(pBuffer);
 }
 
 //------------------------------------------------------------------------

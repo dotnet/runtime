@@ -5,9 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
-using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 
 namespace Microsoft.Extensions.Options.Tests
@@ -321,6 +321,18 @@ namespace Microsoft.Extensions.Options.Tests
             var error = Assert.Throws<NotImplementedException>(() => sp.GetRequiredService<IOptions<FakeOptions>>().Value);
         }
 
+        private class ComplexOptionsValidator : IValidateOptions<ComplexOptions>
+        {
+            public ValidateOptionsResult Validate(string name, ComplexOptions options)
+            {
+                if (options.Boolean == true)
+                {
+                    return ValidateOptionsResult.Success;
+                }
+                return ValidateOptionsResult.Fail("Boolean != true");
+            }
+        }
+
         private class MultiOptionValidator : IValidateOptions<ComplexOptions>, IValidateOptions<FakeOptions>
         {
             private readonly string _allowed;
@@ -565,6 +577,34 @@ namespace Microsoft.Extensions.Options.Tests
 
             var error = Assert.Throws<OptionsValidationException>(() => startupValidator.Validate());
             ValidateFailure<ComplexOptions>(error, Options.DefaultName, 3, "A validation error has occurred.", "Virtual", "Integer");
+        }
+
+        [Fact]
+        public void CanValidateOptionsEagerly_AddOptionsWithValidateOnStart()
+        {
+            var services = new ServiceCollection();
+            services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<ComplexOptions>, ComplexOptionsValidator>());
+            services
+                .AddOptionsWithValidateOnStart<ComplexOptions>()
+                .Configure(o => o.Boolean = false);
+
+            var sp = services.BuildServiceProvider();
+            // This doesn't really verify eager validation since we have no host to start.
+            var error = Assert.Throws<OptionsValidationException>(() => sp.GetRequiredService<IOptions<ComplexOptions>>().Value);
+            ValidateFailure<ComplexOptions>(error, Options.DefaultName, 1, "Boolean != true");
+        }
+
+        [Fact]
+        public void CanValidateOptionsEagerly_AddOptionsWithValidateOnStart_IValidateOptions()
+        {
+            var services = new ServiceCollection();
+            services.AddOptionsWithValidateOnStart<ComplexOptions, ComplexOptionsValidator>()
+                .Configure(o => o.Boolean = false);
+
+            var sp = services.BuildServiceProvider();
+            // This doesn't really verify eager validation since we have no host to start.
+            var error = Assert.Throws<OptionsValidationException>(() => sp.GetRequiredService<IOptions<ComplexOptions>>().Value);
+            ValidateFailure<ComplexOptions>(error, Options.DefaultName, 1, "Boolean != true");
         }
 
         [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = true)]

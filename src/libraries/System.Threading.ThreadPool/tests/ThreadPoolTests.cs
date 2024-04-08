@@ -6,6 +6,8 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
+using System.Net.Sockets;
+using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Threading.Tests;
@@ -42,7 +44,7 @@ namespace System.Threading.ThreadPools.Tests
         // Tests concurrent calls to ThreadPool.SetMinThreads. Invoked from the static constructor.
         private static void ConcurrentInitializeTest()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutor.Invoke((usePortableThreadPool) =>
             {
                 int processorCount = Environment.ProcessorCount;
                 var countdownEvent = new CountdownEvent(processorCount);
@@ -51,7 +53,10 @@ namespace System.Threading.ThreadPools.Tests
                     {
                         countdownEvent.Signal();
                         countdownEvent.Wait(ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
-                        Assert.True(ThreadPool.SetMinThreads(processorCount, processorCount));
+                        if (Boolean.Parse(usePortableThreadPool))
+                        {
+                            Assert.True(ThreadPool.SetMinThreads(processorCount, processorCount));
+                        }
                     };
 
                 var waitForThreadArray = new Action[processorCount];
@@ -66,7 +71,7 @@ namespace System.Threading.ThreadPools.Tests
                 {
                     waitForThread();
                 }
-            }).Dispose();
+            }, UsePortableThreadPool.ToString()).Dispose();
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -97,7 +102,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.True(c <= maxc);
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         [ActiveIssue("https://github.com/mono/mono/issues/15164", TestRuntimes.Mono)]
         public static void SetMinMaxThreadsTest()
         {
@@ -133,7 +138,7 @@ namespace System.Threading.ThreadPools.Tests
                     VerifyMaxThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
                     Assert.True(ThreadPool.SetMaxThreads(MaxPossibleThreadCount + 1, MaxPossibleThreadCount + 1));
                     VerifyMaxThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
-                    Assert.Equal(PlatformDetection.IsNetFramework, ThreadPool.SetMaxThreads(-1, -1));
+                    Assert.False(ThreadPool.SetMaxThreads(-1, -1));
                     VerifyMaxThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
 
                     Assert.True(ThreadPool.SetMinThreads(MaxPossibleThreadCount, MaxPossibleThreadCount));
@@ -161,7 +166,7 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         public static void SetMinMaxThreadsTest_ChangedInDotNetCore()
         {
             RemoteExecutor.Invoke(() =>
@@ -222,7 +227,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.Equal(expectedMaxc, maxc);
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         public static void SetMinThreadsTo0Test()
         {
             RemoteExecutor.Invoke(() =>
@@ -537,7 +542,8 @@ namespace System.Threading.ThreadPools.Tests
                     Assert.True(totalWorkCountToQueue >= 1);
                     waitForWorkStart = true;
                     scheduleWork();
-                    Assert.True(ThreadPool.ThreadCount >= totalWorkCountToQueue);
+                    int threadCountLowerBound = UsePortableThreadPool ? totalWorkCountToQueue : 1;
+                    Assert.True(ThreadPool.ThreadCount >= threadCountLowerBound);
 
                     int runningWorkItemCount = queuedWorkCount;
 
@@ -701,7 +707,7 @@ namespace System.Threading.ThreadPools.Tests
             done.CheckedWait();
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         public static void WorkerThreadStateResetTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -785,7 +791,7 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         public static void SettingMinWorkerThreadsWillCreateThreadsUpToMinimum()
         {
             RemoteExecutor.Invoke(() =>
@@ -1105,7 +1111,7 @@ namespace System.Threading.ThreadPools.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         public void ThreadPoolMinMaxThreadsEventTest()
         {
             // The ThreadPoolMinMaxThreads event is fired when the ThreadPool is created
@@ -1156,7 +1162,105 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
+        private sealed class RuntimeEventListener : EventListener
+        {
+            private const string ClrProviderName = "Microsoft-Windows-DotNETRuntime";
+            private const EventKeywords ThreadingKeyword = (EventKeywords)0x10000;
+
+            public volatile int tpIOEnqueue = 0;
+            public volatile int tpIODequeue = 0;
+            public ManualResetEvent tpWaitIOEnqueueEvent = new ManualResetEvent(false);
+            public ManualResetEvent tpWaitIODequeueEvent = new ManualResetEvent(false);
+
+            protected override void OnEventSourceCreated(EventSource eventSource)
+            {
+                if (eventSource.Name.Equals(ClrProviderName))
+                {
+                    EnableEvents(eventSource, EventLevel.Verbose, ThreadingKeyword);
+                }
+
+                base.OnEventSourceCreated(eventSource);
+            }
+
+            protected override void OnEventWritten(EventWrittenEventArgs eventData)
+            {
+                if (eventData.EventName.Equals("ThreadPoolIOEnqueue"))
+                {
+                    Interlocked.Increment(ref tpIOEnqueue);
+                    tpWaitIOEnqueueEvent.Set();
+                }
+                else if (eventData.EventName.Equals("ThreadPoolIODequeue"))
+                {
+                    Interlocked.Increment(ref tpIODequeue);
+                    tpWaitIODequeueEvent.Set();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UseWindowsThreadPool))]
+        public void ReadWriteAsyncTest()
+        {
+            RemoteExecutor.Invoke(async () =>
+            {
+                using (RuntimeEventListener eventListener = new RuntimeEventListener())
+                {
+                    TaskCompletionSource<int> portTcs = new TaskCompletionSource<int>();
+                    TaskCompletionSource<bool> readAsyncReadyTcs = new TaskCompletionSource<bool>();
+
+                    async Task StartListenerAsync()
+                    {
+                        using TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
+                        listener.Start();
+                        int port = ((IPEndPoint)listener.LocalEndpoint).Port;
+                        portTcs.SetResult(port);
+                        using TcpClient client = await listener.AcceptTcpClientAsync();
+                        using (NetworkStream stream = client.GetStream())
+                        {
+                            byte[] buffer = new byte[1];
+                            Task readAsyncTask = stream.ReadAsync(buffer, 0, buffer.Length);
+                            readAsyncReadyTcs.SetResult(true);
+                            await readAsyncTask;
+                        }
+                        listener.Stop();
+                    }
+
+                    async Task StartClientAsync()
+                    {
+                        int port = await portTcs.Task;
+                        using (TcpClient client = new TcpClient(new IPEndPoint(IPAddress.Loopback, 0)))
+                        {
+                            await client.ConnectAsync(IPAddress.Loopback, port);
+                            using (NetworkStream stream = client.GetStream())
+                            {
+                                bool readAsyncReady = await readAsyncReadyTcs.Task;
+                                byte[] data = new byte[1];
+                                await stream.WriteAsync(data, 0, data.Length);
+                            }
+                        }
+                    }
+
+                    Task listenerTask = StartListenerAsync();
+                    Task clientTask = StartClientAsync();
+                    await Task.WhenAll(listenerTask, clientTask);
+                    ManualResetEvent[] waitEvents = [eventListener.tpWaitIOEnqueueEvent, eventListener.tpWaitIODequeueEvent];
+
+                    Assert.True(WaitHandle.WaitAll(waitEvents, TimeSpan.FromSeconds(15))); // Assert that there wasn't a timeout
+                    Assert.True(eventListener.tpIOEnqueue > 0);
+                    Assert.True(eventListener.tpIODequeue > 0);
+                }
+            }).Dispose();
+        }
+
         public static bool IsThreadingAndRemoteExecutorSupported =>
             PlatformDetection.IsThreadingSupported && RemoteExecutor.IsSupported;
+
+        private static bool GetUseWindowsThreadPool()
+        {
+            AppContext.TryGetSwitch("System.Threading.ThreadPool.UseWindowsThreadPool", out bool useWindowsThreadPool);
+            return useWindowsThreadPool;
+        }
+
+        private static bool UseWindowsThreadPool { get; } = GetUseWindowsThreadPool();
+        private static bool UsePortableThreadPool { get; } = !UseWindowsThreadPool;
     }
 }

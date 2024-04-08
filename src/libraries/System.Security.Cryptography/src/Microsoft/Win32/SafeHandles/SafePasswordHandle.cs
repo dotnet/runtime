@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 
@@ -14,7 +15,13 @@ namespace Microsoft.Win32.SafeHandles
     {
         internal int Length { get; private set; }
 
-        public SafePasswordHandle(string? password)
+        /// <summary>
+        /// This is used to track if a password was explicitly provided.
+        /// A null/empty password is a valid password.
+        /// </summary>
+        internal bool PasswordProvided { get; }
+
+        public SafePasswordHandle(string? password, bool passwordProvided)
             : base(ownsHandle: true)
         {
             if (password != null)
@@ -22,13 +29,15 @@ namespace Microsoft.Win32.SafeHandles
                 handle = Marshal.StringToHGlobalUni(password);
                 Length = password.Length;
             }
+
+            PasswordProvided = passwordProvided;
         }
 
-        public SafePasswordHandle(ReadOnlySpan<char> password)
+        public SafePasswordHandle(ReadOnlySpan<char> password, bool passwordProvided)
             : base(ownsHandle: true)
         {
-            // "".AsSpan() is not default, so this is compat for "null tries NULL first".
-            if (password != default)
+            // "".AsSpan() does not contain a null ref, so this is compat for "null tries NULL first".
+            if (!Unsafe.IsNullRef(ref MemoryMarshal.GetReference(password)))
             {
                 int spanLen;
 
@@ -47,9 +56,11 @@ namespace Microsoft.Win32.SafeHandles
 
                 Length = password.Length;
             }
+
+            PasswordProvided = passwordProvided;
         }
 
-        public SafePasswordHandle(SecureString? password)
+        public SafePasswordHandle(SecureString? password, bool passwordProvided)
             : base(ownsHandle: true)
         {
             if (password != null)
@@ -57,6 +68,8 @@ namespace Microsoft.Win32.SafeHandles
                 handle = Marshal.SecureStringToGlobalAllocUnicode(password);
                 Length = password.Length;
             }
+
+            PasswordProvided = passwordProvided;
         }
 
         protected override bool ReleaseHandle()
@@ -94,7 +107,7 @@ namespace Microsoft.Win32.SafeHandles
             SafeHandleCache<SafePasswordHandle>.GetInvalidHandle(
                 () =>
                 {
-                    var handle = new SafePasswordHandle((string?)null);
+                    var handle = new SafePasswordHandle((string?)null, false);
                     handle.handle = (IntPtr)(-1);
                     return handle;
                 });

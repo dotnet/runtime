@@ -313,9 +313,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                             // machine might be different
                             if (matches.Count == 0)
                             {
-                                Assert.True(
-                                    false,
-                                    $"Root certificate '{rootCert.Subject}' ({rootCert.NotBefore} - {rootCert.NotAfter}) is findable with thumbprint '{rootCert.Thumbprint}' and validOnly=true");
+                                Assert.Fail($"Root certificate '{rootCert.Subject}' ({rootCert.NotBefore} - {rootCert.NotAfter}) is findable with thumbprint '{rootCert.Thumbprint}' and validOnly=true");
                             }
 
                             Assert.NotSame(rootCert, matches[0]);

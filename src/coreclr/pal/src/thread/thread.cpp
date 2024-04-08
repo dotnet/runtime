@@ -1564,7 +1564,7 @@ CorUnix::InternalSetThreadDescription(
         goto InternalSetThreadDescriptionExit;
     }
 
-    nameBuf = (char *)PAL_malloc(nameSize);
+    nameBuf = (char *)malloc(nameSize);
     if (nameBuf == NULL)
     {
         palError = ERROR_OUTOFMEMORY;
@@ -1616,7 +1616,7 @@ InternalSetThreadDescriptionExit:
     }
 
     if (NULL != nameBuf) {
-        PAL_free(nameBuf);
+        free(nameBuf);
     }
 
 #endif //defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
@@ -2220,12 +2220,6 @@ CPalThread::RunPreCreateInitializers(
         goto RunPreCreateInitializersExit;
     }
 
-    palError = crtInfo.InitializePreCreate();
-    if (NO_ERROR != palError)
-    {
-        goto RunPreCreateInitializersExit;
-    }
-
 RunPreCreateInitializersExit:
 
     return palError;
@@ -2313,12 +2307,6 @@ CPalThread::RunPostCreateInitializers(
     }
 
     palError = apcInfo.InitializePostCreate(this, m_threadId, m_dwLwpId);
-    if (NO_ERROR != palError)
-    {
-        goto RunPostCreateInitializersExit;
-    }
-
-    palError = crtInfo.InitializePostCreate(this, m_threadId, m_dwLwpId);
     if (NO_ERROR != palError)
     {
         goto RunPostCreateInitializersExit;
@@ -2449,7 +2437,7 @@ CPalThread::EnsureSignalAlternateStack()
             // We include the size of the SignalHandlerWorkerReturnPoint in the alternate stack size since the
             // context contained in it is large and the SIGSTKSZ was not sufficient on ARM64 during testing.
             int altStackSize = SIGSTKSZ + ALIGN_UP(sizeof(SignalHandlerWorkerReturnPoint), 16) + GetVirtualPageSize();
-#ifdef HAS_ASAN
+#ifdef HAS_ADDRESS_SANITIZER
             // Asan also uses alternate stack so we increase its size on the SIGSTKSZ * 4 that enough for asan
             // (see kAltStackSize in compiler-rt/lib/sanitizer_common/sanitizer_posix_libcdep.cc)
             altStackSize += SIGSTKSZ * 4;

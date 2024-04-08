@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Numerics;
-using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -11,7 +10,6 @@ using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
-#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
 namespace System.Buffers
 {
@@ -107,6 +105,76 @@ namespace System.Buffers
                 values.Length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx512Vbmi))]
+        private static Vector512<byte> ContainsMask64CharsAvx512(Vector512<byte> charMap, ref char searchSpace0, ref char searchSpace1)
+        {
+            Vector512<ushort> source0 = Vector512.LoadUnsafe(ref searchSpace0);
+            Vector512<ushort> source1 = Vector512.LoadUnsafe(ref searchSpace1);
+
+            Vector512<byte> sourceLower = Avx512BW.PackUnsignedSaturate(
+                (source0 & Vector512.Create((ushort)255)).AsInt16(),
+                (source1 & Vector512.Create((ushort)255)).AsInt16());
+
+            Vector512<byte> sourceUpper = Avx512BW.PackUnsignedSaturate(
+                (source0 >>> 8).AsInt16(),
+                (source1 >>> 8).AsInt16());
+
+            Vector512<byte> resultLower = IsCharBitNotSetAvx512(charMap, sourceLower);
+            Vector512<byte> resultUpper = IsCharBitNotSetAvx512(charMap, sourceUpper);
+
+            return ~(resultLower | resultUpper);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx512Vbmi))]
+        private static Vector512<byte> IsCharBitNotSetAvx512(Vector512<byte> charMap, Vector512<byte> values)
+        {
+            Vector512<byte> shifted = values >>> VectorizedIndexShift;
+
+            Vector512<byte> bitPositions = Avx512BW.Shuffle(Vector512.Create(0x8040201008040201).AsByte(), shifted);
+
+            Vector512<byte> index = values & Vector512.Create((byte)VectorizedIndexMask);
+            Vector512<byte> bitMask = Avx512Vbmi.PermuteVar64x8(charMap, index);
+
+            return Vector512.Equals(bitMask & bitPositions, Vector512<byte>.Zero);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx512Vbmi.VL))]
+        private static Vector256<byte> ContainsMask32CharsAvx512(Vector256<byte> charMap, ref char searchSpace0, ref char searchSpace1)
+        {
+            Vector256<ushort> source0 = Vector256.LoadUnsafe(ref searchSpace0);
+            Vector256<ushort> source1 = Vector256.LoadUnsafe(ref searchSpace1);
+
+            Vector256<byte> sourceLower = Avx2.PackUnsignedSaturate(
+                (source0 & Vector256.Create((ushort)255)).AsInt16(),
+                (source1 & Vector256.Create((ushort)255)).AsInt16());
+
+            Vector256<byte> sourceUpper = Avx2.PackUnsignedSaturate(
+                (source0 >>> 8).AsInt16(),
+                (source1 >>> 8).AsInt16());
+
+            Vector256<byte> resultLower = IsCharBitNotSetAvx512(charMap, sourceLower);
+            Vector256<byte> resultUpper = IsCharBitNotSetAvx512(charMap, sourceUpper);
+
+            return ~(resultLower | resultUpper);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx512Vbmi.VL))]
+        private static Vector256<byte> IsCharBitNotSetAvx512(Vector256<byte> charMap, Vector256<byte> values)
+        {
+            Vector256<byte> shifted = values >>> VectorizedIndexShift;
+
+            Vector256<byte> bitPositions = Avx2.Shuffle(Vector256.Create(0x8040201008040201).AsByte(), shifted);
+
+            Vector256<byte> index = values & Vector256.Create((byte)VectorizedIndexMask);
+            Vector256<byte> bitMask = Avx512Vbmi.VL.PermuteVar32x8(charMap, index);
+
+            return Vector256.Equals(bitMask & bitPositions, Vector256<byte>.Zero);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx2))]
         private static Vector256<byte> ContainsMask32CharsAvx2(Vector256<byte> charMapLower, Vector256<byte> charMapUpper, ref char searchSpace)
         {
@@ -121,20 +189,19 @@ namespace System.Buffers
                 (source0 >>> 8).AsInt16(),
                 (source1 >>> 8).AsInt16());
 
-            Vector256<byte> resultLower = IsCharBitSetAvx2(charMapLower, charMapUpper, sourceLower);
-            Vector256<byte> resultUpper = IsCharBitSetAvx2(charMapLower, charMapUpper, sourceUpper);
+            Vector256<byte> resultLower = IsCharBitNotSetAvx2(charMapLower, charMapUpper, sourceLower);
+            Vector256<byte> resultUpper = IsCharBitNotSetAvx2(charMapLower, charMapUpper, sourceUpper);
 
-            return resultLower & resultUpper;
+            return ~(resultLower | resultUpper);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx2))]
-        private static Vector256<byte> IsCharBitSetAvx2(Vector256<byte> charMapLower, Vector256<byte> charMapUpper, Vector256<byte> values)
+        private static Vector256<byte> IsCharBitNotSetAvx2(Vector256<byte> charMapLower, Vector256<byte> charMapUpper, Vector256<byte> values)
         {
-            // X86 doesn't have a logical right shift intrinsic for bytes: https://github.com/dotnet/runtime/issues/82564
-            Vector256<byte> highNibble = (values.AsInt32() >>> VectorizedIndexShift).AsByte() & Vector256.Create((byte)15);
+            Vector256<byte> shifted = values >>> VectorizedIndexShift;
 
-            Vector256<byte> bitPositions = Avx2.Shuffle(Vector256.Create(0x8040201008040201).AsByte(), highNibble);
+            Vector256<byte> bitPositions = Avx2.Shuffle(Vector256.Create(0x8040201008040201).AsByte(), shifted);
 
             Vector256<byte> index = values & Vector256.Create((byte)VectorizedIndexMask);
             Vector256<byte> bitMaskLower = Avx2.Shuffle(charMapLower, index);
@@ -142,7 +209,7 @@ namespace System.Buffers
             Vector256<byte> mask = Vector256.GreaterThan(index, Vector256.Create((byte)15));
             Vector256<byte> bitMask = Vector256.ConditionalSelect(mask, bitMaskUpper, bitMaskLower);
 
-            return ~Vector256.Equals(bitMask & bitPositions, Vector256<byte>.Zero);
+            return Vector256.Equals(bitMask & bitPositions, Vector256<byte>.Zero);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -161,10 +228,10 @@ namespace System.Buffers
                 ? Sse2.PackUnsignedSaturate((source0 >>> 8).AsInt16(), (source1 >>> 8).AsInt16())
                 : AdvSimd.Arm64.UnzipOdd(source0.AsByte(), source1.AsByte());
 
-            Vector128<byte> resultLower = IsCharBitSet(charMapLower, charMapUpper, sourceLower);
-            Vector128<byte> resultUpper = IsCharBitSet(charMapLower, charMapUpper, sourceUpper);
+            Vector128<byte> resultLower = IsCharBitNotSet(charMapLower, charMapUpper, sourceLower);
+            Vector128<byte> resultUpper = IsCharBitNotSet(charMapLower, charMapUpper, sourceUpper);
 
-            return resultLower & resultUpper;
+            return ~(resultLower | resultUpper);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -173,14 +240,11 @@ namespace System.Buffers
         [CompExactlyDependsOn(typeof(AdvSimd))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(PackedSimd))]
-        private static Vector128<byte> IsCharBitSet(Vector128<byte> charMapLower, Vector128<byte> charMapUpper, Vector128<byte> values)
+        private static Vector128<byte> IsCharBitNotSet(Vector128<byte> charMapLower, Vector128<byte> charMapUpper, Vector128<byte> values)
         {
-            // X86 doesn't have a logical right shift intrinsic for bytes: https://github.com/dotnet/runtime/issues/82564
-            Vector128<byte> highNibble = Sse2.IsSupported
-                ? (values.AsInt32() >>> VectorizedIndexShift).AsByte() & Vector128.Create((byte)15)
-                : values >>> VectorizedIndexShift;
+            Vector128<byte> shifted = values >>> VectorizedIndexShift;
 
-            Vector128<byte> bitPositions = Vector128.ShuffleUnsafe(Vector128.Create(0x8040201008040201).AsByte(), highNibble);
+            Vector128<byte> bitPositions = Vector128.ShuffleUnsafe(Vector128.Create(0x8040201008040201).AsByte(), shifted);
 
             Vector128<byte> index = values & Vector128.Create((byte)VectorizedIndexMask);
             Vector128<byte> bitMask;
@@ -197,7 +261,7 @@ namespace System.Buffers
                 bitMask = Vector128.ConditionalSelect(mask, bitMaskUpper, bitMaskLower);
             }
 
-            return ~Vector128.Equals(bitMask & bitPositions, Vector128<byte>.Zero);
+            return Vector128.Equals(bitMask & bitPositions, Vector128<byte>.Zero);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -215,118 +279,100 @@ namespace System.Buffers
                 || (searchSpaceLength < 20 && searchSpaceLength < (valuesLength >> 1));
         }
 
-        public static int IndexOfAny(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength) =>
-            IndexOfAny<SpanHelpers.DontNegate<char>>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
-
-        public static int IndexOfAnyExcept(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength) =>
-            IndexOfAny<SpanHelpers.Negate<char>>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
-
-        public static int LastIndexOfAny(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength) =>
-            LastIndexOfAny<SpanHelpers.DontNegate<char>>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
-
-        public static int LastIndexOfAnyExcept(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength) =>
-            LastIndexOfAny<SpanHelpers.Negate<char>>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
-
-        private static int IndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
-            where TNegator : struct, SpanHelpers.INegator<char>
+        public static int IndexOfAny(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
         {
             var valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
 
             // If the search space is relatively short compared to the needle, do a simple O(n * m) search.
             if (ShouldUseSimpleLoop(searchSpaceLength, valuesLength))
             {
-                ref char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
-                ref char cur = ref searchSpace;
-
-                while (!Unsafe.AreSame(ref cur, ref searchSpaceEnd))
-                {
-                    char c = cur;
-                    if (TNegator.NegateIfNeeded(Contains(valuesSpan, c)))
-                    {
-                        return (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref cur) / sizeof(char));
-                    }
-
-                    cur = ref Unsafe.Add(ref cur, 1);
-                }
-
-                return -1;
+                return IndexOfAnySimpleLoop<IndexOfAnyAsciiSearcher.DontNegate>(ref searchSpace, searchSpaceLength, valuesSpan);
             }
 
-            if (typeof(TNegator) == typeof(SpanHelpers.DontNegate<char>)
-                ? IndexOfAnyAsciiSearcher.TryIndexOfAny(ref searchSpace, searchSpaceLength, valuesSpan, out int index)
-                : IndexOfAnyAsciiSearcher.TryIndexOfAnyExcept(ref searchSpace, searchSpaceLength, valuesSpan, out index))
+            if (IndexOfAnyAsciiSearcher.TryIndexOfAny(ref searchSpace, searchSpaceLength, valuesSpan, out int index))
             {
                 return index;
             }
 
-            return ProbabilisticIndexOfAny<TNegator>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
+            return ProbabilisticIndexOfAny(ref searchSpace, searchSpaceLength, ref values, valuesLength);
         }
 
-        private static int LastIndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
-            where TNegator : struct, SpanHelpers.INegator<char>
+        public static int IndexOfAnyExcept(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
+        {
+            var valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
+
+            if (IndexOfAnyAsciiSearcher.IsVectorizationSupported &&
+                !ShouldUseSimpleLoop(searchSpaceLength, valuesLength) &&
+                IndexOfAnyAsciiSearcher.TryIndexOfAnyExcept(ref searchSpace, searchSpaceLength, valuesSpan, out int index))
+            {
+                return index;
+            }
+
+            return IndexOfAnySimpleLoop<IndexOfAnyAsciiSearcher.Negate>(ref searchSpace, searchSpaceLength, valuesSpan);
+        }
+
+        public static int LastIndexOfAny(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
         {
             var valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
 
             // If the search space is relatively short compared to the needle, do a simple O(n * m) search.
             if (ShouldUseSimpleLoop(searchSpaceLength, valuesLength))
             {
-                for (int i = searchSpaceLength - 1; i >= 0; i--)
-                {
-                    char c = Unsafe.Add(ref searchSpace, i);
-                    if (TNegator.NegateIfNeeded(Contains(valuesSpan, c)))
-                    {
-                        return i;
-                    }
-                }
-
-                return -1;
+                return LastIndexOfAnySimpleLoop<IndexOfAnyAsciiSearcher.DontNegate>(ref searchSpace, searchSpaceLength, valuesSpan);
             }
 
-            if (typeof(TNegator) == typeof(SpanHelpers.DontNegate<char>)
-                ? IndexOfAnyAsciiSearcher.TryLastIndexOfAny(ref searchSpace, searchSpaceLength, valuesSpan, out int index)
-                : IndexOfAnyAsciiSearcher.TryLastIndexOfAnyExcept(ref searchSpace, searchSpaceLength, valuesSpan, out index))
+            if (IndexOfAnyAsciiSearcher.TryLastIndexOfAny(ref searchSpace, searchSpaceLength, valuesSpan, out int index))
             {
                 return index;
             }
 
-            return ProbabilisticLastIndexOfAny<TNegator>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
+            return ProbabilisticLastIndexOfAny(ref searchSpace, searchSpaceLength, ref values, valuesLength);
+        }
+
+        public static int LastIndexOfAnyExcept(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
+        {
+            var valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
+
+            if (IndexOfAnyAsciiSearcher.IsVectorizationSupported &&
+                !ShouldUseSimpleLoop(searchSpaceLength, valuesLength) &&
+                IndexOfAnyAsciiSearcher.TryLastIndexOfAnyExcept(ref searchSpace, searchSpaceLength, valuesSpan, out int index))
+            {
+                return index;
+            }
+
+            return LastIndexOfAnySimpleLoop<IndexOfAnyAsciiSearcher.Negate>(ref searchSpace, searchSpaceLength, valuesSpan);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static int ProbabilisticIndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
-            where TNegator : struct, SpanHelpers.INegator<char>
+        private static int ProbabilisticIndexOfAny(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
         {
             var valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
 
             var map = new ProbabilisticMap(valuesSpan);
             ref uint charMap = ref Unsafe.As<ProbabilisticMap, uint>(ref map);
 
-            return typeof(TNegator) == typeof(SpanHelpers.DontNegate<char>)
-                ? IndexOfAny<IndexOfAnyAsciiSearcher.DontNegate>(ref charMap, ref searchSpace, searchSpaceLength, valuesSpan)
-                : IndexOfAny<IndexOfAnyAsciiSearcher.Negate>(ref charMap, ref searchSpace, searchSpaceLength, valuesSpan);
+            return IndexOfAny(ref charMap, ref searchSpace, searchSpaceLength, valuesSpan);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static int ProbabilisticLastIndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
-            where TNegator : struct, SpanHelpers.INegator<char>
+        private static int ProbabilisticLastIndexOfAny(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
         {
             var valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
 
             var map = new ProbabilisticMap(valuesSpan);
             ref uint charMap = ref Unsafe.As<ProbabilisticMap, uint>(ref map);
 
-            return typeof(TNegator) == typeof(SpanHelpers.DontNegate<char>)
-                ? LastIndexOfAny<IndexOfAnyAsciiSearcher.DontNegate>(ref charMap, ref searchSpace, searchSpaceLength, valuesSpan)
-                : LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate>(ref charMap, ref searchSpace, searchSpaceLength, valuesSpan);
+            return LastIndexOfAny(ref charMap, ref searchSpace, searchSpaceLength, valuesSpan);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int IndexOfAny<TNegator>(ref uint charMap, ref char searchSpace, int searchSpaceLength, ReadOnlySpan<char> values)
-            where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
+        internal static int IndexOfAny(ref uint charMap, ref char searchSpace, int searchSpaceLength, ReadOnlySpan<char> values)
         {
-            if ((Sse41.IsSupported || AdvSimd.Arm64.IsSupported) && typeof(TNegator) == typeof(IndexOfAnyAsciiSearcher.DontNegate) && searchSpaceLength >= 16)
+            if ((Sse41.IsSupported || AdvSimd.Arm64.IsSupported) && searchSpaceLength >= 16)
             {
-                return IndexOfAnyVectorized(ref charMap, ref searchSpace, searchSpaceLength, values);
+                return Vector512.IsHardwareAccelerated && Avx512Vbmi.VL.IsSupported
+                    ? IndexOfAnyVectorizedAvx512(ref charMap, ref searchSpace, searchSpaceLength, values)
+                    : IndexOfAnyVectorized(ref charMap, ref searchSpace, searchSpaceLength, values);
             }
 
             ref char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
@@ -335,9 +381,9 @@ namespace System.Buffers
             while (!Unsafe.AreSame(ref cur, ref searchSpaceEnd))
             {
                 int ch = cur;
-                if (TNegator.NegateIfNeeded(Contains(ref charMap, values, ch)))
+                if (Contains(ref charMap, values, ch))
                 {
-                    return (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref cur) / sizeof(char));
+                    return MatchOffset(ref searchSpace, ref cur);
                 }
 
                 cur = ref Unsafe.Add(ref cur, 1);
@@ -347,15 +393,96 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LastIndexOfAny<TNegator>(ref uint charMap, ref char searchSpace, int searchSpaceLength, ReadOnlySpan<char> values)
-            where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
+        internal static int LastIndexOfAny(ref uint charMap, ref char searchSpace, int searchSpaceLength, ReadOnlySpan<char> values)
         {
             for (int i = searchSpaceLength - 1; i >= 0; i--)
             {
                 int ch = Unsafe.Add(ref searchSpace, i);
-                if (TNegator.NegateIfNeeded(Contains(ref charMap, values, ch)))
+                if (Contains(ref charMap, values, ch))
                 {
                     return i;
+                }
+            }
+
+            return -1;
+        }
+
+        [CompExactlyDependsOn(typeof(Avx512Vbmi.VL))]
+        private static int IndexOfAnyVectorizedAvx512(ref uint charMap, ref char searchSpace, int searchSpaceLength, ReadOnlySpan<char> values)
+        {
+            Debug.Assert(Avx512Vbmi.VL.IsSupported);
+            Debug.Assert(searchSpaceLength >= 16);
+
+            ref char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
+
+            Vector256<byte> charMap256 = Vector256.LoadUnsafe(ref Unsafe.As<uint, byte>(ref charMap));
+
+            if (searchSpaceLength > 32)
+            {
+                Vector512<byte> charMap512 = Vector512.Create(charMap256, charMap256);
+
+                if (searchSpaceLength > 64)
+                {
+                    ref char cur = ref searchSpace;
+                    ref char lastStartVector = ref Unsafe.Subtract(ref searchSpaceEnd, 64);
+
+                    while (true)
+                    {
+                        Vector512<byte> result = ContainsMask64CharsAvx512(charMap512, ref cur, ref Unsafe.Add(ref cur, Vector512<ushort>.Count));
+
+                        if (result != Vector512<byte>.Zero)
+                        {
+                            if (TryFindMatch(ref cur, PackedSpanHelpers.FixUpPackedVector512Result(result).ExtractMostSignificantBits(), values, out int index))
+                            {
+                                return MatchOffset(ref searchSpace, ref cur) + index;
+                            }
+                        }
+
+                        cur = ref Unsafe.Add(ref cur, 64);
+
+                        if (Unsafe.IsAddressGreaterThan(ref cur, ref lastStartVector))
+                        {
+                            if (Unsafe.AreSame(ref cur, ref searchSpaceEnd))
+                            {
+                                break;
+                            }
+
+                            // Adjust the current vector and do one last iteration.
+                            cur = ref lastStartVector;
+                        }
+                    }
+                }
+                else
+                {
+                    Debug.Assert(searchSpaceLength is > 32 and <= 64);
+
+                    // Process the first and last vector in the search space.
+                    // They may overlap, but we'll handle that in the index calculation if we do get a match.
+                    Vector512<byte> result = ContainsMask64CharsAvx512(charMap512, ref searchSpace, ref Unsafe.Subtract(ref searchSpaceEnd, Vector512<ushort>.Count));
+
+                    if (result != Vector512<byte>.Zero)
+                    {
+                        if (TryFindMatchOverlapped(ref searchSpace, searchSpaceLength, PackedSpanHelpers.FixUpPackedVector512Result(result).ExtractMostSignificantBits(), values, out int index))
+                        {
+                            return index;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                Debug.Assert(searchSpaceLength is >= 16 and <= 32);
+
+                // Process the first and last vector in the search space.
+                // They may overlap, but we'll handle that in the index calculation if we do get a match.
+                Vector256<byte> result = ContainsMask32CharsAvx512(charMap256, ref searchSpace, ref Unsafe.Subtract(ref searchSpaceEnd, Vector256<ushort>.Count));
+
+                if (result != Vector256<byte>.Zero)
+                {
+                    if (TryFindMatchOverlapped(ref searchSpace, searchSpaceLength, PackedSpanHelpers.FixUpPackedVector256Result(result).ExtractMostSignificantBits(), values, out int index))
+                    {
+                        return index;
+                    }
                 }
             }
 
@@ -390,22 +517,10 @@ namespace System.Buffers
 
                     if (result != Vector256<byte>.Zero)
                     {
-                        // Account for how ContainsMask32CharsAvx2 packed the source chars (Avx2.PackUnsignedSaturate).
-                        result = Avx2.Permute4x64(result.AsInt64(), 0b_11_01_10_00).AsByte();
-
-                        uint mask = result.ExtractMostSignificantBits();
-                        do
+                        if (TryFindMatch(ref cur, PackedSpanHelpers.FixUpPackedVector256Result(result).ExtractMostSignificantBits(), values, out int index))
                         {
-                            ref char candidatePos = ref Unsafe.Add(ref cur, BitOperations.TrailingZeroCount(mask));
-
-                            if (Contains(values, candidatePos))
-                            {
-                                return (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref candidatePos) / sizeof(char));
-                            }
-
-                            mask = BitOperations.ResetLowestSetBit(mask);
+                            return MatchOffset(ref searchSpace, ref cur) + index;
                         }
-                        while (mask != 0);
                     }
 
                     cur = ref Unsafe.Add(ref cur, 32);
@@ -442,19 +557,10 @@ namespace System.Buffers
 
                 if (result != Vector128<byte>.Zero)
                 {
-                    uint mask = result.ExtractMostSignificantBits();
-                    do
+                    if (TryFindMatch(ref cur, result.ExtractMostSignificantBits(), values, out int index))
                     {
-                        ref char candidatePos = ref Unsafe.Add(ref cur, BitOperations.TrailingZeroCount(mask));
-
-                        if (Contains(values, candidatePos))
-                        {
-                            return (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref candidatePos) / sizeof(char));
-                        }
-
-                        mask = BitOperations.ResetLowestSetBit(mask);
+                        return MatchOffset(ref searchSpace, ref cur) + index;
                     }
-                    while (mask != 0);
                 }
 
                 cur = ref Unsafe.Add(ref cur, 16);
@@ -468,6 +574,141 @@ namespace System.Buffers
 
                     // Adjust the current vector and do one last iteration.
                     cur = ref lastStartVector;
+                }
+            }
+
+            return -1;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int MatchOffset(ref char searchSpace, ref char cur) =>
+            (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref cur) / sizeof(char));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryFindMatch(ref char cur, uint mask, ReadOnlySpan<char> values, out int index)
+        {
+            do
+            {
+                index = BitOperations.TrailingZeroCount(mask);
+
+                if (Contains(values, Unsafe.Add(ref cur, index)))
+                {
+                    return true;
+                }
+
+                mask = BitOperations.ResetLowestSetBit(mask);
+            }
+            while (mask != 0);
+
+            index = 0;
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryFindMatchOverlapped(ref char cur, int searchSpaceLength, uint mask, ReadOnlySpan<char> values, out int index)
+        {
+            do
+            {
+                index = BitOperations.TrailingZeroCount(mask);
+
+                if (index >= Vector256<ushort>.Count)
+                {
+                    // The potential match is in the second vector.
+                    // Fixup the index to account for how we loaded the second overlapped vector.
+                    index += searchSpaceLength - (2 * Vector256<ushort>.Count);
+                }
+
+                if (Contains(values, Unsafe.Add(ref cur, index)))
+                {
+                    return true;
+                }
+
+                mask = BitOperations.ResetLowestSetBit(mask);
+            }
+            while (mask != 0);
+
+            index = 0;
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryFindMatch(ref char cur, ulong mask, ReadOnlySpan<char> values, out int index)
+        {
+            do
+            {
+                index = BitOperations.TrailingZeroCount(mask);
+
+                if (Contains(values, Unsafe.Add(ref cur, index)))
+                {
+                    return true;
+                }
+
+                mask = BitOperations.ResetLowestSetBit(mask);
+            }
+            while (mask != 0);
+
+            index = 0;
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryFindMatchOverlapped(ref char cur, int searchSpaceLength, ulong mask, ReadOnlySpan<char> values, out int index)
+        {
+            do
+            {
+                index = BitOperations.TrailingZeroCount(mask);
+
+                if (index >= Vector512<ushort>.Count)
+                {
+                    // The potential match is in the second vector.
+                    // Fixup the index to account for how we loaded the second overlapped vector.
+                    index += searchSpaceLength - (2 * Vector512<ushort>.Count);
+                }
+
+                if (Contains(values, Unsafe.Add(ref cur, index)))
+                {
+                    return true;
+                }
+
+                mask = BitOperations.ResetLowestSetBit(mask);
+            }
+            while (mask != 0);
+
+            index = 0;
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int IndexOfAnySimpleLoop<TNegator>(ref char searchSpace, int searchSpaceLength, ReadOnlySpan<char> values)
+            where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
+        {
+            ref char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
+            ref char cur = ref searchSpace;
+
+            while (!Unsafe.AreSame(ref cur, ref searchSpaceEnd))
+            {
+                char c = cur;
+                if (TNegator.NegateIfNeeded(Contains(values, c)))
+                {
+                    return MatchOffset(ref searchSpace, ref cur);
+                }
+
+                cur = ref Unsafe.Add(ref cur, 1);
+            }
+
+            return -1;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int LastIndexOfAnySimpleLoop<TNegator>(ref char searchSpace, int searchSpaceLength, ReadOnlySpan<char> values)
+            where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
+        {
+            for (int i = searchSpaceLength - 1; i >= 0; i--)
+            {
+                char c = Unsafe.Add(ref searchSpace, i);
+                if (TNegator.NegateIfNeeded(Contains(values, c)))
+                {
+                    return i;
                 }
             }
 

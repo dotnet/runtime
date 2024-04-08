@@ -4,7 +4,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
@@ -12,6 +14,7 @@ using System.Threading.Tasks;
 using System.Web;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.WebAssembly.AppHost.DevServer;
 using Microsoft.WebAssembly.Diagnostics;
 
 #nullable enable
@@ -44,7 +47,7 @@ internal sealed class BrowserHost
 
     private async Task RunAsync(ILoggerFactory loggerFactory, CancellationToken token)
     {
-        if (_args.CommonConfig.Debugging)
+        if (_args.CommonConfig.Debugging && !_args.CommonConfig.UseStaticWebAssets)
         {
             ProxyOptions options = _args.CommonConfig.ToProxyOptions();
             _ = Task.Run(() => DebugProxyHost.RunDebugProxyAsync(options, Array.Empty<string>(), loggerFactory, token), token)
@@ -71,12 +74,11 @@ internal sealed class BrowserHost
                                                debugging: _args.CommonConfig.Debugging);
         runArgsJson.Save(Path.Combine(_args.CommonConfig.AppPath, "runArgs.json"));
 
-        string[] urls = envVars.TryGetValue("ASPNETCORE_URLS", out string? aspnetUrls)
-                            ? aspnetUrls.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
+        string[] urls = (envVars.TryGetValue("ASPNETCORE_URLS", out string? aspnetUrls) && aspnetUrls.Length > 0)
+                            ? aspnetUrls.Split(';', StringSplitOptions.RemoveEmptyEntries)
                             : new string[] { $"http://127.0.0.1:{_args.CommonConfig.HostProperties.WebServerPort}", "https://127.0.0.1:0" };
 
-        (ServerURLs serverURLs, IWebHost host) = await StartWebServerAsync(_args.CommonConfig.AppPath,
-                                                                           _args.ForwardConsoleOutput ?? false,
+        (ServerURLs serverURLs, IWebHost host) = await StartWebServerAsync(_args,
                                                                            urls,
                                                                            token);
 
@@ -85,31 +87,103 @@ internal sealed class BrowserHost
         foreach (string url in fullUrls)
             Console.WriteLine($"App url: {url}");
 
+        if (serverURLs.DebugPath != null)
+        {
+            Console.WriteLine($"Debug at url: {BuildUrl(serverURLs.Http, serverURLs.DebugPath, string.Empty)}");
+
+            if (serverURLs.Https != null)
+                Console.WriteLine($"Debug at url: {BuildUrl(serverURLs.Https, serverURLs.DebugPath, string.Empty)}");
+        }
+
         await host.WaitForShutdownAsync(token);
     }
 
-    private async Task<(ServerURLs, IWebHost)> StartWebServerAsync(string appPath, bool forwardConsole, string[] urls, CancellationToken token)
+    private async Task<(ServerURLs, IWebHost)> StartWebServerAsync(BrowserArguments args, string[] urls, CancellationToken token)
     {
-        WasmTestMessagesProcessor? logProcessor = null;
-        if (forwardConsole)
+        Func<WebSocket, Task>? onConsoleConnected = null;
+        if (args.ForwardConsoleOutput ?? false)
         {
-            logProcessor = new(_logger);
+            WasmTestMessagesProcessor logProcessor = new(_logger);
+            onConsoleConnected = socket => RunConsoleMessagesPump(socket, logProcessor!, token);
         }
 
-        WebServerOptions options = new
-        (
-            OnConsoleConnected: forwardConsole
-                                    ? socket => RunConsoleMessagesPump(socket, logProcessor!, token)
-                                    : null,
-            ContentRootPath: Path.GetFullPath(appPath),
-            WebServerUseCors: true,
-            WebServerUseCrossOriginPolicy: true,
-            Urls: urls
-        );
+        // If we are using new browser template, use dev server
+        if (args.CommonConfig.UseStaticWebAssets)
+        {
+            DevServerOptions devServerOptions = CreateDevServerOptions(args, urls, onConsoleConnected);
+            return await DevServer.DevServer.StartAsync(devServerOptions, _logger, token);
+        }
 
-        (ServerURLs serverURLs, IWebHost host) = await WebServer.StartAsync(options, _logger, token);
-        return (serverURLs, host);
+        // Otherwise for old template, use web server
+        WebServerOptions webServerOptions = CreateWebServerOptions(urls, args.CommonConfig.AppPath, onConsoleConnected);
+        return await WebServer.StartAsync(webServerOptions, _logger, token);
     }
+
+    private static WebServerOptions CreateWebServerOptions(string[] urls, string appPath, Func<WebSocket, Task>? onConsoleConnected) => new
+    (
+        OnConsoleConnected: onConsoleConnected,
+        ContentRootPath: Path.GetFullPath(appPath),
+        WebServerUseCors: true,
+        WebServerUseCrossOriginPolicy: true,
+        Urls: urls
+    );
+
+    private static DevServerOptions CreateDevServerOptions(BrowserArguments args, string[] urls, Func<WebSocket, Task>? onConsoleConnected)
+    {
+        const string staticWebAssetsV1Extension = ".StaticWebAssets.xml";
+        const string staticWebAssetsV2Extension = ".staticwebassets.runtime.json";
+
+        DevServerOptions? devServerOptions = null;
+
+        string appPath = args.CommonConfig.AppPath;
+        if (args.CommonConfig.HostProperties.MainAssembly != null)
+        {
+            // If we have main assembly name, try to find static web assets manifest by precise name.
+
+            var mainAssemblyPath = Path.Combine(appPath, args.CommonConfig.HostProperties.MainAssembly);
+            var staticWebAssetsPath = Path.ChangeExtension(mainAssemblyPath, staticWebAssetsV2Extension);
+            if (File.Exists(staticWebAssetsPath))
+            {
+                devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, onConsoleConnected);
+            }
+            else
+            {
+                staticWebAssetsPath = Path.ChangeExtension(mainAssemblyPath, staticWebAssetsV1Extension);
+                if (File.Exists(staticWebAssetsPath))
+                    devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, onConsoleConnected);
+            }
+
+            if (devServerOptions == null)
+                devServerOptions = CreateDevServerOptions(urls, mainAssemblyPath, onConsoleConnected);
+        }
+        else
+        {
+            // If we don't have main assembly name, try to find static web assets manifest by search in the directory.
+
+            var staticWebAssetsPath = FindFirstFileWithExtension(appPath, staticWebAssetsV2Extension)
+                ?? FindFirstFileWithExtension(appPath, staticWebAssetsV1Extension);
+
+            if (staticWebAssetsPath != null)
+                devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, onConsoleConnected);
+
+            if (devServerOptions == null)
+                throw new CommandLineException($"Please, provide mainAssembly in hostProperties of runtimeconfig. Alternatively leave the static web assets manifest ('*{staticWebAssetsV2Extension}') in the build output directory '{appPath}' .");
+        }
+
+        return devServerOptions;
+    }
+
+    private static DevServerOptions CreateDevServerOptions(string[] urls, string staticWebAssetsPath, Func<WebSocket, Task>? onConsoleConnected) => new
+    (
+        OnConsoleConnected: onConsoleConnected,
+        StaticWebAssetsPath: staticWebAssetsPath,
+        WebServerUseCors: true,
+        WebServerUseCrossOriginPolicy: true,
+        Urls: urls
+    );
+
+    private static string? FindFirstFileWithExtension(string directory, string extension)
+        => Directory.EnumerateFiles(directory, "*" + extension).FirstOrDefault();
 
     private async Task RunConsoleMessagesPump(WebSocket socket, WasmTestMessagesProcessor messagesProcessor, CancellationToken token)
     {
@@ -169,7 +243,7 @@ internal sealed class BrowserHost
         }
 
         string query = sb.ToString();
-        string filename = Path.GetFileName(_args.HTMLPath!);
+        string? filename = _args.HTMLPath != null ? Path.GetFileName(_args.HTMLPath) : null;
         string httpUrl = BuildUrl(serverURLs.Http, filename, query);
 
         return string.IsNullOrEmpty(serverURLs.Https)
@@ -179,12 +253,18 @@ internal sealed class BrowserHost
                     httpUrl,
                     BuildUrl(serverURLs.Https!, filename, query)
                 });
+    }
 
-        static string BuildUrl(string baseUrl, string htmlFileName, string query)
-            => new UriBuilder(baseUrl)
-            {
-                Query = query,
-                Path = htmlFileName
-            }.ToString();
+    private static string BuildUrl(string baseUrl, string? htmlFileName, string query)
+    {
+        var uriBuilder = new UriBuilder(baseUrl)
+        {
+            Query = query
+        };
+
+        if (htmlFileName != null)
+            uriBuilder.Path = htmlFileName;
+
+        return uriBuilder.ToString();
     }
 }

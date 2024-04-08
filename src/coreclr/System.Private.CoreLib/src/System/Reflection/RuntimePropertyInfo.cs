@@ -261,23 +261,10 @@ namespace System.Reflection
             return m_setterMethod;
         }
 
-        public override ParameterInfo[] GetIndexParameters()
-        {
-            ParameterInfo[] indexParams = GetIndexParametersNoCopy();
+        public override ParameterInfo[] GetIndexParameters() =>
+            GetIndexParametersSpan().ToArray();
 
-            int numParams = indexParams.Length;
-
-            if (numParams == 0)
-                return indexParams;
-
-            ParameterInfo[] ret = new ParameterInfo[numParams];
-
-            Array.Copy(indexParams, ret, numParams);
-
-            return ret;
-        }
-
-        internal ParameterInfo[] GetIndexParametersNoCopy()
+        internal ReadOnlySpan<ParameterInfo> GetIndexParametersSpan()
         {
             // @History - Logic ported from RTM
 
@@ -285,14 +272,14 @@ namespace System.Reflection
             if (m_parameters == null)
             {
                 int numParams = 0;
-                ParameterInfo[]? methParams = null;
+                ReadOnlySpan<ParameterInfo> methParams = default;
 
                 // First try to get the Get method.
                 RuntimeMethodInfo? m = GetGetMethod(true);
                 if (m != null)
                 {
                     // There is a Get method so use it.
-                    methParams = m.GetParametersNoCopy();
+                    methParams = m.GetParametersAsSpan();
                     numParams = methParams.Length;
                 }
                 else
@@ -302,7 +289,7 @@ namespace System.Reflection
 
                     if (m != null)
                     {
-                        methParams = m.GetParametersNoCopy();
+                        methParams = m.GetParametersAsSpan();
                         numParams = methParams.Length - 1;
                     }
                 }
@@ -331,26 +318,26 @@ namespace System.Reflection
         #endregion
 
         #region Dynamic
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override object? GetValue(object? obj, object?[]? index)
         {
             return GetValue(obj, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static,
                 null, index, null);
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override object? GetValue(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
             RuntimeMethodInfo? m = GetGetMethod(true);
             if (m == null)
-                throw new ArgumentException(System.SR.Arg_GetMethNotFnd);
+                throw new ArgumentException(SR.Arg_GetMethNotFnd);
             return m.Invoke(obj, invokeAttr, binder, index, null);
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override void SetValue(object? obj, object? value, object?[]? index)
         {
             SetValue(obj,
@@ -361,18 +348,18 @@ namespace System.Reflection
                     null);
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
             RuntimeMethodInfo? m = GetSetMethod(true);
 
             if (m == null)
-                throw new ArgumentException(System.SR.Arg_SetMethNotFnd);
+                throw new ArgumentException(SR.Arg_SetMethNotFnd);
 
             if (index is null)
             {
-                m.InvokeOneParameter(obj, invokeAttr, binder, value, culture);
+                m.InvokePropertySetter(obj, invokeAttr, binder, value, culture);
             }
             else
             {

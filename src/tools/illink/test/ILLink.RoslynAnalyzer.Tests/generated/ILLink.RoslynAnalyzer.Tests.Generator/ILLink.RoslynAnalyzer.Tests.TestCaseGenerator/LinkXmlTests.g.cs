@@ -22,12 +22,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
-		public Task CanPreserveExcludedFeatureCom ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
 		public Task CanPreserveExportedTypesUsingRegex ()
 		{
 			return RunTest (allowMissingWarnings: true);

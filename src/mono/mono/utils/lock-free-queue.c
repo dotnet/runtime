@@ -52,7 +52,7 @@
 #include <unistd.h>
 #endif
 
-#include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-memory-model.h>
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/atomic.h>
 

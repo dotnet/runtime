@@ -4,7 +4,7 @@ This repo relies on [.NET Compiler Platform analyzers](https://learn.microsoft.c
 
 To add an analyzer package to the build:
 1. Select a package you want to employ, for example https://www.nuget.org/packages/SonarAnalyzer.CSharp/.  This analyzer package's name is `SonarAnalyzer.CSharp` and the latest version as of this edit is `8.50.0.58025`.
-2. Add a `PackageReference` entry to <https://github.com/dotnet/runtime/blob/main/eng/Analyzers.props>, e.g.
+2. Add a `PackageReference` entry to <https://github.com/dotnet/runtime/blob/main/eng/Analyzers.targets>, e.g.
     ```XML
     <PackageReference Include="SonarAnalyzer.CSharp" Version="8.50.0.58025" PrivateAssets="all" />
     ```

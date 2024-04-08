@@ -1,0 +1,102 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
+
+     <!-- some tests require full ICU data, force it -->
+    <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
+  </PropertyGroup>
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
+  <PropertyGroup>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser'">$(DefineConstants);Unix</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\ApplicationIdTests.cs" />
+    <Compile Include="System\Convert.cs" />
+    <Compile Include="System\EnvironmentTests.cs" />
+    <Compile Include="System\IO\PathTests.cs" />
+    <Compile Include="System\IO\PathTests_Windows.cs" />
+    <Compile Include="System\IO\PathTests_Unix.cs" />
+    <Compile Include="System\IO\PathTests_Join.cs" />
+    <Compile Include="System\OperatingSystemTests.cs" />
+    <Compile Include="System\Runtime\Versioning\VersioningHelperTests.cs" />
+    <Compile Include="System\AppDomainTests.cs" />
+    <Compile Include="System\Reflection\AssemblyNameProxyTests.cs" />
+    <Compile Include="System\MarshalByRefObjectTest.cs" />
+    <Compile Include="TestHelpers.cs" />
+    <Compile Include="System\BitConverterSpan.cs" />
+    <Compile Include="System\IO\Path.GetRelativePath.cs" />
+    <Compile Include="System\MathF.cs" />
+    <Compile Include="System\Numerics\BitOperationsTests.cs" />
+    <Compile Include="System\UnloadingAndProcessExitTests.cs" />
+    <Compile Include="System\IO\Path.IsPathFullyQualified.cs" />
+    <Compile Include="System\BitConverterArray.cs" />
+    <Compile Include="System\BitConverterBase.cs" />
+    <Compile Include="System\Environment.IsPrivilegedProcess.cs" />
+    <Compile Include="System\Environment.UserDomainName.cs" />
+    <Compile Include="System\Environment.UserName.cs" />
+    <Compile Include="System\Diagnostics\Stopwatch.cs" />
+    <Compile Include="System\Environment.MachineName.cs" />
+    <Compile Include="System\IO\PathTests_Combine.cs" />
+    <Compile Include="System\Runtime\Versioning\FrameworkName.cs" />
+    <Compile Include="System\IO\PathTestsBase.cs" />
+    <Compile Include="System\Net\WebUtility.cs" />
+    <Compile Include="System\BitConverter.cs" />
+    <Compile Include="System\Convert.BoxedObjectCheck.cs" />
+    <Compile Include="System\Convert.FromBase64.cs" />
+    <Compile Include="System\Convert.FromHexString.cs" />
+    <Compile Include="System\Convert.TestBase.cs" />
+    <Compile Include="System\Convert.ToBase64CharArray.cs" />
+    <Compile Include="System\Convert.ToBase64String.cs" />
+    <Compile Include="System\Convert.ToBoolean.cs" />
+    <Compile Include="System\Convert.ToByte.cs" />
+    <Compile Include="System\Convert.ToChar.cs" />
+    <Compile Include="System\Convert.ToDateTime.cs" />
+    <Compile Include="System\Convert.ToDecimal.cs" />
+    <Compile Include="System\Convert.ToDouble.cs" />
+    <Compile Include="System\Convert.ToHexString.cs" />
+    <Compile Include="System\Convert.ToInt16.cs" />
+    <Compile Include="System\Convert.ToInt32.cs" />
+    <Compile Include="System\Convert.ToInt64.cs" />
+    <Compile Include="System\Convert.ToSByte.cs" />
+    <Compile Include="System\Convert.ToSingle.cs" />
+    <Compile Include="System\Convert.ToString.cs" />
+    <Compile Include="System\Convert.ToUInt16.cs" />
+    <Compile Include="System\Convert.ToUInt32.cs" />
+    <Compile Include="System\Convert.ToUInt64.cs" />
+    <Compile Include="System\Environment.ExpandEnvironmentVariables.cs" />
+    <Compile Include="System\Environment.GetEnvironmentVariable.cs" />
+    <Compile Include="System\Environment.GetCommandLineArgs.cs" />
+    <Compile Include="System\Environment.NewLine.cs" />
+    <Compile Include="System\Environment.ProcessorCount.cs" />
+    <Compile Include="System\Environment.SetEnvironmentVariable.cs" />
+    <Compile Include="System\Environment.StackTrace.cs" />
+    <Compile Include="System\Environment.TickCount.cs" />
+    <Compile Include="System\Environment.Exit.cs" />
+    <Compile Include="System\Math.cs" />
+    <Compile Include="System\Progress.cs" />
+    <Compile Include="System\Random.cs" />
+    <Compile Include="System\StringComparer.cs" />
+    <Compile Include="System\Runtime\ProfileOptimization.cs" />
+    <Compile Include="System\Runtime\CompilerServices\SwitchExpressionExceptionTests.cs" />
+
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs" Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser'" Link="Common\Interop\Unix\System.Native\Interop.GetHostName.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs" Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs" Link="Common\System\IO\PathFeatures.cs" />
+    <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs" Link="Common\System\ShouldNotBeInvokedException.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs" Link="Common\System\Security\Cryptography\ByteUtils.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="AssemblyResolveTestApp\AssemblyResolveTestApp.csproj" />
+    <ProjectReference Include="TestAppOutsideOfTPA\TestAppOutsideOfTPA.csproj" />
+    <ProjectReference Include="VoidMainWithExitCodeApp\VoidMainWithExitCodeApp.csproj" />
+    <ProjectReference Include="TestApp\TestApp.csproj" />
+    <ProjectReference Include="TargetFrameworkNameTestApp\TargetFrameworkNameTestApp.csproj" />
+
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+  </ItemGroup>
+</Project>
