@@ -94,7 +94,10 @@ export function mono_exit (exit_code: number, reason?: any): void {
     }
 
     // force stack property to be generated before we shut down managed code, or create current stack if it doesn't exist
-    reason.stack = "" + new Error().stack || "";
+    const stack = "" + (reason.stack || (new Error().stack));
+    Object.defineProperty(reason, 'stack', {
+        get: () => stack
+    });
 
     // don't report this error twice
     const alreadySilent = !!reason.silent;
