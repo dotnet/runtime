@@ -17,13 +17,16 @@
 
 #ifdef DEBUG
 #define OPT_CONFIG
-#define OPT_CONFIG_INTEGER   CONFIG_INTEGER
-#define OPT_CONFIG_STRING    CONFIG_STRING
-#define OPT_CONFIG_METHODSET CONFIG_METHODSET
+#endif
+
+#ifdef OPT_CONFIG
+#define OPT_CONFIG_INTEGER(name, key, defaultValue) RELEASE_CONFIG_INTEGER(name, key, defaultValue)
+#define OPT_CONFIG_STRING(name, key)                RELEASE_CONFIG_STRING(name, key)
+#define OPT_CONFIG_METHODSET(name, key)             RELEASE_CONFIG_METHODSET(name, key)
 #else
-#define OPT_CONFIG_INTEGER   RELEASE_CONFIG_INTEGER
-#define OPT_CONFIG_STRING    RELEASE_CONFIG_STRING
-#define OPT_CONFIG_METHODSET RELEASE_CONFIG_METHODSET
+#define OPT_CONFIG_INTEGER(name, key, defaultValue)
+#define OPT_CONFIG_STRING(name, key)
+#define OPT_CONFIG_METHODSET(name, key)
 #endif
 
 // Max number of functions to use altjit for (decimal)
