@@ -769,9 +769,9 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
     }
     else if (curAssertion->op1.kind == O1K_ARR_BND)
     {
-        printf("[idx:");
+        printf("[idx: " FMT_VN, curAssertion->op1.bnd.vnIdx);
         vnStore->vnDump(this, curAssertion->op1.bnd.vnIdx);
-        printf(";len:");
+        printf("; len: " FMT_VN, curAssertion->op1.bnd.vnLen);
         vnStore->vnDump(this, curAssertion->op1.bnd.vnLen);
         printf("]");
     }

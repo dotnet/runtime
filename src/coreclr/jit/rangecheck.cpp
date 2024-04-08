@@ -773,6 +773,22 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
 
             isConstantAssertion = true;
         }
+        // Current assertion asserts a bounds check does not throw
+        else if (curAssertion->IsBoundsCheckNoThrow())
+        {
+            ValueNum indexVN = curAssertion->op1.bnd.vnIdx;
+            ValueNum lenVN   = curAssertion->op1.bnd.vnLen;
+            if (normalLclVN == indexVN)
+            {
+                isUnsigned = true;
+                cmpOper    = GT_LT;
+                limit      = Limit(Limit::keBinOpArray, lenVN, 0);
+            }
+            else
+            {
+                continue;
+            }
+        }
         // Current assertion is not supported, ignore it
         else
         {
@@ -782,7 +798,8 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
         assert(limit.IsBinOpArray() || limit.IsConstant());
 
         // Make sure the assertion is of the form != 0 or == 0 if it isn't a constant assertion.
-        if (!isConstantAssertion && (curAssertion->op2.vn != m_pCompiler->vnStore->VNZeroForType(TYP_INT)))
+        if (!isConstantAssertion && (curAssertion->assertionKind != Compiler::OAK_NO_THROW) &&
+            (curAssertion->op2.vn != m_pCompiler->vnStore->VNZeroForType(TYP_INT)))
         {
             continue;
         }
