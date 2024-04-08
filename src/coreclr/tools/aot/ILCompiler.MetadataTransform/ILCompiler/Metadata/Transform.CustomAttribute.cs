@@ -38,9 +38,6 @@ namespace ILCompiler.Metadata
 
             Cts.MethodDesc constructor = module.GetMethod(attribute.Constructor);
 
-            if (constructor.ToString().Contains("MyCustomAttribute"))
-                System.Console.WriteLine();
-
             CustomAttribute result = new CustomAttribute
             {
                 Constructor = HandleQualifiedMethod(constructor),
@@ -146,6 +143,7 @@ namespace ILCompiler.Metadata
                 Ecma.SerializationTypeCode.Boolean => new ConstantBooleanValue { Value = valueReader.ReadBoolean() },
                 Ecma.SerializationTypeCode.Char => new ConstantCharValue { Value = valueReader.ReadChar() },
                 Ecma.SerializationTypeCode.Byte => new ConstantByteValue { Value = valueReader.ReadByte() },
+                Ecma.SerializationTypeCode.SByte => new ConstantSByteValue { Value = valueReader.ReadSByte() },
                 Ecma.SerializationTypeCode.Int16 => new ConstantInt16Value { Value = valueReader.ReadInt16() },
                 Ecma.SerializationTypeCode.UInt16 => new ConstantUInt16Value { Value = valueReader.ReadUInt16() },
                 Ecma.SerializationTypeCode.Int32 => new ConstantInt32Value { Value = valueReader.ReadInt32() },
