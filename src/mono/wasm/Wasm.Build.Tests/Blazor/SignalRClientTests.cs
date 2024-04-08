@@ -9,7 +9,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Playwright;
-using Wasm.Build.Tests.TestAppScenarios;
 using Xunit.Abstractions;
 using Xunit;
 
@@ -17,7 +16,7 @@ using Xunit;
 
 namespace Wasm.Build.Tests.Blazor;
 
-public class SignalRClientTests : AppTestBase
+public class SignalRClientTests : SignalRTestsBase
 {
     public SignalRClientTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -85,13 +84,6 @@ public class SignalRClientTests : AppTestBase
         string threadIdUsedForReceiving = GetThreadOfAction(output, @"ReceiveMessage from server on CurrentManagedThreadId=(\d+)", "signalR message was received");
         Assert.True("1" != threadIdUsedForSending || "1" != threadIdUsedForReceiving,
             $"Expected to send/receive with signalR in non-UI threads, instead only CurrentManagedThreadId=1 was used. TestOutput: {output}.");
-    }
-
-    private string GetThreadOfAction(string testOutput, string pattern, string actionDescription)
-    {
-        Match match = Regex.Match(testOutput, pattern);
-        Assert.True(match.Success, $"Expected to find a log that {actionDescription}. TestOutput: {testOutput}.");
-        return match.Groups[1].Value ?? "";
     }
 
     private async Task SaveClickButtonAsync(IPage page, string selector)

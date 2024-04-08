@@ -16,28 +16,28 @@ using Xunit;
 
 namespace Wasm.Build.Tests.TestAppScenarios;
 
-public class SignalRClientTests : AppTestBase
+public class SignalRClientTests : SignalRTestsBase
 {
     public SignalRClientTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
     {
     }
 
-    // [ConditionalTheory(typeof(BuildTestBase), nameof(IsWorkloadWithMultiThreadingForDefaultFramework))]
-    [Theory]
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsWorkloadWithMultiThreadingForDefaultFramework))]
     [InlineData("Debug", "LongPolling")]
     // [InlineData("Release", "LongPolling")]
     // [InlineData("Debug", "WebSockets")]
     // [InlineData("Release", "WebSockets")]
     public async Task SignalRPassMessages(string config, string transport)
     {
+        // ---------------- from here
         // maybe we can hide the publish step in a AppTestBase method
         CopyTestAsset("WasmBasicTestApp", "SignalRClientTests");
         Console.WriteLine($"WASM _projectDir={_projectDir}");
         // publish WASM App to Server's directory
         // avoid loading .dat files that require integrity hash calculation
         // try fixing System.InvalidOperationException: JsonSerializerIsReflectionDisabled on message passing
-        PublishProject(configuration: config, // ToDo: remove workingDirectory changes
+        PublishProject(configuration: config,
             runtimeType: RuntimeVariant.MultiThreaded,
             assertAppBundle: false, // publish files are in non-Standard location
             extraArgs: "-o ../Server/publish -p:WasmEnableThreads=true -p:InvariantGlobalization=true -p:SkipLazyLoadingTest=true" );
@@ -47,22 +47,20 @@ public class SignalRClientTests : AppTestBase
         if (parentDirName is null)
             throw new Exception("parentDirName cannot be null");
         _projectDir = Path.Combine(parentDirName, "Server");
-        Console.WriteLine($"ASPNETCORE _projectDir={_projectDir}");
 
         // build server project
         BuildProject(configuration: config,
             // runtimeType: RuntimeVariant.MultiThreaded,
             assertAppBundle: false); // should we asset app bunlde?
-        Console.WriteLine($"Starting SignalRPassMessages test with config={config} and transport={transport}");
+        // ---------------- to here -? pack in a AppTestBase.BuildAspNetCoreServingWASM(string )
         try
         {
             var result = await RunSdkStyleAppForBuild(new(
             Configuration: config,
-            TestScenario: "SignalRClientTests", // ToDo: serverport should not be a fixed value
+            TestScenario: "SignalRClientTests",
             BrowserQueryString: new Dictionary<string, string> { ["transport"] = transport, ["message"] = "ping" },
             OnConsoleMessage: async (page, msg) =>
             {
-                Console.WriteLine($"MESSAGE -> {msg.Text}");
                 _testOutput.WriteLine(msg.Text);
                 if (msg.Text.Contains("Buttons added to the body, the test can be started."))
                 {
@@ -85,6 +83,13 @@ public class SignalRClientTests : AppTestBase
         {
             Console.WriteLine($"Exception: {ex}");
         }
-        
+
+        string output = _testOutput.ToString() ?? "";
+        Assert.NotEmpty(output);
+        // check sending and receiving threadId
+        string threadIdUsedForSending = GetThreadOfAction(output, @"SignalRPassMessages was sent by CurrentManagedThreadId=(\d+)", "signalR message was sent");
+        string threadIdUsedForReceiving = GetThreadOfAction(output, @"ReceiveMessage from server on CurrentManagedThreadId=(\d+)", "signalR message was received");
+        Assert.True("1" != threadIdUsedForSending || "1" != threadIdUsedForReceiving,
+            $"Expected to send/receive with signalR in non-UI threads, instead only CurrentManagedThreadId=1 was used. TestOutput: {output}.");
     }
 }

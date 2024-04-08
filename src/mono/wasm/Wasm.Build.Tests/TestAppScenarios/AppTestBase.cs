@@ -23,13 +23,18 @@ public abstract class AppTestBase : BlazorWasmTestBase
     protected string Id { get; set; }
     protected string LogPath { get; set; }
 
-    protected void CopyTestAsset(string assetName, string generatedProjectNamePrefix = null)
+    protected void CopyTestAsset(string assetName, string generatedProjectNamePrefix = null) // string? projectDirSuffix = null
     {
         Id = $"{generatedProjectNamePrefix ?? assetName}_{GetRandomId()}";
         InitBlazorWasmProjectDir(Id);
 
         LogPath = Path.Combine(s_buildEnv.LogRootPath, Id);
         Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, assetName), Path.Combine(_projectDir!));
+
+        // if (!string.IsNullOrEmpty(projectDirSuffix))
+        // {
+        //      _projectDir = Path.Combine(_projectDir, projectDirSuffix);
+        // }
 
         switch(assetName)
         {
