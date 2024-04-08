@@ -50,6 +50,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			StaticInterfaceMethods.Test ();
 			BaseInPreservedScope.Test ();
 			DirectCall.Test ();
+			RequiresAndDynamicallyAccessedMembersValidation.Test ();
 		}
 
 		static void RequirePublicMethods ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
@@ -1017,6 +1018,61 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				ibase.UnannotatedGvmCalledThroughBase<string> (typeof (string));
 
 				CallStaticGvm<ImplIGvmBase> ();
+			}
+		}
+
+		class RequiresAndDynamicallyAccessedMembersValidation
+		{
+			// These tests have both DynamicallyAccessedMembers annotations and Requires annotations.
+			// This is to reproduce a bug where the virtual method annotations would be validated due to
+			// the presence of DynamicallyAccessedMembers, but the logic for checking Requires annotations
+			// was incorrect. The bug didn't manifest with just Requires annotations because the methods wouldn't
+			// be validated at all for Requires on type.
+
+			class BaseMethodWithRequires
+			{
+				[RequiresUnreferencedCode (nameof (MethodWithRequires))]
+				[RequiresDynamicCode (nameof (MethodWithRequires))]
+				public virtual void MethodWithRequires ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t) {}
+			}
+
+			[RequiresUnreferencedCode (nameof (DerivedTypeWithRequires_BaseMethodWithRequires))]
+			[RequiresDynamicCode (nameof (DerivedTypeWithRequires_BaseMethodWithRequires))]
+			class DerivedTypeWithRequires_BaseMethodWithRequires : BaseMethodWithRequires
+			{
+				public override void MethodWithRequires ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t) {}
+			}
+
+			[ExpectedWarning ("IL2026", nameof (DerivedTypeWithRequires_BaseMethodWithRequires))]
+			[ExpectedWarning ("IL2026", nameof (DerivedTypeWithRequires_BaseMethodWithRequires.MethodWithRequires))]
+			[ExpectedWarning ("IL3050", nameof (DerivedTypeWithRequires_BaseMethodWithRequires), ProducedBy = Tool.NativeAot | Tool.Analyzer)]
+			[ExpectedWarning ("IL3050", nameof (DerivedTypeWithRequires_BaseMethodWithRequires.MethodWithRequires), ProducedBy = Tool.NativeAot | Tool.Analyzer)]
+			static void Test_DerivedTypeWithRequires_BaseMethodWithRequires ()
+			{
+				new DerivedTypeWithRequires_BaseMethodWithRequires ().MethodWithRequires (typeof (int));
+			}
+
+			class BaseMethodWithoutRequires
+			{
+				public virtual void MethodWithoutRequires ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t) {}
+			}
+
+			[RequiresUnreferencedCode (nameof (DerivedTypeWithRequires_BaseMethodWithoutRequires))]
+			class DerivedTypeWithRequires_BaseMethodWithoutRequires : BaseMethodWithoutRequires
+			{
+				public override void MethodWithoutRequires ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t) {}
+			}
+
+			[ExpectedWarning ("IL2026", nameof (DerivedTypeWithRequires_BaseMethodWithoutRequires))]
+			static void Test_DerivedTypeWithRequires_BaseMethodWithoutRequires ()
+			{
+				new DerivedTypeWithRequires_BaseMethodWithoutRequires ().MethodWithoutRequires (typeof (int));
+			}
+
+			public static void Test ()
+			{
+				Test_DerivedTypeWithRequires_BaseMethodWithRequires ();
+				Test_DerivedTypeWithRequires_BaseMethodWithoutRequires ();
 			}
 		}
 	}
