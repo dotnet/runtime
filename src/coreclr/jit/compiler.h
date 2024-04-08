@@ -2722,7 +2722,7 @@ public:
 // Exception handling functions
 //
 
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
 
     bool ehNeedsShadowSPslots()
     {
@@ -2735,7 +2735,7 @@ public:
     // etc.
     unsigned ehMaxHndNestingCount;
 
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
 
     static bool jitIsBetween(unsigned value, unsigned start, unsigned end);
     static bool jitIsBetweenInclusive(unsigned value, unsigned start, unsigned end);
@@ -2832,7 +2832,6 @@ public:
     bool ehCallFinallyInCorrectRegion(BasicBlock* blockCallFinally, unsigned finallyIndex);
 #endif // DEBUG
 
-#if defined(FEATURE_EH_FUNCLETS)
     // Do we need a PSPSym in the main function? For codegen purposes, we only need one
     // if there is a filter that protects a region with a nested EH clause (such as a
     // try/catch nested in the 'try' body of a try/filter/filter-handler). See
@@ -2852,23 +2851,6 @@ public:
     unsigned ehFuncletCount(); // Return the count of funclets in the function
 
     unsigned bbThrowIndex(BasicBlock* blk); // Get the index to use as the cache key for sharing throw blocks
-
-#else  // !FEATURE_EH_FUNCLETS
-
-    bool ehAnyFunclets()
-    {
-        return false;
-    }
-    unsigned ehFuncletCount()
-    {
-        return 0;
-    }
-
-    unsigned bbThrowIndex(BasicBlock* blk)
-    {
-        return blk->bbTryIndex;
-    } // Get the index to use as the cache key for sharing throw blocks
-#endif // !FEATURE_EH_FUNCLETS
 
     FlowEdge* BlockPredsWithEH(BasicBlock* blk);
     FlowEdge* BlockDominancePreds(BasicBlock* blk);
@@ -2918,11 +2900,7 @@ public:
 
     void fgRemoveEHTableEntry(unsigned XTnum);
 
-#if defined(FEATURE_EH_FUNCLETS)
-
     EHblkDsc* fgAddEHTableEntry(unsigned XTnum);
-
-#endif // FEATURE_EH_FUNCLETS
 
     void fgSortEHTable();
 
@@ -3042,14 +3020,15 @@ public:
 
     GenTree* gtNewConWithPattern(var_types type, uint8_t pattern);
 
-    GenTreeLclVar* gtNewStoreLclVarNode(unsigned lclNum, GenTree* data);
+    GenTreeLclVar* gtNewStoreLclVarNode(unsigned lclNum, GenTree* value);
 
     GenTreeLclFld* gtNewStoreLclFldNode(
-        unsigned lclNum, var_types type, ClassLayout* layout, unsigned offset, GenTree* data);
+        unsigned lclNum, var_types type, ClassLayout* layout, unsigned offset, GenTree* value);
 
-    GenTreeLclFld* gtNewStoreLclFldNode(unsigned lclNum, var_types type, unsigned offset, GenTree* data)
+    GenTreeLclFld* gtNewStoreLclFldNode(unsigned lclNum, var_types type, unsigned offset, GenTree* value)
     {
-        return gtNewStoreLclFldNode(lclNum, type, (type == TYP_STRUCT) ? data->GetLayout(this) : nullptr, offset, data);
+        return gtNewStoreLclFldNode(
+            lclNum, type, (type == TYP_STRUCT) ? value->GetLayout(this) : nullptr, offset, value);
     }
 
     GenTree* gtNewPutArgReg(var_types type, GenTree* arg, regNumber argReg);
@@ -3404,7 +3383,7 @@ public:
 
     GenTreeMDArr* gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block);
 
-    void gtInitializeStoreNode(GenTree* store, GenTree* data);
+    void gtInitializeStoreNode(GenTree* store, GenTree* value);
 
     void gtInitializeIndirNode(GenTreeIndir* indir, GenTreeFlags indirFlags);
 
@@ -3413,10 +3392,10 @@ public:
     GenTreeIndir* gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTreeBlk* gtNewStoreBlkNode(
-        ClassLayout* layout, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY);
+        ClassLayout* layout, GenTree* addr, GenTree* value, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTreeStoreInd* gtNewStoreIndNode(
-        var_types type, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY);
+        var_types type, GenTree* addr, GenTree* value, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTree* gtNewLoadValueNode(
         var_types type, ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
@@ -3432,16 +3411,17 @@ public:
     }
 
     GenTree* gtNewStoreValueNode(
-        var_types type, ClassLayout* layout, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY);
+        var_types type, ClassLayout* layout, GenTree* addr, GenTree* value, GenTreeFlags indirFlags = GTF_EMPTY);
 
-    GenTree* gtNewStoreValueNode(ClassLayout* layout, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY)
+    GenTree* gtNewStoreValueNode(
+        ClassLayout* layout, GenTree* addr, GenTree* value, GenTreeFlags indirFlags = GTF_EMPTY)
     {
-        return gtNewStoreValueNode(layout->GetType(), layout, addr, data, indirFlags);
+        return gtNewStoreValueNode(layout->GetType(), layout, addr, value, indirFlags);
     }
 
-    GenTree* gtNewStoreValueNode(var_types type, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY)
+    GenTree* gtNewStoreValueNode(var_types type, GenTree* addr, GenTree* value, GenTreeFlags indirFlags = GTF_EMPTY)
     {
-        return gtNewStoreValueNode(type, nullptr, addr, data, indirFlags);
+        return gtNewStoreValueNode(type, nullptr, addr, value, indirFlags);
     }
 
     GenTree* gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock);
@@ -3464,7 +3444,7 @@ public:
                               CORINFO_ACCESS_FLAGS    access,
                               CORINFO_FIELD_INFO*     pFieldInfo,
                               var_types               lclTyp,
-                              GenTree*                assg);
+                              GenTree*                value);
 
     GenTree* gtNewNothingNode();
 
@@ -3909,10 +3889,10 @@ public:
 //-------------------------------------------------------------------------
 // All these frame offsets are inter-related and must be kept in sync
 
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
     // This is used for the callable handlers
     unsigned lvaShadowSPslotsVar; // Block-layout TYP_STRUCT variable for all the shadow SP slots
-#endif                            // FEATURE_EH_FUNCLETS
+#endif                            // FEATURE_EH_WINDOWS_X86
 
     int lvaCachedGenericContextArgOffs;
     int lvaCachedGenericContextArgOffset(); // For CORINFO_CALLCONV_PARAMTYPE and if generic context is passed as
@@ -4043,6 +4023,12 @@ public:
         return lvaGetDesc(lclVar->GetLclNum());
     }
 
+    const ABIPassingInformation& lvaGetParameterABIInfo(unsigned lclNum)
+    {
+        assert(lclNum < info.compArgsCount);
+        return lvaParameterPassingInfo[lclNum];
+    }
+
     unsigned lvaTrackedIndexToLclNum(unsigned trackedIndex)
     {
         assert(trackedIndex < lvaTrackedCount);
@@ -4111,18 +4097,7 @@ public:
     bool lvaIsOriginalThisReadOnly();           // return true if there is no place in the code
                                                 // that writes to arg0
 
-#ifdef TARGET_X86
-    bool lvaIsArgAccessedViaVarArgsCookie(unsigned lclNum)
-    {
-        if (!info.compIsVarArgs)
-        {
-            return false;
-        }
-
-        LclVarDsc* varDsc = lvaGetDesc(lclNum);
-        return varDsc->lvIsParam && !varDsc->lvIsRegArg && (lclNum != lvaVarargsHandleArg);
-    }
-#endif // TARGET_X86
+    bool lvaIsArgAccessedViaVarArgsCookie(unsigned lclNum);
 
     bool lvaIsImplicitByRefLocal(unsigned lclNum) const;
     bool lvaIsLocalImplicitlyAccessedByRef(unsigned lclNum) const;
@@ -4259,9 +4234,7 @@ public:
 
     unsigned lvaStubArgumentVar; // variable representing the secret stub argument coming in EAX
 
-#if defined(FEATURE_EH_FUNCLETS)
     unsigned lvaPSPSym; // variable representing the PSPSym
-#endif
 
     InlineInfo*     impInlineInfo; // Only present for inlinees
     InlineStrategy* m_inlineStrategy;
@@ -4484,6 +4457,9 @@ protected:
     GenTree* impImplicitR4orR8Cast(GenTree* tree, var_types dstTyp);
 
     void impImportLeave(BasicBlock* block);
+#if defined(FEATURE_EH_WINDOWS_X86)
+    void impImportLeaveEHRegions(BasicBlock* block);
+#endif
     void impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr);
     GenTree* impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom);
 
@@ -4646,12 +4622,12 @@ public:
     void impAppendStmt(Statement* stmt);
     void impInsertStmtBefore(Statement* stmt, Statement* stmtBefore);
     Statement* impAppendTree(GenTree* tree, unsigned chkLevel, const DebugInfo& di, bool checkConsumedDebugInfo = true);
-    void impStoreTemp(unsigned         lclNum,
-                      GenTree*         val,
-                      unsigned         curLevel,
-                      Statement**      pAfterStmt = nullptr,
-                      const DebugInfo& di         = DebugInfo(),
-                      BasicBlock*      block      = nullptr);
+    void impStoreToTemp(unsigned         lclNum,
+                        GenTree*         val,
+                        unsigned         curLevel,
+                        Statement**      pAfterStmt = nullptr,
+                        const DebugInfo& di         = DebugInfo(),
+                        BasicBlock*      block      = nullptr);
     Statement* impExtractLastStmt();
     GenTree* impCloneExpr(GenTree*             tree,
                           GenTree**            clone,
@@ -5032,9 +5008,7 @@ public:
     BasicBlock* fgFirstColdBlock; // First block to be placed in the cold section
     BasicBlock* fgEntryBB;        // For OSR, the original method's entry point
     BasicBlock* fgOSREntryBB;     // For OSR, the logical entry point (~ patchpoint)
-#if defined(FEATURE_EH_FUNCLETS)
     BasicBlock* fgFirstFuncletBB; // First block of outlined funclets (to allow block insertion before the funclets)
-#endif
     BasicBlock* fgFirstBBScratch;   // Block inserted for initialization stuff. Is nullptr if no such block has been
                                     // created.
     BasicBlockList* fgReturnBlocks; // list of BBJ_RETURN blocks
@@ -5236,9 +5210,7 @@ public:
                                             // This is derived from the profile data
                                             // or is BB_UNITY_WEIGHT when we don't have profile data
 
-#if defined(FEATURE_EH_FUNCLETS)
     bool fgFuncletsCreated; // true if the funclet creation phase has been run
-#endif                      // FEATURE_EH_FUNCLETS
 
     bool fgGlobalMorph; // indicates if we are during the global morphing phase
                         // since fgMorphTree can be called from several places
@@ -5292,15 +5264,11 @@ public:
 
     GenTree* fgGetCritSectOfStaticMethod();
 
-#if defined(FEATURE_EH_FUNCLETS)
-
     void fgAddSyncMethodEnterExit();
 
     GenTree* fgCreateMonitorTree(unsigned lvaMonitorBool, unsigned lvaThisVar, BasicBlock* block, bool enter);
 
     void fgConvertSyncReturnToLeave(BasicBlock* block);
-
-#endif // FEATURE_EH_FUNCLETS
 
     void fgAddReversePInvokeEnterExit();
 
@@ -5666,8 +5634,6 @@ public:
     void fgUpdateConstTreeValueNumber(GenTree* tree);
 
     // Assumes that all inputs to "tree" have had value numbers assigned; assigns a VN to tree.
-    // (With some exceptions: the VN of the lhs of an assignment is assigned as part of the
-    // assignment.)
     void fgValueNumberTree(GenTree* tree);
 
     void fgValueNumberStore(GenTree* tree);
@@ -6044,15 +6010,14 @@ public:
     };
     BasicBlock* fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE relocateType);
 
-#if defined(FEATURE_EH_FUNCLETS)
     bool fgIsIntraHandlerPred(BasicBlock* predBlock, BasicBlock* block);
     bool fgAnyIntraHandlerPreds(BasicBlock* block);
     void fgInsertFuncletPrologBlock(BasicBlock* block);
     void        fgCreateFuncletPrologBlocks();
     PhaseStatus fgCreateFunclets();
-#else  // !FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_WINDOWS_X86)
     bool fgRelocateEHRegions();
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
 
     bool fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock* target);
 
@@ -6079,9 +6044,7 @@ public:
 
     bool fgReorderBlocks(bool useProfile);
 
-#ifdef FEATURE_EH_FUNCLETS
     bool fgFuncletsAreCold();
-#endif // FEATURE_EH_FUNCLETS
 
     PhaseStatus fgDetermineFirstColdBlock();
 
@@ -6364,7 +6327,7 @@ private:
     //                  Create a new temporary variable to hold the result of *ppTree,
     //                  and transform the graph accordingly.
     GenTree* fgInsertCommaFormTemp(GenTree** ppTree);
-    TempInfo fgMakeTemp(GenTree* rhs);
+    TempInfo fgMakeTemp(GenTree* value);
     GenTree* fgMakeMultiUse(GenTree** ppTree);
 
     //                  Recognize a bitwise rotation pattern and convert into a GT_ROL or a GT_ROR node.
@@ -6461,7 +6424,7 @@ private:
     bool fgMorphCombineSIMDFieldStores(BasicBlock* block, Statement* stmt);
     void impMarkContiguousSIMDFieldStores(Statement* stmt);
 
-    // fgPreviousCandidateSIMDFieldStoreStmt is only used for tracking previous simd field assignment
+    // fgPreviousCandidateSIMDFieldStoreStmt is only used for tracking previous simd field store
     // in function: Compiler::impMarkContiguousSIMDFieldStores.
     Statement* fgPreviousCandidateSIMDFieldStoreStmt;
 
@@ -6589,7 +6552,7 @@ private:
 
     //----------------------- Liveness analysis -------------------------------
 
-    VARSET_TP fgCurUseSet; // vars used     by block (before an assignment)
+    VARSET_TP fgCurUseSet; // vars used     by block (before a def)
     VARSET_TP fgCurDefSet; // vars assigned by block (before a use)
 
     MemoryKindSet fgCurMemoryUse;   // True iff the current basic block uses memory.
@@ -7583,7 +7546,7 @@ public:
         } op1;
         struct AssertionDscOp2
         {
-            optOp2Kind kind; // a const or copy assignment
+            optOp2Kind kind; // a const or copy assertion
         private:
             uint16_t m_encodedIconFlags; // encoded icon gtFlags, don't use directly
         public:
@@ -7802,7 +7765,7 @@ protected:
     AssertionIndex*            optComplementaryAssertionMap;
     JitExpandArray<ASSERT_TP>* optAssertionDep; // table that holds dependent assertions (assertions
                                                 // using the value of a local var) for each local var
-    AssertionDsc*  optAssertionTabPrivate;      // table that holds info about value assignments
+    AssertionDsc*  optAssertionTabPrivate;      // table that holds info about assertions
     AssertionIndex optAssertionCount;           // total number of assertions in the assertion table
     AssertionIndex optMaxAssertionCount;
     bool           optCrossBlockLocalAssertionProp;
@@ -8054,32 +8017,6 @@ private:
     Lowering*            m_pLowering;   // Lowering; needed to Lower IR that's added or modified after Lowering.
     LinearScanInterface* m_pLinearScan; // Linear Scan allocator
 
-    /* raIsVarargsStackArg is called by raMaskStkVars and by
-       lvaComputeRefCounts.  It identifies the special case
-       where a varargs function has a parameter passed on the
-       stack, other than the special varargs handle.  Such parameters
-       require special treatment, because they cannot be tracked
-       by the GC (their offsets in the stack are not known
-       at compile time).
-    */
-
-    bool raIsVarargsStackArg(unsigned lclNum)
-    {
-#ifdef TARGET_X86
-
-        LclVarDsc* varDsc = lvaGetDesc(lclNum);
-
-        assert(varDsc->lvIsParam);
-
-        return (info.compIsVarArgs && !varDsc->lvIsRegArg && (lclNum != lvaVarargsHandleArg));
-
-#else // TARGET_X86
-
-        return false;
-
-#endif // TARGET_X86
-    }
-
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -8274,6 +8211,30 @@ public:
     {
         return eeGetEEInfo()->targetAbi == abi;
     }
+
+#if defined(FEATURE_EH_WINDOWS_X86)
+    bool eeIsNativeAotAbi;
+    bool UsesFunclets() const
+    {
+        return eeIsNativeAotAbi;
+    }
+
+    bool UsesCallFinallyThunks() const
+    {
+        // Generate call-to-finally code in "thunks" in the enclosing EH region, protected by "cloned finally" clauses.
+        return UsesFunclets();
+    }
+#else
+    bool UsesFunclets() const
+    {
+        return true;
+    }
+
+    bool UsesCallFinallyThunks() const
+    {
+        return true;
+    }
+#endif
 
     bool generateCFIUnwindCodes()
     {
@@ -8491,36 +8452,28 @@ public:
     }
 
     // Things that MAY belong either in CodeGen or CodeGenContext
-
-#if defined(FEATURE_EH_FUNCLETS)
     FuncInfoDsc*   compFuncInfos;
     unsigned short compCurrFuncIdx;
     unsigned short compFuncInfoCount;
+    FuncInfoDsc    compFuncInfoRoot;
 
     unsigned short compFuncCount()
     {
-        assert(fgFuncletsCreated);
-        return compFuncInfoCount;
+        if (UsesFunclets())
+        {
+            assert(fgFuncletsCreated);
+            return compFuncInfoCount;
+        }
+        else
+        {
+            return 1;
+        }
     }
 
-#else // !FEATURE_EH_FUNCLETS
-
-    // This is a no-op when there are no funclets!
-    void genUpdateCurrentFunclet(BasicBlock* block)
+    unsigned short funCurrentFuncIdx()
     {
-        return;
+        return UsesFunclets() ? compCurrFuncIdx : 0;
     }
-
-    FuncInfoDsc compFuncInfoRoot;
-
-    static const unsigned compCurrFuncIdx = 0;
-
-    unsigned short compFuncCount()
-    {
-        return 1;
-    }
-
-#endif // !FEATURE_EH_FUNCLETS
 
     FuncInfoDsc* funCurrentFunc();
     void         funSetCurrentFunc(unsigned funcIdx);
@@ -8629,22 +8582,20 @@ public:
     //
 
 private:
-#if defined(FEATURE_EH_FUNCLETS)
     void unwindGetFuncLocations(FuncInfoDsc*             func,
                                 bool                     getHotSectionData,
                                 /* OUT */ emitLocation** ppStartLoc,
                                 /* OUT */ emitLocation** ppEndLoc);
-#endif // FEATURE_EH_FUNCLETS
 
     void unwindReserveFunc(FuncInfoDsc* func);
     void unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode);
 
-#if defined(TARGET_AMD64) || (defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS))
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
 
     void unwindReserveFuncHelper(FuncInfoDsc* func, bool isHotCode);
     void unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pColdCode, bool isHotCode);
 
-#endif // TARGET_AMD64 || (TARGET_X86 && FEATURE_EH_FUNCLETS)
+#endif // TARGET_AMD64 || TARGET_X86
 
     UNATIVE_OFFSET unwindGetCurrentOffset(FuncInfoDsc* func);
 
@@ -10516,14 +10467,14 @@ public:
     unsigned  compHndBBtabCount;      // element count of used elements in EH data array
     unsigned  compHndBBtabAllocCount; // element count of allocated elements in EH data array
 
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
 
     //-------------------------------------------------------------------------
     //  Tracking of region covered by the monitor in synchronized methods
     void* syncStartEmitCookie; // the emitter cookie for first instruction after the call to MON_ENTER
     void* syncEndEmitCookie;   // the emitter cookie for first instruction after the call to MON_EXIT
 
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
 
     Phases      mostRecentlyActivePhase; // the most recently active phase
     PhaseChecks activePhaseChecks;       // the currently active phase checks
@@ -11410,9 +11361,9 @@ public:
             case GT_START_NONGC:
             case GT_START_PREEMPTGC:
             case GT_PROF_HOOK:
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
             case GT_END_LFIN:
-#endif // !FEATURE_EH_FUNCLETS
+#endif // !FEATURE_EH_WINDOWS_X86
             case GT_PHI_ARG:
             case GT_JMPTABLE:
             case GT_PHYSREG:

@@ -5590,6 +5590,23 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
 
 #endif // TARGET_UNIX
 
+void FirstChanceExceptionNotification()
+{
+#ifndef TARGET_UNIX
+    if (IsDebuggerPresent())
+    {
+        PAL_TRY(VOID *, unused, NULL)
+        {
+            RaiseException(EXCEPTION_COMPLUS, 0, 0, NULL);
+        }
+        PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
+        {
+        }
+        PAL_ENDTRY;
+    }
+#endif // TARGET_UNIX
+}
+
 VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pExceptionContext, bool preserveStackTrace)
 {
     STATIC_CONTRACT_THROWS;
@@ -5637,6 +5654,8 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
     DECLARE_ARGHOLDER_ARRAY(args, 2);
     args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(throwable);
     args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+
+    FirstChanceExceptionNotification();
 
     pThread->IncPreventAbort();
 
