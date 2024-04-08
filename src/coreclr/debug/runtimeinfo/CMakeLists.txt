@@ -70,7 +70,7 @@ add_custom_command(
     OUTPUT "${CONTRACT_DESCRIPTOR_OUTPUT}"
     VERBATIM
     COMMAND "${DOTNET_CMD}" run --project "${CDAC_BUILD_TOOL_CSPROJ}" -c "$<CONFIG>" -- compose -v -o "${CONTRACT_DESCRIPTOR_OUTPUT}" -c "${CONTRACT_FILE}" $<TARGET_OBJECTS:cdac_data_descriptor>
-    DEPENDS cdac_data_descriptor $<TARGET_OBJECTS:cdac_data_descriptor> "${CONTRACT_FILE}"
+    DEPENDS cdac_data_descriptor cee_wks_core $<TARGET_OBJECTS:cdac_data_descriptor> "${CONTRACT_FILE}"
     USES_TERMINAL
 )
 
@@ -81,4 +81,4 @@ add_library_clr(cdac_contract_descriptor OBJECT
 target_include_directories(cdac_contract_descriptor BEFORE PRIVATE ${VM_DIR})
 target_include_directories(cdac_contract_descriptor BEFORE PRIVATE ${VM_DIR}/${ARCH_SOURCES_DIR})
 target_include_directories(cdac_contract_descriptor PRIVATE ${CLR_DIR}/interop/inc)
-add_dependencies(cdac_contract_descriptor cdac_data_descriptor)
+add_dependencies(cdac_contract_descriptor cdac_data_descriptor cee_wks_core)
