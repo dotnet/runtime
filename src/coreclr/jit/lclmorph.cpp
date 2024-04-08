@@ -14,7 +14,9 @@ public:
         UseExecutionOrder = true,
     };
 
-    LocalSequencer(Compiler* comp) : GenTreeVisitor(comp), m_prevNode(nullptr)
+    LocalSequencer(Compiler* comp)
+        : GenTreeVisitor(comp)
+        , m_prevNode(nullptr)
     {
     }
 
@@ -918,9 +920,9 @@ private:
                 break;
 
 #ifdef FEATURE_HW_INTRINSICS
-            // We have two cases we want to handle:
-            // 1. Vector2/3/4 and Quaternion where we have 4x float fields
-            // 2. Plane where we have 1x Vector3 and 1x float field
+                // We have two cases we want to handle:
+                // 1. Vector2/3/4 and Quaternion where we have 4x float fields
+                // 2. Plane where we have 1x Vector3 and 1x float field
 
             case IndirTransform::GetElement:
             {
@@ -934,7 +936,7 @@ private:
                     {
                         GenTree* indexNode = m_compiler->gtNewIconNode(offset / genTypeSize(elementType));
                         hwiNode            = m_compiler->gtNewSimdGetElementNode(elementType, lclNode, indexNode,
-                                                                      CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
+                                                                                 CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
                         break;
                     }
                     case TYP_SIMD12:
@@ -1045,9 +1047,9 @@ private:
                 }
                 if (isDef)
                 {
-                    GenTree* data = indir->Data();
+                    GenTree* value = indir->Data();
                     indir->ChangeOper(GT_STORE_LCL_VAR);
-                    indir->AsLclVar()->Data() = data;
+                    indir->AsLclVar()->Data() = value;
                 }
                 else
                 {
@@ -1060,9 +1062,9 @@ private:
             case IndirTransform::LclFld:
                 if (isDef)
                 {
-                    GenTree* data = indir->Data();
+                    GenTree* value = indir->Data();
                     indir->ChangeOper(GT_STORE_LCL_FLD);
-                    indir->AsLclFld()->Data() = data;
+                    indir->AsLclFld()->Data() = value;
                 }
                 else
                 {
@@ -1257,9 +1259,9 @@ private:
         {
             if (node->OperIs(GT_STOREIND, GT_STORE_BLK))
             {
-                GenTree* data = node->Data();
+                GenTree* value = node->Data();
                 node->ChangeOper(GT_STORE_LCL_VAR);
-                node->AsLclVar()->Data() = data;
+                node->AsLclVar()->Data() = value;
                 node->gtFlags |= GTF_VAR_DEF;
             }
             else

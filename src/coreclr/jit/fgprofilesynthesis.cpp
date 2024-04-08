@@ -1353,7 +1353,7 @@ void ProfileSynthesis::GaussSeidelSolver()
     for (unsigned j = m_dfsTree->GetPostOrderCount(); j != 0; j--)
     {
         BasicBlock* const block = dfs->GetPostOrder(j - 1);
-        block->setBBProfileWeight(max(0, countVector[block->bbNum]));
+        block->setBBProfileWeight(max(0.0, countVector[block->bbNum]));
     }
 
     m_approximate = !converged || (m_cappedCyclicProbabilities > 0);

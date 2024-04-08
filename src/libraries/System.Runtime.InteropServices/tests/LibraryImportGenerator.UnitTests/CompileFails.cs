@@ -785,7 +785,7 @@ namespace LibraryImportGenerator.UnitTests
             } };
         }
 
-        [ParallelTheory]
+        [Theory]
         [MemberData(nameof(CodeSnippetsToCompile))]
         public async Task ValidateSnippets(string id, string source, DiagnosticResult[] diagnostics)
         {
@@ -804,7 +804,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.IncorrectAttributeFieldType };
         }
 
-        [ParallelTheory]
+        [Theory]
         [MemberData(nameof(CodeSnippetsToCompile_InvalidCode))]
         public async Task ValidateSnippets_InvalidCodeGracefulFailure(string id, string source)
         {

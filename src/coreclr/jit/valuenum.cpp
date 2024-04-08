@@ -45,7 +45,7 @@ struct FloatTraits
 #if defined(TARGET_XARCH)
         unsigned bits = 0xFFC00000u;
 #elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        unsigned           bits = 0x7FC00000u;
+        unsigned bits = 0x7FC00000u;
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -1647,7 +1647,11 @@ bool ValueNumStore::IsSharedStatic(ValueNum vn)
 }
 
 ValueNumStore::Chunk::Chunk(CompAllocator alloc, ValueNum* pNextBaseVN, var_types typ, ChunkExtraAttribs attribs)
-    : m_defs(nullptr), m_numUsed(0), m_baseVN(*pNextBaseVN), m_typ(typ), m_attribs(attribs)
+    : m_defs(nullptr)
+    , m_numUsed(0)
+    , m_baseVN(*pNextBaseVN)
+    , m_typ(typ)
+    , m_attribs(attribs)
 {
     // Allocate "m_defs" here, according to the typ/attribs pair.
     switch (attribs)
@@ -2971,7 +2975,8 @@ typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, bool> ValueN
 
 class SmallValueNumSet
 {
-    union {
+    union
+    {
         ValueNum     m_inlineElements[4];
         ValueNumSet* m_set;
     };
@@ -3416,7 +3421,7 @@ TailCall:
                             {
                                 bool     usedRecursiveVN = false;
                                 ValueNum curResult       = VNForMapSelectWork(vnk, type, phiArgVN, index, pBudget,
-                                                                        &usedRecursiveVN, recMemoryDependencies);
+                                                                              &usedRecursiveVN, recMemoryDependencies);
 
                                 *pUsedRecursiveVN |= usedRecursiveVN;
                                 if (sameSelResult == ValueNumStore::RecursiveVN)
@@ -3449,8 +3454,9 @@ TailCall:
                                 GetMapSelectWorkCache()->Set(fstruct, entry);
                             }
 
-                            recMemoryDependencies.ForEach(
-                                [this, &memoryDependencies](ValueNum vn) { memoryDependencies.Add(m_pComp, vn); });
+                            recMemoryDependencies.ForEach([this, &memoryDependencies](ValueNum vn) {
+                                memoryDependencies.Add(m_pComp, vn);
+                            });
 
                             return sameSelResult;
                         }
@@ -3485,7 +3491,9 @@ TailCall:
         GetMapSelectWorkCache()->Set(fstruct, entry);
     }
 
-    recMemoryDependencies.ForEach([this, &memoryDependencies](ValueNum vn) { memoryDependencies.Add(m_pComp, vn); });
+    recMemoryDependencies.ForEach([this, &memoryDependencies](ValueNum vn) {
+        memoryDependencies.Add(m_pComp, vn);
+    });
 
     return entry.Result;
 }
@@ -5610,7 +5618,7 @@ ValueNum ValueNumStore::ExtendPtrVN(GenTree* opA, FieldSeq* fldSeq, ssize_t offs
     {
         fldSeq = m_pComp->GetFieldSeqStore()->Append(FieldSeqVNToFieldSeq(funcApp.m_args[1]), fldSeq);
         res    = VNForFunc(TYP_BYREF, VNF_PtrToStatic, funcApp.m_args[0], VNForFieldSeq(fldSeq),
-                        VNForIntPtrCon(ConstantValue<ssize_t>(funcApp.m_args[2]) + offset));
+                           VNForIntPtrCon(ConstantValue<ssize_t>(funcApp.m_args[2]) + offset));
     }
     else if (funcApp.m_func == VNF_PtrToArrElem)
     {
@@ -5653,7 +5661,6 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
 
     auto processDef = [=](unsigned defLclNum, unsigned defSsaNum, ssize_t defOffset, unsigned defSize,
                           ValueNumPair defValue) {
-
         LclVarDsc* defVarDsc = lvaGetDesc(defLclNum);
 
         if (defSsaNum != SsaConfig::RESERVED_SSA_NUM)
@@ -10743,21 +10750,21 @@ void Compiler::fgValueNumberStore(GenTree* store)
 {
     assert(store->OperIsStore());
 
-    GenTree* data = store->Data();
+    GenTree* value = store->Data();
 
     // Only normal values are to be stored in SSA defs, VN maps, etc.
-    ValueNumPair dataExcSet;
-    ValueNumPair dataVNPair;
-    vnStore->VNPUnpackExc(data->gtVNPair, &dataVNPair, &dataExcSet);
-    assert(dataVNPair.BothDefined());
+    ValueNumPair valueExcSet;
+    ValueNumPair valueVNPair;
+    vnStore->VNPUnpackExc(value->gtVNPair, &valueVNPair, &valueExcSet);
+    assert(valueVNPair.BothDefined());
 
-    // Is the type being stored different from the type computed by "data"?
-    if (data->TypeGet() != store->TypeGet())
+    // Is the type being stored different from the type computed by "value"?
+    if (value->TypeGet() != store->TypeGet())
     {
         if (store->OperIsInitBlkOp())
         {
             ValueNum initObjVN;
-            if (data->IsIntegralConst(0))
+            if (value->IsIntegralConst(0))
             {
                 initObjVN = vnStore->VNForZeroObj(store->GetLayout(this));
             }
@@ -10766,31 +10773,29 @@ void Compiler::fgValueNumberStore(GenTree* store)
                 initObjVN = vnStore->VNForExpr(compCurBB, TYP_STRUCT);
             }
 
-            dataVNPair.SetBoth(initObjVN);
+            valueVNPair.SetBoth(initObjVN);
         }
-        else if (data->TypeGet() == TYP_REF)
+        else if (value->TypeGet() == TYP_REF)
         {
-            // If we have an unsafe IL assignment of a TYP_REF to a non-ref (typically a TYP_BYREF)
+            // If we have an unsafe IL store of a TYP_REF to a non-ref (typically a TYP_BYREF)
             // then don't propagate this ValueNumber to the lhs, instead create a new unique VN.
-            dataVNPair.SetBoth(vnStore->VNForExpr(compCurBB, store->TypeGet()));
+            valueVNPair.SetBoth(vnStore->VNForExpr(compCurBB, store->TypeGet()));
         }
         else
         {
-            // This means that there is an implicit cast on the rhs value
-            // We will add a cast function to reflect the possible narrowing of the rhs value
-            dataVNPair = vnStore->VNPairForCast(dataVNPair, store->TypeGet(), data->TypeGet());
+            // This means that there is an implicit cast on the value.
+            // We will add a cast function to reflect its possible narrowing.
+            valueVNPair = vnStore->VNPairForCast(valueVNPair, store->TypeGet(), value->TypeGet());
         }
     }
 
-    // Now, record the new VN for an assignment (performing the indicated "state update").
-    // It's safe to use gtEffectiveVal here, because the non-last elements of a comma list on the
-    // LHS will come before the assignment in evaluation order.
+    // Now, record the new VN for the store (performing the indicated "state update").
     switch (store->OperGet())
     {
         case GT_STORE_LCL_VAR:
         {
             GenTreeLclVarCommon* lcl = store->AsLclVarCommon();
-            fgValueNumberLocalStore(store, lcl, 0, lvaLclExactSize(lcl->GetLclNum()), dataVNPair,
+            fgValueNumberLocalStore(store, lcl, 0, lvaLclExactSize(lcl->GetLclNum()), valueVNPair,
                                     /* normalize */ false);
         }
         break;
@@ -10798,7 +10803,7 @@ void Compiler::fgValueNumberStore(GenTree* store)
         case GT_STORE_LCL_FLD:
         {
             GenTreeLclFld* lclFld = store->AsLclFld();
-            fgValueNumberLocalStore(store, lclFld, lclFld->GetLclOffs(), lclFld->GetSize(), dataVNPair);
+            fgValueNumberLocalStore(store, lclFld, lclFld->GetLclOffs(), lclFld->GetSize(), valueVNPair);
         }
         break;
 
@@ -10828,16 +10833,16 @@ void Compiler::fgValueNumberStore(GenTree* store)
                 fldSeq   = vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[1]);
                 offset   = vnStore->ConstantValue<ssize_t>(funcApp.m_args[2]);
 
-                fgValueNumberFieldStore(store, baseAddr, fldSeq, offset, storeSize, dataVNPair.GetLiberal());
+                fgValueNumberFieldStore(store, baseAddr, fldSeq, offset, storeSize, valueVNPair.GetLiberal());
             }
             else if (addrIsVNFunc && (funcApp.m_func == VNF_PtrToArrElem))
             {
-                fgValueNumberArrayElemStore(store, &funcApp, storeSize, dataVNPair.GetLiberal());
+                fgValueNumberArrayElemStore(store, &funcApp, storeSize, valueVNPair.GetLiberal());
             }
             else if (addr->IsFieldAddr(this, &baseAddr, &fldSeq, &offset))
             {
                 assert(fldSeq != nullptr);
-                fgValueNumberFieldStore(store, baseAddr, fldSeq, offset, storeSize, dataVNPair.GetLiberal());
+                fgValueNumberFieldStore(store, baseAddr, fldSeq, offset, storeSize, valueVNPair.GetLiberal());
             }
             else
             {
@@ -10848,8 +10853,8 @@ void Compiler::fgValueNumberStore(GenTree* store)
                 // at byref loads if the current ByrefExposed VN happens to be
                 // VNF_ByrefExposedStore with the same pointer VN, we could propagate the
                 // VN from the RHS to the VN for the load.  This would e.g. allow tracking
-                // values through assignments to out params.  For now, just model this
-                // as an opaque GcHeap/ByrefExposed mutation.
+                // values through stores to out params.  For now, just model this as an
+                // opaque GcHeap/ByrefExposed mutation.
                 fgMutateGcHeap(store DEBUGARG("assign-of-IND"));
             }
         }
@@ -10860,7 +10865,7 @@ void Compiler::fgValueNumberStore(GenTree* store)
     }
 
     // Stores produce no values, and as such are given the "Void" VN.
-    ValueNumPair storeExcSet = dataExcSet;
+    ValueNumPair storeExcSet = valueExcSet;
     if (store->OperIsIndir())
     {
         storeExcSet = vnStore->VNPUnionExcSet(store->AsIndir()->Addr()->gtVNPair, storeExcSet);
@@ -11234,12 +11239,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
     if (GenTree::OperIsConst(oper))
     {
-        // If this is a struct assignment, with a constant rhs, (i,.e. an initBlk),
-        // it is not useful to value number the constant.
-        if (tree->TypeGet() != TYP_STRUCT)
-        {
-            fgValueNumberTreeConst(tree);
-        }
+        fgValueNumberTreeConst(tree);
     }
     else if (GenTree::OperIsLeaf(oper))
     {
@@ -11331,7 +11331,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             case GT_NOP:
             case GT_JMP:   // Control flow
             case GT_LABEL: // Control flow
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
             case GT_END_LFIN: // Control flow
 #endif
                 tree->gtVNPair = vnStore->VNPForVoid();
@@ -12189,8 +12189,8 @@ void Compiler::fgValueNumberCastTree(GenTree* tree)
 ValueNum ValueNumStore::VNForCast(ValueNum  srcVN,
                                   var_types castToType,
                                   var_types castFromType,
-                                  bool      srcIsUnsigned,    /* = false */
-                                  bool      hasOverflowCheck) /* = false */
+                                  bool      srcIsUnsigned, /* = false */
+                                  bool      hasOverflowCheck)   /* = false */
 {
 
     if ((castFromType == TYP_I_IMPL) && (castToType == TYP_BYREF) && IsVNHandle(srcVN))
@@ -12235,8 +12235,8 @@ ValueNum ValueNumStore::VNForCast(ValueNum  srcVN,
 ValueNumPair ValueNumStore::VNPairForCast(ValueNumPair srcVNPair,
                                           var_types    castToType,
                                           var_types    castFromType,
-                                          bool         srcIsUnsigned,    /* = false */
-                                          bool         hasOverflowCheck) /* = false */
+                                          bool         srcIsUnsigned, /* = false */
+                                          bool         hasOverflowCheck)      /* = false */
 {
     ValueNum srcLibVN = srcVNPair.GetLiberal();
     ValueNum srcConVN = srcVNPair.GetConservative();
@@ -13742,7 +13742,6 @@ void Compiler::fgDebugCheckExceptionSets()
 
             ValueNumPair operandsExcSet = vnStore->VNPForEmptyExcSet();
             tree->VisitOperands([&](GenTree* operand) -> GenTree::VisitResult {
-
                 CheckTree(operand, vnStore);
 
                 ValueNumPair operandVNP = operand->gtVNPair.BothDefined() ? operand->gtVNPair : vnStore->VNPForVoid();
@@ -13796,7 +13795,7 @@ void Compiler::JitTestCheckVN()
 
     // First we have to know which nodes in the tree are reachable.
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, int> NodeToIntMap;
-    NodeToIntMap* reachable = FindReachableNodesInNodeTestData();
+    NodeToIntMap*                                                reachable = FindReachableNodesInNodeTestData();
 
     LabelToVNMap* labelToVN = new (getAllocatorDebugOnly()) LabelToVNMap(getAllocatorDebugOnly());
     VNToLabelMap* vnToLabel = new (getAllocatorDebugOnly()) VNToLabelMap(getAllocatorDebugOnly());
@@ -13931,7 +13930,9 @@ void Compiler::vnPrint(ValueNum vn, unsigned level)
 #endif // DEBUG
 
 // Methods of ValueNumPair.
-ValueNumPair::ValueNumPair() : m_liberal(ValueNumStore::NoVN), m_conservative(ValueNumStore::NoVN)
+ValueNumPair::ValueNumPair()
+    : m_liberal(ValueNumStore::NoVN)
+    , m_conservative(ValueNumStore::NoVN)
 {
 }
 

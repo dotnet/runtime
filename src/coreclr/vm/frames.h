@@ -1337,7 +1337,7 @@ public:
     }
 #endif // DACCESS_COMPILE
 
-    BOOL InsureInit(bool initialInit, struct MachState* unwindState, HostCallPreference hostCallPreference = AllowHostCalls);
+    BOOL InsureInit(bool initialInit, struct MachState* unwindState);
 
     LazyMachState * MachineState() {
         LIMITED_METHOD_CONTRACT;

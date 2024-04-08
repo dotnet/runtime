@@ -71,7 +71,7 @@ CONFIG_INTEGER(JitHideAlignBehindJmp,
                1) // If set, try to hide align instruction (if any) behind an unconditional jump instruction (if any)
                   // that is present before the loop start.
 
-CONFIG_INTEGER(JitOptimizeStructHiddenBuffer, W("JitOptimizeStructHiddenBuffer"), 1) // Track assignments to locals done
+CONFIG_INTEGER(JitOptimizeStructHiddenBuffer, W("JitOptimizeStructHiddenBuffer"), 1) // Track stores to locals done
                                                                                      // through return buffers.
 
 CONFIG_INTEGER(JitUnrollLoopMaxIterationCount,
@@ -377,10 +377,10 @@ CONFIG_INTEGER(JitDisableSimdVN, W("JitDisableSimdVN"), 0) // Default 0, ValueNu
 //
 CONFIG_INTEGER(JitConstCSE, W("JitConstCSE"), 0)
 
-#define CONST_CSE_ENABLE_ARM 0
-#define CONST_CSE_DISABLE_ALL 1
+#define CONST_CSE_ENABLE_ARM            0
+#define CONST_CSE_DISABLE_ALL           1
 #define CONST_CSE_ENABLE_ARM_NO_SHARING 2
-#define CONST_CSE_ENABLE_ALL 3
+#define CONST_CSE_ENABLE_ALL            3
 #define CONST_CSE_ENABLE_ALL_NO_SHARING 4
 
 // If nonzero, use the greedy RL policy.
