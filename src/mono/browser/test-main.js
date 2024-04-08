@@ -52,7 +52,7 @@ if (!ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_WEB && typeof globalThis.crypto === 
 }
 
 if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_WORKER) {
-    console.log("Running at: " + globalThis.location.href);
+    console.log("Running '" + globalThis.navigator.userAgent + "' at: " + globalThis.location.href);
 }
 
 let v8args;

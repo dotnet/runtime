@@ -347,12 +347,6 @@ mono_wasm_exit (int exit_code)
 	emscripten_force_exit (exit_code);
 }
 
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_abort ()
-{
-	abort ();
-}
-
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_set_main_args (int argc, char* argv[])
 {

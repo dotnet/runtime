@@ -198,6 +198,8 @@ export function preRunWorker () {
     const mark = startMeasure();
     try {
         jiterpreter_allocate_tables(); // this will return quickly if already allocated
+        runtimeHelpers.nativeExit = nativeExit;
+        runtimeHelpers.nativeAbort = nativeAbort;
         runtimeHelpers.runtimeReady = true;
         // signal next stage
         runtimeHelpers.afterPreRun.promise_control.resolve();

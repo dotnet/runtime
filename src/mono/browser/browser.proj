@@ -206,6 +206,7 @@
       <EmccExportedFunction Include="stackAlloc" />
       <EmccExportedFunction Include="stackRestore" />
       <EmccExportedFunction Include="stackSave"  />
+      <EmccExportedFunction Include="_emscripten_force_exit" />
     </ItemGroup>
     <!-- for the jiterpreter -->
     <ItemGroup>

@@ -44,9 +44,6 @@ export function mono_log_error (msg: string, ...data: any) {
         }
         if (data[0].toString) {
             console.error(prefix + msg, data[0].toString());
-        }
-        if (data[0].toString) {
-            console.error(prefix + msg, data[0].toString());
             return;
         }
     }
@@ -118,12 +115,13 @@ export function setup_proxy_console (id: string, console: Console, origin: strin
 }
 
 export function teardown_proxy_console (message?: string) {
+    let counter = 30;
     const stop_when_ws_buffer_empty = () => {
         if (!consoleWebSocket) {
             if (message && originalConsoleMethods) {
                 originalConsoleMethods.log(message);
             }
-        } else if (consoleWebSocket.bufferedAmount == 0) {
+        } else if (consoleWebSocket.bufferedAmount == 0 || counter == 0) {
             if (message) {
                 // tell xharness WasmTestMessagesProcessor we are done.
                 // note this sends last few bytes into the same WS
@@ -136,6 +134,7 @@ export function teardown_proxy_console (message?: string) {
             consoleWebSocket.close(1000, message);
             (consoleWebSocket as any) = undefined;
         } else {
+            counter--;
             globalThis.setTimeout(stop_when_ws_buffer_empty, 100);
         }
     };

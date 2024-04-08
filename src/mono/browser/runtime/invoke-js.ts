@@ -60,7 +60,7 @@ export function mono_wasm_invoke_jsimport_MT (signature: JSFunctionSignature, ar
                 }
                 return;
             } catch (ex2: any) {
-                runtimeHelpers.nativeExit(ex2);
+                runtimeHelpers.nativeAbort(ex2);
                 return;
             }
         }
