@@ -174,7 +174,7 @@ namespace System.Numerics
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private Vector4 Transform(Vector4 vector, in Impl matrix)
+            private static Vector4 Transform(Vector4 vector, in Impl matrix)
             {
                 var result = matrix.X * vector.X;
                 result += matrix.Y * vector.Y;
