@@ -142,7 +142,6 @@ size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -494,7 +493,6 @@ FrameType   GetHandlerFrameInfo(hdrInfo   * info,
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -3686,13 +3684,7 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
     }
     else
     {
-        /* However if ExecutionAborted, then this must be one of the
-         * ExceptionFrames. Handle accordingly
-         */
-        _ASSERTE(!(flags & AbortingCall) || !(flags & ActiveStackFrame));
-
-        newCurOffs = (flags & AbortingCall) ? curOffs-1 // inside "call"
-                                            : curOffs;  // at faulting instr, or start of "try"
+        newCurOffs = curOffs;
     }
 
     ptrOffs    = 0;

@@ -94,7 +94,7 @@ void Compiler::gsCopyShadowParams()
 
     // Find groups of variables assigned to each other, and also
     // tracks variables which are dereferenced and marks them as ptrs.
-    // Look for assignments to *p, and ptrs passed to functions
+    // Look for stores to *p, and ptrs passed to functions
     //
     if (gsFindVulnerableParams())
     {
@@ -117,7 +117,7 @@ struct MarkPtrsInfo
 {
     Compiler* comp;
     unsigned  lvStoreDef;   // Which local variable is the tree being assigned to?
-    bool      isStoreSrc;   // Is this the source value for an assignment?
+    bool      isStoreSrc;   // Is this the source value for a local store?
     bool      isUnderIndir; // Is this a pointer value tree that is being dereferenced?
     bool      skipNextNode; // Skip a single node during the tree-walk
 
@@ -455,7 +455,8 @@ void Compiler::gsParamsToShadows()
             DoPostOrder = true
         };
 
-        ReplaceShadowParamsVisitor(Compiler* compiler) : GenTreeVisitor<ReplaceShadowParamsVisitor>(compiler)
+        ReplaceShadowParamsVisitor(Compiler* compiler)
+            : GenTreeVisitor<ReplaceShadowParamsVisitor>(compiler)
         {
         }
 
@@ -527,7 +528,7 @@ void Compiler::gsParamsToShadows()
     if (compJmpOpUsed)
     {
         // There could be more than one basic block ending with a "Jmp" type tail call.
-        // We would have to insert assignments in all such blocks, just before GT_JMP stmnt.
+        // We would have to insert stores in all such blocks, just before GT_JMP stmnt.
         for (BasicBlock* const block : Blocks())
         {
             if (!block->KindIs(BBJ_RETURN))
