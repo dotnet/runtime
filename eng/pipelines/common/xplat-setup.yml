@@ -19,7 +19,6 @@ jobs:
     shouldContinueOnError: ${{ or(eq(parameters.shouldContinueOnError, true), and(ne(parameters.shouldContinueOnError, 'forceFalse'), endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest'))) }}
 
     variables:
-      - template: /eng/common/${{ coalesce(parameters.jobParameters.templatePath, 'templates') }}/variables/pool-providers.yml
       # Disable component governance in our CI builds. These builds are not shipping nor
       # are they a service. Also the component governance jobs issue lots of inconsequential
       # warnings and errors into our build timelines that make it hard to track down
