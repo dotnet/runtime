@@ -44,11 +44,11 @@ namespace Mono.Linker.Steps
 			bool baseRequires = annotations.DoesMethodRequireUnreferencedCode (baseMethod, out _);
 			if ((baseRequires && !methodSatisfies) || (!baseRequires && annotations.DoesMethodRequireUnreferencedCode (method, out _))) {
 				string message = MessageFormat.FormatRequiresAttributeMismatch (
-				    methodSatisfies,
-				    baseMethod.DeclaringType.IsInterface,
-				    nameof (RequiresUnreferencedCodeAttribute),
-				    method.GetDisplayName (),
-				    baseMethod.GetDisplayName ());
+					methodSatisfies,
+					baseMethod.DeclaringType.IsInterface,
+					nameof (RequiresUnreferencedCodeAttribute),
+					method.GetDisplayName (),
+					baseMethod.GetDisplayName ());
 				Context.LogWarning (method, DiagnosticId.RequiresUnreferencedCodeAttributeMismatch, message);
 			}
 		}
