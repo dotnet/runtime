@@ -21,10 +21,67 @@ namespace System.Reflection.Emit.Tests
             LocalBuilder local = il1.DeclareLocal(typeof(int));
             Assert.Throws<ArgumentNullException>("usingNamespace", () => il1.UsingNamespace(null));
             Assert.Throws<ArgumentException>("usingNamespace", () => il1.UsingNamespace(string.Empty));
-            local.SetLocalSymInfo(null); // can be null
+            Assert.Throws<ArgumentNullException>("name", () => local.SetLocalSymInfo(null));
             il1.Emit(OpCodes.Ret);
             tb.CreateType();
             Assert.Throws<InvalidOperationException>(() => local.SetLocalSymInfo("myInt1")); // type created
+        }
+
+        [Fact]
+        public void LocalWithoutSymInfoWillNotAddedToLocalVariablesTable()
+        {
+            PersistedAssemblyBuilder ab = new PersistedAssemblyBuilder(new AssemblyName("MyAssembly"), typeof(object).Assembly);
+            ModuleBuilder mb = ab.DefineDynamicModule("MyModule");
+            TypeBuilder tb = mb.DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
+            ISymbolDocumentWriter srcDoc = mb.DefineDocument("MySourceFile.cs", SymLanguageType.CSharp);
+            MethodBuilder method = tb.DefineMethod("SumMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(int), [typeof(int), typeof(int)]);
+            ILGenerator il1 = method.GetILGenerator();
+            LocalBuilder local = il1.DeclareLocal(typeof(int));
+            local.SetLocalSymInfo("myInt1");
+            il1.Emit(OpCodes.Ldarg_0);
+            il1.Emit(OpCodes.Ldarg_1);
+            il1.Emit(OpCodes.Add);
+            il1.Emit(OpCodes.Stloc_0);
+            LocalBuilder local2 = il1.DeclareLocal(typeof(string));
+            il1.Emit(OpCodes.Ldstr, "MyAssembly");
+            il1.Emit(OpCodes.Stloc, local2);
+            LocalBuilder local3 = il1.DeclareLocal(typeof(int));
+            local3.SetLocalSymInfo("myInt2");
+            il1.Emit(OpCodes.Ldc_I4_2);
+            il1.Emit(OpCodes.Stloc_2);
+            il1.Emit(OpCodes.Ldloc_2);
+            il1.Emit(OpCodes.Ldloc_0);
+            il1.Emit(OpCodes.Add);
+            il1.Emit(OpCodes.Ret);
+            tb.CreateType();
+
+            MetadataBuilder mdb = ab.GenerateMetadata(out BlobBuilder _, out BlobBuilder _, out MetadataBuilder pdbMetadata);
+
+            BlobBuilder portablePdbBlob = new BlobBuilder();
+            PortablePdbBuilder pdbBuilder = new PortablePdbBuilder(pdbMetadata, mdb.GetRowCounts(), default);
+            pdbBuilder.Serialize(portablePdbBlob);
+            using TempFile pdbFile = TempFile.Create();
+            using var pdbFileStream = new FileStream(pdbFile.Path, FileMode.Create, FileAccess.Write);
+            portablePdbBlob.WriteContentTo(pdbFileStream);
+            pdbFileStream.Close();
+
+            using var fs = new FileStream(pdbFile.Path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using MetadataReaderProvider provider = MetadataReaderProvider.FromPortablePdbStream(fs);
+            MetadataReader reader = provider.GetMetadataReader();
+            MethodDebugInformation mdi = reader.GetMethodDebugInformation(MetadataTokens.MethodDebugInformationHandle(method.MetadataToken));
+            SequencePointCollection.Enumerator spcEnumerator = mdi.GetSequencePoints().GetEnumerator();
+            Assert.False(spcEnumerator.MoveNext());
+
+            LocalScopeHandleCollection.Enumerator localScopes = reader.GetLocalScopes(MetadataTokens.MethodDefinitionHandle(method.MetadataToken)).GetEnumerator();
+            Assert.True(localScopes.MoveNext());
+            LocalScope localScope = reader.GetLocalScope(localScopes.Current);
+            LocalVariableHandleCollection.Enumerator localEnumerator = localScope.GetLocalVariables().GetEnumerator();
+            Assert.True(localEnumerator.MoveNext());
+            Assert.Equal("myInt1", reader.GetString(reader.GetLocalVariable(localEnumerator.Current).Name));
+            Assert.True(localEnumerator.MoveNext());
+            Assert.Equal("myInt2", reader.GetString(reader.GetLocalVariable(localEnumerator.Current).Name));
+            Assert.False(localEnumerator.MoveNext());
+            Assert.False(localScopes.MoveNext());
         }
 
         [Fact]

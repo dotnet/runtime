@@ -526,12 +526,15 @@ namespace System.Reflection.Emit
                 bool firstLocalSet = false;
                 foreach (LocalBuilderImpl local in locals)
                 {
-                    LocalVariableHandle localHandle = _pdbMetadata.AddLocalVariable(LocalVariableAttributes.None, local.LocalIndex,
-                                                      local.Name == null ? default : _pdbMetadata.GetOrAddString(local.Name));
-                    if (!firstLocalSet)
+                    if (!string.IsNullOrEmpty(local.Name))
                     {
-                        firstLocalOfLastScope = localHandle;
-                        firstLocalSet = true;
+                        LocalVariableHandle localHandle = _pdbMetadata.AddLocalVariable(LocalVariableAttributes.None, local.LocalIndex,
+                                                          local.Name == null ? _pdbMetadata.GetOrAddString(string.Empty) : _pdbMetadata.GetOrAddString(local.Name));
+                        if (!firstLocalSet)
+                        {
+                            firstLocalOfLastScope = localHandle;
+                            firstLocalSet = true;
+                        }
                     }
                 }
             }
