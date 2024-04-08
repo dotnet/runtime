@@ -64,17 +64,17 @@ steps:
 
     - ${{ if eq(parameters.archType, 'x64') }}:
       - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
-        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_aot ${{ parameters.buildConfig }} ${{ parameters.archType }} /p:RuntimeVariant=${{ parameters.runtimeVariant }}
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_aot ${{ parameters.buildConfig }} ${{ parameters.archType }} /p:RuntimeVariant=${{ parameters.runtimeVariant }} -maxcpucount:1
           displayName: "AOT compile CoreCLR tests"
       - ${{ if in(parameters.runtimeVariant, 'llvmfullaot', 'minifullaot') }}:
         - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_fullaot ${{ parameters.buildConfig }} ${{ parameters.archType }} /p:RuntimeVariant=${{ parameters.runtimeVariant }} -maxcpucount:1
           displayName: "AOT compile CoreCLR tests"
     - ${{ if eq(parameters.archType, 'arm64') }}:
       - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
-        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_aot ${{ parameters.buildConfig }} ${{ parameters.archType }} cross /p:RuntimeVariant=${{ parameters.runtimeVariant }} -maxcpucount:2
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_aot ${{ parameters.buildConfig }} ${{ parameters.archType }} cross /p:RuntimeVariant=${{ parameters.runtimeVariant }} -maxcpucount:1
           displayName: "AOT cross-compile CoreCLR tests"
       - ${{ if in(parameters.runtimeVariant, 'llvmfullaot', 'minifullaot') }}:
-        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_fullaot ${{ parameters.buildConfig }} ${{ parameters.archType }} cross /p:RuntimeVariant=${{ parameters.runtimeVariant }} -maxcpucount:2
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_fullaot ${{ parameters.buildConfig }} ${{ parameters.archType }} cross /p:RuntimeVariant=${{ parameters.runtimeVariant }} -maxcpucount:1
           displayName: "AOT cross-compile CoreCLR tests"
 
   # Checks the value of the compileOnHelix parameter
