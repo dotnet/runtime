@@ -25,7 +25,7 @@ switch (testCase) {
     case "AppSettingsTest":
         dotnet.withApplicationEnvironment(params.get("applicationEnvironment"));
         break;
-    case "DownloadResourceProgressTest":
+    case "ModuleConfigTests":
         if (params.get("failAssemblyDownload") === "true") {
             let assemblyCounter = 0;
             let failAtAssemblyNumbers = [
@@ -64,11 +64,11 @@ switch (testCase) {
                     testOutput("DownloadResourceProgress: Finished");
                 }
             },
-            out: ()=>{
+            out: () => {
                 console.log("Emscripten out override works!");
                 console.log(console)
             },
-            err: ()=>{
+            err: () => {
                 console.log("Emscripten err override works!");
                 console.error(console)
             },
@@ -102,7 +102,7 @@ try {
             exports.AppSettingsTest.Run();
             exit(0);
             break;
-        case "DownloadResourceProgressTest":
+        case "ModuleConfigTests":
             exit(0);
             break;
         case "DebugLevelTest":
