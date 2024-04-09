@@ -29,10 +29,10 @@ import { mono_wasm_cancel_promise } from "./cancelable-promise";
 import {
     mono_wasm_start_deputy_thread_async,
     mono_wasm_pthread_on_pthread_attached, mono_wasm_pthread_on_pthread_unregistered,
-    mono_wasm_pthread_on_pthread_registered, mono_wasm_pthread_set_name, mono_wasm_install_js_worker_interop, mono_wasm_uninstall_js_worker_interop, mono_wasm_start_io_thread_async
+    mono_wasm_pthread_on_pthread_registered, mono_wasm_pthread_set_name, mono_wasm_install_js_worker_interop, mono_wasm_uninstall_js_worker_interop, mono_wasm_start_io_thread_async, mono_wasm_warn_about_blocking_wait
 } from "./pthreads";
 import { mono_wasm_dump_threads } from "./pthreads/ui-thread";
-
+import { mono_wasm_schedule_synchronization_context } from "./pthreads/shared";
 
 // the JS methods would be visible to EMCC linker and become imports of the WASM module
 
@@ -44,6 +44,7 @@ export const mono_wasm_threads_imports = !WasmEnableThreads ? [] : [
     mono_wasm_pthread_set_name,
     mono_wasm_start_deputy_thread_async,
     mono_wasm_start_io_thread_async,
+    mono_wasm_schedule_synchronization_context,
 
     // mono-threads.c
     mono_wasm_dump_threads,
@@ -56,6 +57,7 @@ export const mono_wasm_threads_imports = !WasmEnableThreads ? [] : [
     mono_wasm_install_js_worker_interop,
     mono_wasm_uninstall_js_worker_interop,
     mono_wasm_invoke_jsimport_MT,
+    mono_wasm_warn_about_blocking_wait,
 ];
 
 export const mono_wasm_imports = [
