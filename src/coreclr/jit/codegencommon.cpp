@@ -3073,7 +3073,7 @@ void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, RegGraph* graph)
 
     unsigned                     paramLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
     LclVarDsc*                   paramVarDsc = compiler->lvaGetDesc(paramLclNum);
-    const ABIPassingInformation& abiInfo     = compiler->lvaParameterPassingInfo[paramLclNum];
+    const ABIPassingInformation& abiInfo     = compiler->lvaGetParameterABIInfo(paramLclNum);
     for (unsigned i = 0; i < abiInfo.NumSegments; i++)
     {
         const ABIPassingSegment& seg = abiInfo.Segments[i];
@@ -3171,7 +3171,7 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
                 continue;
             }
 
-            const ABIPassingInformation& abiInfo = compiler->lvaParameterPassingInfo[lclNum];
+            const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
             for (unsigned i = 0; i < abiInfo.NumSegments; i++)
             {
                 const ABIPassingSegment& seg = abiInfo.Segments[i];
