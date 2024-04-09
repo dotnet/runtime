@@ -353,11 +353,11 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
         return;
     }
 
-    if (DoesOverflow(block, treeIndex))
-    {
-        JITDUMP("Method determined to overflow.\n");
-        return;
-    }
+    //if (DoesOverflow(block, treeIndex))
+    //{
+    //    JITDUMP("Method determined to overflow.\n");
+    //    return;
+    //}
 
     JITDUMP("Range value %s\n", range.ToString(m_pCompiler));
     m_pSearchPath->RemoveAll();
