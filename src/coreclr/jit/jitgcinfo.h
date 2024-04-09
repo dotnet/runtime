@@ -367,8 +367,6 @@ private:
 
 #endif // JIT32_GCENCODER
 
-#if !defined(JIT32_GCENCODER) || defined(FEATURE_EH_FUNCLETS)
-
     // This method expands the tracked stack variables lifetimes so that any lifetimes within filters
     // are reported as pinned.
     void gcMarkFilterVarsPinned();
@@ -379,8 +377,6 @@ private:
 #ifdef DEBUG
     void gcDumpVarPtrDsc(varPtrDsc* desc);
 #endif // DEBUG
-
-#endif // !defined(JIT32_GCENCODER) || defined(FEATURE_EH_FUNCLETS)
 
 #if DUMP_GC_TABLES
 

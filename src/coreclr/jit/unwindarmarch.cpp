@@ -579,7 +579,6 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
     }
 #endif // DEBUG
 
-#ifdef FEATURE_EH_FUNCLETS
     // If hot/cold splitting occurred at fgFirstFuncletBB, then the main body is not split.
     const bool splitAtFirstFunclet = (funcHasColdSection && (fgFirstColdBlock == fgFirstFuncletBB));
 
@@ -587,7 +586,6 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
     {
         funcHasColdSection = false;
     }
-#endif // FEATURE_EH_FUNCLETS
 
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())

@@ -1863,6 +1863,11 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
     eeInfoInitialized = false;
 
+#if defined(FEATURE_EH_WINDOWS_X86)
+    // Cache Native AOT ABI check. This must happen *after* eeInfoInitialized is initialized, above.
+    eeIsNativeAotAbi = IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+#endif
+
     compDoAggressiveInlining = false;
 
     if (compIsForInlining())
@@ -3026,7 +3031,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         codeGen->setVerbose(true);
     }
 
-    treesBeforeAfterMorph = (JitConfig.TreesBeforeAfterMorph() == 1);
+    treesBeforeAfterMorph = (JitConfig.JitDumpBeforeAfterMorph() == 1);
     morphNum              = 0; // Initialize the morphed-trees counting.
 
     expensiveDebugCheckLevel = JitConfig.JitExpensiveDebugCheckLevel();
@@ -4636,6 +4641,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         fgFixEntryFlowForOSR();
     }
 
+    // Drop back to just checking profile likelihoods.
+    //
+    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
+    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
+
     // Enable the post-phase checks that use internal logic to decide when checking makes sense.
     //
     activePhaseChecks |=
@@ -4919,13 +4929,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_COMPUTE_EDGE_WEIGHTS, &Compiler::fgComputeBlockAndEdgeWeights);
 
-#if defined(FEATURE_EH_FUNCLETS)
-
-    // Create funclets from the EH handlers.
-    //
-    DoPhase(this, PHASE_CREATE_FUNCLETS, &Compiler::fgCreateFunclets);
-
-#endif // FEATURE_EH_FUNCLETS
+    if (UsesFunclets())
+    {
+        // Create funclets from the EH handlers.
+        //
+        DoPhase(this, PHASE_CREATE_FUNCLETS, &Compiler::fgCreateFunclets);
+    }
 
     if (opts.OptimizationEnabled())
     {
@@ -5466,29 +5475,26 @@ bool Compiler::shouldAlignLoop(FlowGraphNaturalLoop* loop, BasicBlock* top)
 
     assert(!top->IsFirst());
 
-#if FEATURE_EH_CALLFINALLY_THUNKS
-    if (top->Prev()->KindIs(BBJ_CALLFINALLY))
+    if (UsesCallFinallyThunks() && top->Prev()->KindIs(BBJ_CALLFINALLY))
     {
         // It must be a retless BBJ_CALLFINALLY if we get here.
         assert(!top->Prev()->isBBCallFinallyPair());
 
         // If the block before the loop start is a retless BBJ_CALLFINALLY
-        // with FEATURE_EH_CALLFINALLY_THUNKS, we can't add alignment
+        // with UsesCallFinallyThunks, we can't add alignment
         // because it will affect reported EH region range. For x86 (where
-        // !FEATURE_EH_CALLFINALLY_THUNKS), we can allow this.
+        // !UsesCallFinallyThunks), we can allow this.
 
         JITDUMP("Skipping alignment for " FMT_LP "; its top block follows a CALLFINALLY block\n", loop->GetIndex());
         return false;
     }
-#endif // FEATURE_EH_CALLFINALLY_THUNKS
 
     if (top->Prev()->isBBCallFinallyPairTail())
     {
         // If the previous block is the BBJ_CALLFINALLYRET of a
         // BBJ_CALLFINALLY/BBJ_CALLFINALLYRET pair, then we can't add alignment
         // because we can't add instructions in that block. In the
-        // FEATURE_EH_CALLFINALLY_THUNKS case, it would affect the
-        // reported EH, as above.
+        // UsesCallFinallyThunks case, it would affect the reported EH, as above.
         JITDUMP("Skipping alignment for " FMT_LP "; its top block follows a CALLFINALLY/ALWAYS pair\n",
                 loop->GetIndex());
         return false;
@@ -10930,10 +10936,6 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                 m_simdUserForcesDep++;
                 break;
 
-            case DoNotEnregisterReason::NonStandardParameter:
-                m_nonStandardParameter++;
-                break;
-
             default:
                 unreached();
                 break;
@@ -11061,7 +11063,6 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_returnSpCheck, notEnreg);
     PRINT_STATS(m_callSpCheck, notEnreg);
     PRINT_STATS(m_simdUserForcesDep, notEnreg);
-    PRINT_STATS(m_nonStandardParameter, notEnreg);
 
     fprintf(fout, "\nAddr exposed details:\n");
     if (m_addrExposed == 0)

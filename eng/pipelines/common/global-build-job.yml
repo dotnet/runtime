@@ -60,6 +60,14 @@ jobs:
     enableRichCodeNavigation: ${{ parameters.enableRichCodeNavigation }}
     richCodeNavigationLanguage: ${{ parameters.richCodeNavigationLanguage }}
 
+    artifacts:
+      publish:
+        logs:
+          ${{ if notin(parameters.osGroup, 'browser', 'wasi') }}:
+            name: Logs_Build_Attempt$(System.JobAttempt)_${{ parameters.osGroup }}_${{ parameters.osSubGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
+          ${{ if in(parameters.osGroup, 'browser', 'wasi') }}:
+            name: Logs_Build_Attempt$(System.JobAttempt)_${{ parameters.osGroup }}_${{ parameters.archType }}_${{ parameters.hostedOs }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
+
     # Component governance does not work on musl machines
     ${{ if eq(parameters.osSubGroup, '_musl') }}:
       disableComponentGovernance: true
@@ -283,17 +291,3 @@ jobs:
         - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName postbuild_log
           displayName: Collect vslogs on exit
           condition: always()
-
-    - template: /eng/pipelines/common/templates/publish-build-artifacts.yml
-      parameters:
-        isOfficialBuild: ${{ parameters.isOfficialBuild }}
-        displayName: Publish Logs
-        inputs:
-          PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/'
-          PublishLocation: Container
-          ${{ if notin(parameters.osGroup, 'browser', 'wasi') }}:
-            ArtifactName: Logs_Build_Attempt$(System.JobAttempt)_${{ parameters.osGroup }}_${{ parameters.osSubGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
-          ${{ if in(parameters.osGroup, 'browser', 'wasi') }}:
-            ArtifactName: Logs_Build_Attempt$(System.JobAttempt)_${{ parameters.osGroup }}_${{ parameters.archType }}_${{ parameters.hostedOs }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
-          continueOnError: true
-        condition: always()
