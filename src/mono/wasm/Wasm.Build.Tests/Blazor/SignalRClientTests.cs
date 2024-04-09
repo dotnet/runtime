@@ -85,10 +85,4 @@ public class SignalRClientTests : SignalRTestsBase
         Assert.True("1" != threadIdUsedForSending || "1" != threadIdUsedForReceiving,
             $"Expected to send/receive with signalR in non-UI threads, instead only CurrentManagedThreadId=1 was used. TestOutput: {output}.");
     }
-
-    private async Task SaveClickButtonAsync(IPage page, string selector)
-    {
-        await page.WaitForSelectorAsync(selector);
-        await page.ClickAsync(selector);
-    }
 }

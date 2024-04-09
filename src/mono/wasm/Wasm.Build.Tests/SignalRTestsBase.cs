@@ -3,8 +3,10 @@
 
 using System.Text;
 using System.Text.RegularExpressions;
-using Xunit.Abstractions;
+using System.Threading.Tasks;
+using Microsoft.Playwright;
 using Wasm.Build.Tests.TestAppScenarios;
+using Xunit.Abstractions;
 using Xunit;
 #nullable enable
 
@@ -22,5 +24,11 @@ public class SignalRTestsBase : AppTestBase
         Match match = Regex.Match(testOutput, pattern);
         Assert.True(match.Success, $"Expected to find a log that {actionDescription}. TestOutput: {testOutput}.");
         return match.Groups[1].Value ?? "";
+    }
+
+    protected async Task SaveClickButtonAsync(IPage page, string selector)
+    {
+        await page.WaitForSelectorAsync(selector);
+        await page.Locator(selector).ClickAsync();
     }
 }

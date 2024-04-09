@@ -111,26 +111,33 @@ try {
 
             let startConnectionButton = document.createElement("button");
             startConnectionButton.id = "startconnection"; // second: click this
-            startConnectionButton.addEventListener("click", function() {
+            startConnectionButton.addEventListener("click", async function() {
                 testOutput("StartConnectionButton was clicked!");
                 const baseUrl = window.location.protocol + "//" + window.location.host;;
-                exports.SignalRClientTests.Connect(baseUrl, transport);
+                await exports.SignalRClientTests.Connect(baseUrl, transport);
+            
+                let sendMessageButtonCheck = document.getElementById("sendMessage");
+                if (sendMessageButtonCheck) {
+                    console.log("sendMessage button is present");
+                } else {
+                    console.log("sendMessage button is not present");
+                }
             });
             document.body.appendChild(startConnectionButton);
 
             let sendMessageButton = document.createElement("button");
             sendMessageButton.id = "sendMessage"; // third: click this
-            sendMessageButton.addEventListener("click", function() {
+            sendMessageButton.addEventListener("click", async function() {
                 testOutput("sendMessageButton was clicked!");
-                exports.SignalRClientTests.SignalRPassMessages(message);
+                await exports.SignalRClientTests.SignalRPassMessages(message);
             });
             document.body.appendChild(sendMessageButton);
 
             let exitProgramButton = document.createElement("button");
             exitProgramButton.id = "exitProgram"; // fourth: click this
-            exitProgramButton.addEventListener("click", function() {
+            exitProgramButton.addEventListener("click", async function() {
                 testOutput("exitProgramButton was clicked!");
-                exports.SignalRClientTests.DisposeHubConnection();
+                await exports.SignalRClientTests.DisposeHubConnection();
                 exit(0);
             });
             document.body.appendChild(exitProgramButton);

@@ -49,7 +49,6 @@ public class SignalRClientTests : SignalRTestsBase
 
         // build server project
         BuildProject(configuration: config,
-            // runtimeType: RuntimeVariant.MultiThreaded,
             assertAppBundle: false); // should we asset app bunlde?
         // ---------------- to here -? pack in a AppTestBase.BuildAspNetCoreServingWASM(string )
         try
@@ -64,17 +63,26 @@ public class SignalRClientTests : SignalRTestsBase
                 if (msg.Text.Contains("Buttons added to the body, the test can be started."))
                 {
                     Console.WriteLine($"clicking startconnection button");
-                    await page.Locator("#startconnection").ClickAsync();
+                    await SaveClickButtonAsync(page, "#startconnection");
                 }
-                if (msg.Text.Contains("SignalR connected"))
+                if (msg.Text.Contains("sendMessage button is present"))
                 {
-                    Console.WriteLine($"clicking sendmessage button");
-                    await page.Locator("#sendmessage").ClickAsync();
+                    try
+                    {
+                        Console.WriteLine($"clicking sendmessage button");
+                        await SaveClickButtonAsync(page, "#sendmessage");
+                        
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Exception when clicking the message button: {ex}");
+                        await SaveClickButtonAsync(page, "#exitProgram");
+                    }
                 }
                 if (msg.Text.Contains("ReceiveMessage from server"))
                 {
                     Console.WriteLine($"clicking exitProgram button");
-                    await page.Locator("#exitProgram").ClickAsync();
+                    await SaveClickButtonAsync(page, "#exitProgram");
                 }
             }));
         }
