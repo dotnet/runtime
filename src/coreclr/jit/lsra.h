@@ -451,11 +451,12 @@ typedef jitstd::list<RefPosition>::reverse_iterator RefPositionReverseIterator;
 class Referenceable
 {
 public:
-    Referenceable()
+    Referenceable(RegisterType registerType)
     {
         firstRefPosition  = nullptr;
         recentRefPosition = nullptr;
         lastRefPosition   = nullptr;
+        registerType      = registerType;
     }
 
     // A linked list of RefPositions.  These are only traversed in the forward
@@ -465,6 +466,8 @@ public:
     RefPosition* firstRefPosition;
     RefPosition* recentRefPosition;
     RefPosition* lastRefPosition;
+
+    RegisterType registerType;
 
     // Get the position of the next reference which is at or greater than
     // the current location (relies upon recentRefPosition being updated
@@ -476,13 +479,12 @@ public:
 class RegRecord : public Referenceable
 {
 public:
-    RegRecord()
+    RegRecord() : Referenceable(IntRegisterType)
     {
         assignedInterval = nullptr;
         previousInterval = nullptr;
         regNum           = REG_NA;
         isCalleeSave     = false;
-        registerType     = IntRegisterType;
     }
 
     void init(regNumber reg)
@@ -2210,13 +2212,14 @@ class Interval : public Referenceable
 {
 public:
     Interval(RegisterType registerType, regMaskOnlyOne registerPreferences)
-        : registerPreferences(registerPreferences)
+        : Referenceable(registerType)
+        , registerPreferences(registerPreferences)
         , registerAversion(RBM_NONE)
         , relatedInterval(nullptr)
         , assignedReg(nullptr)
         , varNum(0)
         , physReg(REG_COUNT)
-        , registerType(registerType)
+        //, registerType(registerType)
         , isActive(false)
         , isLocalVar(false)
         , isSplit(false)
@@ -2238,6 +2241,7 @@ public:
 #ifdef DEBUG
         , intervalIndex(0)
 #endif
+
     {
     }
 
@@ -2272,8 +2276,6 @@ public:
 
     // The register to which it is currently assigned.
     regNumber physReg;
-
-    RegisterType registerType;
 
     // Is this Interval currently in a register and live?
     bool isActive;
@@ -2695,9 +2697,7 @@ public:
 
     RegisterType getRegisterType()
     {
-        // TODO: The type should be just on `Referenceable` that refposition can extract
-        //  without having to deal with the check.
-        return isIntervalRef() ? getInterval()->registerType : getReg()->registerType;
+        return referent->registerType;
     }
 
     // Returns true if it is a reference on a GenTree node.
