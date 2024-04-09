@@ -12,7 +12,8 @@ namespace System.Numerics
           IEquatable<Decimal64>,
           IDecimalIeee754ParseAndFormatInfo<Decimal64>,
           IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>,
-          IDecimalIeee754UnpackInfo<Decimal64, long, ulong>
+          IDecimalIeee754UnpackInfo<Decimal64, long, ulong>,
+          IDecimalIeee754TryParseInfo<Decimal64, long>
     {
         internal readonly ulong _value;
 
@@ -85,7 +86,7 @@ namespace System.Numerics
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal64 result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.TryParseDecimal64(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseDecimalIeee754<Decimal64, long, char>(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal64 result)
         {
@@ -93,10 +94,10 @@ namespace System.Numerics
 
             if (s == null)
             {
-                result = new Decimal64(0, 0);
+                result = default;
                 return false;
             }
-            return Number.TryParseDecimal64(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseDecimalIeee754<Decimal64, long, char>(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         public int CompareTo(object? value)
@@ -194,5 +195,12 @@ namespace System.Numerics
         static long IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.TwoPowerMostSignificantBitNumberOfSignificand => 9_007_199_254_740_992;
 
         static int IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.NumberDigitsPrecision => NumberDigitsPrecision;
+
+        static int IDecimalIeee754TryParseInfo<Decimal64, long>.DecimalNumberBufferLength => Number.Decimal64NumberBufferLength;
+
+        static bool IDecimalIeee754TryParseInfo<Decimal64, long>.TryNumberToDecimalIeee754(ref Number.NumberBuffer number, out long significand, out int exponent)
+             => Number.TryNumberToDecimalIeee754<Decimal64, long>(ref number, out significand, out exponent);
+
+        static Decimal64 IDecimalIeee754TryParseInfo<Decimal64, long>.Construct(long significand, int exponent) => new Decimal64(significand, exponent);
     }
 }

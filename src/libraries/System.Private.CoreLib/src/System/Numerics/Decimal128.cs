@@ -15,7 +15,8 @@ namespace System.Numerics
           IEquatable<Decimal128>,
           IDecimalIeee754ParseAndFormatInfo<Decimal128>,
           IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>,
-          IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>
+          IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>,
+          IDecimalIeee754TryParseInfo<Decimal128, Int128>
     {
         internal readonly UInt128 _value;
 
@@ -62,7 +63,7 @@ namespace System.Numerics
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal128 result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.TryParseDecimal128(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseDecimalIeee754<Decimal128, Int128, char>(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal128 result)
         {
@@ -70,10 +71,10 @@ namespace System.Numerics
 
             if (s == null)
             {
-                result = new Decimal128(0, 0);
+                result = default;
                 return false;
             }
-            return Number.TryParseDecimal128(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseDecimalIeee754<Decimal128, Int128, char>(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         public int CompareTo(object? value)
@@ -160,7 +161,7 @@ namespace System.Numerics
         static Int128 IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.ConvertToSignificand(UInt128 value) => (Int128)value;
 
         static Int128 IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.Power10(int exponent) => Int128Powers10[exponent];
-
+        
         static UInt128 IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.SignMask => new UInt128(0x8000_0000_0000_0000, 0);
 
         static int IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.NumberBitsEncoding => 128;
@@ -212,5 +213,9 @@ namespace System.Numerics
                 new Int128(54210108624275, 4089650035136921600),
                 new Int128(542101086242752, 4003012203950112768),
             ];
+        static bool IDecimalIeee754TryParseInfo<Decimal128, Int128>.TryNumberToDecimalIeee754(ref Number.NumberBuffer number, out Int128 significand, out int exponent)
+            => Number.TryNumberToDecimalIeee754<Decimal128, Int128>(ref number, out significand, out exponent);
+        static Decimal128 IDecimalIeee754TryParseInfo<Decimal128, Int128>.Construct(Int128 significand, int exponent) => new Decimal128(significand, exponent);
+        static int IDecimalIeee754TryParseInfo<Decimal128, Int128>.DecimalNumberBufferLength => Number.Decimal128NumberBufferLength;
     }
 }
