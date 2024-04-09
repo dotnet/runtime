@@ -2853,7 +2853,7 @@ void LinearScan::buildIntervals()
         RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeBB, nullptr, RBM_NONE);
     }
 
-    needNonIntegerRegisters |= compiler->compFloatingPointUsed; // TODO: Also track about mask registers
+    needNonIntegerRegisters |= compiler->compFloatingPointUsed;
     if (!needNonIntegerRegisters)
     {
         availableRegCount = REG_INT_COUNT;

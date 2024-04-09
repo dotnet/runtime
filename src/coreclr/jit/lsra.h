@@ -814,7 +814,6 @@ private:
         return (LsraStressLimitRegs)(lsraStressMask & LSRA_LIMIT_MASK);
     }
 
-    // TODO: Can have separate methods for each type
     regMaskOnlyOne getConstrainedRegMask(RefPosition*   refPosition,
                                          RegisterType   regType,
                                          regMaskOnlyOne regMaskActual,
@@ -2518,7 +2517,7 @@ public:
     // Prior to the allocation pass, registerAssignment captures the valid registers
     // for this RefPosition.
     // After the allocation pass, this contains the actual assignment
-    // TODO: This should really be a union, where before allocation-pass it has `mask` and
+    // TODO-future: This should really be a union, where before allocation-pass it has `mask` and
     // after allocation-pass, it has regNumber directly, to avoid calling assignedReg();
     regMaskOnlyOne registerAssignment;
 

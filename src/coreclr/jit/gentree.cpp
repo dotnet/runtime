@@ -1053,14 +1053,14 @@ bool GenTree::NeedsConsecutiveRegisters() const
 // Return Value:
 //    Reg Mask of GenTree node.
 //
-AllRegsMask GenTree::gtGetContainedRegMask()
+regMaskGpr GenTree::gtGetContainedRegMask()
 {
     if (!isContained())
     {
-        return isUsedFromReg() ? gtGetRegMask() : AllRegsMask();
+        return isUsedFromReg() ? gtGetRegMask() : RBM_NONE;
     }
 
-    AllRegsMask mask;
+    regMaskGpr mask = RBM_NONE;
     for (GenTree* operand : Operands())
     {
         mask |= operand->gtGetContainedRegMask();
@@ -1077,14 +1077,14 @@ AllRegsMask GenTree::gtGetContainedRegMask()
 // Return Value:
 //    Reg Mask of GenTree node.
 //
-AllRegsMask GenTree::gtGetRegMask() const
+RegBitSet64 GenTree::gtGetRegMask() const
 {
-    AllRegsMask resultMask;
+    RegBitSet64 resultMask;
 
     if (IsMultiRegCall())
     {
-        resultMask = AllRegsMask(genRegMask(GetRegNum()));
-        resultMask |= AsCall()->GetOtherRegMask();
+        resultMask = genRegMask(GetRegNum());
+        resultMask |= AsCall()->GetOtherRegMask().GetGprFloatCombinedMask();
     }
     else if (IsCopyOrReloadOfMultiRegCall())
     {
@@ -1121,7 +1121,7 @@ AllRegsMask GenTree::gtGetRegMask() const
 #endif // FEATURE_ARG_SPLIT
     else
     {
-        resultMask = AllRegsMask(genRegMask(GetRegNum()));
+        resultMask = genRegMask(GetRegNum());
     }
 
     return resultMask;
