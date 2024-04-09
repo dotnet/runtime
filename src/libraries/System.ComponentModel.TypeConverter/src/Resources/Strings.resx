@@ -76,6 +76,9 @@
   <data name="EnumConverterInvalidValue" xml:space="preserve">
     <value>The value '{0}' is not a valid value for the enum '{1}'.</value>
   </data>
+  <data name="EnumInvalidValue" xml:space="preserve">
+    <value>Type provided must be an Enum.</value>
+  </data>
   <data name="ErrorInvalidEventHandler" xml:space="preserve">
     <value>Invalid event handler for the {0} event.</value>
   </data>
@@ -102,6 +105,9 @@
   </data>
   <data name="NullableConverterBadCtorArg" xml:space="preserve">
     <value>The specified type is not a nullable type.</value>
+  </data>
+  <data name="RuntimeInstanceNotAllowed" xml:space="preserve">
+    <value>Runtime instantiation of this attribute is not allowed.</value>
   </data>
   <data name="Text" xml:space="preserve">
     <value>(Text)</value>
@@ -165,6 +171,9 @@
   </data>
   <data name="PropertyTabAttributeParamsBothNull" xml:space="preserve">
     <value>An array of tab type names or tab types must be specified</value>
+  </data>
+  <data name="ComObjectDescriptorsNotSupported" xml:space="preserve">
+    <value>COM object type descriptor functionality has been disabled in the app configuration and is not supported.</value>
   </data>
   <data name="CultureInfoConverterDefaultCultureString" xml:space="preserve">
     <value>(Default)</value>

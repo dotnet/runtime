@@ -49,9 +49,9 @@ bool Compiler::fgBlockContainsStatementBounded(BasicBlock* block,
 //   stmt  - the statement to be inserted.
 //
 // Notes:
-//    We always insert phi statements at the beginning.
-//    In other cases, if there are any phi assignments and/or an assignment of
-//    the GT_CATCH_ARG, we insert after those.
+//    We always insert phi statements at the beginning. In other cases, if
+//    there are any phi stores and/or a store of the GT_CATCH_ARG, we insert
+//    after those.
 //
 void Compiler::fgInsertStmtAtBeg(BasicBlock* block, Statement* stmt)
 {
@@ -538,9 +538,9 @@ inline bool OperIsControlFlow(genTreeOps oper)
 
         case GT_RETURN:
         case GT_RETFILT:
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
         case GT_END_LFIN:
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
             return true;
 
         default:

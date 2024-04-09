@@ -122,6 +122,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                         await triggerRequestWait.Task;
                         var _ = await t;
                     });
+                    _output.WriteLine($"ex: {ex}");
                     Assert.IsType<IOException>(ex.InnerException);
                     Assert.NotNull(ex.InnerException.InnerException);
                     Assert.Contains("The operation timed out", ex.InnerException.InnerException.Message);

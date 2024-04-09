@@ -152,37 +152,39 @@ void Phase::PostPhase(PhaseStatus status)
 
     if (doPostPhase && doPostPhaseChecks)
     {
-        if ((comp->activePhaseChecks & PhaseChecks::CHECK_UNIQUE) == PhaseChecks::CHECK_UNIQUE)
+        PhaseChecks const checks = comp->activePhaseChecks;
+
+        if (hasFlag(checks, PhaseChecks::CHECK_UNIQUE))
         {
             comp->fgDebugCheckNodesUniqueness();
         }
 
-        if ((comp->activePhaseChecks & PhaseChecks::CHECK_FG) == PhaseChecks::CHECK_FG)
+        if (hasFlag(checks, PhaseChecks::CHECK_FG))
         {
             comp->fgDebugCheckBBlist();
         }
 
-        if ((comp->activePhaseChecks & PhaseChecks::CHECK_IR) == PhaseChecks::CHECK_IR)
+        if (hasFlag(checks, PhaseChecks::CHECK_IR))
         {
             comp->fgDebugCheckLinks();
         }
 
-        if ((comp->activePhaseChecks & PhaseChecks::CHECK_EH) == PhaseChecks::CHECK_EH)
+        if (hasFlag(checks, PhaseChecks::CHECK_EH))
         {
             comp->fgVerifyHandlerTab();
         }
 
-        if ((comp->activePhaseChecks & PhaseChecks::CHECK_LOOPS) == PhaseChecks::CHECK_LOOPS)
+        if (hasFlag(checks, PhaseChecks::CHECK_LOOPS))
         {
             comp->fgDebugCheckLoops();
         }
 
-        if ((comp->activePhaseChecks & PhaseChecks::CHECK_PROFILE) == PhaseChecks::CHECK_PROFILE)
+        if (hasFlag(checks, PhaseChecks::CHECK_PROFILE) || hasFlag(checks, PhaseChecks::CHECK_LIKELIHOODS))
         {
-            comp->fgDebugCheckProfileWeights();
+            comp->fgDebugCheckProfile(checks);
         }
 
-        if ((comp->activePhaseChecks & PhaseChecks::CHECK_LINKED_LOCALS) == PhaseChecks::CHECK_LINKED_LOCALS)
+        if (hasFlag(checks, PhaseChecks::CHECK_LINKED_LOCALS))
         {
             comp->fgDebugCheckLinkedLocals();
         }

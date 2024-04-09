@@ -57,6 +57,9 @@ namespace System.Net.Security
         private X509Certificate2? _remoteCertificate;
         private bool _remoteCertificateExposed;
 
+        // -1 for uninitialized, 0 for false, 1 for true, should be accessed via IsLocalClientCertificateUsed property
+        private int _localClientCertificateUsed = -1;
+
         // These are the MAX encrypt buffer output sizes, not the actual sizes.
         private int _headerSize = 5; //ATTN must be set to at least 5 by default
         private int _trailerSize = 16;
@@ -82,11 +85,28 @@ namespace System.Net.Security
             }
         }
 
+        // IsLocalCertificateUsed is expensive, but it does not change during the lifetime of the SslStream except for renegotiation, so we
+        // can cache the value.
+        private bool IsLocalClientCertificateUsed
+        {
+            get
+            {
+                if (_localClientCertificateUsed == -1)
+                {
+                    _localClientCertificateUsed = CertificateValidationPal.IsLocalCertificateUsed(_credentialsHandle, _securityContext!)
+                        ? 1
+                        : 0;
+                }
+
+                return _localClientCertificateUsed == 1;
+            }
+        }
+
         internal X509Certificate? LocalClientCertificate
         {
             get
             {
-                if (_selectedClientCertificate != null && CertificateValidationPal.IsLocalCertificateUsed(_credentialsHandle, _securityContext!))
+                if (_selectedClientCertificate != null && IsLocalClientCertificateUsed)
                 {
                     return _selectedClientCertificate;
                 }
