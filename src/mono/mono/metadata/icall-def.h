@@ -489,8 +489,7 @@ HANDLES(MHAN_1, "GetFunctionPointer", ves_icall_RuntimeMethodHandle_GetFunctionP
 HANDLES(MAHN_3, "ReboxFromNullable", ves_icall_RuntimeMethodHandle_ReboxFromNullable, void, 2, (MonoObject, MonoObjectHandleOnStack))
 HANDLES(MAHN_2, "ReboxToNullable", ves_icall_RuntimeMethodHandle_ReboxToNullable, void, 3, (MonoObject, MonoQCallTypeHandle, MonoObjectHandleOnStack))
 
-ICALL_TYPE(RT, "System.RuntimeType", RT_31)
-HANDLES(RT_31, "AllocateValueType", ves_icall_System_RuntimeType_AllocateValueType, void, 3, (MonoQCallTypeHandle, MonoObject, MonoObjectHandleOnStack))
+ICALL_TYPE(RT, "System.RuntimeType", RT_30)
 HANDLES(RT_1, "CreateInstanceInternal", ves_icall_System_RuntimeType_CreateInstanceInternal, MonoObject, 1, (MonoQCallTypeHandle))
 HANDLES(RT_28, "FunctionPointerReturnAndParameterTypes", ves_icall_RuntimeType_FunctionPointerReturnAndParameterTypes, GPtrArray_ptr, 1, (MonoQCallTypeHandle))
 NOHANDLES(ICALL(RT_33, "GetCallingConventionFromFunctionPointerInternal", ves_icall_RuntimeType_GetCallingConventionFromFunctionPointerInternal))

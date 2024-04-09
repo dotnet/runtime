@@ -113,54 +113,6 @@ FCIMPL2(FC_BOOL_RET, ReflectionInvocation::CanValueSpecialCast, ReflectClassBase
 }
 FCIMPLEND
 
-/// <summary>
-///  Allocate the value type and copy the optional value into it.
-/// </summary>
-FCIMPL2(Object*, ReflectionInvocation::AllocateValueType, ReflectClassBaseObject *pTargetTypeUNSAFE, Object *valueUNSAFE) {
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pTargetTypeUNSAFE));
-        PRECONDITION(CheckPointer(valueUNSAFE, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    struct _gc
-    {
-        REFLECTCLASSBASEREF refTargetType;
-        OBJECTREF value;
-        OBJECTREF obj;
-    }gc;
-
-    gc.value = ObjectToOBJECTREF(valueUNSAFE);
-    gc.obj = gc.value;
-    gc.refTargetType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTargetTypeUNSAFE);
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-
-    TypeHandle targetType = gc.refTargetType->GetType();
-
-    // This method is only intended for value types; it is not called directly by any public APIs
-    // so we don't expect validation issues here.
-    _ASSERTE(targetType.IsValueType());
-
-    MethodTable* allocMT = targetType.AsMethodTable();
-    _ASSERTE(!allocMT->IsByRefLike());
-
-    gc.obj = allocMT->Allocate();
-    _ASSERTE(gc.obj != NULL);
-
-    if (gc.value != NULL) {
-        _ASSERTE(allocMT->IsEquivalentTo(gc.value->GetMethodTable()));
-        CopyValueClass(gc.obj->UnBox(), gc.value->UnBox(), allocMT);
-    }
-
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(gc.obj);
-}
-FCIMPLEND
-
 FCIMPL6(void, RuntimeFieldHandle::SetValue, ReflectFieldObject *pFieldUNSAFE, Object *targetUNSAFE, Object *valueUNSAFE, ReflectClassBaseObject *pFieldTypeUNSAFE, ReflectClassBaseObject *pDeclaringTypeUNSAFE, CLR_BOOL *pIsClassInitialized) {
     CONTRACTL
     {

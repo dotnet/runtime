@@ -60,7 +60,6 @@ public:
 
     // helper fcalls for invocation
     static FCDECL2(FC_BOOL_RET, CanValueSpecialCast, ReflectClassBaseObject *valueType, ReflectClassBaseObject *targetType);
-    static FCDECL2(Object*, AllocateValueType, ReflectClassBaseObject *targetType, Object *valueUNSAFE);
 };
 
 extern "C" void QCALLTYPE ReflectionInvocation_CompileMethod(MethodDesc * pMD);

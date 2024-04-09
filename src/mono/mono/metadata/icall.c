@@ -6259,29 +6259,6 @@ ves_icall_System_RuntimeType_CreateInstanceInternal (MonoQCallTypeHandle type_ha
 	return mono_object_new_handle (klass, error);
 }
 
-/* Only used for value types */
-void
-ves_icall_System_RuntimeType_AllocateValueType (MonoQCallTypeHandle type_handle, MonoObjectHandle value_h, MonoObjectHandleOnStack res, MonoError *error)
-{
-	MonoType *type = type_handle.type;
-	MonoClass *klass = mono_class_from_mono_type_internal (type);
-
-	mono_class_init_checked (klass, error);
-	goto_if_nok (error, error_ret);
-
-	MonoObject *obj_res = mono_object_new_checked (klass, error);
-	goto_if_nok (error, error_ret);
-
-	MonoObject *value = MONO_HANDLE_RAW (value_h);
-	if (value)
-		mono_value_copy_internal (mono_object_unbox_internal (obj_res), mono_object_unbox_internal (value), klass);
-
-	HANDLE_ON_STACK_SET (res, obj_res);
-	return;
-error_ret:
-	HANDLE_ON_STACK_SET (res, NULL);
-}
-
 MonoReflectionMethodHandle
 ves_icall_RuntimeMethodInfo_get_base_method (MonoReflectionMethodHandle m, MonoBoolean definition, MonoError *error)
 {

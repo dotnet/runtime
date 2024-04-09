@@ -3664,9 +3664,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool CanValueSpecialCast(RuntimeType valueType, RuntimeType targetType);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object AllocateValueType(RuntimeType type, object? value);
-
         private CheckValueStatus TryChangeTypeSpecial(ref object value)
         {
             Pointer? pointer = value as Pointer;
