@@ -10,7 +10,6 @@ using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
-
 namespace System.Buffers
 {
     /// <summary>Data structure used to optimize checks for whether a char is in a set of chars.</summary>

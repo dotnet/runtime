@@ -691,7 +691,7 @@ public:
     // Does the binary operation between the operands overflow? Check recursively.
     bool DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop);
 
-    // Does the phi operands involve an assignment that could overflow?
+    // Do the phi operands involve a definition that could overflow?
     bool DoesPhiOverflow(BasicBlock* block, GenTree* expr);
 
     // Find the def of the "expr" local and recurse on the arguments if any of them involve a
@@ -710,9 +710,7 @@ public:
     // Is the binary operation increasing the value.
     bool IsBinOpMonotonicallyIncreasing(GenTreeOp* binop);
 
-    // Given an "expr" trace its rhs and their definitions to check if all the assignments
-    // are monotonically increasing.
-    //
+    // Given an expression trace its value to check if it is monotonically increasing.
     bool IsMonotonicallyIncreasing(GenTree* tree, bool rejectNegativeConst);
 
     // We allocate a budget to avoid walking long UD chains. When traversing each link in the UD

@@ -70,6 +70,18 @@ switch (testCase) {
             }
         });
         break;
+    case "OutErrOverrideWorks":
+        dotnet.withModuleConfig({
+            out: (message) => {
+                console.log("Emscripten out override works!");
+                console.log(message)
+            },
+            err: (message) => {
+                console.error("Emscripten err override works!");
+                console.error(message)
+            },
+        });
+        break;
 }
 
 const { setModuleImports, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
@@ -103,6 +115,9 @@ try {
             break;
         case "DownloadResourceProgressTest":
             exit(0);
+            break;
+        case "OutErrOverrideWorks":
+            dotnet.run();
             break;
         case "DebugLevelTest":
             testOutput("WasmDebugLevel: " + config.debugLevel);

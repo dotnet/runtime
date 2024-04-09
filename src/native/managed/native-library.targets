@@ -39,16 +39,16 @@
     </Target>
 
     <Target Name="StripLibraryLikeCoreCLRBuild"
-            DependsOnTargets="SetupOSSpecificProps;CopyNativeBinary;StripLibraryLikeCoreCLRSetupPaths"
+            DependsOnTargets="SetupOSSpecificProps;LinkNative;StripLibraryLikeCoreCLRSetupPaths"
             Condition="'$(IsRuntimeComponent)' == 'true' and '$(TargetsWindows)' != 'true'"
-            Inputs="$(PublishDir)$(TargetName)$(NativeBinaryExt)"
+            Inputs="$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)"
             Outputs="$(StripSourceFile);$(StripDestinationFile)">
         <Error Text="Do not set StripSymbols to true - runtime components stripping is controlled by native-library.targets" Condition="'$(StripSymbols)' == 'true'" />
 
-        <Message Importance="Normal" Text="Stripping $(PublishDir)$(TargetName)$(NativeBinaryExt) into $(StripSourceFile) and $(StripDestinationFile)" />
+        <Message Importance="Normal" Text="Stripping $(NativeOutputPath)$(TargetName)$(NativeBinaryExt) into $(StripSourceFile) and $(StripDestinationFile)" />
 
-        <!-- copy from the published/ subfolder to the stripped/ subfolder -->
-        <Copy SourceFiles="$(PublishDir)$(TargetName)$(NativeBinaryExt)"
+        <!-- copy from the native/ subfolder to the stripped/ subfolder -->
+        <Copy SourceFiles="$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)"
               DestinationFolder="$(StrippedOutputPath)"
               SkipUnchangedFiles="true" />
 
@@ -68,8 +68,8 @@
     </Target>
 
     <Target Name="InstallRuntimeComponentToFinalDestination"
-            AfterTargets="CopyNativeBinary"
-            DependsOnTargets="CopyNativeBinary;StripLibraryLikeCoreCLRBuild" Condition="'$(IsRuntimeComponent)' == 'true'">
+            AfterTargets="LinkNative"
+            DependsOnTargets="LinkNative;StripLibraryLikeCoreCLRBuild" Condition="'$(IsRuntimeComponent)' == 'true'">
         <Error Text="Set at least one @InstallRuntimeComponentDestination item" Condition="@(InstallRuntimeComponentDestination->Count()) == 0" />
 
         <PropertyGroup>
@@ -87,8 +87,8 @@
         </ItemGroup>
 
         <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-            <CopyFinalFiles Include="$(PublishDir)$(TargetName)$(NativeBinaryExt)" />
-            <CopyFinalFilesPDB Include="$(PublishDir)$(TargetName).pdb" />
+            <CopyFinalFiles Include="$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)" />
+            <CopyFinalFilesPDB Include="$(NativeOutputPath)$(TargetName).pdb" />
         </ItemGroup>
 
         <Message Importance="Normal" Text="Installing @(CopyFinalFiles) into %(_NormalizedInstallRuntimeComponentDest.Identity)"/>
