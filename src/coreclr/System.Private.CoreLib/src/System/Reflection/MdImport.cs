@@ -225,29 +225,69 @@ namespace System.Reflection
 
         #region Static Members
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _GetMarshalAs(IntPtr pNativeType, int cNativeType, out int unmanagedType, out int safeArraySubType, out string? safeArrayUserDefinedSubType,
-            out int arraySubType, out int sizeParamIndex, out int sizeConst, out string? marshalType, out string? marshalCookie,
+        private static extern unsafe Interop.BOOL GetMarshalAs(
+            IntPtr pNativeType,
+            int cNativeType,
+            out int unmanagedType,
+            out int safeArraySubType,
+            out sbyte* safeArrayUserDefinedSubType,
+            out int arraySubType,
+            out int sizeParamIndex,
+            out int sizeConst,
+            out sbyte* marshalType,
+            out sbyte* marshalCookie,
             out int iidParamIndex);
-        internal static void GetMarshalAs(ConstArray nativeType,
-            out UnmanagedType unmanagedType, out VarEnum safeArraySubType, out string? safeArrayUserDefinedSubType,
-            out UnmanagedType arraySubType, out int sizeParamIndex, out int sizeConst, out string? marshalType, out string? marshalCookie,
-            out int iidParamIndex)
-        {
 
-            _GetMarshalAs(nativeType.Signature, (int)nativeType.Length,
-                out int _unmanagedType, out int _safeArraySubType, out safeArrayUserDefinedSubType,
-                out int _arraySubType, out sizeParamIndex, out sizeConst, out marshalType, out marshalCookie,
-                out iidParamIndex);
-            unmanagedType = (UnmanagedType)_unmanagedType;
-            safeArraySubType = (VarEnum)_safeArraySubType;
-            arraySubType = (UnmanagedType)_arraySubType;
-        }
-        #endregion
-
-        #region Internal Static Members
-        internal static void ThrowError(int hResult)
+        internal static unsafe MarshalAsAttribute GetMarshalAs(ConstArray nativeType, RuntimeModule scope)
         {
-            throw new MetadataException(hResult);
+            if (GetMarshalAs(
+                    nativeType.Signature,
+                    nativeType.Length,
+                    out int unmanagedTypeRaw,
+                    out int safeArraySubTypeRaw,
+                    out sbyte* safeArrayUserDefinedSubTypeRaw,
+                    out int arraySubTypeRaw,
+                    out int sizeParamIndex,
+                    out int sizeConst,
+                    out sbyte* marshalTypeRaw,
+                    out sbyte* marshalCookieRaw,
+                    out int iidParamIndex) != Interop.BOOL.TRUE)
+            {
+                throw new MetadataException(HResults.E_FAIL);
+            }
+
+            string? safeArrayUserDefinedTypeName = safeArrayUserDefinedSubTypeRaw == null ? null : new string(safeArrayUserDefinedSubTypeRaw);
+            string? marshalTypeName = marshalTypeRaw == null ? null : new string(marshalTypeRaw);
+            string? marshalCookie = marshalCookieRaw == null ? null : new string(marshalCookieRaw);
+
+            RuntimeType? safeArrayUserDefinedType = string.IsNullOrEmpty(safeArrayUserDefinedTypeName) ? null :
+                TypeNameParser.GetTypeReferencedByCustomAttribute(safeArrayUserDefinedTypeName, scope);
+            RuntimeType? marshalTypeRef = null;
+
+            try
+            {
+                marshalTypeRef = marshalTypeName is null ? null : TypeNameParser.GetTypeReferencedByCustomAttribute(marshalTypeName, scope);
+            }
+            catch (TypeLoadException)
+            {
+                // The user may have supplied a bad type name string causing this TypeLoadException
+                // Regardless, we return the bad type name
+                Debug.Assert(marshalTypeName is not null);
+            }
+
+            MarshalAsAttribute attribute = new MarshalAsAttribute((UnmanagedType)unmanagedTypeRaw);
+
+            attribute.SafeArraySubType = (VarEnum)safeArraySubTypeRaw;
+            attribute.SafeArrayUserDefinedSubType = safeArrayUserDefinedType;
+            attribute.IidParameterIndex = iidParamIndex;
+            attribute.ArraySubType = (UnmanagedType)arraySubTypeRaw;
+            attribute.SizeParamIndex = (short)sizeParamIndex;
+            attribute.SizeConst = sizeConst;
+            attribute.MarshalType = marshalTypeName;
+            attribute.MarshalTypeRef = marshalTypeRef;
+            attribute.MarshalCookie = marshalCookie;
+
+            return attribute;
         }
         #endregion
 

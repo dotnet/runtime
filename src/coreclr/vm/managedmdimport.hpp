@@ -101,18 +101,18 @@ public:
     MDDecl1(mdTypeDef, GetNestedClassProps, mdTypeDef tdNestedClass);
     MDDecl1(ULONG, GetNativeCallConvFromSig, ConstArray sig);
 
-    static FCDECL11(void, GetMarshalAs,
-        BYTE*           pvNativeType,
-        ULONG           cbNativeType,
-        INT32*          unmanagedType,
-        INT32*          safeArraySubType,
-        STRINGREF*      safeArrayUserDefinedSubType,
-        INT32*          arraySubType,
-        INT32*          sizeParamIndex,
-        INT32*          sizeConst,
-        STRINGREF*      marshalType,
-        STRINGREF*      marshalCookie,
-        INT32*          iidParamIndex);
+    static FCDECL11(FC_BOOL_RET, GetMarshalAs,
+        BYTE*   pvNativeType,
+        ULONG   cbNativeType,
+        INT32*  unmanagedType,
+        INT32*  safeArraySubType,
+        LPUTF8* safeArrayUserDefinedSubType,
+        INT32*  arraySubType,
+        INT32*  sizeParamIndex,
+        INT32*  sizeConst,
+        LPUTF8* marshalType,
+        LPUTF8* marshalCookie,
+        INT32*  iidParamIndex);
 };
 
 #endif

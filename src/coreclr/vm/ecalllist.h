@@ -183,7 +183,7 @@ FCFuncStart(gMetaDataImport)
     FCFuncElement("_GetFieldMarshal", MetaDataImport::GetFieldMarshal)
     FCFuncElement("_GetPInvokeMap", MetaDataImport::GetPinvokeMap)
     FCFuncElement("_IsValidToken", MetaDataImport::IsValidToken)
-    FCFuncElement("_GetMarshalAs", MetaDataImport::GetMarshalAs)
+    FCFuncElement("GetMarshalAs", MetaDataImport::GetMarshalAs)
 FCFuncEnd()
 
 FCFuncStart(gSignatureNative)

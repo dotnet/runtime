@@ -7,77 +7,57 @@
 #include "managedmdimport.hpp"
 #include "wrappers.h"
 
-void ThrowMetaDataImportException(HRESULT hr)
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (hr == CLDB_E_RECORD_NOTFOUND)
-        return;
-
-    MethodDescCallSite throwError(METHOD__METADATA_IMPORT__THROW_ERROR);
-
-    ARG_SLOT args[] = { (ARG_SLOT)hr };
-    throwError.Call(args);
-}
-
 //
 // MetaDataImport
 //
 extern BOOL ParseNativeTypeInfo(NativeTypeParamInfo* pInfo, PCCOR_SIGNATURE pvNativeType, ULONG cbNativeType);
 
-FCIMPL11(void, MetaDataImport::GetMarshalAs,
-    BYTE*           pvNativeType,
-    ULONG           cbNativeType,
-    INT32*          unmanagedType,
-    INT32*          safeArraySubType,
-    STRINGREF*      safeArrayUserDefinedSubType,
-    INT32*          arraySubType,
-    INT32*          sizeParamIndex,
-    INT32*          sizeConst,
-    STRINGREF*      marshalType,
-    STRINGREF*      marshalCookie,
-    INT32*          iidParamIndex)
+FCIMPL11(FC_BOOL_RET, MetaDataImport::GetMarshalAs,
+    BYTE*   pvNativeType,
+    ULONG   cbNativeType,
+    INT32*  unmanagedType,
+    INT32*  safeArraySubType,
+    LPUTF8* safeArrayUserDefinedSubType,
+    INT32*  arraySubType,
+    INT32*  sizeParamIndex,
+    INT32*  sizeConst,
+    LPUTF8* marshalType,
+    LPUTF8* marshalCookie,
+    INT32*  iidParamIndex)
 {
     FCALL_CONTRACT;
 
-    HELPER_METHOD_FRAME_BEGIN_0();
+    NativeTypeParamInfo info{};
+
+    if (!ParseNativeTypeInfo(&info, pvNativeType, cbNativeType))
     {
-        NativeTypeParamInfo info;
+        FC_RETURN_BOOL(FALSE);
+    }
 
-        ZeroMemory(&info, sizeof(NativeTypeParamInfo));
-
-        if (!ParseNativeTypeInfo(&info, pvNativeType, cbNativeType))
-        {
-            ThrowMetaDataImportException(E_FAIL);
-        }
-
-        *unmanagedType = info.m_NativeType;
-        *sizeParamIndex = info.m_CountParamIdx;
-        *sizeConst = info.m_Additive;
-        *arraySubType = info.m_ArrayElementType;
+    *unmanagedType = info.m_NativeType;
+    *sizeParamIndex = info.m_CountParamIdx;
+    *sizeConst = info.m_Additive;
+    *arraySubType = info.m_ArrayElementType;
 
 #ifdef FEATURE_COMINTEROP
-        *iidParamIndex = info.m_IidParamIndex;
+    *iidParamIndex = info.m_IidParamIndex;
 
-        *safeArraySubType = info.m_SafeArrayElementVT;
+    *safeArraySubType = info.m_SafeArrayElementVT;
 
-        *safeArrayUserDefinedSubType = info.m_strSafeArrayUserDefTypeName == NULL ? NULL :
-            StringObject::NewString(info.m_strSafeArrayUserDefTypeName, info.m_cSafeArrayUserDefTypeNameBytes);
+    *safeArrayUserDefinedSubType = info.m_strSafeArrayUserDefTypeName;
 #else
-        *iidParamIndex = 0;
+    *iidParamIndex = 0;
 
-        *safeArraySubType = VT_EMPTY;
+    *safeArraySubType = VT_EMPTY;
 
-        *safeArrayUserDefinedSubType = NULL;
+    *safeArrayUserDefinedSubType = NULL;
 #endif
 
-        *marshalType = info.m_strCMMarshalerTypeName == NULL ? NULL :
-            StringObject::NewString(info.m_strCMMarshalerTypeName, info.m_cCMMarshalerTypeNameBytes);
+    *marshalType = info.m_strCMMarshalerTypeName;
 
-        *marshalCookie = info.m_strCMCookie == NULL ? NULL :
-            StringObject::NewString(info.m_strCMCookie, info.m_cCMCookieStrBytes);
-    }
-    HELPER_METHOD_FRAME_END();
+    *marshalCookie = info.m_strCMCookie;
+
+    FC_RETURN_BOOL(TRUE);
 }
 FCIMPLEND
 
