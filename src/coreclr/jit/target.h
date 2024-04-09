@@ -247,7 +247,7 @@ typedef unsigned __int64 regMaskOnlyOne;
 // 0. Revisit regMaskMixed and see if they should be "regMaskMixed"
 // 1. Send separate parameter for `regMaskGpr` and `regMaskFloat`, etc.
 // 2. Have a data structure like struct to pass all these together
-typedef unsigned __int64 regMaskMixed; // TODO: Rename this to regMaskMixed
+typedef unsigned __int64 regMaskMixed;
 
 typedef unsigned __int64 singleRegMask;
 
