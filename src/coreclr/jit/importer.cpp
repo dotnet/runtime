@@ -6606,7 +6606,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     return;
                 }
 
-                block->bbSetRunRarely(); // filters are rare
+                if (!fgPgoSynthesized)
+                {
+                    // filters are rare
+                    block->bbSetRunRarely();
+                }
 
                 if (info.compXcptnsCount == 0)
                 {
@@ -7294,19 +7298,67 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (block->KindIs(BBJ_COND))
                     {
-                        if (op1->AsIntCon()->gtIconVal)
+                        bool const      isCondTrue   = op1->AsIntCon()->gtIconVal != 0;
+                        FlowEdge* const removedEdge  = isCondTrue ? block->GetFalseEdge() : block->GetTrueEdge();
+                        FlowEdge* const retainedEdge = isCondTrue ? block->GetTrueEdge() : block->GetFalseEdge();
+
+                        JITDUMP("\nThe conditional jump becomes an unconditional jump to " FMT_BB "\n",
+                                retainedEdge->getDestinationBlock()->bbNum);
+
+                        fgRemoveRefPred(removedEdge);
+                        block->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
+
+                        // If we removed an edge carrying profile, try to do a local repair.
+                        //
+                        if (block->hasProfileWeight())
                         {
-                            JITDUMP("\nThe conditional jump becomes an unconditional jump to " FMT_BB "\n",
-                                    block->GetTrueTarget()->bbNum);
-                            fgRemoveRefPred(block->GetFalseEdge());
-                            block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetTrueEdge());
-                        }
-                        else
-                        {
-                            assert(block->NextIs(block->GetFalseTarget()));
-                            JITDUMP("\nThe block jumps to the next " FMT_BB "\n", block->Next()->bbNum);
-                            fgRemoveRefPred(block->GetTrueEdge());
-                            block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetFalseEdge());
+                            bool           repairWasComplete = true;
+                            weight_t const weight            = removedEdge->getLikelyWeight();
+
+                            if (weight > 0)
+                            {
+                                // Target block weight will increase.
+                                //
+                                BasicBlock* const target = block->GetTarget();
+                                assert(target->hasProfileWeight());
+                                target->setBBProfileWeight(target->bbWeight + weight);
+
+                                // Alternate weight will decrease
+                                //
+                                BasicBlock* const alternate = removedEdge->getDestinationBlock();
+                                assert(alternate->hasProfileWeight());
+                                weight_t const alternateNewWeight = alternate->bbWeight - weight;
+
+                                // If profile weights are consistent, expect at worst a slight underflow.
+                                //
+                                if (fgPgoConsistent && (alternateNewWeight < 0))
+                                {
+                                    assert(fgProfileWeightsEqual(alternateNewWeight, 0));
+                                }
+                                alternate->setBBProfileWeight(max(0.0, alternateNewWeight));
+
+                                // This will affect profile transitively, so in general
+                                // the profile will become inconsistent.
+                                //
+                                repairWasComplete = false;
+
+                                // But we can check for the special case where the
+                                // block's postdominator is target's target (simple
+                                // if/then/else/join).
+                                //
+                                if (target->KindIs(BBJ_ALWAYS))
+                                {
+                                    repairWasComplete = alternate->KindIs(BBJ_ALWAYS) &&
+                                                        (alternate->GetTarget() == target->GetTarget());
+                                }
+                            }
+
+                            if (!repairWasComplete)
+                            {
+                                JITDUMP("Profile data could not be locally repaired. Data % inconsisent.\n",
+                                        fgPgoConsistent ? "is now" : "was already");
+                                fgPgoConsistent = false;
+                            }
                         }
                     }
 
@@ -10065,8 +10117,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             case CEE_THROW:
 
-                // Any block with a throw is rarely executed.
-                block->bbSetRunRarely();
+                if (!fgPgoSynthesized)
+                {
+                    // Any block with a throw is rarely executed.
+                    block->bbSetRunRarely();
+                }
 
                 // Pop the exception object and create the 'throw' helper call
                 op1 = gtNewHelperCallNode(CORINFO_HELP_THROW, TYP_VOID, impPopStack().val);

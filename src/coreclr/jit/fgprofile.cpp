@@ -5531,6 +5531,7 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
     weight_t       incomingLikelyWeight = 0;
     unsigned       missingLikelyWeight  = 0;
     bool           foundPreds           = false;
+    bool           foundEHPreds         = false;
 
     for (FlowEdge* const predEdge : block->PredEdges())
     {
@@ -5542,6 +5543,10 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
             {
                 incomingLikelyWeight += predEdge->getLikelyWeight();
             }
+            else
+            {
+                foundEHPreds = true;
+            }
         }
         else
         {
@@ -5549,14 +5554,25 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
                     block->bbNum);
             missingLikelyWeight++;
         }
+    }
 
-        foundPreds = true;
+    // We almost certainly won't get the likelihoods on a BBJ_EHFINALLYRET right,
+    // so special-case BBJ_CALLFINALLYRET incoming flow.
+    //
+    if (block->isBBCallFinallyPairTail())
+    {
+        incomingLikelyWeight = block->Prev()->bbWeight;
+        incomingWeightMin    = incomingLikelyWeight;
+        incomingWeightMax    = incomingLikelyWeight;
+        foundEHPreds         = false;
     }
 
     bool classicWeightsValid = true;
     bool likelyWeightsValid  = true;
 
-    if (foundPreds)
+    // If we have EH preds we may not have consistent incoming flow.
+    //
+    if (foundPreds && !foundEHPreds)
     {
         if (verifyClassicWeights)
         {

@@ -2942,10 +2942,22 @@ void Compiler::fgLinkBasicBlocks()
                 curBBdesc->SetTrueEdge(trueEdge);
                 curBBdesc->SetFalseEdge(falseEdge);
 
+                // Avoid making BBJ_THROW successors look likely, if possible.
+                //
                 if (trueEdge == falseEdge)
                 {
                     assert(trueEdge->getDupCount() == 2);
                     trueEdge->setLikelihood(1.0);
+                }
+                else if (trueTarget->KindIs(BBJ_THROW) && !falseTarget->KindIs(BBJ_THROW))
+                {
+                    trueEdge->setLikelihood(0.0);
+                    falseEdge->setLikelihood(1.0);
+                }
+                else if (!trueTarget->KindIs(BBJ_THROW) && falseTarget->KindIs(BBJ_THROW))
+                {
+                    trueEdge->setLikelihood(1.0);
+                    falseEdge->setLikelihood(0.0);
                 }
                 else
                 {
