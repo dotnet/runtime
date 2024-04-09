@@ -1538,7 +1538,8 @@ decode_value_scalar (const guint8 *ptr, const guint8 **new_ptr)
 MONO_ALWAYS_INLINE guint32
 mono_metadata_decode_value_simd (const guint8 *ptr, const guint8 **new_ptr)
 {
-#if defined(__clang__) && (G_BYTE_ORDER == G_LITTLE_ENDIAN)
+	// FIXME: Determine whether it's safe to perform this optimization on non-wasm targets.
+#if defined(__clang__) && (G_BYTE_ORDER == G_LITTLE_ENDIAN) && defined(HOST_WASM)
 	guint32 result;
 
 	typedef guint8 v64_u1 __attribute__ ((vector_size (8)));
@@ -1586,8 +1587,8 @@ mono_metadata_decode_value_simd (const guint8 *ptr, const guint8 **new_ptr)
 		// i don't know why the default case is necessary here, but without it the jump table has 5 entries.
 		default:
 			// (b * 0x80) != 0, and (b & 0x40) != 0
-			// for some reason on wasm the 'v.b[0]' load generates an '& 255',
-			//  even if we cache it in a guint8 local
+			// on wasm the 'v.b[0]' load generates an '& 255', even if we cache it in a
+			//  guint8 local. this is https://github.com/llvm/llvm-project/issues/87398
 			if (v.b[0] == 0xFFu) {
 				// v.b = { ptr[4], ptr[3], ptr[2], ptr[1] }
 				// on x64 this generates kind of gross code, i.e.
