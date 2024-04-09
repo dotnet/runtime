@@ -1312,7 +1312,7 @@ bool RangeCheck::DoesVarDefOverflow(BasicBlock* block, GenTreeLclVarCommon* lcl,
     // We can use intermediate assertions about the local to prove that any
     // overflow on this path does not matter for the range computed.
     Range assertionRange = Range(Limit(Limit::keUnknown));
-    MergeAssertion(block, lcl, &assertionRange, 0);
+    MergeAssertion(block, lcl, &assertionRange DEBUGARG(0));
 
     // But only if the range from the assertion is more strict than the global
     // range computed; otherwise we might still have used the def's value to
