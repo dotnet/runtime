@@ -5405,12 +5405,8 @@ void CEEInfo::getCallInfo(
         //    (c) constraint calls that require runtime context lookup are never resolved
         //        to underlying shared generic code
 
-        bool unresolvedLdVirtFtn = (flags & CORINFO_CALLINFO_LDFTN) && (flags & CORINFO_CALLINFO_CALLVIRT) && !resolvedCallVirt;
-
         if (((pResult->exactContextNeedsRuntimeLookup && pTargetMD->IsInstantiatingStub() && (!allowInstParam || fResolvedConstraint)) || fForceUseRuntimeLookup))
         {
-            _ASSERTE(!m_pMethodBeingCompiled->IsDynamicMethod());
-
             pResult->kind = CORINFO_CALL_CODE_POINTER;
 
             DictionaryEntryKind entryKind;
@@ -5477,8 +5473,6 @@ void CEEInfo::getCallInfo(
 
         if (pResult->exactContextNeedsRuntimeLookup)
         {
-            _ASSERTE(!m_pMethodBeingCompiled->IsDynamicMethod());
-
             ComputeRuntimeLookupForSharedGenericToken(fIsStaticVirtualMethod ? ConstrainedMethodEntrySlot : DispatchStubAddrSlot,
                                                         pResolvedToken,
                                                         pConstrainedResolvedToken,
