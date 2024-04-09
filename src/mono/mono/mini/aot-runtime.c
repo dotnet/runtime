@@ -1971,7 +1971,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	if (mono_aot_mode == MONO_AOT_MODE_NONE)
 		return;
 
-#ifdef __EMSCRIPTEN__
+#ifdef HOST_BROWSER
 	// This indicates that we were not built for AOT, so there's no need to probe for AOT modules.
 	if (mono_aot_mode == MONO_AOT_MODE_INTERP_ONLY)
 		return;
