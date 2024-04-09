@@ -68,9 +68,9 @@ namespace System.Security.Cryptography.X509Certificates
             // will start returning non Rsa / Dsa types.
         }
 
-        public AsnEncodedData EncodedKeyValue { get; private set; }
+        public AsnEncodedData EncodedKeyValue { get; }
 
-        public AsnEncodedData EncodedParameters { get; private set; }
+        public AsnEncodedData EncodedParameters { get; }
 
         [Obsolete(Obsoletions.PublicKeyPropertyMessage, DiagnosticId = Obsoletions.PublicKeyPropertyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public AsymmetricAlgorithm Key

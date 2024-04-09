@@ -486,7 +486,7 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
             return true;
         }
     }
-    // If the rhs expr is local, then try to find the def of the local.
+    // If the expr is local, then try to find the def of the local.
     else if (expr->IsLocal())
     {
         LclSsaVarDsc* ssaDef = GetSsaDefStore(expr->AsLclVarCommon());
@@ -521,7 +521,7 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
     return false;
 }
 
-// Given a lclvar use, try to find the lclvar's defining assignment and its containing block.
+// Given a lclvar use, try to find the lclvar's defining store and its containing block.
 LclSsaVarDsc* RangeCheck::GetSsaDefStore(GenTreeLclVarCommon* lclUse)
 {
     unsigned ssaNum = lclUse->GetSsaNum();

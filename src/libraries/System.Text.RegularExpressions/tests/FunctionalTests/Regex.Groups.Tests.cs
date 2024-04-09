@@ -289,7 +289,7 @@ namespace System.Text.RegularExpressions.Tests
             yield return (enUS, @"(cat)([\u0041]*)(dog)", "catAAAdog", RegexOptions.None, new string[] { "catAAAdog", "cat", "AAA", "dog" });
             yield return (enUS, @"(cat)([\a]*)(dog)", "cat\a\a\adog", RegexOptions.None, new string[] { "cat\a\a\adog", "cat", "\a\a\a", "dog" });
             yield return (enUS, @"(cat)([\b]*)(dog)", "cat\b\b\bdog", RegexOptions.None, new string[] { "cat\b\b\bdog", "cat", "\b\b\b", "dog" });
-            yield return (enUS, @"(cat)([\e]*)(dog)", "cat\u001B\u001B\u001Bdog", RegexOptions.None, new string[] { "cat\u001B\u001B\u001Bdog", "cat", "\u001B\u001B\u001B", "dog" });
+            yield return (enUS, @"(cat)([\e]*)(dog)", "cat\e\e\edog", RegexOptions.None, new string[] { "cat\e\e\edog", "cat", "\e\e\e", "dog" });
             yield return (enUS, @"(cat)([\f]*)(dog)", "cat\f\f\fdog", RegexOptions.None, new string[] { "cat\f\f\fdog", "cat", "\f\f\f", "dog" });
             yield return (enUS, @"(cat)([\r]*)(dog)", "cat\r\r\rdog", RegexOptions.None, new string[] { "cat\r\r\rdog", "cat", "\r\r\r", "dog" });
             yield return (enUS, @"(cat)([\v]*)(dog)", "cat\v\v\vdog", RegexOptions.None, new string[] { "cat\v\v\vdog", "cat", "\v\v\v", "dog" });
@@ -433,7 +433,7 @@ namespace System.Text.RegularExpressions.Tests
 
             if (!PlatformDetection.IsNetFramework) // `\c[` was not handled in .NET Framework. See https://github.com/dotnet/runtime/issues/24759.
             {
-                yield return (enUS, @"(cat)(\c[*)(dog)", "asdlkcat\u001bdogiwod", RegexOptions.None, new string[] { "cat\u001bdog", "cat", "\u001b", "dog" });
+                yield return (enUS, @"(cat)(\c[*)(dog)", "asdlkcat\edogiwod", RegexOptions.None, new string[] { "cat\edog", "cat", "\e", "dog" });
             }
 
             // Atomic Zero-Width Assertions \A \G ^ \Z \z \b \B

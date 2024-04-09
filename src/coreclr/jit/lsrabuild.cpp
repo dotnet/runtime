@@ -2303,7 +2303,7 @@ void LinearScan::buildIntervals()
                 continue;
             }
 
-            const ABIPassingInformation& abiInfo = compiler->lvaParameterPassingInfo[lclNum];
+            const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
             for (unsigned i = 0; i < abiInfo.NumSegments; i++)
             {
                 const ABIPassingSegment& seg = abiInfo.Segments[i];

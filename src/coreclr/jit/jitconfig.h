@@ -55,27 +55,30 @@ public:
     };
 
 private:
-#define CONFIG_INTEGER(name, key, defaultValue) int m_##name;
-#define CONFIG_STRING(name, key)                const WCHAR* m_##name;
-#define CONFIG_METHODSET(name, key)             MethodSet m_##name;
+
+#define RELEASE_CONFIG_INTEGER(name, key, defaultValue) int m_##name;
+#define RELEASE_CONFIG_STRING(name, key)                const WCHAR* m_##name;
+#define RELEASE_CONFIG_METHODSET(name, key)             MethodSet m_##name;
+
 #include "jitconfigvalues.h"
 
 public:
-#define CONFIG_INTEGER(name, key, defaultValue)                                                                        \
+#define RELEASE_CONFIG_INTEGER(name, key, defaultValue)                                                                \
     inline int name() const                                                                                            \
     {                                                                                                                  \
         return m_##name;                                                                                               \
     }
-#define CONFIG_STRING(name, key)                                                                                       \
+#define RELEASE_CONFIG_STRING(name, key)                                                                               \
     inline const WCHAR* name() const                                                                                   \
     {                                                                                                                  \
         return m_##name;                                                                                               \
     }
-#define CONFIG_METHODSET(name, key)                                                                                    \
+#define RELEASE_CONFIG_METHODSET(name, key)                                                                            \
     inline const MethodSet& name() const                                                                               \
     {                                                                                                                  \
         return m_##name;                                                                                               \
     }
+
 #include "jitconfigvalues.h"
 
 private:

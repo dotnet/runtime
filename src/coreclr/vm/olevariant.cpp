@@ -2567,17 +2567,34 @@ void OleVariant::MarshalRecordVariantOleToCom(VARIANT *pOleVariant,
     if (!pRecInfo)
         COMPlusThrow(kArgumentException, IDS_EE_INVALID_OLE_VARIANT);
 
+    LPVOID pvRecord = V_RECORD(pOleVariant);
+    if (pvRecord == NULL)
+    {
+        pComVariant->SetObjRef(NULL);
+        return;
+    }
+
+    MethodTable* pValueClass = NULL;
+    {
+        GCX_PREEMP();
+        pValueClass = GetMethodTableForRecordInfo(pRecInfo);
+    }
+
+    if (pValueClass == NULL)
+    {
+        // This value type should have been registered through
+        // a TLB. CoreCLR doesn't support dynamic type mapping.
+        COMPlusThrow(kArgumentException, IDS_EE_CANNOT_MAP_TO_MANAGED_VC);
+    }
+    _ASSERTE(pValueClass->IsBlittable());
+
     OBJECTREF BoxedValueClass = NULL;
     GCPROTECT_BEGIN(BoxedValueClass)
     {
-        LPVOID pvRecord = V_RECORD(pOleVariant);
-        if (pvRecord)
-        {
-            // This value type should have been registered through
-            // a TLB. CoreCLR doesn't support dynamic type mapping.
-            COMPlusThrow(kArgumentException, IDS_EE_CANNOT_MAP_TO_MANAGED_VC);
-        }
-
+        // Now that we have a blittable value class, allocate an instance of the
+        // boxed value class and copy the contents of the record into it.
+        BoxedValueClass = AllocateObject(pValueClass);
+        memcpyNoGCRefs(BoxedValueClass->GetData(), (BYTE*)pvRecord, pValueClass->GetNativeSize());
         pComVariant->SetObjRef(BoxedValueClass);
     }
     GCPROTECT_END();
@@ -4714,11 +4731,8 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
     // Marshal the contents of the value class into the record.
     MethodDesc* pStructMarshalStub;
     {
-        GCPROTECT_BEGIN(*pBoxedValueClass);
         GCX_PREEMP();
-
         pStructMarshalStub = NDirect::CreateStructMarshalILStub(pValueClassMT);
-        GCPROTECT_END();
     }
 
     MarshalStructViaILStub(pStructMarshalStub, (*pBoxedValueClass)->GetData(), (BYTE*)V_RECORD(pRecHolder), StructMarshalStubs::MarshalOperation::Marshal);

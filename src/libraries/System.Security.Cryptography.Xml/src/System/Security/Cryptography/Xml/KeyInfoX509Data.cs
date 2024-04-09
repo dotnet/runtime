@@ -160,6 +160,15 @@ namespace System.Security.Cryptography.Xml
             if (!BigInteger.TryParse(serialNumber, NumberStyles.AllowHexSpecifier, NumberFormatInfo.CurrentInfo, out h))
                 throw new ArgumentException(SR.Cryptography_Xml_InvalidX509IssuerSerialNumber, nameof(serialNumber));
 
+            // NetFx compat: .NET Framework treats the input as unsigned and we need to write down the X509SerialNumber
+            // as a positive number.
+            if (h < BigInteger.Zero)
+            {
+                byte[] bytes = h.ToByteArray();
+                Array.Resize(ref bytes, bytes.Length + 1);
+                h = new BigInteger(bytes);
+            }
+
             _issuerSerials ??= new ArrayList();
             _issuerSerials.Add(Utils.CreateX509IssuerSerial(issuerName, h.ToString()));
         }
