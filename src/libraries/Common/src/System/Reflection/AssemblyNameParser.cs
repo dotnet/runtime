@@ -260,15 +260,9 @@ namespace System.Reflection
                 return false;
             }
 
-            Span<ushort> versionNumbers = stackalloc ushort[4];
-            for (int i = 0; i < versionNumbers.Length; i++)
+            Span<ushort> versionNumbers = stackalloc ushort[4] { ushort.MaxValue, ushort.MaxValue, ushort.MaxValue, ushort.MaxValue };
+            for (int i = 0; i < parts.Length; i++)
             {
-                if ((uint)i >= (uint)parts.Length)
-                {
-                    versionNumbers[i] = ushort.MaxValue;
-                    break;
-                }
-
                 if (!ushort.TryParse(
 #if NET8_0_OR_GREATER
                     attributeValueSpan[parts[i]],
@@ -429,7 +423,7 @@ namespace System.Reflection
                 }
             }
 
-            ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[64]);
+            using ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[64]);
 
             char quoteChar = '\0';
             if (c == '\'' || c == '\"')
@@ -515,13 +509,14 @@ namespace System.Reflection
             }
 
 
+            int length = sb.Length;
             if (quoteChar == 0)
             {
-                while (sb.Length > 0 && IsWhiteSpace(sb[sb.Length - 1]))
-                    sb.Length--;
+                while (length > 0 && IsWhiteSpace(sb[length - 1]))
+                    length--;
             }
 
-            tokenString = sb.ToString();
+            tokenString = sb.AsSpan(0, length).ToString();
             token = Token.String;
             return true;
         }

@@ -81,6 +81,7 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("EscapeNonSpecialChar\\a")]
         [InlineData("EscapeNonSpecialChar\\0")]
         [InlineData("DoubleNestingChar++Bla")]
+        [InlineData("Integer`2147483647+Overflow`1")]
         public void InvalidTypeNamesAreNotAllowed(string input)
         {
             Assert.Throws<ArgumentException>(() => TypeName.Parse(input.AsSpan()));

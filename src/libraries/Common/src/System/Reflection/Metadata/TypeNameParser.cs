@@ -83,7 +83,7 @@ namespace System.Reflection.Metadata
             // after that. The check slices _inputString, so we'll capture it into
             // a local so we can restore it later if needed.
             ReadOnlySpan<char> capturedBeforeProcessing = _inputString;
-            if (IsBeginningOfGenericAgs(ref _inputString, out bool doubleBrackets))
+            if (IsBeginningOfGenericArgs(ref _inputString, out bool doubleBrackets))
             {
                 int startingRecursionCheck = recursiveDepth;
                 int maxObservedRecursionCheck = recursiveDepth;

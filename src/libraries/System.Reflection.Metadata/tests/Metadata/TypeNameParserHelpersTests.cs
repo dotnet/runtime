@@ -123,7 +123,7 @@ namespace System.Reflection.Metadata.Tests
         {
             ReadOnlySpan<char> inputSpan = input.AsSpan();
 
-            Assert.Equal(expectedResult, TypeNameParserHelpers.IsBeginningOfGenericAgs(ref inputSpan, out bool doubleBrackets));
+            Assert.Equal(expectedResult, TypeNameParserHelpers.IsBeginningOfGenericArgs(ref inputSpan, out bool doubleBrackets));
             Assert.Equal(expectedDoubleBrackets, doubleBrackets);
             Assert.Equal(expectedConsumedInput, inputSpan.ToString());
         }
@@ -136,6 +136,8 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("A.B++C", false, null, 0, 0)] // invalid type name: two following, unescaped +
         [InlineData("A.B`1", true, null, 5, 1)]
         [InlineData("A+B`1+C1`2+DD2`3+E", true, new int[] { 1, 3, 4, 5 }, 18, 6)]
+        [InlineData("Integer`2147483646+NoOverflow`1", true, new int[] { 18 }, 31, 2147483647)]
+        [InlineData("Integer`2147483647+Overflow`1", false, null, 0, 0)] // integer overflow for generic args count
         public void TryGetTypeNameInfoGetsAllTheInfo(string input, bool expectedResult, int[] expectedNestedNameLengths,
             int expectedTotalLength, int expectedGenericArgCount)
         {
@@ -144,9 +146,13 @@ namespace System.Reflection.Metadata.Tests
             bool result = TypeNameParserHelpers.TryGetTypeNameInfo(ref span, ref nestedNameLengths, out int totalLength, out int genericArgCount);
 
             Assert.Equal(expectedResult, result);
-            Assert.Equal(expectedNestedNameLengths, nestedNameLengths?.ToArray());
-            Assert.Equal(expectedTotalLength, totalLength);
-            Assert.Equal(expectedGenericArgCount, genericArgCount);
+
+            if (expectedResult)
+            {
+                Assert.Equal(expectedNestedNameLengths, nestedNameLengths?.ToArray());
+                Assert.Equal(expectedTotalLength, totalLength);
+                Assert.Equal(expectedGenericArgCount, genericArgCount);
+            }
         }
 
         [Theory]

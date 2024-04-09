@@ -202,10 +202,7 @@ namespace System.Reflection.Metadata
                 Debug.Assert(rankOrModifier >= 2 && rankOrModifier <= 32);
 
                 builder.Append('[');
-                for (int i = 1; i < rankOrModifier; i++)
-                {
-                    builder.Append(',');
-                }
+                builder.Append(',', rankOrModifier - 1);
                 builder.Append(']');
             }
 
@@ -215,7 +212,7 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Are there any captured generic args? We'll look for "[[" and "[" that is not followed by "]", "*" and ",".
         /// </summary>
-        internal static bool IsBeginningOfGenericAgs(ref ReadOnlySpan<char> span, out bool doubleBrackets)
+        internal static bool IsBeginningOfGenericArgs(ref ReadOnlySpan<char> span, out bool doubleBrackets)
         {
             doubleBrackets = false;
 
@@ -256,8 +253,6 @@ namespace System.Reflection.Metadata
                     // invalid type names:
                     // -1: invalid escaping
                     // 0: pair of unescaped "++" characters
-                    nestedNameLengths = null;
-                    totalLength = genericArgCount = 0;
                     return false;
                 }
 
@@ -274,7 +269,7 @@ namespace System.Reflection.Metadata
 #endif
 
                 int generics = GetGenericArgumentCount(input.Slice(totalLength, length));
-                if (generics < 0)
+                if (generics < 0 || (generics > 0 && ((long)genericArgCount + generics > int.MaxValue)))
                 {
                     return false; // invalid type name detected!
                 }
