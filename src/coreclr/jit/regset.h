@@ -89,13 +89,11 @@ public:
     void rsSetRegsModified(CONSTREF_AllRegsMask modifiedMask DEBUGARG(bool suppressDump = false));
     void rsSetRegModified(regNumber reg DEBUGARG(bool suppressDump = false));
 
-#ifdef DEBUG
     const AllRegsMask& rsGetModifiedRegsMask() const
     {
         assert(rsModifiedRegsMaskInitialized);
         return rsModifiedRegsMask;
     }
-#endif
 
     AllRegsMask rsGetModifiedCalleeSavedRegsMask() const
     {

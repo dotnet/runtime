@@ -2916,8 +2916,8 @@ void LinearScan::stressSetRandomParameterPreferences()
 {
     CLRRandom rng;
     rng.Init(compiler->info.compMethodHash());
-    regMaskTP intRegs   = compiler->codeGen->intRegState.rsCalleeRegArgMaskLiveIn;
-    regMaskTP floatRegs = compiler->codeGen->floatRegState.rsCalleeRegArgMaskLiveIn;
+    regMaskGpr intRegs   = compiler->codeGen->intRegState.rsCalleeRegArgMaskLiveIn;
+    regMaskFloat floatRegs = compiler->codeGen->floatRegState.rsCalleeRegArgMaskLiveIn;
 
     for (unsigned int varIndex = 0; varIndex < compiler->lvaTrackedCount; varIndex++)
     {
@@ -2930,7 +2930,7 @@ void LinearScan::stressSetRandomParameterPreferences()
 
         Interval* interval = getIntervalForLocalVar(varIndex);
 
-        regMaskTP* regs;
+        regMaskOnlyOne* regs;
         if (interval->registerType == FloatRegisterType)
         {
             regs = &floatRegs;
@@ -2950,10 +2950,10 @@ void LinearScan::stressSetRandomParameterPreferences()
 
         int       bitIndex = rng.Next((int)numBits);
         regNumber prefReg  = REG_NA;
-        regMaskTP regsLeft = *regs;
+        regMaskOnlyOne regsLeft = *regs;
         for (int i = 0; i <= bitIndex; i++)
         {
-            prefReg = genFirstRegNumFromMaskAndToggle(regsLeft);
+            prefReg = genFirstRegNumFromMaskAndToggle(regsLeft MORE_THAN_64_REG_ARG(interval->registerType));
         }
 
         *regs &= ~genRegMask(prefReg);

@@ -3272,16 +3272,16 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
         if ((node->outgoing != nullptr) && (node->copiedReg == REG_NA))
         {
             var_types copyType          = node->outgoing->type;
-            regMaskTP tempRegCandidates = genGetParameterHomingTempRegisterCandidates();
+            RegBitSet64 tempRegCandidates = genGetParameterHomingTempRegisterCandidates();
             tempRegCandidates &= ~busyRegs;
 
-            regMaskTP regTypeMask = varTypeUsesFloatReg(copyType) ? RBM_ALLFLOAT : RBM_ALLINT;
-            regMaskTP availRegs   = tempRegCandidates & regTypeMask;
+            regMaskOnlyOne regTypeMask = varTypeUsesFloatReg(copyType) ? RBM_ALLFLOAT : RBM_ALLINT;
+            regMaskOnlyOne availRegs   = tempRegCandidates & regTypeMask;
 
             // We should have ensured temporary registers are available in
             // genFinalizeFrame.
             noway_assert(availRegs != RBM_NONE);
-            node->copiedReg = genFirstRegNumFromMask(availRegs);
+            node->copiedReg = genFirstRegNumFromMask(availRegs MORE_THAN_64_REG_ARG(copyType));
             busyRegs |= genRegMask(node->copiedReg);
 
             instruction ins = ins_Copy(node->reg, copyType);
@@ -3360,10 +3360,10 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 //   destination register of a parameter, or because a value passed in one of
 //   these registers is still needed.
 //
-regMaskTP CodeGen::genGetParameterHomingTempRegisterCandidates()
+RegBitSet64 CodeGen::genGetParameterHomingTempRegisterCandidates()
 {
     return RBM_CALLEE_TRASH | intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn |
-           regSet.rsGetModifiedRegsMask();
+           regSet.rsGetModifiedRegsMask().GetGprFloatCombinedMask();
 }
 
 /*****************************************************************************
@@ -4643,21 +4643,21 @@ void CodeGen::genFinalizeFrame()
 
     // Parameter homing may need an additional register to handle conflicts if
     // all callee trash registers are used by parameters.
-    regMaskTP homingCandidates = genGetParameterHomingTempRegisterCandidates();
+    RegBitSet64 homingCandidates = genGetParameterHomingTempRegisterCandidates();
     if (((homingCandidates & ~intRegState.rsCalleeRegArgMaskLiveIn) & RBM_ALLINT) == RBM_NONE)
     {
-        regMaskTP extraRegMask = RBM_ALLINT & ~homingCandidates;
+        regMaskGpr extraRegMask = RBM_ALLINT & ~homingCandidates;
         assert(extraRegMask != RBM_NONE);
-        regNumber extraReg = genFirstRegNumFromMask(extraRegMask);
+        regNumber extraReg = genFirstRegNumFromMask(extraRegMask MORE_THAN_64_REG_ARG(TYP_INT));
         JITDUMP("No temporary registers are available for integer parameter homing. Adding %s\n", getRegName(extraReg));
         regSet.rsSetRegsModified(genRegMask(extraReg));
     }
 
     if (((homingCandidates & ~floatRegState.rsCalleeRegArgMaskLiveIn) & RBM_ALLFLOAT) == RBM_NONE)
     {
-        regMaskTP extraRegMask = RBM_ALLFLOAT & ~homingCandidates;
+        regMaskFloat extraRegMask = RBM_ALLFLOAT & ~homingCandidates;
         assert(extraRegMask != RBM_NONE);
-        regNumber extraReg = genFirstRegNumFromMask(extraRegMask);
+        regNumber extraReg = genFirstRegNumFromMask(extraRegMask MORE_THAN_64_REG_ARG(TYP_FLOAT));
         JITDUMP("No temporary registers are available for float parameter homing. Adding %s\n", getRegName(extraReg));
         regSet.rsSetRegsModified(genRegMask(extraReg));
     }
