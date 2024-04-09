@@ -137,7 +137,7 @@ int LinearScan::BuildNode(GenTree* tree)
             // This kills GC refs in callee save regs
             srcCount = 0;
             assert(dstCount == 0);
-            BuildKills(tree, AllRegsMask());
+            BuildKills(tree, AllRegsMask_NONE);
             break;
 
         case GT_PROF_HOOK:
@@ -1411,7 +1411,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
 #endif // SWIFT_SUPPORT
 
     // No args are placed in registers anymore.
-    placedArgRegs      = AllRegsMask();
+    placedArgRegs      = AllRegsMask_NONE;
     numPlacedArgLocals = 0;
     return srcCount;
 }

@@ -227,11 +227,11 @@
   // The registers trashed by profiler enter/leave/tailcall hook
   // See vm\arm\asmhelpers.asm for more details.
   #define RBM_PROFILER_ENTER_TRASH     RBM_NONE
-  #define AllRegsMask_PROFILER_ENTER_TRASH     AllRegsMask()
+  #define AllRegsMask_PROFILER_ENTER_TRASH     AllRegsMask_NONE
   // While REG_PROFILER_RET_SCRATCH is not trashed by the method, the register allocator must
   // consider it killed by the return.
   #define AllRegsMask_PROFILER_LEAVE_TRASH     AllRegsMask_PROFILER_RET_SCRATCH
-  #define AllRegsMask_PROFILER_TAILCALL_TRASH  AllRegsMask()
+  #define AllRegsMask_PROFILER_TAILCALL_TRASH  AllRegsMask_NONE
 
   // Which register are int and long values returned in ?
   #define REG_INTRET               REG_R0

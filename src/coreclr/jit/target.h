@@ -458,6 +458,7 @@ typedef unsigned __int64 regMaskSmall;
   #error Unsupported or unset target architecture
 #endif
 
+#define AllRegsMask_NONE RBM_NONE
 #ifdef HAS_MORE_THAN_64_REGISTERS
   #define AllRegsMask_CALLEE_SAVED AllRegsMask(RBM_INT_CALLEE_SAVED, RBM_FLT_CALLEE_SAVED, RBM_MSK_CALLEE_SAVED)
   #define AllRegsMask_CALLEE_TRASH AllRegsMask(RBM_INT_CALLEE_TRASH, RBM_FLT_CALLEE_TRASH, RBM_MSK_CALLEE_TRASH)

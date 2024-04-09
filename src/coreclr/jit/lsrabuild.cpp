@@ -998,7 +998,7 @@ regMaskGpr LinearScan::getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node)
 AllRegsMask LinearScan::getKillSetForReturn()
 {
     return compiler->compIsProfilerHookNeeded() ? compiler->compHelperCallKillSet(CORINFO_HELP_PROF_FCN_LEAVE)
-                                                : AllRegsMask();
+                                                : AllRegsMask_NONE;
 }
 
 //------------------------------------------------------------------------
@@ -1012,7 +1012,7 @@ AllRegsMask LinearScan::getKillSetForReturn()
 AllRegsMask LinearScan::getKillSetForProfilerHook()
 {
     return compiler->compIsProfilerHookNeeded() ? compiler->compHelperCallKillSet(CORINFO_HELP_PROF_FCN_TAILCALL)
-                                                : AllRegsMask();
+                                                : AllRegsMask_NONE;
 }
 
 #ifdef DEBUG
@@ -2304,8 +2304,8 @@ void LinearScan::buildIntervals()
     RegState* floatRegState                 = &compiler->codeGen->floatRegState;
     intRegState->rsCalleeRegArgMaskLiveIn   = RBM_NONE;
     floatRegState->rsCalleeRegArgMaskLiveIn = RBM_NONE;
-    regsInUseThisLocation                   = AllRegsMask();
-    regsInUseNextLocation                   = AllRegsMask();
+    regsInUseThisLocation                   = AllRegsMask_NONE;
+    regsInUseNextLocation                   = AllRegsMask_NONE;
 
 #ifdef SWIFT_SUPPORT
     if (compiler->info.compCallConv == CorInfoCallConvExtension::Swift)
@@ -2437,7 +2437,7 @@ void LinearScan::buildIntervals()
     }
 
     numPlacedArgLocals = 0;
-    placedArgRegs      = AllRegsMask();
+    placedArgRegs      = AllRegsMask_NONE;
 
     BasicBlock* predBlock = nullptr;
     BasicBlock* prevBlock = nullptr;

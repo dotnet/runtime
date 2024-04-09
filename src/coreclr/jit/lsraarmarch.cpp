@@ -434,7 +434,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
 #endif // SWIFT_SUPPORT
 
     // No args are placed in registers anymore.
-    placedArgRegs      = AllRegsMask();
+    placedArgRegs      = AllRegsMask_NONE;
     numPlacedArgLocals = 0;
     return srcCount;
 }

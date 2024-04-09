@@ -190,7 +190,7 @@ public:
 
     void ClearMaskVars() // Like SetMaskVars(RBM_NONE), but without any debug output.
     {
-        _rsAllMaskVars = AllRegsMask();
+        _rsAllMaskVars = AllRegsMask_NONE;
     }
 
 private:

@@ -1949,8 +1949,7 @@ private:
     void resetRegState()
     {
         resetAvailableRegs();
-        regsBusyUntilKill = AllRegsMask();
-        ;
+        regsBusyUntilKill = AllRegsMask_NONE;
     }
 
     bool conflictingFixedRegReference(regNumber regNum, RefPosition* refPosition);

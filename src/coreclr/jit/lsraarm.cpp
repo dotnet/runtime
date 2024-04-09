@@ -422,7 +422,7 @@ int LinearScan::BuildNode(GenTree* tree)
             // This kills GC refs in callee save regs
             srcCount = 0;
             assert(dstCount == 0);
-            BuildKills(tree, AllRegsMask());
+            BuildKills(tree, AllRegsMask_NONE);
             break;
 
         case GT_LONG:
