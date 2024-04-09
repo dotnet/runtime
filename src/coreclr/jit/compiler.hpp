@@ -5097,7 +5097,7 @@ void AllRegsMask::operator^=(const regNumber reg)
 #endif
 }
 
-AllRegsMask AllRegsMask::operator~()
+AllRegsMask AllRegsMask::operator~() const
 {
     AllRegsMask result;
     result._combinedRegisters = ~_combinedRegisters;

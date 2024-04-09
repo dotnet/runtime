@@ -86,11 +86,11 @@ private:
 #endif // !SWIFT_SUPPORT
 
 public:
-    void rsSetRegsModified(AllRegsMask& modifiedMask DEBUGARG(bool suppressDump = false));
+    void rsSetRegsModified(CONSTREF_AllRegsMask modifiedMask DEBUGARG(bool suppressDump = false));
     void rsSetRegModified(regNumber reg DEBUGARG(bool suppressDump = false));
 
 #ifdef DEBUG
-    AllRegsMask rsGetModifiedRegsMask() const
+    const AllRegsMask& rsGetModifiedRegsMask() const
     {
         assert(rsModifiedRegsMaskInitialized);
         return rsModifiedRegsMask;

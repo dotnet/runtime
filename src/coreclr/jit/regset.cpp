@@ -239,7 +239,7 @@ void RegSet::rsSetRegModified(regNumber reg DEBUGARG(bool suppressDump))
     rsModifiedRegsMask.AddRegNumInMask(reg);
 }
 
-void RegSet::rsSetRegsModified(AllRegsMask& modifiedMask DEBUGARG(bool suppressDump))
+void RegSet::rsSetRegsModified(CONSTREF_AllRegsMask modifiedMask DEBUGARG(bool suppressDump))
 {
     // TODO: Commented this, so that caller don't have to check if modifiedMask is not RBM_NONE
     // It doesn't harm if this was RBM_NONE, as it will not modify the trackingMask

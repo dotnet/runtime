@@ -453,7 +453,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
 //    The def and kill functionality is folded into a single method so that the
 //    save and restores of upper vector registers can be bracketed around the def.
 //
-void LinearScan::BuildDefWithKills(GenTree* tree, regMaskOnlyOne dstCandidates, AllRegsMask killMask)
+void LinearScan::BuildDefWithKills(GenTree* tree, regMaskOnlyOne dstCandidates, REF_AllRegsMask killMask)
 {
     assert(!tree->AsCall()->HasMultiRegRetVal());
     assert((int)genCountBits(dstCandidates) == 1);

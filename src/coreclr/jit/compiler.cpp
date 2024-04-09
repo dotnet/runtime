@@ -3755,7 +3755,7 @@ void Compiler::dumpRegMask(regMaskOnlyOne mask, var_types type) const
 // Arguments:
 //   regs - The set of registers to display
 //
-void Compiler::dumpRegMask(AllRegsMask mask) const
+void Compiler::dumpRegMask(CONSTREF_AllRegsMask mask) const
 {
     if (mask.gprRegs() == RBM_ALLINT)
     {

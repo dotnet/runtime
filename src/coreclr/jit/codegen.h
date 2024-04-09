@@ -348,8 +348,10 @@ protected:
                                             int            spDelta,
                                             int spOffset   MORE_THAN_64_REG_ARG(var_types type));
 
-    void genSaveCalleeSavedRegistersHelp(AllRegsMask regsToSaveMask, int lowestCalleeSavedOffset, int spDelta);
-    void genRestoreCalleeSavedRegistersHelp(AllRegsMask regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta);
+    void genSaveCalleeSavedRegistersHelp(CONSTREF_AllRegsMask regsToSaveMask, int lowestCalleeSavedOffset, int spDelta);
+    void genRestoreCalleeSavedRegistersHelp(CONSTREF_AllRegsMask regsToRestoreMask,
+                                            int                  lowestCalleeSavedOffset,
+                                            int                  spDelta);
 
     void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed);
 

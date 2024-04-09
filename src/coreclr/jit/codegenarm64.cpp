@@ -917,7 +917,9 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskOnlyOne regsMask,
 //    The save set can contain LR in which case LR is saved along with the other callee-saved registers.
 //    But currently Jit doesn't use frames without frame pointer on arm64.
 //
-void CodeGen::genSaveCalleeSavedRegistersHelp(AllRegsMask regsToSaveMask, int lowestCalleeSavedOffset, int spDelta)
+void CodeGen::genSaveCalleeSavedRegistersHelp(CONSTREF_AllRegsMask regsToSaveMask,
+                                              int                  lowestCalleeSavedOffset,
+                                              int                  spDelta)
 {
     assert(spDelta <= 0);
     assert(-spDelta <= STACK_PROBE_BOUNDARY_THRESHOLD_BYTES);
@@ -1056,7 +1058,7 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskOnlyOne regsMask,
 // Return Value:
 //    None.
 
-void CodeGen::genRestoreCalleeSavedRegistersHelp(AllRegsMask regsToRestoreMask,
+void CodeGen::genRestoreCalleeSavedRegistersHelp(CONSTREF_AllRegsMask regsToRestoreMask,
                                                  int         lowestCalleeSavedOffset,
                                                  int         spDelta)
 {

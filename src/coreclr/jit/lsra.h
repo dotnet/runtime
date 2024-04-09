@@ -451,12 +451,12 @@ typedef jitstd::list<RefPosition>::reverse_iterator RefPositionReverseIterator;
 class Referenceable
 {
 public:
-    Referenceable(RegisterType registerType)
+    Referenceable(RegisterType _registerType)
     {
         firstRefPosition  = nullptr;
         recentRefPosition = nullptr;
         lastRefPosition   = nullptr;
-        registerType      = registerType;
+        registerType      = _registerType;
     }
 
     // A linked list of RefPositions.  These are only traversed in the forward
@@ -501,7 +501,7 @@ public:
 #endif
             if (emitter::isGeneralRegister(reg))
         {
-            assert(registerType == IntRegisterType);
+            registerType = IntRegisterType;
         }
         else if (emitter::isFloatReg(reg))
         {
@@ -907,7 +907,7 @@ private:
     {
         return (LsraBlockBoundaryLocations)(lsraStressMask & LSRA_BLOCK_BOUNDARY_MASK);
     }
-    regNumber rotateBlockStartLocation(Interval* interval, regNumber targetReg, AllRegsMask availableRegs);
+    regNumber rotateBlockStartLocation(Interval* interval, regNumber targetReg, CONSTREF_AllRegsMask availableRegs);
 
     // This controls whether we always insert a GT_RELOAD instruction after a spill
     // Note that this can be combined with LSRA_SPILL_ALWAYS (or not)
@@ -984,7 +984,7 @@ private:
     static bool IsResolutionMove(GenTree* node);
     static bool IsResolutionNode(LIR::Range& containingRange, GenTree* node);
 
-    void verifyFreeRegisters(AllRegsMask regsToFree);
+    void verifyFreeRegisters(CONSTREF_AllRegsMask regsToFree);
     void verifyFinalAllocation();
     void verifyResolutionMove(GenTree* resolutionNode, LsraLocation currentLocation);
 #else  // !DEBUG
@@ -1057,7 +1057,7 @@ private:
     void processBlockEndLocations(BasicBlock* current);
     void resetAllRegistersState();
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    FORCEINLINE void updateDeadCandidatesAtBlockStart(AllRegsMask& deadRegMask, VarToRegMap inVarToRegMap);
+    FORCEINLINE void updateDeadCandidatesAtBlockStart(REF_AllRegsMask deadRegMask, VarToRegMap inVarToRegMap);
 #else
     FORCEINLINE void updateDeadCandidatesAtBlockStart(RegBitSet64 deadRegMask, VarToRegMap inVarToRegMap);
 #endif
@@ -1083,7 +1083,7 @@ private:
     void insertZeroInitRefPositions();
 
     // add physreg refpositions for a tree node, based on calling convention and instruction selection predictions
-    void addRefsForPhysRegMask(AllRegsMask& mask, LsraLocation currentLoc, RefType refType, bool isLastUse);
+    void addRefsForPhysRegMask(CONSTREF_AllRegsMask mask, LsraLocation currentLoc, RefType refType, bool isLastUse);
 
     void resolveConflictingDefAndUse(Interval* interval, RefPosition* defRefPosition);
 
@@ -1141,7 +1141,7 @@ private:
 #endif
 
     // Given some tree node add refpositions for all the registers this node kills
-    bool buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc, AllRegsMask killMask);
+    bool buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc, CONSTREF_AllRegsMask killMask);
 
     regMaskOnlyOne allRegs(RegisterType rt);
     regMaskGpr     allByteRegs();
@@ -1151,14 +1151,14 @@ private:
 
     void makeRegisterInactive(RegRecord* physRegRecord);
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    FORCEINLINE void inActivateRegisters(AllRegsMask& inactiveMask);
+    FORCEINLINE void inActivateRegisters(REF_AllRegsMask inactiveMask);
 #else
     FORCEINLINE void inActivateRegisters(RegBitSet64 inactiveMask);
 #endif
     void freeRegister(RegRecord* physRegRecord);
-    void freeRegisters(AllRegsMask regsToFree);
+    void freeRegisters(REF_AllRegsMask regsToFree);
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    FORCEINLINE void freeRegisterMask(AllRegsMask& freeMask);
+    FORCEINLINE void freeRegisterMask(REF_AllRegsMask freeMask);
 #else
     FORCEINLINE void freeRegisterMask(RegBitSet64 freeMask);
 #endif
@@ -1835,7 +1835,7 @@ private:
         return m_AvailableRegs.IsRegNumPresent(reg, regType);
     }
 
-    void setRegsInUse(AllRegsMask regMask)
+    void setRegsInUse(CONSTREF_AllRegsMask regMask)
     {
         m_AvailableRegs &= ~regMask;
     }
@@ -1845,7 +1845,7 @@ private:
         m_AvailableRegs.RemoveRegNum(reg, regType);
     }
 
-    void makeRegsAvailable(AllRegsMask regMask)
+    void makeRegsAvailable(CONSTREF_AllRegsMask regMask)
     {
         m_AvailableRegs |= regMask;
 #ifdef HAS_MORE_THAN_64_REGISTERS
@@ -2038,14 +2038,14 @@ private:
     void         HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs);
     RefPosition* BuildDef(GenTree* tree, regMaskOnlyOne dstCandidates = RBM_NONE, int multiRegIdx = 0);
     void         BuildDefs(GenTree* tree, int dstCount, regMaskOnlyOne dstCandidates = RBM_NONE);
-    void         BuildCallDefs(GenTree* tree, int dstCount, AllRegsMask dstCandidates);
-    void         BuildKills(GenTree* tree, AllRegsMask killMask);
+    void         BuildCallDefs(GenTree* tree, int dstCount, REF_AllRegsMask dstCandidates);
+    void         BuildKills(GenTree* tree, CONSTREF_AllRegsMask killMask);
 #ifdef TARGET_ARMARCH
-    void BuildDefWithKills(GenTree* tree, regMaskOnlyOne dstCandidates, AllRegsMask killMask);
+    void BuildDefWithKills(GenTree* tree, regMaskOnlyOne dstCandidates, REF_AllRegsMask killMask);
 #else
-    void BuildDefWithKills(GenTree* tree, int dstCount, regMaskOnlyOne dstCandidates, AllRegsMask killMask);
+    void BuildDefWithKills(GenTree* tree, int dstCount, regMaskOnlyOne dstCandidates, REF_AllRegsMask killMask);
 #endif
-    void BuildCallDefsWithKills(GenTree* tree, int dstCount, AllRegsMask dstCandidates, AllRegsMask killMask);
+    void BuildCallDefsWithKills(GenTree* tree, int dstCount, REF_AllRegsMask dstCandidates, REF_AllRegsMask killMask);
 
     int BuildReturn(GenTree* tree);
 #ifdef TARGET_XARCH

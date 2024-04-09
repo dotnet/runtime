@@ -1079,7 +1079,7 @@ regMaskGpr GenTree::gtGetContainedRegMask()
 //
 RegBitSet64 GenTree::gtGetRegMask() const
 {
-    RegBitSet64 resultMask;
+    RegBitSet64 resultMask = RBM_NONE;
 
     if (IsMultiRegCall())
     {

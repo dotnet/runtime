@@ -3223,7 +3223,7 @@ public:
 #ifdef FEATURE_MASKED_HW_INTRINSICS
     void emitDispMaskRegSet(regMaskPredicate regs);
 #endif // FEATURE_MASKED_HW_INTRINSICS
-    void emitDispRegSet(AllRegsMask regs);
+    void emitDispRegSet(CONSTREF_AllRegsMask regs);
     void emitDispVarSet();
 #endif
 

@@ -3526,7 +3526,7 @@ void emitter::emitDispMaskRegSet(regMaskPredicate regs)
 }
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
-void emitter::emitDispRegSet(AllRegsMask regs)
+void emitter::emitDispRegSet(CONSTREF_AllRegsMask regs)
 {
     emitDispGprRegSet(regs.gprRegs());
     emitDispFloatRegSet(regs.floatRegs(nullptr));

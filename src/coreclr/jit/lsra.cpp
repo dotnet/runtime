@@ -4118,7 +4118,9 @@ void LinearScan::processBlockEndAllocation(BasicBlock* currentBlock)
 //    The new register to use.
 //
 #ifdef DEBUG
-regNumber LinearScan::rotateBlockStartLocation(Interval* interval, regNumber targetReg, AllRegsMask availableRegs)
+regNumber LinearScan::rotateBlockStartLocation(Interval*            interval,
+                                               regNumber            targetReg,
+                                               CONSTREF_AllRegsMask availableRegs)
 {
     if (targetReg != REG_STK && getLsraBlockBoundaryLocations() == LSRA_BLOCK_BOUNDARY_ROTATE)
     {
@@ -4376,7 +4378,7 @@ void LinearScan::resetAllRegistersState()
 
 #ifdef HAS_MORE_THAN_64_REGISTERS
 
-void LinearScan::updateDeadCandidatesAtBlockStart(AllRegsMask& deadRegMask, VarToRegMap inVarToRegMap)
+void LinearScan::updateDeadCandidatesAtBlockStart(REF_AllRegsMask deadRegMask, VarToRegMap inVarToRegMap)
 {
     while (!deadRegMask.IsEmpty())
     {
@@ -4412,7 +4414,7 @@ void LinearScan::updateDeadCandidatesAtBlockStart(AllRegsMask& deadRegMask, VarT
     }
 }
 #else
-
+// TODO: Merge this with MORE_THAN_64 version updating the != RBM_NONE with IsEmpty() check
 void LinearScan::updateDeadCandidatesAtBlockStart(RegBitSet64 deadRegMask, VarToRegMap inVarToRegMap)
 {
     while (deadRegMask != RBM_NONE)
@@ -4876,7 +4878,7 @@ void LinearScan::makeRegisterInactive(RegRecord* physRegRecord)
 }
 
 #ifdef HAS_MORE_THAN_64_REGISTERS
-void LinearScan::inActivateRegisters(AllRegsMask& inactiveMask)
+void LinearScan::inActivateRegisters(REF_AllRegsMask inactiveMask)
 {
     while (!inactiveMask.IsEmpty())
     {
@@ -4959,7 +4961,7 @@ void LinearScan::freeRegister(RegRecord* physRegRecord)
 // Arguments:
 //    regsToFree         - the mask of registers to free
 //
-void LinearScan::freeRegisters(AllRegsMask regsToFree)
+void LinearScan::freeRegisters(REF_AllRegsMask regsToFree)
 {
     if (regsToFree.IsEmpty())
     {
@@ -4976,7 +4978,7 @@ void LinearScan::freeRegisters(AllRegsMask regsToFree)
 }
 
 #ifdef HAS_MORE_THAN_64_REGISTERS
-void LinearScan::freeRegisterMask(AllRegsMask& freeMask)
+void LinearScan::freeRegisterMask(REF_AllRegsMask freeMask)
 #else
 void LinearScan::freeRegisterMask(RegBitSet64 freeMask)
 #endif // HAS_MORE_THAN_64_REGISTERS
@@ -11841,7 +11843,7 @@ bool LinearScan::IsResolutionNode(LIR::Range& containingRange, GenTree* node)
 // Arguments:
 //   regsToFree - Registers that were just freed.
 //
-void LinearScan::verifyFreeRegisters(AllRegsMask regsToFree)
+void LinearScan::verifyFreeRegisters(CONSTREF_AllRegsMask regsToFree)
 {
     regMaskOnlyOne regsMaskToFree    = regsToFree.gprRegs();
     regMaskOnlyOne availableRegsMask = availableIntRegs;

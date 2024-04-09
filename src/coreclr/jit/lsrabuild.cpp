@@ -701,7 +701,7 @@ bool LinearScan::isContainableMemoryOp(GenTree* node)
 //    refType     - the type of refposition
 //    isLastUse   - true IFF this is a last use of the register
 //
-void LinearScan::addRefsForPhysRegMask(AllRegsMask& mask, LsraLocation currentLoc, RefType refType, bool isLastUse)
+void LinearScan::addRefsForPhysRegMask(CONSTREF_AllRegsMask mask, LsraLocation currentLoc, RefType refType, bool isLastUse)
 {
     assert(refType == RefTypeKill);
 
@@ -1123,7 +1123,7 @@ AllRegsMask LinearScan::getKillSetForNode(GenTree* tree)
 //    This method can add kills even if killMask is RBM_NONE, if this tree is one of the
 //    special cases that signals that we can't permit callee save registers to hold GC refs.
 
-bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc, AllRegsMask killMask)
+bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc, CONSTREF_AllRegsMask killMask)
 {
     assert(compiler->IsGprRegMask(killMask.gprRegs()));
     assert(compiler->IsFloatRegMask(killMask.floatRegs(compiler)));
@@ -3104,7 +3104,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, regMaskOnlyOne dstCandidates, i
 // Notes:
 //    Adds the RefInfo for the definitions to the defList.
 //
-void LinearScan::BuildCallDefs(GenTree* tree, int dstCount, AllRegsMask dstCandidates)
+void LinearScan::BuildCallDefs(GenTree* tree, int dstCount, REF_AllRegsMask dstCandidates)
 {
     assert(dstCount > 0);
     assert((int)dstCandidates.Count() == dstCount);
@@ -3170,7 +3170,7 @@ void LinearScan::BuildDefs(GenTree* tree, int dstCount, regMaskOnlyOne dstCandid
 //    tree          - The node that defines a register
 //    killMask      - The mask of registers killed by this node
 //
-void LinearScan::BuildKills(GenTree* tree, AllRegsMask killMask)
+void LinearScan::BuildKills(GenTree* tree, CONSTREF_AllRegsMask killMask)
 {
     assert(killMask == getKillSetForNode(tree));
 
@@ -3215,7 +3215,7 @@ void LinearScan::BuildKills(GenTree* tree, AllRegsMask killMask)
 //    The def and kill functionality is folded into a single method so that the
 //    save and restores of upper vector registers can be bracketed around the def.
 //
-void LinearScan::BuildDefWithKills(GenTree* tree, int dstCount, regMaskOnlyOne dstCandidates, AllRegsMask killMask)
+void LinearScan::BuildDefWithKills(GenTree* tree, int dstCount, regMaskOnlyOne dstCandidates, REF_AllRegsMask killMask)
 {
     assert(compiler->IsOnlyOneRegMask(dstCandidates));
 
@@ -3255,7 +3255,10 @@ void LinearScan::BuildDefWithKills(GenTree* tree, int dstCount, regMaskOnlyOne d
 //    The def and kill functionality is folded into a single method so that the
 //    save and restores of upper vector registers can be bracketed around the def.
 //
-void LinearScan::BuildCallDefsWithKills(GenTree* tree, int dstCount, AllRegsMask dstCandidates, AllRegsMask killMask)
+void LinearScan::BuildCallDefsWithKills(GenTree*        tree,
+                                        int             dstCount,
+                                        REF_AllRegsMask dstCandidates,
+                                        REF_AllRegsMask killMask)
 {
     assert(dstCount > 0);
     assert(!dstCandidates.IsEmpty());

@@ -405,13 +405,16 @@ public:
     FORCEINLINE void           operator&=(const _regMaskAll& other);
     FORCEINLINE void           operator|=(const regNumber reg);
     FORCEINLINE void           operator^=(const regNumber reg);
-    FORCEINLINE _regMaskAll    operator~();
+    FORCEINLINE _regMaskAll    operator~() const;
     FORCEINLINE bool           operator==(const _regMaskAll& other) const;
     FORCEINLINE bool           operator!=(const _regMaskAll& other) const;
     FORCEINLINE _regMaskAll    operator&(const _regMaskAll& other) const;
     FORCEINLINE _regMaskAll    operator|(const _regMaskAll& other) const;
 
 } AllRegsMask;
+
+#define CONSTREF_AllRegsMask const AllRegsMask&
+#define REF_AllRegsMask AllRegsMask
 
 #define GprRegsMask(gprRegs) AllRegsMask(gprRegs)
 
