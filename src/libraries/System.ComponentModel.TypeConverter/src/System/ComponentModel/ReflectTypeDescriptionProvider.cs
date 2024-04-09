@@ -308,7 +308,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves custom attributes.
         /// </summary>
-        internal AttributeCollection GetAttributes([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+        internal AttributeCollection GetAttributes(Type type)
         {
             ReflectedTypeData td = GetTypeData(type, true)!;
             return td.GetAttributes();
@@ -341,7 +341,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the class name for our type.
         /// </summary>
-        internal string? GetClassName([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+        internal string? GetClassName(Type type)
         {
             ReflectedTypeData td = GetTypeData(type, true)!;
             return td.GetClassName();
@@ -360,8 +360,7 @@ namespace System.ComponentModel
         /// it will be used to retrieve attributes. Otherwise, _type
         /// will be used.
         /// </summary>
-        [RequiresUnreferencedCode("NullableConverter's UnderlyingType cannot be statically discovered. The Type of instance cannot be statically discovered.")]
-        internal TypeConverter GetConverter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object? instance)
+        internal TypeConverter GetConverter(Type type, object? instance)
         {
             ReflectedTypeData td = GetTypeData(type, true)!;
             return td.GetConverter(instance);
@@ -371,8 +370,7 @@ namespace System.ComponentModel
         /// Return the default event. The default event is determined by the
         /// presence of a DefaultEventAttribute on the class.
         /// </summary>
-        [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
-        internal EventDescriptor? GetDefaultEvent([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object? instance)
+        internal EventDescriptor? GetDefaultEvent(Type type, object? instance)
         {
             ReflectedTypeData td = GetTypeData(type, true)!;
             return td.GetDefaultEvent(instance);
@@ -381,8 +379,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Return the default property.
         /// </summary>
-        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " The Type of instance cannot be statically discovered.")]
-        internal PropertyDescriptor? GetDefaultProperty([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object? instance)
+        internal PropertyDescriptor? GetDefaultProperty(Type type, object? instance)
         {
             ReflectedTypeData td = GetTypeData(type, true)!;
             return td.GetDefaultProperty(instance);
@@ -391,8 +388,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the editor for the given base type.
         /// </summary>
-        [RequiresUnreferencedCode(TypeDescriptor.DesignTimeAttributeTrimmed + " The Type of instance cannot be statically discovered.")]
-        internal object? GetEditor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object? instance, Type editorBaseType)
+        internal object? GetEditor(Type type, object? instance, Type editorBaseType)
         {
             ReflectedTypeData td = GetTypeData(type, true)!;
             return td.GetEditor(instance, editorBaseType);
@@ -448,7 +444,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the events for this type.
         /// </summary>
-        internal EventDescriptorCollection GetEvents([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+        internal EventDescriptorCollection GetEvents(Type type)
         {
             ReflectedTypeData td = GetTypeData(type, true)!;
             return td.GetEvents();
@@ -466,7 +462,6 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the class name for our type.
         /// </summary>
-        [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
         internal string? GetExtendedClassName(object instance)
         {
             return GetClassName(instance.GetType());
@@ -485,7 +480,6 @@ namespace System.ComponentModel
         /// it will be used to retrieve attributes. Otherwise, _type
         /// will be used.
         /// </summary>
-        [RequiresUnreferencedCode("The Type of instance cannot be statically discovered. NullableConverter's UnderlyingType cannot be statically discovered.")]
         internal TypeConverter GetExtendedConverter(object instance)
         {
             return GetConverter(instance.GetType(), instance);
@@ -511,7 +505,6 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the editor for the given base type.
         /// </summary>
-        [RequiresUnreferencedCode(TypeDescriptor.DesignTimeAttributeTrimmed  + " The Type of instance cannot be statically discovered.")]
         internal object? GetExtendedEditor(object instance, Type editorBaseType)
         {
             return GetEditor(instance.GetType(), instance, editorBaseType);
@@ -528,7 +521,6 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the properties for this type.
         /// </summary>
-        [RequiresUnreferencedCode("The Type of instance and its IExtenderProviders cannot be statically discovered.")]
         internal PropertyDescriptorCollection GetExtendedProperties(object instance)
         {
             // Is this object a sited component?  If not, then it
@@ -793,7 +785,6 @@ namespace System.ComponentModel
         /// Provides a type descriptor for the given object. We only support this
         /// if the object is a component that
         /// </summary>
-        [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
         public override ICustomTypeDescriptor GetExtendedTypeDescriptor(object instance)
         {
             Debug.Fail("This should never be invoked. TypeDescriptionNode should wrap for us.");
@@ -855,8 +846,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the properties for this type.
         /// </summary>
-        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
-        internal PropertyDescriptorCollection GetProperties([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+        internal PropertyDescriptorCollection GetProperties(Type type)
         {
             ReflectedTypeData td = GetTypeData(type, true)!;
             return td.GetProperties();
@@ -927,7 +917,7 @@ namespace System.ComponentModel
         /// interested in providing type information for the object it should
         /// return null.
         /// </summary>
-        public override ICustomTypeDescriptor GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
+        public override ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object? instance)
         {
             Debug.Fail("This should never be invoked. TypeDescriptionNode should wrap for us.");
             return null;

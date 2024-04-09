@@ -9,9 +9,9 @@ namespace System.ComponentModel.DataAnnotations
     /// Extends the metadata information for a class by adding attributes and property
     /// information that is defined in an associated class.
     /// </summary>
+    [RequiresUnreferencedCode("Reflection-based type description providers are not trim-compatible.")]
     public class AssociatedMetadataTypeTypeDescriptionProvider : TypeDescriptionProvider
     {
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private readonly Type? _associatedMetadataType;
 
         /// <summary>
@@ -31,10 +31,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="type">The type for which the metadata provider is created.</param>
         /// <param name="associatedMetadataType">The associated type that contains the metadata.</param>
         /// <exception cref="System.ArgumentNullException">The value of associatedMetadataType is null.</exception>
-        public AssociatedMetadataTypeTypeDescriptionProvider(
-            Type type,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type associatedMetadataType)
-            : this(type)
+        public AssociatedMetadataTypeTypeDescriptionProvider(Type type, Type associatedMetadataType) : this(type)
         {
             ArgumentNullException.ThrowIfNull(associatedMetadataType);
 
@@ -47,7 +44,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="objectType">The type of object to retrieve the type descriptor for.</param>
         /// <param name="instance">An instance of the type.</param>
         /// <returns>The descriptor that provides metadata for the type.</returns>
-        public override ICustomTypeDescriptor GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
+        public override ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object? instance)
         {
             ICustomTypeDescriptor? baseDescriptor = base.GetTypeDescriptor(objectType, instance);
             return new AssociatedMetadataTypeTypeDescriptor(baseDescriptor, objectType, _associatedMetadataType);

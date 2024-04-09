@@ -126,75 +126,82 @@ namespace System.ComponentModel
         /// </summary>
         public virtual Attribute? this[[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields)] Type attributeType]
         {
-            get
+            get => GetAttribute(attributeType) ?? GetDefaultAttribute(attributeType);
+        }
+
+        /// <summary>
+        /// Gets the attribute with the specified type.
+        /// Does not include the default value of the specified attribute
+        /// if that attribute is not present in the collection.
+        /// </summary>
+        internal Attribute? GetAttribute(Type attributeType)
+        {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
+            lock (s_internalSyncObject)
             {
-                ArgumentNullException.ThrowIfNull(attributeType);
+                // 2 passes here for perf. Really!  first pass, we just
+                // check equality, and if we don't find it, then we
+                // do the IsAssignableFrom dance. Turns out that's
+                // a relatively expensive call and we try to avoid it
+                // since we rarely encounter derived attribute types
+                // and this list is usually short.
+                _foundAttributeTypes ??= new AttributeEntry[FoundTypesLimit];
 
-                lock (s_internalSyncObject)
+                int ind = 0;
+
+                for (; ind < FoundTypesLimit; ind++)
                 {
-                    // 2 passes here for perf. Really!  first pass, we just
-                    // check equality, and if we don't find it, then we
-                    // do the IsAssignableFrom dance. Turns out that's
-                    // a relatively expensive call and we try to avoid it
-                    // since we rarely encounter derived attribute types
-                    // and this list is usually short.
-                    _foundAttributeTypes ??= new AttributeEntry[FoundTypesLimit];
-
-                    int ind = 0;
-
-                    for (; ind < FoundTypesLimit; ind++)
+                    if (_foundAttributeTypes[ind].type == attributeType)
                     {
-                        if (_foundAttributeTypes[ind].type == attributeType)
+                        int index = _foundAttributeTypes[ind].index;
+                        if (index != -1)
                         {
-                            int index = _foundAttributeTypes[ind].index;
-                            if (index != -1)
-                            {
-                                return Attributes[index];
-                            }
-                            else
-                            {
-                                return GetDefaultAttribute(attributeType);
-                            }
+                            return Attributes[index];
                         }
-                        if (_foundAttributeTypes[ind].type == null)
-                            break;
-                    }
-
-                    ind = _index++;
-
-                    if (_index >= FoundTypesLimit)
-                    {
-                        _index = 0;
-                    }
-
-                    _foundAttributeTypes[ind].type = attributeType;
-
-                    int count = Attributes.Length;
-                    for (int i = 0; i < count; i++)
-                    {
-                        Attribute attribute = Attributes[i];
-                        Type aType = attribute.GetType();
-                        if (aType == attributeType)
+                        else
                         {
-                            _foundAttributeTypes[ind].index = i;
-                            return attribute;
+                            return null;
                         }
                     }
-
-                    // Now check the hierarchies.
-                    for (int i = 0; i < count; i++)
-                    {
-                        Attribute attribute = Attributes[i];
-                        if (attributeType.IsInstanceOfType(attribute))
-                        {
-                            _foundAttributeTypes[ind].index = i;
-                            return attribute;
-                        }
-                    }
-
-                    _foundAttributeTypes[ind].index = -1;
-                    return GetDefaultAttribute(attributeType);
+                    if (_foundAttributeTypes[ind].type == null)
+                        break;
                 }
+
+                ind = _index++;
+
+                if (_index >= FoundTypesLimit)
+                {
+                    _index = 0;
+                }
+
+                _foundAttributeTypes[ind].type = attributeType;
+
+                int count = Attributes.Length;
+                for (int i = 0; i < count; i++)
+                {
+                    Attribute attribute = Attributes[i];
+                    Type aType = attribute.GetType();
+                    if (aType == attributeType)
+                    {
+                        _foundAttributeTypes[ind].index = i;
+                        return attribute;
+                    }
+                }
+
+                // Now check the hierarchies.
+                for (int i = 0; i < count; i++)
+                {
+                    Attribute attribute = Attributes[i];
+                    if (attributeType.IsInstanceOfType(attribute))
+                    {
+                        _foundAttributeTypes[ind].index = i;
+                        return attribute;
+                    }
+                }
+
+                _foundAttributeTypes[ind].index = -1;
+                return null;
             }
         }
 

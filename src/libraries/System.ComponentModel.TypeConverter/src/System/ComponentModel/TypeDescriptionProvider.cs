@@ -93,7 +93,6 @@ namespace System.ComponentModel
         /// model only supports extended properties this API can be used for extended
         /// attributes and events as well, if the type description provider supports it.
         /// </summary>
-        [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
         public virtual ICustomTypeDescriptor GetExtendedTypeDescriptor(object instance)
         {
             if (_parent != null)
@@ -214,7 +213,7 @@ namespace System.ComponentModel
         /// interested in providing type information for the object it should
         /// return base.
         /// </summary>
-        public ICustomTypeDescriptor? GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType)
+        public ICustomTypeDescriptor? GetTypeDescriptor(Type objectType)
         {
             return GetTypeDescriptor(objectType, null);
         }
@@ -227,7 +226,6 @@ namespace System.ComponentModel
         /// interested in providing type information for the object it should
         /// return base.
         /// </summary>
-        [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
         public ICustomTypeDescriptor? GetTypeDescriptor(object instance)
         {
             ArgumentNullException.ThrowIfNull(instance);
@@ -249,7 +247,7 @@ namespace System.ComponentModel
         /// this method will invoke the parent provider's GetTypeDescriptor
         /// method.
         /// </summary>
-        public virtual ICustomTypeDescriptor? GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
+        public virtual ICustomTypeDescriptor? GetTypeDescriptor(Type objectType, object? instance)
         {
             if (_parent != null)
             {

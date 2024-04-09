@@ -14,11 +14,12 @@ namespace System.ComponentModel.DataAnnotations
         public object?[] Values { get { throw null; } }
         public override bool IsValid(object? value) { throw null; }
     }
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Reflection-based type description providers are not trim-compatible.")]
     public partial class AssociatedMetadataTypeTypeDescriptionProvider : System.ComponentModel.TypeDescriptionProvider
     {
         public AssociatedMetadataTypeTypeDescriptionProvider(System.Type type) { }
-        public AssociatedMetadataTypeTypeDescriptionProvider(System.Type type, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type associatedMetadataType) { }
-        public override System.ComponentModel.ICustomTypeDescriptor GetTypeDescriptor([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type objectType, object? instance) { throw null; }
+        public AssociatedMetadataTypeTypeDescriptionProvider(System.Type type, System.Type associatedMetadataType) { }
+        public override System.ComponentModel.ICustomTypeDescriptor GetTypeDescriptor(System.Type objectType, object? instance) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false, Inherited=true)]
     [System.ObsoleteAttribute("AssociationAttribute has been deprecated and is not supported.")]

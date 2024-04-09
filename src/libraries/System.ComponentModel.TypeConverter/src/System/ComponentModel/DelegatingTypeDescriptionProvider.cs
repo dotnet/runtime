@@ -80,7 +80,6 @@ namespace System.ComponentModel
         /// model only supports extended properties this API can be used for extended
         /// attributes and events as well, if the type description provider supports it.
         /// </summary>
-        [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
         public override ICustomTypeDescriptor GetExtendedTypeDescriptor(object instance)
         {
             return Provider.GetExtendedTypeDescriptor(instance);
@@ -114,7 +113,7 @@ namespace System.ComponentModel
         /// interested in providing type information for the object it should
         /// return null.
         /// </summary>
-        public override ICustomTypeDescriptor? GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
+        public override ICustomTypeDescriptor? GetTypeDescriptor(Type objectType, object? instance)
         {
             return Provider.GetTypeDescriptor(objectType, instance);
         }

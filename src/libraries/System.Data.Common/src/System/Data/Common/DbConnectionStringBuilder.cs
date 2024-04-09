@@ -397,7 +397,6 @@ namespace System.Data.Common
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
             Justification = "The use of GetType preserves this member with RequiresUnreferencedCode, but the GetType callsites either "
                 + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
-        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         private PropertyDescriptorCollection GetProperties()
         {
             PropertyDescriptorCollection? propertyDescriptors = _propertyDescriptors;
@@ -426,7 +425,6 @@ namespace System.Data.Common
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
             Justification = "The use of GetType preserves this member with RequiresUnreferencedCode, but the GetType callsites either "
                 + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
-        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         protected virtual void GetProperties(Hashtable propertyDescriptors)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbConnectionStringBuilder.GetProperties|API> {0}", ObjectID);
@@ -536,7 +534,6 @@ namespace System.Data.Common
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
             Justification = "The use of GetType preserves this member with RequiresUnreferencedCode, but the GetType callsites either "
                 + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
-        [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         private PropertyDescriptorCollection GetProperties(Attribute[]? attributes)
         {
             PropertyDescriptorCollection propertyDescriptors = GetProperties();
@@ -561,7 +558,7 @@ namespace System.Data.Common
                 bool match = true;
                 foreach (Attribute attribute in attributes)
                 {
-                    Attribute? attr = property.Attributes[attribute.GetType()];
+                    Attribute? attr = GetAttribute(property.Attributes, attribute.GetType());
                     if ((attr == null && !attribute.IsDefaultAttribute()) || attr?.Match(attribute) == false)
                     {
                         match = false;
@@ -582,6 +579,12 @@ namespace System.Data.Common
             Array.Copy(propertiesArray, filteredPropertiesArray, index);
 
             return new PropertyDescriptorCollection(filteredPropertiesArray);
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067", Justification = "The caller of GetAttribute does not depend on GetAttribute's ability to return a default attribute value.")]
+        private static Attribute? GetAttribute(AttributeCollection attributes, Type attributeType)
+        {
+            return attributes[attributeType];
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",

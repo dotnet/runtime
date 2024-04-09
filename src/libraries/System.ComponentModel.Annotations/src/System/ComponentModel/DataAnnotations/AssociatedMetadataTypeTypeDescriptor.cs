@@ -9,6 +9,7 @@ using System.Reflection;
 
 namespace System.ComponentModel.DataAnnotations
 {
+    [RequiresUnreferencedCode("Reflection-based type descriptors are not trim-compatible.")]
     internal sealed class AssociatedMetadataTypeTypeDescriptor : CustomTypeDescriptor
     {
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
