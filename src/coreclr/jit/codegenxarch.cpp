@@ -1584,7 +1584,7 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
 
     // If there is a conflict then swap the condition anyway. LSRA should have
     // ensured the other way around has no conflict.
-    if (trueVal->gtGetContainedRegMask().IsRegNumInMask(dstReg))
+    if ((trueVal->gtGetContainedRegMask() & genRegMask(dstReg)) != 0)
     {
         std::swap(trueVal, falseVal);
         cc = GenCondition::Reverse(cc);
@@ -1595,7 +1595,7 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
     // There may also be a conflict with the falseVal in case this is an AND
     // condition. Once again, after swapping there should be no conflict as
     // ensured by LSRA.
-    if ((desc.oper == GT_AND) && falseVal->gtGetContainedRegMask().IsRegNumInMask(dstReg))
+    if ((desc.oper == GT_AND) && (falseVal->gtGetContainedRegMask() & genRegMask(dstReg)) != 0)
     {
         std::swap(trueVal, falseVal);
         cc   = GenCondition::Reverse(cc);
@@ -1605,13 +1605,13 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
     inst_RV_TT(INS_mov, emitTypeSize(select), dstReg, falseVal);
 
     assert(!trueVal->isContained() || trueVal->isUsedFromMemory());
-    assert(!trueVal->gtGetContainedRegMask().IsRegNumInMask(dstReg));
+    assert((trueVal->gtGetContainedRegMask() & genRegMask(dstReg)) == 0);
     inst_RV_TT(JumpKindToCmov(desc.jumpKind1), emitTypeSize(select), dstReg, trueVal);
 
     if (desc.oper == GT_AND)
     {
         assert(falseVal->isUsedFromReg());
-        assert(!falseVal->gtGetContainedRegMask().IsRegNumInMask(dstReg));
+        assert((falseVal->gtGetContainedRegMask() & genRegMask(dstReg)) == 0);
         inst_RV_TT(JumpKindToCmov(emitter::emitReverseJumpKind(desc.jumpKind2)), emitTypeSize(select), dstReg,
                    falseVal);
     }
