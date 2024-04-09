@@ -353,7 +353,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
         return;
     }
 
-    if (DoesOverflow(block, treeIndex))
+    if (DoesOverflow(block, treeIndex, range))
     {
         JITDUMP("Method determined to overflow.\n");
         return;
@@ -1252,17 +1252,17 @@ bool RangeCheck::MultiplyOverflows(Limit& limit1, Limit& limit2)
 }
 
 // Does the bin operation overflow.
-bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop)
+bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop, const Range& range)
 {
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
 
-    if (!m_pSearchPath->Lookup(op1) && DoesOverflow(block, op1))
+    if (!m_pSearchPath->Lookup(op1) && DoesOverflow(block, op1, range))
     {
         return true;
     }
 
-    if (!m_pSearchPath->Lookup(op2) && DoesOverflow(block, op2))
+    if (!m_pSearchPath->Lookup(op2) && DoesOverflow(block, op2, range))
     {
         return true;
     }
@@ -1296,7 +1296,7 @@ bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop)
 }
 
 // Check if the var definition the rhs involves arithmetic that overflows.
-bool RangeCheck::DoesVarDefOverflow(GenTreeLclVarCommon* lcl)
+bool RangeCheck::DoesVarDefOverflow(BasicBlock* block, GenTreeLclVarCommon* lcl, const Range& range)
 {
     LclSsaVarDsc* ssaDef = GetSsaDefStore(lcl);
     if (ssaDef == nullptr)
@@ -1308,10 +1308,25 @@ bool RangeCheck::DoesVarDefOverflow(GenTreeLclVarCommon* lcl)
         }
         return true;
     }
-    return DoesOverflow(ssaDef->GetBlock(), ssaDef->GetDefNode()->Data());
+
+    // We can use intermediate assertions about the local to prove that any
+    // overflow on this path does not matter for the range computed.
+    Range assertionRange = Range(Limit(Limit::keUnknown));
+    MergeAssertion(block, lcl, &assertionRange, 0);
+
+    // But only if the range from the assertion is more strict than the global
+    // range computed; otherwise we might still have used the def's value to
+    // tighten the range of the global range.
+    Range merged = RangeOps::Merge(range, assertionRange, false);
+    if (merged.LowerLimit().Equals(range.LowerLimit()) && merged.UpperLimit().Equals(range.UpperLimit()))
+    {
+        return false;
+    }
+
+    return DoesOverflow(ssaDef->GetBlock(), ssaDef->GetDefNode()->Data(), range);
 }
 
-bool RangeCheck::DoesPhiOverflow(BasicBlock* block, GenTree* expr)
+bool RangeCheck::DoesPhiOverflow(BasicBlock* block, GenTree* expr, const Range& range)
 {
     for (GenTreePhi::Use& use : expr->AsPhi()->Uses())
     {
@@ -1320,7 +1335,7 @@ bool RangeCheck::DoesPhiOverflow(BasicBlock* block, GenTree* expr)
         {
             continue;
         }
-        if (DoesOverflow(block, arg))
+        if (DoesOverflow(block, arg, range))
         {
             return true;
         }
@@ -1328,17 +1343,30 @@ bool RangeCheck::DoesPhiOverflow(BasicBlock* block, GenTree* expr)
     return false;
 }
 
-bool RangeCheck::DoesOverflow(BasicBlock* block, GenTree* expr)
+//------------------------------------------------------------------------
+// DoesOverflow: Check if the computation of "expr" may have overflowed.
+//
+// Arguments:
+//   block - the block that contains `expr`
+//   expr  - expression to check overflow of
+//   range - range that we believe "expr" to be in without accounting for
+//           overflow; used to ignore potential overflow on paths where
+//           we can prove the value is in this range regardless.
+//
+// Return value:
+//   True if the computation may have involved an impactful overflow.
+//
+bool RangeCheck::DoesOverflow(BasicBlock* block, GenTree* expr, const Range& range)
 {
     bool overflows = false;
     if (!GetOverflowMap()->Lookup(expr, &overflows))
     {
-        overflows = ComputeDoesOverflow(block, expr);
+        overflows = ComputeDoesOverflow(block, expr, range);
     }
     return overflows;
 }
 
-bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
+bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Range& range)
 {
     JITDUMP("Does overflow [%06d]?\n", Compiler::dspTreeID(expr));
     m_pSearchPath->Set(expr, block, SearchPath::Overwrite);
@@ -1360,17 +1388,17 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
     }
     else if (expr->OperIs(GT_COMMA))
     {
-        overflows = ComputeDoesOverflow(block, expr->gtEffectiveVal());
+        overflows = ComputeDoesOverflow(block, expr->gtEffectiveVal(), range);
     }
     // Check if the var def has rhs involving arithmetic that overflows.
     else if (expr->IsLocal())
     {
-        overflows = DoesVarDefOverflow(expr->AsLclVarCommon());
+        overflows = DoesVarDefOverflow(block, expr->AsLclVarCommon(), range);
     }
     // Check if add overflows.
     else if (expr->OperIs(GT_ADD, GT_MUL))
     {
-        overflows = DoesBinOpOverflow(block, expr->AsOp());
+        overflows = DoesBinOpOverflow(block, expr->AsOp(), range);
     }
     // These operators don't overflow.
     // Actually, GT_LSH can overflow so it depends on the analysis done in ComputeRangeForBinOp
@@ -1381,11 +1409,11 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
     // Walk through phi arguments to check if phi arguments involve arithmetic that overflows.
     else if (expr->OperIs(GT_PHI))
     {
-        overflows = DoesPhiOverflow(block, expr);
+        overflows = DoesPhiOverflow(block, expr, range);
     }
     else if (expr->OperIs(GT_CAST))
     {
-        overflows = ComputeDoesOverflow(block, expr->gtGetOp1());
+        overflows = ComputeDoesOverflow(block, expr->gtGetOp1(), range);
     }
     GetOverflowMap()->Set(expr, overflows, OverflowMap::Overwrite);
     m_pSearchPath->Remove(expr);
