@@ -3721,28 +3721,6 @@ write_enum_value (void *mem, int type, guint64 value)
 }
 
 void
-ves_icall_System_Enum_InternalBoxEnum (MonoQCallTypeHandle enum_handle, MonoObjectHandleOnStack res, guint64 value, MonoError *error)
-{
-	MonoClass *enumc;
-	MonoObjectHandle resultHandle;
-	MonoType *etype;
-
-	enumc = mono_class_from_mono_type_internal (enum_handle.type);
-
-	mono_class_init_checked (enumc, error);
-	return_if_nok (error);
-
-	etype = mono_class_enum_basetype_internal (enumc);
-
-	resultHandle = mono_object_new_handle (enumc, error);
-	return_if_nok (error);
-
-	write_enum_value (mono_handle_unbox_unsafe (resultHandle), etype->type, value);
-
-	HANDLE_ON_STACK_SET (res, MONO_HANDLE_RAW (resultHandle));
-}
-
-void
 ves_icall_System_Enum_InternalGetUnderlyingType (MonoQCallTypeHandle type_handle, MonoObjectHandleOnStack res, MonoError *error)
 {
 	MonoType *etype;

@@ -3973,14 +3973,6 @@ namespace System
 
         #region Legacy internal static
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object _CreateEnum(RuntimeType enumType, long value);
-
-        internal static object CreateEnum(RuntimeType enumType, long value)
-        {
-            return _CreateEnum(enumType, value);
-        }
-
 #if FEATURE_COMINTEROP
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern object InvokeDispMethod(

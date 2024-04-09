@@ -194,9 +194,8 @@ NOHANDLES(ICALL(NATIVE_RUNTIME_EVENT_SOURCE_16, "LogWaitHandleWaitStop", ves_ica
 
 ICALL_TYPE(ENUM, "System.Enum", ENUM_1)
 HANDLES(ENUM_1, "GetEnumValuesAndNames", ves_icall_System_Enum_GetEnumValuesAndNames, void, 3, (MonoQCallTypeHandle, MonoArrayOut, MonoArrayOut))
-HANDLES(ENUM_2, "InternalBoxEnum", ves_icall_System_Enum_InternalBoxEnum, void, 3, (MonoQCallTypeHandle, MonoObjectHandleOnStack, guint64))
-NOHANDLES(ICALL(ENUM_3, "InternalGetCorElementType", ves_icall_System_Enum_InternalGetCorElementType))
-HANDLES(ENUM_4, "InternalGetUnderlyingType", ves_icall_System_Enum_InternalGetUnderlyingType, void, 2, (MonoQCallTypeHandle, MonoObjectHandleOnStack))
+NOHANDLES(ICALL(ENUM_2, "InternalGetCorElementType", ves_icall_System_Enum_InternalGetCorElementType))
+HANDLES(ENUM_3, "InternalGetUnderlyingType", ves_icall_System_Enum_InternalGetUnderlyingType, void, 2, (MonoQCallTypeHandle, MonoObjectHandleOnStack))
 
 ICALL_TYPE(ENV, "System.Environment", ENV_1)
 NOHANDLES(ICALL(ENV_1, "Exit", ves_icall_System_Environment_Exit))

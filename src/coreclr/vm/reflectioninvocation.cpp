@@ -1535,24 +1535,6 @@ FCIMPL4(void, ReflectionInvocation::MakeTypedReference, TypedByRef * value, Obje
 }
 FCIMPLEND
 
-FCIMPL2_IV(Object*, ReflectionInvocation::CreateEnum, ReflectClassBaseObject *pTypeUNSAFE, INT64 value) {
-    FCALL_CONTRACT;
-
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    TypeHandle typeHandle = refType->GetType();
-    _ASSERTE(typeHandle.IsEnum());
-    OBJECTREF obj = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
-    MethodTable *pEnumMT = typeHandle.AsMethodTable();
-    obj = pEnumMT->Box(ArgSlotEndiannessFixup ((ARG_SLOT*)&value,
-                                             pEnumMT->GetNumInstanceFieldBytes()));
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(obj);
-}
-FCIMPLEND
-
 #ifdef FEATURE_COMINTEROP
 FCIMPL8(Object*, ReflectionInvocation::InvokeDispMethod, ReflectClassBaseObject* refThisUNSAFE,
                                                          StringObject* nameUNSAFE,
@@ -1965,7 +1947,7 @@ extern "C" void QCALLTYPE ReflectionSerialization_GetCreateUninitializedObjectIn
     bool fHasSideEffectsUnused;
     *ppfnAllocator = CEEJitInfo::getHelperFtnStatic(CEEInfo::getNewHelperStatic(pMT, &fHasSideEffectsUnused));
     *pvAllocatorFirstArg = pMT;
-    
+
     pMT->EnsureInstanceActive();
 
     if (pMT->HasPreciseInitCctors())
@@ -2104,22 +2086,6 @@ extern "C" void QCALLTYPE Enum_GetValuesAndNames(QCall::TypeHandle pEnumType, QC
 
     END_QCALL;
 }
-
-FCIMPL2_IV(Object*, ReflectionEnum::InternalBoxEnum, ReflectClassBaseObject* target, INT64 value) {
-    FCALL_CONTRACT;
-
-    VALIDATEOBJECT(target);
-    OBJECTREF ret = NULL;
-
-    MethodTable* pMT = target->GetType().AsMethodTable();
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    ret = pMT->Box(ArgSlotEndiannessFixup((ARG_SLOT*)&value, pMT->GetNumInstanceFieldBytes()));
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(ret);
-}
-FCIMPLEND
 
 extern "C" int32_t QCALLTYPE ReflectionInvocation_SizeOf(QCall::TypeHandle pType)
 {
