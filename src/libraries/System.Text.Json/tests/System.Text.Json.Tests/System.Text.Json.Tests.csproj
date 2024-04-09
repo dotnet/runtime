@@ -16,15 +16,10 @@
     <!-- Needed for JsonSerializerOptionsUpdateHandler tests -->
     <MetadataUpdaterSupport Condition="'$(MetadataUpdaterSupport)' == '' and '$(TargetOS)' == 'browser'">true</MetadataUpdaterSupport>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-  </PropertyGroup>
-  <ItemGroup>
     <!-- The JsonSerializerIsReflectionEnabledByDefault feature switch is turned off automatically in projects that enable the PublishTrimmed property.
          Enable reflection and preserve required assemblies -->
-    <RuntimeHostConfigurationOption Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'"
-                                    Include="JsonSerializerIsReflectionEnabledByDefault"
-                                    Value="true"
-                                    Trim="true" />
-  </ItemGroup>
+    <JsonSerializerIsReflectionEnabledByDefault Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">true</JsonSerializerIsReflectionEnabledByDefault>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <XunitShowProgress>true</XunitShowProgress>
     <!-- This WASM test is problematic and slow right now. This sets the xharness timeout but there is also override in sendtohelix-browser.targets -->
