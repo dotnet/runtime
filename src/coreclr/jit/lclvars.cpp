@@ -5623,28 +5623,33 @@ void Compiler::lvaAssignFrameOffsets(FrameLayoutState curState)
  */
 void Compiler::lvaFixVirtualFrameOffsets()
 {
-    LclVarDsc* varDsc;
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+
+    // There is no need to recompute the offset.
+
+#else
 
 #if defined(TARGET_AMD64)
     if (lvaPSPSym != BAD_VAR_NUM)
     {
+        LclVarDsc* tmpDsc;
         // We need to fix the offset of the PSPSym so there is no padding between it and the outgoing argument space.
         // Without this code, lvaAlignFrame might have put the padding lower than the PSPSym, which would be between
         // the PSPSym and the outgoing argument space.
-        varDsc = lvaGetDesc(lvaPSPSym);
-        assert(varDsc->lvFramePointerBased); // We always access it RBP-relative.
-        assert(!varDsc->lvMustInit);         // It is never "must init".
-        varDsc->SetStackOffset(codeGen->genCallerSPtoInitialSPdelta() + lvaLclSize(lvaOutgoingArgSpaceVar));
+        tmpDsc = lvaGetDesc(lvaPSPSym);
+        assert(tmpDsc->lvFramePointerBased); // We always access it RBP-relative.
+        assert(!tmpDsc->lvMustInit);         // It is never "must init".
+        tmpDsc->SetStackOffset(codeGen->genCallerSPtoInitialSPdelta() + lvaLclSize(lvaOutgoingArgSpaceVar));
 
         if (opts.IsOSR())
         {
             // With OSR RBP points at the base of the OSR frame, but the virtual offsets
             // are from the base of the Tier0 frame. Adjust.
             //
-            varDsc->SetStackOffset(varDsc->GetStackOffset() - info.compPatchpointInfo->TotalFrameSize());
+            tmpDsc->SetStackOffset(tmpDsc->GetStackOffset() - info.compPatchpointInfo->TotalFrameSize());
         }
     }
-#endif
+#endif // TARGET_AMD64
 
     // The delta to be added to virtual offset to adjust it relative to frame pointer or SP
     int delta = 0;
@@ -5672,18 +5677,18 @@ void Compiler::lvaFixVirtualFrameOffsets()
         // We set FP to be after LR, FP
         delta += 2 * REGSIZE_BYTES;
     }
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64)
     else
     {
         // FP is used.
         JITDUMP("--- delta bump %d for FP frame\n", codeGen->genTotalFrameSize() - codeGen->genSPtoFPdelta());
         delta += codeGen->genTotalFrameSize() - codeGen->genSPtoFPdelta();
     }
-#endif // TARGET_AMD64 || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_AMD64 || TARGET_ARM64
 
     if (opts.IsOSR())
     {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
         // Stack offset includes Tier0 frame.
         //
         JITDUMP("--- delta bump %d for OSR + Tier0 frame\n", info.compPatchpointInfo->TotalFrameSize());
@@ -5693,7 +5698,8 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
     JITDUMP("--- virtual stack offset to actual stack offset delta is %d\n", delta);
 
-    unsigned lclNum;
+    unsigned   lclNum;
+    LclVarDsc* varDsc;
     for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
     {
         bool doAssignStkOffs = true;
@@ -5765,39 +5771,30 @@ void Compiler::lvaFixVirtualFrameOffsets()
     }
 
     lvaCachedGenericContextArgOffs += delta;
+#endif // !TARGET_LOONGARCH64 || !TARGET_RISCV64
 
 #if FEATURE_FIXED_OUT_ARGS
 
     if (lvaOutgoingArgSpaceVar != BAD_VAR_NUM)
     {
-        varDsc = lvaGetDesc(lvaOutgoingArgSpaceVar);
-        varDsc->SetStackOffset(0);
-        varDsc->lvFramePointerBased = false;
-        varDsc->lvMustInit          = false;
+        LclVarDsc* tmpDsc;
+        tmpDsc = lvaGetDesc(lvaOutgoingArgSpaceVar);
+        tmpDsc->SetStackOffset(0);
+        tmpDsc->lvFramePointerBased = false;
+        tmpDsc->lvMustInit          = false;
     }
 
 #endif // FEATURE_FIXED_OUT_ARGS
 
-#if defined(TARGET_ARM64)
-    // We normally add alignment below the locals between them and the outgoing
-    // arg space area. When we store fp/lr(ra) at the bottom, however, this will
-    // be below the alignment. So we should not apply the alignment adjustment to
-    // them. It turns out we always store these at +0 and +8 of the FP,
-    // so instead of dealing with skipping adjustment just for them we just set
-    // them here always.
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    // We always store LR at fp+REGSIZE_BYTES.
+    // For LoongArch64, the RA is the same offset. see the `genPushCalleeSavedRegisters`
     assert(codeGen->isFramePointerUsed());
     if (lvaRetAddrVar != BAD_VAR_NUM)
     {
         lvaTable[lvaRetAddrVar].SetStackOffset(REGSIZE_BYTES);
     }
-#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    assert(codeGen->isFramePointerUsed());
-    if (lvaRetAddrVar != BAD_VAR_NUM)
-    {
-        // For LoongArch64 and RISCV64, the RA is below the fp. see the `genPushCalleeSavedRegisters`
-        lvaTable[lvaRetAddrVar].SetStackOffset(-REGSIZE_BYTES);
-    }
-#endif // !TARGET_LOONGARCH64
+#endif
 }
 
 #ifdef TARGET_ARM
@@ -6460,9 +6457,27 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned    lclNum,
             argOffs = roundUp(argOffs, argAlignment);
         }
 
+        int tmpOffs = argOffs;
+
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        tmpOffs += compCalleeRegsPushed << 3;
+        if (lvaPSPSym != BAD_VAR_NUM)
+        {
+            tmpOffs += TARGET_POINTER_SIZE;
+        }
+        if (opts.IsOSR())
+        {
+            tmpOffs += info.compPatchpointInfo->TotalFrameSize();
+        }
+        else if (lvaMonAcquired != BAD_VAR_NUM)
+        {
+            tmpOffs += TARGET_POINTER_SIZE;
+        }
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
+
         assert((argSize % argAlignment) == 0);
-        assert((argOffs % argAlignment) == 0);
-        varDsc->SetStackOffset(argOffs);
+        assert((tmpOffs % argAlignment) == 0);
+        varDsc->SetStackOffset(tmpOffs);
     }
 
     // For struct promoted parameters we need to set the offsets for both LclVars.
@@ -6551,9 +6566,13 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     //
     if (opts.IsOSR())
     {
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        originalFrameStkOffs = (int)(info.compPatchpointInfo->CalleeSaveRegisters() + (compCalleeRegsPushed << 3));
+#else
         originalFrameSize    = info.compPatchpointInfo->TotalFrameSize();
         originalFrameStkOffs = stkOffs;
         stkOffs -= originalFrameSize;
+#endif
     }
 
 #ifdef TARGET_XARCH
@@ -6609,7 +6628,27 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
+    int PSP_MonAcquire_Size = 0;
+
+    // we always use the frame pointer.
     assert(compCalleeRegsPushed >= 2);
+    stkOffs = (compCalleeRegsPushed << 3);
+    if (lvaMonAcquired != BAD_VAR_NUM)
+    {
+        originalFrameStkOffs += lvaLclSize(lvaMonAcquired);
+        if (!opts.IsOSR())
+        {
+            PSP_MonAcquire_Size = lvaLclSize(lvaMonAcquired);
+            stkOffs += lvaLclSize(lvaMonAcquired);
+        }
+    }
+
+    if (lvaPSPSym != BAD_VAR_NUM)
+    {
+        PSP_MonAcquire_Size += TARGET_POINTER_SIZE;
+        originalFrameStkOffs += TARGET_POINTER_SIZE;
+        stkOffs += TARGET_POINTER_SIZE;
+    }
 
 #else // !TARGET_LOONGARCH64 && !TARGET_RISCV64
 #ifdef TARGET_ARM
@@ -6744,6 +6783,11 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaPSPSym, TARGET_POINTER_SIZE, stkOffs);
     }
 #endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    // From here, all the stack local values are below the FP, so the offset is negative.
+    stkOffs -= (compCalleeRegsPushed << 3);
+#endif
 
     if (mustDoubleAlign)
     {
@@ -7335,13 +7379,11 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #endif // FEATURE_FIXED_OUT_ARGS
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // For LoongArch64 and RISCV64, CalleeSavedRegs are at bottom.
-    int pushedCount = 0;
-#else
+    noway_assert(compLclFrameSize == (unsigned)(PSP_MonAcquire_Size - stkOffs));
+#else // !TARGET_LOONGARCH64 || !TARGET_RISCV64
     // compLclFrameSize equals our negated virtual stack offset minus the pushed registers and return address
     // and the pushed frame pointer register which for some strange reason isn't part of 'compCalleeRegsPushed'.
     int pushedCount = compCalleeRegsPushed;
-#endif
 
 #ifdef TARGET_ARM64
     if (info.compIsVarArgs)
@@ -7360,6 +7402,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
     noway_assert(compLclFrameSize + originalFrameSize ==
                  (unsigned)-(stkOffs + (pushedCount * (int)TARGET_POINTER_SIZE)));
+#endif // !TARGET_LOONGARCH64 || !TARGET_RISCV64
 }
 
 //------------------------------------------------------------------------
@@ -7441,8 +7484,14 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
 #endif
                             ))
     {
-        // Note that stack offsets are negative or equal to zero
+#if !(defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64))
+        // Note that stack offsets are negative or equal to zero.
+        // But for LoongArch64/RISCV64, after the `lvaAssignVirtualFrameOffsetsToLocals`, there is
+        // no need to recompute the LclVarDsc's StackOffset within the `lvaFixVirtualFrameOffsets`.
+        // And the offsets of the callee saved registers, PSPSym and MonitorAcquired are positive.
+        // That is, the `stkOffs` is not always negative or zero.
         assert(stkOffs <= 0);
+#endif
 
         // alignment padding
         unsigned pad = 0;

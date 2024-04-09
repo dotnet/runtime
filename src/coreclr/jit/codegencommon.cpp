@@ -4087,7 +4087,7 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 
         GetEmitter()->emitIns_R_AR(ins_Load(lclTyp), size, varDsc->GetRegNum(), genFramePointerReg(), offset);
 
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARM64)
 
         // Patchpoint offset is from top of Tier0 frame
         //
@@ -4119,7 +4119,39 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 
         genInstrWithConstant(ins_Load(lclTyp), size, varDsc->GetRegNum(), genFramePointerReg(), offset, initReg);
         *pInitRegZeroed = false;
-#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+
+        // Patchpoint offset is from top of Tier0 frame
+        //
+        // We need to determine the frame-pointer relative
+        // offset for this variable in the osr frame.
+        //
+        // First get the fp's relative offset within Tier0 frame
+        //
+        const int tier0FrameOffset = (int)compiler->info.compPatchpointInfo->CalleeSaveRegisters();
+
+        // then add the OSR frame size
+        //
+        const int osrFrameSize = genTotalFrameSize();
+
+        // then subtract OSR SP-FP delta
+        //
+        const int osrSpToFpDelta = genSPtoFPdelta();
+
+        //               | => tier0 top of frame relative
+        //               |         + => tier0's fp relative offset
+        //               |         |                  + => osr bottom of frame (sp) relative
+        //               |         |                  |              - => osr fp relative
+        //               |         |                  |              |
+        const int offset = stkOffs + tier0FrameOffset + osrFrameSize - osrSpToFpDelta;
+
+        JITDUMP("---OSR--- V%02u (reg) Tier0 virtual offset %d OSR frame size %d OSR sp-fp "
+                "delta %d total offset %d (0x%x)\n",
+                varNum, stkOffs, osrFrameSize, osrSpToFpDelta, offset, offset);
+
+        genInstrWithConstant(ins_Load(lclTyp), size, varDsc->GetRegNum(), genFramePointerReg(), offset, initReg);
+        *pInitRegZeroed = false;
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
     }
 }
 
@@ -4745,20 +4777,13 @@ void CodeGen::genFinalizeFrame()
 #endif // defined(TARGET_XARCH)
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    if (isFramePointerUsed())
-    {
-        // For a FP based frame we have to push/pop the FP register
-        //
-        maskCalleeRegsPushed |= RBM_FPBASE;
+    // This assert check that we are not using REG_FP
+    assert(!regSet.rsRegsModified(RBM_FPBASE));
 
-        // This assert check that we are not using REG_FP
-        // as both the frame pointer and as a codegen register
-        //
-        assert(!regSet.rsRegsModified(RBM_FPBASE));
-    }
+    assert(isFramePointerUsed());
+    // we always push FP/RA.  See genPushCalleeSavedRegisters
+    maskCalleeRegsPushed |= (RBM_FPBASE | RBM_RA);
 
-    // we always push RA.  See genPushCalleeSavedRegisters
-    maskCalleeRegsPushed |= RBM_RA;
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
     compiler->compCalleeRegsPushed = genCountBits(maskCalleeRegsPushed);
