@@ -3505,9 +3505,6 @@ void LinearScan::assignPhysReg(RegRecord* regRec, Interval* interval)
 {
     regNumber reg = regRec->regNum;
 
-    // TODO: genIsValid* is heavy operation because it does 2 comparisons, but unfortunately
-    // we cannot use `varTypeRegister[interval->registerType] == VTR_INT` because sometimes
-    // we do `vmovd xmm1, rcx` where we assign gpr for interval of type TYP_SIMD8
     compiler->codeGen->regSet.rsSetRegModified(reg DEBUGARG(true));
 
     interval->assignedReg = regRec;
