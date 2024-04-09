@@ -892,12 +892,14 @@ namespace System.Buffers.Text
             byte* src = srcBytes;
             byte* dest = destBytes;
             Vector128<byte> offset = AdvSimd.DuplicateToVector128((byte)0x3F);
+            var decLutOne = (decLutOne1, decLutOne2, decLutOne3, decLutOne4);
+            var decLutTwo = (decLutTwo1, decLutTwo2, decLutTwo3, decLutTwo4);
 
             do
             {
                 // Load 64 bytes and de-interleave.
                 AssertRead<Vector128<byte>>(src, srcStart, sourceLength);
-               (str1, str2, str3, str4) = AdvSimd.Arm64.LoadVector128x4AndUnzip(src);
+                (str1, str2, str3, str4) = AdvSimd.Arm64.LoadVector128x4AndUnzip(src);
 
                 // Get indices for second LUT:
                 decTwo1 = AdvSimd.SubtractSaturate(str1, offset);
@@ -906,23 +908,23 @@ namespace System.Buffers.Text
                 decTwo4 = AdvSimd.SubtractSaturate(str4, offset);
 
                 // Get values from first LUT. Out-of-range indices are set to 0.
-                decOne1 = AdvSimd.Arm64.VectorTableLookup((decLutOne1, decLutOne2, decLutOne3, decLutOne4), str1);
-                decOne2 = AdvSimd.Arm64.VectorTableLookup((decLutOne1, decLutOne2, decLutOne3, decLutOne4), str2);
-                decOne3 = AdvSimd.Arm64.VectorTableLookup((decLutOne1, decLutOne2, decLutOne3, decLutOne4), str3);
-                decOne4 = AdvSimd.Arm64.VectorTableLookup((decLutOne1, decLutOne2, decLutOne3, decLutOne4), str4);
+                decOne1 = AdvSimd.Arm64.VectorTableLookup(decLutOne, str1);
+                decOne2 = AdvSimd.Arm64.VectorTableLookup(decLutOne, str2);
+                decOne3 = AdvSimd.Arm64.VectorTableLookup(decLutOne, str3);
+                decOne4 = AdvSimd.Arm64.VectorTableLookup(decLutOne, str4);
 
                 // Get values from second LUT. Out-of-range indices are unchanged.
-                decTwo1 = AdvSimd.Arm64.VectorTableLookupExtension(decTwo1, (decLutTwo1, decLutTwo2, decLutTwo3, decLutTwo4), decTwo1);
-                decTwo2 = AdvSimd.Arm64.VectorTableLookupExtension(decTwo2, (decLutTwo1, decLutTwo2, decLutTwo3, decLutTwo4), decTwo2);
-                decTwo3 = AdvSimd.Arm64.VectorTableLookupExtension(decTwo3, (decLutTwo1, decLutTwo2, decLutTwo3, decLutTwo4), decTwo3);
-                decTwo4 = AdvSimd.Arm64.VectorTableLookupExtension(decTwo4, (decLutTwo1, decLutTwo2, decLutTwo3, decLutTwo4), decTwo4);
+                decTwo1 = AdvSimd.Arm64.VectorTableLookupExtension(decTwo1, decLutTwo, decTwo1);
+                decTwo2 = AdvSimd.Arm64.VectorTableLookupExtension(decTwo2, decLutTwo, decTwo2);
+                decTwo3 = AdvSimd.Arm64.VectorTableLookupExtension(decTwo3, decLutTwo, decTwo3);
+                decTwo4 = AdvSimd.Arm64.VectorTableLookupExtension(decTwo4, decLutTwo, decTwo4);
 
                 // Invalid values are set to 255 during above look-ups using 'decLutTwo' and 'decLutTwo'.
                 // Thus the intermediate results 'decOne' and 'decTwo' could be OR-ed to get final values.
-                str1 = AdvSimd.Or(decOne1, decTwo1);
-                str2 = AdvSimd.Or(decOne2, decTwo2);
-                str3 = AdvSimd.Or(decOne3, decTwo3);
-                str4 = AdvSimd.Or(decOne4, decTwo4);
+                str1 = decOne1 | decTwo1;
+                str2 = decOne2 | decTwo2;
+                str3 = decOne3 | decTwo3;
+                str4 = decOne4 | decTwo4;
 
                 // Check for invalid input, any value larger than 63.
                 Vector128<byte> classified = AdvSimd.CompareGreaterThan(str1, offset)
