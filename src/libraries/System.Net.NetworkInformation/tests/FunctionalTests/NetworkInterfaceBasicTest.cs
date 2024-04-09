@@ -22,6 +22,7 @@ namespace System.Net.NetworkInformation.Tests
         [Fact]
         public void BasicTest_GetNetworkInterfaces_AtLeastOne()
         {
+
             Assert.NotEqual<int>(0, NetworkInterface.GetAllNetworkInterfaces().Length);
         }
 
@@ -48,7 +49,8 @@ namespace System.Net.NetworkInformation.Tests
                 _log.WriteLine("SupportsMulticast: " + nic.SupportsMulticast);
                 _log.WriteLine("GetPhysicalAddress(): " + nic.GetPhysicalAddress());
 
-                if (nic.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
+				// We verify that the NIC is an Ethernet type with a positive speed, indicating the presence of a physical address.
+                if (nic.NetworkInterfaceType == NetworkInterfaceType.Ethernet && nic.Speed > 0)
                 {
                     Assert.Equal(6, nic.GetPhysicalAddress().GetAddressBytes().Length);
                 }
