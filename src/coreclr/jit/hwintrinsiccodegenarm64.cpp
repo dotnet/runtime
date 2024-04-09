@@ -495,7 +495,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     else if (HWIntrinsicInfo::IsScalable(intrin.id))
                     {
                         assert(!node->IsEmbMaskOp());
-                        // This generates unpredicated version
+                        // This generates an unpredicated version
                         // Predicated should be taken care above `intrin.op2->IsEmbMaskOp()`
                         GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt,
                                                     INS_SCALABLE_OPTS_UNPREDICATED);

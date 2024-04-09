@@ -75,7 +75,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   ABS Ztied.D, Pg/M, Ztied.D
         ///   MOVPRFX Zresult, Zop; ABS Zresult.D, Pg/M, Zop.D
         /// svint64_t svabs[_s64]_z(svbool_t pg, svint64_t op)
-        ///   MOVPRFX Zresult.D, Pg/Z, Zop.D; ABS Zresult.D, Pg/M, Zop.D        
+        ///   MOVPRFX Zresult.D, Pg/Z, Zop.D; ABS Zresult.D, Pg/M, Zop.D
         /// </summary>
         public static unsafe Vector<long> Abs(Vector<long> value) => Abs(value);
 
