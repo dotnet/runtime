@@ -54,3 +54,4 @@ variables:
                 eq(variables['isRollingBuild'], true))) ]
 
 - template: /eng/pipelines/common/perf-variables.yml
+- template: /eng/common/templates/variables/pool-providers.yml

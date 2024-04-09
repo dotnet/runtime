@@ -26,7 +26,8 @@ variables:
 - template: /eng/pipelines/common/internal-variables.yml
   parameters:
     teamName: dotnet-core-acquisition
-- template: /eng/common/templates-official/templates/variables/pool-providers.yml
+# Override the pool provider template so we use the 1ES version internally
+- template: /eng/common/templates-official/variables/pool-providers.yml
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
