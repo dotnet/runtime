@@ -61,7 +61,7 @@ public class ModuleConfigTests : AppTestBase
         CopyTestAsset("WasmBasicTestApp", $"ModuleConfigTests_OutErrOverrideWorks");
         PublishProject("Debug");
 
-        var result = await RunSdkStyleAppForPublish(new(
+        var result = await RunSdkStyleApp(new(
             Configuration: "Debug",
             TestScenario: "OutErrOverrideWorks"
         ));
