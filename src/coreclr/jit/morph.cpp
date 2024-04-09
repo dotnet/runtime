@@ -14153,7 +14153,7 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
 
             // Must be a void GT_RETURN/GT_SWIFT_ERROR_RET with null operand; delete it as this block branches to
             // oneReturn block
-            GenTree* const retVal = ret->OperIs(GT_RETURN) ? ret->gtGetOp1() : ret->gtGetOp2();
+            GenTree* const retVal = ret->AsOp()->GetReturnValue();
             noway_assert(ret->TypeGet() == TYP_VOID);
             noway_assert(retVal == nullptr);
 

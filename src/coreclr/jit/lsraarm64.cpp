@@ -743,11 +743,11 @@ int LinearScan::BuildNode(GenTree* tree)
 
 #ifdef SWIFT_SUPPORT
         case GT_SWIFT_ERROR_RET:
+            BuildUse(tree->gtGetOp1(), RBM_SWIFT_ERROR);
             // Plus one for error register
             srcCount = BuildReturn(tree) + 1;
             killMask = getKillSetForReturn();
             BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
-            BuildUse(tree->gtGetOp1(), RBM_NONE);
             break;
 #endif // SWIFT_SUPPORT
 

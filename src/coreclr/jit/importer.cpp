@@ -10885,17 +10885,16 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 
 #ifdef SWIFT_SUPPORT
     // If this method has a SwiftError* out parameter, we need to set the error register upon returning.
-    // By placing the GT_SWIFT_ERROR_RET node before the GT_RETURN node,
-    // we don't have to teach the JIT that GT_SWIFT_ERROR_RET is a valid terminator for BBJ_RETURN blocks.
-    // During lowering, we will move the GT_SWIFT_ERROR_RET to the end of the block
-    // so the error register won't get trashed when returning the normal value.
+    // GT_SWIFT_ERROR_RET handles returning both the normal and error value,
+    // and will be the terminator node for this block.
     if (lvaSwiftErrorArg != BAD_VAR_NUM)
     {
         assert(info.compCallConv == CorInfoCallConvExtension::Swift);
         assert(lvaSwiftErrorLocal != BAD_VAR_NUM);
         GenTree* const swiftErrorNode = gtNewLclFldNode(lvaSwiftErrorLocal, TYP_I_IMPL, 0);
-        op1                           = new (this, GT_SWIFT_ERROR_RET)
-            GenTreeOp(GT_SWIFT_ERROR_RET, op1->TypeGet(), swiftErrorNode, op1->gtGetOp1());
+        op1->SetOperRaw(GT_SWIFT_ERROR_RET);
+        op1->AsOp()->gtOp2 = op1->AsOp()->gtOp1;
+        op1->AsOp()->gtOp1 = swiftErrorNode;
     }
 #endif // SWIFT_SUPPORT
 
