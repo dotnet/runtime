@@ -3,7 +3,7 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { GCHandle, GCHandleNull, JSMarshalerArguments, JSThreadInteropMode, MarshalerToCs, MarshalerToJs, MarshalerType, MonoMethod, PThreadPtr } from "./types/internal";
+import { GCHandle, GCHandleNull, JSMarshalerArguments, JSThreadBlockingMode, MarshalerToCs, MarshalerToJs, MarshalerType, MonoMethod, PThreadPtr } from "./types/internal";
 import cwraps, { threads_c_functions as twraps } from "./cwraps";
 import { runtimeHelpers, Module, loaderHelpers, mono_assert } from "./globals";
 import { JavaScriptMarshalerArgSize, alloc_stack_frame, get_arg, get_arg_gc_handle, is_args_exception, set_arg_i32, set_arg_intptr, set_arg_type, set_gc_handle, set_receiver_should_free } from "./marshal";
@@ -18,7 +18,7 @@ import { mono_log_debug } from "./logging";
 
 const managedExports: ManagedExports = {} as any;
 
-export function init_managed_exports(): void {
+export function init_managed_exports (): void {
     const exports_fqn_asm = "System.Runtime.InteropServices.JavaScript";
     // TODO https://github.com/dotnet/runtime/issues/98366
     runtimeHelpers.runtime_interop_module = cwraps.mono_wasm_assembly_load(exports_fqn_asm);
@@ -44,7 +44,7 @@ export function init_managed_exports(): void {
 }
 
 // the marshaled signature is: Task<int>? CallEntrypoint(char* mainAssemblyName, string[] args)
-export function call_entry_point(main_assembly_name: string, program_args: string[] | undefined, waitForDebugger: boolean): Promise<number> {
+export function call_entry_point (main_assembly_name: string, program_args: string[] | undefined, waitForDebugger: boolean): Promise<number> {
     loaderHelpers.assert_runtime_running();
     const sp = Module.stackSave();
     try {
@@ -79,7 +79,7 @@ export function call_entry_point(main_assembly_name: string, program_args: strin
 }
 
 // the marshaled signature is: void LoadSatelliteAssembly(byte[] dll)
-export function load_satellite_assembly(dll: Uint8Array): void {
+export function load_satellite_assembly (dll: Uint8Array): void {
     loaderHelpers.assert_runtime_running();
     const sp = Module.stackSave();
     try {
@@ -95,7 +95,7 @@ export function load_satellite_assembly(dll: Uint8Array): void {
 }
 
 // the marshaled signature is: void LoadLazyAssembly(byte[] dll, byte[] pdb)
-export function load_lazy_assembly(dll: Uint8Array, pdb: Uint8Array | null): void {
+export function load_lazy_assembly (dll: Uint8Array, pdb: Uint8Array | null): void {
     loaderHelpers.assert_runtime_running();
     const sp = Module.stackSave();
     try {
@@ -114,7 +114,7 @@ export function load_lazy_assembly(dll: Uint8Array, pdb: Uint8Array | null): voi
 }
 
 // the marshaled signature is: void ReleaseJSOwnedObjectByGCHandle(GCHandle gcHandle)
-export function release_js_owned_object_by_gc_handle(gc_handle: GCHandle) {
+export function release_js_owned_object_by_gc_handle (gc_handle: GCHandle) {
     mono_assert(gc_handle, "Must be valid gc_handle");
     loaderHelpers.assert_runtime_running();
     const sp = Module.stackSave();
@@ -137,7 +137,7 @@ export function release_js_owned_object_by_gc_handle(gc_handle: GCHandle) {
 }
 
 // the marshaled signature is: void CompleteTask<T>(GCHandle holder, Exception? exceptionResult, T? result)
-export function complete_task(holder_gc_handle: GCHandle, error?: any, data?: any, res_converter?: MarshalerToCs) {
+export function complete_task (holder_gc_handle: GCHandle, error?: any, data?: any, res_converter?: MarshalerToCs) {
     loaderHelpers.assert_runtime_running();
     const sp = Module.stackSave();
     try {
@@ -162,14 +162,15 @@ export function complete_task(holder_gc_handle: GCHandle, error?: any, data?: an
 }
 
 // the marshaled signature is: TRes? CallDelegate<T1,T2,T3,TRes>(GCHandle callback, T1? arg1, T2? arg2, T3? arg3)
-export function call_delegate(callback_gc_handle: GCHandle, arg1_js: any, arg2_js: any, arg3_js: any, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs) {
+export function call_delegate (callback_gc_handle: GCHandle, arg1_js: any, arg2_js: any, arg3_js: any, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs) {
     loaderHelpers.assert_runtime_running();
     if (WasmEnableThreads) {
-        if (runtimeHelpers.config.jsThreadInteropMode == JSThreadInteropMode.NoSyncJSInterop) {
-            throw new Error("Cannot call synchronous C# methods.");
-        }
-        else if (runtimeHelpers.isPendingSynchronousCall) {
-            throw new Error("Cannot call synchronous C# method from inside a synchronous call to a JS method.");
+        if (monoThreadInfo.isUI) {
+            if (runtimeHelpers.config.jsThreadBlockingMode == JSThreadBlockingMode.PreventSynchronousJSExport) {
+                throw new Error("Cannot call synchronous C# methods.");
+            } else if (runtimeHelpers.isPendingSynchronousCall) {
+                throw new Error("Cannot call synchronous C# method from inside a synchronous call to a JS method.");
+            }
         }
     }
     const sp = Module.stackSave();
@@ -207,7 +208,7 @@ export function call_delegate(callback_gc_handle: GCHandle, arg1_js: any, arg2_j
 }
 
 // the marshaled signature is: string GetManagedStackTrace(GCHandle exception)
-export function get_managed_stack_trace(exception_gc_handle: GCHandle) {
+export function get_managed_stack_trace (exception_gc_handle: GCHandle) {
     loaderHelpers.assert_runtime_running();
     const sp = Module.stackSave();
     try {
@@ -226,26 +227,39 @@ export function get_managed_stack_trace(exception_gc_handle: GCHandle) {
     }
 }
 
-// GCHandle InstallMainSynchronizationContext(nint jsNativeTID, JSThreadBlockingMode jsThreadBlockingMode, JSThreadInteropMode jsThreadInteropMode, MainThreadingMode mainThreadingMode)
-export function install_main_synchronization_context(jsThreadBlockingMode: number, jsThreadInteropMode: number, mainThreadingMode: number): GCHandle {
+// GCHandle InstallMainSynchronizationContext(nint jsNativeTID, JSThreadBlockingMode jsThreadBlockingMode)
+export function install_main_synchronization_context (jsThreadBlockingMode: JSThreadBlockingMode): GCHandle {
     if (!WasmEnableThreads) return GCHandleNull;
     assert_c_interop();
 
     try {
         // this block is like alloc_stack_frame() but without set_args_context()
-        const bytes = JavaScriptMarshalerArgSize * 6;
+        const bytes = JavaScriptMarshalerArgSize * 4;
         const args = Module.stackAlloc(bytes) as any;
         _zero_region(args, bytes);
 
         const res = get_arg(args, 1);
         const arg1 = get_arg(args, 2);
         const arg2 = get_arg(args, 3);
-        const arg3 = get_arg(args, 4);
-        const arg4 = get_arg(args, 5);
         set_arg_intptr(arg1, mono_wasm_main_thread_ptr() as any);
-        set_arg_i32(arg2, jsThreadBlockingMode);
-        set_arg_i32(arg3, jsThreadInteropMode);
-        set_arg_i32(arg4, mainThreadingMode);
+
+        // sync with JSHostImplementation.Types.cs
+        switch (jsThreadBlockingMode) {
+            case JSThreadBlockingMode.PreventSynchronousJSExport:
+                set_arg_i32(arg2, 0);
+                break;
+            case JSThreadBlockingMode.ThrowWhenBlockingWait:
+                set_arg_i32(arg2, 1);
+                break;
+            case JSThreadBlockingMode.WarnWhenBlockingWait:
+                set_arg_i32(arg2, 2);
+                break;
+            case JSThreadBlockingMode.DangerousAllowBlockingWait:
+                set_arg_i32(arg2, 100);
+                break;
+            default:
+                throw new Error("Invalid jsThreadBlockingMode");
+        }
 
         // this block is like invoke_sync_jsexport() but without assert_js_interop()
         cwraps.mono_wasm_invoke_jsexport(managedExports.InstallMainSynchronizationContext!, args);
@@ -260,7 +274,7 @@ export function install_main_synchronization_context(jsThreadBlockingMode: numbe
     }
 }
 
-export function invoke_async_jsexport(managedTID: PThreadPtr, method: MonoMethod, args: JSMarshalerArguments, size: number): void {
+export function invoke_async_jsexport (managedTID: PThreadPtr, method: MonoMethod, args: JSMarshalerArguments, size: number): void {
     assert_js_interop();
     if (!WasmEnableThreads || runtimeHelpers.isManagedRunningOnCurrentThread) {
         cwraps.mono_wasm_invoke_jsexport(method, args as any);
@@ -277,16 +291,17 @@ export function invoke_async_jsexport(managedTID: PThreadPtr, method: MonoMethod
     }
 }
 
-export function invoke_sync_jsexport(method: MonoMethod, args: JSMarshalerArguments): void {
+export function invoke_sync_jsexport (method: MonoMethod, args: JSMarshalerArguments): void {
     assert_js_interop();
     if (!WasmEnableThreads) {
         cwraps.mono_wasm_invoke_jsexport(method, args as any);
     } else {
-        if (runtimeHelpers.config.jsThreadInteropMode == JSThreadInteropMode.NoSyncJSInterop) {
-            throw new Error("Cannot call synchronous C# methods.");
-        }
-        else if (runtimeHelpers.isPendingSynchronousCall) {
-            throw new Error("Cannot call synchronous C# method from inside a synchronous call to a JS method.");
+        if (monoThreadInfo.isUI) {
+            if (runtimeHelpers.config.jsThreadBlockingMode == JSThreadBlockingMode.PreventSynchronousJSExport) {
+                throw new Error("Cannot call synchronous C# methods.");
+            } else if (runtimeHelpers.isPendingSynchronousCall) {
+                throw new Error("Cannot call synchronous C# method from inside a synchronous call to a JS method.");
+            }
         }
         if (runtimeHelpers.isManagedRunningOnCurrentThread) {
             twraps.mono_wasm_invoke_jsexport_sync(method, args as any);
@@ -303,7 +318,7 @@ export function invoke_sync_jsexport(method: MonoMethod, args: JSMarshalerArgume
 }
 
 // the marshaled signature is: Task BindAssemblyExports(string assemblyName)
-export function bind_assembly_exports(assemblyName: string): Promise<void> {
+export function bind_assembly_exports (assemblyName: string): Promise<void> {
     loaderHelpers.assert_runtime_running();
     const sp = Module.stackSave();
     try {
@@ -331,7 +346,7 @@ export function bind_assembly_exports(assemblyName: string): Promise<void> {
 }
 
 
-function get_method(method_name: string): MonoMethod {
+function get_method (method_name: string): MonoMethod {
     // TODO https://github.com/dotnet/runtime/issues/98366
     const res = cwraps.mono_wasm_assembly_find_method(runtimeHelpers.runtime_interop_exports_class, method_name, -1);
     if (!res)

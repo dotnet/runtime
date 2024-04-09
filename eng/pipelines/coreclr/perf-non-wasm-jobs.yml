@@ -289,6 +289,23 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perfowl'
 
+  # run coreclr perfviper microbenchmarks perf job
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - linux_x64
+      - windows_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perfviper'
+
   # run coreclr perfowl microbenchmarks perf gdv3 jobs
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -325,6 +342,24 @@ jobs:
         logicalmachine: 'perfowl'
         experimentName: 'rlcse'
 
+  # run coreclr perfowl microbenchmarks perf jitoptrepeat jobs
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - linux_x64
+      - windows_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perfowl'
+        experimentName: 'jitoptrepeat'
+
   # run coreclr crossgen perf job
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -359,6 +394,7 @@ jobs:
           - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
             parameters:
               name: MonoRuntimePacks
+              isOfficialBuild: false
 
   # build PerfBDN app
   - template: /eng/pipelines/common/platform-matrix.yml

@@ -5,7 +5,6 @@ parameters:
   osSubgroup: ''
   container: ''
   crossBuild: false
-  dependOnEvaluatePaths: false
   timeoutInMinutes: ''
   variables: {}
   pool: ''
@@ -21,7 +20,6 @@ jobs:
     osSubgroup: ${{ parameters.osSubgroup }}
     container: ${{ parameters.container }}
     crossBuild: ${{ parameters.crossBuild }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     name: ${{ format('format_{0}{1}_{2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
     displayName: ${{ format('Formatting {0}{1} {2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
@@ -50,8 +48,7 @@ jobs:
       displayName: 'Install .NET SDK'
       inputs:
         packageType: 'sdk'
-        version: '6.x'
-        includePreviewVersions: true
+        version: '8.x'
         installationPath: $(Agent.ToolsDirectory)/dotnet
 
     - script: $(PythonSetupScript)

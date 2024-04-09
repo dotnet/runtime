@@ -256,7 +256,7 @@ mono_wasm_invoke_jsexport (MonoMethod *method, void* args)
 #ifndef DISABLE_THREADS
 
 extern void mono_threads_wasm_async_run_in_target_thread_vii (void* target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
-extern void mono_threads_wasm_sync_run_in_target_thread_vii (void* target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
+extern void mono_threads_wasm_sync_run_in_target_thread_vii (void* target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer args);
 extern void mono_print_thread_dump (void *sigctx);
 
 EMSCRIPTEN_KEEPALIVE void
@@ -271,7 +271,7 @@ mono_wasm_invoke_jsexport_async_post_cb (MonoMethod *method, void* args)
 {
 	mono_wasm_invoke_jsexport (method, args);
 	if (args) {
-		MonoBoolean *is_receiver_should_free = (MonoBoolean *)(args + 20/*JSMarshalerArgumentOffsets.ReceiverShouldFree*/);
+		MonoBoolean *is_receiver_should_free = (MonoBoolean *)(((char *) args) + 20/*JSMarshalerArgumentOffsets.ReceiverShouldFree*/);
 		if(*is_receiver_should_free != 0){
 			free (args);
 		}
@@ -287,8 +287,10 @@ mono_wasm_invoke_jsexport_async_post (void* target_thread, MonoMethod *method, v
 
 
 typedef void (*js_interop_event)(void* args);
+typedef void (*sync_context_pump)(void);
 extern js_interop_event before_sync_js_import;
 extern js_interop_event after_sync_js_import;
+extern sync_context_pump synchronization_context_pump_handler;
 
 // this is running on the target thread
 EMSCRIPTEN_KEEPALIVE void
@@ -303,7 +305,12 @@ mono_wasm_invoke_jsexport_sync (MonoMethod *method, void* args)
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_invoke_jsexport_sync_send (void* target_thread, MonoMethod *method, void* args /*JSMarshalerArguments*/)
 {
-	mono_threads_wasm_sync_run_in_target_thread_vii(target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport_sync, method, args);
+	mono_threads_wasm_sync_run_in_target_thread_vii (target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport_sync, method, args);
+}
+
+EMSCRIPTEN_KEEPALIVE void mono_wasm_synchronization_context_pump (void)
+{
+	synchronization_context_pump_handler ();
 }
 
 #endif /* DISABLE_THREADS */
@@ -434,9 +441,7 @@ mono_wasm_init_finalizer_thread (void)
 {
 	// in the single threaded build, finalizers periodically run on the main thread instead.
 #ifndef DISABLE_THREADS
-	MONO_ENTER_GC_UNSAFE;
 	mono_gc_init_finalizer_thread ();
-	MONO_EXIT_GC_UNSAFE;
 #endif
 }
 

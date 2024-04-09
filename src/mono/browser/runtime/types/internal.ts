@@ -64,7 +64,7 @@ export const CharPtrNull: CharPtr = <CharPtr><any>0;
 export const NativePointerNull: NativePointer = <NativePointer><any>0;
 export const PThreadPtrNull: PThreadPtr = <PThreadPtr><any>0;
 
-export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | null | undefined): T {
+export function coerceNull<T extends ManagedPointer | NativePointer> (ptr: T | null | undefined): T {
     if ((ptr === null) || (ptr === undefined))
         return (0 as any) as T;
     else
@@ -95,9 +95,7 @@ export type MonoConfigInternal = MonoConfig & {
     GitHash?: string,
     ProductVersion?: string,
 
-    mainThreadingMode?: MainThreadingMode,
     jsThreadBlockingMode?: JSThreadBlockingMode,
-    jsThreadInteropMode?: JSThreadInteropMode,
 };
 
 export type RunArguments = {
@@ -133,7 +131,6 @@ export type LoaderHelpers = {
     scriptUrl: string
     modulesUniqueQuery?: string
     preferredIcuAsset?: string | null,
-    loadingWorkers: PThreadWorker[],
     workerNextNumber: number,
 
     actual_downloaded_assets_count: number,
@@ -145,6 +142,7 @@ export type LoaderHelpers = {
     allDownloadsQueued: PromiseAndController<void>,
     wasmCompilePromise: PromiseAndController<WebAssembly.Module>,
     runtimeModuleLoaded: PromiseAndController<void>,
+    loadingWorkers: PromiseAndController<PThreadWorker[]>,
 
     is_exited: () => boolean,
     is_runtime_running: () => boolean,
@@ -206,6 +204,7 @@ export type RuntimeHelpers = {
     getMemory(): WebAssembly.Memory,
     getWasmIndirectFunctionTable(): WebAssembly.Table,
     runtimeReady: boolean,
+    disableManagedTransition: boolean,
     monoThreadInfo: PThreadInfo,
     proxyGCHandle: GCHandle | undefined,
     managedThreadTID: PThreadPtr,
@@ -254,7 +253,7 @@ export type DotnetModuleInternal = EmscriptenModule & DotnetModuleConfig & Emscr
 
 // Evaluates whether a value is nullish (same definition used as the ?? operator,
 //  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing_operator)
-export function is_nullish<T>(value: T | null | undefined): value is null | undefined {
+export function is_nullish<T> (value: T | null | undefined): value is null | undefined {
     return (value === undefined) || (value === null);
 }
 
@@ -299,14 +298,14 @@ export interface ExitStatusError {
 
 /// Always throws. Used to handle unreachable switch branches when TypeScript refines the type of a variable
 /// to 'never' after you handle all the cases it knows about.
-export function assertNever(x: never): never {
+export function assertNever (x: never): never {
     throw new Error("Unexpected value: " + x);
 }
 
 /// returns true if the given value is not Thenable
 ///
 /// Useful if some function returns a value or a promise of a value.
-export function notThenable<T>(x: T | PromiseLike<T>): x is T {
+export function notThenable<T> (x: T | PromiseLike<T>): x is T {
     return typeof x !== "object" || typeof ((<PromiseLike<T>>x).then) !== "function";
 }
 
@@ -432,6 +431,8 @@ export declare interface EmscriptenModuleInternal {
     runtimeKeepalivePop(): void;
     maybeExit(): void;
     __emscripten_thread_init(pthread_ptr: PThreadPtr, isMainBrowserThread: number, isMainRuntimeThread: number, canBlock: number): void;
+    print(message: string): void;
+    printErr(message: string): void;
 }
 
 /// A PromiseController encapsulates a Promise together with easy access to its resolve and reject functions.
@@ -461,7 +462,7 @@ export type initializeExportsType = (globalObjects: GlobalObjects) => RuntimeAPI
 export type initializeReplacementsType = (replacements: EmscriptenReplacements) => void;
 export type afterInitializeType = (module: EmscriptenModuleInternal) => void;
 export type configureEmscriptenStartupType = (module: DotnetModuleInternal) => void;
-export type configureRuntimeStartupType = () => Promise<void>;
+export type configureRuntimeStartupType = (module: DotnetModuleInternal) => Promise<void>;
 export type configureWorkerStartupType = (module: DotnetModuleInternal) => Promise<void>
 
 
@@ -570,35 +571,36 @@ export interface MonoThreadMessage {
 }
 
 // keep in sync with JSHostImplementation.Types.cs
-export const enum MainThreadingMode {
-    // Running the managed main thread on UI thread. 
-    // Managed GC and similar scenarios could be blocking the UI. 
-    // Easy to deadlock. Not recommended for production.
-    UIThread = 0,
-    // Running the managed main thread on dedicated WebWorker. Marshaling all JavaScript calls to and from the main thread.
-    DeputyThread = 1,
-    // TODO comment
-    DeputyAndIOThreads = 2,
-}
-
-// keep in sync with JSHostImplementation.Types.cs
 export const enum JSThreadBlockingMode {
-    // throw PlatformNotSupportedException if blocking .Wait is called on threads with JS interop, like JSWebWorker and Main thread.
-    // Avoids deadlocks (typically with pending JS promises on the same thread) by throwing exceptions.
-    NoBlockingWait = 0,
-    // TODO comment
-    AllowBlockingWaitInAsyncCode = 1,
-    // allow .Wait on all threads. 
-    // Could cause deadlocks with blocking .Wait on a pending JS Task/Promise on the same thread or similar Task/Promise chain.
-    AllowBlockingWait = 100,
-}
-
-// keep in sync with JSHostImplementation.Types.cs
-export const enum JSThreadInteropMode {
-    // throw PlatformNotSupportedException if synchronous JSImport/JSExport is called on threads with JS interop, like JSWebWorker and Main thread.
-    // calling synchronous JSImport on thread pool or new threads is allowed.
-    NoSyncJSInterop = 0,
-    // allow non-re-entrant synchronous blocking calls to and from JS on JSWebWorker on threads with JS interop, like JSWebWorker and Main thread.
-    // calling synchronous JSImport on thread pool or new threads is allowed.
-    SimpleSynchronousJSInterop = 1,
+    /**
+     * Prevents synchronous JSExport from being called from JavaScript code in UI thread.
+     * On JSWebWorker synchronous JSExport always works.
+     * On JSWebWorker blocking .Wait always warns.
+     * This is the default mode.
+     */
+    PreventSynchronousJSExport = "PreventSynchronousJSExport",
+    /**
+     * Allows synchronous JSExport to be called from JavaScript code also in UI thread.
+     * Inside of that call blocking .Wait throws PNSE.
+     * Inside of that call nested call back to synchronous JSImport throws PNSE (because it would deadlock otherwise in 100% cases).
+     * On JSWebWorker synchronous JSExport always works.
+     * On JSWebWorker blocking .Wait always throws PNSE.
+     */
+    ThrowWhenBlockingWait = "ThrowWhenBlockingWait",
+    /**
+     * Allows synchronous JSExport to be called from JavaScript code also in UI thread.
+     * Inside of that call blocking .Wait warns.
+     * Inside of that call nested call back to synchronous JSImport throws PNSE (because it would deadlock otherwise in 100% cases).
+     * On JSWebWorker synchronous JSExport always works.
+     * On JSWebWorker blocking .Wait always warns.
+     */
+    WarnWhenBlockingWait = "WarnWhenBlockingWait",
+    /**
+     * Allows synchronous JSExport to be called from JavaScript code, and allows managed code to use blocking .Wait
+     * .Wait on Promise/Task chains could lead to deadlock because JS event loop is not processed and it can't resolve JS promises.
+     * This mode is dangerous and not supported.
+     * Allows synchronous JSExport to be called from JavaScript code also in Main thread.
+     * Inside of that call nested call back to synchronous JSImport throws PNSE (because it would deadlock otherwise in 100% cases).
+     */
+    DangerousAllowBlockingWait = "DangerousAllowBlockingWait",
 }

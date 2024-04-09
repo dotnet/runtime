@@ -214,7 +214,8 @@ public:
         UseExecutionOrder = true,
     };
 
-    SubstitutePlaceholdersAndDevirtualizeWalker(Compiler* comp) : GenTreeVisitor(comp)
+    SubstitutePlaceholdersAndDevirtualizeWalker(Compiler* comp)
+        : GenTreeVisitor(comp)
     {
     }
 
@@ -261,10 +262,8 @@ public:
             {
                 GenTree* effectiveValue = value->gtEffectiveVal();
 
-                noway_assert(
-                    !varTypeIsStruct(effectiveValue) || (effectiveValue->OperGet() != GT_RET_EXPR) ||
-                    !m_compiler->IsMultiRegReturnedType(effectiveValue->AsRetExpr()->gtInlineCandidate->gtRetClsHnd,
-                                                        CorInfoCallConvExtension::Managed));
+                noway_assert(!varTypeIsStruct(effectiveValue) || (effectiveValue->OperGet() != GT_RET_EXPR) ||
+                             !effectiveValue->AsRetExpr()->gtInlineCandidate->HasMultiRegRetVal());
             }
         }
 
@@ -318,18 +317,9 @@ private:
     //
     void UpdateInlineReturnExpressionPlaceHolder(GenTree** use, GenTree* parent)
     {
-        CORINFO_CLASS_HANDLE retClsHnd = NO_CLASS_HANDLE;
-
         while ((*use)->OperIs(GT_RET_EXPR))
         {
             GenTree* tree = *use;
-            // We are going to copy the tree from the inlinee,
-            // so record the handle now.
-            //
-            if (varTypeIsStruct(tree))
-            {
-                retClsHnd = tree->AsRetExpr()->gtInlineCandidate->gtRetClsHnd;
-            }
 
             // Skip through chains of GT_RET_EXPRs (say from nested inlines)
             // to the actual tree to use.
@@ -397,6 +387,7 @@ private:
 #endif // DEBUG
         }
 
+#if FEATURE_MULTIREG_RET
         // If an inline was rejected and the call returns a struct, we may
         // have deferred some work when importing call for cases where the
         // struct is returned in multiple registers.
@@ -405,55 +396,23 @@ private:
         // candidates.
         //
         // Do the deferred work now.
-        if (retClsHnd != NO_CLASS_HANDLE)
+        if ((*use)->IsCall() && varTypeIsStruct(*use) && (*use)->AsCall()->HasMultiRegRetVal())
         {
-            Compiler::structPassingKind howToReturnStruct;
-            var_types                   returnType =
-                m_compiler->getReturnTypeForStruct(retClsHnd, CorInfoCallConvExtension::Managed, &howToReturnStruct);
-
-            switch (howToReturnStruct)
+            // See assert below, we only look one level above for a store parent.
+            if (parent->OperIsStore())
             {
-#if FEATURE_MULTIREG_RET
-                // Force multi-reg nodes into the "lcl = node()" form if necessary.
-                // TODO-ASG: this code could be improved substantially. There is no need
-                // to introduce temps if the inlinee is not actually a multi-reg node.
-                //
-                case Compiler::SPK_ByValue:
-                case Compiler::SPK_ByValueAsHfa:
-                {
-                    // See assert below, we only look one level above for a store parent.
-                    if (parent->OperIsStore())
-                    {
-                        // The inlinee can only be the value.
-                        assert(parent->Data() == *use);
-                        AttachStructInlineeToStore(parent, retClsHnd);
-                    }
-                    else
-                    {
-                        // Just store the inlinee to a variable to keep it simple.
-                        *use = StoreStructInlineeToVar(*use, retClsHnd);
-                    }
-                    m_madeChanges = true;
-                }
-                break;
-
-#endif // FEATURE_MULTIREG_RET
-
-                case Compiler::SPK_EnclosingType:
-                case Compiler::SPK_PrimitiveType:
-                    // No work needs to be done, the call has struct type and should keep it.
-                    break;
-
-                case Compiler::SPK_ByReference:
-                    // We should have already added the return buffer
-                    // when we first imported the call
-                    break;
-
-                default:
-                    noway_assert(!"Unexpected struct passing kind");
-                    break;
+                // The inlinee can only be the value.
+                assert(parent->Data() == *use);
+                AttachStructInlineeToStore(parent, (*use)->AsCall()->gtRetClsHnd);
             }
+            else
+            {
+                // Just store the inlinee to a variable to keep it simple.
+                *use = StoreStructInlineeToVar(*use, (*use)->AsCall()->gtRetClsHnd);
+            }
+            m_madeChanges = true;
         }
+#endif
     }
 
 #if FEATURE_MULTIREG_RET
@@ -474,7 +433,7 @@ private:
         GenTree* dst     = store;
         GenTree* inlinee = store->Data();
 
-        // We need to force all assignments from multi-reg nodes into the "lcl = node()" form.
+        // We need to force all stores from multi-reg nodes into the "lcl = node()" form.
         if (inlinee->IsMultiRegNode())
         {
             // Special case: we already have a local, the only thing to do is mark it appropriately. Except
@@ -503,7 +462,7 @@ private:
     //
     GenTree* StoreStructInlineeToVar(GenTree* inlinee, CORINFO_CLASS_HANDLE retClsHnd)
     {
-        assert(!inlinee->OperIs(GT_MKREFANY, GT_RET_EXPR));
+        assert(!inlinee->OperIs(GT_RET_EXPR));
 
         unsigned   lclNum = m_compiler->lvaGrabTemp(false DEBUGARG("RetBuf for struct inline return candidates."));
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
@@ -632,9 +591,9 @@ private:
 
                 if (lcl->lvSingleDef)
                 {
-                    bool                 isExact   = false;
-                    bool                 isNonNull = false;
-                    CORINFO_CLASS_HANDLE newClass  = m_compiler->gtGetClassHandle(value, &isExact, &isNonNull);
+                    bool                 isExact;
+                    bool                 isNonNull;
+                    CORINFO_CLASS_HANDLE newClass = m_compiler->gtGetClassHandle(value, &isExact, &isNonNull);
 
                     if (newClass != NO_CLASS_HANDLE)
                     {
@@ -648,7 +607,7 @@ private:
             //
             if (value->OperIs(GT_LCL_VAR) && (value->AsLclVar()->GetLclNum() == lclNum))
             {
-                JITDUMP("... removing self-assignment\n");
+                JITDUMP("... removing self-store\n");
                 DISPTREE(tree);
                 tree->gtBashToNOP();
                 m_madeChanges = true;
@@ -1217,80 +1176,80 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     param.inlineInfo          = &inlineInfo;
     bool success              = eeRunWithErrorTrap<Param>(
         [](Param* pParam) {
-            // Init the local var info of the inlinee
-            pParam->pThis->impInlineInitVars(pParam->inlineInfo);
+        // Init the local var info of the inlinee
+        pParam->pThis->impInlineInitVars(pParam->inlineInfo);
 
-            if (pParam->inlineInfo->inlineResult->IsCandidate())
+        if (pParam->inlineInfo->inlineResult->IsCandidate())
+        {
+            /* Clear the temp table */
+            memset(pParam->inlineInfo->lclTmpNum, -1, sizeof(pParam->inlineInfo->lclTmpNum));
+
+            //
+            // Prepare the call to jitNativeCode
+            //
+
+            pParam->inlineInfo->InlinerCompiler = pParam->pThis;
+            if (pParam->pThis->impInlineInfo == nullptr)
             {
-                /* Clear the temp table */
-                memset(pParam->inlineInfo->lclTmpNum, -1, sizeof(pParam->inlineInfo->lclTmpNum));
+                pParam->inlineInfo->InlineRoot = pParam->pThis;
+            }
+            else
+            {
+                pParam->inlineInfo->InlineRoot = pParam->pThis->impInlineInfo->InlineRoot;
+            }
 
-                //
-                // Prepare the call to jitNativeCode
-                //
+            // The inline context is part of debug info and must be created
+            // before we start creating statements; we lazily create it as
+            // late as possible, which is here.
+            pParam->inlineInfo->inlineContext =
+                pParam->inlineInfo->InlineRoot->m_inlineStrategy
+                    ->NewContext(pParam->inlineInfo->inlineCandidateInfo->inlinersContext, pParam->inlineInfo->iciStmt,
+                                              pParam->inlineInfo->iciCall);
+            pParam->inlineInfo->argCnt                   = pParam->inlineCandidateInfo->methInfo.args.totalILArgs();
+            pParam->inlineInfo->tokenLookupContextHandle = pParam->inlineCandidateInfo->exactContextHnd;
 
-                pParam->inlineInfo->InlinerCompiler = pParam->pThis;
-                if (pParam->pThis->impInlineInfo == nullptr)
-                {
-                    pParam->inlineInfo->InlineRoot = pParam->pThis;
-                }
-                else
-                {
-                    pParam->inlineInfo->InlineRoot = pParam->pThis->impInlineInfo->InlineRoot;
-                }
+            JITLOG_THIS(pParam->pThis,
+                                     (LL_INFO100000, "INLINER: inlineInfo.tokenLookupContextHandle for %s set to 0x%p:\n",
+                         pParam->pThis->eeGetMethodFullName(pParam->fncHandle),
+                         pParam->pThis->dspPtr(pParam->inlineInfo->tokenLookupContextHandle)));
 
-                // The inline context is part of debug info and must be created
-                // before we start creating statements; we lazily create it as
-                // late as possible, which is here.
-                pParam->inlineInfo->inlineContext =
-                    pParam->inlineInfo->InlineRoot->m_inlineStrategy
-                        ->NewContext(pParam->inlineInfo->inlineCandidateInfo->inlinersContext,
-                                     pParam->inlineInfo->iciStmt, pParam->inlineInfo->iciCall);
-                pParam->inlineInfo->argCnt                   = pParam->inlineCandidateInfo->methInfo.args.totalILArgs();
-                pParam->inlineInfo->tokenLookupContextHandle = pParam->inlineCandidateInfo->exactContextHnd;
+            JitFlags compileFlagsForInlinee = *pParam->pThis->opts.jitFlags;
 
-                JITLOG_THIS(pParam->pThis,
-                            (LL_INFO100000, "INLINER: inlineInfo.tokenLookupContextHandle for %s set to 0x%p:\n",
-                             pParam->pThis->eeGetMethodFullName(pParam->fncHandle),
-                             pParam->pThis->dspPtr(pParam->inlineInfo->tokenLookupContextHandle)));
-
-                JitFlags compileFlagsForInlinee = *pParam->pThis->opts.jitFlags;
-
-                // The following flags are lost when inlining.
-                // (This is checked in Compiler::compInitOptions().)
-                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBINSTR);
-                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS);
-                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_PROF_ENTERLEAVE);
-                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_EnC);
-                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_REVERSE_PINVOKE);
-                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_TRACK_TRANSITIONS);
+            // The following flags are lost when inlining.
+            // (This is checked in Compiler::compInitOptions().)
+            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBINSTR);
+            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS);
+            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_PROF_ENTERLEAVE);
+            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_EnC);
+            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_REVERSE_PINVOKE);
+            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_TRACK_TRANSITIONS);
 
 #ifdef DEBUG
-                if (pParam->pThis->verbose)
-                {
-                    printf("\nInvoking compiler for the inlinee method %s :\n",
-                           pParam->pThis->eeGetMethodFullName(pParam->fncHandle));
-                }
+            if (pParam->pThis->verbose)
+            {
+                printf("\nInvoking compiler for the inlinee method %s :\n",
+                       pParam->pThis->eeGetMethodFullName(pParam->fncHandle));
+            }
 #endif // DEBUG
 
-                int result =
-                    jitNativeCode(pParam->fncHandle, pParam->inlineCandidateInfo->methInfo.scope,
-                                  pParam->pThis->info.compCompHnd, &pParam->inlineCandidateInfo->methInfo,
-                                  (void**)pParam->inlineInfo, nullptr, &compileFlagsForInlinee, pParam->inlineInfo);
+            int result =
+                jitNativeCode(pParam->fncHandle, pParam->inlineCandidateInfo->methInfo.scope,
+                              pParam->pThis->info.compCompHnd, &pParam->inlineCandidateInfo->methInfo,
+                              (void**)pParam->inlineInfo, nullptr, &compileFlagsForInlinee, pParam->inlineInfo);
 
-                if (result != CORJIT_OK)
+            if (result != CORJIT_OK)
+            {
+                // If we haven't yet determined why this inline fails, use
+                // a catch-all something bad happened observation.
+                InlineResult* innerInlineResult = pParam->inlineInfo->inlineResult;
+
+                if (!innerInlineResult->IsFailure())
                 {
-                    // If we haven't yet determined why this inline fails, use
-                    // a catch-all something bad happened observation.
-                    InlineResult* innerInlineResult = pParam->inlineInfo->inlineResult;
-
-                    if (!innerInlineResult->IsFailure())
-                    {
-                        innerInlineResult->NoteFatal(InlineObservation::CALLSITE_COMPILATION_FAILURE);
-                    }
+                    innerInlineResult->NoteFatal(InlineObservation::CALLSITE_COMPILATION_FAILURE);
                 }
             }
-        },
+        }
+    },
         &param);
     if (!success)
     {
@@ -1623,7 +1582,6 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     }
 
     // Update optMethodFlags
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     unsigned optMethodFlagsBefore = optMethodFlags;
@@ -1733,7 +1691,7 @@ void Compiler::fgInsertInlineeArgument(
             *newStmt    = nullptr;
             bool append = true;
 
-            if (argNode->gtOper == GT_BLK || argNode->gtOper == GT_MKREFANY)
+            if (argNode->gtOper == GT_BLK)
             {
                 // Don't put GT_BLK node under a GT_COMMA.
                 // Codegen can't deal with it.

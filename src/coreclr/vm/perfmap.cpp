@@ -46,7 +46,11 @@ void PerfMap::Initialize()
 
 const char * PerfMap::InternalConstructPath()
 {
+#ifdef HOST_WINDOWS
     CLRConfigNoCache value = CLRConfigNoCache::Get("PerfMapJitDumpPath");
+#else
+    CLRConfigNoCache value = CLRConfigNoCache::Get("PerfMapJitDumpPath", /* noPrefix */ false, &PAL_getenv);
+#endif
     if (value.IsSet())
     {
         return value.AsString();

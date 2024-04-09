@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Linq;
 using System.Text.RegularExpressions;
 using FluentAssertions;
 using FluentAssertions.Execution;
@@ -112,14 +113,14 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public AndConstraint<CommandResultAssertions> NotHaveStdOut()
         {
             Execute.Assertion.ForCondition(string.IsNullOrEmpty(Result.StdOut))
-                .FailWith($"Expected command to not output to stdout but it was not:{GetDiagnosticsInfo()}");
+                .FailWith($"Expected command to not output to stdout but it did:{GetDiagnosticsInfo()}");
             return new AndConstraint<CommandResultAssertions>(this);
         }
 
         public AndConstraint<CommandResultAssertions> NotHaveStdErr()
         {
             Execute.Assertion.ForCondition(string.IsNullOrEmpty(Result.StdErr))
-                .FailWith($"Expected command to not output to stderr but it was not:{GetDiagnosticsInfo()}");
+                .FailWith($"Expected command to not output to stderr but it did:{GetDiagnosticsInfo()}");
             return new AndConstraint<CommandResultAssertions>(this);
         }
 
@@ -147,27 +148,17 @@ namespace Microsoft.DotNet.CoreSetup.Test
         }
 
         public string GetDiagnosticsInfo()
-        {
-            return $"{Environment.NewLine}" +
-                $"File Name: {Result.StartInfo.FileName}{Environment.NewLine}" +
-                $"Arguments: {Result.StartInfo.Arguments}{Environment.NewLine}" +
-                $"Exit Code: {Result.ExitCode}{Environment.NewLine}" +
-                $"StdOut:{Environment.NewLine}{Result.StdOut}{Environment.NewLine}" +
-                $"StdErr:{Environment.NewLine}{Result.StdErr}{Environment.NewLine}";
-        }
+            => $"""
 
-        public AndConstraint<CommandResultAssertions> HaveSkippedProjectCompilation(string skippedProject, string frameworkFullName)
-        {
-            Result.StdOut.Should().Contain("Project {0} ({1}) was previously compiled. Skipping compilation.", skippedProject, frameworkFullName);
-
-            return new AndConstraint<CommandResultAssertions>(this);
-        }
-
-        public AndConstraint<CommandResultAssertions> HaveCompiledProject(string compiledProject, string frameworkFullName)
-        {
-            Result.StdOut.Should().Contain($"Project {0} ({1}) will be compiled", compiledProject, frameworkFullName);
-
-            return new AndConstraint<CommandResultAssertions>(this);
-        }
+                File Name: {Result.StartInfo.FileName}
+                Arguments: {Result.StartInfo.Arguments}
+                Environment:
+                {string.Join(Environment.NewLine, Result.StartInfo.Environment.Where(i => i.Key.StartsWith(Constants.DotnetRoot.EnvironmentVariable)).Select(i => $"  {i.Key} = {i.Value}"))}
+                Exit Code: 0x{Result.ExitCode:x}
+                StdOut:
+                {Result.StdOut}
+                StdErr:
+                {Result.StdErr}
+                """;
     }
 }

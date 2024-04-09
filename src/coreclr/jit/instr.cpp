@@ -876,7 +876,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                         // broadcast -> LCL_VAR(TYP_(U)INT)
                         ssize_t        scalarValue = hwintrinsicChild->AsIntCon()->IconValue();
                         UNATIVE_OFFSET cnum        = emit->emitDataConst(&scalarValue, genTypeSize(simdBaseType),
-                                                                  genTypeSize(simdBaseType), simdBaseType);
+                                                                         genTypeSize(simdBaseType), simdBaseType);
                         return OperandDesc(compiler->eeFindJitDataOffs(cnum));
                     }
                     else
@@ -1124,9 +1124,9 @@ void CodeGen::inst_RV_TT(instruction ins, emitAttr size, regNumber op1Reg, GenTr
 }
 
 /*****************************************************************************
-*
-*  Generate an instruction of the form "op reg1, reg2, icon".
-*/
+ *
+ *  Generate an instruction of the form "op reg1, reg2, icon".
+ */
 
 void CodeGen::inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regNumber reg2, unsigned ival)
 {
@@ -1256,8 +1256,8 @@ void CodeGen::inst_RV_RV_TT(instruction ins,
     emitter* emit = GetEmitter();
     noway_assert(emit->emitVerifyEncodable(ins, EA_SIZE(size), targetReg));
 
-// TODO-XArch-CQ: Commutative operations can have op1 be contained
-// TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
+    // TODO-XArch-CQ: Commutative operations can have op1 be contained
+    // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
 
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
     if (CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2))
@@ -1687,12 +1687,17 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
         return ins;
     }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     if (varTypeUsesMaskReg(srcType))
     {
+#if defined(TARGET_XARCH)
         return INS_kmovq_msk;
+#elif defined(TARGET_ARM64)
+        unreached(); // TODO-SVE: This needs testing
+        return INS_sve_mov;
+#endif
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     assert(varTypeUsesFloatReg(srcType));
 
@@ -1837,12 +1842,16 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
         return ins;
     }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     if (varTypeUsesMaskReg(srcType))
     {
+#if defined(TARGET_XARCH)
         return INS_kmovq_msk;
+#elif defined(TARGET_ARM64)
+        return INS_sve_ldr_mask;
+#endif
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     assert(varTypeUsesFloatReg(srcType));
 
@@ -1921,12 +1930,17 @@ instruction CodeGen::ins_Copy(var_types dstType)
 #endif
     }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     if (varTypeUsesMaskReg(dstType))
     {
+#if defined(TARGET_XARCH)
         return INS_kmovq_msk;
+#elif defined(TARGET_ARM64)
+        unreached(); // TODO-SVE: This needs testing
+        return INS_sve_mov;
+#endif
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     assert(varTypeUsesFloatReg(dstType));
 
@@ -2030,7 +2044,7 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
 #endif
     }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     if (varTypeUsesMaskReg(dstType))
     {
         if (genIsValidMaskReg(srcReg))
@@ -2041,9 +2055,14 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
 
         // mask to int
         assert(genIsValidIntOrFakeReg(srcReg));
+#if defined(TARGET_XARCH)
         return INS_kmovq_gpr;
+#elif defined(TARGET_ARM64)
+        unreached(); // TODO-SVE: This needs testing
+        return INS_sve_mov;
+#endif
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     assert(varTypeUsesFloatReg(dstType));
 
@@ -2145,12 +2164,16 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
         return ins;
     }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     if (varTypeUsesMaskReg(dstType))
     {
+#if defined(TARGET_XARCH)
         return INS_kmovq_msk;
+#elif defined(TARGET_ARM64)
+        return INS_sve_str_mask;
+#endif
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     assert(varTypeUsesFloatReg(dstType));
 
@@ -2262,7 +2285,7 @@ instruction CodeGenInterface::ins_StoreFromSrc(regNumber srcReg, var_types dstTy
         return ins_Store(dstType, aligned);
     }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     if (varTypeUsesMaskReg(dstType))
     {
         if (genIsValidMaskReg(srcReg))
@@ -2275,7 +2298,7 @@ instruction CodeGenInterface::ins_StoreFromSrc(regNumber srcReg, var_types dstTy
         assert(genIsValidIntOrFakeReg(srcReg));
         return ins_Store(dstType, aligned);
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     assert(varTypeUsesFloatReg(dstType));
 
@@ -2385,13 +2408,17 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
             switch (to)
             {
                 case TYP_INT:
-                    return INS_cvttss2si;
+                    return INS_cvttss2si32;
                 case TYP_LONG:
-                    return INS_cvttss2si;
+                    return INS_cvttss2si64;
                 case TYP_FLOAT:
                     return ins_Move_Extend(TYP_FLOAT, false);
                 case TYP_DOUBLE:
                     return INS_cvtss2sd;
+                case TYP_ULONG:
+                    return INS_vcvttss2usi64;
+                case TYP_UINT:
+                    return INS_vcvttss2usi32;
                 default:
                     unreached();
             }
@@ -2401,13 +2428,17 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
             switch (to)
             {
                 case TYP_INT:
-                    return INS_cvttsd2si;
+                    return INS_cvttsd2si32;
                 case TYP_LONG:
-                    return INS_cvttsd2si;
+                    return INS_cvttsd2si64;
                 case TYP_FLOAT:
                     return INS_cvtsd2ss;
                 case TYP_DOUBLE:
                     return ins_Move_Extend(TYP_DOUBLE, false);
+                case TYP_ULONG:
+                    return INS_vcvttsd2usi64;
+                case TYP_UINT:
+                    return INS_vcvttsd2usi32;
                 default:
                     unreached();
             }

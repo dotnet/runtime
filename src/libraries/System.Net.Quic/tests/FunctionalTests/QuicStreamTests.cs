@@ -14,7 +14,7 @@ namespace System.Net.Quic.Tests
 {
     [Collection(nameof(QuicTestCollection))]
     [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/91757", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine), nameof(PlatformDetection.IsArmProcess))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91757", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     public sealed class QuicStreamTests : QuicTestBase
     {
         private static byte[] s_data = "Hello world!"u8.ToArray();
@@ -1249,6 +1249,9 @@ namespace System.Net.Quic.Tests
                     {
                         await stream.WritesClosed;
                     }
+
+                    var _ = await stream.ReadAsync(new byte[0]);
+
                     serverSem.Release();
                     await clientSem.WaitAsync();
 
@@ -1279,6 +1282,9 @@ namespace System.Net.Quic.Tests
                     {
                         await stream.WritesClosed;
                     }
+
+                    var _ = await stream.ReadAsync(new byte[0]);
+
                     clientSem.Release();
                     await serverSem.WaitAsync();
 

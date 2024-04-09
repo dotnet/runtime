@@ -2038,79 +2038,17 @@ namespace System.Text
 
             if (BitConverter.IsLittleEndian && Vector128.IsHardwareAccelerated && elementCount >= (uint)Vector128<byte>.Count)
             {
-                ushort* pCurrentWriteAddress = (ushort*)pUtf16Buffer;
-
-                if (Vector512.IsHardwareAccelerated && elementCount >= (uint)Vector512<byte>.Count)
+                if (Vector512.IsHardwareAccelerated && (elementCount - currentOffset) >= (uint)Vector512<byte>.Count)
                 {
-                    // Calculating the destination address outside the loop results in significant
-                    // perf wins vs. relying on the JIT to fold memory addressing logic into the
-                    // write instructions. See: https://github.com/dotnet/runtime/issues/33002
-                    nuint finalOffsetWhereCanRunLoop = elementCount - (uint)Vector512<byte>.Count;
-
-                    do
-                    {
-                        Vector512<byte> asciiVector = Vector512.Load(pAsciiBuffer + currentOffset);
-
-                        if (asciiVector.ExtractMostSignificantBits() != 0)
-                        {
-                            break;
-                        }
-
-                        (Vector512<ushort> utf16LowVector, Vector512<ushort> utf16HighVector) = Vector512.Widen(asciiVector);
-                        utf16LowVector.Store(pCurrentWriteAddress);
-                        utf16HighVector.Store(pCurrentWriteAddress + Vector512<ushort>.Count);
-
-                        currentOffset += (nuint)Vector512<byte>.Count;
-                        pCurrentWriteAddress += (nuint)Vector512<byte>.Count;
-                    } while (currentOffset <= finalOffsetWhereCanRunLoop);
+                    WidenAsciiToUtf1_Vector<Vector512<byte>, Vector512<ushort>>(pAsciiBuffer, pUtf16Buffer, ref currentOffset, elementCount);
                 }
-                else if (Vector256.IsHardwareAccelerated && elementCount >= (uint)Vector256<byte>.Count)
+                else if (Vector256.IsHardwareAccelerated && (elementCount - currentOffset) >= (uint)Vector256<byte>.Count)
                 {
-                    // Calculating the destination address outside the loop results in significant
-                    // perf wins vs. relying on the JIT to fold memory addressing logic into the
-                    // write instructions. See: https://github.com/dotnet/runtime/issues/33002
-                    nuint finalOffsetWhereCanRunLoop = elementCount - (uint)Vector256<byte>.Count;
-
-                    do
-                    {
-                        Vector256<byte> asciiVector = Vector256.Load(pAsciiBuffer + currentOffset);
-
-                        if (asciiVector.ExtractMostSignificantBits() != 0)
-                        {
-                            break;
-                        }
-
-                        (Vector256<ushort> utf16LowVector, Vector256<ushort> utf16HighVector) = Vector256.Widen(asciiVector);
-                        utf16LowVector.Store(pCurrentWriteAddress);
-                        utf16HighVector.Store(pCurrentWriteAddress + Vector256<ushort>.Count);
-
-                        currentOffset += (nuint)Vector256<byte>.Count;
-                        pCurrentWriteAddress += (nuint)Vector256<byte>.Count;
-                    } while (currentOffset <= finalOffsetWhereCanRunLoop);
+                    WidenAsciiToUtf1_Vector<Vector256<byte>, Vector256<ushort>>(pAsciiBuffer, pUtf16Buffer, ref currentOffset, elementCount);
                 }
-                else
+                else if (Vector128.IsHardwareAccelerated && (elementCount - currentOffset) >= (uint)Vector128<byte>.Count)
                 {
-                    // Calculating the destination address outside the loop results in significant
-                    // perf wins vs. relying on the JIT to fold memory addressing logic into the
-                    // write instructions. See: https://github.com/dotnet/runtime/issues/33002
-                    nuint finalOffsetWhereCanRunLoop = elementCount - (uint)Vector128<byte>.Count;
-
-                    do
-                    {
-                        Vector128<byte> asciiVector = Vector128.Load(pAsciiBuffer + currentOffset);
-
-                        if (VectorContainsNonAsciiChar(asciiVector))
-                        {
-                            break;
-                        }
-
-                        (Vector128<ushort> utf16LowVector, Vector128<ushort> utf16HighVector) = Vector128.Widen(asciiVector);
-                        utf16LowVector.Store(pCurrentWriteAddress);
-                        utf16HighVector.Store(pCurrentWriteAddress + Vector128<ushort>.Count);
-
-                        currentOffset += (nuint)Vector128<byte>.Count;
-                        pCurrentWriteAddress += (nuint)Vector128<byte>.Count;
-                    } while (currentOffset <= finalOffsetWhereCanRunLoop);
+                    WidenAsciiToUtf1_Vector<Vector128<byte>, Vector128<ushort>>(pAsciiBuffer, pUtf16Buffer, ref currentOffset, elementCount);
                 }
             }
 
@@ -2211,6 +2149,85 @@ namespace System.Text
 
             goto Finish;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe void WidenAsciiToUtf1_Vector<TVectorByte, TVectorUInt16>(byte* pAsciiBuffer, char* pUtf16Buffer, ref nuint currentOffset, nuint elementCount)
+            where TVectorByte : unmanaged, ISimdVector<TVectorByte, byte>
+            where TVectorUInt16 : unmanaged, ISimdVector<TVectorUInt16, ushort>
+        {
+            ushort* pCurrentWriteAddress = (ushort*)pUtf16Buffer;
+            // Calculating the destination address outside the loop results in significant
+            // perf wins vs. relying on the JIT to fold memory addressing logic into the
+            // write instructions. See: https://github.com/dotnet/runtime/issues/33002
+            nuint finalOffsetWhereCanRunLoop = elementCount - (nuint)TVectorByte.Count;
+            TVectorByte asciiVector = TVectorByte.Load(pAsciiBuffer + currentOffset);
+            if (!HasMatch<TVectorByte>(asciiVector))
+            {
+                (TVectorUInt16 utf16LowVector, TVectorUInt16 utf16HighVector) = Widen<TVectorByte, TVectorUInt16>(asciiVector);
+                utf16LowVector.Store(pCurrentWriteAddress);
+                utf16HighVector.Store(pCurrentWriteAddress + TVectorUInt16.Count);
+                pCurrentWriteAddress += (nuint)(TVectorUInt16.Count * 2);
+                if (((nuint)pCurrentWriteAddress % sizeof(char)) == 0)
+                {
+                    // Bump write buffer up to the next aligned boundary
+                    pCurrentWriteAddress = (ushort*)((nuint)pCurrentWriteAddress & ~(nuint)(TVectorUInt16.Alignment - 1));
+                    nuint numBytesWritten = (nuint)pCurrentWriteAddress - (nuint)pUtf16Buffer;
+                    currentOffset += (nuint)numBytesWritten / 2;
+                }
+                else
+                {
+                    // If input isn't char aligned, we won't be able to align it to a Vector
+                    currentOffset += (nuint)TVectorByte.Count;
+                }
+                while (currentOffset <= finalOffsetWhereCanRunLoop)
+                {
+                    asciiVector = TVectorByte.Load(pAsciiBuffer + currentOffset);
+                    if (HasMatch<TVectorByte>(asciiVector))
+                    {
+                        break;
+                    }
+                    (utf16LowVector, utf16HighVector) = Widen<TVectorByte, TVectorUInt16>(asciiVector);
+                    utf16LowVector.Store(pCurrentWriteAddress);
+                    utf16HighVector.Store(pCurrentWriteAddress + TVectorUInt16.Count);
+
+                    currentOffset += (nuint)TVectorByte.Count;
+                    pCurrentWriteAddress += (nuint)(TVectorUInt16.Count * 2);
+                }
+            }
+            return;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe bool HasMatch<TVectorByte>(TVectorByte vector)
+            where TVectorByte : unmanaged, ISimdVector<TVectorByte, byte>
+        {
+            return !(vector & TVectorByte.Create((byte)0x80)).Equals(TVectorByte.Zero);
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe (TVectorUInt16 Lower, TVectorUInt16 Upper) Widen<TVectorByte, TVectorUInt16>(TVectorByte vector)
+            where TVectorByte : unmanaged, ISimdVector<TVectorByte, byte>
+            where TVectorUInt16 : unmanaged, ISimdVector<TVectorUInt16, ushort>
+        {
+            if (typeof(TVectorByte) == typeof(Vector256<byte>))
+            {
+                (Vector256<ushort> Lower256, Vector256<ushort> Upper256) = Vector256.Widen((Vector256<byte>)(object)vector);
+                return ((TVectorUInt16)(object)Lower256, (TVectorUInt16)(object)Upper256);
+            }
+            else if (typeof(TVectorByte) == typeof(Vector512<byte>))
+            {
+                (Vector512<ushort> Lower512, Vector512<ushort> Upper512) = Vector512.Widen((Vector512<byte>)(object)vector);
+                return ((TVectorUInt16)(object)Lower512, (TVectorUInt16)(object)Upper512);
+            }
+            else
+            {
+                Debug.Assert(typeof(TVectorByte) == typeof(Vector128<byte>));
+                (Vector128<ushort> Lower128, Vector128<ushort> Upper128) = Vector128.Widen((Vector128<byte>)(object)vector);
+                return ((TVectorUInt16)(object)Lower128, (TVectorUInt16)(object)Upper128);
+            }
+        }
+
 
         /// <summary>
         /// Given a DWORD which represents a buffer of 4 bytes, widens the buffer into 4 WORDs and

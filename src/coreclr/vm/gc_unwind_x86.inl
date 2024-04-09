@@ -142,7 +142,6 @@ size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -366,7 +365,6 @@ size_t GetLocallocSPOffset(hdrInfo * info)
     return position * sizeof(TADDR);
 }
 
-#ifndef FEATURE_NATIVEAOT
 inline
 size_t GetParamTypeArgOffset(hdrInfo * info)
 {
@@ -451,6 +449,7 @@ TADDR GetOutermostBaseFP(TADDR ebp, hdrInfo * info)
     }
 }
 
+#ifndef FEATURE_NATIVEAOT
 /*****************************************************************************
  *
  *  For functions with handlers, checks if it is currently in a handler.
@@ -494,7 +493,6 @@ FrameType   GetHandlerFrameInfo(hdrInfo   * info,
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -662,7 +660,7 @@ inline size_t GetSizeOfFrameHeaderForEnC(hdrInfo * info)
     return sizeof(TADDR) +
             GetEndShadowSPSlotsOffset(info, MAX_EnC_HANDLER_NESTING_LEVEL);
 }
-#endif
+#endif // FEATURE_NATIVEAOT
 
 /*****************************************************************************/
 static
@@ -1521,10 +1519,10 @@ unsigned scanArgRegTableI(PTR_CBYTE    table,
 
     bool      hasPartialArgInfo;
 
-#ifndef UNIX_X86_ABI
+#ifndef FEATURE_EH_FUNCLETS
     hasPartialArgInfo = info->ebpFrame;
 #else
-    // For x86/Linux, interruptible code always has full arg info
+    // For funclets, interruptible code always has full arg info
     //
     // This should be aligned with emitFullArgInfo setting at
     // emitter::emitEndCodeGen (in JIT)
@@ -3686,13 +3684,7 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
     }
     else
     {
-        /* However if ExecutionAborted, then this must be one of the
-         * ExceptionFrames. Handle accordingly
-         */
-        _ASSERTE(!(flags & AbortingCall) || !(flags & ActiveStackFrame));
-
-        newCurOffs = (flags & AbortingCall) ? curOffs-1 // inside "call"
-                                            : curOffs;  // at faulting instr, or start of "try"
+        newCurOffs = curOffs;
     }
 
     ptrOffs    = 0;

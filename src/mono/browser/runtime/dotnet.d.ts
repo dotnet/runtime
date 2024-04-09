@@ -195,10 +195,6 @@ type MonoConfig = {
      */
     pthreadPoolUnusedSize?: number;
     /**
-     * Delay in milliseconds before starting the finalizer thread
-     */
-    finalizerThreadStartDelayMs?: number;
-    /**
      * If true, a list of the methods optimized by the interpreter will be saved and used for faster startup
      *  on future runs of the application
      */
@@ -486,6 +482,10 @@ type APIType = {
     /**
      * Writes to the WASM linear memory
      */
+    setHeapB8: (offset: NativePointer, value: number | boolean) => void;
+    /**
+     * Writes to the WASM linear memory
+     */
     setHeapU8: (offset: NativePointer, value: number) => void;
     /**
      * Writes to the WASM linear memory
@@ -531,6 +531,10 @@ type APIType = {
      * Reads from the WASM linear memory
      */
     getHeapB32: (offset: NativePointer) => boolean;
+    /**
+     * Reads from the WASM linear memory
+     */
+    getHeapB8: (offset: NativePointer) => boolean;
     /**
      * Reads from the WASM linear memory
      */

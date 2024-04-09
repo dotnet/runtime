@@ -8,7 +8,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
-
 #pragma warning disable 8500 // sizeof of managed types
 
 namespace System
