@@ -32,10 +32,6 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.UseRouting();
-
-app.MapHub<ChatHub>("/chathub");
-
 // WASM app as a static file provider
 var wasmPath = Path.Combine(app.Environment.ContentRootPath, "publish/wwwroot");
 Console.WriteLine($"wasmPath: {wasmPath}");
@@ -48,5 +44,9 @@ app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(wasmPath)
 });
+
+app.UseRouting();
+
+app.MapHub<ChatHub>("/chathub");
 
 app.Run();
