@@ -53,7 +53,9 @@ target_include_directories(cdac_data_descriptor PRIVATE ${CLR_DIR}/interop/inc)
 
 set(GENERATED_CDAC_DESCRIPTOR_DIR "${CMAKE_CURRENT_BINARY_DIR}/cdac")
 set(CONTRACT_DESCRIPTOR_OUTPUT "${GENERATED_CDAC_DESCRIPTOR_DIR}/contract-descriptor.c")
-set(CDAC_BUILD_TOOL_CSPROJ "${CLR_DIR}/tools/cdac-build-tool/cdac-build-tool.csproj")
+if("${CDAC_BUILD_TOOL_BINARY_PATH}" STREQUAL "" OR NOT EXISTS "${CDAC_BUILD_TOOL_BINARY_PATH}")
+  message(FATAL_ERROR "No cdac-build-tool set or ${CDAC_BUILD_TOOL_BINARY_PATH} does not exist")
+endif()
 
 set(CONTRACT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/contracts.txt")
 
@@ -62,7 +64,7 @@ set(CONTRACT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/contracts.txt")
 add_custom_command(
     OUTPUT "${CONTRACT_DESCRIPTOR_OUTPUT}"
     VERBATIM
-    COMMAND dotnet run --project "${CDAC_BUILD_TOOL_CSPROJ}" -c "$<CONFIG>" -- compose -v -o "${CONTRACT_DESCRIPTOR_OUTPUT}" -c "${CONTRACT_FILE}" $<TARGET_OBJECTS:cdac_data_descriptor>
+    COMMAND dotnet ${CDAC_BUILD_TOOL_BINARY_PATH} compose -v -o "${CONTRACT_DESCRIPTOR_OUTPUT}" -c "${CONTRACT_FILE}" $<TARGET_OBJECTS:cdac_data_descriptor>
     DEPENDS cdac_data_descriptor cee_wks_core $<TARGET_OBJECTS:cdac_data_descriptor> "${CONTRACT_FILE}"
     USES_TERMINAL
 )
