@@ -4979,29 +4979,16 @@ void LinearScan::freeRegisters(AllRegsMask regsToFree)
 }
 
 #ifdef HAS_MORE_THAN_64_REGISTERS
-// TODO: Can we just if-def the method signature and `IsEmpty()`?
 void LinearScan::freeRegisterMask(AllRegsMask& freeMask)
-{
-    while (!freeMask.IsEmpty())
-    {
-        regNumber nextReg = genFirstRegNumFromMaskAndToggle(freeMask);
-
-        RegRecord* regRecord = getRegisterRecord(nextReg);
-#ifdef TARGET_ARM
-        if (regRecord->assignedInterval != nullptr && (regRecord->assignedInterval->registerType == TYP_DOUBLE))
-        {
-            assert(genIsValidDoubleReg(nextReg));
-            freeMask ^= genRegMask(regNumber(nextReg + 1));
-        }
-#endif
-        freeRegister(regRecord);
-    }
-}
-
 #else
 void LinearScan::freeRegisterMask(RegBitSet64 freeMask)
+#endif // HAS_MORE_THAN_64_REGISTERS
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    while (!freeMask.IsEmpty())
+#else
     while (freeMask != RBM_NONE)
+#endif // HAS_MORE_THAN_64_REGISTERS
     {
         regNumber nextReg = genFirstRegNumFromMaskAndToggle(freeMask);
 
@@ -5016,7 +5003,6 @@ void LinearScan::freeRegisterMask(RegBitSet64 freeMask)
         freeRegister(regRecord);
     }
 }
-#endif // HAS_MORE_THAN_64_REGISTERS
 
 //------------------------------------------------------------------------
 // LinearScan::allocateRegistersMinimal: Perform the actual register allocation when localVars
