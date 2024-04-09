@@ -26,7 +26,7 @@ DLLEXPORT struct DotNetRuntimeContractDescriptor DotNetRuntimeContractDescriptor
 
 DLLEXPORT struct DotNetRuntimeContractDescriptor DotNetRuntimeContractDescriptor = {
     .magic = 0x0043414443434e44ull, // "DNCCDAC\0"
-    .flags = 0x00000001, // FIXME: generate
+    .flags = %%platformFlags%%,
     .descriptor_size = %%jsonDescriptorSize%%,
     .descriptor = "%%jsonDescriptor%%",
     .aux_data_count = %%auxDataCount%%,

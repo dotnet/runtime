@@ -13,22 +13,25 @@ namespace Microsoft.DotNet.Diagnostics.DataContract.BuildTool;
 
 public class DataDescriptorModel
 {
-    public readonly string Baseline;
+    public string Baseline { get; }
     public IReadOnlyDictionary<string, TypeModel> Types { get; }
     public IReadOnlyDictionary<string, GlobalModel> Globals { get; }
     public IReadOnlyDictionary<string, ContractModel> Contracts { get; }
-    private DataDescriptorModel(string baseline, IReadOnlyDictionary<string, TypeModel> types, IReadOnlyDictionary<string, GlobalModel> globals, IReadOnlyDictionary<string, ContractModel> contracts)
+    public uint PlatformFlags { get; }
+    private DataDescriptorModel(string baseline, IReadOnlyDictionary<string, TypeModel> types, IReadOnlyDictionary<string, GlobalModel> globals, IReadOnlyDictionary<string, ContractModel> contracts, uint platformFlags)
     {
         Baseline = baseline;
         Types = types;
         Globals = globals;
         Contracts = contracts;
+        PlatformFlags = platformFlags;
     }
 
     public const string PointerTypeName = "pointer";
 
     internal void DumpModel()
     {
+        Console.WriteLine($"Platform Flags: 0x{PlatformFlags:x8}");
         Console.WriteLine($"Baseline: {Baseline}");
         foreach (var (typeName, type) in Types)
         {
@@ -157,6 +160,8 @@ public class DataDescriptorModel
             _baselineParsed = false;
         }
 
+        public uint PlatformFlags {get; set;}
+
         public TypeModelBuilder AddOrUpdateType(string name, int? size)
         {
             if (!_baselineParsed)
@@ -254,7 +259,7 @@ public class DataDescriptorModel
             {
                 contracts[contractName] = contractBuilder.Build();
             }
-            return new DataDescriptorModel(_baseline, types, globals, contracts);
+            return new DataDescriptorModel(_baseline, types, globals, contracts, PlatformFlags);
         }
     }
 

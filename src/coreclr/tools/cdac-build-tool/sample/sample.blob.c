@@ -335,7 +335,7 @@ struct CDacGlobalPointerIndex
 struct BinaryBlobDataDescriptor
 {
     struct Directory {
-        uint32_t BaselineStart;
+        uint32_t FlagsAndBaselineStart;
         uint32_t TypesStart;
 
         uint32_t FieldPoolStart;
@@ -357,6 +357,7 @@ struct BinaryBlobDataDescriptor
         uint8_t GlobalLiteralSpecSize;
         uint8_t GlobalPointerSpecSize;
     } Directory;
+    uint32_t PlatformFlags;
     uint32_t BaselineName;
     struct TypeSpec Types[CDacBlobTypesCount];
     struct FieldSpec FieldPool[CDacBlobFieldPoolCount];
@@ -375,7 +376,7 @@ const struct MagicAndBlob Blob = {
     .magic = 0x00424F4C42434144ull,// "DACBLOB",
     .Blob = {
         .Directory = {
-            .BaselineStart = offsetof(struct BinaryBlobDataDescriptor, BaselineName),
+            .FlagsAndBaselineStart = offsetof(struct BinaryBlobDataDescriptor, PlatformFlags),
             .TypesStart = offsetof(struct BinaryBlobDataDescriptor, Types),
             .FieldPoolStart = offsetof(struct BinaryBlobDataDescriptor, FieldPool),
             .GlobalLiteralValuesStart = offsetof(struct BinaryBlobDataDescriptor, GlobalLiteralValues),
@@ -392,6 +393,7 @@ const struct MagicAndBlob Blob = {
             .GlobalPointerSpecSize = sizeof(struct GlobalPointerSpec),
         },
         .EndMagic = { 0x01, 0x02, 0x03, 0x04 },
+	.PlatformFlags = 0x01 | (sizeof(void*) == 4 ? 0x02 : 0),
         .BaselineName = offsetof(struct CDacStringPoolSizes, cdac_string_pool_baseline_),
 
         .NamesPool = ("\0" // starts with a nul

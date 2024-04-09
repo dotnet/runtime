@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "static_assert.h"
 
 #include <sospriv.h>
 #include "threads.h"
@@ -176,7 +177,7 @@ struct CDacGlobalPointerIndex
 struct BinaryBlobDataDescriptor
 {
     struct Directory {
-        uint32_t BaselineStart;
+        uint32_t FlagsAndBaselineStart;
         uint32_t TypesStart;
 
         uint32_t FieldPoolStart;
@@ -198,6 +199,7 @@ struct BinaryBlobDataDescriptor
         uint8_t GlobalLiteralSpecSize;
         uint8_t GlobalPointerSpecSize;
     } Directory;
+    uint32_t PlatformFlags;
     uint32_t BaselineName;
     struct TypeSpec Types[CDacBlobTypesCount];
     struct FieldSpec FieldPool[CDacBlobFieldPoolCount];
@@ -212,6 +214,15 @@ struct MagicAndBlob {
     struct BinaryBlobDataDescriptor Blob;
 };
 
+static
+constexpr uint32_t make_platform_flags()
+{
+    // we only support 32-bit and 64-bit right now
+    static_assert_no_msg(sizeof(void*) == 4 || sizeof(void*) == 8);
+
+    return (sizeof(void*) == 4 ? 0x02 : 0) | 0x01;
+}
+
 // C-style designated initializers are a C++20 feature.  Have to use plain old aggregate initialization instead.
 
 DLLEXPORT
@@ -219,7 +230,7 @@ struct MagicAndBlob BlobDataDescriptor = {
     /*.magic = */ 0x00424F4C42434144ull,// "DACBLOB",
     /*.Blob =*/ {
         /*.Directory =*/ {
-            /*.BaselineStart = */ offsetof(struct BinaryBlobDataDescriptor, BaselineName),
+            /* .FlagsAndBaselineStart = */ offsetof(struct BinaryBlobDataDescriptor, PlatformFlags),
             /* .TypesStart = */ offsetof(struct BinaryBlobDataDescriptor, Types),
             /* .FieldPoolStart = */ offsetof(struct BinaryBlobDataDescriptor, FieldPool),
             /* .GlobalLiteralValuesStart = */ offsetof(struct BinaryBlobDataDescriptor, GlobalLiteralValues),
@@ -235,6 +246,7 @@ struct MagicAndBlob BlobDataDescriptor = {
             /* .GlobalLiteralSpecSize = */ sizeof(struct GlobalLiteralSpec),
             /* .GlobalPointerSpecSize = */ sizeof(struct GlobalPointerSpec),
         },
+        /* .PlatformFlags = */ make_platform_flags (),
         /* .BaselineName = */ offsetof(struct CDacStringPoolSizes, cdac_string_pool_baseline_),
 
         /* .Types = */ {

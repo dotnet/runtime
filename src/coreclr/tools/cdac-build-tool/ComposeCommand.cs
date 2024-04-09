@@ -78,6 +78,7 @@ internal class ComposeCommand : CliCommand
         EnsureDirectoryExists(output);
         using var writer = new System.IO.StreamWriter(output);
         var emitter = new ContractDescriptorSourceFileEmitter();
+        emitter.SetPlatformFlags(model.PlatformFlags);
         emitter.SetAuxDataCount(model.AuxDataCount);
         emitter.SetJsonDescriptor(model.ToJson());
         emitter.Emit(writer);

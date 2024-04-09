@@ -147,7 +147,7 @@ public class ObjectFileScraper
 
     struct HeaderDirectory
     {
-        public uint BaselineStart;
+        public uint FlagsAndBaselineStart;
         public uint TypesStart;
 
         public uint FieldPoolStart;
@@ -172,7 +172,7 @@ public class ObjectFileScraper
 
     private void DumpHeaderDirectory(HeaderDirectory headerDirectory)
     {
-        Console.WriteLine($"Baseline Start = {headerDirectory.BaselineStart}");
+        Console.WriteLine($"Baseline Start = {headerDirectory.FlagsAndBaselineStart}");
         Console.WriteLine($"Types Start = {headerDirectory.TypesStart}");
         Console.WriteLine($"Field Pool  Start = {headerDirectory.FieldPoolStart}");
         Console.WriteLine($"Global Literals Start = {headerDirectory.GlobalLiteralValuesStart}");
@@ -215,7 +215,7 @@ public class ObjectFileScraper
         var globalPointerSpecSize = state.ReadByte();
 
         return new HeaderDirectory {
-            BaselineStart = baselineStart,
+            FlagsAndBaselineStart = baselineStart,
             TypesStart = typesStart,
             FieldPoolStart = fieldPoolStart,
             GlobalLiteralValuesStart = globalLiteralValuesStart,
@@ -274,6 +274,7 @@ public class ObjectFileScraper
 
     class Content
     {
+        public required uint PlatformFlags { get; init; }
         public required uint Baseline { get; init; }
         public required IReadOnlyList<TypeSpec> TypeSpecs { get; init; }
         public required IReadOnlyList<FieldSpec> FieldSpecs { get; init; }
@@ -293,9 +294,11 @@ public class ObjectFileScraper
 
         public void AddToModel(DataDescriptorModel.Builder builder)
         {
+            builder.PlatformFlags = PlatformFlags;
             string baseline = GetPoolString(Baseline);
             Console.WriteLine($"baseline Name = {baseline}");
             builder.SetBaseline(baseline);
+
 
             FieldEntry[] fields = FieldSpecs.Select((fieldSpec) =>
                 (fieldSpec.NameIdx != 0) ?
@@ -352,9 +355,10 @@ public class ObjectFileScraper
 
     private Content ReadContent(ScraperState state, HeaderDirectory header)
     {
-        state.ResetPosition(state.HeaderStart + header.BaselineStart);
+        state.ResetPosition(state.HeaderStart + header.FlagsAndBaselineStart);
+        var platformFlags = state.ReadUInt32();
         var baselineNameIdx = state.ReadUInt32();
-        Console.WriteLine($"baseline Name Idx = {baselineNameIdx}");
+        Console.WriteLine($"flags = 0x{platformFlags:x8}, baseline Name Idx = {baselineNameIdx}");
 
         TypeSpec[] typeSpecs = ReadTypeSpecs(state, header);
         FieldSpec[] fieldSpecs = ReadFieldSpecs(state, header);
@@ -371,6 +375,7 @@ public class ObjectFileScraper
 
         return new Content
         {
+            PlatformFlags = platformFlags,
             Baseline = baselineNameIdx,
             TypeSpecs = typeSpecs,
             FieldSpecs = fieldSpecs,
