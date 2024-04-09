@@ -66,11 +66,11 @@ public class ModuleConfigTests : AppTestBase
             TestScenario: "OutErrOverrideWorks"
         ));
         Assert.True(
-            result.TestOutput.Any(m => m.Contains("Emscripten out override works.")),
+            result.ConsoleOutput.Any(m => m.Contains("Emscripten out override works!")),
             "Emscripten out override doesn't work"
         );
         Assert.True(
-            result.TestOutput.Any(m => m.Contains("Emscripten err override works.")),
+            result.ConsoleOutput.Any(m => m.Contains("Emscripten err override works!")),
             "Emscripten err override doesn't work"
         );
     }
