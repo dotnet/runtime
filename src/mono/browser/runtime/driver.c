@@ -435,9 +435,7 @@ mono_wasm_init_finalizer_thread (void)
 {
 	// in the single threaded build, finalizers periodically run on the main thread instead.
 #ifndef DISABLE_THREADS
-	MONO_ENTER_GC_UNSAFE;
 	mono_gc_init_finalizer_thread ();
-	MONO_EXIT_GC_UNSAFE;
 #endif
 }
 

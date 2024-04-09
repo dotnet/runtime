@@ -8,6 +8,12 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoShortDatePattern
     {
+        public static IEnumerable<object[]> ShortDatePattern_Get_TestData()
+        {
+            yield return new object[] { DateTimeFormatInfo.InvariantInfo, "MM/dd/yyyy", "invariant" };
+            yield return new object[] { new CultureInfo("en-US").DateTimeFormat, "M/d/yyyy", "en-US" };
+            yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat, "dd/MM/yyyy", "fr-FR" };
+        }
         public static IEnumerable<object[]> ShortDatePattern_Get_TestData_HybridGlobalization()
         {
             // see the comments on the right to check the non-Hybrid result, if it differs
@@ -131,7 +137,6 @@ namespace System.Globalization.Tests
             yield return new object[] { "en-ZA", "yyyy/MM/dd" };
             yield return new object[] { "en-ZM", "dd/MM/yyyy" };
             yield return new object[] { "en-ZW", "d/M/yyyy" };
-            yield return new object[] { "en-US", "M/d/yyyy" };
             yield return new object[] { "es-419", "d/M/yyyy" };
             yield return new object[] { "es-ES", "d/M/yyyy" };
             yield return new object[] { "es-MX", "dd/MM/yyyy" };
@@ -198,6 +203,13 @@ namespace System.Globalization.Tests
             yield return new object[] { "zh-SG", "dd/MM/yyyy" };
             yield return new object[] { "zh-HK", "d/M/yyyy" };
             yield return new object[] { "zh-TW", "yyyy/M/d" };
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
+        [MemberData(nameof(ShortDatePattern_Get_TestData))]
+        public void ShortDatePattern_Get_ReturnsExpected(DateTimeFormatInfo format, string expected, string cultureName)
+        {
+            Assert.True(expected == format.ShortDatePattern, $"Failed for culture: {cultureName}. Expected: {expected}, Actual: {format.ShortDatePattern}");
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]

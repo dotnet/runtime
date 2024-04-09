@@ -131,7 +131,6 @@ export type LoaderHelpers = {
     scriptUrl: string
     modulesUniqueQuery?: string
     preferredIcuAsset?: string | null,
-    loadingWorkers: PThreadWorker[],
     workerNextNumber: number,
 
     actual_downloaded_assets_count: number,
@@ -143,6 +142,7 @@ export type LoaderHelpers = {
     allDownloadsQueued: PromiseAndController<void>,
     wasmCompilePromise: PromiseAndController<WebAssembly.Module>,
     runtimeModuleLoaded: PromiseAndController<void>,
+    loadingWorkers: PromiseAndController<PThreadWorker[]>,
 
     is_exited: () => boolean,
     is_runtime_running: () => boolean,

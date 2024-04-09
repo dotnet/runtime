@@ -740,6 +740,7 @@ export async function streamingCompileWasm () {
 export function preloadWorkers () {
     if (!WasmEnableThreads) return;
     const jsModuleWorker = resolve_single_asset_path("js-module-threads");
+    const loadingWorkers = [];
     for (let i = 0; i < loaderHelpers.config.pthreadPoolInitialSize!; i++) {
         const workerNumber = loaderHelpers.workerNextNumber++;
         const worker: Partial<PThreadWorker> = new Worker(jsModuleWorker.resolvedUrl!, {
@@ -753,6 +754,7 @@ export function preloadWorkers () {
             threadPrefix: worker_empty_prefix,
             threadName: "emscripten-pool",
         } as any;
-        loaderHelpers.loadingWorkers.push(worker as any);
+        loadingWorkers.push(worker as any);
     }
+    loaderHelpers.loadingWorkers.promise_control.resolve(loadingWorkers);
 }

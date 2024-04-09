@@ -31,7 +31,7 @@ namespace System
 
         private static class AllocationLockHolder
         {
-            public static Lock AllocationLock = new Lock(useTrivialWaits: true);
+            public static readonly Lock AllocationLock = new Lock(useTrivialWaits: true);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
