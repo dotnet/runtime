@@ -164,7 +164,6 @@ namespace System.Net.Security
             HandshakeStop(SslProtocols.None);
         }
 
-#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         [NonEvent]
         public void HandshakeCompleted(SslProtocols protocol, long startingTimestamp, bool connectionOpen)
         {
@@ -213,7 +212,6 @@ namespace System.Net.Security
 
             HandshakeStop(protocol);
         }
-#pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
         [NonEvent]
         public void ConnectionClosed(SslProtocols protocol)
