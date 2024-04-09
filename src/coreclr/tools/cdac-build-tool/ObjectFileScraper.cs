@@ -274,6 +274,7 @@ public class ObjectFileScraper
 
     class Content
     {
+        public required bool Verbose {get; init; }
         public required uint PlatformFlags { get; init; }
         public required uint Baseline { get; init; }
         public required IReadOnlyList<TypeSpec> TypeSpecs { get; init; }
@@ -296,7 +297,7 @@ public class ObjectFileScraper
         {
             builder.PlatformFlags = PlatformFlags;
             string baseline = GetPoolString(Baseline);
-            Console.WriteLine($"baseline Name = {baseline}");
+            WriteVerbose($"baseline Name = {baseline}");
             builder.SetBaseline(baseline);
 
 
@@ -316,20 +317,20 @@ public class ObjectFileScraper
                 string typeName = GetPoolString(typeSpec.NameIdx);
                 var typeBuilder = builder.AddOrUpdateType(typeName, typeSpec.Size);
                 uint j = typeSpec.FieldsIdx; // convert byte offset to index;
-                Console.WriteLine($"Type {typeName} has fields starting at index {j}");
+                WriteVerbose($"Type {typeName} has fields starting at index {j}");
                 while (j < fields.Length && !String.IsNullOrEmpty(fields[j].Name))
                 {
                     typeBuilder.AddOrUpdateField(fields[j].Name, fields[j].Type, fields[j].Offset);
-                    Console.WriteLine($"Type {typeName} has field {fields[j].Name} with offset {fields[j].Offset}");
+                    WriteVerbose($"Type {typeName} has field {fields[j].Name} with offset {fields[j].Offset}");
                     j++;
                 }
                 if (typeSpec.Size != 0)
                 {
-                    Console.WriteLine($"Type {typeName} has size {typeSpec.Size}");
+                    WriteVerbose($"Type {typeName} has size {typeSpec.Size}");
                 }
                 else
                 {
-                    Console.WriteLine($"Type {typeName} has indeterminate size");
+                    WriteVerbose($"Type {typeName} has indeterminate size");
                 }
             }
 
@@ -339,7 +340,7 @@ public class ObjectFileScraper
                 var globalType = GetPoolString(globalSpec.TypeNameIdx);
                 var globalValue = DataDescriptorModel.GlobalValue.MakeDirect(globalSpec.Value);
                 builder.AddOrUpdateGlobal(globalName, globalType, globalValue);
-                Console.WriteLine($"Global {globalName} has type {globalType} with value {globalValue}");
+                WriteVerbose($"Global {globalName} has type {globalType} with value {globalValue}");
             }
 
             foreach (var globalPointer in GlobalPointerSpecs)
@@ -348,8 +349,14 @@ public class ObjectFileScraper
                 var auxDataIdx = globalPointer.AuxDataIdx;
                 var globalValue = DataDescriptorModel.GlobalValue.MakeIndirect(auxDataIdx);
                 builder.AddOrUpdateGlobal(globalName, DataDescriptorModel.PointerTypeName, globalValue);
-                Console.WriteLine($"Global pointer {globalName} has index {globalValue}");
+                WriteVerbose($"Global pointer {globalName} has index {globalValue}");
             }
+        }
+
+        private void WriteVerbose(string msg)
+        {
+            if (Verbose)
+                Console.WriteLine(msg);
         }
     }
 
@@ -358,7 +365,7 @@ public class ObjectFileScraper
         state.ResetPosition(state.HeaderStart + header.FlagsAndBaselineStart);
         var platformFlags = state.ReadUInt32();
         var baselineNameIdx = state.ReadUInt32();
-        Console.WriteLine($"flags = 0x{platformFlags:x8}, baseline Name Idx = {baselineNameIdx}");
+        WriteVerbose($"flags = 0x{platformFlags:x8}, baseline Name Idx = {baselineNameIdx}");
 
         TypeSpec[] typeSpecs = ReadTypeSpecs(state, header);
         FieldSpec[] fieldSpecs = ReadFieldSpecs(state, header);
@@ -375,6 +382,7 @@ public class ObjectFileScraper
 
         return new Content
         {
+            Verbose = Verbose,
             PlatformFlags = platformFlags,
             Baseline = baselineNameIdx,
             TypeSpecs = typeSpecs,
@@ -399,7 +407,7 @@ public class ObjectFileScraper
             bytesRead += 4;
             typeSpecs[i].Size = state.ReadUInt16();
             bytesRead += 2;
-            Console.WriteLine($"TypeSpec[{i}]: NameIdx = {typeSpecs[i].NameIdx}, FieldsIdx = {typeSpecs[i].FieldsIdx}, Size = {typeSpecs[i].Size}");
+            WriteVerbose($"TypeSpec[{i}]: NameIdx = {typeSpecs[i].NameIdx}, FieldsIdx = {typeSpecs[i].FieldsIdx}, Size = {typeSpecs[i].Size}");
             // skip padding
             if (bytesRead < header.TypeSpecSize)
             {
@@ -486,4 +494,9 @@ public class ObjectFileScraper
         return (bytes[0] == 0x01 && bytes[1] == 0x02 && bytes[2] == 0x03 && bytes[3] == 0x04);
     }
 
+    private void WriteVerbose(string msg)
+    {
+        if (Verbose)
+            Console.WriteLine(msg);
+    }
 }
