@@ -138,6 +138,12 @@ namespace ILCompiler.Metadata
                 };
             }
 
+            if (typeCode == Ecma.SerializationTypeCode.String)
+            {
+                string s = valueReader.ReadSerializedString();
+                return s == null ? new ConstantReferenceValue() : HandleString(s);
+            }
+
             return typeCode switch
             {
                 Ecma.SerializationTypeCode.Boolean => new ConstantBooleanValue { Value = valueReader.ReadBoolean() },
@@ -152,7 +158,6 @@ namespace ILCompiler.Metadata
                 Ecma.SerializationTypeCode.UInt64 => new ConstantUInt64Value { Value = valueReader.ReadUInt64() },
                 Ecma.SerializationTypeCode.Single => new ConstantSingleValue { Value = valueReader.ReadSingle() },
                 Ecma.SerializationTypeCode.Double => new ConstantDoubleValue { Value = valueReader.ReadDouble() },
-                Ecma.SerializationTypeCode.String => new ConstantStringValue { Value = valueReader.ReadSerializedString() },
                 Ecma.SerializationTypeCode.SZArray => HandleCustomAttributeConstantArray(module, valueReader.ReadSerializationTypeCode(), ref valueReader),
                 Ecma.SerializationTypeCode.Type => HandleType(Cts.CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeName(module, valueReader.ReadSerializedString())),
                 _ => throw new System.Exception()
