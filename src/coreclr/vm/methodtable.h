@@ -828,7 +828,7 @@ public:
     static bool IsOnlyOneField(MethodTable * pMT);
     static int GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
 #elif defined(TARGET_RISCV64)
-    static int GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
+    static int GetRiscV64PassStructInRegisterFlags(TypeHandle th);
 #endif
 
 #if defined(UNIX_AMD64_ABI_ITF)

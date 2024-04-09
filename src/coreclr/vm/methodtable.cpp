@@ -3465,9 +3465,8 @@ static bool HandleInlineArray(int elementTypeIndex, int nElements, StructFloatFi
     return true;
 }
 
-static bool FlattenFieldTypes(CORINFO_CLASS_HANDLE cls, StructFloatFieldInfoFlags types[2], int& typeIndex)
+static bool FlattenFieldTypes(TypeHandle th, StructFloatFieldInfoFlags types[2], int& typeIndex)
 {
-    TypeHandle th(cls);
     bool isManaged = !th.IsTypeDesc();
     MethodTable* pMT = isManaged ? th.AsMethodTable() : th.AsNativeValueType();
     int nFields = isManaged ? pMT->GetNumIntroducedInstanceFields() : pMT->GetNativeLayoutInfo()->GetNumFields();
@@ -3487,7 +3486,7 @@ static bool FlattenFieldTypes(CORINFO_CLASS_HANDLE cls, StructFloatFieldInfoFlag
             if (type == ELEMENT_TYPE_VALUETYPE)
             {
                 MethodTable* nested = fields[i].GetApproxFieldTypeHandleThrowing().GetMethodTable();
-                if (!FlattenFieldTypes((CORINFO_CLASS_HANDLE)nested, types, typeIndex))
+                if (!FlattenFieldTypes(TypeHandle(nested), types, typeIndex))
                     return false;
             }
             else if (fields[i].GetSize() <= TARGET_POINTER_SIZE)
@@ -3528,7 +3527,7 @@ static bool FlattenFieldTypes(CORINFO_CLASS_HANDLE cls, StructFloatFieldInfoFlag
                 int elementTypeIndex = typeIndex;
 
                 MethodTable* nested = fields[i].GetNestedNativeMethodTable();
-                if (!FlattenFieldTypes((CORINFO_CLASS_HANDLE)nested, types, typeIndex))
+                if (!FlattenFieldTypes(TypeHandle(nested), types, typeIndex))
                     return false;
 
                 // In native layout fixed arrays are marked as NESTED just like structs
@@ -3555,16 +3554,14 @@ static bool FlattenFieldTypes(CORINFO_CLASS_HANDLE cls, StructFloatFieldInfoFlag
     return true;
 }
 
-int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
+int MethodTable::GetRiscV64PassStructInRegisterFlags(TypeHandle th)
 {
-    TypeHandle th(cls);
-
     if (th.GetSize() > ENREGISTERED_PARAMTYPE_MAXSIZE)
         return STRUCT_NO_FLOAT_FIELD;
 
     StructFloatFieldInfoFlags types[2] = {STRUCT_NO_FLOAT_FIELD, STRUCT_NO_FLOAT_FIELD};
     int nFields = 0;
-    if (!FlattenFieldTypes(cls, types, nFields) || nFields == 0)
+    if (!FlattenFieldTypes(th, types, nFields) || nFields == 0)
         return STRUCT_NO_FLOAT_FIELD;
 
     assert(nFields == 1 || nFields == 2);
