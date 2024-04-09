@@ -1147,7 +1147,7 @@ typedef struct {
 	MonoTableInfo *t;		/* pointer to the table */
 
 	// optimization data
-	gboolean metadata_has_updates;
+	gint32 metadata_has_updates; // -1: uninitialized. 0/1: value
 	const char * t_base;
 	guint t_row_size;
 	guint32 t_rows;
@@ -1173,7 +1173,7 @@ locator_init (MonoTableInfo *t, guint32 idx, guint32 col_idx)
 		return result;
 
 	// optimization data for decode_locator_row
-	result.metadata_has_updates = mono_metadata_has_updates ();
+	result.metadata_has_updates = -1;
 	result.t_base = t->base;
 	result.t_row_size = t->row_size;
 	result.t_rows = table_info_get_rows (t);

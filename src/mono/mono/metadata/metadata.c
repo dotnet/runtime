@@ -4684,7 +4684,9 @@ decode_locator_row (locator_t *loc, int row_index)
 {
 	const char *data;
 
-	if (G_UNLIKELY (loc->metadata_has_updates))
+	if (G_UNLIKELY (loc->metadata_has_updates < 0))
+		loc->metadata_has_updates = mono_metadata_has_updates ();
+	if (G_UNLIKELY (loc->metadata_has_updates > 0))
 		return mono_metadata_decode_row_col_slow (loc->t, row_index, loc->col_idx);
 
 	// g_assert (col < mono_metadata_table_count (bitfield));
