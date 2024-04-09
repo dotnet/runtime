@@ -42,7 +42,7 @@ namespace System.Net.Security.Tests
             {
                 if (bool.Parse(enabledBySwitch))
                 {
-                    AppContext.SetSwitch("System.Net.Security.EnableSslKeyLogging", true);
+                    AppContext.SetSwitch("System.Net.EnableSslKeyLogging", true);
                 }
 
                 (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();

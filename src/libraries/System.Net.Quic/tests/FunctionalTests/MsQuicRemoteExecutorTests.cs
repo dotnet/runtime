@@ -40,7 +40,7 @@ namespace System.Net.Quic.Tests
             {
                 if (bool.Parse(enabledBySwitch))
                 {
-                    AppContext.SetSwitch("System.Net.Security.EnableSslKeyLogging", true);
+                    AppContext.SetSwitch("System.Net.EnableSslKeyLogging", true);
                 }
 
                 (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
