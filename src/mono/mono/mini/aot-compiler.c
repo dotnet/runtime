@@ -1348,7 +1348,7 @@ arm64_emit_load_got_slot (MonoAotCompile *acfg, int dreg, int got_slot)
 	emit_unset_mode (acfg);
 	/* r16==ip0 */
 	offset = (int)(got_slot * TARGET_SIZEOF_VOID_P);
-#ifdef TARGET_MACH
+#ifdef GCC
 	/* clang's integrated assembler */
 	fprintf (acfg->fp, "adrp x16, %s@PAGE+%d\n", acfg->got_symbol, offset & 0xfffff000);
 #ifdef MONO_ARCH_ILP32
