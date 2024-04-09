@@ -9586,7 +9586,7 @@ int MethodTable::GetFieldAlignmentRequirement()
     {
         return GetClass()->GetOverriddenFieldAlignmentRequirement();
     }
-    return min(GetNumInstanceFieldBytes(), TARGET_POINTER_SIZE);
+    return min((int)GetNumInstanceFieldBytes(), TARGET_POINTER_SIZE);
 }
 
 UINT32 MethodTable::GetNativeSize()

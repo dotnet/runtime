@@ -231,7 +231,7 @@ function getDayNames (locale: string | undefined) : { long: string[], abbreviate
     const dayNames = [];
     const dayNamesAbb = [];
     const dayNamesSS = [];
-    for(let i = 0; i < 7; i++) {
+    for (let i = 0; i < 7; i++) {
         dayNames[i] = weekDay.toLocaleDateString(locale, { weekday: "long" });
         dayNamesAbb[i] = weekDay.toLocaleDateString(locale, { weekday: "short" });
         dayNamesSS[i] = weekDay.toLocaleDateString(locale, { weekday: "narrow" });
@@ -251,7 +251,7 @@ function getMonthNames (locale: string | undefined) : { long: string[], abbrevia
     const monthsGen: string[] = [];
     const monthsAbbGen: string[] = [];
     let isChineeseStyle, isShortFormBroken;
-    for(let i = firstMonthShift; i < 12 + firstMonthShift; i++) {
+    for (let i = firstMonthShift; i < 12 + firstMonthShift; i++) {
         const monthCnt = i % 12;
         date.setMonth(monthCnt);
 

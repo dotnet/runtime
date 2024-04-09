@@ -74,10 +74,10 @@ public:
 
 private:
     Statement* optOptimizeBoolsChkBlkCond();
-    GenTree* optIsBoolComp(OptTestInfo* pOptTest);
-    bool optOptimizeBoolsChkTypeCostCond();
-    void optOptimizeBoolsUpdateTrees();
-    bool FindCompareChain(GenTree* condition, bool* isTestCondition);
+    GenTree*   optIsBoolComp(OptTestInfo* pOptTest);
+    bool       optOptimizeBoolsChkTypeCostCond();
+    void       optOptimizeBoolsUpdateTrees();
+    bool       FindCompareChain(GenTree* condition, bool* isTestCondition);
 };
 
 //-----------------------------------------------------------------------------
