@@ -2135,6 +2135,8 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
     }
     CONTRACTL_END;
 
+    Thread *pThread = GetThread();
+
     // Do not save stacktrace to preallocated exception.  These are shared.
     if (CLRException::IsPreallocatedExceptionHandle(hThrowable))
     {
@@ -2145,7 +2147,7 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
         //
         // In such a case, we should clear the flag as the throwable representing the
         // preallocated exception will not have the restored (or any) stack trace.
-        PTR_ThreadExceptionState pCurTES = GetThread()->GetExceptionState();
+        PTR_ThreadExceptionState pCurTES = pThread->GetExceptionState();
         pCurTES->ResetRaisingForeignException();
 
         return;
@@ -2162,7 +2164,7 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
     // Check if the flag indicating foreign exception raise has been setup or not,
     // and then reset it so that subsequent processing of managed frames proceeds
     // normally.
-    PTR_ThreadExceptionState pCurTES = GetThread()->GetExceptionState();
+    PTR_ThreadExceptionState pCurTES = pThread->GetExceptionState();
     BOOL fRaisingForeignException = pCurTES->IsRaisingForeignException();
     pCurTES->ResetRaisingForeignException();
 
@@ -2265,14 +2267,17 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                         gc.dynamicMethodsArray = (PTRARRAYREF)AllocateObjectArray(m_cDynamicMethodItems, g_pObjectClass);
                         LOG((LF_EH, LL_INFO100, "StackTraceInfo::SaveStackTrace - allocated dynamic array for first frame of size %lu\n",
                             m_cDynamicMethodItems));
+
+                        gc.dynamicMethodsArray->SetAt(0, gc.stackTrace.Get());
                     }
 
-                    m_dCurrentDynamicIndex = 0;
+                    m_dCurrentDynamicIndex = 1;
                 }
                 else
                 {
                     // Fetch the stacktrace and the dynamic method array
                     ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->GetStackTrace(gc.stackTrace, &gc.pOrigDynamicArray);
+                    Thread *pStackTraceCreatorThread = (gc.stackTrace.Get() != NULL) ?  gc.stackTrace.GetObjectThread() : NULL;
 
                     if (fRaisingForeignException)
                     {
@@ -2302,7 +2307,7 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                     else
                     {
                         // Since there is no dynamic method array, reset the corresponding state variables
-                        m_dCurrentDynamicIndex = 0;
+                        m_dCurrentDynamicIndex = 1;
                         m_cDynamicMethodItems = 0;
                     }
 
@@ -2321,7 +2326,7 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                         // StackTraceInfo.
 
                         unsigned iStackTraceElements = (unsigned)gc.stackTrace.Size();
-                        m_dCurrentDynamicIndex = 0;
+                        m_dCurrentDynamicIndex = 1;
                         for (unsigned iIndex = 0; iIndex < iStackTraceElements; iIndex++)
                         {
                             MethodDesc *pMethod = gc.stackTrace[iIndex].pFunc;
@@ -2363,15 +2368,22 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
 
                         cTotalDynamicMethodCount = cNewSum.Value();
 
-                        if (cTotalDynamicMethodCount > m_cDynamicMethodItems)
+                        // Create a new dynamic method array if there is more space needed or if the stack trace was created by another thread
+                        if ((cTotalDynamicMethodCount > m_cDynamicMethodItems) || (pStackTraceCreatorThread != pThread))
                         {
+                            S_UINT32 cNewSize = S_UINT32(cTotalDynamicMethodCount);
+                            if (cTotalDynamicMethodCount > m_cDynamicMethodItems)
+                            {
+                                // Double the current limit of the array.
+                                cNewSize *= S_UINT32(2);
+                            }
+
                             if (m_cDynamicMethodItems == 0)
                             {
                                 // We are allocating the array for the first time, add one slot for the stack trace reference
-                                cTotalDynamicMethodCount++;
+                                cNewSize += S_UINT32(1);
                             }
-                            // Double the current limit of the array.
-                            S_UINT32 cNewSize = S_UINT32(2) * S_UINT32(cTotalDynamicMethodCount);
+
                             if (cNewSize.IsOverflow())
                             {
                                 // Overflow here implies that we cannot allocate any more memory
@@ -2401,10 +2413,9 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                             }
                             else
                             {
-                                _ASSERTE(m_dCurrentDynamicIndex == 0);
-                                gc.dynamicMethodsArray->SetAt(0, gc.stackTrace.Get());
-                                m_dCurrentDynamicIndex = 1;
+                                _ASSERTE(m_dCurrentDynamicIndex == 1);
                             }
+                            gc.dynamicMethodsArray->SetAt(0, gc.stackTrace.Get());
                         }
                     }
                 }
