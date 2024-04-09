@@ -348,7 +348,7 @@ void CodeGen::genCodeForBBlist()
             // Mark a label and update the current set of live GC refs
 
             block->bbEmitCookie = GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                                                             gcInfo.gcRegByrefSetCur DEBUG_ARG(block));
+                                                             gcInfo.gcRegByrefSetCur, block->Prev());
         }
 
         if (block->IsFirstColdBlock(compiler))
