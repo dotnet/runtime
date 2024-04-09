@@ -25,9 +25,9 @@ public class SignalRClientTests : SignalRTestsBase
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsWorkloadWithMultiThreadingForDefaultFramework))]
     [InlineData("Debug", "LongPolling")]
-    // [InlineData("Release", "LongPolling")]
-    // [InlineData("Debug", "WebSockets")]
-    // [InlineData("Release", "WebSockets")]
+    [InlineData("Release", "LongPolling")]
+    [InlineData("Debug", "WebSockets")]
+    [InlineData("Release", "WebSockets")]
     public async Task SignalRPassMessages(string config, string transport)
     {
         BuildAspNetCoreServingWASM(config: config,
@@ -39,52 +39,18 @@ public class SignalRClientTests : SignalRTestsBase
             generatedProjectNamePrefix: "SignalRClientTests",
             runtimeType: RuntimeVariant.MultiThreaded);
 
-        try
-        {
-            var result = await RunSdkStyleAppForBuild(new(
+        var result = await RunSdkStyleAppForBuild(new(
             Configuration: config,
             TestScenario: "SignalRClientTests",
-            BrowserQueryString: new Dictionary<string, string> { ["transport"] = transport, ["message"] = "ping" },
-            OnConsoleMessage: async (page, msg) =>
-            {
-                _testOutput.WriteLine(msg.Text);
-                if (msg.Text.Contains("Buttons added to the body, the test can be started."))
-                {
-                    Console.WriteLine($"clicking startconnection button");
-                    await SaveClickButtonAsync(page, "#startconnection");
-                }
-                if (msg.Text.Contains("sendMessage button is present"))
-                {
-                    try
-                    {
-                        Console.WriteLine($"clicking sendmessage button");
-                        await SaveClickButtonAsync(page, "#sendmessage");
-                        
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Exception when clicking the message button: {ex}");
-                        await SaveClickButtonAsync(page, "#exitProgram");
-                    }
-                }
-                if (msg.Text.Contains("ReceiveMessage from server"))
-                {
-                    Console.WriteLine($"clicking exitProgram button");
-                    await SaveClickButtonAsync(page, "#exitProgram");
-                }
-            }));
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Exception: {ex}");
-        }
+            BrowserQueryString: new Dictionary<string, string> { ["transport"] = transport, ["message"] = "ping" } ));
 
-        string output = _testOutput.ToString() ?? "";
-        Assert.NotEmpty(output);
+        string testOutput = string.Join("\n", result.TestOutput) ?? "";
+        Assert.NotEmpty(testOutput);
         // check sending and receiving threadId
-        string threadIdUsedForSending = GetThreadOfAction(output, @"SignalRPassMessages was sent by CurrentManagedThreadId=(\d+)", "signalR message was sent");
-        string threadIdUsedForReceiving = GetThreadOfAction(output, @"ReceiveMessage from server on CurrentManagedThreadId=(\d+)", "signalR message was received");
+        string threadIdUsedForSending = GetThreadOfAction(testOutput, @"SignalRPassMessages was sent by CurrentManagedThreadId=(\d+)", "signalR message was sent");
+        string threadIdUsedForReceiving = GetThreadOfAction(testOutput, @"ReceiveMessage from server on CurrentManagedThreadId=(\d+)", "signalR message was received");
+        string consoleOutput = string.Join("\n", result.ConsoleOutput);
         Assert.True("1" != threadIdUsedForSending || "1" != threadIdUsedForReceiving,
-            $"Expected to send/receive with signalR in non-UI threads, instead only CurrentManagedThreadId=1 was used. TestOutput: {output}.");
+            $"Expected to send/receive with signalR in non-UI threads, instead only CurrentManagedThreadId=1 was used. ConsoleOutput: {consoleOutput}.");
     }
 }

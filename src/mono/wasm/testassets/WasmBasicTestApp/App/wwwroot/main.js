@@ -14,6 +14,10 @@ function testOutput(msg) {
     console.log(`TestOutput -> ${msg}`);
 }
 
+export function exitWithSuccess() { 
+    exit(0);
+}
+
 // Prepare base runtime parameters
 dotnet
     .withElementOnExit()
@@ -68,11 +72,14 @@ switch (testCase) {
         break;
 }
 
-const { getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
+const { setModuleImports, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
 const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
 const assemblyExtension = config.resources.assembly['System.Private.CoreLib.wasm'] !== undefined ? ".wasm" : ".dll";
 
+setModuleImports("main.js", {
+    exitWithSuccess
+});
 // Run the test case
 try {
     switch (testCase) {
@@ -107,41 +114,11 @@ try {
             if (!transport || !message) {
                 exit(2, new Error(`Query string with parameters 'message', 'transport' is required, query = ${params}`));
             }
-            console.log(`Starting SignalRClientTests with transport: ${transport}, message: ${message}`)
+            console.log(`Starting SignalRClientTests with transport: ${transport}, message: ${message}`);
 
-            let startConnectionButton = document.createElement("button");
-            startConnectionButton.id = "startconnection"; // second: click this
-            startConnectionButton.addEventListener("click", async function() {
-                testOutput("StartConnectionButton was clicked!");
-                const baseUrl = window.location.protocol + "//" + window.location.host;;
-                await exports.SignalRClientTests.Connect(baseUrl, transport);
-            
-                let sendMessageButtonCheck = document.getElementById("sendMessage");
-                if (sendMessageButtonCheck) {
-                    console.log("sendMessage button is present");
-                } else {
-                    console.log("sendMessage button is not present");
-                }
-            });
-            document.body.appendChild(startConnectionButton);
-
-            let sendMessageButton = document.createElement("button");
-            sendMessageButton.id = "sendMessage"; // third: click this
-            sendMessageButton.addEventListener("click", async function() {
-                testOutput("sendMessageButton was clicked!");
-                await exports.SignalRClientTests.SignalRPassMessages(message);
-            });
-            document.body.appendChild(sendMessageButton);
-
-            let exitProgramButton = document.createElement("button");
-            exitProgramButton.id = "exitProgram"; // fourth: click this
-            exitProgramButton.addEventListener("click", async function() {
-                testOutput("exitProgramButton was clicked!");
-                await exports.SignalRClientTests.DisposeHubConnection();
-                exit(0);
-            });
-            document.body.appendChild(exitProgramButton);
-            testOutput("Buttons added to the body, the test can be started."); // first: wait for this message
+            const baseUrl = window.location.protocol + "//" + window.location.host;
+            await exports.SignalRClientTests.Connect(baseUrl, transport);
+            await exports.SignalRClientTests.SignalRPassMessages(message);
             break;
         default:
             console.error(`Unknown test case: ${testCase}`);

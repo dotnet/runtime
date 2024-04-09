@@ -25,10 +25,4 @@ public class SignalRTestsBase : AppTestBase
         Assert.True(match.Success, $"Expected to find a log that {actionDescription}. TestOutput: {testOutput}.");
         return match.Groups[1].Value ?? "";
     }
-
-    protected async Task SaveClickButtonAsync(IPage page, string selector)
-    {
-        await page.WaitForSelectorAsync(selector);
-        await page.Locator(selector).ClickAsync();
-    }
 }

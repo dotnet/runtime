@@ -17,16 +17,17 @@ public partial class SignalRClientTests
     public static async Task Connect(string baseUrl, string transport)
     {
         string hubUrl = Path.Combine(baseUrl, "chathub");
-        TestOutput.WriteLine($"hubUrl = {hubUrl}");
         HttpTransportType httpTransportType = StringToTransportType(transport);
         _hubConnection = new HubConnectionBuilder().WithUrl(hubUrl, options =>
             {
                 options.Transports = httpTransportType;
             })
             .Build();
-        _hubConnection.On<string>("ReceiveMessage", (message) =>
+        _hubConnection.On<string>("ReceiveMessage", async (message) =>
         {
             TestOutput.WriteLine($"Message = [{message}]. ReceiveMessage from server on CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
+            await DisposeHubConnection();
+            ExitWithSuccess();
         });
         await _hubConnection.StartAsync();
         TestOutput.WriteLine($"SignalR connected by CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
@@ -45,7 +46,6 @@ public partial class SignalRClientTests
             TestOutput.WriteLine($"SignalRPassMessages was sent by CurrentManagedThreadId={Environment.CurrentManagedThreadId}, message={message}");
         });
 
-    [JSExport]
     private static async Task DisposeHubConnection()
     {
         if (_hubConnection != null)
@@ -56,6 +56,9 @@ public partial class SignalRClientTests
         }
         TestOutput.WriteLine($"SignalR disconnected by CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
     }
+
+    [JSImport("exitWithSuccess", "main.js")]
+    public static partial void ExitWithSuccess();
 
     public static HttpTransportType StringToTransportType(string? transport)
     {
