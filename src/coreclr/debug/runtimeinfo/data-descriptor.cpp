@@ -214,14 +214,8 @@ struct MagicAndBlob {
     struct BinaryBlobDataDescriptor Blob;
 };
 
-static
-constexpr uint32_t make_platform_flags()
-{
-    // we only support 32-bit and 64-bit right now
-    static_assert_no_msg(sizeof(void*) == 4 || sizeof(void*) == 8);
-
-    return (sizeof(void*) == 4 ? 0x02 : 0) | 0x01;
-}
+// we only support 32-bit and 64-bit right now
+static_assert_no_msg(sizeof(void*) == 4 || sizeof(void*) == 8);
 
 // C-style designated initializers are a C++20 feature.  Have to use plain old aggregate initialization instead.
 
@@ -246,7 +240,7 @@ struct MagicAndBlob BlobDataDescriptor = {
             /* .GlobalLiteralSpecSize = */ sizeof(struct GlobalLiteralSpec),
             /* .GlobalPointerSpecSize = */ sizeof(struct GlobalPointerSpec),
         },
-        /* .PlatformFlags = */ make_platform_flags (),
+        /* .PlatformFlags = */ (sizeof(void*) == 4 ? 0x02 : 0) | 0x01,
         /* .BaselineName = */ offsetof(struct CDacStringPoolSizes, cdac_string_pool_baseline_),
 
         /* .Types = */ {
