@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { mono_log_error } from "./logging";
 import { GlobalizationMode, MonoConfig } from "../types";
 import { ENVIRONMENT_IS_WEB, loaderHelpers } from "./globals";
 import { mono_log_info, mono_log_debug } from "./logging";
@@ -18,7 +19,7 @@ export function init_globalization () {
             loaderHelpers.preferredIcuAsset = null;
         } else {
             const msg = "invariant globalization mode is inactive and no ICU data archives are available";
-            loaderHelpers.err(`ERROR: ${msg}`);
+            mono_log_error(`ERROR: ${msg}`);
             throw new Error(msg);
         }
     }
