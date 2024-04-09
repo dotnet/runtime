@@ -1579,13 +1579,13 @@ public:
     // Pred list maintenance
     //
     bool checkPredListOrder();
-    void ensurePredListOrder(Compiler * compiler);
-    void reorderPredList(Compiler * compiler);
+    void ensurePredListOrder(Compiler* compiler);
+    void reorderPredList(Compiler* compiler);
 
     union
     {
         BasicBlock* bbIDom;          // Represent the closest dominator to this block (called the Immediate
-                                        // Dominator) used to compute the dominance tree.
+                                     // Dominator) used to compute the dominance tree.
         FlowEdge* bbLastPred;        // Used early on by fgLinkBasicBlock/fgAddRefPred
         void*     bbSparseProbeList; // Used early on by fgInstrument
     };
@@ -1597,13 +1597,13 @@ public:
 
     IL_OFFSET bbCodeOffs;    // IL offset of the beginning of the block
     IL_OFFSET bbCodeOffsEnd; // IL offset past the end of the block. Thus, the [bbCodeOffs..bbCodeOffsEnd)
-                                // range is not inclusive of the end offset. The count of IL bytes in the block
-                                // is bbCodeOffsEnd - bbCodeOffs, assuming neither are BAD_IL_OFFSET.
+                             // range is not inclusive of the end offset. The count of IL bytes in the block
+                             // is bbCodeOffsEnd - bbCodeOffs, assuming neither are BAD_IL_OFFSET.
 
 #ifdef DEBUG
     void dspBlockILRange() const; // Display the block's IL range as [XXX...YYY), where XXX and YYY might be "???"
-                                    // for BAD_IL_OFFSET.
-#endif                                // DEBUG
+                                  // for BAD_IL_OFFSET.
+#endif                            // DEBUG
 
     VARSET_TP bbVarUse; // variables used     by block (before a definition)
     VARSET_TP bbVarDef; // variables assigned by block (before a use)
@@ -1617,8 +1617,8 @@ public:
     MemoryKindSet bbMemoryLiveIn : MemoryKindCount;
     MemoryKindSet bbMemoryLiveOut : MemoryKindCount;
     MemoryKindSet bbMemoryHavoc : MemoryKindCount; // If true, at some point the block does an operation
-                                                    // that leaves memory in an unknown state. (E.g.,
-                                                    // unanalyzed call, store through unknown pointer...)
+                                                   // that leaves memory in an unknown state. (E.g.,
+                                                   // unanalyzed call, store through unknown pointer...)
 
     // We want to make phi functions for the special implicit var memory.  But since this is not a real
     // lclVar, and thus has no local #, we can't use a GenTreePhiArg.  Instead, we use this struct.
@@ -1643,7 +1643,7 @@ public:
     static MemoryPhiArg* EmptyMemoryPhiDef; // Special value (0x1, FWIW) to represent a to-be-filled in Phi arg list
                                             // for Heap.
     MemoryPhiArg* bbMemorySsaPhiFunc[MemoryKindCount]; // If the "in" Heap SSA var is not a phi definition, this
-                                                        // value is NULL.
+                                                       // value is NULL.
     // Otherwise, it is either the special value EmptyMemoryPhiDefn, to indicate
     // that Heap needs a phi definition on entry, or else it is the linked list
     // of the phi arguments.
@@ -1652,13 +1652,13 @@ public:
 
     VARSET_TP bbScope; // variables in scope over the block
 
-    void InitVarSets(class Compiler * comp);
+    void InitVarSets(class Compiler* comp);
 
     /* The following are the standard bit sets for dataflow analysis.
-        *  We perform CSE and range-checks at the same time
-        *  and assertion propagation separately,
-        *  thus we can union them since the two operations are completely disjunct.
-        */
+     *  We perform CSE and range-checks at the same time
+     *  and assertion propagation separately,
+     *  thus we can union them since the two operations are completely disjunct.
+     */
 
     union
     {
@@ -1678,7 +1678,7 @@ public:
         EXPSET_TP bbCseOut;              // CSEs available on exit
         ASSERT_TP bbAssertionOut;        // assertions available on exit (global prop, local prop & !BBJ_COND)
         ASSERT_TP bbAssertionOutIfFalse; // assertions available on exit along false/next edge (BBJ_COND, local
-                                            // prop)
+                                         // prop)
     };
 
     void* bbEmitCookie;
@@ -1700,7 +1700,7 @@ public:
 
     // Given an the edge b1 -> b2, calculate the slop fraction by
     // using the higher of the two block weights
-    static weight_t GetSlopFraction(BasicBlock * b1, BasicBlock * b2)
+    static weight_t GetSlopFraction(BasicBlock* b1, BasicBlock* b2)
     {
         return GetSlopFraction(max(b1->bbWeight, b2->bbWeight));
     }
@@ -1719,7 +1719,7 @@ public:
 #endif // DEBUG
 
     unsigned    bbStackDepthOnEntry() const;
-    void        bbSetStack(StackEntry * stack);
+    void        bbSetStack(StackEntry* stack);
     StackEntry* bbStackOnEntry() const;
 
     // "bbNum" is one-based (for unknown reasons); it is sometimes useful to have the corresponding
@@ -1753,14 +1753,16 @@ public:
 
     GenTree* lastNode() const;
 
-    bool endsWithJmpMethod(Compiler * comp) const;
+    bool endsWithJmpMethod(Compiler* comp) const;
 
-    bool endsWithTailCall(Compiler * comp, bool fastTailCallsOnly, bool tailCallsConvertibleToLoopOnly,
-                            GenTree** tailCall) const;
+    bool endsWithTailCall(Compiler* comp,
+                          bool      fastTailCallsOnly,
+                          bool      tailCallsConvertibleToLoopOnly,
+                          GenTree** tailCall) const;
 
-    bool endsWithTailCallOrJmp(Compiler * comp, bool fastTailCallsOnly = false) const;
+    bool endsWithTailCallOrJmp(Compiler* comp, bool fastTailCallsOnly = false) const;
 
-    bool endsWithTailCallConvertibleToLoop(Compiler * comp, GenTree * *tailCall) const;
+    bool endsWithTailCallConvertibleToLoop(Compiler* comp, GenTree** tailCall) const;
 
     // Returns the first statement in the statement list of "this" that is
     // not an SSA definition (a lcl = phi(...) store).
@@ -1840,18 +1842,18 @@ public:
     };
 
     template <typename TFunc>
-    BasicBlockVisit VisitEHEnclosedHandlerSecondPassSuccs(Compiler * comp, TFunc func);
+    BasicBlockVisit VisitEHEnclosedHandlerSecondPassSuccs(Compiler* comp, TFunc func);
 
     template <typename TFunc>
-    BasicBlockVisit VisitAllSuccs(Compiler * comp, TFunc func);
+    BasicBlockVisit VisitAllSuccs(Compiler* comp, TFunc func);
 
     template <typename TFunc>
-    BasicBlockVisit VisitEHSuccs(Compiler * comp, TFunc func);
+    BasicBlockVisit VisitEHSuccs(Compiler* comp, TFunc func);
 
     template <typename TFunc>
-    BasicBlockVisit VisitRegularSuccs(Compiler * comp, TFunc func);
+    BasicBlockVisit VisitRegularSuccs(Compiler* comp, TFunc func);
 
-    bool HasPotentialEHSuccs(Compiler * comp);
+    bool HasPotentialEHSuccs(Compiler* comp);
 
     // Base class for Successor block/edge iterators.
     //
@@ -2056,7 +2058,7 @@ public:
         return BBSuccList(this);
     }
 
-    BBCompilerSuccList Succs(Compiler * comp)
+    BBCompilerSuccList Succs(Compiler* comp)
     {
         return BBCompilerSuccList(comp, this);
     }
@@ -2066,18 +2068,18 @@ public:
         return BBSuccEdgeList(this);
     }
 
-    BBCompilerSuccEdgeList SuccEdges(Compiler * comp)
+    BBCompilerSuccEdgeList SuccEdges(Compiler* comp)
     {
         return BBCompilerSuccEdgeList(comp, this);
     }
 
     // Clone block state and statements from `from` block to `to` block (which must be new/empty)
-    static void CloneBlockState(Compiler * compiler, BasicBlock * to, const BasicBlock* from);
+    static void CloneBlockState(Compiler* compiler, BasicBlock* to, const BasicBlock* from);
 
     // Copy the block kind and take memory ownership of the targets.
-    void TransferTarget(BasicBlock * from);
+    void TransferTarget(BasicBlock* from);
 
-    void MakeLIR(GenTree * firstNode, GenTree * lastNode);
+    void MakeLIR(GenTree* firstNode, GenTree* lastNode);
     bool IsLIR() const;
 
     void SetDominatedByExceptionalEntryFlag()
@@ -2104,478 +2106,478 @@ public:
         return false;
     }
 #endif // DEBUG
-    };
+};
 
-    template <>
-    struct JitPtrKeyFuncs<BasicBlock> : public JitKeyFuncsDefEquals<const BasicBlock*>
+template <>
+struct JitPtrKeyFuncs<BasicBlock> : public JitKeyFuncsDefEquals<const BasicBlock*>
+{
+public:
+    // Make sure hashing is deterministic and not on "ptr."
+    static unsigned GetHashCode(const BasicBlock* ptr);
+};
+
+// A set of blocks.
+typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, bool> BlkSet;
+
+// A vector of blocks.
+typedef jitstd::vector<BasicBlock*> BlkVector;
+
+// A map of block -> set of blocks, can be used as sparse block trees.
+typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, BlkSet*> BlkToBlkSetMap;
+
+// A map of block -> vector of blocks, can be used as sparse block trees.
+typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, BlkVector> BlkToBlkVectorMap;
+
+// Map from Block to Block.  Used for a variety of purposes.
+typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, BasicBlock*> BlockToBlockMap;
+
+// BasicBlockIterator: forward iterator for the BasicBlock linked list.
+// It is allowed to make changes to the BasicBlock list as long as the current block remains in the list.
+// E.g., the current block `m_bbNext` pointer can be altered (such as when inserting a following block),
+// as long as the current block is still in the list.
+// The block list is expected to be properly doubly-linked.
+//
+class BasicBlockIterator
+{
+    BasicBlock* m_block;
+
+public:
+    BasicBlockIterator(BasicBlock* block)
+        : m_block(block)
     {
-    public:
-        // Make sure hashing is deterministic and not on "ptr."
-        static unsigned GetHashCode(const BasicBlock* ptr);
-    };
-
-    // A set of blocks.
-    typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, bool> BlkSet;
-
-    // A vector of blocks.
-    typedef jitstd::vector<BasicBlock*> BlkVector;
-
-    // A map of block -> set of blocks, can be used as sparse block trees.
-    typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, BlkSet*> BlkToBlkSetMap;
-
-    // A map of block -> vector of blocks, can be used as sparse block trees.
-    typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, BlkVector> BlkToBlkVectorMap;
-
-    // Map from Block to Block.  Used for a variety of purposes.
-    typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, BasicBlock*> BlockToBlockMap;
-
-    // BasicBlockIterator: forward iterator for the BasicBlock linked list.
-    // It is allowed to make changes to the BasicBlock list as long as the current block remains in the list.
-    // E.g., the current block `m_bbNext` pointer can be altered (such as when inserting a following block),
-    // as long as the current block is still in the list.
-    // The block list is expected to be properly doubly-linked.
-    //
-    class BasicBlockIterator
-    {
-        BasicBlock* m_block;
-
-    public:
-        BasicBlockIterator(BasicBlock* block)
-            : m_block(block)
-        {
-        }
-
-        BasicBlock* operator*() const
-        {
-            return m_block;
-        }
-
-        BasicBlockIterator& operator++()
-        {
-            assert(m_block != nullptr);
-            // Check that we haven't been spliced out of the list.
-            assert(m_block->IsLast() || m_block->Next()->PrevIs(m_block));
-            assert(m_block->IsFirst() || m_block->Prev()->NextIs(m_block));
-
-            m_block = m_block->Next();
-            return *this;
-        }
-
-        bool operator!=(const BasicBlockIterator& i) const
-        {
-            return m_block != i.m_block;
-        }
-    };
-
-    // BasicBlockSimpleList: adapter class for forward iteration of a lexically contiguous range of
-    // BasicBlock, starting at `begin` and going to the end of the function, using range-based `for`,
-    // normally used via Compiler::Blocks(), e.g.:
-    //    for (BasicBlock* const block : Blocks()) ...
-    //
-    class BasicBlockSimpleList
-    {
-        BasicBlock* m_begin;
-
-    public:
-        BasicBlockSimpleList(BasicBlock* begin)
-            : m_begin(begin)
-        {
-        }
-
-        BasicBlockIterator begin() const
-        {
-            return BasicBlockIterator(m_begin);
-        }
-
-        BasicBlockIterator end() const
-        {
-            return BasicBlockIterator(nullptr);
-        }
-    };
-
-    // BasicBlockRangeList: adapter class for forward iteration of a lexically contiguous range of
-    // BasicBlock specified with both `begin` and `end` blocks. `begin` and `end` are *inclusive*
-    // and must be non-null. E.g.,
-    //    for (BasicBlock* const block : BasicBlockRangeList(startBlock, endBlock)) ...
-    //
-    // Note that endBlock->bbNext is captured at the beginning of the iteration. Thus, any blocks
-    // inserted before that will continue the iteration. In particular, inserting blocks between endBlock
-    // and endBlock->bbNext will yield unexpected results, as the iteration will continue longer than desired.
-    //
-    class BasicBlockRangeList
-    {
-        BasicBlock* m_begin;
-        BasicBlock* m_end;
-
-    public:
-        BasicBlockRangeList(BasicBlock* begin, BasicBlock* end)
-            : m_begin(begin)
-            , m_end(end)
-        {
-            assert(begin != nullptr);
-            assert(end != nullptr);
-        }
-
-        BasicBlockIterator begin() const
-        {
-            return BasicBlockIterator(m_begin);
-        }
-
-        BasicBlockIterator end() const
-        {
-            return BasicBlockIterator(m_end->Next()); // walk until we see the block *following* the `m_end` block
-        }
-    };
-
-    // BBswtDesc -- descriptor for a switch block
-    //
-    //  Things to know:
-    //  1. If bbsHasDefault is true, the default case is the last one in the array of basic block addresses
-    //     namely bbsDstTab[bbsCount - 1].
-    //  2. bbsCount must be at least 1, for the default case. bbsCount cannot be zero. It appears that the ECMA spec
-    //     allows for a degenerate switch with zero cases. Normally, the optimizer will optimize degenerate
-    //     switches with just a default case to a BBJ_ALWAYS branch, and a switch with just two cases to a BBJ_COND.
-    //     However, in debuggable code, we might not do that, so bbsCount might be 1.
-    //
-    struct BBswtDesc
-    {
-        FlowEdge** bbsDstTab; // case label table address
-        unsigned   bbsCount;  // count of cases (includes 'default' if bbsHasDefault)
-
-        // Case number and likelihood of most likely case
-        // (only known with PGO, only valid if bbsHasDominantCase is true)
-        unsigned bbsDominantCase;
-        weight_t bbsDominantFraction;
-
-        bool bbsHasDefault;      // true if last switch case is a default case
-        bool bbsHasDominantCase; // true if switch has a dominant case
-
-        BBswtDesc()
-            : bbsHasDefault(true)
-            , bbsHasDominantCase(false)
-        {
-        }
-
-        BBswtDesc(const BBswtDesc* other);
-
-        BBswtDesc(Compiler* comp, const BBswtDesc* other);
-
-        void removeDefault()
-        {
-            assert(bbsHasDefault);
-            assert(bbsCount > 0);
-            bbsHasDefault = false;
-            bbsCount--;
-        }
-
-        FlowEdge* getDefault()
-        {
-            assert(bbsHasDefault);
-            assert(bbsCount > 0);
-            return bbsDstTab[bbsCount - 1];
-        }
-    };
-
-    // BBSwitchTargetList out-of-class-declaration implementations (here due to C++ ordering requirements).
-    //
-
-    inline BBSwitchTargetList::BBSwitchTargetList(BBswtDesc* bbsDesc)
-        : m_bbsDesc(bbsDesc)
-    {
-        assert(m_bbsDesc != nullptr);
-        assert(m_bbsDesc->bbsDstTab != nullptr);
     }
 
-    inline BBArrayIterator BBSwitchTargetList::begin() const
+    BasicBlock* operator*() const
     {
-        return BBArrayIterator(m_bbsDesc->bbsDstTab);
+        return m_block;
     }
 
-    inline BBArrayIterator BBSwitchTargetList::end() const
+    BasicBlockIterator& operator++()
     {
-        return BBArrayIterator(m_bbsDesc->bbsDstTab + m_bbsDesc->bbsCount);
+        assert(m_block != nullptr);
+        // Check that we haven't been spliced out of the list.
+        assert(m_block->IsLast() || m_block->Next()->PrevIs(m_block));
+        assert(m_block->IsFirst() || m_block->Prev()->NextIs(m_block));
+
+        m_block = m_block->Next();
+        return *this;
     }
 
-    // BBehfDesc -- descriptor for a BBJ_EHFINALLYRET block
-    //
-    struct BBehfDesc
+    bool operator!=(const BasicBlockIterator& i) const
     {
-        FlowEdge** bbeSuccs; // array of `FlowEdge*` pointing to BBJ_EHFINALLYRET block successors
-        unsigned   bbeCount; // size of `bbeSuccs` array
+        return m_block != i.m_block;
+    }
+};
 
-        BBehfDesc()
-            : bbeSuccs(nullptr)
-            , bbeCount(0)
-        {
-        }
+// BasicBlockSimpleList: adapter class for forward iteration of a lexically contiguous range of
+// BasicBlock, starting at `begin` and going to the end of the function, using range-based `for`,
+// normally used via Compiler::Blocks(), e.g.:
+//    for (BasicBlock* const block : Blocks()) ...
+//
+class BasicBlockSimpleList
+{
+    BasicBlock* m_begin;
 
-        BBehfDesc(Compiler* comp, const BBehfDesc* other);
-    };
-
-    // BBEhfSuccList out-of-class-declaration implementations (here due to C++ ordering requirements).
-    //
-
-    inline BBEhfSuccList::BBEhfSuccList(BBehfDesc* bbeDesc)
-        : m_bbeDesc(bbeDesc)
+public:
+    BasicBlockSimpleList(BasicBlock* begin)
+        : m_begin(begin)
     {
-        assert(m_bbeDesc != nullptr);
-        assert((m_bbeDesc->bbeSuccs != nullptr) || (m_bbeDesc->bbeCount == 0));
     }
 
-    inline BBArrayIterator BBEhfSuccList::begin() const
+    BasicBlockIterator begin() const
     {
-        return BBArrayIterator(m_bbeDesc->bbeSuccs);
+        return BasicBlockIterator(m_begin);
     }
 
-    inline BBArrayIterator BBEhfSuccList::end() const
+    BasicBlockIterator end() const
     {
-        return BBArrayIterator(m_bbeDesc->bbeSuccs + m_bbeDesc->bbeCount);
+        return BasicBlockIterator(nullptr);
+    }
+};
+
+// BasicBlockRangeList: adapter class for forward iteration of a lexically contiguous range of
+// BasicBlock specified with both `begin` and `end` blocks. `begin` and `end` are *inclusive*
+// and must be non-null. E.g.,
+//    for (BasicBlock* const block : BasicBlockRangeList(startBlock, endBlock)) ...
+//
+// Note that endBlock->bbNext is captured at the beginning of the iteration. Thus, any blocks
+// inserted before that will continue the iteration. In particular, inserting blocks between endBlock
+// and endBlock->bbNext will yield unexpected results, as the iteration will continue longer than desired.
+//
+class BasicBlockRangeList
+{
+    BasicBlock* m_begin;
+    BasicBlock* m_end;
+
+public:
+    BasicBlockRangeList(BasicBlock* begin, BasicBlock* end)
+        : m_begin(begin)
+        , m_end(end)
+    {
+        assert(begin != nullptr);
+        assert(end != nullptr);
     }
 
-    // SuccList out-of-class-declaration implementations
-    //
-    inline BasicBlock::SuccList::SuccList(const BasicBlock* block)
+    BasicBlockIterator begin() const
     {
-        assert(block != nullptr);
+        return BasicBlockIterator(m_begin);
+    }
 
-        switch (block->bbKind)
-        {
-            case BBJ_THROW:
-            case BBJ_RETURN:
-            case BBJ_EHFAULTRET:
-                // We don't need m_succs.
+    BasicBlockIterator end() const
+    {
+        return BasicBlockIterator(m_end->Next()); // walk until we see the block *following* the `m_end` block
+    }
+};
+
+// BBswtDesc -- descriptor for a switch block
+//
+//  Things to know:
+//  1. If bbsHasDefault is true, the default case is the last one in the array of basic block addresses
+//     namely bbsDstTab[bbsCount - 1].
+//  2. bbsCount must be at least 1, for the default case. bbsCount cannot be zero. It appears that the ECMA spec
+//     allows for a degenerate switch with zero cases. Normally, the optimizer will optimize degenerate
+//     switches with just a default case to a BBJ_ALWAYS branch, and a switch with just two cases to a BBJ_COND.
+//     However, in debuggable code, we might not do that, so bbsCount might be 1.
+//
+struct BBswtDesc
+{
+    FlowEdge** bbsDstTab; // case label table address
+    unsigned   bbsCount;  // count of cases (includes 'default' if bbsHasDefault)
+
+    // Case number and likelihood of most likely case
+    // (only known with PGO, only valid if bbsHasDominantCase is true)
+    unsigned bbsDominantCase;
+    weight_t bbsDominantFraction;
+
+    bool bbsHasDefault;      // true if last switch case is a default case
+    bool bbsHasDominantCase; // true if switch has a dominant case
+
+    BBswtDesc()
+        : bbsHasDefault(true)
+        , bbsHasDominantCase(false)
+    {
+    }
+
+    BBswtDesc(const BBswtDesc* other);
+
+    BBswtDesc(Compiler* comp, const BBswtDesc* other);
+
+    void removeDefault()
+    {
+        assert(bbsHasDefault);
+        assert(bbsCount > 0);
+        bbsHasDefault = false;
+        bbsCount--;
+    }
+
+    FlowEdge* getDefault()
+    {
+        assert(bbsHasDefault);
+        assert(bbsCount > 0);
+        return bbsDstTab[bbsCount - 1];
+    }
+};
+
+// BBSwitchTargetList out-of-class-declaration implementations (here due to C++ ordering requirements).
+//
+
+inline BBSwitchTargetList::BBSwitchTargetList(BBswtDesc* bbsDesc)
+    : m_bbsDesc(bbsDesc)
+{
+    assert(m_bbsDesc != nullptr);
+    assert(m_bbsDesc->bbsDstTab != nullptr);
+}
+
+inline BBArrayIterator BBSwitchTargetList::begin() const
+{
+    return BBArrayIterator(m_bbsDesc->bbsDstTab);
+}
+
+inline BBArrayIterator BBSwitchTargetList::end() const
+{
+    return BBArrayIterator(m_bbsDesc->bbsDstTab + m_bbsDesc->bbsCount);
+}
+
+// BBehfDesc -- descriptor for a BBJ_EHFINALLYRET block
+//
+struct BBehfDesc
+{
+    FlowEdge** bbeSuccs; // array of `FlowEdge*` pointing to BBJ_EHFINALLYRET block successors
+    unsigned   bbeCount; // size of `bbeSuccs` array
+
+    BBehfDesc()
+        : bbeSuccs(nullptr)
+        , bbeCount(0)
+    {
+    }
+
+    BBehfDesc(Compiler* comp, const BBehfDesc* other);
+};
+
+// BBEhfSuccList out-of-class-declaration implementations (here due to C++ ordering requirements).
+//
+
+inline BBEhfSuccList::BBEhfSuccList(BBehfDesc* bbeDesc)
+    : m_bbeDesc(bbeDesc)
+{
+    assert(m_bbeDesc != nullptr);
+    assert((m_bbeDesc->bbeSuccs != nullptr) || (m_bbeDesc->bbeCount == 0));
+}
+
+inline BBArrayIterator BBEhfSuccList::begin() const
+{
+    return BBArrayIterator(m_bbeDesc->bbeSuccs);
+}
+
+inline BBArrayIterator BBEhfSuccList::end() const
+{
+    return BBArrayIterator(m_bbeDesc->bbeSuccs + m_bbeDesc->bbeCount);
+}
+
+// SuccList out-of-class-declaration implementations
+//
+inline BasicBlock::SuccList::SuccList(const BasicBlock* block)
+{
+    assert(block != nullptr);
+
+    switch (block->bbKind)
+    {
+        case BBJ_THROW:
+        case BBJ_RETURN:
+        case BBJ_EHFAULTRET:
+            // We don't need m_succs.
+            m_begin = nullptr;
+            m_end   = nullptr;
+            break;
+
+        case BBJ_CALLFINALLY:
+        case BBJ_CALLFINALLYRET:
+        case BBJ_ALWAYS:
+        case BBJ_EHCATCHRET:
+        case BBJ_EHFILTERRET:
+        case BBJ_LEAVE:
+            m_succs[0] = block->GetTargetEdge();
+            m_begin    = &m_succs[0];
+            m_end      = &m_succs[1];
+            break;
+
+        case BBJ_COND:
+            m_succs[0] = block->GetFalseEdge();
+            m_begin    = &m_succs[0];
+
+            // If both fall-through and branch successors are identical, then only include
+            // them once in the iteration (this is the same behavior as NumSucc()/GetSucc()).
+            if (block->TrueEdgeIs(block->GetFalseEdge()))
+            {
+                m_end = &m_succs[1];
+            }
+            else
+            {
+                m_succs[1] = block->GetTrueEdge();
+                m_end      = &m_succs[2];
+            }
+            break;
+
+        case BBJ_EHFINALLYRET:
+            // We don't use the m_succs in-line data; use the existing successor table in the block.
+            // We must tolerate iterating successors early in the system, before EH_FINALLYRET successors have
+            // been computed.
+            if (block->GetEhfTargets() == nullptr)
+            {
                 m_begin = nullptr;
                 m_end   = nullptr;
-                break;
+            }
+            else
+            {
+                m_begin = block->GetEhfTargets()->bbeSuccs;
+                m_end   = block->GetEhfTargets()->bbeSuccs + block->GetEhfTargets()->bbeCount;
+            }
+            break;
 
-            case BBJ_CALLFINALLY:
-            case BBJ_CALLFINALLYRET:
-            case BBJ_ALWAYS:
-            case BBJ_EHCATCHRET:
-            case BBJ_EHFILTERRET:
-            case BBJ_LEAVE:
-                m_succs[0] = block->GetTargetEdge();
-                m_begin    = &m_succs[0];
-                m_end      = &m_succs[1];
-                break;
+        case BBJ_SWITCH:
+            // We don't use the m_succs in-line data for switches; use the existing jump table in the block.
+            assert(block->bbSwtTargets != nullptr);
+            assert(block->bbSwtTargets->bbsDstTab != nullptr);
+            m_begin = block->bbSwtTargets->bbsDstTab;
+            m_end   = block->bbSwtTargets->bbsDstTab + block->bbSwtTargets->bbsCount;
+            break;
 
-            case BBJ_COND:
-                m_succs[0] = block->GetFalseEdge();
-                m_begin    = &m_succs[0];
-
-                // If both fall-through and branch successors are identical, then only include
-                // them once in the iteration (this is the same behavior as NumSucc()/GetSucc()).
-                if (block->TrueEdgeIs(block->GetFalseEdge()))
-                {
-                    m_end = &m_succs[1];
-                }
-                else
-                {
-                    m_succs[1] = block->GetTrueEdge();
-                    m_end      = &m_succs[2];
-                }
-                break;
-
-            case BBJ_EHFINALLYRET:
-                // We don't use the m_succs in-line data; use the existing successor table in the block.
-                // We must tolerate iterating successors early in the system, before EH_FINALLYRET successors have
-                // been computed.
-                if (block->GetEhfTargets() == nullptr)
-                {
-                    m_begin = nullptr;
-                    m_end   = nullptr;
-                }
-                else
-                {
-                    m_begin = block->GetEhfTargets()->bbeSuccs;
-                    m_end   = block->GetEhfTargets()->bbeSuccs + block->GetEhfTargets()->bbeCount;
-                }
-                break;
-
-            case BBJ_SWITCH:
-                // We don't use the m_succs in-line data for switches; use the existing jump table in the block.
-                assert(block->bbSwtTargets != nullptr);
-                assert(block->bbSwtTargets->bbsDstTab != nullptr);
-                m_begin = block->bbSwtTargets->bbsDstTab;
-                m_end   = block->bbSwtTargets->bbsDstTab + block->bbSwtTargets->bbsCount;
-                break;
-
-            default:
-                unreached();
-        }
-
-        assert(m_end >= m_begin);
+        default:
+            unreached();
     }
 
-    // We have a simpler struct, BasicBlockList, which is simply a singly-linked
-    // list of blocks.
+    assert(m_end >= m_begin);
+}
 
-    struct BasicBlockList
+// We have a simpler struct, BasicBlockList, which is simply a singly-linked
+// list of blocks.
+
+struct BasicBlockList
+{
+    BasicBlockList* next;  // The next BasicBlock in the list, nullptr for end of list.
+    BasicBlock*     block; // The BasicBlock of interest.
+
+    BasicBlockList()
+        : next(nullptr)
+        , block(nullptr)
     {
-        BasicBlockList* next;  // The next BasicBlock in the list, nullptr for end of list.
-        BasicBlock*     block; // The BasicBlock of interest.
-
-        BasicBlockList()
-            : next(nullptr)
-            , block(nullptr)
-        {
-        }
-
-        BasicBlockList(BasicBlock* blk, BasicBlockList* rest)
-            : next(rest)
-            , block(blk)
-        {
-        }
-    };
-
-    // FlowEdge implementations (that are required to be defined after the declaration of BasicBlock)
-
-    inline weight_t FlowEdge::getLikelyWeight() const
-    {
-        assert(m_likelihoodSet);
-        return m_likelihood * m_sourceBlock->bbWeight;
     }
 
-    // BasicBlock iterator implementations (that are required to be defined after the declaration of FlowEdge)
-
-    inline BasicBlock* BBArrayIterator::operator*() const
+    BasicBlockList(BasicBlock* blk, BasicBlockList* rest)
+        : next(rest)
+        , block(blk)
     {
-        assert(m_edgeEntry != nullptr);
-        FlowEdge* edgeTarget = *m_edgeEntry;
-        assert(edgeTarget != nullptr);
-        assert(edgeTarget->getDestinationBlock() != nullptr);
-        return edgeTarget->getDestinationBlock();
     }
+};
 
-    // Pred list iterator implementations (that are required to be defined after the declaration of BasicBlock and
-    // FlowEdge)
+// FlowEdge implementations (that are required to be defined after the declaration of BasicBlock)
 
-    inline PredEdgeList::iterator::iterator(FlowEdge* pred)
-        : m_pred(pred)
-    {
+inline weight_t FlowEdge::getLikelyWeight() const
+{
+    assert(m_likelihoodSet);
+    return m_likelihood * m_sourceBlock->bbWeight;
+}
+
+// BasicBlock iterator implementations (that are required to be defined after the declaration of FlowEdge)
+
+inline BasicBlock* BBArrayIterator::operator*() const
+{
+    assert(m_edgeEntry != nullptr);
+    FlowEdge* edgeTarget = *m_edgeEntry;
+    assert(edgeTarget != nullptr);
+    assert(edgeTarget->getDestinationBlock() != nullptr);
+    return edgeTarget->getDestinationBlock();
+}
+
+// Pred list iterator implementations (that are required to be defined after the declaration of BasicBlock and
+// FlowEdge)
+
+inline PredEdgeList::iterator::iterator(FlowEdge* pred)
+    : m_pred(pred)
+{
 #ifdef DEBUG
-        m_next = (m_pred == nullptr) ? nullptr : m_pred->getNextPredEdge();
+    m_next = (m_pred == nullptr) ? nullptr : m_pred->getNextPredEdge();
 #endif
-    }
+}
 
-    inline PredEdgeList::iterator& PredEdgeList::iterator::operator++()
+inline PredEdgeList::iterator& PredEdgeList::iterator::operator++()
+{
+    FlowEdge* next = m_pred->getNextPredEdge();
+
+#ifdef DEBUG
+    // Check that the next block is the one we expect to see.
+    assert(next == m_next);
+    m_next = (next == nullptr) ? nullptr : next->getNextPredEdge();
+#endif // DEBUG
+
+    m_pred = next;
+    return *this;
+}
+
+template <bool allowEdits>
+inline PredBlockList<allowEdits>::iterator::iterator(FlowEdge* pred)
+    : m_pred(pred)
+{
+    bool initNextPointer = allowEdits;
+    INDEBUG(initNextPointer = true);
+    if (initNextPointer)
+    {
+        m_next = (m_pred == nullptr) ? nullptr : m_pred->getNextPredEdge();
+    }
+}
+
+template <bool allowEdits>
+inline BasicBlock* PredBlockList<allowEdits>::iterator::operator*() const
+{
+    return m_pred->getSourceBlock();
+}
+
+template <bool allowEdits>
+inline typename PredBlockList<allowEdits>::iterator& PredBlockList<allowEdits>::iterator::operator++()
+{
+    if (allowEdits)
+    {
+        // For editing iterators, m_next is always used and maintained
+        m_pred = m_next;
+        m_next = (m_next == nullptr) ? nullptr : m_next->getNextPredEdge();
+    }
+    else
     {
         FlowEdge* next = m_pred->getNextPredEdge();
 
 #ifdef DEBUG
-        // Check that the next block is the one we expect to see.
+        // If allowEdits=false, check that the next block is the one we expect to see.
         assert(next == m_next);
-        m_next = (next == nullptr) ? nullptr : next->getNextPredEdge();
+        m_next = (m_next == nullptr) ? nullptr : m_next->getNextPredEdge();
 #endif // DEBUG
 
         m_pred = next;
-        return *this;
     }
 
-    template <bool allowEdits>
-    inline PredBlockList<allowEdits>::iterator::iterator(FlowEdge* pred)
-        : m_pred(pred)
+    return *this;
+}
+
+/*****************************************************************************
+ *
+ *  The following call-backs supplied by the client; it's used by the code
+ *  emitter to convert a basic block to its corresponding emitter cookie.
+ */
+
+void* emitCodeGetCookie(const BasicBlock* block);
+
+// An enumerator of a block's all successors. In some cases (e.g. SsaBuilder::TopologicalSort)
+// using iterators is not exactly efficient, at least because they contain an unnecessary
+// member - a pointer to the Compiler object.
+class AllSuccessorEnumerator
+{
+    BasicBlock* m_block;
+    union
     {
-        bool initNextPointer = allowEdits;
-        INDEBUG(initNextPointer = true);
-        if (initNextPointer)
-        {
-            m_next = (m_pred == nullptr) ? nullptr : m_pred->getNextPredEdge();
-        }
-    }
-
-    template <bool allowEdits>
-    inline BasicBlock* PredBlockList<allowEdits>::iterator::operator*() const
-    {
-        return m_pred->getSourceBlock();
-    }
-
-    template <bool allowEdits>
-    inline typename PredBlockList<allowEdits>::iterator& PredBlockList<allowEdits>::iterator::operator++()
-    {
-        if (allowEdits)
-        {
-            // For editing iterators, m_next is always used and maintained
-            m_pred = m_next;
-            m_next = (m_next == nullptr) ? nullptr : m_next->getNextPredEdge();
-        }
-        else
-        {
-            FlowEdge* next = m_pred->getNextPredEdge();
-
-#ifdef DEBUG
-            // If allowEdits=false, check that the next block is the one we expect to see.
-            assert(next == m_next);
-            m_next = (m_next == nullptr) ? nullptr : m_next->getNextPredEdge();
-#endif // DEBUG
-
-            m_pred = next;
-        }
-
-        return *this;
-    }
-
-    /*****************************************************************************
-     *
-     *  The following call-backs supplied by the client; it's used by the code
-     *  emitter to convert a basic block to its corresponding emitter cookie.
-     */
-
-    void* emitCodeGetCookie(const BasicBlock* block);
-
-    // An enumerator of a block's all successors. In some cases (e.g. SsaBuilder::TopologicalSort)
-    // using iterators is not exactly efficient, at least because they contain an unnecessary
-    // member - a pointer to the Compiler object.
-    class AllSuccessorEnumerator
-    {
-        BasicBlock* m_block;
-        union
-        {
-            // We store up to 4 successors inline in the enumerator. For ASP.NET
-            // and libraries.pmi this is enough in 99.7% of cases.
-            BasicBlock*  m_successors[4];
-            BasicBlock** m_pSuccessors;
-        };
-
-        unsigned m_numSuccs;
-        unsigned m_curSucc = UINT_MAX;
-
-    public:
-        // Constructs an enumerator of all `block`'s successors.
-        AllSuccessorEnumerator(Compiler* comp, BasicBlock* block);
-
-        // Gets the block whose successors are enumerated.
-        BasicBlock* Block()
-        {
-            return m_block;
-        }
-
-        // Returns the next available successor or `nullptr` if there are no more successors.
-        BasicBlock* NextSuccessor()
-        {
-            m_curSucc++;
-            if (m_curSucc >= m_numSuccs)
-            {
-                return nullptr;
-            }
-
-            if (m_numSuccs <= ArrLen(m_successors))
-            {
-                return m_successors[m_curSucc];
-            }
-
-            return m_pSuccessors[m_curSucc];
-        }
+        // We store up to 4 successors inline in the enumerator. For ASP.NET
+        // and libraries.pmi this is enough in 99.7% of cases.
+        BasicBlock*  m_successors[4];
+        BasicBlock** m_pSuccessors;
     };
 
-    // Simple dominator tree node that keeps track of a node's first child and next sibling.
-    // The parent is provided by BasicBlock::bbIDom.
-    struct DomTreeNode
+    unsigned m_numSuccs;
+    unsigned m_curSucc = UINT_MAX;
+
+public:
+    // Constructs an enumerator of all `block`'s successors.
+    AllSuccessorEnumerator(Compiler* comp, BasicBlock* block);
+
+    // Gets the block whose successors are enumerated.
+    BasicBlock* Block()
     {
-        BasicBlock* firstChild;
-        BasicBlock* nextSibling;
-    };
+        return m_block;
+    }
+
+    // Returns the next available successor or `nullptr` if there are no more successors.
+    BasicBlock* NextSuccessor()
+    {
+        m_curSucc++;
+        if (m_curSucc >= m_numSuccs)
+        {
+            return nullptr;
+        }
+
+        if (m_numSuccs <= ArrLen(m_successors))
+        {
+            return m_successors[m_curSucc];
+        }
+
+        return m_pSuccessors[m_curSucc];
+    }
+};
+
+// Simple dominator tree node that keeps track of a node's first child and next sibling.
+// The parent is provided by BasicBlock::bbIDom.
+struct DomTreeNode
+{
+    BasicBlock* firstChild;
+    BasicBlock* nextSibling;
+};
 
 /*****************************************************************************/
 #endif // _BLOCK_H_
-    /*****************************************************************************/
+/*****************************************************************************/

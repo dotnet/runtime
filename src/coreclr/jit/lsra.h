@@ -479,7 +479,8 @@ public:
 class RegRecord : public Referenceable
 {
 public:
-    RegRecord() : Referenceable(IntRegisterType)
+    RegRecord()
+        : Referenceable(IntRegisterType)
     {
         assignedInterval = nullptr;
         previousInterval = nullptr;

@@ -1335,8 +1335,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     const HWIntrinsic intrin(intrinsicTree);
 
-    int       srcCount      = 0;
-    int       dstCount      = 0;
+    int srcCount = 0;
+    int dstCount = 0;
 
     if (HWIntrinsicInfo::IsMultiReg(intrin.id))
     {

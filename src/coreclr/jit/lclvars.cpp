@@ -1752,7 +1752,7 @@ void Compiler::lvaClassifyParameterABI()
 
         // There is an assumption that args never has predicate registers in case
         // of OSX/arm64.
-        RegBitSet64 argRegs = RBM_NONE; 
+        RegBitSet64 argRegs = RBM_NONE;
 
         // The calling convention details computed by the old ABI classifier
         // are wrong since it does not handle the Swift ABI for structs

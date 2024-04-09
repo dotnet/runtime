@@ -701,7 +701,10 @@ bool LinearScan::isContainableMemoryOp(GenTree* node)
 //    refType     - the type of refposition
 //    isLastUse   - true IFF this is a last use of the register
 //
-void LinearScan::addRefsForPhysRegMask(CONSTREF_AllRegsMask mask, LsraLocation currentLoc, RefType refType, bool isLastUse)
+void LinearScan::addRefsForPhysRegMask(CONSTREF_AllRegsMask mask,
+                                       LsraLocation         currentLoc,
+                                       RefType              refType,
+                                       bool                 isLastUse)
 {
     assert(refType == RefTypeKill);
 
@@ -2916,7 +2919,7 @@ void LinearScan::stressSetRandomParameterPreferences()
 {
     CLRRandom rng;
     rng.Init(compiler->info.compMethodHash());
-    regMaskGpr intRegs   = compiler->codeGen->intRegState.rsCalleeRegArgMaskLiveIn;
+    regMaskGpr   intRegs   = compiler->codeGen->intRegState.rsCalleeRegArgMaskLiveIn;
     regMaskFloat floatRegs = compiler->codeGen->floatRegState.rsCalleeRegArgMaskLiveIn;
 
     for (unsigned int varIndex = 0; varIndex < compiler->lvaTrackedCount; varIndex++)
@@ -2948,8 +2951,8 @@ void LinearScan::stressSetRandomParameterPreferences()
             continue;
         }
 
-        int       bitIndex = rng.Next((int)numBits);
-        regNumber prefReg  = REG_NA;
+        int            bitIndex = rng.Next((int)numBits);
+        regNumber      prefReg  = REG_NA;
         regMaskOnlyOne regsLeft = *regs;
         for (int i = 0; i <= bitIndex; i++)
         {

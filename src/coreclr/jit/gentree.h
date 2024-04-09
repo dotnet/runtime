@@ -947,7 +947,7 @@ public:
 
     RegBitSet64 gtGetRegMask() const;
     regMaskGpr  gtGetGprRegMask() const;
-    regMaskGpr gtGetContainedRegMask();
+    regMaskGpr  gtGetContainedRegMask();
 
     GenTreeFlags gtFlags;
 

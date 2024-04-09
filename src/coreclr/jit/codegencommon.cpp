@@ -3271,7 +3271,7 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 
         if ((node->outgoing != nullptr) && (node->copiedReg == REG_NA))
         {
-            var_types copyType          = node->outgoing->type;
+            var_types   copyType          = node->outgoing->type;
             RegBitSet64 tempRegCandidates = genGetParameterHomingTempRegisterCandidates();
             tempRegCandidates &= ~busyRegs;
 
@@ -4167,7 +4167,7 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack)
 
             if (seg.IsPassedInRegister())
             {
-                RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? &floatRegState : &intRegState;
+                RegState*      regState = genIsValidFloatReg(seg.GetRegister()) ? &floatRegState : &intRegState;
                 regMaskOnlyOne regs     = seg.GetRegisterMask();
 
                 if ((regState->rsCalleeRegArgMaskLiveIn & regs) != RBM_NONE)
@@ -4680,8 +4680,9 @@ void CodeGen::genFinalizeFrame()
     noway_assert(!regSet.rsRegsModified(RBM_FPBASE));
 #endif
 
-    regMaskFloat maskPushRegsInt   = regSet.rsGetModifiedCalleeSavedRegsMask().gprRegs();
-    regMaskGpr   maskPushRegsFloat = regSet.rsGetModifiedCalleeSavedRegsMask().GetGprFloatCombinedMask() & RBM_FLT_CALLEE_SAVED;
+    regMaskFloat maskPushRegsInt = regSet.rsGetModifiedCalleeSavedRegsMask().gprRegs();
+    regMaskGpr   maskPushRegsFloat =
+        regSet.rsGetModifiedCalleeSavedRegsMask().GetGprFloatCombinedMask() & RBM_FLT_CALLEE_SAVED;
 #ifdef FEATURE_MASKED_HW_INTRINSICS
     regMaskPredicate maskPushRegsPredicate = regSet.rsGetModifiedPredicateRegsMask() & RBM_MSK_CALLEE_SAVED;
 #endif

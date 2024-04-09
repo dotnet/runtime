@@ -9598,7 +9598,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     // registers that profiler callback kills.
     if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaGetDesc(compiler->info.compThisArg)->lvIsInReg())
     {
-        regNumber      thisPtrReg  = compiler->lvaGetDesc(compiler->info.compThisArg)->GetRegNum();
+        regNumber thisPtrReg = compiler->lvaGetDesc(compiler->info.compThisArg)->GetRegNum();
         noway_assert(!AllRegsMask_PROFILER_LEAVE_TRASH.IsRegNumInMask(thisPtrReg));
     }
 

@@ -924,7 +924,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(CONSTREF_AllRegsMask regsToSaveMas
     assert(spDelta <= 0);
     assert(-spDelta <= STACK_PROBE_BOUNDARY_THRESHOLD_BYTES);
 
-    regMaskGpr maskSaveRegsInt   = regsToSaveMask.gprRegs();
+    regMaskGpr   maskSaveRegsInt   = regsToSaveMask.gprRegs();
     regMaskFloat maskSaveRegsFloat = regsToSaveMask.floatRegs(compiler);
 
     assert(compiler->IsGprRegMask(maskSaveRegsInt));
@@ -1059,8 +1059,8 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskOnlyOne regsMask,
 //    None.
 
 void CodeGen::genRestoreCalleeSavedRegistersHelp(CONSTREF_AllRegsMask regsToRestoreMask,
-                                                 int         lowestCalleeSavedOffset,
-                                                 int         spDelta)
+                                                 int                  lowestCalleeSavedOffset,
+                                                 int                  spDelta)
 {
     assert(spDelta >= 0);
 

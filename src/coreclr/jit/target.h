@@ -369,8 +369,8 @@ public:
     FORCEINLINE void     Clear();
     FORCEINLINE bool     IsEmpty() const;
     FORCEINLINE unsigned Count() const;
-    //FORCEINLINE void     Create(regNumber reg);
-    // Rename this to AddRegNum
+    // FORCEINLINE void     Create(regNumber reg);
+    //  Rename this to AddRegNum
     FORCEINLINE void AddGprRegInMask(regNumber reg);
     FORCEINLINE void AddRegMaskForType(regMaskOnlyOne maskToAdd, var_types type);
     FORCEINLINE void AddGprRegMask(regMaskGpr maskToAdd);
@@ -394,7 +394,7 @@ public:
     FORCEINLINE bool           IsFloatMaskPresent(Compiler* compiler, regMaskFloat maskToCheck) const;
     FORCEINLINE regMaskOnlyOne GetRegMaskForType(var_types type) const;
 
-    FORCEINLINE bool      IsGprOrFloatPresent() const;
+    FORCEINLINE bool        IsGprOrFloatPresent() const;
     FORCEINLINE RegBitSet64 GetGprFloatCombinedMask() const;
 #ifndef HAS_MORE_THAN_64_REGISTERS
     FORCEINLINE RegBitSet64 GetAllRegistersMask() const;
@@ -414,7 +414,7 @@ public:
 } AllRegsMask;
 
 #define CONSTREF_AllRegsMask const AllRegsMask&
-#define REF_AllRegsMask AllRegsMask
+#define REF_AllRegsMask      AllRegsMask
 
 #define GprRegsMask(gprRegs) AllRegsMask(gprRegs)
 

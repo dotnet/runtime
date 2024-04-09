@@ -5580,9 +5580,9 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
     if (jmpEpilog || genStackAllocRegisterMask(compiler->compLclFrameSize,
                                                regSet.rsGetModifiedFloatRegsMask() & RBM_FLT_CALLEE_SAVED) == RBM_NONE)
-        {
-            genFreeLclFrame(compiler->compLclFrameSize, &unwindStarted);
-        }
+    {
+        genFreeLclFrame(compiler->compLclFrameSize, &unwindStarted);
+    }
 
     if (!unwindStarted)
     {
