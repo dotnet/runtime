@@ -3,7 +3,7 @@
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
     <!-- Tracking issue: https://github.com/dotnet/runtime/issues/90427 -->
-    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmaot'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmaot' or '$(RuntimeVariant)' == 'llvmfullaot')">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="call05_small.il" />
