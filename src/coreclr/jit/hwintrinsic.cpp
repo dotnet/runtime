@@ -1410,7 +1410,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 op3 = getArgForHWIntrinsic(sigReader.GetOp3Type(), sigReader.op3ClsHnd);
                 op2 = getArgForHWIntrinsic(sigReader.GetOp2Type(), sigReader.op2ClsHnd);
                 op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
-                assert(addRangeCheckIfNeeded(intrinsic, op3, mustExpand, immLowerBound, immUpperBound) == op3);
                 break;
 
             case 2:
