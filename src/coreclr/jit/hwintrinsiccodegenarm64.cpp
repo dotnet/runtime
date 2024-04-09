@@ -414,10 +414,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             instruction       insOp2     = HWIntrinsicInfo::lookupIns(intrinOp2.id, intrinOp2.baseType);
             const bool        instrIsRMW = op2->isRMWHWIntrinsic(compiler);
 
-            regNumber         maskReg     = op1Reg;
-            regNumber         instrOp1Reg = REG_NA;
-            regNumber         instrOp2Reg = REG_NA;
-            regNumber         falseReg = op3Reg;
+            regNumber maskReg     = op1Reg;
+            regNumber instrOp1Reg = REG_NA;
+            regNumber instrOp2Reg = REG_NA;
+            regNumber falseReg    = op3Reg;
 
             switch (intrinOp2.numOperands)
             {
@@ -462,10 +462,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     // Move the first operand of `insOp2` in the destination. If `falseValue` was zero, then we can just
                     // use /Z during the move, otherwise merge using /M into the destination.
                     GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, instrOp1Reg, opt,
-                                                intrin.op3->IsVectorZero() ? INS_SCALABLE_OPTS_NONE : INS_SCALABLE_OPTS_PREDICATE_MERGE);
+                                                intrin.op3->IsVectorZero() ? INS_SCALABLE_OPTS_NONE
+                                                                           : INS_SCALABLE_OPTS_PREDICATE_MERGE);
 
-                    // Finally, perform the actual operation so that `targetReg` is the first operand and `instrOp2Reg` having
-                    // the second operand.
+                    // Finally, perform the actual operation so that `targetReg` is the first operand and `instrOp2Reg`
+                    // having the second operand.
                     GetEmitter()->emitIns_R_R_R(insOp2, emitSize, targetReg, maskReg, instrOp2Reg, opt);
                     break;
 

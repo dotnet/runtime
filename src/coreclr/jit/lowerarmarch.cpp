@@ -1210,7 +1210,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
         case NI_Sve_ConditionalSelect:
         {
-            GenTree* op1    = node->Op(1);
+            GenTree* op1 = node->Op(1);
             if (op1->OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask))
             {
                 // For cases where conditional-select is used in the user code explicitly,
@@ -1269,8 +1269,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             GenTree* falseVal = comp->gtNewZeroConNode(simdType);
 
             GenTreeHWIntrinsic* condSelNode =
-                comp->gtNewSimdHWIntrinsicNode(simdType, trueMask, trueVal, falseVal,
-                                               NI_Sve_ConditionalSelect, simdBaseJitType, simdSize);
+                comp->gtNewSimdHWIntrinsicNode(simdType, trueMask, trueVal, falseVal, NI_Sve_ConditionalSelect,
+                                               simdBaseJitType, simdSize);
 
             BlockRange().InsertBefore(node, trueMask);
             BlockRange().InsertBefore(node, falseVal);
