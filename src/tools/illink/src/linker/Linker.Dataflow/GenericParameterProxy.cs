@@ -13,6 +13,18 @@ namespace ILLink.Shared.TypeSystemProxy
 
 		internal partial bool HasDefaultConstructorConstraint () => GenericParameter.HasDefaultConstructorConstraint;
 
+		internal partial bool HasEnumConstraint ()
+		{
+			if (GenericParameter.HasConstraints) {
+				foreach (GenericParameterConstraint? constraint in GenericParameter.Constraints) {
+					if (constraint.ConstraintType.Name == "Enum" && constraint.ConstraintType.Namespace == "System")
+						return true;
+				}
+			}
+
+			return false;
+		}
+
 		public readonly GenericParameter GenericParameter;
 
 		public override string ToString () => GenericParameter.ToString ();
