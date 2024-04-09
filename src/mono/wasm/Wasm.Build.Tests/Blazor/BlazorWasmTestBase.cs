@@ -60,13 +60,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         if (options.WarnAsError)
             extraArgs = extraArgs.Append("/warnaserror").ToArray();
 
-        (CommandResult res, string logPath) = BlazorBuildInternal(
-            options.Id,
-            options.Config,
-            publish: false,
-            setWasmDevel: false,
-            expectSuccess: options.ExpectSuccess,
-            extraArgs);
+        (CommandResult res, string logPath) = BlazorBuildInternal(options.Id, options.Config, publish: false, setWasmDevel: false, expectSuccess: options.ExpectSuccess, extraArgs);
 
         if (options.ExpectSuccess && options.AssertAppBundle)
         {
@@ -81,13 +75,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         if (options.WarnAsError)
             extraArgs = extraArgs.Append("/warnaserror").ToArray();
 
-        (CommandResult res, string logPath) = BlazorBuildInternal(
-            options.Id,
-            options.Config,
-            publish: true,
-            setWasmDevel: false,
-            expectSuccess: options.ExpectSuccess,
-            extraArgs);
+        (CommandResult res, string logPath) = BlazorBuildInternal(options.Id, options.Config, publish: true, setWasmDevel: false, expectSuccess: options.ExpectSuccess, extraArgs);
 
         if (options.ExpectSuccess && options.AssertAppBundle)
         {
@@ -114,11 +102,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
             return BuildProjectWithoutAssert(
                         id,
                         config,
-                        new BuildProjectOptions(
-                            CreateProject: false,
-                            UseCache: false,
-                            Publish: publish,
-                            ExpectSuccess: expectSuccess),
+                        new BuildProjectOptions(CreateProject: false, UseCache: false, Publish: publish, ExpectSuccess: expectSuccess),
                         extraArgs.Concat(new[]
                         {
                             "-p:BlazorEnableCompression=false",
@@ -211,11 +195,10 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         runOptions.ServerEnvironment?.ToList().ForEach(
             kv => s_buildEnv.EnvVars[kv.Key] = kv.Value);
 
-        await using var runner = new BrowserRunner(_testOutput);
         using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                     .WithWorkingDirectory(workingDirectory);
 
-        Console.WriteLine("About to run runner.RunAsync");
+        await using var runner = new BrowserRunner(_testOutput);
         var page = await runner.RunAsync(
             runCommand,
             runArgs,
@@ -224,10 +207,8 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
             onError: OnErrorMessage,
             modifyBrowserUrl: browserUrl => browserUrl + runOptions.BrowserPath + runOptions.QueryString);
 
-        Console.WriteLine("Waiting for page to load");
         _testOutput.WriteLine("Waiting for page to load");
         await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded, new () { Timeout = 1 * 60 * 1000 });
-        Console.WriteLine("Page loaded");
 
         if (runOptions.CheckCounter)
         {
@@ -244,10 +225,8 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         if (runOptions.Test is not null)
             await runOptions.Test(page);
 
-        Console.WriteLine("Waiting for additional 10secs");
         _testOutput.WriteLine($"Waiting for additional 10secs to see if any errors are reported");
         await Task.Delay(10_000);
-        Console.WriteLine("Finished waiting");
 
         void OnConsoleMessage(IPage page, IConsoleMessage msg)
         {

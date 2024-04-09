@@ -112,7 +112,6 @@ public abstract class AppTestBase : BlazorWasmTestBase
             query.Add("test", options.TestScenario);
 
         var queryString = query.Any() ? "?" + string.Join("&", query.Select(kvp => $"{kvp.Key}={kvp.Value}")) : "";
-        Console.WriteLine($"Running app with query string: {queryString}");
         var tcs = new TaskCompletionSource<int>();
         List<string> testOutput = new();
         List<string> consoleOutput = new();

@@ -33,7 +33,6 @@ public class SignalRClientTests : SignalRTestsBase
         // ---------------- from here
         // maybe we can hide the publish step in a AppTestBase method
         CopyTestAsset("WasmBasicTestApp", "SignalRClientTests");
-        Console.WriteLine($"WASM _projectDir={_projectDir}");
         // publish WASM App to Server's directory
         // avoid loading .dat files that require integrity hash calculation
         // try fixing System.InvalidOperationException: JsonSerializerIsReflectionDisabled on message passing

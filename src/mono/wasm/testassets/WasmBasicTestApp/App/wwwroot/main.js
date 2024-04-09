@@ -6,7 +6,6 @@ import { dotnet, exit } from './_framework/dotnet.js'
 // Read test case from query string
 const params = new URLSearchParams(location.search);
 const testCase = params.get("test");
-testOutput(`testCase is ${testCase}`);
 if (testCase == null) {
     exit(2, new Error("Missing test scenario. Supply query argument 'test'."));
 }

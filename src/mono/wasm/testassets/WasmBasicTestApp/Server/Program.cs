@@ -37,7 +37,6 @@ app.UseRouting();
 app.MapHub<ChatHub>("/chathub");
 
 // WASM app as a static file provider
-// we will need to publish the WASM app to Server's dir and here paste the path to the result
 var wasmPath = Path.Combine(app.Environment.ContentRootPath, "publish/wwwroot");
 Console.WriteLine($"wasmPath: {wasmPath}");
 app.UseDefaultFiles(new DefaultFilesOptions
