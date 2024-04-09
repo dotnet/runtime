@@ -1300,6 +1300,28 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_PATTERN(ins, emitSize, targetReg, opt, SVE_PATTERN_ALL);
                 break;
 
+            case NI_Sve_CreateWhileLessThanMask8Bit:
+            case NI_Sve_CreateWhileLessThanMask16Bit:
+            case NI_Sve_CreateWhileLessThanMask32Bit:
+            case NI_Sve_CreateWhileLessThanMask64Bit:
+                // Emit size is the size of the scalar operands.
+                emitSize = emitActualTypeSize(intrin.op1->TypeGet());
+                // Instruction is dependent on whether the inputs are signed or unsigned.
+                ins = ((node->gtFlags & GTF_UNSIGNED) != 0) ? INS_sve_whilelo : INS_sve_whilelt;
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+
+            case NI_Sve_CreateWhileLessThanOrEqualMask8Bit:
+            case NI_Sve_CreateWhileLessThanOrEqualMask16Bit:
+            case NI_Sve_CreateWhileLessThanOrEqualMask32Bit:
+            case NI_Sve_CreateWhileLessThanOrEqualMask64Bit:
+                // Emit size is the size of the scalar operands.
+                emitSize = emitActualTypeSize(intrin.op1->TypeGet());
+                // Instruction is dependent on whether the inputs are signed or unsigned.
+                ins = ((node->gtFlags & GTF_UNSIGNED) != 0) ? INS_sve_whilels : INS_sve_whilele;
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+
             default:
                 unreached();
         }
