@@ -33,6 +33,7 @@ public class SignalRClientTests : SignalRTestsBase
     {
         BlazorHostedBuild(config,
             assetName: "BlazorHostedApp",
+            projectDirSuffix: "BlazorHosted.Server",
             clientDirRelativeToProjectDir: "../BlazorHosted.Client",
             generatedProjectNamePrefix: "SignalRClientTests",
             runtimeType: RuntimeVariant.MultiThreaded);

@@ -30,27 +30,15 @@ public class SignalRClientTests : SignalRTestsBase
     // [InlineData("Release", "WebSockets")]
     public async Task SignalRPassMessages(string config, string transport)
     {
-        // ---------------- from here
-        // maybe we can hide the publish step in a AppTestBase method
-        CopyTestAsset("WasmBasicTestApp", "SignalRClientTests");
-        // publish WASM App to Server's directory
-        // avoid loading .dat files that require integrity hash calculation
-        // try fixing System.InvalidOperationException: JsonSerializerIsReflectionDisabled on message passing
-        PublishProject(configuration: config,
-            runtimeType: RuntimeVariant.MultiThreaded,
-            assertAppBundle: false, // publish files are in non-Standard location
-            extraArgs: "-o ../Server/publish -p:WasmEnableThreads=true -p:InvariantGlobalization=true -p:SkipLazyLoadingTest=true" );
+        BuildAspNetCoreServingWASM(config: config,
+            assetName: "WasmBasicTestApp",
+            projectDirSuffix: "App",
+            // publish WASM App to Server's directory and avoid loading .dat files that require integrity hash calculation
+            clientPublisExtraArgs: "-o ../Server/publish -p:WasmEnableThreads=true -p:InvariantGlobalization=true -p:SkipLazyLoadingTest=true",
+            assertAppBundle: false, // published files are in non-standard location so assert would fail
+            generatedProjectNamePrefix: "SignalRClientTests",
+            runtimeType: RuntimeVariant.MultiThreaded);
 
-        // app that will be running is in "../Server" dir
-        string? parentDirName = Directory.GetParent(_projectDir!)!.FullName;
-        if (parentDirName is null)
-            throw new Exception("parentDirName cannot be null");
-        _projectDir = Path.Combine(parentDirName, "Server");
-
-        // build server project
-        BuildProject(configuration: config,
-            assertAppBundle: false); // should we asset app bunlde?
-        // ---------------- to here -? pack in a AppTestBase.BuildAspNetCoreServingWASM(string )
         try
         {
             var result = await RunSdkStyleAppForBuild(new(

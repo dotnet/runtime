@@ -25,7 +25,7 @@ public class DownloadResourceProgressTests : AppTestBase
     [InlineData(true)]
     public async Task DownloadProgressFinishes(bool failAssemblyDownload)
     {
-        CopyTestAsset("WasmBasicTestApp", $"DownloadResourceProgressTests_{failAssemblyDownload}");
+        CopyTestAsset("WasmBasicTestApp", $"DownloadResourceProgressTests_{failAssemblyDownload}", "App");
         PublishProject("Debug");
 
         var result = await RunSdkStyleAppForPublish(new(

@@ -23,7 +23,7 @@ public abstract class AppTestBase : BlazorWasmTestBase
     protected string Id { get; set; }
     protected string LogPath { get; set; }
 
-    protected void CopyTestAsset(string assetName, string generatedProjectNamePrefix = null) // string? projectDirSuffix = null
+    protected void CopyTestAsset(string assetName, string generatedProjectNamePrefix = null, string? projectDirSuffix = null)
     {
         Id = $"{generatedProjectNamePrefix ?? assetName}_{GetRandomId()}";
         InitBlazorWasmProjectDir(Id);
@@ -31,32 +31,44 @@ public abstract class AppTestBase : BlazorWasmTestBase
         LogPath = Path.Combine(s_buildEnv.LogRootPath, Id);
         Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, assetName), Path.Combine(_projectDir!));
 
-        // if (!string.IsNullOrEmpty(projectDirSuffix))
-        // {
-        //      _projectDir = Path.Combine(_projectDir, projectDirSuffix);
-        // }
-
-        switch(assetName)
+        if (!string.IsNullOrEmpty(projectDirSuffix))
         {
-            case "WasmBasicTestApp":
-                // WasmBasicTestApp consists of App + Library + Server projects
-                _projectDir = Path.Combine(_projectDir!, "App");
-                break;
-            case "BlazorHostedApp":
-                // BlazorHostedApp consists of BlazorHosted.Client and BlazorHosted.Server projects
-                _projectDir = Path.Combine(_projectDir!, "BlazorHosted.Server");
-                break;
+             _projectDir = Path.Combine(_projectDir, projectDirSuffix);
         }
+    }
+
+    protected void BuildAspNetCoreServingWASM(
+        string config,
+        string assetName,
+        string projectDirSuffix,
+        string clientPublisExtraArgs,
+        bool assertAppBundle,
+        string? generatedProjectNamePrefix = null,
+        RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
+    {
+        CopyTestAsset(assetName, generatedProjectNamePrefix, projectDirSuffix);
+        PublishProject(configuration: config,
+            runtimeType: runtimeType,
+            assertAppBundle: assertAppBundle,
+            extraArgs: clientPublisExtraArgs );
+
+        string? parentDirName = Directory.GetParent(_projectDir!)!.FullName;
+        if (parentDirName is null)
+            throw new Exception("parentDirName cannot be null");
+        _projectDir = Path.Combine(parentDirName, "Server");
+
+        BuildProject(configuration: config, assertAppBundle: false);
     }
 
     protected void BlazorHostedBuild(
         string config,
         string assetName,
+        string projectDirSuffix,
         string clientDirRelativeToProjectDir = "",
         string? generatedProjectNamePrefix = null,
         RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
     {
-        CopyTestAsset(assetName, generatedProjectNamePrefix);
+        CopyTestAsset(assetName, generatedProjectNamePrefix, projectDirSuffix);
         string frameworkDir = FindBlazorHostedBinFrameworkDir(config,
             forPublish: false,
             clientDirRelativeToProjectDir: clientDirRelativeToProjectDir);
