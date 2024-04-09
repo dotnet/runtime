@@ -24,6 +24,7 @@
     <DotnetPgoToolPath>$([MSBuild]::NormalizePath('$(DotnetPgoToolDir)', 'dotnet-pgo'))</DotnetPgoToolPath>
   </PropertyGroup>
 
+  <!-- When tests are built on Helix, we don't want to invoke ILLink on build machines -->
   <PropertyGroup Condition="('$(EnableAggressiveTrimming)' == 'true' or '$(EnableSoftTrimming)' == 'true') and '$(BuildTestsOnHelix)' != 'true'">
     <PublishTrimmed>true</PublishTrimmed>
     <!-- Suppress trimming warnings as these are tests -->

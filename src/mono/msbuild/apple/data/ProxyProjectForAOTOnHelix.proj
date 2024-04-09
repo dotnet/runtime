@@ -7,7 +7,7 @@
     <ExtraFilesPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'extraFiles'))</ExtraFilesPath>
     <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'obj'))</BaseIntermediateOutputPath>
 
-    <AppleBuildDependsOn Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">ConfigureTrimming;_TrimApp;$(AppleBuildDependsOn)</AppleBuildDependsOn>
+    <AppleBuildDependsOn Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">ConfigureTrimming;_AdjustTrimmedAssembliesToBundle;$(AppleBuildDependsOn)</AppleBuildDependsOn>
     <AppleBuildDependsOn>_PublishRuntimePack;_PrepareForAppleBuildAppOnHelix;$(AppleBuildDependsOn);_AfterAppleBuildOnHelix</AppleBuildDependsOn>
     <!-- Forced by ILLink targets -->
     <SelfContained>true</SelfContained>
@@ -41,6 +41,12 @@
     <!-- we should not strip symbols from the generated library as xcode build will attempt to strip already stripped symbols -->
     <StripSymbols>false</StripSymbols>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- ReferencePath is used in the _RunILLink target as the ReferenceAssemblyPaths parameter of ILLink -->
+    <ReferencePath Include="@(AppleReferenceSharedPathFiles->'$(MicrosoftNetCoreAppRuntimePackLibDir)%(FileName)%(Extension)')" />
+    <ReferencePath Include="@(AppleReferenceExtraPathFiles->'$(ExtraFilesPath)%(FileName)%(Extension)')" />
+  </ItemGroup>
 
   <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
     <DirectPInvoke Include="__Internal" />
@@ -107,16 +113,11 @@
       <_RuntimePackFiles Condition="%(_AppleUsedRuntimePackFiles.Extension) != '.dll' or %(_AppleUsedRuntimePackFiles.FileName) == 'System.Private.CoreLib'" Include="@(_AppleUsedRuntimePackFiles->'$(MicrosoftNetCoreAppRuntimePackNativeDir)%(FileName)%(Extension)')" />
     </ItemGroup>
 
-    <ItemGroup>
-      <ReferencePath Include="@(AppleReferenceSharedPathFiles->'$(MicrosoftNetCoreAppRuntimePackLibDir)%(FileName)%(Extension)')" />
-      <ReferencePath Include="@(AppleReferenceExtraPathFiles->'$(ExtraFilesPath)%(FileName)%(Extension)')" />
-    </ItemGroup>
-
     <Copy SourceFiles="@(_RuntimePackFiles)"
           DestinationFolder="$(OriginalPublishDir)" />
   </Target>
 
-  <Target Name="_TrimApp" DependsOnTargets="ILLink;CopyFilesToPublishDirectory">
+  <Target Name="_AdjustTrimmedAssembliesToBundle" DependsOnTargets="ILLink;CopyFilesToPublishDirectory">
     <ItemGroup>
       <AppleAssembliesToBundle Remove="@(AppleAssembliesToBundle)" />
       <AppleAssembliesToBundle Include="$(OriginalPublishDir)**\*.dll" Exclude="$(OriginalPublishDir)\**\*.resources.dll;@(_RemovedManagedAssembly)" />
