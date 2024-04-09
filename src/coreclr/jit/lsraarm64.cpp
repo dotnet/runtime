@@ -747,12 +747,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildReturn(tree) + 1;
             killMask = getKillSetForReturn();
             BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
-
-            // Any register should do here, but the error register's last use should be for storing the error value
-            // before returning. Instead of loading the SwiftError pseudolocal's value into a temp register,
-            // and then into the error register, use the error register directly.
-            // This will allow us to elide a move instruction during codegen.
-            BuildUse(tree->gtGetOp1(), RBM_SWIFT_ERROR);
+            BuildUse(tree->gtGetOp1(), RBM_NONE);
             break;
 #endif // SWIFT_SUPPORT
 
