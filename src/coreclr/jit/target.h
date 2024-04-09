@@ -367,9 +367,9 @@ public:
     }
 
     FORCEINLINE void     Clear();
-    FORCEINLINE bool     IsEmpty();
-    FORCEINLINE unsigned Count();
-    FORCEINLINE void     Create(regNumber reg);
+    FORCEINLINE bool     IsEmpty() const;
+    FORCEINLINE unsigned Count() const;
+    //FORCEINLINE void     Create(regNumber reg);
     // Rename this to AddRegNum
     FORCEINLINE void AddGprRegInMask(regNumber reg);
     FORCEINLINE void AddRegMaskForType(regMaskOnlyOne maskToAdd, var_types type);
@@ -380,13 +380,13 @@ public:
     FORCEINLINE void AddRegNum(regNumber reg, var_types type);
     FORCEINLINE void RemoveRegNumFromMask(regNumber reg);
     FORCEINLINE void RemoveRegNum(regNumber reg, var_types type);
-    FORCEINLINE bool IsRegNumInMask(regNumber reg);
-    FORCEINLINE bool IsRegNumPresent(regNumber reg, var_types type);
+    FORCEINLINE bool IsRegNumInMask(regNumber reg) const;
+    FORCEINLINE bool IsRegNumPresent(regNumber reg, var_types type) const;
 
 #ifdef TARGET_ARM
     FORCEINLINE void AddRegNumInMask(regNumber reg, var_types type);
     FORCEINLINE void RemoveRegNumFromMask(regNumber reg, var_types type);
-    FORCEINLINE bool IsRegNumInMask(regNumber reg, var_types type);
+    FORCEINLINE bool IsRegNumInMask(regNumber reg, var_types type) const;
 #endif
 
     FORCEINLINE void           RemoveRegTypeFromMask(regMaskOnlyOne regMaskToRemove, var_types type);
@@ -406,8 +406,8 @@ public:
     FORCEINLINE void           operator|=(const regNumber reg);
     FORCEINLINE void           operator^=(const regNumber reg);
     FORCEINLINE _regMaskAll    operator~();
-    FORCEINLINE bool           operator==(const _regMaskAll& other);
-    FORCEINLINE bool           operator!=(const _regMaskAll& other);
+    FORCEINLINE bool           operator==(const _regMaskAll& other) const;
+    FORCEINLINE bool           operator!=(const _regMaskAll& other) const;
     FORCEINLINE _regMaskAll    operator&(const _regMaskAll& other) const;
     FORCEINLINE _regMaskAll    operator|(const _regMaskAll& other) const;
 

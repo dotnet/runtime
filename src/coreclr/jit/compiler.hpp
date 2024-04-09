@@ -5107,7 +5107,7 @@ AllRegsMask AllRegsMask::operator~()
     return result;
 }
 
-bool AllRegsMask::operator==(const AllRegsMask& other)
+bool AllRegsMask::operator==(const AllRegsMask& other) const
 {
     return (_combinedRegisters == other._combinedRegisters)
 #ifdef HAS_MORE_THAN_64_REGISTERS
@@ -5116,7 +5116,7 @@ bool AllRegsMask::operator==(const AllRegsMask& other)
     ;
 }
 
-bool AllRegsMask::operator!=(const AllRegsMask& other)
+bool AllRegsMask::operator!=(const AllRegsMask& other) const
 {
     return !(*this == other);
 }
@@ -5149,7 +5149,7 @@ void AllRegsMask::Clear()
 #endif
 }
 
-bool AllRegsMask::IsEmpty()
+bool AllRegsMask::IsEmpty() const
 {
 #ifdef HAS_MORE_THAN_64_REGISTERS
     return ((_combinedRegisters | _predicateRegs) == RBM_NONE);
@@ -5158,7 +5158,7 @@ bool AllRegsMask::IsEmpty()
 #endif
 }
 
-unsigned AllRegsMask::Count()
+unsigned AllRegsMask::Count() const
 {
     return genCountBits(_combinedRegisters)
 #ifdef HAS_MORE_THAN_64_REGISTERS
@@ -5263,7 +5263,7 @@ void AllRegsMask::RemoveRegNum(regNumber reg, var_types type)
 // ----------------------------------------------------------
 //  IsRegNumInMask: Checks if `reg` is present in the mask.
 //
-bool AllRegsMask::IsRegNumInMask(regNumber reg)
+bool AllRegsMask::IsRegNumInMask(regNumber reg) const
 {
     RegBitSet64 value = genRegMask(reg);
 #ifdef HAS_MORE_THAN_64_REGISTERS
@@ -5277,7 +5277,7 @@ bool AllRegsMask::IsRegNumInMask(regNumber reg)
 // This is similar to IsRegNumInMask(reg, regType) for all platforms
 // except Arm. For Arm, it calls getRegMask() instead of genRegMask()
 // to create a mask that needs to be added.
-bool AllRegsMask::IsRegNumPresent(regNumber reg, var_types type)
+bool AllRegsMask::IsRegNumPresent(regNumber reg, var_types type) const
 {
 #ifdef TARGET_ARM
     return (_combinedRegisters & getRegMask(reg, type)) != RBM_NONE;
@@ -5309,7 +5309,7 @@ void AllRegsMask::RemoveRegNumFromMask(regNumber reg, var_types type)
 //  IsRegNumInMask: Removes `reg` from the mask. It is same as IsRegNumInMask(reg) except
 //  that it takes `type` as an argument and adds `reg` to the mask for that type.
 //
-bool AllRegsMask::IsRegNumInMask(regNumber reg, var_types type)
+bool AllRegsMask::IsRegNumInMask(regNumber reg, var_types type) const
 {
     return (_combinedRegisters & genRegMask(reg, type)) != RBM_NONE;
 }
