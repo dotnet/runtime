@@ -12,14 +12,19 @@
 
     <!-- these tests depend on the pdb files. Causes test failures like:
           [FAIL] System.Text.Json.Tests.DebuggerTests.DefaultJsonElement -->
-    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and ('$(TargetOS)' == 'browser' or '$(TargetsAppleMobile)' == 'true')">true</DebuggerSupport>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'browser'">true</DebuggerSupport>
     <!-- Needed for JsonSerializerOptionsUpdateHandler tests -->
-    <MetadataUpdaterSupport Condition="'$(MetadataUpdaterSupport)' == '' and ('$(TargetOS)' == 'browser' or '$(TargetsAppleMobile)' == 'true')">true</MetadataUpdaterSupport>
+    <MetadataUpdaterSupport Condition="'$(MetadataUpdaterSupport)' == '' and '$(TargetOS)' == 'browser'">true</MetadataUpdaterSupport>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+  </PropertyGroup>
+  <ItemGroup>
     <!-- The JsonSerializerIsReflectionEnabledByDefault feature switch is turned off automatically in projects that enable the PublishTrimmed property.
          Enable reflection and preserve required assemblies -->
-    <JsonSerializerIsReflectionEnabledByDefault Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">true</JsonSerializerIsReflectionEnabledByDefault>
-  </PropertyGroup>
+    <RuntimeHostConfigurationOption Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'"
+                                    Include="JsonSerializerIsReflectionEnabledByDefault"
+                                    Value="true"
+                                    Trim="true" />
+  </ItemGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <XunitShowProgress>true</XunitShowProgress>
     <!-- This WASM test is problematic and slow right now. This sets the xharness timeout but there is also override in sendtohelix-browser.targets -->

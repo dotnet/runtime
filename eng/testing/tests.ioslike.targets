@@ -132,18 +132,11 @@
       <_ApplePropertyNames Include="ShouldILStrip" />
       <_ApplePropertyNames Include="UseConsoleUITemplate" />
       <_ApplePropertyNames Include="UseRuntimeComponents" />
+      <_ApplePropertyNames Include="_NetCoreAppToolCurrent" />
 
       <!-- Globalization properties -->
       <_ApplePropertyNames Include="HybridGlobalization" />
       <_ApplePropertyNames Include="InvariantGlobalization" />
-
-      <!-- ILLink properties -->
-      <_ApplePropertyNames Include="_NetCoreAppToolCurrent" />
-      <_ApplePropertyNames Include="DebuggerSupport" />
-      <_ApplePropertyNames Include="EventSourceSupport" />
-      <_ApplePropertyNames Include="JsonSerializerIsReflectionEnabledByDefault" />
-      <_ApplePropertyNames Include="MetadataUpdaterSupport" />
-
 
       <_AppleUsedRuntimePackFiles
                          Include="@(_UsedRuntimePackFiles->'%(FileName)%(Extension)')"
