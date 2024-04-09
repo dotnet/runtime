@@ -59,34 +59,15 @@ struct CDacStringPoolSizes
     char cdac_string_pool_nil; // make the first real string start at offset 1
 #define DECL_LEN(membername,len) char membername[(len)];
 #define CDAC_BASELINE(name) DECL_LEN(cdac_string_pool_baseline_, (sizeof(name)))
-#define CDAC_TYPES_BEGIN()
 #define CDAC_TYPE_BEGIN(name) DECL_LEN(MAKE_TYPELEN_NAME(name), sizeof(#name))
-#define CDAC_TYPE_INDETERMINATE(name)
-#define CDAC_TYPE_SIZE(size)
 #define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) DECL_LEN(MAKE_FIELDLEN_NAME(tyname,membername), sizeof(#membername)) \
     DECL_LEN(MAKE_FIELDTYPELEN_NAME(tyname,membername), sizeof(#membertyname))
-#define CDAC_TYPE_END(name)
-#define CDAC_TYPES_END()
-#define CDAC_GLOBALS_BEGIN()
 #define CDAC_GLOBAL_POINTER(name,value) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name))
 #define CDAC_GLOBAL(name,tyname,value) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name)) \
     DECL_LEN(MAKE_GLOBALTYPELEN_NAME(name), sizeof(#tyname))
-#define CDAC_GLOBALS_END()
 #include "data-descriptor.h"
-#undef CDAC_BASELINE
-#undef CDAC_TYPES_BEGIN
-#undef CDAC_TYPES_END
-#undef CDAC_TYPE_BEGIN
-#undef CDAC_TYPE_INDETERMINATE
-#undef CDAC_TYPE_SIZE
-#undef CDAC_TYPE_FIELD
-#undef CDAC_TYPE_END
-#undef DECL_LEN
-#undef CDAC_GLOBALS_BEGIN
-#undef CDAC_GLOBAL_POINTER
-#undef CDAC_GLOBAL
-#undef CDAC_GLOBALS_END
     char cdac_string_pool_trailing_nil;
+#undef DECL_LEN
 };
 
 #define GET_TYPE_NAME(name) offsetof(struct CDacStringPoolSizes, MAKE_TYPELEN_NAME(name))
@@ -99,32 +80,9 @@ struct CDacStringPoolSizes
 enum
 {
     CDacBlobTypesCount =
-#define CDAC_BASELINE(name) 0
-#define CDAC_TYPES_BEGIN()
+#define CDAC_TYPES_BEGIN() 0
 #define CDAC_TYPE_BEGIN(name) + 1
-#define CDAC_TYPE_INDETERMINATE(name)
-#define CDAC_TYPE_SIZE(size)
-#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset)
-#define CDAC_TYPE_END(name)
-#define CDAC_TYPES_END()
-#define CDAC_GLOBALS_BEGIN()
-#define CDAC_GLOBAL_POINTER(name,value)
-#define CDAC_GLOBAL(name,tyname,value)
-#define CDAC_GLOBALS_END()
 #include "data-descriptor.h"
-#undef CDAC_BASELINE
-#undef CDAC_TYPES_BEGIN
-#undef CDAC_TYPES_END
-#undef CDAC_TYPE_BEGIN
-#undef CDAC_TYPE_INDETERMINATE
-#undef CDAC_TYPE_SIZE
-#undef CDAC_TYPE_FIELD
-#undef CDAC_TYPE_END
-#undef DECL_LEN
-#undef CDAC_GLOBALS_BEGIN
-#undef CDAC_GLOBAL_POINTER
-#undef CDAC_GLOBAL
-#undef CDAC_GLOBALS_END
     ,
 };
 
@@ -133,32 +91,10 @@ enum
 enum
 {
     CDacBlobFieldPoolCount =
-#define CDAC_BASELINE(name) 1
-#define CDAC_TYPES_BEGIN()
-#define CDAC_TYPE_BEGIN(name)
-#define CDAC_TYPE_INDETERMINATE(name)
-#define CDAC_TYPE_SIZE(size)
+#define CDAC_TYPES_BEGIN() 1
 #define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) + 1
 #define CDAC_TYPE_END(name) + 1
-#define CDAC_TYPES_END()
-#define CDAC_GLOBALS_BEGIN()
-#define CDAC_GLOBAL_POINTER(name,value)
-#define CDAC_GLOBAL(name,tyname,value)
-#define CDAC_GLOBALS_END()
 #include "data-descriptor.h"
-#undef CDAC_BASELINE
-#undef CDAC_TYPES_BEGIN
-#undef CDAC_TYPES_END
-#undef CDAC_TYPE_BEGIN
-#undef CDAC_TYPE_INDETERMINATE
-#undef CDAC_TYPE_SIZE
-#undef CDAC_TYPE_FIELD
-#undef CDAC_TYPE_END
-#undef DECL_LEN
-#undef CDAC_GLOBALS_BEGIN
-#undef CDAC_GLOBAL_POINTER
-#undef CDAC_GLOBAL
-#undef CDAC_GLOBALS_END
     ,
 };
 
@@ -166,32 +102,9 @@ enum
 enum
 {
     CDacBlobGlobalLiteralsCount =
-#define CDAC_BASELINE(name) 0
-#define CDAC_TYPES_BEGIN()
-#define CDAC_TYPE_BEGIN(name)
-#define CDAC_TYPE_INDETERMINATE(name)
-#define CDAC_TYPE_SIZE(size)
-#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset)
-#define CDAC_TYPE_END(name)
-#define CDAC_TYPES_END()
-#define CDAC_GLOBALS_BEGIN()
-#define CDAC_GLOBAL_POINTER(name,value)
+#define CDAC_GLOBALS_BEGIN() 0
 #define CDAC_GLOBAL(name,tyname,value) + 1
-#define CDAC_GLOBALS_END()
 #include "data-descriptor.h"
-#undef CDAC_BASELINE
-#undef CDAC_TYPES_BEGIN
-#undef CDAC_TYPES_END
-#undef CDAC_TYPE_BEGIN
-#undef CDAC_TYPE_INDETERMINATE
-#undef CDAC_TYPE_SIZE
-#undef CDAC_TYPE_FIELD
-#undef CDAC_TYPE_END
-#undef DECL_LEN
-#undef CDAC_GLOBALS_BEGIN
-#undef CDAC_GLOBAL_POINTER
-#undef CDAC_GLOBAL
-#undef CDAC_GLOBALS_END
     ,
 };
 
@@ -199,32 +112,9 @@ enum
 enum
 {
     CDacBlobGlobalPointersCount =
-#define CDAC_BASELINE(name) 0
-#define CDAC_TYPES_BEGIN()
-#define CDAC_TYPE_BEGIN(name)
-#define CDAC_TYPE_INDETERMINATE(name)
-#define CDAC_TYPE_SIZE(size)
-#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset)
-#define CDAC_TYPE_END(name)
-#define CDAC_TYPES_END()
-#define CDAC_GLOBALS_BEGIN()
+#define CDAC_GLOBALS_BEGIN() 0
 #define CDAC_GLOBAL_POINTER(name,value) + 1
-#define CDAC_GLOBAL(name,tyname,value)
-#define CDAC_GLOBALS_END()
 #include "data-descriptor.h"
-#undef CDAC_BASELINE
-#undef CDAC_TYPES_BEGIN
-#undef CDAC_TYPES_END
-#undef CDAC_TYPE_BEGIN
-#undef CDAC_TYPE_INDETERMINATE
-#undef CDAC_TYPE_SIZE
-#undef CDAC_TYPE_FIELD
-#undef CDAC_TYPE_END
-#undef DECL_LEN
-#undef CDAC_GLOBALS_BEGIN
-#undef CDAC_GLOBAL_POINTER
-#undef CDAC_GLOBAL
-#undef CDAC_GLOBALS_END
     ,
 };
 
@@ -250,33 +140,12 @@ enum
 struct CDacFieldPoolSizes
 {
 #define DECL_LEN(membername) char membername;
-#define CDAC_BASELINE(name) DECL_LEN(cdac_field_pool_start_placeholder__)
-#define CDAC_TYPES_BEGIN()
+#define CDAC_TYPES_BEGIN() DECL_LEN(cdac_field_pool_start_placeholder__)
 #define CDAC_TYPE_BEGIN(name) struct MAKE_TYPEFIELDS_TYNAME(name) {
-#define CDAC_TYPE_INDETERMINATE(name)
-#define CDAC_TYPE_SIZE(size)
 #define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) DECL_LEN(CONCAT4(cdac_field_pool_member__, tyname, __, membername))
 #define CDAC_TYPE_END(name) DECL_LEN(CONCAT4(cdac_field_pool_member__, tyname, _, endmarker)) \
     } MAKE_TYPEFIELDS_TYNAME(name);
-#define CDAC_TYPES_END()
-#define CDAC_GLOBALS_BEGIN()
-#define CDAC_GLOBAL_POINTER(name,value)
-#define CDAC_GLOBAL(name,tyname,value)
-#define CDAC_GLOBALS_END()
 #include "data-descriptor.h"
-#undef CDAC_BASELINE
-#undef CDAC_TYPES_BEGIN
-#undef CDAC_TYPES_END
-#undef CDAC_TYPE_BEGIN
-#undef CDAC_TYPE_INDETERMINATE
-#undef CDAC_TYPE_SIZE
-#undef CDAC_TYPE_FIELD
-#undef CDAC_TYPE_END
-#undef DECL_LEN
-#undef CDAC_GLOBALS_BEGIN
-#undef CDAC_GLOBAL_POINTER
-#undef CDAC_GLOBAL
-#undef CDAC_GLOBALS_END
 #undef DECL_LEN
 };
 
@@ -296,32 +165,10 @@ struct CDacFieldPoolSizes
 struct CDacGlobalPointerIndex
 {
 #define DECL_LEN(membername) char membername;
-#define CDAC_BASELINE(name) DECL_LEN(cdac_global_pointer_index_start_placeholder__)
-#define CDAC_TYPES_BEGIN()
-#define CDAC_TYPE_BEGIN(name)
-#define CDAC_TYPE_INDETERMINATE(name)
-#define CDAC_TYPE_SIZE(size)
-#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset)
-#define CDAC_TYPE_END(name)
-#define CDAC_TYPES_END()
-#define CDAC_GLOBALS_BEGIN()
+#define CDAC_GLOBALS_BEGIN() DECL_LEN(cdac_global_pointer_index_start_placeholder__)
 #define CDAC_GLOBAL_POINTER(name,value) DECL_LEN(CONCAT(cdac_global_pointer_index__, name))
-#define CDAC_GLOBAL(name,tyname,value)
-#define CDAC_GLOBALS_END()
 #include "data-descriptor.h"
-#undef CDAC_BASELINE
-#undef CDAC_TYPES_BEGIN
-#undef CDAC_TYPES_END
-#undef CDAC_TYPE_BEGIN
-#undef CDAC_TYPE_INDETERMINATE
-#undef CDAC_TYPE_SIZE
-#undef CDAC_TYPE_FIELD
-#undef CDAC_TYPE_END
 #undef DECL_LEN
-#undef CDAC_GLOBALS_BEGIN
-#undef CDAC_GLOBAL_POINTER
-#undef CDAC_GLOBAL
-#undef CDAC_GLOBALS_END
 };
 
 #define GET_GLOBAL_POINTER_INDEX(name) offsetof(struct CDacGlobalPointerIndex, CONCAT(cdac_global_pointer_index__, name))
@@ -365,8 +212,6 @@ struct MagicAndBlob {
     struct BinaryBlobDataDescriptor Blob;
 };
 
-DLLEXPORT size_t FooFaFa = 0x12345678;
-
 // C-style designated initializers are a C++20 feature.  Have to use plain old aggregate initialization instead.
 
 DLLEXPORT
@@ -393,154 +238,43 @@ struct MagicAndBlob BlobDataDescriptor = {
         /* .BaselineName = */ offsetof(struct CDacStringPoolSizes, cdac_string_pool_baseline_),
 
         /* .Types = */ {
-#define CDAC_BASELINE(name)
-#define CDAC_TYPES_BEGIN()
 #define CDAC_TYPE_BEGIN(name) { \
     /* .Name = */ GET_TYPE_NAME(name), \
     /* .Fields = */ GET_TYPE_FIELDS(name),
 #define CDAC_TYPE_INDETERMINATE(name) /*.Size = */ 0,
 #define CDAC_TYPE_SIZE(size) /* .Size = */ size,
-#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset)
 #define CDAC_TYPE_END(name) },
-#define CDAC_TYPES_END()
-#define CDAC_GLOBALS_BEGIN()
-#define CDAC_GLOBAL_POINTER(name,value)
-#define CDAC_GLOBAL(name,tyname,value)
-#define CDAC_GLOBALS_END()
 #include "data-descriptor.h"
-#undef CDAC_BASELINE
-#undef CDAC_TYPES_BEGIN
-#undef CDAC_TYPES_END
-#undef CDAC_TYPE_BEGIN
-#undef CDAC_TYPE_INDETERMINATE
-#undef CDAC_TYPE_SIZE
-#undef CDAC_TYPE_FIELD
-#undef CDAC_TYPE_END
-#undef DECL_LEN
-#undef CDAC_GLOBALS_BEGIN
-#undef CDAC_GLOBAL_POINTER
-#undef CDAC_GLOBAL
-#undef CDAC_GLOBALS_END
         },
 
         /* .FieldPool = */ {
-#define CDAC_BASELINE(name) {0,},
-#define CDAC_TYPES_BEGIN()
-#define CDAC_TYPE_BEGIN(name)
-#define CDAC_TYPE_INDETERMINATE(name)
-#define CDAC_TYPE_SIZE(size)
+#define CDAC_TYPES_BEGIN() {0,},
 #define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) { \
     /* .Name = */ GET_FIELD_NAME(tyname,membername), \
     /* .TypeName = */ GET_FIELDTYPE_NAME(tyname,membername), \
     /* .FieldOffset = */ offset, \
 },
 #define CDAC_TYPE_END(name) { 0, },
-#define CDAC_TYPES_END()
-#define CDAC_GLOBALS_BEGIN()
-#define CDAC_GLOBAL_POINTER(name,value)
-#define CDAC_GLOBAL(name,tyname,value)
-#define CDAC_GLOBALS_END()
 #include "data-descriptor.h"
-#undef CDAC_BASELINE
-#undef CDAC_TYPES_BEGIN
-#undef CDAC_TYPES_END
-#undef CDAC_TYPE_BEGIN
-#undef CDAC_TYPE_INDETERMINATE
-#undef CDAC_TYPE_SIZE
-#undef CDAC_TYPE_FIELD
-#undef CDAC_TYPE_END
-#undef DECL_LEN
-#undef CDAC_GLOBALS_BEGIN
-#undef CDAC_GLOBAL_POINTER
-#undef CDAC_GLOBAL
-#undef CDAC_GLOBALS_END
         },
 
         /* .GlobalLiteralValues = */ {
-#define CDAC_BASELINE(name)
-#define CDAC_TYPES_BEGIN()
-#define CDAC_TYPE_BEGIN(name)
-#define CDAC_TYPE_INDETERMINATE(name)
-#define CDAC_TYPE_SIZE(size)
-#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset)
-#define CDAC_TYPE_END(name)
-#define CDAC_TYPES_END()
-#define CDAC_GLOBALS_BEGIN()
-#define CDAC_GLOBAL_POINTER(name,value)
 #define CDAC_GLOBAL(name,tyname,value) { /*.Name = */ GET_GLOBAL_NAME(name), /* .TypeName = */ GET_GLOBALTYPE_NAME(name), /* .Value = */ value },
-#define CDAC_GLOBALS_END()
 #include "data-descriptor.h"
-#undef CDAC_BASELINE
-#undef CDAC_TYPES_BEGIN
-#undef CDAC_TYPES_END
-#undef CDAC_TYPE_BEGIN
-#undef CDAC_TYPE_INDETERMINATE
-#undef CDAC_TYPE_SIZE
-#undef CDAC_TYPE_FIELD
-#undef CDAC_TYPE_END
-#undef DECL_LEN
-#undef CDAC_GLOBALS_BEGIN
-#undef CDAC_GLOBAL_POINTER
-#undef CDAC_GLOBAL
-#undef CDAC_GLOBALS_END
         },
 
         /* .GlobalPointerValues = */ {
-#define CDAC_BASELINE(name)
-#define CDAC_TYPES_BEGIN()
-#define CDAC_TYPE_BEGIN(name)
-#define CDAC_TYPE_INDETERMINATE(name)
-#define CDAC_TYPE_SIZE(size)
-#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset)
-#define CDAC_TYPE_END(name)
-#define CDAC_TYPES_END()
-#define CDAC_GLOBALS_BEGIN()
 #define CDAC_GLOBAL_POINTER(name,value) { /* .Name = */ GET_GLOBAL_NAME(name), /* .AuxIndex = */ GET_GLOBAL_POINTER_INDEX(name) },
-#define CDAC_GLOBAL(name,tyname,value)
-#define CDAC_GLOBALS_END()
 #include "data-descriptor.h"
-#undef CDAC_BASELINE
-#undef CDAC_TYPES_BEGIN
-#undef CDAC_TYPES_END
-#undef CDAC_TYPE_BEGIN
-#undef CDAC_TYPE_INDETERMINATE
-#undef CDAC_TYPE_SIZE
-#undef CDAC_TYPE_FIELD
-#undef CDAC_TYPE_END
-#undef DECL_LEN
-#undef CDAC_GLOBALS_BEGIN
-#undef CDAC_GLOBAL_POINTER
-#undef CDAC_GLOBAL
-#undef CDAC_GLOBALS_END
         },
 
         /* .NamesPool = */ ("\0" // starts with a nul
 #define CDAC_BASELINE(name) name "\0"
-#define CDAC_TYPES_BEGIN()
 #define CDAC_TYPE_BEGIN(name) #name "\0"
-#define CDAC_TYPE_INDETERMINATE(name)
-#define CDAC_TYPE_SIZE(size)
 #define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) #membername "\0" #membertyname "\0"
-#define CDAC_TYPE_END(name)
-#define CDAC_TYPES_END()
-#define CDAC_GLOBALS_BEGIN()
 #define CDAC_GLOBAL_POINTER(name,value) #name "\0"
 #define CDAC_GLOBAL(name,tyname,value) #name "\0" #tyname "\0"
-#define CDAC_GLOBALS_END()
 #include "data-descriptor.h"
-#undef CDAC_BASELINE
-#undef CDAC_TYPES_BEGIN
-#undef CDAC_TYPES_END
-#undef CDAC_TYPE_BEGIN
-#undef CDAC_TYPE_INDETERMINATE
-#undef CDAC_TYPE_SIZE
-#undef CDAC_TYPE_FIELD
-#undef CDAC_TYPE_END
-#undef DECL_LEN
-#undef CDAC_GLOBALS_BEGIN
-#undef CDAC_GLOBAL_POINTER
-#undef CDAC_GLOBAL
-#undef CDAC_GLOBALS_END
                   ),
 
         /* .EndMagic = */ { 0x01, 0x02, 0x03, 0x04 },
