@@ -126,7 +126,7 @@ namespace System.ComponentModel.Composition
         ///      A <see cref="string"/> containing the contract name to export the type or member
         ///      marked with this attribute, under. The default value is an empty string ("").
         /// </value>
-        public string? ContractName { get; private set; }
+        public string? ContractName { get; }
 
         /// <summary>
         ///     Get the contract type that is exported by the member that this attribute is attached to.
@@ -136,6 +136,6 @@ namespace System.ComponentModel.Composition
         ///     <see langword="null"/> which means that the type will be obtained by looking at the type on
         ///     the member that this export is attached to.
         /// </value>
-        public Type? ContractType { get; private set; }
+        public Type? ContractType { get; }
     }
 }

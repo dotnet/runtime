@@ -489,7 +489,7 @@ namespace Internal.TypeSystem
             private Stack<int> _indexStack = new Stack<int>();
             private TypeSystemMetadataEmitter _metadataEmitter;
 
-            public static EmbeddedSignatureDataEmitter EmptySingleton = new EmbeddedSignatureDataEmitter(null, null);
+            public static readonly EmbeddedSignatureDataEmitter EmptySingleton = new EmbeddedSignatureDataEmitter(null, null);
 
             public EmbeddedSignatureDataEmitter(EmbeddedSignatureData[] embeddedData, TypeSystemMetadataEmitter metadataEmitter)
             {

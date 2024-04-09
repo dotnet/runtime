@@ -20,15 +20,15 @@ namespace System.DirectoryServices.AccountManagement
     // These are the default options used when a user does not specify a context option to connect to the store.
     internal static class DefaultContextOptions
     {
-        internal static ContextOptions MachineDefaultContextOption = ContextOptions.Negotiate;
-        internal static ContextOptions ADDefaultContextOption = ContextOptions.Negotiate | ContextOptions.Signing | ContextOptions.Sealing;
+        internal const ContextOptions MachineDefaultContextOption = ContextOptions.Negotiate;
+        internal const ContextOptions ADDefaultContextOption = ContextOptions.Negotiate | ContextOptions.Signing | ContextOptions.Sealing;
     }
 
     internal static class LdapConstants
     {
-        public static int LDAP_SSL_PORT = 636;
-        public static int LDAP_PORT = 389;
-        internal static DateTime defaultUtcTime = new DateTime(1601, 1, 1, 0, 0, 0);
+        public const int LDAP_SSL_PORT = 636;
+        public const int LDAP_PORT = 389;
+        internal static readonly DateTime defaultUtcTime = new DateTime(1601, 1, 1, 0, 0, 0);
     }
     // The string constants used internally to specify each property
     internal static class PropertyNames

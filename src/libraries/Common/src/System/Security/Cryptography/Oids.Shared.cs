@@ -72,10 +72,10 @@ namespace System.Security.Cryptography
         internal static Oid CommonNameOid => s_commonNameOid ??= InitializeOid(CommonName);
         internal static Oid CountryOrRegionNameOid => s_countryOrRegionOid ??= InitializeOid(CountryOrRegionName);
         internal static Oid LocalityNameOid => s_localityNameOid ??= InitializeOid(LocalityName);
-        internal static Oid StateOrProvinceNameOid = s_stateOrProvinceNameOid ??= InitializeOid(StateOrProvinceName);
-        internal static Oid OrganizationOid = s_organizationOid ??= InitializeOid(Organization);
-        internal static Oid OrganizationalUnitOid = s_organizationalUnitOid ??= InitializeOid(OrganizationalUnit);
-        internal static Oid EmailAddressOid = s_emailAddressOid ??= InitializeOid(EmailAddress);
+        internal static Oid StateOrProvinceNameOid => s_stateOrProvinceNameOid ??= InitializeOid(StateOrProvinceName);
+        internal static Oid OrganizationOid => s_organizationOid ??= InitializeOid(Organization);
+        internal static Oid OrganizationalUnitOid => s_organizationalUnitOid ??= InitializeOid(OrganizationalUnit);
+        internal static Oid EmailAddressOid => s_emailAddressOid ??= InitializeOid(EmailAddress);
 
         private static Oid InitializeOid(string oidValue)
         {
