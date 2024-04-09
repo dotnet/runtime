@@ -85,12 +85,11 @@ namespace System
                 }
 
                 exponent += numberDigitsRemoving;
-                TSignificand two = TSignificand.CreateTruncating(2);
                 TSignificand divisor = TDecimal.Power10(numberDigitsRemoving);
                 TSignificand quotient = unsignedSignificand / divisor;
                 TSignificand remainder = unsignedSignificand % divisor;
-                TSignificand midPoint = divisor / two;
-                bool needRouding = remainder > midPoint || (remainder == midPoint && quotient % two == TSignificand.One);
+                TSignificand midPoint = divisor >> 1;
+                bool needRouding = remainder > midPoint || (remainder == midPoint && (quotient & TSignificand.One) == TSignificand.One);
 
                 if (needRouding && quotient == TDecimal.MaxSignificand && exponent < TDecimal.MaxDecimalExponent)
                 {

@@ -161,7 +161,7 @@ namespace System.Numerics
         static Int128 IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.ConvertToSignificand(UInt128 value) => (Int128)value;
 
         static Int128 IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.Power10(int exponent) => Int128Powers10[exponent];
-        
+
         static UInt128 IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.SignMask => new UInt128(0x8000_0000_0000_0000, 0);
 
         static int IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.NumberBitsEncoding => 128;
