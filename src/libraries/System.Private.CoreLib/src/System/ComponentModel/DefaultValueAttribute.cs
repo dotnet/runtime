@@ -31,7 +31,6 @@ namespace System.ComponentModel
         /// class, converting the specified value to the specified type, and using the U.S. English
         /// culture as the translation context.
         /// </summary>
-        [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         public DefaultValueAttribute(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
             string? value)
@@ -39,9 +38,9 @@ namespace System.ComponentModel
             // The null check and try/catch here are because attributes should never throw exceptions.
             // We would fail to load an otherwise normal class.
 
+            Debug.Assert(!IsSupported, "Runtime instantiation of this attribute is not allowed.");
             if (!IsSupported)
             {
-                Debug.Assert(!IsSupported, "Runtime instantiation of this attribute is not allowed.");
                 return;
             }
 
@@ -69,8 +68,9 @@ namespace System.ComponentModel
                     _value = Convert.ChangeType(value, type, CultureInfo.InvariantCulture);
                 }
 
-                [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
                 // Looking for ad hoc created TypeDescriptor.ConvertFromInvariantString(Type, string)
+                [UnconditionalSuppressMessage("Trimming", "IL2026:", Justification = "Trimming doesn't support DefaulttValueAttribute being used at runtime")]
+                [UnconditionalSuppressMessage("Trimming", "IL2111:", Justification = "Trimming doesn't support DefaulttValueAttribute being used at runtime")]
                 static bool TryConvertFromInvariantString(
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type typeToConvert,
                     string? stringValue,
