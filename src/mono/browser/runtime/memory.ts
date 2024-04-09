@@ -430,8 +430,9 @@ export function copyBytes (srcPtr: VoidPtr, dstPtr: VoidPtr, bytes: number): voi
 // on non-MT build, this will be a no-op trimmed by rollup
 export function receiveWorkerHeapViews () {
     if (!WasmEnableThreads) return;
-    const memory = runtimeHelpers.getMemory();
-    if (memory.buffer !== Module.HEAPU8.buffer) {
+    const wasmMemory = runtimeHelpers.getMemory();
+    if (wasmMemory.buffer !== Module.HEAPU8.buffer) {
+        mono_log_warn("Updating memory views to:" + wasmMemory.buffer.byteLength + " " + JSON.stringify((performance as any)?.memory));
         runtimeHelpers.updateMemoryViews();
     }
 }
@@ -467,5 +468,8 @@ export function forceThreadMemoryViewRefresh () {
     This only works because their implementation does not skip doing work even when you ask to grow by 0 pages.
     */
     wasmMemory.grow(0);
+    if (wasmMemory.buffer !== Module.HEAPU8.buffer) {
+        mono_log_warn("Forcing update memory views to:" + wasmMemory.buffer.byteLength + " " + JSON.stringify((performance as any)?.memory));
+    }
     runtimeHelpers.updateMemoryViews();
 }

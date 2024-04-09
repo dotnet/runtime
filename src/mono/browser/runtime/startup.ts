@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
-import BuildConfiguration from "consts:configuration";
 
 import { DotnetModuleInternal, CharPtrNull } from "./types/internal";
 import { exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert } from "./globals";
@@ -282,9 +281,9 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: () => void) 
 
 
         Module.runtimeKeepalivePush();
-        if (WasmEnableThreads && BuildConfiguration === "Debug" && globalThis.setInterval) globalThis.setInterval(() => {
-            mono_log_info("UI thread is alive!");
-        }, 3000);
+        if (WasmEnableThreads && globalThis.setInterval) globalThis.setInterval(() => {
+            mono_log_info("UI thread is alive!" + JSON.stringify((performance as any)?.memory));
+        }, 500);
 
         if (WasmEnableThreads) {
             await threadsReady;
