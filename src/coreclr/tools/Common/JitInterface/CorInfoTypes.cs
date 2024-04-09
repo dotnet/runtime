@@ -843,6 +843,7 @@ namespace Internal.JitInterface
             public uint offsetOfCalleeSavedFP;
             public uint offsetOfCallTarget;
             public uint offsetOfReturnAddress;
+            public uint offsetOfSecretStubArg;
             public uint offsetOfSPAfterProlog;
         }
         public InlinedCallFrameInfo inlinedCallFrameInfo;

@@ -1082,7 +1082,7 @@ EXTERN_C TypeHandle::CastResult STDCALL ObjIsInstanceOfCached(Object *pObject, T
 
 #ifdef HOST_64BIT
 class InlinedCallFrame;
-Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame, PTR_VOID StubSecretArg);
+Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame);
 #endif
 
 #ifdef _DEBUG

@@ -5605,6 +5605,7 @@ void Lowering::InsertPInvokeMethodProlog()
     const LclVarDsc* inlinedPInvokeDsc = comp->lvaGetDesc(comp->lvaInlinedPInvokeFrameVar);
     assert(inlinedPInvokeDsc->IsAddressExposed());
 #endif // DEBUG
+
     GenTree* frameAddr = new (comp, GT_LCL_ADDR)
         GenTreeLclFld(GT_LCL_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfFrameVptr);
 
@@ -5614,6 +5615,7 @@ void Lowering::InsertPInvokeMethodProlog()
 
     NewCallArg frameAddrArg = NewCallArg::Primitive(frameAddr).WellKnown(WellKnownArg::PInvokeFrame);
     call->gtArgs.PushBack(comp, frameAddrArg);
+
 // for x86/arm32 don't pass the secretArg.
 #if !defined(TARGET_X86) && !defined(TARGET_ARM)
     NewCallArg stubParamArg =
@@ -5668,6 +5670,15 @@ void Lowering::InsertPInvokeMethodProlog()
     firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, storeFP));
     DISPTREERANGE(firstBlockRange, storeFP);
 #endif // !defined(TARGET_ARM)
+
+    // InlinedCallFrame.m_StubSecretArg = stubSecretArg;
+    if (comp->info.compPublishStubParam)
+    {
+        GenTree* value = comp->gtNewLclvNode(comp->lvaStubArgumentVar, TYP_I_IMPL);
+        GenTree* store = comp->gtNewStoreLclFldNode(comp->lvaInlinedPInvokeFrameVar, TYP_I_IMPL,
+                                                    callFrameInfo.offsetOfSecretStubArg, value);
+        firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, store));
+    }
 
     // --------------------------------------------------------
     // On 32-bit targets, CORINFO_HELP_INIT_PINVOKE_FRAME initializes the PInvoke frame and then pushes it onto
