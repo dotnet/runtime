@@ -36,6 +36,9 @@ import { BINDING, MONO } from "./net6-legacy/globals";
 import { localHeapViewU8 } from "./memory";
 import { assertNoProxies } from "./gc-handles";
 
+// default size if MonoConfig.pthreadPoolSize is undefined
+const MONO_PTHREAD_POOL_SIZE = 4;
+
 export async function configureRuntimeStartup (module: DotnetModuleInternal): Promise<void> {
     if (!module.out) {
         // eslint-disable-next-line no-console
