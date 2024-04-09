@@ -2584,7 +2584,9 @@
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'minifullaot' and '$(TargetArchitecture)' == 'arm64'">
         <!-- Tracking issue: https://github.com/dotnet/runtime/issues/90427 -->
+        <ExcludeList Include="$(XunitTestBinBase)/GC/**" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/nullabletypes/boxunboxenum_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/nullabletypes/boxunboxenum_do/**" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/volatile/1/cpblk_volatile/**" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_85874/**" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/HwiOp/HwiSideEffects/**" />
@@ -2613,6 +2615,31 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/valuetypes/nullable/castclass/castclass/castclass032**" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/regress/ddb/127931/127931/**" />
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/threadstatic/threadstatic08/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/cmov/Float_Xor_Op_cs_ro/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/physicalpromotion/addressinterference/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/HwiOp/HwiSideEffects/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/IL_Conformance/Old/Conformance_Base/add_ovf_i1/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/CodeGenBringUpTests/ArrayExc_do/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Generics/Instantiation/Classes/baseclass02/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/AddingSequence_ro/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Devirtualization/arraypool//**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Performance/CodeQuality/Benchstones/BenchI/Ackermann/Ackermann/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeInitialization/CircularCctors/CircularCctorTwoThreadsThreeCC/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Instantiation/Positive/AbstractBase02/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/casts/array/arrays_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Invoke/25params/25param1c_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/fp/exgen/200w1d-02_cs_do/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/casts/array/arrays_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Invoke/25params/25param1c_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/fp/exgen/200w1d-02_cs_ro/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1.2-M01/b00722/b00722/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_100466/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/VS-ia64-JIT/V1.2-M02/b102844/b102844/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/Dev11/dev11_4421/Dev11_4421/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b30586/b30586/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/rngchk/ArrayWithFunc_o/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/valuetypes/nullable/castclass/castclass/castclass032/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/gc/regress/vswhidbey/143837/**" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'minijit' and '$(TargetArchitecture)' == 'arm64'">
