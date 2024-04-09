@@ -261,13 +261,13 @@ protected:
     // Prolog functions and data (there are a few exceptions for more generally used things)
     //
 
-    void genEstablishFramePointer(int delta, bool reportUnwindData);
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    void genFnPrologCalleeRegArgs();
-#else
-    void genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbered, RegState* regState);
-#endif
-    void genEnregisterIncomingStackArgs();
+    void      genEstablishFramePointer(int delta, bool reportUnwindData);
+    void      genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed);
+    regMaskTP genGetParameterHomingTempRegisterCandidates();
+
+    var_types genParamStackStoreType(LclVarDsc* dsc, const ABIPassingSegment& seg);
+    void      genSpillOrAddRegisterParam(unsigned lclNum, class RegGraph* graph);
+    void      genEnregisterIncomingStackArgs();
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     void genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed);
 #else

@@ -31,7 +31,7 @@ public:
     // offset, relative to the base of stack arguments.
     unsigned GetStackOffset() const;
 
-    var_types GetRegisterStoreType() const;
+    var_types GetRegisterType() const;
 
     static ABIPassingSegment InRegister(regNumber reg, unsigned offset, unsigned size);
     static ABIPassingSegment OnStack(unsigned stackOffset, unsigned offset, unsigned size);

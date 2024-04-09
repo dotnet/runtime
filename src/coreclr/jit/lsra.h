@@ -963,6 +963,11 @@ private:
         return ((lsraStressMask & (LSRA_LIMIT_MASK | LSRA_SELECT_MASK)) != 0);
     }
 
+    bool stressInitialParamReg()
+    {
+        return compiler->compStressCompile(Compiler::STRESS_INITIAL_PARAM_REG, 25);
+    }
+
     // Dump support
     void dumpDefList();
     void lsraDumpIntervals(const char* msg);
@@ -1015,6 +1020,10 @@ private:
         // do nothing; checked only under #DEBUG
     }
     bool candidatesAreStressLimited()
+    {
+        return false;
+    }
+    bool stressInitialParamReg()
     {
         return false;
     }
@@ -1600,6 +1609,8 @@ private:
                                  RegisterScore registerScore = NONE);
 
     void validateIntervals();
+
+    void stressSetRandomParameterPreferences();
 #endif // DEBUG
 
 #if TRACK_LSRA_STATS
