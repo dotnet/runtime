@@ -33,7 +33,7 @@ private:
     BasicBlock* m_startBlock;           // First block in the If Conversion.
     BasicBlock* m_finalBlock = nullptr; // Block where the flows merge. In a return case, this can be nullptr.
 
-    // The node, statement and block of an assignment.
+    // The node, statement and block of an operation.
     struct IfConvertOperation
     {
         BasicBlock* block = nullptr;
@@ -208,15 +208,15 @@ void OptIfConversionDsc::IfConvertFindFlow()
 // IfConvertCheckStmts
 //
 // From the given block to the final block, check all the statements and nodes are
-// valid for an If conversion. Chain of blocks must contain only a single assignment
-// and no other operations.
+// valid for an If conversion. Chain of blocks must contain only a single local
+// store and no other operations.
 //
 // Arguments:
-//   fromBlock  -- Block inside the if statement to start from (Either Then or Else path).
-//   foundOperation -- Returns the found operation.
+//   fromBlock      - Block inside the if statement to start from (Either Then or Else path).
+//   foundOperation - Returns the found operation.
 //
 // Returns:
-//   If everything is valid, then set foundOperation to the assignment and return true.
+//   If everything is valid, then set foundOperation to the store and return true.
 //   Otherwise return false.
 //
 bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOperation* foundOperation)
@@ -774,7 +774,7 @@ PhaseStatus Compiler::optIfConversion()
 
     bool madeChanges = false;
 
-    // This phase does not respect SSA: assignments are deleted/moved.
+    // This phase does not respect SSA: local stores are deleted/moved.
     assert(!fgSsaValid);
     optReachableBitVecTraits = nullptr;
 

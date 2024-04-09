@@ -195,10 +195,6 @@ type MonoConfig = {
      */
     pthreadPoolUnusedSize?: number;
     /**
-     * Delay in milliseconds before starting the finalizer thread
-     */
-    finalizerThreadStartDelayMs?: number;
-    /**
      * If true, a list of the methods optimized by the interpreter will be saved and used for faster startup
      *  on future runs of the application
      */

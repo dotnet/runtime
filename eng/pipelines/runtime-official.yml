@@ -65,6 +65,7 @@ extends:
           buildConfig: release
           platforms:
           - windows_x64
+          - windows_x86
           - windows_arm64
           jobParameters:
             templatePath: 'templates-official'
@@ -89,41 +90,6 @@ extends:
               parameters:
                 name: $(osGroup)$(osSubgroup)_$(archType)
 
-
-      #
-      # Build CoreCLR runtime packs
-      # Windows x86
-      # No NativeAOT as NativeAOT is not supported on x86
-      # Sign diagnostic files after native build
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
-          platforms:
-          - windows_x86
-          jobParameters:
-            templatePath: 'templates-official'
-            buildArgs: -s clr.runtime+clr.alljits -c $(_BuildConfig) /bl:$(Build.SourcesDirectory)/artifacts/logs/$(_BuildConfig)/CoreClrNativeBuild.binlog
-            nameSuffix: CoreCLR
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            timeoutInMinutes: 120
-            postBuildSteps:
-            - template: /eng/pipelines/coreclr/templates/sign-diagnostic-files.yml
-              parameters:
-                basePath: $(Build.SourcesDirectory)/artifacts/bin/coreclr
-                isOfficialBuild: ${{ variables.isOfficialBuild }}
-                timeoutInMinutes: 30
-            # Now that we've signed the diagnostic files, do the rest of the build.
-            - template: /eng/pipelines/common/templates/global-build-step.yml
-              parameters:
-                buildArgs: -s clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+host+packs -c $(_BuildConfig)
-                displayName: Build managed CoreCLR components, all libraries, hosts, and packs
-
-            # Upload the results.
-            - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-              parameters:
-                name: $(osGroup)$(osSubgroup)_$(archType)
       #
       # Build CoreCLR runtime packs
       # Mac x64/arm64
@@ -213,21 +179,17 @@ extends:
                   PublishLocation: Container
                   ArtifactName: CoreCLRCrossDacArtifacts
               # Create RPMs and DEBs
-              - template: /eng/pipelines/installer/jobs/steps/build-linux-package.yml
+              - template: /eng/pipelines/installer/steps/build-linux-package.yml
                 parameters:
                   packageType: deb
                   target: debpkg
-                  packageStepDescription: Runtime Deps, Runtime, Framework Packs Deb installers
-                  subsetArg: -s packs.installers
-                  packagingArgs: -c $(_BuildConfig) --arch $(archType) --os $(osGroup) --ci /p:OfficialBuildId=$(Build.BuildNumber) /p:BuildDebPackage=true
+                  packagingArgs: -c $(_BuildConfig) /p:BuildDebPackage=true
                   condition: and(succeeded(), eq(variables.osSubgroup, ''), eq(variables.archType, 'x64'))
-              - template: /eng/pipelines/installer/jobs/steps/build-linux-package.yml
+              - template: /eng/pipelines/installer/steps/build-linux-package.yml
                 parameters:
                   packageType: rpm
                   target: rpmpkg
-                  packageStepDescription: Runtime Deps, Runtime, Framework Packs RPM installers
-                  subsetArg: -s packs.installers
-                  packagingArgs: -c $(_BuildConfig) --arch $(archType) --os $(osGroup) --ci /p:OfficialBuildId=$(Build.BuildNumber) /p:BuildRpmPackage=true
+                  packagingArgs: -c $(_BuildConfig) /p:BuildRpmPackage=true
                   condition: and(succeeded(), eq(variables.osSubgroup, ''), in(variables.archType, 'x64', 'arm64'))
 
               # Upload the results.

@@ -24,6 +24,10 @@ class MapViewHolder
 #include "../../../inc/stresslog.h"
 #include "StressMsgReader.h"
 
+#ifdef HOST_WINDOWS
+#include <malloc.h>
+#endif
+
 
 void GcHistClear();
 void GcHistAddLog(LPCSTR msg, StressMsgReader stressMsg);

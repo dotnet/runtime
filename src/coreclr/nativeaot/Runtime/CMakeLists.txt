@@ -131,7 +131,6 @@ else()
   include_directories(unix)
 
   # sal.h, pshpack/poppack.h
-  add_definitions(-DPAL_STDCPP_COMPAT)
   include_directories(../../pal/inc/rt)
 
   include(CheckIncludeFiles)
@@ -185,7 +184,7 @@ if (CLR_CMAKE_TARGET_APPLE)
   )
 endif (CLR_CMAKE_TARGET_APPLE)
 
-if (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
+if (CLR_CMAKE_TARGET_ARCH_AMD64)
   set(VXSORT_SOURCES
     ${GC_DIR}/vxsort/isa_detection.cpp
     ${GC_DIR}/vxsort/do_vxsort_avx2.cpp
@@ -201,7 +200,7 @@ if (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
   set(DUMMY_VXSORT_SOURCES
     ${GC_DIR}/vxsort/dummy.cpp
   )
-endif (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
+endif (CLR_CMAKE_TARGET_ARCH_AMD64)
 
 list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/AllocFast.${ASM_SUFFIX}
