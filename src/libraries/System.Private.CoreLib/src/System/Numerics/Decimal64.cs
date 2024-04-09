@@ -129,6 +129,23 @@ namespace System.Numerics
             return _value.GetHashCode();
         }
 
+        public override string ToString()
+        {
+            return Number.FormatDecimal64(this, null, NumberFormatInfo.CurrentInfo);
+        }
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
+        {
+            return Number.FormatDecimal64(this, format, NumberFormatInfo.CurrentInfo);
+        }
+        public string ToString(IFormatProvider? provider)
+        {
+            return Number.FormatDecimal64(this, null, NumberFormatInfo.GetInstance(provider));
+        }
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
+        {
+            return Number.FormatDecimal64(this, format, NumberFormatInfo.GetInstance(provider));
+        }
+
         static int IDecimalIeee754ParseAndFormatInfo<Decimal64>.NumberDigitsPrecision => NumberDigitsPrecision;
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal64>.MaxScale => 385;

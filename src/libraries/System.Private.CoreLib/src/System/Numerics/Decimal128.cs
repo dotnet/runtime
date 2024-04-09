@@ -105,6 +105,24 @@ namespace System.Numerics
         {
             return _value.GetHashCode();
         }
+
+        public override string ToString()
+        {
+            return Number.FormatDecimal128(this, null, NumberFormatInfo.CurrentInfo);
+        }
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
+        {
+            return Number.FormatDecimal128(this, format, NumberFormatInfo.CurrentInfo);
+        }
+        public string ToString(IFormatProvider? provider)
+        {
+            return Number.FormatDecimal128(this, null, NumberFormatInfo.GetInstance(provider));
+        }
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
+        {
+            return Number.FormatDecimal128(this, format, NumberFormatInfo.GetInstance(provider));
+        }
+
         static int IDecimalIeee754ParseAndFormatInfo<Decimal128>.NumberDigitsPrecision => NumberDigitsPrecision;
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal128>.MaxScale => 6145;

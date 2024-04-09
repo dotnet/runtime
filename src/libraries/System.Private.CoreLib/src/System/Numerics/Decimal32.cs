@@ -117,6 +117,23 @@ namespace System.Numerics
             return _value.GetHashCode();
         }
 
+        public override string ToString()
+        {
+            return Number.FormatDecimal32(this, null, NumberFormatInfo.CurrentInfo);
+        }
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
+        {
+            return Number.FormatDecimal32(this, format, NumberFormatInfo.CurrentInfo);
+        }
+        public string ToString(IFormatProvider? provider)
+        {
+            return Number.FormatDecimal32(this, null, NumberFormatInfo.GetInstance(provider));
+        }
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
+        {
+            return Number.FormatDecimal32(this, format, NumberFormatInfo.GetInstance(provider));
+        }
+
         static int IDecimalIeee754ParseAndFormatInfo<Decimal32>.NumberDigitsPrecision => NumberDigitsPrecision;
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal32>.MaxScale => 97;

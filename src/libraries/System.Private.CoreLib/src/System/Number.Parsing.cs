@@ -102,6 +102,9 @@ namespace System
         private const int UInt64Precision = 20;
         private const int Int128Precision = 39;
         private const int UInt128Precision = 39;
+        private const int Decimal32Precision = 7;
+        private const int Decimal64Precision = 16;
+        private const int Decimal128Precision = 34;
 
         private const int FloatingPointMaxExponent = 309;
         private const int FloatingPointMinExponent = -324;

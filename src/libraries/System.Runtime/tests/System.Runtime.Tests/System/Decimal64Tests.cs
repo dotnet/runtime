@@ -252,5 +252,59 @@ namespace System.Tests
             var d = new Decimal64(10, 20);
             Assert.Equal(d.GetHashCode(), d.GetHashCode());
         }
+
+        public static IEnumerable<object[]> ToString_TestData()
+        {
+            foreach (NumberFormatInfo defaultFormat in new[] { null, NumberFormatInfo.CurrentInfo })
+            {
+                yield return new object[] { new Decimal64(3, 384), "G", defaultFormat, "3" + new string('0', 384) };
+                yield return new object[] { new Decimal64(-3, 384), "G", defaultFormat, "-3" + new string('0', 384) };
+                yield return new object[] { new Decimal64(-4567, 0), "G", defaultFormat, "-4567" };
+                yield return new object[] { new Decimal64(-4567891, -3), "G", defaultFormat, "-4567.891" };
+                yield return new object[] { new Decimal64(0, 0), "G", defaultFormat, "0" };
+                yield return new object[] { new Decimal64(4567, 0), "G", defaultFormat, "4567" };
+                yield return new object[] { new Decimal64(4567891, -3), "G", defaultFormat, "4567.891" };
+
+                yield return new object[] { new Decimal64(2468, 0), "N", defaultFormat, "2,468.00" };
+
+                yield return new object[] { new Decimal64(2467, 0), "[#-##-#]", defaultFormat, "[2-46-7]" };
+
+            }
+        }
+
+        [Fact]
+        public static void Test_ToString()
+        {
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
+            {
+                foreach (object[] testdata in ToString_TestData())
+                {
+                    ToString((Decimal64)testdata[0], (string)testdata[1], (IFormatProvider)testdata[2], (string)testdata[3]);
+                }
+            }
+        }
+
+        private static void ToString(Decimal64 f, string format, IFormatProvider provider, string expected)
+        {
+            bool isDefaultProvider = provider == null;
+            if (string.IsNullOrEmpty(format) || format.ToUpperInvariant() == "G")
+            {
+                if (isDefaultProvider)
+                {
+                    Assert.Equal(expected, f.ToString());
+                    Assert.Equal(expected, f.ToString((IFormatProvider)null));
+                }
+                Assert.Equal(expected, f.ToString(provider));
+            }
+            if (isDefaultProvider)
+            {
+                Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant())); // If format is upper case, then exponents are printed in upper case
+                Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant())); // If format is lower case, then exponents are printed in lower case
+                Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant(), null));
+                Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant(), null));
+            }
+            Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant(), provider));
+            Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant(), provider));
+        }
     }
 }
