@@ -4754,6 +4754,16 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     /* Update the emitter's live GC ref sets */
 
+    // If the method returns a GC ref, mark R0 appropriately
+    if (retSize == EA_GCREF)
+    {
+        gcrefRegs |= RBM_R0;
+    }
+    else if (retSize == EA_BYREF)
+    {
+        byrefRegs |= RBM_R0;
+    }
+
     VarSetOps::Assign(emitComp, emitThisGCrefVars, ptrVars);
     emitThisGCrefRegs = gcrefRegs;
     emitThisByrefRegs = byrefRegs;

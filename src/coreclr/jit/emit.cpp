@@ -2217,6 +2217,10 @@ void emitter::emitCreatePlaceholderIG(insGroupPlaceholderType igType,
         emitCurIG->igFlags &= ~IGF_PROPAGATE_MASK;
     }
 
+    // since we have emitted a placeholder, the last ins is not longer the last.
+    emitLastIns   = nullptr;
+    emitLastInsIG = nullptr;
+
 #ifdef DEBUG
     if (emitComp->verbose)
     {
@@ -2873,10 +2877,36 @@ bool emitter::emitNoGChelper(CORINFO_METHOD_HANDLE methHnd)
  *  Mark the current spot as having a label.
  */
 
-void* emitter::emitAddLabel(VARSET_VALARG_TP    GCvars,
-                            regMaskTP           gcrefRegs,
-                            regMaskTP byrefRegs DEBUG_ARG(BasicBlock* block))
+void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, BasicBlock* prevBlock)
 {
+    if (prevBlock != NULL && emitLastInsIsCallWithGC())
+    {
+        // We have just emitted a call that can do GC and conservatively recorded what is alive after the call.
+        // Now we see that the next instruction may be reachable by a branch with a different liveness.
+        // We want to maintain the invariant that the GC info at IP after a GC-capable call is the same
+        // regardless how it is reached.
+        // One way to fix this is to fish out the call instruction and patch its GC info, but we must be
+        // certain that the current IP is indeed reachable after the call.
+        // Another way it to add an instruction (NOP or BRK) after the call.
+        if (emitThisGCrefRegs != gcrefRegs || emitThisByrefRegs != byrefRegs ||
+            !VarSetOps::Equal(emitComp, emitThisGCrefVars, GCvars))
+        {
+            if (prevBlock->KindIs(BBJ_THROW))
+            {
+                emitIns(INS_BREAKPOINT);
+            }
+            else
+            {
+                // other block kinds should emit something at the end that is not a call.
+                assert(prevBlock->KindIs(BBJ_ALWAYS));
+                // CONSIDER: We could patch up the previous call instruction with new GC info instead.
+                //           But that will need to be coordinated with how the GC info vor variables is used.
+                //           We currently apply that info to the instruction before the call. It may need to change.
+                emitIns(INS_nop);
+            }
+        }
+    }
+
     /* Create a new IG if the current one is non-empty */
 
     if (emitCurIGnonEmpty())
@@ -3637,6 +3667,7 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
 
         /* Make sure we didn't waste space unexpectedly */
         assert(!id->idIsLargeCns());
+        id->idSetIsCall();
 
 #ifdef TARGET_XARCH
         /* Store the displacement and make sure the value fit */
@@ -3716,6 +3747,7 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
 
         /* Make sure we didn't waste space unexpectedly */
         assert(!id->idIsLargeCns());
+        id->idSetIsCall();
 
         /* Save the live GC registers in the unused register fields */
         assert((gcrefRegs & RBM_CALLEE_TRASH) == 0);
@@ -8723,6 +8755,16 @@ void emitter::emitUpdateLiveGCvars(VARSET_VALARG_TP vars, BYTE* addr)
     }
 
     emitThisGCrefVset = true;
+}
+
+/*****************************************************************************
+ *
+ *  Last emitted instruction is a call and it is not a NoGC call.
+ */
+
+bool emitter::emitLastInsIsCallWithGC()
+{
+    return emitLastIns != nullptr && emitLastIns->idIsCall() && !emitLastIns->idIsNoGC();
 }
 
 /*****************************************************************************
