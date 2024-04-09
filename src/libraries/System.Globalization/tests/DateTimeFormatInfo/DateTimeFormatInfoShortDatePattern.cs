@@ -8,6 +8,13 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoShortDatePattern
     {
+        public static IEnumerable<object[]> ShortDatePattern_Get_TestData()
+        {
+            yield return new object[] { DateTimeFormatInfo.InvariantInfo, "MM/dd/yyyy", "invariant" };
+            yield return new object[] { new CultureInfo("en-US").DateTimeFormat, "M/d/yyyy", "en-US" };
+            yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat, "dd/MM/yyyy", "fr-FR" };
+        }
+
         public static IEnumerable<object[]> ShortDatePattern_Get_TestData_HybridGlobalization()
         {
             // see the comments on the right to check the non-Hybrid result, if it differs
@@ -131,7 +138,6 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("en-ZA").DateTimeFormat, "yyyy/MM/dd" };
             yield return new object[] { new CultureInfo("en-ZM").DateTimeFormat, "dd/MM/yyyy" };
             yield return new object[] { new CultureInfo("en-ZW").DateTimeFormat, "d/M/yyyy" };
-            yield return new object[] { new CultureInfo("en-US").DateTimeFormat, "M/d/yyyy" };
             yield return new object[] { new CultureInfo("es-419").DateTimeFormat, "d/M/yyyy" };
             yield return new object[] { new CultureInfo("es-ES").DateTimeFormat, "d/M/yyyy" };
             yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, "dd/MM/yyyy" };
@@ -198,6 +204,13 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("zh-SG").DateTimeFormat, "dd/MM/yyyy" };
             yield return new object[] { new CultureInfo("zh-HK").DateTimeFormat, "d/M/yyyy" };
             yield return new object[] { new CultureInfo("zh-TW").DateTimeFormat, "yyyy/M/d" };
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnOSX))]
+        [MemberData(nameof(ShortDatePattern_Get_TestData))]
+        public void ShortDatePattern_Get_ReturnsExpected(DateTimeFormatInfo format, string expected, string cultureName)
+        {
+            Assert.True(expected == format.ShortDatePattern, $"Failed for culture: {cultureName}. Expected: {expected}, Actual: {format.ShortDatePattern}");
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
