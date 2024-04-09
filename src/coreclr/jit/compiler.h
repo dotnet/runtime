@@ -1530,8 +1530,9 @@ enum class PhaseChecks : unsigned int
     CHECK_FG            = 1 << 2, // flow graph integrity
     CHECK_EH            = 1 << 3, // eh table integrity
     CHECK_LOOPS         = 1 << 4, // loop integrity/canonicalization
-    CHECK_PROFILE       = 1 << 5, // profile data integrity
-    CHECK_LINKED_LOCALS = 1 << 6, // check linked list of locals
+    CHECK_LIKELIHOODS   = 1 << 5, // profile data likelihood integrity
+    CHECK_PROFILE       = 1 << 6, // profile data full integrity
+    CHECK_LINKED_LOCALS = 1 << 7, // check linked list of locals
 };
 
 inline constexpr PhaseChecks operator ~(PhaseChecks a)
@@ -1563,6 +1564,12 @@ inline PhaseChecks& operator ^=(PhaseChecks& a, PhaseChecks b)
 {
     return a = (PhaseChecks)((unsigned int)a ^ (unsigned int)b);
 }
+
+inline bool hasFlag(const PhaseChecks& flagSet, const PhaseChecks& flag)
+{
+    return ((flagSet & flag) == flag);
+}
+
 // clang-format on
 
 // Specify which dumps should be run after each phase
@@ -4023,6 +4030,12 @@ public:
         return lvaGetDesc(lclVar->GetLclNum());
     }
 
+    const ABIPassingInformation& lvaGetParameterABIInfo(unsigned lclNum)
+    {
+        assert(lclNum < info.compArgsCount);
+        return lvaParameterPassingInfo[lclNum];
+    }
+
     unsigned lvaTrackedIndexToLclNum(unsigned trackedIndex)
     {
         assert(trackedIndex < lvaTrackedCount);
@@ -4091,18 +4104,7 @@ public:
     bool lvaIsOriginalThisReadOnly();           // return true if there is no place in the code
                                                 // that writes to arg0
 
-#ifdef TARGET_X86
-    bool lvaIsArgAccessedViaVarArgsCookie(unsigned lclNum)
-    {
-        if (!info.compIsVarArgs)
-        {
-            return false;
-        }
-
-        LclVarDsc* varDsc = lvaGetDesc(lclNum);
-        return varDsc->lvIsParam && !varDsc->lvIsRegArg && (lclNum != lvaVarargsHandleArg);
-    }
-#endif // TARGET_X86
+    bool lvaIsArgAccessedViaVarArgsCookie(unsigned lclNum);
 
     bool lvaIsImplicitByRefLocal(unsigned lclNum) const;
     bool lvaIsLocalImplicitlyAccessedByRef(unsigned lclNum) const;
@@ -6136,7 +6138,7 @@ public:
     void fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags);
     void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags);
     void fgDebugCheckTryFinallyExits();
-    void fgDebugCheckProfileWeights();
+    void fgDebugCheckProfile(PhaseChecks checks = PhaseChecks::CHECK_NONE);
     bool fgDebugCheckProfileWeights(ProfileChecks checks);
     bool fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks checks);
     bool fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks checks);
@@ -6281,7 +6283,7 @@ public:
     bool                                   fgPgoConsistent;
 
 #ifdef DEBUG
-    bool                                   fgPgoConsistentCheck;
+    bool                                   fgPgoDeferredInconsistency;
 #endif
 
 
@@ -8021,32 +8023,6 @@ protected:
 private:
     Lowering*            m_pLowering;   // Lowering; needed to Lower IR that's added or modified after Lowering.
     LinearScanInterface* m_pLinearScan; // Linear Scan allocator
-
-    /* raIsVarargsStackArg is called by raMaskStkVars and by
-       lvaComputeRefCounts.  It identifies the special case
-       where a varargs function has a parameter passed on the
-       stack, other than the special varargs handle.  Such parameters
-       require special treatment, because they cannot be tracked
-       by the GC (their offsets in the stack are not known
-       at compile time).
-    */
-
-    bool raIsVarargsStackArg(unsigned lclNum)
-    {
-#ifdef TARGET_X86
-
-        LclVarDsc* varDsc = lvaGetDesc(lclNum);
-
-        assert(varDsc->lvIsParam);
-
-        return (info.compIsVarArgs && !varDsc->lvIsRegArg && (lclNum != lvaVarargsHandleArg));
-
-#else // TARGET_X86
-
-        return false;
-
-#endif // TARGET_X86
-    }
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

@@ -4988,7 +4988,7 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack)
         }
 
         JITDUMP("Homing Swift parameter V%02u: ", lclNum);
-        const ABIPassingInformation& abiInfo = compiler->lvaParameterPassingInfo[lclNum];
+        const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
         DBEXEC(VERBOSE, abiInfo.Dump());
 
         for (unsigned i = 0; i < abiInfo.NumSegments; i++)
@@ -6520,7 +6520,8 @@ void CodeGen::genFnProlog()
         noway_assert(compiler->info.compArgsCount > 0);
 
         // MOV EAX, <VARARGS HANDLE>
-        GetEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_EAX, compiler->info.compArgsCount - 1, 0);
+        assert(compiler->lvaVarargsHandleArg == compiler->info.compArgsCount - 1);
+        GetEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_EAX, compiler->lvaVarargsHandleArg, 0);
         regSet.verifyRegUsed(REG_EAX);
 
         // MOV EAX, [EAX]
@@ -6529,7 +6530,7 @@ void CodeGen::genFnProlog()
         // EDX might actually be holding something here.  So make sure to only use EAX for this code
         // sequence.
 
-        const LclVarDsc* lastArg = compiler->lvaGetDesc(compiler->info.compArgsCount - 1);
+        const LclVarDsc* lastArg = compiler->lvaGetDesc(compiler->lvaVarargsHandleArg);
         noway_assert(!lastArg->lvRegister);
         signed offset = lastArg->GetStackOffset();
         assert(offset != BAD_STK_OFFS);

@@ -2951,28 +2951,23 @@ PhaseStatus Compiler::fgIncorporateProfileData()
     {
         // If for some reason we have both block and edge counts, prefer the edge counts.
         //
-        bool dataIsGood = false;
-
         if (haveEdgeCounts)
         {
-            dataIsGood = fgIncorporateEdgeCounts();
+            fgIncorporateEdgeCounts();
         }
         else if (haveBlockCounts)
         {
-            dataIsGood = fgIncorporateBlockCounts();
+            fgIncorporateBlockCounts();
         }
 
-        // If profile incorporation hit fixable problems, run synthesis in blend mode.
+        // We now always run repair, to get consistent initial counts
         //
-        if (fgPgoHaveWeights && !dataIsGood)
-        {
-            JITDUMP("\nIncorporated count data had inconsistencies; repairing profile...\n");
-            ProfileSynthesis::Run(this, ProfileSynthesisOption::RepairLikelihoods);
-        }
+        JITDUMP("\n%sRepairing profile...\n", opts.IsOSR() ? "blending" : "repairing");
+        ProfileSynthesis::Run(this, ProfileSynthesisOption::RepairLikelihoods);
     }
 
 #ifdef DEBUG
-    // Optionally synthesize & blend
+    // Optionally blend and recompute counts.
     //
     if (JitConfig.JitSynthesizeCounts() == 3)
     {
@@ -5230,26 +5225,37 @@ bool Compiler::fgProfileWeightsConsistent(weight_t weight1, weight_t weight2)
 #ifdef DEBUG
 
 //------------------------------------------------------------------------
-// fgDebugCheckProfileWeights: verify profile weights are self-consistent
+// fgDebugCheckProfile: verify profile data on flow graph is self-consistent
 //   (or nearly so)
 //
+// Arguments:
+//   checks -- [optional] phase checks in force
+//
 // Notes:
-//   By default, just checks for each flow edge having likelihood.
+//   Will check full profile or just likelihoods, depending on the phase check arg.
+//
 //   Can be altered via external config.
 //
-void Compiler::fgDebugCheckProfileWeights()
+void Compiler::fgDebugCheckProfile(PhaseChecks checks)
 {
     const bool configEnabled = (JitConfig.JitProfileChecks() >= 0) && fgHaveProfileWeights() && fgPredsComputed;
+
+    assert(checks != PhaseChecks::CHECK_NONE);
 
     if (configEnabled)
     {
         fgDebugCheckProfileWeights((ProfileChecks)JitConfig.JitProfileChecks());
     }
-    else
+    else if (hasFlag(checks, PhaseChecks::CHECK_PROFILE))
     {
-        ProfileChecks checks =
+        ProfileChecks profileChecks = ProfileChecks::CHECK_LIKELY | ProfileChecks::RAISE_ASSERT;
+        fgDebugCheckProfileWeights(profileChecks);
+    }
+    else if (hasFlag(checks, PhaseChecks::CHECK_LIKELIHOODS))
+    {
+        ProfileChecks profileChecks =
             ProfileChecks::CHECK_HASLIKELIHOOD | ProfileChecks::CHECK_LIKELIHOODSUM | ProfileChecks::RAISE_ASSERT;
-        fgDebugCheckProfileWeights(checks);
+        fgDebugCheckProfileWeights(profileChecks);
     }
 }
 
@@ -5284,7 +5290,7 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
     const bool verifyLikelyWeights  = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
     const bool verifyHasLikelihood  = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
     const bool verifyLikelihoodSum  = hasFlag(checks, ProfileChecks::CHECK_LIKELIHOODSUM);
-    const bool assertOnFailure      = hasFlag(checks, ProfileChecks::RAISE_ASSERT);
+    const bool assertOnFailure      = hasFlag(checks, ProfileChecks::RAISE_ASSERT) && fgPgoConsistent;
     const bool checkAllBlocks       = hasFlag(checks, ProfileChecks::CHECK_ALL_BLOCKS);
 
     if (!(verifyClassicWeights || verifyLikelyWeights || verifyHasLikelihood))
@@ -5293,12 +5299,22 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
         return true;
     }
 
+    if (fgPgoDeferredInconsistency)
+    {
+        // We have a deferred consistency check failure. Just return w/o checking further
+        // We will assert later once we see the method has valid IL.
+        //
+        JITDUMP("[deferred prior check failed -- skipping this check]\n");
+        return false;
+    }
+
     JITDUMP("Checking Profile Weights (flags:0x%x)\n", checks);
     unsigned problemBlocks    = 0;
     unsigned unprofiledBlocks = 0;
     unsigned profiledBlocks   = 0;
     bool     entryProfiled    = false;
     bool     exitProfiled     = false;
+    bool     hasTry           = false;
     weight_t entryWeight      = 0;
     weight_t exitWeight       = 0;
 
@@ -5315,6 +5331,15 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
         // There is some profile data to check.
         //
         profiledBlocks++;
+
+        // If there is a try region in the method, we won't be able
+        // to reliably verify entry/exit counts.
+        //
+        // Technically this checking will fail only if there's a try that
+        // must be exited via exception, but that's not worth checking for,
+        // either here or in the solver.
+        //
+        hasTry |= block->hasTryIndex();
 
         // Currently using raw counts. Consider using normalized counts instead?
         //
@@ -5342,13 +5367,26 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
 
         // Exit blocks
         //
-        if (block->KindIs(BBJ_RETURN, BBJ_THROW))
+        if (block->KindIs(BBJ_RETURN))
         {
-            if (BasicBlock::sameHndRegion(block, fgFirstBB))
+            exitWeight += blockWeight;
+            exitProfiled   = true;
+            verifyOutgoing = false;
+        }
+        else if (block->KindIs(BBJ_THROW))
+        {
+            bool const isCatchableThrow = block->hasTryIndex();
+
+            if (isCatchableThrow)
+            {
+                assert(hasTry);
+            }
+            else
             {
                 exitWeight += blockWeight;
-                exitProfiled = !opts.IsOSR();
+                exitProfiled = true;
             }
+
             verifyOutgoing = false;
         }
 
@@ -5401,11 +5439,14 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
         }
     }
 
-    // Verify overall input-output balance.
+    // Verify overall entry-exit balance.
     //
     if (verifyClassicWeights || verifyLikelyWeights)
     {
-        if (entryProfiled && exitProfiled)
+        // If there's a try, significant weight might pass along exception edges.
+        // We don't model that, and it can throw off entry-exit balance.
+        //
+        if (entryProfiled && exitProfiled && !hasTry)
         {
             // Note these may not agree, if fgEntryBB is a loop header.
             //
@@ -5448,6 +5489,8 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
         JITDUMP("Profile is NOT self-consistent, found %d problems (%d profiled blocks, %d unprofiled)\n",
                 problemBlocks, profiledBlocks, unprofiledBlocks);
 
+        // Note we only assert when we think the profile data should be consistent.
+        //
         if (assertOnFailure)
         {
             assert(!"Inconsistent profile data");

@@ -4596,10 +4596,14 @@ GenTree* Compiler::fgMorphExpandStackArgForVarArgs(GenTreeLclVarCommon* lclNode)
         return nullptr;
     }
 
-    LclVarDsc* varDsc       = lvaGetDesc(lclNode);
-    GenTree*   argsBaseAddr = gtNewLclvNode(lvaVarargsBaseOfStkArgs, TYP_I_IMPL);
-    ssize_t    offset =
-        varDsc->GetStackOffset() - codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES - lclNode->GetLclOffs();
+    LclVarDsc*                   varDsc  = lvaGetDesc(lclNode);
+    const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNode->GetLclNum());
+    assert(abiInfo.HasExactlyOneStackSegment());
+
+    GenTree* argsBaseAddr = gtNewLclvNode(lvaVarargsBaseOfStkArgs, TYP_I_IMPL);
+    ssize_t  offset       = (ssize_t)abiInfo.Segments[0].GetStackOffset() - lclNode->GetLclOffs();
+    assert(abiInfo.Segments[0].GetStackOffset() ==
+           (varDsc->GetStackOffset() - codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES));
     GenTree* offsetNode = gtNewIconNode(offset, TYP_I_IMPL);
     GenTree* argAddr    = gtNewOperNode(GT_SUB, TYP_I_IMPL, argsBaseAddr, offsetNode);
 
@@ -14232,6 +14236,13 @@ void Compiler::fgSetOptions()
     if (info.compXcptnsCount > 0)
     {
         codeGen->setFramePointerRequiredEH(true);
+
+        if (UsesFunclets())
+        {
+            assert(!codeGen->isGCTypeFixed());
+            // Enforce fully interruptible codegen for funclet unwinding
+            SetInterruptible(true);
+        }
     }
 
 #else // !TARGET_X86
@@ -14242,15 +14253,6 @@ void Compiler::fgSetOptions()
     }
 
 #endif // TARGET_X86
-
-#ifdef UNIX_X86_ABI
-    if (info.compXcptnsCount > 0)
-    {
-        assert(!codeGen->isGCTypeFixed());
-        // Enforce fully interruptible codegen for funclet unwinding
-        SetInterruptible(true);
-    }
-#endif // UNIX_X86_ABI
 
     if (compMethodRequiresPInvokeFrame())
     {

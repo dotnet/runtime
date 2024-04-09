@@ -2584,9 +2584,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
                     assert((codeDelta & 0x7) == codeDelta);
                     *dest++ = 0xB0 | (BYTE)codeDelta;
-#ifndef UNIX_X86_ABI
-                    assert(!compiler->isFramePointerUsed());
-#endif
+                    assert(compiler->UsesFunclets() || !compiler->isFramePointerUsed());
 
                     /* Remember the new 'last' offset */
 

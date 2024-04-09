@@ -1028,7 +1028,7 @@ op_to_llvm_type (int opcode)
 	case OP_LMUL_OVF_UN:
 		return LLVMInt64Type ();
 	default:
-		printf ("%s\n", mono_inst_name (opcode));
+		printf ("" M_PRI_INST "\n", mono_inst_name (opcode));
 		g_assert_not_reached ();
 		return NULL;
 	}
@@ -12445,12 +12445,12 @@ MONO_RESTORE_WARNING
 		case OP_LOAD_GOTADDR: {
 			char reason [128];
 
-			sprintf (reason, "opcode %s", mono_inst_name (ins->opcode));
+			sprintf (reason, "opcode " M_PRI_INST "", mono_inst_name (ins->opcode));
 			set_failure (ctx, reason);
 			break;
 		}
 		default:
-			g_error ("opcode %d %s", ins->opcode, mono_inst_name (ins->opcode));
+			g_error ("opcode %d " M_PRI_INST "", ins->opcode, mono_inst_name (ins->opcode));
 			break;
 		}
 

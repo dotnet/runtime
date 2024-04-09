@@ -516,7 +516,7 @@ namespace Internal.Pgo
 
         private sealed class PgoSchemaMergeComparer : IComparer<PgoSchemaElem>, IEqualityComparer<PgoSchemaElem>
         {
-            public static PgoSchemaMergeComparer Singleton = new PgoSchemaMergeComparer();
+            public static readonly PgoSchemaMergeComparer Singleton = new PgoSchemaMergeComparer();
 
             public int Compare(PgoSchemaElem x, PgoSchemaElem y)
             {

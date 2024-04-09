@@ -13,11 +13,11 @@ namespace System.Net.Http.Headers
         public const string DefaultSeparator = ", ";
         public static readonly byte[] DefaultSeparatorBytes = ", "u8.ToArray();
 
-        public bool SupportsMultipleValues { get; private set; }
+        public bool SupportsMultipleValues { get; }
 
-        public string Separator { get; private set; }
+        public string Separator { get; }
 
-        public byte[] SeparatorBytes { get; private set; }
+        public byte[] SeparatorBytes { get; }
 
         // If ValueType implements Equals() as required, there is no need to provide a comparer. A comparer is needed
         // e.g. if we want to compare strings using case-insensitive comparison.
