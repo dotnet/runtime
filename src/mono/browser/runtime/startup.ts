@@ -278,9 +278,8 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: () => void) 
             mono_log_info("UI thread is alive!");
         }, 3000);
 
-        spyEmscriptenProxied(Module.getProxiedFunctionTable());
-
         if (WasmEnableThreads) {
+            spyEmscriptenProxied(Module.getProxiedFunctionTable());
             await threadsReady;
 
             // this will create thread and call start_runtime() on it
