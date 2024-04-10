@@ -6675,9 +6675,10 @@ void ValueNumStore::GetCheckedBoundArithInfo(ValueNum vn, CompareCheckedBoundAri
     }
     else
     {
-        info->arrOper = funcArith.m_func;
-        info->arrOp   = funcArith.m_args[1];
-        info->vnBound = funcArith.m_args[0];
+        info->arrOper  = funcArith.m_func;
+        info->arrOp    = funcArith.m_args[1];
+        info->vnBound  = funcArith.m_args[0];
+        info->arrOpLHS = false;
     }
 }
 
