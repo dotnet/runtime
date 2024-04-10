@@ -52,6 +52,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_UseManagedNtlm Condition="'$(_UseManagedNtlm)' == '' and $(RuntimeIdentifier.StartsWith('linux-bionic'))">true</_UseManagedNtlm>
     <!-- Trim managed NTLM on Linux when it's not explicitly requested -->
     <_UseManagedNtlm Condition="'$(_UseManagedNtlm)' == '' and $(RuntimeIdentifier.StartsWith('linux'))">false</_UseManagedNtlm>
+    <_ComObjectDescriptorSupport Condition="'$(_ComObjectDescriptorSupport)' == ''">false</_ComObjectDescriptorSupport>
   </PropertyGroup>
 
 
