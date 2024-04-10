@@ -2,29 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "dn-simdhash.h"
+#include "dn-simdhash-utils.h"
 
-#if defined(__clang__) || defined (__GNUC__)
-static DN_FORCEINLINE(uint32_t)
-next_power_of_two (uint32_t value) {
-	if (value < 2)
-		return 1;
-	return 1u << (32 - __builtin_clz (value - 1));
+static uint32_t
+compute_adjusted_capacity (uint32_t requested_capacity)
+{
+	uint64_t _capacity = requested_capacity;
+	_capacity *= DN_SIMDHASH_SIZING_PERCENTAGE;
+	_capacity /= 100;
+	dn_simdhash_assert(_capacity <= UINT32_MAX);
+	return (uint32_t)_capacity;
 }
-#else // __clang__ || __GNUC__
-static DN_FORCEINLINE(uint32_t)
-next_power_of_two (uint32_t value) {
-	if (value < 2)
-		return 1;
-	value--;
-	value |= value >> 1;
-	value |= value >> 2;
-	value |= value >> 4;
-	value |= value >> 8;
-	value |= value >> 16;
-	value++;
-	return value;
-}
-#endif // __clang__ || __GNUC__
 
 dn_simdhash_t *
 dn_simdhash_new_internal (dn_simdhash_meta_t *meta, dn_simdhash_vtable_t vtable, uint32_t capacity, dn_allocator_t *allocator)
@@ -33,16 +21,15 @@ dn_simdhash_new_internal (dn_simdhash_meta_t *meta, dn_simdhash_vtable_t vtable,
 	dn_simdhash_t *result = (dn_simdhash_t *)dn_allocator_alloc(allocator, size);
 	memset(result, 0, size);
 
-	assert(meta);
-	assert((meta->bucket_capacity > 1) && (meta->bucket_capacity <= DN_SIMDHASH_MAX_BUCKET_CAPACITY));
-	assert(meta->key_size > 0);
-	assert(meta->bucket_size_bytes >= (DN_SIMDHASH_VECTOR_WIDTH + (meta->bucket_capacity * meta->key_size)));
+	dn_simdhash_assert(meta);
+	dn_simdhash_assert((meta->bucket_capacity > 1) && (meta->bucket_capacity <= DN_SIMDHASH_MAX_BUCKET_CAPACITY));
+	dn_simdhash_assert(meta->key_size > 0);
+	dn_simdhash_assert(meta->bucket_size_bytes >= (DN_SIMDHASH_VECTOR_WIDTH + (meta->bucket_capacity * meta->key_size)));
 	result->meta = meta;
 	result->vtable = vtable;
 	result->buffers.allocator = allocator;
 
-	capacity = capacity * DN_SIMDHASH_SIZING_PERCENTAGE / 100;
-	dn_simdhash_ensure_capacity_internal(result, capacity);
+	dn_simdhash_ensure_capacity_internal(result, compute_adjusted_capacity(capacity));
 
 	return result;
 }
@@ -50,7 +37,7 @@ dn_simdhash_new_internal (dn_simdhash_meta_t *meta, dn_simdhash_vtable_t vtable,
 void
 dn_simdhash_free (dn_simdhash_t *hash)
 {
-	assert(hash);
+	dn_simdhash_assert(hash);
 	if (hash->vtable.destroy_all)
 		hash->vtable.destroy_all(hash);
 	dn_simdhash_buffers_t buffers = hash->buffers;
@@ -71,18 +58,20 @@ dn_simdhash_free_buffers (dn_simdhash_buffers_t buffers)
 dn_simdhash_buffers_t
 dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity)
 {
-	assert(hash);
-	uint32_t bucket_count = (capacity + hash->meta->bucket_capacity - 1) / hash->meta->bucket_capacity;
+	dn_simdhash_assert(hash);
+	size_t bucket_count = (capacity + hash->meta->bucket_capacity - 1) / hash->meta->bucket_capacity;
 	// FIXME: Only apply this when capacity == 0?
 	if (bucket_count < DN_SIMDHASH_MIN_BUCKET_COUNT)
 		bucket_count = DN_SIMDHASH_MIN_BUCKET_COUNT;
+	dn_simdhash_assert(bucket_count < UINT32_MAX);
 	// Bucket count must be a power of two (this enables more efficient hashcode -> bucket mapping)
-	bucket_count = next_power_of_two(bucket_count);
-	uint32_t value_count = bucket_count * hash->meta->bucket_capacity;
+	bucket_count = next_power_of_two((uint32_t)bucket_count);
+	size_t value_count = bucket_count * hash->meta->bucket_capacity;
+	dn_simdhash_assert(value_count <= UINT32_MAX);
 
 	dn_simdhash_buffers_t result = { 0, };
 	if (bucket_count <= hash->buffers.buckets_length) {
-		assert(value_count <= hash->buffers.values_length);
+		dn_simdhash_assert(value_count <= hash->buffers.values_length);
 		return result;
 	}
 
@@ -96,12 +85,15 @@ dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity)
 	// Store old buffers so caller can rehash and then free them
 	result = hash->buffers;
 
-	hash->grow_at_count = value_count * 100 / DN_SIMDHASH_SIZING_PERCENTAGE;
-	hash->buffers.buckets_length = bucket_count;
-	hash->buffers.values_length = value_count;
+	size_t grow_at_count = value_count;
+	grow_at_count *= 100;
+	grow_at_count /= DN_SIMDHASH_SIZING_PERCENTAGE;
+	hash->grow_at_count = (uint32_t)grow_at_count;
+	hash->buffers.buckets_length = (uint32_t)bucket_count;
+	hash->buffers.values_length = (uint32_t)value_count;
 
 	// pad buckets allocation by the width of one vector so we can align it
-	uint32_t buckets_size_bytes = (bucket_count * hash->meta->bucket_size_bytes) + DN_SIMDHASH_VECTOR_WIDTH,
+	size_t buckets_size_bytes = (bucket_count * hash->meta->bucket_size_bytes) + DN_SIMDHASH_VECTOR_WIDTH,
 		values_size_bytes = value_count * hash->meta->value_size;
 
 	hash->buffers.buckets = dn_allocator_alloc(hash->buffers.allocator, buckets_size_bytes);
@@ -122,7 +114,7 @@ dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity)
 void
 dn_simdhash_clear (dn_simdhash_t *hash)
 {
-	assert(hash);
+	dn_simdhash_assert(hash);
 	if (hash->vtable.destroy_all)
 		hash->vtable.destroy_all(hash);
 	hash->count = 0;
@@ -134,21 +126,22 @@ dn_simdhash_clear (dn_simdhash_t *hash)
 uint32_t
 dn_simdhash_capacity (dn_simdhash_t *hash)
 {
-	assert(hash);
+	dn_simdhash_assert(hash);
 	return hash->buffers.buckets_length * hash->meta->bucket_capacity;
 }
 
 uint32_t
 dn_simdhash_count (dn_simdhash_t *hash)
 {
-	assert(hash);
+	dn_simdhash_assert(hash);
 	return hash->count;
 }
 
 void
 dn_simdhash_ensure_capacity (dn_simdhash_t *hash, uint32_t capacity)
 {
-	capacity = capacity * DN_SIMDHASH_SIZING_PERCENTAGE / 100;
+	dn_simdhash_assert(hash);
+	capacity = compute_adjusted_capacity(capacity);
 	dn_simdhash_buffers_t old_buffers = dn_simdhash_ensure_capacity_internal(hash, capacity);
 	if (old_buffers.buckets) {
 		hash->vtable.rehash(hash, old_buffers);

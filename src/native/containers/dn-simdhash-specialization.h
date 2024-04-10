@@ -8,6 +8,7 @@
 #endif
 
 #include "dn-simdhash.h"
+#include "dn-simdhash-utils.h"
 #include "dn-simdhash-arch.h"
 
 #ifndef DN_SIMDHASH_T
@@ -78,26 +79,17 @@ static_assert(DN_SIMDHASH_BUCKET_CAPACITY > 1, "Bucket capacity too low");
 // We use memcpy to do an unaligned load when reading dn_simdhash_suffixes, but it's
 //  still ideal to align instances of bucket_t to match the vector width, so that
 //  loads are less likely to span two cache lines.
-#ifdef _MSC_VER
-typedef struct __declspec(align(DN_SIMDHASH_VECTOR_WIDTH)) bucket_t {
-#else
 typedef struct bucket_t {
-#endif
-	dn_simdhash_suffixes suffixes;
+	_Alignas(DN_SIMDHASH_VECTOR_WIDTH) dn_simdhash_suffixes suffixes;
 	DN_SIMDHASH_KEY_T keys[DN_SIMDHASH_BUCKET_CAPACITY];
-}
-#if defined(__clang__) || defined(__GNUC__)
-__attribute__((__aligned__(DN_SIMDHASH_VECTOR_WIDTH))) bucket_t;
-#else
-bucket_t;
-#endif
+} bucket_t;
 
 static_assert((sizeof (bucket_t) % DN_SIMDHASH_VECTOR_WIDTH) == 0, "Bucket size is not vector aligned");
 
 
 // While we've inlined these constants into the specialized code we're generating,
 //  the generic code in dn-simdhash.c needs them, so we put them in this meta header
-//  that lives inside every hash instance. (TODO: Store it by-reference?)
+//  that is referenced by every hash instance.
 dn_simdhash_meta_t DN_SIMDHASH_T_META = {
 	DN_SIMDHASH_BUCKET_CAPACITY,
 	sizeof(bucket_t),
@@ -114,7 +106,7 @@ check_self (DN_SIMDHASH_T_PTR self)
 	//  what it should be. This detects passing the wrong kind of simdhash_t pointer
 	//  to one of the APIs, since C doesn't have fully type-safe pointers.
 	uint8_t ok = self && (self->meta == &DN_SIMDHASH_T_META);
-	assert(ok);
+	dn_simdhash_assert(ok);
 	return ok;
 }
 
@@ -202,10 +194,10 @@ adjust_cascaded_counts (dn_simdhash_buffers_t buffers, uint32_t first_bucket_ind
 		if (cascaded_count < 255) {
 			if (increase)
 				dn_simdhash_bucket_set_cascaded_count(bucket_address->suffixes, cascaded_count + 1);
-			else if (cascaded_count < 0)
-				assert(0);
-			else
+			else {
+				dn_simdhash_assert(cascaded_count > 0);
 				dn_simdhash_bucket_set_cascaded_count(bucket_address->suffixes, cascaded_count - 1);
+			}
 		}
 	END_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
 }
@@ -294,8 +286,7 @@ DN_SIMDHASH_REHASH_INTERNAL (DN_SIMDHASH_T_PTR hash, dn_simdhash_buffers_t old_b
 			0
 		);
 		// FIXME: Why doesn't assert(ok) work here? Clang says it's unused
-		if (ok != DN_SIMDHASH_INSERT_OK)
-			assert(0);
+		dn_simdhash_assert(ok == DN_SIMDHASH_INSERT_OK);
 	END_SCAN_PAIRS(old_buffers, key_address, value_address)
 }
 
@@ -371,7 +362,7 @@ DN_SIMDHASH_TRY_ADD_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, ui
 		case DN_SIMDHASH_INSERT_NEED_TO_GROW:
 			// We should always have enough space after growing once.
 		default:
-			assert(0);
+			dn_simdhash_assert(0);
 			return 0;
 	}
 }
@@ -497,7 +488,6 @@ DN_SIMDHASH_TRY_REPLACE_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key
 {
 	check_self(hash);
 
-	assert(hash);
 	DN_SIMDHASH_VALUE_T *value_ptr = DN_SIMDHASH_FIND_VALUE_INTERNAL(hash, key, key_hash);
 	if (!value_ptr)
 		return 0;
@@ -515,7 +505,7 @@ void
 DN_SIMDHASH_FOREACH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_FOREACH_FUNC func, void *user_data)
 {
 	check_self(hash);
-	assert(func);
+	dn_simdhash_assert(func);
 
 	dn_simdhash_buffers_t buffers = hash->buffers;
 	BEGIN_SCAN_PAIRS(buffers, key_address, value_address)

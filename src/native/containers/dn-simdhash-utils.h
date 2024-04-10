@@ -5,6 +5,30 @@
 #define __DN_SIMDHASH_UTILS_H__
 
 #include <stdint.h>
+#include <assert.h>
+
+#if defined(__clang__) || defined (__GNUC__)
+static DN_FORCEINLINE(uint32_t)
+next_power_of_two (uint32_t value) {
+	if (value < 2)
+		return 1;
+	return 1u << (32 - __builtin_clz (value - 1));
+}
+#else // __clang__ || __GNUC__
+static DN_FORCEINLINE(uint32_t)
+next_power_of_two (uint32_t value) {
+	if (value < 2)
+		return 1;
+	value--;
+	value |= value >> 1;
+	value |= value >> 2;
+	value |= value >> 4;
+	value |= value >> 8;
+	value |= value >> 16;
+	value++;
+	return value;
+}
+#endif // __clang__ || __GNUC__
 
 // MurmurHash3 was written by Austin Appleby, and is placed in the public
 // domain. The author hereby disclaims copyright to this source code.
@@ -61,7 +85,7 @@ MurmurHash3_32_ptr (const void *ptr, uint32_t seed)
 	//  for a presumed 8-byte alignment of addresses (the dlmalloc default).
 	const uint32_t alignment_shift = 3;
 	// Compute this outside of the if to suppress msvc build warning
-	const uint8_t is_64_bit = sizeof(void*) == sizeof(uint32_t);
+	const uint8_t is_64_bit = sizeof(void*) == sizeof(uint64_t);
 	union {
 		uint32_t u32;
 		uint64_t u64;
@@ -85,14 +109,6 @@ MurmurHash3_32_ptr (const void *ptr, uint32_t seed)
 }
 
 // end of murmurhash
-
-#if defined(__clang__) || defined (__GNUC__)
-#define unlikely(expr) __builtin_expect(!!(expr), 0)
-#define likely(expr)   __builtin_expect(!!(expr), 1)
-#else
-#define unlikely(expr) (expr)
-#define likely(expr) (expr)
-#endif
 
 // FNV has bad properties for simdhash even though it's a fairly fast/good hash,
 //  but the overhead of having to do strlen() first before passing a string key to
@@ -119,7 +135,7 @@ murmur3_scan_forward (const uint8_t *ptr)
 	// I tried to get a loop to auto-unroll, but GCC only unrolls at O3 and MSVC never does.
 #define SCAN_1(i) \
 	result.result.bytes[i] = ptr[i]; \
-	if (unlikely(!result.result.bytes[i])) \
+	if (DN_UNLIKELY(!result.result.bytes[i])) \
 		return result;
 
 	SCAN_1(0);
@@ -147,7 +163,7 @@ MurmurHash3_32_streaming (const uint8_t *key, uint32_t seed)
 		MURMUR3_HASH_BLOCK(block.result.u32);
 
 		// If the scan found a null byte next will be 0, so we stop scanning
-		if (!block.next)
+		if (DN_UNLIKELY(!block.next))
 			break;
 		block = murmur3_scan_forward(block.next);
 	}
@@ -163,7 +179,18 @@ MurmurHash3_32_streaming (const uint8_t *key, uint32_t seed)
 
 // end of reformulated murmur3-32
 
-#undef unlikely
-#undef likely
+#if defined(__clang__) && !defined(NDEBUG)
+#define dn_simdhash_assert(expr) \
+	if (DN_UNLIKELY(!(expr))) { \
+		__assert_fail(#expr, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
+	}
+#else
+
+#define dn_simdhash_assert(expr) \
+	if (DN_UNLIKELY(!(expr))) { \
+		abort(); \
+	}
+
+#endif
 
 #endif // __DN_SIMDHASH_UTILS_H__

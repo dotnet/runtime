@@ -26,12 +26,6 @@
 //  to maintain an ideal load factor. FIXME: 120 isn't right
 #define DN_SIMDHASH_SIZING_PERCENTAGE 120
 
-#ifdef _MSC_VER
-#define DN_FORCEINLINE(RET_TYPE) __forceinline RET_TYPE
-#else
-#define DN_FORCEINLINE(RET_TYPE) inline RET_TYPE __attribute__((always_inline))
-#endif
-
 typedef struct dn_simdhash_void_data_t {
 	// HACK: Empty struct or 0-element array produce a MSVC warning and break the build.
 	uint8_t data[1];
