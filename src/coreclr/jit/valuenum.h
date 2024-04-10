@@ -941,6 +941,7 @@ public:
             , arrOp(NoVN)
             , cmpOper(GT_NONE)
             , cmpOp(NoVN)
+            , arrOpLHS(false)
         {
         }
 #ifdef DEBUG
