@@ -252,6 +252,7 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: () => void) 
         let threadsReady: Promise<void> | undefined;
         if (WasmEnableThreads) {
             // BEGIN: grow memory to 1GB as experiment to avoid MT crashes
+            /*
             const wasmMemory = runtimeHelpers.getMemory();
             const bytesPerPage = 64 * 1024;
             const expectedBytes = 1024 * 1024 * 1024;// 1GB
@@ -260,6 +261,7 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: () => void) 
                 wasmMemory.grow(requestPages);
             }
             runtimeHelpers.updateMemoryViews();
+            */
             // END: grow memory to 1GB as experiment to avoid MT crashes
 
             threadsReady = mono_wasm_init_threads();
