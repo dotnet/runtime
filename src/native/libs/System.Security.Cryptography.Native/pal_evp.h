@@ -107,6 +107,15 @@ PALEXPORT int32_t CryptoNative_EvpMdSize(const EVP_MD* md);
 
 /*
 Function:
+EvpDigestSqueeze
+
+Calls EVP_DigestSqueeze. If the function is not available, haveFeature is set to zero and the return value should
+be ignored. If the function is available, haveFeature is set to one and the operation result is returned.
+*/
+PALEXPORT int32_t CryptoNative_EvpDigestSqueeze(EVP_MD_CTX* ctx, uint8_t* md, uint32_t len, int32_t* haveFeature);
+
+/*
+Function:
 EvpMd5
 
 Direct shim to EVP_md5.

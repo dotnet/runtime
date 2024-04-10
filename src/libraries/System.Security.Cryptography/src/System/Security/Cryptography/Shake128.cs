@@ -100,10 +100,10 @@ namespace System.Security.Cryptography
 
             using (ConcurrencyBlock.Enter(ref _block))
             {
+                CheckReading();
                 byte[] output = new byte[outputLength];
                 _hashProvider.Finalize(output);
                 _hashProvider.Reset();
-                _reading = false;
                 return output;
             }
         }
@@ -121,9 +121,9 @@ namespace System.Security.Cryptography
 
             using (ConcurrencyBlock.Enter(ref _block))
             {
+                CheckReading();
                 _hashProvider.Finalize(destination);
                 _hashProvider.Reset();
-                _reading = false;
             }
         }
 
@@ -145,6 +145,7 @@ namespace System.Security.Cryptography
 
             using (ConcurrencyBlock.Enter(ref _block))
             {
+                CheckReading();
                 byte[] output = new byte[outputLength];
                 _hashProvider.Current(output);
                 return output;
@@ -164,6 +165,7 @@ namespace System.Security.Cryptography
 
             using (ConcurrencyBlock.Enter(ref _block))
             {
+                CheckReading();
                 _hashProvider.Current(destination);
             }
         }
@@ -483,7 +485,7 @@ namespace System.Security.Cryptography
         {
             if (_reading)
             {
-                throw new InvalidOperationException("ALREADY READING!");
+                throw new InvalidOperationException(SR.InvalidOperation_AlreadyReading);
             }
         }
     }

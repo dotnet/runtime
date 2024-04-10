@@ -85,7 +85,7 @@ namespace System.Security.Cryptography
 
         public void Read(Span<byte> destination)
         {
-            throw new NotImplementedException();
+            Check(Interop.Crypto.EvpDigestSqueeze(_ctx, destination));
         }
 
         public void Dispose()

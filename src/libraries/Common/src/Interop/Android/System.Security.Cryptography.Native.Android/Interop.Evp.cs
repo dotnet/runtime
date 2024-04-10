@@ -63,6 +63,14 @@ internal static partial class Interop
             throw new UnreachableException();
         }
 
+        internal static int EvpDigestSqueeze(SafeEvpMdCtxHandle ctx, Span<byte> destination)
+        {
+            _ = ctx;
+            _ = destination;
+            Debug.Fail("Should have validated that XOF is not supported before getting here.");
+            throw new UnreachableException();
+        }
+
         internal static readonly int EVP_MAX_MD_SIZE = GetMaxMdSize();
     }
 }

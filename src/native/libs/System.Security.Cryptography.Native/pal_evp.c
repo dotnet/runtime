@@ -262,6 +262,29 @@ int32_t CryptoNative_EvpDigestXOFOneShot(const EVP_MD* type, const void* source,
     return ret;
 }
 
+int32_t CryptoNative_EvpDigestSqueeze(EVP_MD_CTX* ctx, uint8_t* md, uint32_t len, int32_t* haveFeature)
+{
+    ERR_clear_error();
+
+    if (ctx == NULL || haveFeature == NULL || (md == NULL && len > 0))
+    {
+        return 0;
+    }
+
+    *haveFeature = 0;
+    int32_t ret = 0;
+
+#if HAVE_OPENSSL_SHA3_SQUEEZE
+    if (API_EXISTS(EVP_DigestSqueeze))
+    {
+        *haveFeature = 1;
+        ret = EVP_DigestSqueeze(ctx, md, (size_t)len);
+    }
+#endif
+
+    return ret;
+}
+
 int32_t CryptoNative_EvpMdSize(const EVP_MD* md)
 {
     // No error queue impact.
