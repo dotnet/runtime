@@ -34,6 +34,9 @@ CompPhaseNameMacro(PHASE_INCPROFILE,                 "Profile incorporation",   
 CompPhaseNameMacro(PHASE_MORPH_INIT,                 "Morph - Init",                   false, -1, false)
 CompPhaseNameMacro(PHASE_MORPH_INLINE,               "Morph - Inlining",               false, -1, true)
 CompPhaseNameMacro(PHASE_MORPH_ADD_INTERNAL,         "Morph - Add internal blocks",    false, -1, true)
+#ifdef SWIFT_SUPPORT
+CompPhaseNameMacro(PHASE_SWIFT_ERROR_RET,            "Add Swift error returns",        false, -1, true)
+#endif // SWIFT_SUPPORT
 CompPhaseNameMacro(PHASE_ALLOCATE_OBJECTS,           "Allocate Objects",               false, -1, false)
 CompPhaseNameMacro(PHASE_EMPTY_TRY,                  "Remove empty try",               false, -1, false)
 CompPhaseNameMacro(PHASE_EMPTY_FINALLY,              "Remove empty finally",           false, -1, false)

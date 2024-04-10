@@ -5279,6 +5279,10 @@ public:
 
     PhaseStatus fgAddInternal();
 
+#ifdef SWIFT_SUPPORT
+    PhaseStatus fgAddSwiftErrorReturns();
+#endif // SWIFT_SUPPORT
+
     enum class FoldResult
     {
         FOLD_DID_NOTHING,

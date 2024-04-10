@@ -10883,21 +10883,6 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
         }
     }
 
-#ifdef SWIFT_SUPPORT
-    // If this method has a SwiftError* out parameter, we need to set the error register upon returning.
-    // GT_SWIFT_ERROR_RET handles returning both the normal and error value,
-    // and will be the terminator node for this block.
-    if (lvaSwiftErrorArg != BAD_VAR_NUM)
-    {
-        assert(info.compCallConv == CorInfoCallConvExtension::Swift);
-        assert(lvaSwiftErrorLocal != BAD_VAR_NUM);
-        GenTree* const swiftErrorNode = gtNewLclFldNode(lvaSwiftErrorLocal, TYP_I_IMPL, 0);
-        op1->SetOperRaw(GT_SWIFT_ERROR_RET);
-        op1->AsOp()->gtOp2 = op1->AsOp()->gtOp1;
-        op1->AsOp()->gtOp1 = swiftErrorNode;
-    }
-#endif // SWIFT_SUPPORT
-
     impAppendTree(op1, CHECK_SPILL_NONE, impCurStmtDI);
 #ifdef DEBUG
     // Remember at which BC offset the tree was finished
