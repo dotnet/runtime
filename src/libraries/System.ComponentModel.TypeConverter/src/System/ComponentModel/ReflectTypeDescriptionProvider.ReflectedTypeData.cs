@@ -17,7 +17,6 @@ namespace System.ComponentModel
         /// </summary>
         private sealed class ReflectedTypeData
         {
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             private readonly Type _type;
             private AttributeCollection? _attributes;
             private EventDescriptorCollection? _events;
@@ -26,10 +25,12 @@ namespace System.ComponentModel
             private object[]? _editors;
             private Type[]? _editorTypes;
             private int _editorCount;
+            private bool _isRegisteredAsKnownType;
 
-            internal ReflectedTypeData([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+            internal ReflectedTypeData(Type type, bool isKnownType)
             {
                 _type = type;
+                _isRegisteredAsKnownType = isKnownType;
             }
 
             /// <summary>
@@ -37,6 +38,8 @@ namespace System.ComponentModel
             /// type descriptor has data in it.
             /// </summary>
             internal bool IsPopulated => (_attributes != null) | (_events != null) | (_properties != null);
+
+            internal bool IsRegisteredAsKnownType => _isRegisteredAsKnownType;
 
             /// <summary>
             /// Retrieves custom attributes.
@@ -95,7 +98,7 @@ namespace System.ComponentModel
                     // Next, walk the type's interfaces. We append these to
                     // the attribute array as well.
                     int ifaceStartIdx = attributes.Count;
-                    Type[] interfaces = _type.GetInterfaces();
+                    Type[] interfaces = KnownTypeReflectionHelper.GetInterfaces(_type);
                     for (int idx = 0; idx < interfaces.Length; idx++)
                     {
                         // Only do this for public interfaces.
@@ -172,8 +175,13 @@ namespace System.ComponentModel
             /// it will be used to retrieve attributes. Otherwise, _type
             /// will be used.
             /// </summary>
-            [RequiresUnreferencedCode("NullableConverter's UnderlyingType cannot be statically discovered. The Type of instance cannot be statically discovered.")]
-            internal TypeConverter GetConverter(object? instance)
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                Justification = "_type is annotated as preserve All members, so any Types returned from GetAttributes.")]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+                Justification = "_type is annotated as preserve All members, so any Types returned from CreateInstance.")]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
+                Justification = "_type is annotated as preserve All members, so any Types returned from GetAttributes.")]
+            internal TypeConverter GetConverter(object? instance, bool verifyIsKnownType)
             {
                 TypeConverterAttribute? typeAttr = null;
 
@@ -215,6 +223,18 @@ namespace System.ComponentModel
                         // We did not get a converter. Traverse up the base class chain until
                         // we find one in the stock hashtable.
                         _converter = GetIntrinsicTypeConverter(_type);
+
+                        if (verifyIsKnownType)
+                        {
+                            if (_converter.GetType() == typeof(TypeConverter))
+                            {
+                                if (!_isRegisteredAsKnownType)
+                                {
+                                    throw new InvalidOperationException("todo: trimmable applications require registering Types with TypeDescriptor.AddKnownReflectedType().");
+                                }
+                            }
+                        }
+
                         Debug.Assert(_converter != null, "There is no intrinsic setup in the hashtable for the Object type");
                     }
                 }
@@ -448,7 +468,20 @@ namespace System.ComponentModel
             /// <summary>
             /// Retrieves the properties for this type.
             /// </summary>
-            [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
+            //[RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
+            //internal PropertyDescriptorCollection GetProperties()
+            //    => GetPropertiesImpl();
+
+            //internal PropertyDescriptorCollection GetPropertiesFromKnownType()
+            //{
+            //    if (!IsRegisteredAsKnownType)
+            //    {
+            //        throw new InvalidOperationException("todo: trimmable applications require registering Types with TypeDescriptor.AddKnownReflectedType().");
+            //    }
+
+            //    return GetPropertiesImpl();
+            //}
+
             internal PropertyDescriptorCollection GetProperties()
             {
                 // Worst case collision scenario:  we don't want the perf hit
@@ -463,7 +496,7 @@ namespace System.ComponentModel
 
                     do
                     {
-                        propertyArray = ReflectGetProperties(baseType);
+                        propertyArray = ReflectGetPropertiesFromKnownType(baseType);
                         foreach (PropertyDescriptor p in propertyArray)
                         {
                             propertyList.TryAdd(p.Name, p);

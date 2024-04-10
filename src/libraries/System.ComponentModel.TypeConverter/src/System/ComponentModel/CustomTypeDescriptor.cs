@@ -69,7 +69,7 @@ namespace System.ComponentModel
         /// The GetConverter method returns a type converter for the type this type
         /// descriptor is representing.
         /// </summary>
-        [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         public virtual TypeConverter? GetConverter()
         {
             if (_parent != null)

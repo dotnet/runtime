@@ -58,7 +58,38 @@ namespace System.ComponentModel
         {
             if (_parent != null)
             {
-                return _parent.CreateInstance(provider, objectType, argTypes, args);
+                return _parent.SupportsKnownTypes ?
+                    _parent.CreateInstanceFromKnownType(provider, objectType, argTypes, args) :
+                    _parent.CreateInstance(provider, objectType, argTypes, args);
+            }
+
+            ArgumentNullException.ThrowIfNull(objectType);
+
+            return Activator.CreateInstance(objectType, args);
+        }
+
+        /// <summary>
+        /// This method is used to create an instance that can substitute for another
+        /// data type. If the method is not interested in providing a substitute
+        /// instance, it should call base.
+        ///
+        /// This method is prototyped as virtual, and by default returns null if no
+        /// parent provider was passed. If a parent provider was passed, this
+        /// method will invoke the parent provider's CreateInstance method.
+        /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+            Justification = "objectType is annotated as preserve All members, so it can be passed to CreateInstance.")]
+        public virtual object? CreateInstanceFromKnownType(
+            IServiceProvider? provider,
+            Type objectType,
+            Type[]? argTypes,
+            object?[]? args)
+        {
+            if (_parent != null)
+            {
+                return _parent.SupportsKnownTypes ?
+                    _parent.CreateInstanceFromKnownType(provider, objectType, argTypes, args) :
+                    _parent.CreateInstance(provider, objectType, argTypes, args);
             }
 
             ArgumentNullException.ThrowIfNull(objectType);
@@ -253,11 +284,34 @@ namespace System.ComponentModel
         {
             if (_parent != null)
             {
-                return _parent.GetTypeDescriptor(objectType, instance);
+                return SupportsKnownTypes ?
+                    _parent.GetTypeDescriptorFromKnownType(objectType, instance) :
+                    _parent.GetTypeDescriptor(objectType, instance);
             }
 
             return _emptyDescriptor ??= new EmptyCustomTypeDescriptor();
         }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+            Justification = "This method passes a known Type to another method with DynamicallyAccessedMembers[].")]
+        internal virtual ICustomTypeDescriptor? GetTypeDescriptorFromKnownType(Type objectType, object? instance)
+        {
+            if (!SupportsKnownTypes)
+            {
+#pragma warning disable IL2067
+                return GetTypeDescriptor(objectType, instance);
+#pragma warning restore IL2067
+            }
+
+            if (_parent != null)
+            {
+                return _parent.GetTypeDescriptorFromKnownType(objectType, instance);
+            }
+
+            return _emptyDescriptor ??= new EmptyCustomTypeDescriptor();
+        }
+
+        public virtual bool SupportsKnownTypes => false;
 
         /// <summary>
         /// This method returns true if the type is "supported" by the type descriptor

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel.Design;
 using System.Diagnostics;
@@ -19,23 +20,31 @@ namespace System.ComponentModel
     /// </summary>
     public sealed class TypeDescriptor
     {
+        private const DynamicallyAccessedMemberTypes RequiredReflectedMemberTypes = DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicEvents;
         internal const DynamicallyAccessedMemberTypes ReflectTypesDynamicallyAccessedMembers = DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields;
         internal const string DesignTimeAttributeTrimmed = "Design-time attributes are not preserved when trimming. Types referenced by attributes like EditorAttribute and DesignerAttribute may not be available after trimming.";
 
+        // Mapping of type or object hash to a provider list.
         // Note: this is initialized at class load because we
         // lock on it for thread safety. It is used from nearly
         // every call to this class, so it will be created soon after
         // class load anyway.
-        private static readonly WeakHashtable s_providerTable = new WeakHashtable();     // mapping of type or object hash to a provider list
-        private static readonly Hashtable s_providerTypeTable = new Hashtable();         // A direct mapping from type to provider.
+        private static readonly WeakHashtable s_providerTable = new WeakHashtable();
 
-        private static readonly Hashtable s_defaultProviderInitialized = new Hashtable(); // A table of type -> object to track DefaultTypeDescriptionProviderAttributes.
-                                                                                          // A value of `null` indicates initialization is in progress.
-                                                                                          // A value of s_initializedDefaultProvider indicates the provider is initialized.
+        // A direct mapping from type to provider.
+        private static readonly Dictionary<Type, TypeDescriptionNode> s_providerTypeTable = new Dictionary<Type, TypeDescriptionNode>();
+
+        // Tracks DefaultTypeDescriptionProviderAttributes.
+        // A value of `null` indicates initialization is in progress.
+        // A value of s_initializedDefaultProvider indicates the provider is initialized.
+        private static readonly Dictionary<Type, object?> s_defaultProviderInitialized = new Dictionary<Type, object?>();
+
         private static readonly object s_initializedDefaultProvider = new object();
 
         private static WeakHashtable? s_associationTable;
-        private static int s_metadataVersion;                          // a version stamp for our metadata. Used by property descriptors to know when to rebuild attributes.
+
+        // A version stamp for our metadata. Used by property descriptors to know when to rebuild attributes.
+        private static int s_metadataVersion;
 
         // This is an index that we use to create a unique name for a property in the
         // event of a name collision. The only time we should use this is when
@@ -84,6 +93,15 @@ namespace System.ComponentModel
         {
         }
 
+        public static void AddKnownReflectedType<[DynamicallyAccessedMembers(RequiredReflectedMemberTypes)] T>()
+        {
+            TypeDescriptionNode node = NodeFor(typeof(T), createDelegator: false);
+            if (node.Provider is ReflectTypeDescriptionProvider reflectionProvider)
+            {
+                reflectionProvider.AddKnownReflectedType(typeof(T));
+            }
+        }
+
         /// <summary>
         /// This property returns a Type object that can be passed to the various
         /// AddProvider methods to define a type description provider for interface types.
@@ -106,6 +124,21 @@ namespace System.ComponentModel
         /// Occurs when Refreshed is raised for a component.
         /// </summary>
         public static event RefreshEventHandler? Refreshed;
+
+        private static readonly bool s_isTrimmable =
+            AppContext.TryGetSwitch(
+                switchName: "System.ComponentModel.TypeDescriptor.IsTrimmable",
+                isEnabled: out bool value)
+            ? value : false;
+
+        /// <summary>
+        /// Indicates whether this and related classes support trimming.
+        /// </summary>
+        /// <remarks>
+        /// The value of the property is backed by the "System.ComponentModel.TypeDescriptor.IsTrimmable"
+        /// <see cref="AppContext"/> setting and defaults to <see langword="false"/> if unset.
+        /// </remarks>
+        internal static bool IsTrimmable => s_isTrimmable;
 
         /// <summary>
         /// The AddAttributes method allows you to add class-level attributes for a
@@ -158,7 +191,7 @@ namespace System.ComponentModel
         /// an editor table for the editor type, if one can be found.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        [RequiresUnreferencedCode("The Types specified in table may be trimmed, or have their static construtors trimmed.")]
+        [RequiresUnreferencedCode("The Types specified in table may be trimmed, or have their static constructors trimmed.")]
         public static void AddEditorTable(Type editorBaseType, Hashtable table)
         {
             ReflectTypeDescriptionProvider.AddEditorTable(editorBaseType, table);
@@ -265,7 +298,7 @@ namespace System.ComponentModel
         /// </summary>
         private static void CheckDefaultProvider(Type type)
         {
-            if (s_defaultProviderInitialized[type] == s_initializedDefaultProvider)
+            if (s_defaultProviderInitialized.TryGetValue(type, out object? provider) && provider == s_initializedDefaultProvider)
             {
                 return;
             }
@@ -295,7 +328,7 @@ namespace System.ComponentModel
 
             // Immediately set this to null to indicate we are in progress setting the default provider for a type.
             // This prevents re-entrance to this method.
-            s_defaultProviderInitialized[type] = null;
+            s_defaultProviderInitialized.TryAdd(type, null);
 
             // Always use core reflection when checking for the default provider attribute.
             // If there is a provider, we probably don't want to build up our own cache state against the type.
@@ -412,6 +445,17 @@ namespace System.ComponentModel
             IServiceProvider? provider,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type objectType,
             Type[]? argTypes,
+            object?[]? args) => CreateInstanceFromKnownType(provider, objectType, argTypes, args);
+
+        /// <summary>
+        /// This method will search internal tables within TypeDescriptor for
+        /// a TypeDescriptionProvider object that is associated with the given
+        /// data type. If it finds one, it will delegate the call to that object.
+        /// </summary>
+        public static object? CreateInstanceFromKnownType(
+            IServiceProvider? provider,
+            Type objectType,
+            Type[]? argTypes,
             object?[]? args)
         {
             ArgumentNullException.ThrowIfNull(objectType);
@@ -432,10 +476,10 @@ namespace System.ComponentModel
             // a caller to have complete control over all object instantiation.
             if (provider?.GetService(typeof(TypeDescriptionProvider)) is TypeDescriptionProvider p)
             {
-                instance = p.CreateInstance(provider, objectType, argTypes, args);
+                instance = p.CreateInstanceFromKnownType(provider, objectType, argTypes, args);
             }
 
-            return instance ?? NodeFor(objectType).CreateInstance(provider, objectType, argTypes, args);
+            return instance ?? NodeFor(objectType).CreateInstanceFromKnownType(provider, objectType, argTypes, args);
         }
 
         /// <summary>
@@ -613,10 +657,21 @@ namespace System.ComponentModel
             if (componentType == null)
             {
                 Debug.Fail("COMPAT:  Returning an empty collection, but you should not pass null here");
-                return new AttributeCollection((Attribute[])null);
+                return new AttributeCollection(null);
             }
 
             AttributeCollection attributes = GetDescriptor(componentType, nameof(componentType)).GetAttributes();
+            return attributes;
+        }
+
+        /// <summary>
+        /// Gets a collection of attributes for the specified type of component.
+        /// </summary>
+        public static AttributeCollection GetAttributesFromKnownType(Type componentType)
+        {
+            ArgumentNullException.ThrowIfNull(componentType);
+
+            AttributeCollection attributes = GetDescriptorFromKnownType(componentType, nameof(componentType)).GetAttributes();
             return attributes;
         }
 
@@ -764,14 +819,14 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a type converter for the type of the specified component.
         /// </summary>
-        [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage + " The Type of component cannot be statically discovered.")]
+        [RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public static TypeConverter GetConverter(object component) => GetConverter(component, false);
 
         /// <summary>
         /// Gets a type converter for the type of the specified component.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage + " The Type of component cannot be statically discovered.")]
+        [RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public static TypeConverter GetConverter(object component, bool noCustomTypeDesc)
         {
             TypeConverter? converter = GetDescriptor(component, noCustomTypeDesc)!.GetConverter();
@@ -790,10 +845,13 @@ namespace System.ComponentModel
             return GetDescriptor(type, nameof(type)).GetConverter();
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The callers of this method ensure getting the converter is trim compatible - i.e. the type is not Nullable<T>.")]
-        internal static TypeConverter GetConverterTrimUnsafe([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type) =>
-            GetConverter(type);
+        /// <summary>
+        /// Gets a type converter for the specified known type.
+        /// </summary>
+        public static TypeConverter GetConverterFromKnownType(Type type)
+        {
+            return GetDescriptorFromKnownType(type, nameof(type)).GetConverterFromKnownType();
+        }
 
         // This is called by System.ComponentModel.DefaultValueAttribute via reflection.
         [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
@@ -892,6 +950,21 @@ namespace System.ComponentModel
         }
 
         /// <summary>
+        /// Returns a custom type descriptor for the given type.
+        /// Performs arg checking so callers don't have to.
+        /// </summary>
+        //private static DefaultKnownTypeDescriptor GetDescriptorFromKnownType(Type type,
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+            Justification = "The type has [DynamicallyAccessedMemberTypes].")]
+        private static DefaultTypeDescriptor GetDescriptorFromKnownType(Type type,
+            string typeName)
+        {
+            ArgumentNullException.ThrowIfNull(type, typeName);
+
+            return NodeFor(type).GetDefaultTypeDescriptor(type);
+        }
+
+        /// <summary>
         /// Returns a custom type descriptor for the given instance.
         /// Performs arg checking so callers don't have to. This
         /// will call through to instance if it is a custom type
@@ -978,6 +1051,15 @@ namespace System.ComponentModel
             }
 
             return GetDescriptor(componentType, nameof(componentType))!.GetEvents();
+        }
+
+        /// <summary>
+        /// Gets a collection of events for a specified type of component.
+        /// </summary>
+        public static EventDescriptorCollection GetEventsFromKnownType(Type componentType)
+        {
+            ArgumentNullException.ThrowIfNull(componentType);
+            return GetDescriptorFromKnownType(componentType, nameof(componentType)).GetEventsFromKnownType();
         }
 
         /// <summary>
@@ -1209,6 +1291,17 @@ namespace System.ComponentModel
         }
 
         /// <summary>
+        /// Gets a collection of properties for a specified type.
+        /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "The type has [DynamicallyAccessedMemberTypes].")]
+        public static PropertyDescriptorCollection GetPropertiesFromKnownType(Type componentType)
+        {
+            ArgumentNullException.ThrowIfNull(componentType);
+            return GetDescriptorFromKnownType(componentType, nameof(componentType)).GetPropertiesFromKnownType();
+        }
+
+        /// <summary>
         /// Gets a collection of properties for a specified type of
         /// component using a specified array of attributes as a filter.
         /// </summary>
@@ -1380,7 +1473,6 @@ namespace System.ComponentModel
         public static TypeDescriptionProvider GetProvider(Type type)
         {
             ArgumentNullException.ThrowIfNull(type);
-
             return NodeFor(type, true);
         }
 
@@ -1394,9 +1486,14 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static TypeDescriptionProvider GetProvider(object instance)
         {
-            ArgumentNullException.ThrowIfNull(instance);
+            if (!IsTrimmable)
+            {
+                ArgumentNullException.ThrowIfNull(instance);
 
-            return NodeFor(instance, true);
+                return NodeFor(instance, true);
+            }
+
+            throw new InvalidOperationException("TODO GetProvider");
         }
 
         /// <summary>
@@ -1475,8 +1572,10 @@ namespace System.ComponentModel
 
             while (node == null)
             {
-                node = (TypeDescriptionNode?)s_providerTypeTable[searchType] ??
-                       (TypeDescriptionNode?)s_providerTable[searchType];
+                if (!s_providerTypeTable.TryGetValue(searchType, out node))
+                {
+                    node = (TypeDescriptionNode?)s_providerTable[searchType];
+                }
 
                 if (node == null)
                 {
@@ -1502,7 +1601,7 @@ namespace System.ComponentModel
                         node = new TypeDescriptionNode(new DelegatingTypeDescriptionProvider(baseType));
                         lock (s_providerTable)
                         {
-                            s_providerTypeTable[searchType] = node;
+                            s_providerTypeTable.TryAdd(searchType, node);
                         }
                     }
                     else
@@ -3580,6 +3679,33 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
+            public TypeConverter GetConverterFromKnownType()
+            {
+                // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
+                // If so, we can call on it directly rather than creating another
+                // custom type descriptor
+                TypeDescriptionProvider p = _node.Provider;
+                TypeConverter? converter;
+                if (p is ReflectTypeDescriptionProvider rp)
+                {
+                    converter = rp.GetConverterFromKnownType(_objectType, _instance);
+                }
+                else
+                {
+                    ICustomTypeDescriptor? desc = p.GetTypeDescriptorFromKnownType(_objectType, _instance);
+                    if (desc == null)
+                        throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                    converter = desc.GetConverterFromKnownType();
+                    if (converter == null)
+                        throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetConverter"));
+                }
+
+                return converter;
+            }
+
+            /// <summary>
+            /// ICustomTypeDescriptor implementation.
+            /// </summary>
             [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
             public EventDescriptor? GetDefaultEvent()
             {
@@ -3687,6 +3813,33 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
+            public EventDescriptorCollection GetEventsFromKnownType()
+            {
+                // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
+                // If so, we can call on it directly rather than creating another
+                // custom type descriptor
+                TypeDescriptionProvider p = _node.Provider;
+                EventDescriptorCollection events;
+                if (p is ReflectTypeDescriptionProvider rp)
+                {
+                    events = rp.GetEventsFromKnownType(_objectType);
+                }
+                else
+                {
+                    ICustomTypeDescriptor? desc = p.GetTypeDescriptorFromKnownType(_objectType, _instance);
+                    if (desc == null)
+                        throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                    events = desc.GetEventsFromKnownType();
+                    if (events == null)
+                        throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetEventsFromKnownType"));
+                }
+
+                return events;
+            }
+
+            /// <summary>
+            /// ICustomTypeDescriptor implementation.
+            /// </summary>
             [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
             public EventDescriptorCollection GetEvents(Attribute[]? attributes)
             {
@@ -3732,7 +3885,37 @@ namespace System.ComponentModel
                     ICustomTypeDescriptor? desc = p.GetTypeDescriptor(_objectType, _instance);
                     if (desc == null)
                         throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+
                     properties = desc.GetProperties();
+                    if (properties == null)
+                        throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetProperties"));
+                }
+
+                return properties;
+            }
+
+            /// <summary>
+            /// ICustomTypeDescriptor implementation.
+            /// </summary>
+            public PropertyDescriptorCollection GetPropertiesFromKnownType()
+            {
+                // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
+                // If so, we can call on it directly rather than creating another
+                // custom type descriptor
+                TypeDescriptionProvider p = _node.Provider;
+                PropertyDescriptorCollection properties;
+                if (p is ReflectTypeDescriptionProvider rp)
+                {
+                    properties = rp.GetPropertiesFromKnownType(_objectType);
+                }
+                else
+                {
+                    ICustomTypeDescriptor? desc = p.GetTypeDescriptorFromKnownType(_objectType, _instance);
+                    if (desc == null)
+                        throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+
+                    properties = desc.GetPropertiesFromKnownType();
+
                     if (properties == null)
                         throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetProperties"));
                 }
@@ -3771,7 +3954,7 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
-            object? ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor? pd)
+            public object? GetPropertyOwner(PropertyDescriptor? pd)
             {
                 // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
                 // If so, we can call on it directly rather than creating another

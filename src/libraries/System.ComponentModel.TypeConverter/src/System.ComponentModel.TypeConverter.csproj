@@ -76,6 +76,7 @@
     <Compile Include="System\ComponentModel\InterlockedBitVector32.cs" />
     <Compile Include="System\InvariantComparer.cs" />
     <Compile Include="System\ComponentModel\ITypedList.cs" />
+    <Compile Include="System\ComponentModel\KnownTypeReflectionHelper.cs" />
     <Compile Include="System\ComponentModel\MemberDescriptor.cs" />
     <Compile Include="System\ComponentModel\PropertyDescriptorCollection.cs" />
     <Compile Include="System\ComponentModel\ProvidePropertyAttribute.cs" />

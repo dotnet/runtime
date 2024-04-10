@@ -29,7 +29,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a type converter for this object.
         /// </summary>
-        [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         TypeConverter? GetConverter();
 
         /// <summary>
@@ -78,5 +78,22 @@ namespace System.ComponentModel
         /// Gets the object that directly depends on this value being edited.
         /// </summary>
         object? GetPropertyOwner(PropertyDescriptor? pd);
+
+        /// <summary>
+        /// Gets a type converter for this object that may be registered as a known type.
+        /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "The caller has verified that known types are registered.")]
+        TypeConverter? GetConverterFromKnownType() => GetConverter();
+
+        /// <summary>
+        /// Gets the events for this instance of a component that may be registered as a known type.
+        /// </summary>
+        EventDescriptorCollection GetEventsFromKnownType() => GetEvents();
+
+        /// <summary>
+        /// Gets the properties for this instance of a component that may be registered as a known type..
+        /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "The caller has verified that known types are registered.")]
+        PropertyDescriptorCollection GetPropertiesFromKnownType() => GetProperties();
     }
 }

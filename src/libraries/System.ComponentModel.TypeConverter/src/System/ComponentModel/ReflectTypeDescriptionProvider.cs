@@ -22,31 +22,25 @@ namespace System.ComponentModel
     /// </summary>
     internal sealed partial class ReflectTypeDescriptionProvider : TypeDescriptionProvider
     {
-        // Hastable of Type -> ReflectedTypeData. ReflectedTypeData contains all
-        // of the type information we have gathered for a given type.
-        //
-        private Hashtable? _typeData;
+        // ReflectedTypeData contains all of the type information we have gathered for a given type.
+        private Dictionary<Type, ReflectedTypeData>? _typeData;
 
         // This is the signature we look for when creating types that are generic, but
         // want to know what type they are dealing with. Enums are a good example of this;
         // there is one enum converter that can work with all enums, but it needs to know
         // the type of enum it is dealing with.
-        //
-        private static readonly Type[] s_typeConstructor = new Type[] { typeof(Type) };
+        private static readonly Type[] s_typeConstructor = { typeof(Type) };
 
         // This is where we store the various converters, etc for the intrinsic types.
-        //
         private static Hashtable? s_editorTables;
         private static Dictionary<object, IntrinsicTypeConverterData>? s_intrinsicTypeConverters;
 
         // For converters, etc that are bound to class attribute data, rather than a class
         // type, we have special key sentinel values that we put into the hash table.
-        //
         private static readonly object s_intrinsicReferenceKey = new object();
         private static readonly object s_intrinsicNullableKey = new object();
 
         // The key we put into IDictionaryService to store our cache dictionary.
-        //
         private static readonly object s_dictionaryKey = new object();
 
         // This is a cache on top of core reflection. The cache
@@ -54,7 +48,6 @@ namespace System.ComponentModel
         // on Control, Component and object are also automatically filled
         // in. The keys to the property and event caches are types.
         // The keys to the attribute cache are either MemberInfos or types.
-        //
         private static Hashtable? s_propertyCache;
         private static Hashtable? s_eventCache;
         private static Hashtable? s_attributeCache;
@@ -62,7 +55,6 @@ namespace System.ComponentModel
 
         // These are keys we stuff into our object cache. We use this
         // cache data to store extender provider info for an object.
-        //
         private static readonly Guid s_extenderPropertiesKey = Guid.NewGuid();
         private static readonly Guid s_extenderProviderPropertiesKey = Guid.NewGuid();
 
@@ -88,9 +80,7 @@ namespace System.ComponentModel
             };
         }
 
-
         internal static Guid ExtenderProviderKey { get; } = Guid.NewGuid();
-
 
         private static readonly object s_internalSyncObject = new object();
         /// <summary>
@@ -154,7 +144,6 @@ namespace System.ComponentModel
         /// </remarks>
         private static Dictionary<object, IntrinsicTypeConverterData> IntrinsicTypeConverters
         {
-            [RequiresUnreferencedCode("NullableConverter's UnderlyingType cannot be statically discovered.")]
             get
             {
                 return LazyInitializer.EnsureInitialized(ref s_intrinsicTypeConverters, () => new Dictionary<object, IntrinsicTypeConverterData>(32)
@@ -236,7 +225,7 @@ namespace System.ComponentModel
         /// TypeDescriptor will search an editor
         /// table for the editor type, if one can be found.
         /// </summary>
-        [RequiresUnreferencedCode("The Types specified in table may be trimmed, or have their static construtors trimmed.")]
+        [RequiresUnreferencedCode("The Types specified in table may be trimmed, or have their static constructors trimmed.")]
         internal static void AddEditorTable(Type editorBaseType, Hashtable table)
         {
             ArgumentNullException.ThrowIfNull(editorBaseType);
@@ -298,6 +287,56 @@ namespace System.ComponentModel
             return obj ?? Activator.CreateInstance(objectType, args);
         }
 
+        public override bool SupportsKnownTypes => true;
+
+        /// <summary>
+        /// CreateInstance implementation. We delegate to Activator.
+        /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+            Justification = "objectType is already a protected through [DynamicallyAccessedModifiers].")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "objectType is already a protected through [DynamicallyAccessedModifiers].")]
+        public override object? CreateInstanceFromKnownType(
+            IServiceProvider? provider,
+            Type objectType,
+            Type[]? argTypes,
+            object?[]? args)
+        {
+            Debug.Assert(objectType != null, "Should have arg-checked before coming in here");
+
+            object? obj;
+
+            if (argTypes != null)
+            {
+                obj = objectType.GetConstructor(argTypes)?.Invoke(args);
+            }
+            else
+            {
+                if (args != null)
+                {
+                    argTypes = new Type[args.Length];
+                    for (int idx = 0; idx < args.Length; idx++)
+                    {
+                        if (args[idx] is object arg)
+                        {
+                            argTypes[idx] = arg.GetType();
+                        }
+                        else
+                        {
+                            argTypes[idx] = typeof(object);
+                        }
+                    }
+                }
+                else
+                {
+                    argTypes = Type.EmptyTypes;
+                }
+
+                obj = objectType.GetConstructor(argTypes)?.Invoke(args);
+            }
+
+            return obj ?? Activator.CreateInstance(objectType, args);
+        }
 
         /// <summary>
         /// Helper method to create editors and type converters. This checks to see if the
@@ -318,6 +357,15 @@ namespace System.ComponentModel
         internal AttributeCollection GetAttributes([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
             ReflectedTypeData td = GetTypeData(type, true)!;
+            return td.GetAttributes();
+        }
+
+        /// <summary>
+        /// Retrieves custom attributes.
+        /// </summary>
+        internal AttributeCollection GetAttributesFromKnownType(Type type)
+        {
+            ReflectedTypeData td = GetTypeDataFromKnownType(type);
             return td.GetAttributes();
         }
 
@@ -348,9 +396,15 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the class name for our type.
         /// </summary>
-        internal string? GetClassName([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+        internal string? GetClassName([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type) =>
+            GetClassNameFromKnownType(type);
+
+        /// <summary>
+        /// Retrieves the class name for our type.
+        /// </summary>
+        internal string? GetClassNameFromKnownType(Type type)
         {
-            ReflectedTypeData td = GetTypeData(type, true)!;
+            ReflectedTypeData td = GetTypeDataFromKnownType(type);
             return td.GetClassName();
         }
 
@@ -367,11 +421,16 @@ namespace System.ComponentModel
         /// it will be used to retrieve attributes. Otherwise, _type
         /// will be used.
         /// </summary>
-        [RequiresUnreferencedCode("NullableConverter's UnderlyingType cannot be statically discovered. The Type of instance cannot be statically discovered.")]
         internal TypeConverter GetConverter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object? instance)
         {
-            ReflectedTypeData td = GetTypeData(type, true)!;
-            return td.GetConverter(instance);
+            ReflectedTypeData td = GetTypeData(type, createIfNeeded: true)!;
+            return td.GetConverter(instance, verifyIsKnownType: false);
+        }
+
+        internal TypeConverter GetConverterFromKnownType(Type type, object? instance)
+        {
+            ReflectedTypeData td = GetTypeDataFromKnownType(type);
+            return td.GetConverter(instance, verifyIsKnownType: true);
         }
 
         /// <summary>
@@ -391,7 +450,7 @@ namespace System.ComponentModel
         [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " The Type of instance cannot be statically discovered.")]
         internal PropertyDescriptor? GetDefaultProperty([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object? instance)
         {
-            ReflectedTypeData td = GetTypeData(type, true)!;
+            ReflectedTypeData td = GetTypeData(type, createIfNeeded: true)!;
             return td.GetDefaultProperty(instance);
         }
 
@@ -401,14 +460,14 @@ namespace System.ComponentModel
         [RequiresUnreferencedCode(TypeDescriptor.DesignTimeAttributeTrimmed + " The Type of instance cannot be statically discovered.")]
         internal object? GetEditor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object? instance, Type editorBaseType)
         {
-            ReflectedTypeData td = GetTypeData(type, true)!;
+            ReflectedTypeData td = GetTypeData(type, createIfNeeded: true)!;
             return td.GetEditor(instance, editorBaseType);
         }
 
         /// <summary>
         /// Retrieves a default editor table for the given editor base type.
         /// </summary>
-        [RequiresUnreferencedCode("The Types specified in EditorTables may be trimmed, or have their static construtors trimmed.")]
+        [RequiresUnreferencedCode("The Types specified in EditorTables may be trimmed, or have their static constructors trimmed.")]
         private static Hashtable? GetEditorTable(Type editorBaseType)
         {
             Hashtable editorTables = EditorTables;
@@ -458,6 +517,12 @@ namespace System.ComponentModel
         internal EventDescriptorCollection GetEvents([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
             ReflectedTypeData td = GetTypeData(type, true)!;
+            return td.GetEvents();
+        }
+
+        internal EventDescriptorCollection GetEventsFromKnownType(Type type)
+        {
+            ReflectedTypeData td = GetTypeDataFromKnownType(type);
             return td.GetEvents();
         }
 
@@ -518,7 +583,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the editor for the given base type.
         /// </summary>
-        [RequiresUnreferencedCode(TypeDescriptor.DesignTimeAttributeTrimmed  + " The Type of instance cannot be statically discovered.")]
+        [RequiresUnreferencedCode(TypeDescriptor.DesignTimeAttributeTrimmed + " The Type of instance cannot be statically discovered.")]
         internal object? GetExtendedEditor(object instance, Type editorBaseType)
         {
             return GetEditor(instance.GetType(), instance, editorBaseType);
@@ -839,18 +904,14 @@ namespace System.ComponentModel
 
             lock (s_internalSyncObject)
             {
-                Hashtable? typeData = _typeData;
+                Dictionary<Type, ReflectedTypeData>? typeData = _typeData;
                 if (typeData != null)
                 {
-                    // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
-                    IDictionaryEnumerator e = typeData.GetEnumerator();
-                    while (e.MoveNext())
+                    foreach (KeyValuePair<Type, ReflectedTypeData> kvp in typeData)
                     {
-                        DictionaryEntry de = e.Entry;
-                        Type type = (Type)de.Key;
-                        if (type.Module == module && ((ReflectedTypeData)de.Value!).IsPopulated)
+                        if (kvp.Key.Module == module && kvp.Value!.IsPopulated)
                         {
-                            typeList.Add(type);
+                            typeList.Add(kvp.Key);
                         }
                     }
                 }
@@ -866,6 +927,15 @@ namespace System.ComponentModel
         internal PropertyDescriptorCollection GetProperties([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
             ReflectedTypeData td = GetTypeData(type, true)!;
+            return td.GetProperties();
+        }
+
+        /// <summary>
+        /// Retrieves the properties for this type.
+        /// </summary>
+        internal PropertyDescriptorCollection GetPropertiesFromKnownType(Type type)
+        {
+            ReflectedTypeData td = GetTypeDataFromKnownType(type);
             return td.GetProperties();
         }
 
@@ -899,26 +969,101 @@ namespace System.ComponentModel
         {
             ReflectedTypeData? td = null;
 
-            if (_typeData != null)
+            if (_typeData != null && _typeData.TryGetValue(type, out td))
             {
-                td = (ReflectedTypeData?)_typeData[type];
-                if (td != null)
-                {
-                    return td;
-                }
+                Debug.Assert(td != null);
+                return td;
             }
 
             lock (s_internalSyncObject)
             {
-                if (_typeData != null)
+                if (_typeData != null && _typeData.TryGetValue(type, out td))
                 {
-                    td = (ReflectedTypeData?)_typeData[type];
+                    Debug.Assert(td != null);
+                    return td;
                 }
 
-                if (td == null && createIfNeeded)
+                if (td == null)
                 {
-                    td = new ReflectedTypeData(type);
-                    _typeData ??= new Hashtable();
+                    if (TypeDescriptor.IsTrimmable)
+                    {
+                        throw new InvalidOperationException("todo: trimmable applications require registering Types with TypeDescriptor.AddKnownReflectedType().");
+                    }
+
+                    if (createIfNeeded)
+                    {
+                        td = new ReflectedTypeData(type, isKnownType: false);
+                        _typeData ??= new Dictionary<Type, ReflectedTypeData>();
+                        _typeData[type] = td;
+                    }
+                }
+            }
+
+            return td;
+        }
+
+        private ReflectedTypeData GetTypeDataFromKnownType(Type type)
+        {
+            if (_typeData == null || !_typeData.TryGetValue(type, out ReflectedTypeData? td))
+            {
+                if (IsIntrinsicType(type))
+                {
+                    return GetOrAddKnownReflectedType(type);
+                }
+                else
+                {
+                    throw new InvalidOperationException("todo: KnownType members require registering Types with TypeDescriptor.AddKnownReflectedType().");
+                }
+            }
+
+            return td;
+        }
+
+        internal void AddKnownReflectedType(Type type)
+        {
+            ReflectedTypeData? td = null;
+
+            if (_typeData != null && _typeData.ContainsKey(type))
+            {
+                return;
+            }
+
+            lock (s_internalSyncObject)
+            {
+                if (_typeData != null && _typeData.ContainsKey(type))
+                {
+                    return;
+                }
+
+                if (td == null)
+                {
+                    td = new ReflectedTypeData(type, isKnownType: true);
+                    _typeData ??= new Dictionary<Type, ReflectedTypeData>();
+                    _typeData[type] = td;
+                }
+            }
+        }
+
+        private ReflectedTypeData GetOrAddKnownReflectedType(Type type)
+        {
+            ReflectedTypeData? td = null;
+
+            if (_typeData != null && _typeData.TryGetValue(type, out td))
+            {
+                return td;
+            }
+
+            lock (s_internalSyncObject)
+            {
+                if (_typeData != null && _typeData.TryGetValue(type, out td))
+                {
+                    return td;
+                }
+
+                if (td == null)
+                {
+                    td = new ReflectedTypeData(type, isKnownType: true);
+                    _typeData ??= new Dictionary<Type, ReflectedTypeData>();
                     _typeData[type] = td;
                 }
             }
@@ -1053,8 +1198,7 @@ namespace System.ComponentModel
         /// Static helper API around reflection to get and cache
         /// events. This does not recurse to the base class.
         /// </summary>
-        private static EventDescriptor[] ReflectGetEvents(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+        private static EventDescriptor[] ReflectGetEvents(Type type)
         {
             Hashtable eventCache = EventCache;
             EventDescriptor[]? events = (EventDescriptor[]?)eventCache[type];
@@ -1077,7 +1221,7 @@ namespace System.ComponentModel
                     // have both add and remove, we skip it here, because it
                     // will be picked up in our base class scan.
                     //
-                    EventInfo[] eventInfos = type.GetEvents(bindingFlags);
+                    EventInfo[] eventInfos = KnownTypeReflectionHelper.GetEvents(type, bindingFlags);
                     events = new EventDescriptor[eventInfos.Length];
                     int eventCount = 0;
 
@@ -1096,7 +1240,7 @@ namespace System.ComponentModel
 
                         if (eventInfo.AddMethod != null && eventInfo.RemoveMethod != null)
                         {
-                            events[eventCount++] = new ReflectEventDescriptor(type, eventInfo);
+                            events[eventCount++] = ReflectEventDescriptor.CreateWithKnownType(type, eventInfo);
                         }
                     }
 
@@ -1231,7 +1375,16 @@ namespace System.ComponentModel
         /// </summary>
         [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         private static PropertyDescriptor[] ReflectGetProperties(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type) =>
+                ReflectGetPropertiesImpl(type);
+
+        private static PropertyDescriptor[] ReflectGetPropertiesFromKnownType(Type type)
+        {
+            //todo: throw?
+            return ReflectGetPropertiesImpl(type);
+        }
+
+        private static PropertyDescriptor[] ReflectGetPropertiesImpl(Type type)
         {
             Hashtable propertyCache = PropertyCache;
             PropertyDescriptor[]? properties = (PropertyDescriptor[]?)propertyCache[type];
@@ -1255,7 +1408,7 @@ namespace System.ComponentModel
                     // "new" properties of the same name, so we must preserve
                     // the member info for each method individually.
                     //
-                    PropertyInfo[] propertyInfos = type.GetProperties(bindingFlags);
+                    PropertyInfo[] propertyInfos = KnownTypeReflectionHelper.GetProperties(type, bindingFlags);
                     properties = new PropertyDescriptor[propertyInfos.Length];
                     int propertyCount = 0;
 
@@ -1449,7 +1602,6 @@ namespace System.ComponentModel
         /// The strongly-typed dictionary maps object types to converter data objects which lazily
         /// creates (and caches for re-use, where applicable) converter instances.
         /// </summary>
-        [RequiresUnreferencedCode("NullableConverter's UnderlyingType cannot be statically discovered.")]
         private static TypeConverter GetIntrinsicTypeConverter(Type callingType)
         {
             TypeConverter converter;
@@ -1514,6 +1666,14 @@ namespace System.ComponentModel
             }
 
             return converter;
+        }
+
+        private static bool IsIntrinsicType(Type callingType)
+        {
+            TypeConverter converter = GetIntrinsicTypeConverter(callingType);
+
+            // If TypeConverter is returned, it fell back to the System.Object converter.
+            return (converter.GetType() != typeof(TypeConverter));
         }
     }
 }

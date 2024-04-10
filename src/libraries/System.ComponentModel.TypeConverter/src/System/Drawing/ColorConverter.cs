@@ -72,7 +72,7 @@ namespace System.Drawing
                     culture ??= CultureInfo.CurrentCulture;
 
                     string sep = culture.TextInfo.ListSeparator + " ";
-                    TypeConverter intConverter = TypeDescriptor.GetConverterTrimUnsafe(typeof(int));
+                    TypeConverter intConverter = TypeDescriptor.GetConverterFromKnownType(typeof(int));
                     string?[] args;
                     int nArg = 0;
 

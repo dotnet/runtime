@@ -6,6 +6,10 @@
     <TestConsoleAppSourceFiles Include="InterfaceTypeTest.cs" />
     <TestConsoleAppSourceFiles Include="TypeConverterIsReadOnly.cs" />
     <TestConsoleAppSourceFiles Include="TypeConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeDescriptorTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeDescriptorTest_FeatureSwitch.cs">
+      <EnabledFeatureSwitches>System.ComponentModel.TypeDescriptor.IsTrimmable</EnabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>    
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
