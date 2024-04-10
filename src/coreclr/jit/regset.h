@@ -77,7 +77,7 @@ private:
                                    DEBUGARG(regMaskOnlyOne calleeSaveMask = RBM_NONE)) const;
 #endif // DEBUG
 
-    regMaskGpr  rsIntCalleeSavedMask;
+    regMaskGpr rsIntCalleeSavedMask;
 
 public:
     void rsSetRegsModified(CONSTREF_AllRegsMask modifiedMask DEBUGARG(bool suppressDump = false));

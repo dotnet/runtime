@@ -2049,10 +2049,8 @@ void Compiler::compInitAllRegsMask()
 
     AllRegsMask_NONE = AllRegsMask();
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    AllRegsMask_CALLEE_SAVED =
-        AllRegsMask(RBM_INT_CALLEE_SAVED, RBM_FLT_CALLEE_SAVED, RBM_MSK_CALLEE_SAVED);
-    AllRegsMask_CALLEE_TRASH =
-        AllRegsMask(RBM_INT_CALLEE_TRASH, RBM_FLT_CALLEE_TRASH, RBM_MSK_CALLEE_TRASH);
+    AllRegsMask_CALLEE_SAVED = AllRegsMask(RBM_INT_CALLEE_SAVED, RBM_FLT_CALLEE_SAVED, RBM_MSK_CALLEE_SAVED);
+    AllRegsMask_CALLEE_TRASH = AllRegsMask(RBM_INT_CALLEE_TRASH, RBM_FLT_CALLEE_TRASH, RBM_MSK_CALLEE_TRASH);
 #else
     AllRegsMask_CALLEE_SAVED = AllRegsMask(RBM_CALLEE_SAVED);
     AllRegsMask_CALLEE_TRASH = AllRegsMask(RBM_CALLEE_TRASH);
@@ -2098,10 +2096,9 @@ void Compiler::compInitAllRegsMask()
     // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
     AllRegsMask_CALLEE_TRASH_WRITEBARRIER = AllRegsMask_CALLEE_TRASH_NOGC;
     // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
-    AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER = AllRegsMask_CALLEE_TRASH_NOGC;
-    AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER_BYREF =
-        GprRegsMask(RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF);
-    AllRegsMask_CALLEE_TRASH_WRITEBARRIER_BYREF = GprRegsMask(RBM_CALLEE_TRASH_WRITEBARRIER_BYREF);
+    AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER       = AllRegsMask_CALLEE_TRASH_NOGC;
+    AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER_BYREF = GprRegsMask(RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF);
+    AllRegsMask_CALLEE_TRASH_WRITEBARRIER_BYREF   = GprRegsMask(RBM_CALLEE_TRASH_WRITEBARRIER_BYREF);
 
 #ifdef UNIX_AMD64_ABI
 
@@ -2113,9 +2110,8 @@ void Compiler::compInitAllRegsMask()
     AllRegsMask_STOP_FOR_GC_TRASH =
         AllRegsMask(RBM_INT_CALLEE_TRASH & ~(RBM_INTRET | RBM_INTRET_1),
                     (RBM_FLT_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_FLOATRET_1)), RBM_MSK_CALLEE_TRASH);
-    AllRegsMask_PROFILER_ENTER_TRASH =
-        AllRegsMask((RBM_INT_CALLEE_TRASH & ~RBM_ARG_REGS), (RBM_FLT_CALLEE_TRASH & ~RBM_FLTARG_REGS),
-                    RBM_MSK_CALLEE_TRASH);
+    AllRegsMask_PROFILER_ENTER_TRASH = AllRegsMask((RBM_INT_CALLEE_TRASH & ~RBM_ARG_REGS),
+                                                   (RBM_FLT_CALLEE_TRASH & ~RBM_FLTARG_REGS), RBM_MSK_CALLEE_TRASH);
 #else
     // See vm\amd64\asmhelpers.asm for more details.
     AllRegsMask_STOP_FOR_GC_TRASH =
@@ -2136,8 +2132,7 @@ void Compiler::compInitAllRegsMask()
     AllRegsMask_PROFILER_ENTER_TRASH = AllRegsMask_NONE;
 
     // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
-    AllRegsMask_CALLEE_TRASH_WRITEBARRIER =
-        GprRegsMask(RBM_R0 | RBM_R3 | RBM_LR | RBM_DEFAULT_HELPER_CALL_TARGET);
+    AllRegsMask_CALLEE_TRASH_WRITEBARRIER = GprRegsMask(RBM_R0 | RBM_R3 | RBM_LR | RBM_DEFAULT_HELPER_CALL_TARGET);
 
     // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
     AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER = AllRegsMask_CALLEE_TRASH_WRITEBARRIER;
@@ -2167,10 +2162,9 @@ void Compiler::compInitAllRegsMask()
 
 #elif defined(TARGET_ARM64)
 
-    AllRegsMask_CALLEE_TRASH_NOGC = GprRegsMask(RBM_CALLEE_TRASH_NOGC);
-    AllRegsMask_PROFILER_ENTER_TRASH =
-        AllRegsMask((RBM_INT_CALLEE_TRASH & ~(RBM_ARG_REGS | RBM_ARG_RET_BUFF | RBM_FP)),
-                    (RBM_FLT_CALLEE_TRASH & ~RBM_FLTARG_REGS), RBM_MSK_CALLEE_TRASH);
+    AllRegsMask_CALLEE_TRASH_NOGC    = GprRegsMask(RBM_CALLEE_TRASH_NOGC);
+    AllRegsMask_PROFILER_ENTER_TRASH = AllRegsMask((RBM_INT_CALLEE_TRASH & ~(RBM_ARG_REGS | RBM_ARG_RET_BUFF | RBM_FP)),
+                                                   (RBM_FLT_CALLEE_TRASH & ~RBM_FLTARG_REGS), RBM_MSK_CALLEE_TRASH);
     // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
     AllRegsMask_CALLEE_TRASH_WRITEBARRIER = GprRegsMask(RBM_R14 | RBM_CALLEE_TRASH_NOGC);
 
@@ -2765,7 +2759,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
     else
     {
-        verbose = false;        
+        verbose = false;
         codeGen->setVerbose(false);
     }
     verboseTrees     = verbose && shouldUseVerboseTrees();

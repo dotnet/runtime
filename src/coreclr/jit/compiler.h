@@ -11237,23 +11237,23 @@ public:
     }
 #endif // TARGET_XARCH
 
-AllRegsMask AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER;
-AllRegsMask AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
-AllRegsMask AllRegsMask_CALLEE_SAVED;
-AllRegsMask AllRegsMask_CALLEE_TRASH;
-AllRegsMask AllRegsMask_CALLEE_TRASH_NOGC;
-AllRegsMask AllRegsMask_CALLEE_TRASH_WRITEBARRIER;
-AllRegsMask AllRegsMask_CALLEE_TRASH_WRITEBARRIER_BYREF;
-AllRegsMask AllRegsMask_EDX;
-AllRegsMask AllRegsMask_INIT_PINVOKE_FRAME_TRASH;
-AllRegsMask AllRegsMask_NONE;
-AllRegsMask AllRegsMask_PROF_FNC_LEAVE;
-AllRegsMask AllRegsMask_PROFILER_ENTER_TRASH;
-AllRegsMask AllRegsMask_PROFILER_LEAVE_TRASH;
-AllRegsMask AllRegsMask_PROFILER_RET_SCRATCH;
-AllRegsMask AllRegsMask_PROFILER_TAILCALL_TRASH;
-AllRegsMask AllRegsMask_STOP_FOR_GC_TRASH;
-AllRegsMask AllRegsMask_VALIDATE_INDIRECT_CALL_TRASH;
+    AllRegsMask AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER;
+    AllRegsMask AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
+    AllRegsMask AllRegsMask_CALLEE_SAVED;
+    AllRegsMask AllRegsMask_CALLEE_TRASH;
+    AllRegsMask AllRegsMask_CALLEE_TRASH_NOGC;
+    AllRegsMask AllRegsMask_CALLEE_TRASH_WRITEBARRIER;
+    AllRegsMask AllRegsMask_CALLEE_TRASH_WRITEBARRIER_BYREF;
+    AllRegsMask AllRegsMask_EDX;
+    AllRegsMask AllRegsMask_INIT_PINVOKE_FRAME_TRASH;
+    AllRegsMask AllRegsMask_NONE;
+    AllRegsMask AllRegsMask_PROF_FNC_LEAVE;
+    AllRegsMask AllRegsMask_PROFILER_ENTER_TRASH;
+    AllRegsMask AllRegsMask_PROFILER_LEAVE_TRASH;
+    AllRegsMask AllRegsMask_PROFILER_RET_SCRATCH;
+    AllRegsMask AllRegsMask_PROFILER_TAILCALL_TRASH;
+    AllRegsMask AllRegsMask_STOP_FOR_GC_TRASH;
+    AllRegsMask AllRegsMask_VALIDATE_INDIRECT_CALL_TRASH;
 
 }; // end of class Compiler
 

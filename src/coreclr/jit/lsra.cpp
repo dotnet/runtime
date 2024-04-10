@@ -4358,7 +4358,6 @@ void LinearScan::resetAllRegistersState()
     }
 }
 
-
 #ifdef HAS_MORE_THAN_64_REGISTERS
 void LinearScan::updateDeadCandidatesAtBlockStart(REF_AllRegsMask deadRegMask, VarToRegMap inVarToRegMap)
 #else
@@ -4847,7 +4846,7 @@ void LinearScan::inActivateRegisters(RegBitSet64 inactiveMask)
     }
 }
 
-    //------------------------------------------------------------------------
+//------------------------------------------------------------------------
 // LinearScan::freeRegister: Make a register available for use
 //
 // Arguments:
@@ -5033,7 +5032,7 @@ void LinearScan::allocateRegistersMinimal()
             makeRegsAvailable(regsToMakeInactive);
             // TODO: Clean this up. We need to make the delayRegs inactive as well, but don't want
             // to mark them as free yet.
-            regsToMakeInactive      = delayRegsToMakeInactive;
+            regsToMakeInactive = delayRegsToMakeInactive;
             delayRegsToMakeInactive.Clear();
         }
 
@@ -5107,7 +5106,7 @@ void LinearScan::allocateRegistersMinimal()
                     delayRegsToFree.Clear();
                     regsInUseThisLocation.Clear();
                 }
-                regsToFree      = delayRegsToFree;
+                regsToFree = delayRegsToFree;
                 delayRegsToFree.Clear();
 
 #ifdef DEBUG
@@ -5153,8 +5152,8 @@ void LinearScan::allocateRegistersMinimal()
             regsToFree.Clear();
             regsInUseThisLocation.Clear();
             regsInUseNextLocation.Clear();
-            handledBlockEnd       = true;
-            curBBStartLocation    = currentRefPosition.nodeLocation;
+            handledBlockEnd    = true;
+            curBBStartLocation = currentRefPosition.nodeLocation;
             if (currentBlock == nullptr)
             {
                 currentBlock = startBlockSequence();
@@ -5723,7 +5722,7 @@ void LinearScan::allocateRegisters()
             makeRegsAvailable(regsToMakeInactive);
             // TODO: Clean this up. We need to make the delayRegs inactive as well, but don't want
             // to mark them as free yet.
-            regsToMakeInactive      = delayRegsToMakeInactive;
+            regsToMakeInactive = delayRegsToMakeInactive;
             delayRegsToMakeInactive.Clear();
         }
 
@@ -5801,7 +5800,7 @@ void LinearScan::allocateRegisters()
                     delayRegsToFree.Clear();
                     regsInUseThisLocation.Clear();
                 }
-                regsToFree      = delayRegsToFree;
+                regsToFree = delayRegsToFree;
                 delayRegsToFree.Clear();
 #ifdef DEBUG
                 verifyFreeRegisters(regsToFree);
@@ -5864,8 +5863,8 @@ void LinearScan::allocateRegisters()
             regsToFree.Clear();
             regsInUseThisLocation.Clear();
             regsInUseNextLocation.Clear();
-            handledBlockEnd       = true;
-            curBBStartLocation    = currentRefPosition.nodeLocation;
+            handledBlockEnd    = true;
+            curBBStartLocation = currentRefPosition.nodeLocation;
             if (currentBlock == nullptr)
             {
                 currentBlock = startBlockSequence();

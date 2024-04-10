@@ -347,10 +347,10 @@ public:
     FORCEINLINE void     Clear();
     FORCEINLINE bool     IsEmpty() const;
     FORCEINLINE unsigned Count() const;
-    FORCEINLINE void AddGprRegInMask(regNumber reg);
-    FORCEINLINE void AddRegMaskForType(regMaskOnlyOne maskToAdd, var_types type);
-    FORCEINLINE void AddGprRegMask(regMaskGpr maskToAdd);
-    FORCEINLINE void AddFloatRegMask(regMaskFloat maskToAdd);
+    FORCEINLINE void     AddGprRegInMask(regNumber reg);
+    FORCEINLINE void     AddRegMaskForType(regMaskOnlyOne maskToAdd, var_types type);
+    FORCEINLINE void     AddGprRegMask(regMaskGpr maskToAdd);
+    FORCEINLINE void     AddFloatRegMask(regMaskFloat maskToAdd);
 
     FORCEINLINE void AddRegNumInMask(regNumber reg);
     FORCEINLINE void AddRegNum(regNumber reg, var_types type);

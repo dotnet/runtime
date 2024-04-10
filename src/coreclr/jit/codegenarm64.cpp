@@ -5210,7 +5210,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
             callTargetReg = REG_DEFAULT_HELPER_CALL_TARGET;
         }
 
-        regMaskGpr  callTargetMask = genRegMask(callTargetReg);
+        regMaskGpr           callTargetMask = genRegMask(callTargetReg);
         CONSTREF_AllRegsMask callKillSet    = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
         // assert that all registers in callTargetMask are in the callKillSet

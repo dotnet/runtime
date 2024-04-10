@@ -1132,11 +1132,11 @@ private:
 
     // Helpers for getKillSetForNode().
     CONSTREF_AllRegsMask getKillSetForStoreInd(GenTreeStoreInd* tree);
-    regMaskGpr  getKillSetForShiftRotate(GenTreeOp* tree);
-    regMaskGpr  getKillSetForMul(GenTreeOp* tree);
-    AllRegsMask getKillSetForCall(GenTreeCall* call);
-    regMaskGpr  getKillSetForModDiv(GenTreeOp* tree);
-    AllRegsMask getKillSetForBlockStore(GenTreeBlk* blkNode);
+    regMaskGpr           getKillSetForShiftRotate(GenTreeOp* tree);
+    regMaskGpr           getKillSetForMul(GenTreeOp* tree);
+    AllRegsMask          getKillSetForCall(GenTreeCall* call);
+    regMaskGpr           getKillSetForModDiv(GenTreeOp* tree);
+    AllRegsMask          getKillSetForBlockStore(GenTreeBlk* blkNode);
     CONSTREF_AllRegsMask getKillSetForReturn();
     CONSTREF_AllRegsMask getKillSetForProfilerHook();
 #ifdef FEATURE_HW_INTRINSICS

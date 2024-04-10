@@ -738,7 +738,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_RETURN:
         {
-            srcCount             = BuildReturn(tree);
+            srcCount = BuildReturn(tree);
             BuildKills(tree, getKillSetForReturn());
             break;
         }
