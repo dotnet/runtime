@@ -20,7 +20,7 @@ import { wait_for_all_assets } from "./assets";
 import { replace_linker_placeholders } from "./exports-binding";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { interp_pgo_load_data, interp_pgo_save_data } from "./interp-pgo";
-import { mono_log_debug, mono_log_error, mono_log_info, mono_log_warn } from "./logging";
+import { mono_log_debug, mono_log_error, mono_log_warn } from "./logging";
 
 // threads
 import { populateEmscriptenPool, mono_wasm_init_threads } from "./pthreads";
@@ -287,10 +287,12 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: () => void) 
             const anyPerf = performance as any;
             if (anyPerf.measureUserAgentSpecificMemory) {
                 const memorySample = await anyPerf.measureUserAgentSpecificMemory();
-                mono_log_info("UI thread is alive!" + JSON.stringify(memorySample, null, 2));
+                mono_log_warn("UI thread is alive!" + JSON.stringify(memorySample, null, 2));
             } else {
-                mono_log_info("UI thread is alive!");
+                mono_log_warn("UI thread is alive!");
             }
+            const wasmMemory = runtimeHelpers.getMemory();
+            mono_log_warn("wasmMemory:" + wasmMemory.buffer.byteLength);
         }, 500);
 
         if (WasmEnableThreads) {
