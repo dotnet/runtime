@@ -4109,7 +4109,7 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
 }
 
 //------------------------------------------------------------------------
-// optAssertionProp_Return: Try and optimize a GT_RETURN via assertions.
+// optAssertionProp_Return: Try and optimize a GT_RETURN/GT_SWIFT_ERROR_RET via assertions.
 //
 // Propagates ZEROOBJ for the return value.
 //
@@ -4124,9 +4124,9 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
 // Notes:
 //   stmt may be nullptr during local assertion prop
 //
-GenTree* Compiler::optAssertionProp_Return(ASSERT_VALARG_TP assertions, GenTreeUnOp* ret, Statement* stmt)
+GenTree* Compiler::optAssertionProp_Return(ASSERT_VALARG_TP assertions, GenTreeOp* ret, Statement* stmt)
 {
-    GenTree* retValue = ret->gtGetOp1();
+    GenTree* retValue = ret->GetReturnValue();
 
     // Only propagate zeroes that lowering can deal with.
     if (!ret->TypeIs(TYP_VOID) && varTypeIsStruct(retValue) && !varTypeIsStruct(info.compRetNativeType))
@@ -5512,7 +5512,8 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
             return optAssertionProp_BlockStore(assertions, tree->AsBlk(), stmt);
 
         case GT_RETURN:
-            return optAssertionProp_Return(assertions, tree->AsUnOp(), stmt);
+        case GT_SWIFT_ERROR_RET:
+            return optAssertionProp_Return(assertions, tree->AsOp(), stmt);
 
         case GT_MOD:
         case GT_DIV:

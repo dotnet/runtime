@@ -9712,7 +9712,7 @@ DONE_MORPHING_CHILDREN:
 //    tree - tree to examine and possibly modify
 //
 // Notes:
-//    Currently only called when the tree parent is a GT_RETURN.
+//    Currently only called when the tree parent is a GT_RETURN/GT_SWIFT_ERROR_RET.
 //
 void Compiler::fgTryReplaceStructLocalWithField(GenTree* tree)
 {
@@ -14122,12 +14122,12 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
             // Method must be returning a value other than TYP_VOID.
             noway_assert(compMethodHasRetVal());
 
-            // This block must be ending with a GT_RETURN
+            // This block must be ending with a GT_RETURN/GT_SWIFT_ERROR_RET
             noway_assert(lastStmt != nullptr);
             noway_assert(lastStmt->GetNextStmt() == nullptr);
             noway_assert(ret != nullptr);
 
-            // GT_RETURN must have non-null operand as the method is returning the value assigned to
+            // Return node must have non-null operand as the method is returning the value assigned to
             // genReturnLocal
             GenTree* const retVal = ret->AsOp()->GetReturnValue();
             noway_assert(retVal != nullptr);
@@ -14159,11 +14159,11 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
         }
         else if ((ret != nullptr) && ret->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
         {
-            // This block ends with a GT_RETURN
+            // This block ends with a GT_RETURN/GT_SWIFT_ERROR_RET
             noway_assert(lastStmt != nullptr);
             noway_assert(lastStmt->GetNextStmt() == nullptr);
 
-            // Must be a void GT_RETURN/GT_SWIFT_ERROR_RET with null operand; delete it as this block branches to
+            // Must be a void return node with null operand; delete it as this block branches to
             // oneReturn block
             GenTree* const retVal = ret->AsOp()->GetReturnValue();
             noway_assert(ret->TypeGet() == TYP_VOID);

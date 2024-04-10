@@ -140,7 +140,8 @@ bool OptIfConversionDsc::IfConvertCheckThenFlow()
             if (thenBlock->KindIs(BBJ_RETURN))
             {
                 assert(m_finalBlock == nullptr);
-                m_mainOper = GT_RETURN;
+                m_mainOper = thenBlock->lastNode()->OperGet();
+                assert((m_mainOper == GT_RETURN) || (m_mainOper == GT_SWIFT_ERROR_RET));
             }
             else
             {
@@ -231,7 +232,7 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
         for (Statement* const stmt : block->Statements())
         {
             GenTree* tree = stmt->GetRootNode();
-            switch (tree->gtOper)
+            switch (tree->OperGet())
             {
                 case GT_STORE_LCL_VAR:
                 {
@@ -286,8 +287,9 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                 }
 
                 case GT_RETURN:
+                case GT_SWIFT_ERROR_RET:
                 {
-                    GenTree* op1 = tree->gtGetOp1();
+                    GenTree* const retVal = tree->AsOp()->GetReturnValue();
 
                     // Only allow RETURNs if else conversion is being used.
                     if (!m_doElseConversion)
@@ -296,7 +298,7 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                     }
 
                     // Only one per operation per block can be conditionally executed.
-                    if (found || op1 == nullptr)
+                    if (found || retVal == nullptr)
                     {
                         return false;
                     }
@@ -317,7 +319,7 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
 #endif
 
                     // Ensure it won't cause any additional side effects.
-                    if ((op1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
+                    if ((retVal->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
                     {
                         return false;
                     }
@@ -326,7 +328,7 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                     // with the condition (for example, the condition could be an explicit bounds
                     // check and the operand could read an array element). Disallow this except
                     // for some common cases that we know are always side effect free.
-                    if (((m_cond->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !op1->IsInvariant() && !op1->OperIsLocal())
+                    if (((m_cond->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !retVal->IsInvariant() && !retVal->OperIsLocal())
                     {
                         return false;
                     }
@@ -575,7 +577,7 @@ bool OptIfConversionDsc::optIfConvert()
     {
         return false;
     }
-    assert(m_thenOperation.node->OperIs(GT_STORE_LCL_VAR, GT_RETURN));
+    assert(m_thenOperation.node->OperIs(GT_STORE_LCL_VAR, GT_RETURN, GT_SWIFT_ERROR_RET));
     if (m_doElseConversion)
     {
         if (!IfConvertCheckStmts(m_startBlock->GetTrueTarget(), &m_elseOperation))
@@ -633,11 +635,11 @@ bool OptIfConversionDsc::optIfConvert()
         }
         else
         {
-            assert(m_mainOper == GT_RETURN);
-            thenCost = m_thenOperation.node->gtGetOp1()->GetCostEx();
+            assert((m_mainOper == GT_RETURN) || (m_mainOper == GT_SWIFT_ERROR_RET));
+            thenCost = m_thenOperation.node->AsOp()->GetReturnValue()->GetCostEx();
             if (m_doElseConversion)
             {
-                elseCost = m_elseOperation.node->gtGetOp1()->GetCostEx();
+                elseCost = m_elseOperation.node->AsOp()->GetReturnValue()->GetCostEx();
             }
         }
 
@@ -693,12 +695,12 @@ bool OptIfConversionDsc::optIfConvert()
     }
     else
     {
-        assert(m_mainOper == GT_RETURN);
+        assert((m_mainOper == GT_RETURN) || (m_mainOper == GT_SWIFT_ERROR_RET));
         assert(m_doElseConversion);
         assert(m_thenOperation.node->TypeGet() == m_elseOperation.node->TypeGet());
 
-        selectTrueInput  = m_elseOperation.node->gtGetOp1();
-        selectFalseInput = m_thenOperation.node->gtGetOp1();
+        selectTrueInput  = m_elseOperation.node->AsOp()->GetReturnValue();
+        selectFalseInput = m_thenOperation.node->AsOp()->GetReturnValue();
         selectType       = genActualType(m_thenOperation.node);
     }
 
@@ -714,7 +716,7 @@ bool OptIfConversionDsc::optIfConvert()
     }
     else
     {
-        m_thenOperation.node->AsOp()->gtOp1 = select;
+        m_thenOperation.node->AsOp()->SetReturnValue(select);
     }
     m_comp->gtSetEvalOrder(m_thenOperation.node);
     m_comp->fgSetStmtSeq(m_thenOperation.stmt);
