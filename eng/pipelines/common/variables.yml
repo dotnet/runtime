@@ -60,4 +60,4 @@ variables:
 
 - template: /eng/pipelines/common/perf-variables.yml
 
-- template: /eng/common/${{ parameters.templates }}/variables/pool-providers.yml
+- template: /eng/common/${{ parameters.templatePath }}/variables/pool-providers.yml
