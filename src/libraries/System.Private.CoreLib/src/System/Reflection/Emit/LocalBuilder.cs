@@ -33,6 +33,6 @@ namespace System.Reflection.Emit
         /// <param name="name">The name of the local variable.</param>
         /// <exception cref="InvalidOperationException">The containing type has been created with CreateType() or
         /// containing type doesn't support symbol writing.</exception>"
-        protected virtual void SetLocalSymInfoCore(string name) { }
+        protected virtual void SetLocalSymInfoCore(string name) => throw new NotSupportedException(SR.NotSupported_EmitDebugInfo);
     }
 }

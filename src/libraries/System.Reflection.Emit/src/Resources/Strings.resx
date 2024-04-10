@@ -300,7 +300,4 @@
   <data name="InvalidOperation_InvalidDocument" xml:space="preserve">
     <value>Invalid source document.</value>
   </data>
-  <data name="InvalidOperation_NotValidTypeBuilder" xml:space="preserve">
-    <value>Emitting symbols is not supported for containing type.</value>
-  </data>
 </root>

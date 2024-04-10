@@ -256,7 +256,8 @@ namespace System.Reflection.Emit
         /// <param name="endColumn">The column in the line where the sequence point ends.</param>
         /// <exception cref="ArgumentException"><paramref name="document"/> is not valid.</exception>
         /// <remarks>The parameters validated in the caller: <see cref="MarkSequencePoint"/>.</remarks>
-        protected virtual void MarkSequencePointCore(ISymbolDocumentWriter document, int startLine, int startColumn, int endLine, int endColumn) { }
+        protected virtual void MarkSequencePointCore(ISymbolDocumentWriter document, int startLine, int startColumn, int endLine, int endColumn) =>
+            throw new NotSupportedException(SR.NotSupported_EmitDebugInfo);
 
         #endregion
 
