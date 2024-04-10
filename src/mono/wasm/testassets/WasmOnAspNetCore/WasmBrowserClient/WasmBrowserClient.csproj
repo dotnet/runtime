@@ -9,6 +9,7 @@
     <NoWarn>CA1050;CA2007;CA1861;IL2104</NoWarn>
     <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
     <WasmEnableThreads>true</WasmEnableThreads>
+     <!-- avoid loading .dat files that require integrity hash calculation -->
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 

@@ -41,21 +41,21 @@ public abstract class AppTestBase : BlazorWasmTestBase
         string config,
         string assetName,
         string projectDirSuffix,
-        string clientPublisExtraArgs,
-        bool assertAppBundle,
+        string aspNetCoreAppDir,
         string? generatedProjectNamePrefix = null,
         RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
     {
         CopyTestAsset(assetName, generatedProjectNamePrefix, projectDirSuffix);
         PublishProject(configuration: config,
             runtimeType: runtimeType,
-            assertAppBundle: assertAppBundle,
-            extraArgs: clientPublisExtraArgs );
+            assertAppBundle: false,
+            // publish WASM app to AspNetCoreServer's directory
+            extraArgs: $"-o ../{aspNetCoreAppDir}/publish" );
 
         string? parentDirName = Directory.GetParent(_projectDir!)!.FullName;
         if (parentDirName is null)
             throw new Exception("parentDirName cannot be null");
-        _projectDir = Path.Combine(parentDirName, "Server");
+        _projectDir = Path.Combine(parentDirName, aspNetCoreAppDir);
 
         BuildProject(configuration: config, assertAppBundle: false);
     }
