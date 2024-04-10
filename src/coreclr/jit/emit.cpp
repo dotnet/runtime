@@ -10405,55 +10405,54 @@ AllRegsMask emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
 // Return Value:
 //   Mask of GC register kills
 //
-AllRegsMask emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
+CONSTREF_AllRegsMask emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
 {
     assert(emitNoGChelper(helper));
-    AllRegsMask result;
+
+#ifdef DEBUG
+    // compHelperCallKillSet returns a superset of the registers which values are not guaranteed to be the same
+    // after the call, if a register loses its GC or byref it has to be in the compHelperCallKillSet set as well.
+    AllRegsMask expectedKillSet = emitComp->compHelperCallKillSet(helper);
+#endif // DEBUG
+
+#define CHECK_AND_RETURN(killSet)                   \
+    assert((expectedKillSet & killSet) == killSet); \
+    return killSet;
+
     switch (helper)
     {
         case CORINFO_HELP_ASSIGN_REF:
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
-            result = emitComp->AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER;
-            break;
+            CHECK_AND_RETURN(emitComp->AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER);
 
         case CORINFO_HELP_ASSIGN_BYREF:
-            result = emitComp->AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
-            break;
+            CHECK_AND_RETURN(emitComp->AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER_BYREF);
 
 #if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
         case CORINFO_HELP_PROF_FCN_ENTER:
-            result = emitComp->AllRegsMask_PROFILER_ENTER_TRASH;
-            break;
+            CHECK_AND_RETURN(emitComp->AllRegsMask_PROFILER_ENTER_TRASH);
 
         case CORINFO_HELP_PROF_FCN_LEAVE:
-            result = emitComp->AllRegsMask_PROF_FNC_LEAVE;
-            break;
+            CHECK_AND_RETURN(emitComp->AllRegsMask_PROF_FNC_LEAVE);
 
         case CORINFO_HELP_PROF_FCN_TAILCALL:
-            result = emitComp->AllRegsMask_PROFILER_TAILCALL_TRASH;
-            break;
+            CHECK_AND_RETURN(emitComp->AllRegsMask_PROFILER_TAILCALL_TRASH);
+
 #endif // !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 
 #if defined(TARGET_X86)
         case CORINFO_HELP_INIT_PINVOKE_FRAME:
-            result = emitComp->AllRegsMask_INIT_PINVOKE_FRAME_TRASH;
-            break;
+            CHECK_AND_RETURN(emitComp->AllRegsMask_INIT_PINVOKE_FRAME_TRASH);
 #endif // defined(TARGET_X86)
 
         case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
-            result = emitComp->AllRegsMask_VALIDATE_INDIRECT_CALL_TRASH;
-            break;
+            CHECK_AND_RETURN(emitComp->AllRegsMask_VALIDATE_INDIRECT_CALL_TRASH);
 
         default:
-            result = emitComp->AllRegsMask_CALLEE_TRASH_NOGC;
-            break;
+            CHECK_AND_RETURN(emitComp->AllRegsMask_CALLEE_TRASH_NOGC);
     }
 
-    // compHelperCallKillSet returns a superset of the registers which values are not guaranteed to be the same
-    // after the call, if a register loses its GC or byref it has to be in the compHelperCallKillSet set as well.
-    assert((result & emitComp->compHelperCallKillSet(helper)) == result);
-
-    return result;
+    return emitComp->AllRegsMask_NONE;
 }
 
 #if !defined(JIT32_GCENCODER)
