@@ -2027,13 +2027,22 @@ private:
         }
 
 #ifdef SWIFT_SUPPORT
+        // If this method has a SwiftError* out parameter, we need to set the error register upon returning.
+        // GT_SWIFT_ERROR_RET handles returning both the normal and error value,
+        // and will be the terminator node for this block.
         if (comp->lvaSwiftErrorArg != BAD_VAR_NUM)
         {
             assert(comp->info.compCallConv == CorInfoCallConvExtension::Swift);
             assert(comp->lvaSwiftErrorLocal != BAD_VAR_NUM);
-            GenTree* const swiftErrorNode = comp->gtNewLclFldNode(comp->lvaSwiftErrorLocal, TYP_I_IMPL, 0);
-            returnExpr                    = new (comp, GT_SWIFT_ERROR_RET)
-                GenTreeOp(GT_SWIFT_ERROR_RET, returnExpr->TypeGet(), swiftErrorNode, returnExpr->gtGetOp1());
+            assert(comp->genReturnErrorLocal == BAD_VAR_NUM);
+
+            const unsigned errorLclNum = comp->lvaGrabTemp(true DEBUGARG("Single return block SwiftError value"));
+            comp->genReturnErrorLocal = errorLclNum;
+            comp->lvaGetDesc(errorLclNum)->lvType = genActualType(TYP_I_IMPL);
+
+            returnExpr->SetOperRaw(GT_SWIFT_ERROR_RET);
+            returnExpr->AsOp()->gtOp2 = returnExpr->AsOp()->gtOp1;
+            returnExpr->AsOp()->gtOp1 = comp->gtNewLclvNode(errorLclNum, TYP_I_IMPL);
         }
 #endif // SWIFT_SUPPORT
 

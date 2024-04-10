@@ -70,6 +70,10 @@ void Compiler::fgInit()
     genReturnBB    = nullptr;
     genReturnLocal = BAD_VAR_NUM;
 
+#ifdef SWIFT_SUPPORT
+    genReturnErrorLocal = BAD_VAR_NUM;
+#endif // SWIFT_SUPPORT
+
     /* We haven't reached the global morphing phase */
     fgGlobalMorph     = false;
     fgGlobalMorphDone = false;

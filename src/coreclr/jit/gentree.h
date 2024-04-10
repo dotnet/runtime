@@ -3053,6 +3053,21 @@ struct GenTreeOp : public GenTreeUnOp
         return gtOp1;
     }
 
+    void SetReturnValue(GenTree* const retVal)
+    {
+        assert(OperIs(GT_RETURN, GT_RETFILT, GT_SWIFT_ERROR_RET));
+#ifdef SWIFT_SUPPORT
+        if (OperIs(GT_SWIFT_ERROR_RET))
+        {
+            gtOp2 = retVal;
+        }
+        else
+#endif // SWIFT_SUPPORT
+        {
+            gtOp1 = retVal;
+        }
+    }
+
 #if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
     bool IsValidLongMul();
 #endif

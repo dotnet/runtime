@@ -520,8 +520,11 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerJmpMethod(node);
             break;
 
-        case GT_RETURN:
         case GT_SWIFT_ERROR_RET:
+            LowerNode(node->gtGetOp1());
+
+            FALLTHROUGH;
+        case GT_RETURN:
             LowerRet(node->AsUnOp());
             break;
 
@@ -4547,7 +4550,7 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
 {
     assert(ret->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET));
 
-    JITDUMP("lowering GT_RETURN\n");
+    JITDUMP("lowering return node\n");
     DISPNODE(ret);
     JITDUMP("============\n");
 
@@ -4573,7 +4576,7 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
 #endif
 
         GenTree* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), retVal);
-        ret->gtOp1       = bitcast;
+        ret->AsOp()->SetReturnValue(bitcast);
         BlockRange().InsertBefore(ret, bitcast);
         ContainCheckBitCast(bitcast);
     }
@@ -4965,7 +4968,7 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
 {
     assert(!comp->compMethodReturnsMultiRegRetType());
     assert(ret->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET));
-    GenTreeLclVarCommon* lclVar = ret->gtGetOp1()->AsLclVar();
+    GenTreeLclVarCommon* lclVar = ret->AsOp()->GetReturnValue()->AsLclVar();
     assert(lclVar->OperIs(GT_LCL_VAR));
     unsigned   lclNum = lclVar->GetLclNum();
     LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
@@ -5013,7 +5016,7 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
         if (!varTypeUsesSameRegType(ret, lclVarType))
         {
             GenTree* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), ret->gtOp1);
-            ret->gtOp1       = bitcast;
+            ret->AsOp()->SetReturnValue(bitcast);
             BlockRange().InsertBefore(ret, bitcast);
             ContainCheckBitCast(bitcast);
         }
@@ -8153,7 +8156,7 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
 #if !defined(TARGET_64BIT)
     if (ret->TypeGet() == TYP_LONG)
     {
-        GenTree* op1 = ret->gtGetOp1();
+        GenTree* op1 = ret->AsOp()->GetReturnValue();
         noway_assert(op1->OperGet() == GT_LONG);
         MakeSrcContained(ret, op1);
     }
@@ -8161,7 +8164,7 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
 #if FEATURE_MULTIREG_RET
     if (ret->TypeIs(TYP_STRUCT))
     {
-        GenTree* op1 = ret->gtGetOp1();
+        GenTree* op1 = ret->AsOp()->GetReturnValue();
         // op1 must be either a lclvar or a multi-reg returning call
         if (op1->OperGet() == GT_LCL_VAR)
         {

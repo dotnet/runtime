@@ -8406,6 +8406,10 @@ public:
     unsigned    genReturnLocal; // Local number for the return value when applicable.
     BasicBlock* genReturnBB;    // jumped to when not optimizing for speed.
 
+#ifdef SWIFT_SUPPORT
+    unsigned genReturnErrorLocal; // Local number for the Swift error value when applicable.
+#endif // SWIFT_SUPPORT
+
     // The following properties are part of CodeGenContext.  Getters are provided here for
     // convenience and backward compatibility, but the properties can only be set by invoking
     // the setter on CodeGenContext directly.
