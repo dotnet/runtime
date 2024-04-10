@@ -61,48 +61,33 @@ FCIMPL11(FC_BOOL_RET, MetaDataImport::GetMarshalAs,
 }
 FCIMPLEND
 
-MDImpl4(Object *, MetaDataImport::GetDefaultValue, mdToken tk, INT64* pDefaultValue, INT32* pLength, INT32* pCorElementType)
+MDImpl5(HRESULT, MetaDataImport::GetDefaultValue, mdToken tk, INT64* pDefaultValue, BYTE** pStringValue, INT32* pLength, INT32* pCorElementType)
 {
     FCALL_CONTRACT;
 
     HRESULT hr = S_OK;
-    Object *pRetVal = NULL;
 
     IMDInternalImport *_pScope = pScope;
 
     MDDefaultValue value;
     IfFailGo(_pScope->GetDefaultValue(tk, &value));
 
-    // We treat string values differently. That's because on big-endian architectures we can't return a
-    // pointer to static string data in the metadata, we have to buffer the string in order to byte-swap
-    // all the unicode characters. MDDefaultValue therefore has a destructor on big-endian machines which
-    // reclaims this buffer, implying we can't safely return the embedded pointer to managed code.
-    // The easiest thing for us to do is to construct the managed string object here, in the context of
-    // the still valid MDDefaultValue. We can't return a managed object via the normal out parameter
-    // because it won't be GC protected, so in this special case null the output parameter and return
-    // the string via the protected return result (which is null for all other cases).
     if (value.m_bType == ELEMENT_TYPE_STRING)
     {
-        HELPER_METHOD_FRAME_BEGIN_RET_0();
         *pDefaultValue = 0;
-        STRINGREF refRetval = StringObject::NewString(value.m_wzValue, value.m_cbSize / sizeof(WCHAR));
-        pRetVal = STRINGREFToObject(refRetval);
-        HELPER_METHOD_FRAME_END();
+        *pStringValue = (BYTE*)value.m_wzValue;
     }
     else
     {
         *pDefaultValue = value.m_ullValue;
+        *pStringValue = NULL;
     }
 
-    *pCorElementType = (UINT32)value.m_bType;
     *pLength = (INT32)value.m_cbSize;
-ErrExit:
-    if (FAILED(hr))
-    {
-        FCThrow(kBadImageFormatException);
-    }
+    *pCorElementType = (UINT32)value.m_bType;
 
-    return pRetVal;
+ErrExit:
+    return hr;
 }
 FCIMPLEND
 

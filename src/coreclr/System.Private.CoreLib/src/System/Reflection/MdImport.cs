@@ -339,12 +339,31 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern string? _GetDefaultValue(IntPtr scope, int mdToken, out long value, out int length, out int corElementType);
-        public string? GetDefaultValue(int mdToken, out long value, out int length, out CorElementType corElementType)
+        private static extern unsafe int GetDefaultValue(
+            IntPtr scope,
+            int mdToken,
+            out long value,
+            out byte* stringMetadataEncoding,
+            out int length,
+            out int corElementType);
+        public unsafe string? GetDefaultValue(int mdToken, out long value, out int length, out CorElementType corElementType)
         {
-            string? stringVal = _GetDefaultValue(m_metadataImport2, mdToken, out value, out length, out int _corElementType);
-            corElementType = (CorElementType)_corElementType;
-            return stringVal;
+            int hr = GetDefaultValue(m_metadataImport2, mdToken, out value, out byte* stringMetadataEncoding, out length, out int corElementTypeRaw);
+            if (hr != HResults.S_OK)
+            {
+                throw new BadImageFormatException();
+            }
+
+            corElementType = (CorElementType)corElementTypeRaw;
+
+            if (corElementType is CorElementType.ELEMENT_TYPE_STRING
+                && stringMetadataEncoding != null)
+            {
+                // Metadata encoding is always UTF-16LE.
+                return Text.Encoding.Unicode.GetString(stringMetadataEncoding, length);
+            }
+
+            return null;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]

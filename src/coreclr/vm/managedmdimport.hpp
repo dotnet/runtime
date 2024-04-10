@@ -76,7 +76,7 @@ public:
     //// Misc
     ////
 
-    MDDecl4(Object *, GetDefaultValue, mdToken tk, INT64* pDefaultValue, INT32* pLength, INT32* pCorElementType);
+    MDDecl5(HRESULT, GetDefaultValue, mdToken tk, INT64* pDefaultValue, BYTE** pStringValue, INT32* pLength, INT32* pCorElementType);
     MDDecl2(void, GetName, mdToken tk, LPCSTR* pszName);
     MDDecl3(void, GetUserString, mdToken tk, LPCSTR* pszName, ULONG* pCount);
     MDDecl2(void, GetNamespace, mdToken tk, LPCSTR* pszName);

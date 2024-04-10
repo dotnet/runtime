@@ -159,7 +159,7 @@ FCFuncStart(gCOMTypeHandleFuncs)
 FCFuncEnd()
 
 FCFuncStart(gMetaDataImport)
-    FCFuncElement("_GetDefaultValue", MetaDataImport::GetDefaultValue)
+    FCFuncElement("GetDefaultValue", MetaDataImport::GetDefaultValue)
     FCFuncElement("_GetName", MetaDataImport::GetName)
     FCFuncElement("_GetUserString", MetaDataImport::GetUserString)
     FCFuncElement("_GetScopeProps", MetaDataImport::GetScopeProps)
