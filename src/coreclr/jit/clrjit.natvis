@@ -137,19 +137,9 @@ Documentation for VS debugger format specifiers: https://learn.microsoft.com/en-
             <Exec>block = block->Next()</Exec>
           </Loop>
         </CustomListItems>
-        <Item Name="AvailableRegs Integer mask">this-&gt;m_AvailableRegs[0]</Item>
+        <Item Name="AvailableRegs mask">this-&gt;m_AvailableRegs</Item>
         <CustomListItems>
-          <Variable Name="reg" InitialValue="this->m_AvailableRegs[0]" />
-          <Variable Name="regIndex" InitialValue="0" />
-          <Loop Condition="reg != 0">
-            <Item Condition="(reg &amp; 1) != 0">((regNumber)regIndex),en</Item>
-            <Exec>regIndex++</Exec>
-            <Exec>reg = reg >> 1</Exec>
-          </Loop>
-        </CustomListItems>
-        <Item Name="AvailableRegs Float mask">this-&gt;m_AvailableRegs[1]</Item>
-        <CustomListItems>
-            <Variable Name="reg" InitialValue="this->m_AvailableRegs[1]" />
+            <Variable Name="reg" InitialValue="this->m_AvailableRegs" />
             <Variable Name="regIndex" InitialValue="0" />
             <Loop Condition="reg != 0">
                 <Item Condition="(reg &amp; 1) != 0">((regNumber)regIndex),en</Item>
@@ -157,19 +147,9 @@ Documentation for VS debugger format specifiers: https://learn.microsoft.com/en-
                 <Exec>reg = reg >> 1</Exec>
             </Loop>
         </CustomListItems>
-        <Item Name="RegistersWithConstants Integer mask">this-&gt;m_RegistersWithConstants[0]</Item>
+        <Item Name="RegistersWithConstants mask">this-&gt;m_RegistersWithConstants</Item>
         <CustomListItems>
-          <Variable Name="reg" InitialValue="this->m_RegistersWithConstants[0]" />
-          <Variable Name="regIndex" InitialValue="0" />
-          <Loop Condition="reg != 0">
-            <Item Condition="(reg &amp; 1) != 0">((regNumber)regIndex),en</Item>
-            <Exec>regIndex++</Exec>
-            <Exec>reg = reg >> 1</Exec>
-          </Loop>
-        </CustomListItems>
-        <Item Name="RegistersWithConstants Float mask">this-&gt;m_RegistersWithConstants[1]</Item>
-        <CustomListItems>
-            <Variable Name="reg" InitialValue="this->m_RegistersWithConstants[1]" />
+            <Variable Name="reg" InitialValue="this->m_RegistersWithConstants" />
             <Variable Name="regIndex" InitialValue="0" />
             <Loop Condition="reg != 0">
                 <Item Condition="(reg &amp; 1) != 0">((regNumber)regIndex),en</Item>
@@ -178,7 +158,7 @@ Documentation for VS debugger format specifiers: https://learn.microsoft.com/en-
             </Loop>
         </CustomListItems>
     </Expand>
-  </Type>
+</Type>
 
   <Type Name="RefPosition">
     <DisplayString>[#{rpNum,d} - {refType,en}]</DisplayString>
@@ -195,6 +175,21 @@ Documentation for VS debugger format specifiers: https://learn.microsoft.com/en-
           </Loop>
         </CustomListItems>
     </Expand>
+  </Type>
+
+  <Type Name="_regMaskAll">
+      <!--<DisplayString></DisplayString>-->
+      <Expand>
+          <CustomListItems>
+              <Variable Name="reg" InitialValue="this->_combinedRegisters" />
+              <Variable Name="regIndex" InitialValue="0" />
+              <Loop Condition="reg != 0">
+                  <Item Condition="(reg &amp; 1) != 0">((regNumber)regIndex),en</Item>
+                  <Exec>regIndex++</Exec>
+                  <Exec>reg = reg >> 1</Exec>
+              </Loop>
+          </CustomListItems>
+      </Expand>
   </Type>
 
   <Type Name="Interval">
