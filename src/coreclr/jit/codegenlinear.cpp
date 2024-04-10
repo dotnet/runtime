@@ -500,7 +500,8 @@ void CodeGen::genCodeForBBlist()
         GenTree* blockLastNode = block->lastNode();
         if ((blockLastNode != nullptr) && (blockLastNode->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET)) &&
             (varTypeIsGC(compiler->info.compRetType) ||
-             (blockLastNode->AsOp()->GetReturnValue() != nullptr && varTypeIsGC(blockLastNode->AsOp()->GetReturnValue()->TypeGet()))))
+             (blockLastNode->AsOp()->GetReturnValue() != nullptr &&
+              varTypeIsGC(blockLastNode->AsOp()->GetReturnValue()->TypeGet()))))
         {
             nonVarPtrRegs &= ~RBM_INTRET;
         }

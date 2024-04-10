@@ -328,7 +328,8 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                     // with the condition (for example, the condition could be an explicit bounds
                     // check and the operand could read an array element). Disallow this except
                     // for some common cases that we know are always side effect free.
-                    if (((m_cond->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !retVal->IsInvariant() && !retVal->OperIsLocal())
+                    if (((m_cond->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !retVal->IsInvariant() &&
+                        !retVal->OperIsLocal())
                     {
                         return false;
                     }

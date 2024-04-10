@@ -262,8 +262,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
             cmpOp  = GT_EQ;
         }
         else if (m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_LT &&
-                 (!m_testInfo1.GetTestOp()->IsUnsigned() &&
-                  !m_testInfo2.GetTestOp()->IsUnsigned()))
+                 (!m_testInfo1.GetTestOp()->IsUnsigned() && !m_testInfo2.GetTestOp()->IsUnsigned()))
         {
             // t1:c1<0 t2:c2<0 ==> Branch to BX if either value < 0
             // So we will branch to BX if (c1|c2)<0
@@ -325,8 +324,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
             cmpOp  = GT_NE;
         }
         else if (m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_GE &&
-                 (!m_testInfo1.GetTestOp()->IsUnsigned() &&
-                  !m_testInfo2.GetTestOp()->IsUnsigned()))
+                 (!m_testInfo1.GetTestOp()->IsUnsigned() && !m_testInfo2.GetTestOp()->IsUnsigned()))
         {
             // t1:c1<0 t2:c2>=0 ==> Branch to BX if both values >= 0
             // So we will branch to BX if (c1|c2)>=0

@@ -14187,7 +14187,8 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
         {
             assert(genReturnErrorLocal != BAD_VAR_NUM);
             Statement* insertAfterStmt = block->lastStmt();
-            GenTree* swiftErrorStore = gtNewTempStore(genReturnErrorLocal, errorVal, CHECK_SPILL_NONE, &insertAfterStmt, insertAfterStmt->GetDebugInfo(), block);
+            GenTree* swiftErrorStore = gtNewTempStore(genReturnErrorLocal, errorVal, CHECK_SPILL_NONE, &insertAfterStmt,
+                                                      insertAfterStmt->GetDebugInfo(), block);
             fgNewStmtAtEnd(block, swiftErrorStore);
         }
 #endif // SWIFT_SUPPORT
