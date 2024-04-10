@@ -137,6 +137,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
                     await stream.HandleRequestAsync();
+                    _output.WriteLine($"[{DateTime.Now:T}] Server: Finished request {i}");
                 }
             });
 
@@ -156,6 +157,7 @@ namespace System.Net.Http.Functional.Tests
                     };
 
                     tasks[i] = client.SendAsync(request);
+                    _output.WriteLine($"[{DateTime.Now:T}] Client: Started request {i}");
                 });
 
                 var responses = await Task.WhenAll(tasks);
