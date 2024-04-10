@@ -77,6 +77,7 @@ private:
                                    DEBUGARG(regMaskOnlyOne calleeSaveMask = RBM_NONE)) const;
 #endif // DEBUG
 
+    AllRegsMask rsAllCalleeSavedMask;
     regMaskGpr  rsIntCalleeSavedMask;
 
 public:
@@ -89,7 +90,11 @@ public:
         return rsModifiedRegsMask;
     }
 
-    AllRegsMask rsGetModifiedCalleeSavedRegsMask() const;
+    AllRegsMask rsGetModifiedCalleeSavedRegsMask() const
+    {
+        assert(rsModifiedRegsMaskInitialized);
+        return (rsModifiedRegsMask & rsAllCalleeSavedMask);
+    }
 
     regMaskGpr rsGetModifiedIntCalleeSavedRegsMask() const
     {
