@@ -33,6 +33,7 @@ const threading_cwraps: SigLine[] = WasmEnableThreads ? [
     [true, "mono_wasm_register_ui_thread", "void", []],
     [true, "mono_wasm_register_io_thread", "void", []],
     [true, "mono_wasm_print_thread_dump", "void", []],
+    [true, "mono_wasm_synchronization_context_pump", "void", []],
     [true, "mono_threads_wasm_sync_run_in_target_thread_done", "void", ["number"]],
 ] : [];
 
@@ -62,7 +63,6 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_intern_string_ref", "void", ["number"]],
 
     [false, "mono_wasm_exit", "void", ["number"]],
-    [false, "mono_wasm_abort", "void", []],
     [true, "mono_wasm_getenv", "number", ["string"]],
     [true, "mono_wasm_set_main_args", "void", ["number", "number"]],
     // These two need to be lazy because they may be missing
@@ -157,6 +157,7 @@ export interface t_ThreadingCwraps {
     mono_wasm_register_ui_thread(): void;
     mono_wasm_register_io_thread(): void;
     mono_wasm_print_thread_dump(): void;
+    mono_wasm_synchronization_context_pump(): void;
     mono_threads_wasm_sync_run_in_target_thread_done(sem: VoidPtr): void;
 }
 
@@ -190,7 +191,6 @@ export interface t_Cwraps {
     mono_wasm_intern_string_ref(strRef: MonoStringRef): void;
 
     mono_wasm_exit(exit_code: number): void;
-    mono_wasm_abort(): void;
     mono_wasm_getenv(name: string): CharPtr;
     mono_wasm_set_main_args(argc: number, argv: VoidPtr): void;
     mono_wasm_exec_regression(verbose_level: number, image: string): number;

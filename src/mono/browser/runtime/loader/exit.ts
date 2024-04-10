@@ -39,36 +39,40 @@ export function uninstallUnhandledErrorHandler () {
     }
 }
 
+let originalOnAbort: ((reason: any, extraJson?:string)=>void)|undefined;
+let originalOnExit: ((code: number)=>void)|undefined;
+
 export function registerEmscriptenExitHandlers () {
-    if (!emscriptenModule.onAbort) {
-        emscriptenModule.onAbort = onAbort;
-    }
-    if (!emscriptenModule.onExit) {
-        emscriptenModule.onExit = onExit;
-    }
+    originalOnAbort = emscriptenModule.onAbort;
+    originalOnExit = emscriptenModule.onExit;
+    emscriptenModule.onAbort = onAbort;
+    emscriptenModule.onExit = onExit;
 }
 
 function unregisterEmscriptenExitHandlers () {
     if (emscriptenModule.onAbort == onAbort) {
-        emscriptenModule.onAbort = undefined;
+        emscriptenModule.onAbort = originalOnAbort;
     }
     if (emscriptenModule.onExit == onExit) {
-        emscriptenModule.onExit = undefined;
+        emscriptenModule.onExit = originalOnExit;
     }
 }
 function onExit (code: number) {
+    if (originalOnExit) {
+        originalOnExit(code);
+    }
     mono_exit(code, loaderHelpers.exitReason);
 }
 
 function onAbort (reason: any) {
-    mono_exit(1, loaderHelpers.exitReason || reason);
+    if (originalOnAbort) {
+        originalOnAbort(reason || loaderHelpers.exitReason);
+    }
+    mono_exit(1, reason || loaderHelpers.exitReason);
 }
 
 // this will also call mono_wasm_exit if available, which will call exitJS -> _proc_exit -> terminateAllThreads
 export function mono_exit (exit_code: number, reason?: any): void {
-    unregisterEmscriptenExitHandlers();
-    uninstallUnhandledErrorHandler();
-
     // unify shape of the reason object
     const is_object = reason && typeof reason === "object";
     exit_code = (is_object && typeof reason.status === "number")
@@ -82,7 +86,7 @@ export function mono_exit (exit_code: number, reason?: any): void {
     reason = is_object
         ? reason
         : (runtimeHelpers.ExitStatus
-            ? new runtimeHelpers.ExitStatus(exit_code)
+            ? createExitStatus(exit_code, message)
             : new Error("Exit with code " + exit_code + " " + message));
     reason.status = exit_code;
     if (!reason.message) {
@@ -90,15 +94,19 @@ export function mono_exit (exit_code: number, reason?: any): void {
     }
 
     // force stack property to be generated before we shut down managed code, or create current stack if it doesn't exist
-    if (!reason.stack) {
-        reason.stack = new Error().stack || "";
-    }
+    const stack = "" + (reason.stack || (new Error().stack));
+    Object.defineProperty(reason, "stack", {
+        get: () => stack
+    });
 
     // don't report this error twice
+    const alreadySilent = !!reason.silent;
     reason.silent = true;
 
     if (!is_exited()) {
         try {
+            unregisterEmscriptenExitHandlers();
+            uninstallUnhandledErrorHandler();
             if (!runtimeHelpers.runtimeReady) {
                 mono_log_debug("abort_startup, reason: " + reason);
                 abort_promises(reason);
@@ -119,19 +127,25 @@ export function mono_exit (exit_code: number, reason?: any): void {
         }
 
         try {
-            logOnExit(exit_code, reason);
-            appendElementOnExit(exit_code);
+            if (!alreadySilent) {
+                logOnExit(exit_code, reason);
+                appendElementOnExit(exit_code);
+            }
         } catch (err) {
             mono_log_warn("mono_exit failed", err);
             // don't propagate any failures
         }
 
         loaderHelpers.exitCode = exit_code;
-        loaderHelpers.exitReason = reason.message;
+        if (!loaderHelpers.exitReason) {
+            loaderHelpers.exitReason = reason;
+        }
 
         if (!ENVIRONMENT_IS_WORKER && runtimeHelpers.runtimeReady) {
             emscriptenModule.runtimeKeepalivePop();
         }
+    } else {
+        mono_log_debug("mono_exit called after exit");
     }
 
     if (loaderHelpers.config && loaderHelpers.config.asyncFlushOnExit && exit_code === 0) {
@@ -154,13 +168,11 @@ export function mono_exit (exit_code: number, reason?: any): void {
 function set_exit_code_and_quit_now (exit_code: number, reason?: any): void {
     if (WasmEnableThreads && ENVIRONMENT_IS_WORKER && runtimeHelpers.runtimeReady && runtimeHelpers.nativeAbort) {
         // note that the reason is not passed to UI thread
-        runtimeHelpers.runtimeReady = false;
         runtimeHelpers.nativeAbort(reason);
         throw reason;
     }
 
     if (runtimeHelpers.runtimeReady && runtimeHelpers.nativeExit) {
-        runtimeHelpers.runtimeReady = false;
         try {
             runtimeHelpers.nativeExit(exit_code);
         } catch (error: any) {
@@ -205,7 +217,6 @@ async function flush_node_streams () {
 }
 
 function abort_promises (reason: any) {
-    loaderHelpers.exitReason = reason;
     loaderHelpers.allDownloadsQueued.promise_control.reject(reason);
     loaderHelpers.afterConfigLoaded.promise_control.reject(reason);
     loaderHelpers.wasmCompilePromise.promise_control.reject(reason);
@@ -256,7 +267,7 @@ function logOnExit (exit_code: number, reason: any) {
             }
         }
     }
-    if (loaderHelpers.config) {
+    if (!ENVIRONMENT_IS_WORKER && loaderHelpers.config) {
         if (loaderHelpers.config.logExitCode) {
             if (loaderHelpers.config.forwardConsoleLogsToWS) {
                 teardown_proxy_console("WASM EXIT " + exit_code);
@@ -293,4 +304,11 @@ function fatal_handler (event: any, reason: any, type: string) {
     } catch (err) {
         // no not re-throw from the fatal handler
     }
+}
+
+function createExitStatus (status:number, message:string) {
+    const ex = new runtimeHelpers.ExitStatus(status);
+    ex.message = message;
+    ex.toString = () => message;
+    return ex;
 }

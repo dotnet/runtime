@@ -515,7 +515,7 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocFromFreeList(size_t header, si
 
                 // The space left is not big enough for a new block, let's just
                 // update the TrackAllocation record for the current block
-                if (pCurrent->size - realSize < max(HOST_CODEHEAP_SIZE_ALIGN, sizeof(TrackAllocation)))
+                if (pCurrent->size - realSize < max<size_t>(HOST_CODEHEAP_SIZE_ALIGN, sizeof(TrackAllocation)))
                 {
                     LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Item removed %p, size 0x%X\n", this, pCurrent, pCurrent->size));
                     // remove current

@@ -684,6 +684,9 @@ leave END
 } catch [mscorlib]System.OverflowException {
 pop
 leave END
+} catch [mscorlib]System.DivideByZeroException {
+  pop
+  leave END
 }
 END:
 ldc.i4 100

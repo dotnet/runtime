@@ -716,7 +716,7 @@ namespace System.DirectoryServices.Protocols
             }
 
             IntPtr control = IntPtr.Zero;
-            int structSize = Marshal.SizeOf(typeof(SortKeyInterop));
+            int structSize = Marshal.SizeOf<SortKeyInterop>();
             int keyCount = nativeSortKeys.Length;
             IntPtr memHandle = Utility.AllocHGlobalIntPtrArray(keyCount + 1);
 
