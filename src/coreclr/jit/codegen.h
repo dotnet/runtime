@@ -173,7 +173,6 @@ private:
     // the GC info.  Requires "codeSize" to be the size of the generated code, "prologSize" and "epilogSize"
     // to be the sizes of the prolog and epilog, respectively.  In DEBUG, makes a check involving the
     // "codePtr", assumed to be a pointer to the start of the generated code.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef JIT32_GCENCODER
     void* genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUGARG(void* codePtr));
@@ -262,18 +261,21 @@ protected:
     // Prolog functions and data (there are a few exceptions for more generally used things)
     //
 
-    void genEstablishFramePointer(int delta, bool reportUnwindData);
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    void genFnPrologCalleeRegArgs();
-#else
-    void genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbered, RegState* regState);
-#endif
-    void genEnregisterIncomingStackArgs();
+    void      genEstablishFramePointer(int delta, bool reportUnwindData);
+    void      genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed);
+    regMaskTP genGetParameterHomingTempRegisterCandidates();
+
+    var_types genParamStackStoreType(LclVarDsc* dsc, const ABIPassingSegment& seg);
+    void      genSpillOrAddRegisterParam(unsigned lclNum, class RegGraph* graph);
+    void      genEnregisterIncomingStackArgs();
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     void genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed);
 #else
     void genEnregisterOSRArgsAndLocals();
 #endif
+
+    void genHomeSwiftStructParameters(bool handleStack);
+
     void genCheckUseBlockInit();
 #if defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)
     void genClearStackVec3ArgUpperBits();
@@ -529,7 +531,6 @@ protected:
     //
     // Epilog functions
     //
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_ARM)
     bool genCanUsePopToReturn(regMaskTP maskPopRegsInt, bool jmpEpilog);
@@ -557,8 +558,6 @@ protected:
     void genReserveEpilog(BasicBlock* block);
     void genFnProlog();
     void genFnEpilog(BasicBlock* block);
-
-#if defined(FEATURE_EH_FUNCLETS)
 
     void genReserveFuncletProlog(BasicBlock* block);
     void genReserveFuncletEpilog(BasicBlock* block);
@@ -641,16 +640,6 @@ protected:
     void genSetPSPSym(regNumber initReg, bool* pInitRegZeroed);
 
     void genUpdateCurrentFunclet(BasicBlock* block);
-
-#else // !FEATURE_EH_FUNCLETS
-
-    // This is a no-op when there are no funclets!
-    void genUpdateCurrentFunclet(BasicBlock* block)
-    {
-        return;
-    }
-
-#endif // !FEATURE_EH_FUNCLETS
 
     void genGeneratePrologsAndEpilogs();
 
@@ -746,9 +735,7 @@ public:
     void siOpenScopesForNonTrackedVars(const BasicBlock* block, unsigned int lastBlockILEndOffset);
 
 protected:
-#if defined(FEATURE_EH_FUNCLETS)
     bool siInFuncletRegion; // Have we seen the start of the funclet region?
-#endif                      // FEATURE_EH_FUNCLETS
 
     IL_OFFSET siLastEndOffs; // IL offset of the (exclusive) end of the last block processed
 
@@ -1293,11 +1280,10 @@ protected:
     void genCodeForBfiz(GenTreeOp* tree);
 #endif // TARGET_ARM64
 
-#if defined(FEATURE_EH_FUNCLETS)
     void genEHCatchRet(BasicBlock* block);
-#else  // !FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_WINDOWS_X86)
     void genEHFinallyOrFilterRet(BasicBlock* block);
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
 
     void genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode);
     void genMultiRegStoreToLocal(GenTreeLclVar* lclNode);

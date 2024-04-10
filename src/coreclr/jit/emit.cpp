@@ -1608,11 +1608,8 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     // the prolog/epilog placeholder groups ARE generated in order, and are
     // re-used. But generating additional groups would not work.
     if (emitComp->compStressCompile(Compiler::STRESS_EMITTER, 1) && emitCurIGinsCnt && !emitIGisInProlog(emitCurIG) &&
-        !emitIGisInEpilog(emitCurIG) && !emitCurIG->endsWithAlignInstr()
-#if defined(FEATURE_EH_FUNCLETS)
-        && !emitIGisInFuncletProlog(emitCurIG) && !emitIGisInFuncletEpilog(emitCurIG)
-#endif // FEATURE_EH_FUNCLETS
-    )
+        !emitIGisInEpilog(emitCurIG) && !emitCurIG->endsWithAlignInstr() && !emitIGisInFuncletProlog(emitCurIG) &&
+        !emitIGisInFuncletEpilog(emitCurIG))
     {
         emitNxtIG(true);
     }
@@ -2070,11 +2067,7 @@ void emitter::emitCreatePlaceholderIG(insGroupPlaceholderType igType,
 
     bool extend = false;
 
-    if (igType == IGPT_EPILOG
-#if defined(FEATURE_EH_FUNCLETS)
-        || igType == IGPT_FUNCLET_EPILOG
-#endif // FEATURE_EH_FUNCLETS
-    )
+    if (igType == IGPT_EPILOG || igType == IGPT_FUNCLET_EPILOG)
     {
 #ifdef TARGET_AMD64
         emitOutputPreEpilogNOP();
@@ -2108,7 +2101,7 @@ void emitter::emitCreatePlaceholderIG(insGroupPlaceholderType igType,
      * case, we need to make sure any re-used fields, such as igFuncIdx, are correct.
      */
 
-    igPh->igFuncIdx = emitComp->compCurrFuncIdx;
+    igPh->igFuncIdx = emitComp->funCurrentFuncIdx();
 
     /* Create a separate block of memory to store placeholder information.
      * We could use unions to put some of this into the insGroup itself, but we don't
@@ -2144,7 +2137,6 @@ void emitter::emitCreatePlaceholderIG(insGroupPlaceholderType igType,
     {
         igPh->igFlags |= IGF_EPILOG;
     }
-#if defined(FEATURE_EH_FUNCLETS)
     else if (igType == IGPT_FUNCLET_PROLOG)
     {
         igPh->igFlags |= IGF_FUNCLET_PROLOG;
@@ -2153,7 +2145,6 @@ void emitter::emitCreatePlaceholderIG(insGroupPlaceholderType igType,
     {
         igPh->igFlags |= IGF_FUNCLET_EPILOG;
     }
-#endif // FEATURE_EH_FUNCLETS
 
     /* Link it into the placeholder list */
 
@@ -2174,7 +2165,6 @@ void emitter::emitCreatePlaceholderIG(insGroupPlaceholderType igType,
     emitCurIGsize += MAX_PLACEHOLDER_IG_SIZE;
     emitCurCodeOffset += emitCurIGsize;
 
-#if defined(FEATURE_EH_FUNCLETS)
     // Add the appropriate IP mapping debugging record for this placeholder
     // group. genExitCode() adds the mapping for main function epilogs.
     if (emitComp->opts.compDbgInfo)
@@ -2188,7 +2178,6 @@ void emitter::emitCreatePlaceholderIG(insGroupPlaceholderType igType,
             codeGen->genIPmappingAdd(IPmappingDscKind::Epilog, DebugInfo(), true);
         }
     }
-#endif // FEATURE_EH_FUNCLETS
 
     /* Start a new IG if more code follows */
 
@@ -2198,11 +2187,7 @@ void emitter::emitCreatePlaceholderIG(insGroupPlaceholderType igType,
     }
     else
     {
-        if (igType == IGPT_EPILOG
-#if defined(FEATURE_EH_FUNCLETS)
-            || igType == IGPT_FUNCLET_EPILOG
-#endif // FEATURE_EH_FUNCLETS
-        )
+        if (igType == IGPT_EPILOG || igType == IGPT_FUNCLET_EPILOG)
         {
             // If this was an epilog, then assume this is the end of any currently in progress
             // no-GC region. If a block after the epilog needs to be no-GC, it needs to call
@@ -2249,12 +2234,10 @@ void emitter::emitCreatePlaceholderIG(insGroupPlaceholderType igType,
 void emitter::emitGeneratePrologEpilog()
 {
 #ifdef DEBUG
-    unsigned prologCnt = 0;
-    unsigned epilogCnt = 0;
-#if defined(FEATURE_EH_FUNCLETS)
+    unsigned prologCnt        = 0;
+    unsigned epilogCnt        = 0;
     unsigned funcletPrologCnt = 0;
     unsigned funcletEpilogCnt = 0;
-#endif // FEATURE_EH_FUNCLETS
 #endif // DEBUG
 
     insGroup* igPh;
@@ -2284,8 +2267,6 @@ void emitter::emitGeneratePrologEpilog()
                 emitEndFnEpilog();
                 break;
 
-#if defined(FEATURE_EH_FUNCLETS)
-
             case IGPT_FUNCLET_PROLOG:
                 INDEBUG(++funcletPrologCnt);
                 emitBegFuncletProlog(igPh);
@@ -2300,8 +2281,6 @@ void emitter::emitGeneratePrologEpilog()
                 emitEndFuncletEpilog();
                 break;
 
-#endif // FEATURE_EH_FUNCLETS
-
             default:
                 unreached();
         }
@@ -2311,17 +2290,16 @@ void emitter::emitGeneratePrologEpilog()
     if (emitComp->verbose)
     {
         printf("%d prologs, %d epilogs", prologCnt, epilogCnt);
-#if defined(FEATURE_EH_FUNCLETS)
-        printf(", %d funclet prologs, %d funclet epilogs", funcletPrologCnt, funcletEpilogCnt);
-#endif // FEATURE_EH_FUNCLETS
+        if (emitComp->UsesFunclets())
+        {
+            printf(", %d funclet prologs, %d funclet epilogs", funcletPrologCnt, funcletEpilogCnt);
+        }
         printf("\n");
 
-// prolog/epilog code doesn't use this yet
-// noway_assert(prologCnt == 1);
-// noway_assert(epilogCnt == emitEpilogCnt); // Is this correct?
-#if defined(FEATURE_EH_FUNCLETS)
+        // prolog/epilog code doesn't use this yet
+        // noway_assert(prologCnt == 1);
+        // noway_assert(epilogCnt == emitEpilogCnt); // Is this correct?
         assert(funcletPrologCnt == emitComp->ehFuncletCount());
-#endif // FEATURE_EH_FUNCLETS
     }
 #endif // DEBUG
 }
@@ -2519,8 +2497,6 @@ void emitter::emitEndFnEpilog()
 #endif // JIT32_GCENCODER
 }
 
-#if defined(FEATURE_EH_FUNCLETS)
-
 /*****************************************************************************
  *
  *  Begin generating a funclet prolog.
@@ -2528,6 +2504,7 @@ void emitter::emitEndFnEpilog()
 
 void emitter::emitBegFuncletProlog(insGroup* igPh)
 {
+    assert(emitComp->UsesFunclets());
     emitBegPrologEpilog(igPh);
 }
 
@@ -2538,6 +2515,7 @@ void emitter::emitBegFuncletProlog(insGroup* igPh)
 
 void emitter::emitEndFuncletProlog()
 {
+    assert(emitComp->UsesFunclets());
     emitEndPrologEpilog();
 }
 
@@ -2548,6 +2526,7 @@ void emitter::emitEndFuncletProlog()
 
 void emitter::emitBegFuncletEpilog(insGroup* igPh)
 {
+    assert(emitComp->UsesFunclets());
     emitBegPrologEpilog(igPh);
 }
 
@@ -2558,10 +2537,9 @@ void emitter::emitBegFuncletEpilog(insGroup* igPh)
 
 void emitter::emitEndFuncletEpilog()
 {
+    assert(emitComp->UsesFunclets());
     emitEndPrologEpilog();
 }
-
-#endif // FEATURE_EH_FUNCLETS
 
 #ifdef JIT32_GCENCODER
 
@@ -2999,15 +2977,11 @@ bool emitter::emitIsFuncEnd(emitLocation* emitLoc, emitLocation* emitLocNextFrag
     if (ig->igNext->igFlags & IGF_FUNCLET_PROLOG)
         return true;
 
-#if defined(FEATURE_EH_FUNCLETS)
-
     // Is the next IG a placeholder group for a funclet prolog?
     if ((ig->igNext->igFlags & IGF_PLACEHOLDER) && (ig->igNext->igPhData->igPhType == IGPT_FUNCLET_PROLOG))
     {
         return true;
     }
-
-#endif // FEATURE_EH_FUNCLETS
 
     return false;
 }
@@ -4042,14 +4016,12 @@ void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstruction
             case IGPT_EPILOG:
                 pszType = "epilog";
                 break;
-#if defined(FEATURE_EH_FUNCLETS)
             case IGPT_FUNCLET_PROLOG:
                 pszType = "funclet prolog";
                 break;
             case IGPT_FUNCLET_EPILOG:
                 pszType = "funclet epilog";
                 break;
-#endif // FEATURE_EH_FUNCLETS
             default:
                 pszType = "UNKNOWN";
                 break;
@@ -4667,7 +4639,6 @@ void emitter::emitRemoveJumpToNextInst()
 
                 // the last instruction in the group is the jmp we're looking for
                 // and it jumps to the next instruction group so we don't need it
-                CLANG_FORMAT_COMMENT_ANCHOR
 
 #ifdef DEBUG
                 unsigned instructionCount = jmpGroup->igInsCnt;
@@ -5079,7 +5050,6 @@ AGAIN:
         jmp->idjOffs -= adjLJ;
 
         // If this is a jump via register, the instruction size does not change, so we are done.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_ARM64)
         // JIT code and data will be allocated together for arm64 so the relative offset to JIT data is known.
@@ -5145,7 +5115,6 @@ AGAIN:
         else
         {
             /* First time we've seen this label, convert its target */
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
             if (EMITVERBOSE)
@@ -5554,7 +5523,6 @@ AGAIN:
 #endif
 
         /* Is there a chance of other jumps becoming short? */
-        CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef DEBUG
 #if defined(TARGET_ARM)
         if (EMITVERBOSE)
@@ -5881,7 +5849,6 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader,
             //      jne IG06
             //
             //
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
             if ((igInLoop->igLoopBackEdge != nullptr) && (igInLoop->igLoopBackEdge != igLoopHeader))
@@ -6713,11 +6680,11 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
 
     emitFullyInt   = fullyInt;
     emitFullGCinfo = fullPtrMap;
-
-#ifndef UNIX_X86_ABI
-    emitFullArgInfo = !emitHasFramePtr;
+#if TARGET_X86
+    // On x86 with funclets we emit full ptr map even for EBP frames
+    emitFullArgInfo = comp->UsesFunclets() ? fullPtrMap : !emitHasFramePtr;
 #else
-    emitFullArgInfo = fullPtrMap;
+    emitFullArgInfo = !emitHasFramePtr;
 #endif
 
 #if EMITTER_STATS
@@ -6949,7 +6916,6 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
     *consAddrRW               = consBlockRW;
 
     /* Nothing has been pushed on the stack */
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if EMIT_TRACK_STACK_DEPTH
     emitCurStackLvl = 0;
@@ -7118,16 +7084,15 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
 
                 // printf("Variable #%2u/%2u is at stack offset %d\n", num, indx, offs);
 
-#ifdef JIT32_GCENCODER
-#ifndef FEATURE_EH_FUNCLETS
+#if defined(JIT32_GCENCODER) && defined(FEATURE_EH_WINDOWS_X86)
                 // Remember the frame offset of the "this" argument for synchronized methods.
-                if (emitComp->lvaIsOriginalThisArg(num) && emitComp->lvaKeepAliveAndReportThis())
+                if (!emitComp->UsesFunclets() && emitComp->lvaIsOriginalThisArg(num) &&
+                    emitComp->lvaKeepAliveAndReportThis())
                 {
                     emitSyncThisObjOffs = offs;
                     offs |= this_OFFSET_FLAG;
                 }
-#endif
-#endif // JIT32_GCENCODER
+#endif // JIT32_GCENCODER && FEATURE_EH_WINDOWS_X86
 
                 if (dsc->TypeGet() == TYP_BYREF)
                 {
@@ -7612,7 +7577,6 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
                 if (jmp->idjShort)
                 {
                     // Patch Forward Short Jump
-                    CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(TARGET_XARCH)
                     *(BYTE*)(adr + writeableOffset) -= (BYTE)adj;
 #elif defined(TARGET_ARM)
@@ -7632,7 +7596,6 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
                 else
                 {
                     // Patch Forward non-Short Jump
-                    CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(TARGET_XARCH)
                     *(int*)(adr + writeableOffset) -= adj;
 #elif defined(TARGET_ARMARCH)
@@ -8611,10 +8574,9 @@ void emitter::emitGCvarLiveSet(int offs, GCtype gcType, BYTE* addr, ssize_t disp
     desc->vpdNext = nullptr;
 
     /* the lower 2 bits encode props about the stk ptr */
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(JIT32_GCENCODER) && !defined(FEATURE_EH_FUNCLETS)
-    if (offs == emitSyncThisObjOffs)
+#if defined(JIT32_GCENCODER) && defined(FEATURE_EH_WINDOWS_X86)
+    if (!emitComp->UsesFunclets() && offs == emitSyncThisObjOffs)
     {
         desc->vpdVarNum |= this_OFFSET_FLAG;
     }
@@ -9581,7 +9543,7 @@ void emitter::emitInitIG(insGroup* ig)
 
     /* Set the current function index */
 
-    ig->igFuncIdx = emitComp->compCurrFuncIdx;
+    ig->igFuncIdx = emitComp->funCurrentFuncIdx();
 
     ig->igFlags = 0;
 
@@ -10069,7 +10031,6 @@ void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callIn
             Or do we have a partially interruptible EBP-less frame, and any
             of EDI,ESI,EBX,EBP are live, or is there an outer/pending call?
          */
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if !FPO_INTERRUPTIBLE
         if (emitFullyInt || (gcrefRegs == 0 && byrefRegs == 0 && u2.emitGcArgTrackCnt == 0))

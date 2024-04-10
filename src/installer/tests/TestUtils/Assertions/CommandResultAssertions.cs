@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Linq;
 using System.Text.RegularExpressions;
 using FluentAssertions;
 using FluentAssertions.Execution;
@@ -147,13 +148,17 @@ namespace Microsoft.DotNet.CoreSetup.Test
         }
 
         public string GetDiagnosticsInfo()
-        {
-            return $"{Environment.NewLine}" +
-                $"File Name: {Result.StartInfo.FileName}{Environment.NewLine}" +
-                $"Arguments: {Result.StartInfo.Arguments}{Environment.NewLine}" +
-                $"Exit Code: {Result.ExitCode}{Environment.NewLine}" +
-                $"StdOut:{Environment.NewLine}{Result.StdOut}{Environment.NewLine}" +
-                $"StdErr:{Environment.NewLine}{Result.StdErr}{Environment.NewLine}";
-        }
+            => $"""
+
+                File Name: {Result.StartInfo.FileName}
+                Arguments: {Result.StartInfo.Arguments}
+                Environment:
+                {string.Join(Environment.NewLine, Result.StartInfo.Environment.Where(i => i.Key.StartsWith(Constants.DotnetRoot.EnvironmentVariable)).Select(i => $"  {i.Key} = {i.Value}"))}
+                Exit Code: 0x{Result.ExitCode:x}
+                StdOut:
+                {Result.StdOut}
+                StdErr:
+                {Result.StdErr}
+                """;
     }
 }

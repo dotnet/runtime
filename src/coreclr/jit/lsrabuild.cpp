@@ -2291,6 +2291,32 @@ void LinearScan::buildIntervals()
     regsInUseThisLocation                   = RBM_NONE;
     regsInUseNextLocation                   = RBM_NONE;
 
+#ifdef SWIFT_SUPPORT
+    if (compiler->info.compCallConv == CorInfoCallConvExtension::Swift)
+    {
+        for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
+        {
+            LclVarDsc* argDsc = compiler->lvaGetDesc(lclNum);
+
+            if ((argDsc->lvRefCnt() == 0) && !compiler->opts.compDbgCode)
+            {
+                continue;
+            }
+
+            const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
+            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            {
+                const ABIPassingSegment& seg = abiInfo.Segments[i];
+                if (seg.IsPassedInRegister())
+                {
+                    RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? floatRegState : intRegState;
+                    regState->rsCalleeRegArgMaskLiveIn |= seg.GetRegisterMask();
+                }
+            }
+        }
+    }
+#endif
+
     for (unsigned int varIndex = 0; varIndex < compiler->lvaTrackedCount; varIndex++)
     {
         LclVarDsc* argDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
@@ -2321,7 +2347,7 @@ void LinearScan::buildIntervals()
             Interval*       interval = getIntervalForLocalVar(varIndex);
             const var_types regType  = argDsc->GetRegisterType();
             regMaskTP       mask     = allRegs(regType);
-            if (argDsc->lvIsRegArg)
+            if (argDsc->lvIsRegArg && !stressInitialParamReg())
             {
                 // Set this interval as currently assigned to that register
                 regNumber inArgReg = argDsc->GetArgReg();
@@ -2393,6 +2419,13 @@ void LinearScan::buildIntervals()
     {
         intRegState->rsCalleeRegArgMaskLiveIn |= RBM_SECRET_STUB_PARAM;
     }
+
+#ifdef DEBUG
+    if (stressInitialParamReg())
+    {
+        stressSetRandomParameterPreferences();
+    }
+#endif
 
     numPlacedArgLocals = 0;
     placedArgRegs      = RBM_NONE;
@@ -2509,11 +2542,24 @@ void LinearScan::buildIntervals()
             // assert(block->isRunRarely());
         }
 
+        // For Swift calls there can be an arbitrary amount of codegen related
+        // to homing of decomposed struct parameters passed on stack. We cannot
+        // do that in the prolog. We handle registers in the prolog and the
+        // stack args in the scratch BB that we have ensured exists. The
+        // handling clobbers REG_SCRATCH, so kill it here.
+        if ((block == compiler->fgFirstBB) && compiler->lvaHasAnySwiftStackParamToReassemble())
+        {
+            assert(compiler->fgFirstBBisScratch());
+            addRefsForPhysRegMask(genRegMask(REG_SCRATCH), currentLoc + 1, RefTypeKill, true);
+            currentLoc += 2;
+        }
+
         // For frame poisoning we generate code into scratch BB right after prolog since
         // otherwise the prolog might become too large. In this case we will put the poison immediate
         // into the scratch register, so it will be killed here.
-        if (compiler->compShouldPoisonFrame() && compiler->fgFirstBBisScratch() && block == compiler->fgFirstBB)
+        if (compiler->compShouldPoisonFrame() && (block == compiler->fgFirstBB))
         {
+            assert(compiler->fgFirstBBisScratch());
             regMaskTP killed;
 #if defined(TARGET_XARCH)
             // Poisoning uses EAX for small vars and rep stosd that kills edi, ecx and eax for large vars.
@@ -2533,7 +2579,6 @@ void LinearScan::buildIntervals()
             // is at a new location and doesn't interfere with the uses.
             // For multi-reg local stores, the 'BuildMultiRegStoreLoc' method will further increment the
             // location by 2 for each destination register beyond the first.
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
             node->gtSeqNum = currentLoc;
@@ -2831,6 +2876,64 @@ void LinearScan::buildIntervals()
 }
 
 #ifdef DEBUG
+
+//------------------------------------------------------------------------
+// stressSetRandomParameterPreferences: Randomize preferences of parameter
+// intervals.
+//
+// Remarks:
+//   The intention of this stress is to make the parameter homing logic in
+//   genHomeRegisterParams see harder cases.
+//
+void LinearScan::stressSetRandomParameterPreferences()
+{
+    CLRRandom rng;
+    rng.Init(compiler->info.compMethodHash());
+    regMaskTP intRegs   = compiler->codeGen->intRegState.rsCalleeRegArgMaskLiveIn;
+    regMaskTP floatRegs = compiler->codeGen->floatRegState.rsCalleeRegArgMaskLiveIn;
+
+    for (unsigned int varIndex = 0; varIndex < compiler->lvaTrackedCount; varIndex++)
+    {
+        LclVarDsc* argDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
+
+        if (!argDsc->lvIsParam || !isCandidateVar(argDsc))
+        {
+            continue;
+        }
+
+        Interval* interval = getIntervalForLocalVar(varIndex);
+
+        regMaskTP* regs;
+        if (interval->registerType == FloatRegisterType)
+        {
+            regs = &floatRegs;
+        }
+        else
+        {
+            regs = &intRegs;
+        }
+
+        // Select a random register from all possible parameter registers
+        // (of the right type). Preference this parameter to that register.
+        unsigned numBits = BitOperations::PopCount(*regs);
+        if (numBits == 0)
+        {
+            continue;
+        }
+
+        int       bitIndex = rng.Next((int)numBits);
+        regNumber prefReg  = REG_NA;
+        regMaskTP regsLeft = *regs;
+        for (int i = 0; i <= bitIndex; i++)
+        {
+            prefReg = genFirstRegNumFromMaskAndToggle(regsLeft);
+        }
+
+        *regs &= ~genRegMask(prefReg);
+        interval->mergeRegisterPreferences(genRegMask(prefReg));
+    }
+}
+
 //------------------------------------------------------------------------
 // validateIntervals: A DEBUG-only method that checks that:
 //      - the lclVar RefPositions do not reflect uses of undefined values

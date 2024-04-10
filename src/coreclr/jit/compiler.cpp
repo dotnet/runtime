@@ -758,7 +758,6 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
         {
             // We have a (large) struct that can't be replaced with a "primitive" type
             // and can't be passed in multiple registers
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_X86) || defined(TARGET_ARM) || defined(UNIX_AMD64_ABI)
 
@@ -1864,6 +1863,11 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
     eeInfoInitialized = false;
 
+#if defined(FEATURE_EH_WINDOWS_X86)
+    // Cache Native AOT ABI check. This must happen *after* eeInfoInitialized is initialized, above.
+    eeIsNativeAotAbi = IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+#endif
+
     compDoAggressiveInlining = false;
 
     if (compIsForInlining())
@@ -1908,7 +1912,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
         //
         // Initialize all the per-method statistics gathering data structures.
         //
-        CLANG_FORMAT_COMMENT_ANCHOR;
 #if LOOP_HOIST_STATS
         m_loopsConsidered             = 0;
         m_curLoopHasHoistedExpression = false;
@@ -2279,7 +2282,6 @@ void Compiler::compSetProcessor()
     //
     // Processor specific optimizations
     //
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
     CORINFO_InstructionSetFlags instructionSetFlags = jitFlags.GetInstructionSetFlags();
     opts.compSupportsISA.Reset();
@@ -2880,7 +2882,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     // The rest of the opts fields that we initialize here
     // should only be used when we generate code for the method
     // They should not be used when importing or inlining
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if FEATURE_TAILCALL_OPT
     opts.compTailCallLoopOpt = true;
@@ -3030,7 +3031,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         codeGen->setVerbose(true);
     }
 
-    treesBeforeAfterMorph = (JitConfig.TreesBeforeAfterMorph() == 1);
+    treesBeforeAfterMorph = (JitConfig.JitDumpBeforeAfterMorph() == 1);
     morphNum              = 0; // Initialize the morphed-trees counting.
 
     expensiveDebugCheckLevel = JitConfig.JitExpensiveDebugCheckLevel();
@@ -4622,6 +4623,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         fgFixEntryFlowForOSR();
     }
 
+    // Drop back to just checking profile likelihoods.
+    //
+    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
+    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
+
     // Enable the post-phase checks that use internal logic to decide when checking makes sense.
     //
     activePhaseChecks |=
@@ -4905,13 +4911,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_COMPUTE_EDGE_WEIGHTS, &Compiler::fgComputeBlockAndEdgeWeights);
 
-#if defined(FEATURE_EH_FUNCLETS)
-
-    // Create funclets from the EH handlers.
-    //
-    DoPhase(this, PHASE_CREATE_FUNCLETS, &Compiler::fgCreateFunclets);
-
-#endif // FEATURE_EH_FUNCLETS
+    if (UsesFunclets())
+    {
+        // Create funclets from the EH handlers.
+        //
+        DoPhase(this, PHASE_CREATE_FUNCLETS, &Compiler::fgCreateFunclets);
+    }
 
     if (opts.OptimizationEnabled())
     {
@@ -5452,29 +5457,26 @@ bool Compiler::shouldAlignLoop(FlowGraphNaturalLoop* loop, BasicBlock* top)
 
     assert(!top->IsFirst());
 
-#if FEATURE_EH_CALLFINALLY_THUNKS
-    if (top->Prev()->KindIs(BBJ_CALLFINALLY))
+    if (UsesCallFinallyThunks() && top->Prev()->KindIs(BBJ_CALLFINALLY))
     {
         // It must be a retless BBJ_CALLFINALLY if we get here.
         assert(!top->Prev()->isBBCallFinallyPair());
 
         // If the block before the loop start is a retless BBJ_CALLFINALLY
-        // with FEATURE_EH_CALLFINALLY_THUNKS, we can't add alignment
+        // with UsesCallFinallyThunks, we can't add alignment
         // because it will affect reported EH region range. For x86 (where
-        // !FEATURE_EH_CALLFINALLY_THUNKS), we can allow this.
+        // !UsesCallFinallyThunks), we can allow this.
 
         JITDUMP("Skipping alignment for " FMT_LP "; its top block follows a CALLFINALLY block\n", loop->GetIndex());
         return false;
     }
-#endif // FEATURE_EH_CALLFINALLY_THUNKS
 
     if (top->Prev()->isBBCallFinallyPairTail())
     {
         // If the previous block is the BBJ_CALLFINALLYRET of a
         // BBJ_CALLFINALLY/BBJ_CALLFINALLYRET pair, then we can't add alignment
         // because we can't add instructions in that block. In the
-        // FEATURE_EH_CALLFINALLY_THUNKS case, it would affect the
-        // reported EH, as above.
+        // UsesCallFinallyThunks case, it would affect the reported EH, as above.
         JITDUMP("Skipping alignment for " FMT_LP "; its top block follows a CALLFINALLY/ALWAYS pair\n",
                 loop->GetIndex());
         return false;
@@ -5825,7 +5827,6 @@ void Compiler::generatePatchpointInfo()
     //
     // For arm64, if the frame pointer is not at the top of the frame, we need to adjust the
     // offset.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_AMD64)
     // We add +TARGET_POINTER_SIZE here is to account for the slot that Jit_Patchpoint
@@ -5925,7 +5926,7 @@ void Compiler::generatePatchpointInfo()
     // Record callee save registers.
     // Currently only needed for x64.
     //
-    regMaskTP rsPushRegs = codeGen->regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskTP rsPushRegs = codeGen->regSet.rsGetModifiedCalleeSavedRegsMask();
     rsPushRegs |= RBM_FPBASE;
     patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs);
     JITDUMP("--OSR-- Tier0 callee saves: ");
@@ -9866,7 +9867,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
         chars += printf("flags=");
 
         // Node flags
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(DEBUG)
         if (tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE)
@@ -10918,10 +10918,6 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                 m_simdUserForcesDep++;
                 break;
 
-            case DoNotEnregisterReason::NonStandardParameter:
-                m_nonStandardParameter++;
-                break;
-
             default:
                 unreached();
                 break;
@@ -11049,7 +11045,6 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_returnSpCheck, notEnreg);
     PRINT_STATS(m_callSpCheck, notEnreg);
     PRINT_STATS(m_simdUserForcesDep, notEnreg);
-    PRINT_STATS(m_nonStandardParameter, notEnreg);
 
     fprintf(fout, "\nAddr exposed details:\n");
     if (m_addrExposed == 0)

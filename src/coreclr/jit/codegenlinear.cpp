@@ -376,16 +376,25 @@ void CodeGen::genCodeForBBlist()
 
         bool firstMapping = true;
 
-#if defined(FEATURE_EH_FUNCLETS)
         if (block->HasFlag(BBF_FUNCLET_BEG))
         {
+            assert(compiler->UsesFunclets());
             genReserveFuncletProlog(block);
         }
-#endif // FEATURE_EH_FUNCLETS
 
         // Clear compCurStmt and compCurLifeTree.
         compiler->compCurStmt     = nullptr;
         compiler->compCurLifeTree = nullptr;
+
+#ifdef SWIFT_SUPPORT
+        // Reassemble Swift struct parameters on the local stack frame in the
+        // scratch BB right after the prolog. There can be arbitrary amounts of
+        // codegen related to doing this, so it cannot be done in the prolog.
+        if (compiler->fgBBisScratch(block) && compiler->lvaHasAnySwiftStackParamToReassemble())
+        {
+            genHomeSwiftStructParameters(/* handleStack */ true);
+        }
+#endif
 
         // Emit poisoning into scratch BB that comes right after prolog.
         // We cannot emit this code in the prolog as it might make the prolog too large.
@@ -396,7 +405,6 @@ void CodeGen::genCodeForBBlist()
 
         // Traverse the block in linear order, generating code for each node as we
         // as we encounter it.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
         // Set the use-order numbers for each node.
@@ -728,31 +736,25 @@ void CodeGen::genCodeForBBlist()
                 block = genCallFinally(block);
                 break;
 
-#if defined(FEATURE_EH_FUNCLETS)
-
             case BBJ_EHCATCHRET:
+                assert(compiler->UsesFunclets());
                 genEHCatchRet(block);
                 FALLTHROUGH;
 
             case BBJ_EHFINALLYRET:
             case BBJ_EHFAULTRET:
             case BBJ_EHFILTERRET:
-                genReserveFuncletEpilog(block);
+                if (compiler->UsesFunclets())
+                {
+                    genReserveFuncletEpilog(block);
+                }
+#if defined(FEATURE_EH_WINDOWS_X86)
+                else
+                {
+                    genEHFinallyOrFilterRet(block);
+                }
+#endif // FEATURE_EH_WINDOWS_X86
                 break;
-
-#else // !FEATURE_EH_FUNCLETS
-
-            case BBJ_EHCATCHRET:
-                noway_assert(!"Unexpected BBJ_EHCATCHRET"); // not used on x86
-                break;
-
-            case BBJ_EHFINALLYRET:
-            case BBJ_EHFAULTRET:
-            case BBJ_EHFILTERRET:
-                genEHFinallyOrFilterRet(block);
-                break;
-
-#endif // !FEATURE_EH_FUNCLETS
 
             case BBJ_SWITCH:
                 break;
@@ -829,9 +831,7 @@ void CodeGen::genCodeForBBlist()
 
             assert(ShouldAlignLoops());
             assert(!block->isBBCallFinallyPairTail());
-#if FEATURE_EH_CALLFINALLY_THUNKS
             assert(!block->KindIs(BBJ_CALLFINALLY));
-#endif // FEATURE_EH_CALLFINALLY_THUNKS
 
             GetEmitter()->emitLoopAlignment(DEBUG_ARG1(block->KindIs(BBJ_ALWAYS) && !removedJmp));
         }
@@ -857,7 +857,7 @@ void CodeGen::genCodeForBBlist()
 #endif // DEBUG
     }  //------------------ END-FOR each block of the method -------------------
 
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
     // If this is a synchronized method on x86, and we generated all the code without
     // generating the "exit monitor" call, then we must have deleted the single return block
     // with that call because it was dead code. We still need to report the monitor range
@@ -867,14 +867,15 @@ void CodeGen::genCodeForBBlist()
     // Do this before cleaning the GC refs below; we don't want to create an IG that clears
     // the `this` pointer for lvaKeepAliveAndReportThis.
 
-    if ((compiler->info.compFlags & CORINFO_FLG_SYNCH) && (compiler->syncEndEmitCookie == nullptr))
+    if (!compiler->UsesFunclets() && (compiler->info.compFlags & CORINFO_FLG_SYNCH) &&
+        (compiler->syncEndEmitCookie == nullptr))
     {
         JITDUMP("Synchronized method with missing exit monitor call; adding final label\n");
         compiler->syncEndEmitCookie =
             GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
         noway_assert(compiler->syncEndEmitCookie != nullptr);
     }
-#endif // !FEATURE_EH_FUNCLETS
+#endif
 
     // There could be variables alive at this point. For example see lvaKeepAliveAndReportThis.
     // This call is for cleaning the GC refs
@@ -1780,7 +1781,6 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
 
     // If the op1 is already in the dstReg - nothing to do.
     // Otherwise load the op1 (the address) into the dstReg to copy the struct on the stack by value.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_X86
     assert(dstReg != REG_SPBASE);

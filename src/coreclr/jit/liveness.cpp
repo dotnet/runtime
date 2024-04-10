@@ -498,7 +498,6 @@ void Compiler::fgPerBlockLocalVarLiveness()
                 // 32-bit targets always pop the frame in the epilog.
                 // For 64-bit targets, we only do this in the epilog for IL stubs;
                 // for non-IL stubs the frame is popped after every PInvoke call.
-                CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef TARGET_64BIT
                 if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
 #endif
@@ -663,62 +662,6 @@ void Compiler::fgDispDebugScopes()
  * Mark variables live across their entire scope.
  */
 
-#if defined(FEATURE_EH_FUNCLETS)
-
-void Compiler::fgExtendDbgScopes()
-{
-    compResetScopeLists();
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nMarking vars alive over their entire scope :\n\n");
-    }
-
-    if (verbose)
-    {
-        compDispScopeLists();
-    }
-#endif // DEBUG
-
-    VARSET_TP inScope(VarSetOps::MakeEmpty(this));
-
-    // Mark all tracked LocalVars live over their scope - walk the blocks
-    // keeping track of the current life, and assign it to the blocks.
-
-    for (BasicBlock* const block : Blocks())
-    {
-        // If we get to a funclet, reset the scope lists and start again, since the block
-        // offsets will be out of order compared to the previous block.
-
-        if (block->HasFlag(BBF_FUNCLET_BEG))
-        {
-            compResetScopeLists();
-            VarSetOps::ClearD(this, inScope);
-        }
-
-        // Process all scopes up to the current offset
-
-        if (block->bbCodeOffs != BAD_IL_OFFSET)
-        {
-            compProcessScopesUntil(block->bbCodeOffs, &inScope, &Compiler::fgBeginScopeLife, &Compiler::fgEndScopeLife);
-        }
-
-        // Assign the current set of variables that are in scope to the block variables tracking this.
-
-        fgMarkInScope(block, inScope);
-    }
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        fgDispDebugScopes();
-    }
-#endif // DEBUG
-}
-
-#else // !FEATURE_EH_FUNCLETS
-
 void Compiler::fgExtendDbgScopes()
 {
     compResetScopeLists();
@@ -732,65 +675,105 @@ void Compiler::fgExtendDbgScopes()
 #endif // DEBUG
 
     VARSET_TP inScope(VarSetOps::MakeEmpty(this));
-    compProcessScopesUntil(0, &inScope, &Compiler::fgBeginScopeLife, &Compiler::fgEndScopeLife);
 
-    IL_OFFSET lastEndOffs = 0;
-
-    // Mark all tracked LocalVars live over their scope - walk the blocks
-    // keeping track of the current life, and assign it to the blocks.
-
-    for (BasicBlock* const block : Blocks())
+    if (UsesFunclets())
     {
-        // Find scopes becoming alive. If there is a gap in the instr
-        // sequence, we need to process any scopes on those missing offsets.
+        // Mark all tracked LocalVars live over their scope - walk the blocks
+        // keeping track of the current life, and assign it to the blocks.
 
-        if (block->bbCodeOffs != BAD_IL_OFFSET)
+        for (BasicBlock* const block : Blocks())
         {
-            if (lastEndOffs != block->bbCodeOffs)
+            // If we get to a funclet, reset the scope lists and start again, since the block
+            // offsets will be out of order compared to the previous block.
+
+            if (block->HasFlag(BBF_FUNCLET_BEG))
             {
-                noway_assert(lastEndOffs < block->bbCodeOffs);
+                compResetScopeLists();
+                VarSetOps::ClearD(this, inScope);
+            }
 
+            // Process all scopes up to the current offset
+
+            if (block->bbCodeOffs != BAD_IL_OFFSET)
+            {
                 compProcessScopesUntil(block->bbCodeOffs, &inScope, &Compiler::fgBeginScopeLife,
                                        &Compiler::fgEndScopeLife);
             }
-            else
+
+            // Assign the current set of variables that are in scope to the block variables tracking this.
+
+            fgMarkInScope(block, inScope);
+        }
+
+#ifdef DEBUG
+        if (verbose)
+        {
+            fgDispDebugScopes();
+        }
+#endif // DEBUG
+    }
+#if defined(FEATURE_EH_WINDOWS_X86)
+    else
+    {
+        compProcessScopesUntil(0, &inScope, &Compiler::fgBeginScopeLife, &Compiler::fgEndScopeLife);
+
+        IL_OFFSET lastEndOffs = 0;
+
+        // Mark all tracked LocalVars live over their scope - walk the blocks
+        // keeping track of the current life, and assign it to the blocks.
+
+        for (BasicBlock* const block : Blocks())
+        {
+            // Find scopes becoming alive. If there is a gap in the instr
+            // sequence, we need to process any scopes on those missing offsets.
+
+            if (block->bbCodeOffs != BAD_IL_OFFSET)
             {
-                while (VarScopeDsc* varScope = compGetNextEnterScope(block->bbCodeOffs))
+                if (lastEndOffs != block->bbCodeOffs)
                 {
-                    fgBeginScopeLife(&inScope, varScope);
+                    noway_assert(lastEndOffs < block->bbCodeOffs);
+
+                    compProcessScopesUntil(block->bbCodeOffs, &inScope, &Compiler::fgBeginScopeLife,
+                                           &Compiler::fgEndScopeLife);
+                }
+                else
+                {
+                    while (VarScopeDsc* varScope = compGetNextEnterScope(block->bbCodeOffs))
+                    {
+                        fgBeginScopeLife(&inScope, varScope);
+                    }
                 }
             }
-        }
 
-        // Assign the current set of variables that are in scope to the block variables tracking this.
+            // Assign the current set of variables that are in scope to the block variables tracking this.
 
-        fgMarkInScope(block, inScope);
+            fgMarkInScope(block, inScope);
 
-        // Find scopes going dead.
+            // Find scopes going dead.
 
-        if (block->bbCodeOffsEnd != BAD_IL_OFFSET)
-        {
-            VarScopeDsc* varScope;
-            while ((varScope = compGetNextExitScope(block->bbCodeOffsEnd)) != nullptr)
+            if (block->bbCodeOffsEnd != BAD_IL_OFFSET)
             {
-                fgEndScopeLife(&inScope, varScope);
+                VarScopeDsc* varScope;
+                while ((varScope = compGetNextExitScope(block->bbCodeOffsEnd)) != nullptr)
+                {
+                    fgEndScopeLife(&inScope, varScope);
+                }
+
+                lastEndOffs = block->bbCodeOffsEnd;
             }
-
-            lastEndOffs = block->bbCodeOffsEnd;
         }
+
+        /* Everything should be out of scope by the end of the method. But if the
+        last BB got removed, then inScope may not be empty. */
+
+        noway_assert(VarSetOps::IsEmpty(this, inScope) || lastEndOffs < info.compILCodeSize);
     }
-
-    /* Everything should be out of scope by the end of the method. But if the
-       last BB got removed, then inScope may not be empty. */
-
-    noway_assert(VarSetOps::IsEmpty(this, inScope) || lastEndOffs < info.compILCodeSize);
+#endif // FEATURE_EH_WINDOWS_X86
 }
-
-#endif // !FEATURE_EH_FUNCLETS
 
 /*****************************************************************************
  *
- * For debuggable code, we allow redundant assignments to vars
+ * For debuggable code, we allow redundant stores to vars
  * by marking them live over their entire scope.
  */
 
@@ -1896,12 +1879,12 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
 
                 if (isDeadStore && fgTryRemoveDeadStoreLIR(node, lclVarNode, block))
                 {
-                    GenTree* data = lclVarNode->Data();
-                    data->SetUnusedValue();
+                    GenTree* value = lclVarNode->Data();
+                    value->SetUnusedValue();
 
-                    if (data->isIndir())
+                    if (value->isIndir())
                     {
-                        Lowering::TransformUnusedIndirection(data->AsIndir(), this, block);
+                        Lowering::TransformUnusedIndirection(value->AsIndir(), this, block);
                     }
                 }
                 break;
@@ -1946,9 +1929,9 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_START_NONGC:
             case GT_START_PREEMPTGC:
             case GT_PROF_HOOK:
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
             case GT_END_LFIN:
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
             case GT_SWITCH_TABLE:
             case GT_PINVOKE_PROLOG:
             case GT_PINVOKE_EPILOG:
@@ -2041,7 +2024,7 @@ bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
     {
         // We are only interested in avoiding the removal of nodes with direct side effects
         // (as opposed to side effects of their children).
-        // This default case should never include calls or assignments.
+        // This default case should never include calls or stores.
         assert(!node->OperRequiresAsgFlag() && !node->OperIs(GT_CALL));
         if (!node->gtSetFlags() && !node->OperMayThrow(this))
         {
@@ -2142,11 +2125,11 @@ bool Compiler::fgRemoveDeadStore(GenTree**           pTree,
     *pStoreRemoved = true;
 
     GenTreeLclVarCommon* store = tree->AsLclVarCommon();
-    GenTree*             data  = store->Data();
+    GenTree*             value = store->Data();
 
     // Check for side effects.
     GenTree* sideEffList = nullptr;
-    if ((data->gtFlags & GTF_SIDE_EFFECT) != 0)
+    if ((value->gtFlags & GTF_SIDE_EFFECT) != 0)
     {
 #ifdef DEBUG
         if (verbose)
@@ -2157,7 +2140,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**           pTree,
         }
 #endif // DEBUG
 
-        gtExtractSideEffList(data, &sideEffList);
+        gtExtractSideEffList(value, &sideEffList);
     }
 
     // Test for interior statement

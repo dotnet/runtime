@@ -479,7 +479,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
         case INS_auipc:
             assert(reg != REG_R0);
             assert(isGeneralRegister(reg));
-            assert((((size_t)imm) >> 20) == 0);
+            assert(isValidSimm20(imm));
 
             code |= reg << 7;
             code |= (imm & 0xfffff) << 12;
@@ -1253,7 +1253,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     // Since ADDIW use sign extension fo immediate
     // we have to adjust higher 19 bit loaded by LUI
     // for case when low part is bigger than 0x800.
-    UINT32 high19 = (high31 + 0x800) >> 12;
+    INT32 high19 = ((int32_t)(high31 + 0x800)) >> 12;
 
     emitIns_R_I(INS_lui, size, reg, high19);
     emitIns_R_R_I(INS_addiw, size, reg, reg, high31 & 0xFFF);
@@ -1847,7 +1847,6 @@ AGAIN:
         jmp->idjOffs += adjSJ;
 
         // If this is a jump via register, the instruction size does not change, so we are done.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
         /* Have we bound this jump's target already? */
 
@@ -1868,7 +1867,6 @@ AGAIN:
         else
         {
             /* First time we've seen this label, convert its target */
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
             tgtIG = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
 

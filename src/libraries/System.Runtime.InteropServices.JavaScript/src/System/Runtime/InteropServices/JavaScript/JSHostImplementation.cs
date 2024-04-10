@@ -229,6 +229,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (method.ReturnType == typeof(void))
                 {
                     method.Invoke(null, argsToPass);
+#if FEATURE_WASM_MANAGED_THREADS
+                    result = Task.FromResult(0);
+#endif
                 }
                 else if (method.ReturnType == typeof(int))
                 {

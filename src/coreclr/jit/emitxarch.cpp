@@ -1522,9 +1522,11 @@ bool emitter::TakesRexWPrefix(const instrDesc* id) const
         switch (ins)
         {
             case INS_cvtss2si:
-            case INS_cvttss2si:
+            case INS_cvttss2si32:
+            case INS_cvttss2si64:
             case INS_cvtsd2si:
-            case INS_cvttsd2si:
+            case INS_cvttsd2si32:
+            case INS_cvttsd2si64:
             case INS_movd:
             case INS_movnti:
             case INS_andn:
@@ -1544,7 +1546,6 @@ bool emitter::TakesRexWPrefix(const instrDesc* id) const
 #endif // TARGET_AMD64
             case INS_vcvtsd2usi:
             case INS_vcvtss2usi:
-            case INS_vcvttsd2usi:
             {
                 if (attr == EA_8BYTE)
                 {
@@ -2723,8 +2724,10 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
         case INS_blsmsk:
         case INS_blsr:
         case INS_bzhi:
-        case INS_cvttsd2si:
-        case INS_cvttss2si:
+        case INS_cvttsd2si32:
+        case INS_cvttsd2si64:
+        case INS_cvttss2si32:
+        case INS_cvttss2si64:
         case INS_cvtsd2si:
         case INS_cvtss2si:
         case INS_extractps:
@@ -2748,7 +2751,8 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
 #endif
         case INS_vcvtsd2usi:
         case INS_vcvtss2usi:
-        case INS_vcvttsd2usi:
+        case INS_vcvttsd2usi32:
+        case INS_vcvttsd2usi64:
         case INS_vcvttss2usi32:
         case INS_vcvttss2usi64:
         {
@@ -3827,11 +3831,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
 
         /* Is this a stack parameter reference? */
 
-        if ((emitComp->lvaIsParameter(var)
-#if !defined(TARGET_AMD64) || defined(UNIX_AMD64_ABI)
-             && !emitComp->lvaIsRegArgument(var)
-#endif // !TARGET_AMD64 || UNIX_AMD64_ABI
-                 ) ||
+        if ((emitComp->lvaIsParameter(var) && !emitComp->lvaParamHasLocalStackSpace(var)) ||
             (static_cast<unsigned>(var) == emitComp->lvaRetAddrVar))
         {
             /* If no EBP frame, arguments and ret addr are off of ESP, above temps */
@@ -3863,7 +3863,6 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
 #endif
                 {
                     // Dev10 804810 - failing this assert can lead to bad codegen and runtime crashes
-                    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef UNIX_AMD64_ABI
                     const LclVarDsc* varDsc         = emitComp->lvaGetDesc(var);
@@ -4146,7 +4145,6 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         if (reg == REG_NA)
         {
             /* The address is of the form "[disp]" */
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_X86
             // Special case: "mov eax, [disp]" and "mov [disp], eax" can use a smaller 1-byte encoding.
@@ -11607,22 +11605,20 @@ void emitter::emitDispIns(
                     break;
                 }
 
-                case INS_cvttsd2si:
+                case INS_cvttsd2si32:
+                case INS_cvttsd2si64:
                 case INS_cvtss2si:
                 case INS_cvtsd2si:
-                case INS_cvttss2si:
+                case INS_cvttss2si32:
+                case INS_cvttss2si64:
                 case INS_vcvtsd2usi:
                 case INS_vcvtss2usi:
-                case INS_vcvttsd2usi:
-                {
-                    printf(" %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), EA_16BYTE));
-                    break;
-                }
-
+                case INS_vcvttsd2usi32:
+                case INS_vcvttsd2usi64:
                 case INS_vcvttss2usi32:
                 case INS_vcvttss2usi64:
                 {
-                    printf(" %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), EA_4BYTE));
+                    printf(" %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), EA_16BYTE));
                     break;
                 }
 
@@ -15770,7 +15766,6 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
     if (dstOffs <= srcOffs)
     {
         // This is a backward jump - distance is known at this point
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if DEBUG_EMIT
         if (id->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM || INTERESTING_JUMP_NUM == 0)
@@ -17205,7 +17200,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             if (ins == INS_pop)
             {
                 // The offset in "pop [ESP+xxx]" is relative to the new ESP value
-                CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if !FEATURE_FIXED_OUT_ARGS
                 emitCurStackLvl -= sizeof(int);
@@ -17784,9 +17778,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #if !FEATURE_FIXED_OUT_ARGS
     bool updateStackLevel = !emitIGisInProlog(ig) && !emitIGisInEpilog(ig);
 
-#if defined(FEATURE_EH_FUNCLETS)
     updateStackLevel = updateStackLevel && !emitIGisInFuncletProlog(ig) && !emitIGisInFuncletEpilog(ig);
-#endif // FEATURE_EH_FUNCLETS
 
     // Make sure we keep the current stack level up to date
     if (updateStackLevel)
@@ -19052,7 +19044,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
         }
 
-        case INS_cvttsd2si:
+        case INS_cvttsd2si32:
+        case INS_cvttsd2si64:
         case INS_cvtsd2si:
         case INS_cvtsi2sd32:
         case INS_cvtsi2ss32:
@@ -19061,7 +19054,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vcvtsd2usi:
         case INS_vcvtusi2ss32:
         case INS_vcvtusi2ss64:
-        case INS_vcvttsd2usi:
+        case INS_vcvttsd2usi32:
+        case INS_vcvttsd2usi64:
         case INS_vcvttss2usi32:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += PERFSCORE_LATENCY_7C;
@@ -19073,7 +19067,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insLatency += PERFSCORE_LATENCY_5C;
             break;
 
-        case INS_cvttss2si:
+        case INS_cvttss2si32:
+        case INS_cvttss2si64:
         case INS_cvtss2si:
         case INS_vcvtss2usi:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;

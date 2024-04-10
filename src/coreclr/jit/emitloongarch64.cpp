@@ -2873,7 +2873,6 @@ AGAIN:
         jmp->idjOffs += adjSJ;
 
         // If this is a jump via register, the instruction size does not change, so we are done.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
         /* Have we bound this jump's target already? */
 
@@ -2894,7 +2893,6 @@ AGAIN:
         else
         {
             /* First time we've seen this label, convert its target */
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
             tgtIG = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
 
@@ -4039,15 +4037,15 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             {
                 printf("%s, %s, 0x%lx\n", RegNames[regd], RegNames[regj], offs16);
             }
-            else if (INS_OPTS_NONE == id->idInsOpt())
+            else if ((unsigned)(addr - emitCodeBlock) < emitPrologIG->igSize) // only for prolog
             {
                 if (offs16 < 0)
                 {
-                    printf("-%d ins\n", -offs16 >> 2);
+                    printf("%s, %s, -%d ins\n", RegNames[regj], RegNames[regd], -offs16 >> 2);
                 }
                 else
                 {
-                    printf("+%d ins\n", offs16 >> 2);
+                    printf("%s, %s, +%d ins\n", RegNames[regj], RegNames[regd], offs16 >> 2);
                 }
             }
             else
@@ -4060,12 +4058,12 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         {
             tmp = (((code >> 10) & 0xffff) | ((code & 0x1f) << 16)) << 11;
             tmp >>= 9;
-            if (INS_OPTS_NONE == id->idInsOpt())
+            if ((unsigned)(addr - emitCodeBlock) < emitPrologIG->igSize) // only for prolog
             {
                 tmp >>= 2;
                 if (tmp < 0)
                 {
-                    printf("%s, -%d ins\n", RegNames[regj], tmp);
+                    printf("%s, -%d ins\n", RegNames[regj], -tmp);
                 }
                 else
                 {
@@ -4089,12 +4087,12 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 methodName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
                 printf("# %s\n", methodName);
             }
-            else if (INS_OPTS_NONE == id->idInsOpt())
+            else if ((unsigned)(addr - emitCodeBlock) < emitPrologIG->igSize) // only for prolog
             {
                 tmp >>= 2;
                 if (tmp < 0)
                 {
-                    printf("-%d ins\n", tmp);
+                    printf("-%d ins\n", -tmp);
                 }
                 else
                 {
@@ -4134,7 +4132,12 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             tmp >>= 20;
             if (ins == INS_preld)
             {
-                printf("0x%x, %s, 0x%x\n", regd, RegNames[regj], tmp);
+                printf("0x%x, %s, %d\n", regd, RegNames[regj], tmp);
+                return;
+            }
+            else if (ins == INS_lu52i_d)
+            {
+                printf("%s, %s, 0x%x\n", RegNames[regd], RegNames[regj], tmp & 0xfff);
                 return;
             }
             printf("%s, %s, %d\n", RegNames[regd], RegNames[regj], tmp);

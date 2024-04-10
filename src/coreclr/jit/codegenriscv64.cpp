@@ -1294,7 +1294,6 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                                        0,             // disp
                                        true);         // isJump
             // clang-format on
-            CLANG_FORMAT_COMMENT_ANCHOR;
         }
 #if FEATURE_FASTTAILCALL
         else
@@ -4291,8 +4290,8 @@ int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 // at the end
 static void emitLoadConstAtAddr(emitter* emit, regNumber dstRegister, ssize_t imm)
 {
-    ssize_t high = (imm >> 32) & 0xffffffff;
-    emit->emitIns_R_I(INS_lui, EA_PTRSIZE, dstRegister, (((high + 0x800) >> 12) & 0xfffff));
+    ssize_t high = imm >> 32;
+    emit->emitIns_R_I(INS_lui, EA_PTRSIZE, dstRegister, (high + 0x800) >> 12);
     emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, dstRegister, dstRegister, (high & 0xfff));
 
     ssize_t low = imm & 0xffffffff;
@@ -5198,7 +5197,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
             UINT32 high = ((ssize_t)compiler->gsGlobalSecurityCookieAddr) >> 32;
             if (((high + 0x800) >> 12) != 0)
             {
-                GetEmitter()->emitIns_R_I(INS_lui, EA_PTRSIZE, regGSConst, (((high + 0x800) >> 12) & 0xfffff));
+                GetEmitter()->emitIns_R_I(INS_lui, EA_PTRSIZE, regGSConst, ((int32_t)(high + 0x800)) >> 12);
             }
             if ((high & 0xFFF) != 0)
             {
@@ -7792,7 +7791,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     // beforehand. We don't care if REG_SCRATCH will be overwritten, so we'll skip 'RegZeroed check'.
     //
     // Unlike on x86/x64, we can also push float registers to stack
-    regMaskTP rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskTP rsPushRegs = regSet.rsGetModifiedCalleeSavedRegsMask();
 
 #if ETW_EBP_FRAMED
     if (!isFramePointerUsed() && regSet.rsRegsModified(RBM_FPBASE))
@@ -7955,7 +7954,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 {
     assert(compiler->compGeneratingEpilog);
 
-    regMaskTP regsToRestoreMask = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskTP regsToRestoreMask = regSet.rsGetModifiedCalleeSavedRegsMask();
 
     // On RV64 we always use the FP (frame-pointer)
     assert(isFramePointerUsed());
@@ -8064,8 +8063,9 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     }
 }
 
-void CodeGen::genFnPrologCalleeRegArgs()
+void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 {
+    *initRegStillZeroed = false;
     assert(!(intRegState.rsCalleeRegArgMaskLiveIn & floatRegState.rsCalleeRegArgMaskLiveIn));
 
     regMaskTP regArgMaskLive = intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn;
@@ -8542,7 +8542,11 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 
     genEmitHelperCall(CORINFO_HELP_PROF_FCN_ENTER, 0, EA_UNKNOWN);
 
-    if ((genRegMask(initReg) & RBM_PROFILER_ENTER_TRASH))
+    // If initReg is trashed, either because it was an arg to the enter
+    // callback, or because the enter callback itself trashes it, then it needs
+    // to be zero'ed again before using.
+    if (((RBM_PROFILER_ENTER_TRASH | RBM_PROFILER_ENTER_ARG_FUNC_ID | RBM_PROFILER_ENTER_ARG_CALLER_SP) &
+         genRegMask(initReg)) != RBM_NONE)
     {
         *pInitRegZeroed = false;
     }

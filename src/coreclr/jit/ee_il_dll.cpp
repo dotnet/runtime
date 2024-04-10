@@ -367,7 +367,6 @@ unsigned Compiler::eeGetArgSize(CorInfoType corInfoType, CORINFO_CLASS_HANDLE ty
 
     // Everything fits into a single 'slot' size
     // to accommodate irregular sized structs, they are passed byref
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef UNIX_AMD64_ABI
     if (varTypeIsStruct(argType))
@@ -396,7 +395,6 @@ unsigned Compiler::eeGetArgSize(CorInfoType corInfoType, CORINFO_CLASS_HANDLE ty
 
         // For each target that supports passing struct args in multiple registers
         // apply the target specific rules for them here:
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if FEATURE_MULTIREG_ARGS
 #if defined(TARGET_ARM64)

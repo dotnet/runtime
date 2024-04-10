@@ -34,6 +34,7 @@ jobs:
     enableTelemetry: ${{ parameters.enableTelemetry }}
     enablePublishBuildArtifacts: true
     continueOnError: ${{ parameters.continueOnError }}
+    logsName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}_$(iOSLlvmBuild)_$(iOSStripSymbols)_$(hybridGlobalization)'
 
     ${{ if ne(parameters.displayName, '') }}:
       displayName: '${{ parameters.displayName }}'
@@ -213,12 +214,3 @@ jobs:
         CorrelationPayloadDirectory: '$(PayloadDirectory)' # contains performance repo and built product
         ProjectFile: ${{ parameters.projectFile }}
         osGroup: ${{ parameters.osGroup }}
-
-    # publish logs
-    - task: PublishPipelineArtifact@1
-      displayName: Publish Logs
-      inputs:
-        targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}_$(iOSLlvmBuild)_$(iOSStripSymbols)_$(hybridGlobalization)'
-      continueOnError: true
-      condition: always()
