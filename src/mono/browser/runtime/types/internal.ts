@@ -275,6 +275,7 @@ export type EmscriptenInternals = {
     getMemory(): WebAssembly.Memory,
     getWasmIndirectFunctionTable(): WebAssembly.Table,
     updateMemoryViews: () => void,
+    getProxiedFunctionTable: () => any[],
 };
 export type GlobalObjects = {
     mono: any,
@@ -435,6 +436,7 @@ export declare interface EmscriptenModuleInternal {
     printErr(message: string): void;
     abort(reason: any): void;
     _emscripten_force_exit(exit_code: number): void;
+    getProxiedFunctionTable(): any[],
 }
 
 /// A PromiseController encapsulates a Promise together with easy access to its resolve and reject functions.

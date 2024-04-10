@@ -277,6 +277,9 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: () => void) 
             mono_log_info("UI thread is alive!");
         }, 3000);
 
+        spyEmscriptenProxied(Module.getProxiedFunctionTable());
+        spyEmscriptenFS(Module.FS);
+
         if (WasmEnableThreads) {
             await threadsReady;
 
@@ -675,4 +678,43 @@ export async function configureWorkerStartup (module: DotnetModuleInternal): Pro
     module.preInit = [() => preInitWorkerAsync()];
     module.instantiateWasm = instantiateWasmWorker;
     await runtimeHelpers.afterPreInit.promise;
+}
+
+function simpleArguments (args:any[]) {
+    let text = "";
+    for (const arg of args) {
+        if (typeof arg === "number" || typeof arg === "boolean" || arg === null || arg === undefined) {
+            text += arg + ",";
+        } else if ( typeof arg === "string") {
+            text += "'" + arg + "',";
+        } else {
+            text += "<complex>,";
+        }
+    }
+    return text;
+}
+
+function spyEmscriptenProxied (proxiedFunctionTable:any[]) {
+    for (let index = 0; index < proxiedFunctionTable.length; index++) {
+        const fn = proxiedFunctionTable[index];
+        if (typeof fn === "function") {
+            proxiedFunctionTable[index] = function (...args: any[]) {
+                mono_log_warn(`${fn.name} (${simpleArguments(args)})`);
+                return fn.apply(Module, args);
+            };
+        }
+    }
+}
+
+function spyEmscriptenFS (FS:any) {
+    const keys = Object.keys(FS);
+    for (const k of keys) {
+        const fn = FS[k];
+        if (typeof fn === "function") {
+            FS[k] = function (...args: any[]) {
+                mono_log_warn(`FS.${k} (${simpleArguments(args)})`);
+                return fn.apply(Module.FS, args);
+            };
+        }
+    }
 }

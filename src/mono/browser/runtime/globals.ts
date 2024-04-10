@@ -41,6 +41,7 @@ export function passEmscriptenInternals (internals: EmscriptenInternals, emscrip
     runtimeHelpers.getMemory = internals.getMemory;
     runtimeHelpers.getWasmIndirectFunctionTable = internals.getWasmIndirectFunctionTable;
     runtimeHelpers.updateMemoryViews = internals.updateMemoryViews;
+    Module.getProxiedFunctionTable = internals.getProxiedFunctionTable;
 }
 
 // NOTE: this is called AFTER the config is loaded

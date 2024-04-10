@@ -41,6 +41,7 @@ function setup(emscriptenBuildOptions) {
         isPThread: ENVIRONMENT_IS_PTHREAD,
         quit_, ExitStatus,
         updateMemoryViews,
+        getProxiedFunctionTable:() => { return proxiedFunctionTable; },
         getMemory: () => { return wasmMemory; },
         getWasmIndirectFunctionTable: () => { return wasmTable; },
     }, emscriptenBuildOptions);
