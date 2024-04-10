@@ -5557,19 +5557,19 @@ GenTree* Lowering::CreateFrameLinkUpdate(FrameLinkAction action)
 //  +08h    +04h    vptr for class InlinedCallFrame   offsetOfFrameVptr       method prolog
 //  +10h    +08h    m_Next                            offsetOfFrameLink       method prolog
 //  +18h    +0Ch    m_Datum                           offsetOfCallTarget      call site
-//  +20h    n/a     m_StubSecretArg                                           not set by JIT
-//  +28h    +10h    m_pCallSiteSP                     offsetOfCallSiteSP      x86: call site, and zeroed in method
+//  +20h    +10h    m_StubSecretArg                   offsetOfSecretStubArg   method prolog
+//  +28h    +14h    m_pCallSiteSP                     offsetOfCallSiteSP      x86: call site, and zeroed in method
 //                                                                              prolog;
 //                                                                            non-x86: method prolog (SP remains
 //                                                                              constant in function, after prolog: no
 //                                                                              localloc and PInvoke in same function)
-//  +30h    +14h    m_pCallerReturnAddress            offsetOfReturnAddress   call site
-//  +38h    +18h    m_pCalleeSavedFP                  offsetOfCalleeSavedFP   not set by JIT
-//          +1Ch    m_pThread
-//          +20h    m_pSPAfterProlog                  offsetOfSPAfterProlog   arm only
-//          +20/24h JIT retval spill area (int)                               before call_gc    ???
-//          +24/28h JIT retval spill area (long)                              before call_gc    ???
-//          +28/2Ch Saved value of EBP                                        method prolog     ???
+//  +30h    +18h    m_pCallerReturnAddress            offsetOfReturnAddress   call site
+//  +38h    +1Ch    m_pCalleeSavedFP                  offsetOfCalleeSavedFP   not set by JIT
+//          +20h    m_pThread
+//          +24h    m_pSPAfterProlog                  offsetOfSPAfterProlog   arm only
+//          +24/28h JIT retval spill area (int)                               before call_gc    ???
+//          +28/2Ch JIT retval spill area (long)                              before call_gc    ???
+//          +2C/30h Saved value of EBP                                        method prolog     ???
 //
 // Note that in the VM, InlinedCallFrame is a C++ class whose objects have a 'this' pointer that points
 // to the InlinedCallFrame vptr (the 2nd field listed above), and the GS cookie is stored *before*
