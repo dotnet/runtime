@@ -225,6 +225,28 @@
   #define RBM_OPTIMIZED_WRITE_BARRIER_SRC   (RBM_EAX|RBM_ECX|RBM_EBX|RBM_ESI|RBM_EDI)
 #endif // NOGC_WRITE_BARRIERS
 
+  #define RBM_CALLEE_TRASH_NOGC    RBM_EDX
+
+  // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
+  // Note that x86 normally emits an optimized (source-register-specific) write barrier, but can emit
+  // a call to a "general" write barrier.
+
+#ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
+  #define RBM_CALLEE_TRASH_WRITEBARRIER         (RBM_EAX | RBM_EDX)
+#else // !FEATURE_USE_ASM_GC_WRITE_BARRIERS
+  #define RBM_CALLEE_TRASH_WRITEBARRIER         RBM_CALLEE_TRASH
+#endif // !FEATURE_USE_ASM_GC_WRITE_BARRIERS
+
+  // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
+  #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_EDX
+
+  // Registers killed by CORINFO_HELP_ASSIGN_BYREF.
+  #define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_ESI | RBM_EDI | RBM_ECX)
+
+  // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
+  // Note that RDI and RSI are still valid byref pointers after this helper call, despite their value being changed.
+  #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF RBM_ECX
+
   // GenericPInvokeCalliHelper unmanaged target parameter
   #define REG_PINVOKE_TARGET_PARAM REG_EAX
   #define RBM_PINVOKE_TARGET_PARAM RBM_EAX
@@ -298,6 +320,12 @@
   #define RBM_ARG_1                RBM_EDX
 
   #define RBM_ARG_REGS            (RBM_ARG_0|RBM_ARG_1)
+
+  // The registers trashed by profiler enter/leave/tailcall hook
+  // See vm\i386\asmhelpers.asm for more details.
+  #define RBM_PROFILER_ENTER_TRASH     RBM_NONE
+  #define RBM_PROFILER_LEAVE_TRASH     RBM_NONE
+  #define RBM_PROFILER_TAILCALL_TRASH  (RBM_CALLEE_TRASH & ~RBM_ARG_REGS)
 
   // What sort of reloc do we use for [disp32] address mode
   #define IMAGE_REL_BASED_DISP32   IMAGE_REL_BASED_HIGHLOW

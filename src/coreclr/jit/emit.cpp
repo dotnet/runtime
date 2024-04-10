@@ -10359,7 +10359,7 @@ const char* emitter::emitOffsetToLabel(unsigned offs)
 // Return value:
 //   the saved set of registers.
 //
-AllRegsMask emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
+regMaskGpr emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
 {
     // Is it a helper with a special saved set?
     bool isNoGCHelper = emitNoGChelper(methHnd);
@@ -10368,7 +10368,7 @@ AllRegsMask emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
         CorInfoHelpFunc helpFunc = Compiler::eeGetHelperNum(methHnd);
 
         // Get the set of registers that this call kills and remove it from the saved set.
-        regMaskGpr savedSet = RBM_ALLINT & ~emitGetGCRegsKilledByNoGCCall(helpFunc).gprRegs();
+        regMaskGpr savedSet = RBM_ALLINT & ~emitGetGCRegsKilledByNoGCCall(helpFunc);
 
 #ifdef DEBUG
         if (emitComp->verbose)
@@ -10379,12 +10379,12 @@ AllRegsMask emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
             printf("\n");
         }
 #endif
-        return GprRegsMask(savedSet);
+        return savedSet;
     }
     else
     {
         // This is the saved set of registers after a normal call.
-        return emitComp->AllRegsMask_CALLEE_SAVED;
+        return RBM_INT_CALLEE_SAVED;
     }
 }
 
@@ -10397,7 +10397,7 @@ AllRegsMask emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
 // address registers as killed for liveness purposes, since their values change. However, they still are
 // valid byref pointers after the call, so the dst/src address registers are NOT reported as killed here.
 //
-// Note: This list may not be complete and defaults to the default AllRegsMask_CALLEE_TRASH_NOGC registers.
+// Note: This list may not be complete and defaults to the default RBM_CALLEE_TRASH_NOGC registers.
 //
 // Arguments:
 //   helper - The helper being inquired about
@@ -10405,54 +10405,60 @@ AllRegsMask emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
 // Return Value:
 //   Mask of GC register kills
 //
-CONSTREF_AllRegsMask emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
+RegBitSet64 emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
 {
     assert(emitNoGChelper(helper));
-
-#ifdef DEBUG
-    // compHelperCallKillSet returns a superset of the registers which values are not guaranteed to be the same
-    // after the call, if a register loses its GC or byref it has to be in the compHelperCallKillSet set as well.
-    AllRegsMask expectedKillSet = emitComp->compHelperCallKillSet(helper);
-#endif // DEBUG
-
-#define CHECK_AND_RETURN(killSet)                   \
-    assert((expectedKillSet & killSet) == killSet); \
-    return killSet;
-
+    regMaskTP result;
     switch (helper)
     {
         case CORINFO_HELP_ASSIGN_REF:
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
-            CHECK_AND_RETURN(emitComp->AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER);
+            result = RBM_CALLEE_GCTRASH_WRITEBARRIER;
+            break;
 
         case CORINFO_HELP_ASSIGN_BYREF:
-            CHECK_AND_RETURN(emitComp->AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER_BYREF);
+            result = RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
+            break;
 
 #if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
         case CORINFO_HELP_PROF_FCN_ENTER:
-            CHECK_AND_RETURN(emitComp->AllRegsMask_PROFILER_ENTER_TRASH);
+            result = RBM_PROFILER_ENTER_TRASH;
+            break;
 
         case CORINFO_HELP_PROF_FCN_LEAVE:
-            CHECK_AND_RETURN(emitComp->AllRegsMask_PROF_FNC_LEAVE);
+#if defined(TARGET_ARM)
+            // profiler scratch remains gc live
+            result = RBM_PROFILER_LEAVE_TRASH & ~RBM_PROFILER_RET_SCRATCH;
+#else
+            result = RBM_PROFILER_LEAVE_TRASH;
+#endif
+            break;
 
         case CORINFO_HELP_PROF_FCN_TAILCALL:
-            CHECK_AND_RETURN(emitComp->AllRegsMask_PROFILER_TAILCALL_TRASH);
-
+            result = RBM_PROFILER_TAILCALL_TRASH;
+            break;
 #endif // !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 
 #if defined(TARGET_X86)
         case CORINFO_HELP_INIT_PINVOKE_FRAME:
-            CHECK_AND_RETURN(emitComp->AllRegsMask_INIT_PINVOKE_FRAME_TRASH);
+            result = RBM_INIT_PINVOKE_FRAME_TRASH;
+            break;
 #endif // defined(TARGET_X86)
 
         case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
-            CHECK_AND_RETURN(emitComp->AllRegsMask_VALIDATE_INDIRECT_CALL_TRASH);
+            result = RBM_VALIDATE_INDIRECT_CALL_TRASH;
+            break;
 
         default:
-            CHECK_AND_RETURN(emitComp->AllRegsMask_CALLEE_TRASH_NOGC);
+            result = RBM_CALLEE_TRASH_NOGC;
+            break;
     }
 
-    return emitComp->AllRegsMask_NONE;
+    // compHelperCallKillSet returns a superset of the registers which values are not guaranteed to be the same
+    // after the call, if a register loses its GC or byref it has to be in the compHelperCallKillSet set as well.
+    assert((result & emitComp->compHelperCallKillSet(helper).GetGprFloatCombinedMask()) == result);
+
+    return result;
 }
 
 #if !defined(JIT32_GCENCODER)

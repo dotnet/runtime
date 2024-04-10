@@ -2132,7 +2132,7 @@ void Compiler::compInitAllRegsMask()
 
 #elif defined(TARGET_ARM)
 
-    AllRegsMask_CALLEE_TRASH_NOGC    = GprRegsMask(_RBM_CALLEE_TRASH_NOGC);
+    AllRegsMask_CALLEE_TRASH_NOGC    = GprRegsMask(RBM_CALLEE_TRASH_NOGC);
     AllRegsMask_PROFILER_ENTER_TRASH = AllRegsMask_NONE;
 
     // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
@@ -2144,7 +2144,7 @@ void Compiler::compInitAllRegsMask()
 
     // Registers killed by CORINFO_HELP_ASSIGN_BYREF.
     AllRegsMask_CALLEE_TRASH_WRITEBARRIER_BYREF =
-        GprRegsMask(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF | _RBM_CALLEE_TRASH_NOGC);
+        GprRegsMask(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF | RBM_CALLEE_TRASH_NOGC);
 
     // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
     // Note that r0 and r1 are still valid byref pointers after this helper call, despite their value being changed.
@@ -2167,19 +2167,19 @@ void Compiler::compInitAllRegsMask()
 
 #elif defined(TARGET_ARM64)
 
-    AllRegsMask_CALLEE_TRASH_NOGC = GprRegsMask(_RBM_CALLEE_TRASH_NOGC);
+    AllRegsMask_CALLEE_TRASH_NOGC = GprRegsMask(RBM_CALLEE_TRASH_NOGC);
     AllRegsMask_PROFILER_ENTER_TRASH =
         AllRegsMask((RBM_INT_CALLEE_TRASH & ~(RBM_ARG_REGS | RBM_ARG_RET_BUFF | RBM_FP)),
                     (RBM_FLT_CALLEE_TRASH & ~RBM_FLTARG_REGS), RBM_MSK_CALLEE_TRASH);
     // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
-    AllRegsMask_CALLEE_TRASH_WRITEBARRIER = GprRegsMask(RBM_R14 | _RBM_CALLEE_TRASH_NOGC);
+    AllRegsMask_CALLEE_TRASH_WRITEBARRIER = GprRegsMask(RBM_R14 | RBM_CALLEE_TRASH_NOGC);
 
     // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
     AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER = AllRegsMask_CALLEE_TRASH_NOGC;
 
     // Registers killed by CORINFO_HELP_ASSIGN_BYREF.
     AllRegsMask_CALLEE_TRASH_WRITEBARRIER_BYREF =
-        GprRegsMask(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF | _RBM_CALLEE_TRASH_NOGC);
+        GprRegsMask(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF | RBM_CALLEE_TRASH_NOGC);
 
     // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
     // Note that x13 and x14 are still valid byref pointers after this helper call, despite their value being changed.

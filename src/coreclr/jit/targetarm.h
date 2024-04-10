@@ -166,7 +166,20 @@
   #define REG_WRITE_BARRIER_SRC_BYREF    REG_ARG_1
   #define RBM_WRITE_BARRIER_SRC_BYREF    RBM_ARG_1
 
-  #define _RBM_CALLEE_TRASH_NOGC          (RBM_R2|RBM_R3|RBM_LR|RBM_DEFAULT_HELPER_CALL_TARGET)
+  #define RBM_CALLEE_TRASH_NOGC          (RBM_R2|RBM_R3|RBM_LR|RBM_DEFAULT_HELPER_CALL_TARGET)
+
+  // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
+  #define RBM_CALLEE_TRASH_WRITEBARRIER         (RBM_R0|RBM_R3|RBM_LR|RBM_DEFAULT_HELPER_CALL_TARGET)
+
+  // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
+  #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_WRITEBARRIER
+
+  // Registers killed by CORINFO_HELP_ASSIGN_BYREF.
+  #define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF | RBM_CALLEE_TRASH_NOGC)
+
+  // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
+  // Note that r0 and r1 are still valid byref pointers after this helper call, despite their value being changed.
+  #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF RBM_CALLEE_TRASH_NOGC
 
   // GenericPInvokeCalliHelper VASigCookie Parameter
   #define REG_PINVOKE_COOKIE_PARAM          REG_R4
@@ -207,10 +220,15 @@
   #define REG_PROFILER_ENTER_ARG           REG_R0
   #define RBM_PROFILER_ENTER_ARG           RBM_R0
   #define REG_PROFILER_RET_SCRATCH         REG_R2
+  #define RBM_PROFILER_RET_SCRATCH         RBM_R2
 
   // The registers trashed by profiler enter/leave/tailcall hook
   // See vm\arm\asmhelpers.asm for more details.
   #define RBM_PROFILER_ENTER_TRASH     RBM_NONE
+  // While REG_PROFILER_RET_SCRATCH is not trashed by the method, the register allocator must
+  // consider it killed by the return.
+  #define RBM_PROFILER_LEAVE_TRASH     RBM_PROFILER_RET_SCRATCH
+  #define RBM_PROFILER_TAILCALL_TRASH  RBM_NONE
 
   // Which register are int and long values returned in ?
   #define REG_INTRET               REG_R0

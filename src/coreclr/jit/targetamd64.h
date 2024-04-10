@@ -200,6 +200,14 @@
   #define REG_WRITE_BARRIER_SRC          REG_ARG_1
   #define RBM_WRITE_BARRIER_SRC          RBM_ARG_1
 
+  #define RBM_CALLEE_TRASH_NOGC        RBM_CALLEE_TRASH
+
+  // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
+  #define RBM_CALLEE_TRASH_WRITEBARRIER         RBM_CALLEE_TRASH_NOGC
+
+  // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
+  #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_NOGC
+
   // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
   #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF (RBM_RAX | RBM_RCX)
 
@@ -504,6 +512,30 @@
   #define RBM_ARG_REGS            (RBM_ARG_0|RBM_ARG_1|RBM_ARG_2|RBM_ARG_3)
   #define RBM_FLTARG_REGS         (RBM_FLTARG_0|RBM_FLTARG_1|RBM_FLTARG_2|RBM_FLTARG_3)
 #endif // !UNIX_AMD64_ABI
+
+  // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper.
+#ifdef UNIX_AMD64_ABI
+  // See vm\amd64\unixasmhelpers.S for more details.
+  //
+  // On Unix a struct of size >=9 and <=16 bytes in size is returned in two return registers.
+  // The return registers could be any two from the set { RAX, RDX, XMM0, XMM1 }.
+  // STOP_FOR_GC helper preserves all the 4 possible return registers.
+  #define RBM_STOP_FOR_GC_TRASH (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET | RBM_FLOATRET_1 | RBM_INTRET_1))
+
+  // The registers trashed by profiler enter/leave/tailcall hook
+  // See vm\amd64\asmhelpers.S for more details.
+  #define RBM_PROFILER_ENTER_TRASH  (RBM_CALLEE_TRASH & ~(RBM_ARG_REGS|RBM_FLTARG_REGS))
+  #define RBM_PROFILER_LEAVE_TRASH  (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET | RBM_FLOATRET_1 | RBM_INTRET_1))
+  #define RBM_PROFILER_TAILCALL_TRASH RBM_PROFILER_LEAVE_TRASH
+
+#else
+  // See vm\amd64\asmhelpers.asm for more details.
+  #define RBM_STOP_FOR_GC_TRASH (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
+
+  #define RBM_PROFILER_ENTER_TRASH  RBM_CALLEE_TRASH
+  #define RBM_PROFILER_LEAVE_TRASH  (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
+  #define RBM_PROFILER_TAILCALL_TRASH RBM_PROFILER_LEAVE_TRASH
+#endif
 
   #define RBM_VALIDATE_INDIRECT_CALL_TRASH (RBM_INT_CALLEE_TRASH & ~(RBM_R10 | RBM_RCX))
   #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_RCX
