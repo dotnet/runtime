@@ -215,6 +215,35 @@ namespace NetClient
             }
         }
 
+        static void Validate_ValueCoerce_ReturnToManaged()
+        {
+            var dispatchCoerceTesting = (DispatchCoerceTesting)new DispatchCoerceTestingClass();
+
+            Console.WriteLine($"Calling {nameof(DispatchCoerceTesting.ReturnToManaged)} ...");
+            
+            // Supported types
+            VarEnum[] supportedTypes =
+            {
+                VarEnum.VT_I2,
+                VarEnum.VT_I4,
+                VarEnum.VT_R4,
+                VarEnum.VT_R8,
+                VarEnum.VT_CY,
+                VarEnum.VT_DATE,
+                VarEnum.VT_BSTR,
+                VarEnum.VT_ERROR,
+                VarEnum.VT_BOOL,
+                VarEnum.VT_DECIMAL,
+            };
+
+            foreach (VarEnum vt in supportedTypes)
+            {
+                Console.WriteLine($"{vt} should be supported.");
+                int result = dispatchCoerceTesting.ReturnToManaged((short)vt);
+                Assert.NotEqual(0, result);
+            }
+        }
+
         [Fact]
         public static int TestEntryPoint()
         {
@@ -233,6 +262,7 @@ namespace NetClient
                 Validate_StructNotSupported();
                 Validate_LCID_Marshaled();
                 Validate_Enumerator();
+                Validate_ValueCoerce_ReturnToManaged();
             }
             catch (Exception e)
             {
