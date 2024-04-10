@@ -2203,7 +2203,21 @@ void Compiler::compInitAllRegsMask()
 #endif // TARGET_ARM
 
 #ifdef TARGET_XARCH
-    codeGen->CopyRegisterInfo();
+
+    // Make sure we copy the register info and initialize the
+    // trash regs after the underlying fields are initialized
+
+    const regMaskTP vtCalleeTrashRegs[TYP_COUNT]{
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) ctr,
+#include "typelist.h"
+#undef DEF_TP
+    };
+    memcpy(varTypeCalleeTrashRegs, vtCalleeTrashRegs, sizeof(regMaskTP) * TYP_COUNT);
+
+    if (codeGen != nullptr)
+    {
+        codeGen->CopyRegisterInfo();
+    }
 #endif // TARGET_XARCH
 }
 /*****************************************************************************
@@ -3643,18 +3657,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         opts.compJitSaveFpLrWithCalleeSavedRegisters = JitConfig.JitSaveFpLrWithCalleeSavedRegisters();
     }
 #endif // defined(DEBUG) && defined(TARGET_ARM64)
-
-#if defined(TARGET_XARCH)
-    // Make sure we copy the register info and initialize the
-    // trash regs after the underlying fields are initialized
-
-    const regMaskOnlyOne vtCalleeTrashRegs[TYP_COUNT]{
-#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) ctr,
-#include "typelist.h"
-#undef DEF_TP
-    };
-    memcpy(varTypeCalleeTrashRegs, vtCalleeTrashRegs, sizeof(regMaskOnlyOne) * TYP_COUNT);
-#endif // TARGET_XARCH
 }
 
 #ifdef DEBUG
