@@ -2200,7 +2200,11 @@ void Compiler::compInitAllRegsMask()
     AllRegsMask_PROF_FNC_LEAVE = AllRegsMask_PROFILER_LEAVE_TRASH & ~AllRegsMask_PROFILER_RET_SCRATCH;
 #else
     AllRegsMask_PROF_FNC_LEAVE = AllRegsMask_PROFILER_LEAVE_TRASH;
-#endif
+#endif // TARGET_ARM
+
+#ifdef TARGET_XARCH
+    codeGen->CopyRegisterInfo();
+#endif // TARGET_XARCH
 }
 /*****************************************************************************
  *
@@ -3650,8 +3654,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #undef DEF_TP
     };
     memcpy(varTypeCalleeTrashRegs, vtCalleeTrashRegs, sizeof(regMaskOnlyOne) * TYP_COUNT);
-
-    codeGen->CopyRegisterInfo();
 #endif // TARGET_XARCH
 }
 
