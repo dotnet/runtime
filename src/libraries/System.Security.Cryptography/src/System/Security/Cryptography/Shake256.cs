@@ -178,6 +178,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="outputLength" /> is negative.
         /// </exception>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support multiple reads of the hash. <see cref="GetHashAndReset(int)" /> can be used
@@ -202,6 +203,7 @@ namespace System.Security.Cryptography
         /// resetting the object to its initial state and allowing additional calls to continue retrieving the hash.
         /// </summary>
         /// <param name="destination">The buffer to fill with the hash.</param>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support multiple reads of the hash. <see cref="GetHashAndReset(Span{byte})" /> can be used
@@ -221,6 +223,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Resets the instance back to its initial state.
         /// </summary>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public void Reset()
         {
@@ -237,6 +240,7 @@ namespace System.Security.Cryptography
         /// Creates a new instance of <see cref="Shake256" /> with the existing appended data preserved.
         /// </summary>
         /// <returns>A clone of the current instance.</returns>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
         /// <exception cref="InvalidOperationException">
         ///   The current instance is being read from and cannot be cloned.
         /// </exception>
