@@ -35,7 +35,7 @@ namespace System.Text.Json
     public sealed partial class Utf8JsonWriter : IDisposable, IAsyncDisposable
     {
         // Depending on OS, either '\r\n' OR '\n'
-        private static readonly int s_newLineLength = Environment.NewLine.Length;
+        private static readonly int s_defaultNewLineLength = Environment.NewLine.Length;
 
         private const int DefaultGrowthSize = 4096;
         private const int InitialGrowthSize = 256;
@@ -61,6 +61,7 @@ namespace System.Text.Json
         // Cache indentation settings from JsonWriterOptions to avoid recomputing them in the hot path.
         private byte _indentByte;
         private int _indentLength;
+        private int _newLineLength = s_defaultNewLineLength;
 
         /// <summary>
         /// Returns the amount of bytes written by the <see cref="Utf8JsonWriter"/> so far
@@ -150,6 +151,7 @@ namespace System.Text.Json
             _options = options;
             _indentByte = (byte)_options.IndentCharacter;
             _indentLength = options.IndentSize;
+            _newLineLength = options.NewLine.Length;
 
             if (_options.MaxDepth == 0)
             {
@@ -1024,7 +1026,7 @@ namespace System.Text.Json
         private void WriteNewLine(Span<byte> output)
         {
             // Write '\r\n' OR '\n', depending on OS
-            if (s_newLineLength == 2)
+            if (_newLineLength == 2)
             {
                 output[BytesPending++] = JsonConstants.CarriageReturn;
             }

@@ -89,6 +89,7 @@ namespace System.Text.Json
         private bool _ignoreReadOnlyProperties;
         private bool _ignoreReadonlyFields;
         private bool _includeFields;
+        private string _newLine = Environment.NewLine;
         private bool _propertyNameCaseInsensitive;
         private bool _writeIndented;
         private char _indentCharacter = JsonConstants.DefaultIndentCharacter;
@@ -141,6 +142,7 @@ namespace System.Text.Json
             _ignoreReadOnlyProperties = options._ignoreReadOnlyProperties;
             _ignoreReadonlyFields = options._ignoreReadonlyFields;
             _includeFields = options._includeFields;
+            _newLine = options._newLine;
             _propertyNameCaseInsensitive = options._propertyNameCaseInsensitive;
             _writeIndented = options._writeIndented;
             _indentCharacter = options._indentCharacter;
@@ -751,6 +753,30 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// Gets or sets the new line string to use when <see cref="WriteIndented"/> is <see langword="true"/>.
+        /// The default is the value of <see cref="Environment.NewLine"/>.
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown when the new line string is not <c>\n</c> or <c>\r\n</c>.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        public string NewLine
+        {
+            get
+            {
+                return _newLine;
+            }
+            set
+            {
+                JsonWriterHelper.ValidateNewLine(value);
+                VerifyMutable();
+                _newLine = value;
+            }
+        }
+
+        /// <summary>
         /// Returns true if options uses compatible built-in resolvers or a combination of compatible built-in resolvers.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -970,6 +996,7 @@ namespace System.Text.Json
                 IndentCharacter = IndentCharacter,
                 IndentSize = IndentSize,
                 MaxDepth = EffectiveMaxDepth,
+                NewLine = NewLine,
 #if !DEBUG
                 SkipValidation = true
 #endif

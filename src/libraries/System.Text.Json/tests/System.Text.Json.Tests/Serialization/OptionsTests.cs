@@ -1416,7 +1416,14 @@ namespace System.Text.Json.Serialization.Tests
                 }
                 else if (propertyType == typeof(string))
                 {
-                    property.SetValue(options, "\t");
+                    if (property.Name is "NewLine")
+                    {
+                        property.SetValue(options, "\n");
+                    }
+                    else
+                    {
+                        property.SetValue(options, "\t");
+                    }
                 }
                 else if (propertyType == typeof(IList<JsonConverter>))
                 {
