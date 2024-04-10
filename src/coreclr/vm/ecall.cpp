@@ -616,7 +616,6 @@ MethodDesc* ECall::MapTargetBackToMethod(PCODE pTarg, PCODE * ppAdjustedEntryPoi
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;

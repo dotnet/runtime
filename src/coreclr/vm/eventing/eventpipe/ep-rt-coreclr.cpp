@@ -74,10 +74,6 @@ ep_rt_coreclr_walk_managed_stack_for_thread (
 	EP_ASSERT (thread != NULL);
 	EP_ASSERT (stack_contents != NULL);
 
-	// Calling into StackWalkFrames in preemptive mode violates the host contract,
-	// but this contract is not used on CoreCLR.
-	CONTRACT_VIOLATION (HostViolation);
-
 	// Before we call into StackWalkFrames we need to mark GC_ON_TRANSITIONS as FALSE
 	// because under GCStress runs (GCStress=0x3), a GC will be triggered for every transition,
 	// which will cause the GC to try to walk the stack while we are in the middle of walking the stack.

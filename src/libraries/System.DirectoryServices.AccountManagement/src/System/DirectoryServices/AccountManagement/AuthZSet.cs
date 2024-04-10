@@ -131,7 +131,7 @@ namespace System.DirectoryServices.AccountManagement
 
                                 // Extract TOKEN_GROUPS.GroupCount
 
-                                Interop.TOKEN_GROUPS tokenGroups = (Interop.TOKEN_GROUPS)Marshal.PtrToStructure(pBuffer, typeof(Interop.TOKEN_GROUPS));
+                                Interop.TOKEN_GROUPS tokenGroups = *(Interop.TOKEN_GROUPS*)pBuffer;
 
                                 uint groupCount = tokenGroups.GroupCount;
 
@@ -141,13 +141,13 @@ namespace System.DirectoryServices.AccountManagement
                                 // each native SID_AND_ATTRIBUTES into a managed SID_AND_ATTR.
                                 Interop.SID_AND_ATTRIBUTES[] groups = new Interop.SID_AND_ATTRIBUTES[groupCount];
 
-                                IntPtr currentItem = new IntPtr(pBuffer.ToInt64() + Marshal.SizeOf(typeof(Interop.TOKEN_GROUPS)) - sizeof(Interop.SID_AND_ATTRIBUTES));
+                                IntPtr currentItem = pBuffer + sizeof(Interop.TOKEN_GROUPS) - sizeof(Interop.SID_AND_ATTRIBUTES);
 
                                 for (int i = 0; i < groupCount; i++)
                                 {
-                                    groups[i] = (Interop.SID_AND_ATTRIBUTES)Marshal.PtrToStructure(currentItem, typeof(Interop.SID_AND_ATTRIBUTES));
+                                    groups[i] = *(Interop.SID_AND_ATTRIBUTES*)currentItem;
 
-                                    currentItem = new IntPtr(currentItem.ToInt64() + Marshal.SizeOf(typeof(Interop.SID_AND_ATTRIBUTES)));
+                                    currentItem += sizeof(Interop.SID_AND_ATTRIBUTES);
                                 }
 
                                 _groupSidList = new SidList(groups);

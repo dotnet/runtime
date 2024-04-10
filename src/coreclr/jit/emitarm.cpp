@@ -700,8 +700,8 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
 }
 
 // INST_FP is 1
-#define LD 2
-#define ST 4
+#define LD  2
+#define ST  4
 #define CMP 8
 
 // clang-format off
@@ -1708,10 +1708,10 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
  *  Add an instruction referencing a register and a constant.
  */
 
-void emitter::emitIns_R_I(instruction    ins,
-                          emitAttr       attr,
-                          regNumber      reg,
-                          target_ssize_t imm,
+void emitter::emitIns_R_I(instruction                                ins,
+                          emitAttr                                   attr,
+                          regNumber                                  reg,
+                          target_ssize_t                             imm,
                           insFlags flags /* = INS_FLAGS_DONT_CARE */ DEBUGARG(GenTreeFlags gtFlags))
 
 {
@@ -1738,7 +1738,7 @@ void emitter::emitIns_R_I(instruction    ins,
                         ins = INS_sub;
                     else // ins == INS_sub
                         ins = INS_add;
-                    imm     = -imm;
+                    imm = -imm;
                 }
                 fmt = IF_T1_J0;
                 sf  = INS_FLAGS_SET;
@@ -2607,7 +2607,7 @@ void emitter::emitIns_R_R_I(instruction ins,
                         ins = INS_sub;
                     else
                         ins = INS_add;
-                    imm     = -imm;
+                    imm = -imm;
                 }
                 fmt = IF_T1_G;
                 sf  = INS_FLAGS_SET;
@@ -2621,7 +2621,7 @@ void emitter::emitIns_R_R_I(instruction ins,
                         ins = INS_sub;
                     else
                         ins = INS_add;
-                    imm     = -imm;
+                    imm = -imm;
                 }
                 // Use Thumb-1 encoding
                 emitIns_R_I(ins, attr, reg1, imm, flags);
@@ -2982,9 +2982,9 @@ void emitter::emitIns_R_R_I(instruction ins,
                     }
                 }
             }
-        //
-        // If we did not find a thumb-1 encoding above
-        //
+            //
+            // If we did not find a thumb-1 encoding above
+            //
 
         COMMON_THUMB2_LDST:
             assert(fmt == IF_NONE);
@@ -3185,8 +3185,8 @@ void emitter::emitIns_R_R_R(instruction ins,
         case INS_mul:
             if (insMustSetFlags(flags))
             {
-                assert(reg1 !=
-                       REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+                assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this
+                                        // instruction.
                 assert(reg2 != REG_PC);
                 assert(reg3 != REG_PC);
 
@@ -4836,7 +4836,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     if (m_debugInfoSize > 0)
     {
         INDEBUG(id->idDebugOnlyInfo()->idCallSig = sigInfo);
-        id->idDebugOnlyInfo()->idMemCookie       = (size_t)methHnd; // method token
+        id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
     }
 
 #ifdef LATE_DISASM
@@ -5236,7 +5236,7 @@ unsigned emitter::emitOutput_Thumb1Instr(BYTE* dst, code_t code)
 unsigned emitter::emitOutput_Thumb2Instr(BYTE* dst, code_t code)
 {
     unsigned short word1 = (code >> 16) & 0xffff;
-    unsigned short word2 = (code)&0xffff;
+    unsigned short word2 = (code) & 0xffff;
     assert((code_t)((word1 << 16) | word2) == code);
 
 #ifdef DEBUG
@@ -5342,7 +5342,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 
     if (dstOffs <= srcOffs)
     {
-/* This is a backward jump - distance is known at this point */
+        /* This is a backward jump - distance is known at this point */
 
 #if DEBUG_EMIT
         if (id->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM || INTERESTING_JUMP_NUM == 0)
@@ -5731,7 +5731,7 @@ BYTE* emitter::emitOutputIT(BYTE* dst, instruction ins, insFormat fmt, code_t co
 #endif // FEATURE_ITINSTRUCTION
 
 /*****************************************************************************
-*
+ *
  *  Append the machine code corresponding to the given instruction descriptor
  *  to the code block at '*dp'; the base of the code block is 'bp', and 'ig'
  *  is the instruction group that contains the instruction. Updates '*dp' to
@@ -6504,7 +6504,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code |= (immHi << 16);
                 code |= immLo;
 
-                disp = abs(disp);
+                disp = std::abs(disp);
                 assert((disp & 0x00fffffe) == disp);
 
                 callInstrSize = SafeCvtAssert<unsigned char>(emitOutput_Thumb2Instr(dst, code));
@@ -6561,9 +6561,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             break;
 
-        /********************************************************************/
-        /*                            oops                                  */
-        /********************************************************************/
+            /********************************************************************/
+            /*                            oops                                  */
+            /********************************************************************/
 
         default:
 

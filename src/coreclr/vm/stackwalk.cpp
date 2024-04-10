@@ -1546,6 +1546,66 @@ BOOL StackFrameIterator::IsValid(void)
     return TRUE;
 } // StackFrameIterator::IsValid()
 
+#ifndef DACCESS_COMPILE
+#ifdef FEATURE_EH_FUNCLETS
+//---------------------------------------------------------------------------------------
+//
+// Advance to the position that the other iterator is currently at.
+//
+void StackFrameIterator::SkipTo(StackFrameIterator *pOtherStackFrameIterator)
+{
+    // We copy the other stack frame iterator over the current one, but we need to
+    // keep a couple of members untouched. So we save them here and restore them
+    // after the copy.
+    ExInfo* pPrevExInfo = GetNextExInfo();
+    REGDISPLAY *pRD = m_crawl.GetRegisterSet();
+    Frame *pStartFrame = m_pStartFrame;
+#ifdef _DEBUG
+    Frame *pRealStartFrame = m_pRealStartFrame;
+#endif
+
+    *this = *pOtherStackFrameIterator;
+
+    m_pNextExInfo = pPrevExInfo;
+    m_crawl.pRD = pRD;
+    m_pStartFrame = pStartFrame;
+#ifdef _DEBUG
+    m_pRealStartFrame = pRealStartFrame;
+#endif
+
+    REGDISPLAY *pOtherRD = pOtherStackFrameIterator->m_crawl.GetRegisterSet();
+    *pRD->pCurrentContextPointers = *pOtherRD->pCurrentContextPointers;
+    SetIP(pRD->pCurrentContext, GetIP(pOtherRD->pCurrentContext));
+    SetSP(pRD->pCurrentContext, GetSP(pOtherRD->pCurrentContext));
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = (pRD->pCurrentContextPointers->regname == NULL) ? pOtherRD->pCurrentContext->regname : *pRD->pCurrentContextPointers->regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = pOtherRD->pCurrentContext->regname;
+    ENUM_FP_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+    pRD->IsCallerContextValid = pOtherRD->IsCallerContextValid;
+    if (pRD->IsCallerContextValid)
+    {
+        *pRD->pCallerContextPointers = *pOtherRD->pCallerContextPointers;
+        SetIP(pRD->pCallerContext, GetIP(pOtherRD->pCallerContext));
+        SetSP(pRD->pCallerContext, GetSP(pOtherRD->pCallerContext));
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCallerContext->regname = (pRD->pCallerContextPointers->regname == NULL) ? pOtherRD->pCallerContext->regname : *pRD->pCallerContextPointers->regname;
+        ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCallerContext->regname = pOtherRD->pCallerContext->regname;
+        ENUM_FP_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+    }
+    SyncRegDisplayToCurrentContext(pRD);
+}
+#endif // FEATURE_EH_FUNCLETS
+#endif // DACCESS_COMPILE
+
 //---------------------------------------------------------------------------------------
 //
 // Advance to the next frame according to the stackwalk flags.  If the iterator is stopped

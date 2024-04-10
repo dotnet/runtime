@@ -8,7 +8,10 @@
 
 #include "sideeffects.h"
 
-LclVarSet::LclVarSet() : m_bitVector(nullptr), m_hasAnyLcl(false), m_hasBitVector(false)
+LclVarSet::LclVarSet()
+    : m_bitVector(nullptr)
+    , m_hasAnyLcl(false)
+    , m_hasBitVector(false)
 {
 }
 
@@ -121,7 +124,10 @@ void LclVarSet::Clear()
 }
 
 AliasSet::AliasSet()
-    : m_lclVarReads(), m_lclVarWrites(), m_readsAddressableLocation(false), m_writesAddressableLocation(false)
+    : m_lclVarReads()
+    , m_lclVarWrites()
+    , m_readsAddressableLocation(false)
+    , m_writesAddressableLocation(false)
 {
 }
 
@@ -136,7 +142,11 @@ AliasSet::AliasSet()
 //    node - The node in question.
 //
 AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
-    : m_compiler(compiler), m_node(node), m_flags(0), m_lclNum(0), m_lclOffs(0)
+    : m_compiler(compiler)
+    , m_node(node)
+    , m_flags(0)
+    , m_lclNum(0)
+    , m_lclOffs(0)
 {
     if (node->IsCall())
     {
@@ -444,7 +454,9 @@ void AliasSet::Clear()
     m_lclVarWrites.Clear();
 }
 
-SideEffectSet::SideEffectSet() : m_sideEffectFlags(0), m_aliasSet()
+SideEffectSet::SideEffectSet()
+    : m_sideEffectFlags(0)
+    , m_aliasSet()
 {
 }
 
@@ -460,7 +472,9 @@ SideEffectSet::SideEffectSet() : m_sideEffectFlags(0), m_aliasSet()
 //    compiler - The compiler context.
 //    node - The node to use for initialization.
 //
-SideEffectSet::SideEffectSet(Compiler* compiler, GenTree* node) : m_sideEffectFlags(0), m_aliasSet()
+SideEffectSet::SideEffectSet(Compiler* compiler, GenTree* node)
+    : m_sideEffectFlags(0)
+    , m_aliasSet()
 {
     AddNode(compiler, node);
 }

@@ -528,6 +528,19 @@ namespace ILCompiler.Dataflow
                     break;
 
                 //
+                // System.Array
+                //
+                // CreateInstance (Type, Int32)
+                //
+                case IntrinsicId.Array_CreateInstance:
+                    {
+                        // We could try to analyze if the type is known, but for now making sure this works for canonical arrays is enough.
+                        TypeDesc canonArrayType = reflectionMarker.Factory.TypeSystemContext.CanonType.MakeArrayType();
+                        reflectionMarker.Dependencies.Add(reflectionMarker.Factory.NativeLayout.TemplateTypeLayout(canonArrayType), "Array.CreateInstance was called");
+                        goto case IntrinsicId.None;
+                    }
+
+                //
                 // System.Enum
                 //
                 // static GetValues (Type)

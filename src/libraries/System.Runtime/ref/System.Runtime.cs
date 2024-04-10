@@ -2436,7 +2436,7 @@ namespace System
         public override int GetHashCode() { throw null; }
         public static string? GetName(System.Type enumType, object value) { throw null; }
         public static string[] GetNames(System.Type enumType) { throw null; }
-        public static string[] GetNames<TEnum>() where TEnum : struct { throw null; }
+        public static string[] GetNames<TEnum>() where TEnum : struct, System.Enum { throw null; }
         public static string? GetName<TEnum>(TEnum value) where TEnum : struct, System.Enum { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         public static System.Type GetUnderlyingType(System.Type enumType) { throw null; }
@@ -13149,6 +13149,7 @@ namespace System.Runtime.CompilerServices
         [System.ObsoleteAttribute("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData { get { throw null; } }
         public static System.IntPtr AllocateTypeAssociatedMemory(System.Type type, int size) { throw null; }
+        public static object? Box(ref byte target, System.RuntimeTypeHandle type) { throw null; }
         public static System.ReadOnlySpan<T> CreateSpan<T>(System.RuntimeFieldHandle fldHandle) { throw null; }
         public static void EnsureSufficientExecutionStack() { }
         public static new bool Equals(object? o1, object? o2) { throw null; }
@@ -13175,6 +13176,7 @@ namespace System.Runtime.CompilerServices
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Trimmer can't guarantee existence of class constructor")]
         public static void RunClassConstructor(System.RuntimeTypeHandle type) { }
         public static void RunModuleConstructor(System.ModuleHandle module) { }
+        public static int SizeOf(System.RuntimeTypeHandle type) { throw null; }
         public static bool TryEnsureSufficientExecutionStack() { throw null; }
         public delegate void CleanupCode(object? userData, bool exceptionThrown);
         public delegate void TryCode(object? userData);
@@ -15335,6 +15337,12 @@ namespace System.Threading.Tasks
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(System.Threading.Tasks.Task<TResult> task1, System.Threading.Tasks.Task<TResult> task2) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(params System.Threading.Tasks.Task<TResult>[] tasks) { throw null; }
+        public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task> WhenEach(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task> tasks) { throw null; }
+        public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task> WhenEach(params System.Threading.Tasks.Task[] tasks) { throw null; }
+        public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task> WhenEach(System.ReadOnlySpan<System.Threading.Tasks.Task> tasks) { throw null; }
+        public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task<TResult>> WhenEach<TResult>(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
+        public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task<TResult>> WhenEach<TResult>(params System.Threading.Tasks.Task<TResult>[] tasks) { throw null; }
+        public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task<TResult>> WhenEach<TResult>(System.ReadOnlySpan<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
         public static System.Runtime.CompilerServices.YieldAwaitable Yield() { throw null; }
     }
     public static partial class TaskAsyncEnumerableExtensions

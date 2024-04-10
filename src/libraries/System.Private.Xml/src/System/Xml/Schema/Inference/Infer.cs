@@ -15,26 +15,26 @@ namespace System.Xml.Schema
     /// </summary>
     public sealed class XmlSchemaInference
     {
-        internal static XmlQualifiedName ST_boolean = new XmlQualifiedName("boolean", XmlSchema.Namespace);
-        internal static XmlQualifiedName ST_byte = new XmlQualifiedName("byte", XmlSchema.Namespace);
-        internal static XmlQualifiedName ST_unsignedByte = new XmlQualifiedName("unsignedByte", XmlSchema.Namespace);
-        internal static XmlQualifiedName ST_short = new XmlQualifiedName("short", XmlSchema.Namespace);
-        internal static XmlQualifiedName ST_unsignedShort = new XmlQualifiedName("unsignedShort", XmlSchema.Namespace);
-        internal static XmlQualifiedName ST_int = new XmlQualifiedName("int", XmlSchema.Namespace);
-        internal static XmlQualifiedName ST_unsignedInt = new XmlQualifiedName("unsignedInt", XmlSchema.Namespace);
-        internal static XmlQualifiedName ST_long = new XmlQualifiedName("long", XmlSchema.Namespace);
-        internal static XmlQualifiedName ST_unsignedLong = new XmlQualifiedName("unsignedLong", XmlSchema.Namespace);
-        internal static XmlQualifiedName ST_integer = new XmlQualifiedName("integer", XmlSchema.Namespace);
-        internal static XmlQualifiedName ST_decimal = new XmlQualifiedName("decimal", XmlSchema.Namespace);
-        internal static XmlQualifiedName ST_float = new XmlQualifiedName("float", XmlSchema.Namespace);
-        internal static XmlQualifiedName ST_double = new XmlQualifiedName("double", XmlSchema.Namespace);
-        internal static XmlQualifiedName ST_duration = new XmlQualifiedName("duration", XmlSchema.Namespace);
-        internal static XmlQualifiedName ST_dateTime = new XmlQualifiedName("dateTime", XmlSchema.Namespace);
-        internal static XmlQualifiedName ST_time = new XmlQualifiedName("time", XmlSchema.Namespace);
-        internal static XmlQualifiedName ST_date = new XmlQualifiedName("date", XmlSchema.Namespace);
-        internal static XmlQualifiedName ST_gYearMonth = new XmlQualifiedName("gYearMonth", XmlSchema.Namespace);
-        internal static XmlQualifiedName ST_string = new XmlQualifiedName("string", XmlSchema.Namespace);
-        internal static XmlQualifiedName ST_anySimpleType = new XmlQualifiedName("anySimpleType", XmlSchema.Namespace);
+        internal static readonly XmlQualifiedName ST_boolean = new XmlQualifiedName("boolean", XmlSchema.Namespace);
+        internal static readonly XmlQualifiedName ST_byte = new XmlQualifiedName("byte", XmlSchema.Namespace);
+        internal static readonly XmlQualifiedName ST_unsignedByte = new XmlQualifiedName("unsignedByte", XmlSchema.Namespace);
+        internal static readonly XmlQualifiedName ST_short = new XmlQualifiedName("short", XmlSchema.Namespace);
+        internal static readonly XmlQualifiedName ST_unsignedShort = new XmlQualifiedName("unsignedShort", XmlSchema.Namespace);
+        internal static readonly XmlQualifiedName ST_int = new XmlQualifiedName("int", XmlSchema.Namespace);
+        internal static readonly XmlQualifiedName ST_unsignedInt = new XmlQualifiedName("unsignedInt", XmlSchema.Namespace);
+        internal static readonly XmlQualifiedName ST_long = new XmlQualifiedName("long", XmlSchema.Namespace);
+        internal static readonly XmlQualifiedName ST_unsignedLong = new XmlQualifiedName("unsignedLong", XmlSchema.Namespace);
+        internal static readonly XmlQualifiedName ST_integer = new XmlQualifiedName("integer", XmlSchema.Namespace);
+        internal static readonly XmlQualifiedName ST_decimal = new XmlQualifiedName("decimal", XmlSchema.Namespace);
+        internal static readonly XmlQualifiedName ST_float = new XmlQualifiedName("float", XmlSchema.Namespace);
+        internal static readonly XmlQualifiedName ST_double = new XmlQualifiedName("double", XmlSchema.Namespace);
+        internal static readonly XmlQualifiedName ST_duration = new XmlQualifiedName("duration", XmlSchema.Namespace);
+        internal static readonly XmlQualifiedName ST_dateTime = new XmlQualifiedName("dateTime", XmlSchema.Namespace);
+        internal static readonly XmlQualifiedName ST_time = new XmlQualifiedName("time", XmlSchema.Namespace);
+        internal static readonly XmlQualifiedName ST_date = new XmlQualifiedName("date", XmlSchema.Namespace);
+        internal static readonly XmlQualifiedName ST_gYearMonth = new XmlQualifiedName("gYearMonth", XmlSchema.Namespace);
+        internal static readonly XmlQualifiedName ST_string = new XmlQualifiedName("string", XmlSchema.Namespace);
+        internal static readonly XmlQualifiedName ST_anySimpleType = new XmlQualifiedName("anySimpleType", XmlSchema.Namespace);
 
         internal static XmlQualifiedName[] SimpleTypes =
         {

@@ -700,7 +700,7 @@ public:
         // unused                       = 0x00000040,
         TSNC_CLRCreatedThread           = 0x00000080, // The thread was created through Thread::CreateNewThread
         TSNC_ExistInThreadStore         = 0x00000100, // For dtor to know if it needs to be removed from ThreadStore
-        TSNC_UnsafeSkipEnterCooperative = 0x00000200, // This is a "fix" for deadlocks caused when cleaning up COM
+        // unused                       = 0x00000200,
         TSNC_OwnsSpinLock               = 0x00000400, // The thread owns a spinlock.
         TSNC_PreparingAbort             = 0x00000800, // Preparing abort.  This avoids recursive HandleThreadAbort call.
         TSNC_OSAlertableWait            = 0x00001000, // Preparing abort.  This avoids recursive HandleThreadAbort call.
