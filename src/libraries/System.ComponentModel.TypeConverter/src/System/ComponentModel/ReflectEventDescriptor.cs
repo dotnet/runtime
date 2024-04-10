@@ -248,8 +248,6 @@ namespace System.ComponentModel
             base.FillAttributes(attributes);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "currentReflectType is in _componentClass's hierarchy. Since _componentClass is annotated with All, this means currentReflectType is annotated with All as well.")]
         private void FillEventInfoAttribute(EventInfo realEventInfo, IList attributes)
         {
             string eventName = realEventInfo.Name;

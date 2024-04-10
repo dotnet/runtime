@@ -225,7 +225,7 @@ namespace System.ComponentModel.DataAnnotations
                                                             comparableType.FullName));
                     }
 
-                    TypeConverter converter = GetOperandTypeConverter();
+                    TypeConverter converter = TypeDescriptor.GetConverter(OperandType);
                     IComparable min = (IComparable)(ParseLimitsInInvariantCulture
                         ? converter.ConvertFromInvariantString((string)minimum)!
                         : converter.ConvertFromString((string)minimum))!;
@@ -249,11 +249,6 @@ namespace System.ComponentModel.DataAnnotations
                 }
             }
         }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The ctor that allows this code to be called is marked with RequiresUnreferencedCode.")]
-        private TypeConverter GetOperandTypeConverter() =>
-            TypeDescriptor.GetConverter(OperandType);
 
         private string GetValidationErrorMessage()
         {
