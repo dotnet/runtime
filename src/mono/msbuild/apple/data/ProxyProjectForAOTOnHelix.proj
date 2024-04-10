@@ -117,6 +117,7 @@
           DestinationFolder="$(OriginalPublishDir)" />
   </Target>
 
+  <!-- Since we are reusing the 'publish' folder for different purposes (e.g., using it as a source and destination directory for trimming) we need to adjust the list of assemblies to bundle once trimming is completed. -->
   <Target Name="_AdjustTrimmedAssembliesToBundle" DependsOnTargets="ILLink;CopyFilesToPublishDirectory">
     <ItemGroup>
       <AppleAssembliesToBundle Remove="@(AppleAssembliesToBundle)" />
