@@ -4813,8 +4813,12 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
 
                             assert(vnStore->IsVNCompareCheckedBoundArith(oldCmpVN));
                             vnStore->GetCompareCheckedBoundArithInfo(oldCmpVN, &info);
-                            newCmpArgVN = vnStore->VNForFunc(vnStore->TypeOfVN(info.arrOp), (VNFunc)info.arrOper,
-                                                             info.arrOp, theConservativeVN);
+
+                            ValueNum arrOp1 = info.arrOpLHS ? info.arrOp : theConservativeVN;
+                            ValueNum arrOp2 = info.arrOpLHS ? theConservativeVN : info.arrOp;
+
+                            newCmpArgVN =
+                                vnStore->VNForFunc(vnStore->TypeOfVN(info.arrOp), (VNFunc)info.arrOper, arrOp1, arrOp2);
                         }
                         ValueNum newCmpVN = vnStore->VNForFunc(vnStore->TypeOfVN(oldCmpVN), (VNFunc)info.cmpOper,
                                                                info.cmpOp, newCmpArgVN);
