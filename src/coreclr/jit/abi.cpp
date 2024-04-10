@@ -70,6 +70,16 @@ regMaskTP ABIPassingSegment::GetRegisterMask() const
 // Return Value:
 //   Offset relative to the first stack argument.
 //
+// Remarks:
+//   On x86, where arguments are pushed in order and thus come in reverse order
+//   in the callee, this is the offset to subtract from the top of the stack to
+//   get the argument's address. By top of the stack is meant esp on entry + 4
+//   for the return address + total size of stack arguments. In varargs methods
+//   the varargs cookie contains the information required to allow the
+//   computation of the total size of stack arguments.
+//
+//   Outside x86 this is the offset to add to the first argument's address.
+//
 unsigned ABIPassingSegment::GetStackOffset() const
 {
     assert(IsPassedOnStack());
@@ -77,14 +87,14 @@ unsigned ABIPassingSegment::GetStackOffset() const
 }
 
 //-----------------------------------------------------------------------------
-// GetRegisterStoreType:
-//   Return a type that can be used to store from the register this segment is
-//   in, taking the segment's size into account.
+// GetRegisterType:
+//  Return the smallest type larger or equal to Size that most naturally
+//  represents the register this segment is passed in.
 //
 // Return Value:
-//   A type that matches ABIPassingSegment::Size and the register type.
+//   A type that matches ABIPassingSegment::Size and the register.
 //
-var_types ABIPassingSegment::GetRegisterStoreType() const
+var_types ABIPassingSegment::GetRegisterType() const
 {
     assert(IsPassedInRegister());
     if (genIsValidFloatReg(m_register))
@@ -100,6 +110,7 @@ var_types ABIPassingSegment::GetRegisterStoreType() const
                 return TYP_SIMD16;
 #endif
             default:
+                assert(!"Unexpected size for floating point register");
                 return TYP_UNDEF;
         }
     }
@@ -111,13 +122,18 @@ var_types ABIPassingSegment::GetRegisterStoreType() const
                 return TYP_UBYTE;
             case 2:
                 return TYP_USHORT;
+            case 3:
             case 4:
                 return TYP_INT;
 #ifdef TARGET_64BIT
+            case 5:
+            case 6:
+            case 7:
             case 8:
                 return TYP_LONG;
 #endif
             default:
+                assert(!"Unexpected size for integer register");
                 return TYP_UNDEF;
         }
     }
@@ -206,6 +222,18 @@ bool ABIPassingInformation::HasAnyStackSegment() const
         }
     }
     return false;
+}
+
+//-----------------------------------------------------------------------------
+// HasExactlyOneRegisterSegment:
+//   Check if this value is passed as a single register segment.
+//
+// Return Value:
+//   True if so.
+//
+bool ABIPassingInformation::HasExactlyOneRegisterSegment() const
+{
+    return (NumSegments == 1) && Segments[0].IsPassedInRegister();
 }
 
 //-----------------------------------------------------------------------------

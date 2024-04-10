@@ -3031,7 +3031,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         codeGen->setVerbose(true);
     }
 
-    treesBeforeAfterMorph = (JitConfig.TreesBeforeAfterMorph() == 1);
+    treesBeforeAfterMorph = (JitConfig.JitDumpBeforeAfterMorph() == 1);
     morphNum              = 0; // Initialize the morphed-trees counting.
 
     expensiveDebugCheckLevel = JitConfig.JitExpensiveDebugCheckLevel();
@@ -4622,6 +4622,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     {
         fgFixEntryFlowForOSR();
     }
+
+    // Drop back to just checking profile likelihoods.
+    //
+    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
+    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
 
     // Enable the post-phase checks that use internal logic to decide when checking makes sense.
     //
@@ -10913,10 +10918,6 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                 m_simdUserForcesDep++;
                 break;
 
-            case DoNotEnregisterReason::NonStandardParameter:
-                m_nonStandardParameter++;
-                break;
-
             default:
                 unreached();
                 break;
@@ -11044,7 +11045,6 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_returnSpCheck, notEnreg);
     PRINT_STATS(m_callSpCheck, notEnreg);
     PRINT_STATS(m_simdUserForcesDep, notEnreg);
-    PRINT_STATS(m_nonStandardParameter, notEnreg);
 
     fprintf(fout, "\nAddr exposed details:\n");
     if (m_addrExposed == 0)
