@@ -2305,8 +2305,8 @@ void LinearScan::buildIntervals()
     RegState* floatRegState                 = &compiler->codeGen->floatRegState;
     intRegState->rsCalleeRegArgMaskLiveIn   = RBM_NONE;
     floatRegState->rsCalleeRegArgMaskLiveIn = RBM_NONE;
-    regsInUseThisLocation                   = compiler->AllRegsMask_NONE;
-    regsInUseNextLocation                   = compiler->AllRegsMask_NONE;
+    regsInUseThisLocation.Clear();
+    regsInUseNextLocation.Clear();
 
 #ifdef SWIFT_SUPPORT
     if (compiler->info.compCallConv == CorInfoCallConvExtension::Swift)
@@ -2445,7 +2445,7 @@ void LinearScan::buildIntervals()
 #endif
 
     numPlacedArgLocals = 0;
-    placedArgRegs      = compiler->AllRegsMask_NONE;
+    placedArgRegs.Clear();
 
     BasicBlock* predBlock = nullptr;
     BasicBlock* prevBlock = nullptr;

@@ -313,7 +313,7 @@ void RegSet::rsRemoveRegsModified(regMaskGpr mask)
 
 void RegSet::ClearMaskVars() // Like SetMaskVars(RBM_NONE), but without any debug output.
 {
-    _rsAllMaskVars = m_rsCompiler->AllRegsMask_NONE;
+    _rsAllMaskVars.Clear();
 }
 
 void RegSet::SetMaskVars(CONSTREF_AllRegsMask newMaskVars)

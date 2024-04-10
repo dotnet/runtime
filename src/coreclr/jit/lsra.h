@@ -1961,7 +1961,7 @@ private:
     void resetRegState()
     {
         resetAvailableRegs();
-        regsBusyUntilKill = compiler->AllRegsMask_NONE;
+        regsBusyUntilKill.Clear();
     }
 
     bool conflictingFixedRegReference(regNumber regNum, RefPosition* refPosition);

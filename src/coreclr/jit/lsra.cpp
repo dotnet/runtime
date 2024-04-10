@@ -5004,8 +5004,8 @@ void LinearScan::allocateRegistersMinimal()
     AllRegsMask  regsToMakeInactive;
     AllRegsMask  delayRegsToMakeInactive;
     AllRegsMask  copyRegsToFree;
-    regsInUseThisLocation = compiler->AllRegsMask_NONE;
-    regsInUseNextLocation = compiler->AllRegsMask_NONE;
+    regsInUseThisLocation.Clear();
+    regsInUseNextLocation.Clear();
 
     // This is the most recent RefPosition for which a register was allocated
     // - currently only used for DEBUG but maintained in non-debug, for clarity of code
@@ -5034,7 +5034,7 @@ void LinearScan::allocateRegistersMinimal()
             // TODO: Clean this up. We need to make the delayRegs inactive as well, but don't want
             // to mark them as free yet.
             regsToMakeInactive      = delayRegsToMakeInactive;
-            delayRegsToMakeInactive = compiler->AllRegsMask_NONE;
+            delayRegsToMakeInactive.Clear();
         }
 
 #ifdef DEBUG
@@ -5091,9 +5091,9 @@ void LinearScan::allocateRegistersMinimal()
         {
             // CopyRegs are simply made available - we don't want to make the associated interval inactive.
             makeRegsAvailable(copyRegsToFree);
-            copyRegsToFree        = compiler->AllRegsMask_NONE;
+            copyRegsToFree.Clear();
             regsInUseThisLocation = regsInUseNextLocation;
-            regsInUseNextLocation = compiler->AllRegsMask_NONE;
+            regsInUseNextLocation.Clear();
             if (!((regsToFree | delayRegsToFree).IsEmpty()))
             {
                 freeRegisters(regsToFree);
@@ -5104,11 +5104,11 @@ void LinearScan::allocateRegistersMinimal()
                     assert(!"Found a delayRegFree associated with Location with no reference");
                     // However, to be cautious for the Release build case, we will free them.
                     freeRegisters(delayRegsToFree);
-                    delayRegsToFree       = compiler->AllRegsMask_NONE;
-                    regsInUseThisLocation = compiler->AllRegsMask_NONE;
+                    delayRegsToFree.Clear();
+                    regsInUseThisLocation.Clear();
                 }
                 regsToFree      = delayRegsToFree;
-                delayRegsToFree = compiler->AllRegsMask_NONE;
+                delayRegsToFree.Clear();
 
 #ifdef DEBUG
                 verifyFreeRegisters(regsToFree);
@@ -5150,9 +5150,9 @@ void LinearScan::allocateRegistersMinimal()
         {
             // Free any delayed regs (now in regsToFree) before processing the block boundary
             freeRegisters(regsToFree);
-            regsToFree            = compiler->AllRegsMask_NONE;
-            regsInUseThisLocation = compiler->AllRegsMask_NONE;
-            regsInUseNextLocation = compiler->AllRegsMask_NONE;
+            regsToFree.Clear();
+            regsInUseThisLocation.Clear();
+            regsInUseNextLocation.Clear();
             handledBlockEnd       = true;
             curBBStartLocation    = currentRefPosition.nodeLocation;
             if (currentBlock == nullptr)
@@ -5694,8 +5694,8 @@ void LinearScan::allocateRegisters()
     AllRegsMask  regsToMakeInactive;
     AllRegsMask  delayRegsToMakeInactive;
     AllRegsMask  copyRegsToFree;
-    regsInUseThisLocation = compiler->AllRegsMask_NONE;
-    regsInUseNextLocation = compiler->AllRegsMask_NONE;
+    regsInUseThisLocation.Clear();
+    regsInUseNextLocation.Clear();
 
     // This is the most recent RefPosition for which a register was allocated
     // - currently only used for DEBUG but maintained in non-debug, for clarity of code
@@ -5724,7 +5724,7 @@ void LinearScan::allocateRegisters()
             // TODO: Clean this up. We need to make the delayRegs inactive as well, but don't want
             // to mark them as free yet.
             regsToMakeInactive      = delayRegsToMakeInactive;
-            delayRegsToMakeInactive = compiler->AllRegsMask_NONE;
+            delayRegsToMakeInactive.Clear();
         }
 
 #ifdef DEBUG
@@ -5779,9 +5779,9 @@ void LinearScan::allocateRegisters()
         {
             // CopyRegs are simply made available - we don't want to make the associated interval inactive.
             makeRegsAvailable(copyRegsToFree);
-            copyRegsToFree        = compiler->AllRegsMask_NONE;
+            copyRegsToFree.Clear();
             regsInUseThisLocation = regsInUseNextLocation;
-            regsInUseNextLocation = compiler->AllRegsMask_NONE;
+            regsInUseNextLocation.Clear();
 #ifdef TARGET_ARM64
             if (hasConsecutiveRegister)
             {
@@ -5798,11 +5798,11 @@ void LinearScan::allocateRegisters()
                     assert(!"Found a delayRegFree associated with Location with no reference");
                     // However, to be cautious for the Release build case, we will free them.
                     freeRegisters(delayRegsToFree);
-                    delayRegsToFree       = compiler->AllRegsMask_NONE;
-                    regsInUseThisLocation = compiler->AllRegsMask_NONE;
+                    delayRegsToFree.Clear();
+                    regsInUseThisLocation.Clear();
                 }
                 regsToFree      = delayRegsToFree;
-                delayRegsToFree = compiler->AllRegsMask_NONE;
+                delayRegsToFree.Clear();
 #ifdef DEBUG
                 verifyFreeRegisters(regsToFree);
 #endif
@@ -5861,9 +5861,9 @@ void LinearScan::allocateRegisters()
         {
             // Free any delayed regs (now in regsToFree) before processing the block boundary
             freeRegisters(regsToFree);
-            regsToFree            = compiler->AllRegsMask_NONE;
-            regsInUseThisLocation = compiler->AllRegsMask_NONE;
-            regsInUseNextLocation = compiler->AllRegsMask_NONE;
+            regsToFree.Clear();
+            regsInUseThisLocation.Clear();
+            regsInUseNextLocation.Clear();
             handledBlockEnd       = true;
             curBBStartLocation    = currentRefPosition.nodeLocation;
             if (currentBlock == nullptr)
@@ -11463,7 +11463,7 @@ void LinearScan::dumpRegRecordHeader()
               regColumnWidth + 1);
 
     // Print a "title row" including the legend and the reg names.
-    lastDumpedRegisters = compiler->AllRegsMask_NONE;
+    lastDumpedRegisters.Clear();
     dumpRegRecordTitleIfNeeded();
 }
 
