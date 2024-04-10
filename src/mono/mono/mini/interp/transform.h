@@ -227,6 +227,7 @@ typedef struct
 	gint32 max_stack_size;
 	InterpLocal *locals;
 	int dummy_var;
+	int ref_handle_var;
 	int *local_ref_count;
 	unsigned int il_locals_offset;
 	unsigned int il_locals_size;
