@@ -241,6 +241,8 @@ namespace System.Tests
                 Assert.Equal(d1, d2);
             }
             Assert.Equal(new Decimal32(-1, 1), new Decimal32(-10, 0));
+            Assert.Equal(new Decimal32(1, 90), new Decimal32(10, 89));
+            Assert.Equal(new Decimal32(999999, 90), new Decimal32(9999990, 89));
             Assert.NotEqual(new Decimal32(1, 1), new Decimal32(-10, 0));
             Assert.NotEqual(new Decimal32(-1, 1), new Decimal32(10, 0));
         }

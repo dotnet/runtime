@@ -242,6 +242,8 @@ namespace System.Tests
                 Assert.Equal(d1, d2);
             }
             Assert.Equal(new Decimal64(-1, 1), new Decimal64(-10, 0));
+            Assert.Equal(new Decimal64(1, 369), new Decimal64(10, 368));
+            Assert.Equal(new Decimal64(long.Parse(new string('9', 15)), 369), new Decimal64(long.Parse(new string('9', 15) + "0"), 368));
             Assert.NotEqual(new Decimal64(1, 1), new Decimal64(-10, 0));
             Assert.NotEqual(new Decimal64(-1, 1), new Decimal64(10, 0));
         }
