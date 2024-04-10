@@ -283,8 +283,14 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: () => void) 
 
 
         Module.runtimeKeepalivePush();
-        if (WasmEnableThreads && globalThis.setInterval) globalThis.setInterval(() => {
-            mono_log_info("UI thread is alive!" + JSON.stringify((performance as any)?.memory));
+        if (WasmEnableThreads && globalThis.setInterval) globalThis.setInterval(async () => {
+            const anyPerf = performance as any;
+            if (anyPerf.measureUserAgentSpecificMemory) {
+                const memorySample = await anyPerf.measureUserAgentSpecificMemory();
+                mono_log_info("UI thread is alive!" + JSON.stringify(memorySample, null, 2));
+            } else {
+                mono_log_info("UI thread is alive!");
+            }
         }, 500);
 
         if (WasmEnableThreads) {

@@ -449,7 +449,7 @@ export function receiveWorkerHeapViews () {
     if (!WasmEnableThreads) return;
     const wasmMemory = runtimeHelpers.getMemory();
     if (wasmMemory.buffer !== Module.HEAPU8.buffer) {
-        mono_log_warn("Updating memory views to:" + wasmMemory.buffer.byteLength + " " + JSON.stringify((performance as any)?.memory));
+        mono_log_warn("Updating memory views to:" + wasmMemory.buffer.byteLength);
         runtimeHelpers.updateMemoryViews();
     }
 }
@@ -486,7 +486,7 @@ export function forceThreadMemoryViewRefresh () {
     */
     wasmMemory.grow(0);
     if (wasmMemory.buffer !== Module.HEAPU8.buffer) {
-        mono_log_warn("Forcing update memory views to:" + wasmMemory.buffer.byteLength + " " + JSON.stringify((performance as any)?.memory));
+        mono_log_warn("Forcing update memory views to:" + wasmMemory.buffer.byteLength);
     }
     runtimeHelpers.updateMemoryViews();
 }
