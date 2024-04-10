@@ -168,13 +168,7 @@ namespace System.Numerics
 
         static uint IDecimalIeee754UnpackInfo<Decimal32, int, uint>.SignMask => 0x8000_0000;
 
-        static int IDecimalIeee754UnpackInfo<Decimal32, int, uint>.NumberBitsEncoding => 32;
-
-        static int IDecimalIeee754UnpackInfo<Decimal32, int, uint>.NumberBitsExponent => NumberBitsExponent;
-
         static int IDecimalIeee754UnpackInfo<Decimal32, int, uint>.Bias => Bias;
-
-        static int IDecimalIeee754UnpackInfo<Decimal32, int, uint>.TwoPowerMostSignificantBitNumberOfSignificand => 8388608;
 
         static int IDecimalIeee754UnpackInfo<Decimal32, int, uint>.NumberDigitsPrecision => NumberDigitsPrecision;
 
@@ -183,6 +177,20 @@ namespace System.Numerics
         static int IDecimalIeee754UnpackInfo<Decimal32, int, uint>.ConvertToSignificand(uint value) => (int)value;
 
         static int IDecimalIeee754UnpackInfo<Decimal32, int, uint>.Power10(int exponent) => Int32Powers10[exponent];
+
+        static uint IDecimalIeee754UnpackInfo<Decimal32, int, uint>.G0G1Mask => 0x60000000;
+
+        static uint IDecimalIeee754UnpackInfo<Decimal32, int, uint>.G0ToGwPlus1ExponentMask => 0x7f800000;
+
+        static uint IDecimalIeee754UnpackInfo<Decimal32, int, uint>.G2ToGwPlus3ExponentMask => 0x1fe00000;
+
+        static uint IDecimalIeee754UnpackInfo<Decimal32, int, uint>.GwPlus2ToGwPlus4SignificandMask => 0x007fffff;
+
+        static uint IDecimalIeee754UnpackInfo<Decimal32, int, uint>.GwPlus4SignificandMask => 0x001fffff;
+
+        static int IDecimalIeee754UnpackInfo<Decimal32, int, uint>.NumberBitsSignificand => 20;
+
+        static uint IDecimalIeee754UnpackInfo<Decimal32, int, uint>.MostSignificantBitOfSignificandMask => 0x00800000;
 
         static int IDecimalIeee754TryParseInfo<Decimal32, int>.DecimalNumberBufferLength => Number.Decimal32NumberBufferLength;
 

@@ -182,19 +182,28 @@ namespace System.Numerics
         static int IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.ConvertToExponent(ulong value) => (int)value;
 
         static long IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.ConvertToSignificand(ulong value) => (long)value;
+
         static long IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.Power10(int exponent) => Int64Powers10[exponent];
 
         static ulong IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.SignMask => 0x8000_0000_0000_0000;
 
-        static int IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.NumberBitsEncoding => 64;
-
-        static int IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.NumberBitsExponent => NumberBitsExponent;
-
         static int IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.Bias => Bias;
 
-        static long IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.TwoPowerMostSignificantBitNumberOfSignificand => 9_007_199_254_740_992;
-
         static int IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.NumberDigitsPrecision => NumberDigitsPrecision;
+
+        static ulong IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.G0G1Mask => 0x6000_0000_0000_0000;
+
+        static ulong IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.G0ToGwPlus1ExponentMask => 0x7FE0_0000_0000_0000;
+
+        static ulong IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.G2ToGwPlus3ExponentMask => 0x1FF8_0000_0000_0000;
+
+        static ulong IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.GwPlus2ToGwPlus4SignificandMask => 0x001F_FFFF_FFFF_FFFF;
+
+        static ulong IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.GwPlus4SignificandMask => 0x0007_FFFF_FFFF_FFFF;
+
+        static int IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.NumberBitsSignificand => 50;
+
+        static ulong IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.MostSignificantBitOfSignificandMask => 0x0020_0000_0000_0000;
 
         static int IDecimalIeee754TryParseInfo<Decimal64, long>.DecimalNumberBufferLength => Number.Decimal64NumberBufferLength;
 

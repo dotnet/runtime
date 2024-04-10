@@ -32,11 +32,15 @@ namespace System
         where TValue : IBinaryInteger<TValue>
     {
         static abstract TValue SignMask { get; }
-        static abstract int NumberBitsEncoding { get; }
-        static abstract int NumberBitsExponent { get; }
+        static abstract TValue G0G1Mask { get; }
+        static abstract TValue G0ToGwPlus1ExponentMask { get; } //G0 to G(w+1)
+        static abstract TValue G2ToGwPlus3ExponentMask { get; } //G2 to G(w+3)
+        static abstract TValue GwPlus2ToGwPlus4SignificandMask { get; } //G(w+2) to G(w+4)
+        static abstract TValue GwPlus4SignificandMask { get; } //G(w+4)
+        static abstract int NumberBitsSignificand { get; }
         static abstract int NumberDigitsPrecision { get; }
         static abstract int Bias { get; }
-        static abstract TSignificand TwoPowerMostSignificantBitNumberOfSignificand { get; }
+        static abstract TValue MostSignificantBitOfSignificandMask { get; }
         static abstract int ConvertToExponent(TValue value);
         static abstract TSignificand ConvertToSignificand(TValue value);
         static abstract TSignificand Power10(int exponent);
@@ -171,20 +175,18 @@ namespace System
             where TValue : IBinaryInteger<TValue>
         {
             bool signed = (value & TDecimal.SignMask) != TValue.Zero;
-            TValue g0g1Bits = (value << 1) >> TDecimal.NumberBitsEncoding - 2;
             TSignificand significand;
             int exponent;
 
-            if (g0g1Bits == TValue.CreateTruncating(3))
+            if ((value & TDecimal.G0G1Mask) == TDecimal.G0G1Mask)
             {
-                exponent = TDecimal.ConvertToExponent((value << 3) >> TDecimal.NumberBitsEncoding - TDecimal.NumberBitsExponent);
-                significand = TDecimal.ConvertToSignificand((value << TDecimal.NumberBitsEncoding + 3) >> TDecimal.NumberBitsEncoding + 3);
-                significand += TDecimal.TwoPowerMostSignificantBitNumberOfSignificand;
+                exponent = TDecimal.ConvertToExponent((value & TDecimal.G2ToGwPlus3ExponentMask) >> (TDecimal.NumberBitsSignificand + 1));
+                significand = TDecimal.ConvertToSignificand((value & TDecimal.GwPlus4SignificandMask) | TDecimal.MostSignificantBitOfSignificandMask);
             }
             else
             {
-                exponent = TDecimal.ConvertToExponent((value << 1) >> TDecimal.NumberBitsEncoding - TDecimal.NumberBitsExponent);
-                significand = TDecimal.ConvertToSignificand((value << TDecimal.NumberBitsExponent + 1) >> TDecimal.NumberBitsExponent + 1);
+                exponent = TDecimal.ConvertToExponent((value & TDecimal.G0ToGwPlus1ExponentMask) >> (TDecimal.NumberBitsSignificand + 3));
+                significand = TDecimal.ConvertToSignificand(value & TDecimal.GwPlus2ToGwPlus4SignificandMask);
             }
 
             return new DecimalIeee754<TSignificand>(signed, exponent - TDecimal.Bias, significand);
