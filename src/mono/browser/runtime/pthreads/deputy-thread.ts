@@ -4,7 +4,7 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
-import { mono_log_error, mono_log_info } from "../logging";
+import { mono_log_error, mono_log_warn } from "../logging";
 import { monoThreadInfo, postMessageToMain, update_thread_info } from "./shared";
 import { Module, loaderHelpers, runtimeHelpers } from "../globals";
 import { start_runtime } from "../startup";
@@ -15,8 +15,9 @@ export function mono_wasm_start_deputy_thread_async () {
     if (!WasmEnableThreads) return;
 
     if (BuildConfiguration === "Debug" && globalThis.setInterval) globalThis.setInterval(() => {
-        mono_log_info("Deputy thread is alive!");
-    }, 3000);
+        const wasmMemory = runtimeHelpers.getMemory();
+        mono_log_warn("Deputy thread is alive! wasmMemory:" + wasmMemory.buffer.byteLength);
+    }, 500);
 
     try {
         monoThreadInfo.isDeputy = true;
