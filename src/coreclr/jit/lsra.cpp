@@ -4358,48 +4358,18 @@ void LinearScan::resetAllRegistersState()
     }
 }
 
+
 #ifdef HAS_MORE_THAN_64_REGISTERS
-
 void LinearScan::updateDeadCandidatesAtBlockStart(REF_AllRegsMask deadRegMask, VarToRegMap inVarToRegMap)
-{
-    while (!deadRegMask.IsEmpty())
-    {
-        regNumber  reg           = genFirstRegNumFromMaskAndToggle(deadRegMask);
-        RegRecord* physRegRecord = getRegisterRecord(reg);
-
-        makeRegAvailable(reg, physRegRecord->registerType);
-        Interval* assignedInterval = physRegRecord->assignedInterval;
-
-        if (assignedInterval != nullptr)
-        {
-            assert(assignedInterval->isLocalVar || assignedInterval->isConstant || assignedInterval->IsUpperVector());
-
-            if (!assignedInterval->isConstant && assignedInterval->assignedReg == physRegRecord)
-            {
-                assignedInterval->isActive = false;
-                if (assignedInterval->getNextRefPosition() == nullptr)
-                {
-                    unassignPhysReg(physRegRecord, nullptr);
-                }
-                if (!assignedInterval->IsUpperVector())
-                {
-                    inVarToRegMap[assignedInterval->getVarIndex(compiler)] = REG_STK;
-                }
-            }
-            else
-            {
-                // This interval may still be active, but was in another register in an
-                // intervening block.
-                clearAssignedInterval(physRegRecord ARM_ARG(assignedInterval->registerType));
-            }
-        }
-    }
-}
 #else
-// TODO: Merge this with MORE_THAN_64 version updating the != RBM_NONE with IsEmpty() check
 void LinearScan::updateDeadCandidatesAtBlockStart(RegBitSet64 deadRegMask, VarToRegMap inVarToRegMap)
+#endif // HAS_MORE_THAN_64_REGISTERS
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    while (!deadRegMask.IsEmpty())
+#else
     while (deadRegMask != RBM_NONE)
+#endif
     {
         regNumber  reg           = genFirstRegNumFromMaskAndToggle(deadRegMask);
         RegRecord* physRegRecord = getRegisterRecord(reg);
@@ -4432,7 +4402,6 @@ void LinearScan::updateDeadCandidatesAtBlockStart(RegBitSet64 deadRegMask, VarTo
         }
     }
 }
-#endif // HAS_MORE_THAN_64_REGISTERS
 
 //------------------------------------------------------------------------
 // processBlockStartLocations: Update var locations on entry to 'currentBlock' and clear constant
@@ -4861,19 +4830,15 @@ void LinearScan::makeRegisterInactive(RegRecord* physRegRecord)
 
 #ifdef HAS_MORE_THAN_64_REGISTERS
 void LinearScan::inActivateRegisters(REF_AllRegsMask inactiveMask)
-{
-    while (!inactiveMask.IsEmpty())
-    {
-        regNumber  nextReg   = genFirstRegNumFromMaskAndToggle(inactiveMask);
-        RegRecord* regRecord = getRegisterRecord(nextReg);
-        clearSpillCost(regRecord->regNum, regRecord->registerType);
-        makeRegisterInactive(regRecord);
-    }
-}
 #else
 void LinearScan::inActivateRegisters(RegBitSet64 inactiveMask)
+#endif // HAS_MORE_THAN_64_REGISTERS
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    while (!inactiveMask.IsEmpty())
+#else
     while (inactiveMask != RBM_NONE)
+#endif // HAS_MORE_THAN_64_REGISTERS
     {
         regNumber  nextReg   = genFirstRegNumFromMaskAndToggle(inactiveMask);
         RegRecord* regRecord = getRegisterRecord(nextReg);
@@ -4881,9 +4846,8 @@ void LinearScan::inActivateRegisters(RegBitSet64 inactiveMask)
         makeRegisterInactive(regRecord);
     }
 }
-#endif
 
-//------------------------------------------------------------------------
+    //------------------------------------------------------------------------
 // LinearScan::freeRegister: Make a register available for use
 //
 // Arguments:
