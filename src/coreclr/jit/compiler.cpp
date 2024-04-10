@@ -2019,6 +2019,163 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     new (&Metrics, jitstd::placement_t()) JitMetrics();
 }
 
+void Compiler::compInitAllRegsMask()
+{
+    AllRegsMask_NONE = AllRegsMask();
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    AllRegsMask_CALLEE_SAVED =
+        AllRegsMask(RBM_INT_CALLEE_SAVED, RBM_FLT_CALLEE_SAVED, RBM_MSK_CALLEE_SAVED);
+    AllRegsMask_CALLEE_TRASH =
+        AllRegsMask(RBM_INT_CALLEE_TRASH, RBM_FLT_CALLEE_TRASH, RBM_MSK_CALLEE_TRASH);
+#else
+    AllRegsMask_CALLEE_SAVED = AllRegsMask(RBM_CALLEE_SAVED);
+    AllRegsMask_CALLEE_TRASH = AllRegsMask(RBM_CALLEE_TRASH);
+#endif
+
+#if defined(TARGET_X86)
+
+    AllRegsMask_CALLEE_TRASH_NOGC = GprRegsMask(RBM_EDX);
+    // The registers trashed by profiler enter/leave/tailcall hook
+    // See vm\i386\asmhelpers.asm for more details.
+    AllRegsMask_PROFILER_ENTER_TRASH    = AllRegsMask_NONE;
+    AllRegsMask_PROFILER_LEAVE_TRASH    = AllRegsMask();
+    AllRegsMask_PROFILER_TAILCALL_TRASH = (AllRegsMask_CALLEE_TRASH & GprRegsMask(~RBM_ARG_REGS));
+
+#ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
+    AllRegsMask_CALLEE_TRASH_WRITEBARRIER = GprRegsMask(RBM_EAX | RBM_EDX);
+#else  // !FEATURE_USE_ASM_GC_WRITE_BARRIERS
+    AllRegsMask_CALLEE_TRASH_WRITEBARRIER = AllRegsMask_CALLEE_TRASH;
+#endif // !FEATURE_USE_ASM_GC_WRITE_BARRIERS
+
+    // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
+    AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER = GprRegsMask(RBM_EDX);
+
+    // Registers killed by CORINFO_HELP_ASSIGN_BYREF.
+    AllRegsMask_CALLEE_TRASH_WRITEBARRIER_BYREF = GprRegsMask(RBM_ESI | RBM_EDI | RBM_ECX);
+
+    // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
+    // Note that RDI and RSI are still valid byref pointers after this helper call, despite their value being changed.
+    AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER_BYREF = GprRegsMask(RBM_ECX);
+
+    // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper
+    AllRegsMask_STOP_FOR_GC_TRASH = AllRegsMask_CALLEE_TRASH;
+
+    // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper. On x86, this helper has a custom calling
+    // convention that takes EDI as argument (but doesn't trash it), trashes EAX, and returns ESI.
+    AllRegsMask_INIT_PINVOKE_FRAME_TRASH = GprRegsMask(RBM_PINVOKE_SCRATCH | RBM_PINVOKE_TCB);
+
+    AllRegsMask_VALIDATE_INDIRECT_CALL_TRASH = GprRegsMask(RBM_INT_CALLEE_TRASH & ~RBM_ECX);
+    AllRegsMask_EDX                          = GprRegsMask(RBM_EDX);
+
+#elif defined(TARGET_AMD64)
+    AllRegsMask_CALLEE_TRASH_NOGC = AllRegsMask_CALLEE_TRASH;
+    // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
+    AllRegsMask_CALLEE_TRASH_WRITEBARRIER = AllRegsMask_CALLEE_TRASH_NOGC;
+    // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
+    AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER = AllRegsMask_CALLEE_TRASH_NOGC;
+    AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER_BYREF =
+        GprRegsMask(RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF);
+    AllRegsMask_CALLEE_TRASH_WRITEBARRIER_BYREF = GprRegsMask(RBM_CALLEE_TRASH_WRITEBARRIER_BYREF);
+
+#ifdef UNIX_AMD64_ABI
+
+    // See vm\amd64\unixasmhelpers.S for more details.
+    //
+    // On Unix a struct of size >=9 and <=16 bytes in size is returned in two return registers.
+    // The return registers could be any two from the set { RAX, RDX, XMM0, XMM1 }.
+    // STOP_FOR_GC helper preserves all the 4 possible return registers.
+    AllRegsMask_STOP_FOR_GC_TRASH =
+        AllRegsMask(RBM_INT_CALLEE_TRASH & ~(RBM_INTRET | RBM_INTRET_1),
+                    (RBM_FLT_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_FLOATRET_1)), RBM_MSK_CALLEE_TRASH);
+    AllRegsMask_PROFILER_ENTER_TRASH =
+        AllRegsMask((RBM_INT_CALLEE_TRASH & ~RBM_ARG_REGS), (RBM_FLT_CALLEE_TRASH & ~RBM_FLTARG_REGS),
+                    RBM_MSK_CALLEE_TRASH);
+#else
+    // See vm\amd64\asmhelpers.asm for more details.
+    AllRegsMask_STOP_FOR_GC_TRASH =
+        AllRegsMask((RBM_INT_CALLEE_TRASH & ~RBM_INTRET), (RBM_FLT_CALLEE_TRASH & ~RBM_FLOATRET), RBM_MSK_CALLEE_TRASH);
+    AllRegsMask_PROFILER_ENTER_TRASH = AllRegsMask_CALLEE_TRASH;
+#endif // UNIX_AMD64_ABI
+
+    AllRegsMask_PROFILER_LEAVE_TRASH    = AllRegsMask_STOP_FOR_GC_TRASH;
+    AllRegsMask_PROFILER_TAILCALL_TRASH = AllRegsMask_PROFILER_LEAVE_TRASH;
+
+    // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper.
+    AllRegsMask_INIT_PINVOKE_FRAME_TRASH     = AllRegsMask_CALLEE_TRASH;
+    AllRegsMask_VALIDATE_INDIRECT_CALL_TRASH = GprRegsMask(RBM_VALIDATE_INDIRECT_CALL_TRASH);
+
+#elif defined(TARGET_ARM)
+
+    AllRegsMask_CALLEE_TRASH_NOGC    = GprRegsMask(_RBM_CALLEE_TRASH_NOGC);
+    AllRegsMask_PROFILER_ENTER_TRASH = AllRegsMask_NONE;
+
+    // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
+    AllRegsMask_CALLEE_TRASH_WRITEBARRIER =
+        GprRegsMask(RBM_R0 | RBM_R3 | RBM_LR | RBM_DEFAULT_HELPER_CALL_TARGET);
+
+    // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
+    AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER = AllRegsMask_CALLEE_TRASH_WRITEBARRIER;
+
+    // Registers killed by CORINFO_HELP_ASSIGN_BYREF.
+    AllRegsMask_CALLEE_TRASH_WRITEBARRIER_BYREF =
+        GprRegsMask(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF | _RBM_CALLEE_TRASH_NOGC);
+
+    // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
+    // Note that r0 and r1 are still valid byref pointers after this helper call, despite their value being changed.
+    AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER_BYREF = AllRegsMask_CALLEE_TRASH_NOGC;
+    AllRegsMask_PROFILER_RET_SCRATCH              = GprRegsMask(RBM_R2);
+    // While REG_PROFILER_RET_SCRATCH is not trashed by the method, the register allocator must
+    // consider it killed by the return.
+    AllRegsMask_PROFILER_LEAVE_TRASH    = AllRegsMask_PROFILER_RET_SCRATCH;
+    AllRegsMask_PROFILER_TAILCALL_TRASH = AllRegsMask_NONE;
+    // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper (JIT_RareDisableHelper).
+    // See vm\arm\amshelpers.asm for more details.
+    AllRegsMask_STOP_FOR_GC_TRASH =
+        AllRegsMask((RBM_INT_CALLEE_TRASH & ~(RBM_LNGRET | RBM_R7 | RBM_R8 | RBM_R11)),
+                    (RBM_FLT_CALLEE_TRASH & ~(RBM_DOUBLERET | RBM_F2 | RBM_F3 | RBM_F4 | RBM_F5 | RBM_F6 | RBM_F7)));
+    // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper.
+    AllRegsMask_INIT_PINVOKE_FRAME_TRASH =
+        (AllRegsMask_CALLEE_TRASH | GprRegsMask(RBM_PINVOKE_TCB | RBM_PINVOKE_SCRATCH));
+
+    AllRegsMask_VALIDATE_INDIRECT_CALL_TRASH = GprRegsMask(RBM_INT_CALLEE_TRASH);
+
+#elif defined(TARGET_ARM64)
+
+    AllRegsMask_CALLEE_TRASH_NOGC = GprRegsMask(_RBM_CALLEE_TRASH_NOGC);
+    AllRegsMask_PROFILER_ENTER_TRASH =
+        AllRegsMask((RBM_INT_CALLEE_TRASH & ~(RBM_ARG_REGS | RBM_ARG_RET_BUFF | RBM_FP)),
+                    (RBM_FLT_CALLEE_TRASH & ~RBM_FLTARG_REGS), RBM_MSK_CALLEE_TRASH);
+    // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
+    AllRegsMask_CALLEE_TRASH_WRITEBARRIER = GprRegsMask(RBM_R14 | _RBM_CALLEE_TRASH_NOGC);
+
+    // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
+    AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER = AllRegsMask_CALLEE_TRASH_NOGC;
+
+    // Registers killed by CORINFO_HELP_ASSIGN_BYREF.
+    AllRegsMask_CALLEE_TRASH_WRITEBARRIER_BYREF =
+        GprRegsMask(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF | _RBM_CALLEE_TRASH_NOGC);
+
+    // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
+    // Note that x13 and x14 are still valid byref pointers after this helper call, despite their value being changed.
+    AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER_BYREF = AllRegsMask_CALLEE_TRASH_NOGC;
+
+    AllRegsMask_PROFILER_LEAVE_TRASH    = AllRegsMask_PROFILER_ENTER_TRASH;
+    AllRegsMask_PROFILER_TAILCALL_TRASH = AllRegsMask_PROFILER_ENTER_TRASH;
+
+    // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper
+    AllRegsMask_STOP_FOR_GC_TRASH = AllRegsMask_CALLEE_TRASH;
+    // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper.
+    AllRegsMask_INIT_PINVOKE_FRAME_TRASH     = AllRegsMask_CALLEE_TRASH;
+    AllRegsMask_VALIDATE_INDIRECT_CALL_TRASH = GprRegsMask(RBM_VALIDATE_INDIRECT_CALL_TRASH);
+#endif
+
+#if defined(TARGET_ARM)
+    // profiler scratch remains gc live
+    AllRegsMask_PROF_FNC_LEAVE = AllRegsMask_PROFILER_LEAVE_TRASH & ~AllRegsMask_PROFILER_RET_SCRATCH;
+#else
+    AllRegsMask_PROF_FNC_LEAVE = AllRegsMask_PROFILER_LEAVE_TRASH;
+#endif
+}
 /*****************************************************************************
  *
  *  Destructor
@@ -2564,7 +2721,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
     else
     {
-        verbose = false;
+        verbose = false;        
         codeGen->setVerbose(false);
     }
     verboseTrees     = verbose && shouldUseVerboseTrees();
@@ -6979,6 +7136,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     // compInitOptions will set the correct verbose flag.
 
     compInitOptions(compileFlags);
+    compInitAllRegsMask();
 
     if (!compIsForInlining() && !opts.altJit && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
     {
