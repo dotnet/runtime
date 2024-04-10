@@ -8,7 +8,6 @@ parameters:
   pool: ''
   platform: ''
   shouldContinueOnError: false
-  dependOnEvaluatePaths: false
   jobParameters: {}
 
 jobs:
@@ -22,7 +21,6 @@ jobs:
     pool: ${{ parameters.pool }}
     platform: ${{ parameters.platform }}
     shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths}}
     helixQueues:
 
     # Linux arm

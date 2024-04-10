@@ -79,7 +79,7 @@ namespace ILCompiler.Dataflow
                     MarkEvent(origin, @event, reason, accessKind);
                     break;
                     // case InterfaceImplementation
-                    //  Nothing to do currently as Native AOT will preserve all interfaces on a preserved type
+                    //  This is handled in the MetadataType case above
             }
         }
 

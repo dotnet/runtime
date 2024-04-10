@@ -54,26 +54,27 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				arg.MethodWithDynamicParameter (arg);
 			}
 
-			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.InvokeConstructor")]
-			[ExpectedWarning ("IL3050", ProducedBy = Tool.NativeAot)] // https://github.com/dotnet/runtime/issues/94427
-			static void ObjectCreationDynamicArgument ()
-			{
-				dynamic dynamicObject = "Some string";
-				var x = new ClassWithDynamicCtor (dynamicObject);
-			}
+			// Roslyn codegen no longer produces a call to Binder.InvokeConstructor.
+			// [ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.InvokeConstructor")]
+			// [ExpectedWarning ("IL3050", ProducedBy = Tool.NativeAot)] // https://github.com/dotnet/runtime/issues/94427
+			// static void ObjectCreationDynamicArgument ()
+			// {
+			// 	dynamic dynamicObject = "Some string";
+			// 	var x = new ClassWithDynamicCtor (dynamicObject);
+			// }
 
-			class ClassWithDynamicCtor
-			{
-				public ClassWithDynamicCtor (dynamic arg)
-				{
-				}
-			}
+			// class ClassWithDynamicCtor
+			// {
+			// 	public ClassWithDynamicCtor (dynamic arg)
+			// 	{
+			// 	}
+			// }
 
 			public static void Test ()
 			{
 				DynamicArgument ();
 				DynamicParameter ();
-				ObjectCreationDynamicArgument ();
+				// ObjectCreationDynamicArgument ();
 			}
 		}
 

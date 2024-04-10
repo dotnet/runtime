@@ -30,15 +30,16 @@ variables:
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
+    isOfficialBuild: false
     stages:
+    - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+      - stage: EvaluatePaths
+        displayName: Evaluate Paths
+        jobs:
+          - template: /eng/pipelines/common/evaluate-default-paths.yml
+
     - stage: Build
       jobs:
-
-      #
-      # Evaluate paths
-      #
-      - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
-        - template: /eng/pipelines/common/evaluate-default-paths.yml
 
       #
       # Build with Release config and Debug runtimeConfiguration
@@ -58,8 +59,8 @@ extends:
             timeoutInMinutes: 120
             condition:
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -78,8 +79,8 @@ extends:
             timeoutInMinutes: 120
             condition:
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -98,8 +99,8 @@ extends:
             timeoutInMinutes: 120
             condition:
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -119,7 +120,7 @@ extends:
             timeoutInMinutes: 120
             condition:
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -139,7 +140,7 @@ extends:
             timeoutInMinutes: 120
             condition:
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -158,7 +159,7 @@ extends:
             timeoutInMinutes: 120
             condition:
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -174,4 +175,4 @@ extends:
             nameSuffix: PortableSourceBuild
             timeoutInMinutes: 95
             condition:
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true)
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true)

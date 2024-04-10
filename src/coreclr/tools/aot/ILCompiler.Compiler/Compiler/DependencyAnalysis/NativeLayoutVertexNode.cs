@@ -909,6 +909,15 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
+            foreach (GenericParameterDesc genericParam in _method.GetTypicalMethodDefinition().Instantiation)
+            {
+                foreach (TypeDesc typeConstraint in genericParam.TypeConstraints)
+                {
+                    if (typeConstraint.IsInterface)
+                        yield return new DependencyListEntry(context.InterfaceUse(typeConstraint.GetTypeDefinition()), "Used as constraint");
+                }
+            }
+
             yield return new DependencyListEntry(context.GenericDictionaryLayout(_method), "Dictionary layout");
         }
 
@@ -1024,6 +1033,15 @@ namespace ILCompiler.DependencyAnalysis
             if (context.PreinitializationManager.HasLazyStaticConstructor(_type.ConvertToCanonForm(CanonicalFormKind.Specific)))
             {
                 yield return new DependencyListEntry(context.MethodEntrypoint(_type.GetStaticConstructor().GetCanonMethodTarget(CanonicalFormKind.Specific)), "cctor for template");
+            }
+
+            foreach (GenericParameterDesc genericParam in _type.GetTypeDefinition().Instantiation)
+            {
+                foreach (TypeDesc typeConstraint in genericParam.TypeConstraints)
+                {
+                    if (typeConstraint.IsInterface)
+                        yield return new DependencyListEntry(context.InterfaceUse(typeConstraint.GetTypeDefinition()), "Used as constraint");
+                }
             }
 
             if (!_isUniversalCanon)
@@ -1387,7 +1405,7 @@ namespace ILCompiler.DependencyAnalysis
                         break;
 
                     case VTableEntriesToProcess.AllOnTypesThatShouldProduceFullVTables:
-                        if (factory.VTable(declType).HasFixedSlots)
+                        if (factory.VTable(declType).HasKnownVirtualMethodUse)
                         {
                             vtableEntriesToProcess = factory.VTable(declType).Slots;
                         }
@@ -1398,7 +1416,7 @@ namespace ILCompiler.DependencyAnalysis
                         break;
 
                     case VTableEntriesToProcess.AllOnTypesThatProducePartialVTables:
-                        if (factory.VTable(declType).HasFixedSlots)
+                        if (factory.VTable(declType).HasKnownVirtualMethodUse)
                         {
                             vtableEntriesToProcess = Array.Empty<MethodDesc>();
                         }
@@ -1621,7 +1639,7 @@ namespace ILCompiler.DependencyAnalysis
             if (method.IsRuntimeDeterminedExactMethod)
                 method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            if (!factory.VTable(method.OwningType).HasFixedSlots)
+            if (!factory.VTable(method.OwningType).HasKnownVirtualMethodUse)
             {
                 yield return new DependencyListEntry(factory.VirtualMethodUse(method), "Slot number");
             }

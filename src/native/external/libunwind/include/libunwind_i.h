@@ -333,7 +333,7 @@ static inline void _unw_debug(int level, char const * const fname, char const * 
 
       if (level > 16) level = 16;
       int bcount = snprintf (buf, buf_size, "%*c>%s: ", level, ' ', fname);
-      int res = write(STDERR_FILENO, buf, bcount);
+      ssize_t res = write(STDERR_FILENO, buf, bcount);
 
       va_list ap;
       va_start(ap, fmt);
@@ -350,7 +350,7 @@ static inline void _unw_debug(int level, char const * const fname, char const * 
 # define Dprintf( /* format */ ...)
 #endif /* defined(UNW_DEBUG) */
 
-static ALWAYS_INLINE int
+static ALWAYS_INLINE ssize_t
 print_error (const char *string)
 {
   return write (2, string, strlen (string));
@@ -418,6 +418,9 @@ static inline void invalidate_edi (struct elf_dyn_info *edi)
 #ifndef PT_ARM_EXIDX
 # define PT_ARM_EXIDX           0x70000001      /* ARM unwind segment */
 #endif /* !PT_ARM_EXIDX */
+
+#define DWARF_GET_MEM_LOC(l)    DWARF_GET_LOC(l)
+#define DWARF_GET_REG_LOC(l)    ((unw_regnum_t) DWARF_GET_LOC(l))
 
 #include "tdep/libunwind_i.h"
 

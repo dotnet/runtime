@@ -141,11 +141,11 @@ ASMCONSTANTS_C_ASSERT(UnmanagedToManagedFrame__m_pvDatum == offsetof(UnmanagedTo
 
 #endif // FEATURE_COMINTEROP
 
-#define               Thread__m_fPreemptiveGCDisabled   0x08
+#define               Thread__m_fPreemptiveGCDisabled   0x04
 ASMCONSTANTS_C_ASSERT(Thread__m_fPreemptiveGCDisabled == offsetof(Thread, m_fPreemptiveGCDisabled));
 #define Thread_m_fPreemptiveGCDisabled Thread__m_fPreemptiveGCDisabled
 
-#define               Thread__m_pFrame                  0x0C
+#define               Thread__m_pFrame                  0x08
 ASMCONSTANTS_C_ASSERT(Thread__m_pFrame == offsetof(Thread, m_pFrame));
 #define Thread_m_pFrame Thread__m_pFrame
 

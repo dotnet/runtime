@@ -145,6 +145,8 @@
     <PlatformManifestFileEntry Include="libeventpipe-enabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libRuntime.ServerGC.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libRuntime.WorkstationGC.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libRuntime.VxSortDisabled.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libRuntime.VxSortEnabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libstandalonegc-disabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libstandalonegc-enabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libstdc++compat.a" IsNative="true" />

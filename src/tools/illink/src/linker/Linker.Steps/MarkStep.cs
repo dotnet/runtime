@@ -35,8 +35,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.Runtime.TypeParsing;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
@@ -405,7 +405,7 @@ namespace Mono.Linker.Steps
 
 			if (type.HasEvents) {
 				foreach (var ev in type.Events) {
-					MarkEventVisibleToReflection (ev, new DependencyInfo (DependencyKind.MemberOfType, type), ScopeStack.CurrentScope.Origin);
+					MarkEventVisibleToReflection (ev, new DependencyInfo (DependencyKind.MemberOfType, ScopeStack.CurrentScope.Origin), ScopeStack.CurrentScope.Origin);
 				}
 			}
 		}
@@ -2450,26 +2450,27 @@ namespace Mono.Linker.Steps
 
 		void MarkInterfaceImplementations (TypeDefinition type)
 		{
-			if (!type.HasInterfaces)
+			var ifaces = Annotations.GetRecursiveInterfaces (type);
+			if (ifaces is null)
 				return;
-
-			foreach (var iface in type.Interfaces) {
+			foreach (var (ifaceType, impls) in ifaces) {
 				// Only mark interface implementations of interface types that have been marked.
 				// This enables stripping of interfaces that are never used
-				if (ShouldMarkInterfaceImplementation (type, iface))
-					MarkInterfaceImplementation (iface, new MessageOrigin (type));
+				if (ShouldMarkInterfaceImplementationList (type, impls, ifaceType))
+					MarkInterfaceImplementationList (impls, new MessageOrigin (type));
 			}
 		}
 
-		protected virtual bool ShouldMarkInterfaceImplementation (TypeDefinition type, InterfaceImplementation iface)
+
+		protected virtual bool ShouldMarkInterfaceImplementationList (TypeDefinition type, List<InterfaceImplementation> ifaces, TypeReference ifaceType)
 		{
-			if (Annotations.IsMarked (iface))
+			if (ifaces.All (Annotations.IsMarked))
 				return false;
 
 			if (!Context.IsOptimizationEnabled (CodeOptimizations.UnusedInterfaces, type))
 				return true;
 
-			if (Context.Resolve (iface.InterfaceType) is not TypeDefinition resolvedInterfaceType)
+			if (Context.Resolve (ifaceType) is not TypeDefinition resolvedInterfaceType)
 				return false;
 
 			if (Annotations.IsMarked (resolvedInterfaceType))
@@ -3324,6 +3325,7 @@ namespace Mono.Linker.Steps
 			case DependencyKind.AlreadyMarked:
 			case DependencyKind.TypePreserve:
 			case DependencyKind.PreservedMethod:
+			case DependencyKind.DynamicallyAccessedMemberOnType:
 				return parentDependencyKind;
 
 			default:
@@ -3582,15 +3584,15 @@ namespace Mono.Linker.Steps
 			if (!Annotations.MarkProcessed (evt, reason))
 				return;
 
+			var origin = reason.Source is IMemberDefinition member ? new MessageOrigin (member) : ScopeStack.CurrentScope.Origin;
+			DependencyKind dependencyKind = PropagateDependencyKindToAccessors (reason.Kind, DependencyKind.EventMethod);
+			MarkMethodIfNotNull (evt.AddMethod, new DependencyInfo (dependencyKind, evt), origin);
+			MarkMethodIfNotNull (evt.InvokeMethod, new DependencyInfo (dependencyKind, evt), origin);
+			MarkMethodIfNotNull (evt.RemoveMethod, new DependencyInfo (dependencyKind, evt), origin);
+
 			using var eventScope = ScopeStack.PushLocalScope (new MessageOrigin (evt));
 
 			MarkCustomAttributes (evt, new DependencyInfo (DependencyKind.CustomAttribute, evt));
-
-			DependencyKind dependencyKind = PropagateDependencyKindToAccessors (reason.Kind, DependencyKind.EventMethod);
-			MarkMethodIfNotNull (evt.AddMethod, new DependencyInfo (dependencyKind, evt), ScopeStack.CurrentScope.Origin);
-			MarkMethodIfNotNull (evt.InvokeMethod, new DependencyInfo (dependencyKind, evt), ScopeStack.CurrentScope.Origin);
-			MarkMethodIfNotNull (evt.RemoveMethod, new DependencyInfo (dependencyKind, evt), ScopeStack.CurrentScope.Origin);
-
 			DoAdditionalEventProcessing (evt);
 		}
 
@@ -3764,8 +3766,7 @@ namespace Mono.Linker.Steps
 					ScopeStack.UpdateCurrentScopeInstructionOffset (instruction.Offset);
 					if (markForReflectionAccess) {
 						MarkMethodVisibleToReflection (methodReference, new DependencyInfo (dependencyKind, method), ScopeStack.CurrentScope.Origin);
-					}
-					else {
+					} else {
 						MarkMethod (methodReference, new DependencyInfo (dependencyKind, method), ScopeStack.CurrentScope.Origin);
 					}
 					break;
@@ -3825,6 +3826,12 @@ namespace Mono.Linker.Steps
 			}
 		}
 
+		void MarkInterfaceImplementationList (List<InterfaceImplementation> ifaces, MessageOrigin? origin = null, DependencyInfo? reason = null)
+		{
+			foreach (var iface in ifaces) {
+				MarkInterfaceImplementation (iface, origin, reason);
+			}
+		}
 
 		protected internal virtual void MarkInterfaceImplementation (InterfaceImplementation iface, MessageOrigin? origin = null, DependencyInfo? reason = null)
 		{

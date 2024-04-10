@@ -57,14 +57,16 @@ variables:
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
+    isOfficialBuild: false
     stages:
+    - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+      - stage: EvaluatePaths
+        displayName: Evaluate Paths
+        jobs:
+          - template: /eng/pipelines/common/evaluate-default-paths.yml
+
     - stage: Build
       jobs:
-      #
-      # Evaluate paths
-      #
-      - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
-        - template: /eng/pipelines/common/evaluate-default-paths.yml
 
       #
       # Build CoreCLR verticals where we don't run host tests
@@ -84,7 +86,7 @@ extends:
             timeoutInMinutes: 120
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -93,15 +95,36 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
           - osx_arm64
-          - linux_arm64
-          - linux_musl_x64
           jobParameters:
             nameSuffix: AllSubsets_CoreCLR
             buildArgs: -s clr+libs+host+packs -rc Release -c Release -lc $(_BuildConfig)
             timeoutInMinutes: 120
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+          platforms:
+          - linux_arm64
+          - linux_musl_x64
+          jobParameters:
+            nameSuffix: AllSubsets_CoreCLR
+            buildArgs: -s clr+libs+host+packs -rc Release -c Release -lc $(_BuildConfig)
+            timeoutInMinutes: 120
+            postBuildSteps:
+              - template: /eng/pipelines/installer/steps/build-linux-package.yml
+                parameters:
+                  packageType: rpm
+                  target: rpmpkg
+                  packagingArgs: -c Release -lc $(_BuildConfig) /p:BuildRpmPackage=true
+                  condition: and(succeeded(), eq(variables.osSubgroup, ''))
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -141,8 +164,8 @@ extends:
                   artifactName: CoreCLR_Libraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -175,8 +198,8 @@ extends:
                   artifactName: CoreCLR_Libraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -220,9 +243,9 @@ extends:
                   configOverride: Checked
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -254,8 +277,8 @@ extends:
                   configOverride: Checked
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -289,7 +312,7 @@ extends:
                   artifactName: Libraries_CheckedCoreCLR_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -320,7 +343,7 @@ extends:
                   configOverride: Checked
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr_AppleSilicon.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr_AppleSilicon.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -352,8 +375,8 @@ extends:
                   testGroup: innerloop
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -389,7 +412,7 @@ extends:
                   artifactName: CoreCLR_ReleaseLibraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -412,11 +435,11 @@ extends:
                   testBuildArgs: skipmanaged skipgeneratelayout skiprestorepackages -gcc
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -437,7 +460,7 @@ extends:
                   eq(variables['Build.SourceBranchName'], 'main'),
                   eq(variables['System.PullRequest.TargetBranch'], 'main')),
                 or(
-                  eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr_jit.containsChange'], true),
+                  eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr_jit.containsChange'], true),
                   eq(variables['isRollingBuild'], true)))
 
       #
@@ -458,7 +481,7 @@ extends:
             timeoutInMinutes: 120
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -479,7 +502,7 @@ extends:
             timeoutInMinutes: 120
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -500,7 +523,7 @@ extends:
             timeoutInMinutes: 120
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -521,7 +544,7 @@ extends:
             timeoutInMinutes: 120
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -559,9 +582,9 @@ extends:
                   liveLibrariesBuildConfig: Release
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -598,9 +621,9 @@ extends:
                   liveLibrariesBuildConfig: Release
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -643,9 +666,9 @@ extends:
                   liveLibrariesBuildConfig: Release
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -675,9 +698,9 @@ extends:
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       # Build and test clr tools
@@ -696,8 +719,8 @@ extends:
             # We want to run AOT tests when illink changes because there's share code and tests from illink which are used by AOT
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
       #
       # Build CrossDacs
@@ -722,7 +745,7 @@ extends:
               artifact: CoreCLRCrossDacArtifacts
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       # Build Mono AOT offset headers once, for consumption elsewhere
@@ -731,6 +754,7 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/mono/templates/generate-offsets.yml
+          templatePath: 'templates'
           buildConfig: release
           platforms:
           - android_x64
@@ -744,8 +768,8 @@ extends:
             # needed by crossaot
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       # Build the whole product using Mono runtime
@@ -765,9 +789,9 @@ extends:
             buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -784,9 +808,9 @@ extends:
             buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -937,9 +961,9 @@ extends:
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
-              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
             - name: monoContainsChange
-              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
+              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono
@@ -947,9 +971,9 @@ extends:
             timeoutInMinutes: 480
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
             postBuildSteps:
@@ -979,9 +1003,9 @@ extends:
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
-              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
             - name: monoContainsChange
-              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
+              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono
@@ -989,9 +1013,9 @@ extends:
             timeoutInMinutes: 480
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
             postBuildSteps:
@@ -1022,9 +1046,9 @@ extends:
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
-              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
             - name: coreclrContainsChange
-              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'] ]
+              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'] ]
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_NativeAOT
@@ -1032,9 +1056,9 @@ extends:
             timeoutInMinutes: 180
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
             postBuildSteps:
@@ -1066,9 +1090,9 @@ extends:
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
-              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
             - name: monoContainsChange
-              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
+              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono
@@ -1076,9 +1100,9 @@ extends:
             timeoutInMinutes: 180
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
             postBuildSteps:
@@ -1109,9 +1133,9 @@ extends:
                       /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -1129,9 +1153,9 @@ extends:
                       /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -1152,9 +1176,9 @@ extends:
                       /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -1171,9 +1195,9 @@ extends:
                       /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -1199,7 +1223,7 @@ extends:
             buildArgs: -s mono -c $(_BuildConfig)
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -1230,8 +1254,8 @@ extends:
             - wasi
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -1257,8 +1281,8 @@ extends:
             - wasi
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
       #
       # Build Mono release AOT cross-compilers
@@ -1294,8 +1318,8 @@ extends:
             - maccatalyst
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -1321,7 +1345,7 @@ extends:
                   extraHelixArguments: /p:BuildTargetFramework=net48
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -1339,8 +1363,8 @@ extends:
             timeoutInMinutes: 150
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -1350,38 +1374,74 @@ extends:
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
             - windows_x86
           jobParameters:
-            liveRuntimeBuildConfig: release
-            liveLibrariesBuildConfig: Release
-            unifiedArtifactsName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Release
-            unifiedBuildConfigOverride: release
-            unifiedBuildNameSuffix: CoreCLR_Libraries
+            nameSuffix: Installer_Build_And_Test
+            buildArgs: -s host+packs -c $(_BuildConfig) -lc Release -rc Release -test
+            dependsOnGlobalBuilds:
+              - nameSuffix: CoreCLR_Libraries
+                buildConfig: release
+            preBuildSteps:
+              - template: /eng/pipelines/common/download-artifact-step.yml
+                parameters:
+                  artifactName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Release
+                  artifactFileName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Release$(archiveExtension)
+                  unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  displayName: 'unified artifacts'
+            enablePublishTestResults: true
+            testRunTitle: Installer-$(osGroup)$(osSubgroup)_$(archType)
+            postBuildSteps:
+              - template: /eng/pipelines/installer/steps/upload-job-artifacts.yml
+                parameters:
+                  name: $(osGroup)$(osSubgroup)_$(archType)
             condition:
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
-          buildConfig: Release
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
           platforms:
+            - windows_x64
             - osx_x64
             - linux_x64
-            - windows_x64
           jobParameters:
-            liveRuntimeBuildConfig: release
-            liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-            unifiedArtifactsName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
-            unifiedBuildConfigOverride: ${{ variables.debugOnPrReleaseOnRolling }}
-            unifiedBuildNameSuffix: CoreCLR_Libraries
+            nameSuffix: Installer_Build_And_Test
+            buildArgs: -s host+packs -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} -rc Release -test
+            dependsOnGlobalBuilds:
+              - nameSuffix: CoreCLR_Libraries
+                buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+            preBuildSteps:
+              - template: /eng/pipelines/common/download-artifact-step.yml
+                parameters:
+                  artifactName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
+                  artifactFileName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)$(archiveExtension)
+                  unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  displayName: 'unified artifacts'
+            enablePublishTestResults: true
+            testRunTitle: Installer-$(osGroup)$(osSubgroup)_$(archType)
+            postBuildSteps:
+              - template: /eng/pipelines/installer/steps/upload-job-artifacts.yml
+                parameters:
+                  name: $(osGroup)$(osSubgroup)_$(archType)
+              - template: /eng/pipelines/installer/steps/build-linux-package.yml
+                parameters:
+                  packageType: deb
+                  target: debpkg
+                  packagingArgs: -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} /p:BuildDebPackage=true
+              - template: /eng/pipelines/installer/steps/build-linux-package.yml
+                parameters:
+                  packageType: rpm
+                  target: rpmpkg
+                  packagingArgs: -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} /p:BuildRpmPackage=true
             condition:
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -1409,8 +1469,8 @@ extends:
             timeoutInMinutes: 180
             condition: >-
                   or(
-                    eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                    eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                    eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                    eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
                     eq(variables['isRollingBuild'], true))
 
             postBuildSteps:
@@ -1445,8 +1505,8 @@ extends:
             timeoutInMinutes: 180
             condition: >-
                   or(
-                    eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                    eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                    eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                    eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
                     eq(variables['isRollingBuild'], true))
 
             postBuildSteps:
@@ -1484,8 +1544,8 @@ extends:
             timeoutInMinutes: 180
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             postBuildSteps:
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
@@ -1522,8 +1582,8 @@ extends:
 
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             postBuildSteps:
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
@@ -1548,8 +1608,8 @@ extends:
             testGroup: innerloop
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -1573,8 +1633,8 @@ extends:
             unifiedBuildNameSuffix: CoreCLR_ReleaseLibraries
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -1596,8 +1656,8 @@ extends:
             unifiedBuildConfigOverride: ${{ variables.debugOnPrReleaseOnRolling }}
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -1616,7 +1676,7 @@ extends:
             unifiedBuildConfigOverride: ${{ variables.debugOnPrReleaseOnRolling }}
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr_AppleSilicon.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr_AppleSilicon.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -1639,7 +1699,7 @@ extends:
             unifiedBuildNameSuffix: CoreCLR_Libraries
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -1666,7 +1726,7 @@ extends:
             unifiedBuildConfigOverride: ${{ variables.debugOnPrReleaseOnRolling }}
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
       # The next three jobs run checked coreclr + <either debug or release in PR> libraries tests.
       # The matrix looks like the following, where the right columns specify which configurations
@@ -1705,7 +1765,7 @@ extends:
             unifiedBuildNameSuffix: Libraries_CheckedCoreCLR
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -1732,7 +1792,7 @@ extends:
             unifiedBuildConfigOverride: checked
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -1751,8 +1811,8 @@ extends:
             unifiedBuildNameSuffix: Libraries_CheckedCoreCLR
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -1783,8 +1843,8 @@ extends:
                   interpreter: true
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -1814,8 +1874,8 @@ extends:
                   testRunNamePrefixSuffix: Mono_Minijit_$(_BuildConfig)
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #

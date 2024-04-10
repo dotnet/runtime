@@ -465,6 +465,9 @@
   <data name="Cryptography_KeyBlobParsingError" xml:space="preserve">
     <value>Key Blob not in expected format.</value>
   </data>
+  <data name="Cryptography_KeyNotExtractable" xml:space="preserve">
+    <value>The key does not permit being exported.</value>
+  </data>
   <data name="Cryptography_KeyTooSmall" xml:space="preserve">
     <value>The key is too small for the requested operation.</value>
   </data>

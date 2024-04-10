@@ -366,7 +366,6 @@ BOOL MethodTable::ValidateWithPossibleAV()
         (pEEClass && (pEEClass->GetMethodTableWithPossibleAV()->GetClassWithPossibleAV() == pEEClass))));
 }
 
-#ifndef DACCESS_COMPILE
 
 //==========================================================================================
 BOOL  MethodTable::IsClassInited()
@@ -379,7 +378,7 @@ BOOL  MethodTable::IsClassInited()
     if (IsSharedByGenericInstantiations())
         return FALSE;
 
-    DomainLocalModule *pLocalModule = GetDomainLocalModule();
+    PTR_DomainLocalModule pLocalModule = GetDomainLocalModule();
 
     _ASSERTE(pLocalModule != NULL);
 
@@ -391,12 +390,13 @@ BOOL  MethodTable::IsInitError()
 {
     WRAPPER_NO_CONTRACT;
 
-    DomainLocalModule *pLocalModule = GetDomainLocalModule();
+    PTR_DomainLocalModule pLocalModule = GetDomainLocalModule();
     _ASSERTE(pLocalModule != NULL);
 
     return pLocalModule->IsClassInitError(this);
 }
 
+#ifndef DACCESS_COMPILE
 //==========================================================================================
 // mark the class as having its .cctor run
 void MethodTable::SetClassInited()
@@ -470,6 +470,17 @@ WORD MethodTable::GetNumMethods()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return GetClass()->GetNumMethods();
+}
+
+PTR_MethodTable MethodTable::GetTypicalMethodTable()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    if (IsArray())
+        return (PTR_MethodTable)this;
+
+    PTR_MethodTable methodTableMaybe = GetModule()->LookupTypeDef(GetCl()).AsMethodTable();
+    _ASSERTE(methodTableMaybe->IsTypicalTypeDefinition());
+    return methodTableMaybe;
 }
 
 //==========================================================================================
@@ -4952,7 +4963,11 @@ OBJECTREF MethodTable::FastBox(void** data)
     if (IsNullable())
         return Nullable::Box(*data, this);
 
-    OBJECTREF ref = Allocate();
+    // MethodTable::Allocate() triggers cctors, so to avoid that we
+    // allocate directly without triggering cctors - boxing should not trigger cctors.
+    EnsureInstanceActive();
+    OBJECTREF ref = AllocateObject(this);
+
     CopyValueClass(ref->UnBox(), *data, this);
     return ref;
 }
@@ -9571,7 +9586,7 @@ int MethodTable::GetFieldAlignmentRequirement()
     {
         return GetClass()->GetOverriddenFieldAlignmentRequirement();
     }
-    return min(GetNumInstanceFieldBytes(), TARGET_POINTER_SIZE);
+    return min((int)GetNumInstanceFieldBytes(), TARGET_POINTER_SIZE);
 }
 
 UINT32 MethodTable::GetNativeSize()
