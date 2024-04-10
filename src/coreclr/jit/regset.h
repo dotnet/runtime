@@ -132,7 +132,6 @@ public:
     {
         assert(rsModifiedRegsMaskInitialized);
         return (rsModifiedRegsMask.gprRegs() & mask) != 0;
-        // return (rsModifiedGprRegsMask & mask) != 0;
     }
 
     bool rsRegsModified(CONSTREF_AllRegsMask mask) const
@@ -179,7 +178,7 @@ public:
     void ClearMaskVars(); // Like SetMaskVars(RBM_NONE), but without any debug output.
 
 private:
-    AllRegsMask _rsAllMaskVars; // backing store for rsGprMaskVars property
+    AllRegsMask _rsAllMaskVars; // backing store for rsMaskVars property
 
 #if defined(TARGET_ARMARCH)
     regMaskGpr   rsGprMaskCalleeSaved;

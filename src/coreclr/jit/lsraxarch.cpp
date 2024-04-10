@@ -296,8 +296,7 @@ int LinearScan::BuildNode(GenTree* tree)
             RefPosition* internalDef = buildInternalIntRegisterDefForNode(tree);
             srcCount                 = BuildOperandUses(tree->gtGetOp1());
             buildInternalRegisterUses();
-            CONSTREF_AllRegsMask killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
-            BuildKills(tree, killMask);
+            BuildKills(tree, compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC));
         }
         break;
 
@@ -1677,8 +1676,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 #endif
 
     buildInternalRegisterUses();
-    AllRegsMask killMask = getKillSetForBlockStore(blkNode);
-    BuildKills(blkNode, killMask);
+    BuildKills(blkNode, getKillSetForBlockStore(blkNode));
 
     return useCount;
 }

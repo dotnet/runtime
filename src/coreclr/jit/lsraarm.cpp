@@ -371,8 +371,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 1;
             assert(dstCount == 0);
             BuildUse(tree->gtGetOp1());
-            CONSTREF_AllRegsMask killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
-            BuildKills(tree, killMask);
+            BuildKills(tree, compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC));
             break;
         }
 
@@ -692,7 +691,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 srcCount = 0;
             }
-            BuildDefs(tree, dstCount, argMask); // This is regMaskGpr
+            BuildDefs(tree, dstCount, argMask);
         }
         break;
 

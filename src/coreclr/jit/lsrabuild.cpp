@@ -1126,12 +1126,6 @@ AllRegsMask LinearScan::getKillSetForNode(GenTree* tree)
 
 bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc, CONSTREF_AllRegsMask killMask)
 {
-    assert(compiler->IsGprRegMask(killMask.gprRegs()));
-    assert(compiler->IsFloatRegMask(killMask.floatRegs(compiler)));
-#ifdef FEATURE_MASKED_HW_INTRINSICS
-    assert(compiler->IsPredicateRegMask(killMask.predicateRegs(compiler)));
-#endif // FEATURE_MASKED_HW_INTRINSICS
-
     bool insertedKills = false;
 
     if (!killMask.IsEmpty())

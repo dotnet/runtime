@@ -1860,11 +1860,6 @@ private:
     void makeRegsAvailable(CONSTREF_AllRegsMask regMask)
     {
         m_AvailableRegs |= regMask;
-#ifdef HAS_MORE_THAN_64_REGISTERS
-        assert(compiler->IsGprRegMask(m_AvailableRegs.gprRegs()));
-        assert(compiler->IsFloatRegMask(m_AvailableRegs.floatRegs(compiler)));
-        assert(compiler->IsPredicateRegMask(m_AvailableRegs.predicateRegs(compiler)));
-#endif
     }
 
     void makeRegAvailable(regNumber reg, var_types regType)
@@ -2230,7 +2225,6 @@ public:
         , assignedReg(nullptr)
         , varNum(0)
         , physReg(REG_COUNT)
-        //, registerType(registerType)
         , isActive(false)
         , isLocalVar(false)
         , isSplit(false)

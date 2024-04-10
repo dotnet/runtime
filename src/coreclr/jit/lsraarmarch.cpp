@@ -434,7 +434,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
 #endif // SWIFT_SUPPORT
 
     // No args are placed in registers anymore.
-    placedArgRegs      = compiler->AllRegsMask_NONE;
+    placedArgRegs.Clear();
     numPlacedArgLocals = 0;
     return srcCount;
 }
@@ -649,7 +649,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
         }
     }
     buildInternalRegisterUses();
-    BuildDefs(argNode, dstCount, argMask); // this should only be regMaskGpr
+    BuildDefs(argNode, dstCount, argMask);
     return srcCount;
 }
 
@@ -892,8 +892,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
     assert(compiler->IsGprRegMask(sizeRegMask));
 
     buildInternalRegisterUses();
-    AllRegsMask killMask = getKillSetForBlockStore(blkNode);
-    BuildKills(blkNode, killMask);
+    BuildKills(blkNode, getKillSetForBlockStore(blkNode));
     return useCount;
 }
 

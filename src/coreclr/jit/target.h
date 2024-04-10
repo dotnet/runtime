@@ -224,31 +224,9 @@ typedef unsigned __int64 regMaskFloat;
 typedef unsigned __int64 regMaskPredicate;
 typedef unsigned __int64 RegBitSet64;
 
-// Design:
-// 1. Reduce regMaskGpr to 32-bit
-// 2. singleRegMask > regMaskOnlyOne > (regMaskGpr, regMaskFloat, regMaskPredicate) > regMaskMixed
-// 3. Revisit `regMaskMixed` and see how we can separate them into `regMaskGpr`, `regMaskFloat`, `regMaskPredicate`.
-// 4. Once #3 is solved, `regMaskOnlyOne` should be reduced to 32-bit and so can `regMaskFloat` and `regMaskPredicate`
-//
-
-//
-// We will add a "//TODO: regMaskOnlyOne" through out the code
-// that we know that the existing `regMaskTP` contains data that
-// can be represented by `regMaskOnlyOne`. In other words, at
-// those places, we never pass both gpr and vector registers
-// together as part of `regMaskTP`. This will be eventually
-// converted to "unsigned"
+// Represents that the mask in this type is from one of the register type - gpr/float/predicate
+// but not more than 1.
 typedef unsigned __int64 regMaskOnlyOne;
-
-// `regMaskMixed` tells that the mask can contain any of the gpr/vector
-// registers. Once we identify all the places with `regMaskOnlyOne`,
-// `regMaskFloat`, `regMaskGpr`, we will revisit `regMaskMixed` and try
-// to either:
-// 0. Revisit regMaskMixed and see if they should be "regMaskMixed"
-// 1. Send separate parameter for `regMaskGpr` and `regMaskFloat`, etc.
-// 2. Have a data structure like struct to pass all these together
-typedef unsigned __int64 regMaskMixed;
-
 typedef unsigned __int64 singleRegMask;
 
 #else
@@ -369,8 +347,6 @@ public:
     FORCEINLINE void     Clear();
     FORCEINLINE bool     IsEmpty() const;
     FORCEINLINE unsigned Count() const;
-    // FORCEINLINE void     Create(regNumber reg);
-    //  Rename this to AddRegNum
     FORCEINLINE void AddGprRegInMask(regNumber reg);
     FORCEINLINE void AddRegMaskForType(regMaskOnlyOne maskToAdd, var_types type);
     FORCEINLINE void AddGprRegMask(regMaskGpr maskToAdd);

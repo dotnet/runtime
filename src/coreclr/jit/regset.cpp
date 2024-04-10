@@ -311,7 +311,7 @@ void RegSet::rsRemoveRegsModified(regMaskGpr mask)
     rsModifiedRegsMask.RemoveRegTypeFromMask(mask, TYP_INT);
 }
 
-void RegSet::ClearMaskVars() // Like SetMaskVars(RBM_NONE), but without any debug output.
+void RegSet::ClearMaskVars() // Like SetMaskVars(AllRegsMask), but without any debug output.
 {
     _rsAllMaskVars.Clear();
 }
