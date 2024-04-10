@@ -105,6 +105,13 @@ _exitCode=$?
 popd
 echo ----- end $(date) ----- exit code $_exitCode ----------------------------------------------------------
 
+if test -d ~/.config/google-chrome/Crash\ Reports; then
+  cp -R -v ~/.config/google-chrome/Crash\ Reports/* $XHARNESS_OUT/
+fi
+if test -d ~/.config/chromium/Crash\ Reports; then
+  cp -R -v ~/.config/chromium/Crash\ Reports/* $XHARNESS_OUT/
+fi
+
 echo "XHarness artifacts: $XHARNESS_OUT"
 
 exit $_exitCode
