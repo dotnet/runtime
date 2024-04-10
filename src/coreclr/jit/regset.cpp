@@ -108,7 +108,7 @@ void RegSet::verifyRegUsed(regNumber reg)
 //     should simply validate that the register (or registers) have
 //     already been added to the modified set.
 
-void RegSet::verifyRegistersUsed(AllRegsMask regs)
+void RegSet::verifyRegistersUsed(CONSTREF_AllRegsMask regs)
 {
     if (m_rsCompiler->opts.OptimizationDisabled())
     {
@@ -295,6 +295,11 @@ void RegSet::rsRemoveRegsModified(regMaskGpr mask)
 #endif // DEBUG
 
     rsModifiedRegsMask.RemoveRegTypeFromMask(mask, TYP_INT);
+}
+
+void RegSet::ClearMaskVars() // Like SetMaskVars(RBM_NONE), but without any debug output.
+{
+    _rsAllMaskVars = m_rsCompiler->AllRegsMask_NONE;
 }
 
 void RegSet::SetMaskVars(AllRegsMask newMaskVars)

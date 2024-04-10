@@ -149,7 +149,7 @@ public:
     void verifyRegUsed(regNumber reg);
     void verifyGprRegUsed(regNumber reg);
 
-    void verifyRegistersUsed(AllRegsMask mask);
+    void verifyRegistersUsed(CONSTREF_AllRegsMask mask);
 
 public:
     regMaskOnlyOne GetMaskVars(var_types type) const // 'get' property function for rsMaskVars property
@@ -181,10 +181,7 @@ public:
         SetMaskVars(newMask);
     }
 
-    void ClearMaskVars() // Like SetMaskVars(RBM_NONE), but without any debug output.
-    {
-        _rsAllMaskVars = AllRegsMask_NONE;
-    }
+    void ClearMaskVars(); // Like SetMaskVars(RBM_NONE), but without any debug output.
 
 private:
     AllRegsMask _rsAllMaskVars; // backing store for rsGprMaskVars property

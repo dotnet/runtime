@@ -746,11 +746,9 @@ void LinearScan::addRefsForPhysRegMask(CONSTREF_AllRegsMask mask,
 //
 // Return Value:    a register mask of the registers killed
 //
-AllRegsMask LinearScan::getKillSetForStoreInd(GenTreeStoreInd* tree)
+CONSTREF_AllRegsMask LinearScan::getKillSetForStoreInd(GenTreeStoreInd* tree)
 {
     assert(tree->OperIs(GT_STOREIND));
-
-    AllRegsMask killMask;
 
     GCInfo::WriteBarrierForm writeBarrierForm = compiler->codeGen->gcInfo.gcIsWriteBarrierCandidate(tree);
     if (writeBarrierForm != GCInfo::WBF_NoBarrier)
@@ -761,16 +759,16 @@ AllRegsMask LinearScan::getKillSetForStoreInd(GenTreeStoreInd* tree)
             // the allocated register for the `data` operand. However, all the (x86) optimized
             // helpers have the same kill set: EDX. And note that currently, only x86 can return
             // `true` for genUseOptimizedWriteBarriers().
-            killMask = compiler->AllRegsMask_CALLEE_TRASH_NOGC;
+            return compiler->AllRegsMask_CALLEE_TRASH_NOGC;
         }
         else
         {
             // Figure out which helper we're going to use, and then get the kill set for that helper.
             CorInfoHelpFunc helper = compiler->codeGen->genWriteBarrierHelperForWriteBarrierForm(writeBarrierForm);
-            killMask               = compiler->compHelperCallKillSet(helper);
+            return compiler->compHelperCallKillSet(helper);
         }
     }
-    return killMask;
+    return compiler->AllRegsMask_NONE;
 }
 
 //------------------------------------------------------------------------
@@ -998,10 +996,10 @@ regMaskGpr LinearScan::getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node)
 //
 // Return Value:    a register mask of the registers killed
 //
-AllRegsMask LinearScan::getKillSetForReturn()
+CONSTREF_AllRegsMask LinearScan::getKillSetForReturn()
 {
     return compiler->compIsProfilerHookNeeded() ? compiler->compHelperCallKillSet(CORINFO_HELP_PROF_FCN_LEAVE)
-                                                : AllRegsMask_NONE;
+                                                : compiler->AllRegsMask_NONE;
 }
 
 //------------------------------------------------------------------------
@@ -1012,10 +1010,10 @@ AllRegsMask LinearScan::getKillSetForReturn()
 //
 // Return Value:    a register mask of the registers killed
 //
-AllRegsMask LinearScan::getKillSetForProfilerHook()
+CONSTREF_AllRegsMask LinearScan::getKillSetForProfilerHook()
 {
     return compiler->compIsProfilerHookNeeded() ? compiler->compHelperCallKillSet(CORINFO_HELP_PROF_FCN_TAILCALL)
-                                                : AllRegsMask_NONE;
+                                                : compiler->AllRegsMask_NONE;
 }
 
 #ifdef DEBUG
@@ -2307,8 +2305,8 @@ void LinearScan::buildIntervals()
     RegState* floatRegState                 = &compiler->codeGen->floatRegState;
     intRegState->rsCalleeRegArgMaskLiveIn   = RBM_NONE;
     floatRegState->rsCalleeRegArgMaskLiveIn = RBM_NONE;
-    regsInUseThisLocation                   = AllRegsMask_NONE;
-    regsInUseNextLocation                   = AllRegsMask_NONE;
+    regsInUseThisLocation                   = compiler->AllRegsMask_NONE;
+    regsInUseNextLocation                   = compiler->AllRegsMask_NONE;
 
 #ifdef SWIFT_SUPPORT
     if (compiler->info.compCallConv == CorInfoCallConvExtension::Swift)
@@ -2447,7 +2445,7 @@ void LinearScan::buildIntervals()
 #endif
 
     numPlacedArgLocals = 0;
-    placedArgRegs      = AllRegsMask_NONE;
+    placedArgRegs      = compiler->AllRegsMask_NONE;
 
     BasicBlock* predBlock = nullptr;
     BasicBlock* prevBlock = nullptr;

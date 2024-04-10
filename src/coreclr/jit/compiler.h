@@ -8503,7 +8503,7 @@ public:
 
     // Gets a register mask that represent the kill set for a helper call since
     // not all JIT Helper calls follow the standard ABI on the target architecture.
-    AllRegsMask compHelperCallKillSet(CorInfoHelpFunc helper);
+    CONSTREF_AllRegsMask compHelperCallKillSet(CorInfoHelpFunc helper);
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -11236,6 +11236,7 @@ public:
     }
 #endif // TARGET_XARCH
 
+    const AllRegsMask AllRegsMask_NONE = AllRegsMask();
 #ifdef HAS_MORE_THAN_64_REGISTERS
     const AllRegsMask AllRegsMask_CALLEE_SAVED =
         AllRegsMask(RBM_INT_CALLEE_SAVED, RBM_FLT_CALLEE_SAVED, RBM_MSK_CALLEE_SAVED);
@@ -11279,6 +11280,7 @@ public:
     const AllRegsMask AllRegsMask_INIT_PINVOKE_FRAME_TRASH = GprRegsMask(RBM_PINVOKE_SCRATCH | RBM_PINVOKE_TCB);
 
     const AllRegsMask AllRegsMask_VALIDATE_INDIRECT_CALL_TRASH = GprRegsMask(RBM_INT_CALLEE_TRASH & ~RBM_ECX);
+    const AllRegsMask AllRegsMask_EDX = GprRegsMask(RBM_EDX);
 
 #elif defined(TARGET_AMD64)
     const AllRegsMask AllRegsMask_CALLEE_TRASH_NOGC = AllRegsMask_CALLEE_TRASH;

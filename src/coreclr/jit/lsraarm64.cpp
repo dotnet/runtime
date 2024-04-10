@@ -666,8 +666,7 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             srcCount = 0;
             assert(dstCount == 0);
-            AllRegsMask killMask = getKillSetForProfilerHook();
-            BuildKills(tree, killMask);
+            BuildKills(tree, getKillSetForProfilerHook());
             break;
         }
 
@@ -675,7 +674,7 @@ int LinearScan::BuildNode(GenTree* tree)
             // This kills GC refs in callee save regs
             srcCount = 0;
             assert(dstCount == 0);
-            BuildKills(tree, AllRegsMask_NONE);
+            BuildKills(tree, compiler->AllRegsMask_NONE);
             break;
 
         case GT_CNS_DBL:
@@ -740,8 +739,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_RETURN:
         {
             srcCount             = BuildReturn(tree);
-            AllRegsMask killMask = getKillSetForReturn();
-            BuildKills(tree, killMask);
+            BuildKills(tree, getKillSetForReturn());
             break;
         }
 
@@ -833,7 +831,7 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildUse(tree->gtGetOp1());
             srcCount = 1;
             assert(dstCount == 0);
-            AllRegsMask killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
+            CONSTREF_AllRegsMask killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
             BuildKills(tree, killMask);
             break;
         }

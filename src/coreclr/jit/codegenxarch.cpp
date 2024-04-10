@@ -9063,7 +9063,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     emitter::EmitCallType callType = emitter::EC_FUNC_TOKEN;
     addr                           = compiler->compGetHelperFtn((CorInfoHelpFunc)helper, &pAddr);
     regNumber   callTarget         = REG_NA;
-    AllRegsMask killMask           = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+    CONSTREF_AllRegsMask killMask           = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
     if (!addr)
     {

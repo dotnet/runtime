@@ -137,15 +137,14 @@ int LinearScan::BuildNode(GenTree* tree)
             // This kills GC refs in callee save regs
             srcCount = 0;
             assert(dstCount == 0);
-            BuildKills(tree, AllRegsMask_NONE);
+            BuildKills(tree, compiler->AllRegsMask_NONE);
             break;
 
         case GT_PROF_HOOK:
         {
             srcCount = 0;
             assert(dstCount == 0);
-            AllRegsMask killMask = getKillSetForProfilerHook();
-            BuildKills(tree, killMask);
+            BuildKills(tree, getKillSetForProfilerHook());
             break;
         }
 
@@ -191,8 +190,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_RETURN:
         {
             srcCount             = BuildReturn(tree);
-            AllRegsMask killMask = getKillSetForReturn();
-            BuildKills(tree, killMask);
+            BuildKills(tree, getKillSetForReturn());
             break;
         }
 
@@ -298,7 +296,7 @@ int LinearScan::BuildNode(GenTree* tree)
             RefPosition* internalDef = buildInternalIntRegisterDefForNode(tree);
             srcCount                 = BuildOperandUses(tree->gtGetOp1());
             buildInternalRegisterUses();
-            AllRegsMask killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
+            CONSTREF_AllRegsMask killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
             BuildKills(tree, killMask);
         }
         break;
@@ -1413,7 +1411,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
 #endif // SWIFT_SUPPORT
 
     // No args are placed in registers anymore.
-    placedArgRegs      = AllRegsMask_NONE;
+    placedArgRegs      = compiler->AllRegsMask_NONE;
     numPlacedArgLocals = 0;
     return srcCount;
 }

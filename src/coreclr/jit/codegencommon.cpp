@@ -577,7 +577,7 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
 // Return Value:
 //   Mask of register kills -- registers whose values are no longer guaranteed to be the same.
 //
-AllRegsMask Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
+CONSTREF_AllRegsMask Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
 {
     switch (helper)
     {
@@ -617,7 +617,7 @@ AllRegsMask Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
         case CORINFO_HELP_CHECKED_ASSIGN_REF_EBP:
         case CORINFO_HELP_CHECKED_ASSIGN_REF_ESI:
         case CORINFO_HELP_CHECKED_ASSIGN_REF_EDI:
-            return GprRegsMask(RBM_EDX);
+            return AllRegsMask_EDX;
 #endif
 
         case CORINFO_HELP_STOP_FOR_GC:

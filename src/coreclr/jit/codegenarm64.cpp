@@ -5211,7 +5211,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         }
 
         regMaskGpr  callTargetMask = genRegMask(callTargetReg);
-        AllRegsMask callKillSet    = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+        CONSTREF_AllRegsMask callKillSet    = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
         // assert that all registers in callTargetMask are in the callKillSet
         noway_assert((callTargetMask & callKillSet.gprRegs()) == callTargetMask);
@@ -5233,7 +5233,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                                false                                             /* isJump */
     );
 
-    AllRegsMask killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+    CONSTREF_AllRegsMask killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
     regSet.verifyRegistersUsed(killMask);
 }
 
