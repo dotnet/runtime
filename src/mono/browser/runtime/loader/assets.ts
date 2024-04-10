@@ -12,6 +12,7 @@ import { mono_exit } from "./exit";
 import { addCachedReponse, findCachedResponse } from "./assetsCache";
 import { getIcuResourceName } from "./icu";
 import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
+import { mono_log_info } from "./logging";
 
 
 let throttlingPromise: PromiseAndController<void> | undefined;
@@ -536,7 +537,7 @@ async function start_asset_download_sources (asset: AssetEntryInternal): Promise
         err.status = response.status;
         throw err;
     } else {
-        loaderHelpers.out(`optional download '${response.url}' for ${asset.name} failed ${response.status} ${response.statusText}`);
+        mono_log_info(`optional download '${response.url}' for ${asset.name} failed ${response.status} ${response.statusText}`);
         return undefined;
     }
 }
@@ -740,6 +741,7 @@ export async function streamingCompileWasm () {
 export function preloadWorkers () {
     if (!WasmEnableThreads) return;
     const jsModuleWorker = resolve_single_asset_path("js-module-threads");
+    const loadingWorkers = [];
     for (let i = 0; i < loaderHelpers.config.pthreadPoolInitialSize!; i++) {
         const workerNumber = loaderHelpers.workerNextNumber++;
         const worker: Partial<PThreadWorker> = new Worker(jsModuleWorker.resolvedUrl!, {
@@ -753,6 +755,7 @@ export function preloadWorkers () {
             threadPrefix: worker_empty_prefix,
             threadName: "emscripten-pool",
         } as any;
-        loaderHelpers.loadingWorkers.push(worker as any);
+        loadingWorkers.push(worker as any);
     }
+    loaderHelpers.loadingWorkers.promise_control.resolve(loadingWorkers);
 }
