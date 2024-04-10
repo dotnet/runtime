@@ -391,4 +391,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         override public string ToString() => Name;
     }
+
+    public class FinalizerTest
+    {
+        public static bool FinalizerHit;
+        ~FinalizerTest()
+        {
+            FinalizerHit = true;
+        }
+    }
 }
