@@ -2257,7 +2257,7 @@ namespace System
             ReadOnlySpan<byte> rawData = MemoryMarshal.AsBytes(new ReadOnlySpan<long>(ref value));
             // On little-endian systems, we can always use the pointer to the start of the scratch space
             // as memory layout since the least-significant bit is at the lowest address.
-            // For bit-endian systems, the least-significant bit is at the highest address, so we need to adjust
+            // For big-endian systems, the least-significant bit is at the highest address, so we need to adjust
             // our starting ref to the correct offset from the end of the scratch space to get the value to box.
             if (!BitConverter.IsLittleEndian)
             {
