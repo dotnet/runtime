@@ -765,8 +765,6 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "RetBuffer";
         case WellKnownArg::PInvokeFrame:
             return "PInvokeFrame";
-        case WellKnownArg::SecretStubParam:
-            return "SecretStubParam";
         case WellKnownArg::WrapperDelegateCell:
             return "WrapperDelegateCell";
         case WellKnownArg::ShiftLow:

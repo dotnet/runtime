@@ -4439,7 +4439,6 @@ enum class WellKnownArg : unsigned
     InstParam,
     RetBuffer,
     PInvokeFrame,
-    SecretStubParam,
     WrapperDelegateCell,
     ShiftLow,
     ShiftHigh,

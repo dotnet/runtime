@@ -5616,13 +5616,6 @@ void Lowering::InsertPInvokeMethodProlog()
     NewCallArg frameAddrArg = NewCallArg::Primitive(frameAddr).WellKnown(WellKnownArg::PInvokeFrame);
     call->gtArgs.PushBack(comp, frameAddrArg);
 
-// for x86/arm32 don't pass the secretArg.
-#if !defined(TARGET_X86) && !defined(TARGET_ARM)
-    NewCallArg stubParamArg =
-        NewCallArg::Primitive(PhysReg(REG_SECRET_STUB_PARAM)).WellKnown(WellKnownArg::SecretStubParam);
-    call->gtArgs.PushBack(comp, stubParamArg);
-#endif
-
     // some sanity checks on the frame list root vardsc
     const unsigned   lclNum = comp->info.compLvFrameListRoot;
     const LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
