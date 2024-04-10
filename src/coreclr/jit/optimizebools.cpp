@@ -29,6 +29,16 @@ struct OptTestInfo
     bool       isBool;   // If the compTree is boolean expression
 };
 
+struct IntBoolOpDsc
+{
+    GenTree** lclVarArr;
+    int32_t   lclVarArrLength;
+    ssize_t*  ctsArray;
+    int32_t   ctsArrayLength;
+    GenTree*  start;
+    GenTree*  end;
+};
+
 //-----------------------------------------------------------------------------
 // OptBoolsDsc:     Descriptor used for Boolean Optimization
 //
@@ -1749,6 +1759,350 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 }
 
 //-----------------------------------------------------------------------------
+// ReinitIntBoolOpDsc:   Procedure that reinitialize IntBoolOpDsc reference
+//
+// Arguments:
+//      intBoolOpDsc    the reference for INT OR operations to be folded
+//
+void ReinitIntBoolOpDsc(IntBoolOpDsc* intBoolOpDsc)
+{
+    if (intBoolOpDsc == nullptr)
+    {
+        return;
+    }
+
+    intBoolOpDsc->start = nullptr;
+    intBoolOpDsc->end   = nullptr;
+
+    if (intBoolOpDsc->ctsArray != nullptr)
+    {
+        free(intBoolOpDsc->ctsArray);
+        intBoolOpDsc->ctsArray = nullptr;
+    }
+
+    intBoolOpDsc->ctsArrayLength = 0;
+
+    if (intBoolOpDsc->lclVarArr != nullptr)
+    {
+        free(intBoolOpDsc->lclVarArr);
+        intBoolOpDsc->lclVarArr = nullptr;
+    }
+
+    intBoolOpDsc->lclVarArrLength = 0;
+}
+
+//-----------------------------------------------------------------------------
+// GetNextOrOp:   Function used for searching the next GT_OR node
+//
+// Arguments:
+//      b3    the tree to inspect
+//
+// Return:
+//      On success, return the next GT_OR node or nullptr if it fails
+//
+GenTree* GetNextOrOp(GenTree* b4)
+{
+    while (b4 != nullptr && !b4->OperIs(GT_OR))
+    {
+        b4 = b4->gtPrev;
+    }
+
+    return b4;
+}
+
+//-----------------------------------------------------------------------------
+// GetNextIntBoolOpToOptimize:   Function used for searching constant INT OR operation that can be folded
+//
+// Arguments:
+//      b3    the tree to inspect
+//
+// Return:
+//      On success, return the start and end offset of code to optimize and the variables and constants to be folded.
+//
+// Notes:
+//      We look for consecutive blocks that have GT_OR, GT_LCL_VAR, GT_CNS_INT nodes.
+IntBoolOpDsc* GetNextIntBoolOpToOptimize(GenTree* b3)
+{
+    if (b3 == nullptr)
+    {
+        return nullptr;
+    }
+
+    IntBoolOpDsc* intBoolOpDsc    = reinterpret_cast<IntBoolOpDsc*>(malloc(sizeof(IntBoolOpDsc)));
+    intBoolOpDsc->ctsArray        = nullptr;
+    intBoolOpDsc->ctsArrayLength  = 0;
+    intBoolOpDsc->lclVarArr       = nullptr;
+    intBoolOpDsc->lclVarArrLength = 0;
+    intBoolOpDsc->start           = nullptr;
+    intBoolOpDsc->end             = nullptr;
+    int orOpCount                 = 2;
+
+    GenTree* b4 = GetNextOrOp(b3->gtPrev);
+
+    if (b4 != nullptr)
+    {
+        intBoolOpDsc->start = b4->gtNext;
+        b4                  = b4->gtPrev;
+    }
+
+    while (b4 != nullptr)
+    {
+        if (!b4->OperIs(GT_OR, GT_LCL_VAR, GT_CNS_INT) || !b4->TypeIs(TYP_INT))
+        {
+            if (intBoolOpDsc->ctsArrayLength >= 2 && intBoolOpDsc->lclVarArrLength >= 2)
+            {
+                intBoolOpDsc->end = b4;
+                return intBoolOpDsc;
+            }
+            else
+            {
+                ReinitIntBoolOpDsc(intBoolOpDsc);
+                b4 = GetNextOrOp(b4);
+
+                if (b4 != nullptr)
+                {
+                    orOpCount           = 2;
+                    intBoolOpDsc->start = b4->gtNext;
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+
+        if (orOpCount <= 0)
+        {
+            if (intBoolOpDsc->ctsArrayLength >= 2 && intBoolOpDsc->lclVarArrLength >= 2)
+            {
+                intBoolOpDsc->end = b4;
+                return intBoolOpDsc;
+            }
+
+            ReinitIntBoolOpDsc(intBoolOpDsc);
+
+            if (!b4->OperIs(GT_OR))
+            {
+                b4 = GetNextOrOp(b4);
+            }
+
+            if (b4 != nullptr)
+            {
+                orOpCount           = 2;
+                intBoolOpDsc->start = b4->gtNext;
+            }
+            else
+            {
+                break;
+            }
+        }
+        else
+        {
+            switch (b4->gtOper)
+            {
+                case GT_LCL_VAR:
+                {
+                    intBoolOpDsc->lclVarArrLength++;
+                    if (intBoolOpDsc->lclVarArr == nullptr)
+                    {
+                        intBoolOpDsc->lclVarArr =
+                            reinterpret_cast<GenTree**>(malloc(sizeof(GenTree*) * intBoolOpDsc->lclVarArrLength));
+                    }
+                    else
+                    {
+                        intBoolOpDsc->lclVarArr = reinterpret_cast<GenTree**>(
+                            realloc(intBoolOpDsc->lclVarArr, sizeof(GenTree*) * intBoolOpDsc->lclVarArrLength));
+                    }
+
+                    intBoolOpDsc->lclVarArr[intBoolOpDsc->lclVarArrLength - 1] = b4;
+                    orOpCount--;
+                    break;
+                }
+                case GT_CNS_INT:
+                {
+                    intBoolOpDsc->ctsArrayLength++;
+                    if (intBoolOpDsc->ctsArray == nullptr)
+                    {
+                        intBoolOpDsc->ctsArray =
+                            reinterpret_cast<ssize_t*>(malloc(sizeof(ssize_t) * intBoolOpDsc->ctsArrayLength));
+                    }
+                    else
+                    {
+                        intBoolOpDsc->ctsArray = reinterpret_cast<ssize_t*>(
+                            realloc(intBoolOpDsc->ctsArray, sizeof(ssize_t) * intBoolOpDsc->ctsArrayLength));
+                    }
+                    ssize_t constant                                         = b4->AsIntConCommon()->IconValue();
+                    intBoolOpDsc->ctsArray[intBoolOpDsc->ctsArrayLength - 1] = constant;
+                    orOpCount--;
+                    break;
+                }
+                case GT_OR:
+                    orOpCount++;
+                    break;
+                default:
+                {
+                    break;
+                }
+            }
+        }
+
+        b4 = b4->gtPrev;
+    }
+
+    return intBoolOpDsc;
+}
+
+//-----------------------------------------------------------------------------
+// OptimizeIntBoolOp:   Procedure that fold constant INT OR operations
+//
+// Arguments:
+//      compiler        compiler reference
+//      intBoolOpDsc    the reference for INT OR operations to be folded
+//
+// Notes:
+//      We recreate nodes so as to eliminate excessive constants
+void OptimizeIntBoolOp(Compiler* compiler, IntBoolOpDsc* intBoolOpDsc)
+{
+    GenTreeOp* intVarTree =
+        compiler->gtNewOperNode(GT_OR, TYP_INT, intBoolOpDsc->lclVarArr[0], intBoolOpDsc->lclVarArr[1]);
+    intVarTree->gtPrev                 = intBoolOpDsc->lclVarArr[1];
+    intBoolOpDsc->lclVarArr[1]->gtNext = intVarTree;
+    intBoolOpDsc->lclVarArr[1]->gtPrev = intBoolOpDsc->lclVarArr[0];
+    intBoolOpDsc->lclVarArr[0]->gtNext = intBoolOpDsc->lclVarArr[1];
+    intBoolOpDsc->lclVarArr[0]->gtPrev = intBoolOpDsc->end;
+
+    if (intBoolOpDsc->end != nullptr)
+    {
+        intBoolOpDsc->end->gtNext = intBoolOpDsc->lclVarArr[0];
+    }
+
+    GenTree* tempIntVatTree = intVarTree;
+
+    for (int i = 2; i < intBoolOpDsc->lclVarArrLength; i++)
+    {
+        GenTreeOp* newIntVarTree = compiler->gtNewOperNode(GT_OR, TYP_INT, tempIntVatTree, intBoolOpDsc->lclVarArr[i]);
+        newIntVarTree->gtPrev    = intBoolOpDsc->lclVarArr[i];
+        intBoolOpDsc->lclVarArr[i]->gtNext = newIntVarTree;
+        intBoolOpDsc->lclVarArr[i]->gtPrev = tempIntVatTree;
+        tempIntVatTree->gtNext             = intBoolOpDsc->lclVarArr[i];
+        tempIntVatTree                     = newIntVarTree;
+    }
+
+    size_t optimizedCst = 0;
+    for (int i = 0; i < intBoolOpDsc->ctsArrayLength; i++)
+    {
+        optimizedCst = optimizedCst | intBoolOpDsc->ctsArray[i];
+    }
+
+    GenTreeIntCon* optimizedCstTree = compiler->gtNewIconNode(optimizedCst, TYP_INT);
+    GenTreeOp*     optimizedTree    = compiler->gtNewOperNode(GT_OR, TYP_INT, tempIntVatTree, optimizedCstTree);
+    optimizedTree->gtPrev           = optimizedCstTree;
+    optimizedCstTree->gtNext        = optimizedTree;
+    optimizedCstTree->gtPrev        = tempIntVatTree;
+    tempIntVatTree->gtNext          = optimizedCstTree;
+    intBoolOpDsc->start->gtPrev     = optimizedTree;
+    optimizedTree->gtNext           = intBoolOpDsc->start;
+
+    if (intBoolOpDsc->start->OperIsUnary())
+    {
+        intBoolOpDsc->start->AsOp()->gtOp1 = optimizedTree;
+    }
+    else if (intBoolOpDsc->start->OperIsBinary())
+    {
+        intBoolOpDsc->start->AsOp()->gtOp2 = optimizedTree;
+    }
+    else if (intBoolOpDsc->start->gtNext != nullptr && intBoolOpDsc->start->gtNext->OperIsBinary())
+    {
+        intBoolOpDsc->start->gtNext->AsOp()->gtOp1 = optimizedTree;
+    }
+    else
+    {
+        GenTree* functionCallCandidate  = intBoolOpDsc->start;
+        bool     parameterAssigningDone = false;
+        while (functionCallCandidate != nullptr && !parameterAssigningDone)
+        {
+            if (functionCallCandidate->OperIs(GT_CALL))
+            {
+                GenTreeCall*                        call        = functionCallCandidate->AsCall();
+                IteratorPair<CallArgs::ArgIterator> args        = call->gtArgs.Args();
+                CallArgs::ArgIterator               nextArg     = args.begin();
+                CallArg*                            nextCallArg = nextArg.GetArg();
+
+                if (nextCallArg->GetNode()->gtNext == intBoolOpDsc->start)
+                {
+                    nextCallArg->SetLateNode(optimizedTree);
+                    parameterAssigningDone = true;
+                }
+                else
+                {
+                    nextArg     = nextArg.operator++();
+                    nextCallArg = nextArg.GetArg();
+                    while (nextCallArg != nullptr)
+                    {
+                        if (nextCallArg->GetNode()->gtNext == intBoolOpDsc->start)
+                        {
+                            nextCallArg->SetLateNode(optimizedTree);
+                            parameterAssigningDone = true;
+                            break;
+                        }
+
+                        nextArg     = nextArg.operator++();
+                        nextCallArg = nextArg.GetArg();
+                    }
+                }
+            }
+
+            functionCallCandidate = functionCallCandidate->gtNext;
+        }
+    }
+}
+
+//-----------------------------------------------------------------------------
+// TryOptimizeIntBoolOp:   Procedure that looks for constant INT OR operations to fold and if found, folds them
+//
+// Arguments:
+//      compiler        compiler reference
+//      b1              the block code to inspect for operations to fold
+//
+// Return:
+//      1 if a block was folded, 0 if not
+unsigned int TryOptimizeIntBoolOp(Compiler* compiler, BasicBlock* b1)
+{
+    unsigned int result = 0;
+    Statement*   b2     = b1->firstStmt();
+    if (b2 != nullptr)
+    {
+        GenTree* b3 = b2->GetRootNode();
+        if (b3 != nullptr && b3->OperIs(GT_RETURN))
+        {
+            IntBoolOpDsc* intBoolOpDsc = GetNextIntBoolOpToOptimize(b3);
+
+            if (intBoolOpDsc == nullptr)
+            {
+                return 0;
+            }
+
+            if (intBoolOpDsc->ctsArrayLength >= 2 && intBoolOpDsc->lclVarArrLength >= 2)
+            {
+                OptimizeIntBoolOp(compiler, intBoolOpDsc);
+
+                if (intBoolOpDsc->end == nullptr)
+                {
+                    b2->SetTreeList(intBoolOpDsc->lclVarArr[0]);
+                }
+
+                result++;
+            }
+
+            ReinitIntBoolOpDsc(intBoolOpDsc);
+            free(intBoolOpDsc);
+        }
+    }
+
+    return result;
+}
+
+//-----------------------------------------------------------------------------
 // optOptimizeBools:    Folds boolean conditionals for GT_JTRUE/GT_RETURN nodes
 //
 // Returns:
@@ -1871,6 +2225,14 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 //             +--*  LCL_VAR    int     V00 arg0
 //             \--*  CNS_INT    int     0
 //
+//      Case 16:     ((x | 5) | (y | 2)) => ((x | y) | 7)
+//           *  RETURN    int    $VN.Void
+//           \--*  OR        int
+//              +--*  OR        int
+//              |  +--*  LCL_VAR   int    V01 arg1         u:1 (last use) $81
+//              |  \--*  LCL_VAR   int    V00 arg0         u:1 (last use) $80
+//              \--*  CNS_INT   int    7
+//
 //      Patterns that are not optimized include (x == 1 && y == 1), (x == 1 || y == 1),
 //      (x == 0 || y == 0) because currently their comptree is not marked as boolean expression.
 //      When m_foldOp == GT_AND or m_cmpOp == GT_NE, both compTrees must be boolean expression
@@ -1905,8 +2267,19 @@ PhaseStatus Compiler::optOptimizeBools()
 
             // We're only interested in conditional jumps here
 
-            if (!b1->KindIs(BBJ_COND))
+            if (!b1->KindIs(BBJ_COND, BBJ_RETURN))
             {
+                continue;
+            }
+
+            if (b1->KindIs(BBJ_RETURN))
+            {
+                if (TryOptimizeIntBoolOp(this, b1) > 0)
+                {
+                    numReturn++;
+                    retry = true;
+                }
+
                 continue;
             }
 

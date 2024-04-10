@@ -206,6 +206,19 @@ public class CBoolTest
     {
         return x <= 0 && x != 0;
     }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int Or10Or5(int x, int y)
+    {
+        return (x | 10) | (y | 5);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int Or15(int x, int y)
+    {
+        return (x | y) | 15;
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool AreBothGreatThanZero(int x, int y)
     {
@@ -1113,6 +1126,18 @@ public class CBoolTest
         if (IsEitherOne(2, 0))
         {
             Console.WriteLine("CBoolTest:IsEitherOne(2, 0) failed");
+            return 101;
+        }
+
+        if (Or10Or5(14, 23) != Or15(14, 23))
+        {
+            Console.WriteLine("CBoolTest:Or10Or5(14, 23) failed");
+            return 101;
+        }
+
+        if (Or10Or5(78, 11) != Or15(78, 11))
+        {
+            Console.WriteLine("CBoolTest:Or10Or5(78, 11) failed");
             return 101;
         }
 
