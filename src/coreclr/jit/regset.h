@@ -83,7 +83,7 @@ public:
     void rsSetRegsModified(CONSTREF_AllRegsMask modifiedMask DEBUGARG(bool suppressDump = false));
     void rsSetRegModified(regNumber reg DEBUGARG(bool suppressDump = false));
 
-    const AllRegsMask& rsGetModifiedRegsMask() const
+    CONSTREF_AllRegsMask rsGetModifiedRegsMask() const
     {
         assert(rsModifiedRegsMaskInitialized);
         return rsModifiedRegsMask;
@@ -135,7 +135,7 @@ public:
         // return (rsModifiedGprRegsMask & mask) != 0;
     }
 
-    bool rsRegsModified(const AllRegsMask& mask) const
+    bool rsRegsModified(CONSTREF_AllRegsMask mask) const
     {
         assert(rsModifiedRegsMaskInitialized);
         return !((rsModifiedRegsMask & mask).IsEmpty());
@@ -157,7 +157,7 @@ public:
         return _rsAllMaskVars.gprRegs();
     }
 
-    void SetMaskVars(AllRegsMask newMaskVars); // 'put' property function for rsMaskVars property
+    void SetMaskVars(CONSTREF_AllRegsMask newMaskVars); // 'put' property function for rsMaskVars property
 
     void AddMaskVars(var_types type, regMaskOnlyOne addMaskVars) // union 'addMaskVars' with the rsMaskVars set
     {

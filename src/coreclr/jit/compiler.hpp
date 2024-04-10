@@ -5038,7 +5038,7 @@ FORCEINLINE int regIndexForType(T vt)
     return (type - 1);
 }
 
-void AllRegsMask::operator|=(const AllRegsMask& other)
+void AllRegsMask::operator|=(CONSTREF_AllRegsMask other)
 {
     _combinedRegisters |= other._combinedRegisters;
 #ifdef HAS_MORE_THAN_64_REGISTERS
@@ -5046,7 +5046,7 @@ void AllRegsMask::operator|=(const AllRegsMask& other)
 #endif
 }
 
-void AllRegsMask::operator&=(const AllRegsMask& other)
+void AllRegsMask::operator&=(CONSTREF_AllRegsMask other)
 {
     _combinedRegisters &= other._combinedRegisters;
 #ifdef HAS_MORE_THAN_64_REGISTERS
@@ -5086,7 +5086,7 @@ AllRegsMask AllRegsMask::operator~() const
     return result;
 }
 
-bool AllRegsMask::operator==(const AllRegsMask& other) const
+bool AllRegsMask::operator==(CONSTREF_AllRegsMask other) const
 {
     return (_combinedRegisters == other._combinedRegisters)
 #ifdef HAS_MORE_THAN_64_REGISTERS
@@ -5095,12 +5095,12 @@ bool AllRegsMask::operator==(const AllRegsMask& other) const
     ;
 }
 
-bool AllRegsMask::operator!=(const AllRegsMask& other) const
+bool AllRegsMask::operator!=(CONSTREF_AllRegsMask other) const
 {
     return !(*this == other);
 }
 
-AllRegsMask AllRegsMask::operator&(const AllRegsMask& other) const
+AllRegsMask AllRegsMask::operator&(CONSTREF_AllRegsMask other) const
 {
     AllRegsMask result;
     result._combinedRegisters = _combinedRegisters & other._combinedRegisters;
@@ -5110,7 +5110,7 @@ AllRegsMask AllRegsMask::operator&(const AllRegsMask& other) const
     return result;
 }
 
-AllRegsMask AllRegsMask::operator|(const AllRegsMask& other) const
+AllRegsMask AllRegsMask::operator|(CONSTREF_AllRegsMask other) const
 {
     AllRegsMask result;
     result._combinedRegisters = _combinedRegisters | other._combinedRegisters;

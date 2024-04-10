@@ -1039,7 +1039,7 @@ AllRegsMask LinearScan::getKillSetForNode(GenTree* tree)
         case GT_LSH_HI:
         case GT_RSH_LO:
 #endif
-            killMask.AddGprRegMask(getKillSetForShiftRotate(tree->AsOp()));
+            killMask = GprRegsMask(getKillSetForShiftRotate(tree->AsOp()));
             break;
 
         case GT_MUL:
@@ -1047,14 +1047,14 @@ AllRegsMask LinearScan::getKillSetForNode(GenTree* tree)
 #if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
         case GT_MUL_LONG:
 #endif
-            killMask.AddGprRegMask(getKillSetForMul(tree->AsOp()));
+            killMask = GprRegsMask(getKillSetForMul(tree->AsOp()));
             break;
 
         case GT_MOD:
         case GT_DIV:
         case GT_UMOD:
         case GT_UDIV:
-            killMask.AddGprRegMask(getKillSetForModDiv(tree->AsOp()));
+            killMask = GprRegsMask(getKillSetForModDiv(tree->AsOp()));
             break;
 
         case GT_STORE_BLK:
@@ -1089,7 +1089,7 @@ AllRegsMask LinearScan::getKillSetForNode(GenTree* tree)
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
-            killMask.AddGprRegMask(getKillSetForHWIntrinsic(tree->AsHWIntrinsic()));
+            killMask = GprRegsMask(getKillSetForHWIntrinsic(tree->AsHWIntrinsic()));
             break;
 #endif // FEATURE_HW_INTRINSICS
 

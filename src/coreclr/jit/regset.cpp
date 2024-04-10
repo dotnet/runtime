@@ -316,7 +316,7 @@ void RegSet::ClearMaskVars() // Like SetMaskVars(RBM_NONE), but without any debu
     _rsAllMaskVars = m_rsCompiler->AllRegsMask_NONE;
 }
 
-void RegSet::SetMaskVars(AllRegsMask newMaskVars)
+void RegSet::SetMaskVars(CONSTREF_AllRegsMask newMaskVars)
 {
 #ifdef DEBUG
     if (m_rsCompiler->verbose)
