@@ -8968,9 +8968,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
     assert((unsigned)std::abs(argSize) <= codeGen->genStackLevel);
 
     // Trim out any callee-trashed registers from the live set.
-    AllRegsMask savedSet = emitGetGCRegsSavedOrModified(methHnd);
-    gcrefRegs &= savedSet.gprRegs();
-    byrefRegs &= savedSet.gprRegs();
+    regMaskGpr savedSet = emitGetGCRegsSavedOrModified(methHnd);
+    gcrefRegs &= savedSet;
+    byrefRegs &= savedSet;
 
 #ifdef DEBUG
     if (EMIT_GC_VERBOSE)
