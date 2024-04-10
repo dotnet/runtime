@@ -17,8 +17,10 @@ namespace System
         static abstract int Bias { get; }
         static abstract int CountDigits(TSignificand number);
         static abstract TSignificand Power10(int exponent);
-        static abstract int MostSignificantBitNumberOfSignificand { get; }
         static abstract int NumberBitsEncoding { get; }
+        static abstract TValue G0G1Mask { get; }
+        static abstract TValue MostSignificantBitOfSignificandMask { get; }
+        static abstract TValue SignMask { get; }
         static abstract int NumberBitsCombinationField { get; }
         static abstract int NumberBitsExponent { get; }
         static abstract TValue PositiveInfinityBits { get; }
@@ -123,32 +125,30 @@ namespace System
             }
 
             exponent += TDecimal.Bias;
-            bool msbSignificand = (unsignedSignificand & TSignificand.One << TDecimal.MostSignificantBitNumberOfSignificand) != TSignificand.Zero;
 
             TValue value = TValue.Zero;
             TValue exponentVal = TValue.CreateTruncating(exponent);
             TValue significandVal = TValue.CreateTruncating(unsignedSignificand);
+            bool msbSignificand = (significandVal & TDecimal.MostSignificantBitOfSignificandMask) != TValue.Zero;
 
             if (significand < TSignificand.Zero)
             {
-                value = TValue.One << TDecimal.NumberBitsEncoding - 1;
+                value = TDecimal.SignMask;
             }
 
             if (msbSignificand)
             {
-                value ^= TValue.One << TDecimal.NumberBitsEncoding - 2;
-                value ^= TValue.One << TDecimal.NumberBitsEncoding - 3;
-                exponentVal <<= TDecimal.NumberBitsEncoding - 4;
-                value ^= exponentVal;
-                significandVal <<= TDecimal.NumberBitsEncoding - TDecimal.MostSignificantBitNumberOfSignificand;
-                significandVal >>= TDecimal.NumberBitsCombinationField;
-                value ^= significandVal;
+                value |= TDecimal.G0G1Mask;
+                exponentVal <<= TDecimal.NumberBitsEncoding - TDecimal.NumberBitsExponent - 3;
+                value |= exponentVal;
+                significandVal ^= TDecimal.MostSignificantBitOfSignificandMask;
+                value |= significandVal;
             }
             else
             {
                 exponentVal <<= TDecimal.NumberBitsEncoding - TDecimal.NumberBitsExponent - 1;
-                value ^= exponentVal;
-                value ^= significandVal;
+                value |= exponentVal;
+                value |= significandVal;
             }
 
             return value;

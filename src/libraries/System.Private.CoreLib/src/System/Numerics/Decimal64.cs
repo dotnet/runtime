@@ -22,10 +22,13 @@ namespace System.Numerics
         private const int NumberDigitsPrecision = 16;
         private const int Bias = 398;
         private const int NumberBitsExponent = 10;
-        private const ulong PositiveInfinityValue = 0x7800000000000000;
-        private const ulong NegativeInfinityValue = 0xf800000000000000;
-        private const ulong ZeroValue = 0x0000000000000000;
+        private const ulong PositiveInfinityValue = 0x7800_0000_0000_0000;
+        private const ulong NegativeInfinityValue = 0xF800_0000_0000_0000;
+        private const ulong ZeroValue = 0x0000_0000_0000_0000;
         private const long MaxSignificand = 9_999_999_999_999_999;
+        private const ulong G0G1Mask = 0x6000_0000_0000_0000;
+        private const ulong SignMask = 0x8000_0000_0000_0000;
+        private const ulong MostSignificantBitOfSignificandMask = 0x0020_0000_0000_0000;
 
         public Decimal64(long significand, int exponent)
         {
@@ -165,8 +168,6 @@ namespace System.Numerics
 
         static int IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.Bias => Bias;
 
-        static int IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.MostSignificantBitNumberOfSignificand => 53;
-
         static int IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.NumberBitsEncoding => 64;
 
         static int IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.NumberBitsCombinationField => 13;
@@ -179,19 +180,25 @@ namespace System.Numerics
 
         static ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.Zero => ZeroValue;
 
+        static ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.G0G1Mask => G0G1Mask;
+
+        static ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.MostSignificantBitOfSignificandMask => MostSignificantBitOfSignificandMask;
+
+        static ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.SignMask => SignMask;
+
         static int IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.ConvertToExponent(ulong value) => (int)value;
 
         static long IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.ConvertToSignificand(ulong value) => (long)value;
 
         static long IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.Power10(int exponent) => Int64Powers10[exponent];
 
-        static ulong IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.SignMask => 0x8000_0000_0000_0000;
+        static ulong IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.SignMask => SignMask;
 
         static int IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.Bias => Bias;
 
         static int IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.NumberDigitsPrecision => NumberDigitsPrecision;
 
-        static ulong IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.G0G1Mask => 0x6000_0000_0000_0000;
+        static ulong IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.G0G1Mask => G0G1Mask;
 
         static ulong IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.G0ToGwPlus1ExponentMask => 0x7FE0_0000_0000_0000;
 
@@ -203,7 +210,7 @@ namespace System.Numerics
 
         static int IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.NumberBitsSignificand => 50;
 
-        static ulong IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.MostSignificantBitOfSignificandMask => 0x0020_0000_0000_0000;
+        static ulong IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.MostSignificantBitOfSignificandMask => MostSignificantBitOfSignificandMask;
 
         static int IDecimalIeee754TryParseInfo<Decimal64, long>.DecimalNumberBufferLength => Number.Decimal64NumberBufferLength;
 
