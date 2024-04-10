@@ -2021,6 +2021,32 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
 void Compiler::compInitAllRegsMask()
 {
+#if defined(TARGET_AMD64)
+    rbmAllFloat         = RBM_ALLFLOAT_INIT;
+    rbmFltCalleeTrash   = RBM_FLT_CALLEE_TRASH_INIT;
+    cntCalleeTrashFloat = CNT_CALLEE_TRASH_FLOAT_INIT;
+
+    if (canUseEvexEncoding())
+    {
+        rbmAllFloat |= RBM_HIGHFLOAT;
+        rbmFltCalleeTrash |= RBM_HIGHFLOAT;
+        cntCalleeTrashFloat += CNT_CALLEE_TRASH_HIGHFLOAT;
+    }
+#endif // TARGET_AMD64
+
+#if defined(TARGET_XARCH)
+    rbmAllMask         = RBM_ALLMASK_INIT;
+    rbmMskCalleeTrash  = RBM_MSK_CALLEE_TRASH_INIT;
+    cntCalleeTrashMask = CNT_CALLEE_TRASH_MASK_INIT;
+
+    if (canUseEvexEncoding())
+    {
+        rbmAllMask |= RBM_ALLMASK_EVEX;
+        rbmMskCalleeTrash |= RBM_MSK_CALLEE_TRASH_EVEX;
+        cntCalleeTrashMask += CNT_CALLEE_TRASH_MASK_EVEX;
+    }
+#endif // TARGET_XARCH
+
     AllRegsMask_NONE = AllRegsMask();
 #ifdef HAS_MORE_THAN_64_REGISTERS
     AllRegsMask_CALLEE_SAVED =
@@ -3614,31 +3640,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
 #endif // defined(DEBUG) && defined(TARGET_ARM64)
 
-#if defined(TARGET_AMD64)
-    rbmAllFloat         = RBM_ALLFLOAT_INIT;
-    rbmFltCalleeTrash   = RBM_FLT_CALLEE_TRASH_INIT;
-    cntCalleeTrashFloat = CNT_CALLEE_TRASH_FLOAT_INIT;
-
-    if (canUseEvexEncoding())
-    {
-        rbmAllFloat |= RBM_HIGHFLOAT;
-        rbmFltCalleeTrash |= RBM_HIGHFLOAT;
-        cntCalleeTrashFloat += CNT_CALLEE_TRASH_HIGHFLOAT;
-    }
-#endif // TARGET_AMD64
-
 #if defined(TARGET_XARCH)
-    rbmAllMask         = RBM_ALLMASK_INIT;
-    rbmMskCalleeTrash  = RBM_MSK_CALLEE_TRASH_INIT;
-    cntCalleeTrashMask = CNT_CALLEE_TRASH_MASK_INIT;
-
-    if (canUseEvexEncoding())
-    {
-        rbmAllMask |= RBM_ALLMASK_EVEX;
-        rbmMskCalleeTrash |= RBM_MSK_CALLEE_TRASH_EVEX;
-        cntCalleeTrashMask += CNT_CALLEE_TRASH_MASK_EVEX;
-    }
-
     // Make sure we copy the register info and initialize the
     // trash regs after the underlying fields are initialized
 
