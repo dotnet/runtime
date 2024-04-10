@@ -140,8 +140,16 @@ bool OptIfConversionDsc::IfConvertCheckThenFlow()
             if (thenBlock->KindIs(BBJ_RETURN))
             {
                 assert(m_finalBlock == nullptr);
-                m_mainOper = thenBlock->lastNode()->OperGet();
-                assert((m_mainOper == GT_RETURN) || (m_mainOper == GT_SWIFT_ERROR_RET));
+#ifdef SWIFT_SUPPORT
+                if (m_comp->lvaSwiftErrorArg != BAD_VAR_NUM)
+                {
+                    m_mainOper = GT_SWIFT_ERROR_RET;
+                }
+                else
+#endif // SWIFT_SUPPORT
+                {
+                    m_mainOper = GT_RETURN;
+                }
             }
             else
             {
