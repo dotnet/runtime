@@ -14111,7 +14111,17 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
         }
 
 #ifdef SWIFT_SUPPORT
-        GenTree* const errorVal = ((ret != nullptr) && ret->OperIs(GT_SWIFT_ERROR_RET)) ? ret->gtGetOp1() : nullptr;
+        // If merging GT_SWIFT_ERROR_RET nodes, ensure the error operand is stored to the merged return error local,
+        // so the correct error value is retrieved in the merged return block.
+        if ((ret != nullptr) && ret->OperIs(GT_SWIFT_ERROR_RET))
+        {
+            assert(genReturnErrorLocal != BAD_VAR_NUM);
+            const DebugInfo& di = lastStmt->GetDebugInfo();
+            GenTree* swiftErrorStore = gtNewTempStore(genReturnErrorLocal, ret->gtGetOp1(), CHECK_SPILL_NONE, nullptr,
+                                                      di, block);
+            Statement* const newStmt = gtNewStmt(swiftErrorStore, di);
+            fgInsertStmtBefore(block, lastStmt, newStmt);
+        }
 #endif // SWIFT_SUPPORT
 
         if (genReturnLocal != BAD_VAR_NUM)
@@ -14179,19 +14189,6 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
                 fgRemoveStmt(block, lastStmt);
             }
         }
-
-#ifdef SWIFT_SUPPORT
-        // If merging GT_SWIFT_ERROR_RET nodes, ensure the error operand is stored to the merged return error local,
-        // so the correct error value is retrieved in the merged return block.
-        if (errorVal != nullptr)
-        {
-            assert(genReturnErrorLocal != BAD_VAR_NUM);
-            Statement* insertAfterStmt = block->lastStmt();
-            GenTree* swiftErrorStore = gtNewTempStore(genReturnErrorLocal, errorVal, CHECK_SPILL_NONE, &insertAfterStmt,
-                                                      insertAfterStmt->GetDebugInfo(), block);
-            fgNewStmtAtEnd(block, swiftErrorStore);
-        }
-#endif // SWIFT_SUPPORT
 
         JITDUMP("\nUpdate " FMT_BB " to jump to common return block.\n", block->bbNum);
         DISPBLOCK(block);
