@@ -8737,34 +8737,49 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             return fgMorphIntoHelperCall(tree, helper, true /* morphArgs */, op1, op2);
 
         case GT_RETURN:
+        case GT_SWIFT_ERROR_RET:
+        {
+            GenTree* retVal = tree->AsOp()->GetReturnValue();
+
             if (!tree->TypeIs(TYP_VOID))
             {
-                if (op1->OperIs(GT_LCL_FLD))
+                if (retVal->OperIs(GT_LCL_FLD))
                 {
-                    op1 = fgMorphRetInd(tree->AsUnOp());
+                    retVal = fgMorphRetInd(tree->AsOp());
                 }
 
-                fgTryReplaceStructLocalWithField(op1);
+                fgTryReplaceStructLocalWithField(retVal);
             }
 
             // normalize small integer return values
-            if (fgGlobalMorph && varTypeIsSmall(info.compRetType) && (op1 != nullptr) && !op1->TypeIs(TYP_VOID) &&
-                fgCastNeeded(op1, info.compRetType))
+            if (fgGlobalMorph && varTypeIsSmall(info.compRetType) && (retVal != nullptr) && !retVal->TypeIs(TYP_VOID) &&
+                fgCastNeeded(retVal, info.compRetType))
             {
                 // Small-typed return values are normalized by the callee
-                op1 = gtNewCastNode(TYP_INT, op1, false, info.compRetType);
+                retVal = gtNewCastNode(TYP_INT, retVal, false, info.compRetType);
 
                 // Propagate GTF_COLON_COND
-                op1->gtFlags |= (tree->gtFlags & GTF_COLON_COND);
+                retVal->gtFlags |= (tree->gtFlags & GTF_COLON_COND);
 
-                tree->AsOp()->gtOp1 = fgMorphTree(op1);
+                retVal = fgMorphTree(retVal);
+                tree->AsOp()->SetReturnValue(retVal);
 
                 // Propagate side effect flags
-                tree->SetAllEffectsFlags(tree->AsOp()->gtGetOp1());
+                tree->SetAllEffectsFlags(retVal);
 
                 return tree;
             }
+
+            if (tree->OperIs(GT_RETURN))
+            {
+                op1 = retVal;
+            }
+            else
+            {
+                op2 = retVal;
+            }
             break;
+        }
 
         case GT_EQ:
         case GT_NE:
@@ -9631,15 +9646,18 @@ DONE_MORPHING_CHILDREN:
             break;
 
         case GT_RETURN:
-
-            // Retry updating op1 to a field -- assertion
-            // prop done when morphing op1 changed the local.
+        case GT_SWIFT_ERROR_RET:
+        {
+            // Retry updating return operand to a field -- assertion
+            // prop done when morphing this operand changed the local.
             //
-            if (op1 != nullptr)
+            GenTree* const retVal = tree->AsOp()->GetReturnValue();
+            if (retVal != nullptr)
             {
-                fgTryReplaceStructLocalWithField(op1);
+                fgTryReplaceStructLocalWithField(retVal);
             }
             break;
+        }
 
         default:
             break;
@@ -11538,16 +11556,16 @@ GenTree* Compiler::fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow,
 // fgMorphRetInd: Try to get rid of extra local indirections in a return tree.
 //
 // Arguments:
-//    node - The return node that uses an local field.
+//    node - The return node that uses a local field.
 //
 // Return Value:
-//    the original op1 of the ret if there was no optimization or an optimized new op1.
+//    the original return operand if there was no optimization, or an optimized new return operand.
 //
-GenTree* Compiler::fgMorphRetInd(GenTreeUnOp* ret)
+GenTree* Compiler::fgMorphRetInd(GenTreeOp* ret)
 {
-    assert(ret->OperIs(GT_RETURN));
-    assert(ret->gtGetOp1()->OperIs(GT_LCL_FLD));
-    GenTreeLclFld* lclFld = ret->gtGetOp1()->AsLclFld();
+    assert(ret->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET));
+    assert(ret->GetReturnValue()->OperIs(GT_LCL_FLD));
+    GenTreeLclFld* lclFld = ret->GetReturnValue()->AsLclFld();
     unsigned       lclNum = lclFld->GetLclNum();
 
     if (fgGlobalMorph && varTypeIsStruct(lclFld) && !lvaIsImplicitByRefLocal(lclNum))
