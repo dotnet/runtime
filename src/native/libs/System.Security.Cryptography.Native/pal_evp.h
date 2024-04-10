@@ -91,6 +91,14 @@ PALEXPORT int32_t CryptoNative_EvpDigestXOFOneShot(const EVP_MD* type, const voi
 
 /*
 Function:
+EvpMdCtxCopyEx
+
+Creates a new EVP_MD_CTX and copies the ctx input using EVP_MD_CTX_copy_ex. Returns NULL on error.
+*/
+PALEXPORT EVP_MD_CTX* CryptoNative_EvpMdCtxCopyEx(const EVP_MD_CTX* ctx);
+
+/*
+Function:
 EvpMdSize
 
 Direct shim to EVP_MD_size.

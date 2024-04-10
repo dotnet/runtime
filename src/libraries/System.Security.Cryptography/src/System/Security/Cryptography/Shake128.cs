@@ -23,6 +23,7 @@ namespace System.Security.Cryptography
         private LiteXof _hashProvider;
         private bool _disposed;
         private ConcurrencyBlock _block;
+        private bool _reading;
 
         /// <summary>
         ///   Initializes a new instance of the <see cref="Shake128" /> class.
@@ -35,6 +36,11 @@ namespace System.Security.Cryptography
         {
             CheckPlatformSupport();
             _hashProvider = LiteHashProvider.CreateXof(HashAlgorithmId);
+        }
+
+        internal Shake128(LiteXof hashProvider)
+        {
+            _hashProvider = hashProvider;
         }
 
         /// <summary>
@@ -71,6 +77,7 @@ namespace System.Security.Cryptography
 
             using (ConcurrencyBlock.Enter(ref _block))
             {
+                CheckReading();
                 _hashProvider.Append(data);
             }
         }
@@ -96,6 +103,7 @@ namespace System.Security.Cryptography
                 byte[] output = new byte[outputLength];
                 _hashProvider.Finalize(output);
                 _hashProvider.Reset();
+                _reading = false;
                 return output;
             }
         }
@@ -115,6 +123,7 @@ namespace System.Security.Cryptography
             {
                 _hashProvider.Finalize(destination);
                 _hashProvider.Reset();
+                _reading = false;
             }
         }
 
@@ -156,6 +165,90 @@ namespace System.Security.Cryptography
             using (ConcurrencyBlock.Enter(ref _block))
             {
                 _hashProvider.Current(destination);
+            }
+        }
+
+        /// <summary>
+        /// Retrieves the hash for the data accumulated from prior calls to the <c>AppendData</c> methods without
+        /// resetting the object to its initial state and allowing additional calls to continue retrieving the hash.
+        /// </summary>
+        /// <param name="outputLength">The size of the hash to produce.</param>
+        /// <returns>The computed hash.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="outputLength" /> is negative.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support multiple reads of the hash. <see cref="GetHashAndReset(int)" /> can be used
+        ///   to perform a single operation.
+        /// </exception>
+        public byte[] Read(int outputLength)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(outputLength);
+            CheckDisposed();
+
+            using (ConcurrencyBlock.Enter(ref _block))
+            {
+                byte[] output = new byte[outputLength];
+                _hashProvider.Read(output);
+                _reading = true;
+                return output;
+            }
+        }
+
+        /// <summary>
+        /// Fills the buffer with the hash for the data accumulated from prior calls to the <c>AppendData</c> methods without
+        /// resetting the object to its initial state and allowing additional calls to continue retrieving the hash.
+        /// </summary>
+        /// <param name="destination">The buffer to fill with the hash.</param>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support multiple reads of the hash. <see cref="GetHashAndReset(Span{byte})" /> can be used
+        ///   to perform a single operation.
+        /// </exception>
+        public void Read(Span<byte> destination)
+        {
+            CheckDisposed();
+
+            using (ConcurrencyBlock.Enter(ref _block))
+            {
+                _hashProvider.Read(destination);
+                _reading = true;
+            }
+        }
+
+        /// <summary>
+        /// Resets the instance back to its initial state.
+        /// </summary>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public void Reset()
+        {
+            CheckDisposed();
+
+            using (ConcurrencyBlock.Enter(ref _block))
+            {
+                _hashProvider.Reset();
+                _reading = false;
+            }
+        }
+
+        /// <summary>
+        /// Creates a new instance of <see cref="Shake128" /> with the existing appended data preserved.
+        /// </summary>
+        /// <returns>A clone of the current instance.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   The current instance is being read from and cannot be cloned.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public Shake128 Clone()
+        {
+            CheckDisposed();
+
+            using (ConcurrencyBlock.Enter(ref _block))
+            {
+                CheckReading();
+                LiteXof clone = _hashProvider.Clone();
+                return new Shake128(clone);
             }
         }
 
@@ -385,5 +478,13 @@ namespace System.Security.Cryptography
         }
 
         private void CheckDisposed() => ObjectDisposedException.ThrowIf(_disposed, this);
+
+        private void CheckReading()
+        {
+            if (_reading)
+            {
+                throw new InvalidOperationException("ALREADY READING!");
+            }
+        }
     }
 }

@@ -12,7 +12,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public interface IShakeTrait<TShake> where TShake : IDisposable, new()
+    public interface IShakeTrait<TShake> where TShake : class, IDisposable, new()
     {
         static abstract TShake Create();
         static abstract bool IsSupported { get; }
@@ -22,6 +22,10 @@ namespace System.Security.Cryptography.Tests
         static abstract void GetHashAndReset(TShake shake, Span<byte> destination);
         static abstract byte[] GetCurrentHash(TShake shake, int outputLength);
         static abstract void GetCurrentHash(TShake shake, Span<byte> destination);
+        static abstract void Read(TShake shake, Span<byte> destination);
+        static abstract byte[] Read(TShake shake, int outputLength);
+        static abstract void Reset(TShake shake);
+        static abstract TShake Clone(TShake shake);
 
         static abstract byte[] HashData(byte[] source, int outputLength);
         static abstract byte[] HashData(ReadOnlySpan<byte> source, int outputLength);
@@ -37,7 +41,7 @@ namespace System.Security.Cryptography.Tests
 
     public abstract class ShakeTestDriver<TShakeTrait, TShake>
         where TShakeTrait : IShakeTrait<TShake>
-        where TShake : IDisposable, new()
+        where TShake : class, IDisposable, new()
     {
         protected abstract IEnumerable<(string Msg, string Output)> Fips202Kats { get; }
         public static bool IsSupported => TShakeTrait.IsSupported;
@@ -146,6 +150,65 @@ namespace System.Security.Cryptography.Tests
                     Assert.Equal(kat.Output, Convert.ToHexString(hash), ignoreCase: true);
 
                     TShakeTrait.GetHashAndReset(shake, hash);
+                    Assert.Equal(kat.Output, Convert.ToHexString(hash), ignoreCase: true);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_Clone_Independent_Unobserved()
+        {
+            foreach ((string Msg, string Output) kat in Fips202Kats)
+            {
+                byte[] message = Convert.FromHexString(kat.Msg);
+                byte[] hash = new byte[kat.Output.Length / 2];
+
+                using (TShake shake = new TShake())
+                using (TShake clone = TShakeTrait.Clone(shake))
+                {
+                    TShakeTrait.AppendData(shake, "badbadbad"u8);
+
+                    TShakeTrait.AppendData(clone, message);
+                    TShakeTrait.GetCurrentHash(clone, hash);
+                    Assert.Equal(kat.Output, Convert.ToHexString(hash), ignoreCase: true);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_Clone_Independent_Disposed()
+        {
+            foreach ((string Msg, string Output) kat in Fips202Kats)
+            {
+                byte[] message = Convert.FromHexString(kat.Msg);
+                byte[] hash = new byte[kat.Output.Length / 2];
+
+                TShake shake = new TShake();
+                using (TShake clone = TShakeTrait.Clone(shake))
+                {
+                    shake.Dispose();
+
+                    TShakeTrait.AppendData(clone, message);
+                    TShakeTrait.GetCurrentHash(clone, hash);
+                    Assert.Equal(kat.Output, Convert.ToHexString(hash), ignoreCase: true);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_Reset()
+        {
+            foreach ((string Msg, string Output) kat in Fips202Kats)
+            {
+                byte[] message = Convert.FromHexString(kat.Msg);
+                byte[] hash = new byte[kat.Output.Length / 2];
+
+                using (TShake shake = new TShake())
+                {
+                    TShakeTrait.AppendData(shake, "badbadbad"u8);
+                    TShakeTrait.Reset(shake);
+                    TShakeTrait.AppendData(shake, message);
+                    TShakeTrait.GetCurrentHash(shake, hash);
                     Assert.Equal(kat.Output, Convert.ToHexString(hash), ignoreCase: true);
                 }
             }
@@ -515,6 +578,8 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ObjectDisposedException>(() => TShakeTrait.GetHashAndReset(shake, buffer.AsSpan()));
             Assert.Throws<ObjectDisposedException>(() => TShakeTrait.GetCurrentHash(shake, outputLength: 1));
             Assert.Throws<ObjectDisposedException>(() => TShakeTrait.GetCurrentHash(shake, buffer.AsSpan()));
+            Assert.Throws<ObjectDisposedException>(() => TShakeTrait.Clone(shake));
+            Assert.Throws<ObjectDisposedException>(() => TShakeTrait.Reset(shake));
         }
 
         [ConditionalFact(nameof(IsNotSupported))]
@@ -537,6 +602,16 @@ namespace System.Security.Cryptography.Tests
         public void IsSupported_AgreesWithPlatform()
         {
             Assert.Equal(TShakeTrait.IsSupported, PlatformDetection.SupportsSha3);
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void Clone_DifferentInstance()
+        {
+            using (TShake shake = new TShake())
+            using (TShake clone = TShakeTrait.Clone(shake))
+            {
+                Assert.NotSame(shake, clone);
+            }
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

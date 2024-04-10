@@ -9,6 +9,9 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMdCtxCopyEx")]
+        internal static partial SafeEvpMdCtxHandle EvpMdCtxCopyEx(SafeEvpMdCtxHandle ctx);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMdCtxCreate")]
         internal static partial SafeEvpMdCtxHandle EvpMdCtxCreate(IntPtr type);
 

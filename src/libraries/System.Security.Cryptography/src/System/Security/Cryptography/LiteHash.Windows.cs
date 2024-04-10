@@ -259,6 +259,9 @@ namespace System.Security.Cryptography
             }
         }
 
+        public LiteXof Clone() => throw new NotImplementedException();
+        public void Read(Span<byte> destination) => throw new NotImplementedException();
+
         public readonly void Dispose()
         {
             _hashHandle.Dispose();
