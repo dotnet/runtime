@@ -14,7 +14,7 @@ import { assert_c_interop, assert_js_interop } from "./invoke-js";
 import { monoThreadInfo, mono_wasm_main_thread_ptr } from "./pthreads";
 import { _zero_region, copyBytes } from "./memory";
 import { stringToUTF8Ptr } from "./strings";
-import { mono_log_debug } from "./logging";
+import { mono_log_error } from "./logging";
 
 const managedExports: ManagedExports = {} as any;
 
@@ -269,7 +269,7 @@ export function install_main_synchronization_context (jsThreadBlockingMode: JSTh
         }
         return get_arg_gc_handle(res) as any;
     } catch (e) {
-        mono_log_debug("install_main_synchronization_context failed", e);
+        mono_log_error("install_main_synchronization_context failed", e);
         throw e;
     }
 }
