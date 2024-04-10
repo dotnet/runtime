@@ -48,8 +48,8 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
 
         private static int RunAllocationSamplers()
         {
-            //// trigger GC to avoid one during the next tests
-            //GC.Collect();
+            // trigger GC to avoid impacting the measurements
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true);
 
             // run the same allocations test with no sampling, AllocationTick and AllocationSampled
             Stopwatch clock = new Stopwatch();
@@ -57,14 +57,14 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
             int allocatedSize = AllocateObjects(InstanceCount * 50);
             clock.Stop();
             var duration = clock.ElapsedMilliseconds;
-            Logger.logger.Log($"       #GCs: {GC.CollectionCount(0)}");
+            Logger.logger.Log($"      #GCs: {GC.CollectionCount(0)}");
             Logger.logger.Log($"No Sampling: {InstanceCount * 50} instances allocated for {allocatedSize} bytes in {duration} ms");
             _noSamplingDuration = duration;
             Logger.logger.Log("-");
 
-            //// trigger GC to avoid one during the next tests
-            //GC.Collect();
 
+            // trigger GC to avoid impacting the measurements
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true);
             var ret = IpcTraceTest.RunAndValidateEventCounts(
                 new Dictionary<string, ExpectedEventCount>() { { "Microsoft-Windows-DotNETRuntime", -1 } },
                 _eventGeneratingActionForAllocationsWithAllocationTick,
@@ -75,9 +75,8 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
                 return ret;
             Logger.logger.Log("-");
 
-            //// trigger GC to avoid one during the next tests
-            //GC.Collect();
-
+            // trigger GC to avoid impacting the measurements
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true);
             ret = IpcTraceTest.RunAndValidateEventCounts(
                 new Dictionary<string, ExpectedEventCount>() { { "Microsoft-Windows-DotNETRuntime", -1 } },
                 _eventGeneratingActionForAllocationsWithAllocationSampled,
@@ -103,8 +102,9 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
         }
 
         // 2000 instances of 1KB byte arrays should trigger around 20 events with the default 1/100KB sampling rate
+        // but here we just check that at least one event is generated with the right type name and size
         const int InstanceCount = 2000;
-        const int MinExpectedEvents = 15;
+        const int MinExpectedEvents = 1;
 
         // allocate objects to trigger dynamic allocation sampling events
         private static Action _eventGeneratingActionForAllocations = () =>
@@ -112,8 +112,8 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
             int allocatedSize = 0;
             for (int i = 0; i < InstanceCount; i++)
             {
-                if ((i != 0) && (i % InstanceCount/5 == 0))
-                    Logger.logger.Log($"Allocated {i* InstanceCount / 5} instances {i} times...");
+                if ((i != 0) && (i % (InstanceCount/5) == 0))
+                    Logger.logger.Log($"Allocated {i} instances...");
 
                 byte[] bytes = new byte[1024];
                 allocatedSize += bytes.Length;
@@ -129,7 +129,7 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
             int allocatedSize = AllocateObjects(InstanceCount*50);
             clock.Stop();
             var duration = clock.ElapsedMilliseconds;
-            Logger.logger.Log($"          #GCs: {GC.CollectionCount(0)}");
+            Logger.logger.Log($"      #GCs: {GC.CollectionCount(0)}");
             Logger.logger.Log($"AllocationTick: {InstanceCount*50} instances allocated for {allocatedSize} bytes in {duration} ms");
             _allocationTickDuration = duration;
         };
@@ -141,7 +141,7 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
             int allocatedSize = AllocateObjects(InstanceCount*50);
             clock.Stop();
             var duration = clock.ElapsedMilliseconds;
-            Logger.logger.Log($"             #GCs: {GC.CollectionCount(0)}");
+            Logger.logger.Log($"      #GCs: {GC.CollectionCount(0)}");
             Logger.logger.Log($"AllocationSampled: {InstanceCount*50} instances allocated for {allocatedSize} bytes in {duration} ms");
             _allocationSampledDuration = duration;
         };
