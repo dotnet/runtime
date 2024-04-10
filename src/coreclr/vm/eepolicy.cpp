@@ -796,7 +796,7 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
         // All of the code from here on out is robust to any failures in any API's that are called.
         CONTRACT_VIOLATION(GCViolation | ModeViolation | FaultNotFatal | TakesLockViolation);
         if (g_unityOnFatalError)
-            g_unityOnFatalError(&exceptionPointers);
+            g_unityOnFatalError(pExceptionInfo);
 
 
         // Setting g_fFatalErrorOccurredOnGCThread allows code to avoid attempting to make GC mode transitions which could
