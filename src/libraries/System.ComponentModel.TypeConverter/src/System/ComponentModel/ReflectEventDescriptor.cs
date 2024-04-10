@@ -367,8 +367,6 @@ namespace System.ComponentModel
             _filledMethods = true;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "currentReflectType is in _componentClass's hierarchy. Since _componentClass is annotated with All, this means currentReflectType is annotated with All as well.")]
         private void FillSingleMethodAttribute(MethodInfo realMethodInfo, IList attributes)
         {
             string methodName = realMethodInfo.Name;

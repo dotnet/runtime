@@ -201,8 +201,6 @@ namespace System.ComponentModel
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "IntrinsicTypeConverters is marked with RequiresUnreferencedCode. It is the only place that should call this.")]
         private static NullableConverter CreateNullableConverter(Type type) => new NullableConverter(type);
 
         private static Hashtable PropertyCache => LazyInitializer.EnsureInitialized(ref s_propertyCache, () => new Hashtable());
@@ -926,9 +924,6 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves a type from a name.
         /// </summary>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:TypeGetType",
-            Justification = "typeName is annotated with DynamicallyAccessedMembers, which will preserve the type. " +
-            "Using the non-assembly qualified type name will still work.")]
         private static Type? GetTypeFromName(
             // Using PublicParameterlessConstructor to preserve the type. See https://github.com/mono/linker/issues/1878
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string typeName)
@@ -961,8 +956,6 @@ namespace System.ComponentModel
         /// This method returns true if the data cache in this reflection
         /// type descriptor has data in it.
         /// </summary>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
-            Justification = "ReflectedTypeData is not being created here, just checking if was already created.")]
         internal bool IsPopulated(Type type)
         {
             ReflectedTypeData? td = GetTypeData(type, createIfNeeded: false);
@@ -1296,8 +1289,6 @@ namespace System.ComponentModel
         /// actually requery, but it will clear our state so the next
         /// query re-populates.
         /// </summary>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
-            Justification = "ReflectedTypeData is not being created here, just checking if was already created.")]
         internal void Refresh(Type type)
         {
             ReflectedTypeData? td = GetTypeData(type, createIfNeeded: false);

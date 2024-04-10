@@ -12,12 +12,6 @@ using System.Text;
 
 namespace System.Data.Common
 {
-    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2113:ReflectionToRequiresUnreferencedCode",
-        Justification = "The use of GetType preserves ICustomTypeDescriptor members with RequiresUnreferencedCode, but the GetType callsites either "
-            + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
-    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
-        Justification = "The use of GetType preserves implementation of ICustomTypeDescriptor members with RequiresUnreferencedCode, but the GetType callsites either "
-            + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
     public class DbConnectionStringBuilder : IDictionary, ICustomTypeDescriptor
     {
@@ -394,9 +388,6 @@ namespace System.Data.Common
             return attributes;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
-            Justification = "The use of GetType preserves this member with RequiresUnreferencedCode, but the GetType callsites either "
-                + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
         private PropertyDescriptorCollection GetProperties()
         {
             PropertyDescriptorCollection? propertyDescriptors = _propertyDescriptors;
@@ -422,9 +413,6 @@ namespace System.Data.Common
             return propertyDescriptors;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
-            Justification = "The use of GetType preserves this member with RequiresUnreferencedCode, but the GetType callsites either "
-                + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
         protected virtual void GetProperties(Hashtable propertyDescriptors)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbConnectionStringBuilder.GetProperties|API> {0}", ObjectID);
@@ -531,9 +519,6 @@ namespace System.Data.Common
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
-            Justification = "The use of GetType preserves this member with RequiresUnreferencedCode, but the GetType callsites either "
-                + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
         private PropertyDescriptorCollection GetProperties(Attribute[]? attributes)
         {
             PropertyDescriptorCollection propertyDescriptors = GetProperties();
@@ -635,8 +620,6 @@ namespace System.Data.Common
         {
             return TypeDescriptor.GetDefaultEvent(this, true);
         }
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The component type's events are preserved because this class is marked with [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]")]
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents()
         {
             // Below call is necessary to tell the trimmer that it should mark derived types appropriately.
