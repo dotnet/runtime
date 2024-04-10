@@ -2852,8 +2852,8 @@ public:
     // method if the current InlinedCallFrame is inactive.
     PTR_MethodDesc GetActualInteropMethodDesc()
     {
-        // The actual interop MethodDesc is saved off in a field off the InlinedCrawlFrame
-        // which is populated by the JIT. Refer to JIT_InitPInvokeFrame for details.
+        // The actual interop MethodDesc is saved off in a field in the InlinedCrawlFrame
+        // which is populated by the JIT in `InsertPInvokeMethodProlog`.
         return PTR_MethodDesc(m_StubSecretArg);
     }
 

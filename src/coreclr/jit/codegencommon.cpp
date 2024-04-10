@@ -3141,22 +3141,6 @@ void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, RegGraph* graph)
     }
 }
 
-void CodeGen::genSpillOrAddSimpleRegisterParam(unsigned lclNum, regNumber sourceReg, RegGraph* graph)
-{
-    LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
-    if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr))
-    {
-        GetEmitter()->emitIns_S_R(ins_Store(varDsc->TypeGet()), emitActualTypeSize(varDsc), sourceReg, lclNum, 0);
-    }
-
-    if (varDsc->lvIsInReg())
-    {
-        RegNode* sourceRegNode = graph->GetOrAdd(sourceReg);
-        RegNode* destRegNode   = graph->GetOrAdd(varDsc->GetRegNum());
-        graph->AddEdge(sourceRegNode, destRegNode, TYP_I_IMPL, 0);
-    }
-}
-
 // -----------------------------------------------------------------------------
 // genHomeRegisterParams: Move all register parameters to their initial
 // assigned location.
@@ -3200,12 +3184,6 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
             }
         }
 
-        if (compiler->info.compPublishStubParam && ((paramRegs & RBM_SECRET_STUB_PARAM) != RBM_NONE))
-        {
-            GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SECRET_STUB_PARAM,
-                                      compiler->lvaStubArgumentVar, 0);
-        }
-
         return;
     }
 
@@ -3236,11 +3214,6 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
         {
             genSpillOrAddRegisterParam(lclNum, &graph);
         }
-    }
-
-    if (compiler->info.compPublishStubParam && ((paramRegs & RBM_SECRET_STUB_PARAM) != RBM_NONE))
-    {
-        genSpillOrAddSimpleRegisterParam(compiler->lvaStubArgumentVar, REG_SECRET_STUB_PARAM, &graph);
     }
 
     DBEXEC(VERBOSE, graph.Dump());
@@ -5432,6 +5405,16 @@ void CodeGen::genFnProlog()
         needToEstablishFP = false; // nobody uses this later, but set it anyway, just to be explicit
     }
 #endif // TARGET_ARM
+
+    if (compiler->info.compPublishStubParam)
+    {
+        GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SECRET_STUB_PARAM,
+                                  compiler->lvaStubArgumentVar, 0);
+        assert(intRegState.rsCalleeRegArgMaskLiveIn & RBM_SECRET_STUB_PARAM);
+
+        // It's no longer live; clear it out so it can be used after this in the prolog
+        intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SECRET_STUB_PARAM;
+    }
 
     //
     // Zero out the frame as needed
