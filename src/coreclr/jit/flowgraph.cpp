@@ -2560,6 +2560,14 @@ PhaseStatus Compiler::fgAddInternal()
 }
 
 #ifdef SWIFT_SUPPORT
+//------------------------------------------------------------------------
+// fgAddSwiftErrorReturns: If this method uses Swift error handling,
+// transform all GT_RETURN nodes into GT_SWIFT_ERROR_RET nodes
+// to handle returning the error value alongside the normal return value.
+//
+// Returns:
+//   Suitable phase status.
+//
 PhaseStatus Compiler::fgAddSwiftErrorReturns()
 {
     if (lvaSwiftErrorArg == BAD_VAR_NUM)
