@@ -544,7 +544,11 @@ void EESocketCleanupHelper(bool isExecutingOnAltStack)
 
     if (isExecutingOnAltStack)
     {
-        GetThread()->SetExecutingOnAltStack();
+        Thread *pThread = GetThreadNULLOk();
+        if (pThread)
+        {
+             pThread->SetExecutingOnAltStack();
+        }
     }
 
     // Close the debugger transport socket first
@@ -933,7 +937,7 @@ void EEStartupHelper()
         // retrieve configured max size for the mini-metadata buffer (defaults to 64KB)
         g_MiniMetaDataBuffMaxSize = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MiniMdBufferCapacity);
         // align up to GetOsPageSize(), with a maximum of 1 MB
-        g_MiniMetaDataBuffMaxSize = (DWORD) min(ALIGN_UP(g_MiniMetaDataBuffMaxSize, GetOsPageSize()), 1024 * 1024);
+        g_MiniMetaDataBuffMaxSize = (DWORD) min(ALIGN_UP(g_MiniMetaDataBuffMaxSize, GetOsPageSize()), (DWORD)(1024 * 1024));
         // allocate the buffer. this is never touched while the process is running, so it doesn't
         // contribute to the process' working set. it is needed only as a "shadow" for a mini-metadata
         // buffer that will be set up and reported / updated in the Watson process (the

@@ -27,12 +27,23 @@
     private List<string> chatMessages = new List<string>();
     private string wrongQueryError = "Query string with parameters 'message' and 'transport' are required";
 
+    // remove when https://github.com/dotnet/runtime/issues/96546 is fixed
+    // log that rendering is about to start in case we hit the issue before OnAfterRender is called
+    protected override bool ShouldRender()
+    {
+        bool shouldRender = base.ShouldRender();
+        Helper.TestOutputWriteLine($"ShouldRender = {shouldRender}");
+        return shouldRender;
+    }
+
     protected override void OnAfterRender(bool firstRender)
     {
+        if (firstRender)
+        {
+            Helper.TestOutputWriteLine($"OnAfterRender on CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
+            GetQueryParameters();
+        }
         base.OnAfterRender(firstRender);
-
-        Helper.TestOutputWriteLine($"OnAfterRender on CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
-        GetQueryParameters();
     }
 
     private void GetQueryParameters()
@@ -49,7 +60,7 @@
         }
         transport = Helper.GetValue(parameters, "transport");
         message = $"{transport} {Helper.GetValue(parameters, "message")}" ;
-        Helper.TestOutputWriteLine($"GetQueryParameters on CurrentManagedThreadId={Environment.CurrentManagedThreadId} finished");
+        Helper.TestOutputWriteLine($"Finished GetQueryParameters on CurrentManagedThreadId={Environment.CurrentManagedThreadId}.");
     }
 
     private async Task Connect()

@@ -479,7 +479,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
         case INS_auipc:
             assert(reg != REG_R0);
             assert(isGeneralRegister(reg));
-            assert((((size_t)imm) >> 20) == 0);
+            assert(isValidSimm20(imm));
 
             code |= reg << 7;
             code |= (imm & 0xfffff) << 12;
@@ -988,9 +988,9 @@ void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNu
 }
 
 // This computes address from the immediate which is relocatable.
-void emitter::emitIns_R_AI(instruction ins,
-                           emitAttr    attr,
-                           regNumber   reg,
+void emitter::emitIns_R_AI(instruction  ins,
+                           emitAttr     attr,
+                           regNumber    reg,
                            ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     assert(EA_IS_RELOC(attr)); // EA_PTR_DSP_RELOC
@@ -1253,7 +1253,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     // Since ADDIW use sign extension fo immediate
     // we have to adjust higher 19 bit loaded by LUI
     // for case when low part is bigger than 0x800.
-    UINT32 high19 = (high31 + 0x800) >> 12;
+    INT32 high19 = ((int32_t)(high31 + 0x800)) >> 12;
 
     emitIns_R_I(INS_lui, size, reg, high19);
     emitIns_R_R_I(INS_addiw, size, reg, reg, high31 & 0xFFF);
@@ -1290,8 +1290,8 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 void emitter::emitIns_Call(EmitCallType          callType,
                            CORINFO_METHOD_HANDLE methHnd,
                            INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
-                           void*    addr,
-                           ssize_t  argSize,
+                           void*            addr,
+                           ssize_t          argSize,
                            emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                            VARSET_VALARG_TP ptrVars,
                            regMaskTP        gcrefRegs,
@@ -1760,9 +1760,9 @@ void emitter::emitJumpDistBind()
         emitCounts_INS_OPTS_J * (6 << 2); // the max placeholder sizeof(INS_OPTS_JALR) - sizeof(INS_OPTS_J)
     NATIVE_OFFSET psd = B_DIST_SMALL_MAX_POS - maxPlaceholderSize;
 
-/*****************************************************************************/
-/* If the default small encoding is not enough, we start again here.     */
-/*****************************************************************************/
+    /*****************************************************************************/
+    /* If the default small encoding is not enough, we start again here.     */
+    /*****************************************************************************/
 
 AGAIN:
 
@@ -1793,7 +1793,7 @@ AGAIN:
         UNATIVE_OFFSET dstOffs;
         NATIVE_OFFSET  jmpDist; // the relative jump distance, as it will be encoded
 
-/* Make sure the jumps are properly ordered */
+        /* Make sure the jumps are properly ordered */
 
 #ifdef DEBUG
         assert(lastSJ == nullptr || lastIG != jmp->idjIG || lastSJ->idjOffs < (jmp->idjOffs + adjSJ));
@@ -1847,7 +1847,6 @@ AGAIN:
         jmp->idjOffs += adjSJ;
 
         // If this is a jump via register, the instruction size does not change, so we are done.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
         /* Have we bound this jump's target already? */
 
@@ -1868,7 +1867,6 @@ AGAIN:
         else
         {
             /* First time we've seen this label, convert its target */
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
             tgtIG = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
 
@@ -1948,8 +1946,8 @@ AGAIN:
                 instruction ins = jmp->idIns();
                 assert((INS_jal <= ins) && (ins <= INS_bgeu));
 
-                if (ins > INS_jalr ||
-                    (ins < INS_jalr && ins > INS_j)) // jal < beqz < bnez < jalr < beq/bne/blt/bltu/bge/bgeu
+                if (ins > INS_jalr || (ins < INS_jalr && ins > INS_j)) // jal < beqz < bnez < jalr <
+                                                                       // beq/bne/blt/bltu/bge/bgeu
                 {
                     if (isValidSimm13(jmpDist + maxPlaceholderSize))
                     {
@@ -2022,8 +2020,8 @@ AGAIN:
                 instruction ins = jmp->idIns();
                 assert((INS_jal <= ins) && (ins <= INS_bgeu));
 
-                if (ins > INS_jalr ||
-                    (ins < INS_jalr && ins > INS_j)) // jal < beqz < bnez < jalr < beq/bne/blt/bltu/bge/bgeu
+                if (ins > INS_jalr || (ins < INS_jalr && ins > INS_j)) // jal < beqz < bnez < jalr <
+                                                                       // beq/bne/blt/bltu/bge/bgeu
                 {
                     if (isValidSimm13(jmpDist + maxPlaceholderSize))
                     {
@@ -2966,7 +2964,7 @@ BYTE* emitter::emitOutputInstr_OptsRcNoReloc(BYTE* dst, instruction* ins, unsign
     const regNumber rsvdReg = codeGen->rsGetRsvdReg();
 
     const instruction lastIns = (*ins == INS_jal) ? (*ins = INS_addi) : *ins;
-    const ssize_t     high = immediate >> 11;
+    const ssize_t     high    = immediate >> 11;
 
     dst += emitOutput_UTypeInstr(dst, INS_lui, rsvdReg, UpperNBitsOfWordSignExtend<20>(high));
     dst += emitOutput_ITypeInstr(dst, INS_addi, rsvdReg, rsvdReg, LowerNBitsOfWord<12>(high));

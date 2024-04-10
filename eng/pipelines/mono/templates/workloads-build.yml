@@ -11,11 +11,13 @@ parameters:
   runtimeVariant: ''
   testGroup: ''
   timeoutInMinutes: ''
+  templatePath: 'templates'
   variables: {}
 
 jobs:
 - template: /eng/pipelines/common/templates/runtimes/xplat-job.yml
   parameters:
+    templatePath: ${{ parameters.templatePath }}
     archType: ${{ parameters.archType }}
     buildConfig: ${{ parameters.buildConfig }}
     container: ${{ parameters.container }}
@@ -26,6 +28,7 @@ jobs:
     pool: ${{ parameters.pool }}
     runtimeVariant: ${{ parameters.runtimeVariant }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    logsName: WorkloadLogs_Attempt$(System.JobAttempt)
 
     dependsOn: ${{ parameters.dependsOn }}
 
@@ -97,15 +100,6 @@ jobs:
     - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
       parameters:
         name: workloads
-
-    # Publish Logs
-    - task: PublishPipelineArtifact@1
-      displayName: Publish Logs
-      inputs:
-        targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'WorkloadLogs_Attempt$(System.JobAttempt)'
-      continueOnError: true
-      condition: always()
 
     # Delete wixpdb files before they are uploaded to artifacts
     - task: DeleteFiles@1

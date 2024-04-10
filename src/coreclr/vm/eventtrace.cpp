@@ -264,11 +264,6 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::GetCurrentThreadsCallStac
     }
     CONTRACTL_END;
 
-    // The stack walk performed below can cause allocations (thus entering the host). But
-    // this is acceptable, since we're not supporting the use of SQL/F1 profiling and
-    // full-blown ETW CLR stacks (which would be redundant).
-    PERMANENT_CONTRACT_VIOLATION(HostViolation, ReasonUnsupportedForSQLF1Profiling);
-
     m_FrameCount = 0;
     ETW::SamplingLog::EtwStackWalkStatus stackwalkStatus = SaveCurrentStack();
 

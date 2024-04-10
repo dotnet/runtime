@@ -284,7 +284,6 @@ public:
             if (!HasFaulted() && !IsIPadjusted())
             {
                 _ASSERTE(!(flags & ActiveStackFrame));
-                flags |= AbortingCall;
             }
         }
 
