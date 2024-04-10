@@ -14,10 +14,6 @@ function testOutput(msg) {
     console.log(`TestOutput -> ${msg}`);
 }
 
-export function exitWithSuccess() { 
-    exit(0);
-}
-
 // Prepare base runtime parameters
 dotnet
     .withElementOnExit()
@@ -84,14 +80,11 @@ switch (testCase) {
         break;
 }
 
-const { setModuleImports, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
+const { getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
 const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
 const assemblyExtension = config.resources.assembly['System.Private.CoreLib.wasm'] !== undefined ? ".wasm" : ".dll";
 
-setModuleImports("main.js", {
-    exitWithSuccess
-});
 // Run the test case
 try {
     switch (testCase) {
@@ -122,18 +115,6 @@ try {
         case "DebugLevelTest":
             testOutput("WasmDebugLevel: " + config.debugLevel);
             exit(0);
-            break;
-        case "SignalRClientTests":
-            const transport = params.get("transport");
-            const message = params.get("message");
-            if (!transport || !message) {
-                exit(2, new Error(`Query string with parameters 'message', 'transport' is required, query = ${params}`));
-            }
-            console.log(`Starting SignalRClientTests with transport: ${transport}, message: ${message}`);
-
-            const baseUrl = window.location.protocol + "//" + window.location.host;
-            await exports.SignalRClientTests.Connect(baseUrl, transport);
-            await exports.SignalRClientTests.SignalRPassMessages(message);
             break;
         default:
             console.error(`Unknown test case: ${testCase}`);

@@ -9,15 +9,20 @@ using System.Runtime.InteropServices.JavaScript;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.AspNetCore.Http.Connections;
 
-public partial class SignalRClientTests
+public class SignalRTest
 {
-    private static HubConnection? _hubConnection;
+    private HubConnection? _hubConnection;
 
-    [JSExport]
-    public static async Task Connect(string baseUrl, string transport)
+    public async Task Run(string baseUrl, string transport, string message)
     {
         string hubUrl = Path.Combine(baseUrl, "chathub");
         HttpTransportType httpTransportType = StringToTransportType(transport);
+        await Connect(hubUrl, httpTransportType);
+        await SignalRPassMessages(message);
+    }
+
+    private async Task Connect(string hubUrl, HttpTransportType httpTransportType)
+    {
         _hubConnection = new HubConnectionBuilder().WithUrl(hubUrl, options =>
             {
                 options.Transports = httpTransportType;
@@ -27,14 +32,13 @@ public partial class SignalRClientTests
         {
             TestOutput.WriteLine($"Message = [{message}]. ReceiveMessage from server on CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
             await DisposeHubConnection();
-            ExitWithSuccess();
+            Program.SetResult(0);
         });
         await _hubConnection.StartAsync();
         TestOutput.WriteLine($"SignalR connected by CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
     }
 
-    [JSExport]
-    private static async Task SignalRPassMessages(string message) =>
+    private async Task SignalRPassMessages(string message) =>
         await Task.Run(async () =>
         {
             if (_hubConnection == null)
@@ -46,7 +50,7 @@ public partial class SignalRClientTests
             TestOutput.WriteLine($"SignalRPassMessages was sent by CurrentManagedThreadId={Environment.CurrentManagedThreadId}, message={message}");
         });
 
-    private static async Task DisposeHubConnection()
+    private async Task DisposeHubConnection()
     {
         if (_hubConnection != null)
         {
@@ -57,10 +61,7 @@ public partial class SignalRClientTests
         TestOutput.WriteLine($"SignalR disconnected by CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
     }
 
-    [JSImport("exitWithSuccess", "main.js")]
-    public static partial void ExitWithSuccess();
-
-    public static HttpTransportType StringToTransportType(string? transport)
+    private static HttpTransportType StringToTransportType(string? transport)
     {
         switch (transport?.ToLowerInvariant())
         {
