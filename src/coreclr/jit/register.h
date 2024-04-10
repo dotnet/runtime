@@ -131,7 +131,7 @@ REGDEF(K5,     5+KBASE,    KMASK(5),     "k5", 2)
 REGDEF(K6,     6+KBASE,    KMASK(6),     "k6", 2)
 REGDEF(K7,     7+KBASE,    KMASK(7),     "k7", 2)
 
-REGDEF(STK,    8+KBASE,    0x0000,       "STK", -1)
+REGDEF(STK,    8+KBASE,    0x0000,       "STK", 3)
 
 #elif defined(TARGET_ARM)
  #include "registerarm.h"

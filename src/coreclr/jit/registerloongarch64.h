@@ -101,7 +101,7 @@ REGDEF(F31,  31+FBASE, FMASK(31), "f31",  1)
 #define NBASE 64
 
 // This must be last!
-REGDEF(STK,   0+NBASE, 0x0000,    "STK",  -1)
+REGDEF(STK,   0+NBASE, 0x0000,    "STK",  2)
 
 /*****************************************************************************/
 #undef  RMASK

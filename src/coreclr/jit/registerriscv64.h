@@ -93,7 +93,7 @@ REGDEF(F31,  31+FBASE, FMASK(31), "f31",  1)
 // The registers with values 64 (NBASE) and above are not real register numbers
 #define NBASE 64
 
-REGDEF(STK,   0+NBASE, 0x0000,    "STK",  -1)
+REGDEF(STK,   0+NBASE, 0x0000,    "STK",  2)
 
 /*****************************************************************************/
 #undef  RMASK

@@ -75,7 +75,7 @@ REGALIAS(R14, LR)
 REGALIAS(R15, PC)
 
 // This must be last!
-REGDEF(STK,  32+FPBASE, 0x0000,      "STK",  -1)
+REGDEF(STK,  32+FPBASE, 0x0000,      "STK",  2)
 
 /*****************************************************************************/
 #undef  REGDEF
