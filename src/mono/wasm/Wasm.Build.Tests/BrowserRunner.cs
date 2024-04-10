@@ -134,7 +134,7 @@ internal class BrowserRunner : IAsyncDisposable
         Action<string>? onError = null,
         Func<string, string>? modifyBrowserUrl = null)
     {
-        var urlString = await StartServerAndGetUrlAsync(cmd, args, onServerMessage); // this should be aspentcore app
+        var urlString = await StartServerAndGetUrlAsync(cmd, args, onServerMessage);
         var browser = await SpawnBrowserAsync(urlString, headless);
         var context = await browser.NewContextAsync();
         return await RunAsync(context, urlString, headless, onConsoleMessage, onError, modifyBrowserUrl);

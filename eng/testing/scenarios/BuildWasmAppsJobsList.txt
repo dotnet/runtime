@@ -38,7 +38,7 @@ Wasm.Build.Tests.TestAppScenarios.LazyLoadingTests
 Wasm.Build.Tests.TestAppScenarios.LibraryInitializerTests
 Wasm.Build.Tests.TestAppScenarios.SatelliteLoadingTests
 Wasm.Build.Tests.TestAppScenarios.ModuleConfigTests
-Wasm.Build.Tests.TestAppScenarios.SignalRClientTests
+Wasm.Build.Tests.AspNetCore.SignalRClientTests
 Wasm.Build.Tests.WasmBuildAppTest
 Wasm.Build.Tests.WasmNativeDefaultsTests
 Wasm.Build.Tests.WasmRunOutOfAppBundleTests
