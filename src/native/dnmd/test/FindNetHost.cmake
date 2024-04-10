@@ -1,5 +1,5 @@
 execute_process(
-    COMMAND ${CMAKE_COMMAND} -E env DOTNET_NOLOGO=1 dotnet msbuild FindNetHostDir.proj -t:OutputNetHostDir -nologo
+    COMMAND ${CMAKE_COMMAND} -E env DOTNET_NOLOGO=1 dotnet msbuild FindNetHostDir.proj -t:OutputNetHostDir -nologo -p:SuppressNETCoreSdkPreviewMessage=true
     OUTPUT_VARIABLE NET_HOST_DIR
     OUTPUT_STRIP_TRAILING_WHITESPACE
     COMMAND_ERROR_IS_FATAL ANY
