@@ -2564,6 +2564,8 @@ PhaseStatus Compiler::fgAddInternal()
 // fgAddSwiftErrorReturns: If this method uses Swift error handling,
 // transform all GT_RETURN nodes into GT_SWIFT_ERROR_RET nodes
 // to handle returning the error value alongside the normal return value.
+// Also transform any GT_LCL_VAR uses of lvaSwiftErrorArg (the SwiftError* parameter)
+// into GT_LCL_ADDR uses of lvaSwiftErrorLocal (the SwiftError pseudolocal).
 //
 // Returns:
 //   Suitable phase status.
@@ -2579,8 +2581,39 @@ PhaseStatus Compiler::fgAddSwiftErrorReturns()
     assert(lvaSwiftErrorLocal != BAD_VAR_NUM);
     assert(info.compCallConv == CorInfoCallConvExtension::Swift);
 
+    struct ReplaceSwiftErrorVisitor final : public GenTreeVisitor<ReplaceSwiftErrorVisitor>
+    {
+        enum
+        {
+            DoPreOrder    = true,
+            DoLclVarsOnly = true,
+        };
+
+        ReplaceSwiftErrorVisitor(Compiler* comp)
+            : GenTreeVisitor(comp)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            if ((*use)->OperIs(GT_LCL_VAR) && ((*use)->AsLclVarCommon()->GetLclNum() == m_compiler->lvaSwiftErrorArg))
+            {
+                *use = m_compiler->gtNewLclVarAddrNode(m_compiler->lvaSwiftErrorLocal, genActualType(*use));
+            }
+
+            return fgWalkResult::WALK_CONTINUE;
+        }
+    };
+
+    ReplaceSwiftErrorVisitor visitor(this);
+
     for (BasicBlock* block : Blocks())
     {
+        for (Statement* const stmt : block->Statements())
+        {
+            visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+        }
+
         if (block->KindIs(BBJ_RETURN))
         {
             GenTree* const ret = block->lastNode();
