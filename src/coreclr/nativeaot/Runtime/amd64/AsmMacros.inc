@@ -388,6 +388,7 @@ EXTERN RhExceptionHandling_FailedAllocation     : PROC
 EXTERN RhThrowHwEx                              : PROC
 EXTERN RhThrowEx                                : PROC
 EXTERN RhRethrow                                : PROC
+EXTERN PalRaiseFirstChanceExceptionEvent        : PROC
 EXTERN RhpGcPoll2                               : PROC
 ifdef FEATURE_GC_STRESS
 EXTERN RhpStressGc                              : PROC

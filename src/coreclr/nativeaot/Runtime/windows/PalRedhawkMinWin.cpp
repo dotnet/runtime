@@ -792,6 +792,23 @@ REDHAWK_PALEXPORT void* REDHAWK_PALAPI PalAddVectoredExceptionHandler(uint32_t f
     return AddVectoredExceptionHandler(firstHandler, vectoredHandler);
 }
 
+REDHAWK_PALEXPORT void REDHAWK_PALAPI PalRaiseFirstChanceExceptionEvent()
+{
+
+#define EXCEPTION_COMPLUS 0xe0434352    // 0xe0000000 | 'CCR'
+
+    if (IsDebuggerPresent())
+    {
+        __try
+        {
+            RaiseException(EXCEPTION_COMPLUS, 0, 0, NULL);
+        }
+        __except(EXCEPTION_EXECUTE_HANDLER)
+        {
+        }
+    }
+}
+
 REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
 {
     // Write the message using lowest-level OS API available. This is used to print the stack overflow

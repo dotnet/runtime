@@ -182,6 +182,13 @@ NESTED_ENTRY RhpThrowEx, _TEXT
 
         ;; rcx still contains the exception object
         ;; rdx contains the address of the ExInfo
+        mov     r12, rcx
+        mov     r13, rdx
+        call    PalRaiseFirstChanceExceptionEvent
+
+        ; restore exception object and ExInfo
+        mov     rcx, r12
+        mov     rdx, r13
         call    RhThrowEx
 
 ALTERNATE_ENTRY RhpThrowEx2
