@@ -4189,7 +4189,9 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
     {
         hoistCtxt->m_loopVarMskCount      = 0;
         hoistCtxt->m_loopVarInOutMskCount = 0;
+#ifdef FEATURE_MASKED_HW_INTRINSICS
         hoistCtxt->m_hoistedMskExprCount  = 0;
+#endif
     }
 #endif // TARGET_XARCH
 
@@ -4313,9 +4315,9 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
     optHoistLoopBlocks(loop, &defExec, hoistCtxt);
 
     unsigned numHoisted = hoistCtxt->m_hoistedFPExprCount + hoistCtxt->m_hoistedExprCount;
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     numHoisted += hoistCtxt->m_hoistedMskExprCount;
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
     return numHoisted > 0;
 }
 
