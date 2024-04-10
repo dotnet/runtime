@@ -145,6 +145,7 @@ function preInit (userPreInit: (() => void)[]) {
     Module.addRunDependency("mono_pre_init");
     const mark = startMeasure();
     try {
+        spyEmscriptenFS(Module.FS);
         mono_wasm_pre_init_essential(false);
         mono_log_debug("preInit");
         runtimeHelpers.beforePreInit.promise_control.resolve();
@@ -278,7 +279,6 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: () => void) 
         }, 3000);
 
         spyEmscriptenProxied(Module.getProxiedFunctionTable());
-        spyEmscriptenFS(Module.FS);
 
         if (WasmEnableThreads) {
             await threadsReady;
@@ -700,7 +700,7 @@ function spyEmscriptenProxied (proxiedFunctionTable:any[]) {
         if (typeof fn === "function") {
             proxiedFunctionTable[index] = function (...args: any[]) {
                 mono_log_warn(`${fn.name} (${simpleArguments(args)})`);
-                return fn.apply(Module, args);
+                return fn(...args);
             };
         }
     }
@@ -710,10 +710,10 @@ function spyEmscriptenFS (FS:any) {
     const keys = Object.keys(FS);
     for (const k of keys) {
         const fn = FS[k];
-        if (typeof fn === "function") {
+        if (typeof fn === "function" && fn.name[0].toUpperCase() !== fn.name[0]) {
             FS[k] = function (...args: any[]) {
                 mono_log_warn(`FS.${k} (${simpleArguments(args)})`);
-                return fn.apply(Module.FS, args);
+                return fn(...args);
             };
         }
     }
