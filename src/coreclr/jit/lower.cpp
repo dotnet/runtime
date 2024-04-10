@@ -5625,8 +5625,7 @@ void Lowering::InsertPInvokeMethodProlog()
     {
         argNode = comp->gtNewIconNode(0, TYP_I_IMPL);
     }
-    NewCallArg stubParamArg =
-        NewCallArg::Primitive(argNode).WellKnown(WellKnownArg::SecretStubParam);
+    NewCallArg stubParamArg = NewCallArg::Primitive(argNode).WellKnown(WellKnownArg::SecretStubParam);
     call->gtArgs.PushBack(comp, stubParamArg);
 #endif
 
