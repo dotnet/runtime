@@ -150,7 +150,6 @@ void RegSet::rsClearRegsModified()
     // so don't treat it as callee-save.
     if (m_rsCompiler->lvaSwiftErrorArg != BAD_VAR_NUM)
     {
-        rsAllCalleeSavedMask.RemoveRegNum(REG_SWIFT_ERROR, TYP_INT);
         rsIntCalleeSavedMask &= ~RBM_SWIFT_ERROR;
     }
 #endif // SWIFT_SUPPORT
@@ -187,6 +186,21 @@ void RegSet::printModifiedRegsMask(regMaskOnlyOne              currentMask,
     }
 }
 #endif
+
+AllRegsMask RegSet::rsGetModifiedCalleeSavedRegsMask() const
+{
+    assert(rsModifiedRegsMaskInitialized);
+    AllRegsMask allCalleeSavedMask = m_rsCompiler->AllRegsMask_CALLEE_SAVED;
+#ifdef SWIFT_SUPPORT
+    // If this method has a SwiftError* parameter, we will return SwiftError::Value in REG_SWIFT_ERROR,
+    // so don't treat it as callee-save.
+    if (m_rsCompiler->lvaSwiftErrorArg != BAD_VAR_NUM)
+    {
+        allCalleeSavedMask.RemoveRegNum(REG_SWIFT_ERROR, TYP_INT);
+    }
+#endif // SWIFT_SUPPORT
+    return (rsModifiedRegsMask & allCalleeSavedMask);
+}
 
 void RegSet::rsSetGprRegsModified(regMaskGpr mask DEBUGARG(bool suppressDump))
 {
@@ -381,7 +395,6 @@ RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo)
 #endif
 
     rsIntCalleeSavedMask = RBM_INT_CALLEE_SAVED;
-    rsAllCalleeSavedMask = m_rsCompiler->AllRegsMask_CALLEE_SAVED;
 
 #ifdef DEBUG
     rsModifiedRegsMaskInitialized = false;
