@@ -3394,7 +3394,7 @@ void CodeGen::genCall(GenTreeCall* call)
     // We should not have GC pointers in killed registers live around the call.
     // GC info for arg registers were cleared when consuming arg nodes above
     // and LSRA should ensure it for other trashed registers.
-    AllRegsMask killMask = AllRegsMask_CALLEE_TRASH;
+    AllRegsMask killMask = compiler->AllRegsMask_CALLEE_TRASH;
 
     if (call->IsHelperCall())
     {

@@ -77,13 +77,8 @@ private:
                                    DEBUGARG(regMaskOnlyOne calleeSaveMask = RBM_NONE)) const;
 #endif // DEBUG
 
-#ifdef SWIFT_SUPPORT
     AllRegsMask rsAllCalleeSavedMask;
     regMaskGpr  rsIntCalleeSavedMask;
-#else  // !SWIFT_SUPPORT
-    AllRegsMask rsAllCalleeSavedMask = AllRegsMask_CALLEE_SAVED;
-    regMaskGpr  rsIntCalleeSavedMask = RBM_INT_CALLEE_SAVED;
-#endif // !SWIFT_SUPPORT
 
 public:
     void rsSetRegsModified(CONSTREF_AllRegsMask modifiedMask DEBUGARG(bool suppressDump = false));

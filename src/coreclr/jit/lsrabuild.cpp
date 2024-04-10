@@ -761,7 +761,7 @@ AllRegsMask LinearScan::getKillSetForStoreInd(GenTreeStoreInd* tree)
             // the allocated register for the `data` operand. However, all the (x86) optimized
             // helpers have the same kill set: EDX. And note that currently, only x86 can return
             // `true` for genUseOptimizedWriteBarriers().
-            killMask = AllRegsMask_CALLEE_TRASH_NOGC;
+            killMask = compiler->AllRegsMask_CALLEE_TRASH_NOGC;
         }
         else
         {
@@ -848,7 +848,7 @@ regMaskGpr LinearScan::getKillSetForModDiv(GenTreeOp* node)
 //
 AllRegsMask LinearScan::getKillSetForCall(GenTreeCall* call)
 {
-    AllRegsMask killMask = AllRegsMask_CALLEE_TRASH;
+    AllRegsMask killMask = compiler->AllRegsMask_CALLEE_TRASH;
 
 #ifdef TARGET_X86
     if (compiler->compFloatingPointUsed)
@@ -1173,7 +1173,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                 Interval*      interval     = getIntervalForLocalVar(varIndex);
                 regMaskOnlyOne regsKillMask = killMask.GetRegMaskForType(interval->registerType);
                 const bool     isCallKill =
-                    (killMask.gprRegs() == RBM_INT_CALLEE_TRASH) || (killMask == AllRegsMask_CALLEE_TRASH);
+                    (killMask.gprRegs() == RBM_INT_CALLEE_TRASH) || (killMask == compiler->AllRegsMask_CALLEE_TRASH);
 
                 if (isCallKill)
                 {

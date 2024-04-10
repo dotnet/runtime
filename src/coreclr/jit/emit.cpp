@@ -10384,7 +10384,7 @@ AllRegsMask emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
     else
     {
         // This is the saved set of registers after a normal call.
-        return AllRegsMask_CALLEE_SAVED; // TODO: We should have this as a constant.
+        return emitComp->AllRegsMask_CALLEE_SAVED;
     }
 }
 
@@ -10413,44 +10413,39 @@ AllRegsMask emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
     {
         case CORINFO_HELP_ASSIGN_REF:
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
-            result = AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER;
+            result = emitComp->AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER;
             break;
 
         case CORINFO_HELP_ASSIGN_BYREF:
-            result = AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
+            result = emitComp->AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
             break;
 
 #if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
         case CORINFO_HELP_PROF_FCN_ENTER:
-            result = AllRegsMask_PROFILER_ENTER_TRASH;
+            result = emitComp->AllRegsMask_PROFILER_ENTER_TRASH;
             break;
 
         case CORINFO_HELP_PROF_FCN_LEAVE:
-#if defined(TARGET_ARM)
-            // profiler scratch remains gc live
-            result = AllRegsMask_PROFILER_LEAVE_TRASH & ~AllRegsMask_PROFILER_RET_SCRATCH;
-#else
-            result = AllRegsMask_PROFILER_LEAVE_TRASH;
-#endif
+            result = emitComp->AllRegsMask_PROF_FNC_LEAVE;
             break;
 
         case CORINFO_HELP_PROF_FCN_TAILCALL:
-            result = AllRegsMask_PROFILER_TAILCALL_TRASH;
+            result = emitComp->AllRegsMask_PROFILER_TAILCALL_TRASH;
             break;
 #endif // !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 
 #if defined(TARGET_X86)
         case CORINFO_HELP_INIT_PINVOKE_FRAME:
-            result = AllRegsMask_INIT_PINVOKE_FRAME_TRASH;
+            result = emitComp->AllRegsMask_INIT_PINVOKE_FRAME_TRASH;
             break;
 #endif // defined(TARGET_X86)
 
         case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
-            result = AllRegsMask_VALIDATE_INDIRECT_CALL_TRASH;
+            result = emitComp->AllRegsMask_VALIDATE_INDIRECT_CALL_TRASH;
             break;
 
         default:
-            result = AllRegsMask_CALLEE_TRASH_NOGC;
+            result = emitComp->AllRegsMask_CALLEE_TRASH_NOGC;
             break;
     }
 

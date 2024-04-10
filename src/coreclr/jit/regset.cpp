@@ -375,10 +375,8 @@ RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo)
     rsMaskPreSpillAlign  = RBM_NONE;
 #endif
 
-#ifdef SWIFT_SUPPORT
-    rsAllCalleeSavedMask = RBM_CALLEE_SAVED;
     rsIntCalleeSavedMask = RBM_INT_CALLEE_SAVED;
-#endif // SWIFT_SUPPORT
+    rsAllCalleeSavedMask = m_rsCompiler->AllRegsMask_CALLEE_SAVED;
 
 #ifdef DEBUG
     rsModifiedRegsMaskInitialized = false;

@@ -6030,7 +6030,7 @@ void CodeGen::genCall(GenTreeCall* call)
     // We should not have GC pointers in killed registers live around the call.
     // GC info for arg registers were cleared when consuming arg nodes above
     // and LSRA should ensure it for other trashed registers.
-    AllRegsMask killMask = AllRegsMask_CALLEE_TRASH;
+    AllRegsMask killMask = compiler->AllRegsMask_CALLEE_TRASH;
 
     if (call->IsHelperCall())
     {
@@ -9515,7 +9515,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     // If initReg is trashed, either because it was an arg to the enter
     // callback, or because the enter callback itself trashes it, then it needs
     // to be zero'ed again before using.
-    AllRegsMask profileEnterTrash = AllRegsMask_PROFILER_ENTER_TRASH;
+    AllRegsMask profileEnterTrash = compiler->AllRegsMask_PROFILER_ENTER_TRASH;
     profileEnterTrash.AddRegMaskForType((RBM_ARG_0 | RBM_ARG_1), TYP_INT);
     if (profileEnterTrash.IsRegNumInMask(initReg))
     {
@@ -9556,7 +9556,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     // If initReg is trashed, either because it was an arg to the enter
     // callback, or because the enter callback itself trashes it, then it needs
     // to be zero'ed again before using.
-    AllRegsMask profileEnterTrash = AllRegsMask_PROFILER_ENTER_TRASH;
+    AllRegsMask profileEnterTrash = compiler->AllRegsMask_PROFILER_ENTER_TRASH;
     profileEnterTrash.AddRegMaskForType((RBM_PROFILER_ENTER_ARG_0 | RBM_PROFILER_ENTER_ARG_1), TYP_INT);
     if (profileEnterTrash.IsRegNumInMask(initReg))
     {
@@ -9599,7 +9599,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaGetDesc(compiler->info.compThisArg)->lvIsInReg())
     {
         regNumber thisPtrReg = compiler->lvaGetDesc(compiler->info.compThisArg)->GetRegNum();
-        noway_assert(!AllRegsMask_PROFILER_LEAVE_TRASH.IsRegNumInMask(thisPtrReg));
+        noway_assert(!compiler->AllRegsMask_PROFILER_LEAVE_TRASH.IsRegNumInMask(thisPtrReg));
     }
 
     // At this point return value is computed and stored in RAX or XMM0.
@@ -10219,7 +10219,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                 //    lea esp, [ebp - compiler->compCalleeRegsPushed * REGSIZE_BYTES]
                 needLea = true;
             }
-            else if (!regSet.rsRegsModified(AllRegsMask_CALLEE_SAVED))
+            else if (!regSet.rsRegsModified(compiler->AllRegsMask_CALLEE_SAVED))
             {
                 if (compiler->compLclFrameSize != 0)
                 {

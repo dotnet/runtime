@@ -11281,7 +11281,7 @@ public:
     const AllRegsMask AllRegsMask_VALIDATE_INDIRECT_CALL_TRASH = GprRegsMask(RBM_INT_CALLEE_TRASH & ~RBM_ECX);
 
 #elif defined(TARGET_AMD64)
-        const AllRegsMask AllRegsMask_CALLEE_TRASH_NOGC = AllRegsMask_CALLEE_TRASH;
+    const AllRegsMask AllRegsMask_CALLEE_TRASH_NOGC = AllRegsMask_CALLEE_TRASH;
     // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
     const AllRegsMask AllRegsMask_CALLEE_TRASH_WRITEBARRIER = AllRegsMask_CALLEE_TRASH_NOGC;
     // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
@@ -11385,10 +11385,10 @@ public:
 #endif
 
 #if defined(TARGET_ARM)
-            // profiler scratch remains gc live
-     const AllRegsMask AllRegsMask_PROF_FNC_LEAVE = AllRegsMask_PROFILER_LEAVE_TRASH & ~AllRegsMask_PROFILER_RET_SCRATCH;
+    // profiler scratch remains gc live
+    const AllRegsMask AllRegsMask_PROF_FNC_LEAVE = AllRegsMask_PROFILER_LEAVE_TRASH & ~AllRegsMask_PROFILER_RET_SCRATCH;
 #else
-      const AllRegsMask AllRegsMask_PROF_FNC_LEAVE = AllRegsMask_PROFILER_LEAVE_TRASH;
+    const AllRegsMask AllRegsMask_PROF_FNC_LEAVE = AllRegsMask_PROFILER_LEAVE_TRASH;
 #endif
 
 }; // end of class Compiler

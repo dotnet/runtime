@@ -1663,7 +1663,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         );
     }
 
-    regSet.verifyRegistersUsed(AllRegsMask_CALLEE_TRASH);
+    regSet.verifyRegistersUsed(compiler->AllRegsMask_CALLEE_TRASH);
 }
 
 #ifdef PROFILING_SUPPORTED
@@ -1825,9 +1825,9 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     {
         GetEmitter()->emitIns_Mov(INS_mov, attr, REG_R0, REG_PROFILER_RET_SCRATCH, /* canSkip */ false);
         genTransferRegGCState(REG_R0, REG_PROFILER_RET_SCRATCH);
-        assert(compiler->IsGprRegMask(AllRegsMask_PROFILER_RET_SCRATCH.gprRegs()));
-        assert(AllRegsMask_PROFILER_RET_SCRATCH.floatRegs(compiler) == RBM_NONE);
-        gcInfo.gcMarkRegSetNpt(AllRegsMask_PROFILER_RET_SCRATCH.gprRegs());
+        assert(compiler->IsGprRegMask(compiler->AllRegsMask_PROFILER_RET_SCRATCH.gprRegs()));
+        assert(compiler->AllRegsMask_PROFILER_RET_SCRATCH.floatRegs(compiler) == RBM_NONE);
+        gcInfo.gcMarkRegSetNpt(compiler->AllRegsMask_PROFILER_RET_SCRATCH.gprRegs());
     }
 }
 

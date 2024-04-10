@@ -5560,7 +5560,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     // If initReg is trashed, either because it was an arg to the enter
     // callback, or because the enter callback itself trashes it, then it needs
     // to be zero'ed again before using.
-    AllRegsMask profileEnterTrash = AllRegsMask_PROFILER_ENTER_TRASH;
+    AllRegsMask profileEnterTrash = compiler->AllRegsMask_PROFILER_ENTER_TRASH;
     profileEnterTrash.AddRegMaskForType(RBM_PROFILER_ENTER_ARG_FUNC_ID | RBM_PROFILER_ENTER_ARG_CALLER_SP, TYP_INT);
     if (profileEnterTrash.IsRegNumInMask(initReg))
     {
