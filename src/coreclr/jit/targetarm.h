@@ -243,6 +243,7 @@
   #define RBM_FLOATRET             RBM_F0
   #define RBM_DOUBLERET           (RBM_F0|RBM_F1)
 
+  #define RBM_VALIDATE_INDIRECT_CALL_TRASH (RBM_INT_CALLEE_TRASH)
   #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_R0
 
   #define REG_FPBASE               REG_R11

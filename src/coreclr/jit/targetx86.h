@@ -292,6 +292,14 @@
   #define RBM_FLOATRET             RBM_NONE
   #define RBM_DOUBLERET            RBM_NONE
 
+  // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper
+  #define RBM_STOP_FOR_GC_TRASH    RBM_CALLEE_TRASH
+
+  // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper. On x86, this helper has a custom calling
+  // convention that takes EDI as argument (but doesn't trash it), trashes EAX, and returns ESI.
+  #define RBM_INIT_PINVOKE_FRAME_TRASH  (RBM_PINVOKE_SCRATCH | RBM_PINVOKE_TCB)
+
+  #define RBM_VALIDATE_INDIRECT_CALL_TRASH (RBM_INT_CALLEE_TRASH & ~RBM_ECX)
   #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_ECX
 
   #define REG_FPBASE               REG_EBP
