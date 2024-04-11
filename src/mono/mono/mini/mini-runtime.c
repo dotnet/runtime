@@ -654,8 +654,8 @@ mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 	MonoMethod *wrapper;
 	gconstpointer addr, trampoline;
 
-	if (callinfo->wrapper)
-		return callinfo->wrapper;
+	if (callinfo->wrapper__)
+		return callinfo->wrapper__;
 
 	wrapper = mono_icall_get_wrapper_method (callinfo);
 
@@ -663,22 +663,19 @@ mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 		addr = mono_compile_method_checked (wrapper, error);
 		mono_error_assert_ok (error);
 		mono_memory_barrier ();
-		callinfo->wrapper = addr;
+		callinfo->wrapper__ = addr;
 		return addr;
 	} else {
-		if (callinfo->trampoline)
-			return callinfo->trampoline;
+		if (callinfo->trampoline__)
+			return callinfo->trampoline__;
 		trampoline = mono_create_jit_trampoline (wrapper, error);
 		mono_error_assert_ok (error);
 		trampoline = mono_create_ftnptr ((gpointer)trampoline);
 
-		mono_loader_lock ();
-		if (!callinfo->trampoline) {
-			callinfo->trampoline = trampoline;
-		}
-		mono_loader_unlock ();
+		
+		mono_atomic_cas_ptr ((volatile gpointer*)&callinfo->trampoline__, (void*)trampoline, NULL);
 
-		return callinfo->trampoline;
+		return (gconstpointer)mono_atomic_load_ptr ((volatile gpointer*)&callinfo->trampoline__);
 	}
 }
 
@@ -2856,18 +2853,10 @@ lookup_start:
 	p = mono_create_ftnptr (code);
 
 	if (callinfo) {
-		// FIXME Locking here is somewhat historical due to mono_register_jit_icall_wrapper taking loader lock.
-		// atomic_compare_exchange should suffice.
-		mono_loader_lock ();
-		mono_jit_lock ();
-		if (!callinfo->wrapper) {
-			callinfo->wrapper = p;
-		}
-		mono_jit_unlock ();
-		mono_loader_unlock ();
+		mono_atomic_cas_ptr ((volatile void*)&callinfo->wrapper__, NULL, p);
+		p = mono_atomic_load_ptr((volatile gpointer*)&callinfo->wrapper__);
 	}
 
-	// FIXME p or callinfo->wrapper or does not matter?
 	return p;
 }
 
