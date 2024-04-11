@@ -599,7 +599,7 @@ namespace System.Text.Json
                     }
                     else
                     {
-                        // Unsealed types do not use this branch to avoid user-defined equality from being used.
+                        // Use the built-in hashcode for types that could be overriding GetHashCode().
                         hc.Add(RuntimeHelpers.GetHashCode(value));
                     }
                 }
