@@ -718,22 +718,6 @@ void StubManager::InitializeStubManagers()
 #endif // !DACCESS_COMPILE
 }
 
-//-----------------------------------------------------------
-// Terminate the global stub manager service.
-//-----------------------------------------------------------
-void StubManager::TerminateStubManagers()
-{
-#if !defined(DACCESS_COMPILE)
-
-#if defined(_DEBUG)
-    DbgFinishLog();
-    s_DbgLogCrst.Destroy();
-#endif
-
-    s_StubManagerListCrst.Destroy();
-#endif // !DACCESS_COMPILE
-}
-
 #ifdef _DEBUG
 
 //-----------------------------------------------------------

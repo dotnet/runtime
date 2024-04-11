@@ -832,7 +832,7 @@ GenTree* Compiler::addRangeCheckIfNeeded(
 #ifdef TARGET_XARCH
         && !HWIntrinsicInfo::isAVX2GatherIntrinsic(intrinsic) && !HWIntrinsicInfo::HasFullRangeImm(intrinsic)
 #endif
-            )
+    )
     {
         assert(!immOp->IsCnsIntOrI());
         assert(varTypeIsUnsigned(immOp));

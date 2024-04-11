@@ -13,6 +13,7 @@ parameters:
   runtimeVariant: ''
   dependsOn: []
   crossBuild: false
+  isOfficialBuild: false
 
 ### Build managed test components (native components are getting built as part
 ### of the product build job).
@@ -54,6 +55,11 @@ jobs:
 
     ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
       timeoutInMinutes: 160
+
+    artifacts:
+      publish:
+        logs:
+          name: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_Attempt$(System.JobAttempt)_AnyOS_AnyCPU_$(buildConfig)_${{ parameters.testGroup }}'
 
     variables:
       - ${{ each variable in parameters.variables }}:
@@ -136,13 +142,3 @@ jobs:
         archiveExtension: '.tar.gz'
         artifactName: $(microsoftNetSdkIlArtifactName)
         displayName: 'Microsoft.NET.Sdk.IL package'
-
-
-    # Publish Logs
-    - task: PublishPipelineArtifact@1
-      displayName: Publish Logs
-      inputs:
-        targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_Attempt$(System.JobAttempt)_AnyOS_AnyCPU_$(buildConfig)_${{ parameters.testGroup }}'
-      continueOnError: true
-      condition: always()

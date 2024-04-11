@@ -107,7 +107,6 @@ struct EE_ILEXCEPTION_CLAUSE;
 
 void InitializeExceptionHandling();
 void CLRAddVectoredHandlers(void);
-void CLRRemoveVectoredHandlers(void);
 void TerminateExceptionHandling();
 
 // Prototypes

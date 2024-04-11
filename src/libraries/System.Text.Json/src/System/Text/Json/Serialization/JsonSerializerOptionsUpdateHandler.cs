@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 
@@ -25,11 +23,7 @@ namespace System.Text.Json
                 options.Key.ClearCaches();
             }
 
-            if (RuntimeFeature.IsDynamicCodeSupported)
-            {
-                // Flush the dynamic method cache
-                ReflectionEmitCachingMemberAccessor.Clear();
-            }
+            DefaultJsonTypeInfoResolver.ClearMemberAccessorCaches();
         }
     }
 }

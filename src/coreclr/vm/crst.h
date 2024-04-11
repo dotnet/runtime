@@ -103,7 +103,6 @@ extern DWORD g_fEEShutDown;
 #endif
 // Total count of Crst lock  of the type (Shutdown) that are currently in use
 extern Volatile<LONG> g_ShutdownCrstUsageCount;
-extern Volatile<LONG> g_fForbidEnterEE;
 
 // The CRST.
 class CrstBase
