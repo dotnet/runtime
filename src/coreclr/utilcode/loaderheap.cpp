@@ -78,7 +78,7 @@ void RangeList::InitBlock(RangeListBlock *b)
     while (r < rEnd)
         r++->id = (TADDR)NULL;
 
-    b->next = nullptr;
+    b->next = NULL;
 }
 
 BOOL RangeList::AddRangeWorker(const BYTE *start, const BYTE *end, void *id)
@@ -92,7 +92,7 @@ BOOL RangeList::AddRangeWorker(const BYTE *start, const BYTE *end, void *id)
     }
     CONTRACTL_END
 
-    _ASSERTE(id != (TADDR)NULL);
+    _ASSERTE(id != NULL);
 
     RangeListBlock *b = m_firstEmptyBlock;
     Range *r = b->ranges + m_firstEmptyRange;
@@ -123,7 +123,7 @@ BOOL RangeList::AddRangeWorker(const BYTE *start, const BYTE *end, void *id)
         // new one.
         //
 
-        if (b->next == nullptr)
+        if (b->next == NULL)
         {
             RangeListBlock *newBlock = new (nothrow) RangeListBlock;
 
@@ -136,7 +136,7 @@ BOOL RangeList::AddRangeWorker(const BYTE *start, const BYTE *end, void *id)
 
             InitBlock(newBlock);
 
-            newBlock->next = nullptr;
+            newBlock->next = NULL;
             b->next = newBlock;
         }
 
@@ -204,7 +204,7 @@ void RangeList::RemoveRangesWorker(void *id, const BYTE* start, const BYTE* end)
         // If there are no more blocks, we're done.
         //
 
-        if (b->next == nullptr)
+        if (b->next == NULL)
         {
             m_firstEmptyRange = 0;
             m_firstEmptyBlock = &m_starterBlock;
@@ -266,7 +266,7 @@ BOOL RangeList::IsInRangeWorker(TADDR address, TADDR *pID /* = NULL */)
         // If there are no more blocks, we're done.
         //
 
-        if (b->next == nullptr)
+        if (b->next == NULL)
             return FALSE;
 
         //
