@@ -122,7 +122,7 @@ export function mono_exit (exit_code: number, reason?: any): void {
                 }
             }
         } catch (err) {
-            mono_log_warn("mono_exit failed", err);
+            mono_log_warn("mono_exit A failed", err);
             // don't propagate any failures
         }
 
@@ -132,7 +132,7 @@ export function mono_exit (exit_code: number, reason?: any): void {
                 appendElementOnExit(exit_code);
             }
         } catch (err) {
-            mono_log_warn("mono_exit failed", err);
+            mono_log_warn("mono_exit B failed", err);
             // don't propagate any failures
         }
 
@@ -177,7 +177,7 @@ function set_exit_code_and_quit_now (exit_code: number, reason?: any): void {
             runtimeHelpers.nativeExit(exit_code);
         } catch (error: any) {
             if (runtimeHelpers.ExitStatus && !(error instanceof runtimeHelpers.ExitStatus)) {
-                mono_log_warn("mono_wasm_exit failed: " + error.toString());
+                mono_log_warn("set_exit_code_and_quit_now failed: " + error.toString());
             }
         }
     }

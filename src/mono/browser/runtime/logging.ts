@@ -47,21 +47,6 @@ export const wasm_func_map = new Map<number, string>();
 let wasm_pending_symbol_table: string | undefined;
 const regexes: any[] = [];
 
-// V8
-//   at <anonymous>:wasm-function[1900]:0x83f63
-//   at dlfree (<anonymous>:wasm-function[18739]:0x2328ef)
-regexes.push(/at (?<replaceSection>[^:()]+:wasm-function\[(?<funcNum>\d+)\]:0x[a-fA-F\d]+)((?![^)a-fA-F\d])|$)/);
-
-//# 5: WASM [009712b2], function #111 (''), pc=0x7c16595c973 (+0x53), pos=38740 (+11)
-regexes.push(/(?:WASM \[[\da-zA-Z]+\], (?<replaceSection>function #(?<funcNum>[\d]+) \(''\)))/);
-
-//# chrome
-//# at http://127.0.0.1:63817/dotnet.wasm:wasm-function[8963]:0x1e23f4
-regexes.push(/(?<replaceSection>[a-z]+:\/\/[^ )]*:wasm-function\[(?<funcNum>\d+)\]:0x[a-fA-F\d]+)/);
-
-//# <?>.wasm-function[8962]
-regexes.push(/(?<replaceSection><[^ >]+>[.:]wasm-function\[(?<funcNum>[0-9]+)\])/);
-
 export function mono_wasm_symbolicate_string (message: string): string {
     try {
         performDeferredSymbolMapParsing();
@@ -185,6 +170,21 @@ export function parseSymbolMapFile (text: string) {
 function performDeferredSymbolMapParsing () {
     if (!wasm_pending_symbol_table)
         return;
+
+    // V8
+    //   at <anonymous>:wasm-function[1900]:0x83f63
+    //   at dlfree (<anonymous>:wasm-function[18739]:0x2328ef)
+    regexes.push(/at (?<replaceSection>[^:()]+:wasm-function\[(?<funcNum>\d+)\]:0x[a-fA-F\d]+)((?![^)a-fA-F\d])|$)/);
+
+    //# 5: WASM [009712b2], function #111 (''), pc=0x7c16595c973 (+0x53), pos=38740 (+11)
+    regexes.push(/(?:WASM \[[\da-zA-Z]+\], (?<replaceSection>function #(?<funcNum>[\d]+) \(''\)))/);
+
+    //# chrome
+    //# at http://127.0.0.1:63817/dotnet.wasm:wasm-function[8963]:0x1e23f4
+    regexes.push(/(?<replaceSection>[a-z]+:\/\/[^ )]*:wasm-function\[(?<funcNum>\d+)\]:0x[a-fA-F\d]+)/);
+
+    //# <?>.wasm-function[8962]
+    regexes.push(/(?<replaceSection><[^ >]+>[.:]wasm-function\[(?<funcNum>[0-9]+)\])/);
 
     const text = wasm_pending_symbol_table!;
     wasm_pending_symbol_table = undefined;

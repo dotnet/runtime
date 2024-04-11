@@ -6201,17 +6201,26 @@ mono_metadata_type_dup_with_cmods (MonoImage *image, const MonoType *o, const Mo
 
 	uint8_t num_mods = MAX (mono_type_custom_modifier_count (o), mono_type_custom_modifier_count (cmods_source));
 	gboolean aggregate = mono_type_is_aggregate_mods (o) || mono_type_is_aggregate_mods (cmods_source);
-	size_t sizeof_r = mono_sizeof_type_with_mods (num_mods, aggregate);
+	size_t sizeof_r = mono_sizeof_type_with_mods (num_mods, aggregate),
+		sizeof_o = mono_sizeof_type (o),
+		sizeof_cmods_source = cmods_source->has_cmods ? mono_sizeof_type (cmods_source) : 0,
+		sizeof_header = MAX(sizeof_o, sizeof_cmods_source);
+	uint8_t *r_bytes = NULL;
 
-	r = image ? (MonoType *)mono_image_alloc0 (image, (guint)sizeof_r) : (MonoType *)g_malloc0 (sizeof_r);
+	r = image ? (MonoType *)mono_image_alloc (image, (guint)sizeof_r) : (MonoType *)g_malloc (sizeof_r);
+	r_bytes = (uint8_t *)r;
 
 	if (cmods_source->has_cmods) {
 		/* FIXME: if it's aggregate what do we assert here? */
 		g_assert (!image || (!aggregate && image == mono_type_get_cmods (cmods_source)->image));
-		memcpy (r, cmods_source, mono_sizeof_type (cmods_source));
+		// Copy the portion of the source type that won't be overwritten by o below
+		memcpy (r_bytes + sizeof_o, ((uint8_t *)cmods_source) + sizeof_o, sizeof_cmods_source - sizeof_o);
 	}
 
-	memcpy (r, o, mono_sizeof_type (o));
+	memcpy (r, o, sizeof_o);
+	// Zero the remaining uninitialized bytes
+	if (sizeof_r > sizeof_header)
+		memset (r_bytes + sizeof_header, 0, sizeof_r - sizeof_header);
 
 	/* reset custom mod count and aggregateness to be correct. */
 	mono_type_with_mods_init (r, num_mods, aggregate);
