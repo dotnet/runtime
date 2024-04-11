@@ -285,6 +285,7 @@ typedef struct
 	gint32 total_locals_size;
 	gint32 max_stack_size;
 	int dummy_var;
+	int ref_handle_var;
 	int *local_ref_count;
 	unsigned int il_locals_offset;
 	unsigned int il_locals_size;
