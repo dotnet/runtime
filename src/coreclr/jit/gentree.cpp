@@ -18008,11 +18008,7 @@ bool GenTree::canBeContained() const
     }
     else if (OperIsHWIntrinsic() && !isContainableHWIntrinsic())
     {
-#ifdef TARGET_XARCH
-        return isEvexEmbeddedMaskingCompatibleHWIntrinsic();
-#elif TARGET_ARM64
-        return HWIntrinsicInfo::IsEmbeddedMaskedOperation(AsHWIntrinsic()->GetHWIntrinsicId());
-#endif
+        return isEmbeddedMaskingCompatibleHWIntrinsic();
     }
 
     return true;
@@ -19909,24 +19905,25 @@ bool GenTree::isEvexCompatibleHWIntrinsic() const
 }
 
 //------------------------------------------------------------------------
-// isEvexEmbeddedMaskingCompatibleHWIntrinsic: Checks if the intrinsic is compatible
+// isEmbeddedMaskingCompatibleHWIntrinsic : Checks if the intrinsic is compatible
 // with the EVEX embedded masking form for its intended lowering instruction.
 //
 // Return Value:
 // true if the intrisic node lowering instruction has an EVEX embedded masking
 //
-bool GenTree::isEvexEmbeddedMaskingCompatibleHWIntrinsic() const
+bool GenTree::isEmbeddedMaskingCompatibleHWIntrinsic() const
 {
-#if defined(TARGET_XARCH)
     if (OperIsHWIntrinsic())
     {
+#if defined(TARGET_XARCH)
         // TODO-AVX512F-CQ: Expand this to the full set of APIs and make it table driven
         // using IsEmbMaskingCompatible. For now, however, limit it to some explicit ids
         // for prototyping purposes.
         return (AsHWIntrinsic()->GetHWIntrinsicId() == NI_AVX512F_Add);
+#elif defined(TARGET_ARM64)
+        return HWIntrinsicInfo::IsEmbeddedMaskedOperation(AsHWIntrinsic()->GetHWIntrinsicId());
+#endif
     }
-#endif // TARGET_XARCH
-
     return false;
 }
 

@@ -438,6 +438,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             switch (intrinOp2.numOperands)
             {
                 case 1:
+                    assert(!instrIsRMW);
                     GetEmitter()->emitIns_R_R_R(insOp2, emitSize, targetReg, maskReg, instrOp1Reg, opt);
                     break;
 
@@ -449,11 +450,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         assert(targetReg != instrOp1Reg);
                         assert(targetReg != instrOp2Reg);
 
-                        if (!intrin.op3->IsVectorZero())
+                        if (!intrin.op3->IsVectorZero() && (instrOp1Reg != falseReg))
                         {
                             // If the `falseValue` of conditional-select is non-zero, then we start with that in the
                             // destination followed by `movprfx` (see below) of the relevant bits of the first operand
                             // of `insOp2` based upon the value of predicate `cond`.
+
+                            // Also, if `instrOp1Reg == falseReg`, we will move the `instrOp1Reg` using `movprfx` and
+                            // so, no need to move it separately here.
                             GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, falseReg,
                                                       /* canSkip */ true);
                         }
