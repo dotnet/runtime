@@ -60,7 +60,7 @@ namespace Mono.Linker.Steps
 		}
 
 		protected Queue<(MethodDefinition, DependencyInfo, MessageOrigin)> _methods;
-		protected HashSet<(MethodDefinition, MarkScopeStack.Scope)> _virtual_methods;
+		protected Dictionary<MethodDefinition, MarkScopeStack.Scope> _virtual_methods;
 		protected Queue<AttributeProviderPair> _assemblyLevelAttributes;
 		readonly List<AttributeProviderPair> _ivt_attributes;
 		protected Queue<(AttributeProviderPair, DependencyInfo, MarkScopeStack.Scope)> _lateMarkedAttributes;
@@ -220,7 +220,7 @@ namespace Mono.Linker.Steps
 		public MarkStep ()
 		{
 			_methods = new Queue<(MethodDefinition, DependencyInfo, MessageOrigin)> ();
-			_virtual_methods = new HashSet<(MethodDefinition, MarkScopeStack.Scope)> ();
+			_virtual_methods = new Dictionary<MethodDefinition, MarkScopeStack.Scope> ();
 			_assemblyLevelAttributes = new Queue<AttributeProviderPair> ();
 			_ivt_attributes = new List<AttributeProviderPair> ();
 			_lateMarkedAttributes = new Queue<(AttributeProviderPair, DependencyInfo, MarkScopeStack.Scope)> ();
@@ -588,10 +588,8 @@ namespace Mono.Linker.Steps
 			// We may mark an interface type later on.  Which means we need to reprocess any time with one or more interface implementations that have not been marked
 			// and if an interface type is found to be marked and implementation is not marked, then we need to mark that implementation
 
-			// copy the data to avoid modified while enumerating error potential, which can happen under certain conditions.
-			var typesWithInterfaces = _typesWithInterfaces.ToArray ();
-
-			foreach ((var type, var scope) in typesWithInterfaces) {
+			for(int i = 0; i < _typesWithInterfaces.Count; i++) {
+				(var type, var scope) = _typesWithInterfaces[i];
 				// Exception, types that have not been flagged as instantiated yet.  These types may not need their interfaces even if the
 				// interface type is marked
 				// UnusedInterfaces optimization is turned off mark all interface implementations
@@ -609,7 +607,7 @@ namespace Mono.Linker.Steps
 							continue;
 						foreach (var ov in baseMethods) {
 							if (ov.Base.DeclaringType is not null && ov.Base.DeclaringType.IsInterface && IgnoreScope (ov.Base.DeclaringType.Scope)) {
-								_virtual_methods.Add ((ov.Base, ScopeStack.CurrentScope));
+								_virtual_methods.TryAdd (ov.Base, ScopeStack.CurrentScope);
 							}
 						}
 					}
@@ -709,7 +707,8 @@ namespace Mono.Linker.Steps
 				}
 				var overridingMethods = Annotations.GetOverrides (method);
 				if (overridingMethods is not null) {
-					foreach (OverrideInformation ov in overridingMethods) {
+					for (int i = 0; i < overridingMethods.Count; i++) {
+						OverrideInformation ov = overridingMethods[i];
 						if (IsInterfaceImplementationMethodNeededByTypeDueToInterface (ov))
 							MarkMethod (ov.Override, new DependencyInfo (DependencyKind.Override, ov.Base), ScopeStack.CurrentScope.Origin);
 					}
@@ -785,15 +784,38 @@ namespace Mono.Linker.Steps
 		/// </summary>
 		bool IsInterfaceImplementationMarkedRecursively (TypeDefinition type, TypeDefinition interfaceType)
 		{
-			if (type.HasInterfaces) {
-				foreach (var intf in type.Interfaces) {
-					TypeDefinition? resolvedInterface = Context.Resolve (intf.InterfaceType);
-					if (resolvedInterface == null)
-						continue;
+			if (!type.HasInterfaces)
+				return false;
 
-					if (Annotations.IsMarked (intf) && RequiresInterfaceRecursively (resolvedInterface, interfaceType))
-						return true;
+			var ifaces = Annotations.GetRecursiveInterfaces (type);
+			Debug.Assert (ifaces is not null);
+			bool typeImplementsInterfaceRecursively = false;
+			foreach (var iface in ifaces) {
+				if (Context.Resolve (iface.InterfaceType) != interfaceType) {
+					continue;
 				}
+				typeImplementsInterfaceRecursively = true;
+				foreach (var impl in iface.ImplementationChain) {
+					if (Annotations.IsMarked (impl)) {
+						return true;
+					}
+				}
+			}
+			// We can stop if we know there is no way that `type` can implement `interfaceType`
+			if (!typeImplementsInterfaceRecursively)
+				return false;
+
+			// However, there may be a less direct recursive implementation that TypeMapInfo didn't cache
+			foreach (var iface in ifaces) {
+				// Only check interface types directly implemented on `type` -- the rest will be handled in the recursive call
+				if (iface.ImplementationChain.Count != 1 || !Annotations.IsMarked (iface.ImplementationChain[0]))
+					continue;
+
+				var ifaceType = Context.Resolve (iface.InterfaceType);
+				if (ifaceType is null)
+					continue;
+				if (IsInterfaceImplementationMarkedRecursively (ifaceType, interfaceType))
+					return true;
 			}
 
 			return false;
@@ -3267,7 +3289,7 @@ namespace Mono.Linker.Steps
 			MarkMethodSpecialCustomAttributes (method);
 
 			if (method.IsVirtual)
-				_virtual_methods.Add ((method, ScopeStack.CurrentScope));
+				_virtual_methods.TryAdd (method, ScopeStack.CurrentScope);
 
 			MarkNewCodeDependencies (method);
 
@@ -3475,7 +3497,7 @@ namespace Mono.Linker.Steps
 				// This will produce warnings for all interface methods and virtual methods regardless of whether the interface, interface implementation, or interface method is kept or not.
 				if (ov.Base.DeclaringType.IsInterface && !method.DeclaringType.IsInterface) {
 					// These are all virtual, no need to check IsVirtual before adding to list
-					_virtual_methods.Add ((ov.Base, ScopeStack.CurrentScope));
+					_virtual_methods.TryAdd (ov.Base, ScopeStack.CurrentScope);
 					continue;
 				}
 
