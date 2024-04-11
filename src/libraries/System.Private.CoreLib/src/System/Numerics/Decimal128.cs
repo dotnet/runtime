@@ -18,7 +18,13 @@ namespace System.Numerics
           IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>,
           IDecimalIeee754TryParseInfo<Decimal128, Int128>
     {
-        internal readonly UInt128 _value;
+#if BIGENDIAN
+        private readonly ulong _upper;
+        private readonly ulong _lower;
+#else
+        private readonly ulong _lower;
+        private readonly ulong _upper;
+#endif
 
         private const int MaxDecimalExponent = 6111;
         private const int MinDecimalExponent = -6176;
@@ -35,7 +41,9 @@ namespace System.Numerics
 
         public Decimal128(Int128 significand, int exponent)
         {
-            _value = Number.CalDecimalIeee754<Decimal128, Int128, UInt128>(significand, exponent);
+            UInt128 value = Number.CalDecimalIeee754<Decimal128, Int128, UInt128>(significand, exponent);
+            _lower = value.Lower;
+            _upper = value.Upper;
         }
         public static Decimal128 Parse(string s) => Parse(s, NumberStyles.Number, provider: null);
 
@@ -98,12 +106,17 @@ namespace System.Numerics
                 throw new ArgumentException(SR.Arg_MustBeDecimal128);
             }
 
-            return Number.CompareDecimalIeee754<Decimal128, Int128, UInt128>(_value, i._value);
+            var current = new UInt128(_upper, _lower);
+            var other = new UInt128(i._upper, i._lower);
+
+            return Number.CompareDecimalIeee754<Decimal128, Int128, UInt128>(current, other);
         }
 
         public bool Equals(Decimal128 other)
         {
-            return Number.CompareDecimalIeee754<Decimal128, Int128, UInt128>(_value, other._value) == 0;
+            var current = new UInt128(_upper, _lower);
+            var another = new UInt128(other._upper, other._lower);
+            return Number.CompareDecimalIeee754<Decimal128, Int128, UInt128>(current, another) == 0;
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)
@@ -113,7 +126,7 @@ namespace System.Numerics
 
         public override int GetHashCode()
         {
-            return _value.GetHashCode();
+            return new UInt128(_upper, _lower).GetHashCode();
         }
 
         public override string ToString()
