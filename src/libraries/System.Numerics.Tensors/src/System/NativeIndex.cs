@@ -165,10 +165,5 @@ namespace System
         {
             return new NativeIndex(index.Value, index.IsFromEnd);
         }
-
-        public static implicit operator nint(NativeIndex index)
-        {
-            return index.Value;
-        }
     }
 }

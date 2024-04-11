@@ -29,6 +29,9 @@ namespace System.Numerics.Tensors
         where T : IEquatable<T>
     {
 
+        // REVIEW: SINCE WE ARE STORING THIS AS A MANAGED ARRAY, IT MAKES CONVERSION TO/FROM TORCHSHARP/ORT TENSORS HARDER/IMPOSSIBLE.
+        // REVIEW: SEPARATE TENSOR TYPE FOR NATIVE/POINTER TYPES?
+        // REIVEW: WE CAN DO JUST 1 TYPE, BUT THEN ALWAYS HAVE TO WORRY ABOUT DISPOSING/MEMORY MANAGEMENT EVEN IF ITS NOT NEEDED.
         /// <summary>A byref or a native ptr.</summary>
         internal readonly T[] _values;
         /// <summary>The number of elements this Tensor contains.</summary>
@@ -179,7 +182,7 @@ namespace System.Numerics.Tensors
 
         public SpanND<T> AsSpan() => new SpanND<T>(ref MemoryMarshal.GetArrayDataReference(_values), _lengths, _strides, _isPinned);
         public ReadOnlySpanND<T> AsReadOnlySpan() => new ReadOnlySpanND<T>(ref MemoryMarshal.GetArrayDataReference(_values), _lengths, _strides, _isPinned);
-        public SpanND<T> AsSpan(params NativeRange[] ranges) => Slice(ranges);
+        public SpanND<T> AsSpan(params NativeRange[] ranges) => AsSpan().Slice(ranges);
         public ReadOnlySpanND<T> AsReadOnlySpan(params NativeRange[] ranges) => Slice(ranges);
 
         /// <summary>
@@ -193,30 +196,18 @@ namespace System.Numerics.Tensors
         /// Forms a slice out of the given tensor
         /// </summary>
         /// <param name="ranges">The ranges for the slice</param>
+        // REVIEW: CURRENTLY DOES A COPY.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Tensor<T> Slice(params NativeRange[] ranges)
         {
             if (ranges.Length != Lengths.Length)
                 throw new ArgumentOutOfRangeException(nameof(ranges), "Number of dimensions to slice does not equal the number of dimensions in the span");
 
-            nint linearLength = 1;
-            var lengths = new nint[ranges.Length];
-
-            for (var i = 0; i < ranges.Length; i++)
-            {
-                if (ranges[i].End > Lengths[i])
-                    ThrowHelper.ThrowArgumentOutOfRangeException();
-                linearLength *= (nint)(ranges[i].End - ranges[i].Start);
-                lengths[i] = (nint)(ranges[i].End - ranges[i].Start);
-            }
-
-            T[] values = _isPinned ? GC.AllocateArray<T>((int)linearLength, _isPinned) : (new T[linearLength]);
-
-            SpanND<T> span = new SpanND<T>(values, lengths);
-            var s = AsSpan();
-            s = s.Slice(ranges);
-            s.CopyTo(span);
-            return new Tensor<T>(values, lengths, _isPinned);
+            var s = AsSpan(ranges);
+            T[] values = _isPinned ? GC.AllocateArray<T>(checked((int)s.LinearLength), _isPinned) : (new T[s.LinearLength]);
+            var outTensor = new Tensor<T>(values, s.Lengths.ToArray(), _isPinned);
+            s.CopyTo(outTensor);
+            return outTensor;
         }
 
         /// <summary>
@@ -257,17 +248,38 @@ namespace System.Numerics.Tensors
         public IEnumerator<T> GetEnumerator() => new Enumerator(this);
         IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this);
 
+        // REVIEW: PROBABLY REMOVE.
         // IEquatable
-        // REVIEW: IS IStructuralEquatable/IStructuralComparable/ICloneable SOMETHING WE WANT TO ADD?
         public bool Equals(Tensor<T>? other) => throw new NotImplementedException();
 
+        // REVIEW: REFERENCE EQUALITY VS DEEP EQUALITY. ALL OTHER OPERATORS WILL DO EXPENSIVE WORK.
         // IEqualityOperators
-
         public static bool operator ==(Tensor<T>? left, Tensor<T>? right) => throw new NotImplementedException();
         public static bool operator ==(Tensor<T> left, T right) => throw new NotImplementedException();
 
         public static bool operator !=(Tensor<T>? left, Tensor<T>? right) => !(left == right);
         public static bool operator !=(Tensor<T> left, T right) => !(left == right);
+
+        // REVIEW: DO SOMETHING LIKE THIS?
+        // REVIEW: API REVIEW DOESN'T LIKE RETURNING NON BOOLS, SO WE WOULD HAVE TO HAVE A GOOD REASON FOR THIS.
+        // REVIEW: STEPHEN THOUGHTS?
+        // REVIEW: DOING THIS AND THEN CHANGING IT WHEN EXTENSION OPERATORS COME IN IS A BINARY BREAKING CHANGE.
+        // REVIEW: PUSH FOR EXTENSION OPERATORS IN NET 9 RELEASE?
+        public static Tensor<bool> operator <(Tensor<T> left, T right)
+        {
+            if (typeof(T) == typeof(bool))
+                throw new Exception();
+            throw new Exception();
+            // do elementwise comparison
+        }
+
+        public static Tensor<bool> operator >(Tensor<T> left, T right)
+        {
+            if (typeof(T) == typeof(bool))
+                throw new Exception();
+            throw new Exception();
+            // do elementwise comparison
+        }
 
         public sealed class Enumerator : IEnumerator<T>
         {
@@ -314,11 +326,13 @@ namespace System.Numerics.Tensors
             object IEnumerator.Current => _tensor[_curIndices];
         }
 
+        // REVIEW: PROBABLY REMOVE.
         public override bool Equals(object? obj)
         {
             return Equals(obj as Tensor<T>);
         }
 
+        // REVIEW: PROBABLY REMOVE.
         public override int GetHashCode()
         {
             throw new NotImplementedException();
@@ -352,6 +366,8 @@ namespace System.Numerics.Tensors
             return sb.ToString();
         }
 
+        // REVIEW: WHAT SHOULD WE NAME THIS? WHERE DO WE WANT IT TO LIVE?
+        // REVIEW: WHOLE TYPE AROUND FORMATTING/DISPLAYING/ETC.
         public string ToCSharpString()
         {
             var sb = new StringBuilder();
@@ -371,16 +387,35 @@ namespace System.Numerics.Tensors
         {
             nint linearLength = SpanHelpers.CalculateTotalLength(lengths);
             T[] values = mustPin ? GC.AllocateArray<T>((int)linearLength, mustPin) : (new T[linearLength]);
-            Array.Fill(values, default);
             return new Tensor<T>(values, lengths.ToArray(), mustPin);
         }
+
         public static Tensor<T> Create<T>(bool mustPin, ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides)
             where T : IEquatable<T>
         {
             nint linearLength = SpanHelpers.CalculateTotalLength(lengths);
             T[] values = mustPin ? GC.AllocateArray<T>((int)linearLength, mustPin) : (new T[linearLength]);
-            Array.Fill(values, default);
             return new Tensor<T>(values, lengths.ToArray(), strides.ToArray(), mustPin);
+        }
+
+        public static Tensor<T> Create<T>(T[] values, ReadOnlySpan<nint> lengths)
+            where T : IEquatable<T>
+        {
+            nint linearLength = SpanHelpers.CalculateTotalLength(lengths);
+            if (linearLength != values.Length)
+                throw new Exception();
+
+            return new Tensor<T>(values, lengths.ToArray(), false);
+        }
+
+        public static Tensor<T> Create<T>(T[] values, ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides)
+            where T : IEquatable<T>
+        {
+            nint linearLength = SpanHelpers.CalculateTotalLength(lengths);
+            if (linearLength != values.Length)
+                throw new Exception();
+
+            return new Tensor<T>(values, lengths.ToArray(), strides.ToArray(), false);
         }
 
         //public static Tensor<T> Create(T* address, ReadOnlySpan<nint> lengths);
@@ -390,7 +425,7 @@ namespace System.Numerics.Tensors
             where T : IEquatable<T>
         {
             nint linearLength = SpanHelpers.CalculateTotalLength(lengths);
-            T[] values = mustPin ? GC.AllocateArray<T>((int)linearLength, mustPin) : (new T[linearLength]);
+            T[] values = GC.AllocateUninitializedArray<T>((int)linearLength, mustPin);
             return new Tensor<T>(values, lengths.ToArray(), mustPin);
         }
 
@@ -398,18 +433,25 @@ namespace System.Numerics.Tensors
             where T : IEquatable<T>
         {
             nint linearLength = SpanHelpers.CalculateTotalLength(lengths);
-            T[] values = mustPin ? GC.AllocateArray<T>((int)linearLength, mustPin) : (new T[linearLength]);
+            T[] values = GC.AllocateUninitializedArray<T>((int)linearLength, mustPin);
             return new Tensor<T>(values, lengths.ToArray(), strides.ToArray(), mustPin);
         }
 
-        //public static SpanND<T> CreateSpan(T* address, ReadOnlySpan<nint> lengths);
-        //public static SpanND<T> CreateSpan(T* address, ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides);
+        [CLSCompliant(false)]
+        public static unsafe SpanND<T> CreateSpan<T>(T* address, ReadOnlySpan<nint> lengths) => new SpanND<T>(address, lengths, false);
 
-        //public static ReadOnlySpanND<T> CreateReadOnlySpan(T* address, ReadOnlySpan<nint> lengths);
-        //public static ReadOnlySpanND<T> CreateReadOnlySpan(T* address, ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides);
+        [CLSCompliant(false)]
+        public static unsafe SpanND<T> CreateSpan<T>(T* address, ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides) => new SpanND<T>(address, lengths, false, strides);
+
+        [CLSCompliant(false)]
+        public static unsafe ReadOnlySpanND<T> CreateReadOnlySpan<T>(T* address, ReadOnlySpan<nint> lengths) => new ReadOnlySpanND<T>(address, lengths, false);
+
+        [CLSCompliant(false)]
+        public static unsafe ReadOnlySpanND<T> CreateReadOnlySpan<T>(T* address, ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides) => new ReadOnlySpanND<T>(address, lengths, false, strides);
 
 
         // REVIEW: NOT IN DESIGN DOC BUT IN NIKLAS' NOTEBOOK
+        // REVIEW: REMOVE THIS AND ADD A NEW FACTORY METHOD THAT TAKES AN ARRAY? HOW MUCH DO WE CARE ABOUT NAMING PARITY?
         public static Tensor<T> FillRange<T>(IEnumerable<T> data)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
@@ -418,6 +460,7 @@ namespace System.Numerics.Tensors
         }
 
         // REVIEW: NOT IN DESIGN DOC BUT IN NIKLAS' NOTEBOOK
+        // REVIEW: BASICALLY SEEDING A TENSOR. CHANGE API SHAPE/NAME?
         public static Tensor<T> Uniform<T>(params nint[] lengths)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>
         {
@@ -430,17 +473,8 @@ namespace System.Numerics.Tensors
             return new Tensor<T>(values, lengths, false);
         }
 
-        // REVIEW: NOT IN DESIGN DOC BUT IN NIKLAS' NOTEBOOK
-        public static Tensor<T> Zeros<T>(params nint[] lengths)
-           where T : IEquatable<T>, IEqualityOperators<T, T, bool>
-        {
-            var linearLength = SpanHelpers.CalculateTotalLength(ref lengths);
-            T[] values = new T[linearLength];
-            Array.Fill(values, default);
-            return new Tensor<T>(values, lengths, false);
-        }
-
         #region Normal
+        // REVIEW: BASICALLY SEEDING A TENSOR. CHANGE API SHAPE/NAME?
         public static Tensor<T> Normal<T>(params nint[] lengths)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>
         {
@@ -467,15 +501,23 @@ namespace System.Numerics.Tensors
 
     public static partial class Tensor
     {
-        #region Expand
-        // REVIEW: THIS IS CALLED BROADCAST IN NUMPY AND I BELIEVE OTHER FRAMEWORKS
-        // REVIEW: THIS IS HOW IT WORKS IN NUMPY, WOULD RE RATHER PASS IN SHAPE INSTEAD OF A TENSOR SHAPE TO MATCH? OR BOTH?
-        public static Tensor<T> Expand<T>(this Tensor<T> tensor, params Tensor<T>[] tensors)
+        #region Resize
+        // WORKS SAME AS NUMPY RESIZE BUT FILLS WITH 0 ALWAYS
+        // REVIEW: STRUCT TYPE FOR SHAPE?
+        public static Tensor<T> Resize<T>(this Tensor<T> tensor, ReadOnlySpan<nint> shape)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool> => throw new NotImplementedException();
         #endregion
 
-        #region Flip
-        public static Tensor<T> Flip<T>(this Tensor<T> tensor, params NativeIndex[] axis)
+        #region Broadcast
+        // REVIEW: SHOULD WE HAVE IMPLICIT BROADCASTING? IMPLICIT COPY? OR WHAT IF SOMEONE MUTATES THE DATA WHILE THE BROADCAST WAS HAPPENING?
+        // REVIEW: PROBABLY CAN DO IMPLICIT BROADCASTING, JUST BE EXPLICIT HOW IT WORKS.
+        public static Tensor<T> Broadcast<T>(this Tensor<T> tensor, ReadOnlySpan<nint> shape)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool> => throw new NotImplementedException();
+        #endregion
+
+        #region Reverse
+        // REVIEW: CALLED FLIP IN NUMPY AND OUR API REVIEW. RENAME IN OUR API REVIEW DOCS.
+        public static Tensor<T> Reverse<T>(this Tensor<T> tensor, params NativeIndex[] axis)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool> => throw new NotImplementedException();
 
         #endregion
@@ -483,6 +525,8 @@ namespace System.Numerics.Tensors
         #region Split
         // REVIEW: NOT IN DESIGN DOC BUT NEEDED FOR NIKLAS NOTEBOOK.
         // REVIEW: INT VS NATIVEINDEX VS NINT FOR SINGLE AXIS.
+        // REVIEW: HOW DO WE WANT TO NAME THESE?
+        // REVIEW: GET MORE CONCRETE EXAMPLE FOR ARRAY VERSION.
         /// <summary>
         /// If indices_or_sections is an integer, N, the array will be divided into N equal arrays along axis. If such a split is not possible, an error is raised.
         /// If indices_or_sections is a 1-D array of sorted integers, the entries indicate where along axis the array is split.
@@ -493,12 +537,16 @@ namespace System.Numerics.Tensors
         /// <param name="axis"></param>
         /// <returns></returns>
         /// <exception cref="NotImplementedException"></exception>
-        public static Tensor<T>[] Split<T>(this Tensor<T> tensor, nint[] indices, int axis = 0)
+        public static Tensor<T>[] Split<T>(this Tensor<T> tensor, nint[] indices, NativeIndex axis = default)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool> => throw new NotImplementedException();
+
+        public static Tensor<T>[] Split<T>(this Tensor<T> tensor, nint index, NativeIndex axis = default)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool> => throw new NotImplementedException();
         #endregion
 
         #region SetSlice
         // REVIEW: NOT IN DESIGN DOC BUT NEEDED FOR NIKLAS NOTEBOOK.
+        // REVIEW: WHAT DO WE WANT TO CALL THIS? COPYTO? IT DOES FIT IN WITH THE EXISTING COPY TO CONVENTIONS FOR VECTOR.
         public static Tensor<T> SetSlice<T>(this Tensor<T> tensor, Tensor<T> values, params NativeRange[] ranges)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
@@ -523,6 +571,9 @@ namespace System.Numerics.Tensors
 
         #region FilteredUpdate
         // REVIEW: NOT IN DESIGN DOC BUT NEEDED FOR NIKLAS NOTEBOOK.
+        // REVIEW: PYTORCH/NUMPY DO THIS.
+        //  t0[t0 < 2] = -1;
+        //  OR SHOULD THIS BE AN OVERLOAD OF FILL THAT TAKES IN A FUNC TO KNOW WHICH ONE TO UPDATE?
         public static Tensor<T> FilteredUpdate<T>(this Tensor<T> left, Tensor<bool> filter, T value)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
@@ -686,6 +737,8 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region Stack
+        // REVIEW: NEEDS A DIFFERENT NAME?
+        // JUST AN OVERLOAD FOR CONCATENATE?
         public static Tensor<T> Stack<T>(Tensor<T>[] input, int axis = 0)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
@@ -704,6 +757,7 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region Reshape
+        // REVIEW: SENTINAL VALUE? CONSTANT VALUE FOR -1 WILDCARD?
         public static Tensor<T> Reshape<T>(this Tensor<T> input, params nint[] lengths)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool> => Reshape(input, lengths.AsSpan());
 
@@ -737,6 +791,7 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region Squeeze
+        // REVIEW: NAME?
         public static Tensor<T> Squeeze<T>(this Tensor<T> input, int axis = -1)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
@@ -781,7 +836,7 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region Unsqueeze
-        // REVIEW: NUMPY CALLS THIS expand_dims.
+        // REVIEW: NAME? NUMPY CALLS THIS expand_dims.
         public static Tensor<T> Unsqueeze<T>(this Tensor<T> input, int axis)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
@@ -799,7 +854,7 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region Concatenate
-        //REVIEW: SHOULD AXIS BE NULLABLE INT SO NULL CAN BE PROVIDED INSTEAD OF -1?
+        //REVIEW: SHOULD AXIS BE NULLABLE INT SO NULL CAN BE PROVIDED INSTEAD OF -1? SENTINAL VALUE?
         /// <summary>
         /// Join a sequence of arrays along an existing axis.
         /// </summary>
@@ -893,6 +948,7 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region StdDev
+        // REVIEW: ADD IN ONES THAT TAKE AXIS.
         public static T StdDev<T>(this Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>, IPowerFunctions<T>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
 
@@ -918,6 +974,7 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region Mean
+        // REVIEW: OTHER MATH OPERATIONS LIKE MEDIAN/MODE.
         public static T Mean<T>(this Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>
 
@@ -944,11 +1001,13 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region Permute/Transpose
+        // REVIEW: PERMUTE => PERMUTEDIMENSIONS/PERMUTERANKS?
+        // REVIEW: HOW EXACTLY DO WE WANT TO HANDLE THESE?
         public static Tensor<T> Transpose<T>(this Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             if (input.Lengths.Length < 2)
-                throw new ArgumentException("Must provide a tensor with at least 2 dimensions to tranpose it.");
+                throw new ArgumentException("Must provide a tensor with at least 2 dimensions to transpose it.");
             var axis = Enumerable.Range(0, input.Rank).ToArray();
             var temp = axis[input.Rank - 1];
             axis[input.Rank - 1] = axis[input.Rank - 2];
@@ -1016,6 +1075,9 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region TensorPrimitives
+        // REVIEW: DO WE WANT THESE AS EXTENTION METHODS? UP UNTIL NOW WE HAVEN'T EXPOSED OTHER TYPES AS EXTENSION METHODS.
+        // REVIEW: HOW DO WE HANDLE INPLACE? PARAMETER? HOW DECIMAL/BIGINT DO IT NameSelf? ETC?
+        #region Multiply
         public static Tensor<T> Multiply<T>(this Tensor<T> input, T val, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
@@ -1032,6 +1094,25 @@ namespace System.Numerics.Tensors
             return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Multiply, inPlace);
         }
 
+        public static SpanND<T> Multiply<T>(this SpanND<T> input, T val, bool inPlace = false)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
+        {
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
+            T[] values = input.IsPinned ? GC.AllocateArray<T>((int)input.LinearLength, input.IsPinned) : (new T[input.LinearLength]);
+            SpanND<T> output = inPlace ? input : new SpanND<T>(values, input.Lengths, input.IsPinned);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
+            TensorPrimitives.Multiply(span, val, ospan);
+            return output;
+        }
+
+        public static SpanND<T> Multiply<T>(this SpanND<T> input, Tensor<T> other, bool inPlace = false)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
+        {
+            return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Multiply, inPlace);
+        }
+        #endregion
+
+        #region Divide
         public static Tensor<T> Divide<T>(this Tensor<T> input, T val, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
         {
@@ -1058,6 +1139,37 @@ namespace System.Numerics.Tensors
             return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Divide, inPlace);
         }
 
+        public static SpanND<T> Divide<T>(this SpanND<T> input, T val, bool inPlace = false)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
+        {
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
+            T[] values = input.IsPinned ? GC.AllocateArray<T>((int)input.LinearLength, input.IsPinned) : (new T[input.LinearLength]);
+            SpanND<T> output = inPlace ? input : new SpanND<T>(values, input.Lengths, input.IsPinned);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
+            TensorPrimitives.Divide(span, val, ospan);
+            return output;
+        }
+
+        public static SpanND<T> Divide<T>(T val, SpanND<T> input, bool inPlace = false)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
+        {
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
+            T[] values = input.IsPinned ? GC.AllocateArray<T>((int)input.LinearLength, input.IsPinned) : (new T[input.LinearLength]);
+            SpanND<T> output = inPlace ? input : new SpanND<T>(values, input.Lengths, input.IsPinned);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
+            TensorPrimitives.Divide(val, span, ospan);
+            return output;
+        }
+
+        public static SpanND<T> Divide<T>(this SpanND<T> input, SpanND<T> other, bool inPlace = false)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
+        {
+            return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Divide, inPlace);
+        }
+
+        #endregion
+
+        #region Subtract
         public static Tensor<T> Subtract<T>(this Tensor<T> input, T val, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
         {
@@ -1084,6 +1196,37 @@ namespace System.Numerics.Tensors
             return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Subtract, inPlace);
         }
 
+        public static SpanND<T> Subtract<T>(this SpanND<T> input, T val, bool inPlace = false)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
+        {
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
+            T[] values = input.IsPinned ? GC.AllocateArray<T>((int)input.LinearLength, input.IsPinned) : (new T[input.LinearLength]);
+            SpanND<T> output = inPlace ? input : new SpanND<T>(values, input.Lengths, input.IsPinned);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
+            TensorPrimitives.Subtract(span, val, ospan);
+            return output;
+        }
+
+        public static SpanND<T> Subtract<T>(T val, SpanND<T> input, bool inPlace = false)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
+        {
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
+            T[] values = input.IsPinned ? GC.AllocateArray<T>((int)input.LinearLength, input.IsPinned) : (new T[input.LinearLength]);
+            SpanND<T> output = inPlace ? input : new SpanND<T>(values, input.Lengths, input.IsPinned);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
+            TensorPrimitives.Subtract(val, span, ospan);
+            return output;
+        }
+
+        public static SpanND<T> Subtract<T>(this SpanND<T> input, Tensor<T> other, bool inPlace = false)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
+        {
+            return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Subtract, inPlace);
+        }
+
+        #endregion
+
+        #region Sum
         public static Tensor<T> Sum<T>(this Tensor<T> input, int axis)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T> => throw new NotImplementedException();
 
@@ -1094,6 +1237,19 @@ namespace System.Numerics.Tensors
             return TensorPrimitives.Sum(span);
         }
 
+        public static SpanND<T> Sum<T>(this SpanND<T> input, int axis)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T> => throw new NotImplementedException();
+
+        public static T Sum<T>(this SpanND<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
+        {
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
+            return TensorPrimitives.Sum(span);
+        }
+
+        #endregion
+
+        #region Add
         public static Tensor<T> Add<T>(this Tensor<T> input, Tensor<T> other, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
@@ -1110,6 +1266,26 @@ namespace System.Numerics.Tensors
             return output;
         }
 
+        public static SpanND<T> Add<T>(this SpanND<T> input, SpanND<T> other, bool inPlace = false)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
+        {
+            return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Add, inPlace);
+        }
+
+        public static SpanND<T> Add<T>(this SpanND<T> input, T val, bool inPlace = false)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
+        {
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
+            T[] values = input.IsPinned ? GC.AllocateArray<T>((int)input.LinearLength, input.IsPinned) : (new T[input.LinearLength]);
+            SpanND<T> output = inPlace ? input : new SpanND<T>(values, input.Lengths, input.IsPinned);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
+            TensorPrimitives.Add(span, val, ospan);
+            return output;
+        }
+
+        #endregion
+
+        #region Norm
         public static T Norm<T>(this Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
         {
@@ -1117,42 +1293,106 @@ namespace System.Numerics.Tensors
             return TensorPrimitives.Norm(span);
         }
 
+        public static T Norm<T>(this SpanND<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
+        {
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
+            return TensorPrimitives.Norm(span);
+        }
+
+        #endregion
+
+        #region Cos
         public static Tensor<T> Cos<T>(this Tensor<T> input, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
         {
             return TensorPrimitivesHelperT1(input, TensorPrimitives.Cos, inPlace);
         }
 
+        public static SpanND<T> Cos<T>(this SpanND<T> input, bool inPlace = false)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
+        {
+            return TensorPrimitivesHelperT1(input, TensorPrimitives.Cos, inPlace);
+        }
+
+        #endregion
+
+        #region Sin
         public static Tensor<T> Sin<T>(this Tensor<T> input, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
         {
             return TensorPrimitivesHelperT1(input, TensorPrimitives.Sin, inPlace);
         }
 
+        public static SpanND<T> Sin<T>(this SpanND<T> input, bool inPlace = false)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
+        {
+            return TensorPrimitivesHelperT1(input, TensorPrimitives.Sin, inPlace);
+        }
+
+        #endregion
+
+        #region Sqrt
         public static Tensor<T> Sqrt<T>(this Tensor<T> input, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
         {
             return TensorPrimitivesHelperT1(input, TensorPrimitives.Sqrt, inPlace);
         }
 
+        public static SpanND<T> Sqrt<T>(this SpanND<T> input, bool inPlace = false)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
+        {
+            return TensorPrimitivesHelperT1(input, TensorPrimitives.Sqrt, inPlace);
+        }
+
+        #endregion
+
+        #region Log
         public static Tensor<T> Log<T>(this Tensor<T> input, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
         {
             return TensorPrimitivesHelperT1(input, TensorPrimitives.Log, inPlace);
         }
 
+        public static SpanND<T> Log<T>(this SpanND<T> input, bool inPlace = false)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
+        {
+            return TensorPrimitivesHelperT1(input, TensorPrimitives.Log, inPlace);
+        }
+
+        #endregion
+
+        #region Log10
         public static Tensor<T> Log10<T>(this Tensor<T> input, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
         {
             return TensorPrimitivesHelperT1(input, TensorPrimitives.Log10, inPlace);
         }
 
+        public static SpanND<T> Log10<T>(this SpanND<T> input, bool inPlace = false)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
+        {
+            return TensorPrimitivesHelperT1(input, TensorPrimitives.Log10, inPlace);
+        }
+
+        #endregion
+
+        #region Log2
         public static Tensor<T> Log2<T>(this Tensor<T> input, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
         {
             return TensorPrimitivesHelperT1(input, TensorPrimitives.Log2, inPlace);
         }
 
+        public static SpanND<T> Log2<T>(this SpanND<T> input, bool inPlace = false)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
+        {
+            return TensorPrimitivesHelperT1(input, TensorPrimitives.Log2, inPlace);
+        }
+
+        #endregion
+
+        #region TensorPrimitivesHelpers
         private delegate void PerformCalculationT1<T>(ReadOnlySpan<T> input, Span<T> output)
              where T : IEquatable<T>, IEqualityOperators<T, T, bool>;
 
@@ -1169,6 +1409,16 @@ namespace System.Numerics.Tensors
             return output;
         }
 
+        private static SpanND<T> TensorPrimitivesHelperT1<T>(SpanND<T> input, PerformCalculationT1<T> performCalculation, bool inPlace = false)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>
+        {
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
+            SpanND<T> output = inPlace ? input : Create<T>(input.IsPinned, input.Lengths);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
+            performCalculation(span, ospan);
+            return output;
+        }
+
         private static Tensor<T> TensorPrimitivesHelperT1T2<T>(Tensor<T> input, Tensor<T> inputTwo, PerformCalculationT1T2<T> performCalculation, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
@@ -1179,6 +1429,18 @@ namespace System.Numerics.Tensors
             performCalculation(span, rspan, ospan);
             return output;
         }
+
+        private static SpanND<T> TensorPrimitivesHelperT1T2<T>(SpanND<T> input, SpanND<T> inputTwo, PerformCalculationT1T2<T> performCalculation, bool inPlace = false)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>
+        {
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
+            ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref inputTwo._reference, (int)inputTwo.LinearLength);
+            SpanND<T> output = inPlace ? input : Create<T>(input.IsPinned, input.Lengths);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
+            performCalculation(span, rspan, ospan);
+            return output;
+        }
+        #endregion
         #endregion
     }
 }

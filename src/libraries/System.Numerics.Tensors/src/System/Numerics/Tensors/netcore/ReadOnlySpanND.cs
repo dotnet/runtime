@@ -448,10 +448,7 @@ namespace System.Numerics.Tensors
 
             for (var i = 0; i < ranges.Length; i++)
             {
-                if (ranges[i].End > Lengths[i])
-                    ThrowHelper.ThrowArgumentOutOfRangeException();
-                lengths[i] = (nint)(ranges[i].End - ranges[i].Start);
-                offsets[i] = (nint)ranges[i].Start;
+                (offsets[i], lengths[i]) = ranges[i].GetOffsetAndLength(Lengths[i]);
             }
 
             nint index = 0;

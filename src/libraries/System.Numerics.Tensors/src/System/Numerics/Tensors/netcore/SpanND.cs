@@ -24,6 +24,7 @@ namespace System.Numerics.Tensors
     [DebuggerTypeProxy(typeof(SpanNDDebugView<>))]
     [DebuggerDisplay("{ToString(),raw}")]
 #pragma warning disable SYSLIB1056 // Specified native type is invalid
+    // REVIEW: PROBABLY NOT NEED TO DO THIS.
     //[NativeMarshalling(typeof(SpanMarshaller<,>))]
 #pragma warning restore SYSLIB1056 // Specified native type is invalid
     public readonly ref struct SpanND<T>
@@ -63,6 +64,35 @@ namespace System.Numerics.Tensors
             _lengths = lengths;
             _strides = SpanHelpers.CalculateStrides(Rank, lengths);
         }
+
+        /// <summary>
+        /// Creates a new span over the entirety of the target array.
+        /// </summary>
+        /// <param name="array">The target array.</param>
+        /// <param name="lengths">The lengths of the dimensions. If default is provided its assumed to have 1 dimension with a length equal to the length of the data.</param>
+        /// <param name="isPinned"></param>
+        /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
+        /// <exception cref="ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public SpanND(T[]? array, ReadOnlySpan<nint> lengths, bool isPinned)
+        {
+            if (array == null)
+            {
+                this = default;
+                return; // returns default
+            }
+            if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
+                ThrowHelper.ThrowArrayTypeMismatchException();
+            _linearLength = SpanHelpers.CalculateTotalLength(lengths);
+            if (_linearLength != array.Length)
+                ThrowHelper.ThrowArgument_LengthsMustEqualArrayLength();
+
+            _reference = ref MemoryMarshal.GetArrayDataReference(array);
+            _lengths = lengths;
+            _strides = SpanHelpers.CalculateStrides(Rank, lengths);
+            _isPinned = IsPinned;
+        }
+
 
         /// <summary>
         /// Creates a new span over the portion of the target array beginning
@@ -187,9 +217,38 @@ namespace System.Numerics.Tensors
             }
         }
 
+        // REVIEW: DO WE WANT TO TRY AND PUSH FOR THIS? OR JUST KEEP SETSLICE METHOD?
+        // THIS WOULD BE TO ALLOW BEHAVIOR LIKE THIS:
+        //      This modifies the first row of t0.
+        //      t0[0..1] = (t1 * 1.5f) / (t1 - 0.25f);
+        //   POTENTIALLY CAUSES ISSUES LIKE THIS WHERE BEHAVIOR WOULD BE DIFFERENT:
+        //      tmp = t0[0..1]
+        //      tmp = t1
+        //      vs
+        //      t0[0..1] = t1
+        public SpanND<T> this[params NativeRange[] indices]
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                if (indices.Length != Rank)
+                    ThrowHelper.ThrowIndexOutOfRangeException();
+
+                //var index = SpanHelpers.GetIndex(indices, Strides, Lengths);
+                //return ref Unsafe.Add(ref _reference, index /* force zero-extension */);
+                // BUGBUG: FIX THIS.
+                return Slice(indices);
+            }
+            set
+            {
+                value.CopyTo(this[indices]);
+            }
+        }
+
         /// <summary>
         /// The number of items in the span.
         /// </summary>
+        //REVIEW: DO WE WANT THIS PUBLIC?
         internal nint LinearLength
         {
             get => _linearLength;
@@ -330,6 +389,7 @@ namespace System.Numerics.Tensors
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
+                // BUGBUG: MAKE SURE HAS REFERENCE SUPPORT.
                 // DON'T SUPPORT REFERENCE TYPES CURRENTLY.
                 SpanHelpers.ClearWithReferences(ref Unsafe.As<T, IntPtr>(ref _reference), (nuint)_linearLength * (nuint)(sizeof(T) / sizeof(nuint)));
             }
@@ -482,13 +542,7 @@ namespace System.Numerics.Tensors
 
             for (var i = 0; i < ranges.Length; i++)
             {
-                if (ranges[i].End > Lengths[i])
-                    ThrowHelper.ThrowArgumentOutOfRangeException();
-                if (ranges[i].End.IsFromEnd)
-                    lengths[i] = (nint)(Lengths[i] - ranges[i].End - ranges[i].Start);
-                else
-                    lengths[i] = (nint)(ranges[i].End - ranges[i].Start);
-                offsets[i] = (nint)ranges[i].Start;
+                (offsets[i], lengths[i]) = ranges[i].GetOffsetAndLength(Lengths[i]);
             }
 
             nint index = 0;
@@ -526,6 +580,7 @@ namespace System.Numerics.Tensors
             return destination;
         }
 
+        // REVIEW: WHAT SHOULD WE NAME THIS? WHERE DO WE WANT IT TO LIVE?
         public string ToCSharpString()
         {
             var sb = new StringBuilder();
