@@ -1253,23 +1253,31 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                     return result;
                 }
             }
-
-            JITDUMP("after\n");
-            if (comp->verbose)
-            {
-                comp->fgDumpBlock(m_block);
-            }
             break;
         }
 
         case NI_Sve_Abs:
         {
             assert(HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsicId));
+
+            LIR::Use use;
+            if (BlockRange().TryGetUse(node, &use))
+            {
+                GenTree* user = use.User();
+                if (user->OperIsHWIntrinsic() && user->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConditionalSelect)
+                {
+                    // No need to wrap it if it is already inside a conditional
+                    break;
+                }
+            }
+            else
+            {
+                break;
+            }
+
             CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
-            var_types   simdBaseType    = node->GetSimdBaseType();
             unsigned    simdSize        = node->GetSimdSize();
             var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
-
             GenTree* trueMask = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
             GenTree* trueVal  = node;
             GenTree* falseVal = comp->gtNewZeroConNode(simdType);
@@ -1280,17 +1288,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
             BlockRange().InsertBefore(node, trueMask);
             BlockRange().InsertBefore(node, falseVal);
-
-            LIR::Use use;
-            if (BlockRange().TryGetUse(node, &use))
-            {
-                BlockRange().InsertAfter(node, condSelNode);
-                use.ReplaceWith(condSelNode);
-            }
-            else
-            {
-                condSelNode->SetUnusedValue();
-            }
+            BlockRange().InsertAfter(node, condSelNode);
+            use.ReplaceWith(condSelNode);
 
             break;
         }
