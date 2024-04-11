@@ -451,7 +451,7 @@ namespace Mono.Linker
 		/// Returns a list of all known methods that override <paramref name="method"/>.
 		/// The list may be incomplete if other overrides exist in assemblies that haven't been processed by TypeMapInfo yet
 		/// </summary>
-		public List<OverrideInformation>? GetOverrides (MethodDefinition method)
+		internal List<OverrideInformation>? GetOverrides (MethodDefinition method)
 		{
 			return TypeMapInfo.GetOverrides (method);
 		}
