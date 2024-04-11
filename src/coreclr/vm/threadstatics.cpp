@@ -52,13 +52,22 @@ void ThreadLocalBlock::FreeTLM(SIZE_T i, BOOL isThreadShuttingdown)
                         ThreadLocalModule::CollectibleDynamicEntry *entry = (ThreadLocalModule::CollectibleDynamicEntry*)pThreadLocalModule->m_pDynamicClassTable[k].m_pDynamicEntry;
                         PTR_LoaderAllocator pLoaderAllocator = entry->m_pLoaderAllocator;
 
-                        if (entry->m_hGCStatics != NULL)
+                        // LoaderAllocator may be collected when the thread is shutting down.
+                        // We enter coop mode to ensure that we get a valid value of the exposed object and
+                        // can safely clean up handles if it is not yet collected.
+                        GCX_COOP();
+
+                        LOADERALLOCATORREF loaderAllocator = pLoaderAllocator->GetExposedObject();
+                        if (loaderAllocator != NULL)
                         {
-                            pLoaderAllocator->FreeHandle(entry->m_hGCStatics);
-                        }
-                        if (entry->m_hNonGCStatics != NULL)
-                        {
-                            pLoaderAllocator->FreeHandle(entry->m_hNonGCStatics);
+                            if (entry->m_hGCStatics != NULL)
+                            {
+                                pLoaderAllocator->FreeHandle(entry->m_hGCStatics);
+                            }
+                            if (entry->m_hNonGCStatics != NULL)
+                            {
+                                pLoaderAllocator->FreeHandle(entry->m_hNonGCStatics);
+                            }
                         }
                     }
                     delete pThreadLocalModule->m_pDynamicClassTable[k].m_pDynamicEntry;
