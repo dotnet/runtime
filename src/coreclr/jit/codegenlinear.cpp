@@ -721,9 +721,7 @@ void CodeGen::genCodeForBBlist()
 
                     if ((call != nullptr) && (call->gtOper == GT_CALL))
                     {
-                        if ((call->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0 ||
-                            ((call->AsCall()->gtCallType == CT_HELPER) &&
-                             Compiler::s_helperCallProperties.AlwaysThrow(call->AsCall()->GetHelperNum())))
+                        if (call->AsCall()->IsNoReturn())
                         {
                             instGen(INS_BREAKPOINT); // This should never get executed
                         }
@@ -764,15 +762,7 @@ void CodeGen::genCodeForBBlist()
                 GenTree* call = block->lastNode();
                 if ((call != nullptr) && (call->gtOper == GT_CALL))
                 {
-                    if ((call->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0 ||
-                        ((call->AsCall()->gtCallType == CT_HELPER) &&
-                         Compiler::s_helperCallProperties.AlwaysThrow(call->AsCall()->GetHelperNum())))
-                    {
-                        // NOTE: We should probably never see a BBJ_ALWAYS block ending with a throw in a first place.
-                        //       If that is fixed, this condition can be just an assert.
-                        //       For the reasons why we insert a BP, see the similar code in "case BBJ_THROW:" above.
-                        instGen(INS_BREAKPOINT); // This should never get executed
-                    }
+                    assert(!call->AsCall()->IsNoReturn());
                 }
 
                 // If this block jumps to the next one, we might be able to skip emitting the jump

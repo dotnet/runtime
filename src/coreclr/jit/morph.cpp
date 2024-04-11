@@ -14712,12 +14712,11 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
 
     if (hasTrueExpr)
     {
-        if (trueExpr->OperIs(GT_CALL) && (trueExpr->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN))
+        if (trueExpr->OperIs(GT_CALL) && trueExpr->AsCall()->IsNoReturn())
         {
             Statement* trueStmt = fgNewStmtFromTree(trueExpr, stmt->GetDebugInfo());
             fgInsertStmtAtEnd(thenBlock, trueStmt);
             fgConvertBBToThrowBB(thenBlock);
-            setMethodHasNoReturnCalls();
             introducedThrow = true;
         }
         else
@@ -14736,12 +14735,11 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     // Assign the falseExpr into the dst or tmp, insert in elseBlock
     if (hasFalseExpr)
     {
-        if (falseExpr->OperIs(GT_CALL) && (falseExpr->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN))
+        if (falseExpr->OperIs(GT_CALL) && falseExpr->AsCall()->IsNoReturn())
         {
             Statement* falseStmt = fgNewStmtFromTree(falseExpr, stmt->GetDebugInfo());
             fgInsertStmtAtEnd(elseBlock, falseStmt);
             fgConvertBBToThrowBB(elseBlock);
-            setMethodHasNoReturnCalls();
             introducedThrow = true;
         }
         else

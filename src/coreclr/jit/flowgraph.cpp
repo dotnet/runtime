@@ -611,6 +611,7 @@ bool Compiler::fgIsThrow(GenTree* tree)
     GenTreeCall* call = tree->AsCall();
     if ((call->gtCallType == CT_HELPER) && s_helperCallProperties.AlwaysThrow(eeGetHelperNum(call->gtCallMethHnd)))
     {
+        assert(call->IsNoReturn());
         noway_assert(call->gtFlags & GTF_EXCEPT);
         return true;
     }

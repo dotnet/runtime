@@ -9923,7 +9923,7 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
     if (tree->IsNoReturn())
     {
         assert(copy->IsNoReturn());
-        setMethodHasNoReturnCalls();
+        impInlineRoot()->setMethodHasNoReturnCalls();
     }
 
     return copy;
@@ -27082,7 +27082,7 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet() const
 GenTree* Compiler::gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd)
 {
     GenTreeCall* node = gtNewHelperCallNode(helper, TYP_VOID);
-    node->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
+    assert(node->IsNoReturn());
     if (type != TYP_VOID)
     {
         unsigned dummyTemp = lvaGrabTemp(true DEBUGARG("dummy temp of must thrown exception"));
