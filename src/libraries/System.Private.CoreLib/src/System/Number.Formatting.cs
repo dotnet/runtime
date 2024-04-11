@@ -530,7 +530,7 @@ namespace System
         internal static unsafe void Decimal128ToNumber(Decimal128 d, ref NumberBuffer number)
         {
             byte* buffer = number.DigitsPtr;
-            DecimalIeee754<Int128> decimal128 = UnpackDecimalIeee754<Decimal128, Int128, UInt128>(d._value);
+            DecimalIeee754<Int128> decimal128 = UnpackDecimalIeee754<Decimal128, Int128, UInt128>(new UInt128(d._upper, d._lower));
             number.IsNegative = decimal128.Signed;
             byte* p = buffer + Decimal128Precision;
 

@@ -19,11 +19,11 @@ namespace System.Numerics
           IDecimalIeee754TryParseInfo<Decimal128, Int128>
     {
 #if BIGENDIAN
-        private readonly ulong _upper;
-        private readonly ulong _lower;
+        internal readonly ulong _upper;
+        internal readonly ulong _lower;
 #else
-        private readonly ulong _lower;
-        private readonly ulong _upper;
+        internal readonly ulong _lower;
+        internal readonly ulong _upper;
 #endif
 
         private const int MaxDecimalExponent = 6111;
