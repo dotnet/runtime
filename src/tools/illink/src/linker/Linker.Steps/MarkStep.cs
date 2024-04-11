@@ -784,38 +784,15 @@ namespace Mono.Linker.Steps
 		/// </summary>
 		bool IsInterfaceImplementationMarkedRecursively (TypeDefinition type, TypeDefinition interfaceType)
 		{
-			if (!type.HasInterfaces)
-				return false;
+			if (type.HasInterfaces) {
+				foreach (var intf in type.Interfaces) {
+					TypeDefinition? resolvedInterface = Context.Resolve (intf.InterfaceType);
+					if (resolvedInterface == null)
+						continue;
 
-			var ifaces = Annotations.GetRecursiveInterfaces (type);
-			Debug.Assert (ifaces is not null);
-			bool typeImplementsInterfaceRecursively = false;
-			foreach (var iface in ifaces) {
-				if (Context.Resolve (iface.InterfaceType) != interfaceType) {
-					continue;
-				}
-				typeImplementsInterfaceRecursively = true;
-				foreach (var impl in iface.ImplementationChain) {
-					if (Annotations.IsMarked (impl)) {
+					if (Annotations.IsMarked (intf) && RequiresInterfaceRecursively (resolvedInterface, interfaceType))
 						return true;
-					}
 				}
-			}
-			// We can stop if we know there is no way that `type` can implement `interfaceType`
-			if (!typeImplementsInterfaceRecursively)
-				return false;
-
-			// However, there may be a less direct recursive implementation that TypeMapInfo didn't cache
-			foreach (var iface in ifaces) {
-				// Only check interface types directly implemented on `type` -- the rest will be handled in the recursive call
-				if (iface.ImplementationChain.Count != 1 || !Annotations.IsMarked (iface.ImplementationChain[0]))
-					continue;
-
-				var ifaceType = Context.Resolve (iface.InterfaceType);
-				if (ifaceType is null)
-					continue;
-				if (IsInterfaceImplementationMarkedRecursively (ifaceType, interfaceType))
-					return true;
 			}
 
 			return false;

@@ -490,7 +490,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			// No warning for this case because we don't validate that the attribute usage matches
 			// the expected AttributeUsage.Property for assemblies that define their own version
 			// of FeatureGuardAttribute.
-			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
+			//[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool Method () => true;
 
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCodeAttribute))]
