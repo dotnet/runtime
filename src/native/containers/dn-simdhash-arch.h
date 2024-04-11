@@ -56,6 +56,7 @@ typedef dn_simdhash_suffixes dn_simdhash_search_vector;
 //  lane insertions to write the byte loads into the loaded vector
 //  before finally passing it to find_first_matching_suffix. So we have to vec[].
 // See https://github.com/llvm/llvm-project/issues/87398#issuecomment-2050696298
+// Also see https://github.com/llvm/llvm-project/issues/88460
 #define dn_simdhash_extract_lane(suffixes, lane) \
 	suffixes.vec[lane]
 #else

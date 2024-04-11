@@ -76,9 +76,6 @@ static_assert(DN_SIMDHASH_BUCKET_CAPACITY > 1, "Bucket capacity too low");
 // We set bucket_size_bytes to sizeof() this struct so that we can let the compiler
 //  generate the most optimal code possible when we're manipulating pointers to it -
 //  that is, it can do mul-by-constant instead of mul-by-(hash->meta.etc)
-// We use memcpy to do an unaligned load when reading dn_simdhash_suffixes, but it's
-//  still ideal to align instances of bucket_t to match the vector width, so that
-//  loads are less likely to span two cache lines.
 typedef struct bucket_t {
 	_Alignas(DN_SIMDHASH_VECTOR_WIDTH) dn_simdhash_suffixes suffixes;
 	DN_SIMDHASH_KEY_T keys[DN_SIMDHASH_BUCKET_CAPACITY];
