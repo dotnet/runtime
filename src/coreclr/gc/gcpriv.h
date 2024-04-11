@@ -4106,7 +4106,7 @@ private:
 
     // Total allocated last BGC's plan + between last and this bgc +
     // this bgc's mark
-    PER_HEAP_ISOLATED_FIELD_SINGLE_GC uint64_t   total_loh_a_last_bgc;
+    PER_HEAP_ISOLATED_FIELD_SINGLE_GC uint64_t   total_uoh_a_last_bgc;
 #endif //BACKGROUND_GC
 
 #ifdef USE_REGIONS

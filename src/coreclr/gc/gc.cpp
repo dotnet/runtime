@@ -2794,7 +2794,7 @@ BOOL gc_heap::proceed_with_gc_p = FALSE;
 GCSpinLock gc_heap::gc_lock;
 
 #ifdef BACKGROUND_GC
-uint64_t gc_heap::total_loh_a_last_bgc = 0;
+uint64_t gc_heap::total_uoh_a_last_bgc = 0;
 #endif //BACKGROUND_GC
 
 #ifdef USE_REGIONS
@@ -40601,7 +40601,7 @@ void gc_heap::bgc_tuning::record_and_adjust_bgc_end()
 
     calculate_tuning (max_generation, true);
 
-    if (total_loh_a_last_bgc > 0)
+    if (total_uoh_a_last_bgc > 0)
     {
         calculate_tuning (loh_generation, true);
     }
@@ -46237,7 +46237,7 @@ void gc_heap::background_sweep()
             concurrent_print_time_delta ("Swe SOH");
             FIRE_EVENT(BGC1stSweepEnd, 0);
 
-            //block concurrent allocation for large objects
+            //block concurrent allocation for UOH objects
             enter_spin_lock (&more_space_lock_uoh);
             add_saved_spinlock_info (true, me_acquire, mt_bgc_uoh_sweep, msl_entered);
 
@@ -50267,7 +50267,7 @@ void gc_heap::check_and_adjust_bgc_tuning (int gen_number, size_t physical_size,
 
 void gc_heap::get_and_reset_loh_alloc_info()
 {
-    total_loh_a_last_bgc = 0;
+    total_uoh_a_last_bgc = 0;
 
     uint64_t total_loh_a_no_bgc = 0;
     uint64_t total_loh_a_bgc_marking = 0;
@@ -50302,7 +50302,7 @@ void gc_heap::get_and_reset_loh_alloc_info()
         total_loh_a_bgc_marking,
         total_loh_a_bgc_planning));
 
-    total_loh_a_last_bgc = total_loh_a_no_bgc + total_loh_a_bgc_marking + total_loh_a_bgc_planning;
+    total_uoh_a_last_bgc = total_loh_a_no_bgc + total_loh_a_bgc_marking + total_loh_a_bgc_planning;
 }
 
 bool gc_heap::is_pm_ratio_exceeded()
