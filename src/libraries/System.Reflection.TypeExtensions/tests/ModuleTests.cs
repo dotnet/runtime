@@ -24,12 +24,14 @@ namespace System.Reflection.Tests
 
         // This calls Assembly.Load, but xUnit turn is into a LoadFrom because TinyAssembly is just a Content item in the project.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91923", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
         public void GetModuleVersionId_KnownAssembly_ReturnsExpected()
         {
             Module module = Assembly.Load(new AssemblyName("TinyAssembly")).ManifestModule;
             Assert.True(module.HasModuleVersionId());
-            Assert.Equal(Guid.Parse("{06BB2468-908C-48CF-ADE9-DB6DE4614004}"), module.GetModuleVersionId());
+            if (!(PlatformDetection.IsMonoRuntime && PlatformDetection.IsAppleMobile && PlatformDetection.IsBuiltWithAggressiveTrimming))
+            {
+                Assert.Equal(Guid.Parse("{06BB2468-908C-48CF-ADE9-DB6DE4614004}"), module.GetModuleVersionId());
+            }
         }
     }
 }

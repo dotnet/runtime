@@ -38,10 +38,10 @@ jobs:
       # Don't trim tests on rolling builds
       buildArgs: >-
         -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true /p:IsManualOrRollingBuild=true
-        ${{ if eq(variables['isRollingBuild'], true) }}:
-          /p:EnableAggressiveTrimming=false
-        ${{ else }}:
-          /p:EnableAggressiveTrimming=true
+      ${{ if eq(variables['isRollingBuild'], true) }}:
+        /p:EnableAggressiveTrimming=false
+      ${{ else }}:
+        /p:EnableAggressiveTrimming=true
      timeoutInMinutes: 480
       # extra steps, run tests
       postBuildSteps:
