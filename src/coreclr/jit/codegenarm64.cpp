@@ -2998,7 +2998,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
 void CodeGen::genSimpleReturn(GenTree* treeNode)
 {
     assert(treeNode->OperIs(GT_RETURN, GT_RETFILT, GT_SWIFT_ERROR_RET));
-    GenTree*  op1        = treeNode->gtGetOp1();
+    GenTree*  op1        = treeNode->AsOp()->GetReturnValue();
     var_types targetType = treeNode->TypeGet();
 
     assert(targetType != TYP_STRUCT);

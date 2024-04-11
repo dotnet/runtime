@@ -7733,8 +7733,8 @@ GenTreeIntCon CodeGen::intForm(var_types type, ssize_t value)
 //
 void CodeGen::genLongReturn(GenTree* treeNode)
 {
-    assert(treeNode->OperGet() == GT_RETURN || treeNode->OperGet() == GT_RETFILT);
-    assert(treeNode->TypeGet() == TYP_LONG);
+    assert(treeNode->OperIs(GT_RETURN, GT_RETFILT));
+    assert(treeNode->TypeIs(TYP_LONG));
     GenTree*  op1        = treeNode->gtGetOp1();
     var_types targetType = treeNode->TypeGet();
 
@@ -8006,10 +8006,10 @@ void CodeGen::genStructReturn(GenTree* treeNode)
 {
     assert(treeNode->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET));
 
-    genConsumeRegs(treeNode->gtGetOp1());
-
-    GenTree* op1       = treeNode->gtGetOp1();
+    GenTree* op1       = treeNode->AsOp()->GetReturnValue();
     GenTree* actualOp1 = op1->gtSkipReloadOrCopy();
+
+    genConsumeRegs(op1);
 
     ReturnTypeDesc retTypeDesc = compiler->compRetTypeDesc;
     const unsigned regCount    = retTypeDesc.GetReturnRegCount();
