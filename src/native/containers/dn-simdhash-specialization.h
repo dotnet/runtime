@@ -407,14 +407,14 @@ DN_SIMDHASH_TRY_ADD_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, ui
 			return 1;
 		case DN_SIMDHASH_INSERT_OK_OVERWROTE_EXISTING:
 			// This shouldn't happen
-			assert(0);
+			dn_simdhash_assert(!"Overwrote an existing item while adding");
 			return 1;
 		case DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT:
 			return 0;
 		case DN_SIMDHASH_INSERT_NEED_TO_GROW:
 			// We should always have enough space after growing once.
 		default:
-			dn_simdhash_assert(0);
+			dn_simdhash_assert(!"Failed to add a new item but there was no existing item");
 			return 0;
 	}
 }
