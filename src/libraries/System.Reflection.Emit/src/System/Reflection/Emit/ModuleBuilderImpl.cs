@@ -576,6 +576,7 @@ namespace System.Reflection.Emit
             }
             else
             {
+                Debug.Assert(deltaLines > 0);
                 spBuilder.WriteCompressedSignedInteger(deltaColumns);
             }
         }

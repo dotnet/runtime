@@ -227,17 +227,17 @@ namespace System.Reflection.Emit
                 throw new ArgumentOutOfRangeException(nameof(startLine));
             }
 
-            if (endLine < 0 || endLine > 0x20000000 || startLine > endLine)
+            if (endLine < 0 || endLine >= 0x20000000 || startLine > endLine)
             {
                 throw new ArgumentOutOfRangeException(nameof(endLine));
             }
 
-            if (startColumn < 0 || startColumn > 0x10000)
+            if (startColumn < 0 || startColumn >= 0x10000)
             {
                 throw new ArgumentOutOfRangeException(nameof(startColumn));
             }
 
-            if (endColumn < 0 || endColumn > 0x10000 ||
+            if (endColumn < 0 || endColumn >= 0x10000 ||
                 (startLine == endLine && startLine != 0xfeefee && startColumn >= endColumn))
             {
                 throw new ArgumentOutOfRangeException(nameof(endColumn));
