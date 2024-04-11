@@ -402,7 +402,10 @@ ep_rt_shutdown (void)
 	mono_lazy_cleanup (managed_command_line_get_init (), managed_command_line_lazy_clean);
 	mono_lazy_cleanup (os_command_line_get_init (), os_command_line_lazy_clean);
 
-	ep_rt_mono_fini ();
+	// We were cleaning up resources (mutexes, tls data, etc) here but it races with
+	// other threads on shutdown. Skipping cleanup to prevent failures. If unloading
+	// and not leaking these threads becomes a priority we will have to reimplement
+	// cleanup here.
 }
 
 static
