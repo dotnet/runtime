@@ -4680,7 +4680,7 @@ mono_metadata_token_from_dor (guint32 dor_index)
 }
 
 static guint32
-decode_locator_row (locator_t *loc, int row_index)
+decode_locator_row (mono_locator_t *loc, int row_index)
 {
 	const char *data;
 
@@ -4743,7 +4743,7 @@ decode_locator_row (locator_t *loc, int row_index)
 static int
 typedef_locator (const void *a, const void *b)
 {
-	locator_t *loc = (locator_t *) a;
+	mono_locator_t *loc = (mono_locator_t *) a;
 	const char *bb = (const char *) b;
 	int typedef_index = GPTRDIFF_TO_INT ((bb - loc->t_base) / loc->t_row_size);
 	guint32 col, col_next, target_idx = loc->idx;
@@ -4774,7 +4774,7 @@ typedef_locator (const void *a, const void *b)
 static int
 table_locator (const void *a, const void *b)
 {
-	locator_t *loc = (locator_t *) a;
+	mono_locator_t *loc = (mono_locator_t *) a;
 	const char *bb = (const char *) b;
 	guint32 table_index = GPTRDIFF_TO_INT ((bb - loc->t_base) / loc->t_row_size);
 	guint32 col, target_idx = loc->idx;
@@ -4794,7 +4794,7 @@ table_locator (const void *a, const void *b)
 static int
 declsec_locator (const void *a, const void *b)
 {
-	locator_t *loc = (locator_t *) a;
+	mono_locator_t *loc = (mono_locator_t *) a;
 	const char *bb = (const char *) b;
 	guint32 table_index = GPTRDIFF_TO_UINT32 ((bb - loc->t_base) / loc->t_row_size);
 	guint32 col, target_index = loc->idx;
@@ -4848,7 +4848,7 @@ guint32
 mono_metadata_typedef_from_field (MonoImage *meta, guint32 index)
 {
 	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_TYPEDEF];
-	locator_t loc = locator_init (tdef, mono_metadata_token_index (index), MONO_TYPEDEF_FIELD_LIST);
+	mono_locator_t loc = mono_locator_init (tdef, mono_metadata_token_index (index), MONO_TYPEDEF_FIELD_LIST);
 
 	if (!tdef->base)
 		return 0;
@@ -4882,7 +4882,7 @@ guint32
 mono_metadata_typedef_from_method (MonoImage *meta, guint32 index)
 {
 	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_TYPEDEF];
-	locator_t loc = locator_init (tdef, mono_metadata_token_index (index), MONO_TYPEDEF_METHOD_LIST);
+	mono_locator_t loc = mono_locator_init (tdef, mono_metadata_token_index (index), MONO_TYPEDEF_METHOD_LIST);
 
 	if (!tdef->base)
 		return 0;
@@ -4924,7 +4924,7 @@ gboolean
 mono_metadata_interfaces_from_typedef_full (MonoImage *meta, guint32 index, MonoClass ***interfaces, guint *count, gboolean heap_alloc_result, MonoGenericContext *context, MonoError *error)
 {
 	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_INTERFACEIMPL];
-	locator_t loc;
+	mono_locator_t loc;
 	guint32 start, pos;
 	guint32 cols [MONO_INTERFACEIMPL_SIZE];
 	MonoClass **result;
@@ -4937,7 +4937,7 @@ mono_metadata_interfaces_from_typedef_full (MonoImage *meta, guint32 index, Mono
 	if (!tdef->base && !meta->has_updates)
 		return TRUE;
 
-	loc = locator_init (tdef, mono_metadata_token_index (index), MONO_INTERFACEIMPL_CLASS);
+	loc = mono_locator_init (tdef, mono_metadata_token_index (index), MONO_INTERFACEIMPL_CLASS);
 
 	gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator) != NULL;
 
@@ -5036,7 +5036,7 @@ guint32
 mono_metadata_nested_in_typedef (MonoImage *meta, guint32 index)
 {
 	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_NESTEDCLASS];
-	locator_t loc = locator_init (tdef, mono_metadata_token_index (index), MONO_NESTED_CLASS_NESTED);
+	mono_locator_t loc = mono_locator_init (tdef, mono_metadata_token_index (index), MONO_NESTED_CLASS_NESTED);
 
 	if (!tdef->base && !meta->has_updates)
 		return 0;
@@ -5100,7 +5100,7 @@ guint32
 mono_metadata_packing_from_typedef (MonoImage *meta, guint32 index, guint32 *packing, guint32 *size)
 {
 	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_CLASSLAYOUT];
-	locator_t loc = locator_init (tdef, mono_metadata_token_index (index), MONO_CLASS_LAYOUT_PARENT);
+	mono_locator_t loc = mono_locator_init (tdef, mono_metadata_token_index (index), MONO_CLASS_LAYOUT_PARENT);
 	guint32 cols [MONO_CLASS_LAYOUT_SIZE];
 
 	if (!tdef->base)
@@ -5133,7 +5133,7 @@ guint32
 mono_metadata_custom_attrs_from_index (MonoImage *meta, guint32 index)
 {
 	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_CUSTOMATTRIBUTE];
-	locator_t loc = locator_init (tdef, index, MONO_CUSTOM_ATTR_PARENT);
+	mono_locator_t loc = mono_locator_init (tdef, index, MONO_CUSTOM_ATTR_PARENT);
 
 	if (!tdef->base && !meta->has_updates)
 		return 0;
@@ -5174,7 +5174,7 @@ guint32
 mono_metadata_declsec_from_index (MonoImage *meta, guint32 index)
 {
 	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_DECLSECURITY];
-	locator_t loc = locator_init (tdef, index, MONO_DECL_SECURITY_PARENT);
+	mono_locator_t loc = mono_locator_init (tdef, index, MONO_DECL_SECURITY_PARENT);
 
 	if (!tdef->base)
 		return -1;
@@ -5204,7 +5204,7 @@ guint32
 mono_metadata_localscope_from_methoddef (MonoImage *meta, guint32 index)
 {
 	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_LOCALSCOPE];
-	locator_t loc = locator_init (tdef, index, MONO_LOCALSCOPE_METHOD);
+	mono_locator_t loc = mono_locator_init (tdef, index, MONO_LOCALSCOPE_METHOD);
 
 	if (!tdef->base)
 		return 0;
@@ -6301,7 +6301,7 @@ mono_metadata_field_info_full (MonoImage *meta, guint32 index, guint32 *offset, 
 				       MonoMarshalSpec **marshal_spec, gboolean alloc_from_image)
 {
 	MonoTableInfo *tdef;
-	locator_t loc;
+	mono_locator_t loc;
 
 	guint32 idx = index + 1;
 	if (meta->uncompressed_metadata)
@@ -6310,7 +6310,7 @@ mono_metadata_field_info_full (MonoImage *meta, guint32 index, guint32 *offset, 
 	if (offset) {
 		tdef = &meta->tables [MONO_TABLE_FIELDLAYOUT];
 
-		loc = locator_init (tdef, idx, MONO_FIELD_LAYOUT_FIELD);
+		loc = mono_locator_init (tdef, idx, MONO_FIELD_LAYOUT_FIELD);
 
 		/* metadata-update: explicit layout not supported, just return -1 */
 
@@ -6323,7 +6323,7 @@ mono_metadata_field_info_full (MonoImage *meta, guint32 index, guint32 *offset, 
 	if (rva) {
 		tdef = &meta->tables [MONO_TABLE_FIELDRVA];
 
-		loc = locator_init (tdef, idx, MONO_FIELD_RVA_FIELD);
+		loc = mono_locator_init (tdef, idx, MONO_FIELD_RVA_FIELD);
 
 		gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator);
 
@@ -6365,7 +6365,7 @@ guint32
 mono_metadata_get_constant_index (MonoImage *meta, guint32 token, guint32 hint)
 {
 	MonoTableInfo *tdef;
-	locator_t loc;
+	mono_locator_t loc;
 	guint32 index = mono_metadata_token_index (token);
 
 	tdef = &meta->tables [MONO_TABLE_CONSTANT];
@@ -6385,7 +6385,7 @@ mono_metadata_get_constant_index (MonoImage *meta, guint32 token, guint32 hint)
 		return 0;
 	}
 
-	loc = locator_init (tdef, index, MONO_CONSTANT_PARENT);
+	loc = mono_locator_init (tdef, index, MONO_CONSTANT_PARENT);
 
 	/* FIXME: Index translation */
 
@@ -6414,7 +6414,7 @@ mono_metadata_get_constant_index (MonoImage *meta, guint32 token, guint32 hint)
 guint32
 mono_metadata_events_from_typedef (MonoImage *meta, guint32 index, guint *end_idx)
 {
-	locator_t loc;
+	mono_locator_t loc;
 	guint32 start, end;
 	MonoTableInfo *tdef  = &meta->tables [MONO_TABLE_EVENTMAP];
 
@@ -6423,7 +6423,7 @@ mono_metadata_events_from_typedef (MonoImage *meta, guint32 index, guint *end_id
 	if (!tdef->base && !meta->has_updates)
 		return 0;
 
-	loc = locator_init (tdef, index + 1, MONO_EVENT_MAP_PARENT);
+	loc = mono_locator_init (tdef, index + 1, MONO_EVENT_MAP_PARENT);
 
 	gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator) != NULL;
 	if (!found && !meta->has_updates)
@@ -6469,7 +6469,7 @@ mono_metadata_events_from_typedef (MonoImage *meta, guint32 index, guint *end_id
 guint32
 mono_metadata_methods_from_event   (MonoImage *meta, guint32 index, guint *end_idx)
 {
-	locator_t loc;
+	mono_locator_t loc;
 	guint32 start, end;
 	guint32 cols [MONO_METHOD_SEMA_SIZE];
 	MonoTableInfo *msemt = &meta->tables [MONO_TABLE_METHODSEMANTICS];
@@ -6481,7 +6481,7 @@ mono_metadata_methods_from_event   (MonoImage *meta, guint32 index, guint *end_i
 	if (meta->uncompressed_metadata)
 	    index = search_ptr_table (meta, MONO_TABLE_EVENT_POINTER, index + 1) - 1;
 
-	loc = locator_init (
+	loc = mono_locator_init (
 		msemt,
 		/* Method association coded index */
 		((index + 1) << MONO_HAS_SEMANTICS_BITS) | MONO_HAS_SEMANTICS_EVENT,
@@ -6531,7 +6531,7 @@ mono_metadata_methods_from_event   (MonoImage *meta, guint32 index, guint *end_i
 guint32
 mono_metadata_properties_from_typedef (MonoImage *meta, guint32 index, guint *end_idx)
 {
-	locator_t loc;
+	mono_locator_t loc;
 	guint32 start, end;
 	MonoTableInfo *tdef  = &meta->tables [MONO_TABLE_PROPERTYMAP];
 
@@ -6540,7 +6540,7 @@ mono_metadata_properties_from_typedef (MonoImage *meta, guint32 index, guint *en
 	if (!tdef->base && !meta->has_updates)
 		return 0;
 
-	loc = locator_init (tdef, index + 1, MONO_PROPERTY_MAP_PARENT);
+	loc = mono_locator_init (tdef, index + 1, MONO_PROPERTY_MAP_PARENT);
 
 	gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator) != NULL;
 
@@ -6587,7 +6587,7 @@ mono_metadata_properties_from_typedef (MonoImage *meta, guint32 index, guint *en
 guint32
 mono_metadata_methods_from_property   (MonoImage *meta, guint32 index, guint *end_idx)
 {
-	locator_t loc;
+	mono_locator_t loc;
 	guint32 start, end;
 	guint32 cols [MONO_METHOD_SEMA_SIZE];
 	MonoTableInfo *msemt = &meta->tables [MONO_TABLE_METHODSEMANTICS];
@@ -6599,7 +6599,7 @@ mono_metadata_methods_from_property   (MonoImage *meta, guint32 index, guint *en
 	if (meta->uncompressed_metadata)
 	    index = search_ptr_table (meta, MONO_TABLE_PROPERTY_POINTER, index + 1) - 1;
 
-	loc = locator_init (
+	loc = mono_locator_init (
 		msemt,
 		/* Method association coded index */
 		((index + 1) << MONO_HAS_SEMANTICS_BITS) | MONO_HAS_SEMANTICS_PROPERTY,
@@ -6644,7 +6644,7 @@ mono_metadata_methods_from_property   (MonoImage *meta, guint32 index, guint *en
 guint32
 mono_metadata_implmap_from_method (MonoImage *meta, guint32 method_idx)
 {
-	locator_t loc;
+	mono_locator_t loc;
 	MonoTableInfo *tdef  = &meta->tables [MONO_TABLE_IMPLMAP];
 
 	if (!tdef->base)
@@ -6652,7 +6652,7 @@ mono_metadata_implmap_from_method (MonoImage *meta, guint32 method_idx)
 
 	/* No index translation seems to be needed */
 
-	loc = locator_init (tdef, ((method_idx + 1) << MONO_MEMBERFORWD_BITS) | MONO_MEMBERFORWD_METHODDEF, MONO_IMPLMAP_MEMBER);
+	loc = mono_locator_init (tdef, ((method_idx + 1) << MONO_MEMBERFORWD_BITS) | MONO_MEMBERFORWD_METHODDEF, MONO_IMPLMAP_MEMBER);
 
 	/* FIXME: metadata-update */
 
@@ -7066,10 +7066,10 @@ handle_enum:
 const char*
 mono_metadata_get_marshal_info (MonoImage *meta, guint32 idx, gboolean is_field)
 {
-	locator_t loc;
+	mono_locator_t loc;
 	MonoTableInfo *tdef  = &meta->tables [MONO_TABLE_FIELDMARSHAL];
 
-	loc = locator_init (
+	loc = mono_locator_init (
 		tdef,
 		((idx + 1) << MONO_HAS_FIELD_MARSHAL_BITS) | (is_field? MONO_HAS_FIELD_MARSHAL_FIELDSREF: MONO_HAS_FIELD_MARSHAL_PARAMDEF),
 		MONO_FIELD_MARSHAL_PARENT
@@ -7118,7 +7118,7 @@ mono_method_from_method_def_or_ref (MonoImage *m, guint32 tok, MonoGenericContex
 void
 mono_class_get_overrides_full (MonoImage *image, guint32 type_token, MonoMethod ***overrides, gint32 *num_overrides, MonoGenericContext *generic_context, MonoError *error)
 {
-	locator_t loc;
+	mono_locator_t loc;
 	MonoTableInfo *tdef  = &image->tables [MONO_TABLE_METHODIMPL];
 	guint32 start, end;
 	gint32 i, num;
@@ -7134,7 +7134,7 @@ mono_class_get_overrides_full (MonoImage *image, guint32 type_token, MonoMethod 
 	if (!tdef->base && !image->has_updates)
 		return;
 
-	loc = locator_init (tdef, mono_metadata_token_index (type_token), MONO_METHODIMPL_CLASS);
+	loc = mono_locator_init (tdef, mono_metadata_token_index (type_token), MONO_METHODIMPL_CLASS);
 
 	gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator) != NULL;
 
@@ -7233,7 +7233,7 @@ get_constraints (MonoImage *image, int owner, MonoClass ***constraints, MonoGene
 {
 	MonoTableInfo *tdef  = &image->tables [MONO_TABLE_GENERICPARAMCONSTRAINT];
 	guint32 cols [MONO_GENPARCONSTRAINT_SIZE];
-	locator_t loc;
+	mono_locator_t loc;
 	guint32 i, token, found, start;
 	MonoClass *klass, **res;
 	GSList *cons = NULL, *tmp;
@@ -7246,7 +7246,7 @@ get_constraints (MonoImage *image, int owner, MonoClass ***constraints, MonoGene
 	/* FIXME: metadata-update */
 	guint32 rows = table_info_get_rows (tdef);
 
-	loc = locator_init (tdef, owner, MONO_GENPARCONSTRAINT_GENERICPAR);
+	loc = mono_locator_init (tdef, owner, MONO_GENPARCONSTRAINT_GENERICPAR);
 
 	gboolean is_found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator) != NULL;
 	if (!is_found && !image->has_updates)
@@ -7303,7 +7303,7 @@ guint32
 mono_metadata_get_generic_param_row (MonoImage *image, guint32 token, guint32 *owner)
 {
 	MonoTableInfo *tdef  = &image->tables [MONO_TABLE_GENERICPARAM];
-	locator_t loc;
+	mono_locator_t loc;
 
 	g_assert (owner);
 	if (!tdef->base && !image->has_updates)
@@ -7319,7 +7319,7 @@ mono_metadata_get_generic_param_row (MonoImage *image, guint32 token, guint32 *o
 	}
 	*owner |= mono_metadata_token_index (token) << MONO_TYPEORMETHOD_BITS;
 
-	loc = locator_init (tdef, *owner, MONO_GENERICPARAM_OWNER);
+	loc = mono_locator_init (tdef, *owner, MONO_GENERICPARAM_OWNER);
 
 	gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator) != NULL;
 	if (!found && !image->has_updates)

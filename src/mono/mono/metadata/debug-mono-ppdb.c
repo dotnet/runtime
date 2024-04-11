@@ -765,7 +765,7 @@ mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo)
 static int
 table_locator (const void *a, const void *b)
 {
-	locator_t *loc = (locator_t *)a;
+	mono_locator_t *loc = (mono_locator_t *)a;
 	const char *bb = (const char *)b;
 	guint32 table_index = GPTRDIFF_TO_UINT32 ((bb - loc->t->base) / loc->t->row_size);
 	guint32 col;
@@ -799,12 +799,12 @@ lookup_custom_debug_information (MonoImage* image, guint32 token, uint8_t parent
 {
 	MonoTableInfo *tables = image->tables;
 	MonoTableInfo *table = &tables[MONO_TABLE_CUSTOMDEBUGINFORMATION];
-	locator_t loc;
+	mono_locator_t loc;
 
 	if (!table->base)
 		return 0;
 
-	loc = locator_init (
+	loc = mono_locator_init (
 		table,
 		(mono_metadata_token_index (token) << MONO_HAS_CUSTOM_DEBUG_BITS) | parent_type,
 		MONO_CUSTOMDEBUGINFORMATION_PARENT
