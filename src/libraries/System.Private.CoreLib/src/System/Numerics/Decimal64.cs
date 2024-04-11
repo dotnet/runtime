@@ -192,6 +192,8 @@ namespace System.Numerics
 
         static ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.SignMask => SignMask;
 
+        static string IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.OverflowMessage => SR.Overflow_Decimal64;
+
         static int IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.ConvertToExponent(ulong value) => (int)value;
 
         static long IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.ConvertToSignificand(ulong value) => (long)value;

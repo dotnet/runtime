@@ -169,6 +169,8 @@ namespace System.Numerics
 
         static UInt128 IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.SignMask => SignMask;
 
+        static string IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.OverflowMessage => SR.Overflow_Decimal128;
+
         static int IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.ConvertToExponent(UInt128 value) => (int)value;
 
         static Int128 IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.ConvertToSignificand(UInt128 value) => (Int128)value;

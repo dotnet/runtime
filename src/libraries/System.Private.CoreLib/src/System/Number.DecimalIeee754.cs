@@ -26,6 +26,7 @@ namespace System
         static abstract TValue PositiveInfinityBits { get; }
         static abstract TValue NegativeInfinityBits { get; }
         static abstract TValue Zero { get; }
+        static abstract string OverflowMessage { get; }
     }
 
     internal interface IDecimalIeee754UnpackInfo<TSelf, TSignificand, TValue>
@@ -77,7 +78,7 @@ namespace System
                 }
                 if (exponent < TDecimal.MinDecimalExponent)
                 {
-                    throw new OverflowException(SR.Overflow_Decimal);
+                    throw new OverflowException(TDecimal.OverflowMessage);
                 }
             }
 
@@ -87,7 +88,7 @@ namespace System
 
                 if (exponent + numberDigitsRemoving > TDecimal.MaxDecimalExponent)
                 {
-                    throw new OverflowException(SR.Overflow_Decimal);
+                    throw new OverflowException(TDecimal.OverflowMessage);
                 }
 
                 exponent += numberDigitsRemoving;
@@ -118,7 +119,7 @@ namespace System
 
                 if (numberSignificandDigits + numberZeroDigits > TDecimal.NumberDigitsPrecision)
                 {
-                    throw new OverflowException(SR.Overflow_Decimal);
+                    throw new OverflowException(TDecimal.OverflowMessage);
                 }
                 unsignedSignificand *= TDecimal.Power10(numberZeroDigits);
                 exponent -= numberZeroDigits;
