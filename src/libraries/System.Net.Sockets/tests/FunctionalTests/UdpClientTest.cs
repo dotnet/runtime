@@ -699,8 +699,8 @@ namespace System.Net.Sockets.Tests
                 await sender.SendAsync(new ReadOnlyMemory<byte>(data), null);
                 await AssertReceiveAsync(receiver, data);
 
-                await sender.SendAsync(new ReadOnlyMemory<byte>(data), null, 2);
-                await AssertReceiveAsync(receiver, [1, 2]);
+                await sender.SendAsync(new ReadOnlyMemory<byte>(data), null, 0);
+                await AssertReceiveAsync(receiver, data);
             }
         }
 
