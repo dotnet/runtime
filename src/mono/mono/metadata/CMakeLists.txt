@@ -9,6 +9,10 @@ target_link_libraries(mono-icall-table PRIVATE monoapi eglib_api)
 target_include_directories(mono-icall-table PRIVATE ${PROJECT_BINARY_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../..
   ${PROJECT_SOURCE_DIR}/..)
+if(HOST_BROWSER)
+  set_target_properties(mono-icall-table PROPERTIES COMPILE_FLAGS "-fsanitize=address")
+  set_target_properties(mono-icall-table PROPERTIES LINK_FLAGS "-fsanitize=address")
+endif()
 install(TARGETS mono-icall-table LIBRARY)
 else()
 set(icall_table_sources "icall-table.c")
