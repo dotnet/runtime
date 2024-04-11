@@ -42,7 +42,7 @@ internal static class Entrypoints
         if (target == null)
             return -1;
 
-        SOSDacImpl impl = new(target);
+        Legacy.SOSDacImpl impl = new(target);
         nint ptr = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
         *obj = ptr;
         return 0;
