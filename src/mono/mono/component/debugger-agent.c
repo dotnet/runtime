@@ -4125,7 +4125,7 @@ jit_end (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
 			if (!CHECK_ICORDBG (TRUE) || tls->invoke == NULL) {
 				process_profiler_event (EVENT_KIND_ASSEMBLY_LOAD, assembly);
 			} else {
-				assembly_load(prof, assembly); //send later
+				mono_dbg_assembly_load (prof, assembly); //send later
 				break;
 			}
 		} else {
