@@ -12,6 +12,10 @@
 
 #include <Windows.h>
 
+#ifndef PF_ARM_SVE_INSTRUCTIONS_AVAILABLE
+#define PF_ARM_SVE_INSTRUCTIONS_AVAILABLE (46)
+#endif
+
 #else // HOST_WINDOWS
 
 #include "minipalconfig.h"
@@ -64,10 +68,6 @@ static uint32_t xmmYmmStateSupport()
 #ifndef XSTATE_MASK_AVX512
 #define XSTATE_MASK_AVX512 (0xE0) /* 0b1110_0000 */
 #endif // XSTATE_MASK_AVX512
-
-#ifndef PF_ARM_SVE_INSTRUCTIONS_AVAILABLE
-#define PF_ARM_SVE_INSTRUCTIONS_AVAILABLE (46)
-#endif
 
 static uint32_t avx512StateSupport()
 {
