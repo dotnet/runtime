@@ -38,6 +38,9 @@ typedef DPTR(InteropLib::ABI::ManagedObjectWrapperLayout) PTR_ManagedObjectWrapp
 #include "rejit.h"
 #include "request_common.h"
 
+#include "cdac.h"
+#include "wrappers.h"
+
 // GC headers define these to EE-specific stuff that we don't want.
 #undef EnterCriticalSection
 #undef LeaveCriticalSection
@@ -4951,7 +4954,24 @@ HRESULT ClrDataAccess::GetBreakingChangeVersion(int* pVersion)
     if (pVersion == nullptr)
         return E_INVALIDARG;
 
-    *pVersion = SOS_BREAKING_CHANGE_VERSION;
+    bool useDacFallback = true;
+    if (m_cdac != nullptr)
+    {
+        NonVMComHolder<ISOSDacInterface9> sos9;
+        if (SUCCEEDED(m_cdac->SosInterface()->QueryInterface(__uuidof(ISOSDacInterface9), (void**)&sos9)))
+        {
+            if (SUCCEEDED(sos9->GetBreakingChangeVersion(pVersion)))
+            {
+                useDacFallback = false;
+                _ASSERTE(*pVersion == SOS_BREAKING_CHANGE_VERSION);
+            }
+        }
+    }
+    else
+    {
+        *pVersion = SOS_BREAKING_CHANGE_VERSION;
+    }
+
     return S_OK;
 }
 
@@ -5406,10 +5426,10 @@ HRESULT STDMETHODCALLTYPE ClrDataAccess::GetStaticBaseAddress(CLRDATA_ADDRESS me
 {
     if (!nonGCStaticsAddress && !GCStaticsAddress)
         return E_POINTER;
-    
+
     if (!methodTable)
         return E_INVALIDARG;
-    
+
     SOSDacEnter();
 
     PTR_MethodTable mTable = PTR_MethodTable(TO_TADDR(methodTable));
@@ -5440,13 +5460,13 @@ HRESULT STDMETHODCALLTYPE ClrDataAccess::GetThreadStaticBaseAddress(CLRDATA_ADDR
 {
     if (!nonGCStaticsAddress && !GCStaticsAddress)
         return E_POINTER;
-    
+
     if (!methodTable)
         return E_INVALIDARG;
 
     if (!threadPtr)
         return E_INVALIDARG;
-    
+
     SOSDacEnter();
 
     PTR_MethodTable mTable = PTR_MethodTable(TO_TADDR(methodTable));

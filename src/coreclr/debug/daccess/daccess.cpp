@@ -23,6 +23,7 @@
 #include "dwreport.h"
 #include "primitives.h"
 #include "dbgutil.h"
+#include "cdac.h"
 
 #ifdef USE_DAC_TABLE_RVA
 #include <dactablerva.h>
@@ -3124,6 +3125,7 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
     m_fEnableDllVerificationAsserts = false;
 #endif
 
+    m_cdac = CDAC::Create(0, m_pTarget);
 }
 
 ClrDataAccess::~ClrDataAccess(void)
@@ -3160,6 +3162,12 @@ ClrDataAccess::~ClrDataAccess(void)
     }
     m_pTarget->Release();
     m_pMutableTarget->Release();
+
+    if (m_cdac)
+    {
+        delete m_cdac;
+        m_cdac = NULL;
+    }
 }
 
 STDMETHODIMP
