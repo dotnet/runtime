@@ -2168,7 +2168,7 @@ get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType ty
 		if (type == MONO_PATCH_INFO_JIT_ICALL_ID) {
 			MonoJitICallInfo * const info = mono_find_jit_icall_info ((MonoJitICallId)(gsize)data);
 			g_assert (info);
-			if (info->func != info->wrapper) {
+			if (info->func != info->wrapper__) {
 				type = MONO_PATCH_INFO_METHOD;
 				data = mono_icall_get_wrapper_method (info);
 				callee_name = mono_aot_get_mangled_method_name ((MonoMethod*)data);
@@ -2211,7 +2211,7 @@ get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType ty
 	if (ctx->module->assembly->image == mono_get_corlib () && type == MONO_PATCH_INFO_JIT_ICALL_ID) {
 		MonoJitICallInfo * const info = mono_find_jit_icall_info ((MonoJitICallId)(gsize)data);
 
-		if (info->func != info->wrapper) {
+		if (info->func != info->wrapper__) {
 			type = MONO_PATCH_INFO_METHOD;
 			data = mono_icall_get_wrapper_method (info);
 		}

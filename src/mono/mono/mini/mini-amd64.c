@@ -3161,7 +3161,7 @@ emit_call (MonoCompile *cfg, MonoCallInst *call, guint8 *code, MonoJitICallId ji
 					patch.type = MONO_PATCH_INFO_JIT_ICALL_ID;
 					patch.target = GUINT_TO_POINTER (jit_icall_id);
 
-					if (info->func == info->wrapper) {
+					if (info->func == info->wrapper__) {
 						/* No wrapper */
 						if ((((guint64)info->func) >> 32) == 0)
 							near_call = TRUE;

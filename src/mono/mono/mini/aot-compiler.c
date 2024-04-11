@@ -6942,7 +6942,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 					}
 				} else if (patch_info->type == MONO_PATCH_INFO_JIT_ICALL_ID) {
 					MonoJitICallInfo * const info = mono_find_jit_icall_info (patch_info->data.jit_icall_id);
-					if (!got_only && info->func == info->wrapper) {
+					if (!got_only && info->func == info->wrapper__) {
 						const char * sym = NULL;
 						if (patch_info->data.jit_icall_id == MONO_JIT_ICALL_mono_dummy_runtime_init_callback) {
 							g_assert (acfg->aot_opts.static_link && acfg->aot_opts.runtime_init_callback != NULL);
@@ -10583,7 +10583,7 @@ mono_aot_get_direct_call_symbol (MonoJumpInfoType type, gconstpointer data)
 			sym = lookup_direct_pinvoke_symbol_name_aot (llvm_acfg, method);
 	} else if (type == MONO_PATCH_INFO_JIT_ICALL_ID && (direct_calls || (MonoJitICallId)(gsize)data == MONO_JIT_ICALL_mono_dummy_runtime_init_callback)) {
 		MonoJitICallInfo const * const info = mono_find_jit_icall_info ((MonoJitICallId)(gsize)data);
-		if (info->func == info->wrapper) {
+		if (info->func == info->wrapper__) {
 			if ((MonoJitICallId)(gsize)data == MONO_JIT_ICALL_mono_dummy_runtime_init_callback) {
 				sym = llvm_acfg->aot_opts.runtime_init_callback;
 			} else {
