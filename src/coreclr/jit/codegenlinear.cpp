@@ -759,11 +759,14 @@ void CodeGen::genCodeForBBlist()
 
             case BBJ_ALWAYS:
             {
+#ifdef DEBUG
                 GenTree* call = block->lastNode();
                 if ((call != nullptr) && (call->gtOper == GT_CALL))
                 {
+                    // At this point, BBJ_ALWAYS should never end with a call that doesn't return.
                     assert(!call->AsCall()->IsNoReturn());
                 }
+#endif // DEBUG
 
                 // If this block jumps to the next one, we might be able to skip emitting the jump
                 if (block->CanRemoveJumpToNext(compiler))
