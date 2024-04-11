@@ -175,10 +175,27 @@ namespace System.Text.Json.Tests
         [InlineData("\r")]
         [InlineData("\n\n")]
         [InlineData("\r\n\r\n")]
+        [InlineData("0")]
+        [InlineData("a")]
+        [InlineData("foo")]
+        [InlineData("$")]
+        [InlineData(".")]
+        [InlineData("\u03b1")]
         public static void JsonWriterOptions_NewLine_InvalidNewLine(string value)
         {
             var options = new JsonWriterOptions();
             Assert.Throws<ArgumentOutOfRangeException>(() => options.NewLine = value);
+        }
+
+        [Fact]
+        public static void JsonWriterOptions_NewLine_Null_Resets_To_Default()
+        {
+            var options = new JsonWriterOptions();
+
+            options.NewLine = "\n";
+            options.NewLine = null!;
+
+            Assert.Equal(Environment.NewLine, options.NewLine);
         }
     }
 }

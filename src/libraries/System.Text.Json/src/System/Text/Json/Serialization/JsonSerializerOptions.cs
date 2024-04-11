@@ -89,7 +89,7 @@ namespace System.Text.Json
         private bool _ignoreReadOnlyProperties;
         private bool _ignoreReadonlyFields;
         private bool _includeFields;
-        private string _newLine = Environment.NewLine;
+        private string? _newLine;
         private bool _propertyNameCaseInsensitive;
         private bool _writeIndented;
         private char _indentCharacter = JsonConstants.DefaultIndentCharacter;
@@ -766,7 +766,7 @@ namespace System.Text.Json
         {
             get
             {
-                return _newLine;
+                return _newLine ??= Environment.NewLine;
             }
             set
             {

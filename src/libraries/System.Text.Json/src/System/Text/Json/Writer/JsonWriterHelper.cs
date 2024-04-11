@@ -39,7 +39,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateNewLine(string value)
         {
-            if (value is not JsonConstants.NewLineLineFeed and not JsonConstants.NewLineCarriageReturnLineFeed)
+            if (value is not null && value is not JsonConstants.NewLineLineFeed and not JsonConstants.NewLineCarriageReturnLineFeed)
                 ThrowHelper.ThrowArgumentOutOfRangeException_NewLine(nameof(value));
         }
 

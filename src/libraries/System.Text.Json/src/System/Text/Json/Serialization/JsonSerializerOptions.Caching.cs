@@ -504,6 +504,7 @@ namespace System.Text.Json
                     left._unmappedMemberHandling == right._unmappedMemberHandling &&
                     left._defaultBufferSize == right._defaultBufferSize &&
                     left._maxDepth == right._maxDepth &&
+                    left._newLine == right._newLine &&
                     left._allowOutOfOrderMetadataProperties == right._allowOutOfOrderMetadataProperties &&
                     left._allowTrailingCommas == right._allowTrailingCommas &&
                     left._ignoreNullValues == right._ignoreNullValues &&
@@ -561,6 +562,7 @@ namespace System.Text.Json
                 AddHashCode(ref hc, options._unmappedMemberHandling);
                 AddHashCode(ref hc, options._defaultBufferSize);
                 AddHashCode(ref hc, options._maxDepth);
+                AddHashCode(ref hc, options._newLine ?? Environment.NewLine); // Null is equivalent to the default
                 AddHashCode(ref hc, options._allowOutOfOrderMetadataProperties);
                 AddHashCode(ref hc, options._allowTrailingCommas);
                 AddHashCode(ref hc, options._ignoreNullValues);
@@ -591,7 +593,7 @@ namespace System.Text.Json
 
                 static void AddHashCode<TValue>(ref HashCode hc, TValue? value)
                 {
-                    if (typeof(TValue).IsValueType)
+                    if (typeof(TValue).IsValueType || typeof(TValue) == typeof(string))
                     {
                         hc.Add(value);
                     }

@@ -150,7 +150,7 @@ namespace System.Text.Json
             set
             {
                 JsonWriterHelper.ValidateNewLine(value);
-                if (value != Environment.NewLine)
+                if (value is not null && value != Environment.NewLine)
                     _optionsMask |= NewLineBit;
                 else
                     _optionsMask &= ~NewLineBit;
