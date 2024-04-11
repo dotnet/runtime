@@ -1253,6 +1253,12 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                     return result;
                 }
             }
+
+            JITDUMP("after\n");
+            if (comp->verbose)
+            {
+                comp->fgDumpBlock(m_block);
+            }
             break;
         }
 
