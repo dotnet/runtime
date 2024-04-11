@@ -38,6 +38,9 @@ public:
     HRESULT SetupBindingPaths(SString  &sTrustedPlatformAssemblies,
                               SString  &sPlatformResourceRoots,
                               SString  &sAppPaths);
+    
+    HRESULT SetupBindingPaths(SString &PlatformResourceRoots,
+                              SString &AppPaths);
 
     HRESULT BindToSystem(BINDER_SPACE::Assembly **ppSystemAssembly);
 

@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <deque>
+#include <memory>
 
 #include "pal.h"
 #include "args.h"
@@ -131,7 +132,7 @@ public:
 
     bool resolve_probe_paths(
         probe_paths_t* probe_paths,
-        host_runtime_contract* host_contract,
+        std::unique_ptr<name_to_resolved_asset_map_t>& host_assemblies,
         std::unordered_set<pal::string_t>* breadcrumb,
         bool ignore_missing_assemblies = false);
 
@@ -194,11 +195,6 @@ private:
         const std::vector<pal::string_t>& shared_stores,
         const std::vector<pal::string_t>& additional_probe_paths);
 
-    void create_probing_paths(const std::deque<pal::string_t>& probing_items, 
-        probing_lookup_paths& probing_paths);
-    
-    void create_tpa_list(const name_to_resolved_asset_map_t& items, trusted_platform_assemblies& tpa_list, pal::string_t& output);
-
     void init_known_entry_path(
         const deps_entry_t& entry,
         const pal::string_t& path);
@@ -215,8 +211,7 @@ private:
 private:
     // Resolve order for TPA lookup.
     bool resolve_tpa_list(
-        pal::string_t* output,
-        trusted_platform_assemblies* tpa_list,
+        std::unique_ptr<name_to_resolved_asset_map_t>& host_assemblies,
         std::unordered_set<pal::string_t>* breadcrumb,
         bool ignore_missing_assemblies);
 
@@ -224,7 +219,6 @@ private:
     bool resolve_probe_dirs(
         deps_entry_t::asset_types asset_type,
         pal::string_t* output,
-        probing_lookup_paths* probing_paths,
         std::unordered_set<pal::string_t>* breadcrumb);
 
     // Probe entry in probe configurations and deps dir.

@@ -277,7 +277,7 @@ int coreclr_initialize(
 
     if (hostContract != nullptr)
     {
-        HostInformation::SetContract(hostContract);
+        HostInformation::Instance().SetContract(hostContract);
     }
 
     if (pinvokeOverride != nullptr)

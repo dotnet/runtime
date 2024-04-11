@@ -501,37 +501,6 @@ pal::string_t to_upper(const pal::char_t* in) {
     return ret;
 }
 
-void destroy_tpa_list(trusted_platform_assemblies* tpa_list)
-{
-    if (tpa_list == nullptr)
-    {
-        return;
-    }
-
-    for (uint32_t i = 0; i < tpa_list->assembly_count; ++i)
-    {
-        delete tpa_list->basenames[i];
-        delete tpa_list->assembly_filepaths[i];
-    }
-
-    delete[] tpa_list->basenames;
-    delete[] tpa_list->assembly_filepaths;
-}
-
-void destroy_probing_path_list(probing_lookup_paths* probing_paths)
-{
-    if (probing_paths == nullptr)
-    {
-        return;
-    }
-
-    for (uint32_t i = 0; i < probing_paths->dir_count; ++i)
-    {
-        delete probing_paths->dirs[i];
-    }
-
-    delete[] probing_paths->dirs;
-}
 
 #define TEST_ONLY_MARKER "d38cc827-e34f-4453-9df4-1e796e9f1d07"
 

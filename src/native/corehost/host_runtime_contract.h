@@ -23,24 +23,10 @@
 #define HOST_PROPERTY_PLATFORM_RESOURCE_ROOTS "PLATFORM_RESOURCE_ROOTS"
 #define HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES "TRUSTED_PLATFORM_ASSEMBLIES"
 
-struct trusted_platform_assemblies
+struct host_runtime_assemblies
 {
-	uint32_t assembly_count;
-	char** basenames; /* Foo.dll */
-	char** assembly_filepaths; /* /blah/blah/blah/Foo.dll */
-};
-
-struct probing_lookup_paths 
-{
-	uint32_t dir_count;
-	char** dirs;
-};
-
-struct probing_path_properties
-{
-    trusted_platform_assemblies trusted_platform_assemblies;
-    probing_lookup_paths native_dll_search_directories;
-    probing_lookup_paths platform_resource_roots;
+    uint32_t assembly_count;
+    char** assembly_names;
 };
 
 struct host_runtime_contract
@@ -49,10 +35,6 @@ struct host_runtime_contract
 
     // Context for the contract. Pass to functions taking a contract context.
     void* context;
-
-    char* entry_assembly;
-
-    probing_path_properties probing_paths;
 
     // Get the value of a runtime property.
     // Returns the length of the property including a terminating null or -1 if not found.
@@ -75,6 +57,16 @@ struct host_runtime_contract
     const void* (HOST_CONTRACT_CALLTYPE* pinvoke_override)(
         const char* library_name,
         const char* entry_point_name);
+
+    // Gets the list of assemblies (name plus extension) identified by the host.
+    const host_runtime_assemblies* (HOST_CONTRACT_CALLTYPE* get_assemblies)(
+        void* contract_context);
+
+    const char* (HOST_CONTRACT_CALLTYPE* resolve_assembly_to_path)(
+        const char* assembly_name,
+        void* contract_context);
+
+    char* entry_assembly;
 };
 
 #endif // __HOST_RUNTIME_CONTRACT_H__

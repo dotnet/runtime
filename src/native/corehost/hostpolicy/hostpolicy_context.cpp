@@ -133,6 +133,63 @@ namespace
 
         return -1;
     }
+
+    const host_runtime_assemblies* HOST_CONTRACT_CALLTYPE get_runtime_framework_assemblies(
+        void* contract_context)
+    {
+        hostpolicy_context_t* context = static_cast<hostpolicy_context_t*>(contract_context);
+        host_runtime_assemblies* assemblies = new host_runtime_assemblies();
+
+        assemblies->assembly_count = static_cast<uint32_t>(context->host_assemblies->size());
+        assemblies->assembly_names = new char*[assemblies->assembly_count];
+
+        int32_t item_count = 0;
+        for (auto item = context->host_assemblies->begin(); item != context->host_assemblies->end(); ++item)
+        {
+            pal::string_t file_name = item->second.asset.name;
+
+            size_t len = file_name.size() + 1;
+            assemblies->assembly_names[item_count] = new char[len];
+
+            pal::pal_utf8string(file_name, assemblies->assembly_names[item_count], len);
+            item_count++;
+        }
+
+        return assemblies;
+    }
+
+    const char* HOST_CONTRACT_CALLTYPE resolve_assembly_to_path(
+        const char* assembly_name,
+        void* contract_context)
+    {
+        hostpolicy_context_t* context = static_cast<hostpolicy_context_t*>(contract_context);
+        
+        if (context->host_assemblies == nullptr)
+            return assembly_name;
+    
+        pal::string_t host_assembly_name;
+        if (!pal::clr_palstring(assembly_name, &host_assembly_name))
+        {
+            trace::warning(_X("Failed to convert assembly_name [%hs] to UTF8"), assembly_name);
+            return assembly_name;
+        }
+
+        char* ret;
+        name_to_resolved_asset_map_t::iterator host_assembly = context->host_assemblies->find(host_assembly_name);
+        if (host_assembly != context->host_assemblies->end())
+        {
+            size_t len = host_assembly->second.resolved_path.size() + 1;
+            ret = new char[len];
+
+            pal::pal_utf8string(host_assembly->second.resolved_path, ret, len);
+        }
+        else
+        {
+            ret = const_cast<char*>(assembly_name);
+        }
+
+        return ret;
+    }
 }
 
 bool hostpolicy_context_t::should_read_rid_fallback_graph(const hostpolicy_init_t &init)
@@ -194,6 +251,8 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         pal::pal_utf8string(application, host_contract.entry_assembly, entry_assembly_length);
 
         host_contract.get_runtime_property = &get_runtime_property;
+        host_contract.get_assemblies = &get_runtime_framework_assemblies;
+        host_contract.resolve_assembly_to_path = &resolve_assembly_to_path;
         pal::char_t buffer[STRING_LENGTH("0xffffffffffffffff")];
         pal::snwprintf(buffer, ARRAY_SIZE(buffer), _X("0x%zx"), (size_t)(&host_contract));
         if (!coreclr_properties.add(_STRINGIFY(HOST_PROPERTY_RUNTIME_CONTRACT), buffer))
@@ -202,6 +261,8 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
             return StatusCode::LibHostDuplicateProperty;
         }
     }
+
+    host_assemblies = std::make_unique<name_to_resolved_asset_map_t>();
 
     probe_paths_t probe_paths;
 
@@ -215,14 +276,14 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         breadcrumbs.insert(policy_name);
         breadcrumbs.insert(policy_name + _X(",") + policy_version);
 
-        if (!resolver.resolve_probe_paths(&probe_paths, &host_contract, &breadcrumbs))
+        if (!resolver.resolve_probe_paths(&probe_paths, host_assemblies, &breadcrumbs))
         {
             return StatusCode::ResolverResolveFailure;
         }
     }
     else
     {
-        if (!resolver.resolve_probe_paths(&probe_paths, &host_contract, nullptr))
+        if (!resolver.resolve_probe_paths(&probe_paths, host_assemblies, nullptr))
         {
             return StatusCode::ResolverResolveFailure;
         }
@@ -248,6 +309,10 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         clr_dir = get_directory(clr_path);
     }
 
+/*
+    TO DO: Figure out if single file is impacted by taking this code out and 
+    not providing a TPA list.
+
     // If this is a self-contained single-file bundle,
     // System.Private.CoreLib.dll is expected to be within the bundle, unless it is explicitly excluded from the bundle.
     // In all other cases,
@@ -266,6 +331,7 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
 
         probe_paths.tpa.append(corelib_path);
     }
+*/
 
     pal::string_t fx_deps_str;
     if (resolver.is_framework_dependent())
@@ -299,7 +365,6 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
     pal::string_t app_base;
     resolver.get_app_dir(&app_base);
 
-    coreclr_properties.add(common_property::TrustedPlatformAssemblies, probe_paths.tpa.c_str());
     coreclr_properties.add(common_property::NativeDllSearchDirectories, probe_paths.native.c_str());
     coreclr_properties.add(common_property::PlatformResourceRoots, probe_paths.resources.c_str());
     coreclr_properties.add(common_property::AppContextBaseDirectory, app_base.c_str());

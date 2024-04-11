@@ -20,6 +20,7 @@
 #include "bindertracing.h"
 #include "bindresult.inl"
 #include "failurecache.hpp"
+#include "hostinformation.h"
 #include "utils.hpp"
 #include "stringarraylist.h"
 #include "configuration.h"
@@ -298,9 +299,8 @@ namespace BINDER_SPACE
             {
                 SString fileName;
                 SString simpleName;
-                bool isNativeImage = false;
                 HRESULT pathResult = S_OK;
-                IF_FAIL_GO(pathResult = GetNextTPAPath(sTrustedPlatformAssemblies, i, /*dllOnly*/ true, fileName, simpleName, isNativeImage));
+                IF_FAIL_GO(pathResult = GetNextTPAPath(sTrustedPlatformAssemblies, i, /*dllOnly*/ true, fileName, simpleName));
                 if (pathResult == S_FALSE)
                 {
                     break;
@@ -893,25 +893,24 @@ namespace BINDER_SPACE
             const SimpleNameToFileNameMapEntry *pTpaEntry = tpaMap->LookupPtr(simpleName.GetUnicode());
             if (pTpaEntry != nullptr)
             {
-                if (pTpaEntry->m_wszNIFileName != nullptr)
-                {
-                    SString fileName(pTpaEntry->m_wszNIFileName);
+                SString fileName;
 
-                    hr = GetAssembly(fileName,
-                                     TRUE,  // fIsInTPA
-                                     &pTPAAssembly);
-                    BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
+                // If supported, go ask the host to resolve the path to the assembly 
+                if (pTpaEntry->m_wszILFileName == nullptr)
+                {
+                    _ASSERTE(pTpaEntry->m_wszSimpleName != nullptr);
+                    LPCWSTR lpFileName = HostInformation::Instance().ResolveHostAssemblyPath(pTpaEntry->m_wszSimpleName);
+                    fileName.Set(lpFileName);
                 }
                 else
                 {
-                    _ASSERTE(pTpaEntry->m_wszILFileName != nullptr);
-                    SString fileName(pTpaEntry->m_wszILFileName);
-
-                    hr = GetAssembly(fileName,
-                                     TRUE,  // fIsInTPA
-                                     &pTPAAssembly);
-                    BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
+                    fileName.Set(pTpaEntry->m_wszILFileName);
                 }
+                
+                hr = GetAssembly(fileName,
+                                    TRUE,  // fIsInTPA
+                                    &pTPAAssembly);
+                BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
 
                 pBindResult->SetAttemptResult(hr, pTPAAssembly);
 

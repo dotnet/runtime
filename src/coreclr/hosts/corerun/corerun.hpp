@@ -14,6 +14,7 @@
 #include <sstream>
 #include <vector>
 #include <set>
+#include <unordered_map>
 #include <functional>
 #include <memory>
 #include <minipal/utils.h>
@@ -65,6 +66,22 @@ namespace pal
     const char_t env_path_delim = W(';');
     const char_t nativelib_ext[] = W(".dll");
     const char_t coreclr_lib[] = W("coreclr");
+}
+
+struct host_file_t
+{
+    enum host_dir_type
+    {
+        core_libraries,
+        core_root
+    };
+
+    pal::string_utf8_t name;  // file name + extension
+    host_dir_type dtype;
+};
+
+namespace pal
+{
 
     inline int strcmp(const char_t* str1, const char_t* str2) { return wcscmp(str1, str2); }
     inline size_t strlen(const char_t* str) { return wcslen(str); }
@@ -148,6 +165,57 @@ namespace pal
 
     // Forward declaration
     void ensure_trailing_delimiter(pal::string_t& dir);
+    inline bool string_ends_with(const string_t& str, size_t suffix_len, const char_t* suffix);
+    inline string_utf8_t convert_to_utf8(const char_t* str);
+
+    inline void add_files_from_directory(
+        const string_t& dir,
+        const char_t* ext,
+        const int dir_type,
+        std::unordered_map<string_utf8_t, host_file_t>& files)
+    {
+        assert(ext != nullptr);
+
+        string_t dir_local = dir;
+        dir_local.append(W("*"));
+        dir_local.append(ext);
+
+        const size_t ext_len = pal::strlen(ext);
+
+        WIN32_FIND_DATA data;
+        HANDLE findHandle = ::FindFirstFileW(dir_local.data(), &data);
+        if (findHandle == INVALID_HANDLE_VALUE)
+            return;
+
+        do
+        {
+            if (!(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+            {    
+                // ToLower for case-insensitive comparisons
+                char_t* fileNameChar = data.cFileName;
+                while (*fileNameChar)
+                {
+                    *fileNameChar = towlower(*fileNameChar);
+                    fileNameChar++;
+                }
+
+                string_t file_local{ data.cFileName };
+                string_t file_name { data.cFileName };
+
+                // Strip the extension.
+                if (pal::string_ends_with(file_local, ext_len, ext))
+                    file_name = file_local.substr(0, file_local.length() - ext_len);
+
+                host_file_t f;
+                f.name = convert_to_utf8(file_local.c_str());
+                f.dtype = static_cast<host_file_t::host_dir_type>(dir_type);
+
+                files.insert({convert_to_utf8(file_name.c_str()), f});
+            }
+        } while (FALSE != ::FindNextFileW(findHandle, &data));
+
+        ::FindClose(findHandle);
+    }
 
     inline string_t build_file_list(
         const string_t& dir,
@@ -353,6 +421,22 @@ namespace pal
     const char_t nativelib_ext[] = W(".so");
 #endif
     const char_t coreclr_lib[] = W("libcoreclr");
+}
+
+struct host_file_t
+{
+    enum host_dir_type
+    {
+        core_libraries,
+        core_root
+    };
+
+    string_t name;  // file name + extension
+    host_dir_type dtype;
+};
+
+namespace pal
+{
 
     inline int strcmp(const char_t* str1, const char_t* str2) { return ::strcmp(str1, str2); }
     inline size_t strlen(const char_t* str) { return ::strlen(str); }
@@ -516,7 +600,75 @@ namespace pal
     template<size_t LEN>
     bool string_ends_with(const string_t& str, const char_t(&suffix)[LEN]);
     bool string_ends_with(const string_t& str, size_t suffix_len, const char_t* suffix);
+    inline string_utf8_t convert_to_utf8(const char_t* str);
     void ensure_trailing_delimiter(pal::string_t& dir);
+
+    inline void add_files_from_directory(
+        const string_t& dir,
+        const char_t* ext,
+        const int dir_type,
+        std::unordered_map<string_utf8_t, host_file_t>& files)
+    {
+        assert(ext != nullptr);
+        const size_t ext_len = pal::strlen(ext);
+
+        DIR* dir = opendir(directory.c_str());
+        if (dir == nullptr)
+            return;
+
+        // For all entries in the directory
+        struct dirent* entry;
+        while ((entry = readdir(dir)) != nullptr)
+        {
+#if HAVE_DIRENT_D_TYPE
+            int dirEntryType = entry->d_type;
+#else
+            int dirEntryType = DT_UNKNOWN;
+#endif
+
+            // We are interested in files only
+            switch (dirEntryType)
+            {
+            case DT_REG:
+                break;
+
+            // Handle symlinks and file systems that do not support d_type
+            case DT_LNK:
+            case DT_UNKNOWN:
+                {
+                    string_t full_filename{directory};
+                    full_filename.append(entry->d_name);
+                    if (!does_file_exist(full_filename.c_str()))
+                        continue;
+                }
+                break;
+
+            default:
+                continue;
+            }
+
+            // Check if the extension matches the one we are looking for
+            if (!pal::string_ends_with(entry->d_name, ext_len, ext))
+                continue;
+
+            // Make sure if we have an assembly with multiple extensions present,
+            // we insert only one version of it.
+            string_t file_local{ entry->d_name };
+            string_t file_name { entry->d_name }; 
+
+                // Strip the extension.
+            if (pal::string_ends_with(file_local, ext_len, ext))
+                file_name = file_local.substr(0, file_local.length() - ext_len);
+
+            host_file_t file;
+            f.name = convert_to_utf8(file_local.c_str());
+            f.dtype = static_cast<host_dir_type>(dir_type);
+
+            files.insert({convert_to_utf8(file_name.c_str()), file});
+        }
+
+        closedir(dir);
+    }
 
     inline string_t build_file_list(
         const string_t& directory,

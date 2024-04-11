@@ -29,6 +29,12 @@ struct configuration
             ::free((void*)entry_assembly_argv[i]);
         }
         ::free(entry_assembly_argv);
+
+        for (uint32_t i = 0; i < host_assemblies.assembly_count; ++i)
+        {
+            ::free(host_assemblies.assembly_names[i]);
+        }
+        ::free(host_assemblies.assembly_names);
     }
 
     //
@@ -37,6 +43,10 @@ struct configuration
 
     // CLR path - user supplied location of coreclr binary and managed assemblies.
     string_t clr_path;
+
+    pal::string_utf8_t core_root;
+
+    pal::string_utf8_t core_libraries;
 
     // The full path to the Supplied managed entry assembly.
     string_t entry_assembly_fullpath;
@@ -58,6 +68,12 @@ struct configuration
 
     // configured .env file to load
     dotenv dotenv_configuration;
+
+    // the list of assembly names that the runtime knows about
+    host_runtime_assemblies host_assemblies;
+
+    // contains the name minus extension as the key and the name+extension plus a reference to where it's at on disk as the value
+    std::unordered_map<pal::string_utf8_t, host_file_t> host_file_map;
 };
 
 namespace envvar
@@ -98,71 +114,57 @@ static void wait_for_debugger()
     }
 }
 
-// N.B. It seems that CoreCLR doesn't always use the first instance of an assembly on the TPA list
+// N.B. It seems that CoreCLR doesn't always use the first instance of an assembly
 // (for example, ni's may be preferred over il, even if they appear later). Therefore, when building
-// the TPA only include the first instance of a simple assembly name to allow users the opportunity to
+// the list of assemblies to be used by the runtime, only include the first instance of a simple assembly name to allow users the opportunity to
 // override Framework assemblies by placing dlls in %CORE_LIBRARIES%.
-static string_t build_tpa(const string_t& core_root, const string_t& core_libraries, trusted_platform_assemblies* tpa_items)
+//
+// build the unordered_map -> store in config -> construct the host_runtime_assemblies for the contract -> store in config -> pass to runtime
+static void build_host_assembly_list(const string_t& core_root, const string_t& core_libraries, std::unordered_map<pal::string_utf8_t, host_file_t>& name_file_map)
 {
     static const char_t* const tpa_extensions[] =
     {
-        W(".ni.dll"),  // Probe for .ni.dll first so that it's preferred if ni and il coexist in the same dir
         W(".dll"),
-        W(".ni.exe"),
         W(".exe"),
         nullptr
     };
-
-    std::unordered_map<string_t, string_t> name_path_map;
-    pal::stringstream_t tpa_list;
 
     // Iterate over all extensions.
     for (const char_t* const* curr_ext = tpa_extensions; *curr_ext != nullptr; ++curr_ext)
     {
         const char_t* ext = *curr_ext;
-        const size_t ext_len = pal::strlen(ext);
 
         // Iterate over all supplied directories.
+        int dir_type = 0;
         for (const string_t& dir : { core_libraries, core_root })
         {
             if (dir.empty())
                 continue;
 
             assert(dir.back() == pal::dir_delim);
-            string_t tmp = pal::build_file_list(dir, ext, [&](const char_t* file)
-                {
-                    string_t file_local{ file };
-                    string_t file_name { file }; 
-
-                    // Strip the extension.
-                    if (pal::string_ends_with(file_local, ext_len, ext))
-                        file_name = file_local.substr(0, file_local.length() - ext_len);
-
-                    // Return true if the file is new.
-                    return name_path_map.insert({file_name, file_local}).second;
-                });
-
-            // Add to the TPA.
-            tpa_list << tmp;
+            pal::add_files_from_directory(dir, ext, dir_type, name_file_map);
+            dir_type++;
         }
     }
+}
 
-    tpa_items->assembly_count = static_cast<uint32_t>(name_path_map.size());
-    tpa_items->assembly_filepaths = new char*[tpa_items->assembly_count];
-    tpa_items->basenames = new char*[tpa_items->assembly_count];
+static void build_contract_assembly_list(std::unordered_map<pal::string_utf8_t, host_file_t>& name_file_map, host_runtime_assemblies& assemblies)
+{
+    assemblies.assembly_count = static_cast<uint32_t>(name_file_map.size());
+    assemblies.assembly_names = new char*[assemblies.assembly_count];
 
-    // Convert the paths into a string and return it
     int32_t item_count = 0;
-    for (auto item = name_path_map.begin(); item != name_path_map.end(); ++item)
+    for (auto item = name_file_map.begin(); item != name_file_map.end(); ++item)
     {
-        string_t base_name = item->first;
-        tpa_items->basenames[item_count] = (char*)pal::convert_to_utf8(base_name.c_str()).c_str();
-        tpa_items->assembly_filepaths[item_count] = (char*)pal::convert_to_utf8(item->second.c_str()).c_str();
+        pal::string_utf8_t file_name = item->first;
 
+        size_t len = file_name.size() + 1;
+        assemblies.assembly_names[item_count] = new char[len];
+
+        ::strncpy(assemblies.assembly_names[item_count], file_name.c_str(), len - 1);
+        assemblies.assembly_names[item_count][len - 1] = '\0';
         item_count++;
     }
-
-    return tpa_list.str();
 }
 
 static bool try_get_export(pal::mod_t mod, const char* symbol, void** fptr)
@@ -228,6 +230,50 @@ static void log_error_info(const char* line)
     std::fprintf(stderr, "%s\n", line);
 }
 
+const host_runtime_assemblies* HOST_CONTRACT_CALLTYPE get_assemblies(
+    void* contract_context)
+{
+    configuration* config = static_cast<configuration *>(contract_context);
+    return &config->host_assemblies;
+}
+
+const char* HOST_CONTRACT_CALLTYPE resolve_assembly_to_path(
+    const char* assembly_name,
+    void* contract_context)
+{
+    configuration* config = static_cast<configuration *>(contract_context);
+
+    auto assembly = config->host_file_map.find(assembly_name);
+
+    pal::string_utf8_t full_file;
+    if (assembly != config->host_file_map.end())
+    {
+        host_file_t file = assembly->second;
+        pal::string_utf8_t file_name = file.name;
+
+        if (file.dtype == host_file_t::core_root)
+        {
+            full_file = config->core_root + file_name;
+        }
+        else if (file.dtype == host_file_t::core_libraries)
+        {
+            full_file = config->core_libraries + file_name;
+        }
+        else
+        {
+            full_file = file_name;
+        }
+    }
+
+    size_t len = full_file.size() + 1;
+    char* ret = new char[len];
+
+    ::strncpy(ret, full_file.c_str(), len - 1);
+    ret[len - 1] = '\0';
+
+    return ret;
+}
+
 size_t HOST_CONTRACT_CALLTYPE get_runtime_property(
     const char* key,
     char* value_buffer,
@@ -257,7 +303,7 @@ size_t HOST_CONTRACT_CALLTYPE get_runtime_property(
     return -1;
 }
 
-static int run(const configuration& config)
+static int run(configuration& config)
 {
     platform_specific_actions actions;
 
@@ -269,6 +315,8 @@ static int run(const configuration& config)
     host_contract.size = sizeof(host_runtime_contract);
     host_contract.context = (void*)&config;
     host_contract.get_runtime_property = &get_runtime_property;
+    host_contract.get_assemblies = &get_assemblies;
+    host_contract.resolve_assembly_to_path = &resolve_assembly_to_path;
     host_contract.bundle_probe = nullptr;
     host_contract.pinvoke_override = nullptr;
 
@@ -324,18 +372,12 @@ static int run(const configuration& config)
         native_search_dirs << core_root << pal::env_path_delim;
     }
 
-    string_t tpa_list = build_tpa(core_root, core_libs, &host_contract.probing_paths.trusted_platform_assemblies);
-    probing_lookup_paths* native_paths = &host_contract.probing_paths.native_dll_search_directories;
+    config.core_root = pal::convert_to_utf8(core_root.c_str());
+    config.core_libraries = pal::convert_to_utf8(core_libs.c_str());
 
-    native_paths->dir_count = static_cast<uint32_t>(native_search_dirs_set.size());
-    native_paths->dirs = new char*[native_paths->dir_count];
+    build_host_assembly_list(core_root, core_libs, config.host_file_map);
+    build_contract_assembly_list(config.host_file_map, config.host_assemblies);
 
-    int dir_count = 0;
-    for (const auto& native_dir : native_search_dirs_set)
-    {
-        native_paths->dirs[dir_count] = (char*)pal::convert_to_utf8(native_dir.c_str()).c_str();
-        dir_count++;
-    }
 
     {
         // Load hostpolicy if requested.
@@ -372,7 +414,6 @@ static int run(const configuration& config)
     (void)try_get_export(coreclr_mod, "coreclr_set_error_writer", (void**)&coreclr_set_error_writer_func);
 
     // Construct CoreCLR properties.
-    pal::string_utf8_t tpa_list_utf8 = pal::convert_to_utf8(tpa_list.c_str());
     pal::string_utf8_t app_path_utf8 = pal::convert_to_utf8(app_path.c_str());
     pal::string_utf8_t native_search_dirs_utf8 = pal::convert_to_utf8(native_search_dirs.str().c_str());
 
@@ -386,11 +427,6 @@ static int run(const configuration& config)
     // Set base initialization properties.
     std::vector<const char*> propertyKeys;
     std::vector<const char*> propertyValues;
-
-    // TRUSTED_PLATFORM_ASSEMBLIES
-    // - The list of complete paths to each of the fully trusted assemblies
-    propertyKeys.push_back("TRUSTED_PLATFORM_ASSEMBLIES");
-    propertyValues.push_back(tpa_list_utf8.c_str());
 
     // APP_PATHS
     // - The list of paths which will be probed by the assembly loader
