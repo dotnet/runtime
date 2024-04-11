@@ -1158,7 +1158,7 @@ typedef struct {
 	guint32 result;
 } mono_locator_t;
 
-MONO_ALWAYS_INLINE static inline mono_locator_t
+MONO_ALWAYS_INLINE static mono_locator_t
 mono_locator_init (MonoTableInfo *t, guint32 idx, guint32 col_idx)
 {
 	mono_locator_t result = { 0, };
