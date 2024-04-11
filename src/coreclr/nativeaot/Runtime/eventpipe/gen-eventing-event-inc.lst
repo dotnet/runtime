@@ -46,6 +46,7 @@ GCBulkSurvivingObjectRanges
 GCCreateConcurrentThread_V1
 GCCreateSegment_V1
 GCDecision_V1
+GCDynamicEvent
 GCEnd_V1
 GCFinalizersBegin_V1
 GCFinalizersEnd_V1

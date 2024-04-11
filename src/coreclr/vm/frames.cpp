@@ -1811,27 +1811,18 @@ MethodDesc* HelperMethodFrame::GetFunction()
 //             This is used when the HelperMethodFrame is first created.
 //         * false: complete any initialization that was left to do, if any.
 //      * unwindState - [out] DAC builds use this to return the unwound machine state.
-//      * hostCallPreference - (See code:HelperMethodFrame::HostCallPreference.)
 //
 // Return Value:
 //     Normally, the function always returns TRUE meaning the initialization succeeded.
 //
-//     However, if hostCallPreference is NoHostCalls, AND if a callee (like
-//     LazyMachState::unwindLazyState) needed to acquire a JIT reader lock and was unable
-//     to do so (lest it re-enter the host), then InsureInit will abort and return FALSE.
-//     So any callers that specify hostCallPreference = NoHostCalls (which is not the
-//     default), should check for FALSE return, and refuse to use the HMF in that case.
-//     Currently only asynchronous calls made by profilers use that code path.
 //
 
 BOOL HelperMethodFrame::InsureInit(bool initialInit,
-                                    MachState * unwindState,
-                                    HostCallPreference hostCallPreference /* = AllowHostCalls */)
+                                    MachState * unwindState)
 {
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        if ((hostCallPreference == AllowHostCalls) && !m_MachState.isValid()) { HOST_CALLS; } else { HOST_NOCALLS; }
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -1872,8 +1863,7 @@ BOOL HelperMethodFrame::InsureInit(bool initialInit,
             lazy,
             &unwound,
             threadId,
-            0,
-            hostCallPreference);
+            0);
 
 #if !defined(DACCESS_COMPILE)
         if (!unwound.isValid())
@@ -1890,7 +1880,6 @@ BOOL HelperMethodFrame::InsureInit(bool initialInit,
             // will commonly return an unwound state with _pRetAddr==NULL (which counts
             // as an "invalid" MachState). So have DAC builds deliberately fall through
             // rather than aborting when unwound is invalid.
-            _ASSERTE(hostCallPreference == NoHostCalls);
             return FALSE;
         }
 #endif // !defined(DACCESS_COMPILE)

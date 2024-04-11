@@ -430,7 +430,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
             {
                 // This is an explicit (not special) var, so add its varNumber + 1 to our
                 // max count ("+1" because varNumber is zero-based).
-                oldNumVars = max(oldNumVars, unsigned(-ICorDebugInfo::UNKNOWN_ILNUM) + varNumber + 1);
+                oldNumVars = max(oldNumVars, (unsigned)(unsigned(-ICorDebugInfo::UNKNOWN_ILNUM) + varNumber + 1));
             }
         }
 
@@ -484,7 +484,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
             {
                 // This is an explicit (not special) var, so add its varNumber + 1 to our
                 // max count ("+1" because varNumber is zero-based).
-                newNumVars = max(newNumVars, unsigned(-ICorDebugInfo::UNKNOWN_ILNUM) + varNumber + 1);
+                newNumVars = max(newNumVars, (unsigned)(unsigned(-ICorDebugInfo::UNKNOWN_ILNUM) + varNumber + 1));
             }
         }
 
@@ -1180,7 +1180,6 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -1466,17 +1465,15 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
     }
     else
     {
-        /* However if ExecutionAborted, then this must be one of the
-         * ExceptionFrames. Handle accordingly
-         */
-        _ASSERTE(!(flags & AbortingCall) || !(flags & ActiveStackFrame));
+        // Since we are aborting execution, we are either in a frame that actually faulted or in a throwing call.
+        // * We do not need to adjust in a leaf
+        // * A throwing call will have unreachable <brk> after it, thus GC info is the same as before the call.
+        // 
+        // Either way we do not need to adjust.
 
-        if (flags & AbortingCall)
-        {
-            curOffs--;
-            LOG((LF_GCINFO, LL_INFO1000, "Adjusted GC reporting offset due to flags ExecutionAborted && AbortingCall. Now reporting GC refs for %s at offset %04x.\n",
-                methodName, curOffs));
-        }
+        // NOTE: only fully interruptible methods may need to report anything here as without
+        //       exception handling all current local variables are already unreachable.
+        //       EnumerateLiveSlots will shortcircuit the partially interruptible case just a bit later.
     }
 
     // Check if we have been given an override value for relOffset

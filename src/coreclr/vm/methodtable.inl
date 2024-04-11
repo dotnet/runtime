@@ -1078,8 +1078,6 @@ inline DWORD MethodTable::GetOptionalMembersSize()
     return GetEndOffsetOfOptionalMembers() - GetStartOffsetOfOptionalMembers();
 }
 
-#ifndef DACCESS_COMPILE
-
 //==========================================================================================
 inline PTR_BYTE MethodTable::GetNonGCStaticsBasePointer()
 {
@@ -1093,6 +1091,8 @@ inline PTR_BYTE MethodTable::GetGCStaticsBasePointer()
     WRAPPER_NO_CONTRACT;
     return GetDomainLocalModule()->GetGCStaticsBasePointer(this);
 }
+
+#ifndef DACCESS_COMPILE
 
 //==========================================================================================
 inline PTR_BYTE MethodTable::GetNonGCThreadStaticsBasePointer()

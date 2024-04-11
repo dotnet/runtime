@@ -4,7 +4,7 @@
 import BuildConfiguration from "consts:configuration";
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { MainThreadingMode, type DotnetModuleInternal, type MonoConfigInternal, JSThreadBlockingMode, JSThreadInteropMode } from "../types/internal";
+import { type DotnetModuleInternal, type MonoConfigInternal, JSThreadBlockingMode } from "../types/internal";
 import type { DotnetModuleConfig, MonoConfig, ResourceGroups, ResourceList } from "../types";
 import { exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_error, mono_log_debug } from "./logging";
@@ -12,9 +12,8 @@ import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryI
 import { mono_exit } from "./exit";
 import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
 import { appendUniqueQuery } from "./assets";
-import { mono_log_warn } from "./logging";
 
-export function deep_merge_config(target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
+export function deep_merge_config (target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
     // no need to merge the same object
     if (target === source) return target;
 
@@ -40,7 +39,7 @@ export function deep_merge_config(target: MonoConfigInternal, source: MonoConfig
     return Object.assign(target, providedConfig);
 }
 
-export function deep_merge_module(target: DotnetModuleInternal, source: DotnetModuleConfig): DotnetModuleInternal {
+export function deep_merge_module (target: DotnetModuleInternal, source: DotnetModuleConfig): DotnetModuleInternal {
     // no need to merge the same object
     if (target === source) return target;
 
@@ -52,7 +51,7 @@ export function deep_merge_module(target: DotnetModuleInternal, source: DotnetMo
     return Object.assign(target, providedConfig);
 }
 
-function deep_merge_resources(target: ResourceGroups, source: ResourceGroups): ResourceGroups {
+function deep_merge_resources (target: ResourceGroups, source: ResourceGroups): ResourceGroups {
     // no need to merge the same object
     if (target === source) return target;
 
@@ -102,7 +101,7 @@ function deep_merge_resources(target: ResourceGroups, source: ResourceGroups): R
     return Object.assign(target, providedResources);
 }
 
-function deep_merge_dict(target: { [key: string]: ResourceList }, source: { [key: string]: ResourceList }) {
+function deep_merge_dict (target: { [key: string]: ResourceList }, source: { [key: string]: ResourceList }) {
     // no need to merge the same object
     if (target === source) return target;
 
@@ -113,7 +112,7 @@ function deep_merge_dict(target: { [key: string]: ResourceList }, source: { [key
 }
 
 // NOTE: this is called before setRuntimeGlobals
-export function normalizeConfig() {
+export function normalizeConfig () {
     // normalize
     const config = loaderHelpers.config;
 
@@ -190,48 +189,13 @@ export function normalizeConfig() {
     if (WasmEnableThreads) {
 
         if (!Number.isInteger(config.pthreadPoolInitialSize)) {
-            config.pthreadPoolInitialSize = 7;
+            config.pthreadPoolInitialSize = 5;
         }
         if (!Number.isInteger(config.pthreadPoolUnusedSize)) {
-            config.pthreadPoolUnusedSize = 3;
-        }
-        if (!Number.isInteger(config.finalizerThreadStartDelayMs)) {
-            config.finalizerThreadStartDelayMs = 200;
-        }
-        if (config.mainThreadingMode == undefined) {
-            config.mainThreadingMode = MainThreadingMode.DeputyAndIOThreads;
+            config.pthreadPoolUnusedSize = 1;
         }
         if (config.jsThreadBlockingMode == undefined) {
-            config.jsThreadBlockingMode = JSThreadBlockingMode.AllowBlockingWaitInAsyncCode;
-        }
-        if (config.jsThreadInteropMode == undefined) {
-            config.jsThreadInteropMode = JSThreadInteropMode.SimpleSynchronousJSInterop;
-        }
-        let validModes = false;
-        if (config.mainThreadingMode == MainThreadingMode.DeputyThread
-            && config.jsThreadBlockingMode == JSThreadBlockingMode.NoBlockingWait
-            && config.jsThreadInteropMode == JSThreadInteropMode.SimpleSynchronousJSInterop
-        ) {
-            validModes = true;
-        }
-        else if (config.mainThreadingMode == MainThreadingMode.DeputyAndIOThreads
-            && config.jsThreadBlockingMode == JSThreadBlockingMode.AllowBlockingWaitInAsyncCode
-            && config.jsThreadInteropMode == JSThreadInteropMode.SimpleSynchronousJSInterop
-        ) {
-            validModes = true;
-        }
-        else if (config.mainThreadingMode == MainThreadingMode.DeputyThread
-            && config.jsThreadBlockingMode == JSThreadBlockingMode.AllowBlockingWait
-            && config.jsThreadInteropMode == JSThreadInteropMode.SimpleSynchronousJSInterop
-        ) {
-            validModes = true;
-        }
-        if (!validModes) {
-            mono_log_warn("Unsupported threading configuration", {
-                mainThreadingMode: config.mainThreadingMode,
-                jsThreadBlockingMode: config.jsThreadBlockingMode,
-                jsThreadInteropMode: config.jsThreadInteropMode
-            });
+            config.jsThreadBlockingMode = JSThreadBlockingMode.PreventSynchronousJSExport;
         }
     }
 
@@ -261,7 +225,7 @@ export function normalizeConfig() {
 }
 
 let configLoaded = false;
-export async function mono_wasm_load_config(module: DotnetModuleInternal): Promise<void> {
+export async function mono_wasm_load_config (module: DotnetModuleInternal): Promise<void> {
     const configFilePath = module.configSrc;
     if (configLoaded) {
         await loaderHelpers.afterConfigLoaded.promise;
@@ -284,8 +248,7 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
             try {
                 await module.onConfigLoaded(loaderHelpers.config, exportedRuntimeAPI);
                 normalizeConfig();
-            }
-            catch (err: any) {
+            } catch (err: any) {
                 mono_log_error("onConfigLoaded() failed", err);
                 throw err;
             }
@@ -300,7 +263,7 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
     }
 }
 
-export function isDebuggingSupported(): boolean {
+export function isDebuggingSupported (): boolean {
     // Copied from blazor MonoDebugger.ts/attachDebuggerHotkey
     if (!globalThis.navigator) {
         return false;
@@ -309,7 +272,7 @@ export function isDebuggingSupported(): boolean {
     return loaderHelpers.isChromium || loaderHelpers.isFirefox;
 }
 
-async function loadBootConfig(module: DotnetModuleInternal): Promise<void> {
+async function loadBootConfig (module: DotnetModuleInternal): Promise<void> {
     const defaultConfigSrc = loaderHelpers.locateFile(module.configSrc!);
 
     const loaderResponse = loaderHelpers.loadBootResource !== undefined ?
@@ -329,7 +292,7 @@ async function loadBootConfig(module: DotnetModuleInternal): Promise<void> {
     const loadedConfig: MonoConfig = await readBootConfigResponse(loadConfigResponse);
     deep_merge_config(loaderHelpers.config, loadedConfig);
 
-    function defaultLoadBootConfig(url: string): Promise<Response> {
+    function defaultLoadBootConfig (url: string): Promise<Response> {
         return loaderHelpers.fetch_like(url, {
             method: "GET",
             credentials: "include",
@@ -338,7 +301,7 @@ async function loadBootConfig(module: DotnetModuleInternal): Promise<void> {
     }
 }
 
-async function readBootConfigResponse(loadConfigResponse: Response): Promise<MonoConfig> {
+async function readBootConfigResponse (loadConfigResponse: Response): Promise<MonoConfig> {
     const config = loaderHelpers.config;
     const loadedConfig: MonoConfig = await loadConfigResponse.json();
 

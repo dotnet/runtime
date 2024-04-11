@@ -68,7 +68,7 @@ const enum WasmReftype {
 }
 */
 
-function getTrampImports() {
+function getTrampImports () {
     if (trampImports)
         return trampImports;
 
@@ -98,7 +98,7 @@ class TrampolineInfo {
     result: number;
     hitCount: number;
 
-    constructor(
+    constructor (
         imethod: number, method: MonoMethod, argumentCount: number, pParamTypes: NativePointer,
         unbox: boolean, hasThisReference: boolean, hasReturnValue: boolean, name: string,
         defaultImplementation: number
@@ -137,12 +137,12 @@ let mostRecentOptions: JiterpreterOptions | undefined = undefined;
 // If a method is freed we need to remove its info (just in case another one gets
 //  allocated at that exact memory offset later) and more importantly, ensure it is
 //  not waiting in the jit queue
-export function mono_jiterp_free_method_data_interp_entry(imethod: number) {
+export function mono_jiterp_free_method_data_interp_entry (imethod: number) {
     delete infoTable[imethod];
 }
 
 // FIXME: move this counter into C and make it thread safe
-export function mono_interp_record_interp_entry(imethod: number) {
+export function mono_interp_record_interp_entry (imethod: number) {
     // clear the unbox bit
     imethod = imethod & ~0x1;
 
@@ -168,7 +168,7 @@ export function mono_interp_record_interp_entry(imethod: number) {
 }
 
 // returns function pointer
-export function mono_interp_jit_wasm_entry_trampoline(
+export function mono_interp_jit_wasm_entry_trampoline (
     imethod: number, method: MonoMethod, argumentCount: number, pParamTypes: NativePointer,
     unbox: boolean, hasThisReference: boolean, hasReturnValue: boolean, name: NativePointer,
     defaultImplementation: number
@@ -208,7 +208,7 @@ export function mono_interp_jit_wasm_entry_trampoline(
     return info.result;
 }
 
-function ensure_jit_is_scheduled() {
+function ensure_jit_is_scheduled () {
     if (jitQueueTimeout > 0)
         return;
 
@@ -227,7 +227,7 @@ function ensure_jit_is_scheduled() {
     }, queueFlushDelayMs);
 }
 
-function flush_wasm_entry_trampoline_jit_queue() {
+function flush_wasm_entry_trampoline_jit_queue () {
     const jitQueue : TrampolineInfo[] = [];
     let methodPtr = <MonoMethod><any>0;
     while ((methodPtr = <any>cwraps.mono_jiterp_tlqueue_next(JitQueue.InterpEntry)) != 0) {
@@ -447,7 +447,7 @@ function flush_wasm_entry_trampoline_jit_queue() {
     }
 }
 
-function append_stackval_from_data(
+function append_stackval_from_data (
     builder: WasmBuilder, imethod: number, type: MonoType, valueName: string, argIndex: number
 ) {
     const rawSize = cwraps.mono_jiterp_type_get_raw_value_size(type);
@@ -520,7 +520,7 @@ function append_stackval_from_data(
     }
 }
 
-function generate_wasm_body(
+function generate_wasm_body (
     builder: WasmBuilder, info: TrampolineInfo
 ): boolean {
     // FIXME: This is not thread-safe, but the alternative of alloca makes the trampoline

@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Reflection;
+using System.Threading;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -14,23 +15,30 @@ namespace System.Text.Json.Serialization.Metadata
     {
         internal static MemberAccessor MemberAccessor
         {
+            [RequiresUnreferencedCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
             [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
             get
             {
-                return s_memberAccessor ??=
+                return s_memberAccessor ?? Initialize();
+                static MemberAccessor Initialize()
+                {
+                    MemberAccessor value =
 #if NETCOREAPP
-                // if dynamic code isn't supported, fallback to reflection
-                RuntimeFeature.IsDynamicCodeSupported ?
-                    new ReflectionEmitCachingMemberAccessor() :
-                    new ReflectionMemberAccessor();
+                        // if dynamic code isn't supported, fallback to reflection
+                        RuntimeFeature.IsDynamicCodeSupported ?
+                            new ReflectionEmitCachingMemberAccessor() :
+                            new ReflectionMemberAccessor();
 #elif NETFRAMEWORK
-                    new ReflectionEmitCachingMemberAccessor();
+                            new ReflectionEmitCachingMemberAccessor();
 #else
-                    new ReflectionMemberAccessor();
+                            new ReflectionMemberAccessor();
 #endif
+                    return Interlocked.CompareExchange(ref s_memberAccessor, value, null) ?? value;
+                }
             }
         }
 
+        internal static void ClearMemberAccessorCaches() => s_memberAccessor?.Clear();
         private static MemberAccessor? s_memberAccessor;
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]

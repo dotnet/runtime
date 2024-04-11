@@ -1202,7 +1202,7 @@ mdSignature DacDbiInterfaceImpl::GetILCodeAndSigHelper(Module *       pModule,
     TADDR pTargetIL; // target address of start of IL blob
 
     // This works for methods in dynamic modules, and methods overridden by a profiler.
-    pTargetIL = pModule->GetDynamicIL(mdMethodToken, TRUE);
+    pTargetIL = pModule->GetDynamicIL(mdMethodToken);
 
     // Method not overridden - get the original copy of the IL by going to the PE file/RVA
     // If this is in a dynamic module then don't even attempt this since ReflectionModule::GetIL isn't
@@ -1577,16 +1577,8 @@ void DacDbiInterfaceImpl::GetStaticsBases(TypeHandle thExact,
                                          PTR_BYTE *  ppNonGCStaticsBase)
  {
     MethodTable * pMT = thExact.GetMethodTable();
-    Module * pModuleForStatics = pMT->GetModuleForStatics();
-    if (pModuleForStatics != NULL)
-    {
-        PTR_DomainLocalModule pLocalModule = pModuleForStatics->GetDomainLocalModule();
-        if (pLocalModule != NULL)
-        {
-            *ppGCStaticsBase = pLocalModule->GetGCStaticsBasePointer(pMT);
-            *ppNonGCStaticsBase = pLocalModule->GetNonGCStaticsBasePointer(pMT);
-        }
-    }
+    *ppGCStaticsBase = pMT->GetGCStaticsBasePointer();
+    *ppNonGCStaticsBase = pMT->GetNonGCStaticsBasePointer();
 } // DacDbiInterfaceImpl::GetStaticsBases
 
 //-----------------------------------------------------------------------------

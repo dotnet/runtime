@@ -5,14 +5,14 @@ import { mono_wasm_new_external_root } from "../roots";
 import { monoStringToString, utf16ToString } from "../strings";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
 import { Int32Ptr } from "../types/emscripten";
-import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
+import { wrap_error_root, wrap_no_error_root } from "./helpers";
 import { GraphemeSegmenter } from "./grapheme-segmenter";
 
 const COMPARISON_ERROR = -2;
 const INDEXING_ERROR = -1;
 let graphemeSegmenterCached: GraphemeSegmenter | null;
 
-export function mono_wasm_compare_string(culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): number {
+export function mono_wasm_compare_string (culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): number {
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
     try {
@@ -23,18 +23,16 @@ export function mono_wasm_compare_string(culture: MonoStringRef, str1: number, s
         const locale = cultureName ? cultureName : undefined;
         wrap_no_error_root(is_exception, exceptionRoot);
         return compareStrings(string1, string2, locale, casePicker);
-    }
-    catch (ex: any) {
+    } catch (ex: any) {
         wrap_error_root(is_exception, ex, exceptionRoot);
         return COMPARISON_ERROR;
-    }
-    finally {
+    } finally {
         cultureRoot.release();
         exceptionRoot.release();
     }
 }
 
-export function mono_wasm_starts_with(culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): number {
+export function mono_wasm_starts_with (culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): number {
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
     try {
@@ -54,18 +52,16 @@ export function mono_wasm_starts_with(culture: MonoStringRef, str1: number, str1
         const result = compareStrings(sourceOfPrefixLength, prefix, locale, casePicker);
         wrap_no_error_root(is_exception, exceptionRoot);
         return result === 0 ? 1 : 0; // equals ? true : false
-    }
-    catch (ex: any) {
+    } catch (ex: any) {
         wrap_error_root(is_exception, ex, exceptionRoot);
         return INDEXING_ERROR;
-    }
-    finally {
+    } finally {
         cultureRoot.release();
         exceptionRoot.release();
     }
 }
 
-export function mono_wasm_ends_with(culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): number {
+export function mono_wasm_ends_with (culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): number {
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
     try {
@@ -85,18 +81,16 @@ export function mono_wasm_ends_with(culture: MonoStringRef, str1: number, str1Le
         const result = compareStrings(sourceOfSuffixLength, suffix, locale, casePicker);
         wrap_no_error_root(is_exception, exceptionRoot);
         return result === 0 ? 1 : 0; // equals ? true : false
-    }
-    catch (ex: any) {
+    } catch (ex: any) {
         wrap_error_root(is_exception, ex, exceptionRoot);
         return INDEXING_ERROR;
-    }
-    finally {
+    } finally {
         cultureRoot.release();
         exceptionRoot.release();
     }
 }
 
-export function mono_wasm_index_of(culture: MonoStringRef, needlePtr: number, needleLength: number, srcPtr: number, srcLength: number, options: number, fromBeginning: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): number {
+export function mono_wasm_index_of (culture: MonoStringRef, needlePtr: number, needleLength: number, srcPtr: number, srcLength: number, options: number, fromBeginning: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): number {
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
     try {
@@ -156,22 +150,20 @@ export function mono_wasm_index_of(culture: MonoStringRef, needlePtr: number, ne
         }
         wrap_no_error_root(is_exception, exceptionRoot);
         return result;
-    }
-    catch (ex: any) {
+    } catch (ex: any) {
         wrap_error_root(is_exception, ex, exceptionRoot);
         return INDEXING_ERROR;
-    }
-    finally {
+    } finally {
         cultureRoot.release();
         exceptionRoot.release();
     }
 
-    function checkMatchFound(str1: string, str2: string, locale: string | undefined, casePicker: number): boolean {
+    function checkMatchFound (str1: string, str2: string, locale: string | undefined, casePicker: number): boolean {
         return compareStrings(str1, str2, locale, casePicker) === 0;
     }
 }
 
-function compareStrings(string1: string, string2: string, locale: string | undefined, casePicker: number): number {
+function compareStrings (string1: string, string2: string, locale: string | undefined, casePicker: number): number {
     switch (casePicker) {
         case 0:
             // 0: None - default algorithm for the platform OR
@@ -263,12 +255,12 @@ function compareStrings(string1: string, string2: string, locale: string | undef
     }
 }
 
-function decodeToCleanString(strPtr: number, strLen: number) {
+function decodeToCleanString (strPtr: number, strLen: number) {
     const str = utf16ToString(<any>strPtr, <any>(strPtr + 2 * strLen));
     return cleanString(str);
 }
 
-function cleanString(str: string) {
+function cleanString (str: string) {
     const nStr = str.normalize();
     return nStr.replace(/[\u200B-\u200D\uFEFF\0]/g, "");
 }

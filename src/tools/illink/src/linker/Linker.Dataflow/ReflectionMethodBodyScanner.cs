@@ -263,6 +263,7 @@ namespace Mono.Linker.Dataflow
 				}
 				break;
 
+			case IntrinsicId.Array_CreateInstance:
 			case IntrinsicId.Enum_GetValues:
 			case IntrinsicId.Marshal_SizeOf:
 			case IntrinsicId.Marshal_OffsetOf:

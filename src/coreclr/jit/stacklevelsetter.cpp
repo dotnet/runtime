@@ -287,7 +287,6 @@ void StackLevelSetter::SetThrowHelperBlock(SpecialCodeKind kind, BasicBlock* blo
         // or generate all required helpers after all stack alignment
         // has been added, and the stack level at each call to fgAddCodeRef()
         // is known, or can be recalculated.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(UNIX_X86_ABI)
         framePointerRequired = true;
 #else  // !defined(UNIX_X86_ABI)
