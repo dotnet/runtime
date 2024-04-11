@@ -1355,13 +1355,13 @@ arm64_emit_load_got_slot (MonoAotCompile *acfg, int dreg, int got_slot)
 	offset = (int)(got_slot * TARGET_SIZEOF_VOID_P);
 	if (acfg->aot_opts.asm_type == CLANG_AS) {
 		/* clang's integrated assembler */
-		fprintf (acfg->fp, "adrp x16, %s@PAGE+%d\n", acfg->got_symbol, offset & 0xfffff000);
+		fprintf (acfg->fp, "adrp x16, %s@GOTPAGE+%d\n", acfg->got_symbol, offset & 0xfffff000);
 #ifdef MONO_ARCH_ILP32
-		fprintf (acfg->fp, "add x16, x16, %s@PAGEOFF+%d\n", acfg->got_symbol, offset & 0xfff);
-		fprintf (acfg->fp, "ldr w%d, [x16, #%d]\n", dreg, 0);
+		fprintf (acfg->fp, "add x16, x16, %s@GOTPAGEOFF+%d\n", acfg->got_symbol, offset & 0xfff);
+		fprintf (acfg->fp, "ldr w%d, [x16, %d]\n", dreg, 0);
 #else
-		fprintf (acfg->fp, "add x16, x16, %s@PAGEOFF\n", acfg->got_symbol);
-		fprintf (acfg->fp, "ldr x%d, [x16, #%d]\n", dreg, offset & 0xfff);
+		fprintf (acfg->fp, "add x16, x16, %s@GOTPAGEOFF\n", acfg->got_symbol);
+		fprintf (acfg->fp, "ldr x%d, [x16, %d]\n", dreg, offset & 0xfff);
 #endif
 	} else if (acfg->aot_opts.asm_type == GNU_AS) {
 		/* Linux GAS */
