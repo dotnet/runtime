@@ -8585,6 +8585,8 @@ interp_mark_ref_slots_for_var (TransformData *td, int var)
 	if (!td->ref_slots || max_index >= td->ref_slots->size) {
 		guint32 old_size = td->ref_slots ? (guint32)td->ref_slots->size : 0;
 		guint32 new_size = old_size ? old_size * 2 : 32;
+		while (new_size <= max_index)
+			new_size *= 2;
 
 		gpointer mem = mono_mempool_alloc0 (td->mempool, mono_bitset_alloc_size (new_size, 0));
 		MonoBitSet *new_ref_slots = mono_bitset_mem_new (mem, new_size, 0);
