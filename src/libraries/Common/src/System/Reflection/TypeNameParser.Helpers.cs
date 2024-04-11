@@ -185,13 +185,11 @@ namespace System.Reflection
             {
                 return type.MakeArrayType();
             }
-            else if (typeName.IsVariableBoundArrayType)
-            {
-                return type.MakeArrayType(rank: typeName.GetArrayRank());
-            }
             else
             {
-                throw new UnreachableException();
+                Debug.Assert(typeName.IsVariableBoundArrayType);
+
+                return type.MakeArrayType(rank: typeName.GetArrayRank());
             }
         }
     }
