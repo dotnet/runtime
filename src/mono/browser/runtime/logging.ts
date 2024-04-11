@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/* eslint-disable no-console */
-import { INTERNAL, runtimeHelpers, mono_assert } from "./globals";
+import WasmEnableThreads from "consts:wasmEnableThreads";
+
+import { threads_c_functions as tcwraps } from "./cwraps";
+import { INTERNAL, runtimeHelpers, mono_assert, loaderHelpers, ENVIRONMENT_IS_WORKER, Module } from "./globals";
 import { utf8ToString } from "./strings";
 import { CharPtr, VoidPtr } from "./types/emscripten";
 
@@ -12,6 +14,7 @@ export function set_thread_prefix (threadPrefix: string) {
     prefix = `[${threadPrefix}] MONO_WASM: `;
 }
 
+/* eslint-disable no-console */
 export function mono_log_debug (msg: string, ...data: any) {
     if (runtimeHelpers.diagnosticTracing) {
         console.debug(prefix + msg, ...data);
@@ -27,9 +30,15 @@ export function mono_log_warn (msg: string, ...data: any) {
 }
 
 export function mono_log_error (msg: string, ...data: any) {
-    if (data && data.length > 0 && data[0] && typeof data[0] === "object" && data[0].silent) {
+    if (data && data.length > 0 && data[0] && typeof data[0] === "object") {
         // don't log silent errors
-        return;
+        if (data[0].silent) {
+            return;
+        }
+        if (data[0].toString) {
+            console.error(prefix + msg, data[0].toString());
+            return;
+        }
     }
     console.error(prefix + msg, ...data);
 }
@@ -123,7 +132,27 @@ export function mono_wasm_trace_logger (log_domain_ptr: CharPtr, log_level_ptr: 
     switch (log_level) {
         case "critical":
         case "error":
-            console.error(mono_wasm_stringify_as_error_with_stack(message));
+            {
+                const messageWithStack = message + "\n" + (new Error().stack);
+                if (!loaderHelpers.exitReason) {
+                    loaderHelpers.exitReason = messageWithStack;
+                }
+                console.error(mono_wasm_stringify_as_error_with_stack(messageWithStack));
+                if (WasmEnableThreads) {
+                    try {
+                        tcwraps.mono_wasm_print_thread_dump();
+                    } catch (e) {
+                        console.error("Failed to print thread dump", e);
+                    }
+                }
+                if (WasmEnableThreads && ENVIRONMENT_IS_WORKER) {
+                    setTimeout(() => {
+                        mono_log_error("forcing abort 3000ms after last error log message", messageWithStack);
+                        // _emscripten_force_exit is proxied to UI thread and should also arrive in spin wait loop
+                        Module._emscripten_force_exit(1);
+                    }, 3000);
+                }
+            }
             break;
         case "warning":
             console.warn(message);

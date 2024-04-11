@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.Build.Traversal" DefaultTargets="Publish">
+<Project Sdk="Microsoft.Build.Traversal">
     <PropertyGroup>
         <!-- We always want to use release for publishing using NativeAOT -->
         <NativeLibsPublishConfiguration>Release</NativeLibsPublishConfiguration>
@@ -59,6 +59,7 @@
         <ProjectReference Include="@(NativeLibsProjectsToBuild)"
                           ReferenceOutputAssembly="false"
                           AdditionalProperties="%(AdditionalProperties);$(SplitSubprojectProps)"
-			  Condition="$(SupportsNativeAotComponents)"/>
+                          Targets="LinkNative"
+                          Condition="$(SupportsNativeAotComponents)"/>
     </ItemGroup>
 </Project>
