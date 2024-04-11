@@ -21,10 +21,6 @@ internal static partial class Interop
 {
     internal static partial class OpenSsl
     {
-#if DEBUG
-        private static readonly string? s_keyLogFile = Environment.GetEnvironmentVariable("SSLKEYLOGFILE");
-        private static readonly FileStream? s_fileStream = s_keyLogFile != null ? File.Open(s_keyLogFile, FileMode.Append, FileAccess.Write, FileShare.ReadWrite) : null;
-#endif
         private const string TlsCacheSizeCtxName = "System.Net.Security.TlsCacheSize";
         private const string TlsCacheSizeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_TLSCACHESIZE";
         private const SslProtocols FakeAlpnSslProtocol = (SslProtocols)1;   // used to distinguish server sessions with ALPN
@@ -209,12 +205,10 @@ internal static partial class Interop
                         Ssl.SslCtxSetDefaultOcspCallback(sslCtx);
                     }
                 }
-#if DEBUG
-                if (s_fileStream != null)
+                if (SslKeyLogger.IsEnabled)
                 {
                     Ssl.SslCtxSetKeylogCallback(sslCtx, &KeyLogCallback);
                 }
-#endif
             }
             catch
             {
@@ -757,23 +751,12 @@ internal static partial class Interop
             ctxHandle.RemoveSession(name);
         }
 
-#if DEBUG
         [UnmanagedCallersOnly]
         private static unsafe void KeyLogCallback(IntPtr ssl, char* line)
         {
-            Debug.Assert(s_fileStream != null);
             ReadOnlySpan<byte> data = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((byte*)line);
-            if (data.Length > 0)
-            {
-                lock (s_fileStream)
-                {
-                    s_fileStream.Write(data);
-                    s_fileStream.WriteByte((byte)'\n');
-                    s_fileStream.Flush();
-                }
-            }
+            SslKeyLogger.WriteLineRaw(data);
         }
-#endif
 
         private static int BioRead(SafeBioHandle bio, Span<byte> buffer, int count)
         {
