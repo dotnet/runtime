@@ -2223,7 +2223,7 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBloc
     {
         GenTreeCall* call = tree->AsCall();
 
-        if (call->gtCallType == CT_HELPER)
+        if (call->IsHelperCall())
         {
             CorInfoHelpFunc helper = eeGetHelperNum(call->gtCallMethHnd);
             switch (helper)
@@ -2380,7 +2380,7 @@ bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool
 {
     // Generally all GT_CALL nodes are considered to have side-effects, but we may have extra information about helper
     // calls that can prove them side-effect-free.
-    if (gtCallType != CT_HELPER)
+    if (!IsHelperCall())
     {
         // If needed, we can annotate other special intrinsic methods as side effect free as well.
         if (IsSpecialIntrinsic(compiler, NI_System_Type_GetTypeFromHandle))
@@ -10997,7 +10997,7 @@ void Compiler::gtDispNodeName(GenTree* tree)
                 callType = "CALLV";
             }
         }
-        else if (tree->AsCall()->gtCallType == CT_HELPER)
+        else if (tree->AsCall()->IsHelperCall())
         {
             ctType = " help";
         }
@@ -16726,7 +16726,7 @@ bool Compiler::gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags /* = GTF_S
         {
             // Generally all trees that contain GT_CALL nodes are considered to have side-effects.
             //
-            if (tree->AsCall()->gtCallType == CT_HELPER)
+            if (tree->AsCall()->IsHelperCall())
             {
                 // If this node is a helper call we may not care about the side-effects.
                 // Note that gtNodeHasSideEffects checks the side effects of the helper itself
@@ -17188,7 +17188,7 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
                 // Generally all GT_CALL nodes are considered to have side-effects.
                 // So if we get here it must be a helper call that we decided it does
                 // not have side effects that we needed to keep.
-                assert(!node->OperIs(GT_CALL) || (node->AsCall()->gtCallType == CT_HELPER));
+                assert(!node->OperIs(GT_CALL) || node->AsCall()->IsHelperCall());
             }
 
             if ((m_flags & GTF_IS_IN_CSE) != 0)
@@ -17486,7 +17486,7 @@ Compiler::TypeProducerKind Compiler::gtGetTypeProducerKind(GenTree* tree)
 {
     if (tree->gtOper == GT_CALL)
     {
-        if (tree->AsCall()->gtCallType == CT_HELPER)
+        if (tree->AsCall()->IsHelperCall())
         {
             if (gtIsTypeHandleToRuntimeTypeHelper(tree->AsCall()))
             {
@@ -18568,7 +18568,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     objClass = sig.retTypeClass;
                 }
             }
-            else if (call->gtCallType == CT_HELPER)
+            else if (call->IsHelperCall())
             {
                 objClass = gtGetHelperCallClassHandle(call, pIsExact, pIsNonNull);
             }
@@ -18735,7 +18735,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
 //
 CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, bool* pIsExact, bool* pIsNonNull)
 {
-    assert(call->gtCallType == CT_HELPER);
+    assert(call->IsHelperCall());
 
     *pIsNonNull                    = false;
     *pIsExact                      = false;

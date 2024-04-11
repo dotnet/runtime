@@ -3754,7 +3754,7 @@ inline bool Compiler::IsStaticHelperEligibleForExpansion(GenTree* tree, bool* is
 
 inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
 {
-    if (tree->gtOper != GT_CALL || tree->AsCall()->gtCallType != CT_HELPER)
+    if (!tree->OperIs(GT_CALL) || !tree->AsCall()->IsHelperCall())
     {
         return false;
     }

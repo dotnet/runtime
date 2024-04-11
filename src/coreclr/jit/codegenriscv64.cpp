@@ -6594,7 +6594,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 #ifdef DEBUG
     // Pass the call signature information down into the emitter so the emitter can associate
     // native call sites with the signatures they were generated from.
-    if (call->gtCallType != CT_HELPER)
+    if (!call->IsHelperCall())
     {
         sigInfo = call->callSig;
     }
@@ -6711,7 +6711,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         else
         {
             // Generate a direct call to a non-virtual user defined or helper method
-            assert(call->gtCallType == CT_HELPER || call->gtCallType == CT_USER_FUNC);
+            assert(call->IsHelperCall() || (call->gtCallType == CT_USER_FUNC));
 
             void* addr = nullptr;
 #ifdef FEATURE_READYTORUN
@@ -6722,7 +6722,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             }
             else
 #endif // FEATURE_READYTORUN
-                if (call->gtCallType == CT_HELPER)
+                if (call->IsHelperCall())
                 {
                     CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(methHnd);
                     noway_assert(helperNum != CORINFO_HELP_UNDEF);

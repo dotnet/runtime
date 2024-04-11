@@ -6490,7 +6490,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
     DISPTREE(call);
 
     // Don't support tail calling helper methods
-    assert(call->gtCallType != CT_HELPER);
+    assert(!call->IsHelperCall());
 
     // We come this route only for tail prefixed calls that cannot be dispatched as
     // fast tail calls
@@ -7042,7 +7042,7 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
     assert(call->IsVirtual() || (call->gtCallType != CT_INDIRECT) || (call->gtCallCookie == nullptr));
 
     // Don't support tail calling helper methods
-    assert(call->gtCallType != CT_HELPER);
+    assert(!call->IsHelperCall());
 
     // We come this route only for tail prefixed calls that cannot be dispatched as
     // fast tail calls
@@ -7758,7 +7758,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
     // Morph stelem.ref helper call to store a null value, into a store into an array without the helper.
     // This needs to be done after the arguments are morphed to ensure constant propagation has already taken place.
-    if (opts.OptimizationEnabled() && (call->gtCallType == CT_HELPER) &&
+    if (opts.OptimizationEnabled() && call->IsHelperCall() &&
         (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ARRADDR_ST)))
     {
         assert(call->gtArgs.CountArgs() == 3);
