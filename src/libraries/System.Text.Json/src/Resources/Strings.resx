@@ -718,6 +718,6 @@
     <value>Indentation size must be between {0} and {1}.</value>
   </data>
   <data name="InvalidNewLine" xml:space="preserve">
-    <value>Only the strings '\n' or '\r\n' are permitted.</value>
+    <value>New line can be only "\n" or "\r\n".</value>
   </data>
 </root>
