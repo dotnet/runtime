@@ -302,29 +302,61 @@ HRESULT ClrDataAccess::GetThreadStoreData(struct DacpThreadStoreData *threadStor
 {
     SOSDacEnter();
 
-    ThreadStore* threadStore = ThreadStore::s_pThreadStore;
-    if (!threadStore)
+    if (m_cdacSos != NULL)
     {
-        hr = E_UNEXPECTED;
+        hr = m_cdacSos->GetThreadStoreData(threadStoreData);
+        if (FAILED(hr))
+        {
+            hr = GetThreadStoreDataImpl(threadStoreData);
+        }
+#ifdef _DEBUG
+        else
+        {
+            // Assert that the data is the same as what we get from the DAC.
+            DacpThreadStoreData threadStoreDataLocal;
+            HRESULT hrLocal = GetThreadStoreDataImpl(&threadStoreDataLocal);
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(threadStoreData->threadCount == threadStoreDataLocal.threadCount);
+            _ASSERTE(threadStoreData->unstartedThreadCount == threadStoreDataLocal.unstartedThreadCount);
+            _ASSERTE(threadStoreData->backgroundThreadCount == threadStoreDataLocal.backgroundThreadCount);
+            _ASSERTE(threadStoreData->pendingThreadCount == threadStoreDataLocal.pendingThreadCount);
+            _ASSERTE(threadStoreData->deadThreadCount == threadStoreDataLocal.deadThreadCount);
+            _ASSERTE(threadStoreData->fHostConfig == threadStoreDataLocal.fHostConfig);
+            _ASSERTE(threadStoreData->firstThread == threadStoreDataLocal.firstThread);
+            _ASSERTE(threadStoreData->finalizerThread == threadStoreDataLocal.finalizerThread);
+            _ASSERTE(threadStoreData->gcThread == threadStoreDataLocal.gcThread);
+        }
+#endif
     }
     else
     {
-        // initialize the fields of our local structure
-        threadStoreData->threadCount = threadStore->m_ThreadCount;
-        threadStoreData->unstartedThreadCount = threadStore->m_UnstartedThreadCount;
-        threadStoreData->backgroundThreadCount = threadStore->m_BackgroundThreadCount;
-        threadStoreData->pendingThreadCount = threadStore->m_PendingThreadCount;
-        threadStoreData->deadThreadCount = threadStore->m_DeadThreadCount;
-        threadStoreData->fHostConfig = FALSE;
-
-        // identify the "important" threads
-        threadStoreData->firstThread = HOST_CDADDR(threadStore->m_ThreadList.GetHead());
-        threadStoreData->finalizerThread = HOST_CDADDR(g_pFinalizerThread);
-        threadStoreData->gcThread = HOST_CDADDR(g_pSuspensionThread);
+        hr = GetThreadStoreDataImpl(threadStoreData);
     }
 
     SOSDacLeave();
     return hr;
+}
+
+HRESULT ClrDataAccess::GetThreadStoreDataImpl(struct DacpThreadStoreData *threadStoreData)
+{
+    ThreadStore* threadStore = ThreadStore::s_pThreadStore;
+    if (!threadStore)
+        return E_UNEXPECTED;
+
+    // initialize the fields of our local structure
+    threadStoreData->threadCount = threadStore->m_ThreadCount;
+    threadStoreData->unstartedThreadCount = threadStore->m_UnstartedThreadCount;
+    threadStoreData->backgroundThreadCount = threadStore->m_BackgroundThreadCount;
+    threadStoreData->pendingThreadCount = threadStore->m_PendingThreadCount;
+    threadStoreData->deadThreadCount = threadStore->m_DeadThreadCount;
+    threadStoreData->fHostConfig = FALSE;
+
+    // identify the "important" threads
+    threadStoreData->firstThread = HOST_CDADDR(threadStore->m_ThreadList.GetHead());
+    threadStoreData->finalizerThread = HOST_CDADDR(g_pFinalizerThread);
+    threadStoreData->gcThread = HOST_CDADDR(g_pSuspensionThread);
+
+    return S_OK;
 }
 
 HRESULT

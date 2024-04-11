@@ -1229,6 +1229,8 @@ public:
 
     HRESULT Initialize(void);
 
+    HRESULT GetThreadStoreDataImpl(struct DacpThreadStoreData *data);
+
     BOOL IsExceptionFromManagedCode(EXCEPTION_RECORD * pExceptionRecord);
 #ifndef TARGET_UNIX
     HRESULT GetWatsonBuckets(DWORD dwThreadId, GenericModeBlock * pGM);
