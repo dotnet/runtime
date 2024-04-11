@@ -7,9 +7,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs">
-	  <HasDisasmCheck>true</HasDisasmCheck>
-	</Compile>
-	
+      <HasDisasmCheck>true</HasDisasmCheck>
+    </Compile>
+
     <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
     <CLRTestEnvironmentVariable Include="DOTNET_JITMinOpts" Value="0" />
   </ItemGroup>
