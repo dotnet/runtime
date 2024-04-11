@@ -372,6 +372,21 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets a value that indicates whether additional HTTP/3 connections can be established to the same server
+        /// when the maximum of concurrent streams is reached on all existing connections.
+        /// </summary>
+        public bool EnableMultipleHttp3Connections
+        {
+            get => _settings._enableMultipleHttp3Connections;
+            set
+            {
+                CheckDisposedOrStarted();
+
+                _settings._enableMultipleHttp3Connections = value;
+            }
+        }
+
         internal const bool SupportsAutomaticDecompression = true;
         internal const bool SupportsProxy = true;
         internal const bool SupportsRedirectConfiguration = true;
