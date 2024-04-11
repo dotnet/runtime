@@ -288,8 +288,4 @@ function(set_target_definitions_to_custom_os_and_arch)
   if (TARGETDETAILS_ARCH STREQUAL "armel")
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE ARM_SOFTFP)
   endif()
-
-  if (NOT (TARGETDETAILS_ARCH STREQUAL "x86") OR (TARGETDETAILS_OS MATCHES "^unix") OR (TARGETDETAILS_OS MATCHES "win_aot"))
-    target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_EH_FUNCLETS)
-  endif (NOT (TARGETDETAILS_ARCH STREQUAL "x86") OR (TARGETDETAILS_OS MATCHES "^unix") OR (TARGETDETAILS_OS MATCHES "win_aot"))
 endfunction()

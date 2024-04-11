@@ -1028,8 +1028,8 @@ bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const dom
     // Since flow is going to bypass block, make sure there
     // is nothing in block that can cause a side effect.
     //
-    // For non-PHI RBO, we neglect PHI assignments. This can leave SSA
-    // in an incorrect state but so far it has not yet caused problems.
+    // For non-PHI RBO, we neglect PHI stores. This can leave SSA in
+    // an incorrect state but so far it has not yet caused problems.
     //
     // For PHI-based RBO we need to be more cautious and insist that
     // any PHI is locally consumed, so that if we bypass the block we
@@ -1894,12 +1894,12 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             break;
         }
 
-        GenTree* const prevTreeData = prevTree->AsLclVar()->Data();
+        GenTree* const prevTreeValue = prevTree->AsLclVar()->Data();
 
         // If prevTree has side effects, bail, unless it is in the immediately preceding statement.
         // We'll handle exceptional side effects with VNs below.
         //
-        if (((prevTree->gtFlags & (GTF_CALL | GTF_ORDER_SIDEEFF)) != 0) || ((prevTreeData->gtFlags & GTF_ASG) != 0))
+        if (((prevTree->gtFlags & (GTF_CALL | GTF_ORDER_SIDEEFF)) != 0) || ((prevTreeValue->gtFlags & GTF_ASG) != 0))
         {
             if (prevStmt->GetNextStmt() != stmt)
             {
@@ -1913,13 +1913,13 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
         // If we are seeing PHIs we have run out of interesting stmts.
         //
-        if (prevTreeData->OperIs(GT_PHI))
+        if (prevTreeValue->OperIs(GT_PHI))
         {
             JITDUMP(" -- prev tree is a phi\n");
             break;
         }
 
-        // Figure out what local is assigned here.
+        // Figure out what local is defined here.
         //
         const unsigned   prevTreeLclNum = prevTree->AsLclVarCommon()->GetLclNum();
         LclVarDsc* const prevTreeLclDsc = lvaGetDesc(prevTreeLclNum);
@@ -1946,7 +1946,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
         // If the normal liberal VN of RHS is the normal liberal VN of the current tree, or is "related",
         // consider forward sub.
         //
-        const ValueNum                  domCmpVN        = vnStore->VNNormalValue(prevTreeData->GetVN(VNK_Liberal));
+        const ValueNum                  domCmpVN        = vnStore->VNNormalValue(prevTreeValue->GetVN(VNK_Liberal));
         bool                            matched         = false;
         ValueNumStore::VN_RELATION_KIND vnRelationMatch = ValueNumStore::VN_RELATION_KIND::VRK_Same;
 
@@ -1969,11 +1969,11 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
         JITDUMP("  -- prev tree has relop with %s liberal VN\n", ValueNumStore::VNRelationString(vnRelationMatch));
 
-        // If the jump tree VN has exceptions, verify that the RHS tree has a superset.
+        // If the jump tree VN has exceptions, verify that the value tree has a superset.
         //
         if (treeExcVN != vnStore->VNForEmptyExcSet())
         {
-            const ValueNum prevTreeExcVN = vnStore->VNExceptionSet(prevTreeData->GetVN(VNK_Liberal));
+            const ValueNum prevTreeExcVN = vnStore->VNExceptionSet(prevTreeValue->GetVN(VNK_Liberal));
 
             if (!vnStore->VNExcIsSubset(prevTreeExcVN, treeExcVN))
             {
@@ -1982,14 +1982,14 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             }
         }
 
-        // See if we can safely move a copy of prevTreeRHS later, to replace tree.
+        // See if we can safely move a copy of prevTreeValue later, to replace tree.
         // We can, if none of its lcls are killed.
         //
         bool interferes = false;
 
         for (unsigned int i = 0; i < definedLocalsCount; i++)
         {
-            if (gtTreeHasLocalRead(prevTreeData, definedLocals[i]))
+            if (gtTreeHasLocalRead(prevTreeValue, definedLocals[i]))
             {
                 JITDUMP(" -- prev tree ref to V%02u interferes\n", definedLocals[i]);
                 interferes = true;
@@ -2002,7 +2002,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             break;
         }
 
-        if (gtMayHaveStoreInterference(prevTreeData, tree))
+        if (gtMayHaveStoreInterference(prevTreeValue, tree))
         {
             JITDUMP(" -- prev tree has an embedded store that interferes with [%06u]\n", dspTreeID(tree));
             break;
@@ -2010,7 +2010,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
         // Heuristic: only forward sub a relop
         //
-        if (!prevTreeData->OperIsCompare())
+        if (!prevTreeValue->OperIsCompare())
         {
             JITDUMP(" -- prev tree is not relop\n");
             continue;
@@ -2026,7 +2026,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             continue;
         }
 
-        if ((prevTreeData->gtFlags & GTF_GLOB_REF) != 0)
+        if ((prevTreeValue->gtFlags & GTF_GLOB_REF) != 0)
         {
             bool hasExtraUses = false;
 
@@ -2053,7 +2053,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
         }
 
         JITDUMP(" -- prev tree is viable candidate for relop fwd sub!\n");
-        candidateTree       = prevTreeData;
+        candidateTree       = prevTreeValue;
         candidateStmt       = prevStmt;
         candidateVnRelation = vnRelationMatch;
     }

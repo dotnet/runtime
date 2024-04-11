@@ -363,8 +363,8 @@ enum GenTreeFlags : unsigned int
 //  expression node for one of these flags.
 //---------------------------------------------------------------------
 
-    GTF_ASG           = 0x00000001, // sub-expression contains an assignment
-    GTF_CALL          = 0x00000002, // sub-expression contains a  func. call
+    GTF_ASG           = 0x00000001, // sub-expression contains a store
+    GTF_CALL          = 0x00000002, // sub-expression contains a func. call
     GTF_EXCEPT        = 0x00000004, // sub-expression might throw an exception
     GTF_GLOB_REF      = 0x00000008, // sub-expression uses global variable(s)
     GTF_ORDER_SIDEEFF = 0x00000010, // sub-expression has a re-ordering side effect
@@ -593,14 +593,13 @@ inline GenTreeFlags& operator ^=(GenTreeFlags& a, GenTreeFlags b)
 }
 
 // Can any side-effects be observed externally, say by a caller method?
-// For assignments, only assignments to global memory can be observed
-// externally, whereas simple assignments to local variables can not.
+// For stores, only stores to global memory can be observed externally,
+// whereas simple stores to local variables can not.
 //
 // Be careful when using this inside a "try" protected region as the
-// order of assignments to local variables would need to be preserved
-// wrt side effects if the variables are alive on entry to the
-// "catch/finally" region. In such cases, even assignments to locals
-// will have to be restricted.
+// order of stores to local variables would need to be preserved wrt
+// side effects if the variables are alive on entry to the handler
+// region. In such cases, even stores to locals will have to be restricted.
 #define GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(flags) \
     (((flags) & (GTF_CALL | GTF_EXCEPT)) || (((flags) & (GTF_ASG | GTF_GLOB_REF)) == (GTF_ASG | GTF_GLOB_REF)))
 
@@ -1980,8 +1979,6 @@ public:
     GenTreeLclVarCommon* IsImplicitByrefParameterValuePreMorph(Compiler* compiler);
     GenTreeLclVar*       IsImplicitByrefParameterValuePostMorph(Compiler* compiler, GenTree** addr);
 
-    // Determine whether this is an assignment tree of the form X = X (op) Y,
-    // where Y is an arbitrary tree, and X is a lclVar.
     unsigned IsLclVarUpdateTree(GenTree** otherTree, genTreeOps* updateOper);
 
     // Determine whether this tree is a basic block profile count update.
@@ -3928,8 +3925,8 @@ struct GenTreeBox : public GenTreeUnOp
     {
         return gtOp1;
     }
-    // This is the statement that contains the assignment tree when the node is an inlined GT_BOX on a value
-    // type
+    // This is the statement that contains the definition tree when the node is an inlined GT_BOX
+    // on a value type
     Statement* gtDefStmtWhenInlinedBoxValue;
     // And this is the statement that copies from the value being boxed to the box payload
     Statement* gtCopyStmtWhenInlinedBoxValue;

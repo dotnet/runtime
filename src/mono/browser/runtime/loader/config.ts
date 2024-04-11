@@ -194,9 +194,6 @@ export function normalizeConfig () {
         if (!Number.isInteger(config.pthreadPoolUnusedSize)) {
             config.pthreadPoolUnusedSize = 1;
         }
-        if (!Number.isInteger(config.finalizerThreadStartDelayMs)) {
-            config.finalizerThreadStartDelayMs = 200;
-        }
         if (config.jsThreadBlockingMode == undefined) {
             config.jsThreadBlockingMode = JSThreadBlockingMode.PreventSynchronousJSExport;
         }

@@ -20,6 +20,7 @@ declare interface Int32Ptr extends NativePointer {
 declare interface EmscriptenModule {
     _malloc(size: number): VoidPtr;
     _free(ptr: VoidPtr): void;
+    _sbrk(size: number): VoidPtr;
     out(message: string): void;
     err(message: string): void;
     ccall<T>(ident: string, returnType?: string | null, argTypes?: string[], args?: any[], opts?: any): T;
@@ -194,10 +195,6 @@ type MonoConfig = {
      * number of unused workers kept in the emscripten pthread pool after startup
      */
     pthreadPoolUnusedSize?: number;
-    /**
-     * Delay in milliseconds before starting the finalizer thread
-     */
-    finalizerThreadStartDelayMs?: number;
     /**
      * If true, a list of the methods optimized by the interpreter will be saved and used for faster startup
      *  on future runs of the application
