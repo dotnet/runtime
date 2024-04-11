@@ -317,7 +317,12 @@ namespace System.IO
             Write(string.Format(FormatProvider, format, arg));
         }
 
-        public virtual void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> arg)
+        /// <summary>
+        /// Writes a formatted string to the text stream, using the same semantics as <see cref="string.Format(string, ReadOnlySpan{object?})"/>.
+        /// </summary>
+        /// <param name="format">A composite format string.</param>
+        /// <param name="arg">An object span that contains zero or more objects to format and write.</param>
+        public virtual void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
         {
             Write(string.Format(FormatProvider, format, arg));
         }
@@ -519,7 +524,12 @@ namespace System.IO
             WriteLine(string.Format(FormatProvider, format, arg));
         }
 
-        public virtual void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> arg)
+        /// <summary>
+        /// Writes out a formatted string and a new line to the text stream, using the same semantics as <see cref="string.Format(string, ReadOnlySpan{object?})"/>.
+        /// </summary>
+        /// <param name="format">A composite format string.</param>
+        /// <param name="arg">An object span that contains zero or more objects to format and write.</param>
+        public virtual void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
         {
             WriteLine(string.Format(FormatProvider, format, arg));
         }
@@ -710,7 +720,7 @@ namespace System.IO
             public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1) { }
             public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2) { }
             public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg) { }
-            public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> arg) { }
+            public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg) { }
             public override Task WriteAsync(char value) => Task.CompletedTask;
             public override Task WriteAsync(string? value) => Task.CompletedTask;
             public override Task WriteAsync(StringBuilder? value, CancellationToken cancellationToken = default) => Task.CompletedTask;
@@ -736,7 +746,7 @@ namespace System.IO
             public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1) { }
             public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2) { }
             public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg) { }
-            public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> arg) { }
+            public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg) { }
             public override Task WriteLineAsync(char value) => Task.CompletedTask;
             public override Task WriteLineAsync(string? value) => Task.CompletedTask;
             public override Task WriteLineAsync(StringBuilder? value, CancellationToken cancellationToken = default) => Task.CompletedTask;

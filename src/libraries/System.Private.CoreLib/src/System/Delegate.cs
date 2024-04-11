@@ -26,7 +26,16 @@ namespace System
         public static Delegate? Combine(params Delegate?[]? delegates) =>
             Combine((ReadOnlySpan<Delegate?>)delegates);
 
-        public static Delegate? Combine(/*params*/ ReadOnlySpan<Delegate?> delegates)
+        /// <summary>
+        /// Concatenates the invocation lists of an span of delegates.
+        /// </summary>
+        /// <param name="delegates">The span of delegates to combine.</param>
+        /// <returns>
+        /// A new delegate with an invocation list that concatenates the invocation lists of the delegates in the <paramref name="delegates"/> span.
+        /// Returns <see langword="null" /> if <paramref name="delegates"/> is <see langword="null" />,
+        /// if <paramref name="delegates"/> contains zero elements, or if every entry in <paramref name="delegates"/> is <see langword="null" />.
+        /// </returns>
+        public static Delegate? Combine(params ReadOnlySpan<Delegate?> delegates)
         {
             Delegate? d = null;
 

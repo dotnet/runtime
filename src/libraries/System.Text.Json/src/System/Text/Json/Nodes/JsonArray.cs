@@ -39,7 +39,12 @@ namespace System.Text.Json.Nodes
             InitializeFromArray(items);
         }
 
-        public JsonArray(JsonNodeOptions options, /*param*/ ReadOnlySpan<JsonNode?> items) : base(options)
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="JsonArray"/> class that contains items from the specified params span.
+        /// </summary>
+        /// <param name="options">Options to control the behavior.</param>
+        /// <param name="items">The items to add to the new <see cref="JsonArray"/>.</param>
+        public JsonArray(JsonNodeOptions options, params ReadOnlySpan<JsonNode?> items) : base(options)
         {
             InitializeFromSpan(items);
         }
@@ -53,7 +58,11 @@ namespace System.Text.Json.Nodes
             InitializeFromArray(items);
         }
 
-        public JsonArray(/*params*/ ReadOnlySpan<JsonNode?> items) : base()
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="JsonArray"/> class that contains items from the specified span.
+        /// </summary>
+        /// <param name="items">The items to add to the new <see cref="JsonArray"/>.</param>
+        public JsonArray(params ReadOnlySpan<JsonNode?> items) : base()
         {
             InitializeFromSpan(items);
         }
@@ -149,7 +158,7 @@ namespace System.Text.Json.Nodes
 
         private void InitializeFromSpan(ReadOnlySpan<JsonNode?> items)
         {
-            List<JsonNode?> list = new(items.Count);
+            List<JsonNode?> list = new(items.Length);
 
 #if NET8_0_OR_GREATER
             list.AddRange(items);

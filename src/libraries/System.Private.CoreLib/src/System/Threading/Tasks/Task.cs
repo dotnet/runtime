@@ -4690,8 +4690,21 @@ namespace System.Threading.Tasks
             Debug.Assert(waitResult, "expected wait to succeed");
         }
 
+        /// <summary>
+        /// Waits for all of the provided <see cref="Task"/> objects to complete execution.
+        /// </summary>
+        /// <param name="tasks">
+        /// An array of <see cref="Task"/> instances on which to wait.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// The <paramref name="tasks"/> argument contains a null element.
+        /// </exception>
+        /// <exception cref="AggregateException">
+        /// At least one of the <see cref="Task"/> instances was canceled -or- an exception was thrown during
+        /// the execution of at least one of the <see cref="Task"/> instances.
+        /// </exception>
         [UnsupportedOSPlatform("browser")]
-        public static void WaitAll(/*params*/ ReadOnlySpan<Task> tasks)
+        public static void WaitAll(params ReadOnlySpan<Task> tasks)
         {
             bool waitResult = WaitAllCore(tasks, Timeout.Infinite, default);
             Debug.Assert(waitResult, "expected wait to succeed");
@@ -5933,7 +5946,7 @@ namespace System.Threading.Tasks
         /// </para>
         /// </remarks>
         /// <exception cref="ArgumentException">The <paramref name="tasks"/> array contained a null task.</exception>
-        public static Task WhenAll(/*params*/ ReadOnlySpan<Task> tasks) =>
+        public static Task WhenAll(params ReadOnlySpan<Task> tasks) =>
             tasks.Length != 0 ? new WhenAllPromise(tasks) : CompletedTask;
 
         /// <summary>A Task that gets completed when all of its constituent tasks complete.</summary>
@@ -6233,7 +6246,34 @@ namespace System.Threading.Tasks
             return WhenAll((ReadOnlySpan<Task<TResult>>)tasks);
         }
 
-        public static Task<TResult[]> WhenAll<TResult>(/*params*/ ReadOnlySpan<Task<TResult>> tasks)
+        /// <summary>
+        /// Creates a task that will complete when all of the supplied tasks have completed.
+        /// </summary>
+        /// <param name="tasks">The tasks to wait on for completion.</param>
+        /// <returns>A task that represents the completion of all of the supplied tasks.</returns>
+        /// <remarks>
+        /// <para>
+        /// If any of the supplied tasks completes in a faulted state, the returned task will also complete in a Faulted state,
+        /// where its exceptions will contain the aggregation of the set of unwrapped exceptions from each of the supplied tasks.
+        /// </para>
+        /// <para>
+        /// If none of the supplied tasks faulted but at least one of them was canceled, the returned task will end in the Canceled state.
+        /// </para>
+        /// <para>
+        /// If none of the tasks faulted and none of the tasks were canceled, the resulting task will end in the RanToCompletion state.
+        /// The Result of the returned task will be set to an array containing all of the results of the
+        /// supplied tasks in the same order as they were provided (e.g. if the input tasks array contained t1, t2, t3, the output
+        /// task's Result will return an TResult[] where arr[0] == t1.Result, arr[1] == t2.Result, and arr[2] == t3.Result).
+        /// </para>
+        /// <para>
+        /// If the supplied array/enumerable contains no tasks, the returned task will immediately transition to a RanToCompletion
+        /// state before it's returned to the caller.  The returned TResult[] will be an array of 0 elements.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="ArgumentException">
+        /// The <paramref name="tasks"/> array contained a null task.
+        /// </exception>
+        public static Task<TResult[]> WhenAll<TResult>(params ReadOnlySpan<Task<TResult>> tasks)
         {
             if (tasks.IsEmpty)
             {
@@ -6392,7 +6432,19 @@ namespace System.Threading.Tasks
             return WhenAnyCore((ReadOnlySpan<Task>)tasks);
         }
 
-        public static Task<Task> WhenAny(/*params*/ ReadOnlySpan<Task> tasks) =>
+        /// <summary>
+        /// Creates a task that will complete when any of the supplied tasks have completed.
+        /// </summary>
+        /// <param name="tasks">The tasks to wait on for completion.</param>
+        /// <returns>A task that represents the completion of one of the supplied tasks.  The return Task's Result is the task that completed.</returns>
+        /// <remarks>
+        /// The returned task will complete when any of the supplied tasks has completed.  The returned task will always end in the RanToCompletion state
+        /// with its Result set to the first task to complete.  This is true even if the first task to complete ended in the Canceled or Faulted state.
+        /// </remarks>
+        /// <exception cref="ArgumentException">
+        /// The <paramref name="tasks"/> array contained a null task, or was empty.
+        /// </exception>
+        public static Task<Task> WhenAny(params ReadOnlySpan<Task> tasks) =>
             WhenAnyCore(tasks);
 
         /// <summary>
@@ -6664,7 +6716,19 @@ namespace System.Threading.Tasks
             return WhenAnyCore((ReadOnlySpan<Task<TResult>>)tasks);
         }
 
-        public static Task<Task<TResult>> WhenAny<TResult>(/*params*/ ReadOnlySpan<Task<TResult>> tasks) =>
+        /// <summary>
+        /// Creates a task that will complete when any of the supplied tasks have completed.
+        /// </summary>
+        /// <param name="tasks">The tasks to wait on for completion.</param>
+        /// <returns>A task that represents the completion of one of the supplied tasks.  The return Task's Result is the task that completed.</returns>
+        /// <remarks>
+        /// The returned task will complete when any of the supplied tasks has completed.  The returned task will always end in the RanToCompletion state
+        /// with its Result set to the first task to complete.  This is true even if the first task to complete ended in the Canceled or Faulted state.
+        /// </remarks>
+        /// <exception cref="ArgumentException">
+        /// The <paramref name="tasks"/> array contained a null task, or was empty.
+        /// </exception>
+        public static Task<Task<TResult>> WhenAny<TResult>(params ReadOnlySpan<Task<TResult>> tasks) =>
             WhenAnyCore(tasks);
 
         /// <summary>Creates a task that will complete when either of the supplied tasks have completed.</summary>

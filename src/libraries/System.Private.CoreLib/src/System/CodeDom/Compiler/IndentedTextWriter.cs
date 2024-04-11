@@ -174,7 +174,12 @@ namespace System.CodeDom.Compiler
             _writer.Write(format, arg);
         }
 
-        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> arg)
+        /// <summary>
+        /// Writes out a formatted string, using the same semantics as specified.
+        /// </summary>
+        /// <param name="format">The formatting string to use.</param>
+        /// <param name="arg">The argument span to output.</param>
+        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
         {
             OutputTabs();
             _writer.Write(format, arg);
@@ -358,7 +363,12 @@ namespace System.CodeDom.Compiler
             _tabsPending = true;
         }
 
-        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> arg)
+        /// <summary>
+        /// Writes out a formatted string, followed by a line terminator, using the same semantics as specified.
+        /// </summary>
+        /// <param name="format">The formatting string to use.</param>
+        /// <param name="arg">The argument span to output.</param>
+        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
         {
             OutputTabs();
             _writer.WriteLine(format, arg);

@@ -871,7 +871,13 @@ namespace System.Threading
             return CreateLinkedTokenSource((ReadOnlySpan<CancellationToken>)tokens);
         }
 
-        public static CancellationTokenSource CreateLinkedTokenSource(/*params*/ ReadOnlySpan<CancellationToken> tokens)
+        /// <summary>
+        /// Creates a <see cref="CancellationTokenSource"/> that will be in the canceled state
+        /// when any of the source tokens are in the canceled state.
+        /// </summary>
+        /// <param name="tokens">The <see cref="CancellationToken">CancellationToken</see> instances to observe.</param>
+        /// <returns>A <see cref="CancellationTokenSource"/> that is linked to the source tokens.</returns>
+        public static CancellationTokenSource CreateLinkedTokenSource(params ReadOnlySpan<CancellationToken> tokens)
         {
             return tokens.Length switch
             {

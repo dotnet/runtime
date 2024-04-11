@@ -371,10 +371,15 @@ namespace System.IO
         public static string Combine(params string[] paths)
         {
             ArgumentNullException.ThrowIfNull(paths);
-            return Combine((ReadOnlySpan<string?>)paths);
+            return Combine((ReadOnlySpan<string>)paths);
         }
 
-        public static string Combine(/*params*/ ReadOnlySpan<string> paths)
+        /// <summary>
+        /// Combines a span of strings into a path.
+        /// </summary>
+        /// <param name="paths">A span of parts of the path.</param>
+        /// <returns>The combined paths.</returns>
+        public static string Combine(params ReadOnlySpan<string> paths)
         {
             int maxSize = 0;
             int firstComponent = 0;
@@ -527,7 +532,12 @@ namespace System.IO
             return Join((ReadOnlySpan<string?>)paths);
         }
 
-        public static string Join(/*params*/ ReadOnlySpan<string?> paths)
+        /// <summary>
+        /// Concatenates a span of paths into a single path.
+        /// </summary>
+        /// <param name="paths">A span of paths.</param>
+        /// <returns>The concatenated path.</returns>
+        public static string Join(params ReadOnlySpan<string?> paths)
         {
             if (paths.IsEmpty)
             {

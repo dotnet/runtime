@@ -568,14 +568,15 @@ namespace System.IO
             }
         }
 
-        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> arg)
+        /// <summary>
+        /// Writes a formatted string to the stream, using the same semantics as <see cref="string.Format(string, ReadOnlySpan{object?})"/>.
+        /// </summary>
+        /// <param name="format">A composite format string.</param>
+        /// <param name="arg">An object span that contains zero or more objects to format and write.</param>
+        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
         {
             if (GetType() == typeof(StreamWriter))
             {
-                if (arg == null)
-                {
-                    ArgumentNullException.Throw(format is null ? nameof(format) : nameof(arg)); // same as base logic
-                }
                 WriteFormatHelper(format, arg, appendNewLine: false);
             }
             else
@@ -635,7 +636,12 @@ namespace System.IO
             }
         }
 
-        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> arg)
+        /// <summary>
+        /// Writes out a formatted string and a new line to the stream, using the same semantics as <see cref="string.Format(string, ReadOnlySpan{object?})"/>.
+        /// </summary>
+        /// <param name="format">A composite format string.</param>
+        /// <param name="arg">An object span that contains zero or more objects to format and write.</param>
+        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
         {
             if (GetType() == typeof(StreamWriter))
             {
