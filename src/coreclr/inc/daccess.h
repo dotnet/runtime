@@ -856,7 +856,7 @@ inline TADDR DacTAddrOffset( TADDR taBase, TSIZE_T dwIndex, TSIZE_T dwElementSiz
 class __TPtrBase
 {
 public:
-    __TPtrBase(void)
+    __TPtrBase()
     {
         // Make uninitialized pointers obvious.
         m_addr = (TADDR)-1;
@@ -865,20 +865,44 @@ public:
     {
         m_addr = addr;
     }
-    __TPtrBase(std::nullptr_t)
+
+    // We use this delayed check to avoid ambiguous overload issues with TADDR
+    // on platforms where NULL is defined as anything other than a uintptr_t constant
+    // or nullptr_t exactly.
+    // Without this, any valid "null pointer contstant" that is not directly either type
+    // will be implicitly convertible to both TADDR and std::nullptr_t, causing ambiguity.
+    // With this, this constructor (and all similarly declared operators) drop out of
+    // consideration when used with NULL (and not nullptr_t).
+    // With this workaround, we get identical behavior between the DAC and non-DAC builds for assigning NULL
+    // to DACized pointer types.
+    template<typename T, typename = typename std::enable_if<std::is_same<T, std::nullptr_t>::value>::type>
+    __TPtrBase(T)
     {
         m_addr = 0;
+    }
+
+    __TPtrBase& operator=(TADDR addr)
+    {
+        m_addr = addr;
+        return *this;
+    }
+
+    template<typename T, typename = typename std::enable_if<std::is_same<T, std::nullptr_t>::value>::type>
+    __TPtrBase& operator=(T)
+    {
+        m_addr = 0;
+        return *this;
     }
 
     bool operator!() const
     {
         return m_addr == 0;
     }
-    // We'd like to have an implicit conversion to bool here since the C++
-    // standard says all pointer types are implicitly converted to bool.
-    // Unfortunately, that would cause ambiguous overload errors for uses
-    // of operator== and operator!=.  Instead callers will have to compare
-    // directly against NULL.
+
+    explicit operator bool() const
+    {
+        return m_addr != 0;
+    }
 
     bool operator==(TADDR addr) const
     {
@@ -888,11 +912,15 @@ public:
     {
         return m_addr != addr;
     }
-    bool operator==(std::nullptr_t) const
+
+    template<typename T, typename = typename std::enable_if<std::is_same<T, std::nullptr_t>::value>::type>
+    bool operator==(T) const
     {
         return m_addr == 0;
     }
-    bool operator!=(std::nullptr_t) const
+
+    template<typename T, typename = typename std::enable_if<std::is_same<T, std::nullptr_t>::value>::type>
+    bool operator!=(T) const
     {
         return m_addr != 0;
     }
@@ -931,38 +959,32 @@ protected:
 // This has the common functionality between __DPtr and __ArrayDPtr.
 // The DPtrType type parameter is the actual derived type in use.  This is necessary so that
 // inhereted functions preserve exact return types.
-template<typename type, typename DPtrType>
+template<typename type, template<typename> class DPtrTemplate>
 class __DPtrBase : public __TPtrBase
 {
 public:
     typedef type _Type;
     typedef type* _Ptr;
+    using DPtrType = DPtrTemplate<type>;
 
     using __TPtrBase::__TPtrBase;
 
-    explicit __DPtrBase<type, DPtrType>(__TPtrBase addr)
-    {
-        m_addr = addr.GetAddr();
-    }
-    explicit __DPtrBase<type, DPtrType>(type const * host)
+    explicit __DPtrBase(__TPtrBase ptr) : __TPtrBase(ptr.GetAddr()) {}
+    
+    // construct const from non-const
+    __DPtrBase(__DPtrBase<typename std::remove_const<type>::type, DPtrTemplate> const & rhs) : __DPtrBase(rhs.GetAddr()) {}
+
+    explicit __DPtrBase(type const * host)
     {
         m_addr = DacGetTargetAddrForHostAddr(host, true);
     }
 
 public:
+    using __TPtrBase::operator=;
+
     DPtrType& operator=(const __TPtrBase& ptr)
     {
         m_addr = ptr.GetAddr();
-        return DPtrType(m_addr);
-    }
-    DPtrType& operator=(TADDR addr)
-    {
-        m_addr = addr;
-        return DPtrType(m_addr);
-    }
-    DPtrType& operator=(std::nullptr_t)
-    {
-        m_addr = 0;
         return DPtrType(m_addr);
     }
 
@@ -971,30 +993,19 @@ public:
         return *(type*)DacInstantiateTypeByAddress(m_addr, sizeof(type), true);
     }
 
+    using __TPtrBase::operator==;
+    using __TPtrBase::operator!=;
+
     bool operator==(const DPtrType& ptr) const
     {
         return m_addr == ptr.GetAddr();
     }
-    bool operator==(TADDR addr) const
-    {
-        return m_addr == addr;
-    }
-    bool operator==(std::nullptr_t) const
-    {
-        return m_addr == 0;
-    }
+
     bool operator!=(const DPtrType& ptr) const
     {
         return !operator==(ptr);
     }
-    bool operator!=(TADDR addr) const
-    {
-        return m_addr != addr;
-    }
-    bool operator!=(std::nullptr_t) const
-    {
-        return m_addr != 0;
-    }
+
     bool operator<(const DPtrType& ptr) const
     {
         return m_addr < ptr.GetAddr();
@@ -1197,18 +1208,14 @@ class __GlobalPtr;
 // Pointer wrapper for objects which are just plain data
 // and need no special handling.
 template<typename type>
-class __DPtr : public __DPtrBase<type,__DPtr<type> >
+class __DPtr : public __DPtrBase<type,__DPtr>
 {
 public:
-    using __DPtrBase<type,__DPtr<type>>::__DPtrBase;
-
-    // construct const from non-const
-    typedef typename std::remove_const<type>::type mutable_type;
-    __DPtr<type>(__DPtr<mutable_type> const & rhs) : __DPtrBase<type,__DPtr<type> >(rhs.GetAddr()) {}
+    using __DPtrBase<type,__DPtr>::__DPtrBase;
 
     // construct from GlobalPtr
-    explicit __DPtr<type>(__GlobalPtr< type*, __DPtr< type > > globalPtr) :
-        __DPtrBase<type,__DPtr<type> >(globalPtr.GetAddr()) {}
+    explicit __DPtr(__GlobalPtr< type*, __DPtr< type > > globalPtr) :
+        __DPtrBase<type,__DPtr>(globalPtr.GetAddr()) {}
 
     operator type*() const
     {
@@ -1231,17 +1238,14 @@ public:
 // If you really must marshal a single instance (eg. converting T* to PTR_T is too painful for now),
 // then use code:DacUnsafeMarshalSingleElement so we can identify such unsafe code.
 template<typename type>
-class __ArrayDPtr : public __DPtrBase<type,__ArrayDPtr<type> >
+class __ArrayDPtr : public __DPtrBase<type,__ArrayDPtr>
 {
 public:
-    using __DPtrBase<type,__ArrayDPtr<type>>::__DPtrBase;
+    using __DPtrBase<type,__ArrayDPtr>::__DPtrBase;
 
-    // construct const from non-const
-    typedef typename std::remove_const<type>::type mutable_type;
-    __ArrayDPtr<type>(__ArrayDPtr<mutable_type> const & rhs) : __DPtrBase<type,__ArrayDPtr<type> >(rhs.GetAddr()) {}
-
-    // Note that there is also no explicit constructor from host instances (type*).
+    // We delete the base type's constructor from host pointer.
     // Going this direction is less problematic, but often still represents risky coding.
+    explicit __ArrayDPtr(type const * host) = delete;
 };
 
 #define ArrayDPTR(type) __ArrayDPtr< type >
@@ -1260,28 +1264,18 @@ public:
 
     using __TPtrBase::__TPtrBase;
 
-    explicit __SPtr<type>(__TPtrBase addr)
-    {
-        m_addr = addr.GetAddr();
-    }
-    explicit __SPtr<type>(type* host)
+    explicit __SPtr(__TPtrBase ptr) : __TPtrBase(ptr.GetAddr()) {}
+
+    explicit __SPtr(type* host)
     {
         m_addr = DacGetTargetAddrForHostAddr(host, true);
     }
 
-    __SPtr< type >& operator=(const __TPtrBase& ptr)
+    using __TPtrBase::operator=;
+
+    __SPtr& operator=(const __TPtrBase& ptr)
     {
         m_addr = ptr.GetAddr();
-        return *this;
-    }
-    __SPtr< type >& operator=(TADDR addr)
-    {
-        m_addr = addr;
-        return *this;
-    }
-    __SPtr< type >& operator=(std::nullptr_t)
-    {
-        m_addr = 0;
         return *this;
     }
 
@@ -1357,28 +1351,18 @@ public:
 
     using __TPtrBase::__TPtrBase;
 
-    explicit __VPtr< type >(__TPtrBase addr)
-    {
-        m_addr = addr.GetAddr();
-    }
-    explicit __VPtr< type >(type* host)
+    explicit __VPtr(__TPtrBase ptr) : __TPtrBase(ptr.GetAddr()) {}
+
+    explicit __VPtr(type* host)
     {
         m_addr = DacGetTargetAddrForHostAddr(host, true);
     }
 
-    __VPtr< type >& operator=(const __TPtrBase& ptr)
+    using __TPtrBase::operator=;
+
+    __VPtr& operator=(const __TPtrBase& ptr)
     {
         m_addr = ptr.GetAddr();
-        return *this;
-    }
-    __VPtr< type >& operator=(TADDR addr)
-    {
-        m_addr = addr;
-        return *this;
-    }
-    __VPtr< type >& operator=(std::nullptr_t)
-    {
-        m_addr = 0;
         return *this;
     }
 
@@ -1391,29 +1375,17 @@ public:
         return (type*)DacInstantiateClassByVTable(m_addr, sizeof(type), true);
     }
 
-    bool operator==(const __VPtr< type >& ptr) const
+    using __TPtrBase::operator==;
+    using __TPtrBase::operator!=;
+
+    bool operator==(const __VPtr& ptr) const
     {
         return m_addr == ptr.m_addr;
     }
-    bool operator==(TADDR addr) const
-    {
-        return m_addr == addr;
-    }
-    bool operator==(std::nullptr_t) const
-    {
-        return m_addr == 0;
-    }
-    bool operator!=(const __VPtr< type >& ptr) const
+
+    bool operator!=(const __VPtr& ptr) const
     {
         return !operator==(ptr);
-    }
-    bool operator!=(TADDR addr) const
-    {
-        return m_addr != addr;
-    }
-    bool operator!=(std::nullptr_t) const
-    {
-        return m_addr != 0;
     }
 
     bool IsValid(void) const
@@ -1442,23 +1414,16 @@ public:
 
     using __DPtr<char>::__DPtr;
 
-    explicit __Str8Ptr<type, maxChars>(__TPtrBase addr)
-    {
-        m_addr = addr.GetAddr();
-    }
-    explicit __Str8Ptr<type, maxChars>(type* host)
+    explicit __Str8Ptr(type* host)
     {
         m_addr = DacGetTargetAddrForHostAddr(host, true);
     }
 
-    __Str8Ptr< type, maxChars >& operator=(const __TPtrBase& ptr)
+    using __TPtrBase::operator=;
+
+    __Str8Ptr& operator=(const __TPtrBase& ptr)
     {
         m_addr = ptr.GetAddr();
-        return *this;
-    }
-    __Str8Ptr< type, maxChars >& operator=(TADDR addr)
-    {
-        m_addr = addr;
         return *this;
     }
 
@@ -1493,25 +1458,18 @@ public:
     typedef type _Type;
     typedef type* _Ptr;
 
-    __Str16Ptr<type, maxChars>(void) : __DPtr<WCHAR>() {}
-    __Str16Ptr<type, maxChars>(TADDR addr) : __DPtr<WCHAR>(addr) {}
-    explicit __Str16Ptr< type, maxChars >(__TPtrBase addr)
-    {
-        m_addr = addr.GetAddr();
-    }
-    explicit __Str16Ptr< type, maxChars >(type* host)
+    using __DPtr<WCHAR>::__DPtr;
+
+    explicit __Str16Ptr(type* host)
     {
         m_addr = DacGetTargetAddrForHostAddr(host, true);
     }
 
-    __Str16Ptr<type, maxChars>& operator=(const __TPtrBase& ptr)
+    using __TPtrBase::operator=;
+
+    __Str16Ptr& operator=(const __TPtrBase& ptr)
     {
         m_addr = ptr.GetAddr();
-        return *this;
-    }
-    __Str16Ptr<type, maxChars>& operator=(TADDR addr)
-    {
-        m_addr = addr;
         return *this;
     }
 
@@ -1542,7 +1500,7 @@ template<typename type>
 class __GlobalVal
 {
 public:
-    __GlobalVal< type >(TADDR DacGlobals::* ptr)
+    __GlobalVal(TADDR DacGlobals::* ptr)
     {
         m_ptr = ptr;
     }
@@ -1588,7 +1546,7 @@ template<typename type, size_t size>
 class __GlobalArray
 {
 public:
-    __GlobalArray<type, size>(TADDR DacGlobals::* ptr)
+    __GlobalArray(TADDR DacGlobals::* ptr)
     {
         m_ptr = ptr;
     }
@@ -1622,7 +1580,7 @@ class __GlobalPtr
 {
     using DPtr = __DPtr<store_type>;
 public:
-    __GlobalPtr<acc_type, store_type>(TADDR DacGlobals::* ptr)
+    __GlobalPtr(TADDR DacGlobals::* ptr)
     {
         m_ptr = ptr;
     }
@@ -1792,19 +1750,11 @@ public:
 
     // Note, unlike __DPtr, any pointer type can be assigned to a __VoidPtr
     // This is to mirror the assignability of any pointer type to a void*
+    using __TPtrBase::operator=;
+
     __VoidPtr& operator=(const __TPtrBase& ptr)
     {
         m_addr = ptr.GetAddr();
-        return *this;
-    }
-    __VoidPtr& operator=(TADDR addr)
-    {
-        m_addr = addr;
-        return *this;
-    }
-    __VoidPtr& operator=(std::nullptr_t)
-    {
-        m_addr = 0;
         return *this;
     }
 
@@ -1813,29 +1763,17 @@ public:
 
     // PTR_Void can be compared to any other pointer type (because conceptually,
     // any other pointer type should be implicitly convertible to void*)
+
+    using __TPtrBase::operator==;
+    using __TPtrBase::operator!=;
+
     bool operator==(const __TPtrBase& ptr) const
     {
         return m_addr == ptr.GetAddr();
     }
-    bool operator==(TADDR addr) const
-    {
-        return m_addr == addr;
-    }
-    bool operator==(std::nullptr_t) const
-    {
-        return m_addr == 0;
-    }
     bool operator!=(const __TPtrBase& ptr) const
     {
         return !operator==(ptr);
-    }
-    bool operator!=(TADDR addr) const
-    {
-        return m_addr != addr;
-    }
-    bool operator!=(std::nullptr_t) const
-    {
-        return m_addr != 0;
     }
     bool operator<(const __TPtrBase& ptr) const
     {
