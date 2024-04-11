@@ -4731,11 +4731,8 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
     // Marshal the contents of the value class into the record.
     MethodDesc* pStructMarshalStub;
     {
-        GCPROTECT_BEGIN(*pBoxedValueClass);
         GCX_PREEMP();
-
         pStructMarshalStub = NDirect::CreateStructMarshalILStub(pValueClassMT);
-        GCPROTECT_END();
     }
 
     MarshalStructViaILStub(pStructMarshalStub, (*pBoxedValueClass)->GetData(), (BYTE*)V_RECORD(pRecHolder), StructMarshalStubs::MarshalOperation::Marshal);
