@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -10,6 +11,7 @@ namespace Microsoft.Diagnostics.DataContractReader;
 public partial class ContractDescriptorParser
 {
     public const string TypeDescriptorSizeSigil = "!";
+
     public static CompactContractDescriptor? Parse(ReadOnlySpan<byte> json)
     {
         return JsonSerializer.Deserialize(json, ContractDescriptorContext.Default.CompactContractDescriptor);
@@ -23,14 +25,18 @@ public partial class ContractDescriptorParser
     [JsonSerializable(typeof(Dictionary<string, FieldDescriptor>))]
     [JsonSerializable(typeof(TypeDescriptor))]
     [JsonSerializable(typeof(FieldDescriptor))]
+    [JsonSourceGenerationOptions(AllowTrailingCommas = true,
+                                DictionaryKeyPolicy = JsonKnownNamingPolicy.Unspecified, // contracts, types and globals are case sensitive
+                                PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
+                                NumberHandling = JsonNumberHandling.AllowReadingFromString,
+                                ReadCommentHandling = JsonCommentHandling.Skip)]
     internal sealed partial class ContractDescriptorContext : JsonSerializerContext
     {
     }
 
-    // TODO: fix the key names to use lowercase
     public class CompactContractDescriptor
     {
-        public int Version { get; set; }
+        public int? Version { get; set; }
         public string? Baseline { get; set; }
         public Dictionary<string, int>? Contracts { get; set; }
 
@@ -50,6 +56,7 @@ public partial class ContractDescriptorParser
     }
 
     // TODO: compact format needs a custom converter
+    [JsonConverter(typeof(FieldDescriptorConverter))]
     public class FieldDescriptor
     {
         public string? Type { get; set; }
@@ -99,6 +106,64 @@ public partial class ContractDescriptorParser
         }
 
         public override void Write(Utf8JsonWriter writer, TypeDescriptor value, JsonSerializerOptions options)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    internal sealed class FieldDescriptorConverter : JsonConverter<FieldDescriptor>
+    {
+        public override FieldDescriptor Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (reader.TokenType == JsonTokenType.Number || reader.TokenType == JsonTokenType.String)
+                return new FieldDescriptor { Offset = reader.GetInt32() };
+            if (reader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+            int eltIdx = 0;
+            string? type = null;
+            int offset = 0;
+            while (reader.Read())
+            {
+                switch (reader.TokenType)
+                {
+                    case JsonTokenType.EndArray:
+                        return new FieldDescriptor { Type = type, Offset = offset };
+                    case JsonTokenType.Comment:
+                        // don't incrment eltIdx
+                        continue;
+                    default:
+                        break;
+                }
+                switch (eltIdx)
+                {
+                    case 0:
+                        {
+                            // expect an offset - either a string or a number token
+                            if (reader.TokenType == JsonTokenType.Number || reader.TokenType == JsonTokenType.String)
+                                offset = reader.GetInt32();
+                            else
+                                throw new JsonException();
+                            break;
+                        }
+                    case 1:
+                        {
+                            // expect a type - a string token
+                            if (reader.TokenType == JsonTokenType.String)
+                                type = reader.GetString();
+                            else
+                                throw new JsonException();
+                            break;
+                        }
+                    default:
+                        // too many elements
+                        throw new JsonException();
+                }
+                eltIdx++;
+            }
+            throw new JsonException();
+        }
+
+        public override void Write(Utf8JsonWriter writer, FieldDescriptor value, JsonSerializerOptions options)
         {
             throw new NotImplementedException();
         }
