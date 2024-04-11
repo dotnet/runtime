@@ -23,12 +23,15 @@ namespace System.Net.Quic
     public sealed partial class QuicConnection : System.IAsyncDisposable
     {
         internal QuicConnection() { }
+        public int AvailableBidirectionalStreamsCount { get { throw null; } }
+        public int AvailableUnidirectionalStreamsCount { get { throw null; } }
         public static bool IsSupported { get { throw null; } }
         public System.Net.IPEndPoint LocalEndPoint { get { throw null; } }
         public System.Net.Security.SslApplicationProtocol NegotiatedApplicationProtocol { get { throw null; } }
         public System.Security.Cryptography.X509Certificates.X509Certificate? RemoteCertificate { get { throw null; } }
         public System.Net.IPEndPoint RemoteEndPoint { get { throw null; } }
         public string TargetHostName { get { throw null; } }
+        public event System.Net.Quic.QuicConnectionStreamsAvailableEventHandler? StreamsAvailable { add { } remove { } }
         public System.Threading.Tasks.ValueTask<System.Net.Quic.QuicStream> AcceptInboundStreamAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Threading.Tasks.ValueTask CloseAsync(long errorCode, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.ValueTask<System.Net.Quic.QuicConnection> ConnectAsync(System.Net.Quic.QuicClientConnectionOptions options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
@@ -48,6 +51,13 @@ namespace System.Net.Quic
         public int MaxInboundBidirectionalStreams { get { throw null; } set { } }
         public int MaxInboundUnidirectionalStreams { get { throw null; } set { } }
     }
+    public partial class QuicConnectionStreamsAvailableEventArgs : System.EventArgs
+    {
+        internal QuicConnectionStreamsAvailableEventArgs() { }
+        public int BidirectionalStreamsCountIncrement { get { throw null; } }
+        public int UnidirectionalStreamsCountIncrement { get { throw null; } }
+    }
+    public delegate void QuicConnectionStreamsAvailableEventHandler(object? sender, System.Net.Quic.QuicConnectionStreamsAvailableEventArgs e);
     public enum QuicError
     {
         Success = 0,

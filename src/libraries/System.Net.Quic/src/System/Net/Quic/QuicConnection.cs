@@ -18,6 +18,7 @@ using LOCAL_ADDRESS_CHANGED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymo
 using PEER_ADDRESS_CHANGED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._PEER_ADDRESS_CHANGED_e__Struct;
 using PEER_CERTIFICATE_RECEIVED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._PEER_CERTIFICATE_RECEIVED_e__Struct;
 using PEER_STREAM_STARTED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._PEER_STREAM_STARTED_e__Struct;
+using STREAMS_AVAILABLE_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._STREAMS_AVAILABLE_e__Struct;
 using SHUTDOWN_COMPLETE_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._SHUTDOWN_COMPLETE_e__Struct;
 using SHUTDOWN_INITIATED_BY_PEER_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._SHUTDOWN_INITIATED_BY_PEER_e__Struct;
 using SHUTDOWN_INITIATED_BY_TRANSPORT_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._SHUTDOWN_INITIATED_BY_TRANSPORT_e__Struct;
@@ -179,6 +180,12 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// </summary>
     private IPEndPoint _localEndPoint = null!;
     /// <summary>
+    /// </summary>
+    private int _availableBidirectionalStreamsCount;
+    /// <summary>
+    /// </summary>
+    private int _availableUnidirectionalStreamsCount;
+    /// <summary>
     /// Keeps track whether <see cref="RemoteCertificate"/> has been accessed so that we know whether to dispose the certificate or not.
     /// </summary>
     private bool _remoteCertificateExposed;
@@ -206,6 +213,33 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// The local endpoint used for this connection.
     /// </summary>
     public IPEndPoint LocalEndPoint => _localEndPoint;
+
+    /// <summary>
+    /// Returns the last known number of bidirectional stream that can be opened on this connection.
+    /// </summary>
+    public int AvailableBidirectionalStreamsCount => Volatile.Read(ref _availableBidirectionalStreamsCount);
+    /// <summary>
+    /// Returns the last known number of unidirectional stream that can be opened on this connection.
+    /// </summary>
+    public int AvailableUnidirectionalStreamsCount => Volatile.Read(ref _availableUnidirectionalStreamsCount);
+
+    /// <summary>
+    /// Occurres when an additional stream capacity has been released by the peer. Corresponds to receiving MAX_STREAMS frame.
+    /// </summary>
+    public event QuicConnectionStreamsAvailableEventHandler? StreamsAvailable;
+    private async void OnStreamsAvailable(int bidirectionalStreamsCountIncrement, int unidirectionalStreamsCountIncrement)
+    {
+        // Bail out early to avoid queueing work on the thread pool as well as event args instantiation.
+        if (StreamsAvailable is null)
+        {
+            return;
+        }
+
+        // Do not invoke user-defined event handler code on MsQuic thread.
+        await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+
+        StreamsAvailable?.Invoke(this, new QuicConnectionStreamsAvailableEventArgs(bidirectionalStreamsCountIncrement, unidirectionalStreamsCountIncrement));
+    }
 
     /// <summary>
     /// Gets the name of the server the client is trying to connect to. That name is used for server certificate validation. It can be a DNS name or an IP address.
@@ -428,6 +462,14 @@ public sealed partial class QuicConnection : IAsyncDisposable
             }
 
             await stream.StartAsync(cancellationToken).ConfigureAwait(false);
+            if (type == QuicStreamType.Unidirectional)
+            {
+                Interlocked.Decrement(ref _availableUnidirectionalStreamsCount);
+            }
+            else
+            {
+                Interlocked.Decrement(ref _availableBidirectionalStreamsCount);
+            }
         }
         catch (Exception ex)
         {
@@ -532,6 +574,9 @@ public sealed partial class QuicConnection : IAsyncDisposable
         QuicAddr localAddress = MsQuicHelpers.GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_CONN_LOCAL_ADDRESS);
         _localEndPoint = MsQuicHelpers.QuicAddrToIPEndPoint(&localAddress);
 
+        _availableBidirectionalStreamsCount = MsQuicHelpers.GetMsQuicParameter<short>(_handle, QUIC_PARAM_CONN_LOCAL_BIDI_STREAM_COUNT);
+        _availableUnidirectionalStreamsCount = MsQuicHelpers.GetMsQuicParameter<short>(_handle, QUIC_PARAM_CONN_LOCAL_UNIDI_STREAM_COUNT);
+
         // Final (1-RTT) secrets have been derived, log them if desired to allow decrypting application traffic.
         _tlsSecret?.WriteSecret();
 
@@ -604,6 +649,15 @@ public sealed partial class QuicConnection : IAsyncDisposable
         data.Flags |= QUIC_STREAM_OPEN_FLAGS.DELAY_ID_FC_UPDATES;
         return QUIC_STATUS_SUCCESS;
     }
+    private unsafe int HandleEventStreamsAvailable(ref STREAMS_AVAILABLE_DATA data)
+    {
+        int bidirectionalStreamsCountIncrement = data.BidirectionalCount - _availableBidirectionalStreamsCount;
+        int unidirectionalStreamsCountIncrement = data.UnidirectionalCount - _availableUnidirectionalStreamsCount;
+        Volatile.Write(ref _availableBidirectionalStreamsCount, data.BidirectionalCount);
+        Volatile.Write(ref _availableUnidirectionalStreamsCount, data.UnidirectionalCount);
+        OnStreamsAvailable(bidirectionalStreamsCountIncrement, unidirectionalStreamsCountIncrement);
+        return QUIC_STATUS_SUCCESS;
+    }
     private unsafe int HandleEventPeerCertificateReceived(ref PEER_CERTIFICATE_RECEIVED_DATA data)
     {
         //
@@ -635,6 +689,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             QUIC_CONNECTION_EVENT_TYPE.LOCAL_ADDRESS_CHANGED => HandleEventLocalAddressChanged(ref connectionEvent.LOCAL_ADDRESS_CHANGED),
             QUIC_CONNECTION_EVENT_TYPE.PEER_ADDRESS_CHANGED => HandleEventPeerAddressChanged(ref connectionEvent.PEER_ADDRESS_CHANGED),
             QUIC_CONNECTION_EVENT_TYPE.PEER_STREAM_STARTED => HandleEventPeerStreamStarted(ref connectionEvent.PEER_STREAM_STARTED),
+            QUIC_CONNECTION_EVENT_TYPE.STREAMS_AVAILABLE => HandleEventStreamsAvailable(ref connectionEvent.STREAMS_AVAILABLE),
             QUIC_CONNECTION_EVENT_TYPE.PEER_CERTIFICATE_RECEIVED => HandleEventPeerCertificateReceived(ref connectionEvent.PEER_CERTIFICATE_RECEIVED),
             _ => QUIC_STATUS_SUCCESS,
         };
@@ -733,5 +788,32 @@ public sealed partial class QuicConnection : IAsyncDisposable
         {
             await stream.DisposeAsync().ConfigureAwait(false);
         }
+    }
+}
+
+/// <summary>
+/// Represents the method that will handle the <see cref="QuicConnection.StreamsAvailable" /> event of a <see cref="QuicConnection" /> object.
+/// </summary>
+/// <param name="sender">The source of the <see cref="QuicConnection.StreamsAvailable" /> event.</param>
+/// <param name="e">A <see cref="QuicConnectionStreamsAvailableEventArgs" /> object that contains the event data.</param>
+public delegate void QuicConnectionStreamsAvailableEventHandler(object? sender, QuicConnectionStreamsAvailableEventArgs e);
+/// <summary>
+/// Provides data for the <see cref="QuicConnection.StreamsAvailable" /> event.
+/// </summary>
+public partial class QuicConnectionStreamsAvailableEventArgs : EventArgs
+{
+    /// <summary>
+    /// The increment saying how many additional bidirectional streams can be opened on the connection. At the moment of <see cref="QuicConnection.StreamsAvailable"/> event, corresponds to how much <see cref="QuicConnection.AvailableBidirectionalStreamsCount"/> increased via the latest STREAMS_AVAILABLE frame.
+    /// </summary>
+    public int BidirectionalStreamsCountIncrement { get; }
+    /// <summary>
+    /// The increment saying how many additional unidirectional streams can be opened on the connection. At the moment of <see cref="QuicConnection.StreamsAvailable"/> event, corresponds to how much <see cref="QuicConnection.AvailableUnidirectionalStreamsCount"/> increased via the latest STREAMS_AVAILABLE frame.
+    /// </summary>
+    public int UnidirectionalStreamsCountIncrement { get; }
+
+    internal QuicConnectionStreamsAvailableEventArgs(int bidirectionalStreamsCountIncrement, int unidirectionalStreamsCountIncrement)
+    {
+        BidirectionalStreamsCountIncrement = bidirectionalStreamsCountIncrement;
+        UnidirectionalStreamsCountIncrement = unidirectionalStreamsCountIncrement;
     }
 }
