@@ -24,12 +24,13 @@ namespace System.ComponentModel
         /// specified value to the specified type, and using the U.S. English culture as the
         /// translation context.
         /// </summary>
-        [UnconditionalSuppressMessage("Trimming", "IL2026:", Justification = "Trimming doesn't support AmbientValueAttribute being used at runtime")]
+        [RequiresUnreferencedCode("AmbientValueAttribute usage of TypeConverter is not compatible with trimming.")]
         public AmbientValueAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, string value)
         {
             // The try/catch here is because attributes should never throw exceptions. We would fail to
             // load an otherwise normal class.
 
+            Debug.Assert(IDesignerHost.IsSupported, "Runtime instantiation of this attribute is not allowed with trimming.");
             if (!IDesignerHost.IsSupported)
             {
                 return;

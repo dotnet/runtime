@@ -31,6 +31,7 @@ namespace System.ComponentModel
         /// class, converting the specified value to the specified type, and using the U.S. English
         /// culture as the translation context.
         /// </summary>
+        [RequiresUnreferencedCode("DefaultValueAttribute usage of TypeConverter is not compatible with trimming.")]
         public DefaultValueAttribute(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
             string? value)
@@ -38,7 +39,7 @@ namespace System.ComponentModel
             // The null check and try/catch here are because attributes should never throw exceptions.
             // We would fail to load an otherwise normal class.
 
-            Debug.Assert(!IsSupported, "Runtime instantiation of this attribute is not allowed.");
+            Debug.Assert(IsSupported, "Runtime instantiation of this attribute is not allowed with trimming.");
             if (!IsSupported)
             {
                 return;
@@ -69,8 +70,6 @@ namespace System.ComponentModel
                 }
 
                 // Looking for ad hoc created TypeDescriptor.ConvertFromInvariantString(Type, string)
-                [UnconditionalSuppressMessage("Trimming", "IL2026:", Justification = "Trimming doesn't support DefaulttValueAttribute being used at runtime")]
-                [UnconditionalSuppressMessage("Trimming", "IL2111:", Justification = "Trimming doesn't support DefaulttValueAttribute being used at runtime")]
                 static bool TryConvertFromInvariantString(
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type typeToConvert,
                     string? stringValue,

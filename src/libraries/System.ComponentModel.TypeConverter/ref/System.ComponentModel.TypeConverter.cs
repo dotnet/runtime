@@ -38,6 +38,7 @@ namespace System.ComponentModel
         public AmbientValueAttribute(object? value) { }
         public AmbientValueAttribute(float value) { }
         public AmbientValueAttribute(string? value) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("AmbientValueAttribute usage of TypeConverter is not compatible with trimming.")]
         public AmbientValueAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type type, string value) { }
         public object? Value { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
