@@ -15,5 +15,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\WasmBrowserClient\WasmBrowserClient.csproj" />
+    <ProjectReference Include="..\BlazorClient\BlazorClient.csproj" />
+    <ProjectReference Include="..\Shared\Shared.csproj" />
   </ItemGroup>
+
 </Project>

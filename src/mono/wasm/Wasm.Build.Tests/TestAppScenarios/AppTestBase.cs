@@ -115,7 +115,8 @@ public abstract class AppTestBase : BlazorWasmTestBase
                 OnServerMessage: OnServerMessage,
                 BrowserPath: options.BrowserPath,
                 QueryString: queryString,
-                Host: host);
+                Host: host,
+                ExtraArgs: options.ExtraArgs);
 
         await BlazorRunTest(blazorRunOptions);
 
@@ -172,7 +173,8 @@ public abstract class AppTestBase : BlazorWasmTestBase
         Dictionary<string, string> ServerEnvironment = null,
         Action<IPage, IConsoleMessage> OnConsoleMessage = null,
         Action<string> OnServerMessage = null,
-        int? ExpectedExitCode = 0
+        int? ExpectedExitCode = 0,
+        string? ExtraArgs = null
     );
 
     protected record RunResult(

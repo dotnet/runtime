@@ -12,7 +12,14 @@ using Server;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var client = builder.Configuration.GetValue<string>("client")?.ToLowerInvariant();
+if (string.IsNullOrEmpty(client))
+    throw new Exception($"Client arg cannot be empty. Choose: blazor or wasmbrowser");
+var staticFilesPath = Path.Combine(AppContext.BaseDirectory, $"publish/wwwroot/{client}");
+
 // Add services to the container.
+builder.Services.AddControllersWithViews();
+builder.Services.AddRazorPages();
 builder.Services.AddSignalR();
 var app = builder.Build();
 
@@ -32,20 +39,33 @@ app.Use(async (context, next) =>
     await next();
 });
 
-// WASM app as a static file provider
-var wasmPath = Path.Combine(AppContext.BaseDirectory, "publish/wwwroot");
-Console.WriteLine($"wasmPath: {wasmPath}");
-app.UseDefaultFiles(new DefaultFilesOptions
+Console.WriteLine($"staticFilesPath: {staticFilesPath}");
+switch (client)
 {
-    FileProvider = new PhysicalFileProvider(wasmPath)
-});
+    case "wasmbrowser":
+        app.UseDefaultFiles(new DefaultFilesOptions
+        {
+            FileProvider = new PhysicalFileProvider(staticFilesPath)
+        });
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            FileProvider = new PhysicalFileProvider(staticFilesPath)
+        });
+        break;
+    case "blazor":
+        app.UseStaticFiles();
+        app.Map("/blazor", blazorApp => blazorApp.UseBlazorFrameworkFiles());
+        break;
+    default:
+        throw new Exception($"Expected client to be wasmbrowser or blazor, not {client}.");
 
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new PhysicalFileProvider(wasmPath)
-});
-
+}
 app.UseRouting();
+
+app.MapRazorPages();
+app.MapControllers();
+
+app.MapFallbackToFile("index.html");
 
 app.MapHub<ChatHub>("/chathub");
 

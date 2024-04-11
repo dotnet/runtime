@@ -31,10 +31,11 @@ public class SignalRClientTests : SignalRTestsBase
     public async Task SignalRPassMessages(string config, string transport)
     {
         CopyTestAsset("WasmOnAspNetCore", "SignalRClientTests", "AspNetCoreServer");
-        PublishProject(config, runtimeType: RuntimeVariant.MultiThreaded, assertAppBundle: false);
+        PublishProject(config, runtimeType: RuntimeVariant.MultiThreaded, assertAppBundle: false); // can't we just build?
 
         var result = await RunSdkStyleAppForBuild(new(
             Configuration: config,
+            ExtraArgs: "--client wasmbrowser",
             TestScenario: "SignalRClientTests",
             BrowserQueryString: new Dictionary<string, string> { ["transport"] = transport, ["message"] = "ping" } ));
 

@@ -4,6 +4,7 @@
 using Microsoft.AspNetCore.SignalR;
 
 namespace Server;
+
 public class ChatHub : Hub
 {
     public async Task SendMessage(string message, int sendingThreadId)

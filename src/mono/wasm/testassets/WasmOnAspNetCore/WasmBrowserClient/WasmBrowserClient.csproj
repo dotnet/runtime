@@ -11,6 +11,7 @@
     <WasmEnableThreads>true</WasmEnableThreads>
      <!-- avoid loading .dat files that require integrity hash calculation -->
     <InvariantGlobalization>true</InvariantGlobalization>
+    <StaticWebAssetBasePath>wasmbrowser</StaticWebAssetBasePath>
   </PropertyGroup>
 
   <!-- versions are pinned but when run from WBT level, it's taking in-tree runtime -->

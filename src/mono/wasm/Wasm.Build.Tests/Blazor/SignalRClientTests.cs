@@ -43,6 +43,7 @@ public class SignalRClientTests : SignalRTestsBase
 
         var result = await RunSdkStyleAppForBuild(new(
             Configuration: config,
+            ExtraArgs: "--client blazor",
             // We are using build (not publish),
             // we need to instruct static web assets to use manifest file,
             // because wwwroot in bin doesn't contain all files (for build)
