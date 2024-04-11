@@ -65,6 +65,10 @@ static uint32_t xmmYmmStateSupport()
 #define XSTATE_MASK_AVX512 (0xE0) /* 0b1110_0000 */
 #endif // XSTATE_MASK_AVX512
 
+#ifndef PF_ARM_SVE_INSTRUCTIONS_AVAILABLE
+#define PF_ARM_SVE_INSTRUCTIONS_AVAILABLE (46)
+#endif
+
 static uint32_t avx512StateSupport()
 {
 #if defined(HOST_APPLE)
@@ -457,6 +461,11 @@ int minipal_getcpufeatures(void)
     }
 
     // TODO: IsProcessorFeaturePresent doesn't support LRCPC2 yet.
+
+    if (IsProcessorFeaturePresent(PF_ARM_SVE_INSTRUCTIONS_AVAILABLE))
+    {
+        result |= ARM64IntrinsicConstants_Sve;
+    }
 
 #endif // HOST_WINDOWS
 
