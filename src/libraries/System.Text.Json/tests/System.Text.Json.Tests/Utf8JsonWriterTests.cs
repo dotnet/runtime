@@ -7601,7 +7601,14 @@ namespace System.Text.Json.Tests
 
         private static string HandleFormatting(string text, JsonWriterOptions options)
         {
-            return text.Replace("  ", GetIndentText(options)).Replace(Environment.NewLine, options.NewLine);
+            var normalized = text.Replace("  ", GetIndentText(options));
+
+            if (options.NewLine != Environment.NewLine)
+            {
+                normalized = normalized.Replace(Environment.NewLine, options.NewLine);
+            }
+
+            return normalized;
         }
 
         private static string GetIndentText(JsonWriterOptions options) => new(options.IndentCharacter, options.IndentSize);
