@@ -504,7 +504,7 @@ namespace System.Text.Json
                     left._unmappedMemberHandling == right._unmappedMemberHandling &&
                     left._defaultBufferSize == right._defaultBufferSize &&
                     left._maxDepth == right._maxDepth &&
-                    left._newLine == right._newLine &&
+                    left.NewLine == right.NewLine && // Read through property due to lazy initialization of the backing field
                     left._allowOutOfOrderMetadataProperties == right._allowOutOfOrderMetadataProperties &&
                     left._allowTrailingCommas == right._allowTrailingCommas &&
                     left._ignoreNullValues == right._ignoreNullValues &&
@@ -562,7 +562,7 @@ namespace System.Text.Json
                 AddHashCode(ref hc, options._unmappedMemberHandling);
                 AddHashCode(ref hc, options._defaultBufferSize);
                 AddHashCode(ref hc, options._maxDepth);
-                AddHashCode(ref hc, options._newLine ?? Environment.NewLine); // Null is equivalent to the default
+                AddHashCode(ref hc, options.NewLine); // Read through property due to lazy initialization of the backing field
                 AddHashCode(ref hc, options._allowOutOfOrderMetadataProperties);
                 AddHashCode(ref hc, options._allowTrailingCommas);
                 AddHashCode(ref hc, options._ignoreNullValues);
@@ -593,13 +593,13 @@ namespace System.Text.Json
 
                 static void AddHashCode<TValue>(ref HashCode hc, TValue? value)
                 {
-                    if (typeof(TValue).IsValueType || typeof(TValue) == typeof(string))
+                    if (typeof(TValue).IsValueType || !typeof(TValue).IsSealed)
                     {
                         hc.Add(value);
                     }
                     else
                     {
-                        Debug.Assert(!typeof(TValue).IsSealed, "Sealed reference types like string should not use this method.");
+                        // Unsealed types do not use this branch to avoid user-defined equality from being used.
                         hc.Add(RuntimeHelpers.GetHashCode(value));
                     }
                 }
