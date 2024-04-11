@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.Build.Traversal" DefaultTargets="Publish">
+<Project Sdk="Microsoft.Build.Traversal">
     <PropertyGroup>
         <!-- We always want to use release for publishing using NativeAOT -->
         <NativeLibsPublishConfiguration>Release</NativeLibsPublishConfiguration>
@@ -24,6 +24,7 @@
         <!-- NativeAOT doesn't support cross-OS compilation. disable for crossdac-->
         <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and '$(HostOS)' != '$(TargetOS)'">false</SupportsNativeAotComponents>
         <!-- unsupported targets -->
+        <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and '$(DotNetBuildSourceOnly)' == 'true'">false</SupportsNativeAotComponents>
         <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and ('$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'armel' or '$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'riscv64')">false</SupportsNativeAotComponents>
         <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and ('$(TargetsWindows)' == 'true' or '$(TargetsOSX)' == 'true' or ('$(TargetsLinux)' == 'true' and '$(TargetsAndroid)' != 'true' and '$(TargetsLinuxMusl)' != 'true'))">true</SupportsNativeAotComponents>
         <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == ''">false</SupportsNativeAotComponents>
@@ -58,6 +59,7 @@
         <ProjectReference Include="@(NativeLibsProjectsToBuild)"
                           ReferenceOutputAssembly="false"
                           AdditionalProperties="%(AdditionalProperties);$(SplitSubprojectProps)"
-			  Condition="$(SupportsNativeAotComponents)"/>
+                          Targets="LinkNative"
+                          Condition="$(SupportsNativeAotComponents)"/>
     </ItemGroup>
 </Project>
