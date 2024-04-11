@@ -101,85 +101,7 @@ MDImpl3(HRESULT, MetaDataImport::GetCustomAttributeProps, mdCustomAttribute cv, 
     IfFailGo(_pScope->GetCustomAttributeProps(cv, ptkType));
     IfFailGo(_pScope->GetCustomAttributeAsBlob(cv, (const void **)&ppBlob->m_array, (ULONG *)&ppBlob->m_count));
 ErrExit:
-    if (FAILED(hr))
-    {
-        FCThrowVoid(kBadImageFormatException);
-    }
-}
-FCIMPLEND
-
-static int * EnsureResultSize(MetadataEnumResult * pResult, ULONG length)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    int * p;
-
-    if (length >= ARRAY_SIZE(pResult->smallResult) || DbgRandomOnExe(.01))
-    {
-        pResult->largeResult = (I4Array *)OBJECTREFToObject(AllocatePrimitiveArray(ELEMENT_TYPE_I4, length));
-        p = pResult->largeResult->GetDirectPointerToNonObjectElements();
-    }
-    else
-    {
-        ZeroMemory(pResult->smallResult, sizeof(pResult->smallResult));
-        pResult->largeResult = NULL;
-        p = pResult->smallResult;
-    }
-
-    pResult->length = length;
-    return p;
-}
-
-MDImpl3(void, MetaDataImport::Enum, mdToken type, mdToken tkParent, MetadataEnumResult * pResult)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(pResult != NULL);
-    }
-    CONTRACTL_END;
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-    {
-        IMDInternalImport *_pScope = pScope;
-
-        if (type == mdtTypeDef)
-        {
-            ULONG nestedClassesCount;
-            IfFailThrow(_pScope->GetCountNestedClasses(tkParent, &nestedClassesCount));
-
-            mdTypeDef* arToken = (mdTypeDef*)EnsureResultSize(pResult, nestedClassesCount);
-            IfFailThrow(_pScope->GetNestedClasses(tkParent, arToken, nestedClassesCount, &nestedClassesCount));
-        }
-        else if (type == mdtMethodDef && (TypeFromToken(tkParent) == mdtProperty || TypeFromToken(tkParent) == mdtEvent))
-        {
-            HENUMInternalHolder hEnum(pScope);
-            hEnum.EnumAssociateInit(tkParent);
-
-            ULONG associatesCount = hEnum.EnumGetCount();
-
-            static_assert_no_msg(sizeof(ASSOCIATE_RECORD) == 2 * sizeof(int));
-
-            ASSOCIATE_RECORD* arAssocRecord = (ASSOCIATE_RECORD*)EnsureResultSize(pResult, 2 * associatesCount);
-            IfFailThrow(_pScope->GetAllAssociates(&hEnum, arAssocRecord, associatesCount));
-        }
-        else
-        {
-            HENUMInternalHolder hEnum(pScope);
-            hEnum.EnumInit(type, tkParent);
-
-            ULONG count = hEnum.EnumGetCount();
-
-            mdToken* arToken = (mdToken*)EnsureResultSize(pResult, count);
-            for(COUNT_T i = 0; i < count && _pScope->EnumNext(&hEnum, &arToken[i]); i++);
-        }
-    }
-    HELPER_METHOD_FRAME_END();
+    return hr;
 }
 FCIMPLEND
 
@@ -547,3 +469,136 @@ FCIMPLEND
 #pragma optimize("", on)    // restore command line optimization defaults
 #endif
 
+struct ResultMemory final
+{
+    INT32 length;
+    INT32* alloc;
+
+    ~ResultMemory()
+    {
+        if (alloc != NULL)
+            ::free(alloc);
+    }
+
+    void AllocateManagedArray(QCall::ObjectHandleOnStack& longResult)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            MODE_PREEMPTIVE;
+            PRECONDITION(alloc != NULL);
+        }
+        CONTRACTL_END;
+
+        {
+            GCX_COOP();
+            longResult.Set(AllocatePrimitiveArray(ELEMENT_TYPE_I4, length));
+            void* p = ((I4Array*)OBJECTREFToObject(longResult.Get()))->GetDirectPointerToNonObjectElements();
+            memcpyNoGCRefs(p, alloc, length * sizeof(INT32));
+        }
+    }
+};
+
+static void* EnsureResultSize(
+    INT32 resultLength,
+    INT32 shortResultLen,
+    INT32* shortResult,
+    ResultMemory& resultMemory)
+{
+    CONTRACT(void*)
+    {
+        THROWS;
+        MODE_PREEMPTIVE;
+        PRECONDITION(shortResultLen > 0);
+        PRECONDITION(shortResult != NULL);
+        POSTCONDITION((RETVAL != NULL));
+    }
+    CONTRACT_END;
+
+    void* p;
+    INT32 resultInBytes;
+    if (resultLength <= shortResultLen)
+    {
+        resultInBytes = shortResultLen * sizeof(INT32);
+        p = shortResult;
+    }
+    else
+    {
+        _ASSERTE(resultLength > 0);
+        resultInBytes = resultLength * sizeof(INT32);
+
+        resultMemory.length = resultLength;
+        resultMemory.alloc = (INT32*)::malloc(resultInBytes);
+        if (resultMemory.alloc == NULL)
+            ThrowOutOfMemory();
+        p = resultMemory.alloc;
+    }
+    ZeroMemory(p, resultInBytes);
+    RETURN p;
+}
+
+extern "C" void QCALLTYPE MetadataImport_Enum(
+    IMDInternalImport* pScope,
+    mdToken type,
+    mdToken tkParent,
+    /* in/out */ INT32* length,
+    INT32* shortResult,
+    QCall::ObjectHandleOnStack longResult)
+{
+    CONTRACTL
+    {
+        QCALL_CHECK;
+        PRECONDITION(pScope != NULL);
+        PRECONDITION(length != NULL);
+        PRECONDITION(shortResult != NULL);
+    }
+    CONTRACTL_END;
+
+    BEGIN_QCALL;
+
+    IMDInternalImport *_pScope = pScope;
+
+    ResultMemory memory{};
+    ULONG resultLength;
+    INT32 shortResultLen = *length;
+    if (type == mdtTypeDef)
+    {
+        IfFailThrow(_pScope->GetCountNestedClasses(tkParent, &resultLength));
+
+        mdTypeDef* arToken = (mdTypeDef*)EnsureResultSize(resultLength, shortResultLen, shortResult, memory);
+        IfFailThrow(_pScope->GetNestedClasses(tkParent, arToken, resultLength, &resultLength));
+    }
+    else if (type == mdtMethodDef && (TypeFromToken(tkParent) == mdtProperty || TypeFromToken(tkParent) == mdtEvent))
+    {
+        HENUMInternalHolder hEnum(pScope);
+        hEnum.EnumAssociateInit(tkParent);
+
+        ULONG associatesCount = hEnum.EnumGetCount();
+
+        // The ASSOCIATE_RECORD is a pair of integers.
+        // This means we require a size of 2x the returned length.
+        resultLength = associatesCount * 2;
+        static_assert_no_msg(sizeof(ASSOCIATE_RECORD) == 2 * sizeof(INT32));
+
+        ASSOCIATE_RECORD* arAssocRecord = (ASSOCIATE_RECORD*)EnsureResultSize(resultLength, shortResultLen, shortResult, memory);
+        IfFailThrow(_pScope->GetAllAssociates(&hEnum, arAssocRecord, associatesCount));
+    }
+    else
+    {
+        HENUMInternalHolder hEnum(pScope);
+        hEnum.EnumInit(type, tkParent);
+
+        resultLength = hEnum.EnumGetCount();
+
+        mdToken* arToken = (mdToken*)EnsureResultSize(resultLength, shortResultLen, shortResult, memory);
+        for(COUNT_T i = 0; i < resultLength && _pScope->EnumNext(&hEnum, &arToken[i]); i++);
+    }
+
+    // If the result was longer than the short, we need to allocate an array.
+    if (resultLength > (ULONG)shortResultLen)
+        memory.AllocateManagedArray(longResult);
+
+    *length = resultLength;
+
+    END_QCALL;
+}

@@ -171,38 +171,44 @@ namespace System.Reflection
         public override string ToString() => string.Create(CultureInfo.InvariantCulture, stackalloc char[64], $"0x{Value:x8}");
     }
 
-    internal unsafe struct MetadataEnumResult
+    internal ref struct MetadataEnumResult
     {
-        // Keep the definition in sync with vm\ManagedMdImport.hpp
-        private int[] largeResult;
-        private int length;
-        private fixed int smallResult[16];
+        internal int _length;
 
-        public int Length => length;
+        internal const int SmallIntArrayLength = 16;
+
+        [InlineArray(SmallIntArrayLength)]
+        internal struct SmallIntArray
+        {
+            public int e;
+        }
+        internal SmallIntArray _smallResult;
+        internal int[]? _largeResult;
+
+        public int Length => _length;
 
         public int this[int index]
         {
             get
             {
                 Debug.Assert(0 <= index && index < Length);
-                if (largeResult != null)
-                    return largeResult[index];
+                if (_largeResult != null)
+                    return _largeResult[index];
 
-                fixed (int* p = smallResult)
-                    return p[index];
+                return _smallResult[index];
             }
         }
     }
 
 #pragma warning disable CA1066 // IEquatable<MetadataImport> interface implementation isn't used
-    internal readonly struct MetadataImport
+    internal readonly partial struct MetadataImport
 #pragma warning restore CA1067
     {
         private readonly IntPtr m_metadataImport2;
         private readonly object? m_keepalive;
 
         #region Override methods from Object
-        internal static readonly MetadataImport EmptyImport = new MetadataImport((IntPtr)0, null);
+        internal static readonly MetadataImport EmptyImport = new MetadataImport(IntPtr.Zero, null);
 
         public override int GetHashCode()
         {
@@ -299,13 +305,18 @@ namespace System.Reflection
         }
         #endregion
 
-        #region FCalls
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _Enum(IntPtr scope, int type, int parent, out MetadataEnumResult result);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MetadataImport_Enum")]
+        private static unsafe partial void Enum(IntPtr scope, int type, int parent, ref int length, int* shortResult, ObjectHandleOnStack longResult);
 
-        public void Enum(MetadataTokenType type, int parent, out MetadataEnumResult result)
+        public unsafe void Enum(MetadataTokenType type, int parent, out MetadataEnumResult result)
         {
-            _Enum(m_metadataImport2, (int)type, parent, out result);
+            result = default;
+            int length = MetadataEnumResult.SmallIntArrayLength;
+            fixed (int* p = &result._smallResult.e)
+            {
+                Enum(m_metadataImport2, (int)type, parent, ref length, p, ObjectHandleOnStack.Create(ref result._largeResult));
+            }
+            result._length = length;
         }
 
         public void EnumNestedTypes(int mdTypeDef, out MetadataEnumResult result)
@@ -338,6 +349,7 @@ namespace System.Reflection
             Enum(MetadataTokenType.Event, mdTypeDef, out result);
         }
 
+        #region FCalls
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe int GetDefaultValue(
             IntPtr scope,

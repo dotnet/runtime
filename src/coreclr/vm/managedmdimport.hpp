@@ -24,13 +24,6 @@ typedef struct
     void* m_array;
 } ConstArray;
 
-typedef struct
-{
-    I4Array * largeResult;
-    int length;
-    int smallResult[16];
-} MetadataEnumResult;
-
 #define MDDecl0(RET, NAME) static FCDECL1(RET, NAME, IMDInternalImport* pScope)
 #define MDDecl1(RET, NAME, arg0) static FCDECL2(RET, NAME, IMDInternalImport* pScope, arg0)
 #define MDDecl2(RET, NAME, arg0, arg1) static FCDECL3(RET, NAME, IMDInternalImport* pScope, arg0, arg1)
@@ -98,5 +91,13 @@ public:
         LPUTF8* marshalCookie,
         INT32*  iidParamIndex);
 };
+
+extern "C" void QCALLTYPE MetadataImport_Enum(
+    IMDInternalImport* pScope,
+    mdToken type,
+    mdToken tkParent,
+    INT32* length,
+    INT32* shortResult,
+    QCall::ObjectHandleOnStack longResult);
 
 #endif
