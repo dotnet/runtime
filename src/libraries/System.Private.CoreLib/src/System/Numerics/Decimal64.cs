@@ -103,6 +103,12 @@ namespace System.Numerics
             return Number.TryParseDecimalIeee754<Decimal64, long, char>(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
+        // Compares this object to another object, returning an integer that
+        // indicates the relationship.
+        // Returns a value less than zero if this  object
+        // null is considered to be less than any instance.
+        // If object is not of type Decimal64, this method throws an ArgumentException.
+        //
         public int CompareTo(object? value)
         {
             if (value == null)
@@ -112,7 +118,7 @@ namespace System.Numerics
 
             if (value is not Decimal64 i)
             {
-                throw new ArgumentException(SR.Arg_MustBeDecimal32);
+                throw new ArgumentException(SR.Arg_MustBeDecimal64);
             }
 
             return Number.CompareDecimalIeee754<Decimal64, long, ulong>(_value, i._value);

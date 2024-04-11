@@ -80,6 +80,12 @@ namespace System.Numerics
             return Number.TryParseDecimalIeee754<Decimal128, Int128, char>(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
+        // Compares this object to another object, returning an integer that
+        // indicates the relationship.
+        // Returns a value less than zero if this  object
+        // null is considered to be less than any instance.
+        // If object is not of type Decimal128, this method throws an ArgumentException.
+        //
         public int CompareTo(object? value)
         {
             if (value == null)

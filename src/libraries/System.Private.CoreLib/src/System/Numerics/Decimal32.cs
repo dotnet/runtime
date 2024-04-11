@@ -91,6 +91,15 @@ namespace System.Numerics
                 1000000,
             ];
 
+        // Compares this object to another object, returning an integer that
+        // indicates the relationship.
+        // Returns :
+        // 0 if the values are equal
+        // Negative number if _value is less than value
+        // Positive number if _value is more than value
+        // null is considered to be less than any instance, hence returns positive number
+        // If object is not of type Decimal32, this method throws an ArgumentException.
+        //
         public int CompareTo(object? value)
         {
             if (value == null)
