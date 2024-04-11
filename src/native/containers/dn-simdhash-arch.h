@@ -50,9 +50,18 @@ typedef dn_simdhash_suffixes dn_simdhash_search_vector;
 
 // Extracting lanes from a vector register on x86/x64 has horrible latency,
 //  so it's better to do regular byte loads from the stack
-// This still generates extract_lane on WASM though... is that bad? Who knows
+#if defined(__wasm_simd128__)
+// For wasm with -msimd128, clang generates truly bizarre load/store code
+//  where it does two byte memory loads, then a vector load, then two
+//  lane insertions to write the byte loads into the loaded vector
+//  before finally passing it to find_first_matching_suffix. So we have to vec[].
+// See https://github.com/llvm/llvm-project/issues/87398#issuecomment-2050696298
+#define dn_simdhash_extract_lane(suffixes, lane) \
+	suffixes.vec[lane]
+#else
 #define dn_simdhash_extract_lane(suffixes, lane) \
 	suffixes.values[lane]
+#endif
 
 static DN_FORCEINLINE(uint32_t)
 ctz (uint32_t value)
