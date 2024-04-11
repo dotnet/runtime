@@ -58,7 +58,7 @@ public class ModuleConfigTests : AppTestBase
     [Fact]
     public async Task OutErrOverrideWorks()
     {
-        CopyTestAsset("WasmBasicTestApp", $"ModuleConfigTests_OutErrOverrideWorks");
+        CopyTestAsset("WasmBasicTestApp", $"ModuleConfigTests_OutErrOverrideWorks", "App");
         PublishProject("Debug");
 
         var result = await RunSdkStyleAppForPublish(new(
