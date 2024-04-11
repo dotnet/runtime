@@ -7417,10 +7417,7 @@ public:
         assert(call != nullptr);
         assert(!call->IsNoReturn());
         call->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
-
-        // Always increment the root compiler's optNoReturnCallCount
-        // so fgTailMergeThrows has the correct number of candidates.
-        impInlineRoot()->setMethodHasNoReturnCalls();
+        setMethodHasNoReturnCalls();
     }
 
     unsigned optNoReturnCallCount;

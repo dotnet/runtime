@@ -9923,7 +9923,7 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
     if (tree->IsNoReturn())
     {
         assert(copy->IsNoReturn());
-        impInlineRoot()->setMethodHasNoReturnCalls();
+        setMethodHasNoReturnCalls();
     }
 
     return copy;
