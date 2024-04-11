@@ -5554,6 +5554,8 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
                     block->bbNum);
             missingLikelyWeight++;
         }
+
+        foundPreds = true;
     }
 
     // We almost certainly won't get the likelihoods on a BBJ_EHFINALLYRET right,
