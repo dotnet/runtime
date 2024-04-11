@@ -4,25 +4,13 @@
 #ifndef __DN_SIMDHASH_ARCH_H__
 #define __DN_SIMDHASH_ARCH_H__
 
-#define DN_SIMDHASH_WARNINGS 1
+// #define DN_SIMDHASH_WARNINGS 1
 
 // HACK: for better language server parsing
 #include "dn-simdhash.h"
 
 static DN_FORCEINLINE(int)
-find_first_matching_suffix_scalar (uint8_t needle[DN_SIMDHASH_VECTOR_WIDTH], uint8_t haystack[DN_SIMDHASH_VECTOR_WIDTH], uint32_t count)
-{
-	// TODO: It might be profitable to hand-unroll this loop, but right now doing so
-	//  hits a bug in clang and generates really bad WASM.
-	for (uint32_t i = 0; i < count; i++)
-		if (needle[i] == haystack[i])
-			return i;
-
-	return 32;
-}
-
-static DN_FORCEINLINE(int)
-find_first_matching_suffix_scalar_1 (uint8_t needle, uint8_t haystack[DN_SIMDHASH_VECTOR_WIDTH], uint32_t count)
+find_first_matching_suffix_scalar (uint8_t needle, uint8_t haystack[DN_SIMDHASH_VECTOR_WIDTH], uint32_t count)
 {
 	// TODO: It might be profitable to hand-unroll this loop, but right now doing so
 	//  hits a bug in clang and generates really bad WASM.
@@ -42,10 +30,12 @@ find_first_matching_suffix_scalar_1 (uint8_t needle, uint8_t haystack[DN_SIMDHAS
 #elif defined(__ARM_NEON)
 #include <arm_neon.h>
 #elif defined(__wasm)
+#define DN_SIMDHASH_USE_SCALAR_FALLBACK 1
 #ifdef DN_SIMDHASH_WARNINGS
 #pragma message("WARNING: Building dn_simdhash for WASM without -msimd128! Performance will be terrible!")
 #endif
 #else
+#define DN_SIMDHASH_USE_SCALAR_FALLBACK 1
 #ifdef DN_SIMDHASH_WARNINGS
 #pragma message("WARNING: Unsupported architecture for dn_simdhash! Performance will be terrible!")
 #endif
@@ -64,6 +54,12 @@ typedef union {
 	uint8_t values[DN_SIMDHASH_VECTOR_WIDTH];
 } dn_simdhash_suffixes;
 
+#ifdef DN_SIMDHASH_USE_SCALAR_FALLBACK
+typedef uint8_t dn_simdhash_search_vector;
+#else
+typedef dn_simdhash_suffixes dn_simdhash_search_vector;
+#endif
+
 // Extracting lanes from a vector register on x86/x64 has horrible latency,
 //  so it's better to do regular byte loads from the stack
 // This still generates extract_lane on WASM though... is that bad? Who knows
@@ -79,9 +75,12 @@ ctz (uint32_t value)
 	return (uint32_t)__builtin_ctz(value);
 }
 
-static DN_FORCEINLINE(dn_simdhash_suffixes)
+static DN_FORCEINLINE(dn_simdhash_search_vector)
 build_search_vector (uint8_t needle)
 {
+#ifdef DN_SIMDHASH_USE_SCALAR_FALLBACK
+	return needle;
+#else
 	dn_simdhash_suffixes result;
 	// this produces a splat in wasm, and the other architectures are fine too
 	dn_u8x16 needles = {
@@ -90,11 +89,12 @@ build_search_vector (uint8_t needle)
 	};
 	result.vec = needles;
 	return result;
+#endif
 }
 
 // returns an index in range 0-14 on match, 15-32 if no match
 static DN_FORCEINLINE(uint32_t)
-find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack, uint32_t count)
+find_first_matching_suffix (dn_simdhash_search_vector needle, dn_simdhash_suffixes haystack, uint32_t count)
 {
 #if defined(__wasm_simd128__)
 	return ctz(wasm_i8x16_bitmask(wasm_i8x16_eq(needle.vec, haystack.vec)));
@@ -117,8 +117,7 @@ find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes ha
 	msb.b[1] = vaddv_u8(vget_high_u8(masked.vec));
 	return ctz(msb.u);
 #else
-	#define DN_SIMDHASH_USE_SCALAR_FALLBACK 1
-	return find_first_matching_suffix_scalar(needle.values, haystack.values, count);
+	return find_first_matching_suffix_scalar(needle, haystack.values, count);
 #endif
 }
 
@@ -144,10 +143,12 @@ typedef struct {
 	uint8_t values[DN_SIMDHASH_VECTOR_WIDTH];
 } dn_simdhash_suffixes;
 
+typedef dn_simdhash_suffixes dn_simdhash_search_vector;
+
 #define dn_simdhash_extract_lane(suffixes, lane) \
 	suffixes.values[lane]
 
-static DN_FORCEINLINE(dn_simdhash_suffixes)
+static DN_FORCEINLINE(dn_simdhash_search_vector)
 build_search_vector (uint8_t needle)
 {
 	dn_simdhash_suffixes result;
@@ -157,12 +158,14 @@ build_search_vector (uint8_t needle)
 
 // returns an index in range 0-14 on match, 15-32 if no match
 static DN_FORCEINLINE(uint32_t)
-find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack, uint32_t count)
+find_first_matching_suffix (dn_simdhash_search_vector needle, dn_simdhash_suffixes haystack, uint32_t count)
 {
 	return ctz(_mm_movemask_epi8(_mm_cmpeq_epi8(needle.m128, haystack.m128)));
 }
 
 #else // unknown compiler and/or unknown non-simd arch
+
+#define DN_SIMDHASH_USE_SCALAR_FALLBACK 1
 
 #ifdef DN_SIMDHASH_WARNINGS
 #pragma message("WARNING: Unsupported architecture/compiler for dn_simdhash! Performance will be terrible!")
@@ -172,23 +175,22 @@ typedef struct {
 	uint8_t values[DN_SIMDHASH_VECTOR_WIDTH];
 } dn_simdhash_suffixes;
 
+typedef uint8_t dn_simdhash_search_vector;
+
 #define dn_simdhash_extract_lane(suffixes, lane) \
 	suffixes.values[lane]
 
-static DN_FORCEINLINE(dn_simdhash_suffixes)
+static DN_FORCEINLINE(dn_simdhash_search_vector)
 build_search_vector (uint8_t needle)
 {
-	dn_simdhash_suffixes result;
-	memset(result.values, needle, DN_SIMDHASH_VECTOR_WIDTH);
-	return result;
+	return needle;
 }
 
 // returns an index in range 0-14 on match, 32 if no match
 static DN_FORCEINLINE(uint32_t)
-find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack, uint32_t count)
+find_first_matching_suffix (dn_simdhash_search_vector needle, dn_simdhash_suffixes haystack, uint32_t count)
 {
-	#define DN_SIMDHASH_USE_SCALAR_FALLBACK 1
-	return find_first_matching_suffix_scalar(needle.values, haystack.values, count);
+	return find_first_matching_suffix_scalar(needle, haystack.values, count);
 }
 
 #endif // end of clang/gcc or msvc or fallback

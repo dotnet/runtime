@@ -8,9 +8,6 @@
 #include <stdio.h>
 #include <sys/time.h>
 
-#define dn_simdhash_assert_fail(expr_string) \
-	__assert_fail(expr_string, __FILE__, __LINE__, __PRETTY_FUNCTION__)
-
 #include "dn-vector.h"
 #include "dn-simdhash.h"
 #include "dn-simdhash-utils.h"
@@ -19,6 +16,11 @@ typedef struct {
 	int i;
 	float f;
 } instance_data_t;
+
+void
+dn_simdhash_assert_fail (const char *file, int line, const char *condition) {
+    printf("simdhash assertion failed at %s:%i:\n%s", file, line, condition);
+}
 
 static DN_FORCEINLINE(uint8_t)
 key_comparer (instance_data_t data, size_t lhs, size_t rhs) {

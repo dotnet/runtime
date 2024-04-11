@@ -131,21 +131,14 @@ address_of_value (dn_simdhash_buffers_t buffers, uint32_t value_slot_index)
 // On success: returns index (0-n)
 // On failure: returns -1 if bucket has not overflowed; -2 if it has
 static DN_FORCEINLINE(int)
-DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T_PTR hash, bucket_t *bucket, DN_SIMDHASH_KEY_T needle, dn_simdhash_suffixes search_vector)
+DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T_PTR hash, bucket_t *bucket, DN_SIMDHASH_KEY_T needle, dn_simdhash_search_vector search_vector)
 {
 	// Performing an up-front load of the vector here enables clang to use extract_lane_u
 	//  to load the count on WASM instead of doing a separate load8_u operation from memory
 	dn_simdhash_suffixes bucket_suffixes = bucket->suffixes;
 	uint8_t count = dn_simdhash_extract_lane(bucket_suffixes, DN_SIMDHASH_COUNT_SLOT),
 		overflow_count = dn_simdhash_extract_lane(bucket_suffixes, DN_SIMDHASH_CASCADED_SLOT);
-#if DN_SIMDHASH_USE_SCALAR_FALLBACK
-		// HACK: This allows the creation of the search_vector in our caller to be optimized out,
-		//  and allows the search to compare each lane against a single scalar instead of having to
-		//  compare two search vectors lane-by-lane.
-	uint32_t index = find_first_matching_suffix_scalar_1(search_vector.values[0], bucket_suffixes.values, count);
-#else
 	uint32_t index = find_first_matching_suffix(search_vector, bucket_suffixes, count);
-#endif
 	for (; index < count; index++) {
 		// FIXME: Could be profitable to manually hoist the data load outside of the loop,
 		//  if not out of SCAN_BUCKET_INTERNAL entirely. Clang appears to do LICM on it.
@@ -224,7 +217,7 @@ DN_SIMDHASH_FIND_VALUE_INTERNAL (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, 
 	dn_simdhash_buffers_t buffers = hash->buffers;
 	uint8_t suffix = dn_simdhash_select_suffix(key_hash);
 	uint32_t first_bucket_index = dn_simdhash_select_bucket_index(buffers, key_hash);
-	dn_simdhash_suffixes search_vector = build_search_vector(suffix);
+	dn_simdhash_search_vector search_vector = build_search_vector(suffix);
 
 	BEGIN_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
 		int index_in_bucket = DN_SIMDHASH_SCAN_BUCKET_INTERNAL(hash, bucket_address, key, search_vector);
@@ -282,7 +275,7 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, 
 	dn_simdhash_buffers_t buffers = hash->buffers;
 	uint8_t suffix = dn_simdhash_select_suffix(key_hash);
 	uint32_t first_bucket_index = dn_simdhash_select_bucket_index(hash->buffers, key_hash);
-	dn_simdhash_suffixes search_vector = build_search_vector(suffix);
+	dn_simdhash_search_vector search_vector = build_search_vector(suffix);
 
 	BEGIN_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
 		// If necessary, check the current bucket for the key
@@ -465,7 +458,7 @@ DN_SIMDHASH_TRY_REMOVE_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key,
 	dn_simdhash_buffers_t buffers = hash->buffers;
 	uint8_t suffix = dn_simdhash_select_suffix(key_hash);
 	uint32_t first_bucket_index = dn_simdhash_select_bucket_index(buffers, key_hash);
-	dn_simdhash_suffixes search_vector = build_search_vector(suffix);
+	dn_simdhash_search_vector search_vector = build_search_vector(suffix);
 
 	BEGIN_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
 		int index_in_bucket = DN_SIMDHASH_SCAN_BUCKET_INTERNAL(hash, bucket_address, key, search_vector);
