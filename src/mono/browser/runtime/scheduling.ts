@@ -63,7 +63,7 @@ function mono_background_exec_until_done () {
 export function schedule_background_exec (): void {
     if (WasmEnableThreads) return;
     ++pump_count;
-    Module.safeSetTimeout(mono_background_exec_until_done, 0);
+    monoSafeSetTimeout(mono_background_exec_until_done, 0);
 }
 
 let lastScheduledTimeoutId: any = undefined;
@@ -73,7 +73,7 @@ export function mono_wasm_schedule_timer (shortestDueTimeMs: number): void {
         globalThis.clearTimeout(lastScheduledTimeoutId);
         lastScheduledTimeoutId = undefined;
     }
-    lastScheduledTimeoutId = Module.safeSetTimeout(mono_wasm_schedule_timer_tick, shortestDueTimeMs);
+    lastScheduledTimeoutId = monoSafeSetTimeout(mono_wasm_schedule_timer_tick, shortestDueTimeMs);
 }
 
 function mono_wasm_schedule_timer_tick () {
@@ -92,4 +92,22 @@ function mono_wasm_schedule_timer_tick () {
     } catch (ex) {
         loaderHelpers.mono_exit(1, ex);
     }
+}
+
+
+export function monoSafeSetTimeout (userCallback: (() => void), timeout: number): number {
+    Module.runtimeKeepalivePush();
+    return setTimeout(() => {
+        try {
+            if (!loaderHelpers.is_runtime_running()) {
+                return;
+            }
+            Module.maybeExit();
+            Module.runtimeKeepalivePop();
+            userCallback();
+            Module.maybeExit();
+        } catch (e) {
+            loaderHelpers.mono_exit(1, e);
+        }
+    }, timeout);
 }

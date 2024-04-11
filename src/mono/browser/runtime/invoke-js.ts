@@ -18,6 +18,7 @@ import { wrap_as_cancelable_promise } from "./cancelable-promise";
 import { threads_c_functions as tcwraps } from "./cwraps";
 import { monoThreadInfo } from "./pthreads";
 import { stringToUTF16Ptr } from "./strings";
+import { monoSafeSetTimeout } from "./scheduling";
 
 export const js_import_wrapper_by_fn_handle: Function[] = <any>[null];// 0th slot is dummy, main thread we free them on shutdown. On web worker thread we free them when worker is detached.
 
@@ -501,9 +502,9 @@ export function assert_c_interop (): void {
 // make sure we are not blocking em_task_queue_execute up the call stack
 // so that when we call back to managed, the FS calls could still be processed by the UI thread
 // see also emscripten_yield which can process the FS calls inside the spin wait
-export function invoke_later_when_on_ui_thread_sync (fn: Function, args: JSMarshalerArguments) {
+export function invoke_later_when_on_ui_thread_sync (fn: (() => void), args: JSMarshalerArguments) {
     if (WasmEnableThreads && monoThreadInfo.isUI) {
-        Module.safeSetTimeout(() => {
+        monoSafeSetTimeout(() => {
             fn();
             // see also mono_threads_wasm_sync_run_in_target_thread_vii_cb
             const done_semaphore = get_sync_done_semaphore_ptr(args);
@@ -516,9 +517,9 @@ export function invoke_later_when_on_ui_thread_sync (fn: Function, args: JSMarsh
 
 // make sure we are not blocking em_task_queue_execute up the call stack
 // so that when we call back to managed, the FS calls could still be processed by the UI thread
-export function invoke_later_when_on_ui_thread_async (fn: Function) {
+export function invoke_later_when_on_ui_thread_async (fn: (() => void)) {
     if (WasmEnableThreads && monoThreadInfo.isUI) {
-        Module.safeSetTimeout(fn, 0);
+        monoSafeSetTimeout(fn, 0);
     } else {
         fn();
     }

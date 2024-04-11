@@ -432,7 +432,7 @@
       <_EmccLDSFlags Include="-s STACK_SIZE=$(EmccStackSize)" />
       <_EmccLDSFlags Include="-s WASM_BIGINT=1" />
       <_EmccLDSFlags Condition="'$(EmccEnvironment)' != ''" Include="-s ENVIRONMENT=&quot;$(EmccEnvironment)&quot;" />
-      <_EmccLDSFlags Condition="'$(EmccEnableAssertions)' == 'true'" Include="-s ASSERTIONS=1" />
+      <_EmccLDSFlags Include="-s ASSERTIONS=1" />
 
       <_WasmNativeFileForLinking Include="%(_BitcodeFile.ObjectFile)" />
       <_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompile.ObjectFile)" />

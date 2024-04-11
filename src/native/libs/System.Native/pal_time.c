@@ -34,7 +34,11 @@ int32_t SystemNative_UTimensat(const char* path, TimeSpec* times)
 
     updatedTimes[1].tv_sec = (time_t)times[1].tv_sec;
     updatedTimes[1].tv_nsec = (long)times[1].tv_nsec;
+#if defined(TARGET_BROWSER)
+    while (CheckInterrupted(result = utimensat(AT_FDCWD, path, updatedTimes, 0)));
+#else
     while (CheckInterrupted(result = utimensat(AT_FDCWD, path, updatedTimes, AT_SYMLINK_NOFOLLOW)));
+#endif
 #else
     struct timeval updatedTimes[2];
     updatedTimes[0].tv_sec = (long)times[0].tv_sec;

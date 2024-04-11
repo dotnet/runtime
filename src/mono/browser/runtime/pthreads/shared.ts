@@ -11,6 +11,7 @@ import { set_thread_prefix } from "../logging";
 import { monoMessageSymbol, PThreadPtrNull, WorkerToMainMessageType } from "../types/internal";
 import { threads_c_functions as tcwraps } from "../cwraps";
 import { forceThreadMemoryViewRefresh } from "../memory";
+import { monoSafeSetTimeout } from "../scheduling";
 
 // A duplicate in loader/assets.ts
 export const worker_empty_prefix = "          -    ";
@@ -86,7 +87,7 @@ export function exec_synchronization_context_pump (): void {
 
 export function mono_wasm_schedule_synchronization_context (): void {
     if (!WasmEnableThreads) return;
-    Module.safeSetTimeout(exec_synchronization_context_pump, 0);
+    monoSafeSetTimeout(exec_synchronization_context_pump, 0);
 }
 
 export function mono_wasm_pthread_ptr (): PThreadPtr {
