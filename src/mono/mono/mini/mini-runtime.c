@@ -2853,7 +2853,7 @@ lookup_start:
 	p = mono_create_ftnptr (code);
 
 	if (callinfo) {
-		mono_atomic_cas_ptr ((volatile void*)&callinfo->wrapper__, NULL, p);
+		mono_atomic_cas_ptr ((volatile void*)&callinfo->wrapper__, p, NULL);
 		p = mono_atomic_load_ptr((volatile gpointer*)&callinfo->wrapper__);
 	}
 
