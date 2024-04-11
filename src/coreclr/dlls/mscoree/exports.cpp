@@ -472,8 +472,7 @@ int coreclr_execute_assembly(
             int argc,
             const char** argv,
             const char* managedAssemblyPath,
-            unsigned int* exitCode,
-            bool preLoadLibs)
+            unsigned int* exitCode)
 {
     if (exitCode == NULL)
     {
@@ -492,7 +491,7 @@ int coreclr_execute_assembly(
 
     ConstWStringHolder managedAssemblyPathW = StringToUnicode(managedAssemblyPath);
 
-    HRESULT hr = host->ExecuteAssembly(domainId, managedAssemblyPathW, argc, argvW, (DWORD *)exitCode, preLoadLibs);
+    HRESULT hr = host->ExecuteAssembly(domainId, managedAssemblyPathW, argc, argvW, (DWORD *)exitCode);
     IfFailRet(hr);
 
     return hr;

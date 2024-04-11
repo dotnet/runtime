@@ -42,6 +42,8 @@ extern "C" uint32_t QCALLTYPE AssemblyNative_GetAssemblyCount();
 
 extern "C" void QCALLTYPE AssemblyNative_GetEntryAssembly(QCall::ObjectHandleOnStack retAssembly);
 
+extern "C" void QCALLTYPE AssemblyNative_UpdateEntryAssembly(QCall::AssemblyHandle assemblyHandle);
+
 
 extern "C" void QCALLTYPE AssemblyNative_GetExecutingAssembly(QCall::StackCrawlMarkHandle stackMark, QCall::ObjectHandleOnStack retAssembly);
 

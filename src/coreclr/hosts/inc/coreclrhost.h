@@ -137,8 +137,7 @@ CORECLR_HOSTING_API(coreclr_execute_assembly,
             int argc,
             const char** argv,
             const char* managedAssemblyPath,
-            unsigned int* exitCode,
-            bool preLoadLibs);
+            unsigned int* exitCode);
 
 #undef CORECLR_HOSTING_API
 

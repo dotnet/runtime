@@ -396,8 +396,7 @@ EXTERN_C const IID IID_ICLRRuntimeHost2;
             /* [in] */ LPCWSTR pwzAssemblyPath,
             /* [in] */ int argc,
             /* [in] */ LPCWSTR *argv,
-            /* [out] */ DWORD *pReturnValue,
-             /* [in] */ bool preLoadLibs) = 0;
+            /* [out] */ DWORD *pReturnValue) = 0;
         
     };
     

@@ -126,8 +126,7 @@ public:
         LPCWSTR pwzAssemblyPath,
         int argc,
         LPCWSTR* argv,
-        DWORD* pReturnValue,
-        bool preLoadLibs);
+        DWORD* pReturnValue);
 
     static STARTUP_FLAGS GetStartupFlags();
 

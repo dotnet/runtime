@@ -1381,7 +1381,7 @@ void RunManagedStartup()
     managedStartup.Call(args);
 }
 
-INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThreads, bool preLoadLibs)
+void Assembly::ExecuteMainMethodPre(BOOL waitForOtherThreads)
 {
     CONTRACTL
     {
@@ -1396,9 +1396,6 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
 
     // reset the error code for std C
     errno=0;
-
-    HRESULT hr = S_OK;
-    INT32   iRetVal = 0;
 
     Thread *pThread = GetThread();
     MethodDesc *pMeth;
@@ -1444,11 +1441,77 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
             // Main thread wasn't started by the runtime.
             Thread::InitializationForManagedThreadInNative(pThread);
 
-             if (preLoadLibs)
-                RunManagedStartup();
+            RunManagedStartup();
 
-            if (!preLoadLibs)
-                hr = RunMain(pMeth, 1, &iRetVal, stringArgs);
+            Thread::CleanUpForManagedThreadInNative(pThread);
+        }
+    }
+
+    //RunMainPost is supposed to be called on the main thread of an EXE,
+    //after that thread has finished doing useful work.  It contains logic
+    //to decide when the process should get torn down.  So, don't call it from
+    // AppDomain.ExecuteAssembly()
+    if (pMeth) {
+        if (waitForOtherThreads)
+            RunMainPost();
+    }
+    else {
+        StackSString displayName;
+        GetDisplayName(displayName);
+        COMPlusThrowHR(COR_E_MISSINGMETHOD, IDS_EE_FAILED_TO_FIND_MAIN, displayName);
+    }
+
+}
+
+INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThreads)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        ENTRY_POINT;
+        INJECT_FAULT(COMPlusThrowOM());
+    }
+    CONTRACTL_END;
+
+    // reset the error code for std C
+    errno=0;
+
+    HRESULT hr = S_OK;
+    INT32   iRetVal = 0;
+
+    Thread *pThread = GetThread();
+    MethodDesc *pMeth;
+    {
+        // This thread looks like it wandered in -- but actually we rely on it to keep the process alive.
+        pThread->SetBackground(FALSE);
+
+        GCX_COOP();
+
+        pMeth = GetEntryPoint();
+
+        if (pMeth) {
+            {
+#ifdef FEATURE_COMINTEROP
+                GCX_PREEMP();
+
+                Thread::ApartmentState state = Thread::AS_Unknown;
+                state = SystemDomain::GetEntryPointThreadAptState(pMeth->GetMDImport(), pMeth->GetMemberDef());
+                SystemDomain::SetThreadAptState(state);
+#endif // FEATURE_COMINTEROP
+            }
+
+            RunMainPre();
+
+            // Perform additional managed thread initialization.
+            // This would is normally done in the runtime when a managed
+            // thread is started, but is done here instead since the
+            // Main thread wasn't started by the runtime.
+            Thread::InitializationForManagedThreadInNative(pThread);
+
+            hr = RunMain(pMeth, 1, &iRetVal, stringArgs);
 
             Thread::CleanUpForManagedThreadInNative(pThread);
         }

@@ -259,8 +259,7 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
                                       LPCWSTR pwzAssemblyPath,
                                       int argc,
                                       LPCWSTR* argv,
-                                      DWORD *pReturnValue,
-                                      bool preLoadLibs)
+                                      DWORD *pReturnValue)
 {
     CONTRACTL
     {
@@ -338,7 +337,10 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
         if(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_Corhost_Swallow_Uncaught_Exceptions))
         {
             EX_TRY
-                DWORD retval = pAssembly->ExecuteMainMethod(&arguments, TRUE /* waitForOtherThreads */, preLoadLibs);
+                pAssembly->ExecuteMainMethodPre(TRUE /* waitForOtherThreads */);
+                AppDomain *curDomain = SystemDomain::GetCurrentDomain();
+                Assembly *curEntryAssembly = curDomain->GetRootAssembly();
+                DWORD retval = curEntryAssembly->ExecuteMainMethod(&arguments, TRUE /* waitForOtherThreads */);
                 if (pReturnValue)
                 {
                     *pReturnValue = retval;
@@ -347,7 +349,10 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
         }
         else
         {
-            DWORD retval = pAssembly->ExecuteMainMethod(&arguments, TRUE /* waitForOtherThreads */, preLoadLibs);
+            pAssembly->ExecuteMainMethodPre(TRUE /* waitForOtherThreads */);
+            AppDomain *curDomain = SystemDomain::GetCurrentDomain();
+            Assembly *curEntryAssembly = curDomain->GetRootAssembly();
+            DWORD retval = curEntryAssembly->ExecuteMainMethod(&arguments, TRUE /* waitForOtherThreads */);
             if (pReturnValue)
             {
                 *pReturnValue = retval;

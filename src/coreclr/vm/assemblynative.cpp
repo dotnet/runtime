@@ -1170,6 +1170,19 @@ extern "C" void QCALLTYPE AssemblyNative_GetEntryAssembly(QCall::ObjectHandleOnS
     END_QCALL;
 }
 
+extern "C" void QCALLTYPE AssemblyNative_UpdateEntryAssembly(QCall::AssemblyHandle assemblyHandle)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    Assembly* pAssembly = assemblyHandle->GetAssembly();
+    PTR_AppDomain pCurDomain = GetAppDomain();
+    pCurDomain->SetRootAssembly(pAssembly);
+
+    END_QCALL;
+}
+
 extern "C" void QCALLTYPE AssemblyNative_GetImageRuntimeVersion(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
