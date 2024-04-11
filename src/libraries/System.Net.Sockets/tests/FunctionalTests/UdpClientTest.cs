@@ -594,17 +594,17 @@ namespace System.Net.Sockets.Tests
         public void BeginEndSend_BeginEndReceive_Success(bool ipv4)
         {
             IPAddress address = ipv4 ? IPAddress.Loopback : IPAddress.IPv6Loopback;
-            byte[] sentData = [1, 2, 3];
+            byte[] data = [1, 2, 3];
 
             using (var receiver = new UdpClient(new IPEndPoint(address, 0)))
             using (var sender = new UdpClient(new IPEndPoint(address, 0)))
             {
-                sender.EndSend(sender.BeginSend(sentData, 2, new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port), null, null));
+                sender.EndSend(sender.BeginSend(data, 2, new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port), null, null));
 
                 IPEndPoint remoteEP = null;
-                byte[] data = receiver.EndReceive(receiver.BeginReceive(null, null), ref remoteEP);
+                byte[] receivedData = receiver.EndReceive(receiver.BeginReceive(null, null), ref remoteEP);
                 Assert.NotNull(remoteEP);
-                Assert.True(Enumerable.SequenceEqual(data, new byte[] {1, 2}));
+                Assert.True(Enumerable.SequenceEqual(receivedData, new byte[] {1, 2}));
             }
         }
 
@@ -612,17 +612,17 @@ namespace System.Net.Sockets.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // "localhost" resolves to IPv4 & IPV6 on Windows, but may resolve to only one of those on Unix
         public void BeginEndSend_BeginEndReceive_Connected_Success()
         {
-            byte[] sentData = [1, 2, 3];
+            byte[] data = [1, 2, 3];
 
             using (var receiver = new UdpClient("localhost", 0))
             using (var sender = new UdpClient("localhost", ((IPEndPoint)receiver.Client.LocalEndPoint).Port))
             {
-                sender.EndSend(sender.BeginSend(sentData, 2, null, null));
+                sender.EndSend(sender.BeginSend(data, 2, null, null));
 
                 IPEndPoint remoteEP = null;
-                byte[] data = receiver.EndReceive(receiver.BeginReceive(null, null), ref remoteEP);
+                byte[] receivedData = receiver.EndReceive(receiver.BeginReceive(null, null), ref remoteEP);
                 Assert.NotNull(remoteEP);
-                Assert.True(Enumerable.SequenceEqual(data, new byte[] {1, 2}));
+                Assert.True(Enumerable.SequenceEqual(receivedData, new byte[] {1, 2}));
             }
         }
 
