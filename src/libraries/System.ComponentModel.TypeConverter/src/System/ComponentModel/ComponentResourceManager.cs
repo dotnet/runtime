@@ -67,7 +67,31 @@ namespace System.ComponentModel
         {
             ArgumentNullException.ThrowIfNull(value);
             ArgumentNullException.ThrowIfNull(objectName);
+            ApplyResources(value, value.GetType(), objectName, culture);
+        }
 
+        /// <summary>
+        /// This method examines all the resources for the provided culture.
+        /// When it finds a resource with a key in the format of
+        /// &quot;[objectName].[property name]&quot; or &quot;[objectName]-[property name]&quot; it will apply that resource's value
+        /// to the corresponding property on the object. If there is no matching
+        /// property the resource will be ignored.
+        /// </summary>
+        public virtual void ApplyResources<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(T value, string objectName, CultureInfo? culture)
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            ArgumentNullException.ThrowIfNull(objectName);
+
+            if (typeof(T) == typeof(object))
+            {
+                throw new ArgumentException("todo: The T parameter cannot be the System.Object type.", nameof(value));
+            }
+
+            ApplyResources(value, typeof(T), objectName, culture);
+        }
+
+        private void ApplyResources(object value, Type typeFromValue, string objectName, CultureInfo? culture)
+        {
             culture ??= CultureInfo.CurrentUICulture;
 
             // The general case here will be to always use the same culture, so optimize for
@@ -148,7 +172,7 @@ namespace System.ComponentModel
 
                 if (componentReflect)
                 {
-                    PropertyDescriptor? prop = TypeDescriptor.GetProperties(value).Find(propName, IgnoreCase);
+                    PropertyDescriptor? prop = GetPropertyDescriptor(value).Find(propName, IgnoreCase);
 
                     if (prop != null && !prop.IsReadOnly && (kvp.Value == null || prop.PropertyType.IsInstanceOfType(kvp.Value)))
                     {
@@ -161,16 +185,16 @@ namespace System.ComponentModel
 
                     try
                     {
-                        prop = value.GetType().GetProperty(propName, flags);
+                        prop = prop = TrimSafeReflectionHelper.GetProperty(typeFromValue, propName, flags);
                     }
                     catch (AmbiguousMatchException)
                     {
                         // Looks like we ran into a conflict between a declared property and an inherited one.
                         // In such cases, we choose the most declared one.
-                        Type? t = value.GetType();
+                        Type? t = typeFromValue;
                         do
                         {
-                            prop = t.GetProperty(propName, flags | BindingFlags.DeclaredOnly);
+                            prop = TrimSafeReflectionHelper.GetProperty(t, propName, flags | BindingFlags.DeclaredOnly);
                             t = t.BaseType;
                         } while (prop == null && t != null && t != typeof(object));
                     }
@@ -181,6 +205,10 @@ namespace System.ComponentModel
                     }
                 }
             }
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "Calling method either has DynamicallyAccessedMemberTypes.All or RequiresUnreferencedCode.")]
+            static PropertyDescriptorCollection GetPropertyDescriptor(object value) => TypeDescriptor.GetProperties(value);
         }
 
         /// <summary>

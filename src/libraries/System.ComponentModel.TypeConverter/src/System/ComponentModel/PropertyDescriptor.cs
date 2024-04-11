@@ -197,7 +197,7 @@ namespace System.ComponentModel
         protected object? CreateInstanceFromKnownType(Type type)
         {
             Type[] typeArgs = { typeof(Type) };
-            ConstructorInfo? ctor = KnownTypeReflectionHelper.GetConstructor(type, typeArgs);
+            ConstructorInfo? ctor = TrimSafeReflectionHelper.GetConstructor(type, typeArgs);
             if (ctor != null)
             {
                 return TypeDescriptor.CreateInstance(null, type, typeArgs, new object[] { PropertyType });

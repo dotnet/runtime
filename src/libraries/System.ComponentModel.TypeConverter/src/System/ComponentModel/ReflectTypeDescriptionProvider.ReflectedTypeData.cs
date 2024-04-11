@@ -98,7 +98,7 @@ namespace System.ComponentModel
                     // Next, walk the type's interfaces. We append these to
                     // the attribute array as well.
                     int ifaceStartIdx = attributes.Count;
-                    Type[] interfaces = KnownTypeReflectionHelper.GetInterfaces(_type);
+                    Type[] interfaces = TrimSafeReflectionHelper.GetInterfaces(_type);
                     for (int idx = 0; idx < interfaces.Length; idx++)
                     {
                         // Only do this for public interfaces.

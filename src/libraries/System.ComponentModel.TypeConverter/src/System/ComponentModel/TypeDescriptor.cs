@@ -20,7 +20,6 @@ namespace System.ComponentModel
     /// </summary>
     public sealed class TypeDescriptor
     {
-        private const DynamicallyAccessedMemberTypes RequiredReflectedMemberTypes = DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicEvents;
         internal const DynamicallyAccessedMemberTypes ReflectTypesDynamicallyAccessedMembers = DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields;
         internal const string DesignTimeAttributeTrimmed = "Design-time attributes are not preserved when trimming. Types referenced by attributes like EditorAttribute and DesignerAttribute may not be available after trimming.";
 
@@ -93,7 +92,7 @@ namespace System.ComponentModel
         {
         }
 
-        public static void AddKnownReflectedType<[DynamicallyAccessedMembers(RequiredReflectedMemberTypes)] T>()
+        public static void AddKnownReflectedType<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>()
         {
             TypeDescriptionNode node = NodeFor(typeof(T), createDelegator: false);
             if (node.Provider is ReflectTypeDescriptionProvider reflectionProvider)
@@ -1293,8 +1292,6 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a collection of properties for a specified type.
         /// </summary>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "The type has [DynamicallyAccessedMemberTypes].")]
         public static PropertyDescriptorCollection GetPropertiesFromKnownType(Type componentType)
         {
             ArgumentNullException.ThrowIfNull(componentType);

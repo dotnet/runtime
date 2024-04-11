@@ -1221,7 +1221,7 @@ namespace System.ComponentModel
                     // have both add and remove, we skip it here, because it
                     // will be picked up in our base class scan.
                     //
-                    EventInfo[] eventInfos = KnownTypeReflectionHelper.GetEvents(type, bindingFlags);
+                    EventInfo[] eventInfos = TrimSafeReflectionHelper.GetEvents(type, bindingFlags);
                     events = new EventDescriptor[eventInfos.Length];
                     int eventCount = 0;
 
@@ -1408,7 +1408,7 @@ namespace System.ComponentModel
                     // "new" properties of the same name, so we must preserve
                     // the member info for each method individually.
                     //
-                    PropertyInfo[] propertyInfos = KnownTypeReflectionHelper.GetProperties(type, bindingFlags);
+                    PropertyInfo[] propertyInfos = TrimSafeReflectionHelper.GetProperties(type, bindingFlags);
                     properties = new PropertyDescriptor[propertyInfos.Length];
                     int propertyCount = 0;
 
