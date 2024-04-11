@@ -54,6 +54,15 @@ public:
         return m_sos;
     }
 
+    int ReadFromTarget(uint64_t addr, uint8_t* dest, uint32_t count)
+    {
+        HRESULT hr = ReadFromDataTarget(m_target, addr, dest, count);
+        if (FAILED(hr))
+            return hr;
+
+        return 0;
+    }
+
 public:
     ~CDACImpl()
     {
@@ -76,7 +85,16 @@ private:
     decltype(&cdac_reader_get_sos_interface) m_getSosInterface;
 };
 
-CDACImpl::CDACImpl(HMODULE module, ICorDebugDataTarget* target)
+namespace
+{
+	int ReadFromTargetCallback(uint64_t addr, uint8_t* dest, uint32_t count, void* context)
+	{
+	    CDACImpl* cdac = reinterpret_cast<CDACImpl*>(context);
+	    return cdac->ReadFromTarget(addr, dest, count);
+	}
+}
+
+CDACImpl::CDACImpl(HMODULE module, uint64_t descriptorAddr, ICorDebugDataTarget* target)
     : m_module(module)
     , m_target{target}
 {
@@ -84,7 +102,7 @@ CDACImpl::CDACImpl(HMODULE module, ICorDebugDataTarget* target)
     m_free = reinterpret_cast<decltype(&cdac_reader_free)>(::GetProcAddress(m_module, "cdac_reader_free"));
     m_getSosInterface = reinterpret_cast<decltype(&cdac_reader_get_sos_interface)>(::GetProcAddress(m_module, "cdac_reader_get_sos_interface"));
 
-    m_init(0, &m_cdac_handle);
+    m_init(descriptorAddr, &ReadFromTargetCallback, this, &m_cdac_handle);
     m_getSosInterface(m_cdac_handle, &m_sos);
 }
 

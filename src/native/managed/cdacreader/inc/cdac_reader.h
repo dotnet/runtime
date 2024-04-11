@@ -9,7 +9,7 @@ extern "C"
 {
 #endif
 
-int cdac_reader_init(intptr_t descriptor, intptr_t* handle);
+int cdac_reader_init(uint64_t descriptor, int(*read_from_target)(uint64_t, uint8_t*, uint32_t, void*), void* read_context, intptr_t* handle);
 int cdac_reader_free(intptr_t handle);
 int cdac_reader_get_sos_interface(intptr_t handle, IUnknown** obj);
 

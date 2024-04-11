@@ -12,9 +12,9 @@ internal static class Entrypoints
     private const string CDAC = "cdac_reader_";
 
     [UnmanagedCallersOnly(EntryPoint = $"{CDAC}init")]
-    private static unsafe int Init(nint descriptor, IntPtr* handle)
+    private static unsafe int Init(ulong descriptor, delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget, void* readContext, IntPtr* handle)
     {
-        Target target = new(descriptor);
+        Target target = new(descriptor, readFromTarget, readContext);
         GCHandle gcHandle = GCHandle.Alloc(target);
         *handle = GCHandle.ToIntPtr(gcHandle);
         return 0;
