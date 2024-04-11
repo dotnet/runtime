@@ -23,7 +23,7 @@ typedef struct dn_simdhash_ght_data {
 } dn_simdhash_ght_data;
 
 static inline uint32_t
-dn_simdhash_ght_hash (dn_simdhash_ght_data data, gconstpointer key)
+dn_simdhash_ght_hash (dn_simdhash_ght_data data, gpointer key)
 {
 	GHashFunc hash_func = data.hash_func;
 	if (hash_func)
@@ -34,7 +34,7 @@ dn_simdhash_ght_hash (dn_simdhash_ght_data data, gconstpointer key)
 }
 
 static inline gboolean
-dn_simdhash_ght_equals (dn_simdhash_ght_data data, gconstpointer lhs, gconstpointer rhs)
+dn_simdhash_ght_equals (dn_simdhash_ght_data data, gpointer lhs, gpointer rhs)
 {
 	GEqualFunc equal_func = data.key_equal_func;
 	if (equal_func)
@@ -44,7 +44,7 @@ dn_simdhash_ght_equals (dn_simdhash_ght_data data, gconstpointer lhs, gconstpoin
 }
 
 static inline void
-dn_simdhash_ght_removed (dn_simdhash_ght_data data, gconstpointer key, gpointer value)
+dn_simdhash_ght_removed (dn_simdhash_ght_data data, gpointer key, gpointer value)
 {
 	GDestroyNotify key_destroy_func = data.key_destroy_func,
 		value_destroy_func = data.value_destroy_func;
@@ -55,18 +55,23 @@ dn_simdhash_ght_removed (dn_simdhash_ght_data data, gconstpointer key, gpointer 
 }
 
 static inline void
-dn_simdhash_ght_replaced (dn_simdhash_ght_data data, gconstpointer key, gpointer old_value, gpointer new_value)
+dn_simdhash_ght_replaced (dn_simdhash_ght_data data, gpointer old_key, gpointer new_key, gpointer old_value, gpointer new_value)
 {
-	if (old_value == new_value)
-		return;
+	if (old_key != new_key) {
+		GDestroyNotify key_destroy_func = data.key_destroy_func;
+		if (key_destroy_func)
+			key_destroy_func((gpointer)old_key);
+	}
 
-	GDestroyNotify value_destroy_func = data.value_destroy_func;
-	if (value_destroy_func)
-		value_destroy_func((gpointer)old_value);
+	if (old_value != new_value) {
+		GDestroyNotify value_destroy_func = data.value_destroy_func;
+		if (value_destroy_func)
+			value_destroy_func((gpointer)old_value);
+	}
 }
 
 #define DN_SIMDHASH_T dn_simdhash_ght
-#define DN_SIMDHASH_KEY_T gconstpointer
+#define DN_SIMDHASH_KEY_T gpointer
 #define DN_SIMDHASH_VALUE_T gpointer
 #define DN_SIMDHASH_INSTANCE_DATA_T dn_simdhash_ght_data
 #define DN_SIMDHASH_KEY_HASHER dn_simdhash_ght_hash
@@ -108,4 +113,42 @@ dn_simdhash_ght_new_full (
 	dn_simdhash_instance_data(dn_simdhash_ght_data, hash).key_destroy_func = key_destroy_func;
 	dn_simdhash_instance_data(dn_simdhash_ght_data, hash).value_destroy_func = value_destroy_func;
 	return hash;
+}
+
+void
+dn_simdhash_ght_insert_replace (
+	dn_simdhash_ght_t *hash,
+	gpointer key, gpointer value,
+	gboolean overwrite_key
+)
+{
+	check_self(hash);
+	uint32_t key_hash = DN_SIMDHASH_KEY_HASHER(DN_SIMDHASH_GET_DATA(hash), key);
+	dn_simdhash_insert_mode imode = overwrite_key
+		? DN_SIMDHASH_INSERT_MODE_OVERWRITE_KEY_AND_VALUE
+		: DN_SIMDHASH_INSERT_MODE_OVERWRITE_VALUE;
+
+	dn_simdhash_insert_result ok = DN_SIMDHASH_TRY_INSERT_INTERNAL(hash, key, key_hash, value, imode);
+	if (ok == DN_SIMDHASH_INSERT_NEED_TO_GROW) {
+		dn_simdhash_buffers_t old_buffers = dn_simdhash_ensure_capacity_internal(hash, dn_simdhash_capacity(hash) + 1);
+		if (old_buffers.buckets) {
+			DN_SIMDHASH_REHASH_INTERNAL(hash, old_buffers);
+			dn_simdhash_free_buffers(old_buffers);
+		}
+		ok = DN_SIMDHASH_TRY_INSERT_INTERNAL(hash, key, key_hash, value, imode);
+	}
+
+	switch (ok) {
+		case DN_SIMDHASH_INSERT_OK_ADDED_NEW:
+			hash->count++;
+			return;
+		case DN_SIMDHASH_INSERT_OK_OVERWROTE_EXISTING:
+			return;
+		// We should always return one of the first two
+		case DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT:
+		case DN_SIMDHASH_INSERT_NEED_TO_GROW:
+		default:
+			assert(0);
+			return;
+	}
 }

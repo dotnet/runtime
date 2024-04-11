@@ -6,19 +6,21 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/time.h>
 
 #define dn_simdhash_assert_fail(expr_string) \
 	__assert_fail(expr_string, __FILE__, __LINE__, __PRETTY_FUNCTION__)
 
 #include "dn-vector.h"
 #include "dn-simdhash.h"
+#include "dn-simdhash-utils.h"
 
 typedef struct {
 	int i;
 	float f;
 } instance_data_t;
 
-static inline uint8_t
+static DN_FORCEINLINE(uint8_t)
 key_comparer (instance_data_t data, size_t lhs, size_t rhs) {
 	return ((data.f == 4.20f) || (lhs == rhs));
 }
@@ -29,8 +31,8 @@ key_comparer (instance_data_t data, size_t lhs, size_t rhs) {
 #define DN_SIMDHASH_KEY_HASHER(data, key) (uint32_t)(key & 0xFFFFFFFFu)
 #define DN_SIMDHASH_KEY_EQUALS key_comparer
 #define DN_SIMDHASH_INSTANCE_DATA_T instance_data_t
-#define DN_SIMDHASH_ON_REMOVE(data, key, value) ; // printf("remove [%zd, %zd], f==%f\n", key, value, data.f)
-#define DN_SIMDHASH_ON_REPLACE(data, key, old_value, new_value) ; // printf("replace [%zd, %zd] with [%zd, %zd] i==%i\n", key, old_value, key, new_value, data.i)
+#define DN_SIMDHASH_ON_REMOVE(data, key, value)  // printf("remove [%zd, %zd], f==%f\n", key, value, data.f)
+#define DN_SIMDHASH_ON_REPLACE(data, old_key, new_key, old_value, new_value)  // printf("replace [%zd, %zd] with [%zd, %zd] i==%i\n", key, old_value, key, new_value, data.i)
 
 #include "dn-simdhash-specialization.h"
 
@@ -69,11 +71,19 @@ void foreach_callback (size_t key, size_t value, void * user_data) {
 	(*(uint32_t *)user_data)++;
 }
 
+int64_t get_100ns_ticks () {
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return ((int64_t)tv.tv_sec * 1000000 + tv.tv_usec) * 10;
+}
+
 int main () {
 	const int c = 320000;
 	dn_simdhash_size_t_size_t_t *test = dn_simdhash_size_t_size_t_new(0, NULL);
 	dn_simdhash_instance_data(instance_data_t, test).f = 3.14f;
 	dn_simdhash_instance_data(instance_data_t, test).i = 42;
+
+	printf("hash(test)=%u\n", MurmurHash3_32_ptr(test, 0));
 
 	dn_vector_t *keys = dn_vector_alloc(sizeof(DN_SIMDHASH_KEY_T)),
 		*values = dn_vector_alloc(sizeof(DN_SIMDHASH_VALUE_T));
@@ -95,7 +105,8 @@ retry: {
 		dn_vector_push_back(values, value);
 	}
 
-	for (int iter = 0; iter < 100; iter++) {
+	int64_t started = get_100ns_ticks();
+	for (int iter = 0; iter < 500; iter++) {
 		if (!tasserteq(dn_simdhash_count(test), c, "count did not match"))
 			return 1;
 
@@ -182,7 +193,9 @@ retry: {
 		printf("Count: %u, Capacity: %u, Cascaded item count: %u\n", dn_simdhash_count(test), dn_simdhash_capacity(test), count_cascaded_buckets(test));
 	}
 
-	printf("done\n");
+	int64_t ended = get_100ns_ticks();
+
+	printf("done. elapsed ticks: %lld\n", (ended - started));
 
 	return 0;
 	/*

@@ -44,7 +44,7 @@
 
 #ifndef DN_SIMDHASH_ON_REPLACE
 #define DN_SIMDHASH_HAS_REPLACE_HANDLER 0
-#define DN_SIMDHASH_ON_REPLACE(data, key, old_value, new_value)
+#define DN_SIMDHASH_ON_REPLACE(data, old_key, new_key, old_value, new_value)
 #else // DN_SIMDHASH_ON_REPLACE
 #define DN_SIMDHASH_HAS_REPLACE_HANDLER 1
 #ifndef DN_SIMDHASH_ON_REMOVE
@@ -58,7 +58,7 @@
 #else // DN_SIMDHASH_ON_REMOVE
 #define DN_SIMDHASH_HAS_REMOVE_HANDLER 1
 #ifndef DN_SIMDHASH_ON_REPLACE
-#error Expected DN_SIMDHASH_ON_REPLACE(data, key, old_value, new_value) to be defined.
+#error Expected DN_SIMDHASH_ON_REPLACE(data, old_key, new_key, old_value, new_value) to be defined.
 #endif
 #endif // DN_SIMDHASH_ON_REMOVE
 
@@ -123,45 +123,61 @@ address_of_value (dn_simdhash_buffers_t buffers, uint32_t value_slot_index)
 	return &((DN_SIMDHASH_VALUE_T *)buffers.values)[value_slot_index];
 }
 
+#define DN_SIMDHASH_SCAN_BUCKET_NO_OVERFLOW -1
+#define DN_SIMDHASH_SCAN_BUCKET_OVERFLOWED -2
+
 // This helper is used to locate the first matching key in a given bucket, so that add
 //  operations don't potentially have to scan the whole table twice when hashes collide
+// On success: returns index (0-n)
+// On failure: returns -1 if bucket has not overflowed; -2 if it has
 static DN_FORCEINLINE(int)
 DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T_PTR hash, bucket_t *bucket, DN_SIMDHASH_KEY_T needle, dn_simdhash_suffixes search_vector)
 {
-	uint32_t count = dn_simdhash_bucket_count(bucket->suffixes),
+	// Performing an up-front load of the vector here enables clang to use extract_lane_u
+	//  to load the count on WASM instead of doing a separate load8_u operation from memory
+	dn_simdhash_suffixes bucket_suffixes = bucket->suffixes;
+	uint8_t count = dn_simdhash_extract_lane(bucket_suffixes, DN_SIMDHASH_COUNT_SLOT),
+		overflow_count = dn_simdhash_extract_lane(bucket_suffixes, DN_SIMDHASH_CASCADED_SLOT);
 #if DN_SIMDHASH_USE_SCALAR_FALLBACK
 		// HACK: This allows the creation of the search_vector in our caller to be optimized out,
 		//  and allows the search to compare each lane against a single scalar instead of having to
 		//  compare two search vectors lane-by-lane.
-		index = find_first_matching_suffix_scalar_1(search_vector.values[0], bucket->suffixes.values, count);
+	uint32_t index = find_first_matching_suffix_scalar_1(search_vector.values[0], bucket_suffixes.values, count);
 #else
-		index = find_first_matching_suffix(search_vector, bucket->suffixes, count);
+	uint32_t index = find_first_matching_suffix(search_vector, bucket_suffixes, count);
 #endif
-	DN_SIMDHASH_KEY_T *key = &bucket->keys[index];
-
-	for (; index < count; index++, key++) {
+	for (; index < count; index++) {
 		// FIXME: Could be profitable to manually hoist the data load outside of the loop,
 		//  if not out of SCAN_BUCKET_INTERNAL entirely. Clang appears to do LICM on it.
-		if (DN_SIMDHASH_KEY_EQUALS(DN_SIMDHASH_GET_DATA(hash), needle, *key))
+		// It's better to index bucket->keys each iteration inside the loop than to precompute
+		//  a pointer outside and bump the pointer, because in many cases the bucket will be
+		//  empty, and in many other cases it will have one match. Putting the index inside the
+		//  loop means that for empty/no-match buckets we don't do the index calculation at all.
+		if (DN_SIMDHASH_KEY_EQUALS(DN_SIMDHASH_GET_DATA(hash), needle, bucket->keys[index]))
 			return index;
 	}
 
-	return -1;
+	if (overflow_count)
+		return DN_SIMDHASH_SCAN_BUCKET_OVERFLOWED;
+	else
+		return DN_SIMDHASH_SCAN_BUCKET_NO_OVERFLOW;
 }
 
 // Helper macros so that we can optimize and change scan logic more easily
 #define BEGIN_SCAN_BUCKETS(initial_index, bucket_index, bucket_address) \
 	{ \
 		uint32_t bucket_index = initial_index; \
-		bucket_t *bucket_address; \
-		do { \
-			bucket_address = address_of_bucket(buffers, bucket_index);
+		bucket_t *bucket_address = address_of_bucket(buffers, bucket_index); \
+		do {
 
 #define END_SCAN_BUCKETS(initial_index, bucket_index, bucket_address) \
 			bucket_index++; \
+			bucket_address++; \
 			/* Wrap around if we hit the last bucket. */ \
-			if (bucket_index >= buffers.buckets_length) \
+			if (bucket_index >= buffers.buckets_length) { \
 				bucket_index = 0; \
+				bucket_address = address_of_bucket(buffers, 0); \
+			} \
 		/* if bucket_index == initial_index, we reached our starting point */ \
 		} while (bucket_index != initial_index); \
 	}
@@ -215,17 +231,46 @@ DN_SIMDHASH_FIND_VALUE_INTERNAL (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, 
 		if (index_in_bucket >= 0) {
 			uint32_t value_slot_index = (bucket_index * DN_SIMDHASH_BUCKET_CAPACITY) + index_in_bucket;
 			return address_of_value(buffers, value_slot_index);
-		}
-
-		if (!dn_simdhash_bucket_cascaded_count(bucket_address->suffixes))
+		} else if (index_in_bucket == DN_SIMDHASH_SCAN_BUCKET_NO_OVERFLOW) {
 			return NULL;
+		}
 	END_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
 
 	return NULL;
 }
 
+typedef enum dn_simdhash_insert_mode {
+	// Ensures that no matching key exists in the hash, then adds the key/value pair
+	DN_SIMDHASH_INSERT_MODE_ENSURE_UNIQUE,
+	// If a matching key exists in the hash, overwrite its value but leave the key alone
+	DN_SIMDHASH_INSERT_MODE_OVERWRITE_VALUE,
+	// If a matching key exists in the hash, overwrite both the key and the value
+	DN_SIMDHASH_INSERT_MODE_OVERWRITE_KEY_AND_VALUE,
+	// Do not scan for existing matches before adding the new key/value pair.
+	DN_SIMDHASH_INSERT_MODE_REHASHING,
+} dn_simdhash_insert_mode;
+
+static void
+do_overwrite (
+	DN_SIMDHASH_T_PTR hash, uint32_t bucket_index, bucket_t *bucket_address, int index_in_bucket,
+	DN_SIMDHASH_KEY_T key, DN_SIMDHASH_VALUE_T value, uint8_t overwrite_key
+) {
+	DN_SIMDHASH_KEY_T *key_ptr = &bucket_address->keys[index_in_bucket];
+	DN_SIMDHASH_VALUE_T *value_ptr = address_of_value(hash->buffers, (bucket_index * DN_SIMDHASH_BUCKET_CAPACITY) + index_in_bucket);
+#if DN_SIMDHASH_HAS_REPLACE_HANDLER
+	DN_SIMDHASH_KEY_T old_key = *key_ptr;
+	DN_SIMDHASH_VALUE_T old_value = *value_ptr;
+#endif
+	if (overwrite_key)
+		*key_ptr = key;
+	*value_ptr = value;
+#if DN_SIMDHASH_HAS_REPLACE_HANDLER
+	DN_SIMDHASH_ON_REPLACE(DN_SIMDHASH_GET_DATA(hash), old_key, overwrite_key ? key : old_key, old_value, value);
+#endif
+}
+
 static dn_simdhash_insert_result
-DN_SIMDHASH_TRY_INSERT_INTERNAL (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T value, uint8_t ensure_not_present)
+DN_SIMDHASH_TRY_INSERT_INTERNAL (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T value, dn_simdhash_insert_mode mode)
 {
 	// HACK: Early out. Better to grow without scanning here.
 	// We're comparing with the computed grow_at_count threshold to maintain an appropriate load factor
@@ -241,10 +286,21 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, 
 
 	BEGIN_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
 		// If necessary, check the current bucket for the key
-		if (ensure_not_present) {
+		if (mode != DN_SIMDHASH_INSERT_MODE_REHASHING) {
 			int index_in_bucket = DN_SIMDHASH_SCAN_BUCKET_INTERNAL(hash, bucket_address, key, search_vector);
-			if (index_in_bucket >= 0)
-				return DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT;
+			if (index_in_bucket >= 0) {
+				if (
+					(mode == DN_SIMDHASH_INSERT_MODE_OVERWRITE_KEY_AND_VALUE) ||
+					(mode == DN_SIMDHASH_INSERT_MODE_OVERWRITE_VALUE)
+				) {
+					do_overwrite (
+						hash, bucket_index, bucket_address, index_in_bucket,
+						key, value, (mode == DN_SIMDHASH_INSERT_MODE_OVERWRITE_KEY_AND_VALUE)
+					);
+					return DN_SIMDHASH_INSERT_OK_OVERWROTE_EXISTING;
+				} else
+					return DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT;
+			}
 		}
 
 		// The current bucket doesn't contain the key, or duplicate checks are disabled (for rehashing),
@@ -264,7 +320,7 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, 
 			//  during the process of getting here we may end up finding a duplicate, which would
 			//  leave the cascade counters in a corrupted state
 			adjust_cascaded_counts(buffers, first_bucket_index, bucket_index, 1);
-			return DN_SIMDHASH_INSERT_OK;
+			return DN_SIMDHASH_INSERT_OK_ADDED_NEW;
 		}
 
 		// The current bucket is full, so try the next bucket.
@@ -283,10 +339,9 @@ DN_SIMDHASH_REHASH_INTERNAL (DN_SIMDHASH_T_PTR hash, dn_simdhash_buffers_t old_b
 		dn_simdhash_insert_result ok = DN_SIMDHASH_TRY_INSERT_INTERNAL(
 			hash, *key_address, key_hash,
 			*value_address,
-			0
+			DN_SIMDHASH_INSERT_MODE_REHASHING
 		);
-		// FIXME: Why doesn't assert(ok) work here? Clang says it's unused
-		dn_simdhash_assert(ok == DN_SIMDHASH_INSERT_OK);
+		dn_simdhash_assert(ok == DN_SIMDHASH_INSERT_OK_ADDED_NEW);
 	END_SCAN_PAIRS(old_buffers, key_address, value_address)
 }
 
@@ -343,19 +398,23 @@ DN_SIMDHASH_TRY_ADD_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, ui
 {
 	check_self(hash);
 
-	dn_simdhash_insert_result ok = DN_SIMDHASH_TRY_INSERT_INTERNAL(hash, key, key_hash, value, 1);
+	dn_simdhash_insert_result ok = DN_SIMDHASH_TRY_INSERT_INTERNAL(hash, key, key_hash, value, DN_SIMDHASH_INSERT_MODE_ENSURE_UNIQUE);
 	if (ok == DN_SIMDHASH_INSERT_NEED_TO_GROW) {
 		dn_simdhash_buffers_t old_buffers = dn_simdhash_ensure_capacity_internal(hash, dn_simdhash_capacity(hash) + 1);
 		if (old_buffers.buckets) {
 			DN_SIMDHASH_REHASH_INTERNAL(hash, old_buffers);
 			dn_simdhash_free_buffers(old_buffers);
 		}
-		ok = DN_SIMDHASH_TRY_INSERT_INTERNAL(hash, key, key_hash, value, 1);
+		ok = DN_SIMDHASH_TRY_INSERT_INTERNAL(hash, key, key_hash, value, DN_SIMDHASH_INSERT_MODE_ENSURE_UNIQUE);
 	}
 
 	switch (ok) {
-		case DN_SIMDHASH_INSERT_OK:
+		case DN_SIMDHASH_INSERT_OK_ADDED_NEW:
 			hash->count++;
+			return 1;
+		case DN_SIMDHASH_INSERT_OK_OVERWROTE_EXISTING:
+			// This shouldn't happen
+			assert(0);
 			return 1;
 		case DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT:
 			return 0;
@@ -465,9 +524,7 @@ DN_SIMDHASH_TRY_REMOVE_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key,
 #endif
 
 			return 1;
-		}
-
-		if (!dn_simdhash_bucket_cascaded_count(bucket_address->suffixes))
+		} else if (index_in_bucket == DN_SIMDHASH_SCAN_BUCKET_NO_OVERFLOW)
 			return 0;
 	END_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
 
@@ -475,16 +532,16 @@ DN_SIMDHASH_TRY_REMOVE_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key,
 }
 
 uint8_t
-DN_SIMDHASH_TRY_REPLACE (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, DN_SIMDHASH_VALUE_T new_value)
+DN_SIMDHASH_TRY_REPLACE_VALUE (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, DN_SIMDHASH_VALUE_T new_value)
 {
 	check_self(hash);
 
 	uint32_t key_hash = DN_SIMDHASH_KEY_HASHER(DN_SIMDHASH_GET_DATA(hash), key);
-	return DN_SIMDHASH_TRY_REPLACE_WITH_HASH(hash, key, key_hash, new_value);
+	return DN_SIMDHASH_TRY_REPLACE_VALUE_WITH_HASH(hash, key, key_hash, new_value);
 }
 
 uint8_t
-DN_SIMDHASH_TRY_REPLACE_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T new_value)
+DN_SIMDHASH_TRY_REPLACE_VALUE_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T new_value)
 {
 	check_self(hash);
 
@@ -496,7 +553,7 @@ DN_SIMDHASH_TRY_REPLACE_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key
 #endif
 	*value_ptr = new_value;
 #if DN_SIMDHASH_HAS_REPLACE_HANDLER
-	DN_SIMDHASH_ON_REPLACE(DN_SIMDHASH_GET_DATA(hash), key, old_value, new_value);
+	DN_SIMDHASH_ON_REPLACE(DN_SIMDHASH_GET_DATA(hash), key, key, old_value, new_value);
 #endif
 	return 1;
 }

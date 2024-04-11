@@ -53,7 +53,8 @@ typedef struct dn_simdhash_meta_t {
 } dn_simdhash_meta_t;
 
 typedef enum dn_simdhash_insert_result {
-	DN_SIMDHASH_INSERT_OK,
+	DN_SIMDHASH_INSERT_OK_ADDED_NEW,
+	DN_SIMDHASH_INSERT_OK_OVERWROTE_EXISTING,
 	DN_SIMDHASH_INSERT_NEED_TO_GROW,
 	DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT,
 } dn_simdhash_insert_result;

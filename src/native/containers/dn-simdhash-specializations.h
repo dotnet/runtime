@@ -22,6 +22,7 @@ typedef struct dn_simdhash_str_key dn_simdhash_str_key;
 
 #include "dn-simdhash-string-ptr.h"
 
+
 #define DN_SIMDHASH_T dn_simdhash_u32_ptr
 #define DN_SIMDHASH_KEY_T uint32_t
 #define DN_SIMDHASH_VALUE_T void *
@@ -31,6 +32,7 @@ typedef struct dn_simdhash_str_key dn_simdhash_str_key;
 #undef DN_SIMDHASH_T
 #undef DN_SIMDHASH_KEY_T
 #undef DN_SIMDHASH_VALUE_T
+
 
 #define DN_SIMDHASH_T dn_simdhash_ptr_ptr
 #define DN_SIMDHASH_KEY_T void *
@@ -42,8 +44,9 @@ typedef struct dn_simdhash_str_key dn_simdhash_str_key;
 #undef DN_SIMDHASH_KEY_T
 #undef DN_SIMDHASH_VALUE_T
 
+
 #define DN_SIMDHASH_T dn_simdhash_ght
-#define DN_SIMDHASH_KEY_T gconstpointer
+#define DN_SIMDHASH_KEY_T gpointer
 #define DN_SIMDHASH_VALUE_T gpointer
 #define DN_SIMDHASH_NO_DEFAULT_NEW 1
 
