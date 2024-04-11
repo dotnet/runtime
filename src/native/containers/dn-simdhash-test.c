@@ -7,6 +7,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#define dn_simdhash_assert_fail(expr_string) \
+	__assert_fail(expr_string, __FILE__, __LINE__, __PRETTY_FUNCTION__)
+
 #include "dn-vector.h"
 #include "dn-simdhash.h"
 
@@ -79,7 +82,7 @@ int main () {
 
 	for (int i = 0; i < c; i++) {
 		DN_SIMDHASH_VALUE_T value = (i * 2) + 1;
-        DN_SIMDHASH_KEY_T key;
+		DN_SIMDHASH_KEY_T key;
 
 retry: {
 		key = rand();
@@ -92,92 +95,92 @@ retry: {
 		dn_vector_push_back(values, value);
 	}
 
-    for (int iter = 0; iter < 100; iter++) {
-        if (!tasserteq(dn_simdhash_count(test), c, "count did not match"))
-            return 1;
+	for (int iter = 0; iter < 100; iter++) {
+		if (!tasserteq(dn_simdhash_count(test), c, "count did not match"))
+			return 1;
 
-        printf("Calling foreach:\n");
-        uint32_t foreach_count = 0;
-        dn_simdhash_size_t_size_t_foreach(test, foreach_callback, &foreach_count);
-        printf("Foreach iterated %u time(s)\n", foreach_count);
-        printf("Count: %u, Capacity: %u, Cascaded item count: %u\n", dn_simdhash_count(test), dn_simdhash_capacity(test), count_cascaded_buckets(test));
+		printf("Calling foreach:\n");
+		uint32_t foreach_count = 0;
+		dn_simdhash_size_t_size_t_foreach(test, foreach_callback, &foreach_count);
+		printf("Foreach iterated %u time(s)\n", foreach_count);
+		printf("Count: %u, Capacity: %u, Cascaded item count: %u\n", dn_simdhash_count(test), dn_simdhash_capacity(test), count_cascaded_buckets(test));
 
-        for (int i = 0; i < c; i++) {
-            DN_SIMDHASH_KEY_T key = *dn_vector_index_t(keys, DN_SIMDHASH_KEY_T, i);
-            DN_SIMDHASH_VALUE_T value, expected_value = *dn_vector_index_t(values, DN_SIMDHASH_VALUE_T, i);
+		for (int i = 0; i < c; i++) {
+			DN_SIMDHASH_KEY_T key = *dn_vector_index_t(keys, DN_SIMDHASH_KEY_T, i);
+			DN_SIMDHASH_VALUE_T value, expected_value = *dn_vector_index_t(values, DN_SIMDHASH_VALUE_T, i);
 
-            uint8_t ok = dn_simdhash_size_t_size_t_try_get_value(test, key, &value);
-            if (tassert1(ok, key, "did not find key"))
-                tasserteq(value, expected_value, "value did not match");
-        }
+			uint8_t ok = dn_simdhash_size_t_size_t_try_get_value(test, key, &value);
+			if (tassert1(ok, key, "did not find key"))
+				tasserteq(value, expected_value, "value did not match");
+		}
 
-        // NOTE: Adding duplicates could grow the table if we're unlucky, since the add operation
-        //  eagerly grows before doing a table scan if we're at the grow threshold.
-        for (int i = 0; i < c; i++) {
-            DN_SIMDHASH_KEY_T key = *dn_vector_index_t(keys, DN_SIMDHASH_KEY_T, i);
-            DN_SIMDHASH_VALUE_T value = *dn_vector_index_t(values, DN_SIMDHASH_VALUE_T, i);
+		// NOTE: Adding duplicates could grow the table if we're unlucky, since the add operation
+		//  eagerly grows before doing a table scan if we're at the grow threshold.
+		for (int i = 0; i < c; i++) {
+			DN_SIMDHASH_KEY_T key = *dn_vector_index_t(keys, DN_SIMDHASH_KEY_T, i);
+			DN_SIMDHASH_VALUE_T value = *dn_vector_index_t(values, DN_SIMDHASH_VALUE_T, i);
 
-            uint8_t ok = dn_simdhash_size_t_size_t_try_add(test, key, value);
-            tassert1(!ok, key, "added duplicate key successfully");
-        }
+			uint8_t ok = dn_simdhash_size_t_size_t_try_add(test, key, value);
+			tassert1(!ok, key, "added duplicate key successfully");
+		}
 
-        printf("After adding dupes: Count: %u, Capacity: %u, Cascaded item count: %u\n", dn_simdhash_count(test), dn_simdhash_capacity(test), count_cascaded_buckets(test));
-        uint32_t final_capacity = dn_simdhash_capacity(test);
+		printf("After adding dupes: Count: %u, Capacity: %u, Cascaded item count: %u\n", dn_simdhash_count(test), dn_simdhash_capacity(test), count_cascaded_buckets(test));
+		uint32_t final_capacity = dn_simdhash_capacity(test);
 
-        for (int i = 0; i < c; i++) {
-            DN_SIMDHASH_KEY_T key = *dn_vector_index_t(keys, DN_SIMDHASH_KEY_T, i);
-            uint8_t ok = dn_simdhash_size_t_size_t_try_remove(test, key);
-            tassert1(ok, key, "could not remove key");
+		for (int i = 0; i < c; i++) {
+			DN_SIMDHASH_KEY_T key = *dn_vector_index_t(keys, DN_SIMDHASH_KEY_T, i);
+			uint8_t ok = dn_simdhash_size_t_size_t_try_remove(test, key);
+			tassert1(ok, key, "could not remove key");
 
-            DN_SIMDHASH_VALUE_T value;
-            ok = dn_simdhash_size_t_size_t_try_get_value(test, key, &value);
-            tassert1(!ok, key, "found key after removal");
-        }
+			DN_SIMDHASH_VALUE_T value;
+			ok = dn_simdhash_size_t_size_t_try_get_value(test, key, &value);
+			tassert1(!ok, key, "found key after removal");
+		}
 
-        if (!tasserteq(dn_simdhash_count(test), 0, "was not empty"))
-            return 1;
-        if (!tasserteq(dn_simdhash_capacity(test), final_capacity, "capacity changed by emptying"))
-            return 1;
+		if (!tasserteq(dn_simdhash_count(test), 0, "was not empty"))
+			return 1;
+		if (!tasserteq(dn_simdhash_capacity(test), final_capacity, "capacity changed by emptying"))
+			return 1;
 
-        printf ("Calling foreach after emptying:\n");
-        foreach_count = 0;
-        dn_simdhash_size_t_size_t_foreach(test, foreach_callback, &foreach_count);
-        printf("Foreach iterated %u time(s)\n", foreach_count);
-        printf("Count: %u, Capacity: %u, Cascaded item count: %u\n", dn_simdhash_count(test), dn_simdhash_capacity(test), count_cascaded_buckets(test));
+		printf ("Calling foreach after emptying:\n");
+		foreach_count = 0;
+		dn_simdhash_size_t_size_t_foreach(test, foreach_callback, &foreach_count);
+		printf("Foreach iterated %u time(s)\n", foreach_count);
+		printf("Count: %u, Capacity: %u, Cascaded item count: %u\n", dn_simdhash_count(test), dn_simdhash_capacity(test), count_cascaded_buckets(test));
 
-        for (int i = 0; i < c; i++) {
-            DN_SIMDHASH_KEY_T key = *dn_vector_index_t(keys, DN_SIMDHASH_KEY_T, i);
-            DN_SIMDHASH_VALUE_T value;
-            uint8_t ok = dn_simdhash_size_t_size_t_try_get_value(test, key, &value);
-            tassert1(!ok, key, "found key after removal");
-        }
+		for (int i = 0; i < c; i++) {
+			DN_SIMDHASH_KEY_T key = *dn_vector_index_t(keys, DN_SIMDHASH_KEY_T, i);
+			DN_SIMDHASH_VALUE_T value;
+			uint8_t ok = dn_simdhash_size_t_size_t_try_get_value(test, key, &value);
+			tassert1(!ok, key, "found key after removal");
+		}
 
-        for (int i = 0; i < c; i++) {
-            DN_SIMDHASH_KEY_T key = *dn_vector_index_t(keys, DN_SIMDHASH_KEY_T, i);
-            DN_SIMDHASH_VALUE_T value = *dn_vector_index_t(values, DN_SIMDHASH_VALUE_T, i);
+		for (int i = 0; i < c; i++) {
+			DN_SIMDHASH_KEY_T key = *dn_vector_index_t(keys, DN_SIMDHASH_KEY_T, i);
+			DN_SIMDHASH_VALUE_T value = *dn_vector_index_t(values, DN_SIMDHASH_VALUE_T, i);
 
-            uint8_t ok = dn_simdhash_size_t_size_t_try_add(test, key, value);
-            tassert1(ok, key, "could not re-insert key after emptying");
-        }
+			uint8_t ok = dn_simdhash_size_t_size_t_try_add(test, key, value);
+			tassert1(ok, key, "could not re-insert key after emptying");
+		}
 
-        if (!tasserteq(dn_simdhash_capacity(test), final_capacity, "expected capacity not to change after refilling"))
-            return 1;
+		if (!tasserteq(dn_simdhash_capacity(test), final_capacity, "expected capacity not to change after refilling"))
+			return 1;
 
-        for (int i = 0; i < c; i++) {
-            DN_SIMDHASH_KEY_T key = *dn_vector_index_t(keys, DN_SIMDHASH_KEY_T, i);
-            DN_SIMDHASH_VALUE_T value, expected_value = *dn_vector_index_t(values, DN_SIMDHASH_VALUE_T, i);
+		for (int i = 0; i < c; i++) {
+			DN_SIMDHASH_KEY_T key = *dn_vector_index_t(keys, DN_SIMDHASH_KEY_T, i);
+			DN_SIMDHASH_VALUE_T value, expected_value = *dn_vector_index_t(values, DN_SIMDHASH_VALUE_T, i);
 
-            uint8_t ok = dn_simdhash_size_t_size_t_try_get_value(test, key, &value);
-            if (tassert1(ok, key, "did not find key after refilling"))
-                tasserteq(value, expected_value, "value did not match after refilling");
-        }
+			uint8_t ok = dn_simdhash_size_t_size_t_try_get_value(test, key, &value);
+			if (tassert1(ok, key, "did not find key after refilling"))
+				tasserteq(value, expected_value, "value did not match after refilling");
+		}
 
-        printf("Calling foreach after refilling:\n");
-        foreach_count = 0;
-        dn_simdhash_size_t_size_t_foreach(test, foreach_callback, &foreach_count);
-        printf("Foreach iterated %u time(s)\n", foreach_count);
-        printf("Count: %u, Capacity: %u, Cascaded item count: %u\n", dn_simdhash_count(test), dn_simdhash_capacity(test), count_cascaded_buckets(test));
-    }
+		printf("Calling foreach after refilling:\n");
+		foreach_count = 0;
+		dn_simdhash_size_t_size_t_foreach(test, foreach_callback, &foreach_count);
+		printf("Foreach iterated %u time(s)\n", foreach_count);
+		printf("Count: %u, Capacity: %u, Cascaded item count: %u\n", dn_simdhash_count(test), dn_simdhash_capacity(test), count_cascaded_buckets(test));
+	}
 
 	printf("done\n");
 

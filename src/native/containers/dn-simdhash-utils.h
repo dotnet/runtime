@@ -5,7 +5,6 @@
 #define __DN_SIMDHASH_UTILS_H__
 
 #include <stdint.h>
-#include <assert.h>
 
 #if defined(__clang__) || defined (__GNUC__)
 static DN_FORCEINLINE(uint32_t)
@@ -179,18 +178,24 @@ MurmurHash3_32_streaming (const uint8_t *key, uint32_t seed)
 
 // end of reformulated murmur3-32
 
-#if defined(__clang__) && !defined(NDEBUG)
-#define dn_simdhash_assert(expr) \
-	if (DN_UNLIKELY(!(expr))) { \
-		__assert_fail(#expr, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
-	}
+
+#ifndef dn_simdhash_assert_fail
+#if DN_SIMDHASH_USE_MONO_ASSERTION_MESSAGE
+#warning "Using mono_assertion_message for dn_simdhash_assert_fail"
+
+void
+mono_assertion_message (const char *file, int line, const char *condition);
+
+#define dn_simdhash_assert_fail(expr_string) mono_assertion_message(__FILE__, __LINE__, expr_string)
 #else
+#warning "Using abort for dn_simdhash_assert_fail"
+#define dn_simdhash_assert_fail(expr_string) abort()
+#endif
+#endif // dn_assert_fail
 
 #define dn_simdhash_assert(expr) \
 	if (DN_UNLIKELY(!(expr))) { \
-		abort(); \
+		dn_simdhash_assert_fail(#expr); \
 	}
-
-#endif
 
 #endif // __DN_SIMDHASH_UTILS_H__
