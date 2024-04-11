@@ -8553,7 +8553,7 @@ interp_mark_ref_slots_for_vt (TransformData *td, int base_offset, MonoClass *kla
 retry:
 		if (mini_type_is_reference (ftype) || ftype->type == MONO_TYPE_I || ftype->type == MONO_TYPE_U || m_type_is_byref (ftype)) {
 			int index = offset / sizeof (gpointer);
-			mono_bitset_set_fast (td->ref_slots, index);
+			mono_bitset_set (td->ref_slots, index);
 			if (td->verbose_level)
 				g_print ("Stack ref slot vt field at off %d\n", offset);
 		} else if (ftype->type == MONO_TYPE_VALUETYPE || ftype->type == MONO_TYPE_GENERICINST) {
@@ -8604,7 +8604,7 @@ interp_mark_ref_slots_for_var (TransformData *td, int var)
 		// Managed pointers in interp are normally MONO_TYPE_I
 		if (mini_type_is_reference (type) || type->type == MONO_TYPE_I || type->type == MONO_TYPE_U || m_type_is_byref (type)) {
 			int index = td->vars [var].offset / sizeof (gpointer);
-			mono_bitset_set_fast (td->ref_slots, index);
+			mono_bitset_set (td->ref_slots, index);
 			if (td->verbose_level)
 				g_print ("Stack ref slot at off %d for var %d\n", index * sizeof (gpointer), var);
 		}
