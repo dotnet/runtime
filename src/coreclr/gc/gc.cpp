@@ -2657,11 +2657,11 @@ size_t      gc_heap::end_loh_size = 0;
 size_t      gc_heap::bgc_begin_poh_size = 0;
 size_t      gc_heap::end_poh_size = 0;
 
-uint64_t    gc_heap::loh_a_no_bgc = 0;
-uint64_t    gc_heap::loh_a_bgc_marking = 0;
-uint64_t    gc_heap::loh_a_bgc_planning = 0;
-uint64_t    gc_heap::poh_a_bgc_marking = 0;
-uint64_t    gc_heap::poh_a_bgc_planning = 0;
+size_t      gc_heap::loh_a_no_bgc = 0;
+size_t      gc_heap::loh_a_bgc_marking = 0;
+size_t      gc_heap::loh_a_bgc_planning = 0;
+size_t      gc_heap::poh_a_bgc_marking = 0;
+size_t      gc_heap::poh_a_bgc_planning = 0;
 #ifdef BGC_SERVO_TUNING
 size_t      gc_heap::bgc_maxgen_end_fl_size = 0;
 #endif //BGC_SERVO_TUNING
