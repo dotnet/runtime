@@ -9,18 +9,6 @@
 // HACK: for better language server parsing
 #include "dn-simdhash.h"
 
-static DN_FORCEINLINE(int)
-find_first_matching_suffix_scalar (uint8_t needle, uint8_t haystack[DN_SIMDHASH_VECTOR_WIDTH], uint32_t count)
-{
-	// TODO: It might be profitable to hand-unroll this loop, but right now doing so
-	//  hits a bug in clang and generates really bad WASM.
-	for (uint32_t i = 0; i < count; i++)
-		if (needle == haystack[i])
-			return i;
-
-	return 32;
-}
-
 #if defined(__clang__) || defined (__GNUC__) // use vector intrinsics
 
 #if defined(__wasm_simd128__)
@@ -47,11 +35,11 @@ find_first_matching_suffix_scalar (uint8_t needle, uint8_t haystack[DN_SIMDHASH_
 
 typedef uint8_t dn_u8x16 __attribute__ ((vector_size (DN_SIMDHASH_VECTOR_WIDTH), aligned(DN_SIMDHASH_VECTOR_WIDTH)));
 typedef union {
-	dn_u8x16 vec;
+	_Alignas(DN_SIMDHASH_VECTOR_WIDTH) dn_u8x16 vec;
 #if defined(_M_AMD64) || defined(_M_X64) || (_M_IX86_FP == 2) || defined(__SSE2__)
-	__m128i m128;
+	_Alignas(DN_SIMDHASH_VECTOR_WIDTH) __m128i m128;
 #endif
-	uint8_t values[DN_SIMDHASH_VECTOR_WIDTH];
+	_Alignas(DN_SIMDHASH_VECTOR_WIDTH) uint8_t values[DN_SIMDHASH_VECTOR_WIDTH];
 } dn_simdhash_suffixes;
 
 #ifdef DN_SIMDHASH_USE_SCALAR_FALLBACK
@@ -94,8 +82,16 @@ build_search_vector (uint8_t needle)
 
 // returns an index in range 0-14 on match, 15-32 if no match
 static DN_FORCEINLINE(uint32_t)
-find_first_matching_suffix (dn_simdhash_search_vector needle, dn_simdhash_suffixes haystack, uint32_t count)
-{
+find_first_matching_suffix (
+    dn_simdhash_search_vector needle,
+    // Only used by the vectorized implementations; discarded by scalar.
+    dn_simdhash_suffixes haystack,
+    // HACK: Pass the address of haystack.values directly, for scalar fallback.
+    // Without this, clang makes a full unaligned copy of haystack before calling us.
+    // Discarded by the vectorized implementations.
+    uint8_t haystack_values[DN_SIMDHASH_VECTOR_WIDTH],
+    uint32_t count
+) {
 #if defined(__wasm_simd128__)
 	return ctz(wasm_i8x16_bitmask(wasm_i8x16_eq(needle.vec, haystack.vec)));
 #elif defined(_M_AMD64) || defined(_M_X64) || (_M_IX86_FP == 2) || defined(__SSE2__)
@@ -117,7 +113,14 @@ find_first_matching_suffix (dn_simdhash_search_vector needle, dn_simdhash_suffix
 	msb.b[1] = vaddv_u8(vget_high_u8(masked.vec));
 	return ctz(msb.u);
 #else
-	return find_first_matching_suffix_scalar(needle, haystack.values, count);
+	// TODO: It might be profitable to hand-unroll this loop, but right now doing so
+	//  hits a bug in clang and generates really bad WASM.
+	// HACK: We can't put this in a common helper function without introducing a temporary
+	//  unaligned copy-from-table-to-stack in wasm-without-simd
+	for (uint32_t i = 0; i < count; i++)
+		if (needle == haystack_values[i])
+			return i;
+	return 32;
 #endif
 }
 
@@ -158,8 +161,10 @@ build_search_vector (uint8_t needle)
 
 // returns an index in range 0-14 on match, 15-32 if no match
 static DN_FORCEINLINE(uint32_t)
-find_first_matching_suffix (dn_simdhash_search_vector needle, dn_simdhash_suffixes haystack, uint32_t count)
-{
+find_first_matching_suffix (
+    dn_simdhash_search_vector needle, dn_simdhash_suffixes haystack,
+    uint8_t haystack_values[DN_SIMDHASH_VECTOR_WIDTH], uint32_t count
+) {
 	return ctz(_mm_movemask_epi8(_mm_cmpeq_epi8(needle.m128, haystack.m128)));
 }
 
@@ -188,9 +193,18 @@ build_search_vector (uint8_t needle)
 
 // returns an index in range 0-14 on match, 32 if no match
 static DN_FORCEINLINE(uint32_t)
-find_first_matching_suffix (dn_simdhash_search_vector needle, dn_simdhash_suffixes haystack, uint32_t count)
-{
-	return find_first_matching_suffix_scalar(needle, haystack.values, count);
+find_first_matching_suffix (
+    dn_simdhash_search_vector needle, dn_simdhash_suffixes haystack,
+    uint8_t haystack_values[DN_SIMDHASH_VECTOR_WIDTH], uint32_t count
+) {
+	// TODO: It might be profitable to hand-unroll this loop, but right now doing so
+	//  hits a bug in clang and generates really bad WASM.
+	// HACK: We can't put this in a common helper function without introducing a temporary
+	//  unaligned copy-from-table-to-stack in wasm-without-simd
+	for (uint32_t i = 0; i < count; i++)
+		if (needle == haystack_values[i])
+			return i;
+	return 32;
 }
 
 #endif // end of clang/gcc or msvc or fallback
