@@ -58,48 +58,32 @@ typedef struct
 class MetaDataImport
 {
 public:
-    //
-    // GetXXXProps
-    //
-    MDDecl1(void, GetScopeProps, GUID* pmvid);
-    MDDecl4(void, GetTypeDefProps, mdTypeDef td, STRINGREF* pszTypeDef, DWORD* pdwTypeDefFlags, mdToken* ptkExtends);
-    MDDecl2(void, GetMemberRefProps, mdMemberRef mr, ConstArray* ppvSigBlob);
+    MDDecl1(HRESULT, GetScopeProps, GUID* pmvid);
+    MDDecl2(HRESULT, GetMemberRefProps, mdMemberRef mr, ConstArray* ppvSigBlob);
 
-
-    ////
-    //// EnumXXX
-    ////
-    MDDecl3(void, Enum, mdToken type, mdToken tkParent, MetadataEnumResult * pResult);
-    MDDecl3(void, GetCustomAttributeProps, mdCustomAttribute cv, mdToken* ptkType, ConstArray* ppBlob);
-
-    ////
-    //// Misc
-    ////
+    MDDecl3(HRESULT, GetCustomAttributeProps, mdCustomAttribute cv, mdToken* ptkType, ConstArray* ppBlob);
 
     MDDecl5(HRESULT, GetDefaultValue, mdToken tk, INT64* pDefaultValue, BYTE** pStringValue, INT32* pLength, INT32* pCorElementType);
-    MDDecl2(void, GetName, mdToken tk, LPCSTR* pszName);
-    MDDecl3(void, GetUserString, mdToken tk, LPCSTR* pszName, ULONG* pCount);
-    MDDecl2(void, GetNamespace, mdToken tk, LPCSTR* pszName);
-    MDDecl2(void, GetParentToken, mdToken tk, mdToken* ptk);
-    MDDecl3(void, GetParamDefProps, mdToken tk, INT32* pSequence, INT32* pAttributes);
-    MDDecl4(void, GetPinvokeMap, mdToken tk, DWORD* pMappingFlags, LPCSTR* pszImportName, LPCSTR* pszImportDll);
+    MDDecl2(HRESULT, GetName, mdToken tk, LPCSTR* pszName);
+    MDDecl3(HRESULT, GetUserString, mdToken tk, BYTE** pszName, ULONG* pCount);
+    MDDecl2(HRESULT, GetNamespace, mdToken tk, LPCSTR* pszName);
+    MDDecl2(HRESULT, GetParentToken, mdToken tk, mdToken* ptk);
+    MDDecl3(HRESULT, GetParamDefProps, mdToken tk, INT32* pSequence, INT32* pAttributes);
+    MDDecl4(HRESULT, GetPInvokeMap, mdToken tk, DWORD* pMappingFlags, LPCSTR* pszImportName, LPCSTR* pszImportDll);
 
-    MDDecl3(void, GetClassLayout, mdTypeDef td, DWORD* pdwPackSize, ULONG* pulClassSize);
-    MDDecl3(FC_BOOL_RET, GetFieldOffset, mdTypeDef td, mdFieldDef target, DWORD* pdwFieldOffset);
+    MDDecl3(HRESULT, GetClassLayout, mdTypeDef td, DWORD* pdwPackSize, ULONG* pulClassSize);
+    MDDecl4(FC_BOOL_RET, GetFieldOffset, mdTypeDef td, mdFieldDef target, DWORD* pdwFieldOffsetGetFieldOffset, HRESULT* err);
 
-    MDDecl3(void, GetEventProps, mdToken tk, LPCSTR* pszName, INT32 *pdwEventFlags);
-    MDDecl2(void, GetGenericParamProps, mdToken tk, DWORD* pAttributes);
-    MDDecl2(void, GetFieldDefProps, mdToken tk, INT32 *pdwFieldFlags);
-    MDDecl4(void, GetPropertyProps, mdToken tk, LPCSTR* pszName, INT32 *pdwPropertyFlags, ConstArray* ppvSigBlob);
+    MDDecl3(HRESULT, GetEventProps, mdToken tk, LPCSTR* pszName, INT32 *pdwEventFlags);
+    MDDecl2(HRESULT, GetGenericParamProps, mdToken tk, DWORD* pAttributes);
+    MDDecl2(HRESULT, GetFieldDefProps, mdToken tk, INT32 *pdwFieldFlags);
+    MDDecl4(HRESULT, GetPropertyProps, mdToken tk, LPCSTR* pszName, INT32 *pdwPropertyFlags, ConstArray* ppvSigBlob);
 
-    MDDecl2(void, GetSignatureFromToken, mdToken tk, ConstArray* pSig);
-    MDDecl2(void, GetSigOfFieldDef, mdToken tk, ConstArray* pMarshalInfo);
-    MDDecl2(void, GetSigOfMethodDef, mdToken tk, ConstArray* pMarshalInfo);
-    MDDecl2(void, GetFieldMarshal, mdToken tk, ConstArray* pMarshalInfo);
-    MDDecl2(mdParamDef, GetParamForMethodIndex, mdMethodDef md, ULONG ulParamSeq);
+    MDDecl2(HRESULT, GetSignatureFromToken, mdToken tk, ConstArray* pSig);
+    MDDecl2(HRESULT, GetSigOfFieldDef, mdToken tk, ConstArray* pMarshalInfo);
+    MDDecl2(HRESULT, GetSigOfMethodDef, mdToken tk, ConstArray* pMarshalInfo);
+    MDDecl2(HRESULT, GetFieldMarshal, mdToken tk, ConstArray* pMarshalInfo);
     MDDecl1(FC_BOOL_RET, IsValidToken, mdToken tk);
-    MDDecl1(mdTypeDef, GetNestedClassProps, mdTypeDef tdNestedClass);
-    MDDecl1(ULONG, GetNativeCallConvFromSig, ConstArray sig);
 
     static FCDECL11(FC_BOOL_RET, GetMarshalAs,
         BYTE*   pvNativeType,

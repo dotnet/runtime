@@ -91,7 +91,7 @@ ErrExit:
 }
 FCIMPLEND
 
-MDImpl3(void, MetaDataImport::GetCustomAttributeProps, mdCustomAttribute cv, mdToken* ptkType, ConstArray* ppBlob)
+MDImpl3(HRESULT, MetaDataImport::GetCustomAttributeProps, mdCustomAttribute cv, mdToken* ptkType, ConstArray* ppBlob)
 {
     FCALL_CONTRACT;
 
@@ -184,7 +184,7 @@ MDImpl3(void, MetaDataImport::Enum, mdToken type, mdToken tkParent, MetadataEnum
 FCIMPLEND
 
 #if defined(_MSC_VER) && defined(TARGET_X86)
-#pragma optimize("y", on)		// Small critical routines, don't put in EBP frame
+#pragma optimize("y", on)   // Small critical routines, don't put in EBP frame
 #endif
 
 MDImpl1(FC_BOOL_RET, MetaDataImport::IsValidToken, mdToken tk)
@@ -197,8 +197,7 @@ MDImpl1(FC_BOOL_RET, MetaDataImport::IsValidToken, mdToken tk)
 }
 FCIMPLEND
 
-
-MDImpl3(void, MetaDataImport::GetClassLayout, mdTypeDef td, DWORD* pdwPackSize, ULONG* pulClassSize)
+MDImpl3(HRESULT, MetaDataImport::GetClassLayout, mdTypeDef td, DWORD* pdwPackSize, ULONG* pulClassSize)
 {
     FCALL_CONTRACT;
 
@@ -230,18 +229,16 @@ MDImpl3(void, MetaDataImport::GetClassLayout, mdTypeDef td, DWORD* pdwPackSize, 
         }
     }
 ErrExit:
-    if (FAILED(hr))
-    {
-        FCThrowVoid(kBadImageFormatException);
-    }
+    return hr;
 }
 FCIMPLEND
 
-MDImpl3(FC_BOOL_RET, MetaDataImport::GetFieldOffset, mdTypeDef td, mdFieldDef target, DWORD* pdwFieldOffset)
+MDImpl4(FC_BOOL_RET, MetaDataImport::GetFieldOffset, mdTypeDef td, mdFieldDef target, DWORD* pdwFieldOffset, HRESULT* err)
 {
     FCALL_CONTRACT;
 
     HRESULT hr = S_OK;
+    *err = S_OK;
     IMDInternalImport *_pScope = pScope;
     MD_CLASS_LAYOUT layout;
     BOOL retVal = FALSE;
@@ -267,29 +264,24 @@ MDImpl3(FC_BOOL_RET, MetaDataImport::GetFieldOffset, mdTypeDef td, mdFieldDef ta
 ErrExit:
     if (FAILED(hr))
     {
-        FCThrow(kBadImageFormatException);
+        *err = hr;
     }
     FC_RETURN_BOOL(retVal);
 }
 FCIMPLEND
 
-MDImpl3(void, MetaDataImport::GetUserString, mdToken tk, LPCSTR* pszName, ULONG* pCount)
+MDImpl3(HRESULT, MetaDataImport::GetUserString, mdToken tk, BYTE** pszName, ULONG* pCount)
 {
     FCALL_CONTRACT;
 
-    HRESULT hr;
     IMDInternalImport *_pScope = pScope;
     BOOL bHasExtendedChars;
 
-    hr = _pScope->GetUserString(tk, pCount, &bHasExtendedChars, (LPCWSTR *)pszName);
-    if (FAILED(hr))
-    {
-        FCThrowVoid(kBadImageFormatException);
-    }
+    return _pScope->GetUserString(tk, pCount, &bHasExtendedChars, (LPCWSTR *)pszName);
 }
 FCIMPLEND
 
-MDImpl2(void, MetaDataImport::GetName, mdToken tk, LPCSTR* pszName)
+MDImpl2(HRESULT, MetaDataImport::GetName, mdToken tk, LPCSTR* pszName)
 {
     FCALL_CONTRACT;
 
@@ -332,62 +324,42 @@ MDImpl2(void, MetaDataImport::GetName, mdToken tk, LPCSTR* pszName)
         hr = E_FAIL;
     }
 
-    if (FAILED(hr))
-    {
-        FCThrowVoid(kBadImageFormatException);
-    }
+    return hr;
 }
 FCIMPLEND
 
-MDImpl2(void, MetaDataImport::GetNamespace, mdToken tk, LPCSTR* pszName)
+MDImpl2(HRESULT, MetaDataImport::GetNamespace, mdToken tk, LPCSTR* pszName)
 {
     FCALL_CONTRACT;
 
-    HRESULT hr;
     IMDInternalImport *_pScope = pScope;
     LPCSTR szName = NULL;
 
-    hr = _pScope->GetNameOfTypeDef(tk, &szName, pszName);
-
-    if (FAILED(hr))
-    {
-        FCThrowVoid(kBadImageFormatException);
-    }
+    return _pScope->GetNameOfTypeDef(tk, &szName, pszName);
 }
 FCIMPLEND
 
-
-MDImpl2(void, MetaDataImport::GetGenericParamProps, mdToken tk, DWORD* pAttributes)
+MDImpl2(HRESULT, MetaDataImport::GetGenericParamProps, mdToken tk, DWORD* pAttributes)
 {
     FCALL_CONTRACT;
 
-    HRESULT hr;
     IMDInternalImport *_pScope = pScope;
 
-    hr = _pScope->GetGenericParamProps(tk, NULL, pAttributes, NULL, NULL, NULL);
-    if (FAILED(hr))
-    {
-        FCThrowVoid(kBadImageFormatException);
-    }
+    return _pScope->GetGenericParamProps(tk, NULL, pAttributes, NULL, NULL, NULL);
 }
 FCIMPLEND
 
-MDImpl3(void, MetaDataImport::GetEventProps, mdToken tk, LPCSTR* pszName, INT32 *pdwEventFlags)
+MDImpl3(HRESULT, MetaDataImport::GetEventProps, mdToken tk, LPCSTR* pszName, INT32 *pdwEventFlags)
 {
     FCALL_CONTRACT;
 
-    HRESULT hr;
     IMDInternalImport *_pScope = pScope;
 
-    hr = _pScope->GetEventProps(tk, pszName, (DWORD*)pdwEventFlags, NULL);
-    if (FAILED(hr))
-    {
-        FCThrowVoid(kBadImageFormatException);
-    }
+    return _pScope->GetEventProps(tk, pszName, (DWORD*)pdwEventFlags, NULL);
 }
 FCIMPLEND
 
-MDImpl4(void, MetaDataImport::GetPinvokeMap, mdToken tk, DWORD* pMappingFlags, LPCSTR* pszImportName, LPCSTR* pszImportDll)
+MDImpl4(HRESULT, MetaDataImport::GetPInvokeMap, mdToken tk, DWORD* pMappingFlags, LPCSTR* pszImportName, LPCSTR* pszImportDll)
 {
     FCALL_CONTRACT;
 
@@ -407,15 +379,11 @@ MDImpl4(void, MetaDataImport::GetPinvokeMap, mdToken tk, DWORD* pMappingFlags, L
     {
         hr = _pScope->GetModuleRefProps(tkModule, pszImportDll);
     }
-
-    if (FAILED(hr))
-    {
-        FCThrowVoid(kBadImageFormatException);
-    }
+    return hr;
 }
 FCIMPLEND
 
-MDImpl3(void, MetaDataImport::GetParamDefProps, mdToken tk, INT32* pSequence, INT32* pAttributes)
+MDImpl3(HRESULT, MetaDataImport::GetParamDefProps, mdToken tk, INT32* pSequence, INT32* pAttributes)
 {
     FCALL_CONTRACT;
 
@@ -436,44 +404,31 @@ MDImpl3(void, MetaDataImport::GetParamDefProps, mdToken tk, INT32* pSequence, IN
     }
     *pSequence = (INT32) usSequence;
 
-    if (FAILED(hr))
-    {
-        FCThrowVoid(kBadImageFormatException);
-    }
+    return hr;
 }
 FCIMPLEND
 
-MDImpl2(void, MetaDataImport::GetFieldDefProps, mdToken tk, INT32 *pdwFieldFlags)
+MDImpl2(HRESULT, MetaDataImport::GetFieldDefProps, mdToken tk, INT32 *pdwFieldFlags)
 {
     FCALL_CONTRACT;
 
-    HRESULT hr;
     IMDInternalImport *_pScope = pScope;
 
-    hr = _pScope->GetFieldDefProps(tk, (DWORD *)pdwFieldFlags);
-    if (FAILED(hr))
-    {
-        FCThrowVoid(kBadImageFormatException);
-    }
+    return _pScope->GetFieldDefProps(tk, (DWORD *)pdwFieldFlags);
 }
 FCIMPLEND
 
-MDImpl4(void, MetaDataImport::GetPropertyProps, mdToken tk, LPCSTR* pszName, INT32 *pdwPropertyFlags, ConstArray* ppValue)
+MDImpl4(HRESULT, MetaDataImport::GetPropertyProps, mdToken tk, LPCSTR* pszName, INT32 *pdwPropertyFlags, ConstArray* ppValue)
 {
     FCALL_CONTRACT;
 
-    HRESULT hr;
     IMDInternalImport *_pScope = pScope;
 
-    hr = _pScope->GetPropertyProps(tk, pszName, (DWORD*)pdwPropertyFlags, (PCCOR_SIGNATURE*)&ppValue->m_array, (ULONG*)&ppValue->m_count);
-    if (FAILED(hr))
-    {
-        FCThrowVoid(kBadImageFormatException);
-    }
-}
-FCIMPLEND
+    return _pScope->GetPropertyProps(tk, pszName, (DWORD*)pdwPropertyFlags, (PCCOR_SIGNATURE*)&ppValue->m_array, (ULONG*)&ppValue->m_count);
+ }
+ FCIMPLEND
 
-MDImpl2(void, MetaDataImport::GetFieldMarshal, mdToken tk, ConstArray* ppValue)
+MDImpl2(HRESULT, MetaDataImport::GetFieldMarshal, mdToken tk, ConstArray* ppValue)
 {
     FCALL_CONTRACT;
 
@@ -488,59 +443,41 @@ MDImpl2(void, MetaDataImport::GetFieldMarshal, mdToken tk, ConstArray* ppValue)
         hr = S_OK;
     }
 
-    if (FAILED(hr))
-    {
-        FCThrowVoid(kBadImageFormatException);
-    }
+    return hr;
 }
 FCIMPLEND
 
-MDImpl2(void, MetaDataImport::GetSigOfMethodDef, mdToken tk, ConstArray* ppValue)
+MDImpl2(HRESULT, MetaDataImport::GetSigOfMethodDef, mdToken tk, ConstArray* ppValue)
 {
     FCALL_CONTRACT;
 
-    HRESULT hr;
     IMDInternalImport *_pScope = pScope;
 
-    hr = _pScope->GetSigOfMethodDef(tk, (ULONG*)&ppValue->m_count, (PCCOR_SIGNATURE *)&ppValue->m_array);
-    if (FAILED(hr))
-    {
-        FCThrowVoid(kBadImageFormatException);
-    }
+    return _pScope->GetSigOfMethodDef(tk, (ULONG*)&ppValue->m_count, (PCCOR_SIGNATURE *)&ppValue->m_array);
 }
 FCIMPLEND
 
-MDImpl2(void, MetaDataImport::GetSignatureFromToken, mdToken tk, ConstArray* ppValue)
+MDImpl2(HRESULT, MetaDataImport::GetSignatureFromToken, mdToken tk, ConstArray* ppValue)
 {
     FCALL_CONTRACT;
 
-    HRESULT hr;
     IMDInternalImport *_pScope = pScope;
 
-    hr = _pScope->GetSigFromToken(tk, (ULONG*)&ppValue->m_count, (PCCOR_SIGNATURE *)&(ppValue->m_array));
-    if (FAILED(hr))
-    {
-        FCThrowVoid(kBadImageFormatException);
-    }
+    return _pScope->GetSigFromToken(tk, (ULONG*)&ppValue->m_count, (PCCOR_SIGNATURE *)&(ppValue->m_array));
 }
 FCIMPLEND
 
-MDImpl2(void, MetaDataImport::GetSigOfFieldDef, mdToken tk, ConstArray* ppValue)
+MDImpl2(HRESULT, MetaDataImport::GetSigOfFieldDef, mdToken tk, ConstArray* ppValue)
 {
     FCALL_CONTRACT;
 
-    HRESULT hr;
     IMDInternalImport *_pScope = pScope;
 
-    hr = _pScope->GetSigOfFieldDef(tk, (ULONG*)&ppValue->m_count, (PCCOR_SIGNATURE *)&ppValue->m_array);
-    if (FAILED(hr))
-    {
-        FCThrowVoid(kBadImageFormatException);
-    }
+    return _pScope->GetSigOfFieldDef(tk, (ULONG*)&ppValue->m_count, (PCCOR_SIGNATURE *)&ppValue->m_array);
 }
 FCIMPLEND
 
-MDImpl2(void, MetaDataImport::GetParentToken, mdToken tk, mdToken* ptk)
+MDImpl2(HRESULT, MetaDataImport::GetParentToken, mdToken tk, mdToken* ptk)
 {
     FCALL_CONTRACT;
 
@@ -578,49 +515,35 @@ MDImpl2(void, MetaDataImport::GetParentToken, mdToken tk, mdToken* ptk)
         break;
     }
 
-    if (FAILED(hr))
-    {
-        FCThrowVoid(kBadImageFormatException);
-    }
+    return hr;
 }
 FCIMPLEND
 
-MDImpl1(void, MetaDataImport::GetScopeProps, GUID* pmvid)
+MDImpl1(HRESULT, MetaDataImport::GetScopeProps, GUID* pmvid)
 {
     FCALL_CONTRACT;
 
-    HRESULT hr;
     LPCSTR szName;
-
     IMDInternalImport *_pScope = pScope;
-    hr = _pScope->GetScopeProps(&szName, pmvid);
-    if (FAILED(hr))
-    {
-        FCThrowVoid(kBadImageFormatException);
-    }
+    return _pScope->GetScopeProps(&szName, pmvid);
 }
 FCIMPLEND
 
 
-MDImpl2(void, MetaDataImport::GetMemberRefProps,
+MDImpl2(HRESULT, MetaDataImport::GetMemberRefProps,
     mdMemberRef mr,
     ConstArray* ppvSigBlob)
 {
     FCALL_CONTRACT;
 
-    HRESULT hr;
     IMDInternalImport *_pScope = pScope;
     LPCSTR szName_Ignore;
 
-    hr = _pScope->GetNameAndSigOfMemberRef(mr, (PCCOR_SIGNATURE*)&ppvSigBlob->m_array, (ULONG*)&ppvSigBlob->m_count, &szName_Ignore);
-    if (FAILED(hr))
-    {
-        FCThrowVoid(kBadImageFormatException);
-    }
+    return _pScope->GetNameAndSigOfMemberRef(mr, (PCCOR_SIGNATURE*)&ppvSigBlob->m_array, (ULONG*)&ppvSigBlob->m_count, &szName_Ignore);
 }
 FCIMPLEND
 
 #if defined(_MSC_VER) && defined(TARGET_X86)
-#pragma optimize("", on)			// restore command line optimization defaults
+#pragma optimize("", on)    // restore command line optimization defaults
 #endif
 
