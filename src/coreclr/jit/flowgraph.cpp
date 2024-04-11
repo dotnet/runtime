@@ -2600,7 +2600,7 @@ PhaseStatus Compiler::fgAddSwiftErrorReturns()
             {
                 if (!(*use)->OperIs(GT_LCL_VAR))
                 {
-                    BADCODE("Expected GT_LCL_VAR of SwiftError* parameter, got other GenTreeLclVarCommon node");
+                    BADCODE("Found invalid use of SwiftError* parameter");
                 }
 
                 *use = m_compiler->gtNewLclVarAddrNode(m_compiler->lvaSwiftErrorLocal, genActualType(*use));
