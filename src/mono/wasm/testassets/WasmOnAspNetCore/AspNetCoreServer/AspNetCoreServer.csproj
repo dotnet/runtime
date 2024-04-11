@@ -12,4 +12,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.0-preview.1.24081.5" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WasmBrowserClient\WasmBrowserClient.csproj" />
+  </ItemGroup>
 </Project>

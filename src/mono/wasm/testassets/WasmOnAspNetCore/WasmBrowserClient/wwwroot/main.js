@@ -12,7 +12,7 @@ function getQueryParam(prameterName) {
 }
 
 function getUrl() {
-    return window.location.protocol + "//" + window.location.host;
+    return window.location.origin;
 }
 
 try {

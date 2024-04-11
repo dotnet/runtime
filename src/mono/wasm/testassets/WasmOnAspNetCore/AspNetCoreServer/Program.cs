@@ -33,7 +33,7 @@ app.Use(async (context, next) =>
 });
 
 // WASM app as a static file provider
-var wasmPath = Path.Combine(app.Environment.ContentRootPath, "publish/wwwroot");
+var wasmPath = Path.Combine(AppContext.BaseDirectory, "publish/wwwroot");
 Console.WriteLine($"wasmPath: {wasmPath}");
 app.UseDefaultFiles(new DefaultFilesOptions
 {

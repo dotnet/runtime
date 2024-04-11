@@ -30,12 +30,8 @@ public class SignalRClientTests : SignalRTestsBase
     [InlineData("Release", "WebSockets")]
     public async Task SignalRPassMessages(string config, string transport)
     {
-        BuildAspNetCoreServingWASM(config: config,
-            assetName: "WasmOnAspNetCore",
-            projectDirSuffix: "WasmBrowserClient",
-            aspNetCoreAppDir: "AspNetCoreServer",
-            generatedProjectNamePrefix: "SignalRClientTests",
-            runtimeType: RuntimeVariant.MultiThreaded);
+        CopyTestAsset("WasmOnAspNetCore", "SignalRClientTests", "AspNetCoreServer");
+        PublishProject(config, runtimeType: RuntimeVariant.MultiThreaded, assertAppBundle: false);
 
         var result = await RunSdkStyleAppForBuild(new(
             Configuration: config,
