@@ -14116,10 +14116,9 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
         if ((ret != nullptr) && ret->OperIs(GT_SWIFT_ERROR_RET))
         {
             assert(genReturnErrorLocal != BAD_VAR_NUM);
-            const DebugInfo& di = lastStmt->GetDebugInfo();
-            GenTree*         swiftErrorStore =
-                gtNewTempStore(genReturnErrorLocal, ret->gtGetOp1(), CHECK_SPILL_NONE, nullptr, di, block);
-            Statement* const newStmt = gtNewStmt(swiftErrorStore, di);
+            const DebugInfo& di              = lastStmt->GetDebugInfo();
+            GenTree*         swiftErrorStore = gtNewTempStore(genReturnErrorLocal, ret->gtGetOp1());
+            Statement* const newStmt         = gtNewStmt(swiftErrorStore, di);
             fgInsertStmtBefore(block, lastStmt, newStmt);
         }
 #endif // SWIFT_SUPPORT

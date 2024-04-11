@@ -295,9 +295,9 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                 }
 
                 case GT_RETURN:
-                case GT_SWIFT_ERROR_RET:
                 {
-                    GenTree* const retVal = tree->AsOp()->GetReturnValue();
+                    // GT_SWIFT_ERROR_RET not supported
+                    GenTree* const retVal = tree->gtGetOp1();
 
                     // Only allow RETURNs if else conversion is being used.
                     if (!m_doElseConversion)

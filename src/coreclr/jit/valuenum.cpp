@@ -11697,15 +11697,25 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         }
                         break;
 
+                    // GT_SWIFT_ERROR_RET is similar to GT_RETURN, but it's a binary node, and its return value is op2.
                     case GT_SWIFT_ERROR_RET:
                         if (tree->gtGetOp2() != nullptr)
                         {
-                            tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(),
-                                                                 vnStore->VNPExceptionSet(tree->gtGetOp2()->gtVNPair));
+                            // We have a return value and an error value.
+                            ValueNumPair vnp;
+                            ValueNumPair op1Xvnp;
+                            ValueNumPair op2Xvnp;
+                            vnStore->VNPUnpackExc(tree->gtGetOp1()->gtVNPair, &vnp, &op1Xvnp);
+                            vnStore->VNPUnpackExc(tree->gtGetOp2()->gtVNPair, &vnp, &op2Xvnp);
+
+                            const ValueNumPair excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
+                            tree->gtVNPair                = vnStore->VNPWithExc(vnStore->VNPForVoid(), excSetPair);
                         }
                         else
                         {
-                            tree->gtVNPair = vnStore->VNPForVoid();
+                            // We only have the error value.
+                            tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(),
+                                                                 vnStore->VNPExceptionSet(tree->gtGetOp1()->gtVNPair));
                         }
                         break;
 

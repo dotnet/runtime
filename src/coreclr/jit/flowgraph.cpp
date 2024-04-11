@@ -2596,8 +2596,13 @@ PhaseStatus Compiler::fgAddSwiftErrorReturns()
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
-            if ((*use)->OperIs(GT_LCL_VAR) && ((*use)->AsLclVarCommon()->GetLclNum() == m_compiler->lvaSwiftErrorArg))
+            if ((*use)->AsLclVarCommon()->GetLclNum() == m_compiler->lvaSwiftErrorArg)
             {
+                if (!(*use)->OperIs(GT_LCL_VAR))
+                {
+                    BADCODE("Expected GT_LCL_VAR of SwiftError* parameter, got other GenTreeLclVarCommon node");
+                }
+
                 *use = m_compiler->gtNewLclVarAddrNode(m_compiler->lvaSwiftErrorLocal, genActualType(*use));
             }
 
