@@ -131,7 +131,6 @@ export type LoaderHelpers = {
     scriptUrl: string
     modulesUniqueQuery?: string
     preferredIcuAsset?: string | null,
-    loadingWorkers: PThreadWorker[],
     workerNextNumber: number,
 
     actual_downloaded_assets_count: number,
@@ -143,6 +142,7 @@ export type LoaderHelpers = {
     allDownloadsQueued: PromiseAndController<void>,
     wasmCompilePromise: PromiseAndController<WebAssembly.Module>,
     runtimeModuleLoaded: PromiseAndController<void>,
+    loadingWorkers: PromiseAndController<PThreadWorker[]>,
 
     is_exited: () => boolean,
     is_runtime_running: () => boolean,
@@ -431,6 +431,10 @@ export declare interface EmscriptenModuleInternal {
     runtimeKeepalivePop(): void;
     maybeExit(): void;
     __emscripten_thread_init(pthread_ptr: PThreadPtr, isMainBrowserThread: number, isMainRuntimeThread: number, canBlock: number): void;
+    print(message: string): void;
+    printErr(message: string): void;
+    abort(reason: any): void;
+    _emscripten_force_exit(exit_code: number): void;
 }
 
 /// A PromiseController encapsulates a Promise together with easy access to its resolve and reject functions.
@@ -460,7 +464,7 @@ export type initializeExportsType = (globalObjects: GlobalObjects) => RuntimeAPI
 export type initializeReplacementsType = (replacements: EmscriptenReplacements) => void;
 export type afterInitializeType = (module: EmscriptenModuleInternal) => void;
 export type configureEmscriptenStartupType = (module: DotnetModuleInternal) => void;
-export type configureRuntimeStartupType = () => Promise<void>;
+export type configureRuntimeStartupType = (module: DotnetModuleInternal) => Promise<void>;
 export type configureWorkerStartupType = (module: DotnetModuleInternal) => Promise<void>
 
 
@@ -549,6 +553,7 @@ export interface PThreadLibrary {
     threadInitTLS: () => void,
     getNewWorker: () => PThreadWorker,
     returnWorkerToPool: (worker: PThreadWorker) => void,
+    terminateAllThreads: () => void,
 }
 
 export interface PThreadInfoMap {

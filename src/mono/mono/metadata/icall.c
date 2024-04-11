@@ -1210,6 +1210,33 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_PrepareMethod (MonoMeth
 	// FIXME: Implement
 }
 
+void
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InternalBox (MonoQCallTypeHandle type_handle, char* data, MonoObjectHandleOnStack obj, MonoError *error)
+{
+	MonoType *type = type_handle.type;
+	MonoClass *klass = mono_class_from_mono_type_internal (type);
+
+	g_assert (m_class_is_valuetype (klass));
+
+	mono_class_init_checked (klass, error);
+	goto_if_nok (error, error_ret);
+
+	MonoObject* raw_obj = mono_value_box_checked (klass, data, error);
+	goto_if_nok (error, error_ret);
+
+	HANDLE_ON_STACK_SET(obj, raw_obj);
+	return;
+error_ret:
+	HANDLE_ON_STACK_SET (obj, NULL);
+}
+
+gint32
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SizeOf (MonoQCallTypeHandle type, MonoError* error)
+{
+	int align;
+	return mono_type_size (type.type, &align);
+}
+
 MonoObjectHandle
 ves_icall_System_Object_MemberwiseClone (MonoObjectHandle this_obj, MonoError *error)
 {

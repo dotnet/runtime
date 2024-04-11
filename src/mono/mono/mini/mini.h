@@ -2183,7 +2183,17 @@ GString  *mono_print_ins_index_strbuf       (int i, MonoInst *ins);
 void      mono_print_ins                    (MonoInst *ins);
 void      mono_print_bb                     (MonoBasicBlock *bb, const char *msg);
 void      mono_print_code                   (MonoCompile *cfg, const char *msg);
-const char* mono_inst_name (int op);
+#ifndef DISABLE_LOGGING
+#define M_PRI_INST "%s"
+const char * mono_inst_name(int opcode);
+#else
+#define M_PRI_INST "%d"
+static inline int
+mono_inst_name(int opcode)
+{
+        return opcode;
+}
+#endif
 int       mono_op_to_op_imm                 (int opcode);
 int       mono_op_imm_to_op                 (int opcode);
 int       mono_load_membase_to_load_mem     (int opcode);

@@ -724,12 +724,12 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
                                                  strLenOffset + sizeof(int), cmpMode);
     if (unrolled != nullptr)
     {
-        impStoreTemp(varStrTmp, varStr, CHECK_SPILL_NONE);
+        impStoreToTemp(varStrTmp, varStr, CHECK_SPILL_NONE);
         if (unrolled->OperIs(GT_QMARK))
         {
             // QMARK nodes cannot reside on the evaluation stack
             unsigned rootTmp = lvaGrabTemp(true DEBUGARG("spilling unroll qmark"));
-            impStoreTemp(rootTmp, unrolled, CHECK_SPILL_NONE);
+            impStoreToTemp(rootTmp, unrolled, CHECK_SPILL_NONE);
             unrolled = gtNewLclvNode(rootTmp, TYP_INT);
         }
 
@@ -885,14 +885,14 @@ GenTree* Compiler::impUtf16SpanComparison(StringComparisonKind kind, CORINFO_SIG
     {
         if (!spanObj->OperIs(GT_LCL_VAR))
         {
-            impStoreTemp(spanLclNum, spanObj, CHECK_SPILL_NONE);
+            impStoreToTemp(spanLclNum, spanObj, CHECK_SPILL_NONE);
         }
 
         if (unrolled->OperIs(GT_QMARK))
         {
             // QMARK can't be a root node, spill it to a temp
             unsigned rootTmp = lvaGrabTemp(true DEBUGARG("spilling unroll qmark"));
-            impStoreTemp(rootTmp, unrolled, CHECK_SPILL_NONE);
+            impStoreToTemp(rootTmp, unrolled, CHECK_SPILL_NONE);
             unrolled = gtNewLclvNode(rootTmp, TYP_INT);
         }
 
