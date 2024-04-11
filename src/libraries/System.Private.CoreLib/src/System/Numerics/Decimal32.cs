@@ -182,7 +182,7 @@ namespace System.Numerics
 
         static uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.SignMask => SignMask;
 
-        static string IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.OverflowMessage => SR.Overflow_Decimal32;
+        static string IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.OverflowMessage => SR.Overflow_Decimal32;
 
         static uint IDecimalIeee754UnpackInfo<Decimal32, int, uint>.SignMask => SignMask;
 
