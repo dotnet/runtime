@@ -31,7 +31,7 @@ namespace
 
 class CDACImpl final {
 public:
-    explicit CDACImpl(HMODULE module, ICorDebugDataTarget* target);
+    explicit CDACImpl(HMODULE module, uint64_t descriptorAddr, ICorDebugDataTarget* target);
     CDACImpl(const CDACImpl&) = delete;
     CDACImpl& operator=(CDACImpl&) = delete;
 
@@ -48,6 +48,7 @@ public:
         other.m_target = nullptr;
     }
 
+    // Returns the SOS interface. This does not AddRef the interface.
     IUnknown* SosInterface() const
     {
         return m_sos;
@@ -59,9 +60,6 @@ public:
         if (m_cdac_handle != NULL)
             m_free(m_cdac_handle);
 
-        if (m_sos != NULL)
-            m_sos->Release();
-
         if (m_module != NULL)
             ::FreeLibrary(m_module);
     }
@@ -70,7 +68,7 @@ private:
     HMODULE m_module;
     intptr_t m_cdac_handle;
     ICorDebugDataTarget* m_target;
-    IUnknown* m_sos;
+    NonVMComHolder<IUnknown> m_sos;
 
 private:
     decltype(&cdac_reader_init) m_init;
@@ -91,7 +89,7 @@ CDACImpl::CDACImpl(HMODULE module, ICorDebugDataTarget* target)
 }
 
 
-const CDAC* CDAC::Create(TADDR descriptor, ICorDebugDataTarget* target)
+const CDAC* CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target)
 {
     HRESULT hr = S_OK;
 
@@ -99,7 +97,7 @@ const CDAC* CDAC::Create(TADDR descriptor, ICorDebugDataTarget* target)
     if (!TryLoadCDACLibrary(&cdacLib))
         return nullptr;
 
-    CDACImpl *impl = new (nothrow) CDACImpl{cdacLib, target};
+    CDACImpl *impl = new (nothrow) CDACImpl{cdacLib, descriptorAddr, target};
     if (!impl)
         return nullptr;
 

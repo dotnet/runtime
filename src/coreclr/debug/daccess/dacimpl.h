@@ -1416,6 +1416,8 @@ public:
     bool m_debugMode;
 
     const CDAC* m_cdac;
+    NonVMComHolder<ISOSDacInterface> m_cdacSos;
+    NonVMComHolder<ISOSDacInterface9> m_cdacSos9;
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 

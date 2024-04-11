@@ -3126,6 +3126,13 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
 #endif
 
     m_cdac = CDAC::Create(0, m_pTarget);
+    if (m_cdac != NULL)
+    {
+        // Get SOS interfaces from the cDAC if available.
+        IUnknown* unk = m_cdac->SosInterface();
+        (void)unk->QueryInterface(__uuidof(ISOSDacInterface), (void**)&m_cdacSos);
+        (void)unk->QueryInterface(__uuidof(ISOSDacInterface9), (void**)&m_cdacSos9);
+    }
 }
 
 ClrDataAccess::~ClrDataAccess(void)

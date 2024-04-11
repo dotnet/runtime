@@ -11,7 +11,7 @@ class CDACImpl;
 class CDAC final
 {
 public:
-    static const CDAC* Create(TADDR descriptor, ICorDebugDataTarget *pDataTarget);
+    static const CDAC* Create(uint64_t descriptorAddr, ICorDebugDataTarget *pDataTarget);
     virtual ~CDAC();
     CDAC(const CDAC&) = delete;
     CDAC& operator=(const CDAC&) = delete;

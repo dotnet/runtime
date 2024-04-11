@@ -4954,18 +4954,9 @@ HRESULT ClrDataAccess::GetBreakingChangeVersion(int* pVersion)
     if (pVersion == nullptr)
         return E_INVALIDARG;
 
-    bool useDacFallback = true;
-    if (m_cdac != nullptr)
+    if (m_cdacSos9 != nullptr && SUCCEEDED(m_cdacSos9->GetBreakingChangeVersion(pVersion)))
     {
-        NonVMComHolder<ISOSDacInterface9> sos9;
-        if (SUCCEEDED(m_cdac->SosInterface()->QueryInterface(__uuidof(ISOSDacInterface9), (void**)&sos9)))
-        {
-            if (SUCCEEDED(sos9->GetBreakingChangeVersion(pVersion)))
-            {
-                useDacFallback = false;
-                _ASSERTE(*pVersion == SOS_BREAKING_CHANGE_VERSION);
-            }
-        }
+        _ASSERTE(*pVersion == SOS_BREAKING_CHANGE_VERSION);
     }
     else
     {
