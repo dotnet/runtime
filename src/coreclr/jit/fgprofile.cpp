@@ -5222,6 +5222,34 @@ bool Compiler::fgProfileWeightsConsistent(weight_t weight1, weight_t weight2)
     return fgProfileWeightsEqual(relativeDiff, BB_ZERO_WEIGHT);
 }
 
+//------------------------------------------------------------------------
+// fgProfileWeightsConsistentOrSmall: check if two profile weights are within
+//   some small percentage of one another, or are both less than some epsilon.
+//
+// Arguments:
+//   weight1 -- first weight
+//   weight2 -- second weight
+//   epsilon -- small weight threshold
+//
+bool Compiler::fgProfileWeightsConsistentOrSmall(weight_t weight1, weight_t weight2, weight_t epsilon)
+{
+    if (weight2 == BB_ZERO_WEIGHT)
+    {
+        return fgProfileWeightsEqual(weight1, weight2, epsilon);
+    }
+
+    weight_t const delta = fabs(weight2 - weight1);
+
+    if (delta <= epsilon)
+    {
+        return true;
+    }
+
+    weight_t const relativeDelta = delta / weight2;
+
+    return fgProfileWeightsEqual(relativeDelta, BB_ZERO_WEIGHT);
+}
+
 #ifdef DEBUG
 
 //------------------------------------------------------------------------
@@ -5602,7 +5630,7 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
 
         if (verifyLikelyWeights)
         {
-            if (!fgProfileWeightsConsistent(blockWeight, incomingLikelyWeight))
+            if (!fgProfileWeightsConsistentOrSmall(blockWeight, incomingLikelyWeight))
             {
                 JITDUMP("  " FMT_BB " - block weight " FMT_WT " inconsistent with incoming likely weight " FMT_WT "\n",
                         block->bbNum, blockWeight, incomingLikelyWeight);
