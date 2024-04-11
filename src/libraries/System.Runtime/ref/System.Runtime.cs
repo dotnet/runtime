@@ -2436,7 +2436,7 @@ namespace System
         public override int GetHashCode() { throw null; }
         public static string? GetName(System.Type enumType, object value) { throw null; }
         public static string[] GetNames(System.Type enumType) { throw null; }
-        public static string[] GetNames<TEnum>() where TEnum : struct { throw null; }
+        public static string[] GetNames<TEnum>() where TEnum : struct, System.Enum { throw null; }
         public static string? GetName<TEnum>(TEnum value) where TEnum : struct, System.Enum { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         public static System.Type GetUnderlyingType(System.Type enumType) { throw null; }
