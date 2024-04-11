@@ -13,9 +13,7 @@ public class RangeCheck_Overflow
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int Overflow(Span<byte> a)
     {
-		// We should have two compares in this function: one for the loop test, and one for the bounds check.
-        // X64: cmp
-        // X64: cmp
+        // CHECK: CORINFO_HELP_RNGCHKFAIL
 
         int sum = 0;
         for (int i = 0; i < a.Length; i += 2)
