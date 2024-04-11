@@ -770,7 +770,7 @@ DebuggerControllerPatch *DebuggerPatchTable::GetNextPatch(DebuggerControllerPatc
 #ifdef _DEBUG
 void DebuggerPatchTable::CheckPatchTable()
 {
-    if (0 != m_pcEntries)
+    if ((TADDR)NULL != m_pcEntries)
     {
         LOG((LF_CORDB,LL_INFO1000, "DPT:CPT: %u\n", m_iEntries));
         DebuggerControllerPatch *dcp;
@@ -793,7 +793,7 @@ int DebuggerPatchTable::GetNumberOfPatches()
 {
     int total = 0;
 
-    if (0 != m_pcEntries)
+    if ((TADDR)NULL != m_pcEntries)
     {
         DebuggerControllerPatch *dcp;
         ULONG i = 0;

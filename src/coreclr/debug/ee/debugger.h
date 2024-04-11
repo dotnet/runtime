@@ -1237,8 +1237,8 @@ class CodeRegionInfo
 {
 public:
     CodeRegionInfo() :
-        m_addrOfHotCode((PCODE)0),
-        m_addrOfColdCode((PCODE)0),
+        m_addrOfHotCode((PCODE)NULL),
+        m_addrOfColdCode((PCODE)NULL),
         m_sizeOfHotCode(0),
         m_sizeOfColdCode(0)
     {
@@ -1273,7 +1273,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        if (m_addrOfHotCode != 0)
+        if (m_addrOfHotCode != (PCODE)NULL)
         {
             if (offset < m_sizeOfHotCode)
             {
@@ -1289,7 +1289,7 @@ public:
         }
         else
         {
-            return (PCODE)0;
+            return (PCODE)NULL;
         }
     }
 

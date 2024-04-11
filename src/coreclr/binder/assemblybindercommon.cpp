@@ -1297,7 +1297,7 @@ HRESULT AssemblyBinderCommon::CreateDefaultBinder(DefaultAssemblyBinder** ppDefa
             hr = pApplicationContext->Init();
             if (SUCCEEDED(hr))
             {
-                pBinder->SetManagedAssemblyLoadContext((TADDR)0);
+                pBinder->SetManagedAssemblyLoadContext((INT_PTR)NULL);
                 *ppDefaultBinder = pBinder.Extract();
             }
         }

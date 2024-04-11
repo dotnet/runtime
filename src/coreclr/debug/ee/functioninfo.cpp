@@ -253,7 +253,7 @@ DebuggerJitInfo::DebuggerJitInfo(DebuggerMethodInfo *minfo, NativeCodeVersion na
     m_encBreakpointsApplied(false),
 #endif //FEATURE_METADATA_UPDATER
     m_methodInfo(minfo),
-    m_addrOfCode(0),
+    m_addrOfCode((CORDB_ADDRESS)NULL),
     m_sizeOfCode(0), m_prevJitInfo(NULL), m_nextJitInfo(NULL),
     m_lastIL(0),
     m_sequenceMap(NULL),

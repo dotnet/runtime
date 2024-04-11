@@ -14913,7 +14913,7 @@ HRESULT CordbProcess::GetReferenceValueFromGCHandle(
 
     EX_TRY
     {
-        if (gcHandle == 0)
+        if (gcHandle == (UINT_PTR)0)
         {
             ThrowHR(CORDBG_E_BAD_REFERENCE_VALUE);
         }

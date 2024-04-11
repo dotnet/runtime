@@ -202,7 +202,7 @@ inline TADDR FuncEvalFrame::GetReturnAddressPtr()
 
     if (GetDebuggerEval()->m_evalDuringException)
     {
-        return (TADDR)0;
+        return (TADDR)NULL;
     }
     else
     {
