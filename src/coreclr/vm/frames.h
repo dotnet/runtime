@@ -2852,9 +2852,10 @@ public:
     // method if the current InlinedCallFrame is inactive.
     PTR_MethodDesc GetActualInteropMethodDesc()
     {
-        // The actual interop MethodDesc is saved off in a field in the InlinedCrawlFrame
-        // which is populated by the JIT in `InsertPInvokeMethodProlog`.
-        return PTR_MethodDesc(m_StubSecretArg);
+        // The VM instructs the JIT to publish the secret stub arg at the end
+        // of the InlinedCallFrame structure when it exists.
+        TADDR addr = dac_cast<TADDR>(this) + sizeof(InlinedCallFrame);
+        return PTR_MethodDesc(*PTR_TADDR(addr));
     }
 
     virtual void UpdateRegDisplay(const PREGDISPLAY, bool updateFloats = false);
@@ -2867,11 +2868,6 @@ public:
     // - bit 2 indicates CallCatchFunclet or CallFinallyFunclet
     // See code:HasFunction.
     PTR_NDirectMethodDesc   m_Datum;
-
-    // IL stubs fill this field with the incoming secret argument when they erect
-    // InlinedCallFrame so we know which interop method was invoked even if the frame
-    // is not active at the moment.
-    PTR_VOID             m_StubSecretArg;
 
     // X86: ESP after pushing the outgoing arguments, and just before calling
     // out to unmanaged code.

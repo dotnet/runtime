@@ -3681,13 +3681,6 @@ void CodeGen::genCheckUseBlockInit()
     {
         regMaskTP maskCalleeRegArgMask = intRegState.rsCalleeRegArgMaskLiveIn;
 
-        // If there is a secret stub param, don't count it, as it will no longer
-        // be live when we do block init.
-        if (compiler->info.compPublishStubParam)
-        {
-            maskCalleeRegArgMask &= ~RBM_SECRET_STUB_PARAM;
-        }
-
 #ifdef TARGET_ARM
         //
         // On the Arm if we are using a block init to initialize, then we
