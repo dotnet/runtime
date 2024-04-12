@@ -63,7 +63,8 @@ namespace System
 
             TSignificand unsignedSignificand = significand > TSignificand.Zero ? significand : -significand;
 
-            if (unsignedSignificand > TDecimal.MaxSignificand && exponent > TDecimal.MaxDecimalExponent)
+            if ((unsignedSignificand > TDecimal.MaxSignificand && exponent >= TDecimal.MaxDecimalExponent)
+                || (unsignedSignificand == TDecimal.MaxSignificand && exponent > TDecimal.MaxDecimalExponent))
             {
                 return significand > TSignificand.Zero ? TDecimal.PositiveInfinityBits : TDecimal.NegativeInfinityBits;
             }
