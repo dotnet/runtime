@@ -4,7 +4,7 @@
 #define MEASUREMENTS_IMPLEMENTATION 1
 
 #define INNER_COUNT 1024 * 32
-#define BASELINE_SIZE 102400
+#define BASELINE_SIZE 20480
 
 static dn_simdhash_u32_ptr_t *random_u32s_hash;
 static dn_vector_t *sequential_u32s, *random_u32s, *random_unused_u32s;

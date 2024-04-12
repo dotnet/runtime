@@ -106,7 +106,8 @@ dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity)
 
 	// No need to go out of our way to align values
 	hash->buffers.values = dn_allocator_alloc(hash->buffers.allocator, values_size_bytes);
-	memset(hash->buffers.values, 0, values_size_bytes);
+	// Skip this for performance; memset is especially slow in wasm
+	// memset(hash->buffers.values, 0, values_size_bytes);
 
 	return result;
 }
@@ -118,9 +119,11 @@ dn_simdhash_clear (dn_simdhash_t *hash)
 	if (hash->vtable.destroy_all)
 		hash->vtable.destroy_all(hash);
 	hash->count = 0;
+	// TODO: Scan through buckets sequentially and only erase ones with data in them
+	// Maybe skip erasing the key slots too?
 	memset(hash->buffers.buckets, 0, hash->buffers.buckets_length * hash->meta->bucket_size_bytes);
-	// Clearing the values is technically optional, so we could skip this for performance
-	memset(hash->buffers.values, 0, hash->buffers.values_length * hash->meta->value_size);
+	// Skip this for performance; memset is especially slow in wasm
+	// memset(hash->buffers.values, 0, hash->buffers.values_length * hash->meta->value_size);
 }
 
 uint32_t

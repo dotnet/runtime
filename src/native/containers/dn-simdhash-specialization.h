@@ -511,9 +511,9 @@ DN_SIMDHASH_TRY_REMOVE_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key,
 			// Rotate replacement key from the end of the bucket to here
 			*key_address = *replacement_key_address;
 			// Erase replacement key/value's old slots
-			// TODO: Skip these for performance?
-			memset(replacement_key_address, 0, sizeof(DN_SIMDHASH_KEY_T));
-			memset(replacement_address, 0, sizeof(DN_SIMDHASH_VALUE_T));
+			// Skipped because memset is slow on wasm
+			// memset(replacement_key_address, 0, sizeof(DN_SIMDHASH_KEY_T));
+			// memset(replacement_address, 0, sizeof(DN_SIMDHASH_VALUE_T));
 
 			// If this item cascaded out of its original target bucket, we need
 			//  to go through all the buckets we visited on the way here and reduce

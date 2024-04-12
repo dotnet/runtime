@@ -16,8 +16,11 @@ disassemble-benchmark: benchmark-native benchmark-wasm
 	objdump -d ./a.out > ./a.dis
 	~/wabt/bin/wasm2wat ./a.out.wasm > ./a.wat
 
-run-benchmark: benchmark-native
+run-native: benchmark-native
 	./a.out
 
-default_target: disassemble-benchmark run-benchmark
+run-wasm: benchmark-wasm
+	node ./a.out.js
+
+default_target: disassemble-benchmark
 
