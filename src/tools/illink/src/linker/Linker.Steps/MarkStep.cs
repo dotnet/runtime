@@ -588,7 +588,7 @@ namespace Mono.Linker.Steps
 			// We may mark an interface type later on.  Which means we need to reprocess any time with one or more interface implementations that have not been marked
 			// and if an interface type is found to be marked and implementation is not marked, then we need to mark that implementation
 
-			for(int i = 0; i < _typesWithInterfaces.Count; i++) {
+			for (int i = 0; i < _typesWithInterfaces.Count; i++) {
 				(var type, var scope) = _typesWithInterfaces[i];
 				// Exception, types that have not been flagged as instantiated yet.  These types may not need their interfaces even if the
 				// interface type is marked
@@ -705,7 +705,7 @@ namespace Mono.Linker.Steps
 							MarkMethod (dimInfo.Override, new DependencyInfo (DependencyKind.Override, dimInfo.Base), ScopeStack.CurrentScope.Origin);
 					}
 				}
-				var overridingMethods = Annotations.GetOverrides (method);
+				List<OverrideInformation>? overridingMethods = (List<OverrideInformation>?)Annotations.GetOverrides (method);
 				if (overridingMethods is not null) {
 					for (int i = 0; i < overridingMethods.Count; i++) {
 						OverrideInformation ov = overridingMethods[i];
