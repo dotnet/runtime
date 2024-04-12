@@ -107,19 +107,19 @@ For example, if your target platform has a clang toolchain, something like this 
 input for `cdac-build-tool`:
 
 ```console
-$ clang -target wasm32-unknown-unknown -c -o /tmp/sample.o ./sample/sample.blob.c
+$ clang -target wasm32-unknown-unknown -c -o /tmp/sample.o src/coreclr/tools/cdac-build-tool/sample/sample.blob.c
 ```
 
 If you are modifying the preprocessor macros, using `-E` to emit the preprocessed output is helpful as well.
 
 ```console
-$ clang -target x86_64-unknown-linux-gnu -E -o /tmp/sample.i ./sample/sample.blob.c
+$ clang -target x86_64-unknown-linux-gnu -E -o /tmp/sample.i .src/coreclr/tools/cdac-build-tool/sample/sample.blob.c
 ```
 
 Running the `cdac-build-tool` with the `-v` verbose option will show progress
 
 ```console
-$ ../../../../dotnet.sh run --project cdac-build-tool.csproj -- compose -v -o /tmp/contract.c /tmp/sample.o
+$ ./dotnet.sh run --project src/coreclr/tools/cdac-build-tool/cdac-build-tool.csproj -- compose -v -o /tmp/contract.c /tmp/sample.o
 ```
 
 It is also helpful to run the `cdac-build-tool` under a debugger with a breakpoint in `ObjectFileScraper.ScrapeInput`
