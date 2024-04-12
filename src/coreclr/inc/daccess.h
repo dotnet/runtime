@@ -869,7 +869,7 @@ public:
     // We use this delayed check to avoid ambiguous overload issues with TADDR
     // on platforms where NULL is defined as anything other than a uintptr_t constant
     // or nullptr_t exactly.
-    // Without this, any valid "null pointer contstant" that is not directly either type
+    // Without this, any valid "null pointer constant" that is not directly either type
     // will be implicitly convertible to both TADDR and std::nullptr_t, causing ambiguity.
     // With this, this constructor (and all similarly declared operators) drop out of
     // consideration when used with NULL (and not nullptr_t).
