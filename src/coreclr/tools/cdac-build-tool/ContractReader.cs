@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -22,9 +24,11 @@ public partial class ContractReader
     {
         var s = File.OpenRead(contractFilePath);
         using var reader = new StreamReader(s, System.Text.Encoding.UTF8);
+        uint lineNum = 0;
         while (true)
         {
             var line = await reader.ReadLineAsync(token).ConfigureAwait(false);
+            lineNum++;
             if (line == null)
             {
                 break;
@@ -33,22 +37,35 @@ public partial class ContractReader
             {
                 continue;
             }
-            var (contract, version) = ParseContractLine(line);
+            if (!TryParseContractLine(line, out string? contract, out int version))
+            {
+                Console.Error.WriteLine($"{contractFilePath}:{lineNum}: Invalid contract line: {line}");
+                return false;
+            }
             _builder.AddOrUpdateContract(contract, version);
         }
         return true;
     }
-    public (string, int) ParseContractLine(string line)
+    public bool TryParseContractLine(string line, [NotNullWhen(true)] out string? contract, out int version)
     {
         var match = ContractLineRegex().Match(line);
         if (!match.Success)
         {
-            throw new InvalidOperationException($"Invalid contract line: {line}");
+            contract = null;
+            version = 0;
+            return false;
         }
         GroupCollection groups = match.Groups;
-        var contract = groups["contractName"].Value;
-        var version = int.Parse(groups["contractVersion"].Value);
-        return (contract, version);
+        contract = groups["contractName"].Value;
+        string versionStr = groups["contractVersion"].Value;
+        if (!int.TryParse(versionStr, out version))
+        {
+            Console.Error.WriteLine($"Invalid version number in contract {versionStr}");
+            contract = null;
+            version = 0;
+            return false;
+        }
+        return true;
     }
 
     // Matches a line of the form:
