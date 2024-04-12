@@ -1229,7 +1229,7 @@ public:
 
     type* operator->() const
     {
-        return (type*)this;
+        return (type*)(*this);
     }
 };
 
