@@ -3427,7 +3427,7 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
 #ifdef TARGET_ARM64
             if (HWIntrinsicInfo::IsScalable(hwintrinsic->GetHWIntrinsicId()))
             {
-                for (int argNum = 1; argNum <= numArgs; argNum++)
+                for (size_t argNum = 1; argNum <= numArgs; argNum++)
                 {
                     BuildOperandUses(hwintrinsic->Op(argNum), candidates);
                 }
