@@ -7652,15 +7652,17 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 }
 
                 case NI_SSE2_ConvertToVector128Double:
-                case NI_SSE3_MoveAndDuplicate:
                 case NI_AVX_ConvertToVector256Double:
+                case NI_AVX512F_ConvertToVector512Double:
+                case NI_AVX512F_VL_ConvertToVector128Double:
+                case NI_AVX512F_VL_ConvertToVector256Double:
                 {
                     assert(!supportsSIMDScalarLoads);
 
                     // Most instructions under the non-VEX encoding require aligned operands.
                     // Those used for Sse2.ConvertToVector128Double (CVTDQ2PD and CVTPS2PD)
-                    // and Sse3.MoveAndDuplicate (MOVDDUP) are exceptions and don't fail for
-                    // unaligned inputs as they read mem64 (half the vector width) instead
+                    // are exceptions and don't fail for unaligned inputs as they read half
+                    // the vector width instead
 
                     supportsAlignedSIMDLoads   = !comp->opts.MinOpts();
                     supportsUnalignedSIMDLoads = true;
@@ -7668,10 +7670,29 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     const unsigned expectedSize = genTypeSize(parentNode->TypeGet()) / 2;
                     const unsigned operandSize  = genTypeSize(childNode->TypeGet());
 
-                    // For broadcasts we can only optimize constants and memory operands
-                    const bool broadcastIsContainable = childNode->OperIsConst() || childNode->isMemoryOp();
-                    supportsGeneralLoads =
-                        broadcastIsContainable && supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
+                    if (childNode->OperIsConst() || childNode->isMemoryOp())
+                    {
+                        // For broadcasts we can only optimize constants and memory operands
+                        // since we're going from a smaller base type to a larger base type
+                        supportsGeneralLoads = supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
+                    }
+                    break;
+                }
+
+                case NI_SSE3_MoveAndDuplicate:
+                {
+                    // Most instructions under the non-VEX encoding require aligned operands.
+                    // Those used for Sse3.MoveAndDuplicate (MOVDDUP) are exceptions and don't
+                    // fail for unaligned inputs as they read half the vector width instead
+
+                    supportsAlignedSIMDLoads   = !comp->opts.MinOpts();
+                    supportsUnalignedSIMDLoads = true;
+
+                    const unsigned expectedSize = genTypeSize(parentNode->TypeGet()) / 2;
+                    const unsigned operandSize  = genTypeSize(childNode->TypeGet());
+
+                    supportsGeneralLoads    = supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
+                    supportsSIMDScalarLoads = true;
                     break;
                 }
 
@@ -7697,8 +7718,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     break;
                 }
             }
-
-            assert(supportsSIMDScalarLoads == false);
             break;
         }
 
