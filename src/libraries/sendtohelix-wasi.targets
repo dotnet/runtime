@@ -106,6 +106,7 @@
   <Target Name="PrepareHelixCorrelationPayload_Wasi">
     <Error Text="Cannot find %24(WasmtimeDir)=$(WasmtimeDir)" Condition="'$(WasmtimeDir)' == '' or !Exists($(WasmtimeDir))" />
     <Exec Command="ls -lsa $(WasmtimeDir)" Condition="'$(HostOS)' == 'linux'" />
+    <Exec Command="ls -lsa $(WasmtimeDirForHelixPayload)" Condition="'$(HostOS)' == 'linux'" />
     <ItemGroup>
       <HelixCorrelationPayload Include="$(WasmtimeDirForHelixPayload)" Destination="wasmtime" Condition="'$(NeedsWasmtime)' == 'true'" />
 
@@ -122,6 +123,8 @@
       <HelixCorrelationPayload Include="$(WasiSdkDirForHelixPayload)" Destination="build/wasi-sdk" Condition="'$(NeedsWasiSdk)' == 'true'" />
     </ItemGroup>
   </Target>
+
+  <Target Name="PrintWasmtimePayloadDirContent" BeforeTargets="AfterTest"
 
   <Target Name="PrepareForBuildHelixWorkItems_Wasi"
           DependsOnTargets="$(PrepareForBuildHelixWorkItems_WasiDependsOn);$(HelixExtensionTargets)" />
