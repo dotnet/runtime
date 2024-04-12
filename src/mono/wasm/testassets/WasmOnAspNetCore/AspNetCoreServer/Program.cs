@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.AspNetCore.StaticFiles;
 using Server;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -52,8 +53,12 @@ switch (client)
         {
             FileProvider = new PhysicalFileProvider(staticFilesPath)
         });
+        var provider = new FileExtensionContentTypeProvider();
+        provider.Mappings[".dll"] = "application/octet-stream";
+        provider.Mappings[".dat"] = "application/octet-stream";
         app.UseStaticFiles(new StaticFileOptions
         {
+            ContentTypeProvider = provider,
             FileProvider = new PhysicalFileProvider(staticFilesPath)
         });
         break;
