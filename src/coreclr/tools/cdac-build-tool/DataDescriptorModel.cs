@@ -145,7 +145,7 @@ public class DataDescriptorModel
         return System.Text.Encoding.UTF8.GetString(bytes);
     }
 
-    public int AuxDataCount => Globals.Values.Count(g => g.Value.Indirect);
+    public int PointerDataCount => Globals.Values.Count(g => g.Value.Indirect);
 
     public class Builder
     {

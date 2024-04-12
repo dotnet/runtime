@@ -74,7 +74,7 @@ add_custom_command(
 # DotNetRuntimeContractDescriptor since it is not referenced anywhere.
 add_library_clr(cdac_contract_descriptor OBJECT
     "${CONTRACT_DESCRIPTOR_OUTPUT}"
-    contract-aux-data.cpp
+    contractpointerdata.cpp
 )
 target_include_directories(cdac_contract_descriptor BEFORE PRIVATE ${VM_DIR})
 target_include_directories(cdac_contract_descriptor BEFORE PRIVATE ${VM_DIR}/${ARCH_SOURCES_DIR})

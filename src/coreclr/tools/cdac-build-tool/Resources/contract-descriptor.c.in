@@ -15,12 +15,12 @@ struct DotNetRuntimeContractDescriptor
     uint32_t flags;
     const uint32_t descriptor_size;
     const char *descriptor;
-    const uint32_t aux_data_count;
+    const uint32_t pointer_data_count;
     uint32_t pad0;
-    const uintptr_t *aux_data;
+    const uintptr_t *pointer_data;
 };
 
-extern const uintptr_t contractDescriptorAuxData[];
+extern const uintptr_t contractDescriptorPointerData[];
 
 DLLEXPORT struct DotNetRuntimeContractDescriptor DotNetRuntimeContractDescriptor;
 
@@ -29,6 +29,6 @@ DLLEXPORT struct DotNetRuntimeContractDescriptor DotNetRuntimeContractDescriptor
     .flags = %%platformFlags%%,
     .descriptor_size = %%jsonDescriptorSize%%,
     .descriptor = "%%jsonDescriptor%%",
-    .aux_data_count = %%auxDataCount%%,
-    .aux_data = &contractDescriptorAuxData[0],
+    .pointer_data_count = %%pointerDataCount%%,
+    .pointer_data = &contractDescriptorPointerData[0],
 };

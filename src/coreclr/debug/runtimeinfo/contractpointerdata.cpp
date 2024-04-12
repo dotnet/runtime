@@ -11,9 +11,9 @@
 extern "C"
 {
   
-extern const uintptr_t contractDescriptorAuxData[];
+extern const uintptr_t contractDescriptorPointerData[];
 
-const uintptr_t contractDescriptorAuxData[] = {
+const uintptr_t contractDescriptorPointerData[] = {
     (uintptr_t)0, // placeholder
 #define CDAC_GLOBAL_POINTER(name,value) (uintptr_t)(value),
 #include "data-descriptor.h"

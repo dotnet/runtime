@@ -13,7 +13,7 @@ public partial class ContractDescriptorSourceFileEmitter
     public const string TemplateResourceName = "Microsoft.DotNet.Diagnostics.DataContract.Resources.contract-descriptor.c.in";
     internal const string JsonDescriptorKey = "jsonDescriptor";
     internal const string JsonDescriptorSizeKey = "jsonDescriptorSize";
-    internal const string AuxDataCount = "auxDataCount";
+    internal const string PointerDataCount = "pointerDataCount";
     internal const string PlatformFlags = "platformFlags";
 
     public ContractDescriptorSourceFileEmitter()
@@ -35,9 +35,9 @@ public partial class ContractDescriptorSourceFileEmitter
         return reader.ReadToEnd();
     }
 
-    public void SetAuxDataCount(int count)
+    public void SetPointerDataCount(int count)
     {
-        Elements[AuxDataCount] = count.ToString();
+        Elements[PointerDataCount] = count.ToString();
     }
 
     public void SetPlatformFlags(uint platformFlags)

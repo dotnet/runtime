@@ -79,7 +79,7 @@ internal class ComposeCommand : CliCommand
         using var writer = new System.IO.StreamWriter(output);
         var emitter = new ContractDescriptorSourceFileEmitter();
         emitter.SetPlatformFlags(model.PlatformFlags);
-        emitter.SetAuxDataCount(model.AuxDataCount);
+        emitter.SetPointerDataCount(model.PointerDataCount);
         emitter.SetJsonDescriptor(model.ToJson());
         emitter.Emit(writer);
         await writer.FlushAsync(token);
