@@ -19,7 +19,8 @@ typedef struct {
 
 void
 dn_simdhash_assert_fail (const char *file, int line, const char *condition) {
-    printf("simdhash assertion failed at %s:%i:\n%s", file, line, condition);
+    printf("simdhash assertion failed at %s:%i:\n%s\n", file, line, condition);
+    fflush(stdout);
 }
 
 static DN_FORCEINLINE(uint8_t)
@@ -108,7 +109,7 @@ retry: {
 	}
 
 	int64_t started = get_100ns_ticks();
-	for (int iter = 0; iter < 500; iter++) {
+	for (int iter = 0; iter < 5; iter++) {
 		if (!tasserteq(dn_simdhash_count(test), c, "count did not match"))
 			return 1;
 

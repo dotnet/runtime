@@ -5,27 +5,19 @@
 #include "dn-simdhash.h"
 
 #include "dn-simdhash-utils.h"
-
-typedef unsigned int   guint;
-typedef int32_t        gboolean;
-typedef void *         gpointer;
-typedef const void *   gconstpointer;
-
-typedef void     (*GDestroyNotify) (gpointer data);
-typedef guint    (*GHashFunc)      (gconstpointer key);
-typedef gboolean (*GEqualFunc)     (gconstpointer a, gconstpointer b);
+#include "dn-simdhash-ght-compatible.h"
 
 typedef struct dn_simdhash_ght_data {
-	GHashFunc hash_func;
-	GEqualFunc key_equal_func;
-	GDestroyNotify key_destroy_func;
-	GDestroyNotify value_destroy_func;
+	dn_simdhash_ght_hash_func hash_func;
+	dn_simdhash_ght_equal_func key_equal_func;
+	dn_simdhash_ght_destroy_func key_destroy_func;
+	dn_simdhash_ght_destroy_func value_destroy_func;
 } dn_simdhash_ght_data;
 
 static inline uint32_t
-dn_simdhash_ght_hash (dn_simdhash_ght_data data, gpointer key)
+dn_simdhash_ght_hash (dn_simdhash_ght_data data, void * key)
 {
-	GHashFunc hash_func = data.hash_func;
+	dn_simdhash_ght_hash_func hash_func = data.hash_func;
 	if (hash_func)
 		return (uint32_t)hash_func(key);
 	else
@@ -33,10 +25,10 @@ dn_simdhash_ght_hash (dn_simdhash_ght_data data, gpointer key)
 		return MurmurHash3_32_ptr(key, 0);
 }
 
-static inline gboolean
-dn_simdhash_ght_equals (dn_simdhash_ght_data data, gpointer lhs, gpointer rhs)
+static inline int32_t
+dn_simdhash_ght_equals (dn_simdhash_ght_data data, void * lhs, void * rhs)
 {
-	GEqualFunc equal_func = data.key_equal_func;
+	dn_simdhash_ght_equal_func equal_func = data.key_equal_func;
 	if (equal_func)
 		return equal_func(lhs, rhs);
 	else
@@ -44,35 +36,35 @@ dn_simdhash_ght_equals (dn_simdhash_ght_data data, gpointer lhs, gpointer rhs)
 }
 
 static inline void
-dn_simdhash_ght_removed (dn_simdhash_ght_data data, gpointer key, gpointer value)
+dn_simdhash_ght_removed (dn_simdhash_ght_data data, void * key, void * value)
 {
-	GDestroyNotify key_destroy_func = data.key_destroy_func,
+	dn_simdhash_ght_destroy_func key_destroy_func = data.key_destroy_func,
 		value_destroy_func = data.value_destroy_func;
 	if (key_destroy_func)
-		key_destroy_func((gpointer)key);
+		key_destroy_func((void *)key);
 	if (value_destroy_func)
-		value_destroy_func((gpointer)value);
+		value_destroy_func((void *)value);
 }
 
 static inline void
-dn_simdhash_ght_replaced (dn_simdhash_ght_data data, gpointer old_key, gpointer new_key, gpointer old_value, gpointer new_value)
+dn_simdhash_ght_replaced (dn_simdhash_ght_data data, void * old_key, void * new_key, void * old_value, void * new_value)
 {
 	if (old_key != new_key) {
-		GDestroyNotify key_destroy_func = data.key_destroy_func;
+		dn_simdhash_ght_destroy_func key_destroy_func = data.key_destroy_func;
 		if (key_destroy_func)
-			key_destroy_func((gpointer)old_key);
+			key_destroy_func((void *)old_key);
 	}
 
 	if (old_value != new_value) {
-		GDestroyNotify value_destroy_func = data.value_destroy_func;
+		dn_simdhash_ght_destroy_func value_destroy_func = data.value_destroy_func;
 		if (value_destroy_func)
-			value_destroy_func((gpointer)old_value);
+			value_destroy_func((void *)old_value);
 	}
 }
 
 #define DN_SIMDHASH_T dn_simdhash_ght
-#define DN_SIMDHASH_KEY_T gpointer
-#define DN_SIMDHASH_VALUE_T gpointer
+#define DN_SIMDHASH_KEY_T void *
+#define DN_SIMDHASH_VALUE_T void *
 #define DN_SIMDHASH_INSTANCE_DATA_T dn_simdhash_ght_data
 #define DN_SIMDHASH_KEY_HASHER dn_simdhash_ght_hash
 #define DN_SIMDHASH_KEY_EQUALS dn_simdhash_ght_equals
@@ -90,7 +82,7 @@ dn_simdhash_ght_replaced (dn_simdhash_ght_data data, gpointer old_key, gpointer 
 
 dn_simdhash_ght_t *
 dn_simdhash_ght_new (
-	GHashFunc hash_func, GEqualFunc key_equal_func,
+	dn_simdhash_ght_hash_func hash_func, dn_simdhash_ght_equal_func key_equal_func,
 	uint32_t capacity, dn_allocator_t *allocator
 )
 {
@@ -102,8 +94,8 @@ dn_simdhash_ght_new (
 
 dn_simdhash_ght_t *
 dn_simdhash_ght_new_full (
-	GHashFunc hash_func, GEqualFunc key_equal_func,
-	GDestroyNotify key_destroy_func, GDestroyNotify value_destroy_func,
+	dn_simdhash_ght_hash_func hash_func, dn_simdhash_ght_equal_func key_equal_func,
+	dn_simdhash_ght_destroy_func key_destroy_func, dn_simdhash_ght_destroy_func value_destroy_func,
 	uint32_t capacity, dn_allocator_t *allocator
 )
 {
@@ -118,8 +110,8 @@ dn_simdhash_ght_new_full (
 void
 dn_simdhash_ght_insert_replace (
 	dn_simdhash_ght_t *hash,
-	gpointer key, gpointer value,
-	gboolean overwrite_key
+	void * key, void * value,
+	int32_t overwrite_key
 )
 {
 	check_self(hash);

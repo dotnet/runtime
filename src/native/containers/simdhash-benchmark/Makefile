@@ -1,0 +1,23 @@
+.DEFAULT_GOAL := default_target
+
+dn_deps := $(wildcard ../*.c) $(wildcard ../*.h)
+benchmark_deps := $(wildcard ./*.c) $(wildcard ./*.h)
+
+benchmark_sources := ../dn-simdhash.c ../dn-vector.c ./benchmark.c ../dn-simdhash-u32-ptr.c ../dn-simdhash-string-ptr.c
+common_options := -g -Oz -DNO_CONFIG_H
+
+benchmark-native: $(dn_deps) $(benchmark_deps)
+	clang $(benchmark_sources) $(common_options) -DSIZEOF_VOID_P=8
+
+benchmark-wasm: $(dn_deps) $(benchmark_deps)
+	~/Projects/emscripten/emcc $(benchmark_sources) $(common_options) -DSIZEOF_VOID_P=4 -msimd128
+
+disassemble-benchmark: benchmark-native benchmark-wasm
+	objdump -d ./a.out > ./a.dis
+	~/wabt/bin/wasm2wat ./a.out.wasm > ./a.wat
+
+run-benchmark: benchmark-native
+	./a.out
+
+default_target: disassemble-benchmark run-benchmark
+

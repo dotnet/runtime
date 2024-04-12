@@ -46,8 +46,8 @@ typedef struct dn_simdhash_str_key dn_simdhash_str_key;
 
 
 #define DN_SIMDHASH_T dn_simdhash_ght
-#define DN_SIMDHASH_KEY_T gpointer
-#define DN_SIMDHASH_VALUE_T gpointer
+#define DN_SIMDHASH_KEY_T void *
+#define DN_SIMDHASH_VALUE_T void *
 #define DN_SIMDHASH_NO_DEFAULT_NEW 1
 
 #include "dn-simdhash-specialization-declarations.h"
