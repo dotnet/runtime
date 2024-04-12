@@ -123,7 +123,7 @@ namespace System.Collections.Immutable
         /// <param name="comparer">The comparer.</param>
         /// <param name="items">The items to prepopulate.</param>
         /// <returns>The new immutable collection.</returns>
-        public static ImmutableSortedSet<T> Create<T>(IComparer<T>? comparer, ReadOnlySpan<T> items)
+        public static ImmutableSortedSet<T> Create<T>(IComparer<T>? comparer, params ReadOnlySpan<T> items)
         {
             return ImmutableSortedSet<T>.Empty.WithComparer(comparer).Union(items);
         }
