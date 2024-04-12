@@ -5,7 +5,7 @@ Try {
   
     Try {
         $Stream = New-Object System.Net.Security.SslStream($Conn.GetStream())
-        $Stream.AuthenticateAsClient($WebsiteURL) 
+        $Stream.AuthenticateAsClient($WebsiteURL, $null, [System.Security.Authentication.SslProtocols]::Tls12, $true) 
    
         $Cert = $Stream.Get_RemoteCertificate()
  
