@@ -593,7 +593,7 @@ namespace System.Text.Json
 
                 static void AddHashCode<TValue>(ref HashCode hc, TValue? value)
                 {
-                    if (typeof(TValue).IsValueType || !typeof(TValue).IsSealed)
+                    if (typeof(TValue).IsSealed)
                     {
                         hc.Add(value);
                     }

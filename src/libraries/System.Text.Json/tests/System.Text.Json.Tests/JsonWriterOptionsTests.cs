@@ -188,14 +188,10 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        public static void JsonWriterOptions_NewLine_Null_Resets_To_Default()
+        public static void JsonWriterOptions_NewLine_Null_Throws()
         {
             var options = new JsonWriterOptions();
-
-            options.NewLine = "\n";
-            options.NewLine = null!;
-
-            Assert.Equal(Environment.NewLine, options.NewLine);
+            Assert.Throws<ArgumentNullException>(() => options.NewLine = null);
         }
     }
 }

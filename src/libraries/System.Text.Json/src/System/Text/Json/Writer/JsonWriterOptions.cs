@@ -141,6 +141,9 @@ namespace System.Text.Json
         /// Gets or sets the new line string to use when <see cref="Indented"/> is <see langword="true"/>.
         /// The default is the value of <see cref="Environment.NewLine"/>.
         /// </summary>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when the new line string is <see langword="null"/>.
+        /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the new line string is not <c>\n</c> or <c>\r\n</c>.
         /// </exception>
@@ -150,7 +153,7 @@ namespace System.Text.Json
             set
             {
                 JsonWriterHelper.ValidateNewLine(value);
-                if (value is not null && value != Environment.NewLine)
+                if (value != Environment.NewLine)
                     _optionsMask |= NewLineBit;
                 else
                     _optionsMask &= ~NewLineBit;

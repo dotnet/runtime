@@ -561,13 +561,10 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void TestNewLineNullResetsToDefault()
+        public static void TestNewLineNullThrows()
         {
             var options = new JsonSerializerOptions();
-            options.NewLine = "\n";
-            options.NewLine = null!;
-
-            Assert.Equal(Environment.NewLine, options.NewLine);
+            Assert.Throws<ArgumentNullException>("value", () => options.NewLine = null);
         }
 
         private class TestClassForEncoding

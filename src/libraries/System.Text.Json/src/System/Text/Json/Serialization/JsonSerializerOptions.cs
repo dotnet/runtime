@@ -756,6 +756,9 @@ namespace System.Text.Json
         /// Gets or sets the new line string to use when <see cref="WriteIndented"/> is <see langword="true"/>.
         /// The default is the value of <see cref="Environment.NewLine"/>.
         /// </summary>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when the new line string is <see langword="null"/>.
+        /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the new line string is not <c>\n</c> or <c>\r\n</c>.
         /// </exception>
