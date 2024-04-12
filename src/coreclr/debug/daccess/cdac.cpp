@@ -7,12 +7,12 @@
 #include <sstring.h>
 #include <clrhost.h>
 #include "dbgutil.h"
-#include "cdac_reader.h"
 #include "cdac.h"
+
+#define CDAC_LIB_NAME MAKEDLLNAME_W(W("cdacreader"))
 
 namespace
 {
-    #define CDAC_LIB_NAME MAKEDLLNAME_W(W("cdacreader"))
     bool TryLoadCDACLibrary(HMODULE *phCDAC)
     {
         // Load cdacreader from next to DAC binary
@@ -27,74 +27,25 @@ namespace
 
         return true;
     }
+
+    int ReadFromTargetCallback(uint64_t addr, uint8_t* dest, uint32_t count, void* context)
+    {
+        CDAC* cdac = reinterpret_cast<CDAC*>(context);
+        return cdac->ReadFromTarget(addr, dest, count);
+    }
 }
 
-class CDACImpl final {
-public:
-    explicit CDACImpl(HMODULE module, uint64_t descriptorAddr, ICorDebugDataTarget* target);
-    CDACImpl(const CDACImpl&) = delete;
-    CDACImpl& operator=(CDACImpl&) = delete;
-
-    CDACImpl(CDACImpl&& other)
-        : m_module(other.m_module)
-        , m_cdac_handle{other.m_cdac_handle}
-        , m_target{other.m_target}
-        , m_init{other.m_init}
-        , m_free{other.m_free}
-        , m_getSosInterface{other.m_getSosInterface}
-    {
-        other.m_module = nullptr;
-    	other.m_cdac_handle = 0;
-        other.m_target = nullptr;
-    }
-
-    // Returns the SOS interface. This does not AddRef the interface.
-    IUnknown* SosInterface() const
-    {
-        return m_sos;
-    }
-
-    int ReadFromTarget(uint64_t addr, uint8_t* dest, uint32_t count)
-    {
-        HRESULT hr = ReadFromDataTarget(m_target, addr, dest, count);
-        if (FAILED(hr))
-            return hr;
-
-        return 0;
-    }
-
-public:
-    ~CDACImpl()
-    {
-        if (m_cdac_handle != NULL)
-            m_free(m_cdac_handle);
-
-        if (m_module != NULL)
-            ::FreeLibrary(m_module);
-    }
-
-private:
-    HMODULE m_module;
-    intptr_t m_cdac_handle;
-    ICorDebugDataTarget* m_target;
-    NonVMComHolder<IUnknown> m_sos;
-
-private:
-    decltype(&cdac_reader_init) m_init;
-    decltype(&cdac_reader_free) m_free;
-    decltype(&cdac_reader_get_sos_interface) m_getSosInterface;
-};
-
-namespace
+CDAC* CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target)
 {
-	int ReadFromTargetCallback(uint64_t addr, uint8_t* dest, uint32_t count, void* context)
-	{
-	    CDACImpl* cdac = reinterpret_cast<CDACImpl*>(context);
-	    return cdac->ReadFromTarget(addr, dest, count);
-	}
+    HMODULE cdacLib;
+    if (!TryLoadCDACLibrary(&cdacLib))
+        return nullptr;
+
+    CDAC *impl = new (nothrow) CDAC{cdacLib, descriptorAddr, target};
+    return impl;
 }
 
-CDACImpl::CDACImpl(HMODULE module, uint64_t descriptorAddr, ICorDebugDataTarget* target)
+CDAC::CDAC(HMODULE module, uint64_t descriptorAddr, ICorDebugDataTarget* target)
     : m_module(module)
     , m_target{target}
 {
@@ -106,39 +57,25 @@ CDACImpl::CDACImpl(HMODULE module, uint64_t descriptorAddr, ICorDebugDataTarget*
     m_getSosInterface(m_cdac_handle, &m_sos);
 }
 
-
-const CDAC* CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target)
-{
-    HRESULT hr = S_OK;
-
-    HMODULE cdacLib;
-    if (!TryLoadCDACLibrary(&cdacLib))
-        return nullptr;
-
-    CDACImpl *impl = new (nothrow) CDACImpl{cdacLib, descriptorAddr, target};
-    if (!impl)
-        return nullptr;
-
-    CDAC *cdac = new (nothrow) CDAC(impl);
-    if (!cdac)
-    {
-        delete impl;
-        return nullptr;
-    }
-
-    return cdac;
-}
-
-CDAC::CDAC(CDACImpl *impl) : m_impl(impl)
-{
-}
-
-IUnknown* CDAC::SosInterface() const
-{
-    return m_impl->SosInterface();
-}
-
 CDAC::~CDAC()
 {
-    delete m_impl;
+    if (m_cdac_handle != NULL)
+        m_free(m_cdac_handle);
+
+    if (m_module != NULL)
+        ::FreeLibrary(m_module);
+}
+
+IUnknown* CDAC::SosInterface()
+{
+    return m_sos;
+}
+
+int CDAC::ReadFromTarget(uint64_t addr, uint8_t* dest, uint32_t count)
+{
+    HRESULT hr = ReadFromDataTarget(m_target, addr, dest, count);
+    if (FAILED(hr))
+        return hr;
+
+    return 0;
 }

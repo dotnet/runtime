@@ -1417,7 +1417,7 @@ public:
     ULONG32 m_instanceAge;
     bool m_debugMode;
 
-    const CDAC* m_cdac;
+    CDAC* m_cdac;
     NonVMComHolder<ISOSDacInterface> m_cdacSos;
     NonVMComHolder<ISOSDacInterface9> m_cdacSos9;
 
