@@ -121,7 +121,7 @@
 #include "gchandleutilities.h"
 #include "gcinfotypes.h"
 #include <clrhost.h>
-#include "cdac.h"
+#include "cdacoffsets.h"
 
 class     Thread;
 class     ThreadStore;
