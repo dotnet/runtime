@@ -1752,7 +1752,7 @@ private:
 
     PER_HEAP_ISOLATED_METHOD void add_to_history();
 
-    PER_HEAP_ISOLATED_METHOD void get_and_reset_loh_alloc_info();
+    PER_HEAP_ISOLATED_METHOD void get_and_reset_uoh_alloc_info();
 
 #ifdef BGC_SERVO_TUNING
     // Currently BGC servo tuning is an experimental feature.

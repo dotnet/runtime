@@ -388,7 +388,7 @@ int relative_index_power2_free_space (size_t power2)
 
 #ifdef BACKGROUND_GC
 uint32_t bgc_alloc_spin_count = 140;
-uint32_t bgc_alloc_spin_count_loh = 16;
+uint32_t bgc_alloc_spin_count_uoh = 16;
 uint32_t bgc_alloc_spin = 2;
 
 inline
@@ -15037,6 +15037,7 @@ gc_heap::init_gc_heap (int h_number)
 
 #ifdef BACKGROUND_GC
     uoh_a_no_bgc = 0;
+    static_assert((total_generation_count - uoh_start_generation) == 2);
     uoh_a_bgc_marking[0] = uoh_a_bgc_marking[1] = 0;
     uoh_a_bgc_planning[0] = uoh_a_bgc_planning[1] = 0;
 #ifdef BGC_SERVO_TUNING
@@ -18429,14 +18430,14 @@ void gc_heap::bgc_record_uoh_allocation(int gen_number, size_t size)
     {
         background_uoh_alloc_count++;
 
-        static_assert(poh_generation == (loh_generation + 1));
+        static_assert((total_generation_count - uoh_start_generation) == 2);
         if (current_c_gc_state == c_gc_state_planning)
         {
-            uoh_a_bgc_planning[gen_number - loh_generation] += size;
+            uoh_a_bgc_planning[gen_number - uoh_start_generation] += size;
         }
         else
         {
-            uoh_a_bgc_marking[gen_number - loh_generation] += size;
+            uoh_a_bgc_marking[gen_number - uoh_start_generation] += size;
         }
     }
     else
@@ -18471,7 +18472,7 @@ allocation_state gc_heap::allocate_uoh (int gen_number,
 
     if (gc_heap::background_running_p())
     {
-        //if ((background_loh_alloc_count % bgc_alloc_spin_count_loh) == 0)
+        //if ((background_uoh_alloc_count % bgc_alloc_spin_count_uoh) == 0)
         {
             int spin_for_allocation = (gen_number == loh_generation) ?
                 bgc_loh_allocate_spin() :
@@ -45891,7 +45892,7 @@ void gc_heap::background_sweep()
 
     if (heap_number == 0)
     {
-        get_and_reset_loh_alloc_info();
+        get_and_reset_uoh_alloc_info();
         uint64_t suspended_end_ts = GetHighPrecisionTimeStamp();
         last_bgc_info[last_bgc_info_index].pause_durations[1] = (size_t)(suspended_end_ts - suspended_start_time);
         total_suspended_time += last_bgc_info[last_bgc_info_index].pause_durations[1];
@@ -46278,11 +46279,12 @@ void gc_heap::background_sweep()
 
     // We also need to adjust size_before for UOH allocations that occurred during sweeping.
     gc_history_per_heap* current_gc_data_per_heap = get_gc_data_per_heap();
+    static_assert((total_generation_count - uoh_start_generation) == 2);
     assert(uoh_a_bgc_marking[0] == 0);
     assert(uoh_a_bgc_marking[1] == 0);
     assert(uoh_a_no_bgc == 0);
-    current_gc_data_per_heap->gen_data[loh_generation].size_before += uoh_a_bgc_planning[0];
-    current_gc_data_per_heap->gen_data[poh_generation].size_before += uoh_a_bgc_planning[1];
+    current_gc_data_per_heap->gen_data[loh_generation].size_before += uoh_a_bgc_planning[loh_generation - uoh_start_generation];
+    current_gc_data_per_heap->gen_data[poh_generation].size_before += uoh_a_bgc_planning[poh_generation - uoh_start_generation];
 
 #ifdef DOUBLY_LINKED_FL
     current_bgc_state = bgc_not_in_process;
@@ -50248,13 +50250,13 @@ void gc_heap::check_and_adjust_bgc_tuning (int gen_number, size_t physical_size,
 }
 #endif //BGC_SERVO_TUNING
 
-void gc_heap::get_and_reset_loh_alloc_info()
+void gc_heap::get_and_reset_uoh_alloc_info()
 {
     total_uoh_a_last_bgc = 0;
 
-    uint64_t total_loh_a_no_bgc = 0;
-    uint64_t total_loh_a_bgc_marking = 0;
-    uint64_t total_loh_a_bgc_planning = 0;
+    uint64_t total_uoh_a_no_bgc = 0;
+    uint64_t total_uoh_a_bgc_marking = 0;
+    uint64_t total_uoh_a_bgc_planning = 0;
 #ifdef MULTIPLE_HEAPS
     for (int i = 0; i < gc_heap::n_heaps; i++)
     {
@@ -50268,24 +50270,23 @@ void gc_heap::get_and_reset_loh_alloc_info()
         // before we lose the values here.
         gc_history_per_heap* current_gc_data_per_heap = hp->get_gc_data_per_heap();
         // loh/poh_a_bgc_planning should be the same as they were when init_records set size_before.
-        current_gc_data_per_heap->gen_data[loh_generation].size_before += hp->uoh_a_bgc_marking[0];
-        current_gc_data_per_heap->gen_data[poh_generation].size_before += hp->uoh_a_bgc_marking[1];
+        static_assert((total_generation_count - uoh_start_generation) == 2);
+        current_gc_data_per_heap->gen_data[loh_generation].size_before += hp->uoh_a_bgc_marking[loh_generation - uoh_start_generation];
+        current_gc_data_per_heap->gen_data[poh_generation].size_before += hp->uoh_a_bgc_marking[poh_generation - uoh_start_generation];
 
-        total_loh_a_no_bgc += hp->uoh_a_no_bgc;
+        total_uoh_a_no_bgc += hp->uoh_a_no_bgc;
         hp->uoh_a_no_bgc = 0;
-        total_loh_a_bgc_marking += hp->uoh_a_bgc_marking[0] + hp->uoh_a_bgc_marking[1];
-        hp->uoh_a_bgc_marking[0] = 0;
-        hp->uoh_a_bgc_marking[1] = 0;
-        total_loh_a_bgc_planning += hp->uoh_a_bgc_planning[0] + hp->uoh_a_bgc_planning[1];
-        hp->uoh_a_bgc_planning[0] = 0;
-        hp->uoh_a_bgc_planning[1] = 0;
+        total_uoh_a_bgc_marking += hp->uoh_a_bgc_marking[0] + hp->uoh_a_bgc_marking[1];
+        hp->uoh_a_bgc_marking[0] = hp->uoh_a_bgc_marking[1] = 0;
+        total_uoh_a_bgc_planning += hp->uoh_a_bgc_planning[0] + hp->uoh_a_bgc_planning[1];
+        hp->uoh_a_bgc_planning[0] = hp->uoh_a_bgc_planning[1] = 0;
     }
     dprintf (2, ("LOH alloc: outside bgc: %zd; bm: %zd; bp: %zd",
-        total_loh_a_no_bgc,
-        total_loh_a_bgc_marking,
-        total_loh_a_bgc_planning));
+        total_uoh_a_no_bgc,
+        total_uoh_a_bgc_marking,
+        total_uoh_a_bgc_planning));
 
-    total_uoh_a_last_bgc = total_loh_a_no_bgc + total_loh_a_bgc_marking + total_loh_a_bgc_planning;
+    total_uoh_a_last_bgc = total_uoh_a_no_bgc + total_uoh_a_bgc_marking + total_uoh_a_bgc_planning;
 }
 
 bool gc_heap::is_pm_ratio_exceeded()
