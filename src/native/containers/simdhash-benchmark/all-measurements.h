@@ -2,6 +2,7 @@
 #define ALL_MEASUREMENTS_H
 
 #define INNER_COUNT 1024 * 32
+#define BASELINE_SIZE 102400
 
 static dn_simdhash_u32_ptr_t *random_u32s_hash;
 static dn_vector_t *sequential_u32s, *random_u32s, *random_unused_u32s;
@@ -61,9 +62,21 @@ static void destroy_instance (void *_data) {
     dn_simdhash_free(data);
 }
 
+static void * baseline_init () {
+    return malloc(BASELINE_SIZE);
+}
+
 #endif // ALL_MEASUREMENTS_H
 
 // These go outside the guard because we include this file multiple times.
+
+MEASUREMENT(baseline, uint8_t *, baseline_init, free, {
+    for (int i = 0; i < 256; i++) {
+        memset(data, i, BASELINE_SIZE);
+        // Without this the memset gets optimized out
+        dn_simdhash_assert(data[i] == i);
+    }
+});
 
 MEASUREMENT(dn_clear_then_fill_sequential, dn_simdhash_u32_ptr_t *, create_instance_u32_ptr, destroy_instance, {
     dn_simdhash_clear(data);
