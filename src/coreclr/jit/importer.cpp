@@ -5128,6 +5128,18 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
     // reason we don't want to remove the block at this point is that if we call
     // fgInitBBLookup() again we will do it wrong as the BBJ_ALWAYS block won't be
     // added and the linked list length will be different than fgBBcount.
+    //
+    // Because of this incomplete cleanup. profile data may be left inconsistent.
+    //
+    if (block->hasProfileWeight())
+    {
+        // We are unlikely to be able to repair the profile.
+        // For now we don't even try.
+        //
+        JITDUMP("\nimpResetLeaveBlock: Profile data could not be locally repaired. Data %s inconsisent.\n",
+                fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
+    }
 }
 
 /*****************************************************************************/
