@@ -714,7 +714,7 @@ namespace System.Dynamic.Runtime.Tests
             {
                 using (StreamWriter sw = new StreamWriter(sm))
                 {
-                    sw.WriteLine(mc.Method_ReturnString('a'));
+                    sw.WriteLine((string)mc.Method_ReturnString('a'));
                     sw.Flush();
                     sm.Position = 0;
                     using (StreamReader sr = new StreamReader(sm, (bool)mc.Method_ReturnBool()))

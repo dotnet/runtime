@@ -1169,7 +1169,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Oper
                 }
                 else
                 {
-                    System.Console.WriteLine("Got invalid result when testing {0}: {1}[{2}]", tip, dr, dr.GetType());
+                    System.Console.WriteLine("Got invalid result when testing {0}: {1}[{2}]", arg0: tip, arg1: dr, arg2: dr.GetType());
                 }
             }
             catch (Exception ex)
@@ -1186,7 +1186,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Oper
             try
             {
                 dynamic dr = test(dobj);
-                System.Console.WriteLine("Got invalid result when testing {0}: {1}[{2}]", tip, dr, dr.GetType());
+                System.Console.WriteLine("Got invalid result when testing {0}: {1}[{2}]", arg0: tip, arg1: dr, arg2: dr.GetType());
             }
             catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
             {
