@@ -1563,14 +1563,21 @@ private:
 
 #ifdef VERIFY_HEAP
     PER_HEAP_METHOD void verify_free_lists();
-    PER_HEAP_METHOD void verify_regions (int gen_number, bool can_verify_gen_num, bool can_verify_tail, size_t* p_total_committed = nullptr);
+#if defined (USE_REGIONS) && defined (_DEBUG)
+    PER_HEAP_METHOD void verify_regions (int gen_number, bool can_verify_gen_num, bool can_verify_tail);
     PER_HEAP_METHOD void verify_regions (bool can_verify_gen_num, bool concurrent_p);
+#endif //USE_REGIONS && _DEBUG
     PER_HEAP_ISOLATED_METHOD void enter_gc_lock_for_verify_heap();
     PER_HEAP_ISOLATED_METHOD void leave_gc_lock_for_verify_heap();
     PER_HEAP_METHOD void verify_heap (BOOL begin_gc_p);
     PER_HEAP_METHOD BOOL check_need_card (uint8_t* child_obj, int gen_num_for_cards,
                           uint8_t* low, uint8_t* high);
 #endif //VERIFY_HEAP
+
+#ifdef USE_REGIONS
+    PER_HEAP_METHOD void verify_committed_bytes_per_heap();
+    PER_HEAP_ISOLATED_METHOD void verify_committed_bytes();
+#endif //USE_REGIONS
 
     PER_HEAP_ISOLATED_METHOD void fire_per_heap_hist_event (gc_history_per_heap* current_gc_data_per_heap, int heap_num);
 
@@ -3345,8 +3352,9 @@ private:
         size_t new_current_total_committed);
 
 #ifdef USE_REGIONS
-    PER_HEAP_ISOLATED_METHOD void compute_committed_bytes(size_t& total_committed, size_t& committed_decommit, size_t& committed_free,
-                                  size_t& committed_bookkeeping, size_t& new_current_total_committed, size_t& new_current_total_committed_bookkeeping,
+    PER_HEAP_METHOD size_t compute_committed_bytes_per_heap(int oh, size_t& committed_bookkeeping);
+    PER_HEAP_ISOLATED_METHOD void compute_committed_bytes(size_t& total_committed, size_t& committed_decommit, size_t& committed_free, 
+                                  size_t& committed_bookkeeping, size_t& new_current_total_committed, size_t& new_current_total_committed_bookkeeping, 
                                   size_t* new_committed_by_oh);
 #endif
 
@@ -3886,10 +3894,8 @@ private:
     PER_HEAP_FIELD_DIAG_ONLY gc_history gchist_per_heap[max_history_count];
 
 #ifdef MULTIPLE_HEAPS
-#ifdef _DEBUG
     PER_HEAP_FIELD_DIAG_ONLY size_t committed_by_oh_per_heap[total_oh_count];
     PER_HEAP_FIELD_DIAG_ONLY size_t committed_by_oh_per_heap_refresh[total_oh_count];
-#endif //_DEBUG
 #else //MULTIPLE_HEAPS
 #endif //MULTIPLE_HEAPS
 
@@ -4580,7 +4586,9 @@ private:
 
     // Used both in a GC and on the allocator code paths when heap_hard_limit is non zero
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY CLRCriticalSection check_commit_cs;
+#ifdef COMMITTED_BYTES_SHADOW
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY CLRCriticalSection decommit_lock;
+#endif
 
     // Indicate to use large pages. This only works if hardlimit is also enabled.
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool use_large_pages_p;
