@@ -30,11 +30,11 @@ struct configuration
         }
         ::free(entry_assembly_argv);
 
-        for (uint32_t i = 0; i < host_assemblies.assembly_count; ++i)
+        for (uint32_t i = 0; i < host_assembly_count; ++i)
         {
-            ::free(host_assemblies.assembly_names[i]);
+            ::free(host_assemblies[i]);
         }
-        ::free(host_assemblies.assembly_names);
+        ::free(host_assemblies);
     }
 
     //
@@ -70,7 +70,8 @@ struct configuration
     dotenv dotenv_configuration;
 
     // the list of assembly names that the runtime knows about
-    host_runtime_assemblies host_assemblies;
+    uint32_t host_assembly_count;
+    char** host_assemblies;
 
     // contains the name minus extension as the key and the name+extension plus a reference to where it's at on disk as the value
     std::unordered_map<pal::string_utf8_t, host_file_t> host_file_map;
@@ -148,10 +149,10 @@ static void build_host_assembly_list(const string_t& core_root, const string_t& 
     }
 }
 
-static void build_contract_assembly_list(std::unordered_map<pal::string_utf8_t, host_file_t>& name_file_map, host_runtime_assemblies& assemblies)
+static void build_contract_assembly_list(std::unordered_map<pal::string_utf8_t, host_file_t>& name_file_map, char** assemblies, uint32_t& assemblyCount)
 {
-    assemblies.assembly_count = static_cast<uint32_t>(name_file_map.size());
-    assemblies.assembly_names = new char*[assemblies.assembly_count];
+    assemblyCount = static_cast<uint32_t>(name_file_map.size());
+    assemblies = new char*[assemblyCount];
 
     int32_t item_count = 0;
     for (auto item = name_file_map.begin(); item != name_file_map.end(); ++item)
@@ -159,10 +160,10 @@ static void build_contract_assembly_list(std::unordered_map<pal::string_utf8_t, 
         pal::string_utf8_t file_name = item->first;
 
         size_t len = file_name.size() + 1;
-        assemblies.assembly_names[item_count] = new char[len];
+        assemblies[item_count] = new char[len];
 
-        ::strncpy(assemblies.assembly_names[item_count], file_name.c_str(), len - 1);
-        assemblies.assembly_names[item_count][len - 1] = '\0';
+        ::strncpy(assemblies[item_count], file_name.c_str(), len - 1);
+        assemblies[item_count][len - 1] = '\0';
         item_count++;
     }
 }
@@ -230,11 +231,13 @@ static void log_error_info(const char* line)
     std::fprintf(stderr, "%s\n", line);
 }
 
-const host_runtime_assemblies* HOST_CONTRACT_CALLTYPE get_assemblies(
+char** HOST_CONTRACT_CALLTYPE get_assemblies(
+    uint32_t& assembly_count,
     void* contract_context)
 {
     configuration* config = static_cast<configuration *>(contract_context);
-    return &config->host_assemblies;
+    assembly_count = config->host_assembly_count;
+    return config->host_assemblies;
 }
 
 const char* HOST_CONTRACT_CALLTYPE resolve_assembly_to_path(
@@ -376,8 +379,7 @@ static int run(configuration& config)
     config.core_libraries = pal::convert_to_utf8(core_libs.c_str());
 
     build_host_assembly_list(core_root, core_libs, config.host_file_map);
-    build_contract_assembly_list(config.host_file_map, config.host_assemblies);
-
+    build_contract_assembly_list(config.host_file_map, config.host_assemblies, config.host_assembly_count);
 
     {
         // Load hostpolicy if requested.

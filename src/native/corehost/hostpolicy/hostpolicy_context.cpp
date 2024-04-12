@@ -134,14 +134,15 @@ namespace
         return -1;
     }
 
-    const host_runtime_assemblies* HOST_CONTRACT_CALLTYPE get_runtime_framework_assemblies(
+    char** HOST_CONTRACT_CALLTYPE get_runtime_framework_assemblies(
+        uint32_t& assembly_count,
         void* contract_context)
     {
         hostpolicy_context_t* context = static_cast<hostpolicy_context_t*>(contract_context);
-        host_runtime_assemblies* assemblies = new host_runtime_assemblies();
 
-        assemblies->assembly_count = static_cast<uint32_t>(context->host_assemblies->size());
-        assemblies->assembly_names = new char*[assemblies->assembly_count];
+        char** assemblies;
+        assembly_count = static_cast<uint32_t>(context->host_assemblies->size());
+        assemblies = new char*[assembly_count];
 
         int32_t item_count = 0;
         for (auto item = context->host_assemblies->begin(); item != context->host_assemblies->end(); ++item)
@@ -149,9 +150,9 @@ namespace
             pal::string_t file_name = item->second.asset.name;
 
             size_t len = file_name.size() + 1;
-            assemblies->assembly_names[item_count] = new char[len];
+            assemblies[item_count] = new char[len];
 
-            pal::pal_utf8string(file_name, assemblies->assembly_names[item_count], len);
+            pal::pal_utf8string(file_name, assemblies[item_count], len);
             item_count++;
         }
 

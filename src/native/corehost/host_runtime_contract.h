@@ -23,12 +23,6 @@
 #define HOST_PROPERTY_PLATFORM_RESOURCE_ROOTS "PLATFORM_RESOURCE_ROOTS"
 #define HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES "TRUSTED_PLATFORM_ASSEMBLIES"
 
-struct host_runtime_assemblies
-{
-    uint32_t assembly_count;
-    char** assembly_names;
-};
-
 struct host_runtime_contract
 {
     size_t size;
@@ -59,7 +53,8 @@ struct host_runtime_contract
         const char* entry_point_name);
 
     // Gets the list of assemblies (name plus extension) identified by the host.
-    const host_runtime_assemblies* (HOST_CONTRACT_CALLTYPE* get_assemblies)(
+    char** (HOST_CONTRACT_CALLTYPE* get_assemblies)(
+        /*out*/ uint32_t& assembly_count,
         void* contract_context);
 
     const char* (HOST_CONTRACT_CALLTYPE* resolve_assembly_to_path)(

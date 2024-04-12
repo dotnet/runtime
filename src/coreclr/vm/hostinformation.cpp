@@ -49,23 +49,16 @@ bool HostInformation::GetProperty(_In_z_ const char* name, SString& value)
     return lenActual > 0 && lenActual <= len;
 }
 
-LPCWSTR HostInformation::GetEntryAssembly()
+void HostInformation::GetEntryAssemblyName(SString& entryAssemblyName)
 {
     if ((s_hostContract == nullptr) || (s_hostContract->entry_assembly == nullptr))
-        return L"";
-
-    LPCWSTR entryAssembly = ConvertToUnicode(s_hostContract->entry_assembly);
-
-    size_t len = wcslen(entryAssembly) + 1;
-    LPWSTR ret = new WCHAR[len];
-
-    if (ret == nullptr)
     {
-        return L"";
-    }
+        entryAssemblyName.Set(W(""));
+        return;
+    }   
 
-    wcscpy_s(ret, len, entryAssembly);
-    return ret;
+    entryAssemblyName.SetUTF8(s_hostContract->entry_assembly);
+    entryAssemblyName.Normalize();
 }
 
 SimpleNameToFileNameMap* HostInformation::GetHostAssemblyNames()
@@ -78,62 +71,59 @@ SimpleNameToFileNameMap* HostInformation::GetHostAssemblyNames()
     if (s_hostContract == nullptr || s_hostContract->get_assemblies == nullptr)
         return m_simpleFileNameMap;
 
-    const host_runtime_assemblies* assemblies;
-    assemblies = s_hostContract->get_assemblies(s_hostContract->context);
+    char** assemblies;
+    uint32_t assemblyCount = 0;
+    assemblies = s_hostContract->get_assemblies(assemblyCount, s_hostContract->context);
 
     if (assemblies == nullptr)
         return m_simpleFileNameMap;
 
-    for (uint32_t i = 0; i < assemblies->assembly_count; i++)
+    for (uint32_t i = 0; i < assemblyCount; i++)
     {
-        LPCWSTR assemblyName = ConvertToUnicode(assemblies->assembly_names[i]);
-        if (assemblyName != nullptr)
+        SimpleNameToFileNameMapEntry mapEntry;
+        SString assemblyName;
+
+        assemblyName.SetUTF8(assemblies[i]);
+        assemblyName.Normalize();
+
+        LPWSTR wszSimpleName = new WCHAR[assemblyName.GetCount() + 1];
+        if (wszSimpleName == nullptr)
         {
-            size_t len = wcslen(assemblyName) + 1;
-            LPWSTR wszSimpleName = new WCHAR[len];
-
-            if (wszSimpleName != nullptr)
-            {
-                wcscpy_s(wszSimpleName, len, assemblyName);
-
-                SimpleNameToFileNameMapEntry mapEntry;
-                mapEntry.m_wszSimpleName = wszSimpleName;
-                mapEntry.m_wszILFileName = nullptr;
-
-                m_simpleFileNameMap->AddOrReplace(mapEntry);
-            }
+            return m_simpleFileNameMap;
         }
+        wcscpy_s(wszSimpleName, assemblyName.GetCount() + 1, assemblyName.GetUnicode());
+
+        mapEntry.m_wszSimpleName = wszSimpleName;
+        mapEntry.m_wszILFileName = nullptr;
+
+        m_simpleFileNameMap->AddOrReplace(mapEntry);
     }
 
     return m_simpleFileNameMap;
 }
 
-LPCWSTR HostInformation::ResolveHostAssemblyPath(LPCWSTR simpleName)
+void HostInformation::ResolveHostAssemblyPath(const SString& simpleName, SString& resolvedPath)
 {
-    LPCWSTR ret;
-
     if (s_hostContract == nullptr || s_hostContract->resolve_assembly_to_path == nullptr)
-        return simpleName;
+    {
+        resolvedPath.Set(simpleName);
+        return;
+    }
 
-    LPCSTR utf8SimpleName = ConvertToUTF8(simpleName);
+    SString ssUtf8SimpleName(simpleName);
+    simpleName.ConvertToUTF8(ssUtf8SimpleName);
 
-    if (utf8SimpleName == nullptr)
-        return simpleName;
-
-    LPCSTR assemblyPath = s_hostContract->resolve_assembly_to_path(utf8SimpleName, s_hostContract->context);
+    LPCSTR assemblyPath = s_hostContract->resolve_assembly_to_path(ssUtf8SimpleName.GetUTF8(), s_hostContract->context);
 
     if (assemblyPath == nullptr)
     {
-        ret = simpleName;
+        resolvedPath.Set(simpleName);
     }
     else
     {
-        ret = ConvertToUnicode(assemblyPath);
+        resolvedPath.SetUTF8(assemblyPath);
+        resolvedPath.Normalize();
     }
-
-    delete utf8SimpleName;
-
-    return ret;
 }
 
 LPCSTR HostInformation::ConvertToUTF8(LPCWSTR utf16String)

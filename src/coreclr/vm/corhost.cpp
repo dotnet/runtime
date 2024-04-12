@@ -314,10 +314,13 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
     if (g_EntryAssemblyPath == NULL)
     {
         // Store the entry assembly path for diagnostic purposes (for example, dumps)
-        LPCWSTR pEntryAssembly = HostInformation::Instance().GetEntryAssembly();
-        size_t len = u16_strlen(pEntryAssembly) + 1;
+        SString ssEntryAssemblyName;
+        HostInformation::Instance().GetEntryAssemblyName(ssEntryAssemblyName);
+        
+        const WCHAR* pEntryAssemblyName = ssEntryAssemblyName.GetUnicode();
+        size_t len = u16_strlen(pEntryAssemblyName) + 1;
         NewArrayHolder<WCHAR> path { new WCHAR[len] };
-        wcscpy_s(path, len, pEntryAssembly);
+        wcscpy_s(path, len, pEntryAssemblyName);
         g_EntryAssemblyPath = path.Extract();
     }
 

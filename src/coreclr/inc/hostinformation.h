@@ -6,6 +6,7 @@
 
 #include <corehost/host_runtime_contract.h>
 #include "simplefilenamemap.h"
+#include "sstring.h"
 
 class HostInformation
 {
@@ -20,11 +21,10 @@ public:
 
     void SetContract(_In_ host_runtime_contract* hostContract);
     bool GetProperty(_In_z_ const char* name, SString& value);
-    LPCWSTR GetEntryAssembly();
+    void GetEntryAssemblyName(/*Out*/ SString& entryAssemblyName);
 
-    // flip this back to const SimpleNameToFileNameMap&
     SimpleNameToFileNameMap* GetHostAssemblyNames();
-    LPCWSTR ResolveHostAssemblyPath(LPCWSTR simpleName);
+    void ResolveHostAssemblyPath(const SString& simpleName, /*Out*/ SString& resolvedPath);
 
 private:
     HostInformation() {} // Private constructor to prevent instantiation

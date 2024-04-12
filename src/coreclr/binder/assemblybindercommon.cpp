@@ -899,8 +899,7 @@ namespace BINDER_SPACE
                 if (pTpaEntry->m_wszILFileName == nullptr)
                 {
                     _ASSERTE(pTpaEntry->m_wszSimpleName != nullptr);
-                    LPCWSTR lpFileName = HostInformation::Instance().ResolveHostAssemblyPath(pTpaEntry->m_wszSimpleName);
-                    fileName.Set(lpFileName);
+                    HostInformation::Instance().ResolveHostAssemblyPath(simpleName, fileName);
                 }
                 else
                 {
