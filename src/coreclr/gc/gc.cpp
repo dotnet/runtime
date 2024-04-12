@@ -2658,8 +2658,8 @@ size_t      gc_heap::bgc_begin_poh_size = 0;
 size_t      gc_heap::end_poh_size = 0;
 
 size_t      gc_heap::uoh_a_no_bgc = 0;
-size_t      gc_heap::uoh_a_bgc_marking[2] = {};
-size_t      gc_heap::uoh_a_bgc_planning[2] = {};
+size_t      gc_heap::uoh_a_bgc_marking[total_generation_count - uoh_start_generation] = {};
+size_t      gc_heap::uoh_a_bgc_planning[total_generation_count - uoh_start_generation] = {};
 #ifdef BGC_SERVO_TUNING
 size_t      gc_heap::bgc_maxgen_end_fl_size = 0;
 #endif //BGC_SERVO_TUNING
