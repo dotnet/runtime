@@ -4,13 +4,16 @@
 #define INNER_COUNT 1024 * 32
 
 static dn_simdhash_u32_ptr_t *random_u32s_hash;
-static dn_vector_t *random_u32s;
+static dn_vector_t *sequential_u32s, *random_u32s;
 
-static void init_random_u32s () {
+static void init_data () {
     random_u32s_hash = dn_simdhash_u32_ptr_new(INNER_COUNT, NULL);
+    sequential_u32s = dn_vector_alloc(sizeof(uint32_t));
     random_u32s = dn_vector_alloc(sizeof(uint32_t));
 
-    for (int i = 0; i < INNER_COUNT; i++) {
+    for (uint32_t i = 0; i < INNER_COUNT; i++) {
+        dn_vector_push_back(sequential_u32s, i);
+
 retry: {
         uint32_t key = (uint32_t)(rand() & 0xFFFFFFFFu);
         if (!dn_simdhash_u32_ptr_try_add(random_u32s_hash, key, NULL))
@@ -23,14 +26,17 @@ retry: {
 
 static void * create_instance_u32_ptr () {
     if (!random_u32s)
-        init_random_u32s();
+        init_data();
 
-    return dn_simdhash_u32_ptr_new(0, NULL);
+    return dn_simdhash_u32_ptr_new(INNER_COUNT, NULL);
 }
 
-static void destroy_instance (void *data) {
-    if (data)
-        dn_simdhash_free((dn_simdhash_t *)data);
+static void destroy_instance (void *_data) {
+    dn_simdhash_u32_ptr_t *data = _data;
+    if (!data)
+        return;
+
+    dn_simdhash_free(data);
 }
 
 #endif // ALL_MEASUREMENTS_H
@@ -39,12 +45,16 @@ static void destroy_instance (void *data) {
 
 MEASUREMENT(dn_clear_then_fill_sequential, dn_simdhash_u32_ptr_t *, create_instance_u32_ptr, destroy_instance, {
     dn_simdhash_clear(data);
-    for (int i = 0; i < INNER_COUNT; i++)
+    for (int i = 0; i < INNER_COUNT; i++) {
+        uint32_t key = *dn_vector_index_t(sequential_u32s, uint32_t, i);
         dn_simdhash_u32_ptr_try_add(data, i, (void *)(size_t)i);
+    }
 })
 
 MEASUREMENT(dn_clear_then_fill_random, dn_simdhash_u32_ptr_t *, create_instance_u32_ptr, destroy_instance, {
     dn_simdhash_clear(data);
-    for (int i = 0; i < INNER_COUNT; i++)
-        dn_simdhash_u32_ptr_try_add(data, *dn_vector_index_t(random_u32s, uint32_t, i), (void *)(size_t)i);
+    for (int i = 0; i < INNER_COUNT; i++) {
+        uint32_t key = *dn_vector_index_t(sequential_u32s, uint32_t, i);
+        dn_simdhash_u32_ptr_try_add(data, key, (void *)(size_t)i);
+    }
 })

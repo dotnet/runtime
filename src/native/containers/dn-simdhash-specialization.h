@@ -128,7 +128,7 @@ address_of_value (dn_simdhash_buffers_t buffers, uint32_t value_slot_index)
 // On success: returns index (0-n)
 // On failure: returns -1 if bucket has not overflowed; -2 if it has
 static DN_FORCEINLINE(int)
-DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T_PTR hash, bucket_t *bucket, DN_SIMDHASH_KEY_T needle, dn_simdhash_search_vector search_vector)
+DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T_PTR hash, bucket_t *restrict bucket, DN_SIMDHASH_KEY_T needle, dn_simdhash_search_vector search_vector)
 {
 #if defined(__wasm_simd128__)
 	// Perform an eager load of the vector on wasm
@@ -164,7 +164,7 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T_PTR hash, bucket_t *bucket, DN_S
 #define BEGIN_SCAN_BUCKETS(initial_index, bucket_index, bucket_address) \
 	{ \
 		uint32_t bucket_index = initial_index; \
-		bucket_t *bucket_address = address_of_bucket(buffers, bucket_index); \
+		bucket_t *restrict bucket_address = address_of_bucket(buffers, bucket_index); \
 		do {
 
 #define END_SCAN_BUCKETS(initial_index, bucket_index, bucket_address) \
@@ -304,13 +304,17 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, 
 		//  so attempt to insert into the bucket
 		uint8_t new_index = dn_simdhash_bucket_count(bucket_address->suffixes);
 		if (new_index < DN_SIMDHASH_BUCKET_CAPACITY) {
-			// Calculate value slot index early so that we don't stall waiting for it later
-			uint32_t value_slot_index = (bucket_index * DN_SIMDHASH_BUCKET_CAPACITY) + new_index;
+			// Calculate key address early to reduce odds of a stall
+			DN_SIMDHASH_KEY_T *restrict key_slot_address = &bucket_address->keys[new_index];
 			// We found a bucket with space, so claim the first free slot
 			dn_simdhash_bucket_set_count(bucket_address->suffixes, new_index + 1);
 			dn_simdhash_bucket_set_suffix(bucket_address->suffixes, new_index, suffix);
-			bucket_address->keys[new_index] = key;
-			*address_of_value(buffers, value_slot_index) = value;
+            // Now store the key, it's probably in the same cache line as the count/suffix
+			*key_slot_address = key;
+            // Now store the value, it's in a different cache line
+			uint32_t value_slot_index = (bucket_index * DN_SIMDHASH_BUCKET_CAPACITY) + new_index;
+			DN_SIMDHASH_VALUE_T *restrict value_slot_address = address_of_value(buffers, value_slot_index);
+			*value_slot_address = value;
 			// printf("Inserted [%zd, %zd] in bucket %d at index %d\n", key, value, bucket_index, new_index);
 			// If we cascaded out of our original target bucket, scan through our probe path
 			//  and increase the cascade counters. We have to wait until now to do that, because

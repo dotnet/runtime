@@ -97,7 +97,7 @@ void foreach_measurement (const char *name, void *_info, void *_args) {
     int64_t warmup_duration = 20000000,
         target_step_duration = 10000000,
         target_duration = warmup_duration * 10,
-        warmup_iterations = 1000,
+        warmup_iterations = 500,
         warmup_until = get_100ns_ticks() + warmup_duration,
         warmup_elapsed_total = 0,
         warmup_count = 0;
@@ -134,12 +134,15 @@ void foreach_measurement (const char *name, void *_info, void *_args) {
         steps++;
     } while (get_100ns_ticks() < run_until);
 
-    int64_t run_elapsed_average = run_elapsed_total / steps / necessary_iterations;
+    double run_elapsed_average = (double)(run_elapsed_total) / steps / necessary_iterations / 100.0;
 
     args->result = 0;
     printf(
-        "%" PRId64 " step(s): avg %" PRId64 " min %" PRId64 " max %" PRId64 "\n",
-        steps, run_elapsed_average, run_elapsed_min / necessary_iterations, run_elapsed_max / necessary_iterations
+        "%" PRId64 " step(s): avg %.3fns min %.3fns max %.3fns\n",
+        steps,
+        run_elapsed_average,
+        (double)run_elapsed_min / necessary_iterations / 100.0,
+        (double)run_elapsed_max / necessary_iterations / 100.0
     );
     fflush(stdout);
 }
