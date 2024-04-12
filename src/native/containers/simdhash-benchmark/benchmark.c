@@ -38,6 +38,7 @@ dn_simdhash_assert_fail (const char *file, int line, const char *condition) {
 
 int64_t get_100ns_ticks () {
     struct timespec ts;
+    // FIXME: Use clock_monotonic for wall time instead? I think process time is what we want
     dn_simdhash_assert(clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts) == 0);
     return ((int64_t)ts.tv_sec * MTICKS_PER_SEC + ts.tv_nsec / 100);
 }
