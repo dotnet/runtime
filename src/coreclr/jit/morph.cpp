@@ -8755,6 +8755,18 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             if (fgGlobalMorph && varTypeIsSmall(info.compRetType) && (retVal != nullptr) && !retVal->TypeIs(TYP_VOID) &&
                 fgCastNeeded(retVal, info.compRetType))
             {
+#ifdef SWIFT_SUPPORT
+                // Morph error operand if tree is a GT_SWIFT_ERROR_RET node
+                if (tree->OperIs(GT_SWIFT_ERROR_RET))
+                {
+                    GenTree* const errorVal = fgMorphTree(tree->gtGetOp1());
+                    tree->AsOp()->gtOp1     = errorVal;
+
+                    // Propagate side effect flags
+                    tree->SetAllEffectsFlags(errorVal);
+                }
+#endif // SWIFT_SUPPORT
+
                 // Small-typed return values are normalized by the callee
                 retVal = gtNewCastNode(TYP_INT, retVal, false, info.compRetType);
 

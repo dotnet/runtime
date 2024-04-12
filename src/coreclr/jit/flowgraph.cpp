@@ -2632,7 +2632,7 @@ PhaseStatus Compiler::fgAddSwiftErrorReturns()
             {
                 assert(genReturnErrorLocal == BAD_VAR_NUM);
                 genReturnErrorLocal = lvaGrabTemp(true DEBUGARG("Single return block SwiftError value"));
-                lvaGetDesc(genReturnErrorLocal)->lvType = genActualType(TYP_I_IMPL);
+                lvaGetDesc(genReturnErrorLocal)->lvType = TYP_I_IMPL;
                 ret->AsOp()->gtOp1                      = gtNewLclvNode(genReturnErrorLocal, TYP_I_IMPL);
             }
             else

@@ -140,16 +140,7 @@ bool OptIfConversionDsc::IfConvertCheckThenFlow()
             if (thenBlock->KindIs(BBJ_RETURN))
             {
                 assert(m_finalBlock == nullptr);
-#ifdef SWIFT_SUPPORT
-                if (m_comp->lvaSwiftErrorArg != BAD_VAR_NUM)
-                {
-                    m_mainOper = GT_SWIFT_ERROR_RET;
-                }
-                else
-#endif // SWIFT_SUPPORT
-                {
-                    m_mainOper = GT_RETURN;
-                }
+                m_mainOper = GT_RETURN;
             }
             else
             {
@@ -586,7 +577,7 @@ bool OptIfConversionDsc::optIfConvert()
     {
         return false;
     }
-    assert(m_thenOperation.node->OperIs(GT_STORE_LCL_VAR, GT_RETURN, GT_SWIFT_ERROR_RET));
+    assert(m_thenOperation.node->OperIs(GT_STORE_LCL_VAR, GT_RETURN));
     if (m_doElseConversion)
     {
         if (!IfConvertCheckStmts(m_startBlock->GetTrueTarget(), &m_elseOperation))
@@ -644,7 +635,7 @@ bool OptIfConversionDsc::optIfConvert()
         }
         else
         {
-            assert((m_mainOper == GT_RETURN) || (m_mainOper == GT_SWIFT_ERROR_RET));
+            assert(m_mainOper == GT_RETURN);
             thenCost = m_thenOperation.node->AsOp()->GetReturnValue()->GetCostEx();
             if (m_doElseConversion)
             {
@@ -704,7 +695,7 @@ bool OptIfConversionDsc::optIfConvert()
     }
     else
     {
-        assert((m_mainOper == GT_RETURN) || (m_mainOper == GT_SWIFT_ERROR_RET));
+        assert(m_mainOper == GT_RETURN);
         assert(m_doElseConversion);
         assert(m_thenOperation.node->TypeGet() == m_elseOperation.node->TypeGet());
 
