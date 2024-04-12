@@ -4,7 +4,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Microsoft.Playwright;
+using System.Collections.Generic;
 using Wasm.Build.Tests.TestAppScenarios;
 using Xunit.Abstractions;
 using Xunit;
@@ -19,7 +19,27 @@ public class SignalRTestsBase : AppTestBase
     {
     }
 
-    protected string GetThreadOfAction(string testOutput, string pattern, string actionDescription)
+    protected async Task SignalRPassMessage(string client, string config, string transport)
+    {
+        CopyTestAsset("WasmOnAspNetCore", "SignalRClientTests", "AspNetCoreServer");
+        PublishProject(config, runtimeType: RuntimeVariant.MultiThreaded, assertAppBundle: false);
+
+        var result = await RunSdkStyleAppForBuild(new(
+            Configuration: config,
+            ExtraArgs: $"--client {client}",
+            BrowserQueryString: new Dictionary<string, string> { ["transport"] = transport, ["message"] = "ping" } ));
+
+        string testOutput = string.Join("\n", result.TestOutput) ?? "";
+        Assert.NotEmpty(testOutput);
+        // check sending and receiving threadId
+        string threadIdUsedForSending = GetThreadOfAction(testOutput, @"SignalRPassMessages was sent by CurrentManagedThreadId=(\d+)", "signalR message was sent");
+        string threadIdUsedForReceiving = GetThreadOfAction(testOutput, @"ReceiveMessage from server on CurrentManagedThreadId=(\d+)", "signalR message was received");
+        string consoleOutput = string.Join("\n", result.ConsoleOutput);
+        Assert.True("1" != threadIdUsedForSending || "1" != threadIdUsedForReceiving,
+            $"Expected to send/receive with signalR in non-UI threads, instead only CurrentManagedThreadId=1 was used. ConsoleOutput: {consoleOutput}.");
+    }
+
+    private string GetThreadOfAction(string testOutput, string pattern, string actionDescription)
     {
         Match match = Regex.Match(testOutput, pattern);
         Assert.True(match.Success, $"Expected to find a log that {actionDescription}. TestOutput: {testOutput}.");

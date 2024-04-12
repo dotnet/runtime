@@ -105,7 +105,7 @@ public abstract class AppTestBase : BlazorWasmTestBase
         List<string> testOutput = new();
         List<string> consoleOutput = new();
         List<string> serverOutput = new();
-        Regex exitRegex = new Regex("(WASM EXIT (?<exitCode>[0-9]+)$)|(Program terminated with exit\\((?<exitCode>[0-9]+)\\))");
+        Regex exitRegex = new Regex("WASM EXIT (?<exitCode>[0-9]+)$");
 
         BlazorRunOptions blazorRunOptions = new(
                 CheckCounter: false,

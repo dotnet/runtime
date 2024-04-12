@@ -3,11 +3,10 @@
 
 using System;
 using System.Collections.Specialized;
-using Microsoft.AspNetCore.Http.Connections;
 
 namespace Shared;
 
-public static class Helper
+public static class QueryParser
 {
     public static string GetValue(NameValueCollection parameters, string key)
     {
@@ -21,23 +20,5 @@ public static class Helper
             throw new Exception($"Parameter '{key}' should be unique in the query string");
         }
         return values[0];
-    }
-
-    public static HttpTransportType StringToTransportType(string transport)
-    {
-        switch (transport.ToLowerInvariant())
-        {
-            case "longpolling":
-                return HttpTransportType.LongPolling;
-            case "websockets":
-                return HttpTransportType.WebSockets;
-            default:
-                throw new Exception($"{transport} is invalid transport type");
-        }
-    }
-
-    public static void TestOutputWriteLine(string message)
-    {
-        Console.WriteLine("TestOutput -> " + message);
     }
 }

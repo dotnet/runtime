@@ -14,8 +14,7 @@
     <StaticWebAssetBasePath>wasmbrowser</StaticWebAssetBasePath>
   </PropertyGroup>
 
-  <!-- versions are pinned but when run from WBT level, it's taking in-tree runtime -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.0-preview.1.24081.5" />
+    <ProjectReference Include="..\Shared\Shared.csproj" />
   </ItemGroup>
 </Project>

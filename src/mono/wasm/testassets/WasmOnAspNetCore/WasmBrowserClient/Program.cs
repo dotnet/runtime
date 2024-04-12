@@ -3,41 +3,19 @@
 
 using System;
 using System.Threading.Tasks;
-using System.Runtime.InteropServices.JavaScript;
-using System.Runtime.InteropServices;
+using Shared;
 
 public partial class Program
 {
-    private static TaskCompletionSource<int>? TestTcs;
-
-    public static async Task Main()
+    public static async Task Main(string[] args)
     {
-        Program.TestTcs = new TaskCompletionSource<int>();
+        if (args.Length < 2)
+            throw new Exception("Expected url origin and href passed as arguments");
 
-        string url = GetUrl();
-        string transport = GetQueryParam("transport");
-        string message = GetQueryParam("message");
         SignalRTest test = new();
-        await test.Run(url, transport, message);
-
-        int delayInMin = 2;
-        await Task.WhenAny(
-            Program.TestTcs!.Task,
-            Task.Delay(TimeSpan.FromMinutes(delayInMin)));
-
-        if (!Program.TestTcs!.Task.IsCompleted)
-            throw new TimeoutException($"Test timed out after waiting {delayInMin} minutes for process to exit.");
-
-        int result = Program.TestTcs!.Task.Result;
+        Console.WriteLine($"arg0: {args[0]}, arg1: {args[1]}");
+        int result = await test.Run(origin: args[0], fullUrl: args[1]);
         if (result != 0)
             throw new Exception($"WasmBrowser finished with non-success code: {result}");
     }
-
-    [JSImport("Program.getQueryParam", "main.js")]
-    private static partial string GetQueryParam(string prameterName);
-
-    [JSImport("Program.getUrl", "main.js")]
-    private static partial string GetUrl();
-
-    public static void SetResult(int value) => Program.TestTcs?.SetResult(value);
 }
