@@ -583,11 +583,15 @@ PhaseStatus Compiler::fgImport()
 
     // Now that we've made it through the importer, we know the IL was valid.
     // If we synthesized profile data and though it should be consistent,
-    // verify that it was consistent.
+    // but it wasn't, assert now.
     //
     if (fgPgoSynthesized && fgPgoConsistent)
     {
-        assert(fgPgoConsistentCheck);
+        assert(!fgPgoDeferredInconsistency);
+
+        // Reset this as it is a one-shot thing.
+        //
+        INDEBUG(fgPgoDeferredInconsistency = false);
     }
 
     return PhaseStatus::MODIFIED_EVERYTHING;
@@ -4371,6 +4375,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
             {
                 if (otherLoop->ContainsBlock(header))
                 {
+                    JITDUMP("Noting that " FMT_LP " contains an improper loop header\n", loop->GetIndex());
                     otherLoop->m_containsImproperHeader = true;
                 }
             }
