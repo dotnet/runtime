@@ -69,7 +69,7 @@ add_custom_command(
     USES_TERMINAL
 )
 
-# n.b. important that cdac_contract_descriptor is an object library;
+# It is important that cdac_contract_descriptor is an object library;
 # if it was static, linking it into the final dll would not export
 # DotNetRuntimeContractDescriptor since it is not referenced anywhere.
 add_library_clr(cdac_contract_descriptor OBJECT

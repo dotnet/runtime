@@ -17,7 +17,7 @@ files that specify contracts.
 `cdac-build-tool` is meant to run as a CMake custom command.
 It consumes a target platform object file and emits a C source
 file that contains a JSON contract descriptor.  The C source
-is the included in the normal build and link steps to create the runtime.
+is then included in the normal build and link steps to create the runtime.
 
 The contract descriptor source file depends on `contract-aux-data.c` which is a source file that contains
 the definitions of the "indirect pointer data" that is referenced by the data descriptor.  This is typically the addresses of important global variables in the runtime.
