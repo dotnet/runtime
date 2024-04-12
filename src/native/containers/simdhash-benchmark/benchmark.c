@@ -4,7 +4,11 @@
 #include <assert.h>
 #include <time.h>
 #include <sys/time.h>
+#include <string.h>
 #include <strings.h>
+
+// WHY?
+char *strcasestr(const char *haystack, const char *needle);
 
 #include "../dn-vector.h"
 #include "../dn-simdhash.h"
@@ -12,18 +16,15 @@
 #include "../dn-simdhash-specializations.h"
 
 #include "measurement.h"
-#include "all-measurements.h"
 
 dn_simdhash_string_ptr_t *all_measurements;
 
 #undef MEASUREMENT
 #define MEASUREMENT(name, data_type, setup, teardown, body) \
-    measurement_info DN_SIMDHASH_GLUE(name, _measurement_info) = { \
-        #name, \
-        setup, \
-        DN_SIMDHASH_GLUE(measurement_, name), \
-        teardown \
-    };
+    extern measurement_info DN_SIMDHASH_GLUE(name, _measurement_info);
+
+// Suppress actual codegen
+#define MEASUREMENTS_IMPLEMENTATION 0
 
 #include "all-measurements.h"
 
@@ -82,7 +83,7 @@ void foreach_measurement (const char *name, void *_info, void *_args) {
 
     uint8_t match = args->argc <= 1;
     for (int i = 1; i < args->argc; i++) {
-        if (strcasecmp(name, args->argv[i]) == 0) {
+        if (strcasestr(name, args->argv[i])) {
             match = 1;
             break;
         }

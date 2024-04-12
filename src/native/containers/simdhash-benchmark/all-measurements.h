@@ -1,5 +1,7 @@
-#ifndef ALL_MEASUREMENTS_H
-#define ALL_MEASUREMENTS_H
+#include "ghashtable.h"
+
+#ifndef MEASUREMENTS_IMPLEMENTATION
+#define MEASUREMENTS_IMPLEMENTATION 1
 
 #define INNER_COUNT 1024 * 32
 #define BASELINE_SIZE 102400
@@ -38,6 +40,7 @@ retry2: {
     }
 }
 
+
 static void * create_instance_u32_ptr () {
     if (!random_u32s)
         init_data();
@@ -46,6 +49,9 @@ static void * create_instance_u32_ptr () {
 }
 
 static void * create_instance_u32_ptr_random_values () {
+    if (!random_u32s)
+        init_data();
+
     dn_simdhash_u32_ptr_t *result = dn_simdhash_u32_ptr_new(INNER_COUNT, NULL);
     for (int i = 0; i < INNER_COUNT; i++) {
         uint32_t key = *dn_vector_index_t(random_u32s, uint32_t, i);
@@ -62,11 +68,36 @@ static void destroy_instance (void *_data) {
     dn_simdhash_free(data);
 }
 
+
 static void * baseline_init () {
     return malloc(BASELINE_SIZE);
 }
 
-#endif // ALL_MEASUREMENTS_H
+
+static void * create_instance_ght () {
+    if (!random_u32s)
+        init_data();
+
+    return g_hash_table_new(NULL, NULL);
+}
+
+static void * create_instance_ght_random_values () {
+    if (!random_u32s)
+        init_data();
+
+    GHashTable *result = g_hash_table_new(NULL, NULL);
+    for (int i = 0; i < INNER_COUNT; i++) {
+        uint32_t key = *dn_vector_index_t(random_u32s, uint32_t, i);
+        g_hash_table_insert(result, (gpointer)(size_t)key, (gpointer)(size_t)i);
+    }
+    return result;
+}
+
+static void destroy_instance_ght (void *data) {
+    g_hash_table_destroy((GHashTable *)data);
+}
+
+#endif // MEASUREMENTS_IMPLEMENTATION
 
 // These go outside the guard because we include this file multiple times.
 
@@ -119,5 +150,35 @@ MEASUREMENT(dn_fill_then_remove_every_item, dn_simdhash_u32_ptr_t *, create_inst
     for (int i = 0; i < INNER_COUNT; i++) {
         uint32_t key = *dn_vector_index_t(random_u32s, uint32_t, i);
         dn_simdhash_assert(dn_simdhash_u32_ptr_try_remove(data, key));
+    }
+})
+
+MEASUREMENT(ght_clear_then_fill_sequential, GHashTable *, create_instance_ght, destroy_instance_ght, {
+    g_hash_table_remove_all(data);
+    for (int i = 0; i < INNER_COUNT; i++) {
+        uint32_t key = *dn_vector_index_t(sequential_u32s, uint32_t, i);
+        g_hash_table_insert(data, (gpointer)(size_t)key, (gpointer)(size_t)i);
+    }
+})
+
+MEASUREMENT(ght_clear_then_fill_random, GHashTable *, create_instance_ght, destroy_instance_ght, {
+    g_hash_table_remove_all(data);
+    for (int i = 0; i < INNER_COUNT; i++) {
+        uint32_t key = *dn_vector_index_t(random_u32s, uint32_t, i);
+        g_hash_table_insert(data, (gpointer)(size_t)key, (gpointer)(size_t)i);
+    }
+})
+
+MEASUREMENT(ght_find_random_keys, GHashTable *, create_instance_ght_random_values, destroy_instance_ght, {
+    for (int i = 0; i < INNER_COUNT; i++) {
+        uint32_t key = *dn_vector_index_t(random_u32s, uint32_t, i);
+        dn_simdhash_assert(g_hash_table_lookup(data, (gpointer)(size_t)key) == (gpointer)(size_t)i);
+    }
+})
+
+MEASUREMENT(ght_find_missing_key, GHashTable *, create_instance_ght_random_values, destroy_instance_ght, {
+    for (int i = 0; i < INNER_COUNT; i++) {
+        uint32_t key = *dn_vector_index_t(random_unused_u32s, uint32_t, i);
+        dn_simdhash_assert(g_hash_table_lookup(data, (gpointer)(size_t)key) == NULL);
     }
 })
