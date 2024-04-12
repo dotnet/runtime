@@ -221,6 +221,7 @@ namespace System
             private static bool Div96ByConst(ref ulong high64, ref uint low, uint pow)
             {
 #if TARGET_64BIT
+                // TODO: https://github.com/dotnet/runtime/issues/5213
                 ulong div64 = high64 / pow;
                 uint div = (uint)((((high64 - div64 * pow) << 32) + low) / pow);
                 if (low == div * pow)
@@ -675,6 +676,7 @@ ThrowOverflow:
                 for (uint i = hiRes - 1; (int)i >= 0; i--)
                 {
 #if TARGET_64BIT
+                    // TODO: https://github.com/dotnet/runtime/issues/5213
                     ulong num = result[i] + ((ulong)remainder << 32);
                     remainder = (uint)num - (result[i] = (uint)(num / power)) * power;
 #else
@@ -710,6 +712,7 @@ ThrowOverflow:
                 Debug.Assert(bufQuo.U2 == 0);
 
                 // We have overflown, so load the high bit with a one.
+                // TODO: https://github.com/dotnet/runtime/issues/5213
                 const ulong highbit = 1UL << 32;
                 bufQuo.U2 = (uint)(highbit / 10);
                 ulong tmp = ((highbit % 10) << 32) + bufQuo.U1;
@@ -1090,6 +1093,7 @@ AlignedScale:
                         Number.ThrowOverflowException(SR.Overflow_Decimal);
                     flags -= 1 << ScaleShift;
 
+                    // TODO: https://github.com/dotnet/runtime/issues/5213
                     const uint den = 10;
                     ulong num = high + (1UL << 32);
                     high = (uint)(num / den);
@@ -1776,6 +1780,7 @@ ReturnZero:
                     if (lmax > 14)
                         lmax = 14;
 
+                    // TODO: https://github.com/dotnet/runtime/issues/5213
                     if ((byte)mant == 0 && lmax >= 8)
                     {
                         const uint den = 100000000;
@@ -2349,6 +2354,7 @@ ThrowOverflow:
                 {
                     scale -= MaxInt32Scale;
 
+                    // TODO: https://github.com/dotnet/runtime/issues/5213
                     const uint divisor = TenToPowerNine;
                     uint n = d.uhi;
                     if (n == 0)
@@ -2463,6 +2469,7 @@ done:
                 value.uhi = (uint)(div64 >> 32);
                 value.umid = (uint)div64;
 
+                // TODO: https://github.com/dotnet/runtime/issues/5213
                 ulong num = ((high64 - (uint)div64 * TenToPowerNine) << 32) + value.ulo;
                 uint div = (uint)(num / TenToPowerNine);
                 value.ulo = div;

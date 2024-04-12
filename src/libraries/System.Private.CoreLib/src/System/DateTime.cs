@@ -1405,6 +1405,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void GetTime(out int hour, out int minute, out int second)
         {
+            // TODO: https://github.com/dotnet/runtime/issues/5213
             ulong seconds = UTicks / TicksPerSecond;
             ulong minutes = seconds / 60;
             second = (int)(seconds - (minutes * 60));
@@ -1416,6 +1417,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void GetTime(out int hour, out int minute, out int second, out int millisecond)
         {
+            // TODO: https://github.com/dotnet/runtime/issues/5213
             ulong milliseconds = UTicks / TicksPerMillisecond;
             ulong seconds = milliseconds / 1000;
             millisecond = (int)(milliseconds - (seconds * 1000));
@@ -1429,6 +1431,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void GetTimePrecise(out int hour, out int minute, out int second, out int tick)
         {
+            // TODO: https://github.com/dotnet/runtime/issues/5213
             ulong ticks = UTicks;
             ulong seconds = ticks / TicksPerSecond;
             tick = (int)(ticks - (seconds * TicksPerSecond));

@@ -21,6 +21,7 @@ namespace System.Numerics
 
             for (int i = left.Length - 1; i >= 0; i--)
             {
+                // TODO: https://github.com/dotnet/runtime/issues/5213
                 ulong value = (carry << 32) | left[i];
                 ulong digit = value / right;
                 quotient[i] = (uint)digit;
@@ -39,6 +40,7 @@ namespace System.Numerics
             ulong carry = 0UL;
             for (int i = left.Length - 1; i >= 0; i--)
             {
+                // TODO: https://github.com/dotnet/runtime/issues/5213
                 ulong value = (carry << 32) | left[i];
                 ulong digit = value / right;
                 quotient[i] = (uint)digit;
