@@ -73,6 +73,13 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(15)]
         public async Task LargeSingleHeader_ThrowsException(int maxResponseHeadersLength)
         {
+            TestUtilities.TestEventListener? listener = null;
+
+            if (UseVersion == HttpVersion.Version30)
+            {
+                listener = new TestUtilities.TestEventListener(_output, TestUtilities.TestEventListener.NetworkingEvents);
+            }
+
             using HttpClientHandler handler = CreateHttpClientHandler();
             handler.MaxResponseHeadersLength = maxResponseHeadersLength;
 
