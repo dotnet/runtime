@@ -38,7 +38,7 @@ endif()
 # publish runtimeinfo lib
 install_clr(TARGETS runtimeinfo DESTINATIONS lib COMPONENT runtime)
 
-add_library(cdac_data_descriptor OBJECT data-descriptor.cpp)
+add_library(cdac_data_descriptor OBJECT datadescriptor.cpp)
 # don't build the data descriptor before the VM (and any of its dependencies' generated headers)
 add_dependencies(cdac_data_descriptor cee_wks_core)
 if(CLR_CMAKE_TARGET_WIN32)
