@@ -498,9 +498,10 @@ void CodeGen::genCodeForBBlist()
         // as the determiner because something we are tracking as a byref
         // might be used as a return value of a int function (which is legal)
         GenTree* blockLastNode = block->lastNode();
-        if ((blockLastNode != nullptr) && (blockLastNode->gtOper == GT_RETURN) &&
+        if ((blockLastNode != nullptr) && (blockLastNode->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET)) &&
             (varTypeIsGC(compiler->info.compRetType) ||
-             (blockLastNode->AsOp()->gtOp1 != nullptr && varTypeIsGC(blockLastNode->AsOp()->gtOp1->TypeGet()))))
+             (blockLastNode->AsOp()->GetReturnValue() != nullptr &&
+              varTypeIsGC(blockLastNode->AsOp()->GetReturnValue()->TypeGet()))))
         {
             nonVarPtrRegs &= ~RBM_INTRET;
         }

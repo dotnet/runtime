@@ -9650,6 +9650,10 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
             }
             break;
 
+            case GT_SWIFT_ERROR_RET:
+                copy = new (this, oper) GenTreeOp(oper, tree->TypeGet(), tree->gtGetOp1(), tree->gtGetOp2());
+                break;
+
             default:
                 assert(!GenTree::IsExOp(tree->OperKind()) && tree->OperIsSimple());
                 // We're in the SimpleOp case, so it's always unary or binary.

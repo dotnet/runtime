@@ -1402,13 +1402,15 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
 //
 // Arguments:
 //    treeNode - The GT_RETURN or GT_RETFILT tree node with float type.
+//    (We don't expect treeNode to be a GT_SWIFT_ERROR_RET node,
+//    as Swift interop isn't supported on x86.)
 //
 // Return Value:
 //    None
 //
 void CodeGen::genFloatReturn(GenTree* treeNode)
 {
-    assert(treeNode->OperGet() == GT_RETURN || treeNode->OperGet() == GT_RETFILT);
+    assert(treeNode->OperIs(GT_RETURN, GT_RETFILT));
     assert(varTypeIsFloating(treeNode));
 
     GenTree* op1 = treeNode->gtGetOp1();
@@ -1965,6 +1967,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_RETURN:
             genReturn(treeNode);
             break;
+
+#ifdef SWIFT_SUPPORT
+        case GT_SWIFT_ERROR_RET:
+            genSwiftErrorReturn(treeNode);
+            break;
+#endif // SWIFT_SUPPORT
 
         case GT_LEA:
             // If we are here, it is the case where there is an LEA that cannot be folded into a parent instruction.

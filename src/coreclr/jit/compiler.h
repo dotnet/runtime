@@ -5285,6 +5285,10 @@ public:
 
     PhaseStatus fgAddInternal();
 
+#ifdef SWIFT_SUPPORT
+    PhaseStatus fgAddSwiftErrorReturns();
+#endif // SWIFT_SUPPORT
+
     enum class FoldResult
     {
         FOLD_DID_NOTHING,
@@ -6529,7 +6533,7 @@ private:
     GenTree* fgOptimizeBitwiseAnd(GenTreeOp* andOp);
     GenTree* fgOptimizeBitwiseXor(GenTreeOp* xorOp);
     GenTree* fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow, GenTreeFlags precedingSideEffects);
-    GenTree* fgMorphRetInd(GenTreeUnOp* tree);
+    GenTree* fgMorphRetInd(GenTreeOp* tree);
     GenTree* fgMorphModToZero(GenTreeOp* tree);
     GenTree* fgMorphModToSubMulDiv(GenTreeOp* tree);
     GenTree* fgMorphUModToAndSub(GenTreeOp* tree);
@@ -7892,7 +7896,7 @@ public:
     GenTree* optAssertionProp_LocalStore(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* store, Statement* stmt);
     GenTree* optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenTreeBlk* store, Statement* stmt);
     GenTree* optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt);
-    GenTree* optAssertionProp_Return(ASSERT_VALARG_TP assertions, GenTreeUnOp* ret, Statement* stmt);
+    GenTree* optAssertionProp_Return(ASSERT_VALARG_TP assertions, GenTreeOp* ret, Statement* stmt);
     GenTree* optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt);
     GenTree* optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, Statement* stmt);
@@ -8419,6 +8423,10 @@ public:
 
     unsigned    genReturnLocal; // Local number for the return value when applicable.
     BasicBlock* genReturnBB;    // jumped to when not optimizing for speed.
+
+#ifdef SWIFT_SUPPORT
+    unsigned genReturnErrorLocal; // Local number for the Swift error value when applicable.
+#endif                            // SWIFT_SUPPORT
 
     // The following properties are part of CodeGenContext.  Getters are provided here for
     // convenience and backward compatibility, but the properties can only be set by invoking

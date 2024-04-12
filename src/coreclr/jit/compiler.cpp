@@ -4722,6 +4722,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_MORPH_ADD_INTERNAL, &Compiler::fgAddInternal);
 
+#ifdef SWIFT_SUPPORT
+    // Transform GT_RETURN nodes into GT_SWIFT_ERROR_RET nodes if this method has Swift error handling
+    //
+    DoPhase(this, PHASE_SWIFT_ERROR_RET, &Compiler::fgAddSwiftErrorReturns);
+#endif // SWIFT_SUPPORT
+
     // Remove empty try regions
     //
     DoPhase(this, PHASE_EMPTY_TRY, &Compiler::fgRemoveEmptyTry);
