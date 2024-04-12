@@ -25,7 +25,7 @@ CustomMarshalerInfo::CustomMarshalerInfo(LoaderAllocator *pLoaderAllocator, Type
 : m_NativeSize(0)
 , m_hndManagedType(hndManagedType)
 , m_pLoaderAllocator(pLoaderAllocator)
-, m_hndCustomMarshaler(0)
+, m_hndCustomMarshaler{}
 , m_pMarshalNativeToManagedMD(NULL)
 , m_pMarshalManagedToNativeMD(NULL)
 , m_pCleanUpNativeDataMD(NULL)

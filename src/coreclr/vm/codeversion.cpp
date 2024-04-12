@@ -60,7 +60,7 @@ NativeCodeVersionNode::NativeCodeVersionNode(
     PatchpointInfo* patchpointInfo,
     unsigned ilOffset)
     :
-    m_pNativeCode((PCODE)NULL),
+    m_pNativeCode{},
     m_pMethodDesc(pMethodDesc),
     m_parentId(parentId),
     m_pNextMethodDescSibling(NULL),

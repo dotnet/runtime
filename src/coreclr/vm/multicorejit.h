@@ -92,7 +92,7 @@ private:
     TADDR m_entryPointAndTierInfo;
 
 public:
-    MulticoreJitCodeInfo() : m_entryPointAndTierInfo(0)
+    MulticoreJitCodeInfo() : m_entryPointAndTierInfo{}
     {
         LIMITED_METHOD_CONTRACT;
     }

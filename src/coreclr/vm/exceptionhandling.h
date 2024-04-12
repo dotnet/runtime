@@ -132,7 +132,7 @@ public:
 
     ExceptionTrackerBase(PTR_EXCEPTION_RECORD pExceptionRecord, PTR_CONTEXT pExceptionContext, PTR_ExceptionTrackerBase pPrevNestedInfo) :
         m_pPrevNestedInfo(pPrevNestedInfo),
-        m_hThrowable(0),
+        m_hThrowable{},
         m_ptrs({pExceptionRecord, pExceptionContext}),
         m_fDeliveredFirstChanceNotification(FALSE),
         m_ExceptionCode((pExceptionRecord != PTR_NULL) ? pExceptionRecord->ExceptionCode : 0)
@@ -265,7 +265,7 @@ public:
                      PTR_CONTEXT           pContextRecord) :
         ExceptionTrackerBase(pExceptionRecord, pContextRecord, PTR_NULL),
         m_pThread(GetThread()),
-        m_uCatchToCallPC(0),
+        m_uCatchToCallPC{},
         m_pSkipToParentFunctionMD(NULL),
 // these members were added for resume frame processing
         m_pClauseForCatchToken(NULL)
