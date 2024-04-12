@@ -1256,46 +1256,38 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case NI_Sve_Abs:
-        {
-            assert(HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsicId));
-
-            LIR::Use use;
-            if (BlockRange().TryGetUse(node, &use))
-            {
-                GenTree* user = use.User();
-                if (user->OperIsHWIntrinsic() && user->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConditionalSelect)
-                {
-                    // No need to wrap it if it is already inside a conditional
-                    break;
-                }
-            }
-            else
-            {
-                break;
-            }
-
-            CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
-            unsigned    simdSize        = node->GetSimdSize();
-            var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
-            GenTree*    trueMask        = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
-            GenTree*    trueVal         = node;
-            GenTree*    falseVal        = comp->gtNewZeroConNode(simdType);
-
-            GenTreeHWIntrinsic* condSelNode =
-                comp->gtNewSimdHWIntrinsicNode(simdType, trueMask, trueVal, falseVal, NI_Sve_ConditionalSelect,
-                                               simdBaseJitType, simdSize);
-
-            BlockRange().InsertBefore(node, trueMask);
-            BlockRange().InsertBefore(node, falseVal);
-            BlockRange().InsertAfter(node, condSelNode);
-            use.ReplaceWith(condSelNode);
-
-            break;
-        }
-
         default:
             break;
+    }
+
+    if (HWIntrinsicInfo::IsMaskedPredicatedOnlyOperation(intrinsicId))
+    {
+        assert(HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsicId));
+
+        LIR::Use use;
+        if (BlockRange().TryGetUse(node, &use))
+        {
+            GenTree* user = use.User();
+            // Wrap the intrinsic in ConditionalSelect only if it is not already inside another ConditionalSelect
+            if (user->OperIsHWIntrinsic() && user->AsHWIntrinsic()->GetHWIntrinsicId() != NI_Sve_ConditionalSelect)
+            {
+                CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+                unsigned    simdSize        = node->GetSimdSize();
+                var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
+                GenTree*    trueMask        = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
+                GenTree*    trueVal         = node;
+                GenTree*    falseVal        = comp->gtNewZeroConNode(simdType);
+
+                GenTreeHWIntrinsic* condSelNode =
+                    comp->gtNewSimdHWIntrinsicNode(simdType, trueMask, trueVal, falseVal, NI_Sve_ConditionalSelect,
+                                                   simdBaseJitType, simdSize);
+
+                BlockRange().InsertBefore(node, trueMask);
+                BlockRange().InsertBefore(node, falseVal);
+                BlockRange().InsertAfter(node, condSelNode);
+                use.ReplaceWith(condSelNode);
+            }
+        }
     }
 
     ContainCheckHWIntrinsic(node);

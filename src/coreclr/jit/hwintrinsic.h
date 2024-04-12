@@ -194,6 +194,10 @@ enum HWIntrinsicFlag : unsigned int
     // The intrinsic uses a mask in arg1 to select elements present in the result, which is not present in the API call
     HW_Flag_EmbeddedMaskedOperation = 0x80000,
 
+    // The intrinsic uses a mask in arg1 to select elements present in the result, which is not present in the API call
+    // and only has predicated version of the instruction
+    HW_Flag_MaskedPredicatedOnlyOperation = 0x100000,
+
 #else
 #error Unsupported platform
 #endif
@@ -888,6 +892,12 @@ struct HWIntrinsicInfo
     {
         const HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_EmbeddedMaskedOperation) != 0;
+    }
+
+    static bool IsMaskedPredicatedOnlyOperation(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_MaskedPredicatedOnlyOperation) != 0;
     }
 
     static bool IsExplicitMaskedOperation(NamedIntrinsic id)
