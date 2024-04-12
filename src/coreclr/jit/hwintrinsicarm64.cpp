@@ -2203,7 +2203,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Sve_CreateWhileLessThanOrEqualMask32Bit:
         case NI_Sve_CreateWhileLessThanOrEqualMask64Bit:
         {
-            // Target instruction is dependent on whether the inputs are signed or unsigned.
             // This information is lost when the type is converted from CorInfoType to var_type.
             // Ensure this is marked using GTF_UNSIGNED.
 
@@ -2211,24 +2210,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             CORINFO_ARG_LIST_HANDLE arg2            = info.compCompHnd->getArgNext(arg1);
             var_types               argType         = TYP_UNKNOWN;
             CORINFO_CLASS_HANDLE    argClass        = NO_CLASS_HANDLE;
-            CorInfoType             argCoreInfoType = strip(info.compCompHnd->getArgType(sig, arg2, &argClass));
+
+            // Target instruction is dependent on whether the inputs are signed or unsigned.
+            // Use the input type for the base type.
+            simdBaseJitType = strip(info.compCompHnd->getArgType(sig, arg2, &argClass));
 
             assert(sig->numArgs == 2);
-            argType = JITtype2varType(argCoreInfoType);
+            argType = JITtype2varType(simdBaseJitType);
             op2     = getArgForHWIntrinsic(argType, argClass);
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
             op1     = impPopStack().val;
 
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
-
-            if (argCoreInfoType == CORINFO_TYPE_ULONG || argCoreInfoType == CORINFO_TYPE_UINT)
-            {
-                retNode->gtFlags |= GTF_UNSIGNED;
-            }
-            else
-            {
-                assert(argCoreInfoType == CORINFO_TYPE_LONG || argCoreInfoType == CORINFO_TYPE_INT);
-            }
         }
         break;
 
