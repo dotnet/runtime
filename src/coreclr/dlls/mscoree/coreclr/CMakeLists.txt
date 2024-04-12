@@ -109,6 +109,7 @@ set(CORECLR_LIBRARIES
     interop
     coreclrminipal
     gc_pal
+    cdac_contract_descriptor
 )
 
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
@@ -187,9 +188,6 @@ target_link_libraries(coreclr PUBLIC ${CORECLR_LIBRARIES} ${CLRJIT_STATIC} cee_w
 target_sources(coreclr_static PUBLIC $<TARGET_OBJECTS:cee_wks_core>)
 target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} clrjit_static cee_wks_mergeable ${FOUNDATION})
 target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
-
-target_link_libraries(coreclr PRIVATE cdac_contract_descriptor)
-target_link_libraries(coreclr_static PRIVATE cdac_contract_descriptor)
 
 if(CLR_CMAKE_TARGET_WIN32)
     set(CLRDEBUGINFO_RESOURCE_PATH ${CMAKE_CURRENT_BINARY_DIR}/clr_debug_resource.bin)
