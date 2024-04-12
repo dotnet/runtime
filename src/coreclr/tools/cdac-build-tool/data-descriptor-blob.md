@@ -149,14 +149,13 @@ The fields pool is given as a sequence of `FieldSpec` elements.  The fields for 
 in a contiguous subsequence and are terminated by a marker `FieldSpec` with a `Name` offset of 0.
 (Thus if a type has an empty sequence of fields it just points to a marker field spec directly.)
 For each field there is a name that gives an offset in the name pool and an offset indicating the
-field's offset.  The field type is not given.
+field's offset.
 
-Rationale: it is expected that the types of the fields were provided by a "baseline" data descriptor.
-
-The globals are gives as a sequence of `GlobalSpec` elements.  Each global has a name and a value.
-The types of the globals are not given.
-
-Rationale: it is expected that the types of the global values were provided by a "baseline" data descriptor.
+The global constants are gives as a sequence of `GlobalLiteralSpec` elements.  Each global has a
+name, type and a value.  Globals that are the addresses in target memory, are in `GlobalPointerSpec`
+elements. Each pointer element has a name and an index in a separately compiled pointer structure
+that is linked into runtime .  See
+[contract-descriptor.md](/docs/design/datacontracts/contract-descriptor.md)
 
 The `NamesPool` is a single sequence of utf-8 bytes comprising the concatenation of all the type
 field and global names including a terminating nul byte for each name.  The same name may occur

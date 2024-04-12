@@ -138,7 +138,7 @@ enum
 // there's 1 placeholder element at the start, and 1 endmarker after each type
 enum
 {
-    CDacBlobFieldPoolCount =
+    CDacBlobFieldsPoolCount =
 #define CDAC_BASELINE(name) 1
 #define CDAC_TYPES_BEGIN()
 #define CDAC_TYPE_BEGIN(name)
@@ -235,34 +235,34 @@ enum
 };
 
 
-#define MAKE_TYPEFIELDS_TYNAME(tyname) CONCAT(CDacFieldPoolTypeStart__, tyname)
+#define MAKE_TYPEFIELDS_TYNAME(tyname) CONCAT(CDacFieldsPoolTypeStart__, tyname)
 
 // index of each run of fields.
 // we make a struct containing one 1-byte field for each field in the run, and then take the offset of the
 // struct to get the index of the run of fields.
 // this looks like
 //
-// struct CDacFieldPoolSizes {
+// struct CDacFieldsPoolSizes {
 //   char cdac_field_pool_start_placeholder__;
-//   struct CDacFieldPoolTypeStart__MethodTable {
-//     char cdac_field_pool_member__MethodTable__GCHandle;
-//     char cdac_field_pool_member__MethodTable_endmarker;
-//   } CDacFieldPoolTypeStart__MethodTable;
+//   struct CDacFieldsPoolTypeStart__MethodTable {
+//     char cdac_fields_pool_member__MethodTable__GCHandle;
+//     char cdac_fields_pool_member__MethodTable_endmarker;
+//   } CDacFieldsPoolTypeStart__MethodTable;
 //   ...
 // };
 //
-// so that offsetof(struct CDacFieldPoolSizes, CDacFieldPoolTypeStart__MethodTable) will give the offset of the
+// so that offsetof(struct CDacFieldsPoolSizes, CDacFieldsPoolTypeStart__MethodTable) will give the offset of the
 // method table field descriptors in the run of fields
-struct CDacFieldPoolSizes
+struct CDacFieldsPoolSizes
 {
 #define DECL_LEN(membername) char membername;
-#define CDAC_BASELINE(name) DECL_LEN(cdac_field_pool_start_placeholder__)
+#define CDAC_BASELINE(name) DECL_LEN(cdac_fields_pool_start_placeholder__)
 #define CDAC_TYPES_BEGIN()
 #define CDAC_TYPE_BEGIN(name) struct MAKE_TYPEFIELDS_TYNAME(name) {
 #define CDAC_TYPE_INDETERMINATE(name)
 #define CDAC_TYPE_SIZE(size)
-#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) DECL_LEN(CONCAT4(cdac_field_pool_member__, tyname, __, membername))
-#define CDAC_TYPE_END(name) DECL_LEN(CONCAT4(cdac_field_pool_member__, tyname, _, endmarker)) \
+#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) DECL_LEN(CONCAT4(cdac_fields_pool_member__, tyname, __, membername))
+#define CDAC_TYPE_END(name) DECL_LEN(CONCAT4(cdac_fields_pool_member__, tyname, _, endmarker)) \
     } MAKE_TYPEFIELDS_TYNAME(name);
 #define CDAC_TYPES_END()
 #define CDAC_GLOBALS_BEGIN()
@@ -286,7 +286,7 @@ struct CDacFieldPoolSizes
 #undef DECL_LEN
 };
 
-#define GET_TYPE_FIELDS(tyname) offsetof(struct CDacFieldPoolSizes, MAKE_TYPEFIELDS_TYNAME(tyname))
+#define GET_TYPE_FIELDS(tyname) offsetof(struct CDacFieldsPoolSizes, MAKE_TYPEFIELDS_TYNAME(tyname))
 
 // index of each global pointer
 //
@@ -334,18 +334,19 @@ struct CDacGlobalPointerIndex
 
 struct BinaryBlobDataDescriptor
 {
+    // see data-descriptor-blob.md
     struct Directory {
         uint32_t FlagsAndBaselineStart;
         uint32_t TypesStart;
 
-        uint32_t FieldPoolStart;
+        uint32_t FieldsPoolStart;
         uint32_t GlobalLiteralValuesStart;
 
         uint32_t GlobalPointersStart;
-        uint32_t NamesStart;
+        uint32_t NamesPoolStart;
 
         uint32_t TypeCount;
-        uint32_t FieldPoolCount;
+        uint32_t FieldsPoolCount;
 
         uint32_t GlobalLiteralValuesCount;
         uint32_t GlobalPointerValuesCount;
@@ -360,7 +361,7 @@ struct BinaryBlobDataDescriptor
     uint32_t PlatformFlags;
     uint32_t BaselineName;
     struct TypeSpec Types[CDacBlobTypesCount];
-    struct FieldSpec FieldPool[CDacBlobFieldPoolCount];
+    struct FieldSpec FieldsPool[CDacBlobFieldsPoolCount];
     struct GlobalLiteralSpec GlobalLiteralValues[CDacBlobGlobalLiteralsCount];
     struct GlobalPointerSpec GlobalPointerValues[CDacBlobGlobalPointersCount];
     uint8_t NamesPool[sizeof(struct CDacStringPoolSizes)];
@@ -378,12 +379,12 @@ const struct MagicAndBlob Blob = {
         .Directory = {
             .FlagsAndBaselineStart = offsetof(struct BinaryBlobDataDescriptor, PlatformFlags),
             .TypesStart = offsetof(struct BinaryBlobDataDescriptor, Types),
-            .FieldPoolStart = offsetof(struct BinaryBlobDataDescriptor, FieldPool),
+            .FieldsPoolStart = offsetof(struct BinaryBlobDataDescriptor, FieldsPool),
             .GlobalLiteralValuesStart = offsetof(struct BinaryBlobDataDescriptor, GlobalLiteralValues),
             .GlobalPointersStart = offsetof(struct BinaryBlobDataDescriptor, GlobalPointerValues),
-            .NamesStart = offsetof(struct BinaryBlobDataDescriptor, NamesPool),
+            .NamesPoolStart = offsetof(struct BinaryBlobDataDescriptor, NamesPool),
             .TypeCount = CDacBlobTypesCount,
-            .FieldPoolCount = CDacBlobFieldPoolCount,
+            .FieldsPoolCount = CDacBlobFieldsPoolCount,
             .GlobalLiteralValuesCount = CDacBlobGlobalLiteralsCount,
             .GlobalPointerValuesCount = CDacBlobGlobalPointersCount,
             .NamesPoolCount = sizeof(struct CDacStringPoolSizes),
@@ -425,7 +426,7 @@ const struct MagicAndBlob Blob = {
 #undef CDAC_GLOBALS_END
                   ),
 
-        .FieldPool = {
+        .FieldsPool = {
 #define CDAC_BASELINE(name) {0,},
 #define CDAC_TYPES_BEGIN()
 #define CDAC_TYPE_BEGIN(name)
