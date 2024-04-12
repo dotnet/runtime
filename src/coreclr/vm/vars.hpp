@@ -203,6 +203,7 @@ template <class T>
 class REF : public OBJECTREF
 {
     public:
+        REF() = default;
         using OBJECTREF::OBJECTREF;
 
         //-------------------------------------------------------------

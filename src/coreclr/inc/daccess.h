@@ -899,10 +899,11 @@ public:
         return m_addr == 0;
     }
 
-    explicit operator bool() const
-    {
-        return m_addr != 0;
-    }
+    // We'd like to have an explicit conversion to bool here since the C++
+    // standard says all pointer types are implicitly converted to bool.
+    // Unfortunately, that would cause ambiguous overload errors for uses
+    // of operator== and operator!= with NULL on MSVC (where NULL is a 32-bit int on all platforms).
+    // Instead callers will have to compare directly against NULL.
 
     bool operator==(TADDR addr) const
     {
@@ -968,6 +969,8 @@ public:
     using DPtrType = DPtrTemplate<type>;
 
     using __TPtrBase::__TPtrBase;
+
+    __DPtrBase() = default;
 
     explicit __DPtrBase(__TPtrBase ptr) : __TPtrBase(ptr.GetAddr()) {}
     
@@ -1213,6 +1216,8 @@ class __DPtr : public __DPtrBase<type,__DPtr>
 public:
     using __DPtrBase<type,__DPtr>::__DPtrBase;
 
+    __DPtr() = default;
+
     // construct from GlobalPtr
     explicit __DPtr(__GlobalPtr< type*, __DPtr< type > > globalPtr) :
         __DPtrBase<type,__DPtr>(globalPtr.GetAddr()) {}
@@ -1243,6 +1248,8 @@ class __ArrayDPtr : public __DPtrBase<type,__ArrayDPtr>
 public:
     using __DPtrBase<type,__ArrayDPtr>::__DPtrBase;
 
+    __ArrayDPtr() = default;
+
     // We delete the base type's constructor from host pointer.
     // Going this direction is less problematic, but often still represents risky coding.
     explicit __ArrayDPtr(type const * host) = delete;
@@ -1263,6 +1270,8 @@ public:
     typedef type* _Ptr;
 
     using __TPtrBase::__TPtrBase;
+
+    __SPtr() = default;
 
     explicit __SPtr(__TPtrBase ptr) : __TPtrBase(ptr.GetAddr()) {}
 
@@ -1351,6 +1360,8 @@ public:
 
     using __TPtrBase::__TPtrBase;
 
+    __VPtr() = default;
+
     explicit __VPtr(__TPtrBase ptr) : __TPtrBase(ptr.GetAddr()) {}
 
     explicit __VPtr(type* host)
@@ -1414,6 +1425,8 @@ public:
 
     using __DPtr<char>::__DPtr;
 
+    __Str8Ptr() = default;
+
     explicit __Str8Ptr(type* host)
     {
         m_addr = DacGetTargetAddrForHostAddr(host, true);
@@ -1459,6 +1472,8 @@ public:
     typedef type* _Ptr;
 
     using __DPtr<WCHAR>::__DPtr;
+
+    __Str16Ptr() = default;
 
     explicit __Str16Ptr(type* host)
     {
@@ -1725,6 +1740,8 @@ class __VoidPtr : public __TPtrBase
 {
 public:
     using __TPtrBase::__TPtrBase;
+
+    __VoidPtr() = default;
 
     // Note, unlike __DPtr, this ctor form is not explicit.  We allow implicit
     // conversions from any pointer type (just like for void*).
