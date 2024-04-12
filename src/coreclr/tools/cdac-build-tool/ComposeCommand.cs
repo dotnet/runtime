@@ -2,19 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers.Binary;
-using System.Collections.Generic;
 using System.CommandLine;
-using System.CommandLine.Help;
-using System.CommandLine.Parsing;
-using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.Diagnostics.DataContract.BuildTool;
 
-internal class ComposeCommand : CliCommand
+internal sealed class ComposeCommand : CliCommand
 {
     private readonly CliArgument<string[]> inputFiles = new("INPUT [INPUTS...]") { Arity = ArgumentArity.OneOrMore, Description = "One or more input files" };
     private readonly CliOption<string> outputFile = new("-o") { Arity = ArgumentArity.ExactlyOne, HelpName = "OUTPUT", Required = true, Description = "Output file" };
@@ -51,7 +45,7 @@ internal class ComposeCommand : CliCommand
         foreach (var input in inputs)
         {
             token.ThrowIfCancellationRequested();
-            if (!await scraper.ScrapeInput(input, token))
+            if (!await scraper.ScrapeInput(input, token).ConfigureAwait(false))
             {
                 Console.Error.WriteLine($"could not scrape payload in {input}");
                 return 1;
@@ -62,7 +56,7 @@ internal class ComposeCommand : CliCommand
             var contractReader = new ContractReader(builder);
             foreach (var contract in contracts)
             {
-                if (!await contractReader.ParseContracts(contract, token))
+                if (!await contractReader.ParseContracts(contract, token).ConfigureAwait(false))
                 {
                     Console.Error.WriteLine($"could not parse contracts in {contract}");
                     return 1;
@@ -82,11 +76,11 @@ internal class ComposeCommand : CliCommand
         emitter.SetPointerDataCount(model.PointerDataCount);
         emitter.SetJsonDescriptor(model.ToJson());
         emitter.Emit(writer);
-        await writer.FlushAsync(token);
+        await writer.FlushAsync(token).ConfigureAwait(false);
         return 0;
     }
 
-    private void EnsureDirectoryExists(string outputPath)
+    private static void EnsureDirectoryExists(string outputPath)
     {
         var directory = System.IO.Path.GetDirectoryName(outputPath);
         if (directory == null)

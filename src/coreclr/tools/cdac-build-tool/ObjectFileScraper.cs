@@ -28,7 +28,7 @@ public class ObjectFileScraper
 
     public async Task<bool> ScrapeInput(string inputPath, CancellationToken token)
     {
-        var bytes = await File.ReadAllBytesAsync(inputPath, token);
+        var bytes = await File.ReadAllBytesAsync(inputPath, token).ConfigureAwait(false);
         if (!ScraperState.FindMagic(bytes, out var state))
         {
             return false;
@@ -45,7 +45,7 @@ public class ObjectFileScraper
         return true;
     }
 
-    class ScraperState
+    private sealed class ScraperState
     {
         public ReadOnlyMemory<byte> Data { get; }
         public bool LittleEndian { get; }
@@ -145,7 +145,7 @@ public class ObjectFileScraper
     }
 
 
-    struct HeaderDirectory
+    private struct HeaderDirectory
     {
         public uint FlagsAndBaselineStart;
         public uint TypesStart;
@@ -170,7 +170,7 @@ public class ObjectFileScraper
         public byte GlobalPointerSpecSize;
     };
 
-    private void DumpHeaderDirectory(HeaderDirectory headerDirectory)
+    private static void DumpHeaderDirectory(HeaderDirectory headerDirectory)
     {
         Console.WriteLine($"Baseline Start = {headerDirectory.FlagsAndBaselineStart}");
         Console.WriteLine($"Types Start = {headerDirectory.TypesStart}");
@@ -184,12 +184,7 @@ public class ObjectFileScraper
         Console.WriteLine($"GlobalPointerValuesCount = {headerDirectory.GlobalPointerValuesCount}");
     }
 
-    private uint Swap(bool isLittleEndian, uint value) => (isLittleEndian == BitConverter.IsLittleEndian) ? value : BinaryPrimitives.ReverseEndianness(value);
-    private ushort Swap(bool isLittleEndian, ushort value) => (isLittleEndian == BitConverter.IsLittleEndian) ? value : BinaryPrimitives.ReverseEndianness(value);
-    private ulong Swap(bool isLittleEndian, ulong value) => (isLittleEndian == BitConverter.IsLittleEndian) ? value : BinaryPrimitives.ReverseEndianness(value);
-
-
-    private HeaderDirectory ReadHeader(ScraperState state)
+    private static HeaderDirectory ReadHeader(ScraperState state)
     {
         state.ResetPosition(state.HeaderStart);
         var baselineStart = state.ReadUInt32();
@@ -237,14 +232,14 @@ public class ObjectFileScraper
         };
     }
 
-    struct TypeSpec
+    private struct TypeSpec
     {
         public uint NameIdx;
         public uint FieldsIdx;
         public ushort Size;
     }
 
-    struct FieldSpec
+    private struct FieldSpec
     {
         public uint NameIdx;
         public uint TypeNameIdx;
@@ -252,27 +247,27 @@ public class ObjectFileScraper
     }
 
     // Like a FieldSpec but with names resolved
-    struct FieldEntry
+    private struct FieldEntry
     {
         public string Name;
         public string Type;
         public ushort Offset;
     }
 
-    struct GlobalLiteralSpec
+    private struct GlobalLiteralSpec
     {
         public uint NameIdx;
         public uint TypeNameIdx;
         public ulong Value;
     }
 
-    struct GlobalPointerSpec
+    private struct GlobalPointerSpec
     {
         public uint NameIdx;
         public uint AuxDataIdx;
     }
 
-    class Content
+    private sealed class Content
     {
         public required bool Verbose {get; init; }
         public required uint PlatformFlags { get; init; }
@@ -318,7 +313,7 @@ public class ObjectFileScraper
                 var typeBuilder = builder.AddOrUpdateType(typeName, typeSpec.Size);
                 uint j = typeSpec.FieldsIdx; // convert byte offset to index;
                 WriteVerbose($"Type {typeName} has fields starting at index {j}");
-                while (j < fields.Length && !String.IsNullOrEmpty(fields[j].Name))
+                while (j < fields.Length && !string.IsNullOrEmpty(fields[j].Name))
                 {
                     typeBuilder.AddOrUpdateField(fields[j].Name, fields[j].Type, fields[j].Offset);
                     WriteVerbose($"Type {typeName} has field {fields[j].Name} with offset {fields[j].Offset}");
@@ -417,7 +412,7 @@ public class ObjectFileScraper
         return typeSpecs;
     }
 
-    private FieldSpec[] ReadFieldSpecs(ScraperState state, HeaderDirectory header)
+    private static FieldSpec[] ReadFieldSpecs(ScraperState state, HeaderDirectory header)
     {
         state.ResetPosition(state.HeaderStart + (long)header.FieldPoolStart);
         FieldSpec[] fieldSpecs = new FieldSpec[header.FieldPoolCount];
@@ -439,7 +434,7 @@ public class ObjectFileScraper
         return fieldSpecs;
     }
 
-    private GlobalLiteralSpec[] ReadGlobalLiteralSpecs(ScraperState state, HeaderDirectory header)
+    private static GlobalLiteralSpec[] ReadGlobalLiteralSpecs(ScraperState state, HeaderDirectory header)
     {
         GlobalLiteralSpec[] globalSpecs = new GlobalLiteralSpec[header.GlobalLiteralValuesCount];
         state.ResetPosition(state.HeaderStart + (long)header.GlobalLiteralValuesStart);
@@ -461,7 +456,7 @@ public class ObjectFileScraper
         return globalSpecs;
     }
 
-    private GlobalPointerSpec[] ReadGlobalPointerSpecs(ScraperState state, HeaderDirectory header)
+    private static GlobalPointerSpec[] ReadGlobalPointerSpecs(ScraperState state, HeaderDirectory header)
     {
         GlobalPointerSpec[] globalSpecs = new GlobalPointerSpec[header.GlobalPointerValuesCount];
         state.ResetPosition(state.HeaderStart + (long)header.GlobalPointersStart);
@@ -481,7 +476,7 @@ public class ObjectFileScraper
         return globalSpecs;
     }
 
-    private byte[] ReadNamesPool(ScraperState state, HeaderDirectory header)
+    private static byte[] ReadNamesPool(ScraperState state, HeaderDirectory header)
     {
         byte[] namesPool = new byte[header.NamesPoolCount];
         state.ResetPosition(state.HeaderStart + (long)header.NamesStart);
@@ -489,7 +484,7 @@ public class ObjectFileScraper
         return namesPool;
     }
 
-    private bool CheckEndMagic(ReadOnlySpan<byte> bytes)
+    private static bool CheckEndMagic(ReadOnlySpan<byte> bytes)
     {
         return (bytes[0] == 0x01 && bytes[1] == 0x02 && bytes[2] == 0x03 && bytes[3] == 0x04);
     }

@@ -10,17 +10,10 @@
     <OutputPath>$(RuntimeBinDir)/cdac-build-tool</OutputPath>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
-    <IsPackable>true</IsPackable>
-    <PackAsTool>true</PackAsTool>
-    <ToolCommandName>cdac-build-tool</ToolCommandName>
-    <PackagedShimOutputRootDirectory>$(OutputPath)</PackagedShimOutputRootDirectory>
-    <IsShipping>false</IsShipping> <!-- This tool is an implementatino detail of the build process, it does not ship -->
+    <IsPackable>false</IsPackable>
+    <IsShipping>false</IsShipping> <!-- This tool is an implementation detail of the build process, it does not ship -->
     <Description>.NET runtime data contract build tool</Description>
-    <PackageTags>Diagnostics</PackageTags>
-    <PackageReleaseNotes>$(Description)</PackageReleaseNotes>
     <RootNamespace>Microsoft.DotNet.Diagnostics.DataContract</RootNamespace>
-    <RollForward>Major</RollForward>
-    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>

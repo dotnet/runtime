@@ -24,12 +24,12 @@ public partial class ContractDescriptorSourceFileEmitter
     [GeneratedRegex("%%([a-zA-Z0-9_]+)%%", RegexOptions.CultureInvariant)]
     private static partial Regex FindTemplateSigilRegex();
 
-    internal Stream GetTemplateStream()
+    internal static Stream GetTemplateStream()
     {
         return typeof(ContractDescriptorSourceFileEmitter).Assembly.GetManifestResourceStream(TemplateResourceName)!;
     }
 
-    internal string GetTemplateString()
+    internal static string GetTemplateString()
     {
         using var reader = new StreamReader(GetTemplateStream(), System.Text.Encoding.UTF8);
         return reader.ReadToEnd();
@@ -45,9 +45,7 @@ public partial class ContractDescriptorSourceFileEmitter
         Elements[PlatformFlags] = $"0x{platformFlags:x8}";
     }
 
-    // The string should be C escaped
-    // The length should be the length of the unescaped string
-    // FIXME: move the escaping here.
+    /// <remarks>The jsonDescriptor should not be C escaped</remarks>
     public void SetJsonDescriptor(string jsonDescriptor)
     {
         var count = jsonDescriptor.Length; // return the length before escaping
@@ -59,7 +57,7 @@ public partial class ContractDescriptorSourceFileEmitter
     [GeneratedRegex("(\")", RegexOptions.CultureInvariant)]
     private static partial Regex CStringEscape();
 
-    public Dictionary<string,string> Elements {get; } = new();
+    public Dictionary<string, string> Elements { get; } = new();
 
     public void Emit(TextWriter dest)
     {

@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,7 +26,7 @@ public partial class ContractReader
         using var reader = new StreamReader(s, System.Text.Encoding.UTF8);
         while (true)
         {
-            var line = await reader.ReadLineAsync(token);
+            var line = await reader.ReadLineAsync(token).ConfigureAwait(false);
             if (line == null)
             {
                 break;

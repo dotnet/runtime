@@ -2,11 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 
 namespace Microsoft.DotNet.Diagnostics.DataContract.BuildTool;
@@ -38,7 +35,7 @@ public partial class EmbeddedBaselines
         return baselineNames.ToArray();
     }
 
-    private static readonly Lazy<IReadOnlyList<string>> _baselineNames = new(() => GetBaselineNames());
+    private static readonly Lazy<IReadOnlyList<string>> _baselineNames = new(GetBaselineNames);
     public static IReadOnlyList<string> BaselineNames => _baselineNames.Value;
 
     public static string GetBaselineContent(string name)

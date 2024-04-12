@@ -3,8 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -333,7 +331,7 @@ public class DataDescriptorModel
             }
         }
     }
-    class FieldBuilder
+    internal sealed class FieldBuilder
     {
         private string _type = string.Empty;
         private int? _offset;
@@ -386,7 +384,7 @@ public class DataDescriptorModel
     }
 
 
-    public readonly struct GlobalValue
+    public readonly struct GlobalValue : IEquatable<GlobalValue>
     {
         public bool Indirect { get; private init; }
         public ulong Value { get; }
@@ -397,6 +395,7 @@ public class DataDescriptorModel
         public static bool operator ==(GlobalValue left, GlobalValue right) => left.Value == right.Value && left.Indirect == right.Indirect;
         public static bool operator !=(GlobalValue left, GlobalValue right) => !(left == right);
 
+        public bool Equals(GlobalValue other) => this == other;
         public override bool Equals(object? obj) => obj is GlobalValue value && this == value;
         public override int GetHashCode() => HashCode.Combine(Value, Indirect);
         public override string ToString() => Indirect ? $"Indirect({Value})" : $"0x{Value:x}";
