@@ -13,7 +13,7 @@ namespace Microsoft.Diagnostics.DataContractReader;
 ///   A parser for the JSON representation of a contract descriptor.
 /// </summary>
 /// <remarks>
-/// See docs/design/datacontracts/data_descriptor.md for the format
+/// <see href="https://github.com/dotnet/runtime/blob/main/docs/design/datacontracts/data_descriptor.md">See design doc</see> for the format.
 /// </remarks>
 public partial class ContractDescriptorParser
 {
