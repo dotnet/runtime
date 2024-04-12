@@ -99,7 +99,6 @@ public class ObjectFileScraper
         public ushort GetUInt16(long offset) => LittleEndian ? BinaryPrimitives.ReadUInt16LittleEndian(Data.Span.Slice((int)offset)) : BinaryPrimitives.ReadUInt16BigEndian(Data.Span.Slice((int)offset));
         public byte GetByte(long offset) => Data.Span[(int)offset];
 
-
         public void GetBytes(long offset, Span<byte> buffer) => Data.Span.Slice((int)offset, buffer.Length).CopyTo(buffer);
 
         public void ResetPosition(long position)
@@ -143,7 +142,6 @@ public class ObjectFileScraper
             _position += count;
         }
     }
-
 
     private struct HeaderDirectory
     {

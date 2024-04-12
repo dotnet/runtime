@@ -23,7 +23,6 @@ internal sealed class ComposeCommand : CliCommand
         SetAction(Run);
     }
 
-
     private async Task<int> Run(ParseResult parse, CancellationToken token = default)
     {
         var inputs = parse.GetValue(inputFiles);

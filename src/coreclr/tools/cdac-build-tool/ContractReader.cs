@@ -7,12 +7,10 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-
 namespace Microsoft.DotNet.Diagnostics.DataContract.BuildTool;
 
 public partial class ContractReader
 {
-
     private readonly DataDescriptorModel.Builder _builder;
 
     public ContractReader(DataDescriptorModel.Builder builder)
