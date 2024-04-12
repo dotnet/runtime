@@ -8,11 +8,13 @@
 
 class CDAC final
 {
-public:
+public: // static
     static CDAC* Create(uint64_t descriptorAddr, ICorDebugDataTarget *pDataTarget);
 
 public:
     ~CDAC();
+
+    // This does not AddRef the returned interface
     IUnknown* SosInterface();
     int ReadFromTarget(uint64_t addr, uint8_t* dest, uint32_t count);
 

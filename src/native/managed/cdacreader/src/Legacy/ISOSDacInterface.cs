@@ -7,6 +7,9 @@ using System.Runtime.InteropServices.Marshalling;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
+// This file contains managed declarations for the SOS-DAC interfaces.
+// See src/coreclr/inc/sospriv.idl
+
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
 internal struct DacpThreadStoreData
 {
@@ -45,6 +48,9 @@ internal struct DacpThreadData
 [Guid("436f00f2-b42a-4b9f-870c-e73db66ae930")]
 internal unsafe partial interface ISOSDacInterface
 {
+    // All functions are explicitly PreserveSig so that we can just return E_NOTIMPL instead of throwing
+    // as the cDAC slowly replaces parts of the DAC.
+
     // ThreadStore
     [PreserveSig]
     int GetThreadStoreData(DacpThreadStoreData* data);

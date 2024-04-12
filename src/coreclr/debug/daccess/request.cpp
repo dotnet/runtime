@@ -39,7 +39,6 @@ typedef DPTR(InteropLib::ABI::ManagedObjectWrapperLayout) PTR_ManagedObjectWrapp
 #include "request_common.h"
 
 #include "cdac.h"
-#include "wrappers.h"
 
 // GC headers define these to EE-specific stuff that we don't want.
 #undef EnterCriticalSection
@@ -304,6 +303,7 @@ HRESULT ClrDataAccess::GetThreadStoreData(struct DacpThreadStoreData *threadStor
 
     if (m_cdacSos != NULL)
     {
+        // Try the cDAC first - it will return E_NOTIMPL if it doesn't support this method yet. Fall back to the DAC.
         hr = m_cdacSos->GetThreadStoreData(threadStoreData);
         if (FAILED(hr))
         {
