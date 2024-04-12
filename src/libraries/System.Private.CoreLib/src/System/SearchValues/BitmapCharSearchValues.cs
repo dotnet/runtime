@@ -1,34 +1,55 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Buffers
 {
-    internal sealed class Latin1CharSearchValues : SearchValues<char>
+    internal sealed class BitmapCharSearchValues : SearchValues<char>
     {
-        private readonly BitVector256 _lookup;
+        private readonly uint[] _bitmap;
 
-        public Latin1CharSearchValues(ReadOnlySpan<char> values)
+        public BitmapCharSearchValues(ReadOnlySpan<char> values, int maxInclusive)
         {
+            Debug.Assert(maxInclusive <= char.MaxValue);
+
+            _bitmap = new uint[maxInclusive / 32 + 1];
+
             foreach (char c in values)
             {
-                if (c > 255)
-                {
-                    // The values were modified concurrent with the call to SearchValues.Create
-                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
-                }
-
-                _lookup.Set(c);
+                _bitmap[c >> 5] |= 1u << c;
             }
         }
 
-        internal override char[] GetValues() => _lookup.GetCharValues();
+        internal override char[] GetValues()
+        {
+            var chars = new List<char>();
+            uint[] bitmap = _bitmap;
+
+            for (int i = 0; i < _bitmap.Length * 32; i++)
+            {
+                if (Contains(bitmap, i))
+                {
+                    chars.Add((char)i);
+                }
+            }
+
+            return chars.ToArray();
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override bool ContainsCore(char value) =>
-            _lookup.Contains256(value);
+            Contains(_bitmap, value);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool Contains(uint[] bitmap, int value)
+        {
+            uint offset = (uint)(value >> 5);
+            return offset < (uint)bitmap.Length && (bitmap[offset] & (1u << value)) != 0;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAny(ReadOnlySpan<char> span) =>
@@ -51,11 +72,12 @@ namespace System.Buffers
         {
             ref char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
             ref char cur = ref searchSpace;
+            uint[] bitmap = _bitmap;
 
             while (!Unsafe.AreSame(ref cur, ref searchSpaceEnd))
             {
                 char c = cur;
-                if (TNegator.NegateIfNeeded(_lookup.Contains256(c)))
+                if (TNegator.NegateIfNeeded(Contains(bitmap, c)))
                 {
                     return (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref cur) / sizeof(char));
                 }
@@ -69,16 +91,18 @@ namespace System.Buffers
         private int LastIndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength)
             where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
         {
-            for (int i = searchSpaceLength - 1; i >= 0; i--)
+            uint[] bitmap = _bitmap;
+
+            while (--searchSpaceLength >= 0)
             {
-                char c = Unsafe.Add(ref searchSpace, i);
-                if (TNegator.NegateIfNeeded(_lookup.Contains256(c)))
+                char c = Unsafe.Add(ref searchSpace, searchSpaceLength);
+                if (TNegator.NegateIfNeeded(Contains(bitmap, c)))
                 {
-                    return i;
+                    break;
                 }
             }
 
-            return -1;
+            return searchSpaceLength;
         }
     }
 }
