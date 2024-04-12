@@ -130,12 +130,14 @@ address_of_value (dn_simdhash_buffers_t buffers, uint32_t value_slot_index)
 static DN_FORCEINLINE(int)
 DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T_PTR hash, bucket_t *restrict bucket, DN_SIMDHASH_KEY_T needle, dn_simdhash_search_vector search_vector)
 {
-#if defined(__wasm_simd128__)
-	// Perform an eager load of the vector on wasm
+#ifndef DN_SIMDHASH_USE_SCALAR_FALLBACK
+	// Perform an eager load of the vector if SIMD is in use, even though we do
+    //  byte loads to extract lanes on non-wasm platforms. It's faster on x64 for
+    //  a reason I can't identify, and it significantly improves wasm codegen
 	dn_simdhash_suffixes bucket_suffixes = bucket->suffixes;
 #else
-	// Load through the pointer instead; if we eager load the vector on x64 clang,
-	//  it does lane extraction via pshufd and stuff - the code is truly heinous
+	// Load through the pointer instead. An eager load just copies to the stack for
+    //  no good reason.
 	#define bucket_suffixes (bucket->suffixes)
 #endif
 	uint8_t count = dn_simdhash_extract_lane(bucket_suffixes, DN_SIMDHASH_COUNT_SLOT),
