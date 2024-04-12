@@ -87,7 +87,7 @@
                       GeneratePathProperty="true" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
+  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' or '$(MonoGenerateOffsetsOSGroups)' == 'browser'">
     <NodePkgVersion Condition="'$(HostOS)' == 'linux' and '$(BuildArchitecture)' == 'x64'">$(runtimelinuxx64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
     <NodePkgVersion Condition="'$(HostOS)' == 'linux' and '$(BuildArchitecture)' == 'arm64'">$(runtimelinuxarm64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
     <NodePkgVersion Condition="'$(HostOS)' == 'windows' and '$(BuildArchitecture)' == 'x64'">$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
@@ -107,7 +107,7 @@
     <EmsdkSdkVersion Condition="'$(HostOS)' == 'osx' and '$(BuildArchitecture)' == 'x64'">$(MicrosoftNETRuntimeEmscripten3134Sdkosxx64Version)</EmsdkSdkVersion>
     <EmsdkSdkVersion Condition="'$(HostOS)' == 'osx' and '$(BuildArchitecture)' == 'arm64'">$(MicrosoftNETRuntimeEmscripten3134Sdkosxarm64Version)</EmsdkSdkVersion>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(MonoGenerateOffsetsOSGroups)' == 'browser'">
     <PackageReference Include="Microsoft.NET.Runtime.Emscripten.3.1.34.Cache.$(_portableHostOS)-$(BuildArchitecture)"
                       PrivateAssets="all"
                       Version="$(EmsdkCacheVersion)"
