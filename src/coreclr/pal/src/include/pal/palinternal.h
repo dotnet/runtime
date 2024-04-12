@@ -426,6 +426,7 @@ function_name() to call the system's implementation
 #undef va_start
 #undef va_end
 #undef va_copy
+#undef va_arg
 #undef stdin
 #undef stdout
 #undef stderr
