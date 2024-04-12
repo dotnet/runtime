@@ -10,12 +10,16 @@ static void init_data () {
     random_u32s_hash = dn_simdhash_u32_ptr_new(INNER_COUNT, NULL);
     sequential_u32s = dn_vector_alloc(sizeof(uint32_t));
     random_u32s = dn_vector_alloc(sizeof(uint32_t));
+    // For consistent data between runs
+    srand(1);
 
     for (uint32_t i = 0; i < INNER_COUNT; i++) {
         dn_vector_push_back(sequential_u32s, i);
 
 retry: {
         uint32_t key = (uint32_t)(rand() & 0xFFFFFFFFu);
+        if (key == 0)
+            goto retry;
         if (!dn_simdhash_u32_ptr_try_add(random_u32s_hash, key, NULL))
             goto retry;
 
@@ -29,6 +33,15 @@ static void * create_instance_u32_ptr () {
         init_data();
 
     return dn_simdhash_u32_ptr_new(INNER_COUNT, NULL);
+}
+
+static void * create_instance_u32_ptr_random_values () {
+    dn_simdhash_u32_ptr_t *result = dn_simdhash_u32_ptr_new(INNER_COUNT, NULL);
+    for (int i = 0; i < INNER_COUNT; i++) {
+        uint32_t key = *dn_vector_index_t(random_u32s, uint32_t, i);
+        dn_simdhash_u32_ptr_try_add(result, key, (void *)(size_t)i);
+    }
+    return result;
 }
 
 static void destroy_instance (void *_data) {
@@ -54,7 +67,23 @@ MEASUREMENT(dn_clear_then_fill_sequential, dn_simdhash_u32_ptr_t *, create_insta
 MEASUREMENT(dn_clear_then_fill_random, dn_simdhash_u32_ptr_t *, create_instance_u32_ptr, destroy_instance, {
     dn_simdhash_clear(data);
     for (int i = 0; i < INNER_COUNT; i++) {
-        uint32_t key = *dn_vector_index_t(sequential_u32s, uint32_t, i);
+        uint32_t key = *dn_vector_index_t(random_u32s, uint32_t, i);
         dn_simdhash_u32_ptr_try_add(data, key, (void *)(size_t)i);
+    }
+})
+
+MEASUREMENT(dn_find_random_keys, dn_simdhash_u32_ptr_t *, create_instance_u32_ptr_random_values, destroy_instance, {
+    void *temp = NULL;
+    for (int i = 0; i < INNER_COUNT; i++) {
+        uint32_t key = *dn_vector_index_t(random_u32s, uint32_t, i);
+        dn_simdhash_assert(dn_simdhash_u32_ptr_try_get_value(data, key, &temp));
+    }
+})
+
+MEASUREMENT(dn_find_missing_key, dn_simdhash_u32_ptr_t *, create_instance_u32_ptr_random_values, destroy_instance, {
+    void *temp = NULL;
+    for (int i = 0; i < INNER_COUNT; i++) {
+        uint32_t key = *dn_vector_index_t(random_u32s, uint32_t, i);
+        dn_simdhash_assert(!dn_simdhash_u32_ptr_try_get_value(data, 0, &temp));
     }
 })

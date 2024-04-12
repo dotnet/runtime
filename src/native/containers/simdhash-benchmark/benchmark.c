@@ -2,6 +2,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <assert.h>
+#include <time.h>
 #include <sys/time.h>
 #include <strings.h>
 
@@ -33,10 +34,12 @@ dn_simdhash_assert_fail (const char *file, int line, const char *condition) {
     abort();
 }
 
+#define MTICKS_PER_SEC (10 * 1000 * 1000)
+
 int64_t get_100ns_ticks () {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return ((int64_t)tv.tv_sec * 1000000 + tv.tv_usec) * 10;
+    struct timespec ts;
+    dn_simdhash_assert(clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts) == 0);
+    return ((int64_t)ts.tv_sec * MTICKS_PER_SEC + ts.tv_nsec / 100);
 }
 
 void init_measurements () {
@@ -117,6 +120,8 @@ void foreach_measurement (const char *name, void *_info, void *_args) {
 
     if (necessary_iterations < 16)
         necessary_iterations = 16;
+    // HACK: Reduce minor variation in iteration count
+    necessary_iterations = next_power_of_two((uint32_t)necessary_iterations);
 
     printf(
         "Warmed %" PRId64 " time(s). Running %" PRId64 " iterations... ",
