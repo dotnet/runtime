@@ -12,6 +12,8 @@
 #include <stdint.h>
 #include <wchar.h>
 #include <stdio.h>
+#include <algorithm>
+#include <cmath>
 
 #include <windows.h>
 

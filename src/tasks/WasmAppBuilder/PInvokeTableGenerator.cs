@@ -179,7 +179,7 @@ internal sealed class PInvokeTableGenerator
         if (pinvoke.WasmLinkage)
         {
             // We mangle the name to avoid collisions with symbols in other modules
-            return _fixupSymbolName($"{pinvoke.Module}_{pinvoke.EntryPoint}");
+            return _fixupSymbolName($"{pinvoke.Module}#{pinvoke.EntryPoint}");
         }
         return _fixupSymbolName(pinvoke.EntryPoint);
     }

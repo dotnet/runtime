@@ -3029,7 +3029,7 @@ HRESULT Debugger::GetILToNativeMappingIntoArrays(
     if (pDJI == NULL)
         return E_FAIL;
 
-    ULONG32 cMap = min(cMapMax, pDJI->GetSequenceMapCount());
+    ULONG32 cMap = min((ULONG32)cMapMax, pDJI->GetSequenceMapCount());
     DebuggerILToNativeMap * rgMapInt = pDJI->GetSequenceMap();
 
     NewArrayHolder<UINT> rguiILOffsetTemp = new (nothrow) UINT[cMap];

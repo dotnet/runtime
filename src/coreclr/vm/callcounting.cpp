@@ -664,7 +664,7 @@ bool CallCountingManager::SetCodeEntryPoint(
             // direct calls in codegen and they need to be promoted earlier than their callers.
             if (methodDesc->GetMethodTable() == g_pCastHelpers)
             {
-                callCountThreshold = max(1, (CallCount)(callCountThreshold / 2));
+                callCountThreshold = max<CallCount>(1, (CallCount)(callCountThreshold / 2));
             }
 
             NewHolder<CallCountingInfo> callCountingInfoHolder = new CallCountingInfo(activeCodeVersion, callCountThreshold);

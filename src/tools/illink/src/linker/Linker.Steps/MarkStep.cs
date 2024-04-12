@@ -405,7 +405,7 @@ namespace Mono.Linker.Steps
 
 			if (type.HasEvents) {
 				foreach (var ev in type.Events) {
-					MarkEventVisibleToReflection (ev, new DependencyInfo (DependencyKind.MemberOfType, type), ScopeStack.CurrentScope.Origin);
+					MarkEventVisibleToReflection (ev, new DependencyInfo (DependencyKind.MemberOfType, ScopeStack.CurrentScope.Origin), ScopeStack.CurrentScope.Origin);
 				}
 			}
 		}
@@ -3325,6 +3325,7 @@ namespace Mono.Linker.Steps
 			case DependencyKind.AlreadyMarked:
 			case DependencyKind.TypePreserve:
 			case DependencyKind.PreservedMethod:
+			case DependencyKind.DynamicallyAccessedMemberOnType:
 				return parentDependencyKind;
 
 			default:
@@ -3583,15 +3584,15 @@ namespace Mono.Linker.Steps
 			if (!Annotations.MarkProcessed (evt, reason))
 				return;
 
+			var origin = reason.Source is IMemberDefinition member ? new MessageOrigin (member) : ScopeStack.CurrentScope.Origin;
+			DependencyKind dependencyKind = PropagateDependencyKindToAccessors (reason.Kind, DependencyKind.EventMethod);
+			MarkMethodIfNotNull (evt.AddMethod, new DependencyInfo (dependencyKind, evt), origin);
+			MarkMethodIfNotNull (evt.InvokeMethod, new DependencyInfo (dependencyKind, evt), origin);
+			MarkMethodIfNotNull (evt.RemoveMethod, new DependencyInfo (dependencyKind, evt), origin);
+
 			using var eventScope = ScopeStack.PushLocalScope (new MessageOrigin (evt));
 
 			MarkCustomAttributes (evt, new DependencyInfo (DependencyKind.CustomAttribute, evt));
-
-			DependencyKind dependencyKind = PropagateDependencyKindToAccessors (reason.Kind, DependencyKind.EventMethod);
-			MarkMethodIfNotNull (evt.AddMethod, new DependencyInfo (dependencyKind, evt), ScopeStack.CurrentScope.Origin);
-			MarkMethodIfNotNull (evt.InvokeMethod, new DependencyInfo (dependencyKind, evt), ScopeStack.CurrentScope.Origin);
-			MarkMethodIfNotNull (evt.RemoveMethod, new DependencyInfo (dependencyKind, evt), ScopeStack.CurrentScope.Origin);
-
 			DoAdditionalEventProcessing (evt);
 		}
 

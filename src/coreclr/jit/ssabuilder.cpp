@@ -783,7 +783,6 @@ void SsaBuilder::AddDefToEHSuccessorPhis(BasicBlock* block, unsigned lclNum, uns
         assert(phiFound);
 
         return BasicBlockVisit::Continue;
-
     });
 }
 
@@ -1243,7 +1242,9 @@ void SsaBuilder::RenameVariables()
 
     public:
         SsaRenameDomTreeVisitor(Compiler* compiler, SsaBuilder* builder, SsaRenameState* renameStack)
-            : DomTreeVisitor(compiler), m_builder(builder), m_renameStack(renameStack)
+            : DomTreeVisitor(compiler)
+            , m_builder(builder)
+            , m_renameStack(renameStack)
         {
         }
 
