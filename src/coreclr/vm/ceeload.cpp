@@ -747,11 +747,6 @@ void Module::Destruct()
         delete m_debuggerSpecificData.m_pDynamicILBlobTable;
     }
 
-    if (m_debuggerSpecificData.m_pTemporaryILBlobTable)
-    {
-        delete m_debuggerSpecificData.m_pTemporaryILBlobTable;
-    }
-
     if (m_debuggerSpecificData.m_pILOffsetMappingTable)
     {
         for (ILOffsetMappingTable::Iterator pCurElem = m_debuggerSpecificData.m_pILOffsetMappingTable->Begin(),
@@ -951,26 +946,26 @@ void Module::BuildStaticsOffsets(AllocMemTracker *pamTracker)
                     case ELEMENT_TYPE_I2:
                     case ELEMENT_TYPE_U2:
                     case ELEMENT_TYPE_CHAR:
-                        dwAlignment[kk] =  max(2, dwAlignment[kk]);
+                        dwAlignment[kk] =  max<DWORD>(2, dwAlignment[kk]);
                         dwClassNonGCBytes[kk] += 2;
                         break;
                     case ELEMENT_TYPE_I4:
                     case ELEMENT_TYPE_U4:
                     case ELEMENT_TYPE_R4:
-                        dwAlignment[kk] =  max(4, dwAlignment[kk]);
+                        dwAlignment[kk] =  max<DWORD>(4, dwAlignment[kk]);
                         dwClassNonGCBytes[kk] += 4;
                         break;
                     case ELEMENT_TYPE_FNPTR:
                     case ELEMENT_TYPE_PTR:
                     case ELEMENT_TYPE_I:
                     case ELEMENT_TYPE_U:
-                        dwAlignment[kk] =  max((1 << LOG2_PTRSIZE), dwAlignment[kk]);
+                        dwAlignment[kk] =  max<DWORD>((1 << LOG2_PTRSIZE), dwAlignment[kk]);
                         dwClassNonGCBytes[kk] += (1 << LOG2_PTRSIZE);
                         break;
                     case ELEMENT_TYPE_I8:
                     case ELEMENT_TYPE_U8:
                     case ELEMENT_TYPE_R8:
-                        dwAlignment[kk] =  max(8, dwAlignment[kk]);
+                        dwAlignment[kk] =  max<DWORD>(8, dwAlignment[kk]);
                         dwClassNonGCBytes[kk] += 8;
                         break;
                     case ELEMENT_TYPE_VAR:
@@ -994,7 +989,7 @@ void Module::BuildStaticsOffsets(AllocMemTracker *pamTracker)
                         {
                             // We'll have to be pessimistic here
                             dwClassNonGCBytes[kk] += MAX_PRIMITIVE_FIELD_SIZE;
-                            dwAlignment[kk] = max(MAX_PRIMITIVE_FIELD_SIZE, dwAlignment[kk]);
+                            dwAlignment[kk] = max<DWORD>(MAX_PRIMITIVE_FIELD_SIZE, dwAlignment[kk]);
 
                             dwClassGCHandles[kk]  += 1;
                             break;
@@ -1233,13 +1228,10 @@ void Module::InitializeDynamicILCrst()
 //     Input:
 //         token        method token
 //         blobAddress  address of the start of the IL blob address, including the header
-//         fTemporaryOverride
-//                      is this a permanent override that should go in the
-//                      DynamicILBlobTable, or a temporary one?
 //     Output: not explicit, but if the pair was not already in the table it will be added.
 //             Does not add duplicate tokens to the table.
 
-void Module::SetDynamicIL(mdToken token, TADDR blobAddress, BOOL fTemporaryOverride)
+void Module::SetDynamicIL(mdToken token, TADDR blobAddress)
 {
     DynamicILBlobEntry entry = {mdToken(token), TADDR(blobAddress)};
 
@@ -1252,16 +1244,12 @@ void Module::SetDynamicIL(mdToken token, TADDR blobAddress, BOOL fTemporaryOverr
 
     CrstHolder ch(m_debuggerSpecificData.m_pDynamicILCrst);
 
-    // Figure out which table to fill in
-    PTR_DynamicILBlobTable &table(fTemporaryOverride ? m_debuggerSpecificData.m_pTemporaryILBlobTable
-                                                     : m_debuggerSpecificData.m_pDynamicILBlobTable);
-
     // Lazily allocate the hash table.
-    if (table == NULL)
+    if (m_debuggerSpecificData.m_pDynamicILBlobTable == NULL)
     {
-        table = PTR_DynamicILBlobTable(new DynamicILBlobTable);
+        m_debuggerSpecificData.m_pDynamicILBlobTable = PTR_DynamicILBlobTable(new DynamicILBlobTable);
     }
-    table->AddOrReplace(entry);
+    m_debuggerSpecificData.m_pDynamicILBlobTable->AddOrReplace(entry);
 }
 
 #endif // !DACCESS_COMPILE
@@ -1273,7 +1261,7 @@ void Module::SetDynamicIL(mdToken token, TADDR blobAddress, BOOL fTemporaryOverr
 //         fAllowTemporary also check the temporary overrides
 // Return Value: starting (target) address of the IL blob corresponding to the input token
 
-TADDR Module::GetDynamicIL(mdToken token, BOOL fAllowTemporary)
+TADDR Module::GetDynamicIL(mdToken token)
 {
     SUPPORTS_DAC;
 
@@ -1288,19 +1276,8 @@ TADDR Module::GetDynamicIL(mdToken token, BOOL fAllowTemporary)
     CrstHolder ch(m_debuggerSpecificData.m_pDynamicILCrst);
 #endif
 
-    // Both hash tables are lazily allocated, so if they're NULL
+    // The hash table is lazily allocated, so if it is NULL
     // then we have no IL blobs
-
-    if (fAllowTemporary && m_debuggerSpecificData.m_pTemporaryILBlobTable != NULL)
-    {
-        DynamicILBlobEntry entry = m_debuggerSpecificData.m_pTemporaryILBlobTable->Lookup(token);
-
-        // Only return a value if the lookup succeeded
-        if (!DynamicILBlobTraits::IsNull(entry))
-        {
-            return entry.m_il;
-        }
-    }
 
     if (m_debuggerSpecificData.m_pDynamicILBlobTable == NULL)
     {
@@ -1555,7 +1532,7 @@ DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
 
     if (newId >= m_maxDynamicEntries)
     {
-        SIZE_T maxDynamicEntries = max(16, m_maxDynamicEntries);
+        SIZE_T maxDynamicEntries = max<SIZE_T>(16, m_maxDynamicEntries);
         while (maxDynamicEntries <= newId)
         {
             maxDynamicEntries *= 2;

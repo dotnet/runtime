@@ -57,7 +57,6 @@ namespace Internal.ReadyToRunConstants
     [Flags]
     public enum ReadyToRunFieldSigFlags : byte
     {
-        READYTORUN_FIELD_SIG_IndexInsteadOfToken = 0x08,
         READYTORUN_FIELD_SIG_MemberRefToken = 0x10,
         READYTORUN_FIELD_SIG_OwnerType = 0x40,
     }

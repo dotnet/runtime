@@ -20,11 +20,6 @@ public unsafe class Test
     public unsafe static int Main(string[] args)
     {
         Console.WriteLine($"main: {args.Length}");
-        // workaround to force the interpreter to initialize wasm_native_to_interp_ftndesc for MyExport
-        if (args.Length > 10000) {
-            ((IntPtr)(delegate* unmanaged<int,int>)&MyExport).ToString();
-        }
-
         MyImport();
         return 0;
     }

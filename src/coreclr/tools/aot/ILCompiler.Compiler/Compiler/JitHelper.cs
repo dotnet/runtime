@@ -198,10 +198,10 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.DblRem:
-                    mangledName = "RhpDblRem";
+                    mangledName = "fmod";
                     break;
                 case ReadyToRunHelper.FltRem:
-                    mangledName = "RhpFltRem";
+                    mangledName = "fmodf";
                     break;
 
                 case ReadyToRunHelper.LMul:

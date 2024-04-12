@@ -2,7 +2,6 @@ parameters:
   archType: ''
   buildConfig: ''
   container: ''
-  dependOnEvaluatePaths: false
   dependsOn: []
   isOfficialBuild: false
   osGroup: ''
@@ -12,11 +11,13 @@ parameters:
   runtimeVariant: ''
   testGroup: ''
   timeoutInMinutes: ''
+  templatePath: 'templates'
   variables: {}
 
 jobs:
 - template: /eng/pipelines/common/templates/runtimes/xplat-job.yml
   parameters:
+    templatePath: ${{ parameters.templatePath }}
     archType: ${{ parameters.archType }}
     buildConfig: ${{ parameters.buildConfig }}
     container: ${{ parameters.container }}
@@ -27,7 +28,7 @@ jobs:
     pool: ${{ parameters.pool }}
     runtimeVariant: ${{ parameters.runtimeVariant }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+    logsName: WorkloadLogs_Attempt$(System.JobAttempt)
 
     dependsOn: ${{ parameters.dependsOn }}
 
@@ -82,6 +83,7 @@ jobs:
           IntermediateArtifacts/windows_arm64/Shipping/Microsoft.NETCore.App.Runtime.win-arm64*.nupkg
           IntermediateArtifacts/windows_x64/Shipping/Microsoft.NETCore.App.Runtime.win-x64*.nupkg
           IntermediateArtifacts/windows_x86/Shipping/Microsoft.NETCore.App.Runtime.win-x86*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Sdk.WebAssembly.Pack*.nupkg
 
     - task: CopyFiles@2
       displayName: Flatten packages
@@ -99,15 +101,6 @@ jobs:
     - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
       parameters:
         name: workloads
-
-    # Publish Logs
-    - task: PublishPipelineArtifact@1
-      displayName: Publish Logs
-      inputs:
-        targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'WorkloadLogs_Attempt$(System.JobAttempt)'
-      continueOnError: true
-      condition: always()
 
     # Delete wixpdb files before they are uploaded to artifacts
     - task: DeleteFiles@1
