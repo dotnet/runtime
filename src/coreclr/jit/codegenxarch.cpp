@@ -6132,7 +6132,7 @@ void CodeGen::genCall(GenTreeCall* call)
         // This needs to be here, rather than above where fPossibleSyncHelperCall is set,
         // so the GC state vars have been updated before creating the label.
 
-        if ((call->gtCallType == CT_HELPER) && (compiler->info.compFlags & CORINFO_FLG_SYNCH))
+        if (call->IsHelperCall() && (compiler->info.compFlags & CORINFO_FLG_SYNCH))
         {
             CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(call->gtCallMethHnd);
             noway_assert(helperNum != CORINFO_HELP_UNDEF);
@@ -6239,7 +6239,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
 #ifdef DEBUG
     // Pass the call signature information down into the emitter so the emitter can associate
     // native call sites with the signatures they were generated from.
-    if (call->gtCallType != CT_HELPER)
+    if (!call->IsHelperCall())
     {
         sigInfo = call->callSig;
     }
@@ -6439,10 +6439,10 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
         else
         {
             // Generate a direct call to a non-virtual user defined or helper method
-            assert(call->gtCallType == CT_HELPER || call->gtCallType == CT_USER_FUNC);
+            assert(call->IsHelperCall() || (call->gtCallType == CT_USER_FUNC));
 
             void* addr = nullptr;
-            if (call->gtCallType == CT_HELPER)
+            if (call->IsHelperCall())
             {
                 // Direct call to a helper method.
                 CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(methHnd);

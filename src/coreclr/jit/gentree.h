@@ -9987,7 +9987,7 @@ inline bool GenTree::IsCnsVec() const
 
 inline bool GenTree::IsHelperCall()
 {
-    return OperGet() == GT_CALL && AsCall()->gtCallType == CT_HELPER;
+    return OperGet() == GT_CALL && AsCall()->IsHelperCall();
 }
 
 inline var_types GenTree::CastFromType()

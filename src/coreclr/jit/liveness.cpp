@@ -262,7 +262,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
         {
             GenTreeCall* call    = tree->AsCall();
             bool         modHeap = true;
-            if (call->gtCallType == CT_HELPER)
+            if (call->IsHelperCall())
             {
                 CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
 

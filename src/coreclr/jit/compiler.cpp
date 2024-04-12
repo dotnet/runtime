@@ -8407,7 +8407,7 @@ void Compiler::compCallArgStats()
 
                 if (call->AsCall()->gtCallThisArg == nullptr)
                 {
-                    if (call->AsCall()->gtCallType == CT_HELPER)
+                    if (call->AsCall()->IsHelperCall())
                     {
                         argHelperCalls++;
                     }
