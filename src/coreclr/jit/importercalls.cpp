@@ -5173,10 +5173,10 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
             var_types tgtType = JitType2PreciseVarType(sig->retType);
             retType           = genActualType(retType);
-            bool      uns     = varTypeIsUnsigned(tgtType) && !varTypeIsSmall(tgtType);
+            bool uns          = varTypeIsUnsigned(tgtType) && !varTypeIsSmall(tgtType);
 
-            GenTree* res      = nullptr;
-            GenTree*  op1     = nullptr;
+            GenTree* res = nullptr;
+            GenTree* op1 = nullptr;
 
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
             if ((intrinsic == NI_PRIMITIVE_ConvertToIntegerNative) && IsBaselineSimdIsaSupported())

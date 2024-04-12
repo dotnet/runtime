@@ -21442,7 +21442,8 @@ GenTree* Compiler::gtNewSimdCvtNode(var_types   type,
         fixupVal = gtNewSimdCmpOpNode(GT_GE, type, fixupVal, maxVal, simdSourceBaseJitType, simdSize);
 
         // cast it
-        GenTree* castNode = gtNewSimdCvtNativeNode(type, fixupValDup, simdTargetBaseJitType, simdSourceBaseJitType, simdSize);
+        GenTree* castNode =
+            gtNewSimdCvtNativeNode(type, fixupValDup, simdTargetBaseJitType, simdSourceBaseJitType, simdSize);
 
         // use the fixupVal mask with input value and max value to blend
         return gtNewSimdCndSelNode(type, fixupVal, maxValDup, castNode, simdTargetBaseJitType, simdSize);
@@ -21481,8 +21482,8 @@ GenTree* Compiler::gtNewSimdCvtNativeNode(var_types   type,
 
 #if defined(TARGET_XARCH)
     assert(IsBaselineVector512IsaSupportedDebugOnly() ||
-           ((simdTargetBaseType == TYP_INT) && ((simdSize == 16) ||
-                                                (simdSize == 32 && compIsaSupportedDebugOnly(InstructionSet_AVX)))));
+           ((simdTargetBaseType == TYP_INT) &&
+            ((simdSize == 16) || (simdSize == 32 && compIsaSupportedDebugOnly(InstructionSet_AVX)))));
 
     switch (simdSourceBaseJitType)
     {
