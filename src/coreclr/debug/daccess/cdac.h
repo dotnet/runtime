@@ -5,7 +5,6 @@
 #define CDAC_H
 
 #include <cdac_reader.h>
-#include <holder.h>
 
 class CDAC final
 {
@@ -27,9 +26,7 @@ private:
     NonVMComHolder<IUnknown> m_sos;
 
 private:
-    decltype(&cdac_reader_init) m_init;
     decltype(&cdac_reader_free) m_free;
-    decltype(&cdac_reader_get_sos_interface) m_getSosInterface;
 };
 
 #endif // CDAC_H

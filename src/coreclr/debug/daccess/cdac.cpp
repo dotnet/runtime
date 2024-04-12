@@ -1,13 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <stdio.h>
-#include <minipal/utils.h>
+#include "cdac.h"
 #include <sospriv.h>
 #include <sstring.h>
-#include <clrhost.h>
 #include "dbgutil.h"
-#include "cdac.h"
 
 #define CDAC_LIB_NAME MAKEDLLNAME_W(W("cdacreader"))
 
@@ -49,12 +46,13 @@ CDAC::CDAC(HMODULE module, uint64_t descriptorAddr, ICorDebugDataTarget* target)
     : m_module(module)
     , m_target{target}
 {
-    m_init = reinterpret_cast<decltype(&cdac_reader_init)>(::GetProcAddress(m_module, "cdac_reader_init"));
+    decltype(&cdac_reader_init) init = reinterpret_cast<decltype(&cdac_reader_init)>(::GetProcAddress(m_module, "cdac_reader_init"));
+    decltype(&cdac_reader_get_sos_interface) getSosInterface = reinterpret_cast<decltype(&cdac_reader_get_sos_interface)>(::GetProcAddress(m_module, "cdac_reader_get_sos_interface"));
     m_free = reinterpret_cast<decltype(&cdac_reader_free)>(::GetProcAddress(m_module, "cdac_reader_free"));
-    m_getSosInterface = reinterpret_cast<decltype(&cdac_reader_get_sos_interface)>(::GetProcAddress(m_module, "cdac_reader_get_sos_interface"));
+    _ASSERTE(init != nullptr && getSosInterface != nullptr && m_free != nullptr);
 
-    m_init(descriptorAddr, &ReadFromTargetCallback, this, &m_cdac_handle);
-    m_getSosInterface(m_cdac_handle, &m_sos);
+    init(descriptorAddr, &ReadFromTargetCallback, this, &m_cdac_handle);
+    getSosInterface(m_cdac_handle, &m_sos);
 }
 
 CDAC::~CDAC()
