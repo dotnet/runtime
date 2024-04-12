@@ -183,11 +183,6 @@ struct _ReadOnlyValue {
 };
 static ReadOnlyValue *readonly_values;
 
-typedef enum {
-	GNU_AS,
-	CLANG_AS
-} AsmType;
-
 typedef struct MonoAotOptions {
 	char *outfile;
 	char *llvm_outfile;
@@ -226,7 +221,7 @@ typedef struct MonoAotOptions {
 	// The name of the assembly for which the AOT module is going to have all deduped methods moved to.
 	// When set, we are emitting inflated methods only
 	char *dedup_include;
-	AsmType asm_type;
+	gboolean gnu_asm;
 	gboolean try_llvm;
 	gboolean llvm;
 	gboolean llvm_only;
@@ -1297,7 +1292,7 @@ arch_init (MonoAotCompile *acfg)
 	acfg->llvm_label_prefix = "_";
 	acfg->inst_directive = ".word";
 	acfg->need_no_dead_strip = TRUE;
-	acfg->aot_opts.asm_type = CLANG_AS;
+	acfg->aot_opts.gnu_asm = TRUE;
 #endif
 
 #if defined(__linux__) && !defined(TARGET_ARM)
@@ -1353,19 +1348,22 @@ arm64_emit_load_got_slot (MonoAotCompile *acfg, int dreg, int got_slot)
 	emit_unset_mode (acfg);
 	/* r16==ip0 */
 	offset = (int)(got_slot * TARGET_SIZEOF_VOID_P);
-	if (acfg->aot_opts.asm_type == CLANG_AS) {
-		/* clang's integrated assembler */
-		fprintf(acfg->fp, "adrp x16, %s@GOTPAGE\n", acfg->got_symbol);
-		fprintf(acfg->fp, "add x16, x16, %s@GOTPAGEOFF+%d\n", acfg->got_symbol, offset & 0xfffff000);
-		fprintf(acfg->fp, "ldr x%d, [x16, %d]\n", dreg, offset & 0xfff);
-	} else if (acfg->aot_opts.asm_type == GNU_AS) {
-		/* Linux GAS */
-		fprintf (acfg->fp, "adrp x16, %s+%d\n", acfg->got_symbol, offset & 0xfffff000);
-		fprintf (acfg->fp, "add x16, x16, :lo12:%s\n", acfg->got_symbol);
-		fprintf (acfg->fp, "ldr x%d, [x16, %d]\n", dreg, offset & 0xfff);
-	} else {
-		g_assert_not_reached ();
-	}
+#ifdef TARGET_MACH
+	/* clang's integrated assembler */
+	fprintf (acfg->fp, "adrp x16, %s@PAGE+%d\n", acfg->got_symbol, offset & 0xfffff000);
+#ifdef MONO_ARCH_ILP32
+	fprintf (acfg->fp, "add x16, x16, %s@PAGEOFF+%d\n", acfg->got_symbol, offset & 0xfff);
+	fprintf (acfg->fp, "ldr w%d, [x16, #%d]\n", dreg, 0);
+#else
+	fprintf (acfg->fp, "add x16, x16, %s@PAGEOFF\n", acfg->got_symbol);
+	fprintf (acfg->fp, "ldr x%d, [x16, #%d]\n", dreg, offset & 0xfff);
+#endif
+#else
+	/* Linux GAS */
+	fprintf (acfg->fp, "adrp x16, %s+%d\n", acfg->got_symbol, offset & 0xfffff000);
+	fprintf (acfg->fp, "add x16, x16, :lo12:%s\n", acfg->got_symbol);
+	fprintf (acfg->fp, "ldr x%d, [x16, %d]\n", dreg, offset & 0xfff);
+#endif
 }
 
 static void
@@ -8947,10 +8945,6 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->as_prefix = g_strdup (arg + strlen ("as-prefix="));
 		} else if (str_begins_with (arg, "as-name=")) {
 			opts->as_name = g_strdup (arg + strlen ("as-name="));
-			if (opts->as_name && !strcmp (opts->as_name, "clang"))
-				opts->asm_type = CLANG_AS;
-			else
-				opts->asm_type = GNU_AS;
 		} else if (str_begins_with (arg, "as-options=")) {
 			opts->as_options = g_strdup (arg + strlen ("as-options="));
 		} else if (str_begins_with (arg, "ld-flags=")) {
@@ -15511,7 +15505,7 @@ emit_aot_image (MonoAotCompile *acfg)
 		}
 	}
 
-	if (acfg->aot_opts.dwarf_debug && acfg->aot_opts.asm_type == CLANG_AS) {
+	if (acfg->aot_opts.dwarf_debug && acfg->aot_opts.gnu_asm) {
 		/*
 		 * CLANG supports GAS .file/.loc directives, so emit line number information this way
 		 */
