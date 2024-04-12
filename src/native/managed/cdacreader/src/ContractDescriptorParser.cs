@@ -108,10 +108,9 @@ public partial class ContractDescriptorParser
                             reader.Read();
                             var field = JsonSerializer.Deserialize(ref reader, ContractDescriptorContext.Default.FieldDescriptor);
                             // FIXME: duplicates?
-                            if (fieldName != null && field != null)
-                                fields.Add(fieldName, field);
-                            else
+                            if (fieldName is null || field is null)
                                 throw new JsonException();
+                            fields.Add(fieldName, field);
                         }
                         break;
                     case JsonTokenType.Comment:
@@ -221,7 +220,9 @@ public partial class ContractDescriptorParser
                     throw new JsonException();
                 reader.Read(); // end of array (case 2) or string (case 3)
                 if (reader.TokenType == JsonTokenType.EndArray) // it was case 2
+                {
                     return new GlobalDescriptor { Value = valueCase2or3, Indirect = true };
+                }
                 else if (reader.TokenType == JsonTokenType.String) // it was case 3
                 {
                     string? type = reader.GetString();
@@ -231,7 +232,9 @@ public partial class ContractDescriptorParser
                     return new GlobalDescriptor { Type = type, Value = valueCase2or3 };
                 }
                 else
+                {
                     throw new JsonException();
+                }
             }
         }
 
