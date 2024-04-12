@@ -8,16 +8,21 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Microsoft.Diagnostics.DataContractReader;
+
+/// <summary>
+///   A parser for the JSON representation of a contract descriptor.
+/// </summary>
+/// <remarks>
+/// See docs/design/datacontracts/data_descriptor.md for the format
+/// </remarks>
 public partial class ContractDescriptorParser
 {
+    // data_descriptor.md uses a distinguished property name to indicate the size of a type
     public const string TypeDescriptorSizeSigil = "!";
 
     /// <summary>
     ///  Parses the "compact" representation of a contract descriptor.
     /// </summary>
-    /// <remarks>
-    /// See data_descriptor.md for the format.
-    /// </remarks>
     public static ContractDescriptor? ParseCompact(ReadOnlySpan<byte> json)
     {
         return JsonSerializer.Deserialize(json, ContractDescriptorContext.Default.ContractDescriptor);
