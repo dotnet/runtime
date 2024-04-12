@@ -245,6 +245,10 @@ namespace System.Net.Http
             {
                 _http2RequestQueue = new RequestQueue<Http2Connection?>();
             }
+            if (IsHttp3Supported() && _http3Enabled)
+            {
+                _http3RequestQueue = new RequestQueue<Http3Connection>();
+            }
 
             if (_proxyUri != null && HttpUtilities.IsSupportedSecureScheme(_proxyUri.Scheme))
             {
@@ -881,11 +885,11 @@ namespace System.Net.Http
                     _availableHttp2Connections.Clear();
                 }
 
-                if (_http3Connection is not null)
+                if (IsHttp3Supported() && _availableHttp3Connections is not null)
                 {
-                    toDispose ??= new();
-                    toDispose.Add(_http3Connection);
-                    _http3Connection = null;
+                    toDispose = [.. _availableHttp3Connections];
+                    _associatedHttp3ConnectionCount -= _availableHttp3Connections.Count;
+                    _availableHttp3Connections.Clear();
                 }
 
                 if (_authorityExpireTimer != null)

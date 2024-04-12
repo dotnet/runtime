@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal sealed class HttpConnectionWaiter<T> : TaskCompletionSourceWithCancellation<T>
+    internal class HttpConnectionWaiter<T> : TaskCompletionSourceWithCancellation<T>
         where T : HttpConnectionBase?
     {
         // When a connection attempt is pending, reference the connection's CTS, so we can tear it down if the initiating request is cancelled

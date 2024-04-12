@@ -54,6 +54,10 @@ namespace System.Net.Http
         public Exception? AbortException => Volatile.Read(ref _abortException);
         private object SyncObj => _activeRequests;
 
+        private int _reservedStreams;
+        private TaskCompletionSource<bool>? _availableStreamsWaiter;
+        private bool _streamsAvailableRegistered;
+
         /// <summary>
         /// If true, we've received GOAWAY, are aborting due to a connection-level error, or are disposing due to pool limits.
         /// </summary>
@@ -65,6 +69,9 @@ namespace System.Net.Http
                 return _firstRejectedStreamId != -1;
             }
         }
+
+
+        public int AvailableRequestStreamsCount => _connection?.AvailableBidirectionalStreamsCount ?? 0;
 
         public Http3Connection(HttpConnectionPool pool, HttpAuthority authority, QuicConnection connection, bool includeAltUsedHeader)
             : base(pool, connection.RemoteEndPoint)
@@ -128,6 +135,9 @@ namespace System.Net.Http
             {
                 // Close the QuicConnection in the background.
 
+                _availableStreamsWaiter?.SetResult(false);
+                _availableStreamsWaiter = null;
+
                 _connectionClosedTask ??= _connection.CloseAsync((long)Http3ErrorCode.NoError).AsTask();
 
                 QuicConnection connection = _connection;
@@ -159,6 +169,59 @@ namespace System.Net.Http
                 }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
 
                 MarkConnectionAsClosed();
+            }
+        }
+
+        public bool TryReserveStream()
+        {
+            lock (SyncObj)
+            {
+                if (_reservedStreams >= AvailableRequestStreamsCount)
+                {
+                    return false;
+                }
+                ++_reservedStreams;
+                return true;
+            }
+        }
+
+        public void ReleaseStream()
+        {
+            lock (SyncObj)
+            {
+                Debug.Assert(_reservedStreams > 0);
+                --_reservedStreams;
+            }
+        }
+
+        public Task<bool> WaitForAvailableStreamsAsync()
+        {
+            lock (SyncObj)
+            {
+                if (ShuttingDown)
+                {
+                    return Task.FromResult(false);
+                }
+                if (_reservedStreams < AvailableRequestStreamsCount)
+                {
+                    return Task.FromResult(true);
+                }
+
+                Debug.Assert(_availableStreamsWaiter is null);
+                _availableStreamsWaiter = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                if (!_streamsAvailableRegistered)
+                {
+                    _connection!.StreamsAvailable += (_, _) =>
+                    {
+                        lock (SyncObj)
+                        {
+                            _availableStreamsWaiter?.SetResult(!ShuttingDown);
+                            _availableStreamsWaiter = null;
+                        }
+                    };
+                    _streamsAvailableRegistered = true;
+                }
+                return _availableStreamsWaiter.Task;
             }
         }
 
