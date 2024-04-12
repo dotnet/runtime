@@ -66,9 +66,8 @@ struct GlobalPointerSpec;
 
 struct BinaryBlobDataDescriptor
 {
-    char Magic[8];
     struct Directory {
-        uint32_t BaselineStart;
+        uint32_t FlagsAndBaselineStart;
         uint32_t TypesStart;
 
         uint32_t FieldPoolStart;
@@ -90,6 +89,7 @@ struct BinaryBlobDataDescriptor
         uint8_t GlobalLiteralSpecSize;
         uint8_t GlobalPointerSpecSize;
     } Directory;
+    uint32_t PlatformFlags;
     uint32_t BaselineName;
     struct TypeSpec Types[CDacBlobTypesCount];
     struct FieldSpec FieldPool[CDacBlobFieldPoolCount];
@@ -129,7 +129,7 @@ struct GlobalPointerSpec
 
 where the magic value is `"DACBLOB"` and `EndMagic` is `{0x01, 0x02, 0x03, 0x04}`
 
-The blob begins with a directory that gives the relative offsets of the `Types`, `FieldPool`,
+The blob begins with a directory that gives the relative offsets of the `Baseline`, `Types`, `FieldPool`,
 `GlobalLiteralValues`, `GlobalPointerValues` and `Names` fields of the blob.  The number of elements of each of the arrays is
 next. This is followed by the sizes of the spec structs.
 

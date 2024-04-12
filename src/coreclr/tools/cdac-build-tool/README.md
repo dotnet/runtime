@@ -94,4 +94,40 @@ data descriptor blob.
 
 ## Implementation Details
 
-See [data-descriptor.md](./data-descriptor.md)
+See [data-descriptor-blob.md](./data-descriptor-blob.md)
+
+## Workflow
+
+### Porting and extending the data blob scraper
+
+When porting to a new architecture, or extending the blob contents, it is recommended to
+first work withh the sample blob, rather than the full CoreCLR descriptor.
+
+For example, if your target platform has a clang toolchain, something like this will provide a suitable
+input for `cdac-build-tool`:
+
+```console
+$ clang -target wasm32-unknown-unknown -c -o /tmp/sample.o ./sample/sample.blob.c
+```
+
+If you are modifying the preprocessor macros, using `-E` to emit the preprocessed output is helpful as well.
+
+```console
+$ clang -target x86_64-unknown-linux-gnu -E -o /tmp/sample.i ./sample/sample.blob.c
+```
+
+Running the `cdac-build-tool` with the `-v` verbose option will show progress
+
+```console
+$ ../../../../dotnet.sh run --project cdac-build-tool.csproj -- compose -v -o /tmp/contract.c /tmp/sample.o
+```
+
+It is also helpful to run the `cdac-build-tool` under a debugger with a breakpoint in `ObjectFileScraper.ScrapeInput`
+
+**Release runtime builds** When building Release builds of the runtime, the build infrastructure
+may turn on whole program optimizations.  On some toolchains this may produce object files that
+are a serialization of the internal compiler state, rather than a native object format.  This may break
+assumptions of the `cdac-build-tool` about global symbol initialization, for example constants and string literals might not be stored as binary integers or as byte sequences.  In such cases, it may be
+necessary to turn off global optimizations when compiling `datadescriptor.cpp`.  This is okay to do because `datadescriptor.cpp` is not shipped as part of the runtime build - and in fact it has no executable functions at all.  It is just used to gather type layout and size information.
+
+It is conceivable that some future C/C++ compiler with whole program optimizations turned on may remove unused struct field.  (Such that separately compiling `datadescriptor.cpp` would produce incorrect offsets). In that case, `cdac-build-tool` will need to use another technique to collect offsets for a runtime built with such a compiler.  As of 2024, no compilers do this, however.
