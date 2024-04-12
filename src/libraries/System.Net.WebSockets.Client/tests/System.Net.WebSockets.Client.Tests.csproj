@@ -59,6 +59,7 @@
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs" Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs" Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
     <Compile Include="AbortTest.cs" />
+    <Compile Include="AbortTest.Loopback.cs" />
     <Compile Include="CancelTest.cs" />
     <Compile Include="ClientWebSocketOptionsTests.cs" />
     <Compile Include="ClientWebSocketTestBase.cs" />
@@ -68,6 +69,10 @@
     <Compile Include="ConnectTest.cs" />
     <Compile Include="KeepAliveTest.cs" />
     <Compile Include="LoopbackHelper.cs" />
+    <Compile Include="LoopbackServer\Http2LoopbackStream.cs" />
+    <Compile Include="LoopbackServer\LoopbackWebSocketServer.cs" />
+    <Compile Include="LoopbackServer\WebSocketHandshakeHelper.cs" />
+    <Compile Include="LoopbackServer\WebSocketRequestData.cs" />
     <Compile Include="ResourceHelper.cs" />
     <Compile Include="SendReceiveTest.cs" />
     <Compile Include="SendReceiveTest.Http2.cs" />
