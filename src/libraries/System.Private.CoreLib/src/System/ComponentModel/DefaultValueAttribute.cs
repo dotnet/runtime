@@ -24,14 +24,16 @@ namespace System.ComponentModel
         private static object? s_convertFromInvariantString;
 
         [FeatureSwitchDefinition("System.ComponentModel.DefaultValueAttribute.IsSupported")]
+        [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+#pragma warning disable IL4000
         internal static bool IsSupported => AppContext.TryGetSwitch("System.ComponentModel.DefaultValueAttribute.IsSupported", out bool isSupported) ? isSupported : true;
+#pragma warning restore IL4000
 
         /// <summary>
         /// Initializes a new instance of the <see cref='DefaultValueAttribute'/>
         /// class, converting the specified value to the specified type, and using the U.S. English
         /// culture as the translation context.
         /// </summary>
-        [RequiresUnreferencedCode("DefaultValueAttribute usage of TypeConverter is not compatible with trimming.")]
         public DefaultValueAttribute(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
             string? value)
@@ -69,6 +71,7 @@ namespace System.ComponentModel
                     _value = Convert.ChangeType(value, type, CultureInfo.InvariantCulture);
                 }
 
+                [RequiresUnreferencedCode("DefaultValueAttribute usage of TypeConverter is not compatible with trimming.")]
                 // Looking for ad hoc created TypeDescriptor.ConvertFromInvariantString(Type, string)
                 static bool TryConvertFromInvariantString(
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type typeToConvert,

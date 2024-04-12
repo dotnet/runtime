@@ -24,7 +24,6 @@ namespace System.ComponentModel
         /// specified value to the specified type, and using the U.S. English culture as the
         /// translation context.
         /// </summary>
-        [RequiresUnreferencedCode("AmbientValueAttribute usage of TypeConverter is not compatible with trimming.")]
         public AmbientValueAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, string value)
         {
             // The try/catch here is because attributes should never throw exceptions. We would fail to
@@ -38,7 +37,10 @@ namespace System.ComponentModel
 
             try
             {
-                _value = TypeDescriptor.GetConverter(type).ConvertFromInvariantString(value);
+                _value = TypeDescriptorGetConverter(type).ConvertFromInvariantString(value);
+
+                [RequiresUnreferencedCode("AmbientValueAttribute usage of TypeConverter is not compatible with trimming.")]
+                static TypeConverter TypeDescriptorGetConverter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type) => TypeDescriptor.GetConverter(type);
             }
             catch
             {
