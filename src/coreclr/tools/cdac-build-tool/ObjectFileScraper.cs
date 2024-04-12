@@ -29,12 +29,13 @@ public class ObjectFileScraper
     public async Task<bool> ScrapeInput(string inputPath, CancellationToken token)
     {
         var bytes = await File.ReadAllBytesAsync(inputPath, token).ConfigureAwait(false);
-        if (!ScraperState.FindMagic(bytes, out var state))
+        if (!ScraperState.CreateScraperState(bytes, out var state))
         {
             return false;
         }
-        if (Verbose) {
-            Console.WriteLine($"{inputPath}: magic at {state.MagicStart}");
+        if (Verbose)
+        {
+            Console.WriteLine($"Magic starts at 0x{state.MagicStart:x8} in {inputPath}");
         }
         var header = ReadHeader(state);
         if (Verbose) {
@@ -42,6 +43,10 @@ public class ObjectFileScraper
         }
         var content = ReadContent(state, header);
         content.AddToModel(_builder);
+        if (Verbose)
+        {
+            Console.WriteLine($"\nFinished scraping content from {inputPath}");
+        }
         return true;
     }
 
@@ -63,7 +68,7 @@ public class ObjectFileScraper
             _position = headerStart;
         }
 
-        public static bool FindMagic(ReadOnlyMemory<byte> bytes, [NotNullWhen(true)] out ScraperState? scraperState)
+        public static bool CreateScraperState(ReadOnlyMemory<byte> bytes, [NotNullWhen(true)] out ScraperState? scraperState)
         {
             if (FindMagic(bytes.Span, out int offset, out bool isLittleEndian))
             {
@@ -150,14 +155,14 @@ public class ObjectFileScraper
         public uint FlagsAndBaselineStart;
         public uint TypesStart;
 
-        public uint FieldPoolStart;
+        public uint FieldsPoolStart;
         public uint GlobalLiteralValuesStart;
 
         public uint GlobalPointersStart;
         public uint NamesStart;
 
-        public uint TypeCount;
-        public uint FieldPoolCount;
+        public uint TypesCount;
+        public uint FieldsPoolCount;
 
         public uint GlobalLiteralValuesCount;
         public uint GlobalPointerValuesCount;
@@ -172,16 +177,23 @@ public class ObjectFileScraper
 
     private static void DumpHeaderDirectory(HeaderDirectory headerDirectory)
     {
-        Console.WriteLine($"Baseline Start = {headerDirectory.FlagsAndBaselineStart}");
-        Console.WriteLine($"Types Start = {headerDirectory.TypesStart}");
-        Console.WriteLine($"Field Pool  Start = {headerDirectory.FieldPoolStart}");
-        Console.WriteLine($"Global Literals Start = {headerDirectory.GlobalLiteralValuesStart}");
-        Console.WriteLine($"Global Pointers Start = {headerDirectory.GlobalPointersStart}");
-        Console.WriteLine($"Names Start = {headerDirectory.NamesStart}");
-        Console.WriteLine($"TypeCount = {headerDirectory.TypeCount}");
-        Console.WriteLine($"FieldPoolCount = {headerDirectory.FieldPoolCount}");
-        Console.WriteLine($"GlobalLiteralValuesCount = {headerDirectory.GlobalLiteralValuesCount}");
-        Console.WriteLine($"GlobalPointerValuesCount = {headerDirectory.GlobalPointerValuesCount}");
+        Console.WriteLine($"""
+        Scaped Header Directory:
+
+        Baseline Start        = 0x{headerDirectory.FlagsAndBaselineStart:x8}
+        Types Start           = 0x{headerDirectory.TypesStart:x8}
+        Fields Pool Start     = 0x{headerDirectory.FieldsPoolStart:x8}
+        Global Literals Start = 0x{headerDirectory.GlobalLiteralValuesStart:x8}
+        Global Pointers Start = 0x{headerDirectory.GlobalPointersStart:x8}
+        Names Pool Start      = 0x{headerDirectory.NamesStart:x8}
+
+        Types Count                 = {headerDirectory.TypesCount}
+        Fields Pool Count           = {headerDirectory.FieldsPoolCount}
+        Global Literal Values Count = {headerDirectory.GlobalLiteralValuesCount}
+        Global Pointer Values Count = {headerDirectory.GlobalPointerValuesCount}
+        Names Pool Count            = {headerDirectory.NamesPoolCount}
+
+        """);
     }
 
     private static HeaderDirectory ReadHeader(ScraperState state)
@@ -212,13 +224,13 @@ public class ObjectFileScraper
         return new HeaderDirectory {
             FlagsAndBaselineStart = baselineStart,
             TypesStart = typesStart,
-            FieldPoolStart = fieldPoolStart,
+            FieldsPoolStart = fieldPoolStart,
             GlobalLiteralValuesStart = globalLiteralValuesStart,
             GlobalPointersStart = globalPointersStart,
             NamesStart = namesStart,
 
-            TypeCount = typeCount,
-            FieldPoolCount = fieldPoolCount,
+            TypesCount = typeCount,
+            FieldsPoolCount = fieldPoolCount,
 
             GlobalLiteralValuesCount = globalLiteralValuesCount,
             GlobalPointerValuesCount = globalPointerValuesCount,
@@ -290,9 +302,10 @@ public class ObjectFileScraper
 
         public void AddToModel(DataDescriptorModel.Builder builder)
         {
+            WriteVerbose("\nAdding scraped content to model");
             builder.PlatformFlags = PlatformFlags;
             string baseline = GetPoolString(Baseline);
-            WriteVerbose($"baseline Name = {baseline}");
+            WriteVerbose($"Baseline Name = {baseline}");
             builder.SetBaseline(baseline);
 
 
@@ -357,6 +370,7 @@ public class ObjectFileScraper
 
     private Content ReadContent(ScraperState state, HeaderDirectory header)
     {
+        WriteVerbose("\nReading scraped content");
         state.ResetPosition(state.HeaderStart + header.FlagsAndBaselineStart);
         var platformFlags = state.ReadUInt32();
         var baselineNameIdx = state.ReadUInt32();
@@ -374,7 +388,10 @@ public class ObjectFileScraper
         {
             throw new InvalidOperationException($"expected endMagic, got 0x{endMagic[0]:x} 0x{endMagic[1]:x} 0x{endMagic[2]:x} 0x{endMagic[3]:x}");
         }
-
+        else
+        {
+            WriteVerbose("\nFound correct endMagic at end of content");
+        }
         return new Content
         {
             Verbose = Verbose,
@@ -390,10 +407,10 @@ public class ObjectFileScraper
 
     private TypeSpec[] ReadTypeSpecs(ScraperState state, HeaderDirectory header)
     {
-        TypeSpec[] typeSpecs = new TypeSpec[header.TypeCount];
+        TypeSpec[] typeSpecs = new TypeSpec[header.TypesCount];
 
         state.ResetPosition(state.HeaderStart + (long)header.TypesStart);
-        for (int i = 0; i < header.TypeCount; i++)
+        for (int i = 0; i < header.TypesCount; i++)
         {
             int bytesRead = 0;
             typeSpecs[i].NameIdx = state.ReadUInt32();
@@ -414,9 +431,9 @@ public class ObjectFileScraper
 
     private static FieldSpec[] ReadFieldSpecs(ScraperState state, HeaderDirectory header)
     {
-        state.ResetPosition(state.HeaderStart + (long)header.FieldPoolStart);
-        FieldSpec[] fieldSpecs = new FieldSpec[header.FieldPoolCount];
-        for (int i = 0; i < header.FieldPoolCount; i++)
+        state.ResetPosition(state.HeaderStart + (long)header.FieldsPoolStart);
+        FieldSpec[] fieldSpecs = new FieldSpec[header.FieldsPoolCount];
+        for (int i = 0; i < header.FieldsPoolCount; i++)
         {
             int bytesRead = 0;
             fieldSpecs[i].NameIdx = state.ReadUInt32();

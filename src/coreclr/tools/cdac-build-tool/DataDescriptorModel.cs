@@ -29,6 +29,7 @@ public class DataDescriptorModel
 
     internal void DumpModel()
     {
+        Console.WriteLine("\nData Descriptor Model:");
         Console.WriteLine($"Platform Flags: 0x{PlatformFlags:x8}");
         Console.WriteLine($"Baseline: {Baseline}");
         foreach (var (typeName, type) in Types)
@@ -36,13 +37,13 @@ public class DataDescriptorModel
             Console.WriteLine($"Type: {typeName}");
             if (type.Size != null)
             {
-                Console.WriteLine($"  Size: {type.Size}");
+                Console.WriteLine($"  Size: 0x{type.Size:x8}");
             }
             foreach (var (fieldName, field) in type.Fields)
             {
                 Console.WriteLine($"  Field: {fieldName}");
                 Console.WriteLine($"    Type: {field.Type}");
-                Console.WriteLine($"    Offset: {field.Offset}");
+                Console.WriteLine($"    Offset: 0x{field.Offset:x8}");
             }
         }
         foreach (var (globalName, global) in Globals)
