@@ -1680,21 +1680,6 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
         return false;
     }
 
-    // Avoid allocating parameters that are passed in float regs into integer
-    // registers. We currently home float registers before integer registers,
-    // so that kind of enregistration can trash integer registers containing
-    // other parameters.
-    // We assume that these cases will be homed to float registers if they are
-    // promoted.
-    // TODO-CQ: Combine integer and float register homing to handle these kinds
-    // of conflicts.
-    if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->lvIsRegArg && !varDsc->lvPromoted &&
-        varTypeUsesIntReg(varDsc->GetRegisterType()) && genIsValidFloatReg(varDsc->GetArgReg()))
-    {
-        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::IsStructArg));
-        return false;
-    }
-
     //  Are we not optimizing and we have exception handlers?
     //   if so mark all args and locals as volatile, so that they
     //   won't ever get enregistered.
@@ -3995,11 +3980,8 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
         bool needsKill = varTypeIsGC(assignedInterval->registerType);
         if (!needsKill)
         {
-            // The importer will assign a GC type to the rhs of an assignment if the lhs type is a GC type,
-            // even if the rhs is not. See the CEE_STLOC* case in impImportBlockCode(). As a result,
-            // we can have a 'GT_LCL_VAR' node with a GC type, when the lclVar itself is an integer type.
+            // We can have a 'GT_LCL_VAR' node with a GC type, when the lclVar itself is an integer type.
             // The emitter will mark this register as holding a GC type. Therefore, we must spill this value.
-            // This was exposed on Arm32 with EH write-thru.
             if ((assignedInterval->recentRefPosition != nullptr) &&
                 (assignedInterval->recentRefPosition->treeNode != nullptr))
             {
@@ -5522,7 +5504,7 @@ void LinearScan::allocateRegisters()
         Interval* currentInterval          = &interval;
         currentInterval->recentRefPosition = nullptr;
         currentInterval->isActive          = false;
-        if (currentInterval->isLocalVar)
+        if (currentInterval->isLocalVar && !stressInitialParamReg())
         {
             LclVarDsc* varDsc = currentInterval->getLocalVar(compiler);
             if (varDsc->lvIsRegArg && currentInterval->firstRefPosition != nullptr)

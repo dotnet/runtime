@@ -28,6 +28,7 @@ jobs:
     pool: ${{ parameters.pool }}
     runtimeVariant: ${{ parameters.runtimeVariant }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    logsName: WorkloadLogs_Attempt$(System.JobAttempt)
 
     dependsOn: ${{ parameters.dependsOn }}
 
@@ -82,6 +83,7 @@ jobs:
           IntermediateArtifacts/windows_arm64/Shipping/Microsoft.NETCore.App.Runtime.win-arm64*.nupkg
           IntermediateArtifacts/windows_x64/Shipping/Microsoft.NETCore.App.Runtime.win-x64*.nupkg
           IntermediateArtifacts/windows_x86/Shipping/Microsoft.NETCore.App.Runtime.win-x86*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Sdk.WebAssembly.Pack*.nupkg
 
     - task: CopyFiles@2
       displayName: Flatten packages
@@ -99,17 +101,6 @@ jobs:
     - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
       parameters:
         name: workloads
-
-    # Publish Logs
-    - template: /eng/pipelines/common/templates/publish-pipeline-artifacts.yml
-      parameters:
-        displayName: Publish Logs
-        isOfficialBuild: ${{ parameters.isOfficialBuild }}
-        inputs:
-          targetPath: $(Build.SourcesDirectory)/artifacts/log
-          artifactName: 'WorkloadLogs_Attempt$(System.JobAttempt)'
-          continueOnError: true
-          condition: always()
 
     # Delete wixpdb files before they are uploaded to artifacts
     - task: DeleteFiles@1

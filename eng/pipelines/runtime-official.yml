@@ -23,6 +23,8 @@ pr: none
 
 variables:
 - template: /eng/pipelines/common/variables.yml
+  parameters:
+    templatePath: 'templates-official'
 - template: /eng/pipelines/common/internal-variables.yml
   parameters:
     teamName: dotnet-core-acquisition
