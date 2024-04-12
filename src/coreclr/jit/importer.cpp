@@ -7355,7 +7355,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                             if (!repairWasComplete)
                             {
-                                JITDUMP("Profile data could not be locally repaired. Data % inconsisent.\n",
+                                JITDUMP("Profile data could not be locally repaired. Data %s inconsistent.\n",
                                         fgPgoConsistent ? "is now" : "was already");
                                 fgPgoConsistent = false;
                             }
@@ -7617,7 +7617,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             // transform the basic block into a BBJ_ALWAYS
                             block->SetKindAndTargetEdge(BBJ_ALWAYS, curEdge);
-                            foundVal = true;                       
+                            foundVal = true;
                         }
                         else
                         {
@@ -7641,10 +7641,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // We are unlikely to be able to repair the profile.
                         // For now we don't even try.
                         //
-                        JITDUMP("Profile data could not be locally repaired. Data % inconsisent.\n",
+                        JITDUMP("Profile data could not be locally repaired. Data %s inconsisent.\n",
                                 fgPgoConsistent ? "is now" : "was already");
                         fgPgoConsistent = false;
-                    } 
+                    }
 
                     // Create a NOP node
                     op1 = gtNewNothingNode();

@@ -2790,10 +2790,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     fgPgoSource      = ICorJitInfo::PgoSource::Unknown;
     fgPgoHaveWeights = false;
     fgPgoSynthesized = false;
-
-#ifdef DEBUG
-    fgPgoConsistent = false;
-#endif
+    fgPgoConsistent  = false;
 
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
