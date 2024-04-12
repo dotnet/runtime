@@ -9,7 +9,6 @@
 #include "fx_definition.h"
 
 class runtime_config_t;
-struct host_startup_info_t;
 
 class fx_resolver_t
 {
@@ -23,13 +22,19 @@ public:
     };
 
 public:
+    static StatusCode resolve_frameworks(
+        const pal::string_t& dotnet_root,
+        const runtime_config_t::settings_t& override_settings,
+        const runtime_config_t& app_config,
+        /*in_out*/ fx_definition_vector_t& fx_definitions,
+        resolution_failure_info& resolution_failure);
+
     static StatusCode resolve_frameworks_for_app(
         const pal::string_t& dotnet_root,
         const runtime_config_t::settings_t& override_settings,
         const runtime_config_t& app_config,
         /*in_out*/ fx_definition_vector_t& fx_definitions,
-        const pal::char_t* app_display_name,
-        bool print_errors = true);
+        const pal::char_t* app_display_name);
 
     static bool is_config_compatible_with_frameworks(
         const runtime_config_t& config,

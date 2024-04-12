@@ -493,19 +493,16 @@ StatusCode fx_resolver_t::read_framework(
     return StatusCode::Success;
 }
 
-StatusCode fx_resolver_t::resolve_frameworks_for_app(
+StatusCode fx_resolver_t::resolve_frameworks(
     const pal::string_t& dotnet_root,
     const runtime_config_t::settings_t& override_settings,
     const runtime_config_t& app_config,
     fx_definition_vector_t& fx_definitions,
-    const pal::char_t* app_display_name,
-    bool print_errors)
+    resolution_failure_info& resolution_failure)
 {
-    bool disable_multilevel_lookup = app_config.get_is_multilevel_lookup_disabled();
-    fx_resolver_t resolver{ disable_multilevel_lookup, override_settings };
+    fx_resolver_t resolver{ app_config.get_is_multilevel_lookup_disabled(), override_settings };
 
     // Read the shared frameworks; retry is necessary when a framework is already resolved, but then a newer compatible version is processed.
-    resolution_failure_info resolution_failure;
     StatusCode rc = StatusCode::Success;
     int retry_count = 0;
     do
@@ -520,29 +517,39 @@ StatusCode fx_resolver_t::resolve_frameworks_for_app(
     {
         display_summary_of_frameworks(fx_definitions, resolver.m_effective_fx_references);
     }
-    else if (print_errors)
+
+    return rc;
+}
+
+StatusCode fx_resolver_t::resolve_frameworks_for_app(
+    const pal::string_t& dotnet_root,
+    const runtime_config_t::settings_t& override_settings,
+    const runtime_config_t& app_config,
+    fx_definition_vector_t& fx_definitions,
+    const pal::char_t* app_display_name)
+{
+    resolution_failure_info resolution_failure;
+    StatusCode rc = resolve_frameworks(dotnet_root, override_settings, app_config, fx_definitions, resolution_failure);
+    switch (rc)
     {
-        switch (rc)
-        {
-            case StatusCode::FrameworkMissingFailure:
-                trace::error(
-                    INSTALL_OR_UPDATE_NET_ERROR_MESSAGE
-                    _X("\n\n")
-                    _X("App: %s\n")
-                    _X("Architecture: %s"),
-                    app_display_name,
-                    get_current_arch_name());
-                display_missing_framework_error(resolution_failure.missing.get_fx_name(), resolution_failure.missing.get_fx_version(), pal::string_t(), dotnet_root, disable_multilevel_lookup);
-                break;
-            case StatusCode::FrameworkCompatFailure:
-                display_incompatible_framework_error(resolution_failure.incompatible_higher.get_fx_version(), resolution_failure.incompatible_lower);
-                break;
-            case StatusCode::InvalidConfigFile:
-                trace::error(_X("Invalid framework config.json [%s]"), resolution_failure.invalid_config->get_runtime_config().get_path().c_str());
-                break;
-            default:
-                break;
-        }
+        case StatusCode::FrameworkMissingFailure:
+            trace::error(
+                INSTALL_OR_UPDATE_NET_ERROR_MESSAGE
+                _X("\n\n")
+                _X("App: %s\n")
+                _X("Architecture: %s"),
+                app_display_name,
+                get_current_arch_name());
+            display_missing_framework_error(resolution_failure.missing.get_fx_name(), resolution_failure.missing.get_fx_version(), pal::string_t(), dotnet_root, app_config.get_is_multilevel_lookup_disabled());
+            break;
+        case StatusCode::FrameworkCompatFailure:
+            display_incompatible_framework_error(resolution_failure.incompatible_higher.get_fx_version(), resolution_failure.incompatible_lower);
+            break;
+        case StatusCode::InvalidConfigFile:
+            trace::error(_X("Invalid framework config.json [%s]"), resolution_failure.invalid_config->get_runtime_config().get_path().c_str());
+            break;
+        default:
+            break;
     }
 
     return rc;
