@@ -1301,18 +1301,38 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
 
             case NI_Sve_CreateWhileLessThanMask8Bit:
-            case NI_Sve_CreateWhileLessThanMask16Bit:
-            case NI_Sve_CreateWhileLessThanMask32Bit:
-            case NI_Sve_CreateWhileLessThanMask64Bit:
             case NI_Sve_CreateWhileLessThanOrEqualMask8Bit:
+                // Emit size is the size of the scalar operands.
+                emitSize = emitActualTypeSize(intrin.op1->TypeGet());
+                // opt is based on the size of the returned vector
+                opt = INS_OPTS_SCALABLE_B;
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+
+            case NI_Sve_CreateWhileLessThanMask16Bit:
             case NI_Sve_CreateWhileLessThanOrEqualMask16Bit:
+                // Emit size is the size of the scalar operands.
+                emitSize = emitActualTypeSize(intrin.op1->TypeGet());
+                // opt is based on the size of the returned vector
+                opt = INS_OPTS_SCALABLE_H;
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+
+            case NI_Sve_CreateWhileLessThanMask32Bit:
             case NI_Sve_CreateWhileLessThanOrEqualMask32Bit:
+                // Emit size is the size of the scalar operands.
+                emitSize = emitActualTypeSize(intrin.op1->TypeGet());
+                // opt is based on the size of the returned vector
+                opt = INS_OPTS_SCALABLE_S;
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+
+            case NI_Sve_CreateWhileLessThanMask64Bit:
             case NI_Sve_CreateWhileLessThanOrEqualMask64Bit:
                 // Emit size is the size of the scalar operands.
                 emitSize = emitActualTypeSize(intrin.op1->TypeGet());
                 // opt is based on the size of the returned vector
-                // ERROR: node->gtType is TYP_MASK. We need the type of the elements in the mask.
-                opt      = emitter::optGetSveInsOpt(emitTypeSize(node->gtType));
+                opt = INS_OPTS_SCALABLE_D;
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 break;
 

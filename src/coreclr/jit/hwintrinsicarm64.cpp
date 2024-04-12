@@ -2206,10 +2206,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             // This information is lost when the type is converted from CorInfoType to var_type.
             // Ensure this is marked using GTF_UNSIGNED.
 
-            CORINFO_ARG_LIST_HANDLE arg1            = sig->args;
-            CORINFO_ARG_LIST_HANDLE arg2            = info.compCompHnd->getArgNext(arg1);
-            var_types               argType         = TYP_UNKNOWN;
-            CORINFO_CLASS_HANDLE    argClass        = NO_CLASS_HANDLE;
+            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
+            var_types               argType  = TYP_UNKNOWN;
+            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
 
             // Target instruction is dependent on whether the inputs are signed or unsigned.
             // Use the input type for the base type.
