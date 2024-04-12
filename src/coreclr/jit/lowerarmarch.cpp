@@ -1278,9 +1278,9 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
             unsigned    simdSize        = node->GetSimdSize();
             var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
-            GenTree* trueMask = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
-            GenTree* trueVal  = node;
-            GenTree* falseVal = comp->gtNewZeroConNode(simdType);
+            GenTree*    trueMask        = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
+            GenTree*    trueVal         = node;
+            GenTree*    falseVal        = comp->gtNewZeroConNode(simdType);
 
             GenTreeHWIntrinsic* condSelNode =
                 comp->gtNewSimdHWIntrinsicNode(simdType, trueMask, trueVal, falseVal, NI_Sve_ConditionalSelect,
