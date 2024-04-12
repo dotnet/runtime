@@ -682,6 +682,9 @@
 
     <!-- NativeAOT specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr'">
+        <ExcludeList Include="$(XunitTestBinBase)/reflection/Modifiers/modifiers/**">
+            <Issue>https://github.com/dotnet/runtime/issues/91381</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/Regression/GetInterfaceMapWithStaticVirtualsAndConstraints/**">
             <Issue>https://github.com/dotnet/runtime/issues/89157</Issue>
         </ExcludeList>
