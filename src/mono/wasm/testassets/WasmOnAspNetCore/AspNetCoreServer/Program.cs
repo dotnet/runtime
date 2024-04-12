@@ -15,7 +15,6 @@ var builder = WebApplication.CreateBuilder(args);
 var client = builder.Configuration.GetValue<string>("client")?.ToLowerInvariant();
 if (string.IsNullOrEmpty(client))
     throw new Exception($"Client arg cannot be empty. Choose: blazor or wasmbrowser");
-var staticFilesPath = Path.Combine(AppContext.BaseDirectory, $"publish/wwwroot/{client}");
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
@@ -28,6 +27,12 @@ if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
 }
+else
+{
+    app.UseExceptionHandler("/Error");
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseHsts();
+}
 
 // Add headers to enable SharedArrayBuffer
 app.Use(async (context, next) =>
@@ -39,10 +44,10 @@ app.Use(async (context, next) =>
     await next();
 });
 
-Console.WriteLine($"staticFilesPath: {staticFilesPath}");
 switch (client)
 {
     case "wasmbrowser":
+        var staticFilesPath = Path.Combine(AppContext.BaseDirectory, $"publish/wwwroot/{client}");
         app.UseDefaultFiles(new DefaultFilesOptions
         {
             FileProvider = new PhysicalFileProvider(staticFilesPath)
@@ -53,8 +58,8 @@ switch (client)
         });
         break;
     case "blazor":
+        app.UseBlazorFrameworkFiles();
         app.UseStaticFiles();
-        app.Map("/blazor", blazorApp => blazorApp.UseBlazorFrameworkFiles());
         break;
     default:
         throw new Exception($"Expected client to be wasmbrowser or blazor, not {client}.");

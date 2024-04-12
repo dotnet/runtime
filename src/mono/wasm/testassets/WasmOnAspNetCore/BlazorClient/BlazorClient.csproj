@@ -8,7 +8,6 @@
     <!-- nullablility warning, async warning -->
     <NoWarn>CS8604;CS4014</NoWarn>
     <InvariantGlobalization>true</InvariantGlobalization>
-    <StaticWebAssetBasePath>blazor</StaticWebAssetBasePath>
   </PropertyGroup>
 
   <!-- versions are pinned but when run from WBT level, it's taking in-tree runtime -->
