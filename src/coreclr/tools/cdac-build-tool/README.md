@@ -10,7 +10,7 @@ files that specify contracts.
 ## Running
 
 ```console
-% cdac-build-tool compose [-v] -o contract-descriptor.c -c contracts.txt data-descriptor.o
+% cdac-build-tool compose [-v] -o contractdescriptor.c -c contracts.txt datadescriptor.o
 ```
 ## .NET runtime build integration
 
@@ -19,7 +19,7 @@ It consumes a target platform object file and emits a C source
 file that contains a JSON contract descriptor.  The C source
 is then included in the normal build and link steps to create the runtime.
 
-The contract descriptor source file depends on `contract-aux-data.c` which is a source file that contains
+The contract descriptor source file depends on `contractpointerdata.c` which is a source file that contains
 the definitions of the "indirect pointer data" that is referenced by the data descriptor.  This is typically the addresses of important global variables in the runtime.
 Constants and build flags are embedded directly in the JSON payload.
 
@@ -27,28 +27,34 @@ Multiple data descriptor source files may be specified (for example if they are 
 
 Multiple contracts text files may be specified.  This may be useful if some contracts are conditionally included (for example if they are platform-specific).  The final JSON payload will be a composition of all the contracts files.
 
+In the C/C++ data descriptor, we use a single header file `datadescriptor.h` together with the C preprocessor to produce `datadescriptor.c` and `contractpointerdata.c`.
+This is an implementation detail. For data structures defined in other languages, other tools can be used to produce the object file and indirect pointer data. 
+
 ```mermaid
 flowchart TB
   headers("runtime headers")
-  data_src("data-descriptor.c")
+  data_header("datadescriptor.h")
+  data_src("datadescriptor.c")
   compile_data["clang"]
-  data_obj("data-descriptor.o")
+  data_obj("datadescriptor.o")
   contracts("contracts.txt")
-  globals("contract-aux-data.c")
+  globals("contractpointerdata.c")
   build[["cdac-build-tool"]]
-  descriptor_src("contract-descriptor.c")
+  descriptor_src("contractdescriptor.c")
   vm("runtime sources")
   compile_runtime["clang"]
   runtime_lib(["libcoreclr.so"])
 
   headers -.-> data_src
+  headers ~~~ data_header
+  data_header -.-> data_src
   headers -.-> globals
   headers -.-> vm
   data_src --> compile_data --> data_obj --> build
-  contracts ----> build
+  contracts ---> build
   build --> descriptor_src
   descriptor_src --> compile_runtime
-  globals -----> compile_runtime
+  data_header -.-> globals ----> compile_runtime
   vm ----> compile_runtime --> runtime_lib
 ```
 
@@ -74,9 +80,6 @@ CDAC_TYPE_END(GCHandle)
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
-// FIXME: wasm32 doesn't like uint64_t cast from uintptr_t at compile-time
-// The right thing to do is to not do pointers using this mechanism since they need to go into
-// auxdata anyway.
 CDAC_GLOBAL_POINTER(ManagedThreadStore, &g_managedThreadStore)
 #if FEATURE_EH_FUNCLETS
 CDAC_GLOBAL(FeatureEHFunclets, uint8, 1)
@@ -86,8 +89,6 @@ CDAC_GLOBAL(FeatureEHFunclets, uint8, 0)
 CDAC_GLOBAL(SomeMagicNumber, uint32, 42)
 CDAC_GLOBALS_END()
 ```
-
-**TODO**: finish documenting this
 
 The file is included multiple times with the macros variously defined in order to generate the
 data descriptor blob.
