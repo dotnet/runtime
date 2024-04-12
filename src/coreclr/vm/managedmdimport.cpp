@@ -29,6 +29,12 @@ FCIMPL11(FC_BOOL_RET, MetaDataImport::GetMarshalAs,
 
     NativeTypeParamInfo info{};
 
+    // The zeroing out of memory is important. The Reflection API's
+    // instantiation of MarshalAsAttribute doesn't reflect the default
+    // values the interop subsystem uses. This means NativeTypeParamInfo's
+    // constructor initialization values need to be overridden by zero
+    // initialization.
+    ZeroMemory(&info, sizeof(info));
     if (!ParseNativeTypeInfo(&info, pvNativeType, cbNativeType))
     {
         FC_RETURN_BOOL(FALSE);
