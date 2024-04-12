@@ -124,8 +124,6 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="PrintWasmtimePayloadDirContent" BeforeTargets="AfterTest"
-
   <Target Name="PrepareForBuildHelixWorkItems_Wasi"
           DependsOnTargets="$(PrepareForBuildHelixWorkItems_WasiDependsOn);$(HelixExtensionTargets)" />
 
