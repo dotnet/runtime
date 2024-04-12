@@ -51,6 +51,7 @@ public class ObjectFileScraper
         public bool LittleEndian { get; }
         private long _position;
 
+        // expect MagicLE and MagicBE to have the same length
         public long MagicStart => HeaderStart - MagicLE.Length;
         public long HeaderStart { get; }
 
@@ -143,6 +144,7 @@ public class ObjectFileScraper
         }
     }
 
+    // see typedef Directory in data-descriptor-blob.md
     private struct HeaderDirectory
     {
         public uint FlagsAndBaselineStart;
