@@ -208,13 +208,13 @@ namespace System
                 uint bl = (uint)b;
                 uint bh = (uint)(b >> 32);
 
-                ulong mull = BigMul(al, bl);
-                ulong t = BigMul(ah, bl) + (mull >> 32);
-                ulong tl = BigMul(al, bh) + (uint)t;
+                ulong mull = ((ulong)al) * bl;
+                ulong t = ((ulong)ah) * bl + (mull >> 32);
+                ulong tl = ((ulong)al) * bh + (uint)t;
 
                 low = tl << 32 | (uint)mull;
 
-                return BigMul(ah, bh) + (t >> 32) + (tl >> 32);
+                return ((ulong)ah) * bh + (t >> 32) + (tl >> 32);
             }
         }
 
