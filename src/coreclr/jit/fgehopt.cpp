@@ -1910,7 +1910,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
     // The second pass modifies flow so that predecessors of
     // non-canonical throw blocks now transfer control to the
     // appropriate canonical block.
-    int numCandidates = 0;
+    unsigned numCandidates = 0;
 
     // First pass
     //
@@ -1960,9 +1960,6 @@ PhaseStatus Compiler::fgTailMergeThrows()
             continue;
         }
 
-        // Sanity check -- only user funcs should be marked do not return
-        assert(call->gtCallType == CT_USER_FUNC);
-
         // Ok, we've found a suitable call. See if this is one we know
         // about already, or something new.
         BasicBlock* canonicalBlock = nullptr;
@@ -1986,6 +1983,8 @@ PhaseStatus Compiler::fgTailMergeThrows()
             callMap.Set(key, block);
         }
     }
+
+    assert(numCandidates <= optNoReturnCallCount);
 
     // Bail if no candidates were found
     if (numCandidates == 0)

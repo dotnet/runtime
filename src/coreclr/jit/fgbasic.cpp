@@ -66,6 +66,10 @@ void Compiler::fgInit()
     genReturnBB    = nullptr;
     genReturnLocal = BAD_VAR_NUM;
 
+#ifdef SWIFT_SUPPORT
+    genReturnErrorLocal = BAD_VAR_NUM;
+#endif // SWIFT_SUPPORT
+
     /* We haven't reached the global morphing phase */
     fgGlobalMorph     = false;
     fgGlobalMorphDone = false;
@@ -2641,9 +2645,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
             info.compCompHnd->notifyMethodInfoUsage(impInlineInfo->iciCall->gtCallMethHnd))
         {
             // Mark the call node as "no return" as it can impact caller's code quality.
-            impInlineInfo->iciCall->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
-            // Mark root method as containing a noreturn call.
-            impInlineRoot()->setMethodHasNoReturnCalls();
+            setCallDoesNotReturn(impInlineInfo->iciCall);
 
             // NOTE: we also ask VM whether we're allowed to do so - we don't want to mark a call
             // as "no-return" if its IL may change.

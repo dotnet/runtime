@@ -3664,9 +3664,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool CanValueSpecialCast(RuntimeType valueType, RuntimeType targetType);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object AllocateValueType(RuntimeType type, object? value);
-
         private CheckValueStatus TryChangeTypeSpecial(ref object value)
         {
             Pointer? pointer = value as Pointer;
@@ -3972,14 +3969,6 @@ namespace System
         #endregion
 
         #region Legacy internal static
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object _CreateEnum(RuntimeType enumType, long value);
-
-        internal static object CreateEnum(RuntimeType enumType, long value)
-        {
-            return _CreateEnum(enumType, value);
-        }
 
 #if FEATURE_COMINTEROP
         [MethodImpl(MethodImplOptions.InternalCall)]

@@ -4748,7 +4748,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
                         if (op1->OperIs(GT_CALL))
                         {
                             GenTreeCall* call = op1->AsCall();
-                            if ((call->gtCallType == CT_HELPER) &&
+                            if (call->IsHelperCall() &&
                                 s_helperCallProperties.MayRunCctor(eeGetHelperNum(call->gtCallMethHnd)))
                             {
                                 // Hoisting the comma is ok because it would hoist the initialization along
@@ -4794,7 +4794,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
                 if (treeIsHoistable && tree->IsCall())
                 {
                     GenTreeCall* call = tree->AsCall();
-                    if (call->gtCallType != CT_HELPER)
+                    if (!call->IsHelperCall())
                     {
                         INDEBUG(failReason = "non-helper call";)
                         treeIsHoistable = false;
@@ -4876,7 +4876,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
                     // Further, if it may run a cctor, it must be labeled as "Hoistable"
                     // (meaning it won't run a cctor because the class is not precise-init).
                     GenTreeCall* call = tree->AsCall();
-                    if (call->gtCallType != CT_HELPER)
+                    if (!call->IsHelperCall())
                     {
                         m_beforeSideEffect = false;
                     }
@@ -5608,7 +5608,7 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNatura
                     // Record that this loop contains a call
                     AddContainsCallAllContainingLoops(mostNestedLoop);
 
-                    if (call->gtCallType == CT_HELPER)
+                    if (call->IsHelperCall())
                     {
                         CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
                         if (s_helperCallProperties.MutatesHeap(helpFunc))

@@ -44,13 +44,13 @@ export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8A
             // FIXME
             const lastSlash = virtualName.lastIndexOf("/");
             let parentDirectory = (lastSlash > 0)
-                ? virtualName.substr(0, lastSlash)
+                ? virtualName.substring(0, lastSlash)
                 : null;
             let fileName = (lastSlash > 0)
-                ? virtualName.substr(lastSlash + 1)
+                ? virtualName.substring(lastSlash + 1)
                 : virtualName;
             if (fileName.startsWith("/"))
-                fileName = fileName.substr(1);
+                fileName = fileName.substring(1);
             if (parentDirectory) {
                 mono_log_debug(`Creating directory '${parentDirectory}'`);
 
