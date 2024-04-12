@@ -69,7 +69,7 @@ MEASUREMENT(dn_clear_then_fill_sequential, dn_simdhash_u32_ptr_t *, create_insta
     dn_simdhash_clear(data);
     for (int i = 0; i < INNER_COUNT; i++) {
         uint32_t key = *dn_vector_index_t(sequential_u32s, uint32_t, i);
-        dn_simdhash_u32_ptr_try_add(data, i, (void *)(size_t)i);
+        dn_simdhash_assert(dn_simdhash_u32_ptr_try_add(data, key, (void *)(size_t)i));
     }
 })
 
@@ -77,7 +77,7 @@ MEASUREMENT(dn_clear_then_fill_random, dn_simdhash_u32_ptr_t *, create_instance_
     dn_simdhash_clear(data);
     for (int i = 0; i < INNER_COUNT; i++) {
         uint32_t key = *dn_vector_index_t(random_u32s, uint32_t, i);
-        dn_simdhash_u32_ptr_try_add(data, key, (void *)(size_t)i);
+        dn_simdhash_assert(dn_simdhash_u32_ptr_try_add(data, key, (void *)(size_t)i));
     }
 })
 
@@ -94,5 +94,17 @@ MEASUREMENT(dn_find_missing_key, dn_simdhash_u32_ptr_t *, create_instance_u32_pt
     for (int i = 0; i < INNER_COUNT; i++) {
         uint32_t key = *dn_vector_index_t(random_unused_u32s, uint32_t, i);
         dn_simdhash_assert(!dn_simdhash_u32_ptr_try_get_value(data, key, &temp));
+    }
+})
+
+MEASUREMENT(dn_fill_then_remove_every_item, dn_simdhash_u32_ptr_t *, create_instance_u32_ptr, destroy_instance, {
+    for (int i = 0; i < INNER_COUNT; i++) {
+        uint32_t key = *dn_vector_index_t(random_u32s, uint32_t, i);
+        dn_simdhash_assert(dn_simdhash_u32_ptr_try_add(data, key, (void *)(size_t)i));
+    }
+
+    for (int i = 0; i < INNER_COUNT; i++) {
+        uint32_t key = *dn_vector_index_t(random_u32s, uint32_t, i);
+        dn_simdhash_assert(dn_simdhash_u32_ptr_try_remove(data, key));
     }
 })
