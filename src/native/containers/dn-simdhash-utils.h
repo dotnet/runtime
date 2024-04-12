@@ -178,24 +178,8 @@ MurmurHash3_32_streaming (const uint8_t *key, uint32_t seed)
 
 // end of reformulated murmur3-32
 
-
-#if DN_SIMDHASH_USE_MONO_ASSERTION_MESSAGE
-
-void
-mono_assertion_message (const char *file, int line, const char *condition);
-
-static inline void
-dn_simdhash_assert_fail (const char *file, int line, const char *condition)
-{
-	return mono_assertion_message(file, line, condition);
-}
-
-#else
-
 void
 dn_simdhash_assert_fail (const char *file, int line, const char *condition);
-
-#endif
 
 #define dn_simdhash_assert(expr) \
 	if (DN_UNLIKELY(!(expr))) { \

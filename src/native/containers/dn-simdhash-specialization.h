@@ -130,14 +130,13 @@ address_of_value (dn_simdhash_buffers_t buffers, uint32_t value_slot_index)
 static DN_FORCEINLINE(int)
 DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T_PTR hash, bucket_t *bucket, DN_SIMDHASH_KEY_T needle, dn_simdhash_search_vector search_vector)
 {
-#ifdef DN_SIMDHASH_USE_SCALAR_FALLBACK
-	// An eager load in scalar mode just does two 8-byte copies from the keys table to the stack.
-	// There's no point in doing it.
-	#define bucket_suffixes (bucket->suffixes)
-#else
-	// Performing an up-front load of the vector here enables clang to use extract_lane_u
-	//  to load the count on WASM instead of doing a separate load8_u operation from memory
+#if defined(__wasm_simd128__)
+	// Perform an eager load of the vector on wasm
 	dn_simdhash_suffixes bucket_suffixes = bucket->suffixes;
+#else
+	// Load through the pointer instead; if we eager load the vector on x64 clang,
+	//  it does lane extraction via pshufd and stuff - the code is truly heinous
+	#define bucket_suffixes (bucket->suffixes)
 #endif
 	uint8_t count = dn_simdhash_extract_lane(bucket_suffixes, DN_SIMDHASH_COUNT_SLOT),
 		overflow_count = dn_simdhash_extract_lane(bucket_suffixes, DN_SIMDHASH_CASCADED_SLOT);
