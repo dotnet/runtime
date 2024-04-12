@@ -62,6 +62,7 @@ extern void ep_rt_mono_thread_detach (void);
 extern void ep_rt_mono_component_init (void);
 extern void ep_rt_mono_init (void);
 extern void ep_rt_mono_init_finish (void);
+extern void ep_rt_mono_fini (void);
 extern bool ep_rt_mono_walk_managed_stack_for_thread (ep_rt_thread_handle_t thread, EventPipeStackContents *stack_contents);
 extern bool ep_rt_mono_method_get_simple_assembly_name (ep_rt_method_desc_t *method, ep_char8_t *name, size_t name_len);
 extern bool ep_rt_mono_method_get_full_name (ep_rt_method_desc_t *method, ep_char8_t *name, size_t name_len);
@@ -401,10 +402,7 @@ ep_rt_shutdown (void)
 	mono_lazy_cleanup (managed_command_line_get_init (), managed_command_line_lazy_clean);
 	mono_lazy_cleanup (os_command_line_get_init (), os_command_line_lazy_clean);
 
-	// We were cleaning up resources (mutexes, tls data, etc) here but it races with
-	// other threads on shutdown. Skipping cleanup to prevent failures. If unloading
-	// and not leaking these threads becomes a priority we will have to reimplement
-	// cleanup here.
+	ep_rt_mono_fini ();
 }
 
 static

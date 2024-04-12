@@ -850,6 +850,24 @@ ep_rt_mono_init_finish (void)
 }
 
 void
+ep_rt_mono_fini (void)
+{
+	ep_rt_mono_runtime_provider_fini ();
+	ep_rt_mono_profiler_provider_fini ();
+
+	if (_ep_rt_mono_default_profiler_provider) {
+		mono_profiler_set_runtime_initialized_callback (_ep_rt_mono_default_profiler_provider, NULL);
+		mono_profiler_set_thread_started_callback (_ep_rt_mono_default_profiler_provider, NULL);
+		mono_profiler_set_thread_stopped_callback (_ep_rt_mono_default_profiler_provider, NULL);
+	}
+	
+	// We were cleaning up resources (mutexes, tls data, etc) here but it races with
+	// other threads on shutdown. Skipping cleanup to prevent failures. If unloading
+	// and not leaking these threads becomes a priority we will have to reimplement
+	// cleanup here.
+}
+
+void
 EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntimeRundown (
 	const uint8_t *source_id,
