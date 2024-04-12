@@ -75,7 +75,7 @@ namespace System.Net.Http.Functional.Tests
         {
             TestUtilities.TestEventListener? listener = null;
 
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 listener = new TestUtilities.TestEventListener(_output, TestUtilities.TestEventListener.NetworkingEvents);
             }
@@ -105,6 +105,8 @@ namespace System.Net.Http.Functional.Tests
                 catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad) {}
 #endif
             });
+
+            listener?.Dispose();
         }
 
         [Theory]
