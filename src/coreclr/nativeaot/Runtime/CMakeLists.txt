@@ -131,7 +131,6 @@ else()
   include_directories(unix)
 
   # sal.h, pshpack/poppack.h
-  add_definitions(-DPAL_STDCPP_COMPAT)
   include_directories(../../pal/inc/rt)
 
   include(CheckIncludeFiles)
@@ -185,7 +184,7 @@ if (CLR_CMAKE_TARGET_APPLE)
   )
 endif (CLR_CMAKE_TARGET_APPLE)
 
-if (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
+if (CLR_CMAKE_TARGET_ARCH_AMD64)
   set(VXSORT_SOURCES
     ${GC_DIR}/vxsort/isa_detection.cpp
     ${GC_DIR}/vxsort/do_vxsort_avx2.cpp
@@ -201,13 +200,7 @@ if (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
   set(DUMMY_VXSORT_SOURCES
     ${GC_DIR}/vxsort/dummy.cpp
   )
-endif (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
-
-if (NOT (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64))
-  list(APPEND RUNTIME_SOURCES_ARCH_ASM
-    ${ARCH_SOURCES_DIR}/Interlocked.${ASM_SUFFIX}
-  )
-endif (NOT (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64))
+endif (CLR_CMAKE_TARGET_ARCH_AMD64)
 
 list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/AllocFast.${ASM_SUFFIX}
@@ -263,13 +256,18 @@ add_definitions(-D_LIB)
 # there is a problem with undefined symbols when this is set
 # add_definitions(-DSTRESS_HEAP)
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
   set(FEATURE_ETW 1)
   add_definitions(-DFEATURE_ETW)
   add_definitions(-DFEATURE_SUSPEND_REDIRECTION)
-  add_definitions(-DFEATURE_SPECIAL_USER_MODE_APC)
+  if (CLR_CMAKE_TARGET_ARCH_AMD64)
+    add_definitions(-DFEATURE_SPECIAL_USER_MODE_APC)
+  endif()
+  if (CLR_CMAKE_TARGET_ARCH_I386)
+    add_compile_options($<$<COMPILE_LANGUAGE:ASM_MASM>:/safeseh>)
+  endif()
 else()
-  if(NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+  if(NOT CLR_CMAKE_TARGET_APPLE)
     add_definitions(-DFEATURE_READONLY_GS_COOKIE)
   endif()
   include(unix/configure.cmake)

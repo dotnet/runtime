@@ -93,7 +93,7 @@ code_t emitExtractEvexPrefix(instruction ins, code_t& code) const;
 
 unsigned insEncodeReg012(const instrDesc* id, regNumber reg, emitAttr size, code_t* code);
 unsigned insEncodeReg345(const instrDesc* id, regNumber reg, emitAttr size, code_t* code);
-code_t insEncodeReg3456(const instrDesc* id, regNumber reg, emitAttr size, code_t code);
+code_t   insEncodeReg3456(const instrDesc* id, regNumber reg, emitAttr size, code_t code);
 unsigned insEncodeRegSIB(const instrDesc* id, regNumber reg, code_t* code);
 
 code_t insEncodeMRreg(const instrDesc* id, code_t code);
@@ -116,11 +116,11 @@ static bool IsKInstruction(instruction ins);
 
 static regNumber getBmiRegNumber(instruction ins);
 static regNumber getSseShiftRegNumber(instruction ins);
-bool HasVexEncoding(instruction ins) const;
-bool HasEvexEncoding(instruction ins) const;
-bool IsVexEncodableInstruction(instruction ins) const;
-bool IsEvexEncodableInstruction(instruction ins) const;
-bool IsVexOrEvexEncodableInstruction(instruction ins) const;
+bool             HasVexEncoding(instruction ins) const;
+bool             HasEvexEncoding(instruction ins) const;
+bool             IsVexEncodableInstruction(instruction ins) const;
+bool             IsEvexEncodableInstruction(instruction ins) const;
+bool             IsVexOrEvexEncodableInstruction(instruction ins) const;
 
 code_t insEncodeMIreg(const instrDesc* id, regNumber reg, emitAttr size, code_t code);
 
@@ -130,15 +130,15 @@ code_t AddRexXPrefix(const instrDesc* id, code_t code);
 code_t AddRexBPrefix(const instrDesc* id, code_t code);
 code_t AddRexPrefix(instruction ins, code_t code);
 
-bool EncodedBySSE38orSSE3A(instruction ins) const;
-bool Is4ByteSSEInstruction(instruction ins) const;
+bool   EncodedBySSE38orSSE3A(instruction ins) const;
+bool   Is4ByteSSEInstruction(instruction ins) const;
 code_t AddEvexVPrimePrefix(code_t code);
 code_t AddEvexRPrimePrefix(code_t code);
 
 static bool IsMovInstruction(instruction ins);
-bool HasSideEffect(instruction ins, emitAttr size);
-bool IsRedundantMov(
-    instruction ins, insFormat fmt, emitAttr size, regNumber dst, regNumber src, bool canIgnoreSideEffects);
+bool        HasSideEffect(instruction ins, emitAttr size);
+bool        IsRedundantMov(
+           instruction ins, insFormat fmt, emitAttr size, regNumber dst, regNumber src, bool canIgnoreSideEffects);
 bool EmitMovsxAsCwde(instruction ins, emitAttr size, regNumber dst, regNumber src);
 
 bool IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size, regNumber ireg, int varx, int offs);
@@ -478,15 +478,15 @@ void SetContainsCallNeedingVzeroupper(bool value)
     containsCallNeedingVzeroupper = value;
 }
 
-bool IsDstDstSrcAVXInstruction(instruction ins) const;
-bool IsDstSrcSrcAVXInstruction(instruction ins) const;
-bool IsThreeOperandAVXInstruction(instruction ins) const;
+bool        IsDstDstSrcAVXInstruction(instruction ins) const;
+bool        IsDstSrcSrcAVXInstruction(instruction ins) const;
+bool        IsThreeOperandAVXInstruction(instruction ins) const;
 static bool HasRegularWideForm(instruction ins);
 static bool HasRegularWideImmediateForm(instruction ins);
 static bool DoesWriteZeroFlag(instruction ins);
 static bool DoesWriteSignFlag(instruction ins);
 static bool DoesResetOverflowAndCarryFlags(instruction ins);
-bool IsFlagsAlwaysModified(instrDesc* id);
+bool        IsFlagsAlwaysModified(instrDesc* id);
 static bool IsRexW0Instruction(instruction ins);
 static bool IsRexW1Instruction(instruction ins);
 static bool IsRexWXInstruction(instruction ins);
@@ -528,7 +528,7 @@ const char* emitZMMregName(unsigned reg) const;
 /************************************************************************/
 
 private:
-void emitSetAmdDisp(instrDescAmd* id, ssize_t dsp);
+void       emitSetAmdDisp(instrDescAmd* id, ssize_t dsp);
 instrDesc* emitNewInstrAmd(emitAttr attr, ssize_t dsp);
 instrDesc* emitNewInstrAmdCns(emitAttr attr, ssize_t dsp, int cns);
 
@@ -545,9 +545,9 @@ instrDesc* emitNewInstrCallInd(int              argCnt,
                                regMaskTP        byrefRegs,
                                emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize));
 
-void emitGetInsCns(const instrDesc* id, CnsVal* cv) const;
+void    emitGetInsCns(const instrDesc* id, CnsVal* cv) const;
 ssize_t emitGetInsAmdCns(const instrDesc* id, CnsVal* cv) const;
-void emitGetInsDcmCns(const instrDesc* id, CnsVal* cv) const;
+void    emitGetInsDcmCns(const instrDesc* id, CnsVal* cv) const;
 ssize_t emitGetInsAmdAny(const instrDesc* id) const;
 
 /************************************************************************/
@@ -580,10 +580,10 @@ size_t emitSizeOfInsDsc_NONE(instrDesc* id) const;
 size_t emitSizeOfInsDsc_SPEC(instrDesc* id) const;
 
 /*****************************************************************************
-*
-*  Convert between an index scale in bytes to a smaller encoding used for
-*  storage in instruction descriptors.
-*/
+ *
+ *  Convert between an index scale in bytes to a smaller encoding used for
+ *  storage in instruction descriptors.
+ */
 
 inline emitter::opSize emitEncodeScale(size_t scale)
 {
@@ -635,7 +635,7 @@ void emitIns_R_I(instruction ins,
 
 void emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srgReg, bool canSkip);
 
-void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2);
+void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insOpts instOptions = INS_OPTS_NONE);
 
 void emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int ival);
 
@@ -752,9 +752,9 @@ void emitIns_I_AI(instruction ins, emitAttr attr, int val, ssize_t disp);
 
 void emitIns_R_AR(instruction ins, emitAttr attr, regNumber reg, regNumber base, int disp);
 
-void emitIns_R_AI(instruction ins,
-                  emitAttr    attr,
-                  regNumber   ireg,
+void emitIns_R_AI(instruction  ins,
+                  emitAttr     attr,
+                  regNumber    ireg,
                   ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber base, cnsval_ssize_t disp);
@@ -839,8 +839,13 @@ void emitIns_SIMD_R_R_R_C(instruction          ins,
                           regNumber            op2Reg,
                           CORINFO_FIELD_HANDLE fldHnd,
                           int                  offs);
-void emitIns_SIMD_R_R_R_R(
-    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, regNumber op3Reg);
+void emitIns_SIMD_R_R_R_R(instruction ins,
+                          emitAttr    attr,
+                          regNumber   targetReg,
+                          regNumber   op1Reg,
+                          regNumber   op2Reg,
+                          regNumber   op3Reg,
+                          insOpts     instOptions = INS_OPTS_NONE);
 void emitIns_SIMD_R_R_R_S(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, int varx, int offs);
 

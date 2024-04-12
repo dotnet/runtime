@@ -116,7 +116,7 @@ namespace System
 
         private static unsafe void memcpy(byte* dest, byte* src, int size)
         {
-            Buffer.Memmove(ref *dest, ref *src, (nuint)size);
+            SpanHelpers.Memmove(ref *dest, ref *src, (nuint)size);
         }
 
         /* Used by the runtime */

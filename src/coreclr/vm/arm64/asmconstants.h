@@ -33,8 +33,8 @@
 #define DynamicHelperFrameFlags_ObjectArg   1
 #define DynamicHelperFrameFlags_ObjectArg2  2
 
-#define               Thread__m_fPreemptiveGCDisabled   0x0C
-#define               Thread__m_pFrame                  0x10
+#define               Thread__m_fPreemptiveGCDisabled   0x04
+#define               Thread__m_pFrame                  0x08
 
 ASMCONSTANTS_C_ASSERT(Thread__m_fPreemptiveGCDisabled == offsetof(Thread, m_fPreemptiveGCDisabled));
 ASMCONSTANTS_C_ASSERT(Thread__m_pFrame == offsetof(Thread, m_pFrame));
@@ -96,7 +96,11 @@ ASMCONSTANTS_C_ASSERT(MachState__isValid == offsetof(MachState, _isValid))
 #define LazyMachState_captureX19_X29 MachState__captureX19_X29
 ASMCONSTANTS_C_ASSERT(LazyMachState_captureX19_X29 == offsetof(LazyMachState, captureX19_X29))
 
+#ifdef __APPLE__
+#define LazyMachState_captureSp     (MachState__isValid+8+88) // padding for alignment
+#else // __APPLE__
 #define LazyMachState_captureSp     (MachState__isValid+8) // padding for alignment
+#endif // __APPLE
 ASMCONSTANTS_C_ASSERT(LazyMachState_captureSp == offsetof(LazyMachState, captureSp))
 
 #define LazyMachState_captureIp     (LazyMachState_captureSp+8)

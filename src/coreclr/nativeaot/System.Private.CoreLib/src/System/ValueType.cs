@@ -95,43 +95,28 @@ namespace System
 
         public override unsafe int GetHashCode()
         {
-            int hashCode = (int)this.GetMethodTable()->HashCode;
+            HashCode hashCode = default;
+            hashCode.Add((IntPtr)this.GetMethodTable());
 
-            hashCode ^= GetHashCodeImpl();
-
-            return hashCode;
-        }
-
-        private unsafe int GetHashCodeImpl()
-        {
             int numFields = __GetFieldHelper(GetNumFields, out _);
 
             if (numFields == UseFastHelper)
-                return FastGetValueTypeHashCodeHelper(this.GetMethodTable(), ref this.GetRawData());
+                hashCode.AddBytes(GetSpanForField(this.GetMethodTable(), ref this.GetRawData()));
+            else
+                RegularGetValueTypeHashCode(ref hashCode, ref this.GetRawData(), numFields);
 
-            return RegularGetValueTypeHashCode(ref this.GetRawData(), numFields);
+            return hashCode.ToHashCode();
         }
 
-        private static unsafe int FastGetValueTypeHashCodeHelper(MethodTable* type, ref byte data)
+        private static unsafe ReadOnlySpan<byte> GetSpanForField(MethodTable* type, ref byte data)
         {
             // Sanity check - if there are GC references, we should not be hashing bytes
             Debug.Assert(!type->ContainsGCPointers);
-
-            int size = (int)type->ValueTypeSize;
-            int hashCode = 0;
-
-            for (int i = 0; i < size / 4; i++)
-            {
-                hashCode ^= Unsafe.As<byte, int>(ref Unsafe.Add(ref data, i * 4));
-            }
-
-            return hashCode;
+            return new ReadOnlySpan<byte>(ref data, (int)type->ValueTypeSize);
         }
 
-        private unsafe int RegularGetValueTypeHashCode(ref byte data, int numFields)
+        private unsafe void RegularGetValueTypeHashCode(ref HashCode hashCode, ref byte data, int numFields)
         {
-            int hashCode = 0;
-
             // We only take the hashcode for the first non-null field. That's what the CLR does.
             for (int i = 0; i < numFields; i++)
             {
@@ -142,15 +127,15 @@ namespace System
 
                 if (fieldType->ElementType == EETypeElementType.Single)
                 {
-                    hashCode = Unsafe.As<byte, float>(ref fieldData).GetHashCode();
+                    hashCode.Add(Unsafe.As<byte, float>(ref fieldData));
                 }
                 else if (fieldType->ElementType == EETypeElementType.Double)
                 {
-                    hashCode = Unsafe.As<byte, double>(ref fieldData).GetHashCode();
+                    hashCode.Add(Unsafe.As<byte, double>(ref fieldData));
                 }
                 else if (fieldType->IsPrimitive)
                 {
-                    hashCode = FastGetValueTypeHashCodeHelper(fieldType, ref fieldData);
+                    hashCode.AddBytes(GetSpanForField(fieldType, ref fieldData));
                 }
                 else if (fieldType->IsValueType)
                 {
@@ -164,7 +149,7 @@ namespace System
                     var fieldValue = (ValueType)RuntimeImports.RhBox(fieldType, ref fieldData);
                     if (fieldValue != null)
                     {
-                        hashCode = fieldValue.GetHashCodeImpl();
+                        hashCode.Add(fieldValue);
                     }
                     else
                     {
@@ -177,7 +162,7 @@ namespace System
                     object fieldValue = Unsafe.As<byte, object>(ref fieldData);
                     if (fieldValue != null)
                     {
-                        hashCode = fieldValue.GetHashCode();
+                        hashCode.Add(fieldValue);
                     }
                     else
                     {
@@ -187,8 +172,6 @@ namespace System
                 }
                 break;
             }
-
-            return hashCode;
         }
     }
 }

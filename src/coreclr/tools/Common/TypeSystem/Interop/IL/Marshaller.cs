@@ -908,13 +908,13 @@ namespace Internal.TypeSystem.Interop
             {
                 ILCodeStream marshallingCodeStream = _ilCodeStreams.MarshallingCodeStream;
                 ILEmitter emitter = _ilCodeStreams.Emitter;
-                ILLocalVariable native = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.IntPtr));
+                ILLocalVariable native = emitter.NewLocal(Context.GetPointerType(ManagedParameterType));
 
                 ILLocalVariable vPinnedByRef = emitter.NewLocal(ManagedParameterType, true);
                 marshallingCodeStream.EmitLdArg(Index - 1);
                 marshallingCodeStream.EmitStLoc(vPinnedByRef);
                 marshallingCodeStream.EmitLdLoc(vPinnedByRef);
-                marshallingCodeStream.Emit(ILOpcode.conv_i);
+                marshallingCodeStream.Emit(ILOpcode.conv_u);
                 marshallingCodeStream.EmitStLoc(native);
                 _ilCodeStreams.CallsiteSetupCodeStream.EmitLdLoc(native);
             }

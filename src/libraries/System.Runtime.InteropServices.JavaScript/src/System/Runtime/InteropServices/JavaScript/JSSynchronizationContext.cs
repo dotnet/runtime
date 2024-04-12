@@ -44,30 +44,28 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         // this need to be called from JSWebWorker or UI thread
-        public static JSSynchronizationContext InstallWebWorkerInterop(bool isMainThread, CancellationToken cancellationToken)
+        public static unsafe JSSynchronizationContext InstallWebWorkerInterop(bool isMainThread, CancellationToken cancellationToken)
         {
             var ctx = new JSSynchronizationContext(isMainThread, cancellationToken);
             ctx.previousSynchronizationContext = SynchronizationContext.Current;
             SynchronizationContext.SetSynchronizationContext(ctx);
 
-            // FIXME: make this configurable
-            // we could have 3 different modes of this
-            // 1) throwing on UI + JSWebWorker
-            // 2) throwing only on UI - small risk, more convenient.
-            // 3) not throwing at all - quite risky
-            // deadlock scenarios are:
-            // - .Wait for more than 5000ms and deadlock the GC suspend
-            // - .Wait on the Task from HTTP client, on the same thread as the HTTP client needs to resolve the Task/Promise. This could be also be a chain of promises.
-            // - try to create new pthread when UI thread is blocked and we run out of posix/emscripten pool of loaded workers.
-            // Things which lead to it are
-            // - Task.Wait, Signal.Wait etc
-            // - Monitor.Enter etc, if the lock is held by another thread for long time
-            // - synchronous [JSExport] into managed code, which would block
-            // - synchronous [JSImport] to another thread, which would block
-            // see also https://github.com/dotnet/runtime/issues/76958#issuecomment-1921418290
-            Thread.ThrowOnBlockingWaitOnJSInteropThread = true;
+            if (!isMainThread)
+            {
+                if (JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.ThrowWhenBlockingWait)
+                {
+                    Thread.ThrowOnBlockingWaitOnJSInteropThread = true;
+                }
+                else if (JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.WarnWhenBlockingWait
+                    || JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.PreventSynchronousJSExport
+                    )
+                {
+                    Thread.WarnOnBlockingWaitOnJSInteropThread = true;
+                }
+            }
 
             var proxyContext = ctx.ProxyContext;
+            proxyContext.AsyncTaskScheduler = new JSAsyncTaskScheduler(ctx);
             JSProxyContext.CurrentThreadContext = proxyContext;
             JSProxyContext.ExecutionContext = proxyContext;
             if (isMainThread)
@@ -77,7 +75,10 @@ namespace System.Runtime.InteropServices.JavaScript
 
             ctx.AwaitNewData();
 
-            Interop.Runtime.InstallWebWorkerInterop(proxyContext.ContextHandle);
+            Interop.Runtime.InstallWebWorkerInterop(proxyContext.ContextHandle,
+                (delegate* unmanaged[Cdecl]<JSMarshalerArgument*, void>)&JavaScriptExports.BeforeSyncJSExport,
+                (delegate* unmanaged[Cdecl]<JSMarshalerArgument*, void>)&JavaScriptExports.AfterSyncJSExport,
+                (delegate* unmanaged[Cdecl]<void>)&PumpHandler);
 
             return ctx;
         }
@@ -179,7 +180,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             // While we COULD pump here, we don't want to. We want the pump to happen on the next event loop turn.
             // Otherwise we could get a chain where a pump generates a new work item and that makes us pump again, forever.
-            TargetThreadScheduleBackgroundJob(ProxyContext.JSNativeTID, (delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
+            ScheduleSynchronizationContext(ProxyContext.NativeTID);
         }
 
         public override void Post(SendOrPostCallback d, object? state)
@@ -245,13 +246,13 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void TargetThreadScheduleBackgroundJob(IntPtr targetTID, void* callback);
+        internal static extern unsafe void ScheduleSynchronizationContext(IntPtr targetTID);
 
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
 #pragma warning restore CS3016
         // this callback will arrive on the target thread, called from mono_background_exec
-        private static void BackgroundJobHandler()
+        private static void PumpHandler()
         {
             var ctx = JSProxyContext.AssertIsInteropThread();
             ctx.SynchronizationContext.Pump();
@@ -266,6 +267,10 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             try
             {
+                if (SynchronizationContext.Current == null)
+                {
+                    SetSynchronizationContext(this);
+                }
                 while (Queue.Reader.TryRead(out var item))
                 {
                     try
@@ -291,7 +296,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception e)
             {
-                Environment.FailFast($"JSSynchronizationContext.BackgroundJobHandler failed, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {e.StackTrace}");
+                Environment.FailFast($"JSSynchronizationContext.Pump failed, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {e.StackTrace}");
             }
         }
 

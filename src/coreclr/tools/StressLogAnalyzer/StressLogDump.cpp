@@ -24,6 +24,10 @@ class MapViewHolder
 #include "../../../inc/stresslog.h"
 #include "StressMsgReader.h"
 
+#ifdef HOST_WINDOWS
+#include <malloc.h>
+#endif
+
 
 void GcHistClear();
 void GcHistAddLog(LPCSTR msg, StressMsgReader stressMsg);
@@ -243,7 +247,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
                                     fprintf (file, " (%s", Symbol);
                                     if (Displacement)
                                     {
-                                        fprintf (file, "+%#llx", Displacement);
+                                        fprintf (file, "+%#llx", (unsigned long long)Displacement);
                                     }
                                     fprintf (file, ")");
                                 }
@@ -528,7 +532,7 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
             latestLog->readPtr = NULL;
             if (!bDoGcHist)
             {
-                fprintf(file, "------------ Last message from thread %llx -----------\n", latestLog->threadId);
+                fprintf(file, "------------ Last message from thread %llx -----------\n", (unsigned long long)latestLog->threadId);
             }
         }
 

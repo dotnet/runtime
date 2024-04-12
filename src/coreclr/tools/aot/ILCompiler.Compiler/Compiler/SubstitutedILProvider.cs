@@ -879,10 +879,14 @@ namespace ILCompiler
                 return false;
 
             TypeDesc type2 = ReadLdToken(ref reader, methodIL, flags);
-            if (type1 == null)
+            if (type2 == null)
                 return false;
 
             if (!ReadGetTypeFromHandle(ref reader, methodIL, flags))
+                return false;
+
+            // No value in making this work for definitions
+            if (type1.IsGenericDefinition || type2.IsGenericDefinition)
                 return false;
 
             // Dataflow runs on top of uninstantiated IL and we can't answer some questions there.

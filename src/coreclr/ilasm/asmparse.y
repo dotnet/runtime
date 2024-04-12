@@ -486,7 +486,7 @@ typarAttrib             : '+'                               { $$ = gpCovariant; 
                         | '-'                               { $$ = gpContravariant; }
                         | CLASS_                            { $$ = gpReferenceTypeConstraint; }
                         | VALUETYPE_                        { $$ = gpNotNullableValueTypeConstraint; }
-                        | BYREFLIKE_                        { $$ = gpAcceptByRefLike; }
+                        | BYREFLIKE_                        { $$ = gpAllowByRefLike; }
                         | _CTOR                             { $$ = gpDefaultConstructorConstraint; }
                         | FLAGS_ '(' int32 ')'              { $$ = (CorGenericParamAttr)$3; }
                         ;

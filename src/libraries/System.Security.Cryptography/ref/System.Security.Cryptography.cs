@@ -3612,6 +3612,12 @@ namespace System.Security.Cryptography.X509Certificates
         Sha1 = 0,
         ShortSha1 = 1,
         CapiSha1 = 2,
+        Sha256 = 3,
+        Sha384 = 4,
+        Sha512 = 5,
+        ShortSha256 = 6,
+        ShortSha384 = 7,
+        ShortSha512 = 8,
     }
     [System.FlagsAttribute]
     public enum X509VerificationFlags

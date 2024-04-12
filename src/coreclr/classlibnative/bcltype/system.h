@@ -43,22 +43,15 @@ public:
     static FCDECL1(VOID,SetExitCode,INT32 exitcode);
     static FCDECL0(INT32, GetExitCode);
 
-    static FCDECL1(VOID, FailFast, StringObject* refMessageUNSAFE);
-    static FCDECL2(VOID, FailFastWithExitCode, StringObject* refMessageUNSAFE, UINT exitCode);
-    static FCDECL2(VOID, FailFastWithException, StringObject* refMessageUNSAFE, ExceptionObject* refExceptionUNSAFE);
-    static FCDECL3(VOID, FailFastWithExceptionAndSource, StringObject* refMessageUNSAFE, ExceptionObject* refExceptionUNSAFE, StringObject* errorSourceUNSAFE);
-
     static FCDECL0(FC_BOOL_RET, IsServerGC);
 
     // Return a method info for the method were the exception was thrown
     static FCDECL1(ReflectMethodObject*, GetMethodFromStackTrace, ArrayBase* pStackTraceUNSAFE);
-
-private:
-    // Common processing code for FailFast
-    static void GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExceptionForWatsonBucketing, UINT_PTR retAddress, UINT exitCode, STRINGREF errorSource);
 };
 
 extern "C" void QCALLTYPE Environment_Exit(INT32 exitcode);
+
+extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark, PCWSTR message, QCall::ObjectHandleOnStack exception, PCWSTR errorSource);
 
 // Returns the number of logical processors that can be used by managed code
 extern "C" INT32 QCALLTYPE Environment_GetProcessorCount();

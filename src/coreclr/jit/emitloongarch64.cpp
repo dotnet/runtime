@@ -4,7 +4,7 @@
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XX                                                                           XX
-XX                             emitloongarch64.cpp                                XX
+XX                             emitloongarch64.cpp                           XX
 XX                                                                           XX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -51,9 +51,9 @@ const emitJumpKind emitReverseJumpKinds[] = {
 }
 
 /*****************************************************************************
-* Look up the jump kind for an instruction. It better be a conditional
-* branch instruction with a jump kind!
-*/
+ * Look up the jump kind for an instruction. It better be a conditional
+ * branch instruction with a jump kind!
+ */
 
 /*static*/ emitJumpKind emitter::emitInsToJumpKind(instruction ins)
 {
@@ -2047,9 +2047,9 @@ void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNu
 }
 
 // This computes address from the immediate which is relocatable.
-void emitter::emitIns_R_AI(instruction ins,
-                           emitAttr    attr,
-                           regNumber   reg,
+void emitter::emitIns_R_AI(instruction  ins,
+                           emitAttr     attr,
+                           regNumber    reg,
                            ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     assert(EA_IS_RELOC(attr)); // EA_PTR_DSP_RELOC
@@ -2381,8 +2381,8 @@ void emitter::emitIns_I_la(emitAttr size, regNumber reg, ssize_t imm)
 void emitter::emitIns_Call(EmitCallType          callType,
                            CORINFO_METHOD_HANDLE methHnd,
                            INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
-                           void*    addr,
-                           ssize_t  argSize,
+                           void*            addr,
+                           ssize_t          argSize,
                            emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                            VARSET_VALARG_TP ptrVars,
                            regMaskTP        gcrefRegs,
@@ -2786,9 +2786,9 @@ void emitter::emitJumpDistBind()
         B_DIST_SMALL_MAX_POS -
         emitCounts_INS_OPTS_J * (3 << 2); // the max placeholder sizeof(INS_OPTS_JIRL) - sizeof(INS_OPTS_J).
 
-/*****************************************************************************/
-/* If the default small encoding is not enough, we start again here.     */
-/*****************************************************************************/
+    /*****************************************************************************/
+    /* If the default small encoding is not enough, we start again here.     */
+    /*****************************************************************************/
 
 AGAIN:
 
@@ -2819,7 +2819,7 @@ AGAIN:
         UNATIVE_OFFSET dstOffs;
         NATIVE_OFFSET  jmpDist; // the relative jump distance, as it will be encoded
 
-/* Make sure the jumps are properly ordered */
+        /* Make sure the jumps are properly ordered */
 
 #ifdef DEBUG
         assert(lastSJ == nullptr || lastIG != jmp->idjIG || lastSJ->idjOffs < (jmp->idjOffs + adjSJ));
@@ -2873,7 +2873,6 @@ AGAIN:
         jmp->idjOffs += adjSJ;
 
         // If this is a jump via register, the instruction size does not change, so we are done.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
         /* Have we bound this jump's target already? */
 
@@ -2894,7 +2893,6 @@ AGAIN:
         else
         {
             /* First time we've seen this label, convert its target */
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
             tgtIG = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
 
@@ -2997,8 +2995,8 @@ AGAIN:
                 instruction ins = jmp->idIns();
                 assert((INS_bceqz <= ins) && (ins <= INS_bl));
 
-                if (ins <
-                    INS_beqz) //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu < beqz < bnez  // See instrsloongarch64.h.
+                if (ins < INS_beqz) //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu < beqz < bnez  // See
+                                    //   instrsloongarch64.h.
                 {
                     if ((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000)
                     {
@@ -3085,8 +3083,8 @@ AGAIN:
                 instruction ins = jmp->idIns();
                 assert((INS_bceqz <= ins) && (ins <= INS_bl));
 
-                if (ins <
-                    INS_beqz) //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu < beqz < bnez  // See instrsloongarch64.h.
+                if (ins < INS_beqz) //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu < beqz < bnez  // See
+                                    //   instrsloongarch64.h.
                 {
                     if ((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000)
                     {
@@ -3181,7 +3179,7 @@ AGAIN:
 }
 
 /*****************************************************************************
-*
+ *
  *  Append the machine code corresponding to the given instruction descriptor
  *  to the code block at '*dp'; the base of the code block is 'bp', and 'ig'
  *  is the instruction group that contains the instruction. Updates '*dp' to
@@ -4039,15 +4037,15 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             {
                 printf("%s, %s, 0x%lx\n", RegNames[regd], RegNames[regj], offs16);
             }
-            else if (INS_OPTS_NONE == id->idInsOpt())
+            else if ((unsigned)(addr - emitCodeBlock) < emitPrologIG->igSize) // only for prolog
             {
                 if (offs16 < 0)
                 {
-                    printf("-%d ins\n", -offs16 >> 2);
+                    printf("%s, %s, -%d ins\n", RegNames[regj], RegNames[regd], -offs16 >> 2);
                 }
                 else
                 {
-                    printf("+%d ins\n", offs16 >> 2);
+                    printf("%s, %s, +%d ins\n", RegNames[regj], RegNames[regd], offs16 >> 2);
                 }
             }
             else
@@ -4060,12 +4058,12 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         {
             tmp = (((code >> 10) & 0xffff) | ((code & 0x1f) << 16)) << 11;
             tmp >>= 9;
-            if (INS_OPTS_NONE == id->idInsOpt())
+            if ((unsigned)(addr - emitCodeBlock) < emitPrologIG->igSize) // only for prolog
             {
                 tmp >>= 2;
                 if (tmp < 0)
                 {
-                    printf("%s, -%d ins\n", RegNames[regj], tmp);
+                    printf("%s, -%d ins\n", RegNames[regj], -tmp);
                 }
                 else
                 {
@@ -4089,12 +4087,12 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 methodName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
                 printf("# %s\n", methodName);
             }
-            else if (INS_OPTS_NONE == id->idInsOpt())
+            else if ((unsigned)(addr - emitCodeBlock) < emitPrologIG->igSize) // only for prolog
             {
                 tmp >>= 2;
                 if (tmp < 0)
                 {
-                    printf("-%d ins\n", tmp);
+                    printf("-%d ins\n", -tmp);
                 }
                 else
                 {
@@ -4134,7 +4132,12 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             tmp >>= 20;
             if (ins == INS_preld)
             {
-                printf("0x%x, %s, 0x%x\n", regd, RegNames[regj], tmp);
+                printf("0x%x, %s, %d\n", regd, RegNames[regj], tmp);
+                return;
+            }
+            else if (ins == INS_lu52i_d)
+            {
+                printf("%s, %s, 0x%x\n", RegNames[regd], RegNames[regj], tmp & 0xfff);
                 return;
             }
             printf("%s, %s, %d\n", RegNames[regd], RegNames[regj], tmp);
@@ -4598,7 +4601,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
         int   offset = 0;
         DWORD lsl    = 0;
 
-        if (addr->OperGet() == GT_LEA)
+        if (addr->OperIs(GT_LEA))
         {
             offset = addr->AsAddrMode()->Offset();
             if (addr->AsAddrMode()->gtScale > 0)
@@ -4980,7 +4983,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     {
         emitIns_R_R_R(ins, attr, dst->GetRegNum(), src1->GetRegNum(), src2->GetRegNum());
     }
-    else if (dst->OperGet() == GT_MUL)
+    else if (dst->OperIs(GT_MUL))
     {
         if (!needCheckOv)
         {
@@ -5048,10 +5051,14 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
         // TODO-LOONGARCH64-CQ: here sign-extend dst when deal with 32bit data is too conservative.
         if (EA_SIZE(attr) == EA_4BYTE)
+        {
             emitIns_R_R_I(INS_slli_w, attr, dst->GetRegNum(), dst->GetRegNum(), 0);
+        }
     }
     else
     {
+        assert(dst->OperIs(GT_ADD, GT_SUB));
+
         regNumber regOp1       = src1->GetRegNum();
         regNumber regOp2       = src2->GetRegNum();
         regNumber saveOperReg1 = REG_NA;
@@ -5064,26 +5071,38 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             assert(REG_R21 != dst->GetRegNum());
             assert(REG_RA != dst->GetRegNum());
 
-            if (dst->GetRegNum() == regOp1)
+            if (dst->OperIs(GT_ADD))
             {
-                assert(REG_R21 != regOp1);
-                assert(REG_RA != regOp1);
-                saveOperReg1 = REG_R21;
-                saveOperReg2 = regOp2;
-                emitIns_R_R_R(INS_or, attr, REG_R21, regOp1, REG_R0);
-            }
-            else if (dst->GetRegNum() == regOp2)
-            {
-                assert(REG_R21 != regOp2);
-                assert(REG_RA != regOp2);
-                saveOperReg1 = regOp1;
-                saveOperReg2 = REG_R21;
-                emitIns_R_R_R(INS_or, attr, REG_R21, regOp2, REG_R0);
+                saveOperReg1 = (dst->GetRegNum() == regOp1) ? regOp2 : regOp1;
             }
             else
             {
-                saveOperReg1 = regOp1;
-                saveOperReg2 = regOp2;
+                if (dst->GetRegNum() == regOp1)
+                {
+                    assert(REG_R21 != regOp1);
+                    assert(REG_RA != regOp1);
+                    saveOperReg1 = REG_R21;
+                    emitIns_R_R_R(INS_or, attr, REG_R21, regOp1, REG_R0);
+                }
+                else
+                {
+                    saveOperReg1 = regOp1;
+                }
+            }
+
+            if ((dst->gtFlags & GTF_UNSIGNED) == 0)
+            {
+                saveOperReg2 = dst->GetSingleTempReg();
+                assert((saveOperReg2 != REG_RA) && (saveOperReg2 != REG_R21));
+                assert(REG_RA != regOp1);
+                assert(saveOperReg2 != regOp2);
+
+                ssize_t ui6 = (attr == EA_4BYTE) ? 31 : 63;
+                if (dst->OperIs(GT_ADD))
+                {
+                    emitIns_R_R_I(INS_srli_d, attr, REG_RA, regOp1, ui6);
+                }
+                emitIns_R_R_I(INS_srli_d, attr, saveOperReg2, regOp2, ui6);
             }
         }
 
@@ -5091,86 +5110,56 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
         if (needCheckOv)
         {
-            if (dst->OperGet() == GT_ADD || dst->OperGet() == GT_SUB)
+            // ADD : A = B + C
+            // SUB : A = B - C <=> B = A + C
+            if ((dst->gtFlags & GTF_UNSIGNED) != 0)
             {
-                ssize_t   imm;
-                regNumber tempReg1;
-                regNumber tempReg2;
-                // ADD : A = B + C
-                // SUB : C = A - B
-                if ((dst->gtFlags & GTF_UNSIGNED) != 0)
-                {
-                    // if A < B, goto overflow
-                    if (dst->OperGet() == GT_ADD)
-                    {
-                        tempReg1 = dst->GetRegNum();
-                        tempReg2 = saveOperReg1;
-                    }
-                    else
-                    {
-                        tempReg1 = saveOperReg1;
-                        tempReg2 = saveOperReg2;
-                    }
-                    codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bltu, tempReg1, nullptr, tempReg2);
-                }
-                else
-                {
-                    tempReg1 = REG_RA;
-                    tempReg2 = dst->GetSingleTempReg();
-                    assert(tempReg1 != tempReg2);
-                    assert(tempReg1 != saveOperReg1);
-                    assert(tempReg2 != saveOperReg2);
-
-                    ssize_t ui6 = (attr == EA_4BYTE) ? 31 : 63;
-                    if (dst->OperGet() == GT_ADD)
-                    {
-                        emitIns_R_R_I(INS_srli_d, attr, tempReg1, saveOperReg1, ui6);
-                    }
-                    else
-                    {
-                        emitIns_R_R_I(INS_srli_d, attr, tempReg1, dst->GetRegNum(), ui6);
-                    }
-                    emitIns_R_R_I(INS_srli_d, attr, tempReg2, saveOperReg2, ui6);
-
-                    emitIns_R_R_R(INS_xor, attr, tempReg1, tempReg1, tempReg2);
-                    if (attr == EA_4BYTE)
-                    {
-                        imm = 1;
-                        emitIns_R_R_I(INS_andi, attr, tempReg1, tempReg1, imm);
-                        emitIns_R_R_I(INS_andi, attr, tempReg2, tempReg2, imm);
-                    }
-                    // if (B > 0 && C < 0) || (B < 0  && C > 0), skip overflow
-                    BasicBlock* tmpLabel  = codeGen->genCreateTempLabel();
-                    BasicBlock* tmpLabel2 = codeGen->genCreateTempLabel();
-                    BasicBlock* tmpLabel3 = codeGen->genCreateTempLabel();
-
-                    emitIns_J_cond_la(INS_bne, tmpLabel, tempReg1, REG_R0);
-
-                    emitIns_J_cond_la(INS_bne, tmpLabel3, tempReg2, REG_R0);
-
-                    // B > 0 and C > 0, if A < B, goto overflow
-                    emitIns_J_cond_la(INS_bge, tmpLabel, dst->OperGet() == GT_ADD ? dst->GetRegNum() : saveOperReg1,
-                                      dst->OperGet() == GT_ADD ? saveOperReg1 : saveOperReg2);
-
-                    codeGen->genDefineTempLabel(tmpLabel2);
-
-                    codeGen->genJumpToThrowHlpBlk(EJ_jmp, SCK_OVERFLOW);
-
-                    codeGen->genDefineTempLabel(tmpLabel3);
-
-                    // B < 0 and C < 0, if A > B, goto overflow
-                    emitIns_J_cond_la(INS_blt, tmpLabel2, dst->OperGet() == GT_ADD ? saveOperReg1 : saveOperReg2,
-                                      dst->OperGet() == GT_ADD ? dst->GetRegNum() : saveOperReg1);
-
-                    codeGen->genDefineTempLabel(tmpLabel);
-                }
+                // ADD: if A < B, goto overflow
+                // SUB: if B < A, goto overflow
+                codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bltu,
+                                                 dst->OperIs(GT_ADD) ? dst->GetRegNum() : saveOperReg1, nullptr,
+                                                 dst->OperIs(GT_ADD) ? saveOperReg1 : dst->GetRegNum());
             }
             else
             {
-#ifdef DEBUG
-                printf("---------[LOONGARCH64]-NOTE: UnsignedOverflow instruction %d\n", ins);
-#endif
-                assert(!"unimplemented on LOONGARCH yet");
+                if (dst->OperIs(GT_SUB))
+                {
+                    emitIns_R_R_I(INS_srli_d, attr, REG_RA, dst->GetRegNum(), (attr == EA_4BYTE) ? 31 : 63);
+                }
+
+                emitIns_R_R_R(INS_xor, attr, REG_RA, REG_RA, saveOperReg2);
+                if (attr == EA_4BYTE)
+                {
+                    emitIns_R_R_I(INS_andi, attr, REG_RA, REG_RA, 1);
+                    emitIns_R_R_I(INS_andi, attr, saveOperReg2, saveOperReg2, 1);
+                }
+                // ADD: if (B > 0 && C < 0) || (B < 0  && C > 0), skip overflow
+                // SUB: if (A > 0 && C < 0) || (A < 0  && C > 0), skip overflow
+                BasicBlock* tmpLabel1 = codeGen->genCreateTempLabel();
+                BasicBlock* tmpLabel2 = codeGen->genCreateTempLabel();
+                BasicBlock* tmpLabel3 = codeGen->genCreateTempLabel();
+
+                emitIns_J_cond_la(INS_bne, tmpLabel1, REG_RA, REG_R0);
+
+                emitIns_J_cond_la(INS_bne, tmpLabel3, saveOperReg2, REG_R0);
+
+                // ADD: B > 0 and C > 0, if A < B, goto overflow
+                // SUB: A > 0 and C > 0, if B < A, goto overflow
+                emitIns_J_cond_la(INS_bge, tmpLabel1, dst->OperIs(GT_ADD) ? dst->GetRegNum() : saveOperReg1,
+                                  dst->OperIs(GT_ADD) ? saveOperReg1 : dst->GetRegNum());
+
+                codeGen->genDefineTempLabel(tmpLabel2);
+
+                codeGen->genJumpToThrowHlpBlk(EJ_jmp, SCK_OVERFLOW);
+
+                codeGen->genDefineTempLabel(tmpLabel3);
+
+                // ADD: B < 0 and C < 0, if A > B, goto overflow
+                // SUB: A < 0 and C < 0, if B > A, goto overflow
+                emitIns_J_cond_la(INS_blt, tmpLabel2, dst->OperIs(GT_ADD) ? saveOperReg1 : dst->GetRegNum(),
+                                  dst->OperIs(GT_ADD) ? dst->GetRegNum() : saveOperReg1);
+
+                codeGen->genDefineTempLabel(tmpLabel1);
             }
         }
     }

@@ -194,9 +194,7 @@ GVAL_IMPL(SIZE_T, g_runtimeVirtualSize);
 
 #ifndef DACCESS_COMPILE
 
-Volatile<LONG> g_fForbidEnterEE = false;
 bool g_fManagedAttach = false;
-bool g_fNoExceptions = false;
 
 DWORD g_FinalizerWaiterStatus = 0;
 

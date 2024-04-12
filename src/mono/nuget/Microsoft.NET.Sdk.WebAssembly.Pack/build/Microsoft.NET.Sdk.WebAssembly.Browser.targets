@@ -73,10 +73,6 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PreserveCompilationReferences>false</PreserveCompilationReferences>
     <IsWebConfigTransformDisabled>true</IsWebConfigTransformDisabled>
 
-    <!-- JS Modules -->
-    <!-- We disable the manifest generation because we are going to inline the modules in the blazor.boot.json manifest -->
-    <GenerateJSModuleManifest>false</GenerateJSModuleManifest>
-
     <EnableDefaultWasmAssembliesToBundle>false</EnableDefaultWasmAssembliesToBundle>
     <WasmNestedPublishAppDependsOn>_GatherWasmFilesToPublish;$(WasmNestedPublishAppDependsOn)</WasmNestedPublishAppDependsOn>
     <_WasmNestedPublishAppPreTarget>ComputeFilesToPublish</_WasmNestedPublishAppPreTarget>
@@ -95,10 +91,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       $(ResolveStaticWebAssetsInputsDependsOn);
       _AddWasmStaticWebAssets;
     </ResolveStaticWebAssetsInputsDependsOn>
-    <StaticWebAssetsPrepareForRunDependsOn>
-      _GenerateBuildWasmBootJson;
-      $(StaticWebAssetsPrepareForRunDependsOn)
-    </StaticWebAssetsPrepareForRunDependsOn>
     <ResolvePublishStaticWebAssetsDependsOn Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
       $(ResolvePublishStaticWebAssetsDependsOn);
       ProcessPublishFilesForWasm;
@@ -114,19 +106,17 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ResolveCompressedFilesDependsOn>
       $(ResolveCompressedFilesDependsOn);
       ResolveWasmOutputs;
+      _GenerateBuildWasmBootJson;
       _AddWasmStaticWebAssets;
     </ResolveCompressedFilesDependsOn>
-    <ResolveCompressedFilesForPublishDependsOn>
+    <ResolveCompressedFilesForPublishDependsOn Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
       $(ResolveCompressedFilesForPublishDependsOn);
       ProcessPublishFilesForWasm;
       ComputeWasmExtensions;
+      GeneratePublishWasmBootJson;
       _AddPublishWasmBootJsonToStaticWebAssets;
     </ResolveCompressedFilesForPublishDependsOn>
-    <CompressFilesDependsOn>
-      $(CompressFilesDependsOn)
-      _GenerateBuildWasmBootJson;
-    </CompressFilesDependsOn>
-    <CompressFilesForPublishDependsOn>
+    <CompressFilesForPublishDependsOn Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
       $(CompressFilesForPublishDependsOn);
       GeneratePublishWasmBootJson;
     </CompressFilesForPublishDependsOn>
@@ -138,11 +128,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     </AddWasmStaticWebAssetsDependsOn>
     <GenerateBuildWasmBootJsonDependsOn>
       $(GenerateBuildWasmBootJsonDependsOn);
-      ResolveStaticWebAssetsInputs;
+      ResolveWasmOutputs;
     </GenerateBuildWasmBootJsonDependsOn>
-    <GeneratePublishWasmBootJsonDependsOn>
-      $(GeneratePublishWasmBootJsonDependsOn);
-    </GeneratePublishWasmBootJsonDependsOn>
   </PropertyGroup>
 
   <Target Name="_WasmNativeForBuild" DependsOnTargets="_GatherWasmFilesToBuild;WasmBuildApp" Condition="'$(UsingBrowserRuntimeWorkload)' == 'true'" />
@@ -220,12 +207,15 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <Target Name="_ResolveWasmOutputs" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_ResolveWasmConfiguration;_WasmNativeForBuild;_GetWasmRuntimePackVersion">
+    <PropertyGroup>
+      <_WasmNativeAssetFileNames>;@(WasmNativeAsset->'%(FileName)%(Extension)');</_WasmNativeAssetFileNames>
+    </PropertyGroup>
+
     <ItemGroup>
       <_WasmConfigFileCandidates Include="@(StaticWebAsset)" Condition="'%(SourceType)' == 'Discovered'" />
 
       <!-- Remove dotnet.js/wasm from runtime pack, in favor of the relinked ones in @(WasmNativeAsset) -->
-      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
-                               Condition="@(WasmNativeAsset->Count()) > 0 and ( '%(FileName)' == 'dotnet' or '%(FileName)' == 'dotnet.native' ) and ('%(Extension)' == '.wasm' or '%(Extension)' == '.js')" />
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="$(_WasmNativeAssetFileNames.Contains(';%(FileName)%(Extension);'))" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -296,31 +286,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       <ReferenceCopyLocalPaths Remove="@(_WasmBuildFilesToRemove)" />
     </ItemGroup>
 
-    <PropertyGroup>
-      <_WasmBuildBootJsonPath>$(IntermediateOutputPath)blazor.boot.json</_WasmBuildBootJsonPath>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <_BuildWasmBootJson
-        Include="$(_WasmBuildBootJsonPath)"
-        RelativePath="_framework/blazor.boot.json" />
-    </ItemGroup>
-
-    <DefineStaticWebAssets
-      CandidateAssets="@(_BuildWasmBootJson)"
-      SourceId="$(PackageId)"
-      SourceType="Computed"
-      AssetKind="Build"
-      AssetRole="Primary"
-      AssetTraitName="WasmResource"
-      AssetTraitValue="manifest"
-      CopyToOutputDirectory="PreserveNewest"
-      CopyToPublishDirectory="Never"
-      ContentRoot="$(OutDir)wwwroot"
-      BasePath="$(StaticWebAssetBasePath)"
-    >
-      <Output TaskParameter="Assets" ItemName="_BuildWasmBootJsonStaticWebAsset" />
-    </DefineStaticWebAssets>
   </Target>
 
   <Target Name="_AddWasmStaticWebAssets" DependsOnTargets="$(AddWasmStaticWebAssetsDependsOn)">
@@ -383,6 +348,33 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ItemGroup>
       <FileWrites Include="$(_WasmBuildBootJsonPath)" />
     </ItemGroup>
+
+    <PropertyGroup>
+      <_WasmBuildBootJsonPath>$(IntermediateOutputPath)blazor.boot.json</_WasmBuildBootJsonPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_BuildWasmBootJson
+        Include="$(_WasmBuildBootJsonPath)"
+        RelativePath="_framework/blazor.boot.json" />
+    </ItemGroup>
+
+    <DefineStaticWebAssets
+      CandidateAssets="@(_BuildWasmBootJson)"
+      SourceId="$(PackageId)"
+      SourceType="Computed"
+      AssetKind="Build"
+      AssetRole="Primary"
+      AssetTraitName="WasmResource"
+      AssetTraitValue="manifest"
+      CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="Never"
+      ContentRoot="$(OutDir)wwwroot"
+      BasePath="$(StaticWebAssetBasePath)"
+    >
+      <Output TaskParameter="Assets" ItemName="_BuildWasmBootJsonStaticWebAsset" />
+    </DefineStaticWebAssets>
+
   </Target>
 
   <!-- Publish starts here -->
@@ -450,9 +442,22 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
 
     <ConvertDllsToWebCil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebCilPath)" OutputPath="$(_WasmPublishWebCilPath)" IsEnabled="$(_WasmEnableWebcil)">
-      <Output TaskParameter="WebCilCandidates" ItemName="_NewWebCilPublishStaticWebAssets" />
+      <Output TaskParameter="WebCilCandidates" ItemName="_NewWebCilPublishStaticWebAssetsCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ConvertDllsToWebCil>
+
+    <!-- _NewWebCilPublishStaticWebAssetsCandidates contain the `Fingerprint` and the `Integrity` from the old assets.
+         Remove them and call DefineStaticWebAssets so that they can get re-computed appropriately.
+    -->
+    <ItemGroup>    
+      <_NewWebCilPublishStaticWebAssetsCandidatesNoMetadata 
+        Include="@(_NewWebCilPublishStaticWebAssetsCandidates)"
+        RemoveMetadata="Integrity;Fingerprint" />
+    </ItemGroup>
+
+    <DefineStaticWebAssets CandidateAssets="@(_NewWebCilPublishStaticWebAssetsCandidatesNoMetadata)">
+      <Output TaskParameter="Assets" ItemName="_NewWebCilPublishStaticWebAssets" />
+    </DefineStaticWebAssets>
 
     <ItemGroup>
       <ResolvedFileToPublish Remove="@(_PublishResolvedFilesToRemove)" />
