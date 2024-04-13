@@ -61,6 +61,16 @@ namespace System.Buffers
             _slowContainsValuesPtr = valuesPtr;
         }
 
+        public char[] GetValues()
+        {
+            Debug.Assert(_hashEntries is not null);
+
+            var unique = new HashSet<char>(_hashEntries);
+            char[] values = new char[unique.Count];
+            unique.CopyTo(values);
+            return values;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool FastContains(char value)
         {

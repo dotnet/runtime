@@ -9,15 +9,14 @@ namespace System.Buffers
     internal sealed class ProbabilisticCharSearchValues : SearchValues<char>
     {
         private ProbabilisticMapState _map;
-        private readonly string _values;
 
         public ProbabilisticCharSearchValues(ReadOnlySpan<char> values, int maxInclusive)
         {
-            _values = new string(values);
             _map = new ProbabilisticMapState(values, maxInclusive);
         }
 
-        internal override char[] GetValues() => _values.ToCharArray();
+        internal override char[] GetValues() =>
+            _map.GetValues();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override bool ContainsCore(char value) =>

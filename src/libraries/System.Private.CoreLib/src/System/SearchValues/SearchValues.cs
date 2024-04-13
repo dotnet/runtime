@@ -195,7 +195,7 @@ namespace System.Buffers
 
                 // The probabilistic map is more memory efficient for spare sets, while the bitmap is more efficient for dense sets.
                 int bitmapFootprintBytesEstimate = 64 + (maxInclusive / 8);
-                int probabilisticFootprintBytesEstimate = 128 + (valuesLength * 6);
+                int probabilisticFootprintBytesEstimate = 128 + (valuesLength * 4);
 
                 // The bitmap is a bit faster than the perfect hash checks employed by the probabilistic map.
                 // Sacrifice some memory usage for faster lookups.

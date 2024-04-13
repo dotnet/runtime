@@ -16,7 +16,6 @@ namespace System.Buffers
         private IndexOfAnyAsciiSearcher.AsciiState _asciiState;
         private IndexOfAnyAsciiSearcher.AsciiState _inverseAsciiState;
         private ProbabilisticMapState _map;
-        private readonly string _values;
 
         public ProbabilisticWithAsciiCharSearchValues(ReadOnlySpan<char> values, int maxInclusive)
         {
@@ -26,11 +25,11 @@ namespace System.Buffers
             IndexOfAnyAsciiSearcher.ComputeAsciiState(values, out _asciiState);
             _inverseAsciiState = _asciiState.CreateInverse();
 
-            _values = new string(values);
-            _map = new ProbabilisticMapState(_values, maxInclusive);
+            _map = new ProbabilisticMapState(values, maxInclusive);
         }
 
-        internal override char[] GetValues() => _values.ToCharArray();
+        internal override char[] GetValues() =>
+            _map.GetValues();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override bool ContainsCore(char value) =>
