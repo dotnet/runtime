@@ -74,7 +74,7 @@
     .field public !T Field
 
     .method public hidebysig
-        instance !T CreateInstance() cil managed
+        instance !T CreateDefaultInstance() cil managed
     {
         .locals init (
             [0] !T
@@ -585,7 +585,7 @@
     }
 
     .method public hidebysig static
-        string CreateInstance() cil managed
+        string CreateDefaultInstance() cil managed
     {
         .locals init (
             [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
@@ -594,7 +594,7 @@
         ldloca.s 0
         initobj valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
         ldloca.s 0
-        call instance !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::CreateInstance()
+        call instance !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::CreateDefaultInstance()
         pop
         ldloca.s 0
         call instance class [System.Runtime]System.Type valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::GetGenericType()
