@@ -4875,6 +4875,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToInt32Test()
         {
             Assert.Equal(Vector128.Create(int.MinValue), Vector128.ConvertToInt32(Vector128.Create(float.MinValue)));
@@ -4883,6 +4884,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToInt32NativeTest()
         {
             if (Vector128.IsHardwareAccelerated && Sse2.IsSupported)
@@ -4898,6 +4900,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToInt64Test()
         {
             Assert.Equal(Vector128.Create(long.MinValue), Vector128.ConvertToInt64(Vector128.Create(double.MinValue)));
@@ -4906,6 +4909,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToInt64NativeTest()
         {
             if (Vector128.IsHardwareAccelerated && Avx512DQ.VL.IsSupported)
@@ -4922,6 +4926,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToUInt32Test()
         {
             Assert.Equal(Vector128.Create(uint.MinValue), Vector128.ConvertToUInt32(Vector128.Create(float.MinValue)));
@@ -4930,6 +4935,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToUInt32NativeTest()
         {
             if (Vector128.IsHardwareAccelerated && Avx512F.VL.IsSupported)
@@ -4946,6 +4952,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToUInt64Test()
         {
             Assert.Equal(Vector128.Create(ulong.MinValue), Vector128.ConvertToUInt64(Vector128.Create(double.MinValue)));
@@ -4954,6 +4961,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToUInt64NativeTest()
         {
             if (Vector128.IsHardwareAccelerated && Avx512DQ.VL.IsSupported)

@@ -4290,6 +4290,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToInt32Test()
         {
             Assert.Equal(Vector64.Create(int.MinValue), Vector64.ConvertToInt32(Vector64.Create(float.MinValue)));
@@ -4298,6 +4299,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToInt32NativeTest()
         {
             Assert.Equal(Vector64.Create(int.MinValue), Vector64.ConvertToInt32Native(Vector64.Create(float.MinValue)));
@@ -4306,6 +4308,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToInt64Test()
         {
             Assert.Equal(Vector64.Create(long.MinValue), Vector64.ConvertToInt64(Vector64.Create(double.MinValue)));
@@ -4314,6 +4317,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToInt64NativeTest()
         {
             Assert.Equal(Vector64.Create(long.MinValue), Vector64.ConvertToInt64Native(Vector64.Create(double.MinValue)));
@@ -4322,6 +4326,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToUInt32Test()
         {
             Assert.Equal(Vector64.Create(uint.MinValue), Vector64.ConvertToUInt32(Vector64.Create(float.MinValue)));
@@ -4330,6 +4335,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToUInt32NativeTest()
         {
             Assert.Equal(Vector64.Create(uint.MinValue), Vector64.ConvertToUInt32Native(Vector64.Create(float.MinValue)));
@@ -4338,6 +4344,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToUInt64Test()
         {
             Assert.Equal(Vector64.Create(ulong.MinValue), Vector64.ConvertToUInt64(Vector64.Create(double.MinValue)));
@@ -4346,6 +4353,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToUInt64NativeTest()
         {
             Assert.Equal(Vector64.Create(ulong.MinValue), Vector64.ConvertToUInt64Native(Vector64.Create(double.MinValue)));

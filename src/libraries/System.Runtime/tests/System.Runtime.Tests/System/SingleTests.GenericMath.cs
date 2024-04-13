@@ -358,6 +358,7 @@ namespace System.Tests
         //
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public static void ConvertToIntegerTest()
         {
             // Signed Values
@@ -408,39 +409,17 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public static void ConvertToIntegerNativeTest()
         {
             // Signed Values
 
-            if (Sse2.IsSupported)
-            {
-                // On Xarch:
-                // * Conversion to int is natively supported and returns 0x8000_0000
-                // * Conversion to long is natively supported on 64-bit and returns 0x8000_0000_0000_0000
-
-                Assert.Equal(0, FloatingPointHelper<float>.ConvertToIntegerNative<short>(float.MinValue));
-                Assert.Equal(int.MinValue, FloatingPointHelper<float>.ConvertToIntegerNative<int>(float.MinValue));
-                Assert.Equal(nint.MinValue, FloatingPointHelper<float>.ConvertToIntegerNative<nint>(float.MinValue));
-                Assert.Equal(0, FloatingPointHelper<float>.ConvertToIntegerNative<sbyte>(float.MinValue));
-
-                if (Environment.Is64BitProcess)
-                {
-                    Assert.Equal(long.MinValue, FloatingPointHelper<float>.ConvertToIntegerNative<long>(float.MinValue));
-                }
-                else
-                {
-                    Assert.Equal(0, FloatingPointHelper<float>.ConvertToIntegerNative<long>(float.MinValue));
-                }
-            }
-            else
-            {
-                Assert.Equal(short.MinValue, FloatingPointHelper<float>.ConvertToIntegerNative<short>(float.MinValue));
-                Assert.Equal(int.MinValue, FloatingPointHelper<float>.ConvertToIntegerNative<int>(float.MinValue));
-                Assert.Equal(long.MinValue, FloatingPointHelper<float>.ConvertToIntegerNative<long>(float.MinValue));
-                Assert.Equal(nint.MinValue, FloatingPointHelper<float>.ConvertToIntegerNative<nint>(float.MinValue));
-                Assert.Equal(sbyte.MinValue, FloatingPointHelper<float>.ConvertToIntegerNative<sbyte>(float.MinValue));
-            }
+            Assert.Equal(0, FloatingPointHelper<float>.ConvertToIntegerNative<short>(float.MinValue));
+            Assert.Equal(int.MinValue, FloatingPointHelper<float>.ConvertToIntegerNative<int>(float.MinValue));
+            Assert.Equal(long.MinValue, FloatingPointHelper<float>.ConvertToIntegerNative<long>(float.MinValue));
             Assert.Equal(Int128.MinValue, FloatingPointHelper<float>.ConvertToIntegerNative<Int128>(float.MinValue));
+            Assert.Equal(nint.MinValue, FloatingPointHelper<float>.ConvertToIntegerNative<nint>(float.MinValue));
+            Assert.Equal(0, FloatingPointHelper<float>.ConvertToIntegerNative<sbyte>(float.MinValue));
 
             Assert.Equal(2, FloatingPointHelper<float>.ConvertToIntegerNative<short>(2.6f));
             Assert.Equal(2, FloatingPointHelper<float>.ConvertToIntegerNative<int>(2.6f));
@@ -456,19 +435,26 @@ namespace System.Tests
                 // * Conversion to long is natively supported on 64-bit and returns 0x8000_0000_0000_0000
 
                 Assert.Equal(0, FloatingPointHelper<float>.ConvertToIntegerNative<short>(float.MaxValue));
+                Assert.Equal(int.MinValue, FloatingPointHelper<float>.ConvertToIntegerNative<int>(float.MaxValue));
+                Assert.Equal(nint.MinValue, FloatingPointHelper<float>.ConvertToIntegerNative<nint>(float.MaxValue));
                 Assert.Equal(0, FloatingPointHelper<float>.ConvertToIntegerNative<sbyte>(float.MaxValue));
 
-                Assert.Equal(int.MinValue, FloatingPointHelper<float>.ConvertToIntegerNative<int>(float.MaxValue));
-                Assert.Equal(long.MinValue, FloatingPointHelper<float>.ConvertToIntegerNative<long>(float.MaxValue));
-                Assert.Equal(nint.MinValue, FloatingPointHelper<float>.ConvertToIntegerNative<nint>(float.MaxValue));
+                if (Environment.Is64BitProcess)
+                {
+                    Assert.Equal(long.MinValue, FloatingPointHelper<float>.ConvertToIntegerNative<long>(float.MaxValue));
+                }
+                else
+                {
+                    Assert.Equal(long.MaxValue, FloatingPointHelper<float>.ConvertToIntegerNative<long>(float.MaxValue));
+                }
             }
             else
             {
-                Assert.Equal(short.MaxValue, FloatingPointHelper<float>.ConvertToIntegerNative<short>(float.MaxValue));
+                Assert.Equal(-1, FloatingPointHelper<float>.ConvertToIntegerNative<short>(float.MaxValue));
                 Assert.Equal(int.MaxValue, FloatingPointHelper<float>.ConvertToIntegerNative<int>(float.MaxValue));
                 Assert.Equal(long.MaxValue, FloatingPointHelper<float>.ConvertToIntegerNative<long>(float.MaxValue));
                 Assert.Equal(nint.MaxValue, FloatingPointHelper<float>.ConvertToIntegerNative<nint>(float.MaxValue));
-                Assert.Equal(sbyte.MaxValue, FloatingPointHelper<float>.ConvertToIntegerNative<sbyte>(float.MaxValue));
+                Assert.Equal(-1, FloatingPointHelper<float>.ConvertToIntegerNative<sbyte>(float.MaxValue));
             }
             Assert.Equal(Int128.MaxValue, FloatingPointHelper<float>.ConvertToIntegerNative<Int128>(float.MaxValue));
 
@@ -479,9 +465,6 @@ namespace System.Tests
                 // On Xarch:
                 // * Conversion to uint is natively supported w/ Avx512 and returns 0xFFFF_FFFF
                 // * Conversion to ulong is natively supported on 64-bit w/ Avx512 and returns 0xFFFF_FFFF_FFFF_FFFF
-
-                Assert.Equal(0, FloatingPointHelper<float>.ConvertToIntegerNative<byte>(float.MinValue));
-                Assert.Equal(0, FloatingPointHelper<float>.ConvertToIntegerNative<ushort>(float.MinValue));
 
                 if (Avx512F.IsSupported)
                 {
@@ -505,12 +488,12 @@ namespace System.Tests
             }
             else
             {
-                Assert.Equal(byte.MinValue, FloatingPointHelper<float>.ConvertToIntegerNative<byte>(float.MinValue));
-                Assert.Equal(ushort.MinValue, FloatingPointHelper<float>.ConvertToIntegerNative<ushort>(float.MinValue));
                 Assert.Equal(uint.MinValue, FloatingPointHelper<float>.ConvertToIntegerNative<uint>(float.MinValue));
                 Assert.Equal(ulong.MinValue, FloatingPointHelper<float>.ConvertToIntegerNative<ulong>(float.MinValue));
                 Assert.Equal(nuint.MinValue, FloatingPointHelper<float>.ConvertToIntegerNative<nuint>(float.MinValue));
             }
+            Assert.Equal(byte.MinValue, FloatingPointHelper<float>.ConvertToIntegerNative<byte>(float.MinValue));
+            Assert.Equal(ushort.MinValue, FloatingPointHelper<float>.ConvertToIntegerNative<ushort>(float.MinValue));
             Assert.Equal(UInt128.MinValue, FloatingPointHelper<float>.ConvertToIntegerNative<UInt128>(float.MinValue));
 
             Assert.Equal(2u, FloatingPointHelper<float>.ConvertToIntegerNative<byte>(2.6f));
@@ -536,8 +519,8 @@ namespace System.Tests
             }
             Assert.Equal(uint.MaxValue, FloatingPointHelper<float>.ConvertToIntegerNative<uint>(float.MaxValue));
             Assert.Equal(ulong.MaxValue, FloatingPointHelper<float>.ConvertToIntegerNative<ulong>(float.MaxValue));
-            Assert.Equal(nuint.MaxValue, FloatingPointHelper<float>.ConvertToIntegerNative<nuint>(float.MaxValue));
             Assert.Equal(new UInt128(0xFFFF_FF00_0000_0000, 0x0000_0000_0000_0000), FloatingPointHelper<float>.ConvertToIntegerNative<UInt128>(float.MaxValue));
+            Assert.Equal(nuint.MaxValue, FloatingPointHelper<float>.ConvertToIntegerNative<nuint>(float.MaxValue));
         }
 
         [Fact]
