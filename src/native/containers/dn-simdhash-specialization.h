@@ -96,15 +96,19 @@ dn_simdhash_meta_t DN_SIMDHASH_T_META = {
 };
 
 
-static DN_FORCEINLINE(uint8_t)
+static DN_FORCEINLINE(void)
 check_self (DN_SIMDHASH_T_PTR self)
 {
+#ifdef NDEBUG
+	// In release builds, just nullcheck. Checking meta adds measurable overhead.
+	dn_simdhash_assert(self);
+#else
 	// Verifies both that the self-ptr is non-null and that the meta pointer matches
 	//  what it should be. This detects passing the wrong kind of simdhash_t pointer
 	//  to one of the APIs, since C doesn't have fully type-safe pointers.
 	uint8_t ok = self && (self->meta == &DN_SIMDHASH_T_META);
 	dn_simdhash_assert(ok);
-	return ok;
+#endif
 }
 
 
