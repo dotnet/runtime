@@ -132,16 +132,18 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T_PTR hash, bucket_t *restrict buc
 {
 #ifndef DN_SIMDHASH_USE_SCALAR_FALLBACK
 	// Perform an eager load of the vector if SIMD is in use, even though we do
-    //  byte loads to extract lanes on non-wasm platforms. It's faster on x64 for
-    //  a reason I can't identify, and it significantly improves wasm codegen
+	//  byte loads to extract lanes on non-wasm platforms. It's faster on x64 for
+	//  a reason I can't identify, and it significantly improves wasm codegen
 	dn_simdhash_suffixes bucket_suffixes = bucket->suffixes;
 #else
 	// Load through the pointer instead. An eager load just copies to the stack for
-    //  no good reason.
+	//  no good reason.
 	#define bucket_suffixes (bucket->suffixes)
 #endif
 	uint8_t count = dn_simdhash_extract_lane(bucket_suffixes, DN_SIMDHASH_COUNT_SLOT),
 		overflow_count = dn_simdhash_extract_lane(bucket_suffixes, DN_SIMDHASH_CASCADED_SLOT);
+	// We could early-out here when count==0, but it doesn't appear to meaningfully improve
+	//  search performance to do so, and might actually worsen it
 	uint32_t index = find_first_matching_suffix(search_vector, bucket_suffixes, bucket_suffixes.values, count);
 	for (; index < count; index++) {
 		// FIXME: Could be profitable to manually hoist the data load outside of the loop,
@@ -311,9 +313,9 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, 
 			// We found a bucket with space, so claim the first free slot
 			dn_simdhash_bucket_set_count(bucket_address->suffixes, new_index + 1);
 			dn_simdhash_bucket_set_suffix(bucket_address->suffixes, new_index, suffix);
-            // Now store the key, it's probably in the same cache line as the count/suffix
+			// Now store the key, it's probably in the same cache line as the count/suffix
 			*key_slot_address = key;
-            // Now store the value, it's in a different cache line
+			// Now store the value, it's in a different cache line
 			uint32_t value_slot_index = (bucket_index * DN_SIMDHASH_BUCKET_CAPACITY) + new_index;
 			DN_SIMDHASH_VALUE_T *restrict value_slot_address = address_of_value(buffers, value_slot_index);
 			*value_slot_address = value;
