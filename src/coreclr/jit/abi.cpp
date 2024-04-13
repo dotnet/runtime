@@ -87,14 +87,14 @@ unsigned ABIPassingSegment::GetStackOffset() const
 }
 
 //-----------------------------------------------------------------------------
-// GetRegisterStoreType:
-//   Return a type that can be used to store from the register this segment is
-//   in, taking the segment's size into account.
+// GetRegisterType:
+//  Return the smallest type larger or equal to Size that most naturally
+//  represents the register this segment is passed in.
 //
 // Return Value:
-//   A type that matches ABIPassingSegment::Size and the register type.
+//   A type that matches ABIPassingSegment::Size and the register.
 //
-var_types ABIPassingSegment::GetRegisterStoreType() const
+var_types ABIPassingSegment::GetRegisterType() const
 {
     assert(IsPassedInRegister());
     if (genIsValidFloatReg(m_register))
@@ -110,6 +110,7 @@ var_types ABIPassingSegment::GetRegisterStoreType() const
                 return TYP_SIMD16;
 #endif
             default:
+                assert(!"Unexpected size for floating point register");
                 return TYP_UNDEF;
         }
     }
@@ -121,13 +122,18 @@ var_types ABIPassingSegment::GetRegisterStoreType() const
                 return TYP_UBYTE;
             case 2:
                 return TYP_USHORT;
+            case 3:
             case 4:
                 return TYP_INT;
 #ifdef TARGET_64BIT
+            case 5:
+            case 6:
+            case 7:
             case 8:
                 return TYP_LONG;
 #endif
             default:
+                assert(!"Unexpected size for integer register");
                 return TYP_UNDEF;
         }
     }

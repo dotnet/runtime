@@ -1853,7 +1853,7 @@ class DelegateObject : public Object
     friend class CoreLibBinder;
 
 public:
-    BOOL IsWrapperDelegate() { LIMITED_METHOD_CONTRACT; return _methodPtrAux == NULL; }
+    BOOL IsWrapperDelegate() { LIMITED_METHOD_CONTRACT; return _methodPtrAux == 0; }
 
     OBJECTREF GetTarget() { LIMITED_METHOD_CONTRACT; return _target; }
     void SetTarget(OBJECTREF target) { WRAPPER_NO_CONTRACT; SetObjectReference(&_target, target); }
@@ -2324,7 +2324,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        return (_ipForWatsonBuckets != NULL);
+        return (_ipForWatsonBuckets != 0);
     }
 
     // This method returns the IP for Watson Buckets.
@@ -2455,7 +2455,7 @@ public:
     static BOOL UnBox(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static BOOL UnBoxNoGC(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static void UnBoxNoCheck(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
-    static OBJECTREF BoxedNullableNull(TypeHandle nullableType) { return 0; }
+    static OBJECTREF BoxedNullableNull(TypeHandle nullableType) { return NULL; }
 
     // if 'Obj' is a true boxed nullable, return the form we want (either null or a boxed T)
     static OBJECTREF NormalizeBox(OBJECTREF obj);

@@ -185,7 +185,6 @@ namespace System.Net.Http.Functional.Tests
             }, options);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/29419")]
         [Theory]
         [InlineData(ClientCertificateOption.Manual)]
         [InlineData(ClientCertificateOption.Automatic)]

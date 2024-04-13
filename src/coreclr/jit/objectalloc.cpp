@@ -637,7 +637,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             {
                 GenTreeCall* asCall = parent->AsCall();
 
-                if (asCall->gtCallType == CT_HELPER)
+                if (asCall->IsHelperCall())
                 {
                     // TODO-ObjectStackAllocation: Special-case helpers here that
                     // 1. Don't make objects escape.
