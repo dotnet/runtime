@@ -24,6 +24,24 @@ namespace System.Runtime.CompilerServices
             RuntimeTypeHandle targetTypeHandle,
             out int count);
 
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static unsafe uint GetObjectHeader(object obj)
+        {
+            // We need to pin the object to access its header data
+            // otherwise it's a GC hole (exterior pointer).
+            // JIT is expected to lower this call as a single load with a
+            // negative offset (contained)
+            fixed (byte* pData = &GetRawData(obj))
+            {
+                // 64bit: [4b padding][4b header][8b pMT][data..
+                //                                       ^
+                // 32bit: [4b header][4b pMT][data..
+                //                           ^
+                return ((uint*)pData)[-((sizeof(nint) / 4) + 1)];
+            }
+        }
+
         // GetObjectValue is intended to allow value classes to be manipulated as 'Object'
         // but have aliasing behavior of a value class.  The intent is that you would use
         // this function just before an assignment to a variable of type 'Object'.  If the
@@ -125,8 +143,34 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void PrepareDelegate(Delegate d);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int GetHashCode(object? o)
+        {
+            // GetObjectHeader is not efficient for WASM, because WASM doesn't support
+            // negative offsets for loads, so we're unable to optimize GetObjectHeader in RyuJIT.
+            if (!OperatingSystem.IsWasi() && !OperatingSystem.IsBrowser())
+            {
+                if (o is not null)
+                {
+                    uint syncBlockValue = GetObjectHeader(o);
+
+                    const uint BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX = 0x08000000;
+                    const uint BIT_SBLK_IS_HASHCODE = 0x04000000;
+                    const uint BITS_IS_VALID_HASHCODE = BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE;
+                    const int HASHCODE_BITS = 26;
+                    const uint MASK_HASHCODE = (1u << HASHCODE_BITS) - 1u;
+
+                    if ((syncBlockValue & BITS_IS_VALID_HASHCODE) == BITS_IS_VALID_HASHCODE)
+                    {
+                        return unchecked((int)(syncBlockValue & MASK_HASHCODE));
+                    }
+                }
+            }
+            return InternalGetHashCode(o);
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int GetHashCode(object? o);
+        private static extern int InternalGetHashCode(object? o);
 
         /// <summary>
         /// If a hash code has been assigned to the object, it is returned. Otherwise zero is

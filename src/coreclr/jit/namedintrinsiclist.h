@@ -104,6 +104,7 @@ enum NamedIntrinsic : unsigned short
     NI_Internal_Runtime_MethodTable_Of,
 
     NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan,
+    NI_System_Runtime_CompilerServices_RuntimeHelpers_GetObjectHeader,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant,
 

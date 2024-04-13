@@ -2484,6 +2484,63 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
     return false;
 }
 
+//------------------------------------------------------------------------
+// LowerCallGetObjectHeader: Replace RuntimeHelpers.GetObjectHeader with a simple
+//    load with a negative offset (contained)
+//
+// Arguments:
+//    tree - GenTreeCall node to expand as a load
+//    next - [out] Next node to lower if this function returns true
+//
+// Return Value:
+//    false if no changes were made
+//
+bool Lowering::LowerCallGetObjectHeader(GenTreeCall* call, GenTree** next)
+{
+    if (comp->info.compHasNextCallRetAddr)
+    {
+        JITDUMP("compHasNextCallRetAddr=true so we won't be able to remove the call - bail out.\n")
+        return false;
+    }
+
+    GenTree* objNode = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+
+    // Access object's header using LEA with a negative offset - it is important for that LEA to be emitted
+    // as a load with a "contained" imm offset. Otherwise, it'd be a GC hole.
+    //
+    //   64bit: [4b padding][4b header][8b pMT][data..
+    //                                         ^
+    //   32bit: [4b header][4b pMT][data..
+    //                             ^
+    const ssize_t offset = -(TARGET_POINTER_SIZE + 4);
+    GenTree*      result = new (comp, GT_LEA) GenTreeAddrMode(TYP_INT, objNode, nullptr, 1, offset);
+
+    LIR::Use use;
+    if (BlockRange().TryGetUse(call, &use))
+    {
+        use.ReplaceWith(result);
+    }
+    else
+    {
+        result->SetUnusedValue();
+    }
+
+    BlockRange().InsertAfter(objNode, result);
+    BlockRange().Remove(call);
+
+    // Remove all non-user args (e.g. r2r cell)
+    for (CallArg& arg : call->gtArgs.Args())
+    {
+        if (!arg.IsUserArg())
+        {
+            arg.GetNode()->SetUnusedValue();
+        }
+    }
+
+    *next = result->gtNext;
+    return true;
+}
+
 // do lowering steps for a call
 // this includes:
 //   - adding the placement nodes (either stack or register variety) for arguments
@@ -2537,6 +2594,16 @@ GenTree* Lowering::LowerCall(GenTree* node)
                     return nextNode;
                 }
                 break;
+
+// Target must guarantee that LEA(base, -12 or -8) is lowered as a single load with a contained imm offset
+#if defined(TARGET_XARCH) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_GetObjectHeader:
+                if (LowerCallGetObjectHeader(call, &nextNode))
+                {
+                    return nextNode;
+                }
+                break;
+#endif
 
             default:
                 break;

@@ -3122,6 +3122,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             // Not expanding this can lead to noticeable allocations in T0
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
 
+            // This is expanded into a single load instruction
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_GetObjectHeader:
+
             // We need these to be able to fold "typeof(...) == typeof(...)"
             case NI_System_Type_GetTypeFromHandle:
             case NI_System_Type_op_Equality:
@@ -3309,6 +3312,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 op1->gtFlags |= GTF_EXCEPT;
 
                 retNode = op1;
+                break;
+            }
+
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_GetObjectHeader:
+            {
+                // It is expanded into a single load in lowering
+                isSpecial = true;
                 break;
             }
 
@@ -9632,6 +9642,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             if (strcmp(methodName, "CreateSpan") == 0)
                             {
                                 result = NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan;
+                            }
+                            else if (strcmp(methodName, "GetObjectHeader") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_GetObjectHeader;
                             }
                             else if (strcmp(methodName, "InitializeArray") == 0)
                             {
