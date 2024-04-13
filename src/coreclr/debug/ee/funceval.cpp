@@ -1018,7 +1018,7 @@ static void GetFuncEvalArgValue(DebuggerEval *pDE,
                         }
                         else
                         {
-                            *pArgument = NULL;
+                            *pArgument = (ARG_SLOT)NULL;
                         }
                     }
                 }
@@ -1051,7 +1051,7 @@ static void GetFuncEvalArgValue(DebuggerEval *pDE,
                     }
                     else
                     {
-                        *pArgument = NULL;
+                        *pArgument = (ARG_SLOT)NULL;
                     }
                 }
                 else
@@ -1069,7 +1069,7 @@ static void GetFuncEvalArgValue(DebuggerEval *pDE,
                     }
                     else
                     {
-                        *pArgument = NULL;
+                        *pArgument = (ARG_SLOT)NULL;
                     }
                 }
                 else
