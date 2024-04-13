@@ -15037,7 +15037,7 @@ gc_heap::init_gc_heap (int h_number)
 
 #ifdef BACKGROUND_GC
     uoh_a_no_bgc = 0;
-    static_assert((total_generation_count - uoh_start_generation) == 2);
+    static_assert((total_generation_count - uoh_start_generation) == 2, "code depends on 2 UOH generations");
     uoh_a_bgc_marking[0] = uoh_a_bgc_marking[1] = 0;
     uoh_a_bgc_planning[0] = uoh_a_bgc_planning[1] = 0;
 #ifdef BGC_SERVO_TUNING
@@ -18430,7 +18430,7 @@ void gc_heap::bgc_record_uoh_allocation(int gen_number, size_t size)
     {
         background_uoh_alloc_count++;
 
-        static_assert((total_generation_count - uoh_start_generation) == 2);
+        static_assert((total_generation_count - uoh_start_generation) == 2, "code depends on 2 UOH generations");
         if (current_c_gc_state == c_gc_state_planning)
         {
             uoh_a_bgc_planning[gen_number - uoh_start_generation] += size;
@@ -46279,7 +46279,7 @@ void gc_heap::background_sweep()
 
     // We also need to adjust size_before for UOH allocations that occurred during sweeping.
     gc_history_per_heap* current_gc_data_per_heap = get_gc_data_per_heap();
-    static_assert((total_generation_count - uoh_start_generation) == 2);
+    static_assert((total_generation_count - uoh_start_generation) == 2, "code depends on 2 UOH generations");
     assert(uoh_a_bgc_marking[0] == 0);
     assert(uoh_a_bgc_marking[1] == 0);
     assert(uoh_a_no_bgc == 0);
@@ -50270,7 +50270,7 @@ void gc_heap::get_and_reset_uoh_alloc_info()
         // before we lose the values here.
         gc_history_per_heap* current_gc_data_per_heap = hp->get_gc_data_per_heap();
         // loh/poh_a_bgc_planning should be the same as they were when init_records set size_before.
-        static_assert((total_generation_count - uoh_start_generation) == 2);
+        static_assert((total_generation_count - uoh_start_generation) == 2, "code depends on 2 UOH generations");
         current_gc_data_per_heap->gen_data[loh_generation].size_before += hp->uoh_a_bgc_marking[loh_generation - uoh_start_generation];
         current_gc_data_per_heap->gen_data[poh_generation].size_before += hp->uoh_a_bgc_marking[poh_generation - uoh_start_generation];
 
