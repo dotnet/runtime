@@ -2790,10 +2790,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     fgPgoSource      = ICorJitInfo::PgoSource::Unknown;
     fgPgoHaveWeights = false;
     fgPgoSynthesized = false;
-
-#ifdef DEBUG
-    fgPgoConsistent = false;
-#endif
+    fgPgoConsistent  = false;
 
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
@@ -4623,11 +4620,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         fgFixEntryFlowForOSR();
     }
 
-    // Drop back to just checking profile likelihoods.
-    //
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
-
     // Enable the post-phase checks that use internal logic to decide when checking makes sense.
     //
     activePhaseChecks |=
@@ -4636,6 +4628,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Import: convert the instrs in each basic block to a tree based intermediate representation
     //
     DoPhase(this, PHASE_IMPORTATION, &Compiler::fgImport);
+
+    // Drop back to just checking profile likelihoods.
+    //
+    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
+    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
 
     // If this is a failed inline attempt, we're done.
     //
