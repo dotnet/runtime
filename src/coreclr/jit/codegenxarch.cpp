@@ -6787,6 +6787,8 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 // produce code for a GT_LEA subnode
 void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
 {
+    assert((lea->gtDebugFlags & GTF_DEBUG_LEA_EXTERIOR_PTR) == 0);
+
     emitAttr size = emitTypeSize(lea);
     genConsumeOperands(lea);
 

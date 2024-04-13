@@ -7266,6 +7266,8 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 //
 void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
 {
+    assert((lea->gtDebugFlags & GTF_DEBUG_LEA_EXTERIOR_PTR) == 0);
+
     genConsumeOperands(lea);
     emitter* emit   = GetEmitter();
     emitAttr size   = emitTypeSize(lea);

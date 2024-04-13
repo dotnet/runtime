@@ -4688,6 +4688,8 @@ void CodeGen::genCodeForMulLong(GenTreeOp* mul)
 //
 void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
 {
+    assert((lea->gtDebugFlags & GTF_DEBUG_LEA_EXTERIOR_PTR) == 0);
+
     genConsumeOperands(lea);
     emitter* emit   = GetEmitter();
     emitAttr size   = emitTypeSize(lea);

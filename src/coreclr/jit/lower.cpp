@@ -2499,21 +2499,19 @@ bool Lowering::LowerCallGetObjectHeader(GenTreeCall* call, GenTree** next)
 {
     if (comp->info.compHasNextCallRetAddr)
     {
-        JITDUMP("compHasNextCallRetAddr=true so we won't be able to remove the call - bail out.\n")
+        JITDUMP("compHasNextCallRetAddr is true - bail out.\n")
         return false;
     }
 
     GenTree* objNode = call->gtArgs.GetUserArgByIndex(0)->GetNode();
 
-    // Access object's header using LEA with a negative offset - it is important for that LEA to be emitted
-    // as a load with a "contained" imm offset. Otherwise, it'd be a GC hole.
-    //
-    //   64bit: [4b padding][4b header][8b pMT][data..
-    //                                         ^
-    //   32bit: [4b header][4b pMT][data..
-    //                             ^
-    const ssize_t offset = -(TARGET_POINTER_SIZE + 4);
-    GenTree*      result = new (comp, GT_LEA) GenTreeAddrMode(TYP_INT, objNode, nullptr, 1, offset);
+    // Access object's header using LEA with a negative offset. This LEA has to be lowered into a single
+    // load instruction with an addressing mode to avoid introducing a GC hole.
+    const ssize_t offset = -4;
+    GenTree*      lea    = new (comp, GT_LEA) GenTreeAddrMode(TYP_I_IMPL, objNode, nullptr, 1, offset);
+    INDEBUG(lea->gtDebugFlags |= GTF_DEBUG_LEA_EXTERIOR_PTR);
+    GenTreeIndir* result = comp->gtNewIndir(TYP_INT, lea);
+    lea->SetContained();
 
     LIR::Use use;
     if (BlockRange().TryGetUse(call, &use))
@@ -2525,7 +2523,7 @@ bool Lowering::LowerCallGetObjectHeader(GenTreeCall* call, GenTree** next)
         result->SetUnusedValue();
     }
 
-    BlockRange().InsertAfter(objNode, result);
+    BlockRange().InsertAfter(objNode, lea, result);
     BlockRange().Remove(call);
 
     // Remove all non-user args (e.g. r2r cell)

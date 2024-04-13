@@ -623,6 +623,7 @@ enum GenTreeDebugFlags : unsigned int
 
     GTF_DEBUG_VAR_CSE_REF       = 0x00800000, // GT_LCL_VAR -- This is a CSE LCL_VAR node
     GTF_DEBUG_CAST_DONT_FOLD    = 0x00400000, // GT_CAST    -- Try to prevent this cast from being folded
+    GTF_DEBUG_LEA_EXTERIOR_PTR  = 0x00200000, // GT_LEA     -- It has to be expanded with offset "contained"
 };
 
 inline constexpr GenTreeDebugFlags operator ~(GenTreeDebugFlags a)
