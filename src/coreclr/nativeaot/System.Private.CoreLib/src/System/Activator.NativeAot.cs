@@ -63,7 +63,7 @@ namespace System
                 else
                 {
                     t = default!;
-                    RawCalliHelper.Call(defaultConstructor, ref Unsafe.As<T, byte>(ref t));
+                    ((delegate* <ref byte, void>)defaultConstructor)(ref Unsafe.As<T, byte>(ref t));
 
                     // Debugger goo so that stepping in works. Only affects debug info generation.
                     // The call gets optimized away.
