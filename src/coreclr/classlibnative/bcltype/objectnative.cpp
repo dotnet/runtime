@@ -82,7 +82,7 @@ FCIMPL1(INT32, ObjectNative::InternalGetHashCode, Object* obj) {
 }
 FCIMPLEND
 
-FCIMPL1(INT32, ObjectNative::TryGetHashCode, Object* obj) {
+FCIMPL1(INT32, ObjectNative::InternalTryGetHashCode, Object* obj) {
 
     CONTRACTL
     {

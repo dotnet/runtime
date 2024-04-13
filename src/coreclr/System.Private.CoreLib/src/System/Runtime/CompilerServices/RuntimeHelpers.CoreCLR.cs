@@ -143,23 +143,24 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void PrepareDelegate(Delegate d);
 
+
+
+        private const uint BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX = 0x08000000;
+        private const uint BIT_SBLK_IS_HASHCODE = 0x04000000;
+        private const uint BITS_IS_VALID_HASHCODE = BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE;
+        private const int HASHCODE_BITS = 26;
+        private const uint MASK_HASHCODE = (1u << HASHCODE_BITS) - 1u;
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetHashCode(object? o)
         {
-            // GetObjectHeader is not efficient for WASM, because WASM doesn't support
-            // negative offsets for loads, so we're unable to optimize GetObjectHeader in RyuJIT.
+            // WASM doesn't yet support negative offsets for loads required
+            // for GetObjectHeader to be optimized in RyuJIT.
             if (!OperatingSystem.IsWasi() && !OperatingSystem.IsBrowser())
             {
                 if (o is not null)
                 {
                     uint syncBlockValue = GetObjectHeader(o);
-
-                    const uint BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX = 0x08000000;
-                    const uint BIT_SBLK_IS_HASHCODE = 0x04000000;
-                    const uint BITS_IS_VALID_HASHCODE = BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE;
-                    const int HASHCODE_BITS = 26;
-                    const uint MASK_HASHCODE = (1u << HASHCODE_BITS) - 1u;
-
                     if ((syncBlockValue & BITS_IS_VALID_HASHCODE) == BITS_IS_VALID_HASHCODE)
                     {
                         return unchecked((int)(syncBlockValue & MASK_HASHCODE));
@@ -180,8 +181,27 @@ namespace System.Runtime.CompilerServices
         /// The advantage of this over <see cref="GetHashCode" /> is that it avoids assigning a hash
         /// code to the object if it does not already have one.
         /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int TryGetHashCode(object o)
+        {
+            // WASM doesn't yet support negative offsets for loads required
+            // for GetObjectHeader to be optimized in RyuJIT.
+            if (!OperatingSystem.IsWasi() && !OperatingSystem.IsBrowser())
+            {
+                if (o is not null)
+                {
+                    uint syncBlockValue = GetObjectHeader(o);
+                    if ((syncBlockValue & BITS_IS_VALID_HASHCODE) == BITS_IS_VALID_HASHCODE)
+                    {
+                        return unchecked((int)(syncBlockValue & MASK_HASHCODE));
+                    }
+                }
+            }
+            return InternalTryGetHashCode(o);
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int TryGetHashCode(object o);
+        private static extern int InternalTryGetHashCode(object? o);
 
         public static new unsafe bool Equals(object? o1, object? o2)
         {
