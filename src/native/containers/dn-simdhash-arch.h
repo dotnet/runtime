@@ -126,19 +126,27 @@ find_first_matching_suffix (
 	// HACK: We can't put this in a common helper function without introducing a temporary
 	//  unaligned copy-from-table-to-stack in wasm-without-simd
 #define ITER(offset) \
-	if (needle == haystack_values[i + offset]) \
-		return i + offset;
+	if (needle == haystack_values[offset]) \
+		return offset;
 
-	// It is safe to unroll this 4x without extra bounds checks,
-	//  because the suffixes table always contains 16 items.
-	// Suffixes always have the high bit set, so slot 14 (count) will never
-	//  match, and there's a 1/256 chance of the cascade slot matching.
-	for (uint32_t i = 0; i < count; i += 4) {
-		ITER(0);
-		ITER(1);
-		ITER(2);
-		ITER(3);
-	}
+	// It is safe to unroll this without bounds checks
+	// One would expect this to blow out the branch predictor, but in my testing
+	//  it's significantly faster when there is no match, and slightly faster
+	//  for cases where there is a match.
+	ITER(0);
+	ITER(1);
+	ITER(2);
+	ITER(3);
+	ITER(4);
+	ITER(5);
+	ITER(6);
+	ITER(7);
+	ITER(8);
+	ITER(9);
+	ITER(10);
+	ITER(11);
+	ITER(12);
+	ITER(13);
 #undef ITER
 	return 32;
 #endif
