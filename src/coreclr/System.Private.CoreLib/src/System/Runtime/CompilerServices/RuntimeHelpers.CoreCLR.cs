@@ -38,7 +38,7 @@ namespace System.Runtime.CompilerServices
                 //                                       ^
                 // 32bit: [4b header][4b pMT][data..
                 //                           ^
-                return ((uint*)pData)[-((sizeof(nint) / 4) + 1)];
+                return *(uint*)(pData - sizeof(nint) - sizeof(int));
             }
         }
 
