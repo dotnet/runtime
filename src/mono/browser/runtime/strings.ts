@@ -39,19 +39,20 @@ export function strings_init (): void {
 
 export function stringToUTF8 (str: string): Uint8Array {
     if (_text_encoder_utf8 === undefined) {
-        const buffer = new Uint8Array(str.length * 2);
-        Module.stringToUTF8Array(str, buffer, 0, str.length * 2);
+        const len = Module.lengthBytesUTF8(str);
+        const buffer = new Uint8Array(len);
+        Module.stringToUTF8Array(str, buffer, 0, len);
         return buffer;
     }
     return _text_encoder_utf8.encode(str);
 }
 
 export function stringToUTF8Ptr (str: string): CharPtr {
-    const bytes = (str.length + 1) * 2;
-    const ptr = Module._malloc(bytes) as any;
-    _zero_region(ptr, str.length * 2);
-    const buffer = localHeapViewU8().subarray(ptr, ptr + bytes);
-    buffer.set(stringToUTF8(str));
+    const size = Module.lengthBytesUTF8(str) + 1;
+    const ptr = Module._malloc(size) as any;
+    const buffer = localHeapViewU8().subarray(ptr, ptr + size);
+    Module.stringToUTF8Array(str, buffer, 0, size);
+    buffer[size - 1] = 0;
     return ptr;
 }
 
