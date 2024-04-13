@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 using BCryptCreateHashFlags = Interop.BCrypt.BCryptCreateHashFlags;
@@ -122,7 +123,9 @@ namespace System.Security.Cryptography
         {
             if (disposing)
             {
-                DestroyHash();
+                // Not disposing of _hAlgorithm as we got this from a cache. So it's not ours to Dispose().
+                _hHash.Dispose();
+
                 if (_key != null)
                 {
                     byte[] key = _key;
@@ -134,13 +137,17 @@ namespace System.Security.Cryptography
 
         public sealed override int HashSizeInBytes => _hashSize;
 
+        [MemberNotNull(nameof(_hHash))]
         public override void Reset()
         {
             // Reset does not need to use ConcurrencyBlock. It either no-ops, or creates an entirely new handle, exchanges
             // them, and disposes of the old handle. We don't need to block concurrency on the Dispose because SafeHandle
             // does that.
             if (_reusable && !_running)
+            {
+                Debug.Assert(_hHash is not null);
                 return;
+            }
 
             BCryptCreateHashFlags flags = _reusable ?
                 BCryptCreateHashFlags.BCRYPT_HASH_REUSABLE_FLAG :
@@ -159,20 +166,8 @@ namespace System.Security.Cryptography
             previousHash?.Dispose();
         }
 
-        private void DestroyHash()
-        {
-            SafeBCryptHashHandle? hHash = _hHash;
-            if (hHash != null)
-            {
-                _hHash = null;
-                hHash.Dispose();
-            }
-
-            // Not disposing of _hAlgorithm as we got this from a cache. So it's not ours to Dispose().
-        }
-
         private readonly SafeBCryptAlgorithmHandle _hAlgorithm;
-        private SafeBCryptHashHandle? _hHash;
+        private SafeBCryptHashHandle _hHash;
         private byte[]? _key;
         private readonly bool _reusable;
 
