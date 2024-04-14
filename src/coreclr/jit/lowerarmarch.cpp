@@ -1269,7 +1269,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             GenTree* user = use.User();
             // Wrap the intrinsic in ConditionalSelect only if it is not already inside another ConditionalSelect
-            if (user->OperIsHWIntrinsic() && user->AsHWIntrinsic()->GetHWIntrinsicId() != NI_Sve_ConditionalSelect)
+            if (!user->OperIsHWIntrinsic() || (user->AsHWIntrinsic()->GetHWIntrinsicId() != NI_Sve_ConditionalSelect))
             {
                 CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
                 unsigned    simdSize        = node->GetSimdSize();
