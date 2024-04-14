@@ -339,7 +339,7 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
 
             if (IsInvariantInRange(childNode, parentNode))
             {
-                assert(shiftAmountNode->isContained());
+                assert(rotateAmountNode->isContained());
                 return true;
             }
         }
