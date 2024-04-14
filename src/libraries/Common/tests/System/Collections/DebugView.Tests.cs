@@ -69,6 +69,10 @@ namespace System.Collections.Tests
                     new ("[2]", "\"Two\""),
                 }
             };
+        }
+
+        private static IEnumerable<object[]> TestDebuggerAttributes_AdditionalGenericDictionaries()
+        {
             yield return new object[] { new Dictionary<int, string> { { 1, "One" }, { 2, "Two" } }.ToFrozenDictionary(),
                 new KeyValuePair<string, string>[]
                 {
@@ -208,12 +212,14 @@ namespace System.Collections.Tests
 
         public static IEnumerable<object[]> TestDebuggerAttributes_InputsPresentedAsDictionary()
         {
+            var testCases = TestDebuggerAttributes_NonGenericDictionaries()
+                .Concat(TestDebuggerAttributes_AdditionalGenericDictionaries());
 #if !NETFRAMEWORK
-            return TestDebuggerAttributes_NonGenericDictionaries()
+            return testCases
                 .Concat(TestDebuggerAttributes_GenericDictionaries());
 #else
-            // In .Net Framework only non-generic dictionaries are displayed in a dictionary format by the debugger.
-            return TestDebuggerAttributes_NonGenericDictionaries();
+            // In .Net Framework, the generic dictionaries that are part of the framework are displayed in a list format by the debugger.
+            return testCases;
 #endif
         }
 
