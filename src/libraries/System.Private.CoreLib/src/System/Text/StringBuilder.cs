@@ -846,7 +846,7 @@ namespace System.Text
                 if (length == 0)
                 {
                     ExpandByABlock(count);
-                    length = Math.Min(m_ChunkChars.Length - m_ChunkLength, count);
+                    length = count;
                 }
                 value.CopyTo(startIndex, new Span<char>(m_ChunkChars, m_ChunkLength, length), length);
 
