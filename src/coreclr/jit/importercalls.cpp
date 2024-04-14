@@ -4717,10 +4717,10 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             ClassLayout*         toLayout  = nullptr;
             var_types            toType    = TypeHandleToVarType(toTypeHnd, &toLayout);
 
-            if (fromType == TYP_REF || info.compCompHnd->getBoxHelper(fromTypeHnd) == CORINFO_HELP_BOX_NULLABLE ||
-                toType == TYP_REF || info.compCompHnd->getBoxHelper(toTypeHnd) == CORINFO_HELP_BOX_NULLABLE)
+            if (fromType == TYP_REF || info.compCompHnd->isNullableType(fromTypeHnd) != TypeCompareState::MustNot ||
+                toType == TYP_REF || info.compCompHnd->isNullableType(toTypeHnd) != TypeCompareState::MustNot)
             {
-                // Fallback to the software implementation to throw when the types don't fit "where T : struct"
+                // Fallback to the software implementation to throw when the types fail a "default(T) is not null" check.
                 return nullptr;
             }
 

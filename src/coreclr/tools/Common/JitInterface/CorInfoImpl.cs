@@ -2941,6 +2941,18 @@ namespace Internal.JitInterface
             return _compilation.IsEffectivelySealed(type);
         }
 
+        private TypeCompareState isNullableType(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc type = HandleToObject(cls);
+
+            if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+            {
+                return TypeCompareState.May;
+            }
+
+            return type.IsNullable ? TypeCompareState.Must : TypeCompareState.MustNot;
+        }
+
         private TypeCompareState isEnum(CORINFO_CLASS_STRUCT_* cls, CORINFO_CLASS_STRUCT_** underlyingType)
         {
             Debug.Assert(cls != null);
