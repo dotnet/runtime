@@ -340,10 +340,10 @@ namespace Internal.Runtime.TypeLoader
                 if (result != IntPtr.Zero)
                 {
                     if (Type.IsValueType)
-                        Environment.FailFast("Here!");
-
-                    // TODO
-                    //      result = TypeLoaderEnvironment.Instance.ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(result, new RuntimeTypeHandle(pElementEEType));
+                    {
+                        result = TypeLoaderEnvironment.ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(result,
+                            builder.GetRuntimeTypeHandle(Type));
+                    }
                 }
                 else
                 {
