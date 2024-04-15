@@ -628,12 +628,79 @@ extends:
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/mono/templates/workloads-build.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           platforms:
           - windows_x64
           jobParameters:
-            templatePath: 'templates-official'
+            nameSuffix: Workloads
+            preBuildSteps:
+            - task: DownloadPipelineArtifact@2
+              inputs:
+                artifact: 'IntermediateArtifacts'
+                path: $(Build.SourcesDirectory)/artifacts/workloadPackages
+                patterns: |
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.android-*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-arm64.Cross.android-*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.browser-wasm*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-arm64.Cross.browser-wasm*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.wasi-wasm*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-arm64.Cross.wasi-wasm*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.android-*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.browser-wasm*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.ios-*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.iossimulator-*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.tvos-*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.tvossimulator-*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.wasi-wasm*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Workload.Mono.ToolChain.Current.Manifest*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Workload.Mono.ToolChain.net6.Manifest*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Workload.Mono.ToolChain.net7.Manifest*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Workload.Mono.ToolChain.net8.Manifest*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Runtime.MonoTargets.Sdk*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Runtime.MonoAOTCompiler.Task*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Runtime.WebAssembly.Sdk*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Runtime.WebAssembly.Wasi*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Runtime.WebAssembly.Templates*.nupkg
+                  IntermediateArtifacts/windows_arm64/Shipping/Microsoft.NETCore.App.Runtime.win-arm64*.nupkg
+                  IntermediateArtifacts/windows_x64/Shipping/Microsoft.NETCore.App.Runtime.win-x64*.nupkg
+                  IntermediateArtifacts/windows_x86/Shipping/Microsoft.NETCore.App.Runtime.win-x86*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Sdk.WebAssembly.Pack*.nupkg
+
+            - task: CopyFiles@2
+              displayName: Flatten packages
+              inputs:
+                sourceFolder: $(Build.SourcesDirectory)/artifacts/workloadPackages
+                contents: '*/Shipping/*.nupkg'
+                cleanTargetFolder: false
+                targetFolder: $(Build.SourcesDirectory)/artifacts/workloadPackages
+                flattenFolders: true
+
+            buildArgs: -s mono.workloads -c $(_BuildConfig)
+            
+            postBuildSteps:
+            # Upload packages wrapping msis
+            - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+              parameters:
+                name: workloads
+
+            # Delete wixpdb files before they are uploaded to artifacts
+            - task: DeleteFiles@1
+              displayName: Delete wixpdb's
+              inputs:
+                SourceFolder: $(Build.SourcesDirectory)/artifacts/workloads
+                Contents: '*.wixpdb'
+
+            # Upload artifacts to be used for generating VS components
+            - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+              parameters:
+                name: workloads-vs
+                publishPackagesCondition: false
+                publishVSSetupCondition: always()
+
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
             dependsOn:
