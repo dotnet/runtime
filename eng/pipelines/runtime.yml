@@ -753,8 +753,7 @@ extends:
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/mono/templates/generate-offsets.yml
-          templatePath: 'templates'
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           platforms:
           - android_x64
@@ -764,7 +763,29 @@ extends:
           - ios_arm64
           - maccatalyst_x64
           jobParameters:
-            isOfficialBuild: false
+            nameSuffix: MonoAOTOffsets
+            buildArgs: -s mono.aotcross -c $(_BuildConfig) /p:MonoGenerateOffsetsOSGroups=$(osGroup)
+            variables:
+              - name: _osParameter
+                value: -os linux
+              - name: _archParameter
+                value: -arch x64
+            postBuildSteps:
+              # Upload offset files
+              - task: CopyFiles@2
+                displayName: Collect offset files
+                inputs:
+                  sourceFolder: '$(Build.SourcesDirectory)/artifacts/obj/mono/'
+                  contents: '**/offsets-*.h'
+                  targetFolder: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles/'
+
+              - template: /eng/pipelines/common/templates/publish-pipeline-artifacts.yml
+                parameters:
+                  displayName: Upload offset files
+                  isOfficialBuild: false
+                  inputs:
+                    targetPath: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
+                    artifactName: 'Mono_Offsets_$(osGroup)$(osSubGroup)'
             # needed by crossaot
             condition: >-
               or(
@@ -1245,9 +1266,9 @@ extends:
             nameSuffix: CrossAOT_Mono
             runtimeVariant: crossaot
             dependsOn:
-            - mono_android_offsets
-            - mono_browser_offsets
-            - mono_wasi_offsets
+            - build_android_x64_release_MonoAOTOffsets
+            - build_browser_wasm_release_MonoAOTOffsets
+            - build_wasi_wasm_release_MonoAOTOffsets
             monoCrossAOTTargetOS:
             - android
             - browser
@@ -1272,9 +1293,9 @@ extends:
             nameSuffix: CrossAOT_Mono
             runtimeVariant: crossaot
             dependsOn:
-            - mono_android_offsets
-            - mono_browser_offsets
-            - mono_wasi_offsets
+            - build_android_x64_release_MonoAOTOffsets
+            - build_browser_wasm_release_MonoAOTOffsets
+            - build_wasi_wasm_release_MonoAOTOffsets
             monoCrossAOTTargetOS:
             - android
             - browser
@@ -1303,12 +1324,12 @@ extends:
             nameSuffix: CrossAOT_Mono
             runtimeVariant: crossaot
             dependsOn:
-            - mono_android_offsets
-            - mono_browser_offsets
-            - mono_wasi_offsets
-            - mono_tvos_offsets
-            - mono_ios_offsets
-            - mono_maccatalyst_offsets
+            - build_android_x64_release_MonoAOTOffsets
+            - build_browser_wasm_release_MonoAOTOffsets
+            - build_wasi_wasm_release_MonoAOTOffsets
+            - build_tvos_arm64_release_MonoAOTOffsets
+            - build_ios_arm64_release_MonoAOTOffsets
+            - build_maccatalyst_x64_release_MonoAOTOffsets
             monoCrossAOTTargetOS:
             - android
             - browser
