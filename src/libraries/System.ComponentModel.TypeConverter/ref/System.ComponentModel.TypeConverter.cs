@@ -1074,6 +1074,7 @@ namespace System.ComponentModel
         protected PropertyDescriptor(string name, System.Attribute[]? attrs) : base (default(string)) { }
         public abstract System.Type ComponentType { get; }
         public virtual System.ComponentModel.TypeConverter Converter { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")] get { throw null; } }
+        public virtual System.ComponentModel.TypeConverter ConverterFromKnownType { get { throw null; } }
         public virtual bool IsLocalizable { get { throw null; } }
         public abstract bool IsReadOnly { get; }
         public abstract System.Type PropertyType { get; }

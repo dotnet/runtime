@@ -11,13 +11,14 @@ namespace System.ComponentModel.Tests
         private const string TypeDescriptorIsTrimmableSwitchName = "System.ComponentModel.TypeDescriptor.IsTrimmable";
 
         [Fact]
-        public static void GetPropertiesAndEventsFromKnownType_NotRegistered_Throws()
+        public static void CallMembersWithKnownType_NotRegistered_Throws()
         {
             RemoteExecutor.Invoke(() =>
             {
                 // This throws even if we aren't trimming since we are calling KnownType APIs.
                 Assert.Throws<InvalidOperationException>(() => TypeDescriptor.GetPropertiesFromKnownType(typeof(C1)));
                 Assert.Throws<InvalidOperationException>(() => TypeDescriptor.GetEventsFromKnownType(typeof(C1)));
+                Assert.Throws<InvalidOperationException>(() => TypeDescriptor.GetConverterFromKnownType(typeof(C1)));
             }).Dispose();
         }
 
@@ -62,6 +63,58 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
+        public static void GetPropertiesAndEventsFromKnownType_ChildRegistered_Trimmed()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.RuntimeConfigurationOptions[TypeDescriptorIsTrimmableSwitchName] = bool.TrueString;
+
+            RemoteExecutor.Invoke(() =>
+            {
+                TypeDescriptor.AddKnownReflectedType<C1>();
+                TypeDescriptor.AddKnownReflectedType<C2>();
+                PropertyDescriptorCollection properties = TypeDescriptor.GetPropertiesFromKnownType(typeof(C1));
+                Assert.Equal("Class", properties[1].Name);
+                Assert.Equal(2, properties[1].GetChildProperties().Count);
+            }, options).Dispose();
+        }
+
+        [Fact]
+        public static void GetPropertiesAndEventsFromKnownType_ChildUnregistered_Trimmed()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.RuntimeConfigurationOptions[TypeDescriptorIsTrimmableSwitchName] = bool.TrueString;
+
+            RemoteExecutor.Invoke(() =>
+            {
+                TypeDescriptor.AddKnownReflectedType<C1>();
+                PropertyDescriptorCollection properties = TypeDescriptor.GetPropertiesFromKnownType(typeof(C1));
+                Assert.Equal("Class", properties[1].Name);
+                Assert.Throws<InvalidOperationException>(() => properties[1].GetChildProperties());
+            }, options).Dispose();
+        }
+
+        [Fact]
+        public static void GetPropertiesAndEventsFromKnownType_BaseClassUnregistered_Trimmed()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.RuntimeConfigurationOptions[TypeDescriptorIsTrimmableSwitchName] = bool.TrueString;
+
+            RemoteExecutor.Invoke(() =>
+            {
+                TypeDescriptor.AddKnownReflectedType<C1>();
+                TypeDescriptor.AddKnownReflectedType<C2>();
+
+                PropertyDescriptorCollection properties = TypeDescriptor.GetPropertiesFromKnownType(typeof(C1));
+                Assert.Equal("Int32", properties[0].Name);
+                Assert.Equal("Class", properties[1].Name);
+                Assert.Equal(2, properties[1].GetChildProperties().Count);
+                Assert.Equal("Bool", properties[1].GetChildProperties()[0].Name);
+
+                // Even though C1.Class.Base is not registered, we should still be able to get the properties of Base.
+                Assert.Equal("String", properties[1].GetChildProperties()[1].Name);
+            }, options).Dispose();
+        }
+        [Fact]
         public static void IntrinsicTypesAreKnownTypes()
         {
             Assert.IsType<ByteConverter>(TypeDescriptor.GetConverterFromKnownType(typeof(byte)));
@@ -71,8 +124,8 @@ namespace System.ComponentModel.Tests
 
         private class C1
         {
-            public int P1 { get; set; }
-            public int P2 { get; set; }
+            public int Int32 { get; set; }
+            public C2 Class { get; set; }
 
             public event EventHandler E1
             {
@@ -86,5 +139,16 @@ namespace System.ComponentModel.Tests
                 remove => throw new NotImplementedException();
             }
         }
+
+        private class C2 : Base
+        {
+            public bool Bool { get; set; }
+        }
+
+        private class Base
+        {
+            public string String { get; set; }
+        }
+
     }
 }

@@ -87,6 +87,47 @@ namespace System.ComponentModel
         }
 
         /// <summary>
+        /// Gets the type converter for this property.
+        /// </summary>
+        public virtual TypeConverter ConverterFromKnownType
+        {
+            get
+            {
+                // Always grab the attribute collection first here, because if the metadata version
+                // changes it will invalidate our type converter cache.
+                AttributeCollection attrs = Attributes;
+
+                if (_converter == null)
+                {
+                    TypeConverterAttribute attr = (TypeConverterAttribute)attrs[typeof(TypeConverterAttribute)]!;
+                    if (attr.ConverterTypeName != null && attr.ConverterTypeName.Length > 0)
+                    {
+                        TypeDescriptor.ValidateKnownType(PropertyType);
+                        _converter = CreateConverterFromTypeName(attr);
+                    }
+
+                    _converter ??= TypeDescriptor.GetConverterFromKnownType(PropertyType);
+                }
+                return _converter;
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                    Justification = "GetTypeFromName() can be called on a known type.")]
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+                    Justification = "CreateInstance() can be called on a known type.")]
+                TypeConverter? CreateConverterFromTypeName(TypeConverterAttribute attr)
+                {
+                    Type? converterType = GetTypeFromName(attr.ConverterTypeName);
+                    if (converterType != null && typeof(TypeConverter).IsAssignableFrom(converterType))
+                    {
+                        return (TypeConverter?)CreateInstance(converterType)!;
+                    }
+
+                    return null;
+                }
+            }
+        }
+
+        /// <summary>
         /// Gets a value
         /// indicating whether this property should be localized, as
         /// specified in the <see cref='System.ComponentModel.LocalizableAttribute'/>.

@@ -139,6 +139,23 @@ namespace System.ComponentModel
         /// </remarks>
         internal static bool IsTrimmable => s_isTrimmable;
 
+        internal static bool IsKnownType(Type type)
+        {
+            TypeDescriptionProvider provider = GetProvider(type);
+            return provider.SupportsKnownTypes && provider.IsSupportedType(type);
+        }
+
+        internal static void ValidateKnownType(Type type)
+        {
+#if DEBUG
+            // To avoid a performance hit, only validate in Debug build.
+            if (!TypeDescriptor.IsKnownType(type))
+            {
+                throw new InvalidOperationException("todo: type should be a known type.");
+            }
+#endif
+        }
+
         /// <summary>
         /// The AddAttributes method allows you to add class-level attributes for a
         /// type or an instance. This method simply implements a type description provider
@@ -941,7 +958,6 @@ namespace System.ComponentModel
         /// Returns a custom type descriptor for the given type.
         /// Performs arg checking so callers don't have to.
         /// </summary>
-        //private static DefaultKnownTypeDescriptor GetDescriptorFromKnownType(Type type,
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
             Justification = "The type has [DynamicallyAccessedMemberTypes].")]
         private static DefaultTypeDescriptor GetDescriptorFromKnownType(Type type,
