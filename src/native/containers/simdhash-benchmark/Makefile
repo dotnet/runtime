@@ -24,10 +24,10 @@ disassemble-benchmark: benchmark-native benchmark-wasm
 	~/wabt/bin/wasm2wat ./a.out.wasm > ./a.wat
 
 run-native: benchmark-native
-	./a.out
+	./a.out $(FILTER)
 
 run-wasm: benchmark-wasm
-	$(nodejs_path) ./a.out.js
+	$(nodejs_path) ./a.out.js $(FILTER)
 
 default_target: disassemble-benchmark
 
