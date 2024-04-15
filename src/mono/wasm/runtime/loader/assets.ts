@@ -12,6 +12,7 @@ import { mono_exit } from "./exit";
 import { addCachedReponse, findCachedResponse } from "./assetsCache";
 import { getIcuResourceName } from "./icu";
 import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
+import { mono_log_info } from "./logging";
 
 
 let throttlingPromise: PromiseAndController<void> | undefined;
@@ -545,7 +546,7 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
         err.status = response.status;
         throw err;
     } else {
-        loaderHelpers.out(`optional download '${response.url}' for ${asset.name} failed ${response.status} ${response.statusText}`);
+        mono_log_info(`optional download '${response.url}' for ${asset.name} failed ${response.status} ${response.statusText}`);
         return undefined;
     }
 }
