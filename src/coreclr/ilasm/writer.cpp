@@ -530,7 +530,7 @@ DWORD   Assembler::EmitExportStub(DWORD dwVTFSlotRVA)
     else
     {
         report->error("Unmanaged exports are not implemented for unknown platform");
-        return NULL;
+        return 0;
     }
     // Addr must be aligned, not the stub!
     if (FAILED(m_pCeeFileGen->GetSectionDataLen (m_pILSection, &PEFileOffset))) return 0;

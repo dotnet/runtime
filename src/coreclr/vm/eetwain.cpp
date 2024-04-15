@@ -2010,7 +2010,7 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
             // Detect the end of GS cookie scope by comparing its address with SP
             // gcInfoDecoder.GetGSCookieValidRangeEnd() is not accurate. It does not
             // account for GS cookie going out of scope inside epilog or multiple epilogs.
-            return (LPVOID) ((ptr >= pContext->SP) ? ptr : NULL);
+            return (ptr >= pContext->SP) ? (LPVOID)ptr : nullptr;
         }
     }
     return NULL;

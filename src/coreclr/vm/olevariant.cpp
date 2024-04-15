@@ -1175,11 +1175,11 @@ void SafeVariantClear(VARIANT* pVar)
     }
 }
 
-class VariantEmptyHolder : public Wrapper<VARIANT*, ::DoNothing<VARIANT*>, SafeVariantClear, NULL>
+class VariantEmptyHolder : public Wrapper<VARIANT*, ::DoNothing<VARIANT*>, SafeVariantClear, 0>
 {
 public:
     VariantEmptyHolder(VARIANT* p = NULL) :
-        Wrapper<VARIANT*, ::DoNothing<VARIANT*>, SafeVariantClear, NULL>(p)
+        Wrapper<VARIANT*, ::DoNothing<VARIANT*>, SafeVariantClear, 0>(p)
     {
         WRAPPER_NO_CONTRACT;
     }
@@ -1188,7 +1188,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        Wrapper<VARIANT*, ::DoNothing<VARIANT*>, SafeVariantClear, NULL>::operator=(p);
+        Wrapper<VARIANT*, ::DoNothing<VARIANT*>, SafeVariantClear, 0>::operator=(p);
     }
 };
 
@@ -1205,11 +1205,11 @@ FORCEINLINE void RecordVariantRelease(VARIANT* value)
     }
 }
 
-class RecordVariantHolder : public Wrapper<VARIANT*, ::DoNothing<VARIANT*>, RecordVariantRelease, NULL>
+class RecordVariantHolder : public Wrapper<VARIANT*, ::DoNothing<VARIANT*>, RecordVariantRelease, 0>
 {
 public:
     RecordVariantHolder(VARIANT* p = NULL)
-        : Wrapper<VARIANT*, ::DoNothing<VARIANT*>, RecordVariantRelease, NULL>(p)
+        : Wrapper<VARIANT*, ::DoNothing<VARIANT*>, RecordVariantRelease, 0>(p)
     {
         WRAPPER_NO_CONTRACT;
     }
@@ -1217,7 +1217,7 @@ public:
     FORCEINLINE void operator=(VARIANT* p)
     {
         WRAPPER_NO_CONTRACT;
-        Wrapper<VARIANT*, ::DoNothing<VARIANT*>, RecordVariantRelease, NULL>::operator=(p);
+        Wrapper<VARIANT*, ::DoNothing<VARIANT*>, RecordVariantRelease, 0>::operator=(p);
     }
 };
 #endif  // FEATURE_COMINTEROP

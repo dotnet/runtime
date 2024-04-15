@@ -2044,7 +2044,7 @@ LocalSigBuilder::GetSig(
     }
     else
     {
-        return NULL;
+        return 0;
     }
 }
 
@@ -2239,7 +2239,7 @@ FunctionSigBuilder::GetSig(
     }
     else
     {
-        return NULL;
+        return 0;
     }
 }
 
