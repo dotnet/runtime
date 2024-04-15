@@ -56,6 +56,13 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SetAfterUse_Throws()
         {
+            TestUtilities.TestEventListener? listener = null;
+
+            if (UseVersion == HttpVersion30)
+            {
+                listener = new TestUtilities.TestEventListener(_output, TestUtilities.TestEventListener.NetworkingEvents);
+            }
+
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpClientHandler handler = CreateHttpClientHandler();
@@ -105,8 +112,6 @@ namespace System.Net.Http.Functional.Tests
                 catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad) {}
 #endif
             });
-
-            listener?.Dispose();
         }
 
         [Theory]
