@@ -70,7 +70,7 @@ namespace System.Reflection.Metadata.Tests
                     throw new InvalidOperationException($"Invalid type name: '{typeName}'");
                 }
 
-                if (parsed.GetAssemblyName() is not null)
+                if (parsed.AssemblyName is not null)
                 {
                     // The attackers may create such a payload,
                     // where "typeName" passed to BindToType contains the assembly name

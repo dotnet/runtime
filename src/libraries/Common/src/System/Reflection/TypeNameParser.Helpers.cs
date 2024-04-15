@@ -128,7 +128,7 @@ namespace System.Reflection
                 }
                 string nonNestedParentName = current!.FullName;
 
-                Type? type = GetType(nonNestedParentName, nestedTypeNames, typeName.GetAssemblyName(), typeName.FullName);
+                Type? type = GetType(nonNestedParentName, nestedTypeNames, typeName.AssemblyName?.ToAssemblyName(), typeName.FullName);
                 return Make(type, typeName);
             }
             else if (typeName.IsConstructedGenericType)
@@ -141,7 +141,7 @@ namespace System.Reflection
             }
             else
             {
-                Type? type = GetType(typeName.FullName, nestedTypeNames: ReadOnlySpan<string>.Empty, typeName.GetAssemblyName(), typeName.FullName);
+                Type? type = GetType(typeName.FullName, nestedTypeNames: ReadOnlySpan<string>.Empty, typeName.AssemblyName?.ToAssemblyName(), typeName.FullName);
 
                 return Make(type, typeName);
             }

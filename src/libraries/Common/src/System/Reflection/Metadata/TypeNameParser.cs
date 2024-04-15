@@ -193,7 +193,7 @@ namespace System.Reflection.Metadata
                 previousDecorator = parsedDecorator;
             }
 
-            AssemblyName? assemblyName = null;
+            AssemblyNameInfo? assemblyName = null;
             if (allowFullyQualifiedName && !TryParseAssemblyName(ref assemblyName))
             {
 #if SYSTEM_PRIVATE_CORELIB
@@ -232,7 +232,7 @@ namespace System.Reflection.Metadata
         }
 
         /// <returns>false means the input was invalid and parsing has failed. Empty input is valid and returns true.</returns>
-        private bool TryParseAssemblyName(ref AssemblyName? assemblyName)
+        private bool TryParseAssemblyName(ref AssemblyNameInfo? assemblyName)
         {
             ReadOnlySpan<char> capturedBeforeProcessing = _inputString;
             if (TryStripFirstCharAndTrailingSpaces(ref _inputString, ','))
@@ -247,33 +247,12 @@ namespace System.Reflection.Metadata
                 // Otherwise EOL serves as the terminator.
                 int assemblyNameLength = (int)Math.Min((uint)_inputString.IndexOf(']'), (uint)_inputString.Length);
                 ReadOnlySpan<char> candidate = _inputString.Slice(0, assemblyNameLength);
-                AssemblyNameParser.AssemblyNameParts parts = default;
 
-                if (!AssemblyNameParser.TryParse(candidate, ref parts))
+                if (!AssemblyNameInfo.TryParse(candidate, out assemblyName))
                 {
                     return false;
                 }
 
-                assemblyName = new AssemblyName();
-#if SYSTEM_PRIVATE_CORELIB
-                assemblyName.Init(parts);
-#else
-                assemblyName.Name = parts._name;
-                assemblyName.CultureName = parts._cultureName;
-                assemblyName.Version = parts._version;
-
-                if (parts._publicKeyOrToken is not null)
-                {
-                    if ((parts._flags & AssemblyNameFlags.PublicKey) != 0)
-                    {
-                        assemblyName.SetPublicKey(parts._publicKeyOrToken);
-                    }
-                    else
-                    {
-                        assemblyName.SetPublicKeyToken(parts._publicKeyOrToken);
-                    }
-                }
-#endif
                 _inputString = _inputString.Slice(assemblyNameLength);
                 return true;
             }
@@ -281,7 +260,7 @@ namespace System.Reflection.Metadata
             return true;
         }
 
-        private static TypeName? GetDeclaringType(string fullTypeName, List<int>? nestedNameLengths, AssemblyName? assemblyName)
+        private static TypeName? GetDeclaringType(string fullTypeName, List<int>? nestedNameLengths, AssemblyNameInfo? assemblyName)
         {
             if (nestedNameLengths is null)
             {

@@ -113,19 +113,15 @@ namespace System.Reflection.Metadata.Tests
                 Assert.Equal(type.FullName, parsed.FullName);
                 Assert.Equal(type.Name, parsed.Name);
 
-                AssemblyName parsedAssemblyName = parsed.GetAssemblyName();
+                AssemblyNameInfo parsedAssemblyName = parsed.AssemblyName;
                 Assert.NotNull(parsedAssemblyName);
 
                 Assert.Equal(expectedAssemblyName.Name, parsedAssemblyName.Name);
-                Assert.Equal(expectedAssemblyName.Name, parsed.AssemblySimpleName);
                 Assert.Equal(expectedAssemblyName.Version, parsedAssemblyName.Version);
                 Assert.Equal(expectedAssemblyName.CultureName, parsedAssemblyName.CultureName);
-                Assert.Equal(expectedAssemblyName.GetPublicKeyToken(), parsedAssemblyName.GetPublicKeyToken());
                 Assert.Equal(expectedAssemblyName.FullName, parsedAssemblyName.FullName);
 
-                Assert.Equal(default, parsedAssemblyName.ContentType);
                 Assert.Equal(default, parsedAssemblyName.Flags);
-                Assert.Equal(default, parsedAssemblyName.ProcessorArchitecture);
             }
         }
 
@@ -375,12 +371,12 @@ namespace System.Reflection.Metadata.Tests
                 {
                     if (assemblyNames[i] is null)
                     {
-                        Assert.Null(genericArg.GetAssemblyName());
+                        Assert.Null(genericArg.AssemblyName);
                     }
                     else
                     {
-                        Assert.Equal(assemblyNames[i].FullName, genericArg.GetAssemblyName().FullName);
-                        Assert.Equal(assemblyNames[i].Name, genericArg.AssemblySimpleName);
+                        Assert.Equal(assemblyNames[i].FullName, genericArg.AssemblyName.FullName);
+                        Assert.Equal(assemblyNames[i].Name, genericArg.AssemblyName.Name);
                     }
                 }
             }
@@ -691,7 +687,7 @@ namespace System.Reflection.Metadata.Tests
                 {
                     Assert.True(typeName.IsSimple);
 
-                    AssemblyName? assemblyName = typeName.GetAssemblyName();
+                    AssemblyName? assemblyName = typeName.AssemblyName.ToAssemblyName();
                     Type? type = assemblyName is null
                         ? Type.GetType(typeName.FullName, throwOnError, ignoreCase)
                         : Assembly.Load(assemblyName).GetType(typeName.FullName, throwOnError, ignoreCase);

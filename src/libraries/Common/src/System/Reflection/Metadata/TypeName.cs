@@ -29,13 +29,12 @@ namespace System.Reflection.Metadata
         /// </summary>
         private readonly int _nestedNameLength;
         private readonly TypeName[]? _genericArguments;
-        private readonly AssemblyName? _assemblyName;
         private readonly TypeName? _elementOrGenericType;
         private readonly TypeName? _declaringType;
         private string? _name, _fullName, _assemblyQualifiedName;
 
         internal TypeName(string? fullName,
-            AssemblyName? assemblyName,
+            AssemblyNameInfo? assemblyName,
             TypeName? elementOrGenericType = default,
             TypeName? declaringType = default,
             TypeName[]? genericTypeArguments = default,
@@ -43,7 +42,7 @@ namespace System.Reflection.Metadata
             int nestedNameLength = -1)
         {
             _fullName = fullName;
-            _assemblyName = assemblyName;
+            AssemblyName = assemblyName;
             _rankOrModifier = rankOrModifier;
             _elementOrGenericType = elementOrGenericType;
             _declaringType = declaringType;
@@ -58,18 +57,16 @@ namespace System.Reflection.Metadata
         /// The assembly-qualified name of the type; e.g., "System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089".
         /// </summary>
         /// <remarks>
-        /// If <see cref="GetAssemblyName()"/> returns null, simply returns <see cref="FullName"/>.
+        /// If <see cref="AssemblyName"/> returns null, simply returns <see cref="FullName"/>.
         /// </remarks>
         public string AssemblyQualifiedName
-            => _assemblyQualifiedName ??= _assemblyName is null ? FullName : $"{FullName}, {_assemblyName.FullName}";
+            => _assemblyQualifiedName ??= AssemblyName is null ? FullName : $"{FullName}, {AssemblyName.FullName}";
 
         /// <summary>
-        /// Returns the name of the assembly (not the full name).
+        /// Returns assembly name which contains this type, or null if this <see cref="TypeName"/> was not
+        /// created from a fully-qualified name.
         /// </summary>
-        /// <remarks>
-        /// If <see cref="GetAssemblyName()"/> returns null, simply returns null.
-        /// </remarks>
-        public string? AssemblySimpleName => _assemblyName?.Name;
+        public AssemblyNameInfo? AssemblyName { get; }
 
         /// <summary>
         /// If this type is a nested type (see <see cref="IsNested"/>), gets
@@ -224,8 +221,8 @@ namespace System.Reflection.Metadata
             => other is not null
             && other._rankOrModifier == _rankOrModifier
             // try to prevent from allocations if possible (AssemblyQualifiedName can allocate)
-            && ((other._assemblyName is null && _assemblyName is null)
-             || (other._assemblyName is not null && _assemblyName is not null))
+            && ((other.AssemblyName is null && AssemblyName is null)
+             || (other.AssemblyName is not null && AssemblyName is not null))
             && other.AssemblyQualifiedName == AssemblyQualifiedName;
 
         public override bool Equals(object? obj) => Equals(obj as TypeName);
@@ -352,25 +349,6 @@ namespace System.Reflection.Metadata
                 _ when _rankOrModifier > 0 => _rankOrModifier,
                 _ => throw TypeNameParserHelpers.InvalidOperation_HasToBeArrayClass()
             };
-
-        /// <summary>
-        /// Returns assembly name which contains this type, or null if this <see cref="TypeName"/> was not
-        /// created from a fully-qualified name.
-        /// </summary>
-        /// <remarks>Since <seealso cref="AssemblyName"/> is mutable, this method returns a copy of it.</remarks>
-        public AssemblyName? GetAssemblyName()
-        {
-            if (_assemblyName is null)
-            {
-                return null;
-            }
-
-#if SYSTEM_PRIVATE_CORELIB
-            return _assemblyName; // no need for a copy in CoreLib (it's internal)
-#else
-            return (AssemblyName)_assemblyName.Clone();
-#endif
-        }
 
         /// <summary>
         /// If this <see cref="TypeName"/> represents a constructed generic type, returns an array

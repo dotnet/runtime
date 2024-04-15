@@ -85,7 +85,7 @@ namespace System.Reflection
             {
                 return null;
             }
-            else if (topLevelAssembly is not null && parsed.GetAssemblyName() is not null)
+            else if (topLevelAssembly is not null && parsed.AssemblyName is not null)
             {
                 return throwOnError ? throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly) : null;
             }

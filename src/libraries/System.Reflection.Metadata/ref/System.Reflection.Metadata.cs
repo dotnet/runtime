@@ -2408,6 +2408,23 @@ namespace System.Reflection.Metadata
         public int PackingSize { get { throw null; } }
         public int Size { get { throw null; } }
     }
+    public sealed partial class AssemblyNameInfo : System.IEquatable<System.Reflection.Metadata.AssemblyNameInfo>
+    {
+        public AssemblyNameInfo(string name, System.Version? version = null, string? cultureName = null, System.Reflection.AssemblyNameFlags flags = AssemblyNameFlags.None,
+           Collections.Immutable.ImmutableArray<byte> publicKeyOrToken = default) { }
+        public string Name { get { throw null; } }
+        public string? CultureName { get { throw null; } }
+        public string FullName { get { throw null; } }
+        public System.Version? Version { get { throw null; } }
+        public System.Reflection.AssemblyNameFlags Flags { get { throw null; } }
+        public System.Collections.Immutable.ImmutableArray<byte> PublicKeyOrToken { get { throw null; } }
+        public static System.Reflection.Metadata.AssemblyNameInfo Parse(System.ReadOnlySpan<char> assemblyName) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> assemblyName, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Reflection.Metadata.AssemblyNameInfo? result) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
+        public bool Equals(System.Reflection.Metadata.AssemblyNameInfo? other) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public System.Reflection.AssemblyName ToAssemblyName() { throw null; }
+    }
     public sealed partial class TypeName : System.IEquatable<System.Reflection.Metadata.TypeName>
     {
         internal TypeName() { }
