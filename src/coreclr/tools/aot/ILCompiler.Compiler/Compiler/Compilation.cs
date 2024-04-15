@@ -326,7 +326,7 @@ namespace ILCompiler
                     {
                         var type = (TypeDesc)targetOfLookup;
                         MethodDesc ctor = GetConstructorForCreateInstanceIntrinsic(type);
-                        return NodeFactory.CanonicalEntrypoint(ctor);
+                        return type.IsValueType ? NodeFactory.ExactCallableAddress(ctor) : NodeFactory.CanonicalEntrypoint(ctor);
                     }
                 case ReadyToRunHelperId.ObjectAllocator:
                     {
