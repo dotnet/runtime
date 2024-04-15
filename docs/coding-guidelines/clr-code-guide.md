@@ -83,7 +83,11 @@ Written in 2006, by:
     * [2.10.4 When is it safe to use a runtime contract?](#2.10.4)
     * [2.10.5 Do not make unscoped changes to the ClrDebugState](#2.10.5)
     * [2.10.6 For more details...](#2.10.6)
-  * [2.11 Is your code DAC compliant?](#2.11)
+  * [2.11 Using standard headers](#2.11)
+    * [2.11.1 Do not use wchar_t](#2.11.1)
+	* [2.11.2 Do not use C++ standard exceptions](#2.11.2)
+	* [2.11.3 Do not use getenv on Unix platforms](#2.11.3)
+  * [2.12 Is your code DAC compliant?](#2.12)
 
 # <a name="1"></a>1 Why you must read this document
 
@@ -1252,10 +1256,30 @@ This data is meant to be changed in a scoped manner only. In particular, the CON
 
 See the big block comment at the start of [src\inc\contract.h][contract.h].
 
-## <a name="2.11"></a>2.11 Is your code DAC compliant?
+## <a name="2.11"></a>2.11 Using standard headers
+
+The C and C++ standard headers are available for usage in the CoreCLR code-base. However, there are a few restrictions on using the standard-provided APIs for code that will run as part of CoreCLR.
+
+Code that will only run in other processes, such as createdump or other extraneous tools, do not have many of these restrictions.
+
+### <a name="2.11.1"></a> 2.11.1 Do not use wchar_t
+
+The `wchar_t` type is implementation-defined, with Windows and Unix-based platforms using different definitions (2 byte vs 4 byte). Use the `WCHAR` alias instead, which is always 2 bytes. The CoreCLR PAL provides implementations of a variety of the C standard `wchar_t` APIs with the `WCHAR` type instead. These methods, as well as the methods in the CoreCLR minipal and in the repo minipal should be used. If a CoreCLR minipal API exists, it should be used instead of the PAL API.
+
+### <a name="2.11.2"></a> 2.11.2 Do not use C++ standard exceptions
+
+The exception handling mechanisms in CoreCLR only handle `Exception`-derived types and `PAL_SEHException`. As a result, standard C++ exceptions, derived from `std::exception`, will cause runtime instability and should never be used. This includes using standard collection types with the default `std::allocator<T>` allocator.
+
+### <a name="2.11.3"></a> 2.11.3 Do not use getenv on Unix platforms
+
+The POSIX API `setenv` is not thread safe with `getenv` and can lead to crashes. CoreCLR provides a `PAL_getenv` API that is thread-safe. This API should be used instead when on non-Windows platforms.
+
+## <a name="2.12"></a>2.12 Is your code DAC compliant?
 
 At a high level, DAC is a technique to enable execution of CLR algorithms from out-of-process (eg. on a memory dump). Core CLR code is compiled in a special mode (with DACCESS_COMPILE defined) where all pointer dereferences are intercepted.
 
 Various tools (most notably the debugger and SOS) rely on portions of the CLR code being properly "DACized". Writing code in this way can be tricky and error-prone. Use the following references for more details:
 
 - The best documentation is in the code itself. See the large comments at the top of [src\inc\daccess.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/daccess.h).
+
+C++ standard collections are not DAC-ized and cannot be DAC-ized, so they should never be used as fields in data structures or in global variables that need to be read by the DAC, even when using a CoreCLR compatible allocator.
