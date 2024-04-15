@@ -88,16 +88,8 @@ internal class BrowserRunner : IAsyncDisposable
 
         if (runTask.IsCompleted)
         {
-            try
-            {
-                var res = await runTask;
-                res.EnsureSuccessful();
-            }
-            catch (Exception ex)
-            {
-                _testOutput.WriteLine($"Exception: {ex}");
-                throw;
-            }
+            var res = await runTask;
+            res.EnsureSuccessful();
 
             throw new Exception($"Process ended before the url was found");
         }
@@ -134,10 +126,19 @@ internal class BrowserRunner : IAsyncDisposable
         Action<string>? onError = null,
         Func<string, string>? modifyBrowserUrl = null)
     {
-        var urlString = await StartServerAndGetUrlAsync(cmd, args, onServerMessage);
-        var browser = await SpawnBrowserAsync(urlString, headless);
-        var context = await browser.NewContextAsync();
-        return await RunAsync(context, urlString, headless, onConsoleMessage, onError, modifyBrowserUrl);
+        // try
+        // {
+            var urlString = await StartServerAndGetUrlAsync(cmd, args, onServerMessage);
+            var browser = await SpawnBrowserAsync(urlString, headless);
+            var context = await browser.NewContextAsync();
+            return await RunAsync(context, urlString, headless, onConsoleMessage, onError, modifyBrowserUrl);
+        // }
+        // catch (Exception ex)
+        // {
+        //     _testOutput.WriteLine($"ILONA: {ex}"); // System.ComponentModel.Win32Exception (2): An error occurred trying to start process
+        //     _testOutput.WriteLine($"ILONA Inner: {ex.InnerException}"); // empty
+        //     throw;
+        // }
     }
 
     public async Task<IPage> RunAsync(

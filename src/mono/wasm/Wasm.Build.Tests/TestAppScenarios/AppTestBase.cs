@@ -118,15 +118,7 @@ public abstract class AppTestBase : BlazorWasmTestBase
                 Host: host,
                 ExtraArgs: options.ExtraArgs);
 
-        try
-        {
-            await BlazorRunTest(blazorRunOptions);
-        }
-        catch (Exception ex)
-        {
-            _testOutput.WriteLine(ex);
-            throw ex;
-        }
+        await BlazorRunTest(blazorRunOptions);
 
         void OnConsoleMessage(IPage page, IConsoleMessage msg)
         {
