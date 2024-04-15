@@ -20,6 +20,7 @@ declare interface Int32Ptr extends NativePointer {
 declare interface EmscriptenModule {
     _malloc(size: number): VoidPtr;
     _free(ptr: VoidPtr): void;
+    _sbrk(size: number): VoidPtr;
     out(message: string): void;
     err(message: string): void;
     ccall<T>(ident: string, returnType?: string | null, argTypes?: string[], args?: any[], opts?: any): T;

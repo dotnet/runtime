@@ -23,6 +23,8 @@ pr: none
 
 variables:
 - template: /eng/pipelines/common/variables.yml
+  parameters:
+    templatePath: 'templates-official'
 - template: /eng/pipelines/common/internal-variables.yml
   parameters:
     teamName: dotnet-core-acquisition
@@ -560,22 +562,12 @@ extends:
       #
       # Build SourceBuild packages
       #
-      - template: /eng/pipelines/common/platform-matrix.yml
+      - template: /eng/common/templates-official/jobs/source-build.yml
         parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: Release
-          helixQueueGroup: ci
           platforms:
-          - SourceBuild_linux_x64
-          jobParameters:
-            templatePath: 'templates-official'
-            nameSuffix: PortableSourceBuild
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            postBuildSteps:
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: SourceBuildPackages
-            timeoutInMinutes: 95
+          - name: Linux_x64
+            targetRid: linux-x64
+            container: SourceBuild_linux_x64
 
       #
       # Build PGO Instrumented CoreCLR Release

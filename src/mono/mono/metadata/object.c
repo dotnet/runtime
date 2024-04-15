@@ -1343,7 +1343,7 @@ mono_method_get_imt_slot (MonoMethod *method)
 	}
 
 	/* Initialize hashes */
-	hashes [0] = mono_metadata_str_hash (m_class_get_name (method->klass));
+	hashes [0] = m_class_get_name_hash (method->klass);
 	hashes [1] = mono_metadata_str_hash (m_class_get_name_space (method->klass));
 	hashes [2] = mono_metadata_str_hash (method->name);
 	hashes [3] = mono_metadata_type_hash (sig->ret);
