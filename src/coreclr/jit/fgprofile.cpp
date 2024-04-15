@@ -4932,8 +4932,6 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
     if (block->isBBCallFinallyPairTail())
     {
         incomingLikelyWeight = block->Prev()->bbWeight;
-        incomingWeightMin    = incomingLikelyWeight;
-        incomingWeightMax    = incomingLikelyWeight;
         foundEHPreds         = false;
     }
 
