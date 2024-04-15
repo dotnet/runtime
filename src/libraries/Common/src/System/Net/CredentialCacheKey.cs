@@ -21,7 +21,7 @@ namespace System.Net
             Debug.Assert(authenticationType != null);
 
             UriPrefix = uriPrefix;
-            UriPrefixLength = UriPrefix.ToString().Length;
+            UriPrefixLength = UriPrefix.AbsolutePath.LastIndexOf('/');
             AuthenticationType = authenticationType;
         }
 
