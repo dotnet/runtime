@@ -5565,7 +5565,7 @@ GenTree* Lowering::CreateFrameLinkUpdate(FrameLinkAction action)
 //  +30h    +18h    m_pCalleeSavedFP                  offsetOfCalleeSavedFP   not set by JIT
 //  +38h    +1Ch    m_pThread
 //          +20h    m_pSPAfterProlog                  offsetOfSPAfterProlog   arm only
-//  +40h    +20/24h m_StubSecretArg                   offsetOfSecretStubArg   method prolog of IL stubs with secret arg only
+//  +40h    +20/24h m_StubSecretArg                   offsetOfSecretStubArg   method prolog of IL stubs with secret arg
 //
 // Note that in the VM, InlinedCallFrame is a C++ class whose objects have a 'this' pointer that points
 // to the InlinedCallFrame vptr (the 2nd field listed above), and the GS cookie is stored *before*
@@ -5597,8 +5597,9 @@ void Lowering::InsertPInvokeMethodProlog()
 
     GenTree* const insertionPoint = firstBlockRange.FirstNonCatchArgNode();
 
-    // Store the stub secret arg if necessary. This has to be done before the call to the init helper below,
-    // which links the frame into the thread list on 32-bit platforms.
+    // Store the stub secret arg if necessary. This has to be done before the
+    // call to the init helper below, which links the frame into the thread
+    // list on 32-bit platforms.
     // InlinedCallFrame.m_StubSecretArg = stubSecretArg;
     if (comp->info.compPublishStubParam)
     {
