@@ -695,41 +695,37 @@ void CodeGen::genCodeForBBlist()
                 break;
 
             case BBJ_THROW:
+#ifdef DEBUG
+            {
                 // If we have a throw at the end of a function or funclet, we need to emit another instruction
                 // afterwards to help the OS unwinder determine the correct context during unwind.
-                // We insert an unexecuted breakpoint instruction in several situations
-                // following a throw instruction:
+                // We need that in the following situations:
                 // 1. If the throw is the last instruction of the function or funclet. This helps
                 //    the OS unwinder determine the correct context during an unwind from the
                 //    thrown exception.
                 // 2. If this is this is the last block of the hot section.
                 // 3. If the subsequent block is a special throw block.
                 // 4. On AMD64, if the next block is in a different EH region.
-                if (block->IsLast() || block->Next()->HasFlag(BBF_FUNCLET_BEG) ||
-                    !BasicBlock::sameEHRegion(block, block->Next()) ||
-                    (!isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block->Next())) ||
-                    block->IsLastHotBlock(compiler))
+                //
+                // The extra instruction is also needed to ensure that gc register liveness doesn't change
+                // across call instructions in fully-interruptible mode.
+                //
+                // Considering that the throwing code is typically rare, and is not on the common/fast path
+                // we just add the instruction after all throwing calls.
+                // We will test that invariant in the most common case - when the throw ends the block.
+                GenTree* last = block->lastNode();
+                if ((last != nullptr) && (last->gtOper == GT_CALL))
                 {
-                    instGen(INS_BREAKPOINT); // This should never get executed
-                }
-                // Do likewise for blocks that end in DOES_NOT_RETURN calls
-                // that were not caught by the above rules. This ensures that
-                // gc register liveness doesn't change across call instructions
-                // in fully-interruptible mode.
-                else
-                {
-                    GenTree* call = block->lastNode();
-
-                    if ((call != nullptr) && (call->gtOper == GT_CALL))
+                    GenTreeCall* call = last->AsCall();
+                    if (call->IsNoReturn())
                     {
-                        if (call->AsCall()->IsNoReturn())
-                        {
-                            instGen(INS_BREAKPOINT); // This should never get executed
-                        }
+                        assert(GetEmitter()->emitIsLastInsBreakpoint() || call->IsFastTailCall());
                     }
                 }
+            }
+#endif // DEBUG
 
-                break;
+            break;
 
             case BBJ_CALLFINALLY:
                 block = genCallFinally(block);

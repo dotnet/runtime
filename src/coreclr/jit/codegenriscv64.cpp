@@ -6495,6 +6495,18 @@ void CodeGen::genCall(GenTreeCall* call)
     assert((gcInfo.gcRegByrefSetCur & killMask) == 0);
 #endif
 
+    if (call->IsNoReturn())
+    {
+        // There are several situations when we need to add another instruction
+        // after a throwing call to help the OS unwinder determine the correct context during unwind.
+        // It also ensures that the gc register liveness doesn't change across throwing call instructions
+        // in fully-interruptible mode.
+        instGen(INS_BREAKPOINT);
+
+        // nothing else needs to be emitted for this call
+        return;
+    }
+
     var_types returnType = call->TypeGet();
     if (returnType != TYP_VOID)
     {

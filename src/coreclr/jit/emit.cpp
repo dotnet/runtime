@@ -2569,6 +2569,17 @@ bool emitter::emitHasEpilogEnd()
 
 #endif // JIT32_GCENCODER
 
+// Is the last instruction emitted a breakpoint instruction?
+bool emitter::emitIsLastInsBreakpoint()
+{
+    if (emitHasLastIns() && (emitLastIns->idIns() == INS_BREAKPOINT))
+    {
+        return true;
+    }
+
+    return false;
+}
+
 #ifdef TARGET_XARCH
 
 /*****************************************************************************

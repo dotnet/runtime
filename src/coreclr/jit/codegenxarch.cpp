@@ -6045,6 +6045,30 @@ void CodeGen::genCall(GenTreeCall* call)
     assert((gcInfo.gcRegByrefSetCur & killMask) == 0);
 #endif
 
+    unsigned stackAdjustBias = 0;
+
+#if defined(TARGET_X86)
+    // Is the caller supposed to pop the arguments?
+    if (call->CallerPop() && (stackArgBytes != 0))
+    {
+        stackAdjustBias = stackArgBytes;
+    }
+
+    SubtractStackLevel(stackArgBytes);
+#endif // TARGET_X86
+
+    if (call->IsNoReturn())
+    {
+        // There are several situations when we need to add another instruction
+        // after a throwing call to help the OS unwinder determine the correct context during unwind.
+        // It also ensures that the gc register liveness doesn't change across throwing call instructions
+        // in fully-interruptible mode.
+        instGen(INS_BREAKPOINT);
+
+        // nothing else needs to be emitted for this call
+        return;
+    }
+
     var_types returnType = call->TypeGet();
     if (returnType != TYP_VOID)
     {
@@ -6168,18 +6192,6 @@ void CodeGen::genCall(GenTreeCall* call)
         }
     }
 #endif // FEATURE_EH_WINDOWS_X86
-
-    unsigned stackAdjustBias = 0;
-
-#if defined(TARGET_X86)
-    // Is the caller supposed to pop the arguments?
-    if (call->CallerPop() && (stackArgBytes != 0))
-    {
-        stackAdjustBias = stackArgBytes;
-    }
-
-    SubtractStackLevel(stackArgBytes);
-#endif // TARGET_X86
 
     genRemoveAlignmentAfterCall(call, stackAdjustBias);
 }

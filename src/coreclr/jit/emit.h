@@ -2757,6 +2757,9 @@ private:
         return (emitLastIns != nullptr);
     }
 
+    // Is the last instruction emitted a breakpoint instruction?
+    bool emitIsLastInsBreakpoint();
+
     // Checks to see if we can cross between the two given IG boundaries.
     //
     // We have the following checks:
