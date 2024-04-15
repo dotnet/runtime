@@ -20,6 +20,7 @@ namespace System.Runtime.InteropServices.Marshalling
     /// </remarks>
     [CLSCompliant(false)]
     [CustomMarshaller(typeof(ReadOnlySpan<>), MarshalMode.ManagedToUnmanagedIn, typeof(ReadOnlySpanMarshaller<,>.ManagedToUnmanagedIn))]
+    [CustomMarshaller(typeof(ReadOnlySpan<>), MarshalMode.ManagedToUnmanagedOut, typeof(ReadOnlySpanMarshaller<,>.ManagedToUnmanagedOut))]
     [CustomMarshaller(typeof(ReadOnlySpan<>), MarshalMode.UnmanagedToManagedOut, typeof(ReadOnlySpanMarshaller<,>.UnmanagedToManagedOut))]
     [ContiguousCollectionMarshaller]
     public static unsafe class ReadOnlySpanMarshaller<T, TUnmanagedElement>
@@ -164,6 +165,37 @@ namespace System.Runtime.InteropServices.Marshalling
             public static ref T GetPinnableReference(ReadOnlySpan<T> managed)
             {
                 return ref MemoryMarshal.GetReference(managed);
+            }
+        }
+
+        public struct ManagedToUnmanagedOut
+        {
+            private TUnmanagedElement* _unmanagedArray;
+            private T[]? _managedValues;
+
+            public void FromUnmanaged(TUnmanagedElement* unmanaged)
+            {
+                _unmanagedArray = unmanaged;
+            }
+
+            public ReadOnlySpan<T> ToManaged()
+            {
+                return new ReadOnlySpan<T>(_managedValues!);
+            }
+
+            public ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int numElements)
+            {
+                return new ReadOnlySpan<TUnmanagedElement> ( _unmanagedArray, numElements);
+            }
+
+            public Span<T> GetManagedValuesDestination(int numElements)
+            {
+                return _managedValues = new T[numElements];
+            }
+
+            public void Free()
+            {
+                NativeMemory.Free(_unmanagedArray);
             }
         }
     }
