@@ -745,7 +745,7 @@ namespace System.Reflection.Emit
         {
             if (_currentScope._parent == null)
             {
-                throw new InvalidOperationException(SR.Argument_UnmatchingSymScope);
+                throw new InvalidOperationException(SR.InvalidOperation_UnmatchingSymScope);
             }
 
             _currentScope._endOffset = _il.Offset;

@@ -300,7 +300,7 @@
   <data name="InvalidOperation_InvalidDocument" xml:space="preserve">
     <value>Invalid source document.</value>
   </data>
-  <data name="Argument_UnmatchingSymScope" xml:space="preserve">
-    <value>Non-matching symbol scope.</value>
+  <data name="InvalidOperation_UnmatchingSymScope" xml:space="preserve">
+    <value>Unmatching symbol scope.</value>
   </data>
 </root>

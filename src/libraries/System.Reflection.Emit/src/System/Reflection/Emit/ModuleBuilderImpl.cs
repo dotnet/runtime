@@ -423,10 +423,12 @@ namespace System.Reflection.Emit
                 }
                 else // single document sequence point
                 {
+                    int previousNonHiddenStartLine = -1;
+                    int previousNonHiddenStartColumn = -1;
                     enumerator.MoveNext();
                     BlobBuilder spBlobBuilder = new BlobBuilder();
                     spBlobBuilder.WriteCompressedInteger(MetadataTokens.GetRowNumber(localSignatureHandle));
-                    PopulateSequencePointsBlob(spBlobBuilder, enumerator.Current.Value);
+                    PopulateSequencePointsBlob(spBlobBuilder, enumerator.Current.Value, ref previousNonHiddenStartLine, ref previousNonHiddenStartColumn);
                     _pdbBuilder.AddMethodDebugInformation(GetDocument(enumerator.Current.Key), _pdbBuilder.GetOrAddBlob(spBlobBuilder));
                 }
             }
@@ -440,29 +442,30 @@ namespace System.Reflection.Emit
         private BlobHandle PopulateMultiDocSequencePointsBlob(Dictionary<SymbolDocumentWriter, List<SequencePoint>>.Enumerator enumerator, StandaloneSignatureHandle localSignature)
         {
             BlobBuilder spBlobBuilder = new BlobBuilder();
-            // header:
-            spBlobBuilder.WriteCompressedInteger(MetadataTokens.GetRowNumber(localSignature));
+            int previousNonHiddenStartLine = -1;
+            int previousNonHiddenStartColumn = -1;
             enumerator.MoveNext();
             KeyValuePair<SymbolDocumentWriter, List<SequencePoint>> pair = enumerator.Current;
+
+            // header:
+            spBlobBuilder.WriteCompressedInteger(MetadataTokens.GetRowNumber(localSignature));
             spBlobBuilder.WriteCompressedInteger(MetadataTokens.GetRowNumber(GetDocument(pair.Key)));
+
             // First sequence point record
-            PopulateSequencePointsBlob(spBlobBuilder, pair.Value);
-            int i = 0;
+            PopulateSequencePointsBlob(spBlobBuilder, pair.Value, ref previousNonHiddenStartLine, ref previousNonHiddenStartColumn);
 
             while (enumerator.MoveNext())
             {
-                int previousNonHiddenStartLine = pair.Value[i].StartLine;
-                int previousNonHiddenStartColumn = pair.Value[i].StartColumn;
                 pair = enumerator.Current;
                 spBlobBuilder.WriteCompressedInteger(0);
                 spBlobBuilder.WriteCompressedInteger(MetadataTokens.GetRowNumber(GetDocument(pair.Key)));
-                PopulateSequencePointsBlob(spBlobBuilder, pair.Value, previousNonHiddenStartLine, previousNonHiddenStartColumn);
+                PopulateSequencePointsBlob(spBlobBuilder, pair.Value, ref previousNonHiddenStartLine, ref previousNonHiddenStartColumn);
             }
 
             return _pdbBuilder.GetOrAddBlob(spBlobBuilder);
         }
 
-        private static void PopulateSequencePointsBlob(BlobBuilder spBlobBuilder, List<SequencePoint> sequencePoints, int previousNonHiddenStartLine = -1, int previousNonHiddenStartColumn = -1)
+        private static void PopulateSequencePointsBlob(BlobBuilder spBlobBuilder, List<SequencePoint> sequencePoints, ref int previousNonHiddenStartLine, ref int previousNonHiddenStartColumn)
         {
             for (int i = 0; i < sequencePoints.Count; i++)
             {

@@ -243,6 +243,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder tb = mb.DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
             ISymbolDocumentWriter srcDoc1 = mb.DefineDocument("MySource1.cs", SymLanguageType.CSharp);
             ISymbolDocumentWriter srcDoc2 = mb.DefineDocument("MySource2.cs", SymLanguageType.CSharp);
+            ISymbolDocumentWriter srcDoc3 = mb.DefineDocument("MySource3.cs", SymLanguageType.CSharp);
             MethodBuilder method = tb.DefineMethod("SumMethod", MethodAttributes.Public | MethodAttributes.Static);
             ILGenerator il1 = method.GetILGenerator();
             LocalBuilder local = il1.DeclareLocal(typeof(int));
@@ -261,6 +262,11 @@ namespace System.Reflection.Emit.Tests
             il1.Emit(OpCodes.Add);
             il1.Emit(OpCodes.Stloc_0);
             il1.MarkSequencePoint(srcDoc1, 11, 1, 11, 20);
+            il1.Emit(OpCodes.Ldloc_0);
+            il1.Emit(OpCodes.Ldloc_1);
+            il1.Emit(OpCodes.Add);
+            il1.Emit(OpCodes.Stloc_0);
+            il1.MarkSequencePoint(srcDoc3, 5, 0, 5, 20);
             il1.Emit(OpCodes.Ldloc_0);
             il1.Emit(OpCodes.Ret);
 
@@ -287,7 +293,7 @@ namespace System.Reflection.Emit.Tests
             using MetadataReaderProvider provider = MetadataReaderProvider.FromPortablePdbStream(fs);
             MetadataReader reader = provider.GetMetadataReader();
             DocumentHandleCollection.Enumerator docEnumerator = reader.Documents.GetEnumerator();
-            Assert.Equal(2, reader.Documents.Count);
+            Assert.Equal(3, reader.Documents.Count);
             Assert.True(docEnumerator.MoveNext());
             Document doc1 = reader.GetDocument(docEnumerator.Current);
             Assert.Equal("MySource2.cs", reader.GetString(doc1.Name));
@@ -296,6 +302,10 @@ namespace System.Reflection.Emit.Tests
             Document doc2 = reader.GetDocument(docEnumerator.Current);
             Assert.Equal("MySource1.cs", reader.GetString(doc2.Name));
             Assert.Equal(SymLanguageType.CSharp, reader.GetGuid(doc2.Language));
+            Assert.True(docEnumerator.MoveNext());
+            Document doc3 = reader.GetDocument(docEnumerator.Current);
+            Assert.Equal("MySource3.cs", reader.GetString(doc3.Name));
+            Assert.Equal(SymLanguageType.CSharp, reader.GetGuid(doc3.Language));
             Assert.False(docEnumerator.MoveNext());
 
             MethodDebugInformation mdi1 = reader.GetMethodDebugInformation(MetadataTokens.MethodDebugInformationHandle(method.MetadataToken));
@@ -331,13 +341,21 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(1, sp.StartColumn);
             Assert.Equal(11, sp.EndLine);
             Assert.Equal(20, sp.EndColumn);
+            Assert.True(spcEnumerator.MoveNext());
+            sp = spcEnumerator.Current;
+            Assert.Equal(doc3, reader.GetDocument(sp.Document));
+            Assert.Equal(24, sp.Offset);
+            Assert.Equal(5, sp.StartLine);
+            Assert.Equal(0, sp.StartColumn);
+            Assert.Equal(5, sp.EndLine);
+            Assert.Equal(20, sp.EndColumn);
             Assert.False(spcEnumerator.MoveNext());
 
             LocalScopeHandleCollection.Enumerator localScopes = reader.GetLocalScopes(MetadataTokens.MethodDefinitionHandle(method.MetadataToken)).GetEnumerator();
             Assert.True(localScopes.MoveNext());
             LocalScope locals = reader.GetLocalScope(localScopes.Current);
             Assert.Equal(0, locals.StartOffset);
-            Assert.Equal(12, locals.EndOffset);
+            Assert.Equal(16, locals.EndOffset);
             LocalVariableHandleCollection.Enumerator localEnumerator = locals.GetLocalVariables().GetEnumerator();
             Assert.True(localEnumerator.MoveNext());
             Assert.Equal("MyInt", reader.GetString(reader.GetLocalVariable(localEnumerator.Current).Name));
