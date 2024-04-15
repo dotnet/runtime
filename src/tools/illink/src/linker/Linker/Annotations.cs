@@ -719,7 +719,7 @@ namespace Mono.Linker
 				VirtualMethodsWithAnnotationsToValidate.Add (method);
 		}
 
-		internal List<(TypeReference, List<InterfaceImplementation>)>? GetRecursiveInterfaces (TypeDefinition type)
+		internal List<(TypeReference InterfaceType, List<InterfaceImplementation> ImplementationChain)>? GetRecursiveInterfaces (TypeDefinition type)
 		{
 			return TypeMapInfo.GetRecursiveInterfaces (type);
 		}

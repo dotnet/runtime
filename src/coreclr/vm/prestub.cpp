@@ -344,7 +344,7 @@ bool MayUsePrecompiledILStub()
 PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
 {
     STANDARD_VM_CONTRACT;
-    PCODE pCode = NULL;
+    PCODE pCode = (PCODE)NULL;
 
     bool shouldTier = false;
 #if defined(FEATURE_TIERED_COMPILATION)
@@ -398,7 +398,7 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
                     if (pTargetMD != NULL)
                     {
                         pCode = pTargetMD->GetPrecompiledR2RCode(pConfig);
-                        if (pCode != NULL)
+                        if (pCode != (PCODE)NULL)
                         {
                             LOG_USING_R2R_CODE(this);
                             pConfig->SetNativeCode(pCode, &pCode);
@@ -409,24 +409,24 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         }
 #endif // FEATURE_READYTORUN
 
-        if (pCode == NULL)
+        if (pCode == (PCODE)NULL)
         {
             pCode = GetPrecompiledCode(pConfig, shouldTier);
         }
 
 #ifdef FEATURE_PERFMAP
-        if (pCode != NULL)
+        if (pCode != (PCODE)NULL)
             PerfMap::LogPreCompiledMethod(this, pCode);
 #endif
     }
 
-    if (pConfig->IsForMulticoreJit() && pCode == NULL && pConfig->ReadyToRunRejectedPrecompiledCode())
+    if (pConfig->IsForMulticoreJit() && pCode == (PCODE)NULL && pConfig->ReadyToRunRejectedPrecompiledCode())
     {
         // Was unable to load code from r2r image in mcj thread, don't try to jit it, this method will be loaded later
-        return NULL;
+        return (PCODE)NULL;
     }
 
-    if (pCode == NULL)
+    if (pCode == (PCODE)NULL)
     {
         LOG((LF_CLASSLOADER, LL_INFO1000000,
             "    In PrepareILBasedCode, calling JitCompileCode\n"));
@@ -443,11 +443,11 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
 PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier)
 {
     STANDARD_VM_CONTRACT;
-    PCODE pCode = NULL;
+    PCODE pCode = (PCODE)NULL;
 
 #ifdef FEATURE_READYTORUN
     pCode = GetPrecompiledR2RCode(pConfig);
-    if (pCode != NULL)
+    if (pCode != (PCODE)NULL)
     {
         LOG_USING_R2R_CODE(this);
 
@@ -499,7 +499,7 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE pCode = NULL;
+    PCODE pCode = (PCODE)NULL;
 #ifdef FEATURE_READYTORUN
     ReadyToRunInfo* pAlreadyExaminedInfos[2] = {NULL, NULL};
     Module * pModule = GetModule();
@@ -510,7 +510,7 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
     }
 
     //  Generics may be located in several places
-    if (pCode == NULL && HasClassOrMethodInstantiation())
+    if (pCode == (PCODE)NULL && HasClassOrMethodInstantiation())
     {
         // Generics have an alternative location that is looked up which is based on the first generic
         // argument that the crossgen2 compiler will consider as requiring the cross module compilation logic to kick in.
@@ -521,13 +521,13 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
             pCode = pAlreadyExaminedInfos[1]->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
         }
 
-        if (pCode == NULL)
+        if (pCode == (PCODE)NULL)
         {
             // R2R also supports a concept of R2R code that has code for "Unrelated" generics embedded within it
             // A linked list of these are formed as those modules are loaded, and this restricted set of modules
             // is examined for all generic method lookups
             ReadyToRunInfo* pUnrelatedInfo = ReadyToRunInfo::GetUnrelatedR2RModules();
-            for (;pUnrelatedInfo != NULL && pCode == NULL; pUnrelatedInfo = pUnrelatedInfo->GetNextUnrelatedR2RModule())
+            for (;pUnrelatedInfo != NULL && pCode == (PCODE)NULL; pUnrelatedInfo = pUnrelatedInfo->GetNextUnrelatedR2RModule())
             {
                 if (pUnrelatedInfo == pAlreadyExaminedInfos[0]) continue;
                 if (pUnrelatedInfo == pAlreadyExaminedInfos[1]) continue;
@@ -604,7 +604,7 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
     CheckStacksAndPitch();
 #endif
 
-    PCODE pCode = NULL;
+    PCODE pCode = (PCODE)NULL;
     {
         // Enter the global lock which protects the list of all functions being JITd
         JitListLock::LockHolder pJitLock(AppDomain::GetCurrentDomain()->GetJitLock());
@@ -680,7 +680,7 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
             {
                 bool wasTier0 = false;
                 pCode = GetMulticoreJitCode(pConfig, &wasTier0);
-                if (pCode != NULL)
+                if (pCode != (PCODE)NULL)
                 {
                 #ifdef FEATURE_TIERED_COMPILATION
                     // Finalize the optimization tier before SetNativeCode() is called
@@ -760,7 +760,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE pCode = NULL;
+    PCODE pCode = (PCODE)NULL;
     ULONG sizeOfCode = 0;
 
 #ifdef PROFILING_SUPPORTED
@@ -928,9 +928,9 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE pCode = NULL;
+    PCODE pCode = (PCODE)NULL;
     CORJIT_FLAGS jitFlags;
-    PCODE pOtherCode = NULL;
+    PCODE pOtherCode = (PCODE)NULL;
 
     EX_TRY
     {
@@ -961,7 +961,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
     }
     EX_END_CATCH(RethrowTerminalExceptions)
 
-    if (pOtherCode != NULL)
+    if (pOtherCode != (PCODE)NULL)
     {
         // Somebody finished jitting recursively while we were jitting the method.
         // Just use their method & leak the one we finished. (Normally we hope
@@ -1087,7 +1087,7 @@ namespace
         CaNamedArg namedArgs[1];
         CaType namedArgTypes[1];
         namedArgTypes[0].Init(SERIALIZATION_TYPE_STRING);
-        namedArgs[0].Init("Name", SERIALIZATION_TYPE_PROPERTY, namedArgTypes[0], NULL);
+        namedArgs[0].Init("Name", SERIALIZATION_TYPE_PROPERTY, namedArgTypes[0]);
         if (FAILED(::ParseKnownCaNamedArgs(ca, namedArgs, ARRAY_SIZE(namedArgs))))
             return false;
 
@@ -1862,7 +1862,7 @@ BOOL PrepareCodeConfig::SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse)
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (m_nativeCodeVersion.SetNativeCodeInterlocked(pCode, NULL))
+    if (m_nativeCodeVersion.SetNativeCodeInterlocked(pCode, (PCODE)NULL))
     {
         return TRUE;
     }
@@ -2519,7 +2519,7 @@ static PCODE PreStubWorker_Preemptive(
 {
     _ASSERTE(pMD->HasUnmanagedCallersOnlyAttribute());
 
-    PCODE pbRetVal = NULL;
+    PCODE pbRetVal = (PCODE)NULL;
 
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -2571,7 +2571,7 @@ static PCODE PreStubWorker_Preemptive(
 //=============================================================================
 extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, MethodDesc* pMD)
 {
-    PCODE pbRetVal = NULL;
+    PCODE pbRetVal = (PCODE)NULL;
 
     BEGIN_PRESERVE_LAST_ERROR;
 
@@ -2731,7 +2731,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     CONTRACT_END;
 
     Stub *pStub = NULL;
-    PCODE pCode = NULL;
+    PCODE pCode = (PCODE)NULL;
 
     Thread *pThread = GetThread();
 
@@ -2874,13 +2874,13 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             // a stub, we'll use it directly instead and avoid emitting an IL stub.
             PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
             pCode = GetPrecompiledR2RCode(&config);
-            if (pCode != NULL)
+            if (pCode != (PCODE)NULL)
             {
                 LOG_USING_R2R_CODE(this);
             }
         }
 
-        if (pCode == NULL)
+        if (pCode == (PCODE)NULL)
         {
             pCode = GetStubForInteropMethod(this);
         }
@@ -2935,7 +2935,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     MemoryBarrier();
 #endif
 
-    if (pCode != NULL)
+    if (pCode != (PCODE)NULL)
     {
         _ASSERTE(!MayHaveEntryPointSlotsToBackpatch()); // This path doesn't lock the MethodDescBackpatchTracker as it should only
                                                         // happen for jump-stampable or non-versionable methods
@@ -3036,7 +3036,7 @@ static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_RE
         && pMD->IsNativeCodeStableAfterInit())
     {
         PCODE pDirectTarget = pMD->IsFCall() ? ECall::GetFCallImpl(pMD) : pMD->GetNativeCode();
-        if (pDirectTarget != NULL)
+        if (pDirectTarget != (PCODE)NULL)
             pCode = pDirectTarget;
     }
 #endif //HAS_FIXUP_PRECODE
@@ -3080,7 +3080,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
     // the value of the Last Error before it could be retrieved and saved.
     //
 
-    PCODE         pCode   = NULL;
+    PCODE         pCode   = (PCODE)NULL;
 
     BEGIN_PRESERVE_LAST_ERROR;
 
@@ -3095,7 +3095,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     // Decode indirection cell from callsite if it is not present
-    if (pIndirection == NULL)
+    if (pIndirection == (PCODE)NULL)
     {
         // Assume that the callsite is call [xxxxxxxx]
         PCODE retAddr = pEMFrame->GetReturnAddress();
@@ -3369,7 +3369,7 @@ static PCODE getHelperForInitializedStatic(Module * pModule, CORCOMPILE_FIXUP_BL
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE pHelper = NULL;
+    PCODE pHelper = (PCODE)NULL;
 
     switch (kind)
     {
@@ -3780,7 +3780,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
         ThrowHR(COR_E_BADIMAGEFORMAT);
     }
 
-    PCODE pHelper = NULL;
+    PCODE pHelper = (PCODE)NULL;
 
     if (fReliable)
     {
@@ -3883,7 +3883,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                 UNREACHABLE();
             }
 
-            if (pHelper != NULL)
+            if (pHelper != (PCODE)NULL)
             {
                 *(TADDR *)pCell = pHelper;
             }
@@ -3926,7 +3926,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
                     TADDR pArgument = GetFirstArgumentRegisterValuePtr(pTransitionBlock);
 
-                    if (pArgument != NULL)
+                    if (pArgument != (TADDR)NULL)
                     {
                         pDelegateType = (*(Object **)pArgument)->GetMethodTable();
                         _ASSERTE(pDelegateType->IsDelegate());
@@ -3953,7 +3953,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                     }
                 }
 
-                TADDR target = NULL;
+                TADDR target = (TADDR)NULL;
 
                 if (pDelegateCtor != NULL)
                 {
@@ -3988,7 +3988,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
             UNREACHABLE();
         }
 
-        if (pHelper != NULL)
+        if (pHelper != (PCODE)NULL)
         {
             *(TADDR *)pCell = pHelper;
         }
@@ -4004,8 +4004,8 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
 extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock, TADDR * pCell, DWORD sectionIndex, Module * pModule, INT frameFlags)
 {
-    PCODE pHelper = NULL;
-    SIZE_T result = NULL;
+    PCODE pHelper = (PCODE)NULL;
+    SIZE_T result = 0;
 
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -4051,7 +4051,7 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
         pHelper = DynamicHelperFixup(pTransitionBlock, pCell, sectionIndex, pModule, &kind, &th, &pMD, &pFD);
     }
 
-    if (pHelper == NULL)
+    if (pHelper == (PCODE)NULL)
     {
         TADDR pArgument = GetFirstArgumentRegisterValuePtr(pTransitionBlock);
 
@@ -4068,7 +4068,7 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
                 else
                 {
                     _ASSERTE (!throwInvalidCast);
-                    result = NULL;
+                    result = 0;
                 }
             }
             break;
@@ -4126,7 +4126,7 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
 
     pFrame->Pop(CURRENT_THREAD);
 
-    if (pHelper == NULL)
+    if (pHelper == (PCODE)NULL)
         *(SIZE_T *)((TADDR)pTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters()) = result;
     return pHelper;
 }
