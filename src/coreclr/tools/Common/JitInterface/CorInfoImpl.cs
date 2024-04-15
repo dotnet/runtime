@@ -2945,7 +2945,7 @@ namespace Internal.JitInterface
         {
             TypeDesc type = HandleToObject(cls);
 
-            if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+            if (type.IsGenericParameter)
             {
                 return TypeCompareState.May;
             }
