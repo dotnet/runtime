@@ -1384,10 +1384,17 @@ inline GenTree* Compiler::gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd)
 inline GenTreeCall* Compiler::gtNewHelperCallNode(
     unsigned helper, var_types type, GenTree* arg1, GenTree* arg2, GenTree* arg3)
 {
-    GenTreeFlags flags  = s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper) ? GTF_EMPTY : GTF_EXCEPT;
-    GenTreeCall* result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
-    result->gtFlags |= flags;
+    GenTreeCall* const result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
 
+    if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper))
+    {
+        result->gtFlags |= GTF_EXCEPT;
+
+        if (s_helperCallProperties.AlwaysThrow((CorInfoHelpFunc)helper))
+        {
+            setCallDoesNotReturn(result);
+        }
+    }
 #if DEBUG
     // Helper calls are never candidates.
 
@@ -3747,7 +3754,7 @@ inline bool Compiler::IsStaticHelperEligibleForExpansion(GenTree* tree, bool* is
 
 inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
 {
-    if (tree->gtOper != GT_CALL || tree->AsCall()->gtCallType != CT_HELPER)
+    if (!tree->OperIs(GT_CALL) || !tree->AsCall()->IsHelperCall())
     {
         return false;
     }

@@ -60,7 +60,7 @@ NativeCodeVersionNode::NativeCodeVersionNode(
     PatchpointInfo* patchpointInfo,
     unsigned ilOffset)
     :
-    m_pNativeCode(NULL),
+    m_pNativeCode{},
     m_pMethodDesc(pMethodDesc),
     m_parentId(parentId),
     m_pNextMethodDescSibling(NULL),
@@ -303,7 +303,7 @@ void NativeCodeVersion::SetActiveChildFlag(BOOL isActive)
     {
         if (isActive &&
             !CodeVersionManager::InitialNativeCodeVersionMayNotBeTheDefaultNativeCodeVersion() &&
-            GetMethodDesc()->GetNativeCode() == NULL)
+            GetMethodDesc()->GetNativeCode() == (PCODE)NULL)
         {
             CodeVersionManager::SetInitialNativeCodeVersionMayNotBeTheDefaultNativeCodeVersion();
         }
@@ -1690,7 +1690,7 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
         // CodeVersionManager is set (not a typical case, may be possible with profilers). So, if the flag is not set and the
         // default native code version does not have native code, then it must be the active code version.
         pCode = pMethodDesc->GetNativeCode();
-        if (pCode == NULL && !CodeVersionManager::InitialNativeCodeVersionMayNotBeTheDefaultNativeCodeVersion())
+        if (pCode == (PCODE)NULL && !CodeVersionManager::InitialNativeCodeVersionMayNotBeTheDefaultNativeCodeVersion())
         {
             activeVersion = NativeCodeVersion(pMethodDesc);
             break;
@@ -1699,7 +1699,7 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
         if (!pMethodDesc->IsPointingToPrestub())
         {
             *doFullBackpatchRef = true;
-            return NULL;
+            return (PCODE)NULL;
         }
 
         LockHolder codeVersioningLockHolder;
@@ -1713,7 +1713,7 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
         _ASSERTE(hr == E_OUTOFMEMORY);
         ReportCodePublishError(pMethodDesc, hr);
         *doBackpatchRef = false;
-        return pCode != NULL ? pCode : pMethodDesc->PrepareInitialCode(callerGCMode);
+        return pCode != (PCODE)NULL ? pCode : pMethodDesc->PrepareInitialCode(callerGCMode);
     } while (false);
 
     while (true)
@@ -1724,7 +1724,7 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
         bool profilerMayHaveActivatedNonDefaultCodeVersion = false;
 
         // Compile the code if needed
-        if (pCode == NULL)
+        if (pCode == (PCODE)NULL)
         {
             PrepareCodeConfigBuffer configBuffer(activeVersion);
             PrepareCodeConfig *config = configBuffer.GetConfig();
@@ -1919,12 +1919,12 @@ HRESULT CodeVersionManager::PublishNativeCodeVersion(MethodDesc* pMethod, Native
     _ASSERTE(pMethod->IsVersionable());
 
     HRESULT hr = S_OK;
-    PCODE pCode = nativeCodeVersion.IsNull() ? NULL : nativeCodeVersion.GetNativeCode();
+    PCODE pCode = nativeCodeVersion.IsNull() ? (PCODE)NULL : nativeCodeVersion.GetNativeCode();
     if (pMethod->IsVersionable())
     {
         EX_TRY
         {
-            if (pCode == NULL)
+            if (pCode == (PCODE)NULL)
             {
                 pMethod->ResetCodeEntryPoint();
             }

@@ -2241,6 +2241,7 @@ interp_fold_unop (TransformData *td, InterpInst *ins)
 	td->var_values [sreg].ref_count--;
 	result.def = ins;
 	result.ref_count = td->var_values [dreg].ref_count; // preserve ref count
+	result.liveness = td->var_values [dreg].liveness;
 	td->var_values [dreg] = result;
 
 	return ins;
@@ -2478,6 +2479,7 @@ fold_ok:
 	td->var_values [sreg2].ref_count--;
 	result.def = ins;
 	result.ref_count = td->var_values [dreg].ref_count; // preserve ref count
+	result.liveness = td->var_values [dreg].liveness;
 	td->var_values [dreg] = result;
 
 	return ins;

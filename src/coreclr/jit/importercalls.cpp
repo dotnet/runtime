@@ -1437,8 +1437,8 @@ DONE_CALL:
                 if (call->IsCall())
                 {
                     GenTreeCall* callNode = call->AsCall();
-                    if ((callNode->gtCallType == CT_HELPER) && (gtIsTypeHandleToRuntimeTypeHelper(callNode) ||
-                                                                gtIsTypeHandleToRuntimeTypeHandleHelper(callNode)))
+                    if (callNode->IsHelperCall() && (gtIsTypeHandleToRuntimeTypeHelper(callNode) ||
+                                                     gtIsTypeHandleToRuntimeTypeHandleHelper(callNode)))
                     {
                         spillStack = false;
                     }
@@ -2362,8 +2362,8 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     //
 
     // Check to see if the ldtoken helper call is what we see here.
-    if (fieldTokenNode->gtOper != GT_CALL || (fieldTokenNode->AsCall()->gtCallType != CT_HELPER) ||
-        (fieldTokenNode->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD)))
+    if (!fieldTokenNode->OperIs(GT_CALL) ||
+        !fieldTokenNode->AsCall()->IsHelperCall(eeFindHelper(CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD)))
     {
         return nullptr;
     }
@@ -2416,7 +2416,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     //
 
     GenTree* newArrayCall = arrayLocalStore->AsLclVar()->Data();
-    if ((newArrayCall->gtOper != GT_CALL) || (newArrayCall->AsCall()->gtCallType != CT_HELPER))
+    if (!newArrayCall->OperIs(GT_CALL) || !newArrayCall->AsCall()->IsHelperCall())
     {
         return nullptr;
     }
@@ -2705,8 +2705,8 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
     //
 
     // Check to see if the ldtoken helper call is what we see here.
-    if (fieldTokenNode->gtOper != GT_CALL || (fieldTokenNode->AsCall()->gtCallType != CT_HELPER) ||
-        (fieldTokenNode->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD)))
+    if (!fieldTokenNode->OperIs(GT_CALL) ||
+        !fieldTokenNode->AsCall()->IsHelperCall(eeFindHelper(CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD)))
     {
         return nullptr;
     }
@@ -3616,7 +3616,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             {
                 GenTree*        op1 = impStackTop(0).val;
                 CorInfoHelpFunc typeHandleHelper;
-                if (op1->gtOper == GT_CALL && (op1->AsCall()->gtCallType == CT_HELPER) &&
+                if (op1->gtOper == GT_CALL && op1->AsCall()->IsHelperCall() &&
                     gtIsTypeHandleToRuntimeTypeHandleHelper(op1->AsCall(), &typeHandleHelper))
                 {
                     op1 = impPopStack().val;
@@ -7101,7 +7101,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
     /* Ignore helper calls */
 
-    if (call->gtCallType == CT_HELPER)
+    if (call->IsHelperCall())
     {
         assert(!call->IsGuardedDevirtualizationCandidate());
         inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_CALL_TO_HELPER);
