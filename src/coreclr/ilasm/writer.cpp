@@ -34,6 +34,16 @@ HRESULT Assembler::InitMetaData()
     if (FAILED(hr))
         goto exit;
 
+    if(m_wzMetadataVersion)
+    {
+        VARIANT encOption;
+        BSTR    bstr;
+        V_VT(&encOption) = VT_BSTR;
+        V_BSTR(&encOption) = bstr = ::SysAllocString(m_wzMetadataVersion);
+        hr = m_pDisp->SetOption(MetaDataRuntimeVersion, &encOption);
+        ::SysFreeString(bstr);
+    }
+
     hr = m_pDisp->DefineScope(CLSID_CorMetaDataRuntime, 0, IID_IMetaDataEmit3,
                         (IUnknown **)&m_pEmitter);
     if (FAILED(hr))
