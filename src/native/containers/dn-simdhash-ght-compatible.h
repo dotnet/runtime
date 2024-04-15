@@ -18,9 +18,9 @@ dn_simdhash_ght_new_full (
 // compatible with g_hash_table_insert_replace
 void
 dn_simdhash_ght_insert_replace (
-    dn_simdhash_ght_t *hash,
-    void * key, void * value,
-    int32_t overwrite_key
+	dn_simdhash_ght_t *hash,
+	void * key, void * value,
+	int32_t overwrite_key
 );
 
 // compatibility shims for the g_hash_table_ versions in glib.h

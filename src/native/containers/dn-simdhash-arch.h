@@ -192,14 +192,18 @@ build_search_vector (uint8_t needle)
 	return result;
 }
 
-// returns an index in range 0-14 on match, 15-32 if no match
+// returns an index in range 0-13 on match, 14-32 if no match
 static DN_FORCEINLINE(uint32_t)
-find_first_matching_suffix (
-	dn_simdhash_search_vector needle, dn_simdhash_suffixes haystack,
-	uint8_t haystack_values[DN_SIMDHASH_VECTOR_WIDTH], uint32_t count
+find_first_matching_suffix_internal (
+	__m128i needle, __m128i haystack,
+	uint32_t count
 ) {
-	return ctz(_mm_movemask_epi8(_mm_cmpeq_epi8(needle.m128, haystack.m128)));
+	return ctz(_mm_movemask_epi8(_mm_cmpeq_epi8(needle, haystack)));
 }
+
+// use a macro to discard haystack_values, otherwise MSVC's codegen is worse
+#define find_first_matching_suffix(needle, haystack, haystack_values, count) \
+	find_first_matching_suffix_internal(needle.m128, haystack.m128, count)
 
 #else // unknown compiler and/or unknown non-simd arch
 

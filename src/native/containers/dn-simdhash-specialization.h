@@ -134,7 +134,11 @@ address_of_value (dn_simdhash_buffers_t buffers, uint32_t value_slot_index)
 static DN_FORCEINLINE(int)
 DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T_PTR hash, bucket_t *restrict bucket, DN_SIMDHASH_KEY_T needle, dn_simdhash_search_vector search_vector)
 {
-#ifndef DN_SIMDHASH_USE_SCALAR_FALLBACK
+#ifdef _MSC_VER
+	// MSVC won't do efficient lane extractions if we eager load the vector,
+	//  so just operate through the pointer instead.
+	#define bucket_suffixes (bucket->suffixes)
+#elif !defined(DN_SIMDHASH_USE_SCALAR_FALLBACK)
 	// Perform an eager load of the vector if SIMD is in use, even though we do
 	//  byte loads to extract lanes on non-wasm platforms. It's faster on x64 for
 	//  a reason I can't identify, and it significantly improves wasm codegen
@@ -171,7 +175,7 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T_PTR hash, bucket_t *restrict buc
 // Helper macros so that we can optimize and change scan logic more easily
 #define BEGIN_SCAN_BUCKETS(initial_index, bucket_index, bucket_address) \
 	{ \
-		uint32_t bucket_index = initial_index; \
+		uint32_t bucket_index = initial_index, scan_buckets_length = buffers.buckets_length; \
 		bucket_t *restrict bucket_address = address_of_bucket(buffers, bucket_index); \
 		do {
 
@@ -179,7 +183,7 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T_PTR hash, bucket_t *restrict buc
 			bucket_index++; \
 			bucket_address++; \
 			/* Wrap around if we hit the last bucket. */ \
-			if (bucket_index >= buffers.buckets_length) { \
+			if (bucket_index >= scan_buckets_length) { \
 				bucket_index = 0; \
 				bucket_address = address_of_bucket(buffers, 0); \
 			} \
