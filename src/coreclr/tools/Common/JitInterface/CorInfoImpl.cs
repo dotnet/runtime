@@ -3284,7 +3284,6 @@ namespace Internal.JitInterface
             int pointerSize = this.PointerSize;
 
             pEEInfoOut.inlinedCallFrameInfo.size = (uint)SizeOfPInvokeTransitionFrame;
-            pEEInfoOut.inlinedCallFrameInfo.sizeWithSecretStubArg = (uint)SizeOfPInvokeTransitionFrame + (uint)pointerSize;
 
             pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize;            // Delegate::_firstParameter
             pEEInfoOut.offsetOfDelegateFirstTarget = OffsetOfDelegateFirstTarget;

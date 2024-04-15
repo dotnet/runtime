@@ -5565,7 +5565,7 @@ GenTree* Lowering::CreateFrameLinkUpdate(FrameLinkAction action)
 //  +30h    +18h    m_pCalleeSavedFP                  offsetOfCalleeSavedFP   not set by JIT
 //  +38h    +1Ch    m_pThread
 //          +20h    m_pSPAfterProlog                  offsetOfSPAfterProlog   arm only
-//  +40h    +20/24h m_StubSecretArg                   offsetOfSecretStubArg   method prolog of IL stubs only
+//  +40h    +20/24h m_StubSecretArg                   offsetOfSecretStubArg   method prolog of IL stubs with secret arg only
 //
 // Note that in the VM, InlinedCallFrame is a C++ class whose objects have a 'this' pointer that points
 // to the InlinedCallFrame vptr (the 2nd field listed above), and the GS cookie is stored *before*
@@ -5597,6 +5597,18 @@ void Lowering::InsertPInvokeMethodProlog()
 
     GenTree* const insertionPoint = firstBlockRange.FirstNonCatchArgNode();
 
+    // Store the stub secret arg if necessary. This has to be done before the call to the init helper below,
+    // which links the frame into the thread list on 32-bit platforms.
+    // InlinedCallFrame.m_StubSecretArg = stubSecretArg;
+    if (comp->info.compPublishStubParam)
+    {
+        GenTree* value = comp->gtNewLclvNode(comp->lvaStubArgumentVar, TYP_I_IMPL);
+        GenTree* store = comp->gtNewStoreLclFldNode(comp->lvaInlinedPInvokeFrameVar, TYP_I_IMPL,
+                                                    callFrameInfo.offsetOfSecretStubArg, value);
+        firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, store));
+        DISPTREERANGE(firstBlockRange, store);
+    }
+
     // Call runtime helper to fill in our InlinedCallFrame and push it on the Frame list:
     //     TCB = CORINFO_HELP_INIT_PINVOKE_FRAME(&symFrameStart);
     GenTree*   frameAddr    = comp->gtNewLclAddrNode(comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfFrameVptr);
@@ -5615,17 +5627,6 @@ void Lowering::InsertPInvokeMethodProlog()
     comp->fgMorphTree(store);
     firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, store));
     DISPTREERANGE(firstBlockRange, store);
-
-    // Store the stub secret arg if necessary.
-    // InlinedCallFrame.m_StubSecretArg = stubSecretArg;
-    if (comp->info.compPublishStubParam)
-    {
-        GenTree* value = comp->gtNewLclvNode(comp->lvaStubArgumentVar, TYP_I_IMPL);
-        GenTree* store = comp->gtNewStoreLclFldNode(comp->lvaInlinedPInvokeFrameVar, TYP_I_IMPL,
-                                                    callFrameInfo.offsetOfSecretStubArg, value);
-        firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, store));
-        DISPTREERANGE(firstBlockRange, store);
-    }
 
 #if !defined(TARGET_X86) && !defined(TARGET_ARM)
     // For x86, this step is done at the call site (due to stack pointer not being static in the function).

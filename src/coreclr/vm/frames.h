@@ -730,7 +730,7 @@ private:
     friend LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo);
 #endif
 #ifdef HOST_64BIT
-    friend Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame);
+    friend Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame);
 #endif
 #ifdef FEATURE_EH_FUNCLETS
     friend class ExceptionTracker;
