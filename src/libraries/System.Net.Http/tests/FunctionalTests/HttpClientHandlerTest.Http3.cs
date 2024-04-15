@@ -35,7 +35,10 @@ namespace System.Net.Http.Functional.Tests
         {
             Exception outerEx = await Assert.ThrowsAnyAsync<Exception>(task);
             _output.WriteLine(outerEx.ToString());
-            Assert.IsType<HttpRequestException>(outerEx);
+
+            HttpRequestException httpReqException = Assert.IsType<HttpRequestException>(outerEx);
+            Assert.Equal(HttpRequestError.HttpProtocolError, httpReqException.HttpRequestError);
+
             HttpProtocolException protocolEx = Assert.IsType<HttpProtocolException>(outerEx.InnerException);
             Assert.Equal(errorCode, protocolEx.ErrorCode);
         }
