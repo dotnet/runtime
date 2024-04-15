@@ -4,7 +4,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);netstandard2.0-windows;netstandard2.0;net461-windows</TargetFrameworks>
     <IsPackable>true</IsPackable>
     <!-- If you enable GeneratePackageOnBuild for this package and bump ServicingVersion, make sure to also bump ServicingVersion in Microsoft.Windows.Compatibility.csproj once for the next release. -->
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <ServicingVersion>1</ServicingVersion>
     <PackageDescription>Provides base classes that enable managing access and audit control lists on securable objects.
 
