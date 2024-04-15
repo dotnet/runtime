@@ -90,7 +90,7 @@ build_search_vector (uint8_t needle)
 #endif
 }
 
-// returns an index in range 0-14 on match, 15-32 if no match
+// returns an index in range 0-13 on match, 14-32 if no match
 static DN_FORCEINLINE(uint32_t)
 find_first_matching_suffix (
 	dn_simdhash_search_vector needle,
@@ -133,6 +133,11 @@ find_first_matching_suffix (
 	// One would expect this to blow out the branch predictor, but in my testing
 	//  it's significantly faster when there is no match, and slightly faster
 	//  for cases where there is a match.
+	// Looping from 0-count is slower than this in my testing, even though it's
+	//  going to check fewer suffixes most of the time - probably due to the
+	//  comparison against count for each suffix.
+	// FIXME: If we move this into the specialization header, we can limit the
+	//  number of unrolled iterations to the number of keys in the bucket.
 	ITER(0);
 	ITER(1);
 	ITER(2);
