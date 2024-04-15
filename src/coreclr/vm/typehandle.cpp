@@ -337,7 +337,7 @@ void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
         // Take a lock here since we don't want to allocate redundant objects which won't be collected
         CrstHolder exposedClassLock(AppDomain::GetMethodTableExposedClassObjectLock());
 
-        if (VolatileLoad(pDest) == NULL)
+        if (VolatileLoad(pDest) == 0)
         {
             FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
             Object* obj = foh->TryAllocateObject(g_pRuntimeTypeClass, g_pRuntimeTypeClass->GetBaseSize());

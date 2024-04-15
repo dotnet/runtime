@@ -211,7 +211,7 @@ char* CBlobFetcher::MakeNewBlock(unsigned len, unsigned align) {
     pChRet = m_pIndex[m_nIndexUsed].MakeNewBlock(len + pad, 0);
 
     // Did we run out of memory?
-    if (pChRet == NULL &&  m_pIndex[m_nIndexUsed].GetDataLen() == NULL)
+    if (pChRet == NULL &&  m_pIndex[m_nIndexUsed].GetDataLen() == 0)
         return NULL;
 
     if (pChRet == NULL) {

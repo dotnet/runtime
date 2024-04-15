@@ -492,9 +492,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			public static int field;
 			public static int Property { get; set; }
 
-			// These should not be reported https://github.com/mono/linker/issues/2218
-			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.add", ProducedBy = Tool.Trimmer)]
-			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.remove", ProducedBy = Tool.Trimmer)]
 			public static event EventHandler Event;
 		}
 
@@ -838,24 +835,21 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class ReflectionAccessOnEvents
 		{
-			// Most of the tests in this run into https://github.com/dotnet/linker/issues/2218
+			// Most of the tests in this run into https://github.com/dotnet/runtime/issues/100499
 			// So for now keeping just a very simple test
 
 			[RequiresUnreferencedCode ("--WithRequires--")]
 			[RequiresDynamicCode ("--WithRequires--")]
 			class WithRequires
 			{
-				// These should be reported only in TestDirectReflectionAccess
-				// https://github.com/mono/linker/issues/2218
-				[ExpectedWarning ("IL2026", "StaticEvent.add", ProducedBy = Tool.Trimmer)]
-				[ExpectedWarning ("IL2026", "StaticEvent.remove", ProducedBy = Tool.Trimmer)]
 				public static event EventHandler StaticEvent;
 			}
 
 			[ExpectedWarning ("IL2026", "StaticEvent.add")]
 			[ExpectedWarning ("IL3050", "StaticEvent.add", ProducedBy = Tool.NativeAot)]
-			// https://github.com/mono/linker/issues/2218
-			[ExpectedWarning ("IL2026", "StaticEvent.remove", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			// https://github.com/dotnet/runtime/issues/100499
+			[ExpectedWarning ("IL2026", "StaticEvent.add", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", "StaticEvent.remove")]
 			[ExpectedWarning ("IL3050", "StaticEvent.remove", ProducedBy = Tool.NativeAot)]
 			static void TestDirectReflectionAccess ()
 			{

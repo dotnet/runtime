@@ -946,26 +946,26 @@ void Module::BuildStaticsOffsets(AllocMemTracker *pamTracker)
                     case ELEMENT_TYPE_I2:
                     case ELEMENT_TYPE_U2:
                     case ELEMENT_TYPE_CHAR:
-                        dwAlignment[kk] =  max(2, dwAlignment[kk]);
+                        dwAlignment[kk] =  max<DWORD>(2, dwAlignment[kk]);
                         dwClassNonGCBytes[kk] += 2;
                         break;
                     case ELEMENT_TYPE_I4:
                     case ELEMENT_TYPE_U4:
                     case ELEMENT_TYPE_R4:
-                        dwAlignment[kk] =  max(4, dwAlignment[kk]);
+                        dwAlignment[kk] =  max<DWORD>(4, dwAlignment[kk]);
                         dwClassNonGCBytes[kk] += 4;
                         break;
                     case ELEMENT_TYPE_FNPTR:
                     case ELEMENT_TYPE_PTR:
                     case ELEMENT_TYPE_I:
                     case ELEMENT_TYPE_U:
-                        dwAlignment[kk] =  max((1 << LOG2_PTRSIZE), dwAlignment[kk]);
+                        dwAlignment[kk] =  max<DWORD>((1 << LOG2_PTRSIZE), dwAlignment[kk]);
                         dwClassNonGCBytes[kk] += (1 << LOG2_PTRSIZE);
                         break;
                     case ELEMENT_TYPE_I8:
                     case ELEMENT_TYPE_U8:
                     case ELEMENT_TYPE_R8:
-                        dwAlignment[kk] =  max(8, dwAlignment[kk]);
+                        dwAlignment[kk] =  max<DWORD>(8, dwAlignment[kk]);
                         dwClassNonGCBytes[kk] += 8;
                         break;
                     case ELEMENT_TYPE_VAR:
@@ -989,7 +989,7 @@ void Module::BuildStaticsOffsets(AllocMemTracker *pamTracker)
                         {
                             // We'll have to be pessimistic here
                             dwClassNonGCBytes[kk] += MAX_PRIMITIVE_FIELD_SIZE;
-                            dwAlignment[kk] = max(MAX_PRIMITIVE_FIELD_SIZE, dwAlignment[kk]);
+                            dwAlignment[kk] = max<DWORD>(MAX_PRIMITIVE_FIELD_SIZE, dwAlignment[kk]);
 
                             dwClassGCHandles[kk]  += 1;
                             break;
@@ -1532,7 +1532,7 @@ DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
 
     if (newId >= m_maxDynamicEntries)
     {
-        SIZE_T maxDynamicEntries = max(16, m_maxDynamicEntries);
+        SIZE_T maxDynamicEntries = max<SIZE_T>(16, m_maxDynamicEntries);
         while (maxDynamicEntries <= newId)
         {
             maxDynamicEntries *= 2;
@@ -2580,7 +2580,7 @@ TADDR Module::GetIL(DWORD target)
     SUPPORTS_DAC;
 
     if (target == 0)
-        return NULL;
+        return (TADDR)NULL;
 
     return m_pPEAssembly->GetIL(target);
 }
@@ -3911,7 +3911,7 @@ void Module::FixupVTables()
                     FillMemory(uMThunkMarshInfoWriterHolder.GetRW(), sizeof(UMThunkMarshInfo), 0);
 
                     uMThunkMarshInfoWriterHolder.GetRW()->LoadTimeInit(pMD);
-                    uMEntryThunkWriterHolder.GetRW()->LoadTimeInit(pUMEntryThunk, NULL, NULL, pUMThunkMarshInfo, pMD);
+                    uMEntryThunkWriterHolder.GetRW()->LoadTimeInit(pUMEntryThunk, (PCODE)0, NULL, pUMThunkMarshInfo, pMD);
 
                     SetTargetForVTableEntry(hInstThis, (BYTE **)&pPointers[iMethod], (BYTE *)pUMEntryThunk->GetCode());
 
@@ -4187,14 +4187,14 @@ BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupI
     // Ensure that the compiler won't fetch the value twice
     SIZE_T fixup = VolatileLoadWithoutBarrier(fixupCell);
 
-    if (fixup == NULL)
+    if (fixup == 0)
     {
         PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(GetReadyToRunImage()->GetRvaData(pSection->Signatures));
 
         if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell, mayUsePrecompiledNDirectMethods))
             return FALSE;
 
-        _ASSERTE(*fixupCell != NULL);
+        _ASSERTE(*fixupCell != 0);
     }
 
     return TRUE;
@@ -4611,7 +4611,7 @@ TADDR ReflectionModule::GetIL(RVA il) // virtual
 #else // DACCESS_COMPILE
     SUPPORTS_DAC;
     DacNotImpl();
-    return NULL;
+    return (TADDR)NULL;
 #endif // DACCESS_COMPILE
 }
 
@@ -4905,7 +4905,7 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
 
             // Now, fill in the new cookie (assuming we had enough memory to create one.)
             pCookie->pModule = pDefiningModule;
-            pCookie->pNDirectILStub = NULL;
+            pCookie->pNDirectILStub = 0;
             pCookie->sizeOfArgs = sizeOfArgs;
             pCookie->signature = vaSignature;
             pCookie->pLoaderModule = pLoaderModule;

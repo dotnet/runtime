@@ -54,7 +54,7 @@ internal sealed unsafe partial class MsQuicApi
     private static readonly Lazy<MsQuicApi> _api = new Lazy<MsQuicApi>(AllocateMsQuicApi);
     internal static MsQuicApi Api => _api.Value;
 
-    internal static Version? Version { get; private set; }
+    internal static Version? Version { get; }
 
     internal static bool IsQuicSupported { get; }
 

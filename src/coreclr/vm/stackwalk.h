@@ -247,7 +247,7 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE((int)isNoFrameTransition != 0xcc);
 
-        return (isNoFrameTransition ? taNoFrameTransitionMarker : NULL);
+        return (isNoFrameTransition ? taNoFrameTransitionMarker : 0);
     }
 
     /* Has the IP been adjusted to a point where it is safe to do GC ?
@@ -284,7 +284,6 @@ public:
             if (!HasFaulted() && !IsIPadjusted())
             {
                 _ASSERTE(!(flags & ActiveStackFrame));
-                flags |= AbortingCall;
             }
         }
 
