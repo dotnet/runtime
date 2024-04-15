@@ -131,7 +131,7 @@ namespace ILCompiler.Metadata
             if (typeCode == Ecma.SerializationTypeCode.Enum)
             {
                 Cts.TypeDesc enumType = Cts.CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeName(module, valueReader.ReadSerializedString());
-                return new ConstantBoxedEnumValue
+                return new ConstantEnumValue
                 {
                     Value = HandleCustomAttributeConstantValue(module, TypeDescToSerializationTypeCode(enumType), ref valueReader),
                     Type = HandleType(enumType)

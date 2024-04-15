@@ -303,75 +303,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public bool Value;
     } // ConstantBooleanValue
 
-    public partial class ConstantBoxedEnumValue : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantBoxedEnumValue;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-            Value = visitor.Visit(this, Value);
-            Type = visitor.Visit(this, Type);
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantBoxedEnumValue;
-            if (other == null) return false;
-            if (!Object.Equals(Value, other.Value)) return false;
-            if (!Object.Equals(Type, other.Type)) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = 879057725;
-            hash = ((hash << 13) - (hash >> 19)) ^ (Value == null ? 0 : Value.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Value);
-            writer.Write(Type);
-        } // Save
-
-        internal static ConstantBoxedEnumValueHandle AsHandle(ConstantBoxedEnumValue record)
-        {
-            if (record == null)
-            {
-                return new ConstantBoxedEnumValueHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantBoxedEnumValueHandle Handle
-        {
-            get
-            {
-                return new ConstantBoxedEnumValueHandle(HandleOffset);
-            }
-        } // Handle
-
-        public MetadataRecord Value;
-        public MetadataRecord Type;
-    } // ConstantBoxedEnumValue
-
     public partial class ConstantByteArray : MetadataRecord
     {
         public override HandleType HandleType
@@ -827,6 +758,75 @@ namespace Internal.Metadata.NativeFormat.Writer
         public MetadataRecord ElementType;
         public MetadataRecord Value;
     } // ConstantEnumArray
+
+    public partial class ConstantEnumValue : MetadataRecord
+    {
+        public override HandleType HandleType
+        {
+            get
+            {
+                return HandleType.ConstantEnumValue;
+            }
+        } // HandleType
+
+        internal override void Visit(IRecordVisitor visitor)
+        {
+            Value = visitor.Visit(this, Value);
+            Type = visitor.Visit(this, Type);
+        } // Visit
+
+        public override sealed bool Equals(Object obj)
+        {
+            if (Object.ReferenceEquals(this, obj)) return true;
+            var other = obj as ConstantEnumValue;
+            if (other == null) return false;
+            if (!Object.Equals(Value, other.Value)) return false;
+            if (!Object.Equals(Type, other.Type)) return false;
+            return true;
+        } // Equals
+
+        public override sealed int GetHashCode()
+        {
+            if (_hash != 0)
+                return _hash;
+            EnterGetHashCode();
+            int hash = 1536570168;
+            hash = ((hash << 13) - (hash >> 19)) ^ (Value == null ? 0 : Value.GetHashCode());
+            hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
+            LeaveGetHashCode();
+            _hash = hash;
+            return _hash;
+        } // GetHashCode
+
+        internal override void Save(NativeWriter writer)
+        {
+            writer.Write(Value);
+            writer.Write(Type);
+        } // Save
+
+        internal static ConstantEnumValueHandle AsHandle(ConstantEnumValue record)
+        {
+            if (record == null)
+            {
+                return new ConstantEnumValueHandle(0);
+            }
+            else
+            {
+                return record.Handle;
+            }
+        } // AsHandle
+
+        internal new ConstantEnumValueHandle Handle
+        {
+            get
+            {
+                return new ConstantEnumValueHandle(HandleOffset);
+            }
+        } // Handle
+
+        public MetadataRecord Value;
+        public MetadataRecord Type;
+    } // ConstantEnumValue
 
     public partial class ConstantHandleArray : MetadataRecord
     {
@@ -2194,7 +2194,6 @@ namespace Internal.Metadata.NativeFormat.Writer
                 handle.HandleType == HandleType.TypeSpecification ||
                 handle.HandleType == HandleType.ConstantBooleanArray ||
                 handle.HandleType == HandleType.ConstantBooleanValue ||
-                handle.HandleType == HandleType.ConstantBoxedEnumValue ||
                 handle.HandleType == HandleType.ConstantByteArray ||
                 handle.HandleType == HandleType.ConstantByteValue ||
                 handle.HandleType == HandleType.ConstantCharArray ||
@@ -2202,6 +2201,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                 handle.HandleType == HandleType.ConstantDoubleArray ||
                 handle.HandleType == HandleType.ConstantDoubleValue ||
                 handle.HandleType == HandleType.ConstantEnumArray ||
+                handle.HandleType == HandleType.ConstantEnumValue ||
                 handle.HandleType == HandleType.ConstantHandleArray ||
                 handle.HandleType == HandleType.ConstantInt16Array ||
                 handle.HandleType == HandleType.ConstantInt16Value ||
@@ -2407,7 +2407,6 @@ namespace Internal.Metadata.NativeFormat.Writer
                 DefaultValue.HandleType == HandleType.TypeSpecification ||
                 DefaultValue.HandleType == HandleType.ConstantBooleanArray ||
                 DefaultValue.HandleType == HandleType.ConstantBooleanValue ||
-                DefaultValue.HandleType == HandleType.ConstantBoxedEnumValue ||
                 DefaultValue.HandleType == HandleType.ConstantByteArray ||
                 DefaultValue.HandleType == HandleType.ConstantByteValue ||
                 DefaultValue.HandleType == HandleType.ConstantCharArray ||
@@ -2415,6 +2414,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                 DefaultValue.HandleType == HandleType.ConstantDoubleArray ||
                 DefaultValue.HandleType == HandleType.ConstantDoubleValue ||
                 DefaultValue.HandleType == HandleType.ConstantEnumArray ||
+                DefaultValue.HandleType == HandleType.ConstantEnumValue ||
                 DefaultValue.HandleType == HandleType.ConstantHandleArray ||
                 DefaultValue.HandleType == HandleType.ConstantInt16Array ||
                 DefaultValue.HandleType == HandleType.ConstantInt16Value ||
@@ -3323,7 +3323,6 @@ namespace Internal.Metadata.NativeFormat.Writer
                 Value.HandleType == HandleType.TypeSpecification ||
                 Value.HandleType == HandleType.ConstantBooleanArray ||
                 Value.HandleType == HandleType.ConstantBooleanValue ||
-                Value.HandleType == HandleType.ConstantBoxedEnumValue ||
                 Value.HandleType == HandleType.ConstantByteArray ||
                 Value.HandleType == HandleType.ConstantByteValue ||
                 Value.HandleType == HandleType.ConstantCharArray ||
@@ -3331,6 +3330,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                 Value.HandleType == HandleType.ConstantDoubleArray ||
                 Value.HandleType == HandleType.ConstantDoubleValue ||
                 Value.HandleType == HandleType.ConstantEnumArray ||
+                Value.HandleType == HandleType.ConstantEnumValue ||
                 Value.HandleType == HandleType.ConstantHandleArray ||
                 Value.HandleType == HandleType.ConstantInt16Array ||
                 Value.HandleType == HandleType.ConstantInt16Value ||
@@ -3589,7 +3589,6 @@ namespace Internal.Metadata.NativeFormat.Writer
                 DefaultValue.HandleType == HandleType.TypeSpecification ||
                 DefaultValue.HandleType == HandleType.ConstantBooleanArray ||
                 DefaultValue.HandleType == HandleType.ConstantBooleanValue ||
-                DefaultValue.HandleType == HandleType.ConstantBoxedEnumValue ||
                 DefaultValue.HandleType == HandleType.ConstantByteArray ||
                 DefaultValue.HandleType == HandleType.ConstantByteValue ||
                 DefaultValue.HandleType == HandleType.ConstantCharArray ||
@@ -3597,6 +3596,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                 DefaultValue.HandleType == HandleType.ConstantDoubleArray ||
                 DefaultValue.HandleType == HandleType.ConstantDoubleValue ||
                 DefaultValue.HandleType == HandleType.ConstantEnumArray ||
+                DefaultValue.HandleType == HandleType.ConstantEnumValue ||
                 DefaultValue.HandleType == HandleType.ConstantHandleArray ||
                 DefaultValue.HandleType == HandleType.ConstantInt16Array ||
                 DefaultValue.HandleType == HandleType.ConstantInt16Value ||
@@ -3785,7 +3785,6 @@ namespace Internal.Metadata.NativeFormat.Writer
                 DefaultValue.HandleType == HandleType.TypeSpecification ||
                 DefaultValue.HandleType == HandleType.ConstantBooleanArray ||
                 DefaultValue.HandleType == HandleType.ConstantBooleanValue ||
-                DefaultValue.HandleType == HandleType.ConstantBoxedEnumValue ||
                 DefaultValue.HandleType == HandleType.ConstantByteArray ||
                 DefaultValue.HandleType == HandleType.ConstantByteValue ||
                 DefaultValue.HandleType == HandleType.ConstantCharArray ||
@@ -3793,6 +3792,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                 DefaultValue.HandleType == HandleType.ConstantDoubleArray ||
                 DefaultValue.HandleType == HandleType.ConstantDoubleValue ||
                 DefaultValue.HandleType == HandleType.ConstantEnumArray ||
+                DefaultValue.HandleType == HandleType.ConstantEnumValue ||
                 DefaultValue.HandleType == HandleType.ConstantHandleArray ||
                 DefaultValue.HandleType == HandleType.ConstantInt16Array ||
                 DefaultValue.HandleType == HandleType.ConstantInt16Value ||

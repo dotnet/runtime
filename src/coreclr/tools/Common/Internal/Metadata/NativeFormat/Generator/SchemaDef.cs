@@ -317,7 +317,7 @@ internal sealed class SchemaDef
                     }
                 ),
                 new RecordDef(
-                    name: "ConstantBoxedEnumValue",
+                    name: "ConstantEnumValue",
                     members: new MemberDef[] {
                         new MemberDef("Value", EnumConstantValue, MemberDefFlags.RecordRef | MemberDefFlags.Child),
                         new MemberDef("Type", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef)
