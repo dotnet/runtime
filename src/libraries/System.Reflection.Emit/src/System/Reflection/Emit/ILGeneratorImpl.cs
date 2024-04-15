@@ -743,7 +743,10 @@ namespace System.Reflection.Emit
 
         public override void EndScope()
         {
-            Debug.Assert(_currentScope._parent != null);
+            if (_currentScope._parent == null)
+            {
+                throw new InvalidOperationException(SR.Argument_UnmatchingSymScope);
+            }
 
             _currentScope._endOffset = _il.Offset;
             _currentScope = _currentScope._parent;

@@ -28,11 +28,11 @@ namespace System.Reflection.Emit
         }
 
         /// <summary>
-        /// Sets the name of this local variable.
+        /// When overridden in a derived class, sets the name of this local variable.
         /// </summary>
         /// <param name="name">The name of the local variable.</param>
-        /// <exception cref="InvalidOperationException">The containing type has been created with CreateType() or
-        /// containing type doesn't support symbol writing.</exception>"
+        /// <exception cref="NotSupportedException">Emitting debug info is not supported.</exception>"
+        /// <exception cref="InvalidOperationException">The containing type has been created with CreateType().</exception>"
         protected virtual void SetLocalSymInfoCore(string name) => throw new NotSupportedException(SR.NotSupported_EmitDebugInfo);
     }
 }

@@ -36,7 +36,7 @@ namespace System.Reflection.Emit
         private bool _coreTypesFullyPopulated;
         private bool _hasGlobalBeenCreated;
         private Type?[]? _coreTypes;
-        private MetadataBuilder _pdbMetadata = new();
+        private MetadataBuilder _pdbBuilder = new();
         private static readonly Type[] s_coreTypes = { typeof(void), typeof(object), typeof(bool), typeof(char), typeof(sbyte), typeof(byte), typeof(short), typeof(ushort), typeof(int),
                                                        typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(string), typeof(nint), typeof(nuint), typeof(TypedReference) };
 
@@ -111,7 +111,7 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        internal void AppendMetadata(MethodBodyStreamEncoder methodBodyEncoder, BlobBuilder fieldDataBuilder, out MetadataBuilder pdbMetadata)
+        internal void AppendMetadata(MethodBodyStreamEncoder methodBodyEncoder, BlobBuilder fieldDataBuilder, out MetadataBuilder pdbBuilder)
         {
             // Add module metadata
             ModuleDefinitionHandle moduleHandle = _metadataBuilder.AddModule(
@@ -194,7 +194,7 @@ namespace System.Reflection.Emit
                 AddGenericTypeParametersAndConstraintsCustomAttributes(param._parentHandle, param);
             }
 
-            pdbMetadata = _pdbMetadata;
+            pdbBuilder = _pdbBuilder;
         }
 
         private void WriteInterfaceImplementations(TypeBuilderImpl typeBuilder, TypeDefinitionHandle typeHandle)
@@ -411,7 +411,7 @@ namespace System.Reflection.Emit
             if (il.DocumentToSequencePoints.Count == 0)
             {
                 // empty sequence point
-                _pdbMetadata.AddMethodDebugInformation(default, default);
+                _pdbBuilder.AddMethodDebugInformation(default, default);
             }
             else
             {
@@ -419,7 +419,7 @@ namespace System.Reflection.Emit
                 if (il.DocumentToSequencePoints.Count > 1)
                 {
                     // sequence points spans multiple docs
-                    _pdbMetadata.AddMethodDebugInformation(default, PopulateMultiDocSequencePointsBlob(enumerator, localSignatureHandle));
+                    _pdbBuilder.AddMethodDebugInformation(default, PopulateMultiDocSequencePointsBlob(enumerator, localSignatureHandle));
                 }
                 else // single document sequence point
                 {
@@ -427,14 +427,14 @@ namespace System.Reflection.Emit
                     BlobBuilder spBlobBuilder = new BlobBuilder();
                     spBlobBuilder.WriteCompressedInteger(MetadataTokens.GetRowNumber(localSignatureHandle));
                     PopulateSequencePointsBlob(spBlobBuilder, enumerator.Current.Value);
-                    _pdbMetadata.AddMethodDebugInformation(GetDocument(enumerator.Current.Key), _pdbMetadata.GetOrAddBlob(spBlobBuilder));
+                    _pdbBuilder.AddMethodDebugInformation(GetDocument(enumerator.Current.Key), _pdbBuilder.GetOrAddBlob(spBlobBuilder));
                 }
             }
 
             Scope scope = il.Scope;
             scope._endOffset = il.ILOffset; // Outer most scope covers the entire method body, so haven't closed by the user.
 
-            AddLocalScope(methodHandle, parentImport: default, MetadataTokens.LocalVariableHandle(_pdbMetadata.GetRowCount(TableIndex.LocalVariable) + 1), scope);
+            AddLocalScope(methodHandle, parentImport: default, MetadataTokens.LocalVariableHandle(_pdbBuilder.GetRowCount(TableIndex.LocalVariable) + 1), scope);
         }
 
         private BlobHandle PopulateMultiDocSequencePointsBlob(Dictionary<SymbolDocumentWriter, List<SequencePoint>>.Enumerator enumerator, StandaloneSignatureHandle localSignature)
@@ -459,7 +459,7 @@ namespace System.Reflection.Emit
                 PopulateSequencePointsBlob(spBlobBuilder, pair.Value, previousNonHiddenStartLine, previousNonHiddenStartColumn);
             }
 
-            return _pdbMetadata.GetOrAddBlob(spBlobBuilder);
+            return _pdbBuilder.GetOrAddBlob(spBlobBuilder);
         }
 
         private static void PopulateSequencePointsBlob(BlobBuilder spBlobBuilder, List<SequencePoint> sequencePoints, int previousNonHiddenStartLine = -1, int previousNonHiddenStartColumn = -1)
@@ -507,19 +507,19 @@ namespace System.Reflection.Emit
         {
             parentImport = GetImportScopeHandle(scope._importNamespaces, parentImport);
             firstLocalVariableHandle = GetLocalVariableHandle(scope._locals, firstLocalVariableHandle);
-            _pdbMetadata.AddLocalScope(methodHandle, parentImport, firstLocalVariableHandle,
+            _pdbBuilder.AddLocalScope(methodHandle, parentImport, firstLocalVariableHandle,
                 constantList: MetadataTokens.LocalConstantHandle(1), scope._startOffset, scope._endOffset - scope._startOffset);
 
             if (scope._children != null)
             {
                 foreach (Scope childScope in scope._children)
                 {
-                    AddLocalScope(methodHandle, parentImport, MetadataTokens.LocalVariableHandle(_pdbMetadata.GetRowCount(TableIndex.LocalVariable) + 1), childScope);
+                    AddLocalScope(methodHandle, parentImport, MetadataTokens.LocalVariableHandle(_pdbBuilder.GetRowCount(TableIndex.LocalVariable) + 1), childScope);
                 }
             }
         }
 
-        private LocalVariableHandle GetLocalVariableHandle(List<LocalBuilder>? locals, LocalVariableHandle firstLocalOfLastScope)
+        private LocalVariableHandle GetLocalVariableHandle(List<LocalBuilder>? locals, LocalVariableHandle firstLocalHandleOfLastScope)
         {
             if (locals != null)
             {
@@ -528,18 +528,18 @@ namespace System.Reflection.Emit
                 {
                     if (!string.IsNullOrEmpty(local.Name))
                     {
-                        LocalVariableHandle localHandle = _pdbMetadata.AddLocalVariable(LocalVariableAttributes.None, local.LocalIndex,
-                                                          local.Name == null ? _pdbMetadata.GetOrAddString(string.Empty) : _pdbMetadata.GetOrAddString(local.Name));
+                        LocalVariableHandle localHandle = _pdbBuilder.AddLocalVariable(LocalVariableAttributes.None, local.LocalIndex,
+                                                          local.Name == null ? _pdbBuilder.GetOrAddString(string.Empty) : _pdbBuilder.GetOrAddString(local.Name));
                         if (!firstLocalSet)
                         {
-                            firstLocalOfLastScope = localHandle;
+                            firstLocalHandleOfLastScope = localHandle;
                             firstLocalSet = true;
                         }
                     }
                 }
             }
 
-            return firstLocalOfLastScope;
+            return firstLocalHandleOfLastScope;
         }
 
         private ImportScopeHandle GetImportScopeHandle(List<string>? importNamespaces, ImportScopeHandle parent)
@@ -554,10 +554,10 @@ namespace System.Reflection.Emit
             foreach (string importNs in importNamespaces)
             {
                 importBlob.WriteByte((byte)ImportDefinitionKind.ImportNamespace);
-                importBlob.WriteCompressedInteger(MetadataTokens.GetHeapOffset(_pdbMetadata.GetOrAddBlobUTF8(importNs)));
+                importBlob.WriteCompressedInteger(MetadataTokens.GetHeapOffset(_pdbBuilder.GetOrAddBlobUTF8(importNs)));
             }
 
-            return _pdbMetadata.AddImportScope(parent, _pdbMetadata.GetOrAddBlob(importBlob));
+            return _pdbBuilder.AddImportScope(parent, _pdbBuilder.GetOrAddBlob(importBlob));
         }
 
         private static void SerializeDeltaLinesAndColumns(BlobBuilder spBuilder, SequencePoint sequencePoint)
@@ -592,11 +592,11 @@ namespace System.Reflection.Emit
         }
 
         private DocumentHandle AddDocument(string url, Guid language, Guid hashAlgorithm, byte[]? hash) =>
-            _pdbMetadata.AddDocument(
-                name: _pdbMetadata.GetOrAddDocumentName(url),
-                hashAlgorithm: hashAlgorithm == default ? default : _pdbMetadata.GetOrAddGuid(hashAlgorithm),
+            _pdbBuilder.AddDocument(
+                name: _pdbBuilder.GetOrAddDocumentName(url),
+                hashAlgorithm: hashAlgorithm == default ? default : _pdbBuilder.GetOrAddGuid(hashAlgorithm),
                 hash: hash == null ? default : _metadataBuilder.GetOrAddBlob(hash),
-                language: language == default ? default : _pdbMetadata.GetOrAddGuid(language));
+                language: language == default ? default : _pdbBuilder.GetOrAddGuid(language));
 
         private void FillMemberReferences(ILGeneratorImpl il)
         {

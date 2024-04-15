@@ -109,7 +109,7 @@ namespace System.Reflection.Emit
         /// <param name="mappedFieldData">Outputs <see cref="BlobBuilder"/> bytes that includes all field RVA data defined in the assembly.</param>
         /// <returns>A <see cref="MetadataBuilder"/> that includes all members defined in the Assembly.</returns>
         /// <exception cref="InvalidOperationException">A module not defined for the assembly.</exception>
-        /// <exception cref="InvalidOperationException">The metadata already populated for the assembly before.</exception>
+        /// <exception cref="InvalidOperationException">The metadata already populated for the assembly previously.</exception>
         [CLSCompliant(false)]
         public MetadataBuilder GenerateMetadata(out BlobBuilder ilStream, out BlobBuilder mappedFieldData)
         {
@@ -126,7 +126,7 @@ namespace System.Reflection.Emit
         /// <param name="pdbBuilder">Outputs <see cref="MetadataBuilder"/> that includes PDB metadata.</param>
         /// <returns>A <see cref="MetadataBuilder"/> that includes all members defined in the Assembly.</returns>
         /// <exception cref="InvalidOperationException">A module not defined for the assembly.</exception>
-        /// <exception cref="InvalidOperationException">The metadata already populated for the assembly before.</exception>
+        /// <exception cref="InvalidOperationException">The metadata already populated for the assembly previously.</exception>
         [CLSCompliant(false)]
         public MetadataBuilder GenerateMetadata(out BlobBuilder ilStream, out BlobBuilder mappedFieldData, out MetadataBuilder pdbBuilder)
         {

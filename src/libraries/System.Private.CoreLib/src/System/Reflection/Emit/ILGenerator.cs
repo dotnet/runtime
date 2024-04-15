@@ -218,6 +218,7 @@ namespace System.Reflection.Emit
         /// <paramref name="endLine"/> is not within range [0, 0x10000) or
         /// <paramref name="startLine"/> equal to <paramref name="endLine"/> and it is not hidden sequence point and <paramref name="endLine"/> lower than or equal to <paramref name="startLine"/>.
         /// </exception>
+        /// <exception cref="NotSupportedException">Emitting debug info is not supported.</exception>"
         public void MarkSequencePoint(ISymbolDocumentWriter document, int startLine, int startColumn, int endLine, int endColumn)
         {
             ArgumentNullException.ThrowIfNull(document);
@@ -227,17 +228,17 @@ namespace System.Reflection.Emit
                 throw new ArgumentOutOfRangeException(nameof(startLine));
             }
 
-            if (endLine < 0 || endLine > 0x20000000 || startLine > endLine)
+            if (endLine < 0 || endLine >= 0x20000000 || startLine > endLine)
             {
                 throw new ArgumentOutOfRangeException(nameof(endLine));
             }
 
-            if (startColumn < 0 || startColumn > 0x10000)
+            if (startColumn < 0 || startColumn >= 0x10000)
             {
                 throw new ArgumentOutOfRangeException(nameof(startColumn));
             }
 
-            if (endColumn < 0 || endColumn > 0x10000 ||
+            if (endColumn < 0 || endColumn >= 0x10000 ||
                 (startLine == endLine && startLine != 0xfeefee && startColumn >= endColumn))
             {
                 throw new ArgumentOutOfRangeException(nameof(endColumn));
@@ -255,6 +256,7 @@ namespace System.Reflection.Emit
         /// <param name="endLine">The line where the sequence point ends.</param>
         /// <param name="endColumn">The column in the line where the sequence point ends.</param>
         /// <exception cref="ArgumentException"><paramref name="document"/> is not valid.</exception>
+        /// <exception cref="NotSupportedException">Emitting debug info is not supported.</exception>"
         /// <remarks>The parameters validated in the caller: <see cref="MarkSequencePoint"/>.</remarks>
         protected virtual void MarkSequencePointCore(ISymbolDocumentWriter document, int startLine, int startColumn, int endLine, int endColumn) =>
             throw new NotSupportedException(SR.NotSupported_EmitDebugInfo);
