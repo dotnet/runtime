@@ -152,6 +152,7 @@
              Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <Compile Include="HttpClientHandlerTest.General.cs" />
     <Compile Include="HttpClientHandlerTest.AltSvc.cs" />
+    <Compile Include="HttpClientHandlerTest.BasicAuth.cs" />
     <Compile Include="SocketsHttpHandlerTest.Cancellation.cs" />
     <Compile Include="SocketsHttpHandlerTest.Http1KeepAlive.cs" />
     <Compile Include="SocketsHttpHandlerTest.Http2ExtendedConnect.cs" />
