@@ -826,7 +826,7 @@ TypeCompareState WrapICorJitInfo::isNullableType(
     API_ENTER(isNullableType);
     TypeCompareState temp = wrapHnd->isNullableType(cls);
     API_LEAVE(isNullableType);
-    return temp
+    return temp;
 }
 
 TypeCompareState WrapICorJitInfo::isEnum(

@@ -363,12 +363,12 @@ public class ClassUsingIsGenericTypeOnT<T>
 public class GenericSimpleClass<T>
 {
     public class Nested
-    {       
-    }  
+    {
+    }
 }
 
 public class DerivedGenericSimpleClass : GenericSimpleClass<string>
-{    
+{
 }
 
 public class GenericEnumClass<T> where T : Enum

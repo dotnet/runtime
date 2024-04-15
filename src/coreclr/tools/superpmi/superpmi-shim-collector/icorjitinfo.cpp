@@ -920,6 +920,7 @@ TypeCompareState interceptor_ICJI::isNullableType(CORINFO_CLASS_HANDLE cls)
     mc->cr->AddCall("isNullableType");
     TypeCompareState temp = original_ICorJitInfo->isNullableType(cls);
     mc->recIsNullableType(cls, temp);
+    return temp;
 }
 
 // Returns TypeCompareState::Must if cls is known to be an enum.

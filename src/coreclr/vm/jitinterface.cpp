@@ -4560,7 +4560,7 @@ TypeCompareState CEEInfo::isGenericType(CORINFO_CLASS_HANDLE cls)
 
     TypeCompareState result = TypeCompareState::May;
 
-    JIT_TO_EE_TRANSITION();    
+    JIT_TO_EE_TRANSITION();
 
     if (typeHandle != TypeHandle(g_pCanonMethodTableClass))
     {
