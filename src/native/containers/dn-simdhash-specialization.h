@@ -100,35 +100,38 @@ find_first_matching_suffix_scalar (
 	uint8_t needle,
 	uint8_t haystack[DN_SIMDHASH_VECTOR_WIDTH]
 ) {
+	uint32_t result = 32;
 	// ITERs for indices beyond our specialization's bucket capacity will be
 	//  constant-false and not check the specific bucket slot
 #define ITER(offset) \
 	if ((offset < DN_SIMDHASH_BUCKET_CAPACITY) && (needle == haystack[offset])) \
-		return offset;
+		result = offset;
 
 	// It is safe to unroll this without bounds checks
-	// One would expect this to blow out the branch predictor, but in my testing
-	//  it's significantly faster when there is no match, and slightly faster
-	//  for cases where there is a match.
 	// Looping from 0-count is slower than this in my testing, even though it's
 	//  going to check fewer suffixes most of the time - probably due to the
 	//  comparison against count for each suffix.
-	ITER(0);
-	ITER(1);
-	ITER(2);
-	ITER(3);
-	ITER(4);
-	ITER(5);
-	ITER(6);
-	ITER(7);
-	ITER(8);
-	ITER(9);
-	ITER(10);
-	ITER(11);
-	ITER(12);
+	// Scanning in reverse and conditionally modifying result allows clang to
+	//  emit a chain of 'select' operations per slot on wasm, which produces
+	//  smaller code that seems to be much faster than a chain of
+	//  'if (...) return' for successful matches, and only slightly slower
+	//  for failed matches
 	ITER(13);
+	ITER(12);
+	ITER(11);
+	ITER(10);
+	ITER(9);
+	ITER(8);
+	ITER(7);
+	ITER(6);
+	ITER(5);
+	ITER(4);
+	ITER(3);
+	ITER(2);
+	ITER(1);
+	ITER(0);
 #undef ITER
-	return 32;
+	return result;
 }
 
 static DN_FORCEINLINE(void)
