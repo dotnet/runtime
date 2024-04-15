@@ -13175,9 +13175,9 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
                 ValueNum callAddrVN = vnStore->VNForHandle(addrValue, GTF_ICON_FTN_ADDR);
                 vnpExc              = vnStore->VNPExcSetSingleton(
                     vnStore->VNPairForFunc(TYP_REF, VNF_R2RInvalidCastExc,
-                       vnStore->VNPNormalPair(
-                           call->gtArgs.GetUserArgByIndex(0)->GetNode()->gtVNPair),
-                        ValueNumPair(callAddrVN, callAddrVN)));
+                                                        vnStore->VNPNormalPair(
+                                               call->gtArgs.GetUserArgByIndex(0)->GetNode()->gtVNPair),
+                                                        ValueNumPair(callAddrVN, callAddrVN)));
                 break;
             }
 
