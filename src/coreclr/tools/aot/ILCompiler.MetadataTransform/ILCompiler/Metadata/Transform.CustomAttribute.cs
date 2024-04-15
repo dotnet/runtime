@@ -97,7 +97,9 @@ namespace ILCompiler.Metadata
                     if (type.IsString)
                         return Ecma.SerializationTypeCode.String;
 
-                    Debug.Assert(type is Cts.MetadataType { Name: "Type", Namespace: "System" });
+                    if (type is not Cts.MetadataType { Name: "Type", Namespace: "System" })
+                        throw new UnreachableException();
+
                     return Ecma.SerializationTypeCode.Type;
             }
         }
