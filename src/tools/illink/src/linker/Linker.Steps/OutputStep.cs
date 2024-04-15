@@ -95,7 +95,7 @@ namespace Mono.Linker.Steps
 				if (module.IsCrossgened ()) {
 					module.Attributes |= ModuleAttributes.ILOnly;
 					module.Attributes ^= ModuleAttributes.ILLibrary;
-					module.Architecture = 1; // MSIL architecture which ultimately translates to AnyCPU
+					module.Architecture = (TargetArchitecture)0x0001; // MSIL architecture which ultimately translates to AnyCPU
 				}
 			}
 
