@@ -220,7 +220,7 @@ namespace System.Collections.Tests
             {
                 string newKey = _collidingStrings[i];
                 Assert.Equal(0, _lazyGetNonRandomizedHashCodeDel.Value(newKey)); // ensure has a zero hash code Ordinal
-                Assert.Equal(unchecked((int)0x9B0D9421), _lazyGetNonRandomizedOrdinalIgnoreCaseHashCodeDel.Value(newKey)); // ensure has a zero hash code OrdinalIgnoreCase
+                Assert.Equal(0x24716ca0, _lazyGetNonRandomizedOrdinalIgnoreCaseHashCodeDel.Value(newKey)); // ensure has a zero hash code OrdinalIgnoreCase
 
                 addKeyCallback(collection, newKey);
                 allKeys.Add(newKey);
@@ -279,7 +279,7 @@ namespace System.Collections.Tests
                 Assert.Equal(0, ordinalHashCode); // ensure has a zero hash code Ordinal
 
                 int ordinalIgnoreCaseHashCode = _lazyGetNonRandomizedOrdinalIgnoreCaseHashCodeDel.Value(candidate);
-                if (ordinalIgnoreCaseHashCode == unchecked((int)0x9B0D9421)) // ensure has a zero hash code OrdinalIgnoreCase (might not have one)
+                if (ordinalIgnoreCaseHashCode == 0x24716ca0) // ensure has a zero hash code OrdinalIgnoreCase (might not have one)
                 {
                     collidingStrings.Add(candidate); // success!
                 }
@@ -291,29 +291,25 @@ namespace System.Collections.Tests
 
             // Generates a possible string with a well-known non-randomized hash code:
             // - string.GetNonRandomizedHashCode returns 0.
-            // - string.GetNonRandomizedHashCodeOrdinalIgnoreCase returns 0x9B0D9421.
+            // - string.GetNonRandomizedHashCodeOrdinalIgnoreCase returns 0x24716ca0.
             // Provide a different seed to produce a different string.
             // Caller must check OrdinalIgnoreCase hash code to ensure correctness.
             static string GenerateCollidingStringCandidate(int seed)
             {
-                return string.Create(16, seed, (span, seed) =>
+                return string.Create(8, seed, (span, seed) =>
                 {
                     Span<byte> asBytes = MemoryMarshal.AsBytes(span);
 
                     uint hash1 = (5381 << 16) + 5381;
                     uint hash2 = BitOperations.RotateLeft(hash1, 5) + hash1;
-                    uint hash3 = BitOperations.RotateLeft(hash1, 5) + hash1;
-                    uint hash4 = BitOperations.RotateLeft(hash1, 5) + hash1;
 
                     MemoryMarshal.Write(asBytes, in seed);
-                    MemoryMarshal.Write(asBytes.Slice(12), in hash2); // set hash2 := 0 (for Ordinal)
-                    MemoryMarshal.Write(asBytes.Slice(8), in hash3); // set hash3 := 0 (for Ordinal)
-                    MemoryMarshal.Write(asBytes.Slice(4), in hash4); // set hash4 := 0 (for Ordinal)
+                    MemoryMarshal.Write(asBytes.Slice(4), in hash2); // set hash2 := 0 (for Ordinal)
 
                     hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (uint)seed;
                     hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1);
 
-                    MemoryMarshal.Write(asBytes.Slice(16), in hash1); // set hash1 := 0 (for Ordinal)
+                    MemoryMarshal.Write(asBytes.Slice(8), in hash1); // set hash1 := 0 (for Ordinal)
                 });
             }
         }
