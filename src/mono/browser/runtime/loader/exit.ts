@@ -68,6 +68,9 @@ function onAbort (reason: any) {
     if (originalOnAbort) {
         originalOnAbort(reason || loaderHelpers.exitReason);
     }
+    if (WasmEnableThreads && loaderHelpers.config?.dumpThreadsOnNonZeroExit && runtimeHelpers.mono_wasm_print_thread_dump && loaderHelpers.exitCode === undefined) {
+        runtimeHelpers.mono_wasm_print_thread_dump();
+    }
     mono_exit(1, reason || loaderHelpers.exitReason);
 }
 
