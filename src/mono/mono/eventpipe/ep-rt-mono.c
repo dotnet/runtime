@@ -852,44 +852,19 @@ ep_rt_mono_init_finish (void)
 void
 ep_rt_mono_fini (void)
 {
-	// Avoid cleaning up resources to prevent cleaning up out from under running
-	// threads.
-	if (!mono_runtime_is_shutting_down ())
-		return;
-
 	ep_rt_mono_runtime_provider_fini ();
 	ep_rt_mono_profiler_provider_fini ();
-
-	if (_eventpipe_initialized)
-		mono_rand_close (_rand_provider);
-
-	_rand_provider = NULL;
-	_eventpipe_initialized = FALSE;
-
-	_ep_rt_mono_runtime_initialized = FALSE;
 
 	if (_ep_rt_mono_default_profiler_provider) {
 		mono_profiler_set_runtime_initialized_callback (_ep_rt_mono_default_profiler_provider, NULL);
 		mono_profiler_set_thread_started_callback (_ep_rt_mono_default_profiler_provider, NULL);
 		mono_profiler_set_thread_stopped_callback (_ep_rt_mono_default_profiler_provider, NULL);
 	}
-	_ep_rt_mono_default_profiler_provider = NULL;
-
-	if (_ep_rt_mono_thread_holder_tls_id)
-		mono_native_tls_free (_ep_rt_mono_thread_holder_tls_id);
-	_ep_rt_mono_thread_holder_tls_id = 0;
-
-	if (_thread_data_tls_id)
-		mono_native_tls_free (_thread_data_tls_id);
-	_thread_data_tls_id = 0;
-
-	_ep_rt_mono_os_cmd_line_init = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
-	_ep_rt_mono_os_cmd_line = NULL;
-
-	_ep_rt_mono_managed_cmd_line_init = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
-	_ep_rt_mono_managed_cmd_line = NULL;
-
-	ep_rt_spin_lock_free (&_ep_rt_mono_config_lock);
+	
+	// We were cleaning up resources (mutexes, tls data, etc) here but it races with
+	// other threads on shutdown. Skipping cleanup to prevent failures. If unloading
+	// and not leaking these threads becomes a priority we will have to reimplement
+	// cleanup here.
 }
 
 void
