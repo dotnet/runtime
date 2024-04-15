@@ -290,55 +290,6 @@ namespace System.ComponentModel
         public override bool SupportsKnownTypes => true;
 
         /// <summary>
-        /// CreateInstance implementation. We delegate to Activator.
-        /// </summary>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
-            Justification = "objectType is already a protected through [DynamicallyAccessedModifiers].")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "objectType is already a protected through [DynamicallyAccessedModifiers].")]
-        public override object? CreateInstanceFromKnownType(
-            IServiceProvider? provider,
-            Type objectType,
-            Type[]? argTypes,
-            object?[]? args)
-        {
-            Debug.Assert(objectType != null, "Should have arg-checked before coming in here");
-
-            object? obj;
-
-            if (argTypes != null)
-            {
-                obj = objectType.GetConstructor(argTypes)?.Invoke(args);
-            }
-            else
-            {
-                if (args != null)
-                {
-                    argTypes = new Type[args.Length];
-                    for (int idx = 0; idx < args.Length; idx++)
-                    {
-                        if (args[idx] is object arg)
-                        {
-                            argTypes[idx] = arg.GetType();
-                        }
-                        else
-                        {
-                            argTypes[idx] = typeof(object);
-                        }
-                    }
-                }
-                else
-                {
-                    argTypes = Type.EmptyTypes;
-                }
-
-                obj = objectType.GetConstructor(argTypes)?.Invoke(args);
-            }
-
-            return obj ?? Activator.CreateInstance(objectType, args);
-        }
-
-        /// <summary>
         /// Helper method to create editors and type converters. This checks to see if the
         /// type implements a Type constructor, and if it does it invokes that ctor.
         /// Otherwise, it just tries to create the type.

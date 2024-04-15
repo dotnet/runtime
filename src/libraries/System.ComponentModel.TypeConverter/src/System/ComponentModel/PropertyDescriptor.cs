@@ -190,23 +190,6 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Creates an instance of the specified known type.
-        /// </summary>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
-            Justification = "type is annotated as preserve All members, so it can be passed to CreateInstance.")]
-        protected object? CreateInstanceFromKnownType(Type type)
-        {
-            Type[] typeArgs = { typeof(Type) };
-            ConstructorInfo? ctor = TrimSafeReflectionHelper.GetConstructor(type, typeArgs);
-            if (ctor != null)
-            {
-                return TypeDescriptor.CreateInstance(null, type, typeArgs, new object[] { PropertyType });
-            }
-
-            return TypeDescriptor.CreateInstance(null, type, null, null);
-        }
-
-        /// <summary>
         /// In an inheriting class, adds the attributes of the inheriting class to the
         /// specified list of attributes in the parent class. For duplicate attributes,
         /// the last one added to the list will be kept.

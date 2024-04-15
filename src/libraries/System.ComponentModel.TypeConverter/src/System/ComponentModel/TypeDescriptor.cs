@@ -444,17 +444,6 @@ namespace System.ComponentModel
             IServiceProvider? provider,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type objectType,
             Type[]? argTypes,
-            object?[]? args) => CreateInstanceFromKnownType(provider, objectType, argTypes, args);
-
-        /// <summary>
-        /// This method will search internal tables within TypeDescriptor for
-        /// a TypeDescriptionProvider object that is associated with the given
-        /// data type. If it finds one, it will delegate the call to that object.
-        /// </summary>
-        public static object? CreateInstanceFromKnownType(
-            IServiceProvider? provider,
-            Type objectType,
-            Type[]? argTypes,
             object?[]? args)
         {
             ArgumentNullException.ThrowIfNull(objectType);
@@ -475,10 +464,10 @@ namespace System.ComponentModel
             // a caller to have complete control over all object instantiation.
             if (provider?.GetService(typeof(TypeDescriptionProvider)) is TypeDescriptionProvider p)
             {
-                instance = p.CreateInstanceFromKnownType(provider, objectType, argTypes, args);
+                instance = p.CreateInstance(provider, objectType, argTypes, args);
             }
 
-            return instance ?? NodeFor(objectType).CreateInstanceFromKnownType(provider, objectType, argTypes, args);
+            return instance ?? NodeFor(objectType).CreateInstance(provider, objectType, argTypes, args);
         }
 
         /// <summary>
