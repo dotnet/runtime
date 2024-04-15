@@ -12,7 +12,7 @@ public static class Runtime_100220
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/100220", TestRuntimes.Mono)]
     // Also, Mono needs RuntimeHelpers.GetRawObjectDataSize or equivalent to get an object size
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         if (IntPtr.Size == 8)
         {
@@ -59,7 +59,6 @@ public static class Runtime_100220
 
         // Field offsets:
         Assert.Equal("(5, 3, 4, 1, 2, 6)", FieldOffsets(new SubclassSubclassSeq { A = 1, B = 2, C = 3, D = 4, E = 5, F = 6 }).ToString());
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

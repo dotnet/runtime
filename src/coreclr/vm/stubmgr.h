@@ -215,7 +215,7 @@ class StubManager
     static BOOL IsStub(PCODE stubAddress)
     {
         WRAPPER_NO_CONTRACT;
-        return FindStubManager(stubAddress) != NULL;
+        return FindStubManager(stubAddress) != nullptr;
     }
 
     // Find stub manager for given code address
