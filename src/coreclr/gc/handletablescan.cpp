@@ -931,6 +931,15 @@ static void VerifyObjectAndAge(_UNCHECKED_OBJECTREF from, _UNCHECKED_OBJECTREF o
     }
 }
 
+size_t my_get_size (_UNCHECKED_OBJECTREF ob)
+{
+    DPTR(MethodTable) mT = dac_cast<DPTR(MethodTable)>((TADDR)ob->GetGCSafeMethodTable());
+
+    return (mT->GetBaseSize() +
+            (mT->HasComponentSize() ?
+             ((size_t)dac_cast<DPTR(ArrayBase)>(ob)->GetNumComponents() * mT->RawGetComponentSize()) : 0));
+}
+
 /*
  * BlockVerifyAgeMapForBlocksWorker
  *
@@ -989,6 +998,23 @@ void BlockVerifyAgeMapForBlocksWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Sc
                             if (pSecondary)
                             {
                                 VerifyObject(pSecondary, pSecondary);
+                            }
+                        }
+                    }
+                    if (uType == HNDTYPE_WEAK_INTERIOR_POINTER)
+                    {
+                        PTR_uintptr_t pUserData = HandleQuickFetchUserDataPointer((OBJECTHANDLE)pValue);
+
+                        // if we did then copy the value
+                        if (pUserData)
+                        {
+                            TADDR pObjectInteriorPointer = **dac_cast<DPTR(DPTR(TADDR))>(pUserData);
+                            _UNCHECKED_OBJECTREF pObjectPointerRef = *pValue;
+                            TADDR pObjectPointer = dac_cast<TADDR>(pObjectPointerRef);
+                            if (pObjectInteriorPointer < pObjectPointer || pObjectInteriorPointer >= (pObjectPointer + my_get_size(pObjectPointerRef)))
+                            {
+                                _ASSERTE(!"Weak interior pointer has interior pointer which does not point at the object of the handle.");
+                                GCToEEInterface::HandleFatalError(COR_E_EXECUTIONENGINE);
                             }
                         }
                     }
