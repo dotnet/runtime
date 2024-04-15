@@ -14,16 +14,6 @@ public class Runtime_73615
     public static int TestEntryPoint()
     {
         Foo(new C(101));
-
-        if (Result == 100)
-        {
-            Console.WriteLine("PASS");
-        }
-        else
-        {
-            Console.WriteLine("FAIL: Got result {0}", Result);
-        }
-
         return Result;
     }
 

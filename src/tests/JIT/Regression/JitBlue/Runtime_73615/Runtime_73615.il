@@ -45,26 +45,13 @@
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = ( 01 00 00 00 ) 
     .entrypoint
-    // Code size       59 (0x3b)
+    // Code size       18 (0x12)
     .maxstack  8
     IL_0000:  ldc.i4.s   101
     IL_0002:  newobj     instance void Runtime_73615/C::.ctor(int32)
     IL_0007:  call       void Runtime_73615::Foo(class Runtime_73615/C)
     IL_000c:  ldsfld     int32 Runtime_73615::Result
-    IL_0011:  ldc.i4.s   100
-    IL_0013:  bne.un.s   IL_0021
-
-    IL_0015:  ldstr      "PASS"
-    IL_001a:  call       void [System.Console]System.Console::WriteLine(string)
-    IL_001f:  br.s       IL_0035
-
-    IL_0021:  ldstr      "FAIL: Got result {0}"
-    IL_0026:  ldsfld     int32 Runtime_73615::Result
-    IL_002b:  box        [System.Runtime]System.Int32
-    IL_0030:  call       void [System.Console]System.Console::WriteLine(string,
-                                                                        object)
-    IL_0035:  ldsfld     int32 Runtime_73615::Result
-    IL_003a:  ret
+    IL_0011:  ret
   } // end of method Runtime_73615::TestEntryPoint
 
   .method private hidebysig static void  Foo(class Runtime_73615/C arg) cil managed noinlining
