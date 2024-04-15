@@ -5,9 +5,6 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <assert.h>
-#include <time.h>
-#include <sys/time.h>
-#include <strings.h>
 
 #include "../dn-vector.h"
 #include "../dn-simdhash.h"

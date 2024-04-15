@@ -6,7 +6,9 @@
 #ifndef MEASUREMENTS_IMPLEMENTATION
 #define MEASUREMENTS_IMPLEMENTATION 1
 
-#define INNER_COUNT 1024 * 32
+// If this is too large and libc's rand() is low quality (i.e. MSVC),
+//  initializing the data will take forever
+#define INNER_COUNT 1024 * 16
 #define BASELINE_SIZE 20480
 
 static dn_simdhash_u32_ptr_t *random_u32s_hash;

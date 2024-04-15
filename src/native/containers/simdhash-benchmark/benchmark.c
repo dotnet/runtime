@@ -6,12 +6,15 @@
 #include <stdio.h>
 #include <assert.h>
 #include <time.h>
-#include <sys/time.h>
 #include <string.h>
-#include <strings.h>
 
-// WHY?
+#ifdef _MSC_VER
+#include <windows.h>
+#else
+#include <sys/time.h>
+#include <strings.h>
 char *strcasestr(const char *haystack, const char *needle);
+#endif
 
 #include "../dn-vector.h"
 #include "../dn-simdhash.h"
@@ -41,6 +44,21 @@ dn_simdhash_assert_fail (const char *file, int line, const char *condition) {
 #define MTICKS_PER_SEC (10 * 1000 * 1000)
 
 int64_t get_100ns_ticks () {
+#ifdef _MSC_VER
+	static LARGE_INTEGER freq;
+	static UINT64 start_time;
+	UINT64 cur_time;
+	LARGE_INTEGER value;
+
+	if (!freq.QuadPart) {
+		QueryPerformanceFrequency(&freq);
+		QueryPerformanceCounter(&value);
+		start_time = value.QuadPart;
+	}
+	QueryPerformanceCounter(&value);
+	cur_time = value.QuadPart;
+	return (int64_t)((cur_time - start_time) * (double)MTICKS_PER_SEC / freq.QuadPart);
+#else
     struct timespec ts;
     // FIXME: Use clock_monotonic for wall time instead? I think process time is what we want
 #ifdef __wasm
@@ -49,6 +67,7 @@ int64_t get_100ns_ticks () {
     dn_simdhash_assert(clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts) == 0);
 #endif
     return ((int64_t)ts.tv_sec * MTICKS_PER_SEC + ts.tv_nsec / 100);
+#endif
 }
 
 void init_measurements () {
@@ -90,7 +109,11 @@ void foreach_measurement (const char *name, void *_info, void *_args) {
 
     uint8_t match = args->argc <= 1;
     for (int i = 1; i < args->argc; i++) {
+#ifdef _MSC_VER
+        if (strstr(name, args->argv[i])) {
+#else
         if (strcasestr(name, args->argv[i])) {
+#endif
             match = 1;
             break;
         }

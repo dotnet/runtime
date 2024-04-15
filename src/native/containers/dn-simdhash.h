@@ -4,6 +4,7 @@
 #ifndef __DN_SIMDHASH_H__
 #define __DN_SIMDHASH_H__
 
+#include <stdint.h>
 #include "dn-utils.h"
 #include "dn-allocator.h"
 
