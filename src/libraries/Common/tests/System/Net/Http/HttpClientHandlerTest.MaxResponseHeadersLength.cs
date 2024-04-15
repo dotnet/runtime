@@ -73,6 +73,8 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Throws<InvalidOperationException>(() => handler.MaxResponseHeadersLength = 1);
             },
             server => server.AcceptConnectionSendResponseAndCloseAsync());
+
+            listener?.Dispose();
         }
 
         [Theory]
@@ -112,6 +114,8 @@ namespace System.Net.Http.Functional.Tests
                 catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad) {}
 #endif
             });
+
+            listener?.Dispose();
         }
 
         [Theory]
