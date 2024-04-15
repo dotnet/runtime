@@ -9,6 +9,7 @@ import { monoThreadInfo, postMessageToMain, update_thread_info } from "./shared"
 import { Module, loaderHelpers, runtimeHelpers } from "../globals";
 import { start_runtime } from "../startup";
 import { WorkerToMainMessageType } from "../types/internal";
+import { forceThreadMemoryViewRefresh } from "../memory";
 
 export function mono_wasm_start_deputy_thread_async () {
     if (!WasmEnableThreads) return;
@@ -28,6 +29,7 @@ export function mono_wasm_start_deputy_thread_async () {
         Module.runtimeKeepalivePush();
         Module.safeSetTimeout(async () => {
             try {
+                forceThreadMemoryViewRefresh();
 
                 await start_runtime();
 

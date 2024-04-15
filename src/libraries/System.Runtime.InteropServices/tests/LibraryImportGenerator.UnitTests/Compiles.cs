@@ -440,7 +440,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.CollectionsOfCollectionsStress };
         }
 
-        [ParallelTheory]
+        [Theory]
         [MemberData(nameof(CodeSnippetsToCompile))]
         [MemberData(nameof(CustomCollections))]
         public async Task ValidateSnippets(string id, string source)
@@ -461,7 +461,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { ID(), CodeSnippets.PreprocessorIfAfterAttributeAroundFunctionAdditionalFunctionAfter("Foo"), new string[] { "Foo" } };
             yield return new object[] { ID(), CodeSnippets.PreprocessorIfAfterAttributeAroundFunctionAdditionalFunctionAfter("Foo"), Array.Empty<string>() };
         }
-        [ParallelTheory]
+        [Theory]
         [MemberData(nameof(CodeSnippetsToCompileWithPreprocessorSymbols))]
         public async Task ValidateSnippetsWithPreprocessorDefinitions(string id, string source, IEnumerable<string> preprocessorSymbols)
         {
@@ -530,7 +530,7 @@ namespace LibraryImportGenerator.UnitTests
             }
         }
 
-        [ParallelTheory]
+        [Theory]
         [MemberData(nameof(CodeSnippetsToValidateFallbackForwarder))]
         [OuterLoop("Uses the network for downlevel ref packs")]
         public async Task ValidateSnippetsFallbackForwarder(string id, string source, TestTargetFramework targetFramework, bool expectFallbackForwarder)
@@ -576,7 +576,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.BasicParameterByValue("int") };
         }
 
-        [ParallelTheory]
+        [Theory]
         [MemberData(nameof(FullyBlittableSnippetsToCompile))]
         public async Task ValidateSnippetsWithBlittableAutoForwarding(string id, string source)
         {
@@ -616,7 +616,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.SetLastErrorTrue<int>() };
         }
 
-        [ParallelTheory]
+        [Theory]
         [MemberData(nameof(SnippetsWithBlittableTypesButNonBlittableDataToCompile))]
         public async Task ValidateSnippetsWithBlittableTypesButNonBlittableMetadataDoNotAutoForward(string id, string source)
         {
@@ -689,7 +689,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { ID(), new[] { CodeSnippets.BasicParameterByValue("int[]", CodeSnippets.DisableRuntimeMarshalling), CodeSnippets.BasicParameterWithByRefModifier("ref", "int") } };
         }
 
-        [ParallelTheory]
+        [Theory]
         [MemberData(nameof(CodeSnippetsToCompileMultipleSources))]
         public async Task ValidateSnippetsWithMultipleSources(string id, string[] sources)
         {
@@ -717,7 +717,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { ID(), source, TestTargetFramework.Net };
         }
 
-        [ParallelTheory]
+        [Theory]
         [MemberData(nameof(CodeSnippetsToVerifyNoTreesProduced))]
         public async Task ValidateNoGeneratedOuptutForNoImport(string id, string source, TestTargetFramework framework)
         {

@@ -11181,7 +11181,7 @@ mono_aot_type_hash (MonoType *t1)
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
 		/* check if the distribution is good enough */
-		return ((hash << 5) - hash) ^ mono_metadata_str_hash (m_class_get_name (t1->data.klass));
+		return ((hash << 5) - hash) ^ m_class_get_name_hash (t1->data.klass);
 	case MONO_TYPE_PTR:
 		return ((hash << 5) - hash) ^ mono_metadata_type_hash (t1->data.type);
 	case MONO_TYPE_ARRAY:
@@ -11251,7 +11251,7 @@ mono_aot_method_hash (MonoMethod *method)
 		hashes [1] = 0;
 		g_free (full_name);
 	} else {
-		hashes [0] = mono_metadata_str_hash (m_class_get_name (klass));
+		hashes [0] = m_class_get_name_hash (klass);
 		hashes [1] = mono_metadata_str_hash (m_class_get_name_space (klass));
 	}
 	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE && mono_marshal_get_wrapper_info (method)->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER)

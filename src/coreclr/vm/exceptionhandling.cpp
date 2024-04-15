@@ -1667,7 +1667,7 @@ void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pT
         pcfThisFrame->isFrameless = false;
         pcfThisFrame->pFunc = NULL;
 
-        *puMethodStartPC = NULL;
+        *puMethodStartPC = 0;
     }
 
     pcfThisFrame->pThread = pThread;
@@ -1962,7 +1962,7 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
                     // then we do this for all P/Invokes except ones in IL stubs.
                     // IL stubs link the frame in for the whole stub, so if an exception is thrown during marshalling,
                     // the ICF will be on the frame chain and inactive.
-                    if (returnAddress != NULL && !ExecutionManager::GetCodeMethodDesc(returnAddress)->IsILStub())
+                    if (returnAddress != (TADDR)NULL && !ExecutionManager::GetCodeMethodDesc(returnAddress)->IsILStub())
 #else
                     // If we aren't setting up the frame for each P/Invoke (instead setting up once per method),
                     // then ReadyToRun code is the only code using the per-P/Invoke logic.
@@ -2156,7 +2156,7 @@ lExit:
     // If we are unwinding and the exception was not caught in managed code and we have reached the
     // topmost frame we saw in the first pass, then reset thread abort state if this is the last managed
     // code personality routine on the stack.
-    if ((fIsFirstPass == false) && (this->GetTopmostStackFrameFromFirstPass() == sf) && (GetCatchToCallPC() == NULL))
+    if ((fIsFirstPass == false) && (this->GetTopmostStackFrameFromFirstPass() == sf) && (GetCatchToCallPC() == 0))
     {
         ExceptionTracker::ResetThreadAbortStatus(pThread, &cfThisFrame, sf);
     }
@@ -2443,7 +2443,7 @@ CLRUnwindStatus ExceptionTracker::ProcessExplicitFrame(
                 //
                 // Update stack trace
                 //
-                m_StackTraceInfo.AppendElement(CanAllocateMemory(), NULL, sf.SP, pMD, pcfThisFrame);
+                m_StackTraceInfo.AppendElement(CanAllocateMemory(), 0, sf.SP, pMD, pcfThisFrame);
                 m_StackTraceInfo.SaveStackTrace(CanAllocateMemory(), m_hThrowable, bReplaceStack, bSkipLastElement);
 
                 //
@@ -2690,7 +2690,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
     if (!fIgnoreThisFrame)
     {
         BOOL                    fFoundHandler    = FALSE;
-        DWORD_PTR               dwHandlerStartPC = NULL;
+        DWORD_PTR               dwHandlerStartPC = 0;
 
         BOOL bReplaceStack      = FALSE;
         BOOL bSkipLastElement   = FALSE;
@@ -3006,7 +3006,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                                         // reset all the information we have saved when we find the handler.
                                         m_ExceptionFlags.ResetUnwindingToFindResumeFrame();
 
-                                        m_uCatchToCallPC  = NULL;
+                                        m_uCatchToCallPC  = 0;
                                         m_pClauseForCatchToken = NULL;
 
                                         m_sfResumeStackFrame.Clear();
@@ -4564,7 +4564,7 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
     CONTEXT contextStorage;
     DISPATCHER_CONTEXT dispatcherContext;
     EECodeInfo codeInfo;
-    UINT_PTR establisherFrame = NULL;
+    UINT_PTR establisherFrame = 0;
     PVOID handlerData;
 
     // Indicate that we are performing second pass.
@@ -4747,7 +4747,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
     DISPATCHER_CONTEXT dispatcherContext;
     EECodeInfo codeInfo;
     UINT_PTR controlPc;
-    UINT_PTR establisherFrame = NULL;
+    UINT_PTR establisherFrame = 0;
     PVOID handlerData;
 
 #ifdef FEATURE_HIJACK
@@ -5590,6 +5590,23 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
 
 #endif // TARGET_UNIX
 
+void FirstChanceExceptionNotification()
+{
+#ifndef TARGET_UNIX
+    if (IsDebuggerPresent())
+    {
+        PAL_TRY(VOID *, unused, NULL)
+        {
+            RaiseException(EXCEPTION_COMPLUS, 0, 0, NULL);
+        }
+        PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
+        {
+        }
+        PAL_ENDTRY;
+    }
+#endif // TARGET_UNIX
+}
+
 VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pExceptionContext, bool preserveStackTrace)
 {
     STATIC_CONTRACT_THROWS;
@@ -5637,6 +5654,8 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
     DECLARE_ARGHOLDER_ARRAY(args, 2);
     args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(throwable);
     args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+
+    FirstChanceExceptionNotification();
 
     pThread->IncPreventAbort();
 
@@ -8239,7 +8258,7 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
                     bool canAllocateMemory = !(pExInfo->m_exception == CLRException::GetPreallocatedOutOfMemoryException()) &&
                         !(pExInfo->m_exception == CLRException::GetPreallocatedStackOverflowException());
 
-                    pExInfo->m_StackTraceInfo.AppendElement(canAllocateMemory, NULL, GetRegdisplaySP(pExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pExInfo->m_frameIter.m_crawl);
+                    pExInfo->m_StackTraceInfo.AppendElement(canAllocateMemory, 0, GetRegdisplaySP(pExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pExInfo->m_frameIter.m_crawl);
                     pExInfo->m_StackTraceInfo.SaveStackTrace(canAllocateMemory, pExInfo->m_hThrowable, /*bReplaceStack*/FALSE, /*bSkipLastElement*/FALSE);
 
 #if defined(DEBUGGING_SUPPORTED)
@@ -8509,7 +8528,7 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
                     bool canAllocateMemory = !(pTopExInfo->m_exception == CLRException::GetPreallocatedOutOfMemoryException()) &&
                                              !(pTopExInfo->m_exception == CLRException::GetPreallocatedStackOverflowException());
 
-                    pTopExInfo->m_StackTraceInfo.AppendElement(canAllocateMemory, NULL, GetRegdisplaySP(pTopExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pTopExInfo->m_frameIter.m_crawl);
+                    pTopExInfo->m_StackTraceInfo.AppendElement(canAllocateMemory, 0, GetRegdisplaySP(pTopExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pTopExInfo->m_frameIter.m_crawl);
                     pTopExInfo->m_StackTraceInfo.SaveStackTrace(canAllocateMemory, pTopExInfo->m_hThrowable, /*bReplaceStack*/FALSE, /*bSkipLastElement*/FALSE);
 
 #if defined(DEBUGGING_SUPPORTED)

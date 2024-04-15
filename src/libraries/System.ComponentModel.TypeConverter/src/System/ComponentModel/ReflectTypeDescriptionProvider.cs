@@ -193,7 +193,7 @@ namespace System.ComponentModel
                     //
                     [typeof(Array)] = new IntrinsicTypeConverterData((type) => new ArrayConverter()),
                     [typeof(ICollection)] = new IntrinsicTypeConverterData((type) => new CollectionConverter()),
-                    [typeof(Enum)] = new IntrinsicTypeConverterData((type) => CreateEnumConverter(type), cacheConverterInstance: false),
+                    [typeof(Enum)] = new IntrinsicTypeConverterData((type) => new EnumConverter(type), cacheConverterInstance: false),
                     [s_intrinsicNullableKey] = new IntrinsicTypeConverterData((type) => CreateNullableConverter(type), cacheConverterInstance: false),
                     [s_intrinsicReferenceKey] = new IntrinsicTypeConverterData((type) => new ReferenceConverter(type), cacheConverterInstance: false),
                 });
@@ -203,14 +203,6 @@ namespace System.ComponentModel
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "IntrinsicTypeConverters is marked with RequiresUnreferencedCode. It is the only place that should call this.")]
         private static NullableConverter CreateNullableConverter(Type type) => new NullableConverter(type);
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
-            Justification = "Trimmer does not trim enums")]
-        private static EnumConverter CreateEnumConverter(Type type)
-        {
-            Debug.Assert(type.IsEnum || type == typeof(Enum));
-            return new EnumConverter(type);
-        }
 
         private static Hashtable PropertyCache => LazyInitializer.EnsureInitialized(ref s_propertyCache, () => new Hashtable());
 

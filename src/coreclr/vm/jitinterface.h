@@ -325,17 +325,6 @@ EXTERN_C FCDECL2(Object*, JIT_NewArr1OBJ_MP_InlineGetThread, CORINFO_CLASS_HANDL
 
 EXTERN_C FCDECL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2);
 
-EXTERN_C FCDECL1_V(INT64, JIT_Dbl2Lng, double val);
-EXTERN_C FCDECL1_V(INT64, JIT_Dbl2IntSSE2, double val);
-EXTERN_C FCDECL1_V(INT64, JIT_Dbl2LngP4x87, double val);
-EXTERN_C FCDECL1_V(INT64, JIT_Dbl2LngSSE3, double val);
-EXTERN_C FCDECL1_V(INT64, JIT_Dbl2LngOvf, double val);
-
-EXTERN_C FCDECL1_V(INT32, JIT_Dbl2IntOvf, double val);
-
-EXTERN_C FCDECL2_VV(float, JIT_FltRem, float dividend, float divisor);
-EXTERN_C FCDECL2_VV(double, JIT_DblRem, double dividend, double divisor);
-
 #ifndef HOST_64BIT
 #ifdef TARGET_X86
 // JIThelp.asm
@@ -720,7 +709,7 @@ public:
 #endif
 
 #ifdef FEATURE_EH_FUNCLETS
-        m_moduleBase = NULL;
+        m_moduleBase = (TADDR)0;
         m_totalUnwindSize = 0;
         m_usedUnwindSize = 0;
         m_theUnwindBlock = NULL;
@@ -803,7 +792,7 @@ public:
           m_pCodeHeap(NULL),
           m_ILHeader(header),
 #ifdef FEATURE_EH_FUNCLETS
-          m_moduleBase(NULL),
+          m_moduleBase(0),
           m_totalUnwindSize(0),
           m_usedUnwindSize(0),
           m_theUnwindBlock(NULL),
