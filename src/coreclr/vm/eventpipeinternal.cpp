@@ -146,7 +146,7 @@ extern "C" void QCALLTYPE EventPipeInternal_DeleteProvider(INT_PTR provHandle)
     QCALL_CONTRACT;
     BEGIN_QCALL;
 
-    if (provHandle != NULL)
+    if (provHandle != 0)
     {
         EventPipeProvider *pProvider = reinterpret_cast<EventPipeProvider *>(provHandle);
         EventPipeAdapter::DeleteProvider(pProvider);

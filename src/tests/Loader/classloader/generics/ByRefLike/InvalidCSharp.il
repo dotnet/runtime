@@ -74,6 +74,26 @@
     .field public !T Field
 
     .method public hidebysig
+        instance !T CreateDefaultInstance() cil managed
+    {
+        .locals init (
+            [0] !T
+        )
+        ldloca.s 0
+        initobj !T
+        ldloc.0
+        ret
+    }
+
+    .method public hidebysig
+        instance class [System.Runtime]System.Type GetGenericType() cil managed
+    {
+        ldtoken !T
+        call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+        ret
+    }
+
+    .method public hidebysig
         instance object BoxAsObject(!T) cil managed
     {
         ldarg.1
@@ -561,6 +581,24 @@
     {
         newobj instance void class InvalidCSharp.GenericClass_IndependentConstraints`2<valuetype InvalidCSharp.ByRefLikeTypeWithInterface, valuetype InvalidCSharp.ByRefLikeTypeWithInterface>::.ctor()
         callvirt instance class [System.Runtime]System.Type [System.Runtime]System.Object::GetType()
+        ret
+    }
+
+    .method public hidebysig static
+        string CreateDefaultInstance() cil managed
+    {
+        .locals init (
+            [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
+        )
+
+        ldloca.s 0
+        initobj valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
+        ldloca.s 0
+        call instance !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::CreateDefaultInstance()
+        pop
+        ldloca.s 0
+        call instance class [System.Runtime]System.Type valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::GetGenericType()
+        callvirt instance string [System.Runtime]System.Object::ToString()
         ret
     }
 
