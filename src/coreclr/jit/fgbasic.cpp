@@ -219,10 +219,33 @@ bool Compiler::fgEnsureFirstBBisScratch()
 
         block = BasicBlock::New(this);
 
-        // If we have profile data the new block will inherit fgFirstBlock's weight
+        // If we have profile data determine the weight of the scratch BB
+        //
         if (fgFirstBB->hasProfileWeight())
         {
-            block->inheritWeight(fgFirstBB);
+            // If current entry has preds, sum up those weights
+            //
+            weight_t nonEntryWeight = 0;
+            for (FlowEdge* const edge : fgFirstBB->PredEdges())
+            {
+                nonEntryWeight += edge->getLikelyWeight();
+            }
+
+            // entry weight is weight not from any pred
+            //
+            weight_t const entryWeight = fgFirstBB->bbWeight - nonEntryWeight;
+            if (entryWeight <= 0)
+            {
+                // If the result is clearly nonsensical, just inherit
+                //
+                JITDUMP("\fgEnsureFirstBBisScratch: Profile data could not be locally repaired. Data %s inconsisent.\n",
+                        fgPgoConsistent ? "is now" : "was already");
+                block->inheritWeight(fgFirstBB);
+            }
+            else
+            {
+                block->setBBProfileWeight(entryWeight);
+            }
         }
 
         // The new scratch bb will fall through to the old first bb
