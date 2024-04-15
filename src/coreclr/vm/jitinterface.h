@@ -709,7 +709,7 @@ public:
 #endif
 
 #ifdef FEATURE_EH_FUNCLETS
-        m_moduleBase = NULL;
+        m_moduleBase = (TADDR)0;
         m_totalUnwindSize = 0;
         m_usedUnwindSize = 0;
         m_theUnwindBlock = NULL;
@@ -792,7 +792,7 @@ public:
           m_pCodeHeap(NULL),
           m_ILHeader(header),
 #ifdef FEATURE_EH_FUNCLETS
-          m_moduleBase(NULL),
+          m_moduleBase(0),
           m_totalUnwindSize(0),
           m_usedUnwindSize(0),
           m_theUnwindBlock(NULL),

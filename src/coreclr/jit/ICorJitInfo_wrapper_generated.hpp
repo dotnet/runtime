@@ -804,6 +804,15 @@ bool WrapICorJitInfo::isExactType(
     return temp;
 }
 
+TypeCompareState WrapICorJitInfo::isNullableType(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(isNullableType);
+    TypeCompareState temp = wrapHnd->isNullableType(cls);
+    API_LEAVE(isNullableType);
+    return temp;
+}
+
 TypeCompareState WrapICorJitInfo::isEnum(
           CORINFO_CLASS_HANDLE cls,
           CORINFO_CLASS_HANDLE* underlyingType)

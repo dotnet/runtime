@@ -34,7 +34,7 @@ struct MachState
         INDEBUG(memset((void*)this, 0xCC, sizeof(MachState));)
     }
 
-    bool   isValid()    { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(dac_cast<TADDR>(_pRetAddr) != INVALID_POINTER_CC); return(_pRetAddr != 0); }
+    bool   isValid()    { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(dac_cast<TADDR>(_pRetAddr) != INVALID_POINTER_CC); return(_pRetAddr != nullptr); }
     TADDR* pRetAddr()   { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(isValid()); return(_pRetAddr); }
     TADDR  GetRetAddr() { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(isValid()); return *_pRetAddr; }
 #ifndef DACCESS_COMPILE

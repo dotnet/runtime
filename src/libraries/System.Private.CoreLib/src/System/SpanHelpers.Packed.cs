@@ -27,7 +27,7 @@ namespace System
             Debug.Assert(RuntimeHelpers.IsBitwiseEquatable<T>());
             Debug.Assert(sizeof(T) == sizeof(ushort));
 
-            return *(ushort*)&value - 1u < 254u;
+            return Unsafe.BitCast<T, ushort>(value) - 1u < 254u;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
