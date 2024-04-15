@@ -2951,11 +2951,7 @@ namespace Internal.JitInterface
             }
 
             TypeDesc type = HandleToObject(cls);
-
-            if (type.IsGenericParameter)
-            {
-                return TypeCompareState.May;
-            }
+            Debug.Assert(!type.IsGenericParameter);
 
             if (type.IsEnum)
             {
