@@ -165,8 +165,8 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CallDefaultStructConstructor(System.IntPtr pfn, ref byte data)
         {
-            // Manually expand call of the instance method fat pointer. We cannot use a regular C# function
-            // pointer call because it cannot express call of an instance method.
+            // Manually expand call of the instance method fat pointer. We cannot use a regular static C# function
+            // pointer call since it would not work for shared generic instance method.
             if (FunctionPointerOps.IsGenericMethodPointer(pfn))
             {
                 GenericMethodDescriptor* gmd = FunctionPointerOps.ConvertToGenericDescriptor(pfn);
