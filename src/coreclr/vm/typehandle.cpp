@@ -355,6 +355,7 @@ void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
         GCPROTECT_BEGIN(refClass);
         refClass = (REFLECTCLASSBASEREF)AllocateObject(g_pRuntimeTypeClass);
         refClass->SetKeepAlive(allocator->GetExposedObject());
+        refClass->SetType(*this);
         allocator->InsertObjectIntoFieldWithLifetimeOfCollectibleLoaderAllocator(refClass, (Object**)pDest);
         GCPROTECT_END();
     }
