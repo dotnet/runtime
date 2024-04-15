@@ -85,7 +85,7 @@ key_from_id (const char *id, char *buffer, guint buffer_len)
 		extension_offset = extension - id;
 	if (!buffer) {
 		buffer_len = (guint)(id_length + 1);
-		buffer = g_malloc0(buffer_len);
+		buffer = g_malloc(buffer_len);
 	}
 
 	if (extension_offset && bundled_resources_is_known_assembly_extension (extension))
@@ -194,7 +194,6 @@ bundled_resources_get (const char *id)
 		return NULL;
 
 	char key_buffer[1024];
-	memset(key_buffer, 0, 1024);
 	key_from_id(id, key_buffer, 1024);
 
 	MonoBundledResource *result = NULL;
