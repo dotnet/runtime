@@ -52,6 +52,9 @@ export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8A
             if (fileName.startsWith("/"))
                 fileName = fileName.substring(1);
             if (parentDirectory) {
+                if (!parentDirectory.startsWith("/"))
+                    parentDirectory = "/" + parentDirectory;
+
                 mono_log_debug(`Creating directory '${parentDirectory}'`);
 
                 Module.FS_createPath(

@@ -126,9 +126,6 @@ bundled_resources_resource_id_hash (const char *id)
 void
 mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t len)
 {
-	MonoDomain *domain = mono_get_root_domain ();
-	g_assert (!domain);
-
 	if (!bundled_resources)
 		bundled_resources = g_hash_table_new_full ((GHashFunc)bundled_resources_resource_id_hash, (GEqualFunc)bundled_resources_resource_id_equal, NULL, bundled_resources_value_destroy_func);
 

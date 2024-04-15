@@ -57,6 +57,7 @@ export function setRuntimeGlobals (globalObjects: GlobalObjects) {
 
     const rh: Partial<RuntimeHelpers> = {
         gitHash,
+        coreAssetsInMemory: createPromiseController<void>(),
         allAssetsInMemory: createPromiseController<void>(),
         dotnetReady: createPromiseController<any>(),
         afterInstantiateWasm: createPromiseController<void>(),
