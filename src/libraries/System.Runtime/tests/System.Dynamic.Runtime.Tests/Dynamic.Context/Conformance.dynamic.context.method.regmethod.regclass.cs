@@ -716,7 +716,7 @@ namespace System.Dynamic.Runtime.Tests
                 {
 #pragma warning disable CS9220 // One or more overloads of method having non-array params collection parameter might be applicable only in expanded form which is not supported during dynamic dispatch.
                     sw.WriteLine(mc.Method_ReturnString('a'));
-#pragma warning restore CS9220 // One or more overloads of method having non-array params collection parameter might be applicable only in expanded form which is not supported during dynamic dispatch.
+#pragma warning restore CS9220
                     sw.Flush();
                     sm.Position = 0;
                     using (StreamReader sr = new StreamReader(sm, (bool)mc.Method_ReturnBool()))

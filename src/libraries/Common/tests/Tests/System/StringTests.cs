@@ -4090,7 +4090,6 @@ namespace System.Tests
             yield return new object[] { '$', new object[] { new ObjectWithNullToString() }, "" };
             yield return new object[] { '$', new object[] { "Foo" }, "Foo" };
             yield return new object[] { '$', new object[] { "Foo", "Bar", "Baz" }, "Foo$Bar$Baz" };
-            //yield return new object[] { null, new object[] { "Foo", "Bar", "Baz" }, "FooBarBaz" };
             yield return new object[] { '$', new object[] { "Foo", null, "Baz" }, "Foo$$Baz" };
 
             // Test join when first value is null

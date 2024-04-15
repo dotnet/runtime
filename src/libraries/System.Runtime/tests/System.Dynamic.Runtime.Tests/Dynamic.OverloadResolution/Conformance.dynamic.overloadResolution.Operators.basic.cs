@@ -1171,7 +1171,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Oper
                 {
 #pragma warning disable CS9220 // One or more overloads of method having non-array params collection parameter might be applicable only in expanded form which is not supported during dynamic dispatch.
                     System.Console.WriteLine("Got invalid result when testing {0}: {1}[{2}]", tip, dr, dr.GetType());
-#pragma warning restore CS9220 // One or more overloads of method having non-array params collection parameter might be applicable only in expanded form which is not supported during dynamic dispatch.
+#pragma warning restore CS9220
                 }
             }
             catch (Exception ex)
@@ -1190,7 +1190,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Oper
                 dynamic dr = test(dobj);
 #pragma warning disable CS9220 // One or more overloads of method having non-array params collection parameter might be applicable only in expanded form which is not supported during dynamic dispatch.
                 System.Console.WriteLine("Got invalid result when testing {0}: {1}[{2}]", tip, dr, dr.GetType());
-#pragma warning restore CS9220 // One or more overloads of method having non-array params collection parameter might be applicable only in expanded form which is not supported during dynamic dispatch.
+#pragma warning restore CS9220
             }
             catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
             {

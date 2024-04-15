@@ -148,9 +148,9 @@ namespace System.Text.Json.Nodes
         {
             var list = new List<JsonNode?>(items);
 
-            for (int i = 0; i < items.Length; i++)
+            for (int i = 0; i < list.Count; i++)
             {
-                items[i]?.AssignParent(this);
+                list[i]?.AssignParent(this);
             }
 
             _list = list;
@@ -169,9 +169,9 @@ namespace System.Text.Json.Nodes
             }
 #endif
 
-            for (int i = 0; i < items.Length; i++)
+            for (int i = 0; i < list.Count; i++)
             {
-                items[i]?.AssignParent(this);
+                list[i]?.AssignParent(this);
             }
 
             _list = list;
