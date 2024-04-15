@@ -27,12 +27,13 @@ class Program
         {
             return -3;
         }
-        
+
         // Ensure the internal GlobalizationMode class is trimmed correctly.
         Type globalizationMode = GetCoreLibType("System.Globalization.GlobalizationMode");
 
-        if (OperatingSystem.IsWindows())
+        if (OperatingSystem.IsWindows() || OperatingSystem.IsBrowser())
         {
+            string allowedMember = OperatingSystem.IsWindows() ? "UseNls" : "InvariantFast";
             foreach (MemberInfo member in globalizationMode.GetMembers(allStatics))
             {
                 // properties and their backing getter methods are OK
@@ -41,8 +42,8 @@ class Program
                     continue;
                 }
 
-                // Windows still contains a static cctor and a backing field for UseNls.
-                if (member is ConstructorInfo || (member is FieldInfo field && field.Name.Contains("UseNls")))
+                // Windows still contains a static cctor and a backing field for UseNls or InvariantFast.
+                if (member is ConstructorInfo || (member is FieldInfo field && field.Name.Contains(allowedMember)))
                 {
                     continue;
                 }
@@ -52,10 +53,10 @@ class Program
                 return -4;
             }
         }
-        // On non Windows platforms, the full type is trimmed.
+        // On non Windows platforms, the full type is trimmed, unless it's Browser where we use FastInvariant for lazy ICU loading
         else if (globalizationMode is not null)
         {
-            Console.WriteLine("It is expected to have System.Globalization.GlobalizationMode type trimmed in non-Windows platforms");
+            Console.WriteLine("It is expected to have System.Globalization.GlobalizationMode type trimmed in non-Windows and non-Browser platforms");
             return -5;
         }
 

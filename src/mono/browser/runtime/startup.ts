@@ -34,6 +34,7 @@ import { runtimeList } from "./exports";
 import { nativeAbort, nativeExit } from "./run";
 import { mono_wasm_init_diagnostics } from "./diagnostics";
 import { replaceEmscriptenPThreadInit } from "./pthreads/worker-thread";
+import { mono_wasm_load_icu_data } from "./icu";
 
 export async function configureRuntimeStartup (module: DotnetModuleInternal): Promise<void> {
     if (!module.out) {
@@ -306,6 +307,8 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: () => void) 
             // load mono runtime and apply environment settings (if necessary)
             await start_runtime();
         }
+
+        mono_wasm_load_icu_data();
 
         if (WasmEnableThreads) {
             await runtimeHelpers.afterIOStarted.promise;
