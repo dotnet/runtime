@@ -158,8 +158,8 @@ namespace ComInterfaceGenerator.Tests
                 var values = new int[] { 1, 32, 63, 124, 255 };
 
                 int freeCalls = IntWrapperMarshallerToIntWithFreeCounts.NumCallsToFree;
-
-                NativeExportsNE.UnmanagedToManagedCustomMarshalling.SumAndSetNativeObjectData(wrapper, values, values.Length, out int _);
+                int oldValue = 12;
+                NativeExportsNE.UnmanagedToManagedCustomMarshalling.SumAndSetNativeObjectData(wrapper, values, values.Length, out oldValue);
 
                 Assert.Equal(freeCalls, IntWrapperMarshallerToIntWithFreeCounts.NumCallsToFree);
             }
@@ -183,8 +183,8 @@ namespace ComInterfaceGenerator.Tests
                 var values = new int[] { 1, 32, 63, 124, 255 };
 
                 int freeCalls = IntWrapperMarshallerToIntWithFreeCounts.NumCallsToFree;
-
-                NativeExportsNE.UnmanagedToManagedCustomMarshalling.SumAndSetNativeObjectData(wrapper, ref values, values.Length, out int _);
+                int oldValue = 12;
+                NativeExportsNE.UnmanagedToManagedCustomMarshalling.SumAndSetNativeObjectData(wrapper, ref values, values.Length, out oldValue);
 
                 Assert.Equal(freeCalls + values.Length, IntWrapperMarshallerToIntWithFreeCounts.NumCallsToFree);
             }
