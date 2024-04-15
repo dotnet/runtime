@@ -4305,6 +4305,7 @@ void MethodContext::recGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
     Agnostic_CORINFO_EE_INFO value;
 
     value.inlinedCallFrameInfo.size                  = (DWORD)pEEInfoOut->inlinedCallFrameInfo.size;
+    value.inlinedCallFrameInfo.sizeWithSecretStubArg = (DWORD)pEEInfoOut->inlinedCallFrameInfo.sizeWithSecretStubArg;
     value.inlinedCallFrameInfo.offsetOfGSCookie      = (DWORD)pEEInfoOut->inlinedCallFrameInfo.offsetOfGSCookie;
     value.inlinedCallFrameInfo.offsetOfFrameVptr     = (DWORD)pEEInfoOut->inlinedCallFrameInfo.offsetOfFrameVptr;
     value.inlinedCallFrameInfo.offsetOfFrameLink     = (DWORD)pEEInfoOut->inlinedCallFrameInfo.offsetOfFrameLink;
@@ -4312,6 +4313,8 @@ void MethodContext::recGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
     value.inlinedCallFrameInfo.offsetOfCalleeSavedFP = (DWORD)pEEInfoOut->inlinedCallFrameInfo.offsetOfCalleeSavedFP;
     value.inlinedCallFrameInfo.offsetOfCallTarget    = (DWORD)pEEInfoOut->inlinedCallFrameInfo.offsetOfCallTarget;
     value.inlinedCallFrameInfo.offsetOfReturnAddress = (DWORD)pEEInfoOut->inlinedCallFrameInfo.offsetOfReturnAddress;
+    value.inlinedCallFrameInfo.offsetOfSecretStubArg = (DWORD)pEEInfoOut->inlinedCallFrameInfo.offsetOfSecretStubArg;
+    value.inlinedCallFrameInfo.offsetOfSPAfterProlog = (DWORD)pEEInfoOut->inlinedCallFrameInfo.offsetOfSPAfterProlog;
     value.offsetOfThreadFrame                        = (DWORD)pEEInfoOut->offsetOfThreadFrame;
     value.offsetOfGCState                            = (DWORD)pEEInfoOut->offsetOfGCState;
     value.offsetOfDelegateInstance                   = (DWORD)pEEInfoOut->offsetOfDelegateInstance;
@@ -4328,12 +4331,14 @@ void MethodContext::recGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
 }
 void MethodContext::dmpGetEEInfo(DWORD key, const Agnostic_CORINFO_EE_INFO& value)
 {
-    printf("GetEEInfo key %u, value icfi{sz-%u ogs-%u ofv-%u ofl-%u ocsp-%u ocsfp-%u oct-%u ora-%u} "
+    printf("GetEEInfo key %u, value icfi{sz-%u sz-witharg-%u ogs-%u ofv-%u ofl-%u ocsp-%u ocsfp-%u oct-%u ora-%u ossa-%u osap-%u} "
            "otf-%u ogcs-%u odi-%u odft-%u osdic-%u srpf-%u osps-%u muono-%u tabi-%u osType-%u",
-           key, value.inlinedCallFrameInfo.size, value.inlinedCallFrameInfo.offsetOfGSCookie,
+           key, value.inlinedCallFrameInfo.size, value.inlinedCallFrameInfo.sizeWithSecretStubArg,
+           value.inlinedCallFrameInfo.offsetOfGSCookie,
            value.inlinedCallFrameInfo.offsetOfFrameVptr, value.inlinedCallFrameInfo.offsetOfFrameLink,
            value.inlinedCallFrameInfo.offsetOfCallSiteSP, value.inlinedCallFrameInfo.offsetOfCalleeSavedFP,
            value.inlinedCallFrameInfo.offsetOfCallTarget, value.inlinedCallFrameInfo.offsetOfReturnAddress,
+           value.inlinedCallFrameInfo.offsetOfSecretStubArg, value.inlinedCallFrameInfo.offsetOfSPAfterProlog,
            value.offsetOfThreadFrame, value.offsetOfGCState, value.offsetOfDelegateInstance,
            value.offsetOfDelegateFirstTarget, value.offsetOfWrapperDelegateIndirectCell,
            value.sizeOfReversePInvokeFrame, value.osPageSize, value.maxUncheckedOffsetForNullObject, value.targetAbi,
@@ -4341,64 +4346,33 @@ void MethodContext::dmpGetEEInfo(DWORD key, const Agnostic_CORINFO_EE_INFO& valu
 }
 void MethodContext::repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
 {
-    Agnostic_CORINFO_EE_INFO value;
+    Agnostic_CORINFO_EE_INFO value = LookupByKeyOrMissNoMessage(GetEEInfo, 0);
 
-    int index = -1;
-    if (GetEEInfo != nullptr)
-        index = GetEEInfo->GetIndex((DWORD)0);
-    if (index >= 0)
-    {
-        value = GetEEInfo->Get(0);
-        DEBUG_REP(dmpGetEEInfo(0, value));
+    DEBUG_REP(dmpGetEEInfo(0, value));
 
-        pEEInfoOut->inlinedCallFrameInfo.size               = (unsigned)value.inlinedCallFrameInfo.size;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfGSCookie   = (unsigned)value.inlinedCallFrameInfo.offsetOfGSCookie;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfFrameVptr  = (unsigned)value.inlinedCallFrameInfo.offsetOfFrameVptr;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfFrameLink  = (unsigned)value.inlinedCallFrameInfo.offsetOfFrameLink;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfCallSiteSP = (unsigned)value.inlinedCallFrameInfo.offsetOfCallSiteSP;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfCalleeSavedFP =
-            (unsigned)value.inlinedCallFrameInfo.offsetOfCalleeSavedFP;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfCallTarget = (unsigned)value.inlinedCallFrameInfo.offsetOfCallTarget;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfReturnAddress =
-            (unsigned)value.inlinedCallFrameInfo.offsetOfReturnAddress;
-        pEEInfoOut->offsetOfThreadFrame                = (unsigned)value.offsetOfThreadFrame;
-        pEEInfoOut->offsetOfGCState                    = (unsigned)value.offsetOfGCState;
-        pEEInfoOut->offsetOfDelegateInstance           = (unsigned)value.offsetOfDelegateInstance;
-        pEEInfoOut->offsetOfDelegateFirstTarget        = (unsigned)value.offsetOfDelegateFirstTarget;
-        pEEInfoOut->offsetOfWrapperDelegateIndirectCell= (unsigned)value.offsetOfWrapperDelegateIndirectCell;
-        pEEInfoOut->sizeOfReversePInvokeFrame          = (unsigned)value.sizeOfReversePInvokeFrame;
-        pEEInfoOut->osPageSize                         = (size_t)value.osPageSize;
-        pEEInfoOut->maxUncheckedOffsetForNullObject    = (size_t)value.maxUncheckedOffsetForNullObject;
-        pEEInfoOut->targetAbi                          = (CORINFO_RUNTIME_ABI)value.targetAbi;
-        pEEInfoOut->osType                             = (CORINFO_OS)value.osType;
-    }
-    else
-    {
-        pEEInfoOut->inlinedCallFrameInfo.size                  = (unsigned)0x40;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfGSCookie      = (unsigned)0;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfFrameVptr     = (unsigned)0x8;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfFrameLink     = (unsigned)0x10;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfCallSiteSP    = (unsigned)0x28;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfCalleeSavedFP = (unsigned)0x38;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfCallTarget    = (unsigned)0x18;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfReturnAddress = (unsigned)0x30;
-        pEEInfoOut->offsetOfThreadFrame                        = (unsigned)0x10;
-        pEEInfoOut->offsetOfGCState                            = (unsigned)0xc;
-        pEEInfoOut->offsetOfDelegateInstance                   = (unsigned)0x8;
-        pEEInfoOut->offsetOfDelegateFirstTarget                = (unsigned)0x18;
-        pEEInfoOut->offsetOfWrapperDelegateIndirectCell        = (unsigned)0x40;
-        pEEInfoOut->sizeOfReversePInvokeFrame                  = (unsigned)0x8;
-        pEEInfoOut->osPageSize                                 = (size_t)0x1000;
-        pEEInfoOut->maxUncheckedOffsetForNullObject            = (size_t)((32 * 1024) - 1);
-        pEEInfoOut->targetAbi                                  = CORINFO_CORECLR_ABI;
-#ifdef TARGET_OSX
-        pEEInfoOut->osType                                     = CORINFO_APPLE;
-#elif defined(TARGET_UNIX)
-        pEEInfoOut->osType                                     = CORINFO_UNIX;
-#else
-        pEEInfoOut->osType                                     = CORINFO_WINNT;
-#endif
-    }
+    pEEInfoOut->inlinedCallFrameInfo.size                  = (unsigned)value.inlinedCallFrameInfo.size;
+    pEEInfoOut->inlinedCallFrameInfo.sizeWithSecretStubArg = (unsigned)value.inlinedCallFrameInfo.sizeWithSecretStubArg;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfGSCookie      = (unsigned)value.inlinedCallFrameInfo.offsetOfGSCookie;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfFrameVptr     = (unsigned)value.inlinedCallFrameInfo.offsetOfFrameVptr;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfFrameLink     = (unsigned)value.inlinedCallFrameInfo.offsetOfFrameLink;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfCallSiteSP    = (unsigned)value.inlinedCallFrameInfo.offsetOfCallSiteSP;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfCalleeSavedFP =
+        (unsigned)value.inlinedCallFrameInfo.offsetOfCalleeSavedFP;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfCallTarget = (unsigned)value.inlinedCallFrameInfo.offsetOfCallTarget;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfReturnAddress =
+        (unsigned)value.inlinedCallFrameInfo.offsetOfReturnAddress;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfSecretStubArg = (unsigned)value.inlinedCallFrameInfo.offsetOfSecretStubArg;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfSPAfterProlog = (unsigned)value.inlinedCallFrameInfo.offsetOfSPAfterProlog;
+    pEEInfoOut->offsetOfThreadFrame                = (unsigned)value.offsetOfThreadFrame;
+    pEEInfoOut->offsetOfGCState                    = (unsigned)value.offsetOfGCState;
+    pEEInfoOut->offsetOfDelegateInstance           = (unsigned)value.offsetOfDelegateInstance;
+    pEEInfoOut->offsetOfDelegateFirstTarget        = (unsigned)value.offsetOfDelegateFirstTarget;
+    pEEInfoOut->offsetOfWrapperDelegateIndirectCell= (unsigned)value.offsetOfWrapperDelegateIndirectCell;
+    pEEInfoOut->sizeOfReversePInvokeFrame          = (unsigned)value.sizeOfReversePInvokeFrame;
+    pEEInfoOut->osPageSize                         = (size_t)value.osPageSize;
+    pEEInfoOut->maxUncheckedOffsetForNullObject    = (size_t)value.maxUncheckedOffsetForNullObject;
+    pEEInfoOut->targetAbi                          = (CORINFO_RUNTIME_ABI)value.targetAbi;
+    pEEInfoOut->osType                             = (CORINFO_OS)value.osType;
 }
 
 void MethodContext::recGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal)
