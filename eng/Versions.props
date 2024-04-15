@@ -139,7 +139,7 @@
     <MicrosoftBuildTasksCoreVersion>$(MicrosoftBuildVersion)</MicrosoftBuildTasksCoreVersion>
     <SystemDrawingCommonVersion>4.7.2</SystemDrawingCommonVersion>
     <NugetProjectModelVersion>6.7.1</NugetProjectModelVersion>
-    <NugetPackagingVersion>6.2.2</NugetPackagingVersion>
+    <NugetPackagingVersion>6.2.4</NugetPackagingVersion>
     <!-- Testing -->
     <MicrosoftNETCoreCoreDisToolsVersion>1.0.1-prerelease-00006</MicrosoftNETCoreCoreDisToolsVersion>
     <MicrosoftNETTestSdkVersion>17.4.0-preview-20220707-01</MicrosoftNETTestSdkVersion>
@@ -181,7 +181,7 @@
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenManifest60100Version)</MicrosoftNETRuntimeEmscriptenVersion>
     <!-- workloads -->
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
-    <WixPackageVersion>3.14.0-8606.20240208.1</WixPackageVersion>
+    <WixPackageVersion>3.14.1-8722.20240403.1</WixPackageVersion>
     <MonoWorkloadManifestVersion>6.0.0-preview.5.21275.7</MonoWorkloadManifestVersion>
   </PropertyGroup>
 </Project>
