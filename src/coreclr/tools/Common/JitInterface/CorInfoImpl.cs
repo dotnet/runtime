@@ -2944,7 +2944,6 @@ namespace Internal.JitInterface
         private TypeCompareState isNullableType(CORINFO_CLASS_STRUCT_* cls)
         {
             TypeDesc type = HandleToObject(cls);
-            Debug.Assert(!type.IsGenericParameter);
 
             return type.IsNullable ? TypeCompareState.Must : TypeCompareState.MustNot;
         }
