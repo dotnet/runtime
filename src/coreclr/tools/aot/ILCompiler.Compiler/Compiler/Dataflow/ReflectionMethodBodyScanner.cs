@@ -536,7 +536,7 @@ namespace ILCompiler.Dataflow
                     {
                         // We could try to analyze if the type is known, but for now making sure this works for canonical arrays is enough.
                         TypeDesc canonArrayType = reflectionMarker.Factory.TypeSystemContext.CanonType.MakeArrayType();
-                        reflectionMarker.Dependencies.Add(reflectionMarker.Factory.NativeLayout.TemplateTypeLayout(canonArrayType), "Array.CreateInstance was called");
+                        reflectionMarker.MarkType(diagnosticContext.Origin, canonArrayType, "Array.CreateInstance was called");
                         goto case IntrinsicId.None;
                     }
 
