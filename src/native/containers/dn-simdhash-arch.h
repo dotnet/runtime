@@ -174,9 +174,9 @@ ctz (uint32_t value)
 
 #include <emmintrin.h>
 
-typedef struct {
-	__m128i m128;
-	uint8_t values[DN_SIMDHASH_VECTOR_WIDTH];
+typedef union {
+	_Alignas(DN_SIMDHASH_VECTOR_WIDTH) __m128i m128;
+	_Alignas(DN_SIMDHASH_VECTOR_WIDTH) uint8_t values[DN_SIMDHASH_VECTOR_WIDTH];
 } dn_simdhash_suffixes;
 
 typedef dn_simdhash_suffixes dn_simdhash_search_vector;
@@ -210,7 +210,7 @@ find_first_matching_suffix (
 #endif
 
 typedef struct {
-	uint8_t values[DN_SIMDHASH_VECTOR_WIDTH];
+	_Alignas(DN_SIMDHASH_VECTOR_WIDTH) uint8_t values[DN_SIMDHASH_VECTOR_WIDTH];
 } dn_simdhash_suffixes;
 
 typedef uint8_t dn_simdhash_search_vector;

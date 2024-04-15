@@ -6,7 +6,13 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+
+#ifdef _MSC_VER
+#include <windows.h>
+#define MTICKS_PER_SEC (10 * 1000 * 1000)
+#else
 #include <sys/time.h>
+#endif
 
 #include "dn-vector.h"
 #include "dn-simdhash.h"
@@ -19,8 +25,8 @@ typedef struct {
 
 void
 dn_simdhash_assert_fail (const char *file, int line, const char *condition) {
-    printf("simdhash assertion failed at %s:%i:\n%s\n", file, line, condition);
-    fflush(stdout);
+	printf("simdhash assertion failed at %s:%i:\n%s\n", file, line, condition);
+	fflush(stdout);
 }
 
 static DN_FORCEINLINE(uint8_t)
@@ -75,13 +81,31 @@ void foreach_callback (size_t key, size_t value, void * user_data) {
 }
 
 int64_t get_100ns_ticks () {
+#ifdef _MSC_VER
+	static LARGE_INTEGER freq;
+	static UINT64 start_time;
+	UINT64 cur_time;
+	LARGE_INTEGER value;
+
+	if (!freq.QuadPart) {
+		QueryPerformanceFrequency(&freq);
+		QueryPerformanceCounter(&value);
+		start_time = value.QuadPart;
+	}
+	QueryPerformanceCounter(&value);
+	cur_time = value.QuadPart;
+	return (int64_t)((cur_time - start_time) * (double)MTICKS_PER_SEC / freq.QuadPart);
+#else
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
 	return ((int64_t)tv.tv_sec * 1000000 + tv.tv_usec) * 10;
+#endif
 }
 
 int main () {
-	const int c = 320000;
+	// NOTE: High values of C will cause this test to never complete if libc
+	//  rand() is not high quality enough, i.e. MSVC 2022 on x64
+	const int c = 32000;
 	dn_simdhash_size_t_size_t_t *test = dn_simdhash_size_t_size_t_new(0, NULL);
 	dn_simdhash_instance_data(instance_data_t, test).f = 3.14f;
 	dn_simdhash_instance_data(instance_data_t, test).i = 42;
