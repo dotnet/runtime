@@ -6,13 +6,22 @@
 #ifndef MEASUREMENTS_IMPLEMENTATION
 #define MEASUREMENTS_IMPLEMENTATION 1
 
-// If this is too large and libc's rand() is low quality (i.e. MSVC),
-//  initializing the data will take forever
-#define INNER_COUNT 1024 * 16
+#define INNER_COUNT 1024 * 32
 #define BASELINE_SIZE 20480
 
 static dn_simdhash_u32_ptr_t *random_u32s_hash;
 static dn_vector_t *sequential_u32s, *random_u32s, *random_unused_u32s;
+
+static uint32_t random_uint () {
+    return (uint32_t)(
+#ifdef _MSC_VER
+        // msvc rand has a rand_max of ~32k
+        rand_s()
+#else
+        rand()
+#endif
+        & 0xFFFFFFFFu)
+}
 
 static void init_data () {
     random_u32s_hash = dn_simdhash_u32_ptr_new(INNER_COUNT, NULL);
