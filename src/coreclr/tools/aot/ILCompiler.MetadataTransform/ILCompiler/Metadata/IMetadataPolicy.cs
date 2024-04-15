@@ -49,6 +49,11 @@ namespace ILCompiler.Metadata
         bool GeneratesMetadata(Cts.Ecma.EcmaModule module, Ecma.ExportedTypeHandle exportedType);
 
         /// <summary>
+        /// Returns true if InterfaceImpl should be generated for this type.
+        /// </summary>
+        bool GeneratesInterfaceImpl(Cts.MetadataType typeDef, Cts.MetadataType interfaceImpl);
+
+        /// <summary>
         /// Returns true if a type should be blocked from generating any metadata.
         /// Blocked interfaces are skipped from interface lists, and custom attributes referring to
         /// blocked types are dropped from metadata.

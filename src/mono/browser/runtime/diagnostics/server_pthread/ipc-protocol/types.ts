@@ -8,7 +8,7 @@ export interface BinaryProtocolCommand {
     payload: Uint8Array;
 }
 
-export function isBinaryProtocolCommand(x: object): x is BinaryProtocolCommand {
+export function isBinaryProtocolCommand (x: object): x is BinaryProtocolCommand {
     return "commandSet" in x && "command" in x && "payload" in x;
 }
 

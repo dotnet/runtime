@@ -2564,7 +2564,18 @@ compile_special (MonoMethod *method, MonoError *error)
 		} else {
 			MonoMethod *nm = mono_marshal_get_native_wrapper (method, TRUE, mono_aot_only);
 			compiled_method = mono_jit_compile_method_jit_only (nm, error);
-			return_val_if_nok (error, NULL);
+			if (!compiled_method && mono_aot_only && mono_use_interpreter) {
+				// We failed to find wrapper in aot images, try interpreting it instead
+				mono_error_cleanup (error);
+				error_init_reuse (error);
+				nm = mono_marshal_get_native_wrapper (method, TRUE, FALSE);
+				compiled_method = mono_jit_compile_method (nm, error);
+				return_val_if_nok (error, NULL);
+				code = mono_get_addr_from_ftnptr (compiled_method);
+				return code;
+			} else {
+				return_val_if_nok (error, NULL);
+			}
 		}
 
 		code = mono_get_addr_from_ftnptr (compiled_method);
@@ -4441,7 +4452,6 @@ free_jit_mem_manager (MonoMemoryManager *mem_manager)
 		g_hash_table_destroy (info->dyn_delegate_info_hash);
 	g_hash_table_destroy (info->static_rgctx_trampoline_hash);
 	g_hash_table_destroy (info->mrgctx_hash);
-	g_hash_table_destroy (info->interp_method_pointer_hash);
 	mono_conc_hashtable_destroy (info->runtime_invoke_hash);
 	g_hash_table_destroy (info->seq_points);
 	g_hash_table_destroy (info->arch_seq_points);

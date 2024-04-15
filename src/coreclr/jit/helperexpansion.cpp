@@ -382,7 +382,6 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         FlowEdge* const newEdge = fgAddRefPred(block, fallbackBb);
         fallbackBb->SetTargetEdge(newEdge);
         assert(fallbackBb->JumpsToNext());
-        fallbackBb->SetFlags(BBF_NONE_QUIRK);
     }
 
     if (needsSizeCheck)
@@ -1465,7 +1464,6 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
 
     // Redirect prevBb from block to isInitedBb
     fgRedirectTargetEdge(prevBb, isInitedBb);
-    prevBb->SetFlags(BBF_NONE_QUIRK);
     assert(prevBb->JumpsToNext());
 
     {
@@ -1473,7 +1471,6 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
         FlowEdge* const newEdge = fgAddRefPred(block, helperCallBb);
         helperCallBb->SetTargetEdge(newEdge);
         assert(helperCallBb->JumpsToNext());
-        helperCallBb->SetFlags(BBF_NONE_QUIRK);
     }
 
     {
@@ -1506,6 +1503,10 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
 
     // Clear gtInitClsHnd as a mark that we've already visited this call
     call->gtInitClsHnd = NO_CLASS_HANDLE;
+
+    // The blocks and statements have been modified enough to make the ending offset invalid.
+    block->bbCodeOffsEnd = BAD_IL_OFFSET;
+
     return true;
 }
 
@@ -1790,7 +1791,6 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     //
     // Redirect prevBb to lengthCheckBb
     fgRedirectTargetEdge(prevBb, lengthCheckBb);
-    prevBb->SetFlags(BBF_NONE_QUIRK);
     assert(prevBb->JumpsToNext());
 
     {
@@ -1810,7 +1810,6 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
         FlowEdge* const newEdge = fgAddRefPred(block, fastpathBb);
         fastpathBb->SetTargetEdge(newEdge);
         assert(fastpathBb->JumpsToNext());
-        fastpathBb->SetFlags(BBF_NONE_QUIRK);
     }
 
     //
@@ -1946,13 +1945,13 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
             isCastClass = false;
             break;
 
-        // These are never expanded:
-        // CORINFO_HELP_ISINSTANCEOF_EXCEPTION
-        // CORINFO_HELP_CHKCASTCLASS_SPECIAL
-        // CORINFO_HELP_READYTORUN_ISINSTANCEOF,
-        // CORINFO_HELP_READYTORUN_CHKCAST,
+            // These are never expanded:
+            // CORINFO_HELP_ISINSTANCEOF_EXCEPTION
+            // CORINFO_HELP_CHKCASTCLASS_SPECIAL
+            // CORINFO_HELP_READYTORUN_ISINSTANCEOF,
+            // CORINFO_HELP_READYTORUN_CHKCAST,
 
-        // Other helper calls are not cast helpers
+            // Other helper calls are not cast helpers
 
         default:
             return 0;
@@ -2441,7 +2440,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     if (typeCheckNotNeeded || (typeCheckFailedAction == TypeCheckFailedAction::CallHelper_AlwaysThrows))
     {
         // fallback call is used only to throw InvalidCastException
-        call->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
+        setCallDoesNotReturn(call);
         fallbackBb = fgNewBBFromTreeAfter(BBJ_THROW, lastTypeCheckBb, call, debugInfo, true);
     }
     else if (typeCheckFailedAction == TypeCheckFailedAction::ReturnNull)

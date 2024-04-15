@@ -70,7 +70,6 @@ PAL_X509ContentType AppleCryptoNative_X509GetContentType(uint8_t* pbData, int32_
     // The sniffing order is:
     // * X509 DER
     // * PKCS7 PEM/DER
-    // * PKCS12 DER (or PEM if Apple has non-standard support for that)
     // * X509 PEM or PEM aggregate (or DER, but that already matched)
     //
     // If the X509 PEM check is done first SecItemImport will erroneously match
@@ -78,6 +77,11 @@ PAL_X509ContentType AppleCryptoNative_X509GetContentType(uint8_t* pbData, int32_
     //
     // Likewise, if the X509 DER check isn't done first, Apple will report it as
     // being a PKCS#7.
+    //
+    // This does not attempt to open a PFX / PKCS12 as Apple does not provide
+    // a suitable API to determine if it is PKCS12 without doing potentially
+    // unbound MAC / KDF work. Instead, let that return Unknown and let the managed
+    // decoding do the check.
     SecCertificateRef certref = SecCertificateCreateWithData(NULL, cfData);
 
     if (certref != NULL)
@@ -101,41 +105,6 @@ PAL_X509ContentType AppleCryptoNative_X509GetContentType(uint8_t* pbData, int32_
         {
             CFRelease(cfData);
             return PAL_Pkcs7;
-        }
-    }
-
-    dataFormat = kSecFormatPKCS12;
-    actualFormat = dataFormat;
-    itemType = kSecItemTypeAggregate;
-    actualType = itemType;
-
-    osStatus = SecItemImport(cfData, NULL, &actualFormat, &actualType, 0, NULL, NULL, NULL);
-
-    if (osStatus == errSecPassphraseRequired)
-    {
-        dataFormat = kSecFormatPKCS12;
-        actualFormat = dataFormat;
-        itemType = kSecItemTypeAggregate;
-        actualType = itemType;
-
-        SecItemImportExportKeyParameters importParams;
-        memset(&importParams, 0, sizeof(SecItemImportExportKeyParameters));
-
-        importParams.version = SEC_KEY_IMPORT_EXPORT_PARAMS_VERSION;
-        importParams.passphrase = CFSTR("");
-
-        osStatus = SecItemImport(cfData, NULL, &actualFormat, &actualType, 0, &importParams, NULL, NULL);
-
-        CFRelease(importParams.passphrase);
-        importParams.passphrase = NULL;
-    }
-
-    if (osStatus == noErr || osStatus == errSecPkcs12VerifyFailure)
-    {
-        if (actualType == itemType && actualFormat == dataFormat)
-        {
-            CFRelease(cfData);
-            return PAL_Pkcs12;
         }
     }
 

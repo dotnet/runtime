@@ -24,6 +24,7 @@
                                    $(ArtifactsPackagesDir)**\*.zip;
                                    $(ArtifactsPackagesDir)**\*.deb;
                                    $(ArtifactsPackagesDir)**\*.rpm;
+                                   $(ArtifactsPackagesDir)**\*.pkg;
                                    $(ArtifactsPackagesDir)**\*.exe;
                                    $(ArtifactsPackagesDir)**\*.msi"
                           Exclude="$(ArtifactsPackagesDir)**\Symbols.runtime.tar.gz" />

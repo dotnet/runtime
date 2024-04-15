@@ -151,6 +151,7 @@ namespace System
             throw new OverflowException(SR.Overflow_NegateTwosCompNum);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe ulong BigMul(uint a, uint b)
         {
 #if TARGET_32BIT

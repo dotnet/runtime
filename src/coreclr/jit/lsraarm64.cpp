@@ -582,7 +582,7 @@ int LinearScan::BuildNode(GenTree* tree)
 {
     assert(!tree->isContained());
     int       srcCount;
-    int       dstCount      = 0;
+    int       dstCount;
     regMaskTP killMask      = RBM_NONE;
     bool      isLocalDefUse = false;
 
@@ -740,6 +740,16 @@ int LinearScan::BuildNode(GenTree* tree)
             killMask = getKillSetForReturn();
             BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
             break;
+
+#ifdef SWIFT_SUPPORT
+        case GT_SWIFT_ERROR_RET:
+            BuildUse(tree->gtGetOp1(), RBM_SWIFT_ERROR);
+            // Plus one for error register
+            srcCount = BuildReturn(tree) + 1;
+            killMask = getKillSetForReturn();
+            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            break;
+#endif // SWIFT_SUPPORT
 
         case GT_RETFILT:
             assert(dstCount == 0);

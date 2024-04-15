@@ -21,7 +21,7 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: checked
+          buildConfig: Release
           helixQueueGroup: libraries
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           platforms:
@@ -29,7 +29,7 @@ extends:
           jobParameters:
             # Default timeout is 150 minutes (2.5 hours), which is not enough for stress.
             timeoutInMinutes: 660
-            buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
+            buildArgs: -s clr+libs+libs.tests -rc Checked -c $(_BuildConfig) /p:ArchiveTests=true
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
@@ -41,7 +41,7 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: checked
+          buildConfig: Release
           helixQueueGroup: libraries
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           platforms:
@@ -53,7 +53,7 @@ extends:
           jobParameters:
             # Default timeout is 150 minutes (2.5 hours), which is not enough for stress.
             timeoutInMinutes: 660
-            buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
+            buildArgs: -s clr+libs+libs.tests -rc Checked -c $(_BuildConfig) /p:ArchiveTests=true
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:

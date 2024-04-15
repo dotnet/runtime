@@ -950,9 +950,6 @@ namespace Internal.JitInterface
                                 RelocType.IMAGE_REL_BASED_ABSOLUTE :
                                 RelocType.IMAGE_REL_BASED_RELPTR32;
 
-                            if (_compilation.NodeFactory.Target.Abi == TargetAbi.Jit)
-                                rel = RelocType.IMAGE_REL_BASED_REL32;
-
                             builder.EmitReloc(typeSymbol, rel);
                         }
                         break;
@@ -1615,31 +1612,14 @@ namespace Internal.JitInterface
 
                 pResult->nullInstanceCheck = false;
             }
-            else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0
-                // Canonically-equivalent types have the same vtable layout. Check the canonical form.
-                // We don't want to accidentally ask about Foo<object, __Canon> that may or may not
-                // be available to ask vtable questions about.
-                // This can happen in inlining that the scanner didn't expect.
-                && _compilation.HasFixedSlotVTable(targetMethod.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific)))
+            else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0)
             {
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_VTABLE;
                 pResult->nullInstanceCheck = true;
             }
             else
             {
-                ReadyToRunHelperId helperId;
-                if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0)
-                {
-                    pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
-                    helperId = ReadyToRunHelperId.ResolveVirtualFunction;
-                }
-                else
-                {
-                    // CORINFO_CALL_CODE_POINTER tells the JIT that this is indirect
-                    // call that should not be inlined.
-                    pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
-                    helperId = ReadyToRunHelperId.VirtualCall;
-                }
+                pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
 
                 // If this is a non-interface call, we actually don't need a runtime lookup to find the target.
                 // We don't even need to keep track of the runtime-determined method being called because the system ensures
@@ -1650,7 +1630,6 @@ namespace Internal.JitInterface
                     // We need JitInterface changes to fully support this.
                     // If this is LDVIRTFTN of an interface method that is part of a verifiable delegate creation sequence,
                     // RyuJIT is not going to use this value.
-                    Debug.Assert(helperId == ReadyToRunHelperId.ResolveVirtualFunction);
                     pResult->exactContextNeedsRuntimeLookup = false;
                     pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol("NYI_LDVIRTFTN"));
                 }
@@ -1666,7 +1645,7 @@ namespace Internal.JitInterface
 
                     pResult->codePointerOrStubLookup.constLookup =
                         CreateConstLookupToSymbol(
-                            _compilation.NodeFactory.ReadyToRunHelper(helperId, slotDefiningMethod));
+                            _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.ResolveVirtualFunction, slotDefiningMethod));
                 }
 
                 // The current NativeAOT ReadyToRun helpers do not handle null thisptr - ask the JIT to emit explicit null checks
@@ -1840,11 +1819,15 @@ namespace Internal.JitInterface
             // Canonically-equivalent types have the same slots, so ask for Foo<__Canon, __Canon>.
             methodDesc = methodDesc.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(_compilation.NodeFactory, methodDesc, methodDesc.OwningType);
+            TypeDesc owningType = methodDesc.OwningType;
+            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(_compilation.NodeFactory, methodDesc, owningType);
             if (slot == -1)
             {
                 throw new InvalidOperationException(methodDesc.ToString());
             }
+
+            if (_compilation.NeedsSlotUseTracking(owningType))
+                (_additionalDependencies ??= new ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<NodeFactory>.DependencyList()).Add(_compilation.NodeFactory.VirtualMethodUse(methodDesc), "Virtual method call");
 
             offsetAfterIndirection = (uint)(EETypeNode.GetVTableOffset(pointerSize) + slot * pointerSize);
         }
@@ -2248,12 +2231,40 @@ namespace Internal.JitInterface
             //       and STS::AccessCheck::CanAccess.
         }
 
+        private bool CanNeverHaveInstanceOfSubclassOf(TypeDesc type)
+        {
+            // Don't try to optimize nullable
+            if (type.IsNullable)
+                return false;
+
+            // We don't track unconstructable types very well and they are rare anyway
+            if (!ConstructedEETypeNode.CreationAllowed(type))
+                return false;
+
+            TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+
+            // If we don't have a constructed MethodTable for the exact type or for its template,
+            // this type or any of its subclasses can never be instantiated.
+            return !_compilation.CanReferenceConstructedTypeOrCanonicalFormOfType(type)
+                && (type == canonType || !_compilation.CanReferenceConstructedMethodTable(canonType));
+        }
+
         private int getExactClasses(CORINFO_CLASS_STRUCT_* baseType, int maxExactClasses, CORINFO_CLASS_STRUCT_** exactClsRet)
         {
             MetadataType type = HandleToObject(baseType) as MetadataType;
             if (type == null)
             {
+                return -1;
+            }
+
+            if (CanNeverHaveInstanceOfSubclassOf(type))
+            {
                 return 0;
+            }
+
+            if (maxExactClasses == 0)
+            {
+                return -1;
             }
 
             // type is already sealed, return it
@@ -2266,7 +2277,7 @@ namespace Internal.JitInterface
             TypeDesc[] implClasses = _compilation.GetImplementingClasses(type);
             if (implClasses == null || implClasses.Length > maxExactClasses)
             {
-                return 0;
+                return -1;
             }
 
             int index = 0;
@@ -2308,12 +2319,16 @@ namespace Internal.JitInterface
 
                     if (value == null)
                     {
-                        Debug.Assert(valueOffset == 0);
-                        Debug.Assert(bufferSize == targetPtrSize);
-
-                        // Write "null" to buffer
-                        new Span<byte>(buffer, targetPtrSize).Clear();
-                        return true;
+                        if ((valueOffset == 0) && (bufferSize == targetPtrSize))
+                        {
+                            // Write "null" to buffer
+                            new Span<byte>(buffer, targetPtrSize).Clear();
+                            return true;
+                        }
+                        else
+                        {
+                            return false;
+                        }
                     }
 
                     if (value.GetRawData(_compilation.NodeFactory, out object data))
@@ -2329,13 +2344,14 @@ namespace Internal.JitInterface
                                 return false;
 
                             case FrozenObjectNode:
-                                Debug.Assert(valueOffset == 0);
-                                Debug.Assert(bufferSize == targetPtrSize);
-
-                                // save handle's value to buffer
-                                nint handle = ObjectToHandle(data);
-                                new Span<byte>(&handle, targetPtrSize).CopyTo(new Span<byte>(buffer, targetPtrSize));
-                                return true;
+                                if ((valueOffset == 0) && (bufferSize == targetPtrSize))
+                                {
+                                    // save handle's value to buffer
+                                    nint handle = ObjectToHandle(data);
+                                    new Span<byte>(&handle, targetPtrSize).CopyTo(new Span<byte>(buffer, targetPtrSize));
+                                    return true;
+                                }
+                                return false;
                         }
                     }
                 }

@@ -25,6 +25,7 @@ terminology.
 | EE | [Execution Engine](https://docs.microsoft.com/dotnet/standard/managed-execution-process#running_code). |
 | GC | [Garbage Collector](https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/botr/garbage-collection.md). |
 | IBC | Instrumented Block Counts - used as extension (`*.ibc`) for old PGO files. |
+| IJW | "It Just Works" - Codename for [C++/CLI](https://learn.microsoft.com/cpp/dotnet/dotnet-programming-with-cpp-cli-visual-cpp) managed/native interop |
 | IPC | Inter-Process Communication. |
 | IL | Intermediate Language. Equivalent to CIL, also equivalent to [MSIL](https://docs.microsoft.com/dotnet/standard/managed-execution-process#compiling-to-msil). |
 | JIT | [Just-in-Time](https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/jit/ryujit-overview.md) compiler. RyuJIT is the code name for the next generation Just-in-Time(aka "JIT") for the .NET runtime. |

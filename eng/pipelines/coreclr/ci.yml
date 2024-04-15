@@ -44,7 +44,7 @@ extends:
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/common/templates/global-build-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: debug
           platforms:
           - linux_arm
@@ -69,7 +69,7 @@ extends:
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/common/templates/global-build-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           platforms:
           - linux_arm
