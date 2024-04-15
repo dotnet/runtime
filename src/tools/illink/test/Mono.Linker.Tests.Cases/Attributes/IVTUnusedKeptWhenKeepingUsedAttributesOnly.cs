@@ -9,7 +9,9 @@ namespace Mono.Linker.Tests.Cases.Attributes;
 [KeptAssembly ("lib.dll")]
 [KeptTypeInAssembly ("lib.dll", typeof(IVTUnusedLib))]
 [KeptAttributeInAssembly ("lib.dll", typeof (InternalsVisibleToAttribute))]
-class IVTUnused
+
+[SetupLinkerArgument("--used-attrs-only", "true")]
+class IVTUnusedKeptWhenKeepingUsedAttributesOnly
 {
 	static void Main ()
 	{
