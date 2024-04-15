@@ -238,10 +238,10 @@ namespace System.Reflection.Tests
             Assert.Equal(typeof(MyPropertyAttribute), customAttributesData[1].AttributeType);
         }
 
-        internal enum EnumForArrays { One }
+        internal enum EnumForArrays { Zero, One, Two }
 
-        [CustomAttributeWithObjects(EnumForArrays.One, new object[] { EnumForArrays.One }, new EnumForArrays[] { EnumForArrays.One },
-                B1 = EnumForArrays.One, B2 = new object[] { EnumForArrays.One }, B3 = new EnumForArrays[] { EnumForArrays.One })]
+        [CustomAttributeWithObjects(EnumForArrays.One, new object[] { EnumForArrays.One }, new EnumForArrays[] { EnumForArrays.Two },
+                B1 = EnumForArrays.One, B2 = new object[] { EnumForArrays.One }, B3 = new EnumForArrays[] { EnumForArrays.Two })]
         internal class ClassWithObjectEnums { }
 
         internal class CustomAttributeWithObjectsAttribute(object a1, object a2, object a3) : Attribute
@@ -264,12 +264,16 @@ namespace System.Reflection.Tests
             Assert.Equal(typeof(EnumForArrays), att.A1.GetType());
             Assert.Equal(typeof(object[]), att.A2.GetType());
             Assert.Equal(typeof(EnumForArrays), ((object[])att.A2)[0].GetType());
+            Assert.Equal(EnumForArrays.One, ((object[])att.A2)[0]);
             Assert.Equal(typeof(EnumForArrays[]), att.A3.GetType());
+            Assert.Equal(EnumForArrays.Two, ((EnumForArrays[])att.A3)[0]);
 
             Assert.Equal(typeof(EnumForArrays), att.B1.GetType());
             Assert.Equal(typeof(object[]), att.B2.GetType());
             Assert.Equal(typeof(EnumForArrays), ((object[])att.B2)[0].GetType());
+            Assert.Equal(EnumForArrays.One, ((object[])att.B2)[0]);
             Assert.Equal(typeof(EnumForArrays[]), att.B3.GetType());
+            Assert.Equal(EnumForArrays.Two, ((EnumForArrays[])att.B3)[0]);
         }
     }
 }
