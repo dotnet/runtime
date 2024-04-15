@@ -15,10 +15,7 @@
 
   <!-- Emscripten uses system python on Linux, so we don't need $(EmscriptenPythonToolsPath) -->
   <PropertyGroup Condition="!$([MSBuild]::IsOSPlatform('linux'))">
-    <_PythonToolsBasePath>$(EmscriptenSdkToolsPath)python</_PythonToolsBasePath>
-    <_PythonToolsVersionedPath Condition="Exists($(_PythonToolsBasePath))">$([System.IO.Directory]::GetDirectories($(_PythonToolsBasePath)))</_PythonToolsVersionedPath>
-    <EmscriptenPythonToolsPath Condition="'$(_PythonToolsVersionedPath)' != ''">$(_PythonToolsVersionedPath)</EmscriptenPythonToolsPath>
-    <EmscriptenPythonToolsPath Condition="'$(EmscriptenPythonToolsPath)' != ''">$([MSBuild]::NormalizeDirectory($(EmscriptenPythonToolsPath)))</EmscriptenPythonToolsPath>
+    <EmscriptenPythonToolsPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath)python))</EmscriptenPythonToolsPath>
 
     <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenPythonToolsPath)' == '' or !Exists('$(EmscriptenPythonToolsPath)'))">%24(EmscriptenPythonToolsPath)=$(EmscriptenPythonToolsPath) </_EMSDKMissingPaths>
   </PropertyGroup>
