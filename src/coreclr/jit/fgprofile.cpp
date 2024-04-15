@@ -4660,11 +4660,11 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
     //   and/or
     // new likelihood based weights.
     //
-    const bool verifyLikelyWeights  = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
-    const bool verifyHasLikelihood  = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
-    const bool verifyLikelihoodSum  = hasFlag(checks, ProfileChecks::CHECK_LIKELIHOODSUM);
-    const bool assertOnFailure      = hasFlag(checks, ProfileChecks::RAISE_ASSERT) && fgPgoConsistent;
-    const bool checkAllBlocks       = hasFlag(checks, ProfileChecks::CHECK_ALL_BLOCKS);
+    const bool verifyLikelyWeights = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
+    const bool verifyHasLikelihood = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
+    const bool verifyLikelihoodSum = hasFlag(checks, ProfileChecks::CHECK_LIKELIHOODSUM);
+    const bool assertOnFailure     = hasFlag(checks, ProfileChecks::RAISE_ASSERT) && fgPgoConsistent;
+    const bool checkAllBlocks      = hasFlag(checks, ProfileChecks::CHECK_ALL_BLOCKS);
 
     if (!verifyLikelyWeights && !verifyHasLikelihood)
     {
@@ -4937,7 +4937,7 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
         foundEHPreds         = false;
     }
 
-    bool likelyWeightsValid  = true;
+    bool likelyWeightsValid = true;
 
     // If we have EH preds we may not have consistent incoming flow.
     //
