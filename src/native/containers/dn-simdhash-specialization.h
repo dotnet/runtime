@@ -104,8 +104,12 @@ find_first_matching_suffix_scalar (
 	// ITERs for indices beyond our specialization's bucket capacity will be
 	//  constant-false and not check the specific bucket slot
 #define ITER(offset) \
-	if ((offset < DN_SIMDHASH_BUCKET_CAPACITY) && (needle == haystack[offset])) \
-		result = offset;
+	{ \
+		/* Avoid MSVC C4127 by computing this separately in a temp local */ \
+		uint8_t in_bounds = (offset < DN_SIMDHASH_BUCKET_CAPACITY); \
+		if (in_bounds && (needle == haystack[offset])) \
+			result = offset; \
+	}
 
 	// It is safe to unroll this without bounds checks
 	// Looping from 0-count is slower than this in my testing, even though it's
