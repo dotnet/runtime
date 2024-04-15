@@ -936,7 +936,7 @@ namespace System.ComponentModel
 
                 if (td == null)
                 {
-                    if (TypeDescriptor.IsTrimmable)
+                    if (TypeDescriptor.IsTrimmable && !IsIntrinsicType(type))
                     {
                         throw new InvalidOperationException("todo: trimmable applications require registering Types with TypeDescriptor.AddKnownReflectedType().");
                     }

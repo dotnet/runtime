@@ -11,30 +11,24 @@ namespace System.ComponentModel.Tests
         private const string TypeDescriptorIsTrimmableSwitchName = "System.ComponentModel.TypeDescriptor.IsTrimmable";
 
         [Fact]
-        public static void CallMembersWithKnownType_NotRegistered_Throws()
+        public static void GetMembersWithKnownType_NotRegistered()
         {
             RemoteExecutor.Invoke(() =>
             {
-                // This throws even if we aren't trimming since we are calling KnownType APIs.
+                // These throw even if we aren't trimming since we are calling KnownType APIs.
                 Assert.Throws<InvalidOperationException>(() => TypeDescriptor.GetPropertiesFromKnownType(typeof(C1)));
                 Assert.Throws<InvalidOperationException>(() => TypeDescriptor.GetEventsFromKnownType(typeof(C1)));
                 Assert.Throws<InvalidOperationException>(() => TypeDescriptor.GetConverterFromKnownType(typeof(C1)));
+
+                // Intrinsic types do not need to be registered.
+                TypeDescriptor.GetPropertiesFromKnownType(typeof(string));
+                TypeDescriptor.GetEventsFromKnownType(typeof(string));
+                Assert.IsType<StringConverter>(TypeDescriptor.GetConverterFromKnownType(typeof(string)));
             }).Dispose();
         }
 
         [Fact]
-        public static void GetPropertiesAndEventsFromIntrinsicType_NotRegistered()
-        {
-            RemoteExecutor.Invoke(() =>
-            {
-                Assert.Equal(0, TypeDescriptor.GetProperties(typeof(double)).Count);
-                Assert.Equal(0, TypeDescriptor.GetPropertiesFromKnownType(typeof(int)).Count);
-                Assert.Equal(0, TypeDescriptor.GetEventsFromKnownType(typeof(int)).Count);
-            }).Dispose();
-        }
-
-        [Fact]
-        public static void GetPropertiesAndEvents_NotRegistered_Trimmed_Throws()
+        public static void GetMembers_NotRegistered_Trimmed_Throws()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.RuntimeConfigurationOptions[TypeDescriptorIsTrimmableSwitchName] = bool.TrueString;
@@ -44,11 +38,12 @@ namespace System.ComponentModel.Tests
                 TypeDescriptionProvider provider = TypeDescriptor.GetProvider(typeof(C1));
                 Assert.Throws<InvalidOperationException>(() => TypeDescriptor.GetProperties(typeof(C1)));
                 Assert.Throws<InvalidOperationException>(() => TypeDescriptor.GetEvents(typeof(C1)));
+                Assert.Throws<InvalidOperationException>(() => TypeDescriptor.GetConverter(typeof(C1)));
             }, options).Dispose();
         }
 
         [Fact]
-        public static void GetPropertiesAndEventsFromKnownType_Registered_Trimmed()
+        public static void GetMembersFromKnownType_Registered_Trimmed()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.RuntimeConfigurationOptions[TypeDescriptorIsTrimmableSwitchName] = bool.TrueString;
@@ -57,13 +52,16 @@ namespace System.ComponentModel.Tests
             {
                 TypeDescriptor.AddKnownReflectedType<C1>();
                 TypeDescriptionProvider provider = TypeDescriptor.GetProvider(typeof(C1));
-                Assert.Equal(2, TypeDescriptor.GetPropertiesFromKnownType(typeof(C1)).Count);
+
+                PropertyDescriptorCollection properties = TypeDescriptor.GetPropertiesFromKnownType(typeof(C1));
+                Assert.Equal(2, properties.Count);
+                Assert.Equal("System.ComponentModel.Int32Converter", properties[0].ConverterFromKnownType.ToString());
                 Assert.Equal(2, TypeDescriptor.GetEventsFromKnownType(typeof(C1)).Count);
             }, options).Dispose();
         }
 
         [Fact]
-        public static void GetPropertiesAndEventsFromKnownType_ChildRegistered_Trimmed()
+        public static void GetMembersFromKnownType_ChildRegistered_Trimmed()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.RuntimeConfigurationOptions[TypeDescriptorIsTrimmableSwitchName] = bool.TrueString;
@@ -79,7 +77,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public static void GetPropertiesAndEventsFromKnownType_ChildUnregistered_Trimmed()
+        public static void GetMembersFromKnownType_ChildUnregistered_Trimmed()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.RuntimeConfigurationOptions[TypeDescriptorIsTrimmableSwitchName] = bool.TrueString;
@@ -94,7 +92,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public static void GetPropertiesAndEventsFromKnownType_BaseClassUnregistered_Trimmed()
+        public static void GetMembersFromKnownType_BaseClassUnregistered_Trimmed()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.RuntimeConfigurationOptions[TypeDescriptorIsTrimmableSwitchName] = bool.TrueString;
@@ -113,13 +111,6 @@ namespace System.ComponentModel.Tests
                 // Even though C1.Class.Base is not registered, we should still be able to get the properties of Base.
                 Assert.Equal("String", properties[1].GetChildProperties()[1].Name);
             }, options).Dispose();
-        }
-        [Fact]
-        public static void IntrinsicTypesAreKnownTypes()
-        {
-            Assert.IsType<ByteConverter>(TypeDescriptor.GetConverterFromKnownType(typeof(byte)));
-            Assert.IsType<Int64Converter>(TypeDescriptor.GetConverterFromKnownType(typeof(long)));
-            Assert.IsType<UriTypeConverter>(TypeDescriptor.GetConverterFromKnownType(typeof(Uri)));
         }
 
         private class C1
