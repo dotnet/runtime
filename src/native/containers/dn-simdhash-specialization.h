@@ -227,7 +227,7 @@ adjust_cascaded_counts (dn_simdhash_buffers_t buffers, uint32_t first_bucket_ind
 	END_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
 }
 
-static DN_SIMDHASH_VALUE_T *
+static DN_FORCEINLINE(DN_SIMDHASH_VALUE_T *)
 DN_SIMDHASH_FIND_VALUE_INTERNAL (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash)
 {
 	dn_simdhash_buffers_t buffers = hash->buffers;
