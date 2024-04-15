@@ -10,6 +10,7 @@ using Ecma = System.Reflection.Metadata;
 
 using Debug = System.Diagnostics.Debug;
 using NamedArgumentMemberKind = Internal.Metadata.NativeFormat.NamedArgumentMemberKind;
+using UnreachableException = System.Diagnostics.UnreachableException;
 
 namespace ILCompiler.Metadata
 {
@@ -165,7 +166,7 @@ namespace ILCompiler.Metadata
                 Ecma.SerializationTypeCode.Single => new ConstantSingleValue { Value = valueReader.ReadSingle() },
                 Ecma.SerializationTypeCode.Double => new ConstantDoubleValue { Value = valueReader.ReadDouble() },
                 Ecma.SerializationTypeCode.SZArray => HandleCustomAttributeConstantArray(module, valueReader.ReadSerializationTypeCode(), ref valueReader),
-                _ => throw new System.Exception()
+                _ => throw new UnreachableException()
             };
         }
 
@@ -225,7 +226,7 @@ namespace ILCompiler.Metadata
                 Ecma.SerializationTypeCode.UInt64 => new ConstantUInt64Array { Value = GetCustomAttributeConstantArrayElements<ulong>(ref valueReader, count) },
                 Ecma.SerializationTypeCode.Single => new ConstantSingleArray { Value = GetCustomAttributeConstantArrayElements<float>(ref valueReader, count) },
                 Ecma.SerializationTypeCode.Double => new ConstantDoubleArray { Value = GetCustomAttributeConstantArrayElements<double>(ref valueReader, count) },
-                _ => throw new System.Exception()
+                _ => throw new UnreachableException()
             };
         }
 
