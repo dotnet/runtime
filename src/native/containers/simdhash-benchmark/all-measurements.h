@@ -13,14 +13,14 @@ static dn_simdhash_u32_ptr_t *random_u32s_hash;
 static dn_vector_t *sequential_u32s, *random_u32s, *random_unused_u32s;
 
 static uint32_t random_uint () {
-    return (uint32_t)(
 #ifdef _MSC_VER
-        // msvc rand has a rand_max of ~32k
-        rand_s()
+    unsigned int temp;
+    // FIXME: This ignores srand()
+    rand_s(&temp);
+    return (uint32_t)(temp & 0xFFFFFFFFu);
 #else
-        rand()
+    return (uint32_t)(rand() & 0xFFFFFFFFu);
 #endif
-        & 0xFFFFFFFFu)
 }
 
 static void init_data () {
@@ -35,7 +35,7 @@ static void init_data () {
         dn_vector_push_back(sequential_u32s, i);
 
 retry: {
-        uint32_t key = (uint32_t)(rand() & 0xFFFFFFFFu);
+        uint32_t key = (uint32_t)(random_uint() & 0xFFFFFFFFu);
         if (!dn_simdhash_u32_ptr_try_add(random_u32s_hash, key, NULL))
             goto retry;
 
@@ -45,7 +45,7 @@ retry: {
 
     for (uint32_t i = 0; i < INNER_COUNT; i++) {
 retry2: {
-        uint32_t key = (uint32_t)(rand() & 0xFFFFFFFFu);
+        uint32_t key = (uint32_t)(random_uint() & 0xFFFFFFFFu);
         if (!dn_simdhash_u32_ptr_try_add(random_u32s_hash, key, NULL))
             goto retry2;
 
