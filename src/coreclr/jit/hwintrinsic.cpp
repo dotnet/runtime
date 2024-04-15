@@ -1607,7 +1607,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         // HWInstrinsic returns a mask, but all returns must be vectors, so convert mask to vector.
         assert(HWIntrinsicInfo::ReturnsPerElementMask(intrinsic));
         assert(nodeRetType == TYP_MASK);
-        retNode = gtNewSimdConvertMaskToVectorNode(retNode->AsHWIntrinsic(), retType);
+        retNode = gtNewSimdConvertMaskToVectorNode(retType, retNode->AsHWIntrinsic(), simdBaseJitType, simdSize);
     }
 #endif // defined(TARGET_ARM64)
 

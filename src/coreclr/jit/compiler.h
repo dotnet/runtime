@@ -3474,7 +3474,7 @@ public:
 
 #if defined(TARGET_ARM64)
     GenTree* gtNewSimdConvertVectorToMaskNode(var_types type, GenTree* node, CorInfoType simdBaseJitType, unsigned simdSize);
-    GenTree* gtNewSimdConvertMaskToVectorNode(GenTreeHWIntrinsic* node, var_types type);
+    GenTree* gtNewSimdConvertMaskToVectorNode(var_types type, GenTreeHWIntrinsic* node, CorInfoType simdBaseJitType, unsigned simdSize);
 #endif
 
     //------------------------------------------------------------------------

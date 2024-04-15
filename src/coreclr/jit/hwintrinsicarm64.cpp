@@ -2235,12 +2235,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 }
 
 //------------------------------------------------------------------------
-// gtNewSimdConvertMaskToVectorNode: Convert a HW instrinsic vector node to a mask
+// gtNewSimdConvertVectorToMaskNode: Convert a HW instrinsic vector node to a mask
 //
 // Arguments:
 //    node            -- The node to convert
-//    simdBaseJitType -- the base jit type of the converted node
-//    simdSize        -- the simd size of the converted node
+//    simdBaseJitType -- The base jit type of the converted node
+//    simdSize        -- The simd size of the converted node
 //
 // Return Value:
 //    The node converted to the a mask type
@@ -2262,19 +2262,23 @@ GenTree* Compiler::gtNewSimdConvertVectorToMaskNode(var_types   type,
 // gtNewSimdConvertMaskToVectorNode: Convert a HW instrinsic mask node to a vector
 //
 // Arguments:
-//    node          -- The node to convert
-//    type          -- The type of the node to convert to
+//    node            -- The node to convert
+//    type            -- The type of the node to convert to
+//    simdBaseJitType -- The base jit type of node to convert to
+//    simdSize        -- The simd size of the node to convert to
 //
 // Return Value:
 //    The node converted to the given type
 //
-GenTree* Compiler::gtNewSimdConvertMaskToVectorNode(GenTreeHWIntrinsic* node, var_types type)
+GenTree* Compiler::gtNewSimdConvertMaskToVectorNode(var_types           type,
+                                                    GenTreeHWIntrinsic* node,
+                                                    CorInfoType         simdBaseJitType,
+                                                    unsigned            simdSize)
 {
     assert(varTypeIsMask(node));
     assert(varTypeIsSIMD(type));
 
-    return gtNewSimdHWIntrinsicNode(type, node, NI_Sve_ConvertMaskToVector, node->GetSimdBaseJitType(),
-                                    node->GetSimdSize());
+    return gtNewSimdHWIntrinsicNode(type, node, NI_Sve_ConvertMaskToVector, simdBaseJitType, simdSize);
 }
 
 #endif // FEATURE_HW_INTRINSICS
