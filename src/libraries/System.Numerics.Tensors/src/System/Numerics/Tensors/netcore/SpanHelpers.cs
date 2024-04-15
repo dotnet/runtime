@@ -429,11 +429,23 @@ namespace System.Numerics.Tensors
 
         public static void AdjustIndices(int curIndex, nint addend, ref nint[] curIndices, ReadOnlySpan<nint> lengths)
         {
-            if (addend == 0 || curIndex < 0)
+            if (addend <= 0 || curIndex < 0)
                 return;
             curIndices[curIndex] += addend;
             AdjustIndices(curIndex - 1, curIndices[curIndex] / lengths[curIndex], ref curIndices, lengths);
             curIndices[curIndex] = curIndices[curIndex] % lengths[curIndex];
+        }
+
+        public static void AdjustIndicesDown(int curIndex, nint addend, ref nint[] curIndices, ReadOnlySpan<nint> lengths)
+        {
+            if (addend <= 0 || curIndex < 0)
+                return;
+            curIndices[curIndex] -= addend;
+            if (curIndices[curIndex] < 0)
+            {
+                curIndices[curIndex] = lengths[curIndex] - 1;
+                AdjustIndices(curIndex - 1, 1, ref curIndices, lengths);
+            }
         }
 
         public static nint CountTrueElements(Tensor<bool> filter)
