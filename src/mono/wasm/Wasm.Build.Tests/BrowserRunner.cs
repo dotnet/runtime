@@ -126,19 +126,10 @@ internal class BrowserRunner : IAsyncDisposable
         Action<string>? onError = null,
         Func<string, string>? modifyBrowserUrl = null)
     {
-        // try
-        // {
-            var urlString = await StartServerAndGetUrlAsync(cmd, args, onServerMessage);
-            var browser = await SpawnBrowserAsync(urlString, headless);
-            var context = await browser.NewContextAsync();
-            return await RunAsync(context, urlString, headless, onConsoleMessage, onError, modifyBrowserUrl);
-        // }
-        // catch (Exception ex)
-        // {
-        //     _testOutput.WriteLine($"ILONA: {ex}"); // System.ComponentModel.Win32Exception (2): An error occurred trying to start process
-        //     _testOutput.WriteLine($"ILONA Inner: {ex.InnerException}"); // empty
-        //     throw;
-        // }
+        var urlString = await StartServerAndGetUrlAsync(cmd, args, onServerMessage);
+        var browser = await SpawnBrowserAsync(urlString, headless);
+        var context = await browser.NewContextAsync();
+        return await RunAsync(context, urlString, headless, onConsoleMessage, onError, modifyBrowserUrl);
     }
 
     public async Task<IPage> RunAsync(
