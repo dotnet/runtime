@@ -90,6 +90,17 @@ namespace System.Buffers.Text
                         }
                     }
 
+                    end = srcMax - 66;
+                    if (AdvSimd.Arm64.IsSupported && (end >= src))
+                    {
+                        AdvSimdDecode(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
+
+                        if (src == srcEnd)
+                        {
+                            goto DoneExit;
+                        }
+                    }
+
                     end = srcMax - 24;
                     if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian && (end >= src))
                     {
@@ -842,6 +853,107 @@ namespace System.Buffers.Text
             }
 
             return Vector128.ShuffleUnsafe(left, right);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        private static unsafe void AdvSimdDecode(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
+        {
+            // C# implementation of https://github.com/aklomp/base64/blob/3a5add8652076612a8407627a42c768736a4263f/lib/arch/neon64/dec_loop.c
+            // If we have AdvSimd support, pick off 64 bytes at a time for as long as we can,
+            // but make sure that we quit before seeing any == markers at the end of the
+            // string. 64 + 2 = 66 bytes.
+
+            Vector128<byte> decLutOne1 = Vector128.Create(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF).AsByte();
+            Vector128<byte> decLutOne2 = Vector128.Create(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF).AsByte();
+            Vector128<byte> decLutOne3 = Vector128.Create(0xFFFFFFFF, 0xFFFFFFFF, 0x3EFFFFFF, 0x3FFFFFFF).AsByte();
+            Vector128<byte> decLutOne4 = Vector128.Create(0x37363534, 0x3B3A3938, 0xFFFF3D3C, 0xFFFFFFFF).AsByte();
+            Vector128<byte> decLutTwo1 = Vector128.Create(0x0100FF00, 0x05040302, 0x09080706, 0x0D0C0B0A).AsByte();
+            Vector128<byte> decLutTwo2 = Vector128.Create(0x11100F0E, 0x15141312, 0x19181716, 0xFFFFFFFF).AsByte();
+            Vector128<byte> decLutTwo3 = Vector128.Create(0x1B1AFFFF, 0x1F1E1D1C, 0x23222120, 0x27262524).AsByte();
+            Vector128<byte> decLutTwo4 = Vector128.Create(0x2B2A2928, 0x2F2E2D2C, 0x33323130, 0xFFFFFFFF).AsByte();
+
+            Vector128<byte> decOne1;
+            Vector128<byte> decOne2;
+            Vector128<byte> decOne3;
+            Vector128<byte> decOne4;
+            Vector128<byte> decTwo1;
+            Vector128<byte> decTwo2;
+            Vector128<byte> decTwo3;
+            Vector128<byte> decTwo4;
+            Vector128<byte> str1;
+            Vector128<byte> str2;
+            Vector128<byte> str3;
+            Vector128<byte> str4;
+            Vector128<byte> res1;
+            Vector128<byte> res2;
+            Vector128<byte> res3;
+
+            byte* src = srcBytes;
+            byte* dest = destBytes;
+            Vector128<byte> offset = AdvSimd.DuplicateToVector128((byte)0x3F);
+            var decLutOne = (decLutOne1, decLutOne2, decLutOne3, decLutOne4);
+            var decLutTwo = (decLutTwo1, decLutTwo2, decLutTwo3, decLutTwo4);
+
+            do
+            {
+                // Load 64 bytes and de-interleave.
+                AssertRead<Vector128<byte>>(src, srcStart, sourceLength);
+                (str1, str2, str3, str4) = AdvSimd.Arm64.LoadVector128x4AndUnzip(src);
+
+                // Get indices for second LUT:
+                decTwo1 = AdvSimd.SubtractSaturate(str1, offset);
+                decTwo2 = AdvSimd.SubtractSaturate(str2, offset);
+                decTwo3 = AdvSimd.SubtractSaturate(str3, offset);
+                decTwo4 = AdvSimd.SubtractSaturate(str4, offset);
+
+                // Get values from first LUT. Out-of-range indices are set to 0.
+                decOne1 = AdvSimd.Arm64.VectorTableLookup(decLutOne, str1);
+                decOne2 = AdvSimd.Arm64.VectorTableLookup(decLutOne, str2);
+                decOne3 = AdvSimd.Arm64.VectorTableLookup(decLutOne, str3);
+                decOne4 = AdvSimd.Arm64.VectorTableLookup(decLutOne, str4);
+
+                // Get values from second LUT. Out-of-range indices are unchanged.
+                decTwo1 = AdvSimd.Arm64.VectorTableLookupExtension(decTwo1, decLutTwo, decTwo1);
+                decTwo2 = AdvSimd.Arm64.VectorTableLookupExtension(decTwo2, decLutTwo, decTwo2);
+                decTwo3 = AdvSimd.Arm64.VectorTableLookupExtension(decTwo3, decLutTwo, decTwo3);
+                decTwo4 = AdvSimd.Arm64.VectorTableLookupExtension(decTwo4, decLutTwo, decTwo4);
+
+                // Invalid values are set to 255 during above look-ups using 'decLutTwo' and 'decLutTwo'.
+                // Thus the intermediate results 'decOne' and 'decTwo' could be OR-ed to get final values.
+                str1 = decOne1 | decTwo1;
+                str2 = decOne2 | decTwo2;
+                str3 = decOne3 | decTwo3;
+                str4 = decOne4 | decTwo4;
+
+                // Check for invalid input, any value larger than 63.
+                Vector128<byte> classified = AdvSimd.CompareGreaterThan(str1, offset)
+                                           | AdvSimd.CompareGreaterThan(str2, offset)
+                                           | AdvSimd.CompareGreaterThan(str3, offset)
+                                           | AdvSimd.CompareGreaterThan(str4, offset);
+
+                // Check that all bits are zero.
+                if (classified != Vector128<byte>.Zero)
+                {
+                    break;
+                }
+
+                // Compress four bytes into three.
+                res1 = AdvSimd.ShiftLeftLogical(str1, 2) | AdvSimd.ShiftRightLogical(str2, 4);
+                res2 = AdvSimd.ShiftLeftLogical(str2, 4) | AdvSimd.ShiftRightLogical(str3, 2);
+                res3 = AdvSimd.ShiftLeftLogical(str3, 6) | str4;
+
+                // Interleave and store decoded result.
+                AssertWrite<Vector128<byte>>(dest, destStart, destLength);
+                AdvSimd.Arm64.StoreVector128x3AndZip(dest, (res1, res2, res3));
+
+                src += 64;
+                dest += 48;
+            }
+            while (src <= srcEnd);
+
+            srcBytes = src;
+            destBytes = dest;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

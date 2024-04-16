@@ -2580,7 +2580,7 @@ TADDR Module::GetIL(DWORD target)
     SUPPORTS_DAC;
 
     if (target == 0)
-        return NULL;
+        return (TADDR)NULL;
 
     return m_pPEAssembly->GetIL(target);
 }
@@ -3911,7 +3911,7 @@ void Module::FixupVTables()
                     FillMemory(uMThunkMarshInfoWriterHolder.GetRW(), sizeof(UMThunkMarshInfo), 0);
 
                     uMThunkMarshInfoWriterHolder.GetRW()->LoadTimeInit(pMD);
-                    uMEntryThunkWriterHolder.GetRW()->LoadTimeInit(pUMEntryThunk, NULL, NULL, pUMThunkMarshInfo, pMD);
+                    uMEntryThunkWriterHolder.GetRW()->LoadTimeInit(pUMEntryThunk, (PCODE)0, NULL, pUMThunkMarshInfo, pMD);
 
                     SetTargetForVTableEntry(hInstThis, (BYTE **)&pPointers[iMethod], (BYTE *)pUMEntryThunk->GetCode());
 
@@ -4187,14 +4187,14 @@ BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupI
     // Ensure that the compiler won't fetch the value twice
     SIZE_T fixup = VolatileLoadWithoutBarrier(fixupCell);
 
-    if (fixup == NULL)
+    if (fixup == 0)
     {
         PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(GetReadyToRunImage()->GetRvaData(pSection->Signatures));
 
         if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell, mayUsePrecompiledNDirectMethods))
             return FALSE;
 
-        _ASSERTE(*fixupCell != NULL);
+        _ASSERTE(*fixupCell != 0);
     }
 
     return TRUE;
@@ -4611,7 +4611,7 @@ TADDR ReflectionModule::GetIL(RVA il) // virtual
 #else // DACCESS_COMPILE
     SUPPORTS_DAC;
     DacNotImpl();
-    return NULL;
+    return (TADDR)NULL;
 #endif // DACCESS_COMPILE
 }
 
@@ -4905,7 +4905,7 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
 
             // Now, fill in the new cookie (assuming we had enough memory to create one.)
             pCookie->pModule = pDefiningModule;
-            pCookie->pNDirectILStub = NULL;
+            pCookie->pNDirectILStub = 0;
             pCookie->sizeOfArgs = sizeOfArgs;
             pCookie->signature = vaSignature;
             pCookie->pLoaderModule = pLoaderModule;

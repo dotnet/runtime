@@ -185,6 +185,7 @@
       <EmccExportedRuntimeMethod Include="getValue" />
       <EmccExportedRuntimeMethod Include="UTF8ToString" />
       <EmccExportedRuntimeMethod Include="UTF8ArrayToString" />
+      <EmccExportedRuntimeMethod Include="lengthBytesUTF8" />
       <EmccExportedRuntimeMethod Include="stringToUTF8Array" />
       <EmccExportedRuntimeMethod Include="FS_createPath" />
       <EmccExportedRuntimeMethod Include="FS_createDataFile" />
