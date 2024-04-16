@@ -35,15 +35,17 @@ variables:
 
 resources:
   repositories:
-  - repository: PerformanceRepo
-    ref: '${{ parameters.performanceRepoBranch }}'
-    ${{ if eq(parameters.performanceRepoSource, 'github') }}:
+  - ${{ if eq(parameters.performanceRepoSource, 'github') }}:
+    - repository: PerformanceRepo
       type: github
       endpoint: dotnet
       name: dotnet/performance
-    ${{ if eq(parameters.performanceRepoSource, 'ado') }}:
+      ref: '${{ parameters.performanceRepoBranch }}'
+  - ${{ if eq(parameters.performanceRepoSource, 'ado') }}:
+    - repository: PerformanceRepo
       type: git
       name: dotnet-performance
+      ref: '${{ parameters.performanceRepoBranch }}'
 
 #
 # For the 'schedule' case, only wasm/jsc perf jobs are run.
