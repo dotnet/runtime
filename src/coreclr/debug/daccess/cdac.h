@@ -15,6 +15,9 @@ public: // static
     }
 
 public:
+    CDAC(const CDAC&) = delete;
+    CDAC& operator=(const CDAC&) = delete;
+
     CDAC(CDAC&& other)
         : m_module{ other.m_module }
         , m_cdac_handle{ other.m_cdac_handle }

@@ -81,5 +81,5 @@ int CDAC::ReadFromTarget(uint64_t addr, uint8_t* dest, uint32_t count)
     if (FAILED(hr))
         return hr;
 
-    return 0;
+    return S_OK;
 }
