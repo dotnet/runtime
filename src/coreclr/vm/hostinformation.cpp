@@ -89,7 +89,7 @@ SimpleNameToFileNameMap* HostInformation::GetHostAssemblyNames()
         LPWSTR wszSimpleName = new WCHAR[assemblyName.GetCount() + 1];
         if (wszSimpleName == nullptr)
         {
-            return m_simpleFileNameMap;
+            continue;
         }
         wcscpy_s(wszSimpleName, assemblyName.GetCount() + 1, assemblyName.GetUnicode());
 
@@ -98,6 +98,8 @@ SimpleNameToFileNameMap* HostInformation::GetHostAssemblyNames()
 
         m_simpleFileNameMap->AddOrReplace(mapEntry);
     }
+
+    s_hostContract->destroy_assemblies(assemblies, assemblyCount);
 
     return m_simpleFileNameMap;
 }

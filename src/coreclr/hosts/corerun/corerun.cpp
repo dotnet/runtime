@@ -240,6 +240,17 @@ char** HOST_CONTRACT_CALLTYPE get_assemblies(
     return config->host_assemblies;
 }
 
+void HOST_CONTRACT_CALLTYPE destroy_assemblies(
+    char** assemblies,
+    uint32_t assembly_count)
+{
+    for (uint32_t i = 0; i < assembly_count; ++i)
+    {
+        delete[] assemblies[i];
+    }
+    delete[] assemblies;
+}
+
 const char* HOST_CONTRACT_CALLTYPE resolve_assembly_to_path(
     const char* assembly_name,
     void* contract_context)

@@ -159,6 +159,18 @@ namespace
         return assemblies;
     }
 
+    void HOST_CONTRACT_CALLTYPE destroy_assemblies(
+        char** assemblies,
+        uint32_t assembly_count)
+    {
+        for (uint32_t i = 0; i < assembly_count; ++i)
+        {
+            delete[] assemblies[i];
+        }
+
+        delete[] assemblies;
+    }
+
     const char* HOST_CONTRACT_CALLTYPE resolve_assembly_to_path(
         const char* assembly_name,
         void* contract_context)
@@ -253,6 +265,7 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
 
         host_contract.get_runtime_property = &get_runtime_property;
         host_contract.get_assemblies = &get_runtime_framework_assemblies;
+        host_contract.destroy_assemblies = &destroy_assemblies;
         host_contract.resolve_assembly_to_path = &resolve_assembly_to_path;
         pal::char_t buffer[STRING_LENGTH("0xffffffffffffffff")];
         pal::snwprintf(buffer, ARRAY_SIZE(buffer), _X("0x%zx"), (size_t)(&host_contract));
