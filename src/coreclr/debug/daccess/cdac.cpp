@@ -5,6 +5,7 @@
 #include <sospriv.h>
 #include <sstring.h>
 #include "dbgutil.h"
+#include <cdac_reader.h>
 
 #define CDAC_LIB_NAME MAKEDLLNAME_W(W("cdacreader"))
 
@@ -32,24 +33,25 @@ namespace
     }
 }
 
-CDAC* CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target)
+CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target)
 {
     HMODULE cdacLib;
     if (!TryLoadCDACLibrary(&cdacLib))
-        return nullptr;
+        return CDAC::Invalid();
 
-    CDAC *impl = new (nothrow) CDAC{cdacLib, descriptorAddr, target};
-    return impl;
+    return CDAC{cdacLib, descriptorAddr, target};
 }
 
 CDAC::CDAC(HMODULE module, uint64_t descriptorAddr, ICorDebugDataTarget* target)
     : m_module(module)
     , m_target{target}
 {
+    if (m_module == NULL)
+        return;
+
     decltype(&cdac_reader_init) init = reinterpret_cast<decltype(&cdac_reader_init)>(::GetProcAddress(m_module, "cdac_reader_init"));
     decltype(&cdac_reader_get_sos_interface) getSosInterface = reinterpret_cast<decltype(&cdac_reader_get_sos_interface)>(::GetProcAddress(m_module, "cdac_reader_get_sos_interface"));
-    m_free = reinterpret_cast<decltype(&cdac_reader_free)>(::GetProcAddress(m_module, "cdac_reader_free"));
-    _ASSERTE(init != nullptr && getSosInterface != nullptr && m_free != nullptr);
+    _ASSERTE(init != nullptr && getSosInterface != nullptr);
 
     init(descriptorAddr, &ReadFromTargetCallback, this, &m_cdac_handle);
     getSosInterface(m_cdac_handle, &m_sos);
@@ -58,7 +60,11 @@ CDAC::CDAC(HMODULE module, uint64_t descriptorAddr, ICorDebugDataTarget* target)
 CDAC::~CDAC()
 {
     if (m_cdac_handle != NULL)
-        m_free(m_cdac_handle);
+    {
+        decltype(&cdac_reader_free) free = reinterpret_cast<decltype(&cdac_reader_free)>(::GetProcAddress(m_module, "cdac_reader_free"));
+        _ASSERTE(free != nullptr);
+        free(m_cdac_handle);
+    }
 
     if (m_module != NULL)
         ::FreeLibrary(m_module);

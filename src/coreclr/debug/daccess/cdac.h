@@ -4,31 +4,63 @@
 #ifndef CDAC_H
 #define CDAC_H
 
-#include <cdac_reader.h>
-
 class CDAC final
 {
 public: // static
-    static CDAC* Create(uint64_t descriptorAddr, ICorDebugDataTarget *pDataTarget);
+    static CDAC Create(uint64_t descriptorAddr, ICorDebugDataTarget *pDataTarget);
+
+    static CDAC Invalid()
+    {
+        return CDAC{nullptr, 0, nullptr};
+    }
 
 public:
+    CDAC(CDAC&& other)
+        : m_module{ other.m_module }
+        , m_cdac_handle{ other.m_cdac_handle }
+        , m_target{ other.m_target }
+        , m_sos{ other.m_sos.Extract() }
+    {
+        other.m_module = NULL;
+        other.m_cdac_handle = 0;
+        other.m_target = NULL;
+        other.m_sos = NULL;
+    }
+
+    CDAC& operator=(CDAC&& other)
+    {
+        m_module = other.m_module;
+        m_cdac_handle = other.m_cdac_handle;
+        m_target = other.m_target;
+        m_sos = other.m_sos.Extract();
+
+        other.m_module = NULL;
+        other.m_cdac_handle = 0;
+        other.m_target = NULL;
+        other.m_sos = NULL;
+
+        return *this;
+    }
+
     ~CDAC();
+
+    bool IsValid() const
+    {
+        return m_module != NULL && m_cdac_handle != 0;
+    }
 
     // This does not AddRef the returned interface
     IUnknown* SosInterface();
     int ReadFromTarget(uint64_t addr, uint8_t* dest, uint32_t count);
 
 private:
-    explicit CDAC(HMODULE module, uint64_t descriptorAddr, ICorDebugDataTarget* target);
+    CDAC(HMODULE module, uint64_t descriptorAddr, ICorDebugDataTarget* target);
 
 private:
     HMODULE m_module;
     intptr_t m_cdac_handle;
     ICorDebugDataTarget* m_target;
     NonVMComHolder<IUnknown> m_sos;
-
-private:
-    decltype(&cdac_reader_free) m_free;
 };
 
 #endif // CDAC_H

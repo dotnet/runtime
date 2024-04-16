@@ -3035,6 +3035,7 @@ private:
 //----------------------------------------------------------------------------
 
 ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget/*=0*/)
+    : m_cdac{CDAC::Invalid()}
 {
     SUPPORTS_DAC_HOST_ONLY;     // ctor does no marshalling - don't check with DacCop
 
@@ -3130,10 +3131,10 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
     //if (TryGetSymbol(m_pTarget, m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
     {
         m_cdac = CDAC::Create(contractDescriptorAddr, m_pTarget);
-        if (m_cdac != NULL)
+        if (m_cdac.IsValid())
         {
             // Get SOS interfaces from the cDAC if available.
-            IUnknown* unk = m_cdac->SosInterface();
+            IUnknown* unk = m_cdac.SosInterface();
             (void)unk->QueryInterface(__uuidof(ISOSDacInterface), (void**)&m_cdacSos);
             (void)unk->QueryInterface(__uuidof(ISOSDacInterface9), (void**)&m_cdacSos9);
         }
@@ -3174,12 +3175,6 @@ ClrDataAccess::~ClrDataAccess(void)
     }
     m_pTarget->Release();
     m_pMutableTarget->Release();
-
-    if (m_cdac)
-    {
-        delete m_cdac;
-        m_cdac = NULL;
-    }
 }
 
 STDMETHODIMP

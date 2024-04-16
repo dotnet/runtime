@@ -794,7 +794,7 @@ class DacStreamManager;
 
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
-class CDAC;
+#include "cdac.h"
 
 //----------------------------------------------------------------------------
 //
@@ -1417,7 +1417,7 @@ public:
     ULONG32 m_instanceAge;
     bool m_debugMode;
 
-    CDAC* m_cdac;
+    CDAC m_cdac;
     NonVMComHolder<ISOSDacInterface> m_cdacSos;
     NonVMComHolder<ISOSDacInterface9> m_cdacSos9;
 
