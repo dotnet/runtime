@@ -31,6 +31,43 @@ namespace System.Runtime.Intrinsics.Arm
             public static new bool IsSupported { [Intrinsic] get { return false; } }
         }
 
+
+        ///  Count16BitElements : Count the number of 16-bit elements in a vector
+
+        /// <summary>
+        /// uint64_t svcnth_pat(enum svpattern pattern)
+        ///   CNTH Xresult, pattern
+        /// </summary>
+        public static unsafe ulong Count16BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+
+        ///  Count32BitElements : Count the number of 32-bit elements in a vector
+
+        /// <summary>
+        /// uint64_t svcntw_pat(enum svpattern pattern)
+        ///   CNTW Xresult, pattern
+        /// </summary>
+        public static unsafe ulong Count32BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+
+        ///  Count64BitElements : Count the number of 64-bit elements in a vector
+
+        /// <summary>
+        /// uint64_t svcntd_pat(enum svpattern pattern)
+        ///   CNTD Xresult, pattern
+        /// </summary>
+        public static unsafe ulong Count64BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+
+        ///  Count8BitElements : Count the number of 8-bit elements in a vector
+
+        /// <summary>
+        /// uint64_t svcntb_pat(enum svpattern pattern)
+        ///   CNTB Xresult, pattern
+        /// </summary>
+        public static unsafe ulong Count8BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+
         ///  CreateTrueMaskByte : Set predicate elements to true
 
         /// <summary>
