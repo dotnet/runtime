@@ -762,14 +762,14 @@ extends:
           - tvos_arm64
           - ios_arm64
           - maccatalyst_x64
+          variables:
+            - name: _osParameter
+              value: -os linux
+            - name: _archParameter
+              value: -arch x64
           jobParameters:
             nameSuffix: MonoAOTOffsets
             buildArgs: -s mono.aotcross -c $(_BuildConfig) /p:MonoGenerateOffsetsOSGroups=$(osGroup)
-            variables:
-              - name: _osParameter
-                value: -os linux
-              - name: _archParameter
-                value: -arch x64
             postBuildSteps:
               # Upload offset files
               - task: CopyFiles@2
