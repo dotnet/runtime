@@ -394,7 +394,7 @@
       Test="true" Category="tools"/>
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+'))">
+  <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+')) and '$(TargetArchitecture)' != 'arm'">
     <ProjectToBuild Include="$(CoreClrProjectRoot)crossgen-corelib.proj" Category="clr" />
   </ItemGroup>
 
