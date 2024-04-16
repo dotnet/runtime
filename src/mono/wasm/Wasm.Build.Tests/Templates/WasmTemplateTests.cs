@@ -628,11 +628,11 @@ namespace Wasm.Build.Tests
             }
         }
 
-        [Fact]
-        //[BuildAndRun(host: RunHost.Chrome)]
-        public void UCOCallWithSpecialCharacters()
+        [Theory]
+        [InlineData("Debug")]
+        [InlineData("Release")]
+        public async Task UCOWithSpecialCharacters(string config)
         {
-            string config = "Debug";
             string code =
                 """
                 using System;
@@ -681,14 +681,16 @@ namespace Wasm.Build.Tests
             string id = $"browser_{config}_{GetRandomId()}";
             string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
-            
             File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
             File.WriteAllText(Path.Combine(_projectDir!, "local.c"), cCode);
-            string extraProperties = @"<AllowUnsafeBlocks>true</AllowUnsafeBlocks>";
+
+            UpdateBrowserMainJs(DefaultTargetFramework);
+
             var buildArgs = new BuildArgs(projectName, config, false, id, null);
+            string extraProperties = @"<AllowUnsafeBlocks>true</AllowUnsafeBlocks>";
+
             buildArgs = ExpandBuildArgs(buildArgs, extraProperties: extraProperties,
                                         extraItems: @$"<NativeFileReference Include=""local.c"" />");
-            
 
             bool expectRelinking = config == "Release";
             BuildTemplateProject(buildArgs,
@@ -700,14 +702,15 @@ namespace Wasm.Build.Tests
                             MainJS: "main.js",
                             Publish: true,
                             TargetFramework: BuildTestBase.DefaultTargetFramework,
-                            UseCache: false
-                            ));
-        
-            CommandResult res = new RunCommand(s_buildEnv, _testOutput)
-                                                .WithWorkingDirectory(_projectDir!)
-                                                .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {config}")
-                                                .EnsureSuccessful();
-            Assert.Contains("ManagedFunc returned 42", res.Output);
+                            UseCache: false));
+
+            using var runCommand = new RunCommand(s_buildEnv, _testOutput)
+                                        .WithWorkingDirectory(_projectDir!);
+
+            await using var runner = new BrowserRunner(_testOutput);
+            var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --no-build -r browser-wasm --forward-console");
+            await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
+            Assert.Contains("ManagedFunc returned 42", string.Join(Environment.NewLine, runner.OutputLines));
         }
     }
 }
