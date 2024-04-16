@@ -151,6 +151,13 @@ namespace Mono.Linker
 			return null;
 		}
 
+		public static TypeReference? TryInflateFrom (this TypeReference typeToInflate, TypeReference maybeGenericInstanceProvider, ITryResolveMetadata resolver)
+		{
+			if (maybeGenericInstanceProvider is GenericInstanceType genericInstanceProvider)
+				return InflateGenericType (genericInstanceProvider, typeToInflate, resolver);
+			return typeToInflate;
+		}
+
 		public static IEnumerable<(TypeReference InflatedInterface, InterfaceImplementation OriginalImpl)> GetInflatedInterfaces (this TypeReference typeRef, ITryResolveMetadata resolver)
 		{
 			var typeDef = resolver.TryResolve (typeRef);

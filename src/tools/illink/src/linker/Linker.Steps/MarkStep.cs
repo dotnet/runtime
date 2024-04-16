@@ -35,8 +35,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.Runtime.TypeParsing;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
@@ -60,9 +60,8 @@ namespace Mono.Linker.Steps
 		}
 
 		protected Queue<(MethodDefinition, DependencyInfo, MessageOrigin)> _methods;
-		protected HashSet<(MethodDefinition, MarkScopeStack.Scope)> _virtual_methods;
+		protected Dictionary<MethodDefinition, MarkScopeStack.Scope> _virtual_methods;
 		protected Queue<AttributeProviderPair> _assemblyLevelAttributes;
-		readonly List<AttributeProviderPair> _ivt_attributes;
 		protected Queue<(AttributeProviderPair, DependencyInfo, MarkScopeStack.Scope)> _lateMarkedAttributes;
 		protected List<(TypeDefinition, MarkScopeStack.Scope)> _typesWithInterfaces;
 		protected HashSet<AssemblyDefinition> _dynamicInterfaceCastableImplementationTypesDiscovered;
@@ -220,9 +219,8 @@ namespace Mono.Linker.Steps
 		public MarkStep ()
 		{
 			_methods = new Queue<(MethodDefinition, DependencyInfo, MessageOrigin)> ();
-			_virtual_methods = new HashSet<(MethodDefinition, MarkScopeStack.Scope)> ();
+			_virtual_methods = new Dictionary<MethodDefinition, MarkScopeStack.Scope> ();
 			_assemblyLevelAttributes = new Queue<AttributeProviderPair> ();
-			_ivt_attributes = new List<AttributeProviderPair> ();
 			_lateMarkedAttributes = new Queue<(AttributeProviderPair, DependencyInfo, MarkScopeStack.Scope)> ();
 			_typesWithInterfaces = new List<(TypeDefinition, MarkScopeStack.Scope)> ();
 			_dynamicInterfaceCastableImplementationTypesDiscovered = new HashSet<AssemblyDefinition> ();
@@ -285,42 +283,6 @@ namespace Mono.Linker.Steps
 		{
 			foreach ((var body, var _) in _unreachableBodies) {
 				Annotations.SetAction (body.Method, MethodAction.ConvertToThrow);
-			}
-		}
-
-		bool ProcessInternalsVisibleAttributes ()
-		{
-			bool marked_any = false;
-			foreach (var attr in _ivt_attributes) {
-
-				var provider = attr.Provider;
-				Debug.Assert (attr.Provider is ModuleDefinition or AssemblyDefinition);
-				var assembly = (provider is ModuleDefinition module) ? module.Assembly : provider as AssemblyDefinition;
-
-				using var assemblyScope = ScopeStack.PushLocalScope (new MessageOrigin (assembly));
-
-				if (!Annotations.IsMarked (attr.Attribute) && IsInternalsVisibleAttributeAssemblyMarked (attr.Attribute)) {
-					MarkCustomAttribute (attr.Attribute, new DependencyInfo (DependencyKind.AssemblyOrModuleAttribute, attr.Provider));
-					marked_any = true;
-				}
-			}
-
-			return marked_any;
-
-			bool IsInternalsVisibleAttributeAssemblyMarked (CustomAttribute ca)
-			{
-				System.Reflection.AssemblyName an;
-				try {
-					an = new System.Reflection.AssemblyName ((string) ca.ConstructorArguments[0].Value);
-				} catch {
-					return false;
-				}
-
-				var assembly = Context.GetLoadedAssembly (an.Name!);
-				if (assembly == null)
-					return false;
-
-				return Annotations.IsMarked (assembly.MainModule);
 			}
 		}
 
@@ -405,7 +367,7 @@ namespace Mono.Linker.Steps
 
 			if (type.HasEvents) {
 				foreach (var ev in type.Events) {
-					MarkEventVisibleToReflection (ev, new DependencyInfo (DependencyKind.MemberOfType, type), ScopeStack.CurrentScope.Origin);
+					MarkEventVisibleToReflection (ev, new DependencyInfo (DependencyKind.MemberOfType, ScopeStack.CurrentScope.Origin), ScopeStack.CurrentScope.Origin);
 				}
 			}
 		}
@@ -416,8 +378,7 @@ namespace Mono.Linker.Steps
 				ProcessMarkedPending () ||
 				ProcessLazyAttributes () ||
 				ProcessLateMarkedAttributes () ||
-				MarkFullyPreservedAssemblies () ||
-				ProcessInternalsVisibleAttributes ()) ;
+				MarkFullyPreservedAssemblies ()) ;
 
 			ProcessPendingTypeChecks ();
 		}
@@ -588,10 +549,8 @@ namespace Mono.Linker.Steps
 			// We may mark an interface type later on.  Which means we need to reprocess any time with one or more interface implementations that have not been marked
 			// and if an interface type is found to be marked and implementation is not marked, then we need to mark that implementation
 
-			// copy the data to avoid modified while enumerating error potential, which can happen under certain conditions.
-			var typesWithInterfaces = _typesWithInterfaces.ToArray ();
-
-			foreach ((var type, var scope) in typesWithInterfaces) {
+			for (int i = 0; i < _typesWithInterfaces.Count; i++) {
+				(var type, var scope) = _typesWithInterfaces[i];
 				// Exception, types that have not been flagged as instantiated yet.  These types may not need their interfaces even if the
 				// interface type is marked
 				// UnusedInterfaces optimization is turned off mark all interface implementations
@@ -609,7 +568,7 @@ namespace Mono.Linker.Steps
 							continue;
 						foreach (var ov in baseMethods) {
 							if (ov.Base.DeclaringType is not null && ov.Base.DeclaringType.IsInterface && IgnoreScope (ov.Base.DeclaringType.Scope)) {
-								_virtual_methods.Add ((ov.Base, ScopeStack.CurrentScope));
+								_virtual_methods.TryAdd (ov.Base, ScopeStack.CurrentScope);
 							}
 						}
 					}
@@ -707,9 +666,10 @@ namespace Mono.Linker.Steps
 							MarkMethod (dimInfo.Override, new DependencyInfo (DependencyKind.Override, dimInfo.Base), ScopeStack.CurrentScope.Origin);
 					}
 				}
-				var overridingMethods = Annotations.GetOverrides (method);
+				List<OverrideInformation>? overridingMethods = (List<OverrideInformation>?)Annotations.GetOverrides (method);
 				if (overridingMethods is not null) {
-					foreach (OverrideInformation ov in overridingMethods) {
+					for (int i = 0; i < overridingMethods.Count; i++) {
+						OverrideInformation ov = overridingMethods[i];
 						if (IsInterfaceImplementationMethodNeededByTypeDueToInterface (ov))
 							MarkMethod (ov.Override, new DependencyInfo (DependencyKind.Override, ov.Base), ScopeStack.CurrentScope.Origin);
 					}
@@ -1170,6 +1130,9 @@ namespace Mono.Linker.Steps
 				case "System.Runtime.InteropServices.InterfaceTypeAttribute":
 				case "System.Runtime.InteropServices.GuidAttribute":
 					return true;
+				// May be implicitly used by the runtime
+				case "System.Runtime.CompilerServices.InternalsVisibleToAttribute":
+					return true;
 				}
 
 				TypeDefinition? type = Context.Resolve (attr_type);
@@ -1547,10 +1510,7 @@ namespace Mono.Linker.Steps
 				if (IsAttributeRemoved (customAttribute, resolved.DeclaringType) && Annotations.GetAction (CustomAttributeSource.GetAssemblyFromCustomAttributeProvider (assemblyLevelAttribute.Provider)) == AssemblyAction.Link)
 					continue;
 
-				if (customAttribute.AttributeType.IsTypeOf ("System.Runtime.CompilerServices", "InternalsVisibleToAttribute") && !Annotations.IsMarked (customAttribute)) {
-					_ivt_attributes.Add (assemblyLevelAttribute);
-					continue;
-				} else if (!ShouldMarkTopLevelCustomAttribute (assemblyLevelAttribute, resolved)) {
+				if (!ShouldMarkTopLevelCustomAttribute (assemblyLevelAttribute, resolved)) {
 					skippedItems.Add (assemblyLevelAttribute);
 					continue;
 				}
@@ -2450,26 +2410,27 @@ namespace Mono.Linker.Steps
 
 		void MarkInterfaceImplementations (TypeDefinition type)
 		{
-			if (!type.HasInterfaces)
+			var ifaces = Annotations.GetRecursiveInterfaces (type);
+			if (ifaces is null)
 				return;
-
-			foreach (var iface in type.Interfaces) {
+			foreach (var (ifaceType, impls) in ifaces) {
 				// Only mark interface implementations of interface types that have been marked.
 				// This enables stripping of interfaces that are never used
-				if (ShouldMarkInterfaceImplementation (type, iface))
-					MarkInterfaceImplementation (iface, new MessageOrigin (type));
+				if (ShouldMarkInterfaceImplementationList (type, impls, ifaceType))
+					MarkInterfaceImplementationList (impls, new MessageOrigin (type));
 			}
 		}
 
-		protected virtual bool ShouldMarkInterfaceImplementation (TypeDefinition type, InterfaceImplementation iface)
+
+		protected virtual bool ShouldMarkInterfaceImplementationList (TypeDefinition type, List<InterfaceImplementation> ifaces, TypeReference ifaceType)
 		{
-			if (Annotations.IsMarked (iface))
+			if (ifaces.All (Annotations.IsMarked))
 				return false;
 
 			if (!Context.IsOptimizationEnabled (CodeOptimizations.UnusedInterfaces, type))
 				return true;
 
-			if (Context.Resolve (iface.InterfaceType) is not TypeDefinition resolvedInterfaceType)
+			if (Context.Resolve (ifaceType) is not TypeDefinition resolvedInterfaceType)
 				return false;
 
 			if (Annotations.IsMarked (resolvedInterfaceType))
@@ -3266,7 +3227,7 @@ namespace Mono.Linker.Steps
 			MarkMethodSpecialCustomAttributes (method);
 
 			if (method.IsVirtual)
-				_virtual_methods.Add ((method, ScopeStack.CurrentScope));
+				_virtual_methods.TryAdd (method, ScopeStack.CurrentScope);
 
 			MarkNewCodeDependencies (method);
 
@@ -3324,6 +3285,7 @@ namespace Mono.Linker.Steps
 			case DependencyKind.AlreadyMarked:
 			case DependencyKind.TypePreserve:
 			case DependencyKind.PreservedMethod:
+			case DependencyKind.DynamicallyAccessedMemberOnType:
 				return parentDependencyKind;
 
 			default:
@@ -3473,7 +3435,7 @@ namespace Mono.Linker.Steps
 				// This will produce warnings for all interface methods and virtual methods regardless of whether the interface, interface implementation, or interface method is kept or not.
 				if (ov.Base.DeclaringType.IsInterface && !method.DeclaringType.IsInterface) {
 					// These are all virtual, no need to check IsVirtual before adding to list
-					_virtual_methods.Add ((ov.Base, ScopeStack.CurrentScope));
+					_virtual_methods.TryAdd (ov.Base, ScopeStack.CurrentScope);
 					continue;
 				}
 
@@ -3582,15 +3544,15 @@ namespace Mono.Linker.Steps
 			if (!Annotations.MarkProcessed (evt, reason))
 				return;
 
+			var origin = reason.Source is IMemberDefinition member ? new MessageOrigin (member) : ScopeStack.CurrentScope.Origin;
+			DependencyKind dependencyKind = PropagateDependencyKindToAccessors (reason.Kind, DependencyKind.EventMethod);
+			MarkMethodIfNotNull (evt.AddMethod, new DependencyInfo (dependencyKind, evt), origin);
+			MarkMethodIfNotNull (evt.InvokeMethod, new DependencyInfo (dependencyKind, evt), origin);
+			MarkMethodIfNotNull (evt.RemoveMethod, new DependencyInfo (dependencyKind, evt), origin);
+
 			using var eventScope = ScopeStack.PushLocalScope (new MessageOrigin (evt));
 
 			MarkCustomAttributes (evt, new DependencyInfo (DependencyKind.CustomAttribute, evt));
-
-			DependencyKind dependencyKind = PropagateDependencyKindToAccessors (reason.Kind, DependencyKind.EventMethod);
-			MarkMethodIfNotNull (evt.AddMethod, new DependencyInfo (dependencyKind, evt), ScopeStack.CurrentScope.Origin);
-			MarkMethodIfNotNull (evt.InvokeMethod, new DependencyInfo (dependencyKind, evt), ScopeStack.CurrentScope.Origin);
-			MarkMethodIfNotNull (evt.RemoveMethod, new DependencyInfo (dependencyKind, evt), ScopeStack.CurrentScope.Origin);
-
 			DoAdditionalEventProcessing (evt);
 		}
 
@@ -3764,8 +3726,7 @@ namespace Mono.Linker.Steps
 					ScopeStack.UpdateCurrentScopeInstructionOffset (instruction.Offset);
 					if (markForReflectionAccess) {
 						MarkMethodVisibleToReflection (methodReference, new DependencyInfo (dependencyKind, method), ScopeStack.CurrentScope.Origin);
-					}
-					else {
+					} else {
 						MarkMethod (methodReference, new DependencyInfo (dependencyKind, method), ScopeStack.CurrentScope.Origin);
 					}
 					break;
@@ -3825,6 +3786,12 @@ namespace Mono.Linker.Steps
 			}
 		}
 
+		void MarkInterfaceImplementationList (List<InterfaceImplementation> ifaces, MessageOrigin? origin = null, DependencyInfo? reason = null)
+		{
+			foreach (var iface in ifaces) {
+				MarkInterfaceImplementation (iface, origin, reason);
+			}
+		}
 
 		protected internal virtual void MarkInterfaceImplementation (InterfaceImplementation iface, MessageOrigin? origin = null, DependencyInfo? reason = null)
 		{

@@ -3394,7 +3394,7 @@ ILCriticalHandleMarshaler::ReturnOverride(
     return OVERRIDDEN;
 } // ILCriticalHandleMarshaler::ReturnOverride
 
-#if defined(TARGET_WINDOWS)
+#if defined(FEATURE_IJW)
 MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOverride(NDirectStubLinker* psl,
                                                 BOOL               byref,
                                                 BOOL               fin,
@@ -3520,7 +3520,7 @@ MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOver
         return OVERRIDDEN;
     }
 }
-#endif // defined(TARGET_WINDOWS)
+#endif // defined(FEATURE_IJW)
 
 LocalDesc ILArgIteratorMarshaler::GetNativeType()
 {

@@ -4,11 +4,9 @@
     <Description>Apphost Bundle Tests</Description>
     <TargetFramework>$(TestInfraTargetFramework)</TargetFramework>
     <AssemblyName>AppHost.Bundle.Tests</AssemblyName>
-    <PackageId>AppHost.Bundle.Tests</PackageId>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <!-- Reduce the length of the test output dir to make it more reliable on Windows. -->
     <TestsOutputName>ahb</TestsOutputName>
-    <UsesTestAssets>true</UsesTestAssets>
   </PropertyGroup>
 
   <ItemGroup>
