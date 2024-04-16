@@ -6,8 +6,12 @@
     <TestConsoleAppSourceFiles Include="InterfaceTypeTest.cs" />
     <TestConsoleAppSourceFiles Include="TypeConverterIsReadOnly.cs" />
     <TestConsoleAppSourceFiles Include="TypeConverterTest.cs" />
-    <TestConsoleAppSourceFiles Include="TypeDescriptorTest.cs" />
-    <TestConsoleAppSourceFiles Include="TypeDescriptorTest_FeatureSwitch.cs">
+    <TestConsoleAppSourceFiles Include="TypeDescriptorTest_Registered.cs" />
+    <TestConsoleAppSourceFiles Include="TypeDescriptorTest_Unregistered.cs" />
+    <TestConsoleAppSourceFiles Include="TypeDescriptorTest_FeatureSwitch_Registered.cs">
+      <EnabledFeatureSwitches>System.ComponentModel.TypeDescriptor.IsTrimmable</EnabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>    
+    <TestConsoleAppSourceFiles Include="TypeDescriptorTest_FeatureSwitch_Unregistered.cs">
       <EnabledFeatureSwitches>System.ComponentModel.TypeDescriptor.IsTrimmable</EnabledFeatureSwitches>
     </TestConsoleAppSourceFiles>    
   </ItemGroup>

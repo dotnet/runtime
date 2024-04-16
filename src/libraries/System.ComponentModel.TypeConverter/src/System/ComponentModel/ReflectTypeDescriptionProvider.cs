@@ -307,7 +307,7 @@ namespace System.ComponentModel
         /// </summary>
         internal AttributeCollection GetAttributes([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
-            ReflectedTypeData td = GetTypeData(type, true)!;
+            ReflectedTypeData td = GetTypeData(type, createIfNeeded: true)!;
             return td.GetAttributes();
         }
 
@@ -877,7 +877,7 @@ namespace System.ComponentModel
         [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         internal PropertyDescriptorCollection GetProperties([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
-            ReflectedTypeData td = GetTypeData(type, true)!;
+            ReflectedTypeData td = GetTypeData(type, createIfNeeded: true)!;
             return td.GetProperties();
         }
 
@@ -934,19 +934,16 @@ namespace System.ComponentModel
                     return td;
                 }
 
-                if (td == null)
+                if (TypeDescriptor.IsTrimmable && !IsIntrinsicType(type))
                 {
-                    if (TypeDescriptor.IsTrimmable && !IsIntrinsicType(type))
-                    {
-                        throw new InvalidOperationException("todo: trimmable applications require registering Types with TypeDescriptor.AddKnownReflectedType().");
-                    }
+                    throw new InvalidOperationException("todo: trimmable applications require registering Types with TypeDescriptor.AddKnownReflectedType().");
+                }
 
-                    if (createIfNeeded)
-                    {
-                        td = new ReflectedTypeData(type, isKnownType: false);
-                        _typeData ??= new Dictionary<Type, ReflectedTypeData>();
-                        _typeData[type] = td;
-                    }
+                if (createIfNeeded)
+                {
+                    td = new ReflectedTypeData(type, isKnownType: false);
+                    _typeData ??= new Dictionary<Type, ReflectedTypeData>();
+                    _typeData[type] = td;
                 }
             }
 
@@ -961,10 +958,8 @@ namespace System.ComponentModel
                 {
                     return GetOrAddKnownReflectedType(type);
                 }
-                else
-                {
-                    throw new InvalidOperationException("todo: KnownType members require registering Types with TypeDescriptor.AddKnownReflectedType().");
-                }
+
+                throw new InvalidOperationException("todo: KnownType members require registering Types with TypeDescriptor.AddKnownReflectedType().");
             }
 
             return td;

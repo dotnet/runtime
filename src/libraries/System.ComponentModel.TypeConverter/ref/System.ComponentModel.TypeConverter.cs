@@ -57,7 +57,7 @@ namespace System.ComponentModel
         public static readonly System.ComponentModel.AttributeCollection Empty;
         protected AttributeCollection() { }
         public AttributeCollection(params System.Attribute[]? attributes) { }
-        protected internal virtual System.Attribute[] Attributes { get { throw null; } }
+        protected virtual System.Attribute[] Attributes { get { throw null; } }
         public int Count { get { throw null; } }
         public virtual System.Attribute this[int index] { get { throw null; } }
         public virtual System.Attribute? this[[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type attributeType] { get { throw null; } }

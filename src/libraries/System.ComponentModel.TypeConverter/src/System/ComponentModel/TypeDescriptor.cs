@@ -127,8 +127,8 @@ namespace System.ComponentModel
         private static readonly bool s_isTrimmable =
             AppContext.TryGetSwitch(
                 switchName: "System.ComponentModel.TypeDescriptor.IsTrimmable",
-                isEnabled: out bool value)
-            ? value : false;
+                isEnabled: out bool isEnabled)
+            ? isEnabled : false;
 
         /// <summary>
         /// Indicates whether this and related classes support trimming.
@@ -137,6 +137,7 @@ namespace System.ComponentModel
         /// The value of the property is backed by the "System.ComponentModel.TypeDescriptor.IsTrimmable"
         /// <see cref="AppContext"/> setting and defaults to <see langword="false"/> if unset.
         /// </remarks>
+        [FeatureSwitchDefinition("System.ComponentModel.TypeDescriptor.IsTrimmable")]
         internal static bool IsTrimmable => s_isTrimmable;
 
         internal static bool IsKnownType(Type type)

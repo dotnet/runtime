@@ -3,8 +3,5 @@
     <type fullname="System.ComponentModel.Design.DesigntimeLicenseContextSerializer" feature="System.ComponentModel.TypeConverter.EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization" featurevalue="false">
       <method signature="System.Boolean get_EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization()" body="stub" value="false" />
     </type>
-    <type fullname="System.ComponentModel.TypeDescriptor">
-       <method signature="System.Boolean get_IsTrimmable()" body="stub" value="true" feature="System.ComponentModel.TypeDescriptor.IsTrimmable" featurevalue="true"/>
-    </type>
   </assembly>
 </linker>

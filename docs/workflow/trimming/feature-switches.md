@@ -35,7 +35,6 @@ configurations but their defaults might vary as any SDK can set the defaults dif
 | JsonSerializerIsReflectionEnabledByDefault | System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault | When set to false, disables using reflection as the default contract resolver in System.Text.Json |
 | EnableGeneratedComInterfaceComImportInterop | System.Runtime.InteropServices.Marshalling.EnableGeneratedComInterfaceComImportInterop | When set to true, enables casting source-generated COM object wrappers to built-in COM-based COM interfaces. |
 | _UseManagedNtlm | System.Net.Security.UseManagedNtlm | When set to true, uses built-in managed implementation of NTLM and SPNEGO algorithm for HTTP, SMTP authentication, and NegotiateAuthentication API instead of system provided GSSAPI implementation. |
-| TypeDescriptorIsTrimmable  | System.ComponentModel.TypeDescriptor.IsTrimmable | When set to true, requires trim-compatible methods to be used. |
 
 Any feature-switch which defines property can be set in csproj file or
 on the command line as any other MSBuild property. Those without predefined property name

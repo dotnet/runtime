@@ -18,12 +18,12 @@ class Program
         s_usedProperty = c1.P1;
         s_usedProperty = c1.P2;
 
-        if (!RunTest(targetType: typeof(ClassWithUnusedProperties), expectedPropertyCount: 0))
+        if (!RunTest(targetType: typeof(ClassWithUnusedProperties)))
         {
             return -1;
         }
 
-        if (!RunTest(targetType: typeof(ClassWithUsedProperties), expectedPropertyCount: 2))
+        if (!RunTest(targetType: typeof(ClassWithUsedProperties)))
         {
             return -2;
         }
@@ -31,10 +31,19 @@ class Program
         return 100;
     }
 
-    private static bool RunTest(Type targetType, int expectedPropertyCount)
+    private static bool RunTest(Type targetType)
     {
-        PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(targetType);
-        return (properties.Count == expectedPropertyCount);
+        try
+        {
+            // The feature switch is on so InvalidOperationException should be thrown.
+            PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(targetType);
+        }
+        catch (InvalidOperationException)
+        {
+            return true;
+        }
+
+        return false;
     }
 
     private class ClassWithUnusedProperties
