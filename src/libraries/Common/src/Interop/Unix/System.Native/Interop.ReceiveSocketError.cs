@@ -2,17 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct IOVector
-        {
-            public byte* Base;
-            public UIntPtr Count;
-        }
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReceiveSocketError")]
+        internal static unsafe partial SocketError ReceiveSocketError(SafeHandle socket, MessageHeader* messageHeader);
     }
 }
