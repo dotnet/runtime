@@ -4,7 +4,6 @@
 using System;
 using System.Collections;
 using System.ComponentModel;
-using System.Runtime.CompilerServices;
 
 /// <summary>
 /// Tests that the properties are preserved in a trimmed application.

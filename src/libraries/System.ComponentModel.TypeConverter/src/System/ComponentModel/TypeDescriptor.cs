@@ -825,14 +825,14 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a type converter for the type of the specified component.
         /// </summary>
-        [RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
+        [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage + " The Type of component cannot be statically discovered.")]
         public static TypeConverter GetConverter(object component) => GetConverter(component, false);
 
         /// <summary>
         /// Gets a type converter for the type of the specified component.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        [RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
+        [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage + " The Type of component cannot be statically discovered.")]
         public static TypeConverter GetConverter(object component, bool noCustomTypeDesc)
         {
             TypeConverter? converter = GetDescriptor(component, noCustomTypeDesc)!.GetConverter();
