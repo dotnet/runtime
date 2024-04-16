@@ -4,7 +4,10 @@
 //
 // codeman.cpp - a managment class for handling multiple code managers
 //
-
+#if defined(TARGET_LINUX) && (defined(DEBUG) || defined(_DEBUG))
+#include <sys/prctl.h>
+#include <sys/syscall.h>
+#endif // defined(TARGET_LINUX) && (defined(DEBUG) || defined(_DEBUG))
 #include "common.h"
 #include "jitinterface.h"
 #include "corjit.h"
@@ -1525,6 +1528,18 @@ void EEJitManager::SetCpuInfo()
 
     if (((cpuFeatures & ARM64IntrinsicConstants_Sve) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Sve))
     {
+#if defined(TARGET_LINUX) && (defined(DEBUG) || defined(_DEBUG))
+        int maxVectorLength = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_MaxVectorLength);
+
+        // Limit the SVE vector length to 'maxVectorLength' if the underlying hardware offers longer vectors.
+        if ((prctl(PR_SVE_GET_VL, 0,0,0,0) & PR_SVE_VL_LEN_MASK) > maxVectorLength)
+        {
+            if (prctl(PR_SVE_SET_VL, (maxVectorLength | PR_SVE_VL_INHERIT), 0, 0, 0) == -1)
+            {
+                LogErrorToHost("LoadAndInitializeJIT: prctl() FAILED - unable to set maxVectorLength to %d", maxVectorLength);
+            }
+        }
+#endif // defined(TARGET_LINUX) && (defined(DEBUG) || defined(_DEBUG))
         CPUCompileFlags.Set(InstructionSet_Sve);
     }
 
