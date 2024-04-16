@@ -1263,8 +1263,8 @@ extends:
             runtimeVariant: crossaot
             dependsOn:
             - build_android_x64_release_MonoAOTOffsets
-            - build_browser_wasm_release_MonoAOTOffsets
-            - build_wasi_wasm_release_MonoAOTOffsets
+            - build_browser_wasm_linux_release_MonoAOTOffsets
+            - build_wasi_wasm_linux_release_MonoAOTOffsets
             monoCrossAOTTargetOS:
             - android
             - browser
@@ -1290,8 +1290,8 @@ extends:
             runtimeVariant: crossaot
             dependsOn:
             - build_android_x64_release_MonoAOTOffsets
-            - build_browser_wasm_release_MonoAOTOffsets
-            - build_wasi_wasm_release_MonoAOTOffsets
+            - build_browser_wasm_linux_release_MonoAOTOffsets
+            - build_wasi_wasm_linux_release_MonoAOTOffsets
             monoCrossAOTTargetOS:
             - android
             - browser
@@ -1321,8 +1321,8 @@ extends:
             runtimeVariant: crossaot
             dependsOn:
             - build_android_x64_release_MonoAOTOffsets
-            - build_browser_wasm_release_MonoAOTOffsets
-            - build_wasi_wasm_release_MonoAOTOffsets
+            - build_browser_wasm_linux_release_MonoAOTOffsets
+            - build_wasi_wasm_linux_release_MonoAOTOffsets
             - build_tvos_arm64_release_MonoAOTOffsets
             - build_ios_arm64_release_MonoAOTOffsets
             - build_maccatalyst_x64_release_MonoAOTOffsets
