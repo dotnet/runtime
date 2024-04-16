@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Security.Authentication;
 using System.Net.Security;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -49,7 +49,7 @@ internal static partial class MsQuicConfiguration
         public readonly List<SslApplicationProtocol> ApplicationProtocols;
         public readonly QUIC_ALLOWED_CIPHER_SUITE_FLAGS AllowedCipherSuites;
 
-        private readonly ReadOnlySpan<byte> SettingsSpan => MemoryMarshal.AsBytes(new ReadOnlySpan<QUIC_SETTINGS>(ref Unsafe.AsRef(in Settings)));
+        [UnscopedRef] private readonly ReadOnlySpan<byte> SettingsSpan => MemoryMarshal.AsBytes(new ReadOnlySpan<QUIC_SETTINGS>(in Settings));
 
         public CacheKey(QUIC_SETTINGS settings, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol> alpnProtocols, QUIC_ALLOWED_CIPHER_SUITE_FLAGS allowedCipherSuites)
         {
