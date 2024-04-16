@@ -134,9 +134,12 @@ jobs:
     - name: _iosArgs
       ${{ if in(parameters.runtimeType, 'iOSMono', 'iOSNativeAOT') }}:
         value: '$(_iOSLlvmBuildArg) $(_iOSStripSymbolsArg)'
+    - name: _projectFileArg
+      ${{ if ne(parameters.projectFile, '') }}:
+        value: '--project-file ${{ parameters.projectFile }}'
 
     - name: extraSetupParameters
-      value: "--run-kind ${{ parameters.runKind }} --architecture ${{ parameters.archType }} --os-group ${{ parameters.osGroup }} $(_subGroupArg) --logical-machine ${{ parameters.logicalMachine }} --performance-repo-dir $(Agent.BuildDirectory)/performance --runtime-repo-dir $(Build.SourcesDirectory) --codegen-type ${{ parameters.codeGenType }} --runtime-type ${{ parameters.runtimeType }} --use-local-commit-time $(_compareArg) $(_onlySanityCheckArg) $(_hybridGlobalizationArg) $(_pgoRunTypeArg) $(_physicalPromotionRunTypeArg) $(_r2rRunTypeArg) $(_experimentArg) $(_jsEngineArg) $(_iosArgs)"
+      value: "--run-kind ${{ parameters.runKind }} --architecture ${{ parameters.archType }} --os-group ${{ parameters.osGroup }} $(_subGroupArg) --logical-machine ${{ parameters.logicalMachine }} --performance-repo-dir $(Agent.BuildDirectory)/performance --runtime-repo-dir $(Build.SourcesDirectory) --codegen-type ${{ parameters.codeGenType }} --runtime-type ${{ parameters.runtimeType }} --use-local-commit-time $(_compareArg) $(_onlySanityCheckArg) $(_hybridGlobalizationArg) $(_pgoRunTypeArg) $(_physicalPromotionRunTypeArg) $(_r2rRunTypeArg) $(_experimentArg) $(_jsEngineArg) $(_iosArgs) $(_projectFileArg)"
 
     - ${{ if eq(parameters.crossBuild, true) }}:
       - _crossBuildPropertyArg: '-cross'
