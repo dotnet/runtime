@@ -23,12 +23,8 @@ void Compiler::fgInit()
     /* We haven't yet computed the bbPreds lists */
     fgPredsComputed = false;
 
-    /* We haven't yet computed the edge weight */
-    fgEdgeWeightsComputed    = false;
-    fgHaveValidEdgeWeights   = false;
-    fgSlopUsedInEdgeWeights  = false;
-    fgRangeUsedInEdgeWeights = true;
-    fgCalledCount            = BB_ZERO_WEIGHT;
+    /* We haven't yet computed block weights */
+    fgCalledCount = BB_ZERO_WEIGHT;
 
     /* Initialize the basic block list */
 
@@ -5446,6 +5442,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
         // Add a new block after bSrc which jumps to 'bDst'
         jmpBlk                  = fgNewBBafter(BBJ_ALWAYS, bSrc, true);
         FlowEdge* const oldEdge = bSrc->GetFalseEdge();
+
         // Access the likelihood of oldEdge before
         // it gets reset by SetTargetEdge below.
         //
@@ -5457,29 +5454,9 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 
         // When adding a new jmpBlk we will set the bbWeight and bbFlags
         //
-        if (fgHaveValidEdgeWeights && fgHaveProfileWeights())
+        if (fgHaveProfileWeights())
         {
-            jmpBlk->bbWeight = (newEdge->edgeWeightMin() + newEdge->edgeWeightMax()) / 2;
-            if (bSrc->bbWeight == BB_ZERO_WEIGHT)
-            {
-                jmpBlk->bbWeight = BB_ZERO_WEIGHT;
-            }
-
-            if (jmpBlk->bbWeight == BB_ZERO_WEIGHT)
-            {
-                jmpBlk->SetFlags(BBF_RUN_RARELY);
-            }
-
-            weight_t weightDiff = (newEdge->edgeWeightMax() - newEdge->edgeWeightMin());
-            weight_t slop       = BasicBlock::GetSlopFraction(bSrc, bDst);
-            //
-            // If the [min/max] values for our edge weight is within the slop factor
-            //  then we will set the BBF_PROF_WEIGHT flag for the block
-            //
-            if (weightDiff <= slop)
-            {
-                jmpBlk->SetFlags(BBF_PROF_WEIGHT);
-            }
+            jmpBlk->setBBProfileWeight(newEdge->getLikelyWeight());
         }
         else
         {
