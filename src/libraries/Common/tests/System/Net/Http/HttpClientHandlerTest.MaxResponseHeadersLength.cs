@@ -95,6 +95,10 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpClient client = CreateHttpClient(handler);
+                if (UseVersion == HttpVersion30)
+                {
+                    _output.WriteLine("H/3 LargeSingleHeader_Throws HttpClient created.");
+                }
 
                 Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
                 if (!IsWinHttpHandler)
@@ -104,6 +108,10 @@ namespace System.Net.Http.Functional.Tests
             },
             async server =>
             {
+                if (UseVersion == HttpVersion30)
+                {
+                    _output.WriteLine($"H/3 LargeSingleHeader_Throws: Listening on: {server.Address}");
+                }
                 try
                 {
                     await server.HandleRequestAsync(headers: new[] { new HttpHeaderData("Foo", new string('a', handler.MaxResponseHeadersLength * 1024)) });
