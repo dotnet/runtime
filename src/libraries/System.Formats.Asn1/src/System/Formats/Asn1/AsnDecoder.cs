@@ -221,6 +221,12 @@ namespace System.Formats.Asn1
         ///   The decoded value of the length, or <see langword="null"/> if the
         ///   encoded length represents the indefinite length.
         /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="ruleSet"/> is not a known <see cref="AsnEncodingRules"/> value.
+        /// </exception>
+        /// <exception cref="AsnContentException">
+        ///   <paramref name="source"/> does not decode as a length under the specified encoding rules.
+        /// </exception>
         /// <remarks>
         ///   This method only processes the length portion of an ASN.1/BER Tag-Length-Value triplet,
         ///   so <paramref name="source"/> needs to have already sliced off the encoded tag.
@@ -258,6 +264,9 @@ namespace System.Formats.Asn1
         ///   <see langword="true"/> if the buffer represents a valid length under the specified encoding rules;
         ///   otherwise, <see langword="false"/>
         /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="ruleSet"/> is not a known <see cref="AsnEncodingRules"/> value.
+        /// </exception>
         /// <remarks>
         ///   This method only processes the length portion of an ASN.1/BER Tag-Length-Value triplet,
         ///   so <paramref name="source"/> needs to have already sliced off the encoded tag.
