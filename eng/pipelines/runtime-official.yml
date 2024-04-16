@@ -402,6 +402,7 @@ extends:
             - name: _archParameter
               value: -arch x64
           jobParameters:
+            templatePath: 'templates-official'
             nameSuffix: MonoAOTOffsets
             buildArgs: -s mono.aotcross -c $(_BuildConfig) /p:MonoGenerateOffsetsOSGroups=$(osGroup)
             postBuildSteps:
@@ -633,6 +634,7 @@ extends:
           platforms:
           - windows_x64
           jobParameters:
+            templatePath: 'templates-official'
             nameSuffix: Workloads
             preBuildSteps:
             - task: DownloadPipelineArtifact@2
