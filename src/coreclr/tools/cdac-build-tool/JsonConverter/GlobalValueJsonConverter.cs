@@ -23,7 +23,7 @@ public class GlobalValueJsonConverter : JsonConverter<DataDescriptorModel.Global
         }
         else
         {
-            // pointer data index.  write as a decimal number
+            // pointer data index.  write as a 1-element array containing a decimal number
             writer.WriteStartArray();
             writer.WriteNumberValue(value.Value);
             writer.WriteEndArray();

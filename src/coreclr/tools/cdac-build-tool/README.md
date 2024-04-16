@@ -28,7 +28,7 @@ Multiple data descriptor source files may be specified (for example if they are 
 Multiple contracts text files may be specified.  This may be useful if some contracts are conditionally included (for example if they are platform-specific).  The final JSON payload will be a composition of all the contracts files.
 
 In the C/C++ data descriptor, we use a single header file `datadescriptor.h` together with the C preprocessor to produce `datadescriptor.c` and `contractpointerdata.c`.
-This is an implementation detail. For data structures defined in other languages, other tools can be used to produce the object file and indirect pointer data. 
+This is an implementation detail. For data structures defined in other languages, other tools can be used to produce the object file and indirect pointer data.
 
 ```mermaid
 flowchart TB

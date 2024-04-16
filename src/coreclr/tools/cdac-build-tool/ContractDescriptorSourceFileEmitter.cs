@@ -22,7 +22,7 @@ public partial class ContractDescriptorSourceFileEmitter
     }
 
     [GeneratedRegex("%%([a-zA-Z0-9_]+)%%", RegexOptions.CultureInvariant)]
-    private static partial Regex FindTemplateSigilRegex();
+    private static partial Regex FindTemplatePlaceholderRegex();
 
     internal static Stream GetTemplateStream()
     {
@@ -62,7 +62,7 @@ public partial class ContractDescriptorSourceFileEmitter
     public void Emit(TextWriter dest)
     {
         var template = GetTemplateString();
-        var matches = FindTemplateSigilRegex().Matches(template);
+        var matches = FindTemplatePlaceholderRegex().Matches(template);
         var prevPos = 0;
         foreach (Match match in matches) {
             // copy everything from the end of the last match (prevPos) to just before the current match to the output
