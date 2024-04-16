@@ -402,6 +402,32 @@ public class DataDescriptorModel
         public int Version { get; init; }
     }
 
+    public class ContractsCollctionBuilder
+    {
+        private readonly Dictionary<string, ContractBuilder> _contracts = new();
+        public void AddOrUpdateContract(string name, int version)
+        {
+            if (!_contracts.TryGetValue(name, out var contract))
+            {
+                contract = new ContractBuilder();
+                _contracts[name] = contract;
+            }
+            contract.Version = version;
+        }
+
+        public void AddOrUpdateContract(string name, ContractModel contract) => AddOrUpdateContract(name, contract.Version);
+
+        public ContractsCollectionModel Build()
+        {
+            var contracts = new Dictionary<string, ContractModel>();
+            foreach (var (contractName, contractBuilder) in _contracts)
+            {
+                contracts[contractName] = contractBuilder.Build();
+            }
+            return new ContractsCollectionModel(contracts);
+        }
+    }
+
     public class ContractBuilder
     {
         private int? _version;
