@@ -13171,6 +13171,7 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 
             case CORINFO_HELP_READYTORUN_CHKCAST:
             {
+                // This helper casts to a class determined by the entry point.
                 ssize_t  addrValue  = (ssize_t)call->gtEntryPoint.addr;
                 ValueNum callAddrVN = vnStore->VNForHandle(addrValue, GTF_ICON_FTN_ADDR);
                 vnpExc              = vnStore->VNPExcSetSingleton(
@@ -13191,7 +13192,15 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
             case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
             case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS:
                 // These all take (Module*, class ID) as parameters.
-
+                //
+                // Strictly speaking the exact possible exception thrown by the
+                // static constructor depends on heap state too, but given that
+                // the constructor is only invoked once we can model that for
+                // the same class the same exceptions are thrown. Downstream
+                // code like CSE/copy prop that makes use VNs innately need to
+                // establish some form of dominance around the individual trees
+                // that makes this ok.
+                //
                 vnpExc = vnStore->VNPExcSetSingleton(
                     vnStore->VNPairForFunc(TYP_REF, VNF_ClassInitExc,
                                            vnStore->VNPNormalPair(
