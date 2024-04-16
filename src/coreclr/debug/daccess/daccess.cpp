@@ -3125,20 +3125,6 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
     // see ClrDataAccess::VerifyDlls for details.
     m_fEnableDllVerificationAsserts = false;
 #endif
-
-    // TODO: [cdac] Get contract descriptor from exported symbol
-    uint64_t contractDescriptorAddr = 0;
-    //if (TryGetSymbol(m_pTarget, m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
-    {
-        m_cdac = CDAC::Create(contractDescriptorAddr, m_pTarget);
-        if (m_cdac.IsValid())
-        {
-            // Get SOS interfaces from the cDAC if available.
-            IUnknown* unk = m_cdac.SosInterface();
-            (void)unk->QueryInterface(__uuidof(ISOSDacInterface), (void**)&m_cdacSos);
-            (void)unk->QueryInterface(__uuidof(ISOSDacInterface9), (void**)&m_cdacSos9);
-        }
-    }
 }
 
 ClrDataAccess::~ClrDataAccess(void)
@@ -5505,6 +5491,20 @@ ClrDataAccess::Initialize(void)
     // cannot interfere with each other.
     IfFailRet(GetDacGlobalValues());
     IfFailRet(DacGetHostVtPtrs());
+
+    // TODO: [cdac] Get contract descriptor from exported symbol
+    uint64_t contractDescriptorAddr = 0;
+    //if (TryGetSymbol(m_pTarget, m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
+    {
+        m_cdac = CDAC::Create(contractDescriptorAddr, m_pTarget);
+        if (m_cdac.IsValid())
+        {
+            // Get SOS interfaces from the cDAC if available.
+            IUnknown* unk = m_cdac.SosInterface();
+            (void)unk->QueryInterface(__uuidof(ISOSDacInterface), (void**)&m_cdacSos);
+            (void)unk->QueryInterface(__uuidof(ISOSDacInterface9), (void**)&m_cdacSos9);
+        }
+    }
 
     //
     // DAC is now setup and ready to use
