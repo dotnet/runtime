@@ -30,6 +30,7 @@ parameters:
   onlySanityCheck: false
   downloadSpecificBuild: null # buildId, pipeline, branchName, project
   crossBuild: false
+  performanceRepoSource: 'ado' # ado, github
 
 ### Perf job
 
@@ -174,6 +175,10 @@ jobs:
         SourceFolder: $(Build.SourcesDirectory)/dotnet-runtime
     - checkout: InternalPerformanceRepo
       path: performance
+      condition: and(succeeded(), eq(parameters.performanceRepoSource, 'ado'))
+    - checkout: GithubPerformanceRepo
+      path: performance
+      condition: and(succeeded(), eq(parameters.performanceRepoSource, 'github'))
     # Extra steps that will be passed to the performance template and run before sending the job to helix (all of which is done in the template)
     - script: |
         $(Build.SourcesDirectory)/eng/common/msbuild.sh $(Build.SourcesDirectory)/eng/testing/performance/add_properties_to_pipeline.proj /t:SetVariables

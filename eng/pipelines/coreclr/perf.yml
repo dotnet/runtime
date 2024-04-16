@@ -1,3 +1,16 @@
+parameters:
+- name: performanceRepoBranch
+  displayName: Performance Repo Branch
+  type: string
+  default: 'refs/heads/main'
+- name: performanceRepoSource
+  displayName: Performance Repo Source
+  type: string
+  default: ado
+  values:
+  - ado
+  - github
+
 trigger:
   batch: true
   branches:
@@ -22,10 +35,15 @@ variables:
 
 resources:
   repositories:
+  - repository: GithubPerformanceRepo
+    type: github
+    endpoint: dotnet
+    name: dotnet/performance
+    ref: '${{ parameters.performanceRepoBranch }}'
   - repository: InternalPerformanceRepo
     type: git
     name: dotnet-performance
-    ref: caaavik/python-pipeline-for-runtime # Use this to set a custom dotnet-performance branch
+    ref: '${{ parameters.performanceRepoBranch }}'
 
 #
 # For the 'schedule' case, only wasm/jsc perf jobs are run.
@@ -52,9 +70,12 @@ extends:
       - template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
         parameters:
           collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
+          performanceRepoSource: ${{ parameters.performanceRepoSource }}
           #${{ and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
           #  runProfile: 'non-v8'
           ${{ if ne(variables['System.TeamProject'], 'public') }}:
             runProfile: 'v8'
 
       - template: /eng/pipelines/coreclr/perf-non-wasm-jobs.yml
+        parameters:
+          performanceRepoSource: ${{ parameters.performanceRepoSource }}
