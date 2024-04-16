@@ -9,13 +9,11 @@ namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
 public class ContractDescriptorParserTests
 {
-
-
     [Fact]
     public void ParsesEmptyContract()
     {
-        ReadOnlyMemory<byte> json = "{}"u8.ToArray();
-        ContractDescriptorParser.ContractDescriptor descriptor = ContractDescriptorParser.ParseCompact(json.Span);
+        ReadOnlySpan<byte> json = "{}"u8;
+        ContractDescriptorParser.ContractDescriptor descriptor = ContractDescriptorParser.ParseCompact(json);
         Assert.Null(descriptor.Version);
         Assert.Null(descriptor.Baseline);
         Assert.Null(descriptor.Contracts);
@@ -25,7 +23,7 @@ public class ContractDescriptorParserTests
     [Fact]
     public void ParsesTrivialContract()
     {
-        ReadOnlyMemory<byte> json = """
+        ReadOnlySpan<byte> json = """
         {
             "version": 0,
             "baseline": "empty",
@@ -33,8 +31,8 @@ public class ContractDescriptorParserTests
             "types": {},
             "globals": {}
         }
-        """u8.ToArray();
-        ContractDescriptorParser.ContractDescriptor descriptor = ContractDescriptorParser.ParseCompact(json.Span);
+        """u8;
+        ContractDescriptorParser.ContractDescriptor descriptor = ContractDescriptorParser.ParseCompact(json);
         Assert.Equal(0, descriptor.Version);
         Assert.Equal("empty", descriptor.Baseline);
         Assert.Empty(descriptor.Contracts);
@@ -46,7 +44,7 @@ public class ContractDescriptorParserTests
     [Fact]
     public void ParseSizedTypes()
     {
-        ReadOnlyMemory<byte> json = """
+        ReadOnlySpan<byte> json = """
         {
             "version": 0,
             "baseline": "empty",
@@ -68,8 +66,8 @@ public class ContractDescriptorParserTests
             },
             "globals": {}
         }
-        """u8.ToArray();
-        ContractDescriptorParser.ContractDescriptor descriptor = ContractDescriptorParser.ParseCompact(json.Span);
+        """u8;
+        ContractDescriptorParser.ContractDescriptor descriptor = ContractDescriptorParser.ParseCompact(json);
         Assert.Equal(0, descriptor.Version);
         Assert.Equal("empty", descriptor.Baseline);
         Assert.Empty(descriptor.Contracts);
@@ -95,7 +93,7 @@ public class ContractDescriptorParserTests
     [Fact]
     public void ParseContractsCaseSensitive()
     {
-        ReadOnlyMemory<byte> json = """
+        ReadOnlySpan<byte> json = """
         {
             "version": 0,
             "baseline": "empty",
@@ -106,8 +104,8 @@ public class ContractDescriptorParserTests
             "types": {},
             "globals": {}
         }
-        """u8.ToArray();
-        ContractDescriptorParser.ContractDescriptor descriptor = ContractDescriptorParser.ParseCompact(json.Span);
+        """u8;
+        ContractDescriptorParser.ContractDescriptor descriptor = ContractDescriptorParser.ParseCompact(json);
         Assert.Equal(0, descriptor.Version);
         Assert.Equal("empty", descriptor.Baseline);
         Assert.Equal(2, descriptor.Contracts.Count);
@@ -118,7 +116,7 @@ public class ContractDescriptorParserTests
     [Fact]
     public void ParsesGlobals()
     {
-        ReadOnlyMemory<byte> json = """
+        ReadOnlySpan<byte> json = """
         {
             "version": 0,
             "baseline": "empty",
@@ -140,8 +138,8 @@ public class ContractDescriptorParserTests
                 "globalTypedStringyPtr": [["0x1234"], "int"]
             }
         }
-        """u8.ToArray();
-        ContractDescriptorParser.ContractDescriptor descriptor = ContractDescriptorParser.ParseCompact(json.Span);
+        """u8;
+        ContractDescriptorParser.ContractDescriptor descriptor = ContractDescriptorParser.ParseCompact(json);
         Assert.Equal(0, descriptor.Version);
         Assert.Equal("empty", descriptor.Baseline);
         Assert.Empty(descriptor.Contracts);
@@ -182,7 +180,7 @@ public class ContractDescriptorParserTests
     [Fact]
     void ParsesExoticOffsets()
     {
-        ReadOnlyMemory<byte> json = """
+        ReadOnlySpan<byte> json = """
         {
             "version": 0,
             "baseline": "empty",
@@ -198,8 +196,8 @@ public class ContractDescriptorParserTests
             "globals": {
             }
         }
-        """u8.ToArray();
-        ContractDescriptorParser.ContractDescriptor descriptor = ContractDescriptorParser.ParseCompact(json.Span);
+        """u8;
+        ContractDescriptorParser.ContractDescriptor descriptor = ContractDescriptorParser.ParseCompact(json);
         Assert.Equal(0, descriptor.Version);
         Assert.Equal("empty", descriptor.Baseline);
         Assert.Empty(descriptor.Contracts);

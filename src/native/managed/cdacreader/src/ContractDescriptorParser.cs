@@ -101,16 +101,16 @@ public partial class ContractDescriptorParser
                     case JsonTokenType.EndObject:
                         return new TypeDescriptor { Size = size, Fields = fields };
                     case JsonTokenType.PropertyName:
-                        if (reader.GetString() == TypeDescriptorSizeSigil)
+                        string? fieldNameOrSizeSigil = reader.GetString();
+                        reader.Read(); // read the next value: either a number or a field descriptor
+                        if (fieldNameOrSizeSigil == TypeDescriptorSizeSigil)
                         {
-                            reader.Read();
                             size = reader.GetUInt32();
                             // FIXME: handle duplicates?
                         }
                         else
                         {
-                            string? fieldName = reader.GetString();
-                            reader.Read();
+                            string? fieldName = fieldNameOrSizeSigil;
                             var field = JsonSerializer.Deserialize(ref reader, ContractDescriptorContext.Default.FieldDescriptor);
                             // FIXME: duplicates?
                             if (fieldName is null || field is null)
@@ -136,27 +136,21 @@ public partial class ContractDescriptorParser
 
     internal sealed class FieldDescriptorConverter : JsonConverter<FieldDescriptor>
     {
-        // Compact Field descriptors are either one or two element arrays
-        // 1. [number] - no type, offset is given as the number
-        // 2. [number, string] - has a type, offset is given as the number
+        // Compact Field descriptors are either a number or a two element array
+        // 1. number - no type, offset is given as the number
+        // 2. [number, string] - offset is given as the number, type name is given as the string
         public override FieldDescriptor Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (GetInt32FromToken(ref reader, out int offset))
+            if (TryGetInt32FromToken(ref reader, out int offset))
                 return new FieldDescriptor { Offset = offset };
             if (reader.TokenType != JsonTokenType.StartArray)
                 throw new JsonException();
             reader.Read();
-            // two cases:
-            //   [number]
-            //    ^ we're here
-            // or
             //   [number, string]
             //    ^ we're here
-            if (!GetInt32FromToken(ref reader, out offset))
+            if (!TryGetInt32FromToken(ref reader, out offset))
                 throw new JsonException();
             reader.Read(); // end of array or string
-            if (reader.TokenType == JsonTokenType.EndArray)
-                return new FieldDescriptor { Offset = offset };
             if (reader.TokenType != JsonTokenType.String)
                 throw new JsonException();
             string? type = reader.GetString();
@@ -168,7 +162,7 @@ public partial class ContractDescriptorParser
 
         public override void Write(Utf8JsonWriter writer, FieldDescriptor value, JsonSerializerOptions options)
         {
-            throw new NotImplementedException();
+            throw new JsonException();
         }
     }
 
@@ -183,7 +177,7 @@ public partial class ContractDescriptorParser
             // 4. [[number], string] - type, indirect value, given aux data ptr
 
             // Case 1: number
-            if (GetUInt64FromToken(ref reader, out ulong valueCase1))
+            if (TryGetUInt64FromToken(ref reader, out ulong valueCase1))
                 return new GlobalDescriptor { Value = valueCase1 };
             if (reader.TokenType != JsonTokenType.StartArray)
                 throw new JsonException();
@@ -200,7 +194,7 @@ public partial class ContractDescriptorParser
                 // case 4: [[number], string]
                 //          ^ we're here
                 reader.Read(); // number
-                if (!GetUInt64FromToken(ref reader, out ulong value))
+                if (!TryGetUInt64FromToken(ref reader, out ulong value))
                     throw new JsonException();
                 reader.Read(); // end of inner array
                 if (reader.TokenType != JsonTokenType.EndArray)
@@ -221,7 +215,7 @@ public partial class ContractDescriptorParser
                 //          ^ we're here
                 // case 3: [number, string]
                 //          ^ we're here
-                if (!GetUInt64FromToken(ref reader, out ulong valueCase2or3))
+                if (!TryGetUInt64FromToken(ref reader, out ulong valueCase2or3))
                     throw new JsonException();
                 reader.Read(); // end of array (case 2) or string (case 3)
                 if (reader.TokenType == JsonTokenType.EndArray) // it was case 2
@@ -245,18 +239,18 @@ public partial class ContractDescriptorParser
 
         public override void Write(Utf8JsonWriter writer, GlobalDescriptor value, JsonSerializerOptions options)
         {
-            throw new NotImplementedException();
+            throw new JsonException();
         }
     }
 
     // Somewhat flexible parsing of numbers, allowing json number tokens or strings as decimal or hex, possibly negatated.
-    private static bool GetUInt64FromToken(ref Utf8JsonReader reader, out ulong value)
+    private static bool TryGetUInt64FromToken(ref Utf8JsonReader reader, out ulong value)
     {
         if (reader.TokenType == JsonTokenType.Number)
         {
             if (reader.TryGetUInt64(out value))
                 return true;
-            else if (reader.TryGetInt64(out long signedValue))
+            if (reader.TryGetInt64(out long signedValue))
             {
                 value = (ulong)signedValue;
                 return true;
@@ -277,13 +271,13 @@ public partial class ContractDescriptorParser
                 value = (ulong)signedValue;
                 return true;
             }
-            if ((s.StartsWith("0x") || s.StartsWith("0X")) &&
+            if (s.StartsWith("0x", StringComparison.OrdinalIgnoreCase) &&
                 ulong.TryParse(s.AsSpan(2), System.Globalization.NumberStyles.HexNumber, null, out value))
                 return true;
-            if ((s.StartsWith("-0x") || s.StartsWith("-0X")) &&
+            if (s.StartsWith("-0x", StringComparison.OrdinalIgnoreCase) &&
                 ulong.TryParse(s.AsSpan(3), System.Globalization.NumberStyles.HexNumber, null, out ulong negValue))
             {
-                value = ~negValue + 1; // twos complement
+                value = ~negValue + 1; // two's complement
                 return true;
             }
         }
@@ -292,7 +286,7 @@ public partial class ContractDescriptorParser
     }
 
     // Somewhat flexible parsing of numbers, allowing json number tokens or strings as either decimal or hex, possibly negated
-    private static bool GetInt32FromToken(ref Utf8JsonReader reader, out int value)
+    private static bool TryGetInt32FromToken(ref Utf8JsonReader reader, out int value)
     {
         if (reader.TokenType == JsonTokenType.Number)
         {
@@ -308,11 +302,15 @@ public partial class ContractDescriptorParser
                 return false;
             }
             if (int.TryParse(s, out value))
+            {
                 return true;
-            if ((s.StartsWith("0x") || s.StartsWith("0X")) &&
+            }
+            if (s.StartsWith("0x", StringComparison.OrdinalIgnoreCase) &&
                 int.TryParse(s.AsSpan(2), System.Globalization.NumberStyles.HexNumber, null, out value))
+            {
                 return true;
-            if ((s.StartsWith("-0x") || s.StartsWith("-0X")) &&
+            }
+            if (s.StartsWith("-0x", StringComparison.OrdinalIgnoreCase) &&
                 int.TryParse(s.AsSpan(3), System.Globalization.NumberStyles.HexNumber, null, out int negValue))
             {
                 value = -negValue;
