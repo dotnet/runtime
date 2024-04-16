@@ -1446,9 +1446,8 @@ private:
             flags |= AccessKindFlags::IsStoreSource;
         }
 
-        if (user->OperIs(GT_RETURN))
+        if (user->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
         {
-            assert(user->gtGetOp1()->gtEffectiveVal() == lcl);
             flags |= AccessKindFlags::IsReturned;
         }
 #endif
@@ -2546,7 +2545,7 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
         JITDUMP("Processing struct use [%06u] of V%02u.[%03u..%03u)\n", Compiler::dspTreeID(lcl), lclNum, offs,
                 offs + lcl->GetLayout(m_compiler)->GetSize());
 
-        assert(effectiveUser->OperIs(GT_CALL, GT_RETURN));
+        assert(effectiveUser->OperIs(GT_CALL, GT_RETURN, GT_SWIFT_ERROR_RET));
         unsigned size = lcl->GetLayout(m_compiler)->GetSize();
         WriteBackBeforeUse(use, lclNum, lcl->GetLclOffs(), size);
 

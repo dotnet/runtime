@@ -1931,7 +1931,7 @@ MethodDesc *MethodTable::GetMethodDescForInterfaceMethod(TypeHandle ownerType, M
     PCODE pTgt = VirtualCallStubManager::GetTarget(
         pInterfaceMT->GetLoaderAllocator()->GetDispatchToken(pInterfaceMT->GetTypeID(), pInterfaceMD->GetSlot()),
         this, throwOnConflict);
-    if (pTgt == NULL)
+    if (pTgt == (PCODE)NULL)
     {
         _ASSERTE(!throwOnConflict);
         return NULL;
@@ -4657,7 +4657,7 @@ void MethodTable::DoRunClassInitThrowing()
             } else {
                 // if the stored exception is a preallocated one we cannot store the new Exception object in it.
                 // we'll attempt to create a new handle for the new TypeInitializationException object
-                LOADERHANDLE hNewInitException = NULL;
+                LOADERHANDLE hNewInitException = 0;
                 // CreateHandle can throw due to OOM. We need to catch this so that we make sure to set the
                 // init error. Whatever exception was thrown will be rethrown below, so no worries.
                 EX_TRY {
@@ -4667,7 +4667,7 @@ void MethodTable::DoRunClassInitThrowing()
                 } EX_END_CATCH(SwallowAllExceptions);
 
                 // if two threads are racing to set m_hInitException, clear the handle created by the loser
-                if (hNewInitException != NULL &&
+                if (hNewInitException != 0 &&
                     InterlockedCompareExchangeT((&pEntry->m_hInitException), hNewInitException, hOrigInitException) != hOrigInitException)
                 {
                     pEntry->m_pLoaderAllocator->FreeHandle(hNewInitException);
@@ -5161,7 +5161,7 @@ OBJECTREF MethodTable::GetManagedClassObject()
     GCStress<cfg_any, PulseGcTriggerPolicy>::MaybeTrigger();
 #endif // _DEBUG
 
-    if (GetAuxiliaryData()->m_hExposedClassObject == NULL)
+    if (GetAuxiliaryData()->m_hExposedClassObject == 0)
     {
         // Make sure that we have been restored
         CheckRestore();
@@ -6837,7 +6837,7 @@ DispatchSlot MethodTable::FindDispatchSlot(UINT32 typeID, UINT32 slotNumber, BOO
     }
     CONTRACTL_END;
 
-    DispatchSlot implSlot(NULL);
+    DispatchSlot implSlot(0);
     FindDispatchImpl(typeID, slotNumber, &implSlot, throwOnConflict);
     return implSlot;
 }
@@ -8102,7 +8102,7 @@ DispatchSlot MethodTable::MethodDataInterfaceImpl::GetImplSlot(UINT32 slotNumber
     WRAPPER_NO_CONTRACT;
     UINT32 implSlotNumber = MapToImplSlotNumber(slotNumber);
     if (implSlotNumber == INVALID_SLOT_NUMBER) {
-        return DispatchSlot(NULL);
+        return DispatchSlot(0);
     }
     return m_pImpl->GetImplSlot(implSlotNumber);
 }
@@ -8664,7 +8664,7 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         EnumMemoryRegionsForExtraInterfaceInfo();
     }
 
-    if (HasPerInstInfo() != NULL)
+    if (HasPerInstInfo() != FALSE)
     {
         DacEnumMemoryRegion(dac_cast<TADDR>(GetPerInstInfo()) - sizeof(GenericsDictInfo), GetPerInstInfoSize() + sizeof(GenericsDictInfo));
     }

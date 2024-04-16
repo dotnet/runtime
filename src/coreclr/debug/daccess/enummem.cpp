@@ -574,12 +574,12 @@ HRESULT ClrDataAccess::DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJE
             // Pulls in sequence points.
             DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(flags, pMD);
             PCODE addr = pMD->GetNativeCode();
-            if (addr != NULL)
+            if (addr != (PCODE)NULL)
             {
                 EECodeInfo codeInfo(addr);
                 if (codeInfo.IsValid())
                 {
-                    IJitManager::MethodRegionInfo methodRegionInfo = { NULL, 0, NULL, 0 };
+                    IJitManager::MethodRegionInfo methodRegionInfo = { (TADDR)NULL, 0, (TADDR)NULL, 0 };
                     codeInfo.GetMethodRegionInfo(&methodRegionInfo);
                 }
             }
@@ -785,7 +785,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
         {
             bool frameHadContext = false;
             status = pStackWalk->GetFrame(&pFrame);
-            PCODE addr = NULL;
+            PCODE addr = (PCODE)NULL;
             if (status == S_OK && pFrame != NULL)
             {
                 // write out the code that ip pointed to
@@ -917,7 +917,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
                                     // This method has a generic type token which is required to figure out the exact instantiation
                                     // of the method.
                                     // We need to use the variable index of the generic type token in order to do the look up.
-                                    CLRDATA_ADDRESS address = NULL;
+                                    CLRDATA_ADDRESS address = (CLRDATA_ADDRESS)NULL;
                                     DWORD dwExactGenericArgsTokenIndex = 0;
                                     ReleaseHolder<IXCLRDataValue> pDV(NULL);
                                     ReleaseHolder<IXCLRDataValue> pAssociatedValue(NULL);
@@ -955,7 +955,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER)
 
-                            if (addr != NULL)
+                            if (addr != (PCODE)NULL)
                             {
                                 EECodeInfo codeInfo(addr);
 
