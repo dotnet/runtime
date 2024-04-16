@@ -277,8 +277,15 @@ namespace System.Net.Http
             }
             catch (QuicException ex) when (ex.QuicError == QuicError.OperationAborted && _connection.AbortException != null)
             {
+                HttpRequestError httpRequestError = HttpRequestError.Unknown;
+
+                // TODO: there are still some races
+                if (_connection.AbortException is HttpProtocolException)
+                {
+                    httpRequestError = HttpRequestError.HttpProtocolError;
+                }
+
                 // we close the connection, propagate the AbortException
-                HttpRequestError httpRequestError = _connection.AbortException is HttpProtocolException ? HttpRequestError.HttpProtocolError : HttpRequestError.Unknown;
                 throw new HttpRequestException(httpRequestError, SR.net_http_client_execution_error, _connection.AbortException);
             }
             // It is possible for user's Content code to throw an unexpected OperationCanceledException.
