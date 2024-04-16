@@ -15,7 +15,6 @@ public partial class EmbeddedBaselines
     public const string TemplateResourceNameExt = ".jsonc";
     public const string TemplateResourceNameEscapeExt = @"\.jsonc";
 
-
     [GeneratedRegex("^" + TemplateResourceNameEscapePrefix + "(.+)" + TemplateResourceNameEscapeExt + "$", RegexOptions.CultureInvariant)]
     private static partial Regex BaselineRegex();
 

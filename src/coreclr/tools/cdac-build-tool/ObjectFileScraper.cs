@@ -38,7 +38,8 @@ public class ObjectFileScraper
             Console.WriteLine($"Magic starts at 0x{state.MagicStart:x8} in {inputPath}");
         }
         var header = ReadHeader(state);
-        if (Verbose) {
+        if (Verbose)
+        {
             DumpHeaderDirectory(header);
         }
         var content = ReadContent(state, header);
@@ -105,7 +106,7 @@ public class ObjectFileScraper
         public ushort GetUInt16(long offset) => LittleEndian ? BinaryPrimitives.ReadUInt16LittleEndian(Data.Span.Slice((int)offset)) : BinaryPrimitives.ReadUInt16BigEndian(Data.Span.Slice((int)offset));
         public byte GetByte(long offset) => Data.Span[(int)offset];
 
-        public void GetBytes(long offset, Span<byte> buffer) => Data.Span.Slice((int)offset, buffer.Length).CopyTo(buffer);
+        public ReadOnlySpan<byte> GetBytes(long offset, int length) => Data.Span.Slice((int)offset, length);
 
         public void ResetPosition(long position)
         {
@@ -139,7 +140,7 @@ public class ObjectFileScraper
         }
         public void ReadBytes(Span<byte> buffer)
         {
-            GetBytes(_position, buffer);
+            GetBytes(_position, buffer.Length).CopyTo(buffer);
             _position += buffer.Length;
         }
 
@@ -414,15 +415,15 @@ public class ObjectFileScraper
         {
             int bytesRead = 0;
             typeSpecs[i].NameIdx = state.ReadUInt32();
-            bytesRead += 4;
+            bytesRead += sizeof(uint);
             typeSpecs[i].FieldsIdx = state.ReadUInt32();
-            bytesRead += 4;
+            bytesRead += sizeof(uint);
             ushort size = state.ReadUInt16();
+            bytesRead += sizeof(ushort);
             if (size != 0)
             {
                 typeSpecs[i].Size = size;
             }
-            bytesRead += 2;
             WriteVerbose($"TypeSpec[{i}]: NameIdx = {typeSpecs[i].NameIdx}, FieldsIdx = {typeSpecs[i].FieldsIdx}, Size = {typeSpecs[i].Size}");
             // skip padding
             if (bytesRead < header.TypeSpecSize)
@@ -441,11 +442,11 @@ public class ObjectFileScraper
         {
             int bytesRead = 0;
             fieldSpecs[i].NameIdx = state.ReadUInt32();
-            bytesRead += 4;
+            bytesRead += sizeof(uint);
             fieldSpecs[i].TypeNameIdx = state.ReadUInt32();
-            bytesRead += 4;
+            bytesRead += sizeof(uint);
             fieldSpecs[i].FieldOffset = state.ReadUInt16();
-            bytesRead += 2;
+            bytesRead += sizeof(ushort);
             // skip padding
             if (bytesRead < header.FieldSpecSize)
             {
@@ -463,11 +464,11 @@ public class ObjectFileScraper
         {
             int bytesRead = 0;
             globalSpecs[i].NameIdx = state.ReadUInt32();
-            bytesRead += 4;
+            bytesRead += sizeof(uint);
             globalSpecs[i].TypeNameIdx = state.ReadUInt32();
-            bytesRead += 4;
+            bytesRead += sizeof(uint);
             globalSpecs[i].Value = state.ReadUInt64();
-            bytesRead += 8;
+            bytesRead += sizeof(ulong);
             // skip padding
             if (bytesRead < header.GlobalLiteralSpecSize)
             {
@@ -485,9 +486,9 @@ public class ObjectFileScraper
         {
             int bytesRead = 0;
             globalSpecs[i].NameIdx = state.ReadUInt32();
-            bytesRead += 4;
+            bytesRead += sizeof(uint);
             globalSpecs[i].AuxDataIdx = state.ReadUInt32();
-            bytesRead += 4;
+            bytesRead += sizeof(uint);
             // skip padding
             if (bytesRead < header.GlobalPointerSpecSize)
             {

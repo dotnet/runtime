@@ -13,7 +13,7 @@
 // CDAC_GLOBALS_END()
 //
 // In <types> the format is:
-// CDAC_TYPE_BEGIN(cdacTypeIdentifier) // defined a new data descriptor names cdacIdentifier
+// CDAC_TYPE_BEGIN(cdacTypeIdentifier) // defined a new data descriptor named cdacIdentifier
 //
 // CDAC_TYPE_SIZE(k) -or- CDAC_TYPE_INDETERMINATE(cdacTypeIdentifier) specifies that the type has
 //   size k (bytes - usually sizeof(SomeNativeType)) or specify that the type's size is not provided
