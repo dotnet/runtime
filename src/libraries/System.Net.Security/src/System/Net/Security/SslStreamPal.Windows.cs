@@ -233,7 +233,7 @@ namespace System.Net.Security
                 if (newCredentialsRequested && sslAuthenticationOptions.CertificateContext != null)
                 {
                     SafeFreeCredential_SECURITY handle = (SafeFreeCredential_SECURITY)cred;
-                    handle.LocalCertificate = true;
+                    handle.HasLocalCertificate = true;
                 }
 
                 return cred;
