@@ -105,7 +105,7 @@
                       GeneratePathProperty="true"
                       Condition="'$(DotNetBuildFromSource)' != 'true'" />
     <PackageReference Include="Microsoft.Native.Quic.MsQuic.Schannel"
-                      Version="$(MicrosoftNativeQuicMsQuicVersion)"
+                      Version="$(MicrosoftNativeQuicMsQuicSchannelVersion)"
                       PrivateAssets="all"
                       GeneratePathProperty="true"
                       Condition="'$(DotNetBuildFromSource)' != 'true'" />
