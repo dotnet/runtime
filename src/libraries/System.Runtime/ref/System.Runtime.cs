@@ -13763,6 +13763,7 @@ namespace System.Runtime.InteropServices.Marshalling
         public partial struct ManagedToUnmanagedOut
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public void FromUnmanaged(TUnmanagedElement* unmanaged) { throw null; }
             public ReadOnlySpan<T> ToManaged() { throw null; }
             public ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int numElements) { throw null; }
