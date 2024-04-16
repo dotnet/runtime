@@ -1,31 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.IO.Pipes;
 using System.Linq;
-using System.Net.Http.Headers;
-using System.Net.Security;
-using System.Net.Sockets;
 using System.Net.Test.Common;
-using System.Numerics;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Security.Authentication;
-using System.Security.Cryptography.X509Certificates;
-using System.Security.Principal;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.DotNet.RemoteExecutor;
+
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public class HttpClientHandlerTest_BasicAuth : HttpClientHandlerTestBase
     {
         public HttpClientHandlerTest_BasicAuth(ITestOutputHelper output) : base(output)
