@@ -5492,17 +5492,22 @@ ClrDataAccess::Initialize(void)
     IfFailRet(GetDacGlobalValues());
     IfFailRet(DacGetHostVtPtrs());
 
-    // TODO: [cdac] Get contract descriptor from exported symbol
-    uint64_t contractDescriptorAddr = 0;
-    //if (TryGetSymbol(m_pTarget, m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
+    PathString envVar;
+    DWORD len = WszGetEnvironmentVariable(W("DOTNET_ENABLE_CDAC"), envVar);
+    if (len != 0 && u16_strcmp(envVar, W("1")) == 0)
     {
-        m_cdac = CDAC::Create(contractDescriptorAddr, m_pTarget);
-        if (m_cdac.IsValid())
+        // TODO: [cdac] Get contract descriptor from exported symbol
+        uint64_t contractDescriptorAddr = 0;
+        //if (TryGetSymbol(m_pTarget, m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
         {
-            // Get SOS interfaces from the cDAC if available.
-            IUnknown* unk = m_cdac.SosInterface();
-            (void)unk->QueryInterface(__uuidof(ISOSDacInterface), (void**)&m_cdacSos);
-            (void)unk->QueryInterface(__uuidof(ISOSDacInterface9), (void**)&m_cdacSos9);
+            m_cdac = CDAC::Create(contractDescriptorAddr, m_pTarget);
+            if (m_cdac.IsValid())
+            {
+                // Get SOS interfaces from the cDAC if available.
+                IUnknown* unk = m_cdac.SosInterface();
+                (void)unk->QueryInterface(__uuidof(ISOSDacInterface), (void**)&m_cdacSos);
+                (void)unk->QueryInterface(__uuidof(ISOSDacInterface9), (void**)&m_cdacSos9);
+            }
         }
     }
 
