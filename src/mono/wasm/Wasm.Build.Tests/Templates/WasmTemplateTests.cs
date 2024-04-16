@@ -627,5 +627,87 @@ namespace Wasm.Build.Tests
                 Assert.True(copyOutputSymbolsToPublishDirectory == File.Exists(Path.Combine(publishFrameworkPath, fileName)), $"The {fileName} file {(copyOutputSymbolsToPublishDirectory ? "should" : "shouldn't")} exist in publish folder");
             }
         }
+
+        [Fact]
+        //[BuildAndRun(host: RunHost.Chrome)]
+        public void UCOCallWithSpecialCharacters()
+        {
+            string config = "Debug";
+            string code =
+                """
+                using System;
+                using System.Runtime.InteropServices;
+                public unsafe partial class Test
+                {
+
+                    public unsafe static int Main(string[] args)
+                    {
+                        ((IntPtr)(delegate* unmanaged<int,int>)&Interop.ManagedFunc).ToString();
+
+                        Console.WriteLine($"main: {args.Length}");
+                        Interop.UnmanagedFunc();
+                        return 0;
+                    }
+                }
+
+                file partial class Interop
+                {
+                    [UnmanagedCallersOnly(EntryPoint = "ManagedFunc")]
+                    public static int ManagedFunc(int number)
+                    {
+                        // called from MyImport aka UnmanagedFunc
+                        Console.WriteLine($"MyExport({number}) -> 42");
+                        return 42;
+                    }
+
+                    [DllImport("local", EntryPoint = "UnmanagedFunc")]
+                    public static extern void UnmanagedFunc(); // calls ManagedFunc aka MyExport
+                }
+                """;
+            string cCode =
+                    """
+                    #include <stdio.h>
+
+                    int ManagedFunc(int number);
+
+                    void UnmanagedFunc()
+                    {
+                        int ret = 0;
+                        printf("UnmanagedFunc calling ManagedFunc\n");
+                        ret = ManagedFunc(123);
+                        printf("ManagedFunc returned %d\n", ret);
+                    }
+                    """;
+            string id = $"browser_{config}_{GetRandomId()}";
+            string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
+            string projectName = Path.GetFileNameWithoutExtension(projectFile);
+            
+            File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
+            File.WriteAllText(Path.Combine(_projectDir!, "local.c"), cCode);
+            string extraProperties = @"<AllowUnsafeBlocks>true</AllowUnsafeBlocks>";
+            var buildArgs = new BuildArgs(projectName, config, false, id, null);
+            buildArgs = ExpandBuildArgs(buildArgs, extraProperties: extraProperties,
+                                        extraItems: @$"<NativeFileReference Include=""local.c"" />");
+            
+
+            bool expectRelinking = config == "Release";
+            BuildTemplateProject(buildArgs,
+                        id: id,
+                        new BuildProjectOptions(
+                            DotnetWasmFromRuntimePack: !expectRelinking,
+                            CreateProject: false,
+                            HasV8Script: false,
+                            MainJS: "main.js",
+                            Publish: true,
+                            TargetFramework: BuildTestBase.DefaultTargetFramework,
+                            UseCache: false
+                            ));
+        
+            CommandResult res = new RunCommand(s_buildEnv, _testOutput)
+                                                .WithWorkingDirectory(_projectDir!)
+                                                .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {config}")
+                                                .EnsureSuccessful();
+            Assert.Contains("ManagedFunc returned 42", res.Output);
+        }
     }
 }
