@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Microsoft.DotNet.Diagnostics.DataContract.BuildTool;
 
@@ -14,9 +16,9 @@ public class DataDescriptorModel
     public string Baseline { get; }
     public IReadOnlyDictionary<string, TypeModel> Types { get; }
     public IReadOnlyDictionary<string, GlobalModel> Globals { get; }
-    public IReadOnlyDictionary<string, ContractModel> Contracts { get; }
+    public ContractCollectionModel Contracts { get; }
     public uint PlatformFlags { get; }
-    private DataDescriptorModel(string baseline, IReadOnlyDictionary<string, TypeModel> types, IReadOnlyDictionary<string, GlobalModel> globals, IReadOnlyDictionary<string, ContractModel> contracts, uint platformFlags)
+    private DataDescriptorModel(string baseline, IReadOnlyDictionary<string, TypeModel> types, IReadOnlyDictionary<string, GlobalModel> globals, ContractCollectionModel contracts, uint platformFlags)
     {
         Baseline = baseline;
         Types = types;
@@ -131,12 +133,8 @@ public class DataDescriptorModel
                 }
             }
             w.WriteEndObject();
-            w.WriteStartObject("contracts");
-            foreach (var (contractName, contract) in Contracts)
-            {
-                w.WriteNumber(contractName, contract.Version);
-            }
-            w.WriteEndObject();
+            w.WritePropertyName("contracts");
+            JsonSerializer.Serialize(w, Contracts);
             w.WriteEndObject();
             w.Flush();
         }
@@ -202,6 +200,14 @@ public class DataDescriptorModel
             contract.Version = version;
         }
 
+        public void AddOrupdateContracts(IEnumerable<KeyValuePair<string, ContractModel>> contracts)
+        {
+            foreach (var (name, contract) in contracts)
+            {
+                AddOrUpdateContract(name, contract.Version);
+            }
+        }
+
         public void SetBaseline(string baseline)
         {
             if (_baseline != string.Empty && _baseline != baseline)
@@ -258,7 +264,7 @@ public class DataDescriptorModel
             {
                 contracts[contractName] = contractBuilder.Build();
             }
-            return new DataDescriptorModel(_baseline, types, globals, contracts, PlatformFlags);
+            return new DataDescriptorModel(_baseline, types, globals, new ContractCollectionModel(contracts), PlatformFlags);
         }
     }
 
@@ -407,6 +413,19 @@ public class DataDescriptorModel
         public string Name { get; init; }
         public string Type { get; init; }
         public GlobalValue Value { get; init; }
+    }
+
+    [JsonConverter(typeof(JsonConverter.ContractCollectionModelJsonConverter))]
+    public class ContractCollectionModel : IEnumerable<KeyValuePair<string, ContractModel>>
+    {
+        public IReadOnlyDictionary<string, ContractModel> Contracts { get; }
+        public ContractCollectionModel(IReadOnlyDictionary<string, ContractModel> contracts)
+        {
+            Contracts = contracts;
+        }
+
+        public IEnumerator<KeyValuePair<string, ContractModel>> GetEnumerator() => Contracts.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
     public readonly struct ContractModel

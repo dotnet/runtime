@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.IO;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,6 +16,8 @@ public partial class ContractReader
 {
     private readonly DataDescriptorModel.Builder _builder;
 
+    private static readonly JsonSerializerOptions s_jsonSerializerOptions = new() { PropertyNameCaseInsensitive = false, ReadCommentHandling = JsonCommentHandling.Skip };
+
     public ContractReader(DataDescriptorModel.Builder builder)
     {
         _builder = builder;
@@ -22,28 +25,11 @@ public partial class ContractReader
 
     public async Task<bool> ParseContracts(string contractFilePath, CancellationToken token = default)
     {
-        var s = File.OpenRead(contractFilePath);
-        using var reader = new StreamReader(s, System.Text.Encoding.UTF8);
-        uint lineNum = 0;
-        while (true)
-        {
-            var line = await reader.ReadLineAsync(token).ConfigureAwait(false);
-            lineNum++;
-            if (line == null)
-            {
-                break;
-            }
-            if (BlankOrCommentRegex().Match(line) is { Success: true })
-            {
-                continue;
-            }
-            if (!TryParseContractLine(line, out string? contract, out int version))
-            {
-                Console.Error.WriteLine($"{contractFilePath}:{lineNum}: Invalid contract line: {line}");
-                return false;
-            }
-            _builder.AddOrUpdateContract(contract, version);
-        }
+        string? contents = await File.ReadAllTextAsync(contractFilePath, token).ConfigureAwait(false);
+        var contractCollectionModel = JsonSerializer.Deserialize<DataDescriptorModel.ContractCollectionModel>(contents, s_jsonSerializerOptions);
+        if (contractCollectionModel is null)
+            return false;
+        _builder.AddOrupdateContracts(contractCollectionModel);
         return true;
     }
     public bool TryParseContractLine(string line, [NotNullWhen(true)] out string? contract, out int version)

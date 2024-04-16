@@ -57,7 +57,7 @@ if("${CDAC_BUILD_TOOL_BINARY_PATH}" STREQUAL "" OR NOT EXISTS "${CDAC_BUILD_TOOL
   message(FATAL_ERROR "No cdac-build-tool set or ${CDAC_BUILD_TOOL_BINARY_PATH} does not exist")
 endif()
 
-set(CONTRACT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/contracts.txt")
+set(CONTRACT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/contracts.jsonc")
 
 # generate the contract descriptor by running cdac-build-tool
 # n.b. this just uses `dotnet` from the PATH.  InitializeDotNetCli adds the apropropriate directory
