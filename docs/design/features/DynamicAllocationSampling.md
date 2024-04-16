@@ -86,8 +86,6 @@ The only impact of this change is to recompute the value of the **alloc_sampling
 
 The new *AllocationSampling* event needs to be defined in ClrEtwAll.man.
 
-TODO: is there anything to do in ClrEtwAllMeta.lst?
-
 
 Perfview could be updated to recognize the new event and leverage its payload for more accurate memory allocations analysis.
 

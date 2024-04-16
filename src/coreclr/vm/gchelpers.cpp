@@ -183,11 +183,6 @@ inline void CheckObjectSize(size_t alloc_size)
     }
 }
 
-// TODO: what are the call sites other than the fast path helpers?
-// if there is not,
-//      isSampled =
-//          (pEEAllocContext->alloc_sampling != pAllocContext->alloc_limit);
-//
 inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FLAGS flags, bool& isSampled)
 {
     CONTRACTL {
@@ -446,7 +441,8 @@ void PublishObjectAndNotify(TObj* &orObject, size_t size, GC_ALLOC_FLAGS flags, 
 
 void PublishFrozenObject(Object*& orObject, size_t size)
 {
-    PublishObjectAndNotify(orObject, size, GC_ALLOC_NO_FLAGS, false);  // TODO: allocations in NGCH are not sampled?
+    // allocations in NGCH are not sampled
+    PublishObjectAndNotify(orObject, size, GC_ALLOC_NO_FLAGS, false);
 }
 
 inline SIZE_T MaxArrayLength()

@@ -16,73 +16,141 @@ using Microsoft.Diagnostics.NETCore.Client;
 using Tracing.Tests.Common;
 using Xunit;
 
+// TODO: add a README file to explain that it is used to compare the perf impac of AllocationTick and AllocationSampled
+//       + transform into a simple console app to run it on the command line
 namespace Tracing.Tests.SimpleRuntimeEventValidation
 {
-    public class AllocationSamplingValidation
+    public class DynamicSamplingValidation
     {
+        // variables used to compare results of different tests
+        static long _noSamplingDuration = 0;
+        static long _allocationTickDuration = 0;
+        static long _allocationSampledDuration = 0;
+
         [Fact]
         public static int TestEntryPoint()
         {
-            // check that AllocationSampled events are generated and size + type name are correct
-            var ret = IpcTraceTest.RunAndValidateEventCounts(
-                new Dictionary<string, ExpectedEventCount>() { { "Microsoft-Windows-DotNETRuntime", -1 } },
-                _eventGeneratingActionForAllocations,
-                // AllocationSamplingKeyword (0x80000000000): 0b1000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000
-                new List<EventPipeProvider>() { new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Informational, 0x80000000000) },
-                1024, _DoesTraceContainEnoughAllocationSampledEvents, enableRundownProvider: false);
+            // measure impact of AllocationTick and AllocationSampled
+            ret = RunAllocationSamplers();
             if (ret != 100)
                 return ret;
 
             return 100;
         }
 
-        const int InstanceCount = 2000000;
-        const int MinExpectedEvents = 1;
-        static List<Object128> _objects128s = new List<Object128>(InstanceCount);
-
-        // allocate objects to trigger dynamic allocation sampling events
-        private static Action _eventGeneratingActionForAllocations = () =>
+        private static int RunAllocationSamplers()
         {
-            _objects128s.Clear();
-            for (int i = 0; i < InstanceCount; i++)
-            {
-                if ((i != 0) && (i % (InstanceCount/5) == 0))
-                    Logger.logger.Log($"Allocated {i} instances...");
+            // trigger GC to avoid impacting the measurements
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true);
 
-                Object128 obj = new Object128();
-                _objects128s.Add(obj);
-            }
+            // run the same allocations test with no sampling, AllocationTick and AllocationSampled
+            Stopwatch clock = new Stopwatch();
+            clock.Start();
+            int allocatedSize = AllocateObjects(ArrayInstanceCount);
+            clock.Stop();
+            var duration = clock.ElapsedMilliseconds;
+            Logger.logger.Log($" #GCs: {GC.CollectionCount(0)}");
+            Logger.logger.Log($" No Sampling: {ArrayInstanceCount} instances allocated for {allocatedSize} bytes in {duration} ms");
+            _noSamplingDuration = duration;
+            Logger.logger.Log("-");
 
-            Logger.logger.Log($"{_objects128s.Count} instances allocated");
-        };
+            // trigger GC to avoid impacting the measurements
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true);
+            var ret = IpcTraceTest.RunAndValidateEventCounts(
+                new Dictionary<string, ExpectedEventCount>() { { "Microsoft-Windows-DotNETRuntime", -1 } },
+                _eventGeneratingActionForAllocationsWithAllocationTick,
+                // GCKeyword (0x1): 0b1
+                new List<EventPipeProvider>() { new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Verbose, 0b1) },
+                1024, _DoesTraceContainAllocationTickEvents, enableRundownProvider: false);
+            if (ret != 100)
+                return ret;
+            Logger.logger.Log("-");
+
+            // trigger GC to avoid impacting the measurements
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true);
+            ret = IpcTraceTest.RunAndValidateEventCounts(
+                new Dictionary<string, ExpectedEventCount>() { { "Microsoft-Windows-DotNETRuntime", -1 } },
+                _eventGeneratingActionForAllocationsWithAllocationSampled,
+                // AllocationSamplingKeyword (0x80000000000): 0b1000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000
+                new List<EventPipeProvider>() { new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Informational, 0x80000000000) },
+                1024, _DoesTraceContainAllocationSampledEvents, enableRundownProvider: false);
+            if (ret != 100)
+                return ret;
+
+            return 100;
+        }
 
         const int ArrayInstanceCount = 100000;
-        // allocate the same number of objects to compare AllocationTick vs AllocationSampled
+        static List<byte[]> _arrays = new List<byte[]>(ArrayInstanceCount);
 
-        private static Func<EventPipeEventSource, Func<int>> _DoesTraceContainEnoughAllocationSampledEvents = (source) =>
+        private static int AllocateObjects(int instanceCount)
         {
-            int AllocationSampledEvents = 0;
-            int Object128Count = 0;
+            _arrays.Clear();
+            int size = 0;
+            for (int i = 0; i < instanceCount; i++)
+            {
+                byte[] bytes = new byte[35];
+                size += bytes.Length;
+                _arrays.Add(bytes);
+            }
+
+            Logger.logger.Log($"{_arrays.Count} allocated arrays");
+            return size;
+        }
+
+        // allocate the same number of objects to compare AllocationTick vs AllocationSampled
+        private static Action _eventGeneratingActionForAllocationsWithAllocationTick = () =>
+        {
+            Stopwatch clock = new Stopwatch();
+            clock.Start();
+            int allocatedSize = AllocateObjects(ArrayInstanceCount);
+            clock.Stop();
+            var duration = clock.ElapsedMilliseconds;
+            Logger.logger.Log($" #GCs: {GC.CollectionCount(0)}");
+            Logger.logger.Log($" AllocationTick: {ArrayInstanceCount} instances allocated for {allocatedSize} bytes in {duration} ms");
+            _allocationTickDuration = duration;
+        };
+
+        private static Action _eventGeneratingActionForAllocationsWithAllocationSampled = () =>
+        {
+            Stopwatch clock = new Stopwatch();
+            clock.Start();
+            int allocatedSize = AllocateObjects(ArrayInstanceCount);
+            clock.Stop();
+            var duration = clock.ElapsedMilliseconds;
+            Logger.logger.Log($" #GCs: {GC.CollectionCount(0)}");
+            Logger.logger.Log($" AllocationSampled: {ArrayInstanceCount} instances allocated for {allocatedSize} bytes in {duration} ms");
+            _allocationSampledDuration = duration;
+        };
+
+        private static Func<EventPipeEventSource, Func<int>> _DoesTraceContainAllocationTickEvents = (source) =>
+        {
+            int allocationTickEvents = 0;
+            source.Clr.GCAllocationTick += (eventData) =>
+            {
+                allocationTickEvents++;
+            };
+            return () => {
+                Logger.logger.Log("AllocationTick counts validation");
+                Logger.logger.Log("Nb events: " + allocationTickEvents);
+                return (allocationTickEvents > 0) ? 100 : -1;
+            };
+        };
+
+        private static Func<EventPipeEventSource, Func<int>> _DoesTraceContainAllocationSampledEvents = (source) =>
+        {
+            int allocationSampledEvents = 0;
             source.Dynamic.All += (eventData) =>
             {
                 if (eventData.ID == (TraceEventID)303)  // AllocationSampled is not defined in TraceEvent yet
                 {
-                    AllocationSampledEvents++;
-
-                    AllocationSampledData payload = new AllocationSampledData(eventData, source.PointerSize);
-                    // uncomment to see the allocation events payload
-                    //Logger.logger.Log($"{payload.HeapIndex} - {payload.AllocationKind} | ({payload.ObjectSize}) {payload.TypeName}  = 0x{payload.Address}");
-                    if (payload.TypeName == "Tracing.Tests.SimpleRuntimeEventValidation.Object128")
-                    {
-                        Object128Count++;
-                    }
+                    allocationSampledEvents++;
                 }
             };
             return () => {
                 Logger.logger.Log("AllocationSampled counts validation");
-                Logger.logger.Log("Nb events: " + AllocationSampledEvents);
-                Logger.logger.Log("Nb object128: " + Object128Count);
-                return (AllocationSampledEvents >= MinExpectedEvents) && (Object128Count != 0) ? 100 : -1;
+                Logger.logger.Log("Nb events: " + allocationSampledEvents);
+                return (allocationSampledEvents > 0) ? 100 : -1;
             };
         };
     }
