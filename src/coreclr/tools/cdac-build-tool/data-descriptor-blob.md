@@ -32,40 +32,74 @@ This leads to the following overall strategy for the design:
 * The physical blob must be constructible using "lowest common denominator" target toolchain
   tooling - the C preprocessor.  That doesn't mean that tooling _must_ use the C preprocessor to
   generate the blob, but the format must not exceed the capabilities of the C preprocessor.
-* The physical blob must be round-trippable: it should be possible to extract the blob from an
-  object file and write it back out as C source code that compiles back to a logically equivalent
-  blob.
 
-### Summary
-
-The binary blob format for a physical descriptor is expected to be stored in the memory space of a
-target .NET runtime and is thus likely to be the final descriptor in the "baseline" graph.
-
-It is likely that the physical descriptor will be a part of a build-time constant in the disk image
-of a .NET runtime, and the format is designed to be compact and specifiable as a (likely
-machine-generated) compile-time constant in a suitable source language.
-
-The data descriptor forms one part of an overall physical data contract descriptor in a target .NET
-runtime and as such this format does not specify a "magic number", or "well known symbol", or
-another means of identifying the blob within a target process.  Additionally the version of the
-binary blob data descriptor is expected to be stored within the larger enclosing data contract
-descriptor and is not included here.
 
 ### Blob
 
 Multi-byte values are in the target platform endianness.
 
-The format is:
+The blob's job is to encode descriptions of the .NET runtime's implementation types and their fields,
+as well as globals.
+
+When encoding strings, we create a "string pool" in the data blob: a massive string literal
+that concatentates all the names that we might need, separated by `"\0"` nul characters.  To encode a name into another data structure, we write the offset of the name from the beginning of the string pool.  We reserve the offset 0 to designate empty or invalid names.
+
+When encoding the fields of a type, we create a "field pool" in the data blob: a collection of field
+descriptors delimited by an "empty field descriptor" (a field descriptor of a name index of 0).  All
+the fields for a single type are encoded as a contiguous run from a given field pool index until the next empty field descriptor.
+
+We're interested in encoding the following kinds of information:
 
 ```c
+// A type:
+// We encode a data contract name and a collection of fields, and the size of the type.
+struct TypeSpec
+{
+    uint32_t Name;
+    uint32_t Fields;
+    uint16_t Size;
+};
 
-struct TypeSpec;
-struct FieldSpec;
-struct GlobalLiteralSpec;
-struct GlobalPointerSpec;
+// A field:
+// We encode the field name, the type (or an empty name) and the offset of the field in the native
+// struct. The size of the field is not part of the data descriptor.
+struct FieldSpec
+{
+    uint32_t Name;
+    uint32_t TypeName;
+    uint16_t FieldOffset;
+};
 
+// A literal global value such as a constant, some flags bitmap, or the value of a preprocessor define:
+// we record the name, an optional type name, and a value as an unsigned 64-bit value
+struct GlobalLiteralSpec
+{
+    uint32_t Name;
+    uint32_t TypeName;
+    uint64_t Value;
+};
+
+// A global pointer value such as the addrress of some important datastructure:
+// We record the name and the index of the global in the auxiliarly "pointer data" global which
+// is compiled into the .NET runtime and contains the addresses of all the globals that are referenced
+// from the data descriptor.
+struct GlobalPointerSpec
+{
+    uint32_t Name;
+    uint32_t AuxIndex;
+};
+```
+
+The main data we want to emit to the object file is an instance of the following structure:
+
+```c
+// The main payload of the object file.
 struct BinaryBlobDataDescriptor
 {
+    // A directory giving the offsets of all the other content,
+    // the number of types, fields, global literals and pointers, and
+    // the sizes of the "Spec" structs, above, in order to account for any padding added
+    // by the C/C++ compiler.
     struct Directory {
         uint32_t FlagsAndBaselineStart;
         uint32_t TypesStart;
@@ -89,47 +123,40 @@ struct BinaryBlobDataDescriptor
         uint8_t GlobalLiteralSpecSize;
         uint8_t GlobalPointerSpecSize;
     } Directory;
+    // Platform flags (primarily pointer size)
     uint32_t PlatformFlags;
+    // a well-known name of the baseline data descriptor. the current descriptor
+    // records changes from this baseline.
     uint32_t BaselineName;
+    // an array of type specs
     struct TypeSpec Types[CDacBlobTypesCount];
+    // all of the field specs - contiguous runs are all owned by the same type
     struct FieldSpec FieldPool[CDacBlobFieldPoolCount];
+    // an array of literal globals
     struct GlobalLiteralSpec GlobalLiteralValues[CDacBlobGlobalLiteralsCount];
+    // an array of pointer globals
     struct GlobalPointerSpec GlobalPointerValues[CDacBlobGlobalPointersCount];
+    // all of the names that might be referenced from elsewhere in BinaryBlobDataDescriptor,
+    // delimited by "\0"
     uint8_t NamesPool[sizeof(struct CDacStringPoolSizes)];
-    uint8_t EndMagic[4];
-};
-
-struct TypeSpec
-{
-    uint32_t Name;
-    uint32_t Fields;
-    uint16_t Size;
-};
-
-struct FieldSpec
-{
-    uint32_t Name;
-    uint32_t TypeName;
-    uint16_t FieldOffset;
-};
-
-struct GlobalLiteralSpec
-{
-    uint32_t Name;
-    uint32_t TypeName;
-    uint64_t Value;
-};
-
-struct GlobalPointerSpec
-{
-    uint32_t Name;
-    uint32_t AuxIndex;
+    // an end magic value to validate that the name pool is of the expected length
+    uint8_t EndMagic[4]; // the bytes 0x01 0x02 0x03 0x04
 };
 ```
 
-where the magic value is `"DACBLOB"` and `EndMagic` is `{0x01, 0x02, 0x03, 0x04}`
+Finally, the value that we write to the object file has this form:
 
-The blob begins with a directory that gives the relative offsets of the `Baseline`, `Types`, `FieldPool`,
+```c
+struct MagicAndBlob {
+    // the magic value that we look for in the object file
+    // 0x00424F4C42434144ull - in little endian this is "DACBLOB\0"
+    uint64_t magic;
+    // the blob payload, described above
+    struct BinaryBlobDataDescriptor Blob;
+};
+```
+
+The `BinaryBlobDataDescriptor` begins with a directory that gives the relative offsets of the `PlatformFlags`, `Types`, `FieldPool`,
 `GlobalLiteralValues`, `GlobalPointerValues` and `Names` fields of the blob.  The number of elements of each of the arrays is
 next. This is followed by the sizes of the spec structs.
 
@@ -151,7 +178,7 @@ in a contiguous subsequence and are terminated by a marker `FieldSpec` with a `N
 For each field there is a name that gives an offset in the name pool and an offset indicating the
 field's offset.
 
-The global constants are gives as a sequence of `GlobalLiteralSpec` elements.  Each global has a
+The global constants are given as a sequence of `GlobalLiteralSpec` elements.  Each global has a
 name, type and a value.  Globals that are the addresses in target memory, are in `GlobalPointerSpec`
 elements. Each pointer element has a name and an index in a separately compiled pointer structure
 that is linked into runtime .  See
@@ -159,7 +186,7 @@ that is linked into runtime .  See
 
 The `NamesPool` is a single sequence of utf-8 bytes comprising the concatenation of all the type
 field and global names including a terminating nul byte for each name.  The same name may occur
-multiple times.  The names will be referenced by multiple type or multiple fields. (That is, a
+multiple times.  The names could be referenced by multiple type or multiple fields. (That is, a
 clever blob emitter may pool strings).  The first name in the name pool is the empty string (with
 its nul byte).
 
