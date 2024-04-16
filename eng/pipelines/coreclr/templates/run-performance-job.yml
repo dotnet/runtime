@@ -69,7 +69,6 @@ jobs:
       # nodejs installation steps from https://github.com/nodesource/distributions
       - HelixPreCommandsWasmOnLinux: >-
           export RestoreAdditionalProjectSources=$HELIX_CORRELATION_PAYLOAD/built-nugets &&
-          sudo apt-get remove -y lttng-modules-dkms &&
           sudo apt-get -y remove nodejs &&
           sudo apt-get update &&
           sudo apt-get install -y ca-certificates curl gnupg &&
