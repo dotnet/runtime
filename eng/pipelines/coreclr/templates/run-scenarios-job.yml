@@ -49,24 +49,13 @@ jobs:
       - ${{insert}}: ${{ variable }}
 
     - name: internalParam
-      value: --internal
+      value: ''
 
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - name: internalParam
         value: --internal
       - group: DotNet-HelixApi-Access
       - group: dotnet-benchview
-
-    - ${{ if not(and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))) }}:
-      - ${{ if eq(parameters.osGroup, 'windows') }}:
-        - AdditionalHelixPreCommands: $(HelixPreCommandWindows)
-        - AdditionalHelixPostCommands: $(HelixPostCommandsWindows)
-      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osGroup, 'osx')) }}:
-        - AdditionalHelixPreCommands: $(HelixPreCommandLinux)
-        - AdditionalHelixPostCommands: $(HelixPostCommandsLinux)
-      - ${{ if eq(parameters.osGroup, 'osx') }}:
-        - AdditionalHelixPreCommands: $(HelixPreCommandOSX)
-        - AdditionalHelixPostCommands: $(HelixPostCommandOSX)
 
     - ExtraSetupArguments: ''
     - name: ExtraSetupArguments
@@ -101,7 +90,7 @@ jobs:
       displayName: "Create wasm directory (Linux)"
       condition: and(succeeded(), eq('${{ parameters.runtimeType }}', 'wasm'))
     # run run-performance-job.py
-    - script: $(Python) $(Agent.BuildDirectory)/performance/scripts/run_performance_job.py --is-scenario --framework $(_Framework) ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
+    - script: $(Python) $(Agent.BuildDirectory)/performance/scripts/run_performance_job.py --is-scenario --framework $(_Framework) $(internalParam) ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
       displayName: Run performance job script
       env:
         HelixAccessToken: '$(HelixApiAccessToken)'

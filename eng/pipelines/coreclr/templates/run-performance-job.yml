@@ -57,7 +57,7 @@ jobs:
       - ${{insert}}: ${{ variable }}
 
     - name: internalParam
-      value: --internal
+      value: ''
 
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - name: internalParam
@@ -78,7 +78,7 @@ jobs:
             _Framework: ${{ framework }}
     steps:
     - ${{ parameters.steps }}
-    - script: $(Python) $(Agent.BuildDirectory)/performance/scripts/run_performance_job.py --framework $(_Framework) ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
+    - script: $(Python) $(Agent.BuildDirectory)/performance/scripts/run_performance_job.py --framework $(_Framework) $(internalParam) ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
       displayName: Run performance job script
       env:
         HelixAccessToken: '$(HelixApiAccessToken)'
