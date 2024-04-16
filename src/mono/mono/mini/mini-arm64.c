@@ -2887,7 +2887,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			offset += size;
 
 			cfg->arch.swift_error_var = ins;
-			cfg->used_int_regs |= 1 << ARMREG_R21;
+			if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
+ 				cfg->used_int_regs |= 1 << ARMREG_R21;
 			break;
 		}
 		default:
@@ -3731,8 +3732,13 @@ emit_move_return_value (MonoCompile *cfg, guint8 * code, MonoInst *ins)
 	MonoCallInst *call;
 
 	if (cfg->arch.swift_error_var) {
-		code = emit_ldrx (code, ARMREG_IP0, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
-		code = emit_strx (code, ARMREG_R21, ARMREG_IP0, 0);
+		if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+			code = emit_ldrx (code, ARMREG_IP0, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
+			code = emit_strx (code, ARMREG_R21, ARMREG_IP0, 0);
+		} else if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+			code = emit_ldrx (code, ARMREG_R21, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
+			code = emit_ldrx (code, ARMREG_R21, ARMREG_R21, 0);
+		}
 	}
 
 	call = (MonoCallInst*)ins;
@@ -5937,11 +5943,17 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 				code = emit_strfpq (code, ainfo->reg, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset));
 				break;
 			case ArgSwiftError:
-				if (ainfo->offset) {
-					code = emit_ldrx (code, ARMREG_IP0, cfg->arch.args_reg, ainfo->offset);
-					code = emit_strx (code, ARMREG_IP0, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
-				} else {
-					code = emit_strx (code, ainfo->reg, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
+				if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+					if (ainfo->offset) {
+						code = emit_ldrx (code, ARMREG_IP0, cfg->arch.args_reg, ainfo->offset);
+						code = emit_strx (code, ARMREG_IP0, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
+					} else {
+						code = emit_strx (code, ainfo->reg, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
+					}
+				}
+				if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+					code = emit_ldrx (code, ARMREG_IP0, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
+					code = emit_strx (code, ARMREG_R21, ARMREG_IP0, 0);
 				}
 				break;
 			default:
