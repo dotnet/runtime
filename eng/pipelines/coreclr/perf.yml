@@ -31,19 +31,19 @@ trigger:
     - THIRD-PARTY-NOTICES.TXT
 
 variables:
-  - template: /eng/pipelines/common/variables.yml
+- template: /eng/pipelines/common/variables.yml
 
 resources:
   repositories:
-  - repository: GithubPerformanceRepo
-    type: github
-    endpoint: dotnet
-    name: dotnet/performance
+  - repository: PerformanceRepo
     ref: '${{ parameters.performanceRepoBranch }}'
-  - repository: InternalPerformanceRepo
-    type: git
-    name: dotnet-performance
-    ref: '${{ parameters.performanceRepoBranch }}'
+    ${{ if eq(parameters.performanceRepoSource, 'github') }}:
+      type: github
+      endpoint: dotnet
+      name: dotnet/performance
+    ${{ if eq(parameters.performanceRepoSource, 'ado') }}:
+      type: git
+      name: dotnet-performance
 
 #
 # For the 'schedule' case, only wasm/jsc perf jobs are run.
