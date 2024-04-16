@@ -56,13 +56,6 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SetAfterUse_Throws()
         {
-            TestUtilities.TestEventListener? listener = null;
-
-            if (UseVersion == HttpVersion30)
-            {
-                listener = new TestUtilities.TestEventListener(_output, TestUtilities.TestEventListener.NetworkingEvents);
-            }
-
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpClientHandler handler = CreateHttpClientHandler();
@@ -73,8 +66,6 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Throws<InvalidOperationException>(() => handler.MaxResponseHeadersLength = 1);
             },
             server => server.AcceptConnectionSendResponseAndCloseAsync());
-
-            listener?.Dispose();
         }
 
         [Theory]
@@ -82,23 +73,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(15)]
         public async Task LargeSingleHeader_ThrowsException(int maxResponseHeadersLength)
         {
-            TestUtilities.TestEventListener? listener = null;
-
-            if (UseVersion == HttpVersion30)
-            {
-                listener = new TestUtilities.TestEventListener(_output, TestUtilities.TestEventListener.NetworkingEvents);
-            }
-
             using HttpClientHandler handler = CreateHttpClientHandler();
             handler.MaxResponseHeadersLength = maxResponseHeadersLength;
 
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpClient client = CreateHttpClient(handler);
-                if (UseVersion == HttpVersion30)
-                {
-                    _output.WriteLine("H/3 LargeSingleHeader_Throws HttpClient created.");
-                }
 
                 Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
                 if (!IsWinHttpHandler)
@@ -108,10 +88,6 @@ namespace System.Net.Http.Functional.Tests
             },
             async server =>
             {
-                if (UseVersion == HttpVersion30)
-                {
-                    _output.WriteLine($"H/3 LargeSingleHeader_Throws: Listening on: {server.Address}");
-                }
                 try
                 {
                     await server.HandleRequestAsync(headers: new[] { new HttpHeaderData("Foo", new string('a', handler.MaxResponseHeadersLength * 1024)) });
@@ -122,8 +98,6 @@ namespace System.Net.Http.Functional.Tests
                 catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad) {}
 #endif
             });
-
-            listener?.Dispose();
         }
 
         [Theory]

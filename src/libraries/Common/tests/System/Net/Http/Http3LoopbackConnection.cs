@@ -127,6 +127,7 @@ namespace System.Net.Test.Common
 
                 while (true)
                 {
+                    Console.WriteLine("Ensuring Control Stream Accepted");
                     QuicStream quicStream = await _connection.AcceptInboundStreamAsync().ConfigureAwait(false);
 
                     if (!quicStream.CanWrite)
