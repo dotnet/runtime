@@ -47,7 +47,10 @@ CDAC::CDAC(HMODULE module, uint64_t descriptorAddr, ICorDebugDataTarget* target)
     , m_target{target}
 {
     if (m_module == NULL)
+    {
+        m_cdac_handle = NULL;
         return;
+    }
 
     decltype(&cdac_reader_init) init = reinterpret_cast<decltype(&cdac_reader_init)>(::GetProcAddress(m_module, "cdac_reader_init"));
     decltype(&cdac_reader_get_sos_interface) getSosInterface = reinterpret_cast<decltype(&cdac_reader_get_sos_interface)>(::GetProcAddress(m_module, "cdac_reader_get_sos_interface"));
