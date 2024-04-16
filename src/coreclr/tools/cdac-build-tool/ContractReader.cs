@@ -26,7 +26,7 @@ public partial class ContractReader
     public async Task<bool> ParseContracts(string contractFilePath, CancellationToken token = default)
     {
         string? contents = await File.ReadAllTextAsync(contractFilePath, token).ConfigureAwait(false);
-        var contractCollectionModel = JsonSerializer.Deserialize<DataDescriptorModel.ContractCollectionModel>(contents, s_jsonSerializerOptions);
+        var contractCollectionModel = JsonSerializer.Deserialize<DataDescriptorModel.ContractsCollectionModel>(contents, s_jsonSerializerOptions);
         if (contractCollectionModel is null)
             return false;
         _builder.AddOrupdateContracts(contractCollectionModel);

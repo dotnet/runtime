@@ -8,17 +8,25 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.DotNet.Diagnostics.DataContract.JsonConverter;
 
 namespace Microsoft.DotNet.Diagnostics.DataContract.BuildTool;
 
 public class DataDescriptorModel
 {
+    public int Version => 0;
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string Baseline { get; }
-    public IReadOnlyDictionary<string, TypeModel> Types { get; }
-    public IReadOnlyDictionary<string, GlobalModel> Globals { get; }
-    public ContractCollectionModel Contracts { get; }
+    public TypesCollectionModel Types { get; }
+    public GlobalsCollectionModel Globals { get; }
+    public ContractsCollectionModel Contracts { get; }
+    [JsonIgnore]
     public uint PlatformFlags { get; }
-    private DataDescriptorModel(string baseline, IReadOnlyDictionary<string, TypeModel> types, IReadOnlyDictionary<string, GlobalModel> globals, ContractCollectionModel contracts, uint platformFlags)
+    [JsonIgnore]
+    public int PointerDataCount => Globals.PointerDataCount;
+
+
+    private DataDescriptorModel(string baseline, TypesCollectionModel types, GlobalsCollectionModel globals, ContractsCollectionModel contracts, uint platformFlags)
     {
         Baseline = baseline;
         Types = types;
@@ -61,88 +69,17 @@ public class DataDescriptorModel
         }
     }
 
+    private static JsonSerializerOptions s_jsonSerializerOptions = new JsonSerializerOptions
+    {
+        WriteIndented = false,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DictionaryKeyPolicy = null, // leave unchanged
+    };
     public string ToJson()
     {
         // always writes the "compact" format, see data_descriptor.md
-        var options = new JsonWriterOptions { Indented = false, };
-        using var stream = new MemoryStream();
-        using (var w = new Utf8JsonWriter(stream, options))
-        {
-            w.WriteStartObject();
-            w.WriteNumber("version", 0);
-            if (Baseline != string.Empty)
-            {
-                w.WriteString("baseline", Baseline);
-            }
-            w.WriteStartObject("types");
-            foreach (var (typeName, type) in Types)
-            {
-                w.WriteStartObject(typeName);
-                if (type.Size != null && type.Size != 0)
-                {
-                    w.WriteNumber("!", (int)type.Size);
-                }
-                foreach (var (fieldName, field) in type.Fields)
-                {
-                    if (field.Type == string.Empty)
-                    {
-                        w.WriteNumber(fieldName, field.Offset);
-                    }
-                    else
-                    {
-                        w.WriteStartArray(fieldName);
-                        w.WriteNumberValue(field.Offset);
-                        w.WriteStringValue(field.Type);
-                        w.WriteEndArray();
-                    }
-                }
-                w.WriteEndObject();
-            }
-            w.WriteEndObject();
-            w.WriteStartObject("globals");
-            foreach (var (globalName, global) in Globals)
-            {
-                if (global.Type == string.Empty)
-                {
-                    if (global.Value.Indirect)
-                    {
-                        w.WriteStartArray(globalName);
-                        w.WriteNumberValue(global.Value.Value);
-                        w.WriteEndArray();
-                    }
-                    else
-                    {
-                        w.WriteString(globalName, global.Value.ToString());
-                    }
-                }
-                else
-                {
-                    w.WriteStartArray(globalName);
-                    if (global.Value.Indirect)
-                    {
-                        w.WriteStartArray();
-                        w.WriteNumberValue(global.Value.Value);
-                        w.WriteEndArray();
-                    }
-                    else
-                    {
-                        w.WriteStringValue(global.Value.ToString());
-                    }
-                    w.WriteStringValue(global.Type);
-                    w.WriteEndArray();
-                }
-            }
-            w.WriteEndObject();
-            w.WritePropertyName("contracts");
-            JsonSerializer.Serialize(w, Contracts);
-            w.WriteEndObject();
-            w.Flush();
-        }
-        byte[] bytes = stream.ToArray();
-        return System.Text.Encoding.UTF8.GetString(bytes);
+        return JsonSerializer.Serialize(this, s_jsonSerializerOptions);
     }
-
-    public int PointerDataCount => Globals.Values.Count(g => g.Value.Indirect);
 
     public class Builder
     {
@@ -257,14 +194,14 @@ public class DataDescriptorModel
                 {
                     throw new InvalidOperationException($"Value must be set for global {globalName}");
                 }
-                globals[globalName] = new GlobalModel { Name = globalName, Type = globalBuilder.Type, Value = v.Value };
+                globals[globalName] = new GlobalModel { Type = globalBuilder.Type, Value = v.Value };
             }
             var contracts = new Dictionary<string, ContractModel>();
             foreach (var (contractName, contractBuilder) in _contracts)
             {
                 contracts[contractName] = contractBuilder.Build();
             }
-            return new DataDescriptorModel(_baseline, types, globals, new ContractCollectionModel(contracts), PlatformFlags);
+            return new DataDescriptorModel(_baseline, new TypesCollectionModel(types), new GlobalsCollectionModel(globals), new ContractsCollectionModel(contracts), PlatformFlags);
         }
     }
 
@@ -300,7 +237,7 @@ public class DataDescriptorModel
 
         public TypeModel Build(string typeName)
         {
-            var fields = new Dictionary<string, Field>();
+            var fields = new Dictionary<string, FieldModel>();
             foreach (var (fieldName, fieldBuilder) in _fields)
             {
                 fields.Add(fieldName, fieldBuilder.Build(typeName, fieldName));
@@ -368,29 +305,45 @@ public class DataDescriptorModel
             }
         }
 
-        public Field Build(string typeName, string fieldName)
+        public FieldModel Build(string typeName, string fieldName)
         {
             if (_offset == null)
             {
                 throw new InvalidOperationException($"Offset must be set for {typeName}.{fieldName}");
             }
-            return new Field { Type = _type, Offset = (int)_offset };
+            return new FieldModel { Type = _type, Offset = (int)_offset };
         }
     }
 
-    public readonly struct Field
+    [JsonConverter(typeof(FieldModelJsonConverter))]
+    public readonly struct FieldModel
     {
         public string Type { get; init; }
         public int Offset { get; init; }
     }
 
+    [JsonConverter(typeof(TypesCollectionModelJsonConverter))]
+    public class TypesCollectionModel : IEnumerable<KeyValuePair<string, TypeModel>>
+    {
+        private readonly Dictionary<string, TypeModel> _types;
+        public TypesCollectionModel(Dictionary<string, TypeModel> types)
+        {
+            _types = types;
+        }
+
+        public IEnumerator<KeyValuePair<string, TypeModel>> GetEnumerator() => _types.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    [JsonConverter(typeof(TypeModelJsonConverter))]
     public readonly struct TypeModel
     {
         public int? Size { get; init; }
-        public IReadOnlyDictionary<string, Field> Fields { get; init; }
+        public IReadOnlyDictionary<string, FieldModel> Fields { get; init; }
     }
 
 
+    [JsonConverter(typeof(GlobalValueJsonConverter))]
     public readonly struct GlobalValue : IEquatable<GlobalValue>
     {
         public bool Indirect { get; private init; }
@@ -408,18 +361,33 @@ public class DataDescriptorModel
         public override string ToString() => Indirect ? $"Indirect({Value})" : $"0x{Value:x}";
     }
 
+    [JsonConverter(typeof(GlobalsCollectionModelJsonConverter))]
+    public class GlobalsCollectionModel : IEnumerable<KeyValuePair<string, GlobalModel>>
+    {
+        private readonly Dictionary<string, GlobalModel> _globals;
+        public GlobalsCollectionModel(Dictionary<string, GlobalModel> globals)
+        {
+            _globals = globals;
+        }
+
+        public int PointerDataCount => _globals.Values.Count(g => g.Value.Indirect);
+
+        public IEnumerator<KeyValuePair<string, GlobalModel>> GetEnumerator() => _globals.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    [JsonConverter(typeof(GlobalModelJsonConverter))]
     public readonly struct GlobalModel
     {
-        public string Name { get; init; }
         public string Type { get; init; }
         public GlobalValue Value { get; init; }
     }
 
-    [JsonConverter(typeof(JsonConverter.ContractCollectionModelJsonConverter))]
-    public class ContractCollectionModel : IEnumerable<KeyValuePair<string, ContractModel>>
+    [JsonConverter(typeof(ContractsCollectionModelJsonConverter))]
+    public class ContractsCollectionModel : IEnumerable<KeyValuePair<string, ContractModel>>
     {
         public IReadOnlyDictionary<string, ContractModel> Contracts { get; }
-        public ContractCollectionModel(IReadOnlyDictionary<string, ContractModel> contracts)
+        public ContractsCollectionModel(IReadOnlyDictionary<string, ContractModel> contracts)
         {
             Contracts = contracts;
         }
@@ -428,6 +396,7 @@ public class DataDescriptorModel
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
+    [JsonConverter(typeof(ContractModelJsonConverter))]
     public readonly struct ContractModel
     {
         public int Version { get; init; }

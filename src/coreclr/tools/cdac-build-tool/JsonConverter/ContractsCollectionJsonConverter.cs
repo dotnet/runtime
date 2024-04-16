@@ -4,19 +4,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Microsoft.DotNet.Diagnostics.DataContract.BuildTool;
 
 namespace Microsoft.DotNet.Diagnostics.DataContract.JsonConverter;
 
-/// <summary>
-///  Parses or serializes contracts in the "compact" JSON format: as a single
-///  object for the whole collection where each contract name is a property name and
-///  the value is the version number.
-/// </summary>
-public class ContractCollectionModelJsonConverter : JsonConverter<DataDescriptorModel.ContractCollectionModel>
+public sealed class ContractsCollectionModelJsonConverter : CompactCollectionModelJsonConverter<DataDescriptorModel.ContractsCollectionModel, DataDescriptorModel.ContractModel>
 {
-    public override DataDescriptorModel.ContractCollectionModel Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override DataDescriptorModel.ContractsCollectionModel Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         Dictionary<string, DataDescriptorModel.ContractBuilder> contracts = new();
         if (reader.TokenType != JsonTokenType.StartObject)
@@ -29,7 +23,7 @@ public class ContractCollectionModelJsonConverter : JsonConverter<DataDescriptor
             {
                 case JsonTokenType.EndObject:
                     var builtContracts = contracts.Select((kvp) => (kvp.Key, kvp.Value.Build()));
-                    return new DataDescriptorModel.ContractCollectionModel(builtContracts.ToDictionary());
+                    return new DataDescriptorModel.ContractsCollectionModel(builtContracts.ToDictionary());
                 case JsonTokenType.PropertyName:
                     string? propertyName = reader.GetString();
                     if (propertyName is null)
@@ -47,16 +41,5 @@ public class ContractCollectionModelJsonConverter : JsonConverter<DataDescriptor
             }
         }
         throw new JsonException();
-    }
-
-    public override void Write(Utf8JsonWriter writer, DataDescriptorModel.ContractCollectionModel value, JsonSerializerOptions options)
-    {
-        writer.WriteStartObject();
-        foreach (var (name, contract) in value.Contracts)
-        {
-            writer.WriteNumber(name, contract.Version);
-
-        }
-        writer.WriteEndObject();
     }
 }

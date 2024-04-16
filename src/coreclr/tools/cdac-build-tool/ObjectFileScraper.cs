@@ -248,7 +248,7 @@ public class ObjectFileScraper
     {
         public uint NameIdx;
         public uint FieldsIdx;
-        public ushort Size;
+        public ushort? Size;
     }
 
     private struct FieldSpec
@@ -332,7 +332,7 @@ public class ObjectFileScraper
                     WriteVerbose($"Type {typeName} has field {fields[j].Name} with offset {fields[j].Offset}");
                     j++;
                 }
-                if (typeSpec.Size != 0)
+                if (typeSpec.Size is not null)
                 {
                     WriteVerbose($"Type {typeName} has size {typeSpec.Size}");
                 }
@@ -417,7 +417,11 @@ public class ObjectFileScraper
             bytesRead += 4;
             typeSpecs[i].FieldsIdx = state.ReadUInt32();
             bytesRead += 4;
-            typeSpecs[i].Size = state.ReadUInt16();
+            ushort size = state.ReadUInt16();
+            if (size != 0)
+            {
+                typeSpecs[i].Size = size;
+            }
             bytesRead += 2;
             WriteVerbose($"TypeSpec[{i}]: NameIdx = {typeSpecs[i].NameIdx}, FieldsIdx = {typeSpecs[i].FieldsIdx}, Size = {typeSpecs[i].Size}");
             // skip padding
