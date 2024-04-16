@@ -119,8 +119,6 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         }
     };
 
-    ABIPassingInformation info;
-
     if ((floatFields > 0) && (m_floatRegs.Count() >= floatFields) && (m_intRegs.Count() >= intFields))
     {
         // Hardware floating-point calling convention
@@ -131,7 +129,7 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
             else
                 assert((flags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0); // struct containing just one FP real
 
-            info = ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), 0,
+            return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), 0,
                                                                                           passedSize));
         }
         else
@@ -149,14 +147,13 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
             bool isSecondFloat = (flags & (STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_SECOND)) != 0;
             assert(isFirstFloat || isSecondFloat);
 
-            info.NumSegments = 2;
-            info.Segments    = new (comp, CMK_ABI)
-                ABIPassingSegment[info.NumSegments]{isFirstFloat ? ABIPassingSegment::InRegister(m_floatRegs.Dequeue(),
-                                                                                                 0, firstSize)
-                                                                 : PassIntegerSlot(0, firstSize),
-                                                    isSecondFloat ? ABIPassingSegment::InRegister(m_floatRegs.Dequeue(),
-                                                                                                  offset, secondSize)
-                                                                  : PassIntegerSlot(offset, secondSize)};
+            ABIPassingSegment firstSeg  = isFirstFloat
+                                              ? ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), 0, firstSize)
+                                              : PassIntegerSlot(0, firstSize);
+            ABIPassingSegment secondSeg = isSecondFloat
+                                              ? ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), offset, secondSize)
+                                              : PassIntegerSlot(offset, secondSize);
+            return ABIPassingInformation::FromSegments(comp, {firstSeg, secondSeg});
         }
     }
     else
@@ -164,20 +161,18 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         // Integer calling convention
         if (passedSize <= TARGET_POINTER_SIZE)
         {
-            info = ABIPassingInformation::FromSegment(comp, PassIntegerSlot(0, passedSize));
+            return ABIPassingInformation::FromSegment(comp, PassIntegerSlot(0, passedSize));
         }
         else
         {
             assert(varTypeIsStruct(type));
-            info.NumSegments = 2;
-            info.Segments    = new (comp, CMK_ABI)
-                ABIPassingSegment[info.NumSegments]{PassIntegerSlot(0, TARGET_POINTER_SIZE),
-                                                    PassIntegerSlot(TARGET_POINTER_SIZE,
-                                                                    passedSize - TARGET_POINTER_SIZE)};
+            return ABIPassingInformation::FromSegments(comp, {PassIntegerSlot(0, TARGET_POINTER_SIZE),
+                                                              PassIntegerSlot(TARGET_POINTER_SIZE,
+                                                                              passedSize - TARGET_POINTER_SIZE)});
         }
     }
 
-    return info;
+    unreached();
 }
 
 #endif // TARGET_RISCV64

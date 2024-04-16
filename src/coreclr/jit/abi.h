@@ -59,6 +59,7 @@ struct ABIPassingInformation
     bool IsSplitAcrossRegistersAndStack() const;
 
     static ABIPassingInformation FromSegment(Compiler* comp, const ABIPassingSegment& segment);
+    static ABIPassingInformation FromSegments(Compiler* comp, std::initializer_list<ABIPassingSegment> segments);
 
 #ifdef DEBUG
     void Dump() const;
