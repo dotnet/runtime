@@ -266,8 +266,6 @@ static gboolean debugger_enabled = FALSE;
 
 static MonoException* do_transform_method (InterpMethod *imethod, InterpFrame *method, ThreadContext *context);
 
-static InterpMethod* lookup_method_pointer (gpointer addr);
-
 typedef void (*ICallMethod) (InterpFrame *frame);
 
 static MonoNativeTlsKey thread_context_id;
@@ -3262,20 +3260,6 @@ interp_compile_interp_method (MonoMethod *method, MonoError *error)
 	return imethod->jinfo;
 }
 
-static InterpMethod*
-lookup_method_pointer (gpointer addr)
-{
-	InterpMethod *res = NULL;
-	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
-
-	jit_mm_lock (jit_mm);
-	if (jit_mm->interp_method_pointer_hash)
-		res = (InterpMethod*)g_hash_table_lookup (jit_mm->interp_method_pointer_hash, addr);
-	jit_mm_unlock (jit_mm);
-
-	return res;
-}
-
 #ifndef MONO_ARCH_HAVE_INTERP_NATIVE_TO_MANAGED
 static void
 interp_no_native_to_managed (void)
@@ -3379,13 +3363,6 @@ interp_create_method_pointer_llvmonly (MonoMethod *method, gboolean unbox, MonoE
 	MonoFtnDesc *entry_ftndesc = mini_llvmonly_create_ftndesc (method, entry_func, entry_arg);
 
 	addr = mini_llvmonly_create_ftndesc (method, entry_wrapper, entry_ftndesc);
-
-	MonoJitMemoryManager *jit_mm = jit_mm_for_method (method);
-	jit_mm_lock (jit_mm);
-	if (!jit_mm->interp_method_pointer_hash)
-		jit_mm->interp_method_pointer_hash = g_hash_table_new (NULL, NULL);
-	g_hash_table_insert (jit_mm->interp_method_pointer_hash, addr, imethod);
-	jit_mm_unlock (jit_mm);
 
 	mono_memory_barrier ();
 	if (unbox)
@@ -3538,13 +3515,6 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 
 	addr = mono_create_ftnptr_arg_trampoline (ftndesc, entry_wrapper);
 
-	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
-	jit_mm_lock (jit_mm);
-	if (!jit_mm->interp_method_pointer_hash)
-		jit_mm->interp_method_pointer_hash = g_hash_table_new (NULL, NULL);
-	g_hash_table_insert (jit_mm->interp_method_pointer_hash, addr, imethod);
-	jit_mm_unlock (jit_mm);
-
 	mono_memory_barrier ();
 	imethod->jit_entry = addr;
 
@@ -3555,23 +3525,16 @@ static void
 interp_free_method (MonoMethod *method)
 {
 	MonoJitMemoryManager *jit_mm = jit_mm_for_method (method);
-	InterpMethod *imethod;
 	MonoDynamicMethod *dmethod = (MonoDynamicMethod*)method;
 
 	jit_mm_lock (jit_mm);
-	imethod = (InterpMethod*)mono_internal_hash_table_lookup (&jit_mm->interp_code_hash, method);
 
 #if HOST_BROWSER
+	InterpMethod *imethod = (InterpMethod*)mono_internal_hash_table_lookup (&jit_mm->interp_code_hash, method);
 	mono_jiterp_free_method_data (method, imethod);
 #endif
 
 	mono_internal_hash_table_remove (&jit_mm->interp_code_hash, method);
-	if (imethod && jit_mm->interp_method_pointer_hash) {
-		if (imethod->jit_entry)
-			g_hash_table_remove (jit_mm->interp_method_pointer_hash, imethod->jit_entry);
-		if (imethod->llvmonly_unbox_entry)
-			g_hash_table_remove (jit_mm->interp_method_pointer_hash, imethod->llvmonly_unbox_entry);
-	}
 	jit_mm_unlock (jit_mm);
 
 	if (dmethod->mp) {
@@ -4164,6 +4127,9 @@ main_loop:
 			}
 			cmethod = del_imethod;
 			if (!is_multicast) {
+				int ref_slot_offset = frame->imethod->ref_slot_offset;
+				if (ref_slot_offset >= 0)
+					LOCAL_VAR (ref_slot_offset, gpointer) = del;
 				int param_count = ip [4];
 				if (cmethod->param_count == param_count + 1) {
 					// Target method is static but the delegate has a target object. We handle

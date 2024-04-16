@@ -2398,7 +2398,7 @@ public:
 #ifndef DACCESS_COMPILE
     static PCODE VirtualUnwindLeafCallFrame(T_CONTEXT* pContext);
     static PCODE VirtualUnwindNonLeafCallFrame(T_CONTEXT* pContext, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers = NULL,
-        PT_RUNTIME_FUNCTION pFunctionEntry = NULL, UINT_PTR uImageBase = NULL);
+        PT_RUNTIME_FUNCTION pFunctionEntry = NULL, UINT_PTR uImageBase = 0);
     static UINT_PTR VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext);
 #endif // DACCESS_COMPILE
 #endif // FEATURE_EH_FUNCLETS
@@ -2918,13 +2918,13 @@ private:
 
 public:
 
-    BOOL IsLastThrownObjectNull() { WRAPPER_NO_CONTRACT; return (m_LastThrownObjectHandle == NULL); }
+    BOOL IsLastThrownObjectNull() { WRAPPER_NO_CONTRACT; return (m_LastThrownObjectHandle == (OBJECTHANDLE)0); }
 
     OBJECTREF LastThrownObject()
     {
         WRAPPER_NO_CONTRACT;
 
-        if (m_LastThrownObjectHandle == NULL)
+        if (m_LastThrownObjectHandle == (OBJECTHANDLE)0)
         {
             return NULL;
         }

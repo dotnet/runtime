@@ -160,7 +160,7 @@ export async function mono_wasm_init_threads () {
 }
 
 // when we create threads with browser event loop, it's not able to be joined by mono's thread join during shutdown and blocks process exit
-export function cancelThreads () {
+export function postCancelThreads () {
     if (!WasmEnableThreads) return;
     const workers: PThreadWorker[] = getRunningWorkers();
     for (const worker of workers) {
@@ -311,6 +311,10 @@ export function getUnusedWorkerPool (): PThreadWorker[] {
 
 export function getRunningWorkers (): PThreadWorker[] {
     return getModulePThread().runningWorkers;
+}
+
+export function terminateAllThreads (): void {
+    getModulePThread().terminateAllThreads();
 }
 
 export function loadWasmModuleToWorker (worker: PThreadWorker): Promise<PThreadWorker> {

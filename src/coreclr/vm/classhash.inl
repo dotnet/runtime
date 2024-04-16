@@ -34,7 +34,7 @@ inline PTR_VOID EEClassHashTable::CompressClassDef(mdToken cl)
         case mdtExportedType: return (PTR_VOID)(EECLASSHASH_MDEXPORT_DISCR | (((ULONG_PTR)cl & 0x00ffffff) << 1) | EECLASSHASH_TYPEHANDLE_DISCR);
         default:
             _ASSERTE(!"Can't get here.");
-            return 0;
+            return nullptr;
     }
 }
 
