@@ -42,12 +42,12 @@ jobs:
       clean: true
       fetchDepth: 20
     - script: >-
-      build.cmd -ci
-      -subset publish
-      -configuration Release
-      /p:PublishRidAgnosticPackagesFromPlatform=${{ parameters.PublishRidAgnosticPackagesFromPlatform }}
-      /p:OfficialBuildId=$(Build.BuildNumber)
-      /p:SignType=$(_SignType)
-      /p:DotNetSignType=$(_SignType)
-      /bl:$(Build.SourcesDirectory)\prepare-artifacts.binlog
+        build.cmd -ci
+        -subset publish
+        -configuration Release
+        /p:PublishRidAgnosticPackagesFromPlatform=${{ parameters.PublishRidAgnosticPackagesFromPlatform }}
+        /p:OfficialBuildId=$(Build.BuildNumber)
+        /p:SignType=$(_SignType)
+        /p:DotNetSignType=$(_SignType)
+        /bl:$(Build.SourcesDirectory)\prepare-artifacts.binlog
     displayName: Prepare artifacts and upload to build
