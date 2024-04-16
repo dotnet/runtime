@@ -8,6 +8,11 @@ list(APPEND SHARED_CONTAINER_SOURCES
     dn-queue.c
     dn-umap.c
     dn-vector.c
+    # FIXME: Including these here causes a linker collision with sgen metadata
+    # dn-simdhash.c
+    # dn-simdhash-string-ptr.c
+    # dn-simdhash-u32-ptr.c
+    # dn-simdhash-ptr-ptr.c
 )
 
 list(APPEND SHARED_CONTAINER_HEADERS
@@ -24,4 +29,11 @@ list(APPEND SHARED_CONTAINER_HEADERS
     dn-vector-ptr.h
     dn-vector-t.h
     dn-vector-types.h
+    dn-simdhash.h
+    dn-simdhash-specialization.h
+    dn-simdhash-specialization-declarations.h
+    dn-simdhash-specializations.h
+    dn-simdhash-arch.h
+    dn-simdhash-string-ptr.h
+    dn-simdhash-utils.h
 )

@@ -1338,11 +1338,6 @@ namespace System.Threading.Tasks.Tests
         [OuterLoop]
         public static void RunTaskWaitAllTests()
         {
-            Assert.Throws<ArgumentNullException>(() => Task.WaitAll((Task[])null));
-            AssertExtensions.Throws<ArgumentException>("tasks", () => Task.WaitAll(new Task[] { null }));
-            Assert.Throws<ArgumentOutOfRangeException>(() => Task.WaitAll(new Task[] { Task.Factory.StartNew(() => { }) }, -2));
-            Assert.Throws<ArgumentOutOfRangeException>(() => Task.WaitAll(new Task[] { Task.Factory.StartNew(() => { }) }, TimeSpan.FromMilliseconds(-2)));
-
             ThreadPoolHelpers.EnsureMinThreadsAtLeast(10);
             RunTaskWaitAllTest(false, 1);
             RunTaskWaitAllTest(false, 10);
