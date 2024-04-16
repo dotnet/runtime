@@ -206,7 +206,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // it's also OK to block here, because we know we will only block shortly, as this is just race with the other thread.
                 if (holder.CallbackReady != null)
                 {
-                    Thread.ForceBlockingWait(static (b) => ((ManualResetEventSlim)b).Wait(), holder.CallbackReady);
+                    Thread.ForceBlockingWait(static (b) => ((ManualResetEventSlim)b!).Wait(), holder.CallbackReady);
                 }
 
                 lock (ctx)
