@@ -369,6 +369,10 @@
       Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
   </ItemGroup>
 
+  <ItemGroup Condition="$(_subset.Contains('+tools.cdacreadertests+'))">
+    <ProjectToBuild Include="$(SharedNativeRoot)managed\cdacreader\tests\Microsoft.Diagnostics.DataContractReader.Tests.csproj" Test="true" Category="tools"/>
+  </ItemGroup>
+
   <ItemGroup Condition="$(_subset.Contains('+tools.illink+'))">
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\linker\Mono.Linker.csproj" Category="tools" />
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\ILLink.Tasks\ILLink.Tasks.csproj" Category="tools" />

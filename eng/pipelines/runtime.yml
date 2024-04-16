@@ -713,7 +713,7 @@ extends:
           jobParameters:
             timeoutInMinutes: 120
             nameSuffix: CLR_Tools_Tests
-            buildArgs: -s clr.aot+clr.iltools+libs.sfx+clr.toolstests -c $(_BuildConfig) -test
+            buildArgs: -s clr.aot+clr.iltools+libs.sfx+clr.toolstests+tools.cdacreadertests -c $(_BuildConfig) -test
             enablePublishTestResults: true
             testResultsFormat: 'xunit'
             # We want to run AOT tests when illink changes because there's share code and tests from illink which are used by AOT
@@ -721,6 +721,7 @@ extends:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_cdacreader.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
       #
       # Build CrossDacs
