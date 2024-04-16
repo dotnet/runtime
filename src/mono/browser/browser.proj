@@ -185,6 +185,7 @@
       <EmccExportedRuntimeMethod Include="getValue" />
       <EmccExportedRuntimeMethod Include="UTF8ToString" />
       <EmccExportedRuntimeMethod Include="UTF8ArrayToString" />
+      <EmccExportedRuntimeMethod Include="lengthBytesUTF8" />
       <EmccExportedRuntimeMethod Include="stringToUTF8Array" />
       <EmccExportedRuntimeMethod Include="FS_createPath" />
       <EmccExportedRuntimeMethod Include="FS_createDataFile" />
@@ -200,12 +201,14 @@
       <EmccExportedFunction Include="_free" />
       <EmccExportedFunction Include="_htons" />
       <EmccExportedFunction Include="_malloc" />
+      <EmccExportedFunction Include="_sbrk" />
       <EmccExportedFunction Include="_memalign" />
       <EmccExportedFunction Include="_memset" />
       <EmccExportedFunction Include="_ntohs" />
       <EmccExportedFunction Include="stackAlloc" />
       <EmccExportedFunction Include="stackRestore" />
       <EmccExportedFunction Include="stackSave"  />
+      <EmccExportedFunction Include="_emscripten_force_exit" />
     </ItemGroup>
     <!-- for the jiterpreter -->
     <ItemGroup>

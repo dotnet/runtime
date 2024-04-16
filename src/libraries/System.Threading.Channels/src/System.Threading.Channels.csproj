@@ -14,16 +14,10 @@ System.Threading.Channel&lt;T&gt;</PackageDescription>
   <ItemGroup>
     <Compile Include="System\VoidResult.cs" />
     <Compile Include="System\Threading\Channels\AsyncOperation.cs" />
-    <Compile Include="System\Threading\Channels\AsyncOperation.netcoreapp.cs"
-             Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
-    <Compile Include="System\Threading\Channels\AsyncOperation.netstandard.cs"
-             Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
     <Compile Include="System\Threading\Channels\BoundedChannel.cs" />
     <Compile Include="System\Threading\Channels\BoundedChannelFullMode.cs" />
     <Compile Include="System\Threading\Channels\Channel.cs" />
     <Compile Include="System\Threading\Channels\ChannelClosedException.cs" />
-    <Compile Include="System\Threading\Channels\ChannelClosedException.netcoreapp.cs"
-             Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))" />
     <Compile Include="System\Threading\Channels\ChannelOptions.cs" />
     <Compile Include="System\Threading\Channels\ChannelReader.cs" />
     <Compile Include="System\Threading\Channels\ChannelUtilities.cs" />
@@ -32,29 +26,38 @@ System.Threading.Channel&lt;T&gt;</PackageDescription>
     <Compile Include="System\Threading\Channels\Channel_2.cs" />
     <Compile Include="System\Threading\Channels\IDebugEnumerator.cs" />
     <Compile Include="System\Threading\Channels\SingleConsumerUnboundedChannel.cs" />
-    <Compile Include="System\Threading\Channels\TaskCompletionSource.cs"
-             Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'"/>
     <Compile Include="System\Threading\Channels\UnboundedChannel.cs" />
-    <Compile Include="$(CommonPath)Internal\Padding.cs"
-             Link="Common\Internal\Padding.cs" />
-    <Compile Include="$(CommonPath)System\Collections\Concurrent\IProducerConsumerQueue.cs"
-             Link="Common\System\Collections\Concurrent\IProducerConsumerQueue.cs" />
-    <Compile Include="$(CommonPath)System\Collections\Concurrent\MultiProducerMultiConsumerQueue.cs"
-             Link="Common\System\Collections\Concurrent\MultiProducerMultiConsumerQueue.cs" />
-    <Compile Include="$(CommonPath)System\Collections\Concurrent\SingleProducerSingleConsumerQueue.cs"
-             Link="Common\System\Collections\Concurrent\SingleProducerSingleConsumerQueue.cs" />
-    <Compile Include="$(CommonPath)System\Collections\Generic\Deque.cs"
-             Link="Common\System\Collections\Generic\Deque.cs" />
-    <Compile Include="$(CommonPath)System\Obsoletions.cs"
-             Link="Common\System\Obsoletions.cs" />
+    <Compile Include="$(CommonPath)Internal\Padding.cs" Link="Common\Internal\Padding.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Concurrent\IProducerConsumerQueue.cs" Link="Common\System\Collections\Concurrent\IProducerConsumerQueue.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Concurrent\MultiProducerMultiConsumerQueue.cs" Link="Common\System\Collections\Concurrent\MultiProducerMultiConsumerQueue.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Concurrent\SingleProducerSingleConsumerQueue.cs" Link="Common\System\Collections\Concurrent\SingleProducerSingleConsumerQueue.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\Deque.cs" Link="Common\System\Collections\Generic\Deque.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="System\Threading\Channels\AsyncOperation.netstandard.cs" />
+    <Compile Include="System\Threading\Channels\TaskCompletionSource.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="System\Threading\Channels\AsyncOperation.netcoreapp.cs" />
+    <Compile Include="System\Threading\Channels\Channel.netcoreapp.cs" />
+    <Compile Include="System\Threading\Channels\ChannelOptions.netcoreapp.cs" />
+    <Compile Include="System\Threading\Channels\UnboundedPriorityChannel.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.ThreadPool" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
+    <Compile Include="System\Threading\Channels\ChannelClosedException.netcoreapp.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">

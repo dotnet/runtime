@@ -780,7 +780,7 @@ public:
 #endif // _PREFAST_
 
         VMPTR_This dummy;
-        dummy.m_addr = NULL;
+        dummy.m_addr = (TADDR)NULL;
         return dummy;
 
 #ifdef _PREFAST_

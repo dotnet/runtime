@@ -289,6 +289,7 @@ namespace System.Runtime.InteropServices.JavaScript
             try
             {
                 var ctx = arg_exc.AssertCurrentThreadContext();
+                // note that this method is only executed when the caller is on another thread, via mono_wasm_invoke_jsexport_sync -> mono_wasm_install_js_worker_interop_wrapper
                 ctx.IsPendingSynchronousCall = true;
                 if (ctx.IsMainThread)
                 {

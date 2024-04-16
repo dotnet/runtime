@@ -16,6 +16,9 @@
     <!-- Needed for JsonSerializerOptionsUpdateHandler tests -->
     <MetadataUpdaterSupport Condition="'$(MetadataUpdaterSupport)' == '' and '$(TargetOS)' == 'browser'">true</MetadataUpdaterSupport>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <!-- The JsonSerializerIsReflectionEnabledByDefault feature switch is turned off automatically in projects that enable the PublishTrimmed property.
+         Enable reflection and preserve required assemblies -->
+    <JsonSerializerIsReflectionEnabledByDefault Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">true</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <XunitShowProgress>true</XunitShowProgress>
@@ -302,5 +305,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
-
+  <ItemGroup>
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+  </ItemGroup>
 </Project>

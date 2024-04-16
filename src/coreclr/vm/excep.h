@@ -503,7 +503,7 @@ extern "C" BOOL ExceptionIsOfRightType(TypeHandle clauseType, TypeHandle thrownT
 
 
 // Specify NULL for uTryCatchResumeAddress when not checking for a InducedThreadRedirectAtEndOfCatch
-EXTERN_C LPVOID COMPlusCheckForAbort(UINT_PTR uTryCatchResumeAddress = NULL);
+EXTERN_C LPVOID COMPlusCheckForAbort(UINT_PTR uTryCatchResumeAddress = 0);
 
 BOOL        IsThreadHijackedForThreadStop(Thread* pThread, EXCEPTION_RECORD* pExceptionRecord);
 void        AdjustContextForThreadStop(Thread* pThread, T_CONTEXT* pContext);

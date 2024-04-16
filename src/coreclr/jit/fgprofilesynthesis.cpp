@@ -1039,29 +1039,28 @@ void ProfileSynthesis::AssignInputWeights(ProfileSynthesisOption option)
 
     // Determine input weight for EH regions, if any.
     //
-    weight_t exceptionScaleFactor = exceptionScale;
+    weight_t ehWeight = exceptionWeight;
 
 #ifdef DEBUG
-    if (JitConfig.JitSynthesisExceptionScale() != nullptr)
+    if (JitConfig.JitSynthesisExceptionWeight() != nullptr)
     {
-        ConfigDoubleArray JitSynthesisExceptionScaleArray;
-        JitSynthesisExceptionScaleArray.EnsureInit(JitConfig.JitSynthesisExceptionScale());
-        weight_t newFactor = JitSynthesisExceptionScaleArray.GetData()[0];
+        ConfigDoubleArray JitSynthesisExceptionWeightArray;
+        JitSynthesisExceptionWeightArray.EnsureInit(JitConfig.JitSynthesisExceptionWeight());
+        weight_t newFactor = JitSynthesisExceptionWeightArray.GetData()[0];
 
         if ((newFactor >= 0) && (newFactor <= 1.0))
         {
-            exceptionScaleFactor = newFactor;
+            ehWeight = newFactor;
         }
     }
 #endif
 
-    JITDUMP("Synthesis: exception scale factor " FMT_WT "\n", exceptionScaleFactor);
-    const weight_t ehWeight = entryWeight * exceptionScaleFactor;
+    JITDUMP("Synthesis: exception weight " FMT_WT "\n", ehWeight);
 
     if (ehWeight != 0)
     {
-        // We can't inline methods with EH, also inlinees share the parent
-        // EH tab, so we can't rely on this being empty.
+        // We can't inline methods with EH. Inlinees share the parent
+        // EH tab, so we can't rely on the EH table being empty.
         //
         if (!m_comp->compIsForInlining())
         {

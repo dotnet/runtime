@@ -362,11 +362,9 @@ namespace System.Net.Security
             if (isServer)
             {
                 direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_INBOUND;
-                flags = Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_SEND_AUX_RECORD;
-                if (authOptions.CertificateContext?.Trust?._sendTrustInHandshake == true)
-                {
-                    flags |= Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_NO_SYSTEM_MAPPER;
-                }
+                flags =
+                    Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_SEND_AUX_RECORD |
+                    Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_NO_SYSTEM_MAPPER;
                 if (!allowTlsResume)
                 {
                     // Works only on server
