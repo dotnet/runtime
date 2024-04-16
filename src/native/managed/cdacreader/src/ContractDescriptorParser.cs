@@ -230,10 +230,7 @@ public partial class ContractDescriptorParser
                         throw new JsonException();
                     return new GlobalDescriptor { Type = type, Value = valueCase2or3 };
                 }
-                else
-                {
-                    throw new JsonException();
-                }
+                throw new JsonException();
             }
         }
 
