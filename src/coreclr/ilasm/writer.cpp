@@ -36,12 +36,10 @@ HRESULT Assembler::InitMetaData()
 
     if(m_wzMetadataVersion)
     {
-        VARIANT encOption;
-        BSTR    bstr;
-        V_VT(&encOption) = VT_BSTR;
-        V_BSTR(&encOption) = bstr = ::SysAllocString(m_wzMetadataVersion);
-        hr = m_pDisp->SetOption(MetaDataRuntimeVersion, &encOption);
-        ::SysFreeString(bstr);
+        VARIANT optionValue;
+        V_VT(&optionValue) = VT_BSTR;
+        V_BSTR(&optionValue) = m_wzMetadataVersion; // IMetaDataDispenserEx does not require proper BSTR
+        hr = m_pDisp->SetOption(MetaDataRuntimeVersion, &optionValue);
     }
 
     hr = m_pDisp->DefineScope(CLSID_CorMetaDataRuntime, 0, IID_IMetaDataEmit3,
