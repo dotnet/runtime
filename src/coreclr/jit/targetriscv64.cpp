@@ -24,7 +24,6 @@ const regNumber fltArgRegs [] = {REG_FLTARG_0, REG_FLTARG_1, REG_FLTARG_2, REG_F
 const regMaskTP fltArgMasks[] = {RBM_FLTARG_0, RBM_FLTARG_1, RBM_FLTARG_2, RBM_FLTARG_3, RBM_FLTARG_4, RBM_FLTARG_5, RBM_FLTARG_6, RBM_FLTARG_7 };
 // clang-format on
 
-
 //-----------------------------------------------------------------------------
 // RiscV64Classifier:
 //   Construct a new instance of the RISC-V 64 ABI classifier.
@@ -54,15 +53,15 @@ RiscV64Classifier::RiscV64Classifier(const ClassifierInfo& info)
 //   Classification information for the parameter.
 //
 ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
-                                                var_types    type,
-                                                ClassLayout* structLayout,
-                                                WellKnownArg /*wellKnownParam*/)
+                                                  var_types    type,
+                                                  ClassLayout* structLayout,
+                                                  WellKnownArg /*wellKnownParam*/)
 {
     assert(!m_info.IsVarArgs); // TODO: varargs currently not supported on RISC-V
 
-    StructFloatFieldInfoFlags flags = STRUCT_NO_FLOAT_FIELD;
-    unsigned intFields = 0, floatFields = 0;
-    unsigned passedSize;
+    StructFloatFieldInfoFlags flags     = STRUCT_NO_FLOAT_FIELD;
+    unsigned                  intFields = 0, floatFields = 0;
+    unsigned                  passedSize;
 
     if (varTypeIsStruct(type))
     {
@@ -73,7 +72,8 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         }
         else if (!structLayout->IsBlockLayout())
         {
-            flags = (StructFloatFieldInfoFlags)comp->info.compCompHnd->getRISCV64PassStructInRegisterFlags(structLayout->GetClassHandle());
+            flags = (StructFloatFieldInfoFlags)comp->info.compCompHnd->getRISCV64PassStructInRegisterFlags(
+                structLayout->GetClassHandle());
 
             if ((flags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
             {
@@ -87,7 +87,7 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
             {
                 assert((flags & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND)) != 0);
                 floatFields = 1;
-                intFields = 1;
+                intFields   = 1;
             }
         }
     }
@@ -103,8 +103,7 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
 
     assert((floatFields > 0) || (intFields == 0));
 
-    auto PassIntegerSlot = [this](unsigned offset, unsigned size) -> ABIPassingSegment
-    {
+    auto PassIntegerSlot = [this](unsigned offset, unsigned size) -> ABIPassingSegment {
         assert(size > 0);
         assert(size <= TARGET_POINTER_SIZE);
         if (m_intRegs.Count() > 0)
@@ -132,7 +131,8 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
             else
                 assert((flags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0); // struct containing just one FP real
 
-            info = ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), 0, passedSize));
+            info = ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), 0,
+                                                                                          passedSize));
         }
         else
         {
@@ -141,19 +141,22 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
             assert(flags != STRUCT_NO_FLOAT_FIELD);
             assert((flags & STRUCT_FLOAT_FIELD_ONLY_ONE) == 0);
 
-            unsigned firstSize = ((flags & STRUCT_FIRST_FIELD_SIZE_IS8) != 0) ? 8 : 4;
+            unsigned firstSize  = ((flags & STRUCT_FIRST_FIELD_SIZE_IS8) != 0) ? 8 : 4;
             unsigned secondSize = ((flags & STRUCT_SECOND_FIELD_SIZE_IS8) != 0) ? 8 : 4;
             unsigned offset = max(firstSize, secondSize); // TODO: cover empty fields and custom offsets / alignments
 
-            bool isFirstFloat = (flags & (STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_FIRST)) != 0;
+            bool isFirstFloat  = (flags & (STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_FIRST)) != 0;
             bool isSecondFloat = (flags & (STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_SECOND)) != 0;
             assert(isFirstFloat || isSecondFloat);
 
             info.NumSegments = 2;
-            info.Segments = new (comp, CMK_ABI) ABIPassingSegment[info.NumSegments] {
-                isFirstFloat ? ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), 0, firstSize) : PassIntegerSlot(0, firstSize),
-                isSecondFloat ? ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), offset, secondSize) : PassIntegerSlot(offset, secondSize)
-            };
+            info.Segments    = new (comp, CMK_ABI)
+                ABIPassingSegment[info.NumSegments]{isFirstFloat ? ABIPassingSegment::InRegister(m_floatRegs.Dequeue(),
+                                                                                                 0, firstSize)
+                                                                 : PassIntegerSlot(0, firstSize),
+                                                    isSecondFloat ? ABIPassingSegment::InRegister(m_floatRegs.Dequeue(),
+                                                                                                  offset, secondSize)
+                                                                  : PassIntegerSlot(offset, secondSize)};
         }
     }
     else
@@ -167,10 +170,10 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         {
             assert(varTypeIsStruct(type));
             info.NumSegments = 2;
-            info.Segments = new (comp, CMK_ABI) ABIPassingSegment[info.NumSegments] {
-                PassIntegerSlot(0, TARGET_POINTER_SIZE),
-                PassIntegerSlot(TARGET_POINTER_SIZE, passedSize - TARGET_POINTER_SIZE)
-            };
+            info.Segments    = new (comp, CMK_ABI)
+                ABIPassingSegment[info.NumSegments]{PassIntegerSlot(0, TARGET_POINTER_SIZE),
+                                                    PassIntegerSlot(TARGET_POINTER_SIZE,
+                                                                    passedSize - TARGET_POINTER_SIZE)};
         }
     }
 
