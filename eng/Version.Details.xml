@@ -352,9 +352,9 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>78a5b978e1965c1335edb4b9a22bc4d6ff5a77a6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="9.0.0-alpha.0.24209.1">
+    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="9.0.0-alpha.0.24215.1">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
-      <Sha>fbe3136eb65d4ce816880b8858eee3b358c59dcd</Sha>
+      <Sha>4670b9e37293570f8d93d6af40c4710e2686bf67</Sha>
     </Dependency>
     <Dependency Name="System.Runtime.Numerics.TestData" Version="9.0.0-beta.24215.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
