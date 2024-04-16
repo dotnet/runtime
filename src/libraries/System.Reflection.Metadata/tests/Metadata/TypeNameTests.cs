@@ -53,22 +53,8 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("MissingAssemblyName, ")]
         [InlineData("ExtraComma, ,")]
         [InlineData("ExtraComma, , System.Runtime")]
-        [InlineData("TooManyGenericArgumentsDoubleSquareBracket'1[[a],[b]]")]
-        [InlineData("TooManyGenericArgumentsSingleSquareBracket'1[a,b]")]
-        [InlineData("TooManyGenericArgumentsDoubleSquareBracketTwoDigits'10[[1],[2],[3],[4],[5],[6],[7],[8],[9],[10],[11]]")]
-        [InlineData("TooManyGenericArgumentsSingleSquareBracketTwoDigits'10[1,2,3,4,5,6,7,8,9,10,11]")]
-        [InlineData("TooFewGenericArgumentsDoubleSquareBracket'3[[a],[b]]")]
-        [InlineData("TooFewGenericArgumentsDoubleSquareBracket'3[a,b]")]
-        [InlineData("TooFewGenericArgumentsDoubleSquareBracketTwoDigits'10[[1],[2],[3],[4],[5],[6],[7],[8],[9]]")]
-        [InlineData("TooFewGenericArgumentsSingleSquareBracketTwoDigits'10[1,2,3,4,5,6,7,8,9]")]
-        [InlineData("`1")] // back tick as first char followed by numbers (short)
-        [InlineData("`111")] // back tick as first char followed by numbers (longer)
-        [InlineData("NegativeGenericArgumentCount`-123")]
         [InlineData("MoreThanMaxArrayRank[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]")]
-        [InlineData("NonGenericTypeUsingGenericSyntax[[type1], [type2]]")]
-        [InlineData("NonGenericTypeUsingGenericSyntax[[type1, assembly1], [type2, assembly2]]")]
-        [InlineData("NonGenericTypeUsingGenericSyntax[type1,type2]")]
-        [InlineData("NonGenericTypeUsingGenericSyntax[[]]")]
+        [InlineData("UsingGenericSyntaxButNotProvidingGenericArgs[[]]")]
         [InlineData("ExtraCommaAfterFirstGenericArg`1[[type1, assembly1],]")]
         [InlineData("MissingClosingSquareBrackets`1[[type1, assembly1")] // missing ]]
         [InlineData("MissingClosingSquareBracket`1[[type1, assembly1]")] // missing ]
@@ -81,7 +67,6 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("EscapeNonSpecialChar\\a")]
         [InlineData("EscapeNonSpecialChar\\0")]
         [InlineData("DoubleNestingChar++Bla")]
-        [InlineData("Integer`2147483647+Overflow`1")]
         public void InvalidTypeNamesAreNotAllowed(string input)
         {
             Assert.Throws<ArgumentException>(() => TypeName.Parse(input.AsSpan()));
@@ -603,6 +588,22 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Theory]
+        [InlineData("Name`2[[int], [bool]]", "Name`2")] // match
+        [InlineData("Name`1[[int], [bool]]", "Name`1")] // less than expected
+        [InlineData("Name`3[[int], [bool]]", "Name`3")] // more than expected
+        [InlineData("Name[[int], [bool]]", "Name")] // no backtick at all!
+        public void TheNumberAfterBacktickDoesNotEnforceGenericArgCount(string input, string expectedName)
+        {
+            TypeName parsed = TypeName.Parse(input.AsSpan());
+
+            Assert.True(parsed.IsConstructedGenericType);
+            Assert.Equal(expectedName, parsed.Name);
+            Assert.Equal($"{expectedName}[[int],[bool]]", parsed.FullName);
+            Assert.Equal("int", parsed.GetGenericArguments()[0].Name);
+            Assert.Equal("bool", parsed.GetGenericArguments()[1].Name);
+        }
+
+        [Theory]
         [InlineData(typeof(int))]
         [InlineData(typeof(int?))]
         [InlineData(typeof(int[]))]
@@ -731,6 +732,8 @@ namespace System.Reflection.Metadata.Tests
                     }
                     else
                     {
+                        Assert.True(typeName.IsVariableBoundArrayType);
+
                         return type.MakeArrayType(rank: typeName.GetArrayRank());
                     }
                 }

@@ -5,6 +5,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
+#if !SYSTEM_PRIVATE_CORELIB
+using System.Collections.Immutable;
+#endif
+
 using static System.Reflection.Metadata.TypeNameParserHelpers;
 
 #nullable enable
@@ -66,7 +70,7 @@ namespace System.Reflection.Metadata
             }
 
             List<int>? nestedNameLengths = null;
-            if (!TryGetTypeNameInfo(ref _inputString, ref nestedNameLengths, out int fullTypeNameLength, out int genericArgCount))
+            if (!TryGetTypeNameInfo(ref _inputString, ref nestedNameLengths, out int fullTypeNameLength))
             {
                 return null;
             }
@@ -74,9 +78,12 @@ namespace System.Reflection.Metadata
             ReadOnlySpan<char> fullTypeName = _inputString.Slice(0, fullTypeNameLength);
             _inputString = _inputString.Slice(fullTypeNameLength);
 
-            int genericArgIndex = 0;
-            // Don't allocate now, as it may be an open generic type like "List`1"
-            TypeName[]? genericArgs = null;
+            // Don't allocate now, as it may be an open generic type like "Name`1"
+#if SYSTEM_PRIVATE_CORELIB
+            List<TypeName>? genericArgs = null;
+#else
+            ImmutableArray<TypeName>.Builder? genericArgs = null;
+#endif
 
             // Are there any captured generic args? We'll look for "[[" and "[".
             // There are no spaces allowed before the first '[', but spaces are allowed
@@ -85,34 +92,16 @@ namespace System.Reflection.Metadata
             ReadOnlySpan<char> capturedBeforeProcessing = _inputString;
             if (IsBeginningOfGenericArgs(ref _inputString, out bool doubleBrackets))
             {
-                int startingRecursionCheck = recursiveDepth;
-                int maxObservedRecursionCheck = recursiveDepth;
-
             ParseAnotherGenericArg:
 
-                // Invalid generic argument count provided after backtick.
-                // Examples:
-                // - too many: List`1[[a], [b]]
-                // - not expected: NoBacktick[[a]]
-                if (genericArgIndex >= genericArgCount)
-                {
-                    return null;
-                }
-
-                recursiveDepth = startingRecursionCheck;
-                // Namespace.Type`1[[GenericArgument1, AssemblyName1],[GenericArgument2, AssemblyName2]] - double square bracket syntax allows for fully qualified type names
-                // Namespace.Type`1[GenericArgument1,GenericArgument2] - single square bracket syntax is legal only for non-fully qualified type names
-                // Namespace.Type`1[[GenericArgument1, AssemblyName1], GenericArgument2] - mixed mode
-                // Namespace.Type`1[GenericArgument1, [GenericArgument2, AssemblyName2]] - mixed mode
+                // Namespace.Type`2[[GenericArgument1, AssemblyName1],[GenericArgument2, AssemblyName2]] - double square bracket syntax allows for fully qualified type names
+                // Namespace.Type`2[GenericArgument1,GenericArgument2] - single square bracket syntax is legal only for non-fully qualified type names
+                // Namespace.Type`2[[GenericArgument1, AssemblyName1], GenericArgument2] - mixed mode
+                // Namespace.Type`2[GenericArgument1, [GenericArgument2, AssemblyName2]] - mixed mode
                 TypeName? genericArg = ParseNextTypeName(allowFullyQualifiedName: doubleBrackets, ref recursiveDepth);
                 if (genericArg is null) // parsing failed
                 {
                     return null;
-                }
-
-                if (recursiveDepth > maxObservedRecursionCheck)
-                {
-                    maxObservedRecursionCheck = recursiveDepth;
                 }
 
                 // For [[, there had better be a ']' after the type name.
@@ -123,17 +112,13 @@ namespace System.Reflection.Metadata
 
                 if (genericArgs is null)
                 {
-                    // Parsing the rest would hit the limit.
-                    // -1 because the first generic arg has been already parsed.
-                    if (maxObservedRecursionCheck + genericArgCount - 1 > _parseOptions.MaxNodes)
-                    {
-                        recursiveDepth = _parseOptions.MaxNodes;
-                        return null;
-                    }
-
-                    genericArgs = new TypeName[genericArgCount];
+#if SYSTEM_PRIVATE_CORELIB
+                    genericArgs = new List<TypeName>(2);
+#else
+                    genericArgs = ImmutableArray.CreateBuilder<TypeName>(2);
+#endif
                 }
-                genericArgs[genericArgIndex++] = genericArg;
+                genericArgs.Add(genericArg);
 
                 // Is there a ',[' indicating fully qualified generic type arg?
                 // Is there a ',' indicating non-fully qualified generic type arg?
@@ -150,16 +135,6 @@ namespace System.Reflection.Metadata
                 {
                     return null;
                 }
-
-                // We have reached the end of generic arguments, but parsed fewer than expected.
-                // Example: A`2[[b]]
-                if (genericArgIndex != genericArgCount)
-                {
-                    return null;
-                }
-
-                // And now that we're at the end, restore the max observed recursion count.
-                recursiveDepth = maxObservedRecursionCheck;
             }
 
             // If there was an error stripping the generic args, back up to

@@ -24,54 +24,7 @@ namespace System.Reflection.Metadata
         private static readonly SearchValues<char> _endOfFullTypeNameDelimitersSearchValues = SearchValues.Create("[]&*,+\\");
 #endif
 
-        /// <returns>
-        /// <para>Negative value for invalid type names.</para>
-        /// <para>Zero for valid non-generic type names.</para>
-        /// <para>Positive value for valid generic type names.</para>
-        /// </returns>
-        internal static int GetGenericArgumentCount(ReadOnlySpan<char> fullTypeName)
-        {
-            const int ShortestInvalidTypeName = 2; // Back tick and one digit. Example: "`1"
-            if (fullTypeName.Length < ShortestInvalidTypeName || !IsAsciiDigit(fullTypeName[fullTypeName.Length - 1]))
-            {
-                return 0;
-            }
-
-            int backtickIndex = fullTypeName.Length - 2; // we already know it's true for the last one
-            for (; backtickIndex >= 0; backtickIndex--)
-            {
-                if (fullTypeName[backtickIndex] == '`')
-                {
-                    if (backtickIndex == 0)
-                    {
-                        return -1; // illegal name, example "`1"
-                    }
-                    else if (fullTypeName[backtickIndex - 1] == EscapeCharacter)
-                    {
-                        return 0; // legal name, but not a generic type definition. Example: "Escaped\\`1"
-                    }
-                    else if (TryParse(fullTypeName.Slice(backtickIndex + 1), out int value))
-                    {
-                        // From C# 2.0 language spec: 8.16.3 Multiple type parameters Generic type declarations can have any number of type parameters.
-                        // There is no special treatment for values larger than Array.MaxLength,
-                        // as the parser should simply prevent from parsing that many nodes.
-                        // The value can still be negative, but it's fine as the caller should treat that as an error.
-                        return value;
-                    }
-
-                    // most likely the value was too large to be parsed as an int
-                    return -1;
-                }
-                else if (!IsAsciiDigit(fullTypeName[backtickIndex]) && fullTypeName[backtickIndex] != '-')
-                {
-                    break;
-                }
-            }
-
-            return 0;
-        }
-
-        internal static string GetGenericTypeFullName(ReadOnlySpan<char> fullTypeName, TypeName[] genericArgs)
+        internal static string GetGenericTypeFullName(ReadOnlySpan<char> fullTypeName, IReadOnlyList<TypeName> genericArgs)
         {
             ValueStringBuilder result = new(stackalloc char[128]);
             result.Append(fullTypeName);
@@ -239,12 +192,10 @@ namespace System.Reflection.Metadata
             return false;
         }
 
-        internal static bool TryGetTypeNameInfo(ref ReadOnlySpan<char> input, ref List<int>? nestedNameLengths,
-            out int totalLength, out int genericArgCount)
+        internal static bool TryGetTypeNameInfo(ref ReadOnlySpan<char> input, ref List<int>? nestedNameLengths, out int totalLength)
         {
             bool isNestedType;
             totalLength = 0;
-            genericArgCount = 0;
             do
             {
                 int length = GetFullTypeNameLength(input.Slice(totalLength), out isNestedType);
@@ -267,14 +218,6 @@ namespace System.Reflection.Metadata
                     length--;
                 }
 #endif
-
-                int generics = GetGenericArgumentCount(input.Slice(totalLength, length));
-                if (generics < 0 || (generics > 0 && ((long)genericArgCount + generics > int.MaxValue)))
-                {
-                    return false; // invalid type name detected!
-                }
-                genericArgCount += generics;
-
                 if (isNestedType)
                 {
                     // do not validate the type name now, it will be validated as a whole nested type name later

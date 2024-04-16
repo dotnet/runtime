@@ -3,9 +3,14 @@
 
 #nullable enable
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+
+#if !SYSTEM_PRIVATE_CORELIB
+using System.Collections.Immutable;
+#endif
 
 namespace System.Reflection.Metadata
 {
@@ -28,16 +33,24 @@ namespace System.Reflection.Metadata
         /// So when the name is needed, a substring is being performed.
         /// </summary>
         private readonly int _nestedNameLength;
-        private readonly TypeName[]? _genericArguments;
         private readonly TypeName? _elementOrGenericType;
         private readonly TypeName? _declaringType;
+#if SYSTEM_PRIVATE_CORELIB
+        private readonly IReadOnlyList<TypeName> _genericArguments;
+#else
+        private readonly ImmutableArray<TypeName> _genericArguments;
+#endif
         private string? _name, _fullName, _assemblyQualifiedName;
 
         internal TypeName(string? fullName,
             AssemblyNameInfo? assemblyName,
             TypeName? elementOrGenericType = default,
             TypeName? declaringType = default,
-            TypeName[]? genericTypeArguments = default,
+#if SYSTEM_PRIVATE_CORELIB
+            List<TypeName>? genericTypeArguments = default,
+#else
+            ImmutableArray<TypeName>.Builder? genericTypeArguments = default,
+#endif
             sbyte rankOrModifier = default,
             int nestedNameLength = -1)
         {
@@ -46,11 +59,15 @@ namespace System.Reflection.Metadata
             _rankOrModifier = rankOrModifier;
             _elementOrGenericType = elementOrGenericType;
             _declaringType = declaringType;
-            _genericArguments = genericTypeArguments;
             _nestedNameLength = nestedNameLength;
 
-            Debug.Assert(!(IsArray || IsPointer || IsByRef) || _elementOrGenericType is not null);
-            Debug.Assert(_genericArguments is null || _elementOrGenericType is not null);
+#if SYSTEM_PRIVATE_CORELIB
+            _genericArguments = genericTypeArguments is not null ? genericTypeArguments : Array.Empty<TypeName>();
+#else
+            _genericArguments = genericTypeArguments is null
+                ? ImmutableArray<TypeName>.Empty
+                : genericTypeArguments.Count == genericTypeArguments.Capacity ? genericTypeArguments.MoveToImmutable() : genericTypeArguments.ToImmutableArray();
+#endif
         }
 
         /// <summary>
@@ -100,7 +117,7 @@ namespace System.Reflection.Metadata
             {
                 if (_fullName is null)
                 {
-                    if (_genericArguments is not null)
+                    if (IsConstructedGenericType)
                     {
                         _fullName = TypeNameParserHelpers.GetGenericTypeFullName(GetGenericTypeDefinition().FullName.AsSpan(), _genericArguments);
                     }
@@ -138,7 +155,12 @@ namespace System.Reflection.Metadata
         /// <remarks>
         /// Returns false for open generic types (e.g., "Dictionary&lt;,&gt;").
         /// </remarks>
-        public bool IsConstructedGenericType => _genericArguments is not null;
+        public bool IsConstructedGenericType =>
+#if SYSTEM_PRIVATE_CORELIB
+            _genericArguments.Count > 0;
+#else
+            _genericArguments.Length > 0;
+#endif
 
         /// <summary>
         /// Returns true if this is a "plain" type; that is, not an array, not a pointer, not a reference, and
@@ -274,12 +296,9 @@ namespace System.Reflection.Metadata
                 result = checked(result + GetElementType().GetNodeCount());
             }
 
-            if (_genericArguments is not null)
+            foreach (TypeName genericArgument in _genericArguments)
             {
-                foreach (TypeName genericArgument in _genericArguments)
-                {
-                    result = checked(result + genericArgument.GetNodeCount());
-                }
+                result = checked(result + genericArgument.GetNodeCount());
             }
 
             return result;
@@ -358,16 +377,12 @@ namespace System.Reflection.Metadata
         /// <para>For example, given "Dictionary&lt;string, int&gt;", returns a 2-element array containing
         /// string and int.</para>
         /// </remarks>
+        public
 #if SYSTEM_PRIVATE_CORELIB
-        public TypeName[] GetGenericArguments() => _genericArguments ?? Array.Empty<TypeName>();
+        IReadOnlyList<TypeName>
 #else
-        public Collections.Immutable.ImmutableArray<TypeName> GetGenericArguments()
-            => _genericArguments is null ? Collections.Immutable.ImmutableArray<TypeName>.Empty :
-    #if NET8_0_OR_GREATER
-            Runtime.InteropServices.ImmutableCollectionsMarshal.AsImmutableArray(_genericArguments);
-    #else
-            Collections.Immutable.ImmutableArray.Create(_genericArguments);
-    #endif
+        ImmutableArray<TypeName>
 #endif
+        GetGenericArguments() => _genericArguments;
     }
 }

@@ -2429,7 +2429,7 @@ namespace System.Reflection.Metadata
     {
         internal TypeName() { }
         public string AssemblyQualifiedName { get { throw null; } }
-        public string? AssemblySimpleName { get { throw null; } }
+        public AssemblyNameInfo? AssemblyName { get { throw null; } }
         public System.Reflection.Metadata.TypeName? DeclaringType { get { throw null; } }
         public string FullName { get { throw null; } }
         public bool IsArray { get { throw null; } }
@@ -2447,7 +2447,6 @@ namespace System.Reflection.Metadata
         public bool Equals(System.Reflection.Metadata.TypeName? other) { throw null; }
         public override int GetHashCode() { throw null; }
         public int GetArrayRank() { throw null; }
-        public System.Reflection.AssemblyName? GetAssemblyName() { throw null; }
         public System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.TypeName> GetGenericArguments() { throw null; }
         public System.Reflection.Metadata.TypeName GetGenericTypeDefinition() { throw null; }
         public System.Reflection.Metadata.TypeName GetElementType() { throw null; }

@@ -160,8 +160,13 @@ namespace System.Reflection
             else if (typeName.IsConstructedGenericType)
             {
                 var genericArgs = typeName.GetGenericArguments();
-                Type[] genericTypes = new Type[genericArgs.Length];
-                for (int i = 0; i < genericArgs.Length; i++)
+#if SYSTEM_PRIVATE_CORELIB
+                int size = genericArgs.Count;
+#else
+                int size = genericArgs.Length;
+#endif
+                Type[] genericTypes = new Type[size];
+                for (int i = 0; i < size; i++)
                 {
                     Type? genericArg = Resolve(genericArgs[i]);
                     if (genericArg is null)

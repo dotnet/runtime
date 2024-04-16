@@ -10,35 +10,6 @@ namespace System.Reflection.Metadata.Tests
 {
     public class TypeNameParserHelpersTests
     {
-        public static IEnumerable<object[]> GetGenericArgumentCountReturnsExpectedValue_Args()
-        {
-            yield return new object[] { $"TooLargeForInt`{long.MaxValue}", -1 };
-            yield return new object[] { $"TooLargeForInt`{(long)int.MaxValue + 1}", -1 };
-            yield return new object[] { $"TooLargeForInt`{(long)uint.MaxValue + 1}", -1 };
-        }
-
-        [Theory]
-        [InlineData("", 0)] // empty input
-        [InlineData("1", 0)] // short, valid
-        [InlineData("`1", -1)] // short, back tick as first char
-        [InlineData("`111", -1)] // long, back tick as first char
-        [InlineData("\\`111", 0)] // long enough, escaped back tick as first char
-        [InlineData("NoBackTick2", 0)] // no backtick, single digit
-        [InlineData("NoBackTick123", 0)] // no backtick, few digits
-        [InlineData("a`1", 1)] // valid, single digit
-        [InlineData("a`666", 666)] // valid, few digits
-        [InlineData("DigitBeforeBackTick1`7", 7)] // valid, single digit
-        [InlineData("DigitBeforeBackTick123`321", 321)] // valid, few digits
-        [InlineData("EscapedBacktick\\`1", 0)] // escaped backtick, single digit
-        [InlineData("EscapedBacktick\\`123", 0)] // escaped backtick, few digits
-        [InlineData("NegativeValue`-1", -1)] // negative value, single digit
-        [InlineData("NegativeValue`-222", -222)] // negative value, few digits
-        [InlineData("EscapedBacktickNegativeValue\\`-1", 0)] // negative value, single digit
-        [InlineData("EscapedBacktickNegativeValue\\`-222", 0)] // negative value, few digits
-        [MemberData(nameof(GetGenericArgumentCountReturnsExpectedValue_Args))]
-        public void GetGenericArgumentCountReturnsExpectedValue(string input, int expected)
-            => Assert.Equal(expected, TypeNameParserHelpers.GetGenericArgumentCount(input.AsSpan()));
-
         [Theory]
         [InlineData("A[]", 1, false)]
         [InlineData("AB[a,b]", 2, false)]
@@ -129,21 +100,20 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Theory]
-        [InlineData("A.B.C", true, null, 5, 0)]
-        [InlineData("A.B.C\\", false, null, 0, 0)] // invalid type name: ends with escape character
-        [InlineData("A.B.C\\DoeNotNeedEscaping", false, null, 0, 0)] // invalid type name: escapes non-special character
-        [InlineData("A.B+C", true, new int[] { 3 }, 5, 0)]
-        [InlineData("A.B++C", false, null, 0, 0)] // invalid type name: two following, unescaped +
-        [InlineData("A.B`1", true, null, 5, 1)]
-        [InlineData("A+B`1+C1`2+DD2`3+E", true, new int[] { 1, 3, 4, 5 }, 18, 6)]
-        [InlineData("Integer`2147483646+NoOverflow`1", true, new int[] { 18 }, 31, 2147483647)]
-        [InlineData("Integer`2147483647+Overflow`1", false, null, 0, 0)] // integer overflow for generic args count
-        public void TryGetTypeNameInfoGetsAllTheInfo(string input, bool expectedResult, int[] expectedNestedNameLengths,
-            int expectedTotalLength, int expectedGenericArgCount)
+        [InlineData("A.B.C", true, null, 5)]
+        [InlineData("A.B.C\\", false, null, 0)] // invalid type name: ends with escape character
+        [InlineData("A.B.C\\DoeNotNeedEscaping", false, null, 0)] // invalid type name: escapes non-special character
+        [InlineData("A.B+C", true, new int[] { 3 }, 5)]
+        [InlineData("A.B++C", false, null, 0)] // invalid type name: two following, unescaped +
+        [InlineData("A.B`1", true, null, 5)]
+        [InlineData("A+B`1+C1`2+DD2`3+E", true, new int[] { 1, 3, 4, 5 }, 18)]
+        [InlineData("Integer`2147483646+NoOverflow`1", true, new int[] { 18 }, 31)]
+        [InlineData("Integer`2147483647+Overflow`1", true, new int[] { 18 }, 29)]
+        public void TryGetTypeNameInfoGetsAllTheInfo(string input, bool expectedResult, int[] expectedNestedNameLengths, int expectedTotalLength)
         {
             List<int>? nestedNameLengths = null;
             ReadOnlySpan<char> span = input.AsSpan();
-            bool result = TypeNameParserHelpers.TryGetTypeNameInfo(ref span, ref nestedNameLengths, out int totalLength, out int genericArgCount);
+            bool result = TypeNameParserHelpers.TryGetTypeNameInfo(ref span, ref nestedNameLengths, out int totalLength);
 
             Assert.Equal(expectedResult, result);
 
@@ -151,7 +121,6 @@ namespace System.Reflection.Metadata.Tests
             {
                 Assert.Equal(expectedNestedNameLengths, nestedNameLengths?.ToArray());
                 Assert.Equal(expectedTotalLength, totalLength);
-                Assert.Equal(expectedGenericArgCount, genericArgCount);
             }
         }
 
