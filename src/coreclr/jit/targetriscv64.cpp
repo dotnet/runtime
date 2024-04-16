@@ -103,10 +103,14 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
 
     assert((floatFields > 0) || (intFields == 0));
 
-    auto PassIntegerSlot = [this](unsigned offset, unsigned size) -> ABIPassingSegment {
+    auto PassSlot = [this](bool inFloatReg, unsigned offset, unsigned size) -> ABIPassingSegment {
         assert(size > 0);
         assert(size <= TARGET_POINTER_SIZE);
-        if (m_intRegs.Count() > 0)
+        if (inFloatReg)
+        {
+            return ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), offset, size);
+        }
+        else if (m_intRegs.Count() > 0)
         {
             return ABIPassingSegment::InRegister(m_intRegs.Dequeue(), offset, size);
         }
@@ -147,13 +151,8 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
             bool isSecondFloat = (flags & (STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_SECOND)) != 0;
             assert(isFirstFloat || isSecondFloat);
 
-            ABIPassingSegment firstSeg  = isFirstFloat
-                                              ? ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), 0, firstSize)
-                                              : PassIntegerSlot(0, firstSize);
-            ABIPassingSegment secondSeg = isSecondFloat
-                                              ? ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), offset, secondSize)
-                                              : PassIntegerSlot(offset, secondSize);
-            return ABIPassingInformation::FromSegments(comp, {firstSeg, secondSeg});
+            return ABIPassingInformation::FromSegments(comp, {PassSlot(isFirstFloat, 0, firstSize),
+                                                              PassSlot(isSecondFloat, offset, secondSize)});
         }
     }
     else
@@ -161,14 +160,14 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         // Integer calling convention
         if (passedSize <= TARGET_POINTER_SIZE)
         {
-            return ABIPassingInformation::FromSegment(comp, PassIntegerSlot(0, passedSize));
+            return ABIPassingInformation::FromSegment(comp, PassSlot(false, 0, passedSize));
         }
         else
         {
             assert(varTypeIsStruct(type));
-            return ABIPassingInformation::FromSegments(comp, {PassIntegerSlot(0, TARGET_POINTER_SIZE),
-                                                              PassIntegerSlot(TARGET_POINTER_SIZE,
-                                                                              passedSize - TARGET_POINTER_SIZE)});
+            return ABIPassingInformation::FromSegments(comp, {PassSlot(false, 0, TARGET_POINTER_SIZE),
+                                                              PassSlot(false, TARGET_POINTER_SIZE,
+                                                                       passedSize - TARGET_POINTER_SIZE)});
         }
     }
 
