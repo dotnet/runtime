@@ -3615,19 +3615,9 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                     FlowEdge* edgeToBlock = bPrev->GetFalseEdge();
                     noway_assert(edgeToDest != nullptr);
                     noway_assert(edgeToBlock != nullptr);
-                    //
-                    // Calculate the taken ratio
-                    //   A takenRatio of 0.10 means taken 10% of the time, not taken 90% of the time
-                    //   A takenRatio of 0.50 means taken 50% of the time, not taken 50% of the time
-                    //   A takenRatio of 0.90 means taken 90% of the time, not taken 10% of the time
-                    //
-                    double takenCount    = edgeToDest->getLikelyWeight();
-                    double notTakenCount = edgeToBlock->getLikelyWeight();
-                    double totalCount    = takenCount + notTakenCount;
 
-                    // If the takenRatio (takenCount / totalCount) is greater or equal to 51% then we will reverse
-                    // the branch
-                    if (takenCount < (0.51 * totalCount))
+                    // If we take the true branch more than half the time, we will reverse the branch.
+                    if (edgeToDest->getLikelihood() < 0.51)
                     {
                         reorderBlock = false;
                     }
