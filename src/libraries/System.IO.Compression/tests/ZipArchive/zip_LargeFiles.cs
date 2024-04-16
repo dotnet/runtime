@@ -46,17 +46,23 @@ namespace System.IO.Compression.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized), nameof(PlatformDetection.Is64BitProcess))] // don't run it on slower runtimes
-        [OuterLoop("It requires 5 GB of free disk space")]
-        public static void CheckZIP64VersionIsSet_ForSmallFilesAfterBigFiles()
+        private static void FillWithHardToCompressData(byte[] buffer)
+        {
+            Random.Shared.NextBytes(buffer);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized), nameof(PlatformDetection.Is64BitProcess))] // don't run it on slower runtimes
+        [OuterLoop("It requires 5~6 GB of free disk space and a lot of CPU time for compressed tests")]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void CheckZIP64VersionIsSet_ForSmallFilesAfterBigFiles(bool isCompressed)
         {
             // issue #94899
 
-            byte[] largeBuffer = GC.AllocateUninitializedArray<byte>(1_000_000_000); // 1 GB
             byte[] smallBuffer = GC.AllocateUninitializedArray<byte>(1000);
+            byte[] largeBuffer = GC.AllocateUninitializedArray<byte>(1_000_000_000); // ~1 GB
 
             string zipArchivePath = Path.Combine(Path.GetTempPath(), "over4GB.zip");
-            DirectoryInfo tempDir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "over4GB"));
 
             try
             {
@@ -69,21 +75,29 @@ namespace System.IO.Compression.Tests
                 {
                     // Create
 
+                    var compressLevel = isCompressed ? CompressionLevel.Optimal : CompressionLevel.NoCompression;
+
                     using var archive = new ZipArchive(fs, ZipArchiveMode.Create, true);
-                    ZipArchiveEntry file = archive.CreateEntry(LargeFileName, CompressionLevel.NoCompression);
+                    ZipArchiveEntry file = archive.CreateEntry(LargeFileName, compressLevel);
 
                     using (Stream stream = file.Open())
                     {
                         // Write 5GB of data
 
-                        stream.Write(largeBuffer);
-                        stream.Write(largeBuffer);
-                        stream.Write(largeBuffer);
-                        stream.Write(largeBuffer);
-                        stream.Write(largeBuffer);
+                        const int HOW_MANY_GB_TO_WRITE = 5;
+
+                        for (var i = 0; i < HOW_MANY_GB_TO_WRITE; i++)
+                        {
+                            if (isCompressed)
+                            {
+                                FillWithHardToCompressData(largeBuffer);
+                            }
+
+                            stream.Write(largeBuffer);
+                        }
                     }
 
-                    file = archive.CreateEntry(SmallFileName, CompressionLevel.NoCompression);
+                    file = archive.CreateEntry(SmallFileName, compressLevel);
 
                     using (Stream stream = file.Open())
                     {
@@ -110,15 +124,13 @@ namespace System.IO.Compression.Tests
                         fs.Position = (long)offsetOfLHField.GetValue(entry) + ZipLocalFileHeader_OffsetToVersionFromHeaderStart;
                         ushort versionNeeded = reader.ReadUInt16();
 
-                        Assert.True(versionNeeded >= Zip64Version, "ZIP64 version is not set for files with LH at >4GB offset.");
+                        Assert.True(versionNeeded == Zip64Version, "Version is not ZIP64 for files with Local Header at >4GB offset.");
                     }
                 }
             }
             finally
             {
                 File.Delete(zipArchivePath);
-
-                tempDir.Delete(recursive: true);
             }
         }
     }
