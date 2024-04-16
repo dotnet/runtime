@@ -22,7 +22,7 @@ parameters:
   experimentName: ''              # optional -- name of the experiment
   runtimeType: 'coreclr'          # optional -- Sets the runtime as coreclr or mono
   codeGenType: 'JIT'              # optional -- Decides on the codegen technology if running on mono
-  projectFile: 'microbenchmarks.proj'   # optional -- project file to build helix workitems
+  projectFile: '$(Agent.BuildDirectory)/performance/eng/performance/helix.proj'   # optional -- project file to build helix workitems
   runKind: ''                     # required -- test category
   logicalMachine: ''              # required -- Used to specify a which pool of machines the test should run against
   javascriptEngine: 'NoJS'

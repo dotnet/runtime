@@ -112,7 +112,7 @@ jobs:
       jobParameters:
         testGroup: perf
         runtimeType: AndroidMono
-        projectFile: android_scenarios.proj
+        projectFile: $(Build.SourcesDirectory)/eng/testing/performance/android_scenarios.proj
         runKind: android_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfpixel4a'
@@ -129,7 +129,7 @@ jobs:
         testGroup: perf
         liveLibrariesBuildConfig: Release
         runtimeType: mono
-        projectFile: microbenchmarks.proj
+        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
         runKind: micro_mono
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
@@ -147,7 +147,7 @@ jobs:
         liveLibrariesBuildConfig: Release
         runtimeType: mono
         codeGenType: 'Interpreter'
-        projectFile: microbenchmarks.proj
+        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
         runKind: micro_mono
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
@@ -165,7 +165,7 @@ jobs:
         liveLibrariesBuildConfig: Release
         runtimeType: mono
         codeGenType: 'AOT'
-        projectFile: microbenchmarks.proj
+        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
         runKind: micro_mono
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
@@ -184,7 +184,7 @@ jobs:
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
-        projectFile: microbenchmarks.proj
+        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
@@ -200,7 +200,7 @@ jobs:
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
-        projectFile: microbenchmarks.proj
+        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
@@ -216,7 +216,7 @@ jobs:
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
-        projectFile: microbenchmarks.proj
+        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
@@ -233,7 +233,7 @@ jobs:
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
-        projectFile: microbenchmarks.proj
+        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
@@ -249,7 +249,7 @@ jobs:
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
-        projectFile: microbenchmarks.proj
+        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
@@ -266,7 +266,7 @@ jobs:
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
-        projectFile: microbenchmarks.proj
+        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
@@ -284,7 +284,7 @@ jobs:
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
-        projectFile: microbenchmarks.proj
+        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perfowl'
@@ -301,7 +301,7 @@ jobs:
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
-        projectFile: microbenchmarks.proj
+        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perfviper'
@@ -318,7 +318,7 @@ jobs:
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
-        projectFile: microbenchmarks.proj
+        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perfowl'
@@ -336,7 +336,7 @@ jobs:
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
-        projectFile: microbenchmarks.proj
+        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perfowl'
@@ -354,7 +354,7 @@ jobs:
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
-        projectFile: microbenchmarks.proj
+        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perfowl'
@@ -373,7 +373,7 @@ jobs:
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
-        projectFile: crossgen_perf.proj
+        projectFile: $(Build.SourcesDirectory)/eng/testing/performance/crossgen_perf.proj
         runKind: crossgen_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perftiger_crossgen'

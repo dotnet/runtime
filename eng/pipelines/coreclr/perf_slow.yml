@@ -79,7 +79,7 @@ extends:
               liveLibrariesBuildConfig: Release
               runtimeType: mono
               codeGenType: 'Interpreter'
-              projectFile: microbenchmarks.proj
+              projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
               runKind: micro_mono
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
@@ -148,7 +148,7 @@ extends:
               liveLibrariesBuildConfig: Release
               runtimeType: mono
               codeGenType: 'AOT'
-              projectFile: microbenchmarks.proj
+              projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
               runKind: micro_mono
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
@@ -165,7 +165,7 @@ extends:
             jobParameters:
               testGroup: perf
               liveLibrariesBuildConfig: Release
-              projectFile: microbenchmarks.proj
+              projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
@@ -182,7 +182,7 @@ extends:
             jobParameters:
               testGroup: perf
               liveLibrariesBuildConfig: Release
-              projectFile: microbenchmarks.proj
+              projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
@@ -200,7 +200,7 @@ extends:
             jobParameters:
               testGroup: perf
               liveLibrariesBuildConfig: Release
-              projectFile: microbenchmarks.proj
+              projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
@@ -218,7 +218,7 @@ extends:
             jobParameters:
               testGroup: perf
               liveLibrariesBuildConfig: Release
-              projectFile: microbenchmarks.proj
+              projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfsurf'
@@ -234,7 +234,7 @@ extends:
             jobParameters:
               testGroup: perf
               liveLibrariesBuildConfig: Release
-              projectFile: microbenchmarks.proj
+              projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
@@ -251,7 +251,7 @@ extends:
             jobParameters:
               testGroup: perf
               liveLibrariesBuildConfig: Release
-              projectFile: microbenchmarks.proj
+              projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
@@ -269,7 +269,7 @@ extends:
             jobParameters:
               testGroup: perf
               liveLibrariesBuildConfig: Release
-              projectFile: microbenchmarks.proj
+              projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
@@ -289,7 +289,7 @@ extends:
             jobParameters:
               testGroup: perf
               liveLibrariesBuildConfig: Release
-              projectFile: microbenchmarks.proj
+              projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'cloudvm'
@@ -306,7 +306,7 @@ extends:
       #     jobParameters:
       #       testGroup: perf
       #       liveLibrariesBuildConfig: Release
-      #       projectFile: crossgen_perf.proj
+      #       projectFile: $(Build.SourcesDirectory)/eng/testing/performance/crossgen_perf.proj
       #       runKind: crossgen_scenarios
       #       runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
       #       logicalmachine: 'perfa64'
@@ -322,7 +322,7 @@ extends:
       #     jobParameters:
       #       testGroup: perf
       #       liveLibrariesBuildConfig: Release
-      #       projectFile: crossgen_perf.proj
+      #       projectFile: $(Build.SourcesDirectory)/eng/testing/performance/crossgen_perf.proj
       #       runKind: crossgen_scenarios
       #       runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
       #       logicalmachine: 'perfsurf'
