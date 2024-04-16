@@ -16,6 +16,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
 			i.Foo ();
 		}
 
+		[ComImport]
+		[Guid ("D7BB1889-3AB7-4681-A115-60CA9158FECA")]
 		interface IBar
 		{
 			void Bar ();
