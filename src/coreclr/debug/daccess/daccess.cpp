@@ -5499,9 +5499,8 @@ ClrDataAccess::Initialize(void)
         DWORD val;
         if (enable.TryAsInteger(10, val) && val == 1)
         {
-            // TODO: [cdac] Get contract descriptor from exported symbol
             uint64_t contractDescriptorAddr = 0;
-            //if (TryGetSymbol(m_pTarget, m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
+            if (TryGetSymbol(m_pTarget, m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
             {
                 m_cdac = CDAC::Create(contractDescriptorAddr, m_pTarget);
                 if (m_cdac.IsValid())
