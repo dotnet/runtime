@@ -7,13 +7,6 @@ parameters:
   displayName: Performance Repo Branch
   type: string
   default: 'refs/heads/main'
-- name: performanceRepoSource
-  displayName: Performance Repo Source
-  type: string
-  default: ado
-  values:
-  - ado
-  - github
 
 trigger: none
 
@@ -36,12 +29,7 @@ variables:
 
 resources:
   repositories:
-  - repository: GithubPerformanceRepo
-    type: github
-    endpoint: dotnet
-    name: dotnet/performance
-    ref: '${{ parameters.performanceRepoBranch }}'
-  - repository: InternalPerformanceRepo
+  - repository: PerformanceRepo
     type: git
     name: dotnet-performance
     ref: '${{ parameters.performanceRepoBranch }}'
@@ -57,7 +45,6 @@ extends:
           runProfile: 'v8'
           collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
           onlySanityCheck: true
-          performanceRepoSource: ${{ parameters.performanceRepoSource }}
           #downloadSpecificBuild:
             #buildId: '1878694'
             #pipeline: 'perf-wasm'

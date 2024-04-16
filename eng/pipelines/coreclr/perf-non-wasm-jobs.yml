@@ -1,6 +1,3 @@
-parameters:
-  performanceRepoSource: 'ado' # ado, github
-
 jobs:
 
 - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
@@ -119,7 +116,6 @@ jobs:
         runKind: android_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfpixel4a'
-        performanceRepoSource: ${{ parameters.performanceRepoSource }}
 
   # run mono microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -137,7 +133,6 @@ jobs:
         runKind: micro_mono
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
-        performanceRepoSource: ${{ parameters.performanceRepoSource }}
 
   # run mono interpreter perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -156,7 +151,6 @@ jobs:
         runKind: micro_mono
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
-        performanceRepoSource: ${{ parameters.performanceRepoSource }}
 
   # run mono aot microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -175,7 +169,6 @@ jobs:
         runKind: micro_mono
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
-        performanceRepoSource: ${{ parameters.performanceRepoSource }}
 
   # run coreclr perftiger microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -195,7 +188,6 @@ jobs:
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
-        performanceRepoSource: ${{ parameters.performanceRepoSource }}
 
   # run coreclr perftiger microbenchmarks no dynamic pgo perf jobs
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -213,7 +205,6 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
         pgoRunType: -NoDynamicPGO
-        performanceRepoSource: ${{ parameters.performanceRepoSource }}
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -230,7 +221,6 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
         pgoRunType: --nodynamicpgo
-        performanceRepoSource: ${{ parameters.performanceRepoSource }}
 
   # run coreclr perftiger microbenchmarks no R2R perf jobs
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -248,7 +238,6 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
         r2rRunType: -NoR2R
-        performanceRepoSource: ${{ parameters.performanceRepoSource }}
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -265,7 +254,6 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
         r2rRunType: --nor2r
-        performanceRepoSource: ${{ parameters.performanceRepoSource }}
 
   # run coreclr perftiger microbenchmarks memory randomization jobs
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -283,7 +271,6 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
         experimentName: 'memoryRandomization'
-        performanceRepoSource: ${{ parameters.performanceRepoSource }}
 
   # run coreclr perfowl microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -301,7 +288,6 @@ jobs:
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perfowl'
-        performanceRepoSource: ${{ parameters.performanceRepoSource }}
 
   # run coreclr perfviper microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -319,7 +305,6 @@ jobs:
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perfviper'
-        performanceRepoSource: ${{ parameters.performanceRepoSource }}
 
   # run coreclr perfowl microbenchmarks perf gdv3 jobs
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -338,7 +323,6 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perfowl'
         experimentName: 'gdv3'
-        performanceRepoSource: ${{ parameters.performanceRepoSource }}
 
   # run coreclr perfowl microbenchmarks perf rlcse jobs
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -357,7 +341,6 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perfowl'
         experimentName: 'rlcse'
-        performanceRepoSource: ${{ parameters.performanceRepoSource }}
 
   # run coreclr perfowl microbenchmarks perf jitoptrepeat jobs
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -376,7 +359,6 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perfowl'
         experimentName: 'jitoptrepeat'
-        performanceRepoSource: ${{ parameters.performanceRepoSource }}
 
   # run coreclr crossgen perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -395,7 +377,6 @@ jobs:
         runKind: crossgen_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perftiger_crossgen'
-        performanceRepoSource: ${{ parameters.performanceRepoSource }}
 
   # build mono runtime packs
   - template: /eng/pipelines/common/platform-matrix.yml

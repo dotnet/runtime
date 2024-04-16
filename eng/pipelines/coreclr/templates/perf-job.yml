@@ -30,7 +30,6 @@ parameters:
   onlySanityCheck: false
   downloadSpecificBuild: null # buildId, pipeline, branchName, project
   crossBuild: false
-  performanceRepoSource: 'ado' # ado, github
 
 ### Perf job
 

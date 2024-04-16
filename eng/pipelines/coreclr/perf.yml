@@ -3,13 +3,6 @@ parameters:
   displayName: Performance Repo Branch
   type: string
   default: 'refs/heads/main'
-- name: performanceRepoSource
-  displayName: Performance Repo Source
-  type: string
-  default: ado
-  values:
-  - ado
-  - github
 
 trigger:
   batch: true
@@ -32,26 +25,12 @@ trigger:
 
 variables:
 - template: /eng/pipelines/common/variables.yml
-- name: performanceRepoType
-  ${{ if eq(parameters.performanceRepoSource, 'github') }}:
-    value: github
-  ${{ if eq(parameters.performanceRepoSource, 'ado') }}:
-    value: git
-- name: performanceRepoEndpoint
-  ${{ if eq(parameters.performanceRepoSource, 'github') }}:
-    value: dotnet
-- name: performanceRepoName
-  ${{ if eq(parameters.performanceRepoSource, 'github') }}:
-    value: dotnet/performance
-  ${{ if eq(parameters.performanceRepoSource, 'ado') }}:
-    value: dotnet-performance
 
 resources:
   repositories:
   - repository: PerformanceRepo
-    type: '$(performanceRepoType)'
-    endpoint: '$(performanceRepoEndpoint)'
-    name: '$(performanceRepoName)'
+    type: git
+    name: dotnet-performance
     ref: '${{ parameters.performanceRepoBranch }}'
 
 #
@@ -79,12 +58,9 @@ extends:
       - template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
         parameters:
           collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
-          performanceRepoSource: ${{ parameters.performanceRepoSource }}
           #${{ and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
           #  runProfile: 'non-v8'
           ${{ if ne(variables['System.TeamProject'], 'public') }}:
             runProfile: 'v8'
 
       - template: /eng/pipelines/coreclr/perf-non-wasm-jobs.yml
-        parameters:
-          performanceRepoSource: ${{ parameters.performanceRepoSource }}
