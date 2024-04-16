@@ -70,6 +70,8 @@ jobs:
       value: ''
     - name: publishLogsArtifactPrefix
       value: 'BuildLogs_CoreCLR'
+    - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+      - group: AzureDevOps-Artifact-Feeds-Pats
     - name: officialBuildIdArg
       value: ''
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
