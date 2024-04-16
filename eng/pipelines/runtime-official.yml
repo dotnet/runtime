@@ -681,7 +681,7 @@ extends:
                 targetFolder: $(Build.SourcesDirectory)/artifacts/workloadPackages
                 flattenFolders: true
 
-            buildArgs: -s mono.workloads -c $(_BuildConfig)
+            buildArgs: -s mono.workloads -c $(_BuildConfig) /p:PackageSource=$(Build.SourcesDirectory)/artifacts/workloadPackages /p:WorkloadOutputPath=$(Build.SourcesDirectory)/artifacts/workloads
             
             postBuildSteps:
             # Upload packages wrapping msis
