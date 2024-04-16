@@ -207,7 +207,6 @@ namespace System.Threading.Tasks.Tests
 
             //shouldn't throw
             CancellationTokenSource.CreateLinkedTokenSource(new[] { token, token });
-            CancellationTokenSource.CreateLinkedTokenSource((ReadOnlySpan<CancellationToken>)new[] { token, token });
         }
 
         /// <summary>
@@ -432,20 +431,15 @@ namespace System.Threading.Tasks.Tests
                 "CreateLinkedToken_Simple_TwoToken:  The combined token should now be signalled");
         }
 
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public static void CreateLinkedTokenSource_Simple_MultiToken(bool useSpan)
+        [Fact]
+        public static void CreateLinkedTokenSource_Simple_MultiToken()
         {
             CancellationTokenSource signal1 = new CancellationTokenSource();
             CancellationTokenSource signal2 = new CancellationTokenSource();
             CancellationTokenSource signal3 = new CancellationTokenSource();
 
             //Neither token is signalled.
-            CancellationTokenSource combined = useSpan ?
-                CancellationTokenSource.CreateLinkedTokenSource((ReadOnlySpan<CancellationToken>)new[] { signal1.Token, signal2.Token, signal3.Token }) :
-                CancellationTokenSource.CreateLinkedTokenSource(new[] { signal1.Token, signal2.Token, signal3.Token });
-
+            CancellationTokenSource combined = CancellationTokenSource.CreateLinkedTokenSource(new[] { signal1.Token, signal2.Token, signal3.Token });
             Assert.False(combined.IsCancellationRequested,
                 "CreateLinkedToken_Simple_MultiToken:  The combined token should start unsignalled");
 
