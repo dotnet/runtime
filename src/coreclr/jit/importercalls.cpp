@@ -4717,6 +4717,14 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             ClassLayout*         toLayout  = nullptr;
             var_types            toType    = TypeHandleToVarType(toTypeHnd, &toLayout);
 
+            if (fromType == TYP_REF || info.compCompHnd->isNullableType(fromTypeHnd) != TypeCompareState::MustNot ||
+                toType == TYP_REF || info.compCompHnd->isNullableType(toTypeHnd) != TypeCompareState::MustNot)
+            {
+                // Fallback to the software implementation to throw when the types fail a "default(T) is not null"
+                // check.
+                return nullptr;
+            }
+
             unsigned fromSize = fromLayout != nullptr ? fromLayout->GetSize() : genTypeSize(fromType);
             unsigned toSize   = toLayout != nullptr ? toLayout->GetSize() : genTypeSize(toType);
 
@@ -4728,8 +4736,6 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
                 // Fallback to the software implementation to throw when sizes don't match
                 return nullptr;
             }
-
-            assert((fromType != TYP_REF) && (toType != TYP_REF));
 
             GenTree* op1 = impPopStack().val;
 
