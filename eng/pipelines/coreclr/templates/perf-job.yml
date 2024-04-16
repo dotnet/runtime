@@ -114,7 +114,7 @@ jobs:
       ${{ if ne(parameters.pgoRunType, '') }}:
         value: '--pgo-run-type ${{ parameters.pgoRunType }}'
     - name: _physicalPromotionRunTypeArg
-      ${{ if ne(parameters.pgoRunType, '') }}:
+      ${{ if ne(parameters.physicalPromotionRunType, '') }}:
         value: '--physical-promotion-run-type ${{ parameters.physicalPromotionRunType }}'
     - name: _r2rRunTypeArg
       ${{ if ne(parameters.r2rRunType, '') }}:
