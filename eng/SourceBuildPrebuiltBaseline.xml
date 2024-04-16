@@ -28,5 +28,11 @@
     <!-- Analyzers cannot be SBRPed + an older release version is being used, meaning there is no intermediate for it
          In full source build, this version is overridden by previous repo outputs or come from previously source-built artifacts. -->
     <UsagePattern IdentityGlob="Microsoft.CodeAnalysis.Analyzers/*" />
+
+    <!-- Transitive msbuild dependencies that when build in product source-build, latest/n-1 is used -->
+    <UsagePattern IdentityGlob="System.Configuration.ConfigurationManager*/*7.0.*" />
+    <UsagePattern IdentityGlob="System.Diagnostics.EventLog*/*7.0.*" />
+    <UsagePattern IdentityGlob="System.Reflection.MetadataLoadContext*/*7.0.*" />
+    <UsagePattern IdentityGlob="System.Security.Cryptography.ProtectedData*/*7.0.*" />
   </IgnorePatterns>
 </UsageData>
