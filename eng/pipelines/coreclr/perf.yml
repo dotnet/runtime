@@ -32,27 +32,26 @@ trigger:
 
 variables:
 - template: /eng/pipelines/common/variables.yml
-- ${{ if eq(parameters.performanceRepoSource, 'github') }}:
-  - name: performanceRepoType
+- name: performanceRepoType
+  ${{ if eq(parameters.performanceRepoSource, 'github') }}:
     value: github
-  - name: performanceRepoEndpoint
-    value: dotnet
-  - name: performanceRepoName
-    value: dotnet/performance
-- ${{ if eq(parameters.performanceRepoSource, 'ado') }}:
-  - name: performanceRepoType
+  ${{ if eq(parameters.performanceRepoSource, 'ado') }}:
     value: git
-  - name: performanceRepoEndpoint
-    value: 
-  - name: performanceRepoName
+- name: performanceRepoEndpoint
+  ${{ if eq(parameters.performanceRepoSource, 'github') }}:
+    value: dotnet
+- name: performanceRepoName
+  ${{ if eq(parameters.performanceRepoSource, 'github') }}:
+    value: dotnet/performance
+  ${{ if eq(parameters.performanceRepoSource, 'ado') }}:
     value: dotnet-performance
 
 resources:
   repositories:
   - repository: PerformanceRepo
-    type: $(performanceRepoType)
-    endpoint: $(performanceRepoEndpoint)
-    name: $(performanceRepoName)
+    type: '$(performanceRepoType)'
+    endpoint: '$(performanceRepoEndpoint)'
+    name: '$(performanceRepoName)'
     ref: '${{ parameters.performanceRepoBranch }}'
 
 #
