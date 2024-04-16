@@ -2250,7 +2250,7 @@ bool LoaderAllocator::InsertObjectIntoFieldWithLifetimeOfCollectibleLoaderAlloca
             //
             // We work around these details by the following means
             // 1. We use a LOADERHANDLE to keep the object alive until the LoaderAllocator is freed.
-            // 2. We hold the crstLoaderAllocatorLock, and double check to wnsure that the data is ready to be filled in
+            // 2. We hold the crstLoaderAllocatorLock, and double check to ensure that the data is ready to be filled in
             // 3. We create the weak interior handle, and register it for cleanup (which can fail with an OOM) before updating the statics data to have the pointer
             // 4. Registration for cleanup cannot trigger a GC
             // 5. We then unconditionally set the statics pointer.

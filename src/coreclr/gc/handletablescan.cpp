@@ -933,11 +933,11 @@ static void VerifyObjectAndAge(_UNCHECKED_OBJECTREF from, _UNCHECKED_OBJECTREF o
 
 size_t my_get_size (_UNCHECKED_OBJECTREF ob)
 {
-    DPTR(MethodTable) mT = dac_cast<DPTR(MethodTable)>((TADDR)ob->GetGCSafeMethodTable());
+    MethodTable* mT = ob->GetGCSafeMethodTable();
 
     return (mT->GetBaseSize() +
             (mT->HasComponentSize() ?
-             ((size_t)dac_cast<DPTR(ArrayBase)>(ob)->GetNumComponents() * mT->RawGetComponentSize()) : 0));
+             ((size_t)reinterpret_cast<ArrayBase*>(ob)->GetNumComponents() * mT->RawGetComponentSize()) : 0));
 }
 
 /*
@@ -1008,9 +1008,9 @@ void BlockVerifyAgeMapForBlocksWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Sc
                         // if we did then copy the value
                         if (pUserData)
                         {
-                            TADDR pObjectInteriorPointer = **dac_cast<DPTR(DPTR(TADDR))>(pUserData);
+                            uintptr_t pObjectInteriorPointer = **reinterpret_cast<uintptr_t**>(pUserData);
                             _UNCHECKED_OBJECTREF pObjectPointerRef = *pValue;
-                            TADDR pObjectPointer = dac_cast<TADDR>(pObjectPointerRef);
+                            uintptr_t pObjectPointer = reinterpret_cast<uintptr_t>(pObjectPointerRef);
                             if (pObjectInteriorPointer < pObjectPointer || pObjectInteriorPointer >= (pObjectPointer + my_get_size(pObjectPointerRef)))
                             {
                                 _ASSERTE(!"Weak interior pointer has interior pointer which does not point at the object of the handle.");

@@ -447,20 +447,6 @@ typedef uintptr_t TADDR;
 typedef DPTR(size_t)    PTR_size_t;
 typedef DPTR(uint8_t)   PTR_uint8_t;
 
-#if defined(BUILD_AS_STANDALONE)
-// In the standalone build, we don't have the DAC headers, so we need to define a non-DAC variant of dac_cast.
-template <typename Tgt, typename Src>
-inline Tgt dac_cast(Src src)
-{
-    // In non-DAC builds, dac_cast is the same as a C-style cast because we need to support:
-    //  - casting away const
-    //  - conversions between pointers and TADDR
-    // Perhaps we should more precisely restrict it's usage, but we get the precise
-    // restrictions in DAC builds, so it wouldn't buy us much.
-    return (Tgt)(src);
-}
-#endif
-
 // -----------------------------------------------------------------------------------------------------------
 
 #define DATA_ALIGNMENT sizeof(uintptr_t)
