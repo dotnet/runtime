@@ -151,8 +151,8 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
             bool isSecondFloat = (flags & (STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_SECOND)) != 0;
             assert(isFirstFloat || isSecondFloat);
 
-            return ABIPassingInformation::FromSegments(comp, {PassSlot(isFirstFloat, 0, firstSize),
-                                                              PassSlot(isSecondFloat, offset, secondSize)});
+            return {2, new (comp, CMK_ABI) ABIPassingSegment[]{PassSlot(isFirstFloat, 0, firstSize),
+                                                               PassSlot(isSecondFloat, offset, secondSize)}};
         }
     }
     else
@@ -165,9 +165,9 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         else
         {
             assert(varTypeIsStruct(type));
-            return ABIPassingInformation::FromSegments(comp, {PassSlot(false, 0, TARGET_POINTER_SIZE),
-                                                              PassSlot(false, TARGET_POINTER_SIZE,
-                                                                       passedSize - TARGET_POINTER_SIZE)});
+            return {2, new (comp, CMK_ABI)
+                           ABIPassingSegment[]{PassSlot(false, 0, TARGET_POINTER_SIZE),
+                                               PassSlot(false, TARGET_POINTER_SIZE, passedSize - TARGET_POINTER_SIZE)}};
         }
     }
 

@@ -281,31 +281,7 @@ bool ABIPassingInformation::IsSplitAcrossRegistersAndStack() const
 //
 ABIPassingInformation ABIPassingInformation::FromSegment(Compiler* comp, const ABIPassingSegment& segment)
 {
-    ABIPassingInformation info;
-    info.NumSegments = 1;
-    info.Segments    = new (comp, CMK_ABI) ABIPassingSegment(segment);
-    return info;
-}
-
-//-----------------------------------------------------------------------------
-// FromSegments:
-//   Create ABIPassingInformation from multiple segments.
-//
-// Parameters:
-//   comp    - Compiler instance
-//   segments - Segments that represents the passing information
-//
-// Return Value:
-//   An instance of ABIPassingInformation.
-//
-ABIPassingInformation ABIPassingInformation::FromSegments(Compiler*                                comp,
-                                                          std::initializer_list<ABIPassingSegment> segments)
-{
-    ABIPassingInformation info;
-    info.NumSegments = segments.size();
-    info.Segments    = new (comp, CMK_ABI) ABIPassingSegment[info.NumSegments];
-    std::copy(segments.begin(), segments.end(), info.Segments);
-    return info;
+    return {1, new (comp, CMK_ABI) ABIPassingSegment(segment)};
 }
 
 #ifdef DEBUG

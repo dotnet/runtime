@@ -52,6 +52,12 @@ struct ABIPassingInformation
     unsigned           NumSegments = 0;
     ABIPassingSegment* Segments    = nullptr;
 
+    ABIPassingInformation(unsigned numSegments = 0, ABIPassingSegment* segments = nullptr)
+        : NumSegments(numSegments)
+        , Segments(segments)
+    {
+    }
+
     bool HasAnyRegisterSegment() const;
     bool HasAnyStackSegment() const;
     bool HasExactlyOneRegisterSegment() const;
@@ -59,7 +65,6 @@ struct ABIPassingInformation
     bool IsSplitAcrossRegistersAndStack() const;
 
     static ABIPassingInformation FromSegment(Compiler* comp, const ABIPassingSegment& segment);
-    static ABIPassingInformation FromSegments(Compiler* comp, std::initializer_list<ABIPassingSegment> segments);
 
 #ifdef DEBUG
     void Dump() const;
