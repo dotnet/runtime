@@ -78,7 +78,7 @@ jobs:
             _Framework: ${{ framework }}
     steps:
     - ${{ parameters.steps }}
-    - checkout: InternalPerformanceRepo
+    - checkout: PerformanceRepo
       path: performance
     # copy wasm packs if running on wasm (TODO: move to run-performance-job.py)
     - script: >-
