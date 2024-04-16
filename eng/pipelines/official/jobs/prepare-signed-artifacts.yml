@@ -51,3 +51,14 @@ jobs:
         /p:DotNetSignType=$(_SignType)
         /bl:$(Build.SourcesDirectory)\prepare-artifacts.binlog
     displayName: Prepare artifacts and upload to build
+    
+    - task: CopyFiles@2
+    displayName: Copy Files to $(Build.StagingDirectory)\BuildLogs
+    inputs:
+      SourceFolder: '$(Build.SourcesDirectory)'
+      Contents: |
+        **/*.log
+        **/*.binlog
+      TargetFolder: '$(Build.StagingDirectory)\BuildLogs'
+    continueOnError: true
+    condition: succeededOrFailed()
