@@ -779,13 +779,9 @@ extends:
                   contents: '**/offsets-*.h'
                   targetFolder: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles/'
 
-              - template: /eng/pipelines/common/templates/publish-pipeline-artifacts.yml
-                parameters:
-                  displayName: Upload offset files
-                  isOfficialBuild: false
-                  inputs:
-                    targetPath: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
-                    artifactName: 'Mono_Offsets_$(osGroup)$(osSubGroup)'
+              - publish: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
+                artifact: Mono_Offsets_$(osGroup)$(osSubGroup)
+                displayName: Upload offset files
             # needed by crossaot
             condition: >-
               or(
