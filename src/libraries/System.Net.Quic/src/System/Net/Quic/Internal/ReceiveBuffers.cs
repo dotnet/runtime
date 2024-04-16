@@ -52,7 +52,7 @@ internal struct ReceiveBuffers
             int totalCopied = 0;
             for (int i = 0; i < quicBuffers.Length; ++i)
             {
-                Span<byte> quicBuffer = quicBuffers[i].Span;
+                ReadOnlySpan<byte> quicBuffer = quicBuffers[i].ReadOnlySpan;
                 if (totalLength < quicBuffer.Length)
                 {
                     quicBuffer = quicBuffer.Slice(0, totalLength);

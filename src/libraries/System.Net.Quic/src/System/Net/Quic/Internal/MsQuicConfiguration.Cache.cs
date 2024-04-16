@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Security.Authentication;
 using System.Net.Security;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using Microsoft.Quic;
@@ -39,13 +40,13 @@ internal static partial class MsQuicConfiguration
 
     private static readonly ConcurrentDictionary<CacheKey, MsQuicConfigurationSafeHandle> s_configurationCache = new();
 
-    private readonly struct CacheKey : IEquatable<CacheKey>
+    private struct CacheKey : IEquatable<CacheKey>
     {
-        public readonly List<byte[]> CertificateThumbprints;
-        public readonly QUIC_CREDENTIAL_FLAGS Flags;
-        public readonly QUIC_SETTINGS Settings;
-        public readonly List<SslApplicationProtocol> ApplicationProtocols;
-        public readonly QUIC_ALLOWED_CIPHER_SUITE_FLAGS AllowedCipherSuites;
+        private readonly List<byte[]> CertificateThumbprints;
+        private readonly QUIC_CREDENTIAL_FLAGS Flags;
+        private QUIC_SETTINGS Settings; // not readonly to be able to compare using MemoryMarshal
+        private readonly List<SslApplicationProtocol> ApplicationProtocols;
+        private readonly QUIC_ALLOWED_CIPHER_SUITE_FLAGS AllowedCipherSuites;
 
         public CacheKey(QUIC_SETTINGS settings, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol> alpnProtocols, QUIC_ALLOWED_CIPHER_SUITE_FLAGS allowedCipherSuites)
         {
@@ -98,7 +99,7 @@ internal static partial class MsQuicConfiguration
 
             return
                 Flags == other.Flags &&
-                Settings.Equals(other.Settings) &&
+                MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Settings, 1)).SequenceEqual(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref other.Settings, 1))) &&
                 AllowedCipherSuites == other.AllowedCipherSuites;
         }
 
