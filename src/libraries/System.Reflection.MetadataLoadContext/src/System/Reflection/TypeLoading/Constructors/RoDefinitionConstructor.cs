@@ -13,7 +13,7 @@ namespace System.Reflection.TypeLoading
     internal sealed class RoDefinitionConstructor<TMethodDecoder> : RoConstructor where TMethodDecoder : IMethodDecoder
     {
         private readonly RoInstantiationProviderType _declaringType;
-        private readonly TMethodDecoder _decoder;
+        private TMethodDecoder _decoder;
 
         internal RoDefinitionConstructor(RoInstantiationProviderType declaringType, TMethodDecoder decoder)
             : base()
