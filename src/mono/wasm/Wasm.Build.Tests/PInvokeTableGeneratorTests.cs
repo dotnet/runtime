@@ -884,5 +884,80 @@ namespace Wasm.Build.Tests
         [BuildAndRun(host: RunHost.Chrome, aot: false)]
         public void EnsureWasmAbiRulesAreFollowedInInterpreter(BuildArgs buildArgs, RunHost host, string id) =>
             EnsureWasmAbiRulesAreFollowed(buildArgs, host, id);
+
+        [Theory]
+        [BuildAndRun(host: RunHost.Chrome, aot: true)]
+        public void UCOWithSpecialCharacters(BuildArgs buildArgs, RunHost host, string id)
+        {
+            string code =
+                """
+                using System;
+                using System.Runtime.InteropServices;
+                public unsafe partial class Test
+                {
+
+                    public unsafe static int Main(string[] args)
+                    {
+                        ((IntPtr)(delegate* unmanaged<int,int>)&Interop.ManagedFunc).ToString();
+
+                        Console.WriteLine($"main: {args.Length}");
+                        Interop.UnmanagedFunc();
+                        return 0;
+                    }
+                }
+
+                file partial class Interop
+                {
+                    [UnmanagedCallersOnly(EntryPoint = "ManagedFunc")]
+                    public static int ManagedFunc(int number)
+                    {
+                        // called from MyImport aka UnmanagedFunc
+                        Console.WriteLine($"MyExport({number}) -> 42");
+                        return 42;
+                    }
+
+                    [DllImport("local", EntryPoint = "UnmanagedFunc")]
+                    public static extern void UnmanagedFunc(); // calls ManagedFunc aka MyExport
+                }
+                """;
+            string cCode =
+                    """
+                    #include <stdio.h>
+
+                    int ManagedFunc(int number);
+
+                    void UnmanagedFunc()
+                    {
+                        int ret = 0;
+                        printf("UnmanagedFunc calling ManagedFunc\n");
+                        ret = ManagedFunc(123);
+                        printf("ManagedFunc returned %d\n", ret);
+                    }
+                    """;
+
+            var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>";
+            var extraItems = @"<NativeFileReference Include=""local.c"" />";
+
+            buildArgs = ExpandBuildArgs(buildArgs,
+                                        extraItems: extraItems,
+                                        extraProperties: extraProperties);
+
+            (string libraryDir, string output) = BuildProject(buildArgs,
+                                        id: id,
+                                        new BuildProjectOptions(
+                                            InitProject: () =>
+                                            {
+                                                File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
+                                                File.WriteAllText(Path.Combine(_projectDir!, "local.c"), cCode);
+                                            },
+                                            Publish: buildArgs.AOT,
+                                            // Verbosity: "diagnostic",
+                                            DotnetWasmFromRuntimePack: false));
+
+            string objDir = Path.Combine(_projectDir!, "obj", buildArgs.Config!, "net9.0", "browser-wasm", "wasm", buildArgs.AOT ? "for-publish" : "for-build");
+
+            var runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+            Assert.Contains("ManagedFunc returned 42", runOutput);
+        }
     }
 }
