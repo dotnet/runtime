@@ -134,6 +134,7 @@
     <runtimenativeSystemIOPortsVersion>9.0.0-preview.4.24215.1</runtimenativeSystemIOPortsVersion>
     <!-- Keep toolset versions in sync with dotnet/msbuild and dotnet/sdk -->
     <SystemCollectionsImmutableToolsetVersion>8.0.0</SystemCollectionsImmutableToolsetVersion>
+    <SystemTextJsonToolsetVersion>8.0.0</SystemTextJsonToolsetVersion>
     <SystemReflectionMetadataToolsetVersion>8.0.0</SystemReflectionMetadataToolsetVersion>
     <SystemReflectionMetadataLoadContextToolsetVersion>8.0.0</SystemReflectionMetadataLoadContextToolsetVersion>
     <!-- Runtime-Assets dependencies -->
