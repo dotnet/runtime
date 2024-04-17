@@ -18,7 +18,6 @@
   <ItemGroup>
     <Reference Include="System.ComponentModel" />
     <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Threading" />
   </ItemGroup>
