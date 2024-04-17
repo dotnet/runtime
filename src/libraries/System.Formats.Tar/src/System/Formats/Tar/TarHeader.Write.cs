@@ -1065,10 +1065,7 @@ namespace System.Formats.Tar
                 // GNU format: store negative numbers in big endian format with leading '0xff' byte.
                 //             store positive numbers in big endian format with leading '0x80' byte.
                 long destinationValue = value;
-                if (value >= 0)
-                {
-                    destinationValue |= 1L << 63;
-                }
+                destinationValue |= 1L << 63;
                 BinaryPrimitives.WriteInt64BigEndian(destination, destinationValue);
                 return Checksum(destination);
             }
