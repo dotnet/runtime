@@ -656,12 +656,6 @@ namespace ILCompiler.Dataflow
                         if (Intrinsics.GetIntrinsicIdForMethod(callingMethodDefinition) == IntrinsicId.RuntimeReflectionExtensions_GetMethodInfo)
                             break;
 
-                        if (param.IsEmpty())
-                        {
-                            // The static value is unknown and the below `foreach` won't execute
-                            reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ReflectedDelegate(null), "Delegate.Method access on unknown delegate type");
-                        }
-
                         foreach (var valueNode in param.AsEnumerable())
                         {
                             TypeDesc? staticType = (valueNode as IValueWithStaticType)?.StaticType?.Type;
