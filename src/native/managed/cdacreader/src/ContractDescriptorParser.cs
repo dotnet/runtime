@@ -270,7 +270,9 @@ public partial class ContractDescriptorParser
             }
             if (s.StartsWith("0x", StringComparison.OrdinalIgnoreCase) &&
                 ulong.TryParse(s.AsSpan(2), System.Globalization.NumberStyles.HexNumber, null, out value))
+            {
                 return true;
+            }
             if (s.StartsWith("-0x", StringComparison.OrdinalIgnoreCase) &&
                 ulong.TryParse(s.AsSpan(3), System.Globalization.NumberStyles.HexNumber, null, out ulong negValue))
             {
@@ -317,5 +319,4 @@ public partial class ContractDescriptorParser
         value = 0;
         return false;
     }
-
 }
