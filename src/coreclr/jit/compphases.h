@@ -34,6 +34,7 @@ CompPhaseNameMacro(PHASE_INCPROFILE,                 "Profile incorporation",   
 CompPhaseNameMacro(PHASE_MORPH_INIT,                 "Morph - Init",                   false, -1, false)
 CompPhaseNameMacro(PHASE_MORPH_INLINE,               "Morph - Inlining",               false, -1, true)
 CompPhaseNameMacro(PHASE_MORPH_ADD_INTERNAL,         "Morph - Add internal blocks",    false, -1, true)
+CompPhaseNameMacro(PHASE_SWIFT_ERROR_RET,            "Add Swift error returns",        false, -1, true)
 CompPhaseNameMacro(PHASE_ALLOCATE_OBJECTS,           "Allocate Objects",               false, -1, false)
 CompPhaseNameMacro(PHASE_EMPTY_TRY,                  "Remove empty try",               false, -1, false)
 CompPhaseNameMacro(PHASE_EMPTY_FINALLY,              "Remove empty finally",           false, -1, false)
@@ -55,9 +56,7 @@ CompPhaseNameMacro(PHASE_POST_MORPH,                 "Post-Morph",              
 CompPhaseNameMacro(PHASE_MORPH_END,                  "Morph - Finish",                 false, -1, true)
 CompPhaseNameMacro(PHASE_GS_COOKIE,                  "GS Cookie",                      false, -1, false)
 CompPhaseNameMacro(PHASE_COMPUTE_EDGE_WEIGHTS,       "Compute edge weights (1, false)",false, -1, false)
-#if defined(FEATURE_EH_FUNCLETS)
 CompPhaseNameMacro(PHASE_CREATE_FUNCLETS,            "Create EH funclets",             false, -1, false)
-#endif // FEATURE_EH_FUNCLETS
 CompPhaseNameMacro(PHASE_HEAD_TAIL_MERGE,            "Head and tail merge",            false, -1, false)
 CompPhaseNameMacro(PHASE_MERGE_THROWS,               "Merge throw blocks",             false, -1, false)
 CompPhaseNameMacro(PHASE_INVERT_LOOPS,               "Invert loops",                   false, -1, false)

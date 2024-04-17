@@ -458,7 +458,7 @@ HRESULT CordbValue::InternalCreateHandle(CorDebugHandleType      handleType,
                           true,
                           m_appdomain->GetADToken());
 
-    CORDB_ADDRESS addr = GetValueHome() != NULL ? GetValueHome()->GetAddress() : NULL;
+    CORDB_ADDRESS addr = GetValueHome() != NULL ? GetValueHome()->GetAddress() : (CORDB_ADDRESS)NULL;
     event.CreateHandle.objectToken = CORDB_ADDRESS_TO_PTR(addr);
     event.CreateHandle.handleType = handleType;
 
@@ -546,7 +546,7 @@ CordbGenericValue::CordbGenericValue(CordbAppDomain *              pAppdomain,
 // Arguments:
 //     input: pType - the type of the value
 CordbGenericValue::CordbGenericValue(CordbType * pType)
-    : CordbValue(NULL, pType, NULL, true),
+    : CordbValue(NULL, pType, (CORDB_ADDRESS)NULL, true),
       m_pValueHome(NULL)
 {
     // The only purpose of a literal value is to hold a RS literal value.
@@ -776,7 +776,7 @@ CordbReferenceValue::CordbReferenceValue(CordbAppDomain *              pAppdomai
 // Arguments:
 //     input: pType - the type of the value
 CordbReferenceValue::CordbReferenceValue(CordbType * pType)
-    : CordbValue(NULL, pType, NULL, true, pType->GetAppDomain()->GetSweepableExitNeuterList())
+    : CordbValue(NULL, pType, (CORDB_ADDRESS)NULL, true, pType->GetAppDomain()->GetSweepableExitNeuterList())
 {
     memset(&m_info, 0, sizeof(m_info));
 
@@ -905,7 +905,7 @@ HRESULT CordbReferenceValue::GetAddress(CORDB_ADDRESS *pAddress)
     PUBLIC_REENTRANT_API_ENTRY(this);
     VALIDATE_POINTER_TO_OBJECT(pAddress, CORDB_ADDRESS *);
 
-    *pAddress = m_valueHome.m_pHome ? m_valueHome.m_pHome->GetAddress() : NULL;
+    *pAddress = m_valueHome.m_pHome ? m_valueHome.m_pHome->GetAddress() : (CORDB_ADDRESS)NULL;
     return (S_OK);
 }
 
@@ -940,7 +940,7 @@ HRESULT CordbReferenceValue::GetValue(CORDB_ADDRESS *pAddress)
 
     // Copy out the value, which is simply the value the object reference.
     if (m_isLiteral)
-        *pAddress = NULL;
+        *pAddress = (CORDB_ADDRESS)NULL;
     else
         *pAddress = PTR_TO_CORDB_ADDRESS(m_info.objRef);
 
@@ -2501,7 +2501,7 @@ HRESULT CordbObjectValue::IsExceptionObject()
     {
         CORDB_ADDRESS objAddr = m_valueHome.GetAddress();
 
-        if (objAddr == NULL)
+        if (objAddr == (CORDB_ADDRESS)NULL)
         {
             // object is a literal
             hr = S_FALSE;
@@ -2533,7 +2533,7 @@ HRESULT CordbObjectValue::IsRcw()
     {
         CORDB_ADDRESS objAddr = m_valueHome.GetAddress();
 
-        if (objAddr == NULL)
+        if (objAddr == (CORDB_ADDRESS)NULL)
         {
             // object is a literal
             hr = S_FALSE;
@@ -2565,7 +2565,7 @@ HRESULT CordbObjectValue::IsDelegate()
     {
         CORDB_ADDRESS objAddr = m_valueHome.GetAddress();
 
-        if (objAddr == NULL)
+        if (objAddr == (CORDB_ADDRESS)NULL)
         {
             // object is a literal
             hr = S_FALSE;
@@ -4104,7 +4104,7 @@ CordbHandleValue::CordbHandleValue(
     CordbAppDomain *   pAppdomain,
     CordbType *        pType,             // The type of object that we create handle on
     CorDebugHandleType handleType)         // strong or weak handle
-    : CordbValue(pAppdomain, pType, NULL, false,
+    : CordbValue(pAppdomain, pType, (CORDB_ADDRESS)NULL, false,
                     pAppdomain->GetSweepableExitNeuterList()
                 )
 {

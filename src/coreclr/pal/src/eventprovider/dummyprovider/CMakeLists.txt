@@ -24,7 +24,6 @@ foreach(DUMMY_PROVIDER_FILE ${DUMMY_PROVIDER_OUTPUT})
   list(APPEND DUMMY_PROVIDER_SOURCES ${DUMMY_PROVIDER_FILE})
 endforeach()
 
-add_definitions(-DPAL_STDCPP_COMPAT=1)
 include_directories(${COREPAL_SOURCE_DIR}/inc/rt)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/dummy)
 

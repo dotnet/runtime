@@ -816,7 +816,7 @@ DWORD LCM(DWORD u, DWORD v)
         DWORD currentProcsInGroup = 0;
         for (WORD i = 0; i < m_nGroups; i++)
         {
-            currentProcsInGroup = max(currentProcsInGroup, m_CPUGroupInfoArray[i].nr_active);
+            currentProcsInGroup = max(currentProcsInGroup, (DWORD)m_CPUGroupInfoArray[i].nr_active);
         }
         *max_procs_per_group = currentProcsInGroup;
         return true;
