@@ -3440,9 +3440,9 @@ private:
     PER_HEAP_FIELD_SINGLE_GC uint8_t* next_sweep_obj;
     PER_HEAP_FIELD_SINGLE_GC uint8_t* current_sweep_pos;
 
-    PER_HEAP_FIELD_SINGLE_GC size_t uoh_a_no_bgc;
-    PER_HEAP_FIELD_SINGLE_GC size_t uoh_a_bgc_marking[total_generation_count - uoh_start_generation];
-    PER_HEAP_FIELD_SINGLE_GC size_t uoh_a_bgc_planning[total_generation_count - uoh_start_generation];
+    PER_HEAP_FIELD_SINGLE_GC size_t uoh_a_no_bgc[uoh_generation_count];
+    PER_HEAP_FIELD_SINGLE_GC size_t uoh_a_bgc_marking[uoh_generation_count];
+    PER_HEAP_FIELD_SINGLE_GC size_t uoh_a_bgc_planning[uoh_generation_count];
 
 #ifdef DOUBLY_LINKED_FL
     PER_HEAP_FIELD_SINGLE_GC heap_segment* current_sweep_seg;
