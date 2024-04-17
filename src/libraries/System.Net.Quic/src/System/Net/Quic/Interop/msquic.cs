@@ -20,8 +20,7 @@ namespace Microsoft.Quic
 {
     internal unsafe partial struct QUIC_BUFFER
     {
-        public Span<byte> Span => new(Buffer, (int)Length);
-        public readonly ReadOnlySpan<byte> ReadOnlySpan => new(Buffer, (int)Length);
+        public readonly Span<byte> Span => new(Buffer, (int)Length);
     }
 
     internal partial class MsQuic
