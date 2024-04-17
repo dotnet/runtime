@@ -19,7 +19,7 @@ namespace System.Collections.Frozen
         where TThisWrapper : struct, FrozenSetInternalBase<T, TThisWrapper>.IGenericSpecializedWrapper
     {
         /// <summary>A wrapper around this that enables access to important members without making virtual calls.</summary>
-        private readonly TThisWrapper _thisSet;
+        private TThisWrapper _thisSet;
 
         protected FrozenSetInternalBase(IEqualityComparer<T> comparer) : base(comparer)
         {
