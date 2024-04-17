@@ -15036,11 +15036,11 @@ gc_heap::init_gc_heap (int h_number)
     make_mark_stack(arr);
 
 #ifdef BACKGROUND_GC
-    for (int gen_num = uoh_start_generation; gen_num < total_generation_count; gen_num++)
+    for (int i = uoh_start_generation; i < total_generation_count; i++)
     {
-        uoh_a_no_bgc[gen_num - uoh_start_generation] = 0;
-        uoh_a_bgc_marking[gen_num - uoh_start_generation] = 0;
-        uoh_a_bgc_planning[gen_num - uoh_start_generation] = 0;
+        uoh_a_no_bgc[i - uoh_start_generation] = 0;
+        uoh_a_bgc_marking[i - uoh_start_generation] = 0;
+        uoh_a_bgc_planning[i - uoh_start_generation] = 0;
     }
 #ifdef BGC_SERVO_TUNING
     bgc_maxgen_end_fl_size = 0;
@@ -46306,11 +46306,11 @@ void gc_heap::background_sweep()
 
     // We also need to adjust size_before for UOH allocations that occurred during sweeping.
     gc_history_per_heap* current_gc_data_per_heap = get_gc_data_per_heap();
-    for (int gen_num = uoh_start_generation; gen_num < total_generation_count; gen_num++)
+    for (int i = uoh_start_generation; i < total_generation_count; i++)
     {
-        assert(uoh_a_bgc_marking[gen_num - uoh_start_generation] == 0);
-        assert(uoh_a_no_bgc[gen_num - uoh_start_generation] == 0);
-        current_gc_data_per_heap->gen_data[gen_num].size_before += uoh_a_bgc_planning[gen_num - uoh_start_generation];
+        assert(uoh_a_bgc_marking[i - uoh_start_generation] == 0);
+        assert(uoh_a_no_bgc[i - uoh_start_generation] == 0);
+        current_gc_data_per_heap->gen_data[i].size_before += uoh_a_bgc_planning[i - uoh_start_generation];
     }
 
 #ifdef DOUBLY_LINKED_FL
@@ -50304,18 +50304,18 @@ void gc_heap::get_and_reset_uoh_alloc_info()
         // before we lose the values here.
         gc_history_per_heap* current_gc_data_per_heap = hp->get_gc_data_per_heap();
         // loh/poh_a_bgc_planning should be the same as they were when init_records set size_before.
-        for (int gen_num = uoh_start_generation; gen_num < total_generation_count; gen_num++)
+        for (int i = uoh_start_generation; i < total_generation_count; i++)
         {
-            current_gc_data_per_heap->gen_data[gen_num].size_before += hp->uoh_a_bgc_marking[gen_num - uoh_start_generation];
+            current_gc_data_per_heap->gen_data[i].size_before += hp->uoh_a_bgc_marking[i - uoh_start_generation];
 
-            total_uoh_a_no_bgc += hp->uoh_a_no_bgc[gen_num - uoh_start_generation];
-            hp->uoh_a_no_bgc[gen_num - uoh_start_generation] = 0;
+            total_uoh_a_no_bgc += hp->uoh_a_no_bgc[i - uoh_start_generation];
+            hp->uoh_a_no_bgc[i - uoh_start_generation] = 0;
 
-            total_uoh_a_bgc_marking += hp->uoh_a_bgc_marking[gen_num - uoh_start_generation];
-            hp->uoh_a_bgc_marking[gen_num - uoh_start_generation] = 0;
+            total_uoh_a_bgc_marking += hp->uoh_a_bgc_marking[i - uoh_start_generation];
+            hp->uoh_a_bgc_marking[i - uoh_start_generation] = 0;
 
-            total_uoh_a_bgc_planning += hp->uoh_a_bgc_planning[gen_num - uoh_start_generation];
-            hp->uoh_a_bgc_planning[gen_num - uoh_start_generation] = 0;
+            total_uoh_a_bgc_planning += hp->uoh_a_bgc_planning[i - uoh_start_generation];
+            hp->uoh_a_bgc_planning[i - uoh_start_generation] = 0;
         }
     }
     dprintf (2, ("LOH alloc: outside bgc: %zd; bm: %zd; bp: %zd",
