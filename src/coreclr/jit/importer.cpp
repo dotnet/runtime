@@ -9393,7 +9393,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             CORINFO_FIELD_INFO fi;
                             eeGetFieldInfo(&fldToken, CORINFO_ACCESS_SET, &fi);
                             unsigned flagsToCheck = CORINFO_FLG_FIELD_STATIC | CORINFO_FLG_FIELD_FINAL;
-                            if ((fi.fieldFlags & flagsToCheck) == flagsToCheck)
+                            if (((fi.fieldFlags & flagsToCheck) == flagsToCheck) &&
+                                ((info.compCompHnd->getClassAttribs(info.compClassHnd) & CORINFO_FLG_SHAREDINST) == 0))
                             {
 #ifdef FEATURE_READYTORUN
                                 if (opts.IsReadyToRun())
