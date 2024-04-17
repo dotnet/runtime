@@ -105,17 +105,23 @@ public partial class ContractDescriptorParser
                         reader.Read(); // read the next value: either a number or a field descriptor
                         if (fieldNameOrSizeSigil == TypeDescriptorSizeSigil)
                         {
-                            size = reader.GetUInt32();
-                            // FIXME: handle duplicates?
+                            uint newSize = reader.GetUInt32();
+                            if (size is not null)
+                            {
+                                throw new JsonException($"Size specified multiple times: {size} and {newSize}");
+                            }
+                            size = newSize;
                         }
                         else
                         {
                             string? fieldName = fieldNameOrSizeSigil;
                             var field = JsonSerializer.Deserialize(ref reader, ContractDescriptorContext.Default.FieldDescriptor);
-                            // FIXME: duplicates?
                             if (fieldName is null || field is null)
                                 throw new JsonException();
-                            fields.Add(fieldName, field);
+                            if (!fields.TryAdd(fieldName, field))
+                            {
+                                throw new JsonException($"Duplicate field name: {fieldName}");
+                            }
                         }
                         break;
                     case JsonTokenType.Comment:
@@ -182,7 +188,7 @@ public partial class ContractDescriptorParser
             if (reader.TokenType != JsonTokenType.StartArray)
                 throw new JsonException();
             reader.Read();
-            // we're in case 2 or 3 or 4
+            // we're in case 2 or 3 or 4:
             // case 2: [number]
             //          ^ we're here
             // case 3: [number, string]
