@@ -20,10 +20,8 @@ public class ManualTests : TarTestsBase
             foreach (TarEntryFormat entryFormat in new[] { TarEntryFormat.V7, TarEntryFormat.Ustar, TarEntryFormat.Gnu, TarEntryFormat.Pax })
             {
                 yield return new object[] { entryFormat, LegacyMaxFileSize, unseekableStream };
+                yield return new object[] { entryFormat, LegacyMaxFileSize + 1, unseekableStream };
             }
-
-            // Pax supports unlimited size files.
-            yield return new object[] { TarEntryFormat.Pax, LegacyMaxFileSize + 1, unseekableStream };
         }
     }
 

@@ -60,12 +60,10 @@ namespace System.Formats.Tar.Tests
 
             // ATime: Verify the default value was approximately "now"
             Assert.True(entry.AccessTime > approxNow);
-            Assert.Throws<ArgumentOutOfRangeException>(() => entry.AccessTime = DateTimeOffset.MinValue);
             entry.AccessTime = TestAccessTime;
 
             // CTime: Verify the default value was approximately "now"
             Assert.True(entry.ChangeTime > approxNow);
-            Assert.Throws<ArgumentOutOfRangeException>(() => entry.ChangeTime = DateTimeOffset.MinValue);
             entry.ChangeTime = TestChangeTime;
         }
 

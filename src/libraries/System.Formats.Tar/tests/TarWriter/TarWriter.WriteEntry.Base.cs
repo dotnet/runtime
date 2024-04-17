@@ -48,5 +48,59 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(value, gea.GlobalExtendedAttributes[key]);
             }
         }
+
+        public static IEnumerable<object[]> WriteIntField_TheoryData()
+        {
+            foreach (TarEntryFormat format in new[] { TarEntryFormat.V7, TarEntryFormat.Ustar, TarEntryFormat.Pax, TarEntryFormat.Gnu })
+            {
+                // Min value.
+                yield return new object[] { format, 0 };
+                // Max value.
+                yield return new object[] { format, int.MaxValue }; // This doesn't fit an 8-byte field with octal representation.
+
+                yield return new object[] { format, 1 };
+                yield return new object[] { format, 42 };
+            }
+        }
+
+        public static IEnumerable<object[]> WriteTimeStampsWithFormats_TheoryData()
+        {
+            foreach (TarEntryFormat entryFormat in new[] { TarEntryFormat.V7, TarEntryFormat.Ustar, TarEntryFormat.Gnu, TarEntryFormat.Pax })
+            {
+                foreach (DateTimeOffset timestamp in GetWriteTimeStamps())
+                {
+                    yield return new object[] { entryFormat, timestamp };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> WriteTimeStamps_TheoryData()
+        {
+            foreach (DateTimeOffset timestamp in GetWriteTimeStamps())
+            {
+                yield return new object[] { timestamp };
+            }
+        }
+
+        private static IEnumerable<DateTimeOffset> GetWriteTimeStamps()
+        {
+            // One second past Y2K38
+            yield return new DateTimeOffset(2038, 1, 19, 3, 14, 8, TimeSpan.Zero);
+
+            // One second past what a 12-byte field can store with octal representation
+            yield return new DateTimeOffset(2242, 3, 16, 12, 56, 33, TimeSpan.Zero);
+
+            // Min value
+            yield return DateTimeOffset.MinValue;
+
+            // Max value. Everything below seconds is set to zero for test equality comparison.
+            yield return new DateTimeOffset(new DateTime(DateTime.MaxValue.Year,
+                                                         DateTime.MaxValue.Month,
+                                                         DateTime.MaxValue.Day,
+                                                         DateTime.MaxValue.Hour,
+                                                         DateTime.MaxValue.Minute,
+                                                         DateTime.MaxValue.Second,
+                                                         DateTime.MaxValue.Kind), TimeSpan.Zero);
+        }
     }
 }

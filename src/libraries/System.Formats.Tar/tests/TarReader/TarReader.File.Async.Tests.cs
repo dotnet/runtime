@@ -263,7 +263,6 @@ namespace System.Formats.Tar.Tests
         [InlineData("invalid-go17")] // Many octal fields are all zero chars
         [InlineData("issue11169")] // Checksum with null in the middle
         [InlineData("issue10968")] // Garbage chars
-        [InlineData("writer-big")] // The size field contains an euro char
         public async Task Throw_ArchivesWithRandomCharsAsync(string testCaseName)
         {
             await using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", testCaseName);
