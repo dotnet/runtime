@@ -11,15 +11,11 @@ namespace Microsoft.DotNet.Diagnostics.DataContract.BuildTool;
 public partial class ContractDescriptorSourceFileEmitter
 {
     public const string TemplateResourceName = "Microsoft.DotNet.Diagnostics.DataContract.Resources.contract-descriptor.c.in";
-    internal const string JsonDescriptorKey = "jsonDescriptor";
-    internal const string JsonDescriptorSizeKey = "jsonDescriptorSize";
-    internal const string PointerDataCount = "pointerDataCount";
-    internal const string PlatformFlags = "platformFlags";
+    private const string JsonDescriptorKey = "jsonDescriptor";
+    private const string JsonDescriptorSizeKey = "jsonDescriptorSize";
+    private const string PointerDataCount = "pointerDataCount";
+    private const string PlatformFlags = "platformFlags";
 
-    public ContractDescriptorSourceFileEmitter()
-    {
-
-    }
 
     [GeneratedRegex("%%([a-zA-Z0-9_]+)%%", RegexOptions.CultureInvariant)]
     private static partial Regex FindTemplatePlaceholderRegex();

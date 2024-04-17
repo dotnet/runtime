@@ -17,16 +17,16 @@ public class DataDescriptorModel
     public int Version => 0;
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string Baseline { get; }
-    public TypesCollectionModel Types { get; }
-    public GlobalsCollectionModel Globals { get; }
-    public ContractsCollectionModel Contracts { get; }
+    public IReadOnlyDictionary<string, TypeModel> Types { get; }
+    public IReadOnlyDictionary<string, GlobalModel> Globals { get; }
+    public IReadOnlyDictionary<string, ContractModel> Contracts { get; }
     [JsonIgnore]
     public uint PlatformFlags { get; }
+    // The number of indirect globals plus 1 for the placeholder at index 0
     [JsonIgnore]
-    public int PointerDataCount => Globals.PointerDataCount;
+    public int PointerDataCount => 1 + Globals.Values.Count(g => g.Value.Indirect);
 
-
-    private DataDescriptorModel(string baseline, TypesCollectionModel types, GlobalsCollectionModel globals, ContractsCollectionModel contracts, uint platformFlags)
+    private DataDescriptorModel(string baseline, IReadOnlyDictionary<string, TypeModel> types, IReadOnlyDictionary<string, GlobalModel> globals, IReadOnlyDictionary<string, ContractModel> contracts, uint platformFlags)
     {
         Baseline = baseline;
         Types = types;
@@ -137,11 +137,11 @@ public class DataDescriptorModel
             contract.Version = version;
         }
 
-        public void AddOrupdateContracts(IEnumerable<KeyValuePair<string, ContractModel>> contracts)
+        public void AddOrupdateContracts(IEnumerable<KeyValuePair<string, int>> contracts)
         {
-            foreach (var (name, contract) in contracts)
+            foreach (var (name, version) in contracts)
             {
-                AddOrUpdateContract(name, contract.Version);
+                AddOrUpdateContract(name, version);
             }
         }
 
@@ -201,7 +201,7 @@ public class DataDescriptorModel
             {
                 contracts[contractName] = contractBuilder.Build();
             }
-            return new DataDescriptorModel(_baseline, new TypesCollectionModel(types), new GlobalsCollectionModel(globals), new ContractsCollectionModel(contracts), PlatformFlags);
+            return new DataDescriptorModel(_baseline, types, globals, contracts, PlatformFlags);
         }
     }
 
@@ -322,26 +322,12 @@ public class DataDescriptorModel
         public int Offset { get; init; }
     }
 
-    [JsonConverter(typeof(TypesCollectionModelJsonConverter))]
-    public class TypesCollectionModel : IEnumerable<KeyValuePair<string, TypeModel>>
-    {
-        private readonly Dictionary<string, TypeModel> _types;
-        public TypesCollectionModel(Dictionary<string, TypeModel> types)
-        {
-            _types = types;
-        }
-
-        public IEnumerator<KeyValuePair<string, TypeModel>> GetEnumerator() => _types.GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-    }
-
     [JsonConverter(typeof(TypeModelJsonConverter))]
     public readonly struct TypeModel
     {
         public int? Size { get; init; }
         public IReadOnlyDictionary<string, FieldModel> Fields { get; init; }
     }
-
 
     [JsonConverter(typeof(GlobalValueJsonConverter))]
     public readonly struct GlobalValue : IEquatable<GlobalValue>
@@ -361,21 +347,6 @@ public class DataDescriptorModel
         public override string ToString() => Indirect ? $"Indirect({Value})" : $"0x{Value:x}";
     }
 
-    [JsonConverter(typeof(GlobalsCollectionModelJsonConverter))]
-    public class GlobalsCollectionModel : IEnumerable<KeyValuePair<string, GlobalModel>>
-    {
-        private readonly Dictionary<string, GlobalModel> _globals;
-        public GlobalsCollectionModel(Dictionary<string, GlobalModel> globals)
-        {
-            _globals = globals;
-        }
-
-        public int PointerDataCount => _globals.Values.Count(g => g.Value.Indirect);
-
-        public IEnumerator<KeyValuePair<string, GlobalModel>> GetEnumerator() => _globals.GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-    }
-
     [JsonConverter(typeof(GlobalModelJsonConverter))]
     public readonly struct GlobalModel
     {
@@ -383,49 +354,10 @@ public class DataDescriptorModel
         public GlobalValue Value { get; init; }
     }
 
-    [JsonConverter(typeof(ContractsCollectionModelJsonConverter))]
-    public class ContractsCollectionModel : IEnumerable<KeyValuePair<string, ContractModel>>
-    {
-        public IReadOnlyDictionary<string, ContractModel> Contracts { get; }
-        public ContractsCollectionModel(IReadOnlyDictionary<string, ContractModel> contracts)
-        {
-            Contracts = contracts;
-        }
-
-        public IEnumerator<KeyValuePair<string, ContractModel>> GetEnumerator() => Contracts.GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-    }
-
     [JsonConverter(typeof(ContractModelJsonConverter))]
     public readonly struct ContractModel
     {
         public int Version { get; init; }
-    }
-
-    public class ContractsCollctionBuilder
-    {
-        private readonly Dictionary<string, ContractBuilder> _contracts = new();
-        public void AddOrUpdateContract(string name, int version)
-        {
-            if (!_contracts.TryGetValue(name, out var contract))
-            {
-                contract = new ContractBuilder();
-                _contracts[name] = contract;
-            }
-            contract.Version = version;
-        }
-
-        public void AddOrUpdateContract(string name, ContractModel contract) => AddOrUpdateContract(name, contract.Version);
-
-        public ContractsCollectionModel Build()
-        {
-            var contracts = new Dictionary<string, ContractModel>();
-            foreach (var (contractName, contractBuilder) in _contracts)
-            {
-                contracts[contractName] = contractBuilder.Build();
-            }
-            return new ContractsCollectionModel(contracts);
-        }
     }
 
     public class ContractBuilder

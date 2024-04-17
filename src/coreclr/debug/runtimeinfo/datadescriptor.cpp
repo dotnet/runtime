@@ -84,7 +84,6 @@ enum
 #define CDAC_TYPES_BEGIN() 0
 #define CDAC_TYPE_BEGIN(name) + 1
 #include "datadescriptor.h"
-    ,
 };
 
 // count the field pool size.
@@ -96,7 +95,6 @@ enum
 #define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) + 1
 #define CDAC_TYPE_END(name) + 1
 #include "datadescriptor.h"
-    ,
 };
 
 // count the literal globals
@@ -106,7 +104,6 @@ enum
 #define CDAC_GLOBALS_BEGIN() 0
 #define CDAC_GLOBAL(name,tyname,value) + 1
 #include "datadescriptor.h"
-    ,
 };
 
 // count the aux vector globals
@@ -116,7 +113,6 @@ enum
 #define CDAC_GLOBALS_BEGIN() 0
 #define CDAC_GLOBAL_POINTER(name,value) + 1
 #include "datadescriptor.h"
-    ,
 };
 
 
