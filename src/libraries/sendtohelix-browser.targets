@@ -56,7 +56,7 @@
     <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
     <NeedsEMSDK Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">true</NeedsEMSDK>
     <NeedsEMSDKNode Condition="'$(Scenario)' == 'WasmTestOnNodeJS' or '$(Scenario)' == 'BuildWasmApps'">false</NeedsEMSDKNode>
-    <NeedsToRunOnBrowser Condition="'$(Scenario)' == 'WasmTestOnChrome' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnBrowser>
+    <NeedsToRunOnChrome Condition="'$(Scenario)' == 'WasmTestOnChrome' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnChrome>
     <NeedsToRunOnFirefox Condition="'$(Scenario)' == 'WasmTestOnFirefox'">true</NeedsToRunOnFirefox>
     <NeedsToRunOnV8 Condition="'$(Scenario)' == '' or '$(Scenario)' == 'normal' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnV8>
     <NeedsBuiltNugets Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsBuiltNugets>
