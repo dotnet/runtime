@@ -61,7 +61,7 @@ jobs:
       - name: _wasmRunSmokeTestsOnlyArg
         value: /p:RunSmokeTestsOnly=$(shouldRunSmokeOnlyVar)
       - name: chromeInstallArg
-        ${{ if containsValue(parameters.scenarios, 'wasmtestonbrowser') }}:
+        ${{ if containsValue(parameters.scenarios, 'WasmTestOnChrome') }}:
           value: /p:InstallChromeForTests=true
         ${{ else }}:
           value: ''
