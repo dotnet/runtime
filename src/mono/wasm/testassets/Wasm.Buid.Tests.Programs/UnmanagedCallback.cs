@@ -1,11 +1,17 @@
 using System;
 using System.Runtime.InteropServices;
 
-((IntPtr)(delegate* unmanaged<int,int>)&Interop.ManagedFunc).ToString();
+public unsafe partial class Test
+{
+    public unsafe static int Main(string[] args)
+    {
+        ((IntPtr)(delegate* unmanaged<int,int>)&Interop.ManagedFunc).ToString();
 
-Console.WriteLine($"main: {args.Length}");
-Interop.UnmanagedFunc();
-return 42;
+        Console.WriteLine($"main: {args.Length}");
+        Interop.UnmanagedFunc();
+        return 42;
+    }
+}
 
 file partial class Interop
 {
