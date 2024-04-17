@@ -16,6 +16,7 @@ public struct TargetPointer
 
 internal sealed unsafe class Target
 {
+    private const int StackAllocByteThreshold = 1024;
     private static readonly ReadOnlyMemory<byte> MagicLE = new byte[] { 0x44, 0x4e, 0x43, 0x43, 0x44, 0x41, 0x43, 0x00 }; // "DNCCDAC\0"
     private static readonly ReadOnlyMemory<byte> MagicBE = new byte[] { 0x00, 0x43, 0x41, 0x44, 0x43, 0x43, 0x4e, 0x44 };
 
@@ -75,7 +76,9 @@ internal sealed unsafe class Target
 
         // Read descriptor
         // TODO: [cdac] Pass to JSON parser
-        Span<byte> descriptorBuffer = stackalloc byte[(int)descriptorSize];
+        Span<byte> descriptorBuffer = descriptorSize <= StackAllocByteThreshold
+            ? stackalloc byte[(int)descriptorSize]
+            : new byte[(int)descriptorSize];
         if (ReadFromTarget(descriptor.Value, descriptorBuffer) < 0)
             throw new InvalidOperationException("Failed to read descriptor.");
 
