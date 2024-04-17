@@ -1,8 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- The issue this test is for can only occur on targets that allow inlining pinvokes in the same frame as the frame of the continuation of catch handler -->
-    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'arm' AND '$(TargetArchitecture)' != 'x86'">true</CLRTestTargetUnsupported>
-    <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
     <Optimize>True</Optimize>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
