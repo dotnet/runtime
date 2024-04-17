@@ -233,8 +233,7 @@ namespace System.Net.Security
                 if (newCredentialsRequested && sslAuthenticationOptions.CertificateContext != null)
                 {
                     SafeFreeCredential_SECURITY handle = (SafeFreeCredential_SECURITY)cred;
-                    // We need to create copy to avoid Disposal issue.
-                    handle.LocalCertificate = new X509Certificate2(sslAuthenticationOptions.CertificateContext.TargetCertificate);
+                    handle.HasLocalCertificate = true;
                 }
 
                 return cred;

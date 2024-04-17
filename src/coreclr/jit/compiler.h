@@ -1593,12 +1593,11 @@ enum API_ICorJitInfo_Names
 enum class ProfileChecks : unsigned int
 {
     CHECK_NONE          = 0,
-    CHECK_CLASSIC       = 1 << 0, // check "classic" jit weights
-    CHECK_HASLIKELIHOOD = 1 << 1, // check all FlowEdges for hasLikelihood
-    CHECK_LIKELIHOODSUM = 1 << 2, // check block successor likelihoods sum to 1                              
-    CHECK_LIKELY        = 1 << 3, // fully check likelihood based weights
-    RAISE_ASSERT        = 1 << 4, // assert on check failure
-    CHECK_ALL_BLOCKS    = 1 << 5, // check blocks even if bbHasProfileWeight is false
+    CHECK_HASLIKELIHOOD = 1 << 0, // check all FlowEdges for hasLikelihood
+    CHECK_LIKELIHOODSUM = 1 << 1, // check block succesor likelihoods sum to 1                              
+    CHECK_LIKELY        = 1 << 2, // fully check likelihood based weights
+    RAISE_ASSERT        = 1 << 3, // assert on check failure
+    CHECK_ALL_BLOCKS    = 1 << 4, // check blocks even if bbHasProfileWeight is false
 };
 
 inline constexpr ProfileChecks operator ~(ProfileChecks a)
@@ -5207,14 +5206,10 @@ public:
     // - Rationalization links all nodes into linear form which is kept until
     //   the end of compilation. The first and last nodes are stored in the block.
     NodeThreading fgNodeThreading;
-    bool          fgCanRelocateEHRegions;   // true if we are allowed to relocate the EH regions
-    bool          fgEdgeWeightsComputed;    // true after we have called fgComputeEdgeWeights
-    bool          fgHaveValidEdgeWeights;   // true if we were successful in computing all of the edge weights
-    bool          fgSlopUsedInEdgeWeights;  // true if their was some slop used when computing the edge weights
-    bool          fgRangeUsedInEdgeWeights; // true if some of the edgeWeight are expressed in Min..Max form
-    weight_t      fgCalledCount;            // count of the number of times this method was called
-                                            // This is derived from the profile data
-                                            // or is BB_UNITY_WEIGHT when we don't have profile data
+    bool          fgCanRelocateEHRegions; // true if we are allowed to relocate the EH regions
+    weight_t      fgCalledCount;          // count of the number of times this method was called
+                                          // This is derived from the profile data
+                                          // or is BB_UNITY_WEIGHT when we don't have profile data
 
     bool fgFuncletsCreated; // true if the funclet creation phase has been run
 
@@ -5693,6 +5688,9 @@ public:
     // Adds the exception sets for the current tree node which is performing a division or modulus operation
     void fgValueNumberAddExceptionSetForDivision(GenTree* tree);
 
+    // Compute exceptions for a division operation
+    ValueNumPair fgValueNumberDivisionExceptions(genTreeOps oper, GenTree* dividend, GenTree* divisor);
+
     // Adds the exception set for the current tree node which is performing a overflow checking operation
     void fgValueNumberAddExceptionSetForOverflow(GenTree* tree);
 
@@ -6047,10 +6045,9 @@ public:
 #ifdef DEBUG
     void fgPrintEdgeWeights();
 #endif
-    PhaseStatus fgComputeBlockAndEdgeWeights();
+    PhaseStatus fgComputeBlockWeights();
     bool fgComputeMissingBlockWeights(weight_t* returnWeight);
     bool fgComputeCalledCount(weight_t returnWeight);
-    PhaseStatus fgComputeEdgeWeights();
 
     bool fgReorderBlocks(bool useProfile);
 
@@ -6868,7 +6865,6 @@ public:
     BasicBlock* optTryAdvanceLoopCompactionInsertionPoint(FlowGraphNaturalLoop* loop, BasicBlock* insertionPoint, BasicBlock* top, BasicBlock* bottom);
     bool optCreatePreheader(FlowGraphNaturalLoop* loop);
     void optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicBlock* block);
-    weight_t optEstimateEdgeLikelihood(BasicBlock* from, BasicBlock* to, bool* fromProfile);
 
     bool optCanonicalizeExits(FlowGraphNaturalLoop* loop);
     bool optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit);

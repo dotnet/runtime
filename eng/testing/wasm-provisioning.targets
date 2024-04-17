@@ -11,10 +11,9 @@
 
     <!-- disable by default on unsupported platforms -->
     <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and '$(ChromeOSIdentifier)' == ''">false</InstallChromeForTests>
+    <InstallFirefoxForTests Condition="'$(InstallFirefoxForTests)' == '' and '$(ChromeOSIdentifier)' == ''">false</InstallFirefoxForTests>
     <InstallV8ForTests Condition="'$(InstallV8ForTests)' == ''">false</InstallV8ForTests>
 
-    <FirefoxDir>$(ArtifactsBinDir)firefox\</FirefoxDir>
-    <FirefoxStampFile>$([MSBuild]::NormalizePath($(FirefoxDir), '.install-firefox-$(FirefoxRevision).stamp'))</FirefoxStampFile>
     <_BrowserStampDir>$(ArtifactsBinDir)\</_BrowserStampDir>
 
     <WasmProvisionAfterTarget Condition="'$(WasmProvisionAfterTarget)' == ''">Build</WasmProvisionAfterTarget>
@@ -23,9 +22,19 @@
   <Import Project="$(MSBuildThisFileDirectory)ChromeVersions.props" />
 
   <PropertyGroup Condition="'$(BrowserHost)' != 'windows'">
-    <FirefoxRevision>108.0.1</FirefoxRevision>
-    <FirefoxUrl>https://ftp.mozilla.org/pub/firefox/releases/$(FirefoxRevision)/linux-x86_64/en-US/firefox-$(FirefoxRevision).tar.bz2</FirefoxUrl>
+    <FirefoxUrl>https://ftp.mozilla.org/pub/firefox/releases/$(linux_FirefoxRevision)/linux-x86_64/en-US/firefox-$(linux_FirefoxRevision).tar.bz2</FirefoxUrl>
+    <GeckoDriverUrl>https://github.com/mozilla/geckodriver/releases/download/v$(linux_GeckoDriverRevision)/geckodriver-v$(linux_GeckoDriverRevision)-linux64.tar.gz</GeckoDriverUrl>
     <FirefoxBinaryName>firefox</FirefoxBinaryName>
+    <GeckoDriverBinaryName>geckodriver</GeckoDriverBinaryName>
+    <FirefoxDir>$(ArtifactsBinDir)firefox\</FirefoxDir>
+    <FirefoxDirName>firefox</FirefoxDirName>
+    <GeckoDriverDirName>geckodriver</GeckoDriverDirName>
+    <GeckoDriverDir>$(ArtifactsBinDir)geckodriver\</GeckoDriverDir>
+    <FirefoxStampFile>$([MSBuild]::NormalizePath($(FirefoxDir), '.install-firefox-$(linux_FirefoxRevision).stamp'))</FirefoxStampFile>
+    <GeckoDriverStampFile>$([MSBuild]::NormalizePath($(GeckoDriverDir), '.install-geckodriver-$(linux_GeckoDriverRevision).stamp'))</GeckoDriverStampFile>
+
+    <FirefoxBinaryPath>$([MSBuild]::NormalizePath($(FirefoxDir), $(FirefoxDirName), $(FirefoxBinaryName)))</FirefoxBinaryPath>
+    <GeckoDriverBinaryPath>$([MSBuild]::NormalizePath($(GeckoDriverDir), $(GeckoDriverDirName), $(GeckoDriverBinaryName)))</GeckoDriverBinaryPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('linux'))">
@@ -82,12 +91,6 @@
     <V8Dir>$(ArtifactsBinDir)$(V8DirName)\</V8Dir>
     <V8StampFile>$([MSBuild]::NormalizePath('$(V8Dir)', '.install-$(V8Version).stamp'))</V8StampFile>
     <V8BinaryPath>$([MSBuild]::NormalizePath($(V8Dir), $(V8BinaryName)))</V8BinaryPath>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(BrowserHost)' != 'windows'">
-    <FirefoxRevision>108.0.1</FirefoxRevision>
-    <FirefoxUrl>https://ftp.mozilla.org/pub/firefox/releases/$(FirefoxRevision)/linux-x86_64/en-US/firefox-$(FirefoxRevision).tar.bz2</FirefoxUrl>
-    <FirefoxBinaryName>firefox</FirefoxBinaryName>
   </PropertyGroup>
 
   <Target Name="DownloadAndInstallChrome"
@@ -188,6 +191,9 @@ export __SCRIPT_DIR=%24( cd -- "%24( dirname -- "%24{BASH_SOURCE[0]}" )" &amp;> 
     <Delete Files="@(_StampFile)" />
     <RemoveDir Directories="$(FirefoxDir)" />
 
+    <Message Text="** Installing firefox version $(FirefoxRevision), to: $(FirefoxDir). To disable this set the msuild property InstallFirefoxForTests=false ."
+             Importance="High" />
+
     <DownloadFile SourceUrl="$(FirefoxUrl)" DestinationFolder="$(FirefoxDir)" SkipUnchangedFiles="true">
       <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
     </DownloadFile>
@@ -204,5 +210,37 @@ export __SCRIPT_DIR=%24( cd -- "%24( dirname -- "%24{BASH_SOURCE[0]}" )" &amp;> 
     <Exec Command="chmod +x $(_FirefoxBinaryPath)"/>
 
     <Touch Files="$(FirefoxStampFile)" AlwaysCreate="true" />
+  </Target>
+
+  <Target Name="DownloadAndInstallGeckoDriver"
+          AfterTargets="$(WasmProvisionAfterTarget)"
+          Condition="!Exists($(GeckoDriverStampFile)) and '$(InstallFirefoxForTests)' == 'true' and !$([MSBuild]::IsOSPlatform('windows'))">
+    <ItemGroup>
+      <_StampFile Include="$(_BrowserStampDir).install-geckodriver*.stamp" />
+    </ItemGroup>
+
+    <Delete Files="@(_StampFile)" />
+    <RemoveDir Directories="$(GeckoDriverDir)" />
+
+    <Message Text="** Installing GeckoDriver version $(GeckoDriverRevision), to: $(GeckoDriverDir)/$(GeckoDriverDirName). To disable this set the msuild property InstallFirefoxForTests=false ."
+             Importance="High" />
+
+    <DownloadFile SourceUrl="$(GeckoDriverUrl)" DestinationFolder="$(GeckoDriverDir)" SkipUnchangedFiles="true">
+      <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
+    </DownloadFile>
+    <Exec Command="mkdir -p $(GeckoDriverDir)/$(GeckoDriverDirName)"/>
+    <Exec Command="tar -xf $(_DownloadedFile) -C $(GeckoDriverDir)/$(GeckoDriverDirName)"/>
+    <Exec Command="rm -rf $(_DownloadedFile)"/>
+
+    <PropertyGroup>
+      <_GeckoDriverBinaryPath>$([MSBuild]::NormalizePath($(GeckoDriverDir), $(GeckoDriverBinaryName)))</_GeckoDriverBinaryPath>
+    </PropertyGroup>
+
+    <Error Text="Cannot find GeckoDriver at $(_GeckoDriverBinaryPath) in the downloaded copy"
+           Condition="!Exists($(_GeckoDriverBinaryPath))" />
+
+    <Exec Command="chmod +x $(_GeckoDriverBinaryPath)"/>
+
+    <Touch Files="$(GeckoDriverStampFile)" AlwaysCreate="true" />
   </Target>
 </Project>
