@@ -2347,7 +2347,7 @@ void LinearScan::buildIntervals()
             Interval*       interval = getIntervalForLocalVar(varIndex);
             const var_types regType  = argDsc->GetRegisterType();
             regMaskTP       mask     = allRegs(regType);
-            if (argDsc->lvIsRegArg)
+            if (argDsc->lvIsRegArg && !stressInitialParamReg())
             {
                 // Set this interval as currently assigned to that register
                 regNumber inArgReg = argDsc->GetArgReg();
@@ -2419,6 +2419,13 @@ void LinearScan::buildIntervals()
     {
         intRegState->rsCalleeRegArgMaskLiveIn |= RBM_SECRET_STUB_PARAM;
     }
+
+#ifdef DEBUG
+    if (stressInitialParamReg())
+    {
+        stressSetRandomParameterPreferences();
+    }
+#endif
 
     numPlacedArgLocals = 0;
     placedArgRegs      = RBM_NONE;
@@ -2869,6 +2876,64 @@ void LinearScan::buildIntervals()
 }
 
 #ifdef DEBUG
+
+//------------------------------------------------------------------------
+// stressSetRandomParameterPreferences: Randomize preferences of parameter
+// intervals.
+//
+// Remarks:
+//   The intention of this stress is to make the parameter homing logic in
+//   genHomeRegisterParams see harder cases.
+//
+void LinearScan::stressSetRandomParameterPreferences()
+{
+    CLRRandom rng;
+    rng.Init(compiler->info.compMethodHash());
+    regMaskTP intRegs   = compiler->codeGen->intRegState.rsCalleeRegArgMaskLiveIn;
+    regMaskTP floatRegs = compiler->codeGen->floatRegState.rsCalleeRegArgMaskLiveIn;
+
+    for (unsigned int varIndex = 0; varIndex < compiler->lvaTrackedCount; varIndex++)
+    {
+        LclVarDsc* argDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
+
+        if (!argDsc->lvIsParam || !isCandidateVar(argDsc))
+        {
+            continue;
+        }
+
+        Interval* interval = getIntervalForLocalVar(varIndex);
+
+        regMaskTP* regs;
+        if (interval->registerType == FloatRegisterType)
+        {
+            regs = &floatRegs;
+        }
+        else
+        {
+            regs = &intRegs;
+        }
+
+        // Select a random register from all possible parameter registers
+        // (of the right type). Preference this parameter to that register.
+        unsigned numBits = BitOperations::PopCount(*regs);
+        if (numBits == 0)
+        {
+            continue;
+        }
+
+        int       bitIndex = rng.Next((int)numBits);
+        regNumber prefReg  = REG_NA;
+        regMaskTP regsLeft = *regs;
+        for (int i = 0; i <= bitIndex; i++)
+        {
+            prefReg = genFirstRegNumFromMaskAndToggle(regsLeft);
+        }
+
+        *regs &= ~genRegMask(prefReg);
+        interval->mergeRegisterPreferences(genRegMask(prefReg));
+    }
+}
+
 //------------------------------------------------------------------------
 // validateIntervals: A DEBUG-only method that checks that:
 //      - the lclVar RefPositions do not reflect uses of undefined values
@@ -3446,11 +3511,11 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
         // ANDs may be contained in a chain.
         return BuildBinaryUses(node->AsOp(), candidates);
     }
-    if (node->OperIs(GT_NEG, GT_CAST, GT_LSH, GT_RSH, GT_RSZ))
+    if (node->OperIs(GT_NEG, GT_CAST, GT_LSH, GT_RSH, GT_RSZ, GT_ROR))
     {
         // NEG can be contained for mneg on arm64
         // CAST and LSH for ADD with sign/zero extension
-        // LSH, RSH, and RSZ for various "shifted register" instructions on arm64
+        // LSH, RSH, RSZ, and ROR for various "shifted register" instructions on arm64
         return BuildOperandUses(node->gtGetOp1(), candidates);
     }
 #endif
@@ -3989,7 +4054,7 @@ int LinearScan::BuildSimple(GenTree* tree)
 //
 int LinearScan::BuildReturn(GenTree* tree)
 {
-    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op1 = tree->AsOp()->GetReturnValue();
 
 #if !defined(TARGET_64BIT)
     if (tree->TypeGet() == TYP_LONG)

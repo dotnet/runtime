@@ -237,6 +237,7 @@ export type RuntimeHelpers = {
     jiterpreter_dump_stats?: (concise?: boolean) => void,
     forceDisposeProxies: (disposeMethods: boolean, verbose: boolean) => void,
     dumpThreads: () => void,
+    mono_wasm_print_thread_dump: () => void,
 }
 
 export type AOTProfilerOptions = {
@@ -433,6 +434,8 @@ export declare interface EmscriptenModuleInternal {
     __emscripten_thread_init(pthread_ptr: PThreadPtr, isMainBrowserThread: number, isMainRuntimeThread: number, canBlock: number): void;
     print(message: string): void;
     printErr(message: string): void;
+    abort(reason: any): void;
+    _emscripten_force_exit(exit_code: number): void;
 }
 
 /// A PromiseController encapsulates a Promise together with easy access to its resolve and reject functions.
@@ -551,6 +554,7 @@ export interface PThreadLibrary {
     threadInitTLS: () => void,
     getNewWorker: () => PThreadWorker,
     returnWorkerToPool: (worker: PThreadWorker) => void,
+    terminateAllThreads: () => void,
 }
 
 export interface PThreadInfoMap {

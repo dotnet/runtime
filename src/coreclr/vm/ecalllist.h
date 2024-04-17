@@ -56,7 +56,6 @@ FCFuncEnd()
 
 FCFuncStart(gEnumFuncs)
     FCFuncElement("InternalGetCorElementType",  ReflectionEnum::InternalGetCorElementType)
-    FCFuncElement("InternalBoxEnum", ReflectionEnum::InternalBoxEnum)
 FCFuncEnd()
 
 FCFuncStart(gObjectFuncs)
@@ -114,9 +113,7 @@ FCFuncEnd()
 
 FCFuncStart(gSystem_RuntimeType)
     FCFuncElement("GetGUID", ReflectionInvocation::GetGUID)
-    FCFuncElement("_CreateEnum", ReflectionInvocation::CreateEnum)
     FCFuncElement("CanValueSpecialCast", ReflectionInvocation::CanValueSpecialCast)
-    FCFuncElement("AllocateValueType", ReflectionInvocation::AllocateValueType)
 #if defined(FEATURE_COMINTEROP)
     FCFuncElement("InvokeDispMethod", ReflectionInvocation::InvokeDispMethod)
 #endif // defined(FEATURE_COMINTEROP)
