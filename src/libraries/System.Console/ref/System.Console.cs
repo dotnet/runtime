@@ -175,7 +175,6 @@ namespace System
         public static void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
         public static void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { }
         public static void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[]? arg) { }
-        public static void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> arg) { }
         [System.CLSCompliantAttribute(false)]
         public static void Write(uint value) { }
         [System.CLSCompliantAttribute(false)]
@@ -196,7 +195,6 @@ namespace System
         public static void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
         public static void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { }
         public static void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[]? arg) { }
-        public static void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> arg) { }
         [System.CLSCompliantAttribute(false)]
         public static void WriteLine(uint value) { }
         [System.CLSCompliantAttribute(false)]

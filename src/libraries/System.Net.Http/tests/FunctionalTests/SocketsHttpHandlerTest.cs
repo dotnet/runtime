@@ -1634,6 +1634,8 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91757")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/101015")]
     public sealed class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http3 : SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength
     {
         public SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http3(ITestOutputHelper output) : base(output) { }
@@ -4024,7 +4026,6 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Http3 : HttpClientHandlerTest
     {
@@ -4032,7 +4033,6 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
     public sealed class SocketsHttpHandlerTest_Cookies_Http3 : HttpClientHandlerTest_Cookies
     {
@@ -4040,7 +4040,6 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http3 : HttpClientHandlerTest_Headers
     {
@@ -4048,7 +4047,6 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3 : SocketsHttpHandler_Cancellation_Test
     {
@@ -4056,7 +4054,6 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3 : HttpClientHandler_AltSvc_Test
     {
@@ -4064,7 +4061,6 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_Finalization_Http3 : HttpClientHandler_Finalization_Test
     {
@@ -4328,7 +4324,7 @@ namespace System.Net.Http.Functional.Tests
                     };
 
                     policy.ExtraStore.AddRange(caCerts);
-                    policy.CustomTrustStore.Add(caCerts[caCerts.Count -1]);
+                    policy.CustomTrustStore.Add(caCerts[caCerts.Count - 1]);
                     socketsHandler.SslOptions = new SslClientAuthenticationOptions() { CertificateChainPolicy = policy };
 
                     using HttpClient client = CreateHttpClient(handler);
@@ -4490,7 +4486,7 @@ namespace System.Net.Http.Functional.Tests
             options: new GenericLoopbackOptions() { UseSsl = true });
         }
 
-        
+
     }
 
     public sealed class SocketsHttpHandler_HttpRequestErrorTest_Http11 : SocketsHttpHandler_HttpRequestErrorTest
@@ -4533,7 +4529,6 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
     public sealed class SocketsHttpHandler_HttpRequestErrorTest_Http30 : SocketsHttpHandler_HttpRequestErrorTest
     {
