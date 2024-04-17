@@ -13,9 +13,9 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests.TestAppScenarios;
 
-public class DownloadResourceProgressTests : AppTestBase
+public class ModuleConfigTests : AppTestBase
 {
-    public DownloadResourceProgressTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
+    public ModuleConfigTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
     {
     }
@@ -25,7 +25,7 @@ public class DownloadResourceProgressTests : AppTestBase
     [InlineData(true)]
     public async Task DownloadProgressFinishes(bool failAssemblyDownload)
     {
-        CopyTestAsset("WasmBasicTestApp", $"DownloadResourceProgressTests_{failAssemblyDownload}");
+        CopyTestAsset("WasmBasicTestApp", $"ModuleConfigTests_DownloadProgressFinishes_{failAssemblyDownload}");
         PublishProject("Debug");
 
         var result = await RunSdkStyleApp(new(
@@ -52,6 +52,26 @@ public class DownloadResourceProgressTests : AppTestBase
             failAssemblyDownload
                 ? "The download progress test didn't emit expected message about failing download"
                 : "The download progress test did emit unexpected message about failing download"
+        );
+    }
+
+    [Fact]
+    public async Task OutErrOverrideWorks()
+    {
+        CopyTestAsset("WasmBasicTestApp", $"ModuleConfigTests_OutErrOverrideWorks");
+        PublishProject("Debug");
+
+        var result = await RunSdkStyleApp(new(
+            Configuration: "Debug",
+            TestScenario: "OutErrOverrideWorks"
+        ));
+        Assert.True(
+            result.ConsoleOutput.Any(m => m.Contains("Emscripten out override works!")),
+            "Emscripten out override doesn't work"
+        );
+        Assert.True(
+            result.ConsoleOutput.Any(m => m.Contains("Emscripten err override works!")),
+            "Emscripten err override doesn't work"
         );
     }
 }

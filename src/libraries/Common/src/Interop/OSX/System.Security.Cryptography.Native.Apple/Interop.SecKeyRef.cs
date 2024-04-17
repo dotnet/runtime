@@ -127,6 +127,10 @@ internal static partial class Interop
         {
             const int errSecPassphraseRequired = -25260;
 
+            // macOS Sonoma 14.4 started returning errSecInvalidKeyAttributeMask when a key could not be exported
+            // because it must be exported with a password.
+            const int errSecInvalidKeyAttributeMask = -67738;
+
             int result = AppleCryptoNative_SecKeyCopyExternalRepresentation(
                 key,
                 out SafeCFDataHandle data,
@@ -141,7 +145,7 @@ internal static partial class Interop
                         externalRepresentation = CoreFoundation.CFGetData(data);
                         return true;
                     case kErrorSeeError:
-                        if (Interop.CoreFoundation.GetErrorCode(errorHandle) == errSecPassphraseRequired)
+                        if (Interop.CoreFoundation.GetErrorCode(errorHandle) is errSecPassphraseRequired or errSecInvalidKeyAttributeMask)
                         {
                             externalRepresentation = Array.Empty<byte>();
                             return false;
