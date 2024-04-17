@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers.Binary;
+using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
@@ -25,6 +26,7 @@ internal sealed unsafe class Target
     private int _pointerSize;
 
     private TargetPointer[] _pointerData = [];
+    private IReadOnlyDictionary<string, int> _contracts = new Dictionary<string, int>();
 
     public Target(ulong contractDescriptor, delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget, void* readContext)
     {
@@ -75,12 +77,22 @@ internal sealed unsafe class Target
         TargetPointer pointerData = ReadPointer(address);
 
         // Read descriptor
-        // TODO: [cdac] Pass to JSON parser
         Span<byte> descriptorBuffer = descriptorSize <= StackAllocByteThreshold
             ? stackalloc byte[(int)descriptorSize]
             : new byte[(int)descriptorSize];
         if (ReadFromTarget(descriptor.Value, descriptorBuffer) < 0)
             throw new InvalidOperationException("Failed to read descriptor.");
+
+        ContractDescriptorParser.ContractDescriptor? targetDescriptor = ContractDescriptorParser.ParseCompact(descriptorBuffer);
+
+        if (targetDescriptor is null)
+        {
+            throw new InvalidOperationException("Failed to parse descriptor.");
+        }
+
+        // TODO: [cdac] Read globals and types
+        // note: we will probably want to store the globals and types into a more usable form
+        _contracts = targetDescriptor.Contracts ?? new Dictionary<string, int>();
 
         // Read pointer data
         _pointerData = new TargetPointer[pointerDataCount];

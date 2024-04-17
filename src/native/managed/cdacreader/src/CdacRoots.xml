@@ -1,0 +1,6 @@
+<linker>
+  <assembly fullname="libcdacreader">
+    <!-- https://github.com/dotnet/runtime/issues/101205 -->
+    <type fullname="Microsoft.Diagnostics.DataContractReader.Root" preserve="all" />
+  </assembly>
+</linker>

@@ -29,7 +29,7 @@ public partial class ContractDescriptorParser
     }
 
     [JsonSerializable(typeof(ContractDescriptor))]
-    [JsonSerializable(typeof(int))]
+    [JsonSerializable(typeof(int?))]
     [JsonSerializable(typeof(string))]
     [JsonSerializable(typeof(Dictionary<string, int>))]
     [JsonSerializable(typeof(Dictionary<string, TypeDescriptor>))]
@@ -38,11 +38,17 @@ public partial class ContractDescriptorParser
     [JsonSerializable(typeof(TypeDescriptor))]
     [JsonSerializable(typeof(FieldDescriptor))]
     [JsonSerializable(typeof(GlobalDescriptor))]
+    [JsonSerializable(typeof(Dictionary<string, JsonElement>))]
     [JsonSourceGenerationOptions(AllowTrailingCommas = true,
                                 DictionaryKeyPolicy = JsonKnownNamingPolicy.Unspecified, // contracts, types and globals are case sensitive
                                 PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
                                 NumberHandling = JsonNumberHandling.AllowReadingFromString,
-                                ReadCommentHandling = JsonCommentHandling.Skip)]
+                                ReadCommentHandling = JsonCommentHandling.Skip,
+                                UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip,
+                                UnknownTypeHandling = JsonUnknownTypeHandling.JsonElement,
+                                Converters = [typeof(TypeDescriptorConverter),
+                                            typeof(FieldDescriptorConverter),
+                                            typeof(GlobalDescriptorConverter)])]
     internal sealed partial class ContractDescriptorContext : JsonSerializerContext
     {
     }
@@ -58,7 +64,13 @@ public partial class ContractDescriptorParser
         public Dictionary<string, GlobalDescriptor>? Globals { get; set; }
 
         [JsonExtensionData]
-        public Dictionary<string, object?>? Extras { get; set; }
+        public Dictionary<string, JsonElement>? Extras { get; set; }
+
+        public override string ToString()
+        {
+            return $"Version: {Version}, Baseline: {Baseline}, Contracts: {Contracts?.Count}, Types: {Types?.Count}, Globals: {Globals?.Count}";
+        }
+
     }
 
     [JsonConverter(typeof(TypeDescriptorConverter))]
