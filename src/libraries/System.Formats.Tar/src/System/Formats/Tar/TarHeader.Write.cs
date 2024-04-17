@@ -1060,16 +1060,16 @@ namespace System.Formats.Tar
             {
                 return FormatOctal(value, destination);
             }
-            else if (value < 0)
-            {
-                // GNU format: store negative numbers in big endian format with leading '0xff' byte.
-                BinaryPrimitives.WriteInt64BigEndian(destination, value);
-                return Checksum(destination);
-            }
             else
             {
-                // GNU format: store positive numbers in big endian format with leading '0x80' byte.
-                BinaryPrimitives.WriteUInt64BigEndian(destination, (1UL << 63) | (uint)value);
+                // GNU format: store negative numbers in big endian format with leading '0xff' byte.
+                //             store positive numbers in big endian format with leading '0x80' byte.
+                long destinationValue = value;
+                if (value >= 0)
+                {
+                    destinationValue |= 1L << 63;
+                }
+                BinaryPrimitives.WriteInt64BigEndian(destination, destinationValue);
                 return Checksum(destination);
             }
         }
@@ -1086,18 +1086,11 @@ namespace System.Formats.Tar
             {
                 return FormatOctal(value, destination);
             }
-            else if (value < 0)
-            {
-                // GNU format: store negative numbers in big endian format with leading '0xff' byte.
-                destination.Slice(0, Offset).Fill(0xff);
-                BinaryPrimitives.WriteInt64BigEndian(destination.Slice(Offset), value);
-                return Checksum(destination);
-            }
             else
             {
-                // GNU format: store positive numbers in big endian format with leading '0x80' byte.
-                destination.Slice(0, Offset).Fill(0);
-                destination[0] = 0x80;
+                // GNU format: store negative numbers in big endian format with leading '0xff' byte.
+                //             store positive numbers in big endian format with leading '0x80' byte.
+                BinaryPrimitives.WriteUInt32BigEndian(destination, value < 0 ? 0xffffffff : 1U << 31);
                 BinaryPrimitives.WriteInt64BigEndian(destination.Slice(Offset), value);
                 return Checksum(destination);
             }
