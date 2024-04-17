@@ -55,13 +55,13 @@ namespace System.Reflection
             }
         }
 
-        private Type GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, AssemblyName assemblyNameIfAny, string _)
+        private Type GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, AssemblyNameInfo assemblyNameIfAny, string _)
         {
             ModuleDesc module;
 
             if (assemblyNameIfAny != null)
             {
-                module = _context.ResolveAssembly(assemblyNameIfAny, throwIfNotFound: false);
+                module = _context.ResolveAssembly(assemblyNameIfAny.ToAssemblyName(), throwIfNotFound: false);
             }
             else
             {

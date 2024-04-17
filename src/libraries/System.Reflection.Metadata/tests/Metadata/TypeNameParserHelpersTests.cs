@@ -49,6 +49,14 @@ namespace System.Reflection.Metadata.Tests
             => Assert.Equal(expected, TypeNameParserHelpers.GetName(fullName.AsSpan()).ToString());
 
         [Theory]
+        [InlineData("simple", "simple")]
+        [InlineData("simple]", "simple")]
+        [InlineData("esc\\]aped", "esc\\]aped")]
+        [InlineData("esc\\]aped]", "esc\\]aped")]
+        public void GetAssemblyNameCandidateReturnsExpectedValue(string input, string expected)
+            => Assert.Equal(expected, TypeNameParserHelpers.GetAssemblyNameCandidate(input.AsSpan()).ToString());
+
+        [Theory]
         [InlineData(TypeNameParserHelpers.SZArray, "[]")]
         [InlineData(TypeNameParserHelpers.Pointer, "*")]
         [InlineData(TypeNameParserHelpers.ByRef, "&")]

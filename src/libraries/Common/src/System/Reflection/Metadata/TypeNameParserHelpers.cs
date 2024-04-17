@@ -6,16 +6,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
-using static System.Char;
-using static System.Int32;
-
 #nullable enable
 
 namespace System.Reflection.Metadata
 {
     internal static class TypeNameParserHelpers
     {
-        internal const int MaxArrayRank = 32;
         internal const sbyte SZArray = -1;
         internal const sbyte Pointer = -2;
         internal const sbyte ByRef = -3;
@@ -100,6 +96,7 @@ namespace System.Reflection.Metadata
                 return offset;
             }
 
+            // This is not a strict implementation of ECMA, so far all .NET Runtimes were forbidding to escape other characters.
             static bool NeedsEscaping(char c) => c is '[' or ']' or '&' or '*' or ',' or '+' or EscapeCharacter;
         }
 
@@ -132,6 +129,37 @@ namespace System.Reflection.Metadata
             }
         }
 
+        // this method handles escaping of the ] just to let the AssemblyNameParser fail for the right input
+        internal static ReadOnlySpan<char> GetAssemblyNameCandidate(ReadOnlySpan<char> input)
+        {
+            // The only delimiter which can terminate an assembly name is ']'.
+            // Otherwise EOL serves as the terminator.
+            int offset = input.IndexOf(']');
+
+            if (offset > 0 && input[offset - 1] == EscapeCharacter) // this should be very rare (IL Emit & pure IL)
+            {
+                offset = GetUnescapedOffset(input, startIndex: offset);
+            }
+
+            return offset < 0 ? input : input.Slice(0, offset);
+
+            static int GetUnescapedOffset(ReadOnlySpan<char> input, int startIndex)
+            {
+                int offset = startIndex;
+                for (; offset < input.Length; offset++)
+                {
+                    if (input[offset] is ']')
+                    {
+                        if (input[offset - 1] != EscapeCharacter)
+                        {
+                            break;
+                        }
+                    }
+                }
+                return offset;
+            }
+        }
+
         internal static string GetRankOrModifierStringRepresentation(int rankOrModifier, ValueStringBuilder builder)
         {
             if (rankOrModifier == ByRef)
@@ -152,7 +180,7 @@ namespace System.Reflection.Metadata
             }
             else
             {
-                Debug.Assert(rankOrModifier >= 2 && rankOrModifier <= 32);
+                Debug.Assert(rankOrModifier >= 2);
 
                 builder.Append('[');
                 builder.Append(',', rankOrModifier - 1);
@@ -343,12 +371,6 @@ namespace System.Reflection.Metadata
             new InvalidOperationException(SR.Argument_HasToBeArrayClass);
 #else // tools that reference this file as a link
             new InvalidOperationException();
-#endif
-
-#if !NETCOREAPP
-        private static bool TryParse(ReadOnlySpan<char> input, out int value) => int.TryParse(input.ToString(), out value);
-
-        private static bool IsAsciiDigit(char ch) => ch >= '0' && ch <= '9';
 #endif
     }
 }

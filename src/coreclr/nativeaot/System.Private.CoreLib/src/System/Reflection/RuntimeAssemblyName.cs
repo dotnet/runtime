@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection.Metadata;
 
 namespace System.Reflection
 {
@@ -129,13 +130,9 @@ namespace System.Reflection
             return assemblyName;
         }
 
-        internal static RuntimeAssemblyName FromAssemblyName(AssemblyName source)
+        internal static RuntimeAssemblyName FromAssemblyNameInfo(AssemblyNameInfo source)
         {
-            byte[]? publicKeyOrToken = (source._flags & AssemblyNameFlags.PublicKey) != 0
-                ? source.GetPublicKey()
-                : source.GetPublicKeyToken();
-
-            return new(source.Name, source.Version, source.CultureName, source._flags, publicKeyOrToken);
+            return new(source.Name, source.Version, source.CultureName, source._flags, source.PublicKeyOrToken);
         }
 
         //
@@ -151,10 +148,10 @@ namespace System.Reflection
 
             // Our "Flags" contain both the classic flags and the ProcessorArchitecture + ContentType bits. The public AssemblyName has separate properties for
             // these. The setters for these properties quietly mask out any bits intended for the other one, so we needn't do that ourselves..
-            blank.Flags = ExtractAssemblyNameFlags(this.Flags);
-            blank.ContentType = ExtractAssemblyContentType(this.Flags);
+            blank.Flags = AssemblyNameInfo.ExtractAssemblyNameFlags(this.Flags);
+            blank.ContentType = AssemblyNameInfo.ExtractAssemblyContentType(this.Flags);
 #pragma warning disable SYSLIB0037 // AssemblyName.ProcessorArchitecture is obsolete
-            blank.ProcessorArchitecture = ExtractProcessorArchitecture(this.Flags);
+            blank.ProcessorArchitecture = AssemblyNameInfo.ExtractProcessorArchitecture(this.Flags);
 #pragma warning restore SYSLIB0037
 
             if (this.PublicKeyOrToken != null)
@@ -177,17 +174,8 @@ namespace System.Reflection
             get
             {
                 byte[]? pkt = (0 != (Flags & AssemblyNameFlags.PublicKey)) ? AssemblyNameHelpers.ComputePublicKeyToken(PublicKeyOrToken) : PublicKeyOrToken;
-                return AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName, pkt, ExtractAssemblyNameFlags(Flags), ExtractAssemblyContentType(Flags));
+                return AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName, pkt, AssemblyNameInfo.ExtractAssemblyNameFlags(Flags), AssemblyNameInfo.ExtractAssemblyContentType(Flags));
             }
         }
-
-        private static AssemblyNameFlags ExtractAssemblyNameFlags(AssemblyNameFlags combinedFlags)
-            => combinedFlags & unchecked((AssemblyNameFlags)0xFFFFF10F);
-
-        private static AssemblyContentType ExtractAssemblyContentType(AssemblyNameFlags flags)
-            => (AssemblyContentType)((((int)flags) >> 9) & 0x7);
-
-        private static ProcessorArchitecture ExtractProcessorArchitecture(AssemblyNameFlags flags)
-            => (ProcessorArchitecture)((((int)flags) >> 4) & 0x7);
     }
 }

@@ -13,6 +13,9 @@ namespace System.Reflection
     {
         private const char EscapeCharacter = '\\';
 
+        /// <summary>
+        /// Removes escape characters from the string (if there were any found).
+        /// </summary>
         private static string UnescapeTypeName(string name)
         {
             int indexOfEscapeCharacter = name.IndexOf(EscapeCharacter);
@@ -90,6 +93,7 @@ namespace System.Reflection
             string typeNamespace, name;
 
             // Matches algorithm from ns::FindSep in src\coreclr\utilcode\namespaceutil.cpp
+            // This could result in the type name beginning with a '.' character.
             int separator = typeName.LastIndexOf('.');
             if (separator <= 0)
             {
@@ -119,6 +123,8 @@ namespace System.Reflection
                     current = current.DeclaringType;
                 }
 
+                // We're performing real type resolution, it is assumed that the caller has already validated the correctness
+                // of this TypeName object against their own policies, so there is no need for this method to perform any further checks.
                 string[] nestedTypeNames = new string[nestingDepth];
                 current = typeName;
                 while (current is not null && current.IsNested)
@@ -128,7 +134,7 @@ namespace System.Reflection
                 }
                 string nonNestedParentName = current!.FullName;
 
-                Type? type = GetType(nonNestedParentName, nestedTypeNames, typeName.AssemblyName?.ToAssemblyName(), typeName.FullName);
+                Type? type = GetType(nonNestedParentName, nestedTypeNames, typeName.AssemblyName, typeName.FullName);
                 return Make(type, typeName);
             }
             else if (typeName.IsConstructedGenericType)
@@ -137,11 +143,22 @@ namespace System.Reflection
             }
             else if (typeName.IsArray || typeName.IsPointer || typeName.IsByRef)
             {
-                return Make(Resolve(typeName.GetElementType()), typeName);
+                Metadata.TypeName elementType = typeName.GetElementType();
+
+                if (elementType.IsByRef || (typeName.IsVariableBoundArrayType && typeName.GetArrayRank() > 32))
+                {
+#if SYSTEM_PRIVATE_CORELIB
+                    throw new TypeLoadException(); // CLR throws TypeLoadException for invalid decorators
+#else
+                    return null;
+#endif
+                }
+
+                return Make(Resolve(elementType), typeName);
             }
             else
             {
-                Type? type = GetType(typeName.FullName, nestedTypeNames: ReadOnlySpan<string>.Empty, typeName.AssemblyName?.ToAssemblyName(), typeName.FullName);
+                Type? type = GetType(typeName.FullName, nestedTypeNames: ReadOnlySpan<string>.Empty, typeName.AssemblyName, typeName.FullName);
 
                 return Make(type, typeName);
             }

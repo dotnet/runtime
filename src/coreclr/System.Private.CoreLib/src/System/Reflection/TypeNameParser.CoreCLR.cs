@@ -185,13 +185,13 @@ namespace System.Reflection
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "TypeNameParser.GetType is marked as RequiresUnreferencedCode.")]
         private Type? GetType(string escapedTypeName, // For nested types, it's Name. For other types it's FullName
-            ReadOnlySpan<string> nestedTypeNames, AssemblyName? assemblyNameIfAny, string fullEscapedName)
+            ReadOnlySpan<string> nestedTypeNames, Metadata.AssemblyNameInfo? assemblyNameIfAny, string fullEscapedName)
         {
             Assembly? assembly;
 
             if (assemblyNameIfAny is not null)
             {
-                assembly = ResolveAssembly(assemblyNameIfAny);
+                assembly = ResolveAssembly(assemblyNameIfAny.ToAssemblyName());
                 if (assembly is null)
                     return null;
             }

@@ -9,23 +9,39 @@ using System.Text;
 
 namespace System.Reflection.Metadata
 {
+    /// <summary>
+    /// Describes an assembly.
+    /// </summary>
+    /// <remarks>
+    /// It's a more lightweight, immutable version of <seealso cref="AssemblyName"/> that does not pre-allocate <seealso cref="System.Globalization.CultureInfo"/> instances.
+    /// </remarks>
     [DebuggerDisplay("{FullName}")]
 #if SYSTEM_PRIVATE_CORELIB
     internal
 #else
     public
 #endif
-    sealed class AssemblyNameInfo : IEquatable<AssemblyNameInfo>
+    sealed class AssemblyNameInfo
     {
+        internal readonly AssemblyNameFlags _flags;
         private string? _fullName;
 
 #if !SYSTEM_PRIVATE_CORELIB
+        /// <summary>
+        /// Initializes a new instance of the AssemblyNameInfo class.
+        /// </summary>
+        /// <param name="name">The simple name of the assembly.</param>
+        /// <param name="version">The version of the assembly.</param>
+        /// <param name="cultureName">The name of the culture associated with the assembly.</param>
+        /// <param name="flags">The attributes of the assembly.</param>
+        /// <param name="publicKeyOrToken">The public key or its token. Set <paramref name="flags"/> to <seealso cref="AssemblyNameFlags.PublicKey"/> when it's public key.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is null.</exception>
         public AssemblyNameInfo(string name, Version? version = null, string? cultureName = null, AssemblyNameFlags flags = AssemblyNameFlags.None, Collections.Immutable.ImmutableArray<byte> publicKeyOrToken = default)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             Version = version;
             CultureName = cultureName;
-            Flags = flags;
+            _flags = flags;
             PublicKeyOrToken = publicKeyOrToken;
         }
 #endif
@@ -35,7 +51,7 @@ namespace System.Reflection.Metadata
             Name = parts._name;
             Version = parts._version;
             CultureName = parts._cultureName;
-            Flags = parts._flags;
+            _flags = parts._flags;
 #if SYSTEM_PRIVATE_CORELIB
             PublicKeyOrToken = parts._publicKeyOrToken;
 #else
@@ -49,17 +65,40 @@ namespace System.Reflection.Metadata
 #endif
         }
 
+        /// <summary>
+        /// Gets the simple name of the assembly.
+        /// </summary>
         public string Name { get; }
-        public Version? Version { get; }
-        public string? CultureName { get; }
-        public AssemblyNameFlags Flags { get; }
 
+        /// <summary>
+        /// Gets the version of the assembly.
+        /// </summary>
+        public Version? Version { get; }
+
+        /// <summary>
+        /// Gets the name of the culture associated with the assembly.
+        /// </summary>
+        public string? CultureName { get; }
+
+        /// <summary>
+        /// Gets the attributes of the assembly.
+        /// </summary>
+        public AssemblyNameFlags Flags => ExtractAssemblyNameFlags(_flags);
+
+        /// <summary>
+        /// Gets the public key or the public key token of the assembly.
+        /// </summary>
+        /// <remarks>Check <seealso cref="Flags"/> for <seealso cref="AssemblyNameFlags.PublicKey"/> flag to see whether it's public key or its token.</remarks>
 #if SYSTEM_PRIVATE_CORELIB
         public byte[]? PublicKeyOrToken { get; }
 #else
         public Collections.Immutable.ImmutableArray<byte> PublicKeyOrToken { get; }
 #endif
 
+        /// <summary>
+        /// Gets the full name of the assembly, also known as the display name.
+        /// </summary>
+        /// <remarks>In contrary to <seealso cref="AssemblyName.FullName"/> it does not validate public key token neither computes it based on the provided public key.</remarks>
         public string FullName
         {
             get
@@ -74,131 +113,29 @@ namespace System.Reflection.Metadata
 #else
                     ToArray(PublicKeyOrToken);
 #endif
-                    _fullName = AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName, publicKeyToken);
+                    _fullName = AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName, publicKeyToken, Flags, ExtractAssemblyContentType(_flags));
                 }
 
                 return _fullName;
             }
         }
 
-        public bool Equals(AssemblyNameInfo? other)
-        {
-            if (other is null || Flags != other.Flags || !Name.Equals(other.Name) || !string.Equals(CultureName, other.CultureName))
-            {
-                return false;
-            }
-
-            if (Version is null)
-            {
-                if (other.Version is not null)
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                if (!Version.Equals(other.Version))
-                {
-                    return false;
-                }
-            }
-
-            return SequenceEqual(PublicKeyOrToken, other.PublicKeyOrToken);
-
-#if SYSTEM_PRIVATE_CORELIB
-            static bool SequenceEqual(byte[]? left, byte[]? right)
-            {
-                if (left is null)
-                {
-                    if (right is not null)
-                    {
-                        return false;
-                    }
-                }
-                else if (right is null)
-                {
-                    return false;
-                }
-                else if (left.Length != right.Length)
-                {
-                    return false;
-                }
-                else
-                {
-                    for (int i = 0; i < left.Length; i++)
-                    {
-                        if (left[i] != right[i])
-                        {
-                            return false;
-                        }
-                    }
-                }
-
-                return true;
-            }
-#else
-            static bool SequenceEqual(Collections.Immutable.ImmutableArray<byte> left, Collections.Immutable.ImmutableArray<byte> right)
-            {
-                int leftLength = left.IsDefaultOrEmpty ? 0 : left.Length;
-                int rightLength = right.IsDefaultOrEmpty ? 0 : right.Length;
-
-                if (leftLength != rightLength)
-                {
-                    return false;
-                }
-                else if (leftLength > 0)
-                {
-                    for (int i = 0; i < leftLength; i++)
-                    {
-                        if (left[i] != right[i])
-                        {
-                            return false;
-                        }
-                    }
-                }
-
-                return true;
-            }
-#endif
-        }
-
-        public override bool Equals(object? obj) => Equals(obj as AssemblyNameInfo);
-
-        public override int GetHashCode()
-        {
-#if NETCOREAPP
-            HashCode hashCode = default;
-            hashCode.Add(Name);
-            hashCode.Add(Flags);
-            hashCode.Add(Version);
-
-    #if SYSTEM_PRIVATE_CORELIB
-            if (PublicKeyOrToken is not null)
-            {
-                hashCode.AddBytes(PublicKeyOrToken);
-            }
-    #else
-            if (!PublicKeyOrToken.IsDefaultOrEmpty)
-            {
-                hashCode.AddBytes(Runtime.InteropServices.ImmutableCollectionsMarshal.AsArray(PublicKeyOrToken));
-            }
-    #endif
-            return hashCode.ToHashCode();
-#else
-            return FullName.GetHashCode();
-#endif
-        }
-
+        /// <summary>
+        /// Initializes a new instance of the <seealso cref="AssemblyName"/> class based on the stored information.
+        /// </summary>
         public AssemblyName ToAssemblyName()
         {
             AssemblyName assemblyName = new();
             assemblyName.Name = Name;
             assemblyName.CultureName = CultureName;
             assemblyName.Version = Version;
+            assemblyName.Flags = Flags;
+            assemblyName.ContentType = ExtractAssemblyContentType(_flags);
+#pragma warning disable SYSLIB0037 // Type or member is obsolete
+            assemblyName.ProcessorArchitecture = ExtractProcessorArchitecture(_flags);
+#pragma warning restore SYSLIB0037 // Type or member is obsolete
 
 #if SYSTEM_PRIVATE_CORELIB
-            assemblyName._flags = Flags;
-
             if (PublicKeyOrToken is not null)
             {
                 if ((Flags & AssemblyNameFlags.PublicKey) != 0)
@@ -211,10 +148,9 @@ namespace System.Reflection.Metadata
                 }
             }
 #else
-            assemblyName.Flags = Flags;
-
             if (!PublicKeyOrToken.IsDefault)
             {
+                // A copy of the array needs to be created, as AssemblyName allows for the mutation of provided array.
                 if ((Flags & AssemblyNameFlags.PublicKey) != 0)
                 {
                     assemblyName.SetPublicKey(ToArray(PublicKeyOrToken));
@@ -238,7 +174,11 @@ namespace System.Reflection.Metadata
         public static AssemblyNameInfo Parse(ReadOnlySpan<char> assemblyName)
             => TryParse(assemblyName, out AssemblyNameInfo? result)
                 ? result!
-                : throw new ArgumentException("TODO_adsitnik_add_or_reuse_resource");
+#if SYSTEM_REFLECTION_METADATA || SYSTEM_PRIVATE_CORELIB
+                : throw new ArgumentException(SR.InvalidAssemblyName, nameof(assemblyName));
+#else // tools that reference this file as a link
+                : throw new ArgumentException("The given assembly name was invalid.", nameof(assemblyName));
+#endif
 
         /// <summary>
         /// Tries to parse a span of characters into an assembly name.
@@ -262,6 +202,15 @@ namespace System.Reflection.Metadata
             result = null;
             return false;
         }
+
+        internal static AssemblyNameFlags ExtractAssemblyNameFlags(AssemblyNameFlags combinedFlags)
+            => combinedFlags & unchecked((AssemblyNameFlags)0xFFFFF10F);
+
+        internal static AssemblyContentType ExtractAssemblyContentType(AssemblyNameFlags flags)
+            => (AssemblyContentType)((((int)flags) >> 9) & 0x7);
+
+        internal static ProcessorArchitecture ExtractProcessorArchitecture(AssemblyNameFlags flags)
+            => (ProcessorArchitecture)((((int)flags) >> 4) & 0x7);
 
 #if !SYSTEM_PRIVATE_CORELIB
         private static byte[]? ToArray(Collections.Immutable.ImmutableArray<byte> input)

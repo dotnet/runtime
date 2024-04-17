@@ -309,7 +309,7 @@ namespace System.Reflection
                 return true;
             }
 
-            if (isToken && attributeValue.Length != 8 * 2)
+            if (attributeValue.Length % 2 != 0 || (isToken && attributeValue.Length != 8 * 2))
             {
                 return false;
             }

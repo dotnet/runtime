@@ -20,7 +20,7 @@ namespace System.Reflection.Metadata
 #else
     public
 #endif
-    sealed class TypeName : IEquatable<TypeName>
+    sealed class TypeName
     {
         /// <summary>
         /// Positive value is array rank.
@@ -239,18 +239,6 @@ namespace System.Reflection.Metadata
             }
         }
 
-        public bool Equals(TypeName? other)
-            => other is not null
-            && other._rankOrModifier == _rankOrModifier
-            // try to prevent from allocations if possible (AssemblyQualifiedName can allocate)
-            && ((other.AssemblyName is null && AssemblyName is null)
-             || (other.AssemblyName is not null && AssemblyName is not null))
-            && other.AssemblyQualifiedName == AssemblyQualifiedName;
-
-        public override bool Equals(object? obj) => Equals(obj as TypeName);
-
-        public override int GetHashCode() => AssemblyQualifiedName.GetHashCode();
-
         /// <summary>
         /// Represents the total number of <see cref="TypeName"/> instances that are used to describe
         /// this instance, including any generic arguments or underlying types.
@@ -285,20 +273,20 @@ namespace System.Reflection.Metadata
 
             if (IsNested)
             {
-                result = checked(result + DeclaringType.GetNodeCount());
+                result += DeclaringType.GetNodeCount();
             }
             else if (IsConstructedGenericType)
             {
-                result = checked(result + 1);
+                result++;
             }
             else if (IsArray || IsPointer || IsByRef)
             {
-                result = checked(result + GetElementType().GetNodeCount());
+                result += GetElementType().GetNodeCount();
             }
 
             foreach (TypeName genericArgument in _genericArguments)
             {
-                result = checked(result + genericArgument.GetNodeCount());
+                result += genericArgument.GetNodeCount();
             }
 
             return result;

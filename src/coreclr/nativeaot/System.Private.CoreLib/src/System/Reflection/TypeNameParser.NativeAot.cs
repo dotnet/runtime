@@ -93,16 +93,16 @@ namespace System.Reflection
             }.Resolve(parsed);
         }
 
-        private Assembly? ResolveAssembly(AssemblyName assemblyName)
+        private Assembly? ResolveAssembly(Metadata.AssemblyNameInfo assemblyName)
         {
             Assembly? assembly;
             if (_assemblyResolver is not null)
             {
-                assembly = _assemblyResolver(assemblyName);
+                assembly = _assemblyResolver(assemblyName.ToAssemblyName());
             }
             else
             {
-                assembly = RuntimeAssemblyInfo.GetRuntimeAssemblyIfExists(RuntimeAssemblyName.FromAssemblyName(assemblyName));
+                assembly = RuntimeAssemblyInfo.GetRuntimeAssemblyIfExists(RuntimeAssemblyName.FromAssemblyNameInfo(assemblyName));
             }
 
             if (assembly is null && _throwOnError)
@@ -117,7 +117,7 @@ namespace System.Reflection
             Justification = "GetType APIs are marked as RequiresUnreferencedCode.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "GetType APIs are marked as RequiresUnreferencedCode.")]
-        private Type? GetType(string escapedTypeName, ReadOnlySpan<string> nestedTypeNames, AssemblyName? assemblyNameIfAny, string _)
+        private Type? GetType(string escapedTypeName, ReadOnlySpan<string> nestedTypeNames, Metadata.AssemblyNameInfo? assemblyNameIfAny, string _)
         {
             Assembly? assembly;
 

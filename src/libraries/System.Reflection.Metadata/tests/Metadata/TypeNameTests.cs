@@ -53,7 +53,6 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("MissingAssemblyName, ")]
         [InlineData("ExtraComma, ,")]
         [InlineData("ExtraComma, , System.Runtime")]
-        [InlineData("MoreThanMaxArrayRank[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]")]
         [InlineData("UsingGenericSyntaxButNotProvidingGenericArgs[[]]")]
         [InlineData("ExtraCommaAfterFirstGenericArg`1[[type1, assembly1],]")]
         [InlineData("MissingClosingSquareBrackets`1[[type1, assembly1")] // missing ]]
@@ -62,7 +61,6 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("MissingClosingSquareBrackets`2[[type1, assembly1], [type2, assembly2")] // missing ]
         [InlineData("MissingClosingSquareBracketsMixedMode`2[type1, [type2, assembly2")] // missing ]]
         [InlineData("MissingClosingSquareBracketsMixedMode`2[type1, [type2, assembly2]")] // missing ]
-        [InlineData("CantMakeByRefToByRef&&")]
         [InlineData("EscapeCharacterAtTheEnd\\")]
         [InlineData("EscapeNonSpecialChar\\a")]
         [InlineData("EscapeNonSpecialChar\\0")]
@@ -72,6 +70,23 @@ namespace System.Reflection.Metadata.Tests
             Assert.Throws<ArgumentException>(() => TypeName.Parse(input.AsSpan()));
 
             Assert.False(TypeName.TryParse(input.AsSpan(), out _));
+        }
+
+        [Theory]
+        [InlineData("int&&")] // by-ref to by-ref is currently not supported by CLR
+        [InlineData("int[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]")] // more than max array rank (32)
+        public void ParserIsNotEnforcingRuntimeSpecificRules(string input)
+        {
+            Assert.True(TypeName.TryParse(input.AsSpan(), out _));
+
+            if (PlatformDetection.IsNotMonoRuntime) // https://github.com/dotnet/runtime/issues/45033
+            {
+#if NETCOREAPP
+                Assert.Throws<TypeLoadException>(() => Type.GetType(input));
+#elif NETFRAMEWORK
+                Assert.Null(Type.GetType(input));
+#endif
+            }
         }
 
         [Theory]
@@ -560,31 +575,6 @@ namespace System.Reflection.Metadata.Tests
                 Assert.Equal(genericType.FullName, genericTypeName.FullName);
                 Assert.Equal(genericType.AssemblyQualifiedName, genericTypeName.AssemblyQualifiedName);
             }
-        }
-
-        [Theory]
-        [InlineData("name", "name", true)]
-        [InlineData("Name", "Name", true)]
-        [InlineData("name", "Name", false)]
-        [InlineData("Name", "name", false)]
-        [InlineData("type, assembly", "type, assembly", true)]
-        [InlineData("Type, Assembly", "Type, Assembly", true)]
-        [InlineData("Type, Assembly", "type, assembly", false)]
-        [InlineData("Type, assembly", "type, Assembly", false)]
-        [InlineData("name[]", "name[]", true)]
-        [InlineData("name[]", "name[*]", false)]
-        [InlineData("name[]", "name[,]", false)]
-        [InlineData("name*", "name*", true)]
-        [InlineData("name&", "name&", true)]
-        [InlineData("name*", "name&", false)]
-        [InlineData("generic`1[[int]]", "generic`1[[int]]", true)] // exactly the same
-        [InlineData("generic`1[[int]]", "generic`1[int]", true)] // different generic args syntax describing same type
-        [InlineData("generic`2[[int],[bool]]", "generic`2[int,bool]", true)]
-        public void Equality(string left, string right, bool expected)
-        {
-            Assert.Equal(expected, TypeName.Parse(left.AsSpan()).Equals(TypeName.Parse(right.AsSpan())));
-            Assert.Equal(TypeName.Parse(left.AsSpan()), TypeName.Parse(left.AsSpan()));
-            Assert.Equal(TypeName.Parse(right.AsSpan()), TypeName.Parse(right.AsSpan()));
         }
 
         [Theory]

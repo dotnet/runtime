@@ -156,15 +156,8 @@ namespace System.Reflection.Metadata
                     return null;
                 }
 
-                if (previousDecorator == ByRef // it's illegal for managed reference to be followed by any other decorator
-                    || parsedDecorator > MaxArrayRank)
-                {
-#if SYSTEM_PRIVATE_CORELIB
-                    throw new TypeLoadException(); // CLR throws TypeLoadException for invalid decorators
-#else
-                    return null;
-#endif
-                }
+                // Currently it's illegal for managed reference to be followed by any other decorator,
+                // but this is a runtime-specific behavior and the parser is not enforcing that rule.
                 previousDecorator = parsedDecorator;
             }
 
@@ -218,17 +211,13 @@ namespace System.Reflection.Metadata
                     return false;
                 }
 
-                // The only delimiter which can terminate an assembly name is ']'.
-                // Otherwise EOL serves as the terminator.
-                int assemblyNameLength = (int)Math.Min((uint)_inputString.IndexOf(']'), (uint)_inputString.Length);
-                ReadOnlySpan<char> candidate = _inputString.Slice(0, assemblyNameLength);
-
+                ReadOnlySpan<char> candidate = GetAssemblyNameCandidate(_inputString);
                 if (!AssemblyNameInfo.TryParse(candidate, out assemblyName))
                 {
                     return false;
                 }
 
-                _inputString = _inputString.Slice(assemblyNameLength);
+                _inputString = _inputString.Slice(candidate.Length);
                 return true;
             }
 

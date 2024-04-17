@@ -68,10 +68,10 @@ namespace System.Reflection
             }
         }
 
-        private Type GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, AssemblyName assemblyNameIfAny, string fullEscapedName)
+        private Type GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, AssemblyNameInfo assemblyNameIfAny, string fullEscapedName)
         {
             ModuleDesc module = (assemblyNameIfAny == null) ? _module :
-                _module.Context.ResolveAssembly(assemblyNameIfAny, throwIfNotFound: _throwIfNotFound);
+                _module.Context.ResolveAssembly(assemblyNameIfAny.ToAssemblyName(), throwIfNotFound: _throwIfNotFound);
 
             if (_canonResolver != null && nestedTypeNames.IsEmpty)
             {

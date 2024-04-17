@@ -24,7 +24,7 @@ namespace System.Reflection
         private AssemblyHashAlgorithm _hashAlgorithm;
 
         private AssemblyVersionCompatibility _versionCompatibility;
-        internal AssemblyNameFlags _flags;
+        private AssemblyNameFlags _flags;
 
         public AssemblyName(string assemblyName)
             : this()
