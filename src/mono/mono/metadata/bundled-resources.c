@@ -73,6 +73,17 @@ bundled_resources_is_known_assembly_extension (const char *ext)
 #endif
 }
 
+// strrchr calls strlen, so we need to do a search with known length instead
+// for some reason memrchr is defined in a header but the build fails when we try to use it
+static const char *
+g_memrchr (const char *s, char c, size_t n)
+{
+	while (n--)
+		if (s[n] == c)
+			return (void *)(s + n);
+	return NULL;
+}
+
 // If a bundled resource has a known assembly extension, we strip the extension from its name
 // This ensures that lookups for foo.dll will work even if the assembly is in a webcil container
 static char *
@@ -80,12 +91,12 @@ key_from_id (const char *id, char *buffer, guint buffer_len)
 {
 	size_t id_length = strlen (id),
 		extension_offset = -1;
-	const char *extension = strrchr (id, '.');
+	const char *extension = g_memrchr (id, '.', id_length);
 	if (extension)
 		extension_offset = extension - id;
 	if (!buffer) {
 		buffer_len = (guint)(id_length + 1);
-		buffer = g_malloc(buffer_len);
+		buffer = g_malloc (buffer_len);
 	}
 	buffer[0] = 0;
 
