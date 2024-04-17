@@ -50,12 +50,13 @@ namespace System.Linq.Parallel.Tests
         {
             IEnumerable<int> enumerable = labeled.Item.AsEnumerable();
 
-            // The LINQ Cast<T>() retains origin type for ParallelEnumerable  and Partitioner when unordered,
+            // The LINQ Cast<T>() retains origin type for ParallelEnumerable and Partitioner when unordered,
             // (and all when ordered, due to the extra wrapper)
             // although aliased as IEnumerable<T>, so further LINQ calls work as expected.
             // If this test starts failing, update this test, and maybe mention it in release notes.
             Assert.IsNotType<ParallelQuery<int>>(enumerable.Cast<int>());
             Assert.True(enumerable.Cast<int>() is ParallelQuery<int>);
+            Assert.True(enumerable.OfType<int>() is ParallelQuery<int>); // for non-nullable value types, OfType is equivalent to Cast
 
             Assert.False(enumerable.DefaultIfEmpty() is ParallelQuery<int>);
             Assert.False(enumerable.Distinct() is ParallelQuery<int>);
@@ -64,7 +65,6 @@ namespace System.Linq.Parallel.Tests
             Assert.False(enumerable.GroupJoin(Enumerable.Range(0, count), x => x, y => y, (x, g) => x) is ParallelQuery<int>);
             Assert.False(enumerable.Intersect(Enumerable.Range(0, count)) is ParallelQuery<int>);
             Assert.False(enumerable.Join(Enumerable.Range(0, count), x => x, y => y, (x, y) => x) is ParallelQuery<int>);
-            Assert.False(enumerable.OfType<int>() is ParallelQuery<int>);
             Assert.False(enumerable.OrderBy(x => x) is ParallelQuery<int>);
             Assert.False(enumerable.OrderByDescending(x => x) is ParallelQuery<int>);
             Assert.False(enumerable.Reverse() is ParallelQuery<int>);

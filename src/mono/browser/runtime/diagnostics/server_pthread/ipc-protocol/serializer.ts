@@ -5,7 +5,7 @@ import { mono_assert } from "../../../globals";
 import Serializer from "./base-serializer";
 import { CommandSetId, ServerCommandId } from "./types";
 
-export function createBinaryCommandOKReply(payload?: Uint8Array): Uint8Array {
+export function createBinaryCommandOKReply (payload?: Uint8Array): Uint8Array {
     const len = Serializer.computeMessageByteLength(payload);
     const buf = new Uint8Array(len);
     const pos = { pos: 0 };
@@ -16,7 +16,7 @@ export function createBinaryCommandOKReply(payload?: Uint8Array): Uint8Array {
     return buf;
 }
 
-function serializeGuid(buf: Uint8Array, pos: { pos: number }, guid: string): void {
+function serializeGuid (buf: Uint8Array, pos: { pos: number }, guid: string): void {
     guid.split("-").forEach((part) => {
         // FIXME: I'm sure the endianness is wrong here
         for (let i = 0; i < part.length; i += 2) {
@@ -26,7 +26,7 @@ function serializeGuid(buf: Uint8Array, pos: { pos: number }, guid: string): voi
     });
 }
 
-function serializeAsciiLiteralString(buf: Uint8Array, pos: { pos: number }, s: string): void {
+function serializeAsciiLiteralString (buf: Uint8Array, pos: { pos: number }, s: string): void {
     const len = s.length;
     const hasNul = s[len - 1] === "\0";
     for (let i = 0; i < len; i++) {
@@ -38,7 +38,7 @@ function serializeAsciiLiteralString(buf: Uint8Array, pos: { pos: number }, s: s
 }
 
 
-export function createAdvertise(guid: string, processId: [/*lo*/ number, /*hi*/number]): Uint8Array {
+export function createAdvertise (guid: string, processId: [/*lo*/ number, /*hi*/number]): Uint8Array {
     const BUF_LENGTH = 34;
     const buf = new Uint8Array(BUF_LENGTH);
     const pos = { pos: 0 };

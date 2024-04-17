@@ -74,13 +74,13 @@ unw_get_save_loc (unw_cursor_t *cursor, int reg, unw_save_loc_t *sloc)
   if (DWARF_IS_REG_LOC (loc))
     {
       sloc->type = UNW_SLT_REG;
-      sloc->u.regnum = DWARF_GET_LOC (loc);
+      sloc->u.regnum = DWARF_GET_REG_LOC (loc);
     }
   else
 #endif
     {
       sloc->type = UNW_SLT_MEMORY;
-      sloc->u.addr = DWARF_GET_LOC (loc);
+      sloc->u.addr = DWARF_GET_MEM_LOC (loc);
     }
   return 0;
 }

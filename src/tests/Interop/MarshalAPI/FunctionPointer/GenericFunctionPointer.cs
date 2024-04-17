@@ -29,6 +29,12 @@ public partial class FunctionPtr
         return new() { X = Convert.ToInt32(arg) };
     }
 
+    [UnmanagedCallersOnly]
+    static unsafe void UnmanagedExportedFunctionRefInt(int* pval, float arg)
+    {
+        *pval = Convert.ToInt32(arg);
+    }
+
     class GenericCaller<T>
     {
         internal static unsafe T GenericCalli<U>(void* fnptr, U arg)
@@ -39,6 +45,11 @@ public partial class FunctionPtr
         internal static unsafe BlittableGeneric<T> WrappedGenericCalli<U>(void* fnptr, U arg)
         {
             return ((delegate* unmanaged<U, BlittableGeneric<T>>)fnptr)(arg);
+        }
+
+        internal static unsafe void NonGenericCalli<U>(void* fnptr, ref int val, float arg)
+        {
+            ((delegate* unmanaged<ref int, float, void>)fnptr)(ref val, arg);
         }
     }
 
@@ -79,6 +90,14 @@ public partial class FunctionPtr
         unsafe
         {
             outVar = GenericCaller<string>.WrappedGenericCalli((delegate* unmanaged<float, BlittableGeneric<string>>)&UnmanagedExportedFunctionBlittableGenericString, inVal).X;
+        }
+        Assert.Equal(expectedValue, outVar);
+
+        outVar = 0;
+        Console.WriteLine("Testing non-GenericCalli with non-blittable argument in a generic caller");
+        unsafe
+        {
+            GenericCaller<string>.NonGenericCalli<string>((delegate* unmanaged<int*, float, void>)&UnmanagedExportedFunctionRefInt, ref outVar, inVal);
         }
         Assert.Equal(expectedValue, outVar);
     }

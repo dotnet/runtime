@@ -136,6 +136,7 @@ namespace System
         public static bool IsWasmThreadingSupported => IsBrowser && IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
         public static bool IsNotWasmThreadingSupported => !IsWasmThreadingSupported;
         public static bool IsWasmBackgroundExec => IsBrowser && IsEnvironmentVariableTrue("IsWasmBackgroundExec");
+        public static bool IsThreadingSupportedNotBrowserBackgroundExec => IsWasmThreadingSupported && !IsWasmBackgroundExec;
         public static bool IsWasmBackgroundExecOrSingleThread => IsWasmBackgroundExec || IsNotWasmThreadingSupported;
         public static bool IsThreadingSupportedOrBrowserBackgroundExec => IsWasmBackgroundExec || !IsBrowser;
         public static bool IsBinaryFormatterSupported => IsNotMobile && !IsNativeAot;
@@ -151,6 +152,8 @@ namespace System
         public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
         public static bool IsWebSocketSupported => IsEnvironmentVariableTrue("IsWebSocketSupported");
         public static bool IsNodeJS => IsEnvironmentVariableTrue("IsNodeJS");
+        public static bool IsFirefox => IsEnvironmentVariableTrue("IsFirefox");
+        public static bool IsChromium => IsEnvironmentVariableTrue("IsChromium");
         public static bool IsNotNodeJS => !IsNodeJS;
         public static bool IsNodeJSOnWindows => GetNodeJSPlatform() == "win32";
         public static bool LocalEchoServerIsNotAvailable => !LocalEchoServerIsAvailable;
@@ -282,7 +285,7 @@ namespace System
         public static bool UsesMobileAppleCrypto => IsMacCatalyst || IsiOS || IstvOS;
 
         // Changed to `true` when trimming
-        public static bool IsBuiltWithAggressiveTrimming => IsNativeAot;
+        public static bool IsBuiltWithAggressiveTrimming => IsNativeAot || IsAppleMobile;
         public static bool IsNotBuiltWithAggressiveTrimming => !IsBuiltWithAggressiveTrimming;
         public static bool IsTrimmedWithILLink => IsBuiltWithAggressiveTrimming && !IsNativeAot;
 

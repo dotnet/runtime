@@ -47,6 +47,7 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
 
             _ASSERT(type != nullptr);
             _ASSERT(FOH_COMMIT_SIZE >= MIN_OBJECT_SIZE);
+            _ASSERT(!type->Collectible());
 
             // Currently we don't support frozen objects with special alignment requirements
             // TODO: We should also give up on arrays of doubles on 32-bit platforms.

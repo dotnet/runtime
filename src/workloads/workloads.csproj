@@ -132,7 +132,7 @@
       <ShortNames Include="Microsoft.NET.Workload.Mono.ToolChain.Current.">
         <Replacement>Mono.</Replacement>
       </ShortNames>
-      <ShortNames Include="microsoft.netcore.app.runtime;Microsoft.NETCore.App.Runtime;microsoft.net.runtime;Microsoft.NET.Runtime">
+      <ShortNames Include="microsoft.netcore.app.runtime;Microsoft.NETCore.App.Runtime;microsoft.net.runtime;Microsoft.NET.Runtime;Microsoft.NET.Sdk">
         <Replacement>Microsoft</Replacement>
       </ShortNames>
       <ShortNames Include="Microsoft.NET.Workload;microsoft.net.workload">
@@ -186,6 +186,15 @@
     <ItemGroup>
       <VSDrop Include="%(PartitionedSwixProjects.ZipFile)" SourceDirectory="%(ManifestOutputPath)" />
     </ItemGroup>
+
+    <!-- Generate metadata for VSDROP automation. This information cannot be obtained during staging when insertions are triggered -->
+    <ItemGroup>
+      <VSDropMetadata Include="$(FileVersion)" />
+      <VSDropMetadata Include="$(BUILD_REPOSITORY_NAME)" />
+      <VSDropMetadata Include="$(BUILD_SOURCEBRANCH)"/>
+    </ItemGroup>
+
+    <WriteLinesToFile File="%(VSDrop.SourceDirectory)\.metadata" Lines="@(VSDropMetadata)" Overwrite="true" Condition="'$(OfficialBuild)' == 'true'" />
 
     <MakeDir Directories="$(ArtifactsNonShippingPackagesDir)" />
     <MakeDir Directories="$(VisualStudioSetupInsertionPath)" />

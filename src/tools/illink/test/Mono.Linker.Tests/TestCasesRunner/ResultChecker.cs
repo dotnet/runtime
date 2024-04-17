@@ -101,6 +101,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					if (!HasActiveSkipKeptItemsValidationAttribute(linkResult.TestCase.FindTypeDefinition (original))) {
 						CreateAssemblyChecker (original, linked, linkResult).Verify ();
 					}
+					CreateILChecker ().Check(linkResult, original);
 				}
 
 				VerifyLinkingOfOtherAssemblies (original);
@@ -279,7 +280,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual void InitialChecking (TrimmedTestCaseResult linkResult, AssemblyDefinition original, AssemblyDefinition linked)
 		{
-			CreateILChecker ().Check(linkResult, original);
 			ValidateTypeRefsHaveValidAssemblyRefs (linked);
 		}
 

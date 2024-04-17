@@ -445,7 +445,7 @@ namespace System.Xml.Xsl.Xslt
         public readonly string NanSymbol;
         public readonly char[] Characters;
 
-        public static DecimalFormatDecl Default = new DecimalFormatDecl(new XmlQualifiedName(), "Infinity", "NaN", ".,%\u20300#;-");
+        public static readonly DecimalFormatDecl Default = new DecimalFormatDecl(new XmlQualifiedName(), "Infinity", "NaN", ".,%\u20300#;-");
 
         public DecimalFormatDecl(XmlQualifiedName name, string infinitySymbol, string nanSymbol, string characters)
         {

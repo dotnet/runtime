@@ -135,7 +135,15 @@ namespace System
             get => IsPrimitiveImpl();
         }
         protected abstract bool IsPrimitiveImpl();
-        public bool IsValueType { [Intrinsic] get => IsValueTypeImpl(); }
+        public bool IsValueType
+        {
+#if NATIVEAOT
+            // https://github.com/dotnet/runtime/issues/97272
+            [MethodImpl(MethodImplOptions.NoOptimization)]
+#endif
+            [Intrinsic]
+            get => IsValueTypeImpl();
+        }
         protected virtual bool IsValueTypeImpl() => IsSubclassOf(typeof(ValueType));
 
         [Intrinsic]

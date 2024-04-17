@@ -144,7 +144,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             File.Delete(builtApp.DepsJson);
 
             var shortVersion = TestContext.Tfm[3..]; // trim "net" from beginning
-            var builder = NetCoreAppBuilder.ForNETCoreApp(AppName, TestContext.TargetRID, shortVersion);
+            var builder = NetCoreAppBuilder.ForNETCoreApp(AppName, TestContext.BuildRID, shortVersion);
 
             // Update the .runtimeconfig.json
             builder.WithRuntimeConfig(c =>
@@ -164,7 +164,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                     .WithAsset(Path.GetFileName(builtApp.AppDll), f => f.NotOnDisk())));
             if (selfContained)
             {
-                builder.WithRuntimePack($"{Constants.MicrosoftNETCoreApp}.Runtime.{TestContext.TargetRID}", TestContext.MicrosoftNETCoreAppVersion, l => l
+                builder.WithRuntimePack($"{Constants.MicrosoftNETCoreApp}.Runtime.{TestContext.BuildRID}", TestContext.MicrosoftNETCoreAppVersion, l => l
                     .WithAssemblyGroup(string.Empty, g =>
                     {
                         foreach (var file in Binaries.GetRuntimeFiles().Assemblies)

@@ -7612,7 +7612,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void InternalTestAotSubset()
+        public static void InternTestAotSubset()
         {
 #pragma warning disable 0618 // suppress obsolete warning for String.Copy
             string emptyFromField = string.Empty;
@@ -7627,6 +7627,17 @@ namespace System.Tests
             string sNew = string.Copy(sInterned1);
             Assert.NotSame(sInterned1, sNew);
 #pragma warning restore 0618 // restore warning when accessing obsolete members
+        }
+
+        [Fact]
+        public static void InternTestCanReturnNull()
+        {
+            for (int i = 0; i < 20; i++)
+            {
+                if (string.IsInterned(Guid.NewGuid().ToString()) == null)
+                    return;
+            }
+            Assert.Fail("string.IsInterned never returns null");
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]

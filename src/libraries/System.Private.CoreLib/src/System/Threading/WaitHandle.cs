@@ -106,6 +106,7 @@ namespace System.Threading
 
         internal bool WaitOneNoCheck(
             int millisecondsTimeout,
+            bool useTrivialWaits = false,
             object? associatedObject = null,
             NativeRuntimeEventSource.WaitHandleWaitSourceMap waitSource = NativeRuntimeEventSource.WaitHandleWaitSourceMap.Unknown)
         {
@@ -116,28 +117,36 @@ namespace System.Threading
             SafeWaitHandle? waitHandle = _waitHandle;
             ObjectDisposedException.ThrowIf(waitHandle is null, this);
 
+#if FEATURE_WASM_MANAGED_THREADS
+            Thread.AssureBlockingPossible();
+#endif
+
             bool success = false;
             try
             {
                 waitHandle.DangerousAddRef(ref success);
 
                 int waitResult = WaitFailed;
-                SynchronizationContext? context = SynchronizationContext.Current;
-                if (context != null && context.IsWaitNotificationRequired())
+
+                // Check if the wait should be forwarded to a SynchronizationContext wait override. Trivial waits don't allow
+                // reentrance or interruption, and are not forwarded.
+                bool usedSyncContextWait = false;
+                if (!useTrivialWaits)
                 {
-                    waitResult = context.Wait(new[] { waitHandle.DangerousGetHandle() }, false, millisecondsTimeout);
+                    SynchronizationContext? context = SynchronizationContext.Current;
+                    if (context != null && context.IsWaitNotificationRequired())
+                    {
+                        usedSyncContextWait = true;
+                        waitResult = context.Wait(new[] { waitHandle.DangerousGetHandle() }, false, millisecondsTimeout);
+                    }
                 }
-                else
+
+                if (!usedSyncContextWait)
                 {
 #if !CORECLR // CoreCLR sends the wait events from the native side
                     bool sendWaitEvents =
                         millisecondsTimeout != 0 &&
-#if NATIVEAOT
-                        // A null check is necessary in NativeAOT due to the possibility of reentrance during class
-                        // construction, as this path can be reached through Lock. See
-                        // https://github.com/dotnet/runtime/issues/94728 for a call stack.
-                        NativeRuntimeEventSource.Log != null &&
-#endif
+                        !useTrivialWaits &&
                         NativeRuntimeEventSource.Log.IsEnabled(
                             EventLevel.Verbose,
                             NativeRuntimeEventSource.Keywords.WaitHandleKeyword);
@@ -149,7 +158,7 @@ namespace System.Threading
                         waitSource != NativeRuntimeEventSource.WaitHandleWaitSourceMap.MonitorWait;
                     if (tryNonblockingWaitFirst)
                     {
-                        waitResult = WaitOneCore(waitHandle.DangerousGetHandle(), millisecondsTimeout: 0);
+                        waitResult = WaitOneCore(waitHandle.DangerousGetHandle(), 0 /* millisecondsTimeout */, useTrivialWaits);
                         if (waitResult == WaitTimeout)
                         {
                             // Do a full wait and send the wait events
@@ -171,7 +180,7 @@ namespace System.Threading
                     if (!tryNonblockingWaitFirst)
 #endif
                     {
-                        waitResult = WaitOneCore(waitHandle.DangerousGetHandle(), millisecondsTimeout);
+                        waitResult = WaitOneCore(waitHandle.DangerousGetHandle(), millisecondsTimeout, useTrivialWaits);
                     }
 
 #if !CORECLR // CoreCLR sends the wait events from the native side

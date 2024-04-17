@@ -39,6 +39,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public ReadyToRunGenericHelperNode(NodeFactory factory, ReadyToRunHelperId helperId, object target, TypeSystemEntity dictionaryOwner)
         {
+            Debug.Assert(
+                (dictionaryOwner is TypeDesc type && type.HasInstantiation)
+                || (dictionaryOwner is MethodDesc method && method.HasInstantiation));
             _id = helperId;
             _dictionaryOwner = dictionaryOwner;
             _target = target;
@@ -151,7 +154,7 @@ namespace ILCompiler.DependencyAnalysis
                         if (createInfo.NeedsVirtualMethodUseTracking)
                         {
                             MethodDesc instantiatedTargetMethod = createInfo.TargetMethod.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation);
-                            if (!factory.VTable(instantiatedTargetMethod.OwningType).HasFixedSlots)
+                            if (!factory.VTable(instantiatedTargetMethod.OwningType).HasKnownVirtualMethodUse)
                             {
                                 result.Add(
                                     new DependencyListEntry(

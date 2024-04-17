@@ -19,7 +19,7 @@ namespace System.Security.Cryptography
     /// </remarks>
     public sealed class KmacXof128 : IDisposable
     {
-        private readonly LiteKmac _kmacProvider;
+        private ConcurrentSafeKmac _kmacProvider;
         private bool _disposed;
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace System.Security.Cryptography
         public KmacXof128(ReadOnlySpan<byte> key, ReadOnlySpan<byte> customizationString = default)
         {
             CheckPlatformSupport();
-            _kmacProvider = LiteHashProvider.CreateKmac(HashAlgorithmNames.KMAC128, key, customizationString, xof: true);
+            _kmacProvider = new ConcurrentSafeKmac(HashAlgorithmNames.KMAC128, key, customizationString, xof: true);
         }
 
         /// <summary>
