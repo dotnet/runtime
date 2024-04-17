@@ -4485,11 +4485,11 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 
 	result = mono_class_implement_interface_slow_cached (target, candidate, cache);
 
+	// Under most circumstances we won't have multiple threads competing to run implement_interface_slow,
+	//  so it's not worth making this thread-local and potentially keeping a cache instance around per-thread.
 	cas_result = mono_atomic_cas_ptr ((volatile gpointer *)&implement_interface_scratch_cache, cache, NULL);
-	if (cas_result != NULL) {
-		g_printf ("freeing extra implement_interface cache\n");
+	if (cas_result != NULL)
 		dn_simdhash_free (cache);
-	}
 
 	return result;
 }
