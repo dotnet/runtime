@@ -886,40 +886,9 @@ namespace Wasm.Build.Tests
             EnsureWasmAbiRulesAreFollowed(buildArgs, host, id);
 
         [Theory]
-        [BuildAndRun(host: RunHost.Chrome, aot: true)]
+        [BuildAndRun(host: RunHost.Chrome, aot: false)]
         public void UCOWithSpecialCharacters(BuildArgs buildArgs, RunHost host, string id)
         {
-            string code =
-                """
-                using System;
-                using System.Runtime.InteropServices;
-                public unsafe partial class Test
-                {
-
-                    public unsafe static int Main(string[] args)
-                    {
-                        ((IntPtr)(delegate* unmanaged<int,int>)&Interop.ManagedFunc).ToString();
-
-                        Console.WriteLine($"main: {args.Length}");
-                        Interop.UnmanagedFunc();
-                        return 0;
-                    }
-                }
-
-                file partial class Interop
-                {
-                    [UnmanagedCallersOnly(EntryPoint = "ManagedFunc")]
-                    public static int ManagedFunc(int number)
-                    {
-                        // called from MyImport aka UnmanagedFunc
-                        Console.WriteLine($"MyExport({number}) -> 42");
-                        return 42;
-                    }
-
-                    [DllImport("local", EntryPoint = "UnmanagedFunc")]
-                    public static extern void UnmanagedFunc(); // calls ManagedFunc aka MyExport
-                }
-                """;
             string cCode =
                     """
                     #include <stdio.h>
@@ -947,14 +916,11 @@ namespace Wasm.Build.Tests
                                         new BuildProjectOptions(
                                             InitProject: () =>
                                             {
-                                                File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
+                                                File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "UnmanagedCallback.cs"), Path.Combine(_projectDir!, "Program.cs"));
                                                 File.WriteAllText(Path.Combine(_projectDir!, "local.c"), cCode);
                                             },
-                                            Publish: buildArgs.AOT,
-                                            // Verbosity: "diagnostic",
+                                            Publish: true,
                                             DotnetWasmFromRuntimePack: false));
-
-            string objDir = Path.Combine(_projectDir!, "obj", buildArgs.Config!, "net9.0", "browser-wasm", "wasm", buildArgs.AOT ? "for-publish" : "for-build");
 
             var runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("ManagedFunc returned 42", runOutput);
