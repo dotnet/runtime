@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.Tests.Common;
 using Xunit;
 
@@ -151,6 +152,66 @@ namespace System.Runtime.InteropServices.Tests
 
             Assert.Throws<InvalidCastException>(() => Marshal.GetDelegateForFunctionPointer<OtherNonGenericDelegate>(ptr));
             GC.KeepAlive(d);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/99478", TestRuntimes.Mono)]
+        public void GetDelegateForFunctionPointer_Resurrection()
+        {
+            GCHandle handle = Alloc();
+
+            if (PlatformDetection.IsPreciseGcSupported)
+            {
+                while (!IsNullTarget(handle))
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                }
+            }
+
+            handle.Free();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static GCHandle Alloc()
+            {
+                GCHandle gcHandle = default;
+                gcHandle = GCHandle.Alloc(new FreachableObject(), GCHandleType.WeakTrackResurrection);
+                return gcHandle;
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static bool IsNullTarget(GCHandle handle)
+            {
+                return handle.Target is null;
+            }
+        }
+
+        private class FreachableObject
+        {
+            private readonly Action _del;
+            private readonly IntPtr _fnptr;
+            private int _count;
+
+            internal FreachableObject()
+            {
+                _del = new Action(SomeFunction);
+                _fnptr = Marshal.GetFunctionPointerForDelegate(_del);
+            }
+
+            // Note: This method cannot be replaced by a lambda for the test to trigger the delegate resurrection
+            private void SomeFunction()
+            {
+            }
+
+            ~FreachableObject()
+            {
+                Assert.Same(Marshal.GetDelegateForFunctionPointer<Action>(_fnptr), _del);
+
+                if (_count++ < 3)
+                {
+                    GC.ReRegisterForFinalize(this);
+                }
+            }
         }
 
         public delegate void GenericDelegate<T>(T t);

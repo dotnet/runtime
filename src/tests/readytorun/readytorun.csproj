@@ -1,4 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Tracking issue: https://github.com/dotnet/runtime/issues/90427 -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'minifullaot' or '$(RuntimeVariant)' == 'llvmfullaot')">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
   <ItemGroup>
     <MergedWrapperProjectReference Include="*/**/*.??proj" />
     <MergedWrapperProjectReference Remove="tests/testv1/*.??proj" />

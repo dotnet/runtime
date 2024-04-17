@@ -59,10 +59,6 @@ namespace ILCompiler.DependencyAnalysis
                 if (field.IsLiteral || field.HasRva)
                     continue;
 
-                // CppCodegen: implement thread statics
-                if (factory.Target.Abi == TargetAbi.CppCodegen && field.IsThreadStatic)
-                    continue;
-
                 FieldTableFlags flags;
                 if (field.IsStatic)
                 {

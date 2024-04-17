@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using Internal.Pgo;
 
 namespace Internal.JitInterface
@@ -1507,10 +1508,21 @@ namespace Internal.JitInterface
             public CorInfoType type;
         }
 
+        [InlineArray(4)]
+        private struct LoweredOffsets
+        {
+            public uint offset;
+        }
+
         private SwiftLoweredTypes _loweredElements;
 
         [UnscopedRef]
         public Span<CorInfoType> LoweredElements => _loweredElements;
+
+        private LoweredOffsets _offsets;
+
+        [UnscopedRef]
+        public Span<uint> Offsets => _offsets;
 
         public nint numLoweredElements;
 
@@ -1522,7 +1534,20 @@ namespace Internal.JitInterface
                 return "byReference";
             }
 
-            return string.Join(", ", LoweredElements[0..(int)numLoweredElements].ToArray());
+            var stringBuilder = new StringBuilder();
+            stringBuilder.Append('{');
+            for (int i = 0; i < numLoweredElements; i++)
+            {
+                if (i != 0)
+                {
+                    stringBuilder.Append(", ");
+                }
+                stringBuilder.Append(LoweredElements[i]);
+                stringBuilder.Append(": ");
+                stringBuilder.Append(Offsets[i]);
+            }
+            stringBuilder.Append('}');
+            return stringBuilder.ToString();
         }
     }
 }

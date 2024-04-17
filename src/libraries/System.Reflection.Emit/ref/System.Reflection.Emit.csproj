@@ -10,5 +10,6 @@
     <ProjectReference Include="..\..\System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj" />
     <ProjectReference Include="..\..\System.Reflection.Primitives\ref\System.Reflection.Primitives.csproj" />
     <ProjectReference Include="..\..\System.Reflection.Emit.ILGeneration\ref\System.Reflection.Emit.ILGeneration.csproj" />
+    <ProjectReference Include="..\..\System.Reflection.Metadata\ref\System.Reflection.Metadata.csproj" />
   </ItemGroup>
 </Project>

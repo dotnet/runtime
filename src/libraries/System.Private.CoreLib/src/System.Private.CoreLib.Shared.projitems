@@ -454,7 +454,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\AhoCorasickBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\AhoCorasickNode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\CharacterFrequencyHelper.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\EightPackedReferences.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\RabinKarp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\StringSearchValuesHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\TeddyBucketizer.cs" />
@@ -472,6 +471,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\StringSearchValuesAhoCorasick.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\StringSearchValuesRabinKarp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOutOfRangeException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\InlineArrays.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\InsufficientExecutionStackException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\InsufficientMemoryException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Int16.cs" />
@@ -615,7 +615,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\OutOfMemoryException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\OverflowException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ParamArrayAttribute.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\ParamsArray.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ParseNumbers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\PasteArguments.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\PlatformID.cs" />
@@ -1031,6 +1030,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\VarEnum.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\VariantWrapper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\WasmImportLinkageAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Enums.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\ISimdVector_2.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Scalar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\SimdVectorExtensions.cs" />
@@ -1430,6 +1430,9 @@
     <Compile Include="$(CommonPath)System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\Number.Formatting.Common.cs">
+      <Link>System\Number.Formatting.Common.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\Number.NumberBuffer.cs">
       <Link>System\Number.NumberBuffer.cs</Link>
     </Compile>
@@ -1524,6 +1527,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventCounter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventDescriptor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventPipe.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventPipe.Internal.cs" Condition="'$(FeaturePerfTracing)' == 'true' and '$(FeatureMono)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventPipeEventDispatcher.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventPipeEventProvider.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventPipeMetadataGenerator.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
@@ -1537,6 +1541,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\NativeRuntimeEventSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\NativeRuntimeEventSource.Threading.cs" Condition="'$(FeaturePerfTracing)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\NativeRuntimeEventSource.Threading.NativeSinks.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\NativeRuntimeEventSource.Threading.NativeSinks.Internal.cs" Condition="'$(FeaturePerfTracing)' == 'true' and '$(FeatureMono)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\PollingCounter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\RuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\Winmeta.cs" />
@@ -2683,7 +2688,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.ThreadCounts.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.WaitThread.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.WorkerThread.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.WorkerThread.NonBrowser.cs" Condition="'$(TargetsBrowser)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.WorkerTracking.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or ('$(TargetsBrowser)' == 'true' and '$(FeatureWasmManagedThreads)' != 'true') or '$(TargetsWasi)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
@@ -2695,7 +2699,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.Portable.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphoreBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Portable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />

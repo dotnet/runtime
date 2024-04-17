@@ -212,7 +212,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
     RegisterType registerType = call->TypeGet();
 
-// Set destination candidates for return value of the call.
+    // Set destination candidates for return value of the call.
 
 #ifdef TARGET_ARM
     if (call->IsHelperCall(compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
@@ -224,22 +224,22 @@ int LinearScan::BuildCall(GenTreeCall* call)
     else
 #endif // TARGET_ARM
         if (hasMultiRegRetVal)
-    {
-        assert(retTypeDesc != nullptr);
-        dstCandidates = retTypeDesc->GetABIReturnRegs();
-    }
-    else if (varTypeUsesFloatArgReg(registerType))
-    {
-        dstCandidates = RBM_FLOATRET;
-    }
-    else if (registerType == TYP_LONG)
-    {
-        dstCandidates = RBM_LNGRET;
-    }
-    else
-    {
-        dstCandidates = RBM_INTRET;
-    }
+        {
+            assert(retTypeDesc != nullptr);
+            dstCandidates = retTypeDesc->GetABIReturnRegs(call->GetUnmanagedCallConv());
+        }
+        else if (varTypeUsesFloatArgReg(registerType))
+        {
+            dstCandidates = RBM_FLOATRET;
+        }
+        else if (registerType == TYP_LONG)
+        {
+            dstCandidates = RBM_LNGRET;
+        }
+        else
+        {
+            dstCandidates = RBM_INTRET;
+        }
 
     // First, count reg args
     // Each register argument corresponds to one source.
@@ -394,10 +394,9 @@ int LinearScan::BuildCall(GenTreeCall* call)
     BuildDefsWithKills(call, dstCount, dstCandidates, killMask);
 
 #ifdef SWIFT_SUPPORT
-    if ((call->gtCallMoreFlags & GTF_CALL_M_SWIFT_ERROR_HANDLING) != 0)
+    if (call->HasSwiftErrorHandling())
     {
         // Tree is a Swift call with error handling; error register should have been killed
-        assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
         assert((killMask & RBM_SWIFT_ERROR) != 0);
 
         // After a Swift call that might throw returns, we expect the error register to be consumed

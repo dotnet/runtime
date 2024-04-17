@@ -43,8 +43,6 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		FeatureChecksVisitor _featureChecksVisitor;
 
-		DataFlowAnalyzerContext _dataFlowAnalyzerContext;
-
 		public TrimAnalysisVisitor (
 			Compilation compilation,
 			LocalStateAndContextLattice<MultiValue, FeatureContext, ValueSetLattice<SingleValue>, FeatureContextLattice> lattice,
@@ -59,7 +57,6 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			_multiValueLattice = lattice.LocalStateLattice.Lattice.ValueLattice;
 			TrimAnalysisPatterns = trimAnalysisPatterns;
 			_featureChecksVisitor = new FeatureChecksVisitor (dataFlowAnalyzerContext);
-			_dataFlowAnalyzerContext = dataFlowAnalyzerContext;
 		}
 
 		public override FeatureChecksValue GetConditionValue (IOperation branchValueOperation, StateValue state)
@@ -436,7 +433,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			if (OwningSymbol is not IMethodSymbol method)
 				return;
 
-			// FeatureGuard validation needs to happen only for properties.
+			// FeatureGuard validation needs to happen only for property getters.
+			// Include properties with setters here because they will get validated later.
 			if (method.MethodKind != MethodKind.PropertyGet)
 				return;
 

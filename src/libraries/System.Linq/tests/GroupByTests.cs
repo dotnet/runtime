@@ -887,5 +887,32 @@ namespace System.Linq.Tests
                 }
             }
         }
+
+        [Fact]
+        public void EnumerateGrouping()
+        {
+            IGrouping<string, int> g = Enumerable.Range(0, 42).GroupBy(i => "onegroup").First();
+            Assert.Equal("onegroup", g.Key);
+            Assert.Equal(42, g.Count());
+
+            using IEnumerator<int> e = g.GetEnumerator();
+
+            var values = new HashSet<int>();
+
+            for (int trial = 0; trial < 3; trial++)
+            {
+                values.Clear();
+
+                while (e.MoveNext())
+                {
+                    Assert.True(values.Add(e.Current));
+                }
+
+                Assert.Equal(42, values.Count);
+                Assert.Equal(Enumerable.Range(0, 42), values.Order());
+
+                e.Reset();
+            }
+        }
     }
 }

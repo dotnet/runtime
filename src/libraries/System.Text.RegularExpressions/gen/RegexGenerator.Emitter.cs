@@ -391,11 +391,13 @@ namespace System.Text.RegularExpressions.Generator
         /// <summary>Adds a SearchValues instance declaration to the required helpers collection if the chars are ASCII.</summary>
         private static string EmitSearchValuesOrLiteral(ReadOnlySpan<char> chars, Dictionary<string, string[]> requiredHelpers)
         {
-            // SearchValues<char> is faster than a regular IndexOfAny("abcd") for sets of 4/5 values iff they are ASCII.
-            // Only emit SearchValues instances when we know they'll be faster to avoid increasing the startup cost too much.
-            Debug.Assert(chars.Length is 4 or 5);
+            Debug.Assert(chars.Length > 3);
 
-            return RegexCharClass.IsAscii(chars)
+            // IndexOfAny(SearchValues) is faster than a regular IndexOfAny("abcd") if:
+            // - There are more than 5 characters in the needle, or
+            // - There are only 4 or 5 characters in the needle and they're all ASCII.
+
+            return chars.Length > 5 || RegexCharClass.IsAscii(chars)
                 ? EmitSearchValues(chars.ToArray(), requiredHelpers)
                 : Literal(chars.ToString());
         }
@@ -416,7 +418,7 @@ namespace System.Text.RegularExpressions.Generator
                         bitmap[c >> 3] |= (byte)(1 << (c & 7));
                     }
 
-                    string hexBitmap = BitConverter.ToString(bitmap).Replace("-", string.Empty);
+                    string hexBitmap = ToHexStringNoDashes(bitmap);
 
                     fieldName = hexBitmap switch
                     {
@@ -1789,16 +1791,6 @@ namespace System.Text.RegularExpressions.Generator
                                     sliceStaticPos++;
                                     break;
 
-                                case RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic:
-                                case RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic:
-                                    // First character of the loop was handled by the switch. Emit matching code for the remainder of the loop.
-                                    Debug.Assert(child == startingLiteralNode);
-                                    Debug.Assert(child.M > 0);
-                                    sliceStaticPos++;
-                                    EmitNode(child.CloneCharLoopWithOneLessIteration());
-                                    writer.WriteLine();
-                                    break;
-
                                 case RegexNodeKind.Multi:
                                     // First character was handled by the switch. Emit matching code for the remainder of the multi string.
                                     sliceStaticPos++;
@@ -1808,16 +1800,20 @@ namespace System.Text.RegularExpressions.Generator
                                     writer.WriteLine();
                                     break;
 
-                                case RegexNodeKind.Concatenate when child.Child(0) == startingLiteralNode && (startingLiteralNode.IsOneFamily || startingLiteralNode.IsSetFamily || startingLiteralNode.Kind is RegexNodeKind.Multi):
-                                    // This is a concatenation where its first node is the starting literal we found. This is a common
+                                case RegexNodeKind.Concatenate when child.Child(0) == startingLiteralNode && (startingLiteralNode.Kind is RegexNodeKind.One or RegexNodeKind.Set or RegexNodeKind.Multi):
+                                    // This is a concatenation where its first node is the starting literal we found and that starting literal
+                                    // is one of the nodes above that we know how to handle completely. This is a common
                                     // enough case that we want to special-case it to avoid duplicating the processing for that character
                                     // unnecessarily. So, we'll shave off that first node from the concatenation and then handle the remainder.
+                                    // Note that it's critical startingLiteralNode is something we can fully handle above: if it's not,
+                                    // we'll end up losing some of the pattern due to overwriting `remainder`.
                                     remainder = child;
                                     child = child.Child(0);
                                     remainder.ReplaceChild(0, new RegexNode(RegexNodeKind.Empty, remainder.Options));
                                     goto HandleChild; // reprocess just the first node that was saved; the remainder will then be processed below
 
                                 default:
+                                    Debug.Assert(remainder is null);
                                     remainder = child;
                                     break;
                             }
@@ -2712,6 +2708,12 @@ namespace System.Text.RegularExpressions.Generator
                 // If the generated code ends up here, it matched the lookaround, which actually
                 // means failure for a _negative_ lookaround, so we need to jump to the original done.
                 writer.WriteLine();
+                if (hasCaptures && isInLoop)
+                {
+                    // Pop the crawl position from the stack.
+                    writer.WriteLine("stackpos--;");
+                    EmitStackCookieValidate(stackCookie);
+                }
                 Goto(originalDoneLabel);
                 writer.WriteLine();
 
@@ -3510,11 +3512,10 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     if (iterationCount is null &&
                         node.Kind is RegexNodeKind.Notonelazy &&
-                        subsequent?.FindStartingLiteral(4) is RegexNode.StartingLiteralData literal && // 5 == max efficiently optimized by IndexOfAny, and we need to reserve 1 for node.Ch
+                        subsequent?.FindStartingLiteral() is RegexNode.StartingLiteralData literal &&
                         !literal.Negated && // not negated; can't search for both the node.Ch and a negated subsequent char with an IndexOf* method
                         (literal.String is not null ||
                          literal.SetChars is not null ||
-                         (literal.AsciiChars is not null && node.Ch < 128) || // for ASCII sets, only allow when the target can be efficiently included in the set
                          literal.Range.LowInclusive == literal.Range.HighInclusive ||
                          (literal.Range.LowInclusive <= node.Ch && node.Ch <= literal.Range.HighInclusive))) // for ranges, only allow when the range overlaps with the target, since there's no accelerated way to search for the union
                     {
@@ -3545,18 +3546,6 @@ namespace System.Text.RegularExpressions.Generator
                                 (false, 2) => $"{startingPos} = {sliceSpan}.IndexOfAny({Literal(node.Ch)}, {Literal(literal.SetChars[0])}, {Literal(literal.SetChars[1])});",
                                 (false, _) => $"{startingPos} = {sliceSpan}.IndexOfAny({EmitSearchValuesOrLiteral($"{node.Ch}{literal.SetChars}".AsSpan(), requiredHelpers)});",
                             });
-                        }
-                        else if (literal.AsciiChars is not null) // set of only ASCII characters
-                        {
-                            char[] asciiChars = literal.AsciiChars;
-                            overlap = asciiChars.Contains(node.Ch);
-                            if (!overlap)
-                            {
-                                Debug.Assert(node.Ch < 128);
-                                Array.Resize(ref asciiChars, asciiChars.Length + 1);
-                                asciiChars[asciiChars.Length - 1] = node.Ch;
-                            }
-                            writer.WriteLine($"{startingPos} = {sliceSpan}.IndexOfAny({EmitSearchValues(asciiChars, requiredHelpers)});");
                         }
                         else if (literal.Range.LowInclusive == literal.Range.HighInclusive) // single char from a RegexNode.One
                         {
@@ -4928,11 +4917,10 @@ namespace System.Text.RegularExpressions.Generator
             {
                 bool negated = RegexCharClass.IsNegated(node.Str) ^ negate;
 
-                Span<char> setChars = stackalloc char[5]; // current max that's vectorized
-                int setCharsCount = RegexCharClass.GetSetChars(node.Str, setChars);
-
-                // Prefer IndexOfAnyInRange over IndexOfAny for sets of 3-5 values that fit in a single range.
-                if (setCharsCount is not (1 or 2) && RegexCharClass.TryGetSingleRange(node.Str, out char lowInclusive, out char highInclusive))
+                // IndexOfAny{Except}InRange
+                // Prefer IndexOfAnyInRange over IndexOfAny, except for tiny ranges (1 or 2 items) that IndexOfAny handles more efficiently
+                if (RegexCharClass.TryGetSingleRange(node.Str, out char lowInclusive, out char highInclusive) &&
+                    (highInclusive - lowInclusive) > 1)
                 {
                     string indexOfAnyInRangeName = !negated ?
                         "IndexOfAnyInRange" :
@@ -4944,13 +4932,15 @@ namespace System.Text.RegularExpressions.Generator
                     return true;
                 }
 
-                if (setCharsCount > 0)
+                // IndexOfAny{Except}(ch1, ...)
+                Span<char> setChars = stackalloc char[128];
+                setChars = setChars.Slice(0, RegexCharClass.GetSetChars(node.Str, setChars));
+                if (!setChars.IsEmpty)
                 {
                     (string indexOfName, string indexOfAnyName) = !negated ?
                         ("IndexOf", "IndexOfAny") :
                         ("IndexOfAnyExcept", "IndexOfAnyExcept");
 
-                    setChars = setChars.Slice(0, setCharsCount);
                     indexOfExpr = setChars.Length switch
                     {
                         1 => $"{last}{indexOfName}({Literal(setChars[0])})",
@@ -4958,18 +4948,6 @@ namespace System.Text.RegularExpressions.Generator
                         3 => $"{last}{indexOfAnyName}({Literal(setChars[0])}, {Literal(setChars[1])}, {Literal(setChars[2])})",
                         _ => $"{last}{indexOfAnyName}({EmitSearchValuesOrLiteral(setChars, requiredHelpers)})",
                     };
-
-                    literalLength = 1;
-                    return true;
-                }
-
-                if (RegexCharClass.TryGetAsciiSetChars(node.Str, out char[]? asciiChars))
-                {
-                    string indexOfAnyName = !negated ?
-                        "IndexOfAny" :
-                        "IndexOfAnyExcept";
-
-                    indexOfExpr = $"{last}{indexOfAnyName}({EmitSearchValues(asciiChars, requiredHelpers)})";
 
                     literalLength = 1;
                     return true;
@@ -5427,7 +5405,7 @@ namespace System.Text.RegularExpressions.Generator
         {
 #pragma warning disable CA1850 // SHA256.HashData isn't available on netstandard2.0
             using SHA256 sha = SHA256.Create();
-            return $"{prefix}{BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(toEncode))).Replace("-", "")}";
+            return $"{prefix}{ToHexStringNoDashes(Encoding.UTF8.GetBytes(toEncode))}";
 #pragma warning restore CA1850
         }
 
@@ -5622,6 +5600,13 @@ namespace System.Text.RegularExpressions.Generator
 
             return style + bounds;
         }
+
+        private static string ToHexStringNoDashes(byte[] bytes) =>
+#if NETCOREAPP
+            Convert.ToHexString(bytes);
+#else
+            BitConverter.ToString(bytes).Replace("-", "");
+#endif
 
         private static FinishEmitBlock EmitBlock(IndentedTextWriter writer, string? clause, bool faux = false)
         {

@@ -402,8 +402,8 @@ In Blazor, you can customize the startup in your index.html
 <script src="_framework/blazor.webassembly.js" autostart="false"></script>
 <script>
 Blazor.start({
-    configureRuntime: function (builder) {
-        builder.withConfig({
+    configureRuntime: function (dotnet) {
+        dotnet.withConfig({
             browserProfilerOptions: {}
         });
     }

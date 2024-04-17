@@ -106,62 +106,48 @@ namespace HostApiInvokerApp
         /// <summary>
         /// Test invoking the native hostfxr api hostfxr_resolve_sdk2
         /// </summary>
-        /// <param name="args[0]">hostfxr_get_available_sdks</param>
-        /// <param name="args[1]">Directory of dotnet executable</param>
-        /// <param name="args[2]">Working directory where search for global.json begins</param>
-        /// <param name="args[3]">Flags</param>
+        /// <param name="args[0]">Directory of dotnet executable</param>
+        /// <param name="args[1]">Working directory where search for global.json begins</param>
+        /// <param name="args[2]">Flags</param>
         static void Test_hostfxr_resolve_sdk2(string[] args)
         {
-            if (args.Length != 4)
+            if (args.Length != 3)
             {
                 throw new ArgumentException("Invalid number of arguments passed");
             }
 
             var data = new List<(hostfxr.hostfxr_resolve_sdk2_result_key_t, string)>();
             int rc = hostfxr.hostfxr_resolve_sdk2(
-                exe_dir: args[1],
-                working_dir: args[2],
-                flags: Enum.Parse<hostfxr.hostfxr_resolve_sdk2_flags_t>(args[3]),
+                exe_dir: args[0],
+                working_dir: args[1],
+                flags: Enum.Parse<hostfxr.hostfxr_resolve_sdk2_flags_t>(args[2]),
                 result: (key, value) => data.Add((key, value)));
 
-            if (rc == 0)
-            {
-                Console.WriteLine("hostfxr_resolve_sdk2:Success");
-            }
-            else
-            {
-                Console.WriteLine($"hostfxr_resolve_sdk2:Fail[{rc}]");
-            }
-
-            Console.WriteLine($"hostfxr_resolve_sdk2 data:[{string.Join(';', data)}]");
+            string api = nameof(hostfxr.hostfxr_resolve_sdk2);
+            LogResult(api, rc);
+            Console.WriteLine($"{api} data:[{string.Join(';', data)}]");
         }
 
         /// <summary>
         /// Test invoking the native hostfxr api hostfxr_get_available_sdks
         /// </summary>
-        /// <param name="args[0]">hostfxr_get_available_sdks</param>
-        /// <param name="args[1]">Directory of dotnet executable</param>
+        /// <param name="args[0]">Directory of dotnet executable</param>
         static void Test_hostfxr_get_available_sdks(string[] args)
         {
-            if (args.Length != 2)
+            if (args.Length != 1)
             {
                 throw new ArgumentException("Invalid number of arguments passed");
             }
 
             string[] sdks = null;
             int rc = hostfxr.hostfxr_get_available_sdks(
-                exe_dir: args[1],
+                exe_dir: args[0],
                 (sdk_count, sdk_dirs) => sdks = sdk_dirs);
 
-            if (rc == 0)
-            {
-                Console.WriteLine("hostfxr_get_available_sdks:Success");
-                Console.WriteLine($"hostfxr_get_available_sdks sdks:[{string.Join(';', sdks)}]");
-            }
-            else
-            {
-                Console.WriteLine($"hostfxr_get_available_sdks:Fail[{rc}]");
-            }
+            string api = nameof(hostfxr.hostfxr_get_available_sdks);
+            LogResult(api, rc);
+            if (sdks != null)
+                Console.WriteLine($"{api} sdks:[{string.Join(';', sdks)}]");
         }
 
         static void Test_hostfxr_set_error_writer(string[] args)
@@ -193,13 +179,12 @@ namespace HostApiInvokerApp
         /// <summary>
         /// Test that invokes native api hostfxr_get_dotnet_environment_info.
         /// </summary>
-        /// <param name="args[0]">hostfxr_get_dotnet_environment_info</param>
-        /// <param name="args[1]">(Optional) Path to the directory with dotnet.exe</param>
+        /// <param name="args[0]">(Optional) Path to the directory with dotnet.exe</param>
         static void Test_hostfxr_get_dotnet_environment_info(string[] args)
         {
             string dotnetExeDir = null;
-            if (args.Length >= 2)
-                dotnetExeDir = args[1];
+            if (args.Length >= 1)
+                dotnetExeDir = args[0];
 
             string hostfxr_version;
             string hostfxr_commit_hash;
@@ -254,20 +239,19 @@ namespace HostApiInvokerApp
                 result: result_fn,
                 result_context: new IntPtr(42));
 
-            if (rc != 0)
-            {
-                Console.WriteLine($"hostfxr_get_dotnet_environment_info:Fail[{rc}]");
-            }
+            string api = nameof(hostfxr.hostfxr_get_dotnet_environment_info);
+            LogResult(api, rc);
 
-            Console.WriteLine($"hostfxr_get_dotnet_environment_info sdk versions:[{string.Join(";", sdks.Select(s => s.version).ToList())}]");
-            Console.WriteLine($"hostfxr_get_dotnet_environment_info sdk paths:[{string.Join(";", sdks.Select(s => s.path).ToList())}]");
+            Console.WriteLine($"{api} sdk versions:[{string.Join(";", sdks.Select(s => s.version).ToList())}]");
+            Console.WriteLine($"{api} sdk paths:[{string.Join(";", sdks.Select(s => s.path).ToList())}]");
 
-            Console.WriteLine($"hostfxr_get_dotnet_environment_info framework names:[{string.Join(";", frameworks.Select(f => f.name).ToList())}]");
-            Console.WriteLine($"hostfxr_get_dotnet_environment_info framework versions:[{string.Join(";", frameworks.Select(f => f.version).ToList())}]");
-            Console.WriteLine($"hostfxr_get_dotnet_environment_info framework paths:[{string.Join(";", frameworks.Select(f => f.path).ToList())}]");
-
-            Console.WriteLine("hostfxr_get_dotnet_environment_info:Success");
+            Console.WriteLine($"{api} framework names:[{string.Join(";", frameworks.Select(f => f.name).ToList())}]");
+            Console.WriteLine($"{api} framework versions:[{string.Join(";", frameworks.Select(f => f.version).ToList())}]");
+            Console.WriteLine($"{api} framework paths:[{string.Join(";", frameworks.Select(f => f.path).ToList())}]");
         }
+
+        private static void LogResult(string apiName, int rc)
+            => Console.WriteLine(rc == 0 ? $"{apiName}:Success" : $"{apiName}:Fail[0x{rc:x}]");
 
         public static bool RunTest(string apiToTest, string[] args)
         {
