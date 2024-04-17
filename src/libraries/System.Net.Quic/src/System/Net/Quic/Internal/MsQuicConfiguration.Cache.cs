@@ -49,7 +49,10 @@ internal static partial class MsQuicConfiguration
         public readonly List<SslApplicationProtocol> ApplicationProtocols;
         public readonly QUIC_ALLOWED_CIPHER_SUITE_FLAGS AllowedCipherSuites;
 
-        [UnscopedRef] 
+        // Span-based access to settings for fast comparison and hashing. This
+        // avoids boxing and defensive copies due to accessing readonly struct
+        // fields.
+        [UnscopedRef]
         private readonly ReadOnlySpan<byte> SettingsSpan => MemoryMarshal.AsBytes(new ReadOnlySpan<QUIC_SETTINGS>(in Settings));
 
         public CacheKey(QUIC_SETTINGS settings, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol> alpnProtocols, QUIC_ALLOWED_CIPHER_SUITE_FLAGS allowedCipherSuites)
@@ -117,7 +120,7 @@ internal static partial class MsQuicConfiguration
             }
 
             hash.Add(Flags);
-            hash.Add(Settings);
+            hash.AddBytes(SettingsSpan);
 
             foreach (var protocol in ApplicationProtocols)
             {
