@@ -52,7 +52,8 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, host_mgreg_t *regs, guin
 
 	/* adrp */
 	ins = ((guint32*)code) [0];
-	g_assert (((ins >> 28) & 0x9) == 0x9);
+	printf ("ins: %08x\n", ins);
+	g_assert (((ins >> 24) & 0x1f) == 0x10);
 	disp = (((ins >> 5) & 0x7ffff) << 2) | ((ins >> 29) & 0x3);
 	/* FIXME: disp is signed */
 	g_assert ((disp >> 20) == 0);
