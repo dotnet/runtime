@@ -404,7 +404,7 @@ void CodeGen::genCodeForBBlist()
         }
 
         // Traverse the block in linear order, generating code for each node as we
-        // as we encounter it.
+        // encounter them.
 
 #ifdef DEBUG
         // Set the use-order numbers for each node.
@@ -469,10 +469,35 @@ void CodeGen::genCodeForBBlist()
 #endif // DEBUG
             }
 
+            // generate code for the node
             genCodeForTreeNode(node);
+
             if (node->gtHasReg(compiler) && node->IsUnusedValue())
             {
                 genConsumeReg(node);
+            }
+
+            if (node->gtOper == GT_CALL && node->AsCall()->IsNoReturn())
+            {
+                assert(block->KindIs(BBJ_THROW));
+                if (node->IsValue() && !node->IsUnusedValue())
+                {
+                    node->SetUnusedValue();
+                    if (node->gtHasReg(compiler))
+                    {
+                        genConsumeReg(node);
+                    }
+                }
+
+                // the rest of the block is unreachable.
+                LIR::Range& blockRange = LIR::AsRange(block);
+                GenTree*    lastNode   = blockRange.LastNode();
+                if (lastNode != node)
+                {
+                    blockRange.Delete(compiler, block, node->gtNext, lastNode);
+                }
+
+                break;
             }
         } // end for each node in block
 
@@ -571,29 +596,32 @@ void CodeGen::genCodeForBBlist()
         // it up to date for vars that are not register candidates
         // (it would be nice to have a xor set function)
 
-        VARSET_TP mismatchLiveVars(VarSetOps::Diff(compiler, block->bbLiveOut, compiler->compCurLife));
-        VarSetOps::UnionD(compiler, mismatchLiveVars,
-                          VarSetOps::Diff(compiler, compiler->compCurLife, block->bbLiveOut));
-        VarSetOps::Iter mismatchLiveVarIter(compiler, mismatchLiveVars);
-        unsigned        mismatchLiveVarIndex  = 0;
-        bool            foundMismatchedRegVar = false;
-        while (mismatchLiveVarIter.NextElem(&mismatchLiveVarIndex))
+        if (!block->KindIs(BBJ_THROW))
         {
-            LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(mismatchLiveVarIndex);
-            if (varDsc->lvIsRegCandidate())
+            VARSET_TP mismatchLiveVars(VarSetOps::Diff(compiler, block->bbLiveOut, compiler->compCurLife));
+            VarSetOps::UnionD(compiler, mismatchLiveVars,
+                              VarSetOps::Diff(compiler, compiler->compCurLife, block->bbLiveOut));
+            VarSetOps::Iter mismatchLiveVarIter(compiler, mismatchLiveVars);
+            unsigned        mismatchLiveVarIndex  = 0;
+            bool            foundMismatchedRegVar = false;
+            while (mismatchLiveVarIter.NextElem(&mismatchLiveVarIndex))
             {
-                if (!foundMismatchedRegVar)
+                LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(mismatchLiveVarIndex);
+                if (varDsc->lvIsRegCandidate())
                 {
-                    JITDUMP("Mismatched live reg vars after " FMT_BB ":", block->bbNum);
-                    foundMismatchedRegVar = true;
+                    if (!foundMismatchedRegVar)
+                    {
+                        JITDUMP("Mismatched live reg vars after " FMT_BB ":", block->bbNum);
+                        foundMismatchedRegVar = true;
+                    }
+                    JITDUMP(" V%02u", compiler->lvaTrackedIndexToLclNum(mismatchLiveVarIndex));
                 }
-                JITDUMP(" V%02u", compiler->lvaTrackedIndexToLclNum(mismatchLiveVarIndex));
             }
-        }
-        if (foundMismatchedRegVar)
-        {
-            JITDUMP("\n");
-            assert(!"Found mismatched live reg var(s) after block");
+            if (foundMismatchedRegVar)
+            {
+                JITDUMP("\n");
+                assert(!"Found mismatched live reg var(s) after block");
+            }
         }
 #endif
 
@@ -756,15 +784,6 @@ void CodeGen::genCodeForBBlist()
 
             case BBJ_ALWAYS:
             {
-#ifdef DEBUG
-                GenTree* call = block->lastNode();
-                if ((call != nullptr) && (call->gtOper == GT_CALL))
-                {
-                    // At this point, BBJ_ALWAYS should never end with a call that doesn't return.
-                    assert(!call->AsCall()->IsNoReturn());
-                }
-#endif // DEBUG
-
                 // If this block jumps to the next one, we might be able to skip emitting the jump
                 if (block->CanRemoveJumpToNext(compiler))
                 {
