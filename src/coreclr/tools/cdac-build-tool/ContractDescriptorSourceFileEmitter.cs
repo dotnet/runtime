@@ -64,7 +64,8 @@ public partial class ContractDescriptorSourceFileEmitter
         var template = GetTemplateString();
         var matches = FindTemplatePlaceholderRegex().Matches(template);
         var prevPos = 0;
-        foreach (Match match in matches) {
+        foreach (Match match in matches)
+        {
             // copy everything from the end of the last match (prevPos) to just before the current match to the output
             dest.Write(template.AsSpan(prevPos, match.Index - prevPos));
 
