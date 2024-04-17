@@ -38,7 +38,6 @@ namespace Wasm.Build.NativeRebuild.Tests
         [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/77740")]
         public void BlazorNoopRebuild(string config)
         {
             string id = $"blz_rebuild_{config}";
@@ -66,7 +65,6 @@ namespace Wasm.Build.NativeRebuild.Tests
         [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/77740")]
         public void BlazorOnlyLinkRebuild(string config)
         {
             string id = $"blz_relink_{config}";
