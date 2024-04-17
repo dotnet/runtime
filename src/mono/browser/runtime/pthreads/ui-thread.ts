@@ -96,7 +96,11 @@ function monoWorkerMessageHandler (worker: PThreadWorker, ev: MessageEvent<any>)
             worker.info = Object.assign(worker.info!, message.info, {});
             break;
         case WorkerToMainMessageType.deputyStarted:
-            runtimeHelpers.afterMonoStarted.promise_control.resolve(message.deputyProxyGCHandle);
+            runtimeHelpers.deputyWorker = worker;
+            runtimeHelpers.afterMonoStarted.promise_control.resolve();
+            break;
+        case WorkerToMainMessageType.deputyReady:
+            runtimeHelpers.afterDeputyReady.promise_control.resolve(message.deputyProxyGCHandle);
             break;
         case WorkerToMainMessageType.ioStarted:
             runtimeHelpers.afterIOStarted.promise_control.resolve();

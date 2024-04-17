@@ -5,7 +5,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { PThreadPtrNull, type AssetEntryInternal, type PThreadWorker, type PromiseAndController } from "../types/internal";
 import type { AssetBehaviors, AssetEntry, LoadingResource, ResourceList, SingleAssetBehaviors as SingleAssetBehaviors, WebAssemblyBootResourceType } from "../types";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { createPromiseController } from "./promise-controller";
 import { mono_log_debug, mono_log_warn } from "./logging";
 import { mono_exit } from "./exit";
@@ -233,15 +233,19 @@ export async function mono_download_assets (): Promise<void> {
         // this await will get past the onRuntimeInitialized because we are not blocking via addRunDependency
         // and we are not awaiting it here
         Promise.all(promises_of_asset_instantiation_core).then(() => {
-            runtimeHelpers.coreAssetsInMemory.promise_control.resolve();
+            if (!ENVIRONMENT_IS_WORKER) {
+                runtimeHelpers.coreAssetsInMemory.promise_control.resolve();
+            }
         }).catch(err => {
             loaderHelpers.err("Error in mono_download_assets: " + err);
             mono_exit(1, err);
             throw err;
         });
         Promise.all(promises_of_asset_instantiation_remaining).then(async () => {
-            await runtimeHelpers.coreAssetsInMemory.promise;
-            runtimeHelpers.allAssetsInMemory.promise_control.resolve();
+            if (!ENVIRONMENT_IS_WORKER) {
+                await runtimeHelpers.coreAssetsInMemory.promise;
+                runtimeHelpers.allAssetsInMemory.promise_control.resolve();
+            }
         }).catch(err => {
             loaderHelpers.err("Error in mono_download_assets: " + err);
             mono_exit(1, err);
