@@ -49,7 +49,7 @@ struct arm_exbuf_data
 #define arm_exidx_apply_cmd     UNW_OBJ(arm_exidx_apply_cmd)
 
 int arm_exidx_extract (struct dwarf_cursor *c, uint8_t *buf);
-int arm_exidx_decode (const uint8_t *buf, uint8_t len, struct dwarf_cursor *c);
+int arm_exidx_decode (const uint8_t *buf, int len, struct dwarf_cursor *c);
 int arm_exidx_apply_cmd (struct arm_exbuf_data *edata, struct dwarf_cursor *c);
 
 #endif // ARM_EX_TABLES_H

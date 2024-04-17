@@ -210,13 +210,12 @@ class StubManager
   public:
     // Startup and shutdown the global stubmanager service.
     static void InitializeStubManagers();
-    static void TerminateStubManagers();
 
     // Does any sub manager recognise this EIP?
     static BOOL IsStub(PCODE stubAddress)
     {
         WRAPPER_NO_CONTRACT;
-        return FindStubManager(stubAddress) != NULL;
+        return FindStubManager(stubAddress) != nullptr;
     }
 
     // Find stub manager for given code address

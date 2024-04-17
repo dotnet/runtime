@@ -63,7 +63,7 @@ namespace System.Linq
 
         private static TSource? TryGetLast<TSource>(this IEnumerable<TSource> source, out bool found)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -111,12 +111,12 @@ namespace System.Linq
 
         private static TSource? TryGetLast<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, out bool found)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (predicate == null)
+            if (predicate is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }

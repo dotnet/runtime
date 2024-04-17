@@ -174,13 +174,13 @@ ASMCONSTANTS_C_ASSERT(CORINFO_ArgumentException_ASM == CORINFO_ArgumentException
 
 
 
-#define Thread_m_State      0x04
+#define Thread_m_State      0x00
 ASMCONSTANTS_C_ASSERT(Thread_m_State == offsetof(Thread, m_State))
 
-#define Thread_m_fPreemptiveGCDisabled     0x08
+#define Thread_m_fPreemptiveGCDisabled     0x04
 ASMCONSTANTS_C_ASSERT(Thread_m_fPreemptiveGCDisabled == offsetof(Thread, m_fPreemptiveGCDisabled))
 
-#define Thread_m_pFrame     0x0C
+#define Thread_m_pFrame     0x08
 ASMCONSTANTS_C_ASSERT(Thread_m_pFrame == offsetof(Thread, m_pFrame))
 
 
@@ -231,8 +231,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__FrameHandlerExRecord__m_pEntryFrame == offsetof(
 #define STACK_OVERWRITE_BARRIER_VALUE 0xabcdefab
 #endif
 
-#define SIZEOF_FrameHandlerExRecordWithBarrier 0x5c
-ASMCONSTANTS_C_ASSERT(SIZEOF_FrameHandlerExRecordWithBarrier == sizeof(FrameHandlerExRecordWithBarrier))
 #endif
 
 

@@ -43,15 +43,18 @@ namespace System.Memory.Tests.Span
 
             foreach (string value in values)
             {
+                Assert.True(stringValues.Contains(value));
+
                 string differentCase = value.ToLowerInvariant();
                 if (value == differentCase)
                 {
                     differentCase = value.ToUpperInvariant();
-                    Assert.NotEqual(value, differentCase);
                 }
 
-                Assert.True(stringValues.Contains(value));
-                Assert.Equal(comparisonType == StringComparison.OrdinalIgnoreCase, stringValues.Contains(differentCase));
+                if (value != differentCase)
+                {
+                    Assert.Equal(comparisonType == StringComparison.OrdinalIgnoreCase, stringValues.Contains(differentCase));
+                }
 
                 AssertIndexOfAnyAndFriends(new[] { value }, 0, -1, 0, -1);
                 AssertIndexOfAnyAndFriends(new[] { value, value }, 0, -1, 1, -1);
@@ -73,7 +76,7 @@ namespace System.Memory.Tests.Span
                     AssertIndexOfAnyAndFriends(new[] { ValueNotInSet, differentCase, ValueNotInSet }, 1, 0, 1, 2);
                     AssertIndexOfAnyAndFriends(new[] { differentCase, ValueNotInSet, differentCase }, 0, 1, 2, 1);
                 }
-                else
+                else if (value != differentCase)
                 {
                     AssertIndexOfAnyAndFriends(new[] { differentCase }, -1, 0, -1, 0);
                     AssertIndexOfAnyAndFriends(new[] { differentCase, differentCase }, -1, 0, -1, 1);
@@ -173,6 +176,122 @@ namespace System.Memory.Tests.Span
 
             Assert.Equal(expected >= 0, text.AsSpan().ContainsAny(stringValues));
             Assert.Equal(expected >= 0, textSpan.ContainsAny(stringValues));
+
+            if (values is null || stringValues.Contains(string.Empty))
+            {
+                // The tests below don't work if an empty string is in the set.
+                return;
+            }
+
+            // The tests below assume none of the values contain these characters.
+            Assert.Equal(-1, IndexOfAnyReferenceImpl(new string('\0', 100), valuesArray, comparisonType));
+            Assert.Equal(-1, IndexOfAnyReferenceImpl(new string('\u00FC', 100), valuesArray, comparisonType));
+
+            string[] valuesWithDifferentCases = valuesArray;
+
+            if (comparisonType == StringComparison.OrdinalIgnoreCase)
+            {
+                valuesWithDifferentCases = valuesArray
+                    .SelectMany(v => new[] { v, v.ToUpperInvariant(), v.ToLowerInvariant() })
+                    .Distinct()
+                    // Invariant conversions may produce values that don't match under ordinal rules. Filter them out.
+                    .Where(v => valuesArray.Any(original => v.Equals(original, StringComparison.OrdinalIgnoreCase)))
+                    .ToArray();
+            }
+
+            // Test cases where the implementation changes based on the haystack length (e.g. swapping from Teddy to Rabin-Karp).
+            for (int haystackLength = 0; haystackLength < 50; haystackLength++)
+            {
+                TestWithPoisonPages(PoisonPagePlacement.Before, haystackLength);
+                TestWithPoisonPages(PoisonPagePlacement.After, haystackLength);
+            }
+
+            void TestWithPoisonPages(PoisonPagePlacement poisonPlacement, int haystackLength)
+            {
+                using BoundedMemory<char> memory = BoundedMemory.Allocate<char>(haystackLength, poisonPlacement);
+                Span<char> haystack = memory.Span;
+
+                char asciiNumberNotInSet = Enumerable.Range('0', 10).Select(c => (char)c)
+                    .First(c => !values.Contains(c));
+
+                char asciiLetterLowerNotInSet;
+                char asciiLetterUpperNotInSet;
+
+                if (comparisonType == StringComparison.Ordinal)
+                {
+                    asciiLetterLowerNotInSet = Enumerable.Range('a', 26).Select(c => (char)c).First(c => !values.Contains(c));
+                    asciiLetterUpperNotInSet = Enumerable.Range('A', 26).Select(c => (char)c).First(c => !values.Contains(c));
+                }
+                else
+                {
+                    asciiLetterLowerNotInSet = Enumerable.Range('a', 26).Select(c => (char)c)
+                        .First(c => !values.AsSpan().ContainsAny(c, char.ToUpperInvariant(c)));
+
+                    asciiLetterUpperNotInSet = Enumerable.Range(0, 26).Select(c => (char)('Z' - c))
+                        .First(c => !values.AsSpan().ContainsAny(c, char.ToLowerInvariant(c)));
+                }
+
+                TestWithDifferentMarkerChars(haystack, '\0');
+                TestWithDifferentMarkerChars(haystack, '\u00FC');
+                TestWithDifferentMarkerChars(haystack, asciiNumberNotInSet);
+                TestWithDifferentMarkerChars(haystack, asciiLetterLowerNotInSet);
+                TestWithDifferentMarkerChars(haystack, asciiLetterUpperNotInSet);
+            }
+
+            void TestWithDifferentMarkerChars(Span<char> haystack, char marker)
+            {
+                haystack.Fill(marker);
+                Assert.True(haystack.IndexOfAny(stringValues) == -1, marker.ToString());
+
+                string shortestValue = valuesArray.MinBy(value => value.Length);
+
+                // Test every value individually at every offset in the haystack.
+                foreach (string value in valuesWithDifferentCases)
+                {
+                    for (int startOffset = 0; startOffset <= haystack.Length - value.Length; startOffset++)
+                    {
+                        haystack.Fill(marker);
+
+                        // Place an unrelated matching value at the end of the haystack. It shouldn't affect the result.
+                        shortestValue.CopyTo(haystack.Slice(haystack.Length - shortestValue.Length));
+
+                        // Place a matching value at the offset position.
+                        value.CopyTo(haystack.Slice(startOffset));
+
+                        int actual = haystack.IndexOfAny(stringValues);
+                        if (startOffset != actual)
+                        {
+                            StringSearchValuesTestHelper.AssertionFailed(haystack, valuesArray, stringValues, comparisonType, startOffset, actual);
+                        }
+                    }
+                }
+
+                if (text == valuesArray[0])
+                {
+                    // Already tested above.
+                    return;
+                }
+
+                // Test the provided test case at various offsets in the haystack.
+                for (int startOffset = 0; startOffset <= haystack.Length - text.Length; startOffset++)
+                {
+                    haystack.Fill(marker);
+
+                    // Place the test case text at the end of the haystack. It shouldn't affect the result.
+                    text.CopyTo(haystack.Slice(haystack.Length - text.Length));
+
+                    // Place the test text at the offset position.
+                    text.CopyTo(haystack.Slice(startOffset));
+
+                    int expectedAtOffset = expected == -1 ? -1 : startOffset + expected;
+
+                    int actual = haystack.IndexOfAny(stringValues);
+                    if (expectedAtOffset != actual)
+                    {
+                        StringSearchValuesTestHelper.AssertionFailed(haystack, valuesArray, stringValues, comparisonType, expectedAtOffset, actual);
+                    }
+                }
+            }
         }
 
         [Fact]
@@ -195,6 +314,102 @@ namespace System.Memory.Tests.Span
 
             // Low surrogate without the high surrogate.
             IndexOfAny(StringComparison.OrdinalIgnoreCase, 1, "\uD801\uDCD8\uD8FB\uDCD8", "foo, \uDCD8");
+        }
+
+        [Theory]
+        // Single value of various lengths
+        [InlineData("a")]
+        [InlineData("!")]
+        [InlineData("\u00F6")]
+        [InlineData("ab")]
+        [InlineData("a!")]
+        [InlineData("!a")]
+        [InlineData("!%")]
+        [InlineData("a\u00F6")]
+        [InlineData("\u00F6\u00F6")]
+        [InlineData("abc")]
+        [InlineData("ab!")]
+        [InlineData("a\u00F6b")]
+        [InlineData("\u00F6a\u00F6")]
+        [InlineData("abcd")]
+        [InlineData("ab!cd")]
+        [InlineData("abcde")]
+        [InlineData("abcd!")]
+        [InlineData("abcdefgh")]
+        [InlineData("abcdefghi")]
+        // Multiple values, but they all share the same prefix
+        [InlineData("abc", "ab", "abcd")]
+        // These should hit the Aho-Corasick implementation
+        [InlineData("a", "b")]
+        [InlineData("ab", "c")]
+        // Simple Teddy cases
+        [InlineData("abc", "cde")]
+        [InlineData("abc", "cd")]
+        // Teddy where all starting chars are letters, but not all other characters are
+        [InlineData("ab", "de%", "ghi", "jkl!")]
+        [InlineData("abc", "def%", "ghi", "jkl!")]
+        // Teddy where starting chars aren't only letters
+        [InlineData("ab", "d%e", "ghi", "jkl!")]
+        [InlineData("abc", "def%", "ghi", "!jkl")]
+        // Teddy where the starting chars aren't affected by case conversion
+        [InlineData("12", "45b", "789")]
+        [InlineData("123", "456", "789")]
+        [InlineData("123", "456a", "789b")]
+        // We'll expand these values to all case permutations
+        [InlineData("ab", "bc")]
+        [InlineData("ab", "c!")]
+        [InlineData("ab", "c!", "!%")]
+        // These won't be expanded as they would produce more than 8 permutations
+        [InlineData("ab", "bc", "c!")]
+        [InlineData("abc", "bc")]
+        // Rabin-Karp where one of the values is longer than what the implementation can match (17)
+        [InlineData("abc", "a012345678012345678")]
+        // Rabin-Karp where all of the values are longer than what the implementation can match (17)
+        [InlineData("a012345678012345678", "bc012345678012345678")]
+        // Teddy with exactly 8 values (filling all 8 buckets)
+        [InlineData("ab", "bc", "def", "ghi", "jkl", "mno", "pqr", "stu")]
+        [InlineData("abc", "def", "ghi", "jkl", "mno", "pqr", "stu", "vwx")]
+        // Teddy with more than 8 values
+        [InlineData("ab", "bc", "def", "ghi", "jkl", "mno", "pqr", "stu", "vwx")]
+        [InlineData("abc", "def", "ghi", "jkl", "mno", "pqr", "stu", "vwx", "yab")]
+        public static void SimpleIndexOfAnyValues(params string[] valuesArray)
+        {
+            TestCore(valuesArray);
+
+            // Test cases where the implementation differs for ASCII letters, different cases, non-letters.
+            if (valuesArray.Any(v => v.Contains('a')))
+            {
+                TestCore(valuesArray.Select(v => v.Replace('a', 'A')).ToArray());
+                TestCore(valuesArray.Select(v => v.Replace('a', '7')).ToArray());
+            }
+
+            int offset = valuesArray.Length / 2;
+            string original = valuesArray[offset];
+
+            // Test non-ASCII values
+            valuesArray[offset] = $"{original}\u00F6";
+            TestCore(valuesArray);
+
+            valuesArray[offset] = $"\u00F6{original}";
+            TestCore(valuesArray);
+
+            valuesArray[offset] = $"{original[0]}\u00F6{original.AsSpan(1)}";
+            TestCore(valuesArray);
+
+            // Test null chars in values
+            valuesArray[offset] = $"{original[0]}\0{original.AsSpan(1)}";
+            TestCore(valuesArray);
+
+            static void TestCore(string[] valuesArray)
+            {
+                Values_ImplementsSearchValuesBase(StringComparison.Ordinal, valuesArray);
+                Values_ImplementsSearchValuesBase(StringComparison.OrdinalIgnoreCase, valuesArray);
+
+                string values = string.Join(", ", valuesArray);
+
+                IndexOfAny(StringComparison.Ordinal, 0, valuesArray[0], values);
+                IndexOfAny(StringComparison.OrdinalIgnoreCase, 0, valuesArray[0], values);
+            }
         }
 
         [Fact]
@@ -495,7 +710,7 @@ namespace System.Memory.Tests.Span
                 return slice.Slice(0, Math.Min(slice.Length, rng.Next(maxLength + 1)));
             }
 
-            private static void AssertionFailed(ReadOnlySpan<char> haystack, string[] needle, SearchValues<string> searchValues, StringComparison comparisonType, int expected, int actual)
+            public static void AssertionFailed(ReadOnlySpan<char> haystack, string[] needle, SearchValues<string> searchValues, StringComparison comparisonType, int expected, int actual)
             {
                 Type implType = searchValues.GetType();
                 string impl = $"{implType.Name} [{string.Join(", ", implType.GenericTypeArguments.Select(t => t.Name))}]";

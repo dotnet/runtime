@@ -301,6 +301,8 @@ if [[ "$internal" == true ]]; then
         queue=OSX.13.Amd64.Iphone.Perf
     elif [[ "$logical_machine" == "perfampere" ]]; then
         queue=Ubuntu.2204.Arm64.Perf
+    elif [[ "$logical_machine" == "perfviper" ]]; then
+        queue=Ubuntu.2204.Amd64.Viper.Perf
     elif [[ "$logical_machine" == "cloudvm" ]]; then
         queue=Ubuntu.2204.Amd64
     elif [[ "$architecture" == "arm64" ]]; then
@@ -492,7 +494,7 @@ if [[ "$nor2r" == "true" ]]; then
 fi
 
 if [[ ! -z "$experimentname" ]]; then
-    setup_arguments="$setup_arguments --experiment-name '$experimentname'"
+    setup_arguments="$setup_arguments --experiment-name $experimentname"
 fi
 
 if [[ "$monoaot" == "true" ]]; then

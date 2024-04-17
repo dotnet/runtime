@@ -1247,12 +1247,5 @@ namespace System.Numerics.Tensors
                 }
             }
         }
-
-        /// <summary>Creates a span of <typeparamref name="TTo"/> from a <typeparamref name="TTo"/> when they're the same type.</summary>
-        private static unsafe Span<TTo> Rename<TFrom, TTo>(Span<TFrom> span)
-        {
-            Debug.Assert(sizeof(TFrom) == sizeof(TTo));
-            return MemoryMarshal.CreateSpan(ref Unsafe.As<TFrom, TTo>(ref MemoryMarshal.GetReference(span)), span.Length);
-        }
     }
 }

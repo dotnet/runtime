@@ -16,7 +16,7 @@ namespace System.Linq.Tests
 
         private static void AssertGroupingCorrect<TKey, TElement>(IEnumerable<TKey> keys, IEnumerable<TElement> elements, IEnumerable<IGrouping<TKey, TElement>> grouping, IEqualityComparer<TKey> keyComparer)
         {
-            if (grouping == null)
+            if (grouping is null)
             {
                 Assert.Null(elements);
                 Assert.Null(keys);
@@ -37,7 +37,7 @@ namespace System.Linq.Tests
 
                     TKey key = keyEn.Current;
 
-                    if (key == null)
+                    if (key is null)
                     {
                         groupingForNullKeys.Add(elEn.Current);
                     }
@@ -57,7 +57,7 @@ namespace System.Linq.Tests
                 TKey key = group.Key;
                 List<TElement> list;
 
-                if (key == null)
+                if (key is null)
                 {
                     Assert.Equal(groupingForNullKeys, group);
                     groupingForNullKeys.Clear();
@@ -885,6 +885,33 @@ namespace System.Linq.Tests
                     foreach (int i in e2) count++;
                     Assert.Equal(10, count);
                 }
+            }
+        }
+
+        [Fact]
+        public void EnumerateGrouping()
+        {
+            IGrouping<string, int> g = Enumerable.Range(0, 42).GroupBy(i => "onegroup").First();
+            Assert.Equal("onegroup", g.Key);
+            Assert.Equal(42, g.Count());
+
+            using IEnumerator<int> e = g.GetEnumerator();
+
+            var values = new HashSet<int>();
+
+            for (int trial = 0; trial < 3; trial++)
+            {
+                values.Clear();
+
+                while (e.MoveNext())
+                {
+                    Assert.True(values.Add(e.Current));
+                }
+
+                Assert.Equal(42, values.Count);
+                Assert.Equal(Enumerable.Range(0, 42), values.Order());
+
+                e.Reset();
             }
         }
     }

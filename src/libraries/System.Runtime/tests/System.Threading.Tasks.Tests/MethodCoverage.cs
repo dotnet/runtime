@@ -279,6 +279,7 @@ namespace TaskCoverage
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/99500", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void CancellationTokenRegitration()
         {
             ManualResetEvent mre = new ManualResetEvent(false);
@@ -296,6 +297,7 @@ namespace TaskCoverage
         /// verify that the taskawaiter.UnsafeOnCompleted is invoked
         /// </summary>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/99519", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void TaskAwaiter()
         {
             ManualResetEvent mre = new ManualResetEvent(false);
@@ -921,6 +923,119 @@ namespace TaskCoverage
                 Assert.True(twa.IsFaulted);
                 Assert.Equal(e1, twa.Exception?.InnerException);
             }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void Task_WhenEach_NullsTriggerExceptions()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("tasks", () => Task.WhenEach((Task[])null));
+            AssertExtensions.Throws<ArgumentNullException>("tasks", () => Task.WhenEach((Task<int>[])null));
+            AssertExtensions.Throws<ArgumentNullException>("tasks", () => Task.WhenEach((IEnumerable<Task>)null));
+            AssertExtensions.Throws<ArgumentNullException>("tasks", () => Task.WhenEach((IEnumerable<Task<int>>)null));
+
+            AssertExtensions.Throws<ArgumentException>("tasks", () => Task.WhenEach((Task[])[null]));
+            AssertExtensions.Throws<ArgumentException>("tasks", () => Task.WhenEach((ReadOnlySpan<Task>)[null]));
+            AssertExtensions.Throws<ArgumentException>("tasks", () => Task.WhenEach((IEnumerable<Task>)[null]));
+            AssertExtensions.Throws<ArgumentException>("tasks", () => Task.WhenEach((Task<int>[])[null]));
+            AssertExtensions.Throws<ArgumentException>("tasks", () => Task.WhenEach((ReadOnlySpan<Task<int>>)[null]));
+            AssertExtensions.Throws<ArgumentException>("tasks", () => Task.WhenEach((IEnumerable<Task<int>>)[null]));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task Task_WhenEach_EmptyInputsCompleteImmediately()
+        {
+            Assert.False(await Task.WhenEach((Task[])[]).GetAsyncEnumerator().MoveNextAsync());
+            Assert.False(await Task.WhenEach((ReadOnlySpan<Task>)[]).GetAsyncEnumerator().MoveNextAsync());
+            Assert.False(await Task.WhenEach((IEnumerable<Task>)[]).GetAsyncEnumerator().MoveNextAsync());
+            Assert.False(await Task.WhenEach((Task<int>[])[]).GetAsyncEnumerator().MoveNextAsync());
+            Assert.False(await Task.WhenEach((ReadOnlySpan<Task<int>>)[]).GetAsyncEnumerator().MoveNextAsync());
+            Assert.False(await Task.WhenEach((IEnumerable<Task<int>>)[]).GetAsyncEnumerator().MoveNextAsync());
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task Task_WhenEach_TasksOnlyEnumerableOnce()
+        {
+            IAsyncEnumerable<Task>[] enumerables =
+            [
+                Task.WhenEach((Task[])[Task.CompletedTask, Task.CompletedTask]),
+                Task.WhenEach((ReadOnlySpan<Task>)[Task.CompletedTask, Task.CompletedTask]),
+                Task.WhenEach((IEnumerable<Task>)[Task.CompletedTask, Task.CompletedTask]),
+                Task.WhenEach((Task<int>[])[Task.FromResult(0), Task.FromResult(0)]),
+                Task.WhenEach((ReadOnlySpan<Task<int>>)[Task.FromResult(0), Task.FromResult(0)]),
+                Task.WhenEach((IEnumerable<Task<int>>)[Task.FromResult(0), Task.FromResult(0)]),
+            ];
+
+            foreach (IAsyncEnumerable<Task> e in enumerables)
+            {
+                IAsyncEnumerator<Task> e1 = e.GetAsyncEnumerator();
+                IAsyncEnumerator<Task> e2 = e.GetAsyncEnumerator();
+                IAsyncEnumerator<Task> e3 = e.GetAsyncEnumerator();
+
+                Assert.True(await e1.MoveNextAsync());
+                Assert.False(await e2.MoveNextAsync());
+                Assert.False(await e3.MoveNextAsync());
+
+                int count = 0;
+                do
+                {
+                    count++;
+                }
+                while (await e1.MoveNextAsync());
+                Assert.Equal(2, count);
+
+                Assert.False(await e.GetAsyncEnumerator().MoveNextAsync());
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        public async Task Task_WhenEach_IteratesThroughCompleteAndIncompleteTasks(int mode)
+        {
+            TaskCompletionSource<int> tcs1 = new(), tcs2 = new(), tcs3 = new();
+            Task<int>[] array = [Task.FromResult(1), tcs1.Task, Task.FromResult(2), tcs2.Task, Task.FromResult(3), tcs3.Task];
+
+            IAsyncEnumerable<Task> tasks = mode switch
+            {
+                0 => Task.WhenEach((ReadOnlySpan<Task>)array),
+                1 => Task.WhenEach((Task[])array),
+                2 => Task.WhenEach((IEnumerable<Task>)array),
+                3 => Task.WhenEach((ReadOnlySpan<Task<int>>)array),
+                4 => Task.WhenEach((Task<int>[])array),
+                _ => Task.WhenEach((IEnumerable<Task<int>>)array),
+            };
+
+            Assert.NotNull(tasks);
+
+            IAsyncEnumerator<Task> e = tasks.GetAsyncEnumerator();
+            Assert.NotNull(tasks);
+
+            ValueTask<bool> moveNext;
+
+            for (int i = 1; i <= 3; i++)
+            {
+                moveNext = e.MoveNextAsync();
+                Assert.True(moveNext.IsCompletedSuccessfully);
+                Assert.True(moveNext.Result);
+                Assert.Same(Task.FromResult(i), e.Current);
+            }
+
+            foreach (TaskCompletionSource<int> tcs in new[] { tcs2, tcs1, tcs3 })
+            {
+                moveNext = e.MoveNextAsync();
+                Assert.False(moveNext.IsCompleted);
+                tcs.SetResult(42);
+                Assert.True(await moveNext);
+                Assert.Same(tcs.Task, e.Current);
+            }
+
+            moveNext = e.MoveNextAsync();
+            Assert.True(moveNext.IsCompletedSuccessfully);
+            Assert.False(moveNext.Result);
         }
     }
 }

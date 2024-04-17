@@ -15,7 +15,7 @@ namespace System.Linq
                 for (int index = 0; ; ++index)
                 {
                     IEnumerable<TSource>? enumerable = GetEnumerable(index);
-                    if (enumerable == null)
+                    if (enumerable is null)
                     {
                         return set;
                     }
@@ -24,7 +24,7 @@ namespace System.Linq
                 }
             }
 
-            public override TSource[] ToArray() => HashSetToArray(FillSet());
+            public override TSource[] ToArray() => ICollectionToArray(FillSet());
 
             public override List<TSource> ToList() => new List<TSource>(FillSet());
 

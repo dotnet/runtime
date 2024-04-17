@@ -420,12 +420,6 @@ namespace Microsoft.Win32.SafeHandles
                 _writeBio?.Dispose();
             }
 
-            if (AlpnHandle.IsAllocated)
-            {
-                Interop.Ssl.SslSetData(handle, IntPtr.Zero);
-                AlpnHandle.Free();
-            }
-
             base.Dispose(disposing);
         }
 
@@ -437,6 +431,12 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             SslContextHandle?.DangerousRelease();
+
+            if (AlpnHandle.IsAllocated)
+            {
+                Interop.Ssl.SslSetData(handle, IntPtr.Zero);
+                AlpnHandle.Free();
+            }
 
             IntPtr h = handle;
             SetHandle(IntPtr.Zero);

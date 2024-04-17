@@ -180,6 +180,9 @@
         IsNative="" />
       <ExcludeNativeLibrariesRuntimeFiles Condition="'$(IncludeOOBLibraries)' != 'true'"
                                           Include="$(LibrariesNativeArtifactsPath)libSystem.IO.Ports.Native.*" />
+
+      <ExcludeNativeLibrariesRuntimeFiles Condition="'$(RuntimeFlavor)' != 'Mono'"
+                                          Include="$(LibrariesNativeArtifactsPath)System.Globalization.Native.dll;$(LibrariesNativeArtifactsPath)System.Globalization.Native.so;$(LibrariesNativeArtifactsPath)System.Globalization.Native.dylib" />
       <LibrariesRuntimeFiles Include="
         $(LibrariesNativeArtifactsPath)*.dat;
         $(LibrariesNativeArtifactsPath)*.dll;

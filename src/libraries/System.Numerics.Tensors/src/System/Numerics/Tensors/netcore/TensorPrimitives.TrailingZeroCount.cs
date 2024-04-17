@@ -30,7 +30,7 @@ namespace System.Numerics.Tensors
         private readonly unsafe struct TrailingZeroCountOperator<T> : IUnaryOperator<T, T> where T : IBinaryInteger<T>
         {
             public static bool Vectorizable =>
-                (AdvSimd.IsSupported && AdvSimd.Arm64.IsSupported && sizeof(T) == 1) ||
+                (AdvSimd.Arm64.IsSupported && sizeof(T) == 1) ||
                 PopCountOperator<T>.Vectorizable; // http://0x80.pl/notesen/2023-01-31-avx512-bsf.html#trailing-zeros-simplified
 
             public static T Invoke(T x) => T.TrailingZeroCount(x);
@@ -38,7 +38,7 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<T> Invoke(Vector128<T> x)
             {
-                if (AdvSimd.IsSupported && sizeof(T) == 1)
+                if (AdvSimd.Arm64.IsSupported && sizeof(T) == 1)
                 {
                     return AdvSimd.LeadingZeroCount(AdvSimd.Arm64.ReverseElementBits(x.AsByte())).As<byte, T>();
                 }

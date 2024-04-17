@@ -167,7 +167,7 @@ namespace System.Threading
                 }
                 else
                 {
-                    result = WaitHandle.WaitOneCore(waitHandle.DangerousGetHandle(), millisecondsTimeout);
+                    result = WaitHandle.WaitOneCore(waitHandle.DangerousGetHandle(), millisecondsTimeout, useTrivialWaits: false);
                 }
 
                 return result == (int)Interop.Kernel32.WAIT_OBJECT_0;

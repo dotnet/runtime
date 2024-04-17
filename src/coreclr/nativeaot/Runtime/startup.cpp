@@ -67,12 +67,7 @@ typedef size_t GSCookie;
 
 #ifdef FEATURE_READONLY_GS_COOKIE
 
-#ifdef __APPLE__
-#define READONLY_ATTR_ARGS section("__DATA,__const")
-#else
-#define READONLY_ATTR_ARGS section(".rodata")
-#endif
-#define READONLY_ATTR __attribute__((READONLY_ATTR_ARGS))
+#define READONLY_ATTR __attribute__((section(".rodata")))
 
 // const is so that it gets placed in the .text section (which is read-only)
 // volatile is so that accesses to it do not get optimized away because of the const

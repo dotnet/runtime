@@ -271,23 +271,23 @@ namespace System.Linq.Tests
             var iterator1 = NumberRangeGuaranteedNotCollectionType(0, 3).Take(2);
             // Don't insist on this behaviour, but check it's correct if it happens
             var en1 = iterator1 as IEnumerator<int>;
-            Assert.False(en1 != null && en1.MoveNext());
+            Assert.False(en1 is not null && en1.MoveNext());
 
             var iterator2 = NumberRangeGuaranteedNotCollectionType(0, 3).Take(0..2);
             var en2 = iterator2 as IEnumerator<int>;
-            Assert.False(en2 != null && en2.MoveNext());
+            Assert.False(en2 is not null && en2.MoveNext());
 
             var iterator3 = NumberRangeGuaranteedNotCollectionType(0, 3).Take(^3..2);
             var en3 = iterator3 as IEnumerator<int>;
-            Assert.False(en3 != null && en3.MoveNext());
+            Assert.False(en3 is not null && en3.MoveNext());
 
             var iterator4 = NumberRangeGuaranteedNotCollectionType(0, 3).Take(0..^1);
             var en4 = iterator4 as IEnumerator<int>;
-            Assert.False(en4 != null && en4.MoveNext());
+            Assert.False(en4 is not null && en4.MoveNext());
 
             var iterator5 = NumberRangeGuaranteedNotCollectionType(0, 3).Take(^3..^1);
             var en5 = iterator5 as IEnumerator<int>;
-            Assert.False(en5 != null && en5.MoveNext());
+            Assert.False(en5 is not null && en5.MoveNext());
         }
 
         [Fact]
@@ -320,23 +320,23 @@ namespace System.Linq.Tests
             var iterator1 = NumberRangeGuaranteedNotCollectionType(0, 3).ToList().Take(2);
             // Don't insist on this behaviour, but check it's correct if it happens
             var en1 = iterator1 as IEnumerator<int>;
-            Assert.False(en1 != null && en1.MoveNext());
+            Assert.False(en1 is not null && en1.MoveNext());
 
             var iterator2 = NumberRangeGuaranteedNotCollectionType(0, 3).ToList().Take(0..2);
             var en2 = iterator2 as IEnumerator<int>;
-            Assert.False(en2 != null && en2.MoveNext());
+            Assert.False(en2 is not null && en2.MoveNext());
 
             var iterator3 = NumberRangeGuaranteedNotCollectionType(0, 3).ToList().Take(^3..2);
             var en3 = iterator3 as IEnumerator<int>;
-            Assert.False(en3 != null && en3.MoveNext());
+            Assert.False(en3 is not null && en3.MoveNext());
 
             var iterator4 = NumberRangeGuaranteedNotCollectionType(0, 3).ToList().Take(0..^1);
             var en4 = iterator4 as IEnumerator<int>;
-            Assert.False(en4 != null && en4.MoveNext());
+            Assert.False(en4 is not null && en4.MoveNext());
 
             var iterator5 = NumberRangeGuaranteedNotCollectionType(0, 3).ToList().Take(^3..^1);
             var en5 = iterator5 as IEnumerator<int>;
-            Assert.False(en5 != null && en5.MoveNext());
+            Assert.False(en5 is not null && en5.MoveNext());
         }
 
         [Fact]

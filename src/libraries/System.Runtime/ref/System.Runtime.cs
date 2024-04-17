@@ -2436,7 +2436,7 @@ namespace System
         public override int GetHashCode() { throw null; }
         public static string? GetName(System.Type enumType, object value) { throw null; }
         public static string[] GetNames(System.Type enumType) { throw null; }
-        public static string[] GetNames<TEnum>() where TEnum : struct { throw null; }
+        public static string[] GetNames<TEnum>() where TEnum : struct, System.Enum { throw null; }
         public static string? GetName<TEnum>(TEnum value) where TEnum : struct, System.Enum { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         public static System.Type GetUnderlyingType(System.Type enumType) { throw null; }
@@ -8062,7 +8062,6 @@ namespace System.ComponentModel
         public DefaultValueAttribute(sbyte value) { }
         public DefaultValueAttribute(float value) { }
         public DefaultValueAttribute(string? value) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         public DefaultValueAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type type, string? value) { }
         [System.CLSCompliantAttribute(false)]
         public DefaultValueAttribute(ushort value) { }
@@ -8442,6 +8441,18 @@ namespace System.Diagnostics.CodeAnalysis
         public ExperimentalAttribute(string diagnosticId) { }
         public string DiagnosticId { get { throw null; } }
         public string? UrlFormat { get { throw null; } set { } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property, Inherited = false, AllowMultiple = true)]
+    public sealed class FeatureGuardAttribute : System.Attribute
+    {
+        public FeatureGuardAttribute(System.Type featureType) { }
+        public System.Type FeatureType { get { throw null; } }
+    }
+    [System.AttributeUsage(System.AttributeTargets.Property, Inherited = false)]
+    public sealed class FeatureSwitchDefinitionAttribute : Attribute
+    {
+        public FeatureSwitchDefinitionAttribute(string switchName) { }
+        public string SwitchName { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited=false)]
     public sealed partial class MaybeNullAttribute : System.Attribute
@@ -13062,6 +13073,11 @@ namespace System.Runtime.CompilerServices
         public readonly bool IncludesInternals;
         public NullablePublicOnlyAttribute(bool value) { }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = true, AllowMultiple = false)]
+    public sealed partial class ParamCollectionAttribute : System.Attribute
+    {
+        public ParamCollectionAttribute() { }
+    }
     public partial struct PoolingAsyncValueTaskMethodBuilder
     {
         private object _dummy;
@@ -13136,7 +13152,9 @@ namespace System.Runtime.CompilerServices
         public const string PortablePdb = "PortablePdb";
         public const string UnmanagedSignatureCallingConvention = "UnmanagedSignatureCallingConvention";
         public const string VirtualStaticsInInterfaces = "VirtualStaticsInInterfaces";
+        [System.Diagnostics.CodeAnalysis.FeatureGuard(typeof(System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute))]
         public static bool IsDynamicCodeCompiled { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.FeatureSwitchDefinition("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported")]
         public static bool IsDynamicCodeSupported { get { throw null; } }
         public static bool IsSupported(string feature) { throw null; }
     }
@@ -13145,6 +13163,7 @@ namespace System.Runtime.CompilerServices
         [System.ObsoleteAttribute("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData { get { throw null; } }
         public static System.IntPtr AllocateTypeAssociatedMemory(System.Type type, int size) { throw null; }
+        public static object? Box(ref byte target, System.RuntimeTypeHandle type) { throw null; }
         public static System.ReadOnlySpan<T> CreateSpan<T>(System.RuntimeFieldHandle fldHandle) { throw null; }
         public static void EnsureSufficientExecutionStack() { }
         public static new bool Equals(object? o1, object? o2) { throw null; }
@@ -13171,6 +13190,7 @@ namespace System.Runtime.CompilerServices
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Trimmer can't guarantee existence of class constructor")]
         public static void RunClassConstructor(System.RuntimeTypeHandle type) { }
         public static void RunModuleConstructor(System.ModuleHandle module) { }
+        public static int SizeOf(System.RuntimeTypeHandle type) { throw null; }
         public static bool TryEnsureSufficientExecutionStack() { throw null; }
         public delegate void CleanupCode(object? userData, bool exceptionThrown);
         public delegate void TryCode(object? userData);
@@ -13294,7 +13314,7 @@ namespace System.Runtime.CompilerServices
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("o")]
         public static T? As<T>(object? o) where T : class? { throw null; }
         public static ref TTo As<TFrom, TTo>(ref TFrom source) { throw null; }
-        public static TTo BitCast<TFrom, TTo>(TFrom source) where TFrom : struct where TTo : struct { throw null; }
+        public static TTo BitCast<TFrom, TTo>(TFrom source) { throw null; }
         public static System.IntPtr ByteOffset<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T origin, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T target) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static void CopyBlock(ref byte destination, ref readonly byte source, uint byteCount) { }
@@ -15331,6 +15351,12 @@ namespace System.Threading.Tasks
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(System.Threading.Tasks.Task<TResult> task1, System.Threading.Tasks.Task<TResult> task2) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(params System.Threading.Tasks.Task<TResult>[] tasks) { throw null; }
+        public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task> WhenEach(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task> tasks) { throw null; }
+        public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task> WhenEach(params System.Threading.Tasks.Task[] tasks) { throw null; }
+        public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task> WhenEach(System.ReadOnlySpan<System.Threading.Tasks.Task> tasks) { throw null; }
+        public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task<TResult>> WhenEach<TResult>(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
+        public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task<TResult>> WhenEach<TResult>(params System.Threading.Tasks.Task<TResult>[] tasks) { throw null; }
+        public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task<TResult>> WhenEach<TResult>(System.ReadOnlySpan<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
         public static System.Runtime.CompilerServices.YieldAwaitable Yield() { throw null; }
     }
     public static partial class TaskAsyncEnumerableExtensions

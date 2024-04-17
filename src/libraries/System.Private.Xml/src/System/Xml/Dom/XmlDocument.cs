@@ -125,10 +125,10 @@ namespace System.Xml
 
         private XmlAttribute? _namespaceXml;
 
-        internal static EmptyEnumerator EmptyEnumerator = new EmptyEnumerator();
-        internal static IXmlSchemaInfo NotKnownSchemaInfo = new XmlSchemaInfo(XmlSchemaValidity.NotKnown);
-        internal static IXmlSchemaInfo ValidSchemaInfo = new XmlSchemaInfo(XmlSchemaValidity.Valid);
-        internal static IXmlSchemaInfo InvalidSchemaInfo = new XmlSchemaInfo(XmlSchemaValidity.Invalid);
+        internal static readonly EmptyEnumerator EmptyEnumerator = new EmptyEnumerator();
+        internal static readonly IXmlSchemaInfo NotKnownSchemaInfo = new XmlSchemaInfo(XmlSchemaValidity.NotKnown);
+        internal static readonly IXmlSchemaInfo ValidSchemaInfo = new XmlSchemaInfo(XmlSchemaValidity.Valid);
+        internal static readonly IXmlSchemaInfo InvalidSchemaInfo = new XmlSchemaInfo(XmlSchemaValidity.Invalid);
 
         // Initializes a new instance of the XmlDocument class.
         public XmlDocument() : this(new XmlImplementation())

@@ -14,12 +14,12 @@ namespace System.Linq
 
         public static ILookup<TKey, TSource> ToLookup<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (keySelector == null)
+            if (keySelector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
             }
@@ -37,17 +37,17 @@ namespace System.Linq
 
         public static ILookup<TKey, TElement> ToLookup<TSource, TKey, TElement>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, IEqualityComparer<TKey>? comparer)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (keySelector == null)
+            if (keySelector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
             }
 
-            if (elementSelector == null)
+            if (elementSelector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementSelector);
             }
@@ -81,9 +81,9 @@ namespace System.Linq
 
         internal static Lookup<TKey, TElement> Create<TSource>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, IEqualityComparer<TKey>? comparer)
         {
-            Debug.Assert(source != null);
-            Debug.Assert(keySelector != null);
-            Debug.Assert(elementSelector != null);
+            Debug.Assert(source is not null);
+            Debug.Assert(keySelector is not null);
+            Debug.Assert(elementSelector is not null);
 
             var lookup = new CollectionLookup<TKey, TElement>(comparer);
             foreach (TSource item in source)
@@ -96,8 +96,8 @@ namespace System.Linq
 
         internal static Lookup<TKey, TElement> Create(IEnumerable<TElement> source, Func<TElement, TKey> keySelector, IEqualityComparer<TKey>? comparer)
         {
-            Debug.Assert(source != null);
-            Debug.Assert(keySelector != null);
+            Debug.Assert(source is not null);
+            Debug.Assert(keySelector is not null);
 
             var lookup = new CollectionLookup<TKey, TElement>(comparer);
             foreach (TElement item in source)
@@ -114,7 +114,7 @@ namespace System.Linq
             foreach (TElement item in source)
             {
                 TKey key = keySelector(item);
-                if (key != null)
+                if (key is not null)
                 {
                     lookup.GetGrouping(key, create: true)!.Add(item);
                 }
@@ -133,18 +133,18 @@ namespace System.Linq
 
         public IEnumerable<TElement> this[TKey key] => GetGrouping(key, create: false) ?? Enumerable.Empty<TElement>();
 
-        public bool Contains(TKey key) => GetGrouping(key, create: false) != null;
+        public bool Contains(TKey key) => GetGrouping(key, create: false) is not null;
 
         public IEnumerator<IGrouping<TKey, TElement>> GetEnumerator()
         {
             Grouping<TKey, TElement>? g = _lastGrouping;
-            if (g != null)
+            if (g is not null)
             {
                 do
                 {
                     g = g._next;
 
-                    Debug.Assert(g != null);
+                    Debug.Assert(g is not null);
                     yield return g;
                 }
                 while (g != _lastGrouping);
@@ -155,7 +155,7 @@ namespace System.Linq
         {
             List<TResult> list = new List<TResult>(_count);
             Grouping<TKey, TElement>? g = _lastGrouping;
-            if (g != null)
+            if (g is not null)
             {
                 Span<TResult> span = Enumerable.SetCountAndGetSpan(list, _count);
                 int index = 0;
@@ -163,7 +163,7 @@ namespace System.Linq
                 {
                     g = g._next;
 
-                    Debug.Assert(g != null);
+                    Debug.Assert(g is not null);
                     g.Trim();
                     span[index] = resultSelector(g._key, g._elements);
                     ++index;
@@ -179,13 +179,13 @@ namespace System.Linq
         public IEnumerable<TResult> ApplyResultSelector<TResult>(Func<TKey, IEnumerable<TElement>, TResult> resultSelector)
         {
             Grouping<TKey, TElement>? g = _lastGrouping;
-            if (g != null)
+            if (g is not null)
             {
                 do
                 {
                     g = g._next;
 
-                    Debug.Assert(g != null);
+                    Debug.Assert(g is not null);
                     g.Trim();
                     yield return resultSelector(g._key, g._elements);
                 }
@@ -198,13 +198,13 @@ namespace System.Linq
         private int InternalGetHashCode(TKey key)
         {
             // Handle comparer implementations that throw when passed null
-            return (key == null) ? 0 : _comparer.GetHashCode(key) & 0x7FFFFFFF;
+            return (key is null) ? 0 : _comparer.GetHashCode(key) & 0x7FFFFFFF;
         }
 
         internal Grouping<TKey, TElement>? GetGrouping(TKey key, bool create)
         {
             int hashCode = InternalGetHashCode(key);
-            for (Grouping<TKey, TElement>? g = _groupings[(uint)hashCode % _groupings.Length]; g != null; g = g._hashNext)
+            for (Grouping<TKey, TElement>? g = _groupings[(uint)hashCode % _groupings.Length]; g is not null; g = g._hashNext)
             {
                 if (g._hashCode == hashCode && _comparer.Equals(g._key, key))
                 {
@@ -223,7 +223,7 @@ namespace System.Linq
                 Grouping<TKey, TElement> g = new Grouping<TKey, TElement>(key, hashCode);
                 g._hashNext = _groupings[index];
                 _groupings[index] = g;
-                if (_lastGrouping == null)
+                if (_lastGrouping is null)
                 {
                     g._next = g;
                 }
@@ -271,12 +271,12 @@ namespace System.Linq
             ArgumentOutOfRangeException.ThrowIfLessThan(array.Length - arrayIndex, Count, nameof(arrayIndex));
 
             Grouping<TKey, TElement>? g = _lastGrouping;
-            if (g != null)
+            if (g is not null)
             {
                 do
                 {
                     g = g._next;
-                    Debug.Assert(g != null);
+                    Debug.Assert(g is not null);
 
                     array[arrayIndex] = g;
                     ++arrayIndex;
