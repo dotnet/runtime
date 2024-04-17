@@ -152,6 +152,8 @@ namespace System
         public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
         public static bool IsWebSocketSupported => IsEnvironmentVariableTrue("IsWebSocketSupported");
         public static bool IsNodeJS => IsEnvironmentVariableTrue("IsNodeJS");
+        public static bool IsFirefox => IsEnvironmentVariableTrue("IsFirefox");
+        public static bool IsChromium => IsEnvironmentVariableTrue("IsChromium");
         public static bool IsNotNodeJS => !IsNodeJS;
         public static bool IsNodeJSOnWindows => GetNodeJSPlatform() == "win32";
         public static bool LocalEchoServerIsNotAvailable => !LocalEchoServerIsAvailable;

@@ -23,6 +23,8 @@
 #include "dwreport.h"
 #include "primitives.h"
 #include "dbgutil.h"
+#include "cdac.h"
+#include <clrconfignocache.h>
 
 #ifdef USE_DAC_TABLE_RVA
 #include <dactablerva.h>
@@ -3034,6 +3036,7 @@ private:
 //----------------------------------------------------------------------------
 
 ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget/*=0*/)
+    : m_cdac{CDAC::Invalid()}
 {
     SUPPORTS_DAC_HOST_ONLY;     // ctor does no marshalling - don't check with DacCop
 
@@ -3123,7 +3126,6 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
     // see ClrDataAccess::VerifyDlls for details.
     m_fEnableDllVerificationAsserts = false;
 #endif
-
 }
 
 ClrDataAccess::~ClrDataAccess(void)
@@ -5490,6 +5492,28 @@ ClrDataAccess::Initialize(void)
     // cannot interfere with each other.
     IfFailRet(GetDacGlobalValues());
     IfFailRet(DacGetHostVtPtrs());
+
+    CLRConfigNoCache enable = CLRConfigNoCache::Get("ENABLE_CDAC");
+    if (enable.IsSet())
+    {
+        DWORD val;
+        if (enable.TryAsInteger(10, val) && val == 1)
+        {
+            // TODO: [cdac] Get contract descriptor from exported symbol
+            uint64_t contractDescriptorAddr = 0;
+            //if (TryGetSymbol(m_pTarget, m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
+            {
+                m_cdac = CDAC::Create(contractDescriptorAddr, m_pTarget);
+                if (m_cdac.IsValid())
+                {
+                    // Get SOS interfaces from the cDAC if available.
+                    IUnknown* unk = m_cdac.SosInterface();
+                    (void)unk->QueryInterface(__uuidof(ISOSDacInterface), (void**)&m_cdacSos);
+                    (void)unk->QueryInterface(__uuidof(ISOSDacInterface9), (void**)&m_cdacSos9);
+                }
+            }
+        }
+    }
 
     //
     // DAC is now setup and ready to use
