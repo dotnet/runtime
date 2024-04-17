@@ -936,7 +936,7 @@ namespace System.ComponentModel
 
                 if (TypeDescriptor.IsTrimmable && !IsIntrinsicType(type))
                 {
-                    throw new InvalidOperationException("todo: trimmable applications require registering Types with TypeDescriptor.AddKnownReflectedType().");
+                    TypeDescriptor.ThrowHelper.ThrowInvalidOperationException_AddKnownReflectedTypeRequired();
                 }
 
                 if (createIfNeeded)
@@ -959,33 +959,35 @@ namespace System.ComponentModel
                     return GetOrAddKnownReflectedType(type);
                 }
 
-                throw new InvalidOperationException("todo: KnownType members require registering Types with TypeDescriptor.AddKnownReflectedType().");
+                TypeDescriptor.ThrowHelper.ThrowInvalidOperationException_AddKnownReflectedTypeRequired();
+                td = null;
             }
 
             return td;
         }
 
-        internal void AddKnownReflectedType(Type type)
+        public override void AddKnownReflectedType<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>()
         {
+            Type componentType = typeof(T);
             ReflectedTypeData? td = null;
 
-            if (_typeData != null && _typeData.ContainsKey(type))
+            if (_typeData != null && _typeData.ContainsKey(componentType))
             {
                 return;
             }
 
             lock (s_internalSyncObject)
             {
-                if (_typeData != null && _typeData.ContainsKey(type))
+                if (_typeData != null && _typeData.ContainsKey(componentType))
                 {
                     return;
                 }
 
                 if (td == null)
                 {
-                    td = new ReflectedTypeData(type, isKnownType: true);
+                    td = new ReflectedTypeData(componentType, isKnownType: true);
                     _typeData ??= new Dictionary<Type, ReflectedTypeData>();
-                    _typeData[type] = td;
+                    _typeData[componentType] = td;
                 }
             }
         }

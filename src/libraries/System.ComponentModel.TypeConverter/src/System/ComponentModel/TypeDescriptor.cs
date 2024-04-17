@@ -95,10 +95,7 @@ namespace System.ComponentModel
         public static void AddKnownReflectedType<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>()
         {
             TypeDescriptionNode node = NodeFor(typeof(T), createDelegator: false);
-            if (node.Provider is ReflectTypeDescriptionProvider reflectionProvider)
-            {
-                reflectionProvider.AddKnownReflectedType(typeof(T));
-            }
+            node.Provider.AddKnownReflectedType<T>();
         }
 
         /// <summary>
@@ -677,7 +674,7 @@ namespace System.ComponentModel
         {
             ArgumentNullException.ThrowIfNull(componentType);
 
-            AttributeCollection attributes = GetDescriptorFromKnownType(componentType, nameof(componentType)).GetAttributes();
+            AttributeCollection attributes = GetDescriptorFromKnownType(componentType, nameof(componentType)).GetAttributesFromKnownType();
             return attributes;
         }
 
@@ -3601,6 +3598,30 @@ namespace System.ComponentModel
                 return attrs;
             }
 
+            public AttributeCollection GetAttributesFromKnownType()
+            {
+                // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
+                // If so, we can call on it directly rather than creating another
+                // custom type descriptor
+                TypeDescriptionProvider p = _node.Provider;
+                AttributeCollection attrs;
+                if (p is ReflectTypeDescriptionProvider rp)
+                {
+                    attrs = rp.GetAttributesFromKnownType(_objectType);
+                }
+                else
+                {
+                    ICustomTypeDescriptor? desc = p.GetTypeDescriptor(_objectType, _instance);
+                    if (desc == null)
+                        throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                    attrs = desc.GetAttributesFromKnownType();
+                    if (attrs == null)
+                        throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetAttributesFromKnownType"));
+                }
+
+                return attrs;
+            }
+
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
@@ -3700,7 +3721,7 @@ namespace System.ComponentModel
                         throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
                     converter = desc.GetConverterFromKnownType();
                     if (converter == null)
-                        throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetConverter"));
+                        throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetConverterFromKnownType"));
                 }
 
                 return converter;
@@ -3831,7 +3852,7 @@ namespace System.ComponentModel
                 {
                     ICustomTypeDescriptor? desc = p.GetTypeDescriptorFromKnownType(_objectType, _instance);
                     if (desc == null)
-                        throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                        throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptorFromKnownType"));
                     events = desc.GetEventsFromKnownType();
                     if (events == null)
                         throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetEventsFromKnownType"));
@@ -3920,7 +3941,7 @@ namespace System.ComponentModel
                     properties = desc.GetPropertiesFromKnownType();
 
                     if (properties == null)
-                        throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetProperties"));
+                        throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetPropertiesFromKnownType"));
                 }
 
                 return properties;
@@ -3986,6 +4007,17 @@ namespace System.ComponentModel
         /// </summary>
         private sealed class TypeDescriptorInterface
         {
+        }
+
+        internal static class ThrowHelper
+        {
+            internal static NotSupportedException GetNotSupportedException_CustomTypeProviderMustImplememtMember(string memberName) => new NotSupportedException($"todo: custom type providers must implement member {memberName}.");
+
+            [DoesNotReturn]
+            internal static void ThrowNotSupportedException_KnownTypeMemberCalledOnLegacyProvider(string memberName) => throw new NotSupportedException($"todo: the member {memberName} was called on a provider that returned 'false' for SupportsKnownTypes.");
+
+            [DoesNotReturn]
+            internal static void ThrowInvalidOperationException_AddKnownReflectedTypeRequired() => throw new InvalidOperationException($"todo: the Type must be registered with TypeDescriptor.AddKnownReflectedType().");
         }
     }
 }

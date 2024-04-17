@@ -112,8 +112,6 @@ namespace System.ComponentModel
 
                 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                     Justification = "GetTypeFromName() can be called on a known type.")]
-                // [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
-                //     Justification = "CreateInstance() can be called on a known type.")]
                 TypeConverter? CreateConverterFromTypeName(TypeConverterAttribute attr)
                 {
                     Type? converterType = GetTypeFromName(attr.ConverterTypeName);

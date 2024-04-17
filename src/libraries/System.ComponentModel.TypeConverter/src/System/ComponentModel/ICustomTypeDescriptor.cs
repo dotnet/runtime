@@ -79,21 +79,37 @@ namespace System.ComponentModel
         /// </summary>
         object? GetPropertyOwner(PropertyDescriptor? pd);
 
+        #region Known type DIMs
+
+        /// <summary>
+        /// Gets a collection of type <see cref='System.Attribute'/> with the attributes
+        /// for this object.
+        /// </summary>
+        /// <remarks>
+        /// todo: if trimmable, th
+        /// </remarks>
+        AttributeCollection GetAttributesFromKnownType() => throw TypeDescriptor.ThrowHelper.GetNotSupportedException_CustomTypeProviderMustImplememtMember(nameof(GetAttributesFromKnownType));
+
         /// <summary>
         /// Gets a type converter for this object that may be registered as a known type.
         /// </summary>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "The caller has verified that known types are registered.")]
-        TypeConverter? GetConverterFromKnownType() => GetConverter();
+        TypeConverter? GetConverterFromKnownType() => throw TypeDescriptor.ThrowHelper.GetNotSupportedException_CustomTypeProviderMustImplememtMember(nameof(GetConverterFromKnownType));
 
         /// <summary>
         /// Gets the events for this instance of a component that may be registered as a known type.
         /// </summary>
-        EventDescriptorCollection GetEventsFromKnownType() => GetEvents();
+        EventDescriptorCollection GetEventsFromKnownType() => throw TypeDescriptor.ThrowHelper.GetNotSupportedException_CustomTypeProviderMustImplememtMember(nameof(GetEventsFromKnownType));
 
         /// <summary>
         /// Gets the properties for this instance of a component that may be registered as a known type..
         /// </summary>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "The caller has verified that known types are registered.")]
-        PropertyDescriptorCollection GetPropertiesFromKnownType() => GetProperties();
+        PropertyDescriptorCollection GetPropertiesFromKnownType() => throw TypeDescriptor.ThrowHelper.GetNotSupportedException_CustomTypeProviderMustImplememtMember(nameof(GetPropertiesFromKnownType));
+
+        /// <summary>
+        /// Whether this type provider supports known types.
+        /// </summary>
+        bool SupportsKnownTypes => false;
+
+        #endregion
     }
 }

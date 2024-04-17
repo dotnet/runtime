@@ -52,6 +52,35 @@ namespace System.ComponentModel
         }
 
         /// <summary>
+        /// The GetAttributes method returns the type-level attributes for
+        /// the type this custom type descriptor is providing information for.
+        /// You must always return a valid collection from this method.
+        /// </summary>
+        public virtual AttributeCollection GetAttributesFromKnownType()
+        {
+            if (_parent != null)
+            {
+                return _parent.GetAttributesFromKnownType();
+            }
+
+            if (SupportsKnownTypes)
+            {
+                return AttributeCollection.Empty;
+            }
+
+            if (TypeDescriptor.IsTrimmable)
+            {
+                TypeDescriptor.ThrowHelper.ThrowNotSupportedException_KnownTypeMemberCalledOnLegacyProvider(nameof(GetAttributesFromKnownType));
+            }
+
+            return FallBackToLegacyProvider();
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "Chaining from known type provider to legacy provider is supported when TypeDescriptor.IsTrimmable is false.")]
+            AttributeCollection FallBackToLegacyProvider() => GetAttributes();
+        }
+
+        /// <summary>
         /// The GetClassName method returns the fully qualified name of the
         /// class this type descriptor is representing. Returning null from
         /// this method causes the TypeDescriptor object to return the
@@ -78,6 +107,34 @@ namespace System.ComponentModel
             }
 
             return new TypeConverter();
+        }
+
+        /// <summary>
+        /// The GetConverter method returns a type converter for the type this type
+        /// descriptor is representing.
+        /// </summary>
+        public virtual TypeConverter? GetConverterFromKnownType()
+        {
+            if (_parent != null)
+            {
+                return _parent.GetConverterFromKnownType();
+            }
+
+            if (SupportsKnownTypes)
+            {
+                return new TypeConverter(); // todo: add supportsknowntypes property?
+            }
+
+            if (TypeDescriptor.IsTrimmable)
+            {
+                TypeDescriptor.ThrowHelper.ThrowNotSupportedException_KnownTypeMemberCalledOnLegacyProvider(nameof(GetConverterFromKnownType));
+            }
+
+            return FallBackToLegacyProvider();
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "Chaining from known type provider to legacy provider is supported when TypeDescriptor.IsTrimmable is false.")]
+            TypeConverter? FallBackToLegacyProvider() => GetConverter();
         }
 
         /// <summary>
@@ -137,6 +194,33 @@ namespace System.ComponentModel
         }
 
         /// <summary>
+        /// Returns a collection of event descriptors
+        /// for the object this type descriptor is representing. An optional
+        /// attribute array may be provided to filter the collection that is
+        /// returned. If no parent is provided,this will return an empty
+        /// event collection.
+        /// </summary>
+        public virtual EventDescriptorCollection GetEventsFromKnownType()
+        {
+            if (_parent != null)
+            {
+                return _parent.GetEventsFromKnownType();
+            }
+
+            if (SupportsKnownTypes)
+            {
+                return EventDescriptorCollection.Empty;
+            }
+
+            if (TypeDescriptor.IsTrimmable)
+            {
+                TypeDescriptor.ThrowHelper.ThrowNotSupportedException_KnownTypeMemberCalledOnLegacyProvider(nameof(GetEventsFromKnownType));
+            }
+
+            return GetEvents();
+        }
+
+        /// <summary>
         /// The GetProperties method returns a collection of property descriptors
         /// for the object this type descriptor is representing. An optional
         /// attribute array may be provided to filter the collection that is returned.
@@ -152,6 +236,37 @@ namespace System.ComponentModel
             }
 
             return PropertyDescriptorCollection.Empty;
+        }
+
+        /// <summary>
+        /// The GetProperties method returns a collection of property descriptors
+        /// for the object this type descriptor is representing. An optional
+        /// attribute array may be provided to filter the collection that is returned.
+        /// If no parent is provided,this will return an empty
+        /// property collection.
+        /// </summary>
+        public virtual PropertyDescriptorCollection GetPropertiesFromKnownType()
+        {
+            if (_parent != null)
+            {
+                return _parent.GetPropertiesFromKnownType();
+            }
+
+            if (SupportsKnownTypes)
+            {
+                return PropertyDescriptorCollection.Empty;
+            }
+
+            if (TypeDescriptor.IsTrimmable)
+            {
+                TypeDescriptor.ThrowHelper.ThrowNotSupportedException_KnownTypeMemberCalledOnLegacyProvider(nameof(GetPropertiesFromKnownType));
+            }
+
+            return FallBackToLegacyProvider();
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "Chaining from known type provider to legacy provider is supported when TypeDescriptor.IsTrimmable is false.")]
+            PropertyDescriptorCollection FallBackToLegacyProvider() => GetProperties();
         }
 
         /// <summary>
@@ -180,5 +295,21 @@ namespace System.ComponentModel
         /// to use its default type description services.
         /// </summary>
         public virtual object? GetPropertyOwner(PropertyDescriptor? pd) => _parent?.GetPropertyOwner(pd);
+
+        /// <summary>
+        /// todo
+        /// </summary>
+        public virtual bool SupportsKnownTypes
+        {
+            get
+            {
+                if (_parent != null)
+                {
+                    return _parent.SupportsKnownTypes;
+                }
+
+                return false;
+            }
+        }
     }
 }

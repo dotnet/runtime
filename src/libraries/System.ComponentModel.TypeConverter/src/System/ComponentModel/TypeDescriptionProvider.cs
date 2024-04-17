@@ -41,6 +41,11 @@ namespace System.ComponentModel
             _parent = parent;
         }
 
+        public virtual void AddKnownReflectedType<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>()
+        {
+            // We allow this to be a no-op since the caller may not know if the provider supports known types.
+        }
+
         /// <summary>
         /// This method is used to create an instance that can substitute for another
         /// data type. If the method is not interested in providing a substitute
@@ -253,34 +258,43 @@ namespace System.ComponentModel
         {
             if (_parent != null)
             {
-                return SupportsKnownTypes ?
-                    _parent.GetTypeDescriptorFromKnownType(objectType, instance) :
-                    _parent.GetTypeDescriptor(objectType, instance);
+                return _parent.GetTypeDescriptor(objectType, instance);
             }
 
             return _emptyDescriptor ??= new EmptyCustomTypeDescriptor();
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
-            Justification = "This method passes a known Type to another method with DynamicallyAccessedMembers[].")]
         internal virtual ICustomTypeDescriptor? GetTypeDescriptorFromKnownType(Type objectType, object? instance)
         {
-            if (!SupportsKnownTypes)
-            {
-#pragma warning disable IL2067
-                return GetTypeDescriptor(objectType, instance);
-#pragma warning restore IL2067
-            }
-
             if (_parent != null)
             {
                 return _parent.GetTypeDescriptorFromKnownType(objectType, instance);
             }
 
-            return _emptyDescriptor ??= new EmptyCustomTypeDescriptor();
+            if (SupportsKnownTypes)
+            {
+                return _emptyDescriptor ??= new EmptyCustomTypeDescriptor();
+            }
+
+            return FallBackToLegacyProvider();
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:RequiresUnreferencedCode",
+                Justification = "Chaining from known type provider to legacy provider is supported.")]
+            ICustomTypeDescriptor? FallBackToLegacyProvider() => GetTypeDescriptor(objectType, instance);
         }
 
-        public virtual bool SupportsKnownTypes => false;
+        public virtual bool SupportsKnownTypes
+        {
+            get
+            {
+                if (_parent != null)
+                {
+                    return _parent.SupportsKnownTypes;
+                }
+
+                return false;
+            }
+        }
 
         /// <summary>
         /// This method returns true if the type is "supported" by the type descriptor

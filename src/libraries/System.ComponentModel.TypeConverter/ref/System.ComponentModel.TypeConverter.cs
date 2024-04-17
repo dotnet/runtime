@@ -287,10 +287,12 @@ namespace System.ComponentModel
         protected CustomTypeDescriptor() { }
         protected CustomTypeDescriptor(System.ComponentModel.ICustomTypeDescriptor? parent) { }
         public virtual System.ComponentModel.AttributeCollection GetAttributes() { throw null; }
+        public virtual System.ComponentModel.AttributeCollection GetAttributesFromKnownType() { throw null; }
         public virtual string? GetClassName() { throw null; }
         public virtual string? GetComponentName() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         public virtual System.ComponentModel.TypeConverter? GetConverter() { throw null; }
+        public virtual System.ComponentModel.TypeConverter? GetConverterFromKnownType() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         public virtual System.ComponentModel.EventDescriptor? GetDefaultEvent() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
@@ -298,13 +300,16 @@ namespace System.ComponentModel
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Design-time attributes are not preserved when trimming. Types referenced by attributes like EditorAttribute and DesignerAttribute may not be available after trimming.")]
         public virtual object? GetEditor(System.Type editorBaseType) { throw null; }
         public virtual System.ComponentModel.EventDescriptorCollection GetEvents() { throw null; }
+        public virtual System.ComponentModel.EventDescriptorCollection GetEventsFromKnownType() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public virtual System.ComponentModel.EventDescriptorCollection GetEvents(System.Attribute[]? attributes) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         public virtual System.ComponentModel.PropertyDescriptorCollection GetProperties() { throw null; }
+        public virtual System.ComponentModel.PropertyDescriptorCollection GetPropertiesFromKnownType() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public virtual System.ComponentModel.PropertyDescriptorCollection GetProperties(System.Attribute[]? attributes) { throw null; }
         public virtual object? GetPropertyOwner(System.ComponentModel.PropertyDescriptor? pd) { throw null; }
+        public virtual bool SupportsKnownTypes { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class)]
     public sealed partial class DataObjectAttribute : System.Attribute
@@ -582,6 +587,7 @@ namespace System.ComponentModel
     public partial interface ICustomTypeDescriptor
     {
         System.ComponentModel.AttributeCollection GetAttributes();
+        System.ComponentModel.AttributeCollection GetAttributesFromKnownType() { throw null; }
         string? GetClassName();
         string? GetComponentName();
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
@@ -602,6 +608,7 @@ namespace System.ComponentModel
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         System.ComponentModel.PropertyDescriptorCollection GetProperties(System.Attribute[]? attributes);
         System.ComponentModel.PropertyDescriptorCollection GetPropertiesFromKnownType() { throw null; }
+        bool SupportsKnownTypes => throw null!;
         object? GetPropertyOwner(System.ComponentModel.PropertyDescriptor? pd);
     }
     public partial interface IDataErrorInfo
@@ -1391,6 +1398,7 @@ namespace System.ComponentModel
     {
         protected TypeDescriptionProvider() { }
         protected TypeDescriptionProvider(System.ComponentModel.TypeDescriptionProvider parent) { }
+        public virtual void AddKnownReflectedType<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] T>() { }
         public virtual bool SupportsKnownTypes { get { throw null; } }
         public virtual object? CreateInstance(System.IServiceProvider? provider, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type objectType, System.Type[]? argTypes, object?[]? args) { throw null; }
         public virtual System.Collections.IDictionary? GetCache(object instance) { throw null; }

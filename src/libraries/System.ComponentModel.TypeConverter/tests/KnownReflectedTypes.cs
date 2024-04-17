@@ -53,12 +53,12 @@ namespace System.ComponentModel.Tests
                 // These throw even if we aren't trimming since we are calling KnownType APIs.
                 Assert.Throws<InvalidOperationException>(() => TypeDescriptor.GetPropertiesFromKnownType(typeof(C1)));
                 Assert.Throws<InvalidOperationException>(() => TypeDescriptor.GetEventsFromKnownType(typeof(C1)));
-                //Assert.Throws<InvalidOperationException>(() => TypeDescriptor.GetConverterFromKnownType(typeof(C1)));
+                Assert.Throws<InvalidOperationException>(() => TypeDescriptor.GetConverterFromKnownType(typeof(C1)));
 
                 // Intrinsic types do not need to be registered.
                 TypeDescriptor.GetPropertiesFromKnownType(typeof(string));
                 TypeDescriptor.GetEventsFromKnownType(typeof(string));
-                //Assert.IsType<StringConverter>(TypeDescriptor.GetConverterFromKnownType(typeof(string)));
+                Assert.IsType<StringConverter>(TypeDescriptor.GetConverterFromKnownType(typeof(string)));
             }).Dispose();
         }
 
@@ -90,7 +90,7 @@ namespace System.ComponentModel.Tests
 
                 PropertyDescriptorCollection properties = TypeDescriptor.GetPropertiesFromKnownType(typeof(C1));
                 Assert.Equal(2, properties.Count);
-                //Assert.Equal("System.ComponentModel.Int32Converter", properties[0].ConverterFromKnownType.ToString());
+                Assert.Equal("System.ComponentModel.Int32Converter", properties[0].ConverterFromKnownType.ToString());
                 Assert.Equal(2, TypeDescriptor.GetEventsFromKnownType(typeof(C1)).Count);
             }, options).Dispose();
         }
