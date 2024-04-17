@@ -5,7 +5,7 @@ public unsafe partial class Test
 {
     public unsafe static int Main(string[] args)
     {
-        ((IntPtr)(delegate* unmanaged<int,int>)&Interop.ManagedFunc).ToString();
+        ((IntPtr)(delegate* unmanaged<int,int>)&Interop.Managed8\u4F60Func).ToString();
 
         Console.WriteLine($"main: {args.Length}");
         Interop.UnmanagedFunc();
@@ -16,10 +16,10 @@ public unsafe partial class Test
 file partial class Interop
 {
     [UnmanagedCallersOnly(EntryPoint = "ManagedFunc")]
-    public static int ManagedFunc(int number)
+    public static int Managed8\u4F60Func(int number)
     {
-        // called UnmanagedFunc
-        Console.WriteLine($"ManagedFunc({number}) -> 42");
+        // called from UnmanagedFunc
+        Console.WriteLine($"Managed8\u4F60Func({number}) -> 42");
         return 42;
     }
 
