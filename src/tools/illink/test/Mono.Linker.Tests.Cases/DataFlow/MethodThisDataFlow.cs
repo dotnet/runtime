@@ -88,6 +88,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			s.AssignToThisCaptured ();
 		}
 
+		// Analyzer warns that 'this' doesn't satisfy annotations on GetMethod,
+		// even though those annotations are invalid.
+		// https://github.com/dotnet/runtime/issues/101211
+		[ExpectedWarning ("IL2075", ProducedBy = Tool.Analyzer)]
 		static void TestAnnotationOnNonTypeMethod ()
 		{
 			var t = new NonTypeType ();
