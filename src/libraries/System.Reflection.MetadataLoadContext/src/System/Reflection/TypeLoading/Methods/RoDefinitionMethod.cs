@@ -31,7 +31,7 @@ namespace System.Reflection.TypeLoading
     internal sealed partial class RoDefinitionMethod<TMethodDecoder> : RoDefinitionMethod where TMethodDecoder : IMethodDecoder
     {
         private readonly RoInstantiationProviderType _declaringType;
-        private readonly TMethodDecoder _decoder;
+        private TMethodDecoder _decoder;
 
         internal RoDefinitionMethod(RoInstantiationProviderType declaringType, Type reflectedType, TMethodDecoder decoder)
             : base(reflectedType)
