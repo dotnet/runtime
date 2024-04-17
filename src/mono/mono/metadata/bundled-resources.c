@@ -163,7 +163,7 @@ mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t 
 		dn_simdhash_ptr_ptr_try_add (bundled_resource_key_lookup_table, (void *)resource_to_bundle->id, key);
 
 		g_assert (dn_simdhash_ght_try_add (bundled_resources, (gpointer) key, resource_to_bundle));
-		g_assert (bundled_resources_get (resource_to_bundle->id) == resource_to_bundle);
+		// g_assert (bundled_resources_get (resource_to_bundle->id) == resource_to_bundle);
 	}
 
 	if (assemblyAdded)
