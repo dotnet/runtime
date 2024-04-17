@@ -35,7 +35,5 @@ jobs:
           - normal
         - ${{ if eq(platform, 'browser_wasm_win') }}:
           - WasmTestOnChrome
-        - ${{ if eq(platform, 'wasi_wasm_win') }}:
-          - WasmTestOnWasmtime
-        - ${{ if eq(platform, 'wasi_wasm') }}:
+        - ${{ if or(eq(platform, 'wasi_wasm_win'), eq(platform, 'wasi_wasm')) }}:
           - WasmTestOnWasmtime
