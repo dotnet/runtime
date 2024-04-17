@@ -24,7 +24,7 @@ internal class FirefoxProvider : WasmHostProvider
     private static readonly Lazy<string> s_browserPath = new(() =>
     {
         string artifactsBinDir = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(typeof(ChromeProvider).Assembly.Location)!, "..", "..", ".."));
-        return BrowserLocator.FindFirefox(artifactsBinDir, "BROWSER_PATH_FOR_TESTS");
+        return BrowserLocator.FindFirefox(artifactsBinDir, "FIREFOX_PATH_FOR_TESTS");
     });
 
     public FirefoxProvider(string id, ILogger logger) : base(id, logger)
