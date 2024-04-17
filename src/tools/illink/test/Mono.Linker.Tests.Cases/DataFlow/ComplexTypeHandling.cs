@@ -151,7 +151,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		[ExpectedWarning ("IL2032", ProducedBy = Tool.NativeAot)] // https://github.com/dotnet/runtime/issues/82447
+		[ExpectedMissingWarning ("IL2032", ProducedBy = Tool.NativeAot)] // https://github.com/dotnet/runtime/issues/82447
 		static void TestArrayCreateInstanceByName ()
 		{
 			Activator.CreateInstance ("test", "Mono.Linker.Tests.Cases.DataFlow.ComplexTypeHandling+ArrayCreateInstanceByNameElement[]");

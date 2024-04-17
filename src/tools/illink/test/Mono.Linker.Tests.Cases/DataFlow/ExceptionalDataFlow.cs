@@ -46,9 +46,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			ExceptionFilterWithException ();
 		}
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Analyzer)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicProperties) + "()")]
 		public static void TryFlowsToFinally ()
@@ -109,11 +109,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		// On each path, only one state is possible, but we conservatively merge the (non-exceptional)
 		// finally states for each path and expect the warnings to reflect this merged state.
 		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicMethods) + "()")]
-		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Analyzer)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicProperties) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicProperties) + "()",
 			ProducedBy = Tool.Analyzer)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicEvents) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicEvents) + "()",
 			ProducedBy = Tool.Analyzer)]
 
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicMethods) + "()")]
@@ -124,11 +124,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[ExpectedWarning ("IL2073", nameof (MultipleFinallyPaths) + "()", nameof (GetWithPublicEvents) + "()")]
 
 		// Trimmer merges branches going forward.
-		[ExpectedWarning ("IL2073", nameof (MultipleFinallyPaths) + "()", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2073", nameof (MultipleFinallyPaths) + "()", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-		[ExpectedWarning ("IL2073", nameof (MultipleFinallyPaths) + "()", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2073", nameof (MultipleFinallyPaths) + "()", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-		[ExpectedWarning ("IL2073", nameof (MultipleFinallyPaths) + "()", nameof (GetWithPublicProperties) + "()",
+		[ExpectedMissingWarning ("IL2073", nameof (MultipleFinallyPaths) + "()", nameof (GetWithPublicProperties) + "()",
 			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
 		public static Type MultipleFinallyPaths ()
@@ -160,13 +160,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			throw new Exception ();
 		}
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicProperties) + "()")]
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Analyzer)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicProperties) + "()")]
 		public static void FinallyChain ()
@@ -184,15 +184,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicProperties) + "()")]
 
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicProperties) + "()")]
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Analyzer)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicProperties) + "()")]
 
@@ -218,9 +218,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireAll4 (t);
 		}
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Analyzer)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicProperties) + "()")]
 		public static void TryFlowsToCatch ()
@@ -235,9 +235,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Analyzer)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicProperties) + "()")]
 		public static void CatchFlowsToFinally ()
@@ -253,7 +253,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicProperties) + "()")]
 		public static void CatchFlowsToAfterTry ()
@@ -268,7 +268,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireAll (t);
 		}
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicProperties) + "()")]
 		public static void CatchFlowsToAfterFinally ()
@@ -303,19 +303,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicFields) + "()")]
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicFields) + "()")]
 
 		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicProperties) + "()")]
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll4) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll4) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll4) + "(Type)", nameof (GetWithPublicFields) + "()")]
 
 		[ExpectedWarning ("IL2072", nameof (RequireAll5) + "(Type)", nameof (GetWithPublicEvents) + "()")]
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll6) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll6) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll6) + "(Type)", nameof (GetWithPublicFields) + "()")]
 		[ExpectedWarning ("IL2072", nameof (RequireAll6) + "(Type)", nameof (GetWithPublicProperties) + "()")]
@@ -326,25 +326,25 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicConstructors) + "()")]
 
 		// Trimmer merges branches going forward.
-		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll4) + "(Type)", nameof (GetWithPublicProperties) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll4) + "(Type)", nameof (GetWithPublicProperties) + "()",
 			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll5) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll5) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll5) + "(Type)", nameof (GetWithPublicProperties) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll5) + "(Type)", nameof (GetWithPublicProperties) + "()",
 			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll7) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll7) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll7) + "(Type)", nameof (GetWithPublicProperties) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll7) + "(Type)", nameof (GetWithPublicProperties) + "()",
 			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll7) + "(Type)", nameof (GetWithPublicEvents) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll7) + "(Type)", nameof (GetWithPublicEvents) + "()",
 			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicProperties) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicProperties) + "()",
 			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicEvents) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicEvents) + "()",
 			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 
 		public static void TryFlowsToMultipleCatchAndFinally ()
@@ -370,19 +370,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicProperties) + "()")]
 
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicConstructors) + "()")]
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Analyzer)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Analyzer)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicProperties) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicProperties) + "()",
 			ProducedBy = Tool.Analyzer)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicEvents) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicEvents) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicConstructors) + "()")]
 
@@ -408,16 +408,16 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicFields) + "()")]
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicFields) + "()")]
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicProperties) + "()")]
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicFields) + "()")]
 		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicProperties) + "()")]
@@ -446,21 +446,21 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicProperties) + "()")]
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicProperties) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicProperties) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicConstructors) + "()")]
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Analyzer)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Analyzer)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicProperties) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicProperties) + "()",
 			ProducedBy = Tool.Analyzer)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicEvents) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicEvents) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicConstructors) + "()")]
 
@@ -488,7 +488,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicFields) + "()")]
 		// Trimmer merges branches going forward.
-		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 		public static void CatchInTry ()
 		{
@@ -510,10 +510,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicMethods) + "()")]
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicFields) + "()")]
 		// The bug was producing this warning:
-		// [ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicConstructors) + "()")]
+		// [ExpectedSharedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicConstructors) + "()")]
 
 		// Trimmer merges branches going forward.
-		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 		public static void CatchInTryWithFinally ()
 		{
@@ -540,11 +540,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicConstructors) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicConstructors) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicMethods) + "()")]
 		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicFields) + "()")]
-		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicConstructors) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicConstructors) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicMethods) + "()")]
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicFields) + "()")]
@@ -565,7 +565,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()")]
 
 		// Trimmer merges branches going forward.
-		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 		public static void TestCatchesHaveSeparateState ()
 		{
@@ -581,7 +581,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()")]
-		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Analyzer)]
 		public static void FinallyWithBranchToFirstBlock ()
 		{
@@ -596,7 +596,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()")]
-		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Analyzer)]
 		public static void FinallyWithBranchToFirstBlockAndEnclosingTryCatchState ()
 		{
@@ -619,7 +619,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()")]
-		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Analyzer)]
 		public static void CatchWithBranchToFirstBlock ()
 		{
@@ -634,7 +634,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()")]
-		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Analyzer)]
 		public static void CatchWithBranchToFirstBlockAndReassignment ()
 		{
@@ -651,9 +651,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicProperties) + "()")]
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Analyzer)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicProperties) + "()")]
 		public static void CatchWithNonSimplePredecessor ()
@@ -676,9 +676,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicProperties) + "()")]
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Analyzer)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicProperties) + "()")]
 		public static void FinallyWithNonSimplePredecessor ()
@@ -701,9 +701,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicProperties) + "()")]
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Analyzer)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicProperties) + "()")]
 		public static void FinallyInTryWithPredecessor ()
@@ -724,11 +724,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicFields) + "()")]
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicFields) + "()")]
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicProperties) + "()")]
@@ -736,7 +736,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicProperties) + "()")]
 
 		// Trimmer merges branches going forward.
-		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 		public static void NestedFinally ()
 		{
@@ -760,9 +760,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[ExpectedWarning ("IL2072", nameof (RequireAll4) + "(Type)", nameof (GetWithPublicFields) + "()")]
 
 		// Trimmer merges branches going forward.
-		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll4) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll4) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 		public static void ChangeInFinallyNestedInFinally ()
 		{
@@ -780,11 +780,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireAll4 (t); // fields only
 		}
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicFields) + "()")]
 
-		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicFields) + "()")]
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicProperties) + "()")]
@@ -792,7 +792,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicProperties) + "()")]
 
 		// Trimmer merges branches going forward.
-		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 		public static void NestedFinallyWithPredecessor ()
 		{
@@ -811,10 +811,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[ExpectedWarning ("IL2072", nameof (RequireAllTrue) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAllTrue) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAllTrue) + "(Type)", nameof (GetWithPublicFields) + "()")]
-		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicFields) + "()")]
 		public static void ExceptionFilter ()
@@ -833,7 +833,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicFields) + "()")]
 
 		// Trimmer merges branches going forward.
-		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 		public static void ExceptionFilterStateChange ()
 		{
@@ -872,11 +872,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[ExpectedWarning ("IL2072", nameof (RequireAll6) + "(Type)", nameof (GetWithPublicProperties) + "()")]
 
 		// Trimmer merges branches going forward.
-		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicMethods) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicFields) + "()",
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 		public static void ExceptionMultipleFilters ()
 		{
@@ -908,7 +908,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicProperties))]
 
 		// Trimmer merges branches going forward.
-		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods),
+		[ExpectedMissingWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods),
 			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 		public static void ExceptionFilterWithBranch ()
 		{

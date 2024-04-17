@@ -227,10 +227,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						}
 						break;
 
-					case nameof (ExpectedWarningAttribute): {
+					case nameof (ExpectedMissingWarningAttribute):
+					case nameof (ExpectedWarningAttribute):
+					case nameof (UnexpectedWarningAttribute): {
 							var expectedWarningCode = (string) attr.GetConstructorArgumentValue (0);
 							if (!expectedWarningCode.StartsWith ("IL")) {
-								Assert.Fail ($"The warning code specified in {nameof (ExpectedWarningAttribute)} must start with the 'IL' prefix. Specified value: '{expectedWarningCode}'.");
+								Assert.Fail ($"The warning code specified in {attr.AttributeType.Name} must start with the 'IL' prefix. Specified value: '{expectedWarningCode}'.");
 							}
 							var expectedMessageContains = ((CustomAttributeArgument[]) attr.GetConstructorArgumentValue (1)).Select (a => (string) a.Value).ToArray ();
 							string fileName = (string) attr.GetPropertyValue ("FileName")!;

@@ -39,12 +39,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
 			Type annotatedField = GetUnknown ();
 
-			[ExpectedWarning ("IL2074", nameof (GetUnknown), nameof (AnnotatedProperty), CompilerGeneratedCode = true,
+			[ExpectedMissingWarning ("IL2074", nameof (GetUnknown), nameof (AnnotatedProperty), CompilerGeneratedCode = true,
 				ProducedBy = Tool.Trimmer | Tool.NativeAot)] // https://github.com/dotnet/runtime/issues/93277
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
 			Type AnnotatedProperty { get; } = GetUnknown ();
 
-			[ExpectedWarning ("IL2074", nameof (GetUnknown), nameof (AnnotatedPropertyWithSetter), CompilerGeneratedCode = true,
+			[ExpectedMissingWarning ("IL2074", nameof (GetUnknown), nameof (AnnotatedPropertyWithSetter), CompilerGeneratedCode = true,
 				ProducedBy = Tool.Trimmer | Tool.NativeAot)] // https://github.com/dotnet/runtime/issues/93277
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
 			Type AnnotatedPropertyWithSetter { get; set; } = GetUnknown ();
@@ -81,11 +81,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			int PropertyWithThrowStatementInInitializer { get; } = string.Empty.Length == 0 ? throw new Exception() : 0;
 
-			[ExpectedWarning ("IL2067", nameof (TryGetUnknown), nameof (RequireAll), CompilerGeneratedCode = true,
+			[ExpectedMissingWarning ("IL2067", nameof (TryGetUnknown), nameof (RequireAll), CompilerGeneratedCode = true,
 				ProducedBy = Tool.Trimmer | Tool.NativeAot)] // https://github.com/dotnet/linker/issues/2158
 			int fieldWithLocalReferenceInInitializer = TryGetUnknown (out var type) ? RequireAll (type) : 0;
 
-			[ExpectedWarning ("IL2067", nameof (TryGetUnknown), nameof (RequireAll), CompilerGeneratedCode = true,
+			[ExpectedMissingWarning ("IL2067", nameof (TryGetUnknown), nameof (RequireAll), CompilerGeneratedCode = true,
 				ProducedBy = Tool.Trimmer | Tool.NativeAot)] // https://github.com/dotnet/linker/issues/2158
 			int PropertyWithLocalReferenceInInitializer { get; } = TryGetUnknown (out var type) ? RequireAll (type) : 0;
 

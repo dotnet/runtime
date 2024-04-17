@@ -10,18 +10,10 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 		AllowMultiple = true,
 		Inherited = false)]
 	/// <summary>
-	/// An attribute applied to a member to indicate that a warning is expected in ideal behavior, and is present in all tools
+	/// An attribute applied to a member to indicate that a warning is raised in tests, but should not be present in ideal behavior
 	/// </summary>
-	public class ExpectedWarningAttribute : EnableLoggerAttribute
+	public class UnexpectedWarningAttribute : ExpectedMissingWarningAttribute
 	{
-		public ExpectedWarningAttribute (string warningCode, params string[] messageContains)
-		{
-		}
-
-		public string FileName { get; set; }
-		public int SourceLine { get; set; }
-		public int SourceColumn { get; set; }
-
-		public bool CompilerGeneratedCode { get; set; }
+		public UnexpectedWarningAttribute (string warningCode, params string[] messageContains) : base (warningCode, messageContains) { }
 	}
 }

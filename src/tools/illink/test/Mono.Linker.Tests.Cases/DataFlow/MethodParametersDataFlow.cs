@@ -143,8 +143,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type2.RequiresPublicConstructors ();
 		}
 
-		// TODO: https://github.com/dotnet/linker/issues/2273
-		// (Dataflow analysis is not supported by the analyzer yet)
 		[ExpectedWarning ("IL2067",
 			nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicConstructors) + "(Type)",
 			"'type'")]

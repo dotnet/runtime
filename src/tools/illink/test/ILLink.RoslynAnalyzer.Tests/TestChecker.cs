@@ -66,7 +66,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			}
 
 			if (message.Length > 0) {
-				Assert.Fail(message);
+				Assert.Fail (message);
 			}
 		}
 
@@ -207,9 +207,11 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		static bool IsExpectedDiagnostic (AttributeSyntax attribute)
 		{
-			switch (attribute.Name.ToString ()) {
-			case "ExpectedWarning":
-			case "LogContains":
+			switch (attribute.Name.ToString () + "Attribute") {
+			case nameof (ExpectedWarningAttribute):
+			case nameof (ExpectedMissingWarningAttribute):
+			case nameof (UnexpectedWarningAttribute):
+			case nameof (LogContainsAttribute):
 				var args = LinkerTestBase.GetAttributeArguments (attribute);
 				if (args.TryGetValue ("ProducedBy", out var producedBy)) {
 					// Skip if this warning is not expected to be produced by any of the analyzers that we are currently testing.
@@ -248,10 +250,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		bool TryValidateExpectedDiagnostic (AttributeSyntax attribute, List<Diagnostic> diagnostics, [NotNullWhen (true)] out int? matchIndex, [NotNullWhen (false)] out string? missingDiagnosticMessage)
 		{
-			switch (attribute.Name.ToString ()) {
-			case "ExpectedWarning":
+			switch (attribute.Name.ToString () + "Attribute") {
+			case nameof (ExpectedWarningAttribute):
+			case nameof (ExpectedMissingWarningAttribute):
+			case nameof (UnexpectedWarningAttribute):
 				return TryValidateExpectedWarningAttribute (attribute!, diagnostics, out matchIndex, out missingDiagnosticMessage);
-			case "LogContains":
+			case nameof (LogContainsAttribute):
 				return TryValidateLogContainsAttribute (attribute!, diagnostics, out matchIndex, out missingDiagnosticMessage);
 			default:
 				throw new InvalidOperationException ($"Unsupported attribute type {attribute.Name}");
@@ -318,7 +322,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			Assert.False (args.ContainsKey ("#1"));
 			_ = LinkerTestBase.GetStringFromExpression (arg, _semanticModel);
 			if (LogContains (attribute, diagnosticMessages, out var matchIndex, out var findText)) {
-				Assert.Fail($"LogDoesNotContain failure: Text\n\"{findText}\"\nfound in diagnostic:\n {diagnosticMessages[(int) matchIndex]}");
+				Assert.Fail ($"LogDoesNotContain failure: Text\n\"{findText}\"\nfound in diagnostic:\n {diagnosticMessages[(int) matchIndex]}");
 			}
 		}
 

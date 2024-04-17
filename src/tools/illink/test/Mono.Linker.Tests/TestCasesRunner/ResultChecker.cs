@@ -66,13 +66,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						throw new NotImplementedException ($"Unexpected scope type '{exportedType.Scope.GetType ()}' for exported type '{exportedType.FullName}'");
 					}
 					continue;
-				case AssemblyNameReference:
-				{
-					// There should be an AssemblyRef row for this assembly
-					var assemblyRef = linked.MainModule.AssemblyReferences.Single (ar => ar.Name == typeRef.Scope.Name);
-					Assert.IsNotNull (assemblyRef, $"Type reference '{typeRef.FullName}' has a reference to assembly '{typeRef.Scope.Name}' which is not a reference of '{linked.FullName}'");
-					continue;
-				}
+				case AssemblyNameReference: {
+						// There should be an AssemblyRef row for this assembly
+						var assemblyRef = linked.MainModule.AssemblyReferences.Single (ar => ar.Name == typeRef.Scope.Name);
+						Assert.IsNotNull (assemblyRef, $"Type reference '{typeRef.FullName}' has a reference to assembly '{typeRef.Scope.Name}' which is not a reference of '{linked.FullName}'");
+						continue;
+					}
 				default:
 					throw new NotImplementedException ($"Unexpected scope type '{typeRef.Scope.GetType ()}' for type reference '{typeRef.FullName}'");
 				}
@@ -98,10 +97,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					PerformOutputAssemblyChecks (original, linkResult.OutputAssemblyPath.Parent);
 					PerformOutputSymbolChecks (original, linkResult.OutputAssemblyPath.Parent);
 
-					if (!HasActiveSkipKeptItemsValidationAttribute(linkResult.TestCase.FindTypeDefinition (original))) {
+					if (!HasActiveSkipKeptItemsValidationAttribute (linkResult.TestCase.FindTypeDefinition (original))) {
 						CreateAssemblyChecker (original, linked, linkResult).Verify ();
 					}
-					CreateILChecker ().Check(linkResult, original);
+					CreateILChecker ().Check (linkResult, original);
 				}
 
 				VerifyLinkingOfOtherAssemblies (original);
@@ -218,12 +217,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		void VerifyExitCode (TrimmedTestCaseResult linkResult, AssemblyDefinition original)
 		{
-			if (TryGetCustomAttribute (original, nameof(ExpectNonZeroExitCodeAttribute), out var attr)) {
+			if (TryGetCustomAttribute (original, nameof (ExpectNonZeroExitCodeAttribute), out var attr)) {
 				var expectedExitCode = (int) attr.ConstructorArguments[0].Value;
-				Assert.AreEqual (expectedExitCode, linkResult.ExitCode, $"Expected exit code {expectedExitCode} but got {linkResult.ExitCode}.  Output was:\n{FormatLinkerOutput()}");
+				Assert.AreEqual (expectedExitCode, linkResult.ExitCode, $"Expected exit code {expectedExitCode} but got {linkResult.ExitCode}.  Output was:\n{FormatLinkerOutput ()}");
 			} else {
 				if (linkResult.ExitCode != 0) {
-					Assert.Fail($"Linker exited with an unexpected non-zero exit code of {linkResult.ExitCode} and output:\n{FormatLinkerOutput()}");
+					Assert.Fail ($"Linker exited with an unexpected non-zero exit code of {linkResult.ExitCode} and output:\n{FormatLinkerOutput ()}");
 				}
 			}
 
@@ -794,12 +793,17 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						}
 						break;
 
-					case nameof (ExpectedWarningAttribute): {
-							var expectedWarningCode = (string) attr.GetConstructorArgumentValue (0);
+					case nameof (ExpectedMissingWarningAttribute) or nameof (UnexpectedWarningAttribute) or nameof(ExpectedWarningAttribute): {
+							(string expectedWarningCode, string[] expectedMessageContains) = attr.ConstructorArguments switch {
+								[{Value: string warningCode }, {Value: CustomAttributeArgument[] messageContains }, ..]
+									=> (warningCode, messageContains.Select(a => (string) a.Value).ToArray()),
+									[{ Value: string warningCode}, { Value: string messageContains}, ..]
+									=> (warningCode, [messageContains]),
+								_ => throw new NotImplementedException ()
+							};
 							if (!expectedWarningCode.StartsWith ("IL")) {
-								Assert.Fail ($"The warning code specified in {nameof (ExpectedWarningAttribute)} must start with the 'IL' prefix. Specified value: '{expectedWarningCode}'.");
+								Assert.Fail ($"The warning code specified in {attr.AttributeType.Name} must start with the 'IL' prefix. Specified value: '{expectedWarningCode}'.");
 							}
-							var expectedMessageContains = ((CustomAttributeArgument[]) attr.GetConstructorArgumentValue (1)).Select (a => (string) a.Value).ToArray ();
 							string fileName = (string) attr.GetPropertyValue ("FileName");
 							int? sourceLine = (int?) attr.GetPropertyValue ("SourceLine");
 							int? sourceColumn = (int?) attr.GetPropertyValue ("SourceColumn");
