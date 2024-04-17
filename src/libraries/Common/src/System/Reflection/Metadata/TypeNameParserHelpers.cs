@@ -96,7 +96,6 @@ namespace System.Reflection.Metadata
                 return offset;
             }
 
-            // This is not a strict implementation of ECMA, so far all .NET Runtimes were forbidding to escape other characters.
             static bool NeedsEscaping(char c) => c is '[' or ']' or '&' or '*' or ',' or '+' or EscapeCharacter;
         }
 

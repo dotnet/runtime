@@ -7,6 +7,10 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
+#if !SYSTEM_PRIVATE_CORELIB
+using System.Collections.Immutable;
+#endif
+
 namespace System.Reflection.Metadata
 {
     /// <summary>
@@ -36,7 +40,7 @@ namespace System.Reflection.Metadata
         /// <param name="flags">The attributes of the assembly.</param>
         /// <param name="publicKeyOrToken">The public key or its token. Set <paramref name="flags"/> to <seealso cref="AssemblyNameFlags.PublicKey"/> when it's public key.</param>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is null.</exception>
-        public AssemblyNameInfo(string name, Version? version = null, string? cultureName = null, AssemblyNameFlags flags = AssemblyNameFlags.None, Collections.Immutable.ImmutableArray<byte> publicKeyOrToken = default)
+        public AssemblyNameInfo(string name, Version? version = null, string? cultureName = null, AssemblyNameFlags flags = AssemblyNameFlags.None, ImmutableArray<byte> publicKeyOrToken = default)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             Version = version;
@@ -56,11 +60,11 @@ namespace System.Reflection.Metadata
             PublicKeyOrToken = parts._publicKeyOrToken;
 #else
             PublicKeyOrToken = parts._publicKeyOrToken is null ? default : parts._publicKeyOrToken.Length == 0
-                ? Collections.Immutable.ImmutableArray<byte>.Empty
+                ? ImmutableArray<byte>.Empty
     #if NET8_0_OR_GREATER
                 : Runtime.InteropServices.ImmutableCollectionsMarshal.AsImmutableArray(parts._publicKeyOrToken);
     #else
-                : Collections.Immutable.ImmutableArray.Create(parts._publicKeyOrToken);
+                : ImmutableArray.Create(parts._publicKeyOrToken);
     #endif
 #endif
         }
@@ -92,7 +96,7 @@ namespace System.Reflection.Metadata
 #if SYSTEM_PRIVATE_CORELIB
         public byte[]? PublicKeyOrToken { get; }
 #else
-        public Collections.Immutable.ImmutableArray<byte> PublicKeyOrToken { get; }
+        public ImmutableArray<byte> PublicKeyOrToken { get; }
 #endif
 
         /// <summary>
@@ -213,7 +217,7 @@ namespace System.Reflection.Metadata
             => (ProcessorArchitecture)((((int)flags) >> 4) & 0x7);
 
 #if !SYSTEM_PRIVATE_CORELIB
-        private static byte[]? ToArray(Collections.Immutable.ImmutableArray<byte> input)
+        private static byte[]? ToArray(ImmutableArray<byte> input)
         {
             // not using System.Linq.ImmutableArrayExtensions.ToArray as TypeSystem does not allow System.Linq
             if (input.IsDefault)
