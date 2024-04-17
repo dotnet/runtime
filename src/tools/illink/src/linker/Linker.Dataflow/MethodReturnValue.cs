@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using ILLink.Shared.DataFlow;
 using Mono.Cecil;
+using Mono.Linker;
 using Mono.Linker.Dataflow;
 using TypeDefinition = Mono.Cecil.TypeDefinition;
 
@@ -16,7 +17,13 @@ namespace ILLink.Shared.TrimAnalysis
 	/// </summary>
 	internal partial record MethodReturnValue
 	{
-		public MethodReturnValue (TypeDefinition? staticType, MethodDefinition method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+		public static MethodReturnValue Create (MethodDefinition method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, LinkContext context)
+		{
+			var staticType = method.IsConstructor ? method.DeclaringType : method.ReturnType.ResolveToTypeDefinition (context);
+			return new MethodReturnValue (staticType, method, dynamicallyAccessedMemberTypes);
+		}
+
+		private MethodReturnValue (TypeDefinition? staticType, MethodDefinition method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 		{
 			StaticType = staticType == null ? null : new (staticType);
 			Method = method;

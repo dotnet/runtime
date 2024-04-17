@@ -683,7 +683,7 @@ namespace ILLink.Shared.TrimAnalysis
 			=> RequiresDataFlowAnalysis (method.Method);
 
 		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-			=> new MethodReturnValue (method.Method.ReturnType.ResolveToTypeDefinition (_context), method.Method, dynamicallyAccessedMemberTypes);
+			=> MethodReturnValue.Create (method.Method, dynamicallyAccessedMemberTypes, _context);
 
 		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method)
 			=> GetMethodReturnValue (method, GetReturnParameterAnnotation (method.Method));

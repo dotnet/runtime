@@ -1167,7 +1167,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 			// For now, if the intrinsic doesn't set a return value, fall back on the annotations.
 			// Note that this will be DynamicallyAccessedMembers.None for the intrinsics which don't return types.
-			returnValue ??= calledMethod.ReturnsVoid () ? MultiValueLattice.Top : annotatedMethodReturnValue;
+			returnValue ??= (calledMethod.ReturnsVoid () && !calledMethod.IsConstructor ()) ? MultiValueLattice.Top : annotatedMethodReturnValue;
 
 			if (MethodIsTypeConstructor (calledMethod))
 				returnValue = UnknownValue.Instance;

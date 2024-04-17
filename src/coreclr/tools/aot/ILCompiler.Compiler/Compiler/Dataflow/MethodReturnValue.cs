@@ -18,7 +18,7 @@ namespace ILLink.Shared.TrimAnalysis
     {
         public MethodReturnValue(MethodDesc method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
         {
-            StaticType = method.Signature.ReturnType;
+            StaticType = method.IsConstructor ? method.OwningType : method.Signature.ReturnType;
             Method = method;
             DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
         }
