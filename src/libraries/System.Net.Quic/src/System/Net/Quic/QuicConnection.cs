@@ -446,10 +446,20 @@ public sealed partial class QuicConnection : IAsyncDisposable
             throw new InvalidOperationException(SR.net_quic_accept_not_allowed);
         }
 
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} Waiting for incoming stream");
+        }
+
         GCHandle keepObject = GCHandle.Alloc(this);
         try
         {
-            return await _acceptQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+            QuicStream stream = await _acceptQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(this, $"{this} Accepted incoming stream {stream}");
+            }
+            return stream;
         }
         catch (ChannelClosedException ex) when (ex.InnerException is not null)
         {

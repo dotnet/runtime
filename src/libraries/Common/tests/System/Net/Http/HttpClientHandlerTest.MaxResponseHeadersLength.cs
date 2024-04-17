@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
+using TestUtilities;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -73,6 +74,8 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(15)]
         public async Task LargeSingleHeader_ThrowsException(int maxResponseHeadersLength)
         {
+            Console.WriteLine("Test start");
+            using TestEventListener listener = new TestEventListener(_output, TestEventListener.NetworkingEvents);
             using HttpClientHandler handler = CreateHttpClientHandler();
             handler.MaxResponseHeadersLength = maxResponseHeadersLength;
 
@@ -97,7 +100,7 @@ namespace System.Net.Http.Functional.Tests
 #if !WINHTTPHANDLER_TEST
                 catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad) {}
 #endif
-            });
+            }).WaitAsync(TimeSpan.FromSeconds(7));
         }
 
         [Theory]

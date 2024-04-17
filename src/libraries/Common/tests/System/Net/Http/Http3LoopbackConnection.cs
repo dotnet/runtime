@@ -124,7 +124,7 @@ namespace System.Net.Test.Common
             async Task EnsureControlStreamAcceptedInternalAsync()
             {
                 Http3LoopbackStream controlStream;
-
+                Console.WriteLine("New call to EnsureControlStreamAcceptedInternalAsync");
                 while (true)
                 {
                     Console.WriteLine("Ensuring Control Stream Accepted");
