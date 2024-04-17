@@ -997,10 +997,10 @@ mono_metadata_table_bounds_check_slow (MonoImage *image, int table_index, int to
 	if (G_LIKELY (GINT_TO_UINT32(token_index) <= table_info_get_rows (&image->tables [table_index])))
 		return FALSE;
 
-        if (G_LIKELY (!image->has_updates))
-                return TRUE;
+	if (G_LIKELY (!image->has_updates))
+		return TRUE;
 
-        return mono_metadata_update_table_bounds_check (image, table_index, token_index);
+	return mono_metadata_update_table_bounds_check (image, table_index, token_index);
 }
 
 void
@@ -1094,7 +1094,7 @@ get_blob_heap (MonoImage *image)
 static gboolean
 mono_delta_heap_lookup (MonoImage *base_image, MetadataHeapGetterFunc get_heap, guint32 orig_index, MonoImage **image_out, guint32 *index_out)
 {
-        return mono_metadata_update_delta_heap_lookup (base_image, get_heap, orig_index, image_out, index_out);
+	return mono_metadata_update_delta_heap_lookup (base_image, get_heap, orig_index, image_out, index_out);
 }
 
 /**
@@ -6451,12 +6451,12 @@ mono_metadata_events_from_typedef (MonoImage *meta, guint32 index, guint *end_id
 	}
 
 	start = mono_metadata_decode_row_col (tdef, loc.result, MONO_EVENT_MAP_EVENTLIST);
-        /*
-         * metadata-update: note this next line needs block needs to look at the number of rows in
-         * EventMap and Event of the base image.  Updates will add rows for new properties,
-         * but they won't be contiguous.  if we set end to the number of rows in the updated
-         * Property table, the range will include properties from some other class
-         */
+	/*
+	 * metadata-update: note this next line needs block needs to look at the number of rows in
+	 * EventMap and Event of the base image.  Updates will add rows for new properties,
+	 * but they won't be contiguous.  if we set end to the number of rows in the updated
+	 * Property table, the range will include properties from some other class
+	 */
 	if (loc.result + 1 < table_info_get_rows (tdef)) {
 		end = mono_metadata_decode_row_col (tdef, loc.result + 1, MONO_EVENT_MAP_EVENTLIST) - 1;
 	} else {
@@ -6569,12 +6569,12 @@ mono_metadata_properties_from_typedef (MonoImage *meta, guint32 index, guint *en
 	}
 
 	start = mono_metadata_decode_row_col (tdef, loc.result, MONO_PROPERTY_MAP_PROPERTY_LIST);
-        /*
-         * metadata-update: note this next line needs block needs to look at the number of rows in
-         * PropertyMap and Property of the base image.  Updates will add rows for new properties,
-         * but they won't be contiguous.  if we set end to the number of rows in the updated
-         * Property table, the range will include properties from some other class
-         */
+	/*
+	 * metadata-update: note this next line needs block needs to look at the number of rows in
+	 * PropertyMap and Property of the base image.  Updates will add rows for new properties,
+	 * but they won't be contiguous.  if we set end to the number of rows in the updated
+	 * Property table, the range will include properties from some other class
+	 */
 	if (loc.result + 1 < table_info_get_rows (&meta->tables [MONO_TABLE_PROPERTYMAP])) {
 		end = mono_metadata_decode_row_col (tdef, loc.result + 1, MONO_PROPERTY_MAP_PROPERTY_LIST) - 1;
 	} else {
@@ -7088,10 +7088,10 @@ mono_metadata_get_marshal_info (MonoImage *meta, guint32 idx, gboolean is_field)
 
 	gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator);
 
-        if (G_UNLIKELY (meta->has_updates)) {
-                if (!found && !mono_metadata_update_metadata_linear_search (meta, tdef, &loc, table_locator))
-                        return NULL;
-        }
+	if (G_UNLIKELY (meta->has_updates)) {
+		if (!found && !mono_metadata_update_metadata_linear_search (meta, tdef, &loc, table_locator))
+			return NULL;
+	}
 
 	return mono_metadata_blob_heap (meta, mono_metadata_decode_row_col (tdef, loc.result, MONO_FIELD_MARSHAL_NATIVE_TYPE));
 }
@@ -8054,4 +8054,13 @@ mono_metadata_get_method_params (MonoImage *image, uint32_t method_idx, uint32_t
 		*last_param_out = lastp;
 
 	return param_index;
+}
+
+// Required by dn_simdhash
+void
+dn_simdhash_assert_fail (const char *file, int line, const char *condition);
+
+void
+dn_simdhash_assert_fail (const char *file, int line, const char *condition) {
+	mono_assertion_message (file, line, condition);
 }

@@ -1353,7 +1353,7 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     m_debuggerModule = g_pDebugger->LookupOrCreateModule(pEvalInfo->vmDomainAssembly);
     m_funcEvalKey = pEvalInfo->funcEvalKey;
     m_argCount = pEvalInfo->argCount;
-    m_targetCodeAddr = NULL;
+    m_targetCodeAddr = (TADDR)NULL;
     m_stringSize = pEvalInfo->stringSize;
     m_arrayRank = pEvalInfo->arrayRank;
     m_genericArgsCount = pEvalInfo->genericArgsCount;
@@ -2238,7 +2238,7 @@ DebuggerLazyInit::DebuggerLazyInit() :
     m_exAttachEvent(NULL),
     m_exUnmanagedAttachEvent(NULL),
     m_garbageCollectionBlockerEvent(NULL),
-    m_DebuggerHandlingCtrlC(NULL)
+    m_DebuggerHandlingCtrlC(FALSE)
 {
 }
 
@@ -2724,7 +2724,7 @@ DebuggerJitInfo *Debugger::GetJitInfoWorker(MethodDesc *fd, const BYTE *pbAddr, 
     else
     {
         PCODE startAddr = g_pEEInterface->GetNativeCodeStartAddress((PCODE)pbAddr);
-        if (startAddr == NULL)
+        if (startAddr == (PCODE)NULL)
         {
             LOG((LF_CORDB,LL_INFO1000,"D::GJIW: Couldn't find a DJI by address 0x%p, "
                 "so it might be a stub or thunk\n", pbAddr));
@@ -2748,7 +2748,7 @@ DebuggerJitInfo *Debugger::GetJitInfoWorker(MethodDesc *fd, const BYTE *pbAddr, 
 #endif // LOGGING
         }
 
-        if (startAddr != NULL)
+        if (startAddr != (PCODE)NULL)
         {
             dji = dmi->FindOrCreateInitAndAddJitInfo(fd, startAddr);
         }
@@ -3488,7 +3488,7 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
     BOOL exact;
     SIZE_T offsetNatTo;
 
-    PCODE    pbDest = NULL;
+    PCODE    pbDest = (PCODE)NULL;
     BYTE    *pbBase = NULL;
     CONTEXT *pCtx   = NULL;
     DWORD    dwSize = 0;
@@ -8546,8 +8546,8 @@ LONG Debugger::LastChanceManagedException(EXCEPTION_POINTERS * pExceptionInfo,
             // attach stuff out here and not bother with the flag.
             hr = SendException(thread,
                           FALSE,
-                          ((pContext != NULL) ? (SIZE_T)GetIP(pContext) : NULL),
-                          ((pContext != NULL) ? (SIZE_T)GetSP(pContext) : NULL),
+                          ((pContext != NULL) ? (SIZE_T)GetIP(pContext) : 0),
+                          ((pContext != NULL) ? (SIZE_T)GetSP(pContext) : 0),
                           continuable,
                           !!jitAttachRequested,  // If we are JIT attaching on an unhandled exceptioin, we force
                           !!jitAttachRequested,  // the exception to be uninterceptable.
@@ -13984,7 +13984,7 @@ bool Debugger::GetILOffsetFromNative (MethodDesc *pFunc, const BYTE *pbAddr,
     }
 
     PCODE methodStartAddress = g_pEEInterface->GetNativeCodeStartAddress((PCODE)pbAddr);
-    if (methodStartAddress == NULL)
+    if (methodStartAddress == (PCODE)NULL)
     {
         return false;
     }

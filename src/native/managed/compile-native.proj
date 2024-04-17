@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.Build.Traversal">
     <PropertyGroup>
-        <!-- We always want to use release for publishing using NativeAOT -->
-        <NativeLibsPublishConfiguration>Release</NativeLibsPublishConfiguration>
-	<!-- we always want to make shared libs -->
+    	<!-- we always want to make shared libs -->
         <NativeLibKind Condition="'$(NativeLibKind)' == ''">shared</NativeLibKind>
 
 	<!-- When we publish, we want to ensure the SDK does the same thing as though we ran 'dotnet publish' -->
@@ -39,7 +37,7 @@
 
     <!-- properties to pass down to the subproject builds -->
     <ItemGroup>
-        <SubprojectProps Include="Configuration" Value="$(NativeLibsPublishConfiguration)" />
+        <SubprojectProps Include="Configuration" Value="$(Configuration)" />
         <SubprojectProps Include="RuntimeConfiguration" Value="$(RuntimeConfiguration)" />
         <SubprojectProps Include="LibrariesConfiguration" Value="$(LibrariesConfiguration)" />
         <SubprojectProps Include="RuntimeIdentifier" Value="$(OutputRID)" />
