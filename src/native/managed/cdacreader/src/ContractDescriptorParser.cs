@@ -150,7 +150,7 @@ public partial class ContractDescriptorParser
             //    ^ we're here
             if (!TryGetInt32FromToken(ref reader, out offset))
                 throw new JsonException();
-            reader.Read(); // end of array or string
+            reader.Read(); // string
             if (reader.TokenType != JsonTokenType.String)
                 throw new JsonException();
             string? type = reader.GetString();
@@ -189,6 +189,28 @@ public partial class ContractDescriptorParser
             //          ^ we're here
             // case 4: [[number], string]
             //          ^ we're here
+            if (TryGetUInt64FromToken(ref reader, out ulong valueCase2or3))
+            {
+                // case 2 or 3
+                // case 2: [number]
+                //          ^ we're here
+                // case 3: [number, string]
+                //          ^ we're here
+                reader.Read(); // end of array (case 2) or string (case 3)
+                if (reader.TokenType == JsonTokenType.EndArray) // it was case 2
+                {
+                    return new GlobalDescriptor { Value = valueCase2or3, Indirect = true };
+                }
+                if (reader.TokenType == JsonTokenType.String) // it was case 3
+                {
+                    string? type = reader.GetString();
+                    reader.Read(); // end of array for case 3
+                    if (reader.TokenType != JsonTokenType.EndArray)
+                        throw new JsonException();
+                    return new GlobalDescriptor { Type = type, Value = valueCase2or3 };
+                }
+                throw new JsonException();
+            }
             if (reader.TokenType == JsonTokenType.StartArray)
             {
                 // case 4: [[number], string]
@@ -208,30 +230,7 @@ public partial class ContractDescriptorParser
                     throw new JsonException();
                 return new GlobalDescriptor { Type = type, Value = value, Indirect = true };
             }
-            else
-            {
-                // case 2 or 3
-                // case 2: [number]
-                //          ^ we're here
-                // case 3: [number, string]
-                //          ^ we're here
-                if (!TryGetUInt64FromToken(ref reader, out ulong valueCase2or3))
-                    throw new JsonException();
-                reader.Read(); // end of array (case 2) or string (case 3)
-                if (reader.TokenType == JsonTokenType.EndArray) // it was case 2
-                {
-                    return new GlobalDescriptor { Value = valueCase2or3, Indirect = true };
-                }
-                else if (reader.TokenType == JsonTokenType.String) // it was case 3
-                {
-                    string? type = reader.GetString();
-                    reader.Read(); // end of array for case 3
-                    if (reader.TokenType != JsonTokenType.EndArray)
-                        throw new JsonException();
-                    return new GlobalDescriptor { Type = type, Value = valueCase2or3 };
-                }
-                throw new JsonException();
-            }
+            throw new JsonException();
         }
 
         public override void Write(Utf8JsonWriter writer, GlobalDescriptor value, JsonSerializerOptions options)
