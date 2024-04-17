@@ -192,7 +192,55 @@
       <EmsdkLocalPath>emsdk</EmsdkLocalPath>
       <EmscriptenVersion>%(_VersionLines.Identity)</EmscriptenVersion>
       <_EmsdkPaths Condition="'$(HostOS)' != 'windows'">
-export EMSDK_PATH=$(EMSDK_PATH)
+CURRENT_SCRIPT=
+DIR="."
+
+# use shell specific method to get the path
+# to the current file being source'd.
+#
+# To add a shell, add another conditional below,
+# then add tests to scripts/test_source_env.sh
+
+if [ -n "${BASH_SOURCE-}" ]; then
+  CURRENT_SCRIPT="$BASH_SOURCE"
+elif [ -n "${ZSH_VERSION-}" ]; then
+  CURRENT_SCRIPT="${(%):-%x}"
+elif [ -n "${KSH_VERSION-}" ]; then
+  CURRENT_SCRIPT=${.sh.file}
+fi
+
+if [ -n "${CURRENT_SCRIPT-}" ]; then
+  DIR=$(dirname "$CURRENT_SCRIPT")
+  if [ -h "$CURRENT_SCRIPT" ]; then
+    # Now work out actual DIR since this is part of a symlink.
+    # Since we can't be sure that readlink or realpath
+    # are available, use tools more likely to be installed.
+    # (This will still fail if sed is not available.)
+    SYMDIR=$(dirname "$(ls -l "$CURRENT_SCRIPT" | sed -n "s/.*-&gt; //p")")
+    if [ -z "$SYMDIR" ]; then
+      SYMDIR="."
+    fi
+    FULLDIR="$DIR/$SYMDIR"
+    DIR=$(cd "$FULLDIR" &gt; /dev/null 2&gt;&amp;1; /bin/pwd)
+    unset SYMDIR
+    unset FULLDIR
+  fi
+fi
+unset CURRENT_SCRIPT
+
+if [ ! -f "$DIR/emsdk.py" ]; then
+  echo "Error: unable to determine 'emsdk' directory. Perhaps you are using a shell or" 1&gt;&amp;2
+  echo "       environment that this script does not support." 1&gt;&amp;2
+  echo 1&gt;&amp;2
+  echo "A possible solution is to source this script while in the 'emsdk' directory." 1&gt;&amp;2
+  echo 1&gt;&amp;2
+  unset DIR
+  return
+fi
+
+export EMSDK_PATH=$(DIR)
+unset DIR
+
 export DOTNET_EMSCRIPTEN_LLVM_ROOT=$(EMSDK_PATH)bin/
 export DOTNET_EMSCRIPTEN_NODE_JS=$(EMSDK_PATH)node/bin/node
 export DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EMSDK_PATH)
