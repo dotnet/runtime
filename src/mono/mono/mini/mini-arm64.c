@@ -2887,6 +2887,10 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			offset += size;
 
 			cfg->arch.swift_error_var = ins;
+
+			/* In the n2m case, the error register functions as an extra return register
+			 * and is thus is not treated as callee-saved.
+			 */
 			if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
  				cfg->used_int_regs |= 1 << ARMREG_R21;
 			break;
@@ -3736,7 +3740,9 @@ emit_move_return_value (MonoCompile *cfg, guint8 * code, MonoInst *ins)
 			code = emit_ldrx (code, ARMREG_IP0, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
 			code = emit_strx (code, ARMREG_R21, ARMREG_IP0, 0);
 		} else if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+			/* Load the address of SwiftError into R21 */
 			code = emit_ldrx (code, ARMREG_R21, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
+			/* Load the Value field of SwiftError into R21 */
 			code = emit_ldrx (code, ARMREG_R21, ARMREG_R21, 0);
 		}
 	}
