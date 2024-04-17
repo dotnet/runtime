@@ -17,6 +17,7 @@ namespace Wasm.Build.Tests
         internal static readonly string? XHarnessCliPath           = Environment.GetEnvironmentVariable("XHARNESS_CLI_PATH");
         internal static readonly string? BuiltNuGetsPath           = Environment.GetEnvironmentVariable("BUILT_NUGETS_PATH");
         internal static readonly string? BrowserPathForTests       = Environment.GetEnvironmentVariable("BROWSER_PATH_FOR_TESTS");
+        internal static readonly string? FirefoxPathForTests       = Environment.GetEnvironmentVariable("FIREFOX_PATH_FOR_TESTS");
         internal static readonly string? V8PathForTests            = Environment.GetEnvironmentVariable("V8_PATH_FOR_TESTS");
         internal static readonly bool    IsRunningOnCI             = Environment.GetEnvironmentVariable("IS_RUNNING_ON_CI") is "true";
         internal static readonly bool    ShowBuildOutput           = IsRunningOnCI || Environment.GetEnvironmentVariable("SHOW_BUILD_OUTPUT") is not null;

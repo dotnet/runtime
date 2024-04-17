@@ -56,8 +56,9 @@
     <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
     <NeedsEMSDK Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">true</NeedsEMSDK>
     <NeedsEMSDKNode Condition="'$(Scenario)' == 'WasmTestOnNodeJS' or '$(Scenario)' == 'BuildWasmApps'">false</NeedsEMSDKNode>
-    <NeedsToRunOnBrowser Condition="'$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnBrowser>
-    <NeedsToRunOnV8 Condition="'$(Scenario)' == '' or '$(Scenario)' == 'normal' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnV8>
+    <NeedsToRunOnChrome Condition="'$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnChrome>
+    <NeedsToRunOnFirefox Condition="'$(Scenario)' == 'WasmTestOnFirefox'">true</NeedsToRunOnFirefox>
+    <NeedsToRunOnV8 Condition="'$(Scenario)' == 'WasmTestOnV8' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnV8>
     <NeedsBuiltNugets Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsBuiltNugets>
 
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
@@ -98,9 +99,10 @@
     <HelixPreCommand Include="export XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
 
-    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(ChromeDriverDirName):$PATH" />
-    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(ChromeDirName):$PATH" />
-
+    <HelixPreCommand Condition="'$(NeedsToRunOnChrome)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(ChromeDriverDirName):$PATH" />
+    <HelixPreCommand Condition="'$(NeedsToRunOnChrome)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(ChromeDirName):$PATH" />
+    <HelixPreCommand Condition="'$(NeedsToRunOnFirefox)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(GeckoDriverDirName):$PATH" />
+    <HelixPreCommand Condition="'$(NeedsToRunOnFirefox)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(FirefoxDirName):$PATH" />
     <HelixPreCommand Condition="'$(NeedsToRunOnV8)' == 'true'" Include="export V8_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/$(V8DirName)/$(V8BinaryName)" />
   </ItemGroup>
 
@@ -113,9 +115,10 @@
     <HelixPreCommand Include="set XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="set XHARNESS_LOG_WITH_TIMESTAMPS=true" />
 
-    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDriverDirName)%3B%PATH%" />
-    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDirName)%3B%PATH%" />
-
+    <HelixPreCommand Condition="'$(NeedsToRunOnChrome)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDriverDirName)%3B%PATH%" />
+    <HelixPreCommand Condition="'$(NeedsToRunOnChrome)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDirName)%3B%PATH%" />
+    <HelixPreCommand Condition="'$(NeedsToRunOnFirefox)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(GeckoDriverDirName)%3B%PATH%" />
+    <HelixPreCommand Condition="'$(NeedsToRunOnFirefox)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(FirefoxDirName)%3B%PATH%" />
     <HelixPreCommand Condition="'$(NeedsToRunOnV8)' == 'true'" Include="set V8_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\$(V8DirName)\$(V8BinaryName)" />
   </ItemGroup>
 
@@ -176,24 +179,25 @@
   <Target Name="PrepareHelixCorrelationPayload_Wasm">
     <Message Condition="'$(NeedsEMSDK)' == 'true' or '$(NeedsEMSDKNode)' == 'true'" Importance="High" Text="Using emsdk: $(EmSdkDirForHelixPayload)" />
 
-    <Error Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome' and !Exists($(ChromeDir))"
+    <Error Condition="'$(NeedsToRunOnChrome)' == 'true' and '$(DebuggerHost)' == 'chrome' and !Exists($(ChromeDir))"
            Text="Could not find chrome at $(ChromeDir)" />
-    <Error Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome' and !Exists($(ChromeDriverDir))"
+    <Error Condition="'$(NeedsToRunOnChrome)' == 'true' and '$(DebuggerHost)' == 'chrome' and !Exists($(ChromeDriverDir))"
            Text="Could not find chromedriver at $(ChromeDriverDir)" />
     <Error Condition="'$(NeedsToRunOnV8)' == 'true' and !Exists($(V8BinaryPath))"
            Text="Could not find v8 at $(V8BinaryPath)" />
-    <Error Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'firefox' and !Exists($(FirefoxDir))"
+    <Error Condition="'$(NeedsToRunOnChrome)' == 'true' and '$(DebuggerHost)' == 'firefox' and !Exists($(FirefoxDir))"
            Text="Could not find firefox at $(FirefoxDir)" />
 
-    <ItemGroup Condition="'$(NeedsToRunOnBrowser)' == 'true'">
-      <HelixCorrelationPayload Condition="'$(DebuggerHost)' == 'chrome'" Include="$(ChromeDir)" />
-      <HelixCorrelationPayload Condition="'$(DebuggerHost)' == 'chrome'" Include="$(ChromeDriverDir)" />
-
-      <HelixCorrelationPayload Condition="'$(WindowsShell)' != 'true' and '$(DebuggerHost)' == 'firefox'" Include="$(FirefoxDir)" />
+    <ItemGroup Condition="'$(NeedsToRunOnChrome)' == 'true'">
+      <HelixCorrelationPayload Include="$(ChromeDir)" />
+      <HelixCorrelationPayload Include="$(ChromeDriverDir)" />
     </ItemGroup>
-
-    <ItemGroup>
-      <HelixCorrelationPayload Condition="'$(NeedsToRunOnV8)' == 'true'" Include="$(V8Dir)" Destination="$(V8DirName)" />
+    <ItemGroup Condition="'$(NeedsToRunOnFirefox)' == 'true'">
+      <HelixCorrelationPayload Include="$(FirefoxDir)" />
+      <HelixCorrelationPayload Include="$(GeckoDriverDir)" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(NeedsToRunOnV8)' == 'true'">
+      <HelixCorrelationPayload Include="$(V8Dir)" Destination="$(V8DirName)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(NeedsEMSDK)' == 'true'">
