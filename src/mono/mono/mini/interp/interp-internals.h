@@ -154,6 +154,7 @@ struct InterpMethod {
 	unsigned int hasthis; // boolean
 	MonoProfilerCallInstrumentationFlags prof_flags;
 	InterpMethodCodeType code_type;
+	int ref_slot_offset; // GC visible pointer slot
 	MonoBitSet *ref_slots;
 #ifdef ENABLE_EXPERIMENT_TIERED
 	MiniTieredCounter tiered_counter;

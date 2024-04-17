@@ -2440,7 +2440,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     if (typeCheckNotNeeded || (typeCheckFailedAction == TypeCheckFailedAction::CallHelper_AlwaysThrows))
     {
         // fallback call is used only to throw InvalidCastException
-        call->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
+        setCallDoesNotReturn(call);
         fallbackBb = fgNewBBFromTreeAfter(BBJ_THROW, lastTypeCheckBb, call, debugInfo, true);
     }
     else if (typeCheckFailedAction == TypeCheckFailedAction::ReturnNull)

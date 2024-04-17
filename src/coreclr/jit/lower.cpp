@@ -520,8 +520,9 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerJmpMethod(node);
             break;
 
+        case GT_SWIFT_ERROR_RET:
         case GT_RETURN:
-            LowerRet(node->AsUnOp());
+            LowerRet(node->AsOp());
             break;
 
         case GT_RETURNTRAP:
@@ -4541,22 +4542,22 @@ void Lowering::LowerJmpMethod(GenTree* jmp)
     }
 }
 
-// Lower GT_RETURN node to insert PInvoke method epilog if required.
-void Lowering::LowerRet(GenTreeUnOp* ret)
+// Lower GT_RETURN/GT_SWIFT_ERROR_RET node to insert PInvoke method epilog if required.
+void Lowering::LowerRet(GenTreeOp* ret)
 {
-    assert(ret->OperGet() == GT_RETURN);
+    assert(ret->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET));
 
-    JITDUMP("lowering GT_RETURN\n");
+    JITDUMP("lowering return node\n");
     DISPNODE(ret);
     JITDUMP("============\n");
 
-    GenTree* retVal = ret->gtGetOp1();
+    GenTree* retVal = ret->GetReturnValue();
     // There are two kinds of retyping:
     // - A simple bitcast can be inserted when:
     //   - We're returning a floating type as an integral type or vice-versa, or
     // - If we're returning a struct as a primitive type, we change the type of
     // 'retval' in 'LowerRetStructLclVar()'
-    bool needBitcast        = (ret->TypeGet() != TYP_VOID) && !varTypeUsesSameRegType(ret, ret->gtGetOp1());
+    bool needBitcast        = (ret->TypeGet() != TYP_VOID) && !varTypeUsesSameRegType(ret, retVal);
     bool doPrimitiveBitcast = false;
     if (needBitcast)
     {
@@ -4572,7 +4573,7 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
 #endif
 
         GenTree* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), retVal);
-        ret->gtOp1       = bitcast;
+        ret->SetReturnValue(bitcast);
         BlockRange().InsertBefore(ret, bitcast);
         ContainCheckBitCast(bitcast);
     }
@@ -4871,7 +4872,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
         return;
     }
 
-    assert(ret->OperIs(GT_RETURN));
+    assert(ret->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET));
     assert(varTypeIsStruct(ret));
 
     GenTree*  retVal           = ret->gtGetOp1();
@@ -4963,8 +4964,8 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
 {
     assert(!comp->compMethodReturnsMultiRegRetType());
-    assert(ret->OperIs(GT_RETURN));
-    GenTreeLclVarCommon* lclVar = ret->gtGetOp1()->AsLclVar();
+    assert(ret->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET));
+    GenTreeLclVarCommon* lclVar = ret->AsOp()->GetReturnValue()->AsLclVar();
     assert(lclVar->OperIs(GT_LCL_VAR));
     unsigned   lclNum = lclVar->GetLclNum();
     LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
@@ -5012,7 +5013,7 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
         if (!varTypeUsesSameRegType(ret, lclVarType))
         {
             GenTree* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), ret->gtOp1);
-            ret->gtOp1       = bitcast;
+            ret->AsOp()->SetReturnValue(bitcast);
             BlockRange().InsertBefore(ret, bitcast);
             ContainCheckBitCast(bitcast);
         }
@@ -5200,7 +5201,7 @@ GenTreeLclVar* Lowering::SpillStructCallResult(GenTreeCall* call) const
 
 GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
 {
-    noway_assert(call->gtCallType == CT_USER_FUNC || call->gtCallType == CT_HELPER);
+    noway_assert(call->gtCallType == CT_USER_FUNC || call->IsHelperCall());
 
     // Non-virtual direct/indirect calls: Work out if the address of the
     // call is known at JIT time.  If not it is either an indirect call
@@ -5218,7 +5219,7 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
     }
     else
 #endif
-        if (call->gtCallType == CT_HELPER)
+        if (call->IsHelperCall())
     {
         noway_assert(helperNum != CORINFO_HELP_UNDEF);
 
@@ -5616,8 +5617,16 @@ void Lowering::InsertPInvokeMethodProlog()
     call->gtArgs.PushBack(comp, frameAddrArg);
 // for x86/arm32 don't pass the secretArg.
 #if !defined(TARGET_X86) && !defined(TARGET_ARM)
-    NewCallArg stubParamArg =
-        NewCallArg::Primitive(PhysReg(REG_SECRET_STUB_PARAM)).WellKnown(WellKnownArg::SecretStubParam);
+    GenTree* argNode;
+    if (comp->info.compPublishStubParam)
+    {
+        argNode = comp->gtNewLclvNode(comp->lvaStubArgumentVar, TYP_I_IMPL);
+    }
+    else
+    {
+        argNode = comp->gtNewIconNode(0, TYP_I_IMPL);
+    }
+    NewCallArg stubParamArg = NewCallArg::Primitive(argNode).WellKnown(WellKnownArg::SecretStubParam);
     call->gtArgs.PushBack(comp, stubParamArg);
 #endif
 
@@ -8147,12 +8156,12 @@ void Lowering::ContainCheckLclHeap(GenTreeOp* node)
 //
 void Lowering::ContainCheckRet(GenTreeUnOp* ret)
 {
-    assert(ret->OperIs(GT_RETURN));
+    assert(ret->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET));
 
 #if !defined(TARGET_64BIT)
     if (ret->TypeGet() == TYP_LONG)
     {
-        GenTree* op1 = ret->gtGetOp1();
+        GenTree* op1 = ret->AsOp()->GetReturnValue();
         noway_assert(op1->OperGet() == GT_LONG);
         MakeSrcContained(ret, op1);
     }
@@ -8160,7 +8169,7 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
 #if FEATURE_MULTIREG_RET
     if (ret->TypeIs(TYP_STRUCT))
     {
-        GenTree* op1 = ret->gtGetOp1();
+        GenTree* op1 = ret->AsOp()->GetReturnValue();
         // op1 must be either a lclvar or a multi-reg returning call
         if (op1->OperGet() == GT_LCL_VAR)
         {

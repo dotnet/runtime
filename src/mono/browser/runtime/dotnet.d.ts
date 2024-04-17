@@ -20,6 +20,7 @@ declare interface Int32Ptr extends NativePointer {
 declare interface EmscriptenModule {
     _malloc(size: number): VoidPtr;
     _free(ptr: VoidPtr): void;
+    _sbrk(size: number): VoidPtr;
     out(message: string): void;
     err(message: string): void;
     ccall<T>(ident: string, returnType?: string | null, argTypes?: string[], args?: any[], opts?: any): T;
@@ -31,6 +32,7 @@ declare interface EmscriptenModule {
     UTF8ToString(ptr: CharPtr, maxBytesToRead?: number): string;
     UTF8ArrayToString(u8Array: Uint8Array, idx?: number, maxBytesToRead?: number): string;
     stringToUTF8Array(str: string, heap: Uint8Array, outIdx: number, maxBytesToWrite: number): void;
+    lengthBytesUTF8(str: string): number;
     FS_createPath(parent: string, path: string, canRead?: boolean, canWrite?: boolean): string;
     FS_createDataFile(parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
     addFunction(fn: Function, signature: string): number;
