@@ -87,13 +87,12 @@ key_from_id (const char *id, char *buffer, guint buffer_len)
 		buffer_len = (guint)(id_length + 1);
 		buffer = g_malloc(buffer_len);
 	}
+	buffer[0] = 0;
 
 	if (extension_offset && bundled_resources_is_known_assembly_extension (extension))
-		strncpy(buffer, id, MIN(buffer_len - 1, extension_offset + 1));
+		g_strlcpy(buffer, id, MIN(buffer_len, extension_offset + 1));
 	else
-		strncpy(buffer, id, MIN(buffer_len - 1, id_length));
-
-	buffer[buffer_len - 1] = 0;
+		g_strlcpy(buffer, id, MIN(buffer_len, id_length + 1));
 
 	return buffer;
 }
@@ -163,7 +162,7 @@ mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t 
 		char *key = key_from_id (resource_to_bundle->id, NULL, 0);
 		dn_simdhash_ptr_ptr_try_add (bundled_resource_key_lookup_table, (void *)resource_to_bundle->id, key);
 
-		dn_simdhash_ght_try_add (bundled_resources, (gpointer) key, resource_to_bundle);
+		g_assert (dn_simdhash_ght_try_add (bundled_resources, (gpointer) key, resource_to_bundle));
 		g_assert (bundled_resources_get (resource_to_bundle->id) == resource_to_bundle);
 	}
 
