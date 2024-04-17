@@ -86,7 +86,7 @@ struct GlobalLiteralSpec
 struct GlobalPointerSpec
 {
     uint32_t Name;
-    uint32_t AuxIndex;
+    uint32_t PointerDataIndex;
 };
 ```
 
