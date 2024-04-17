@@ -150,7 +150,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
-		public Task FeatureCheckAttributeDataFlow ()
+		public Task FeatureGuardAttributeDataFlow ()
 		{
 			return RunTest ();
 		}
@@ -193,6 +193,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		[Fact]
 		public Task MakeGenericDataFlow ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
+		public Task MakeGenericDataflowIntrinsics ()
 		{
 			return RunTest ();
 		}

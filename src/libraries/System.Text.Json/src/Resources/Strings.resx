@@ -717,4 +717,7 @@
   <data name="InvalidIndentSize" xml:space="preserve">
     <value>Indentation size must be between {0} and {1}.</value>
   </data>
+  <data name="InvalidNewLine" xml:space="preserve">
+    <value>New line can be only "\n" or "\r\n".</value>
+  </data>
 </root>

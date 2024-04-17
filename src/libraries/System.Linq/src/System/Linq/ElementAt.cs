@@ -16,7 +16,18 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            TSource? element = TryGetElementAt(source, index, out bool found, guardIListLength: false);
+            if (source is IList<TSource> list)
+            {
+                return list[index];
+            }
+
+            bool found;
+            TSource? element =
+#if !OPTIMIZE_FOR_SIZE
+                source is Iterator<TSource> iterator ? iterator.TryGetElementAt(index, out found) :
+#endif
+                TryGetElementAtNonIterator(source, index, out found);
+
             if (!found)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
@@ -102,31 +113,27 @@ namespace System.Linq
             return element;
         }
 
-        private static TSource? TryGetElementAt<TSource>(this IEnumerable<TSource> source, int index, out bool found, bool guardIListLength = true) =>
-#if !OPTIMIZE_FOR_SIZE
-            source is Iterator<TSource> iterator ? iterator.TryGetElementAt(index, out found) :
-#endif
-            TryGetElementAtNonIterator(source, index, out found, guardIListLength);
+        private static TSource? TryGetElementAt<TSource>(this IEnumerable<TSource> source, int index, out bool found)
+        {
+            if (source is IList<TSource> list)
+            {
+                return (found = (uint)index < (uint)list.Count) ?
+                    list[index] :
+                    default;
+            }
 
-        private static TSource? TryGetElementAtNonIterator<TSource>(IEnumerable<TSource> source, int index, out bool found, bool guardIListLength = true)
+            return
+#if !OPTIMIZE_FOR_SIZE
+                source is Iterator<TSource> iterator ? iterator.TryGetElementAt(index, out found) :
+#endif
+                TryGetElementAtNonIterator(source, index, out found);
+        }
+
+        private static TSource? TryGetElementAtNonIterator<TSource>(IEnumerable<TSource> source, int index, out bool found)
         {
             Debug.Assert(source is not null);
 
-            if (source is IList<TSource> list)
-            {
-                // Historically, ElementAt would simply delegate to IList[int] without first checking the bounds.
-                // That in turn meant that whatever exception the IList[int] throws for out-of-bounds access would
-                // propagate, e.g. ImmutableArray throws IndexOutOfRangeException whereas List throws ArgumentOutOfRangeException.
-                // Other uses of this, though, do need to guard, such as ElementAtOrDefault and all the various
-                // internal TryGetElementAt helpers. So, we have a guardIListLength parameter to allow the caller
-                // to specify whether to guard or not.
-                if (!guardIListLength || (uint)index < (uint)list.Count)
-                {
-                    found = true;
-                    return list[index];
-                }
-            }
-            else if (index >= 0)
+            if (index >= 0)
             {
                 using IEnumerator<TSource> e = source.GetEnumerator();
                 while (e.MoveNext())

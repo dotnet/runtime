@@ -13,6 +13,7 @@ using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Xunit;
+using System.Reflection.Metadata;
 
 namespace ILCompiler.Compiler.Tests
 {
@@ -44,33 +45,79 @@ namespace ILCompiler.Compiler.Tests
             var testModule = context.GetModuleForSimpleName("ILCompiler.Compiler.Tests.Assets");
             foreach (var type in testModule.GetAllTypes())
             {
-                if (type.Namespace == "ILCompiler.Compiler.Tests.Assets.SwiftTypes" && type.IsValueType)
+                if (type is EcmaType { Namespace: "ILCompiler.Compiler.Tests.Assets.SwiftTypes", IsValueType: true } ecmaType
+                    && ecmaType.GetDecodedCustomAttribute("ILCompiler.Compiler.Tests.Assets.SwiftTypes", "ExpectedLoweringAttribute") is { } expectedLoweringAttribute)
                 {
-                    yield return new object[] { type.Name, type };
+                    // By default, we assume that our lowered representation is meant to be naturally aligned.
+                    // For types that are not naturally aligned, the test can specify the offsets.
+                    int[]? offsets = null;
+                    if (expectedLoweringAttribute.NamedArguments.FirstOrDefault(a => a.Name == "Offsets").Value is ImmutableArray<CustomAttributeTypedArgument<TypeDesc>> offsetsArgument)
+                    {
+                        offsets = new int[offsetsArgument.Length];
+                        for (int i = 0; i < offsetsArgument.Length; i++)
+                        {
+                            offsets[i] = (int)offsetsArgument[i].Value;
+                        }
+                    }
+
+                    CORINFO_SWIFT_LOWERING expected;
+                    if (expectedLoweringAttribute.FixedArguments.Length == 0)
+                    {
+                        expected = new CORINFO_SWIFT_LOWERING { byReference = true };
+                    }
+                    else
+                    {
+                        expected = new CORINFO_SWIFT_LOWERING
+                        {
+                            numLoweredElements = expectedLoweringAttribute.FixedArguments.Length,
+                        };
+                        int naturalOffset = 0;
+                        for (int i = 0; i < expectedLoweringAttribute.FixedArguments.Length; i++)
+                        {
+                            ExpectedLowering lowering = (ExpectedLowering)(int)expectedLoweringAttribute.FixedArguments[i].Value;
+                            expected.LoweredElements[i] = GetCorType(lowering);
+                            if (offsets is not null)
+                            {
+                                expected.Offsets[i] = (uint)offsets[i];
+                            }
+                            else
+                            {
+                                // For all types that we lower to, alignment == size
+                                int size = GetSize(lowering);
+                                if (size > 1)
+                                {
+                                    expected.Offsets[i] = (uint)naturalOffset.AlignUp(size);
+                                }
+                                naturalOffset += size;
+                            }
+                        }
+                    }
+                    yield return new object[] { type.Name, type, expected };
                 }
             }
         }
 
         [Theory]
         [MemberData(nameof(DiscoverSwiftTypes))]
-        public void VerifyLowering(string typeName, EcmaType type)
+        public void VerifyLowering(string typeName, EcmaType type, CORINFO_SWIFT_LOWERING expectedLowering)
         {
             _ = typeName;
-            var expectedLoweringAttribute = type.GetDecodedCustomAttribute("ILCompiler.Compiler.Tests.Assets.SwiftTypes", "ExpectedLoweringAttribute");
 
-            var actualLowering = SwiftPhysicalLowering.LowerTypeForSwiftSignature(type);
+            Assert.Equal(expectedLowering, SwiftPhysicalLowering.LowerTypeForSwiftSignature(type));
+        }
 
-            if (expectedLoweringAttribute.Value.FixedArguments.Length == 0)
+        private static int GetSize(ExpectedLowering expectedLowering)
+        {
+            return expectedLowering switch
             {
-                Assert.Equal(new CORINFO_SWIFT_LOWERING { byReference = true }, actualLowering, SwiftLoweringComparer.Instance);
-            }
-            else
-            {
-                CORINFO_SWIFT_LOWERING expectedLowering = default;
-                expectedLowering.numLoweredElements = expectedLoweringAttribute.Value.FixedArguments.Length;
-                expectedLoweringAttribute.Value.FixedArguments.Select(na => GetCorType((ExpectedLowering)(int)na.Value)).ToArray().AsSpan().CopyTo(expectedLowering.LoweredElements);
-                Assert.Equal(expectedLowering, actualLowering);
-            }
+                ExpectedLowering.Float => 4,
+                ExpectedLowering.Double => 8,
+                ExpectedLowering.Int8 => 1,
+                ExpectedLowering.Int16 => 2,
+                ExpectedLowering.Int32 => 4,
+                ExpectedLowering.Int64 => 8,
+                _ => throw new ArgumentOutOfRangeException(nameof(expectedLowering))
+            };
         }
 
         private static CorInfoType GetCorType(ExpectedLowering expectedLowering)
@@ -85,34 +132,6 @@ namespace ILCompiler.Compiler.Tests
                 ExpectedLowering.Int64 => CorInfoType.CORINFO_TYPE_LONG,
                 _ => throw new ArgumentOutOfRangeException(nameof(expectedLowering))
             };
-        }
-
-        private sealed class SwiftLoweringComparer : IEqualityComparer<CORINFO_SWIFT_LOWERING>
-        {
-            public static SwiftLoweringComparer Instance { get; } = new SwiftLoweringComparer();
-
-            public bool Equals(CORINFO_SWIFT_LOWERING x, CORINFO_SWIFT_LOWERING y)
-            {
-                if (x.byReference != y.byReference)
-                    return false;
-
-                return x.LoweredElements.SequenceEqual(y.LoweredElements);
-            }
-
-            public int GetHashCode([DisallowNull] CORINFO_SWIFT_LOWERING obj)
-            {
-                HashCode code = default;
-                code.Add(obj.byReference);
-                if (obj.byReference)
-                {
-                    code.Add(obj.numLoweredElements);
-                    foreach (var type in obj.LoweredElements[0..(int)obj.numLoweredElements])
-                    {
-                        code.Add(type);
-                    }
-                }
-                return code.ToHashCode();
-            }
         }
     }
 }

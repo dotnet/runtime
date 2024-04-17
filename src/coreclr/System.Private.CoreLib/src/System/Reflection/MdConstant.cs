@@ -72,7 +72,7 @@ namespace System.Reflection
                         #endregion
                 }
 
-                return RuntimeType.CreateEnum(fieldType, defaultValue);
+                return Enum.ToObject(fieldType, defaultValue);
             }
             else if (fieldType == typeof(DateTime))
             {

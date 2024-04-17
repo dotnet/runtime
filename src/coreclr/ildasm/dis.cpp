@@ -1573,7 +1573,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 if(f==0.0)
                     strcpy_s(szf,32,((v>>24)==0)? "0.0" : "-0.0");
                 else
-                    _gcvt_s(szf,32,(double)f, 8);
+                    sprintf_s(szf, 32, "%.*g", 8, (double)f);
                 float fd = (float)atof(szf);
                 // Must compare as underlying bytes, not floating point otherwise optimizer will
                 // try to enregister and compare 80-bit precision number with 32-bit precision number!!!!
@@ -1612,7 +1612,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 if(d==0.0)
                     strcpy_s(szf,32,((v>>56)==0)? "0.0" : "-0.0");
                 else
-                    _gcvt_s(szf,32,d, 17);
+                    sprintf_s(szf, 32, "%.*g", 17, d);
                 double df = strtod(szf, &pch); //atof(szf);
                 // Must compare as underlying bytes, not floating point otherwise optimizer will
                 // try to enregister and compare 80-bit precision number with 64-bit precision number!!!!

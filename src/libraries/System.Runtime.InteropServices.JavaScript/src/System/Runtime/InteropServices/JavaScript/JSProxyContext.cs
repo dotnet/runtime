@@ -42,9 +42,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public JSSynchronizationContext SynchronizationContext;
         public JSAsyncTaskScheduler? AsyncTaskScheduler;
 
-        public static MainThreadingMode MainThreadingMode = MainThreadingMode.DeputyThread;
-        public static JSThreadBlockingMode ThreadBlockingMode = JSThreadBlockingMode.NoBlockingWait;
-        public static JSThreadInteropMode ThreadInteropMode = JSThreadInteropMode.SimpleSynchronousJSInterop;
+        public static JSThreadBlockingMode ThreadBlockingMode = JSThreadBlockingMode.PreventSynchronousJSExport;
         public bool IsPendingSynchronousCall;
 
 #if !DEBUG
@@ -52,7 +50,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
         public bool IsCurrentThread()
         {
-            return ManagedTID == Environment.CurrentManagedThreadId && (!IsMainThread || MainThreadingMode == MainThreadingMode.UIThread);
+            return ManagedTID == Environment.CurrentManagedThreadId && !IsMainThread;
         }
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "thread_id")]
@@ -517,7 +515,6 @@ namespace System.Runtime.InteropServices.JavaScript
                     {
                         Environment.FailFast($"JSProxyContext must be disposed on the thread which owns it, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
                     }
-                    ((GCHandle)ContextHandle).Free();
 #endif
 
                     List<WeakReference<JSObject>> copy = new(ThreadCsOwnedObjects.Values);
@@ -531,6 +528,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
 #if FEATURE_WASM_MANAGED_THREADS
                     Interop.Runtime.UninstallWebWorkerInterop();
+                    ((GCHandle)ContextHandle).Free();
 #endif
 
                     foreach (var gch in ThreadJsOwnedObjects.Values)
@@ -544,6 +542,7 @@ namespace System.Runtime.InteropServices.JavaScript
                         {
                             holder.Callback!.Invoke(null);
                         }
+                        ((GCHandle)holder.GCHandle).Free();
                     }
 
                     ThreadCsOwnedObjects.Clear();

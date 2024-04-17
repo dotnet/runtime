@@ -27,8 +27,14 @@ const threading_cwraps: SigLine[] = WasmEnableThreads ? [
     [false, "mono_wasm_init_finalizer_thread", null, []],
     [false, "mono_wasm_invoke_jsexport_async_post", "void", ["number", "number", "number"]],
     [false, "mono_wasm_invoke_jsexport_sync_send", "void", ["number", "number", "number"]],
+    [false, "mono_wasm_invoke_jsexport_sync", "void", ["number", "number"]],
     [true, "mono_wasm_create_deputy_thread", "number", []],
+    [true, "mono_wasm_create_io_thread", "number", []],
     [true, "mono_wasm_register_ui_thread", "void", []],
+    [true, "mono_wasm_register_io_thread", "void", []],
+    [true, "mono_wasm_print_thread_dump", "void", []],
+    [true, "mono_wasm_synchronization_context_pump", "void", []],
+    [true, "mono_threads_wasm_sync_run_in_target_thread_done", "void", ["number"]],
 ] : [];
 
 // when the method is assigned/cached at usage, instead of being invoked directly from cwraps, it can't be marked lazy, because it would be re-bound on each call
@@ -57,7 +63,6 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_intern_string_ref", "void", ["number"]],
 
     [false, "mono_wasm_exit", "void", ["number"]],
-    [false, "mono_wasm_abort", "void", []],
     [true, "mono_wasm_getenv", "number", ["string"]],
     [true, "mono_wasm_set_main_args", "void", ["number", "number"]],
     // These two need to be lazy because they may be missing
@@ -146,8 +151,14 @@ export interface t_ThreadingCwraps {
     mono_wasm_init_finalizer_thread(): void;
     mono_wasm_invoke_jsexport_async_post(targetTID: PThreadPtr, method: MonoMethod, args: VoidPtr): void;
     mono_wasm_invoke_jsexport_sync_send(targetTID: PThreadPtr, method: MonoMethod, args: VoidPtr): void;
+    mono_wasm_invoke_jsexport_sync(method: MonoMethod, args: VoidPtr): void;
     mono_wasm_create_deputy_thread(): PThreadPtr;
+    mono_wasm_create_io_thread(): PThreadPtr;
     mono_wasm_register_ui_thread(): void;
+    mono_wasm_register_io_thread(): void;
+    mono_wasm_print_thread_dump(): void;
+    mono_wasm_synchronization_context_pump(): void;
+    mono_threads_wasm_sync_run_in_target_thread_done(sem: VoidPtr): void;
 }
 
 export interface t_ProfilerCwraps {
@@ -180,7 +191,6 @@ export interface t_Cwraps {
     mono_wasm_intern_string_ref(strRef: MonoStringRef): void;
 
     mono_wasm_exit(exit_code: number): void;
-    mono_wasm_abort(): void;
     mono_wasm_getenv(name: string): CharPtr;
     mono_wasm_set_main_args(argc: number, argv: VoidPtr): void;
     mono_wasm_exec_regression(verbose_level: number, image: string): number;
@@ -273,7 +283,7 @@ export const enum I52Error {
 
 const fastCwrapTypes = ["void", "number", null];
 
-function cwrap(name: string, returnType: string | null, argTypes: string[] | undefined, opts: any): Function {
+function cwrap (name: string, returnType: string | null, argTypes: string[] | undefined, opts: any): Function {
     // Attempt to bypass emscripten's generated wrapper if it is safe to do so
     let fce =
         // Special cwrap options disable the fast path
@@ -304,7 +314,7 @@ function cwrap(name: string, returnType: string | null, argTypes: string[] | und
     return fce;
 }
 
-export function init_c_exports(): void {
+export function init_c_exports (): void {
     const fns = [...fn_signatures];
     for (const sig of fns) {
         const wf: any = wrapped_c_functions;

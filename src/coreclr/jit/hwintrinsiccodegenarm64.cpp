@@ -36,7 +36,10 @@
 //       of a for-loop.
 //
 CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin)
-    : codeGen(codeGen), endLabel(nullptr), nonZeroLabel(nullptr), branchTargetReg(REG_NA)
+    : codeGen(codeGen)
+    , endLabel(nullptr)
+    , nonZeroLabel(nullptr)
+    , branchTargetReg(REG_NA)
 {
     assert(codeGen != nullptr);
     assert(varTypeIsIntegral(immOp));
@@ -265,6 +268,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         emitSize = EA_UNKNOWN;
         opt      = INS_OPTS_NONE;
     }
+    else if (HWIntrinsicInfo::IsScalable(intrin.id))
+    {
+        emitSize = EA_SCALABLE;
+        opt      = emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType));
+    }
     else
     {
         emitSize = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
@@ -276,7 +284,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
     genConsumeMultiOpOperands(node);
 
-    if (intrin.IsTableDriven())
+    if (intrin.codeGenIsTableDriven())
     {
         const instruction ins = HWIntrinsicInfo::lookupIns(intrin.id, intrin.baseType);
         assert(ins != INS_invalid);
@@ -370,6 +378,27 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             else
             {
                 emitShift(intrin.op2, op1Reg);
+            }
+        }
+        else if (intrin.category == HW_Category_EnumPattern)
+        {
+            assert(hasImmediateOperand);
+
+            switch (intrin.numOperands)
+            {
+                case 1:
+                {
+                    HWIntrinsicImmOpHelper helper(this, intrin.op1, node);
+                    for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                    {
+                        const insSvePattern pattern = (insSvePattern)helper.ImmValue();
+                        GetEmitter()->emitIns_R_PATTERN(ins, emitSize, targetReg, opt, pattern);
+                    }
+                };
+                break;
+
+                default:
+                    unreached();
             }
         }
         else
@@ -1252,6 +1281,23 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_ArmBase_Arm64_MultiplyLongSub:
                 assert(opt == INS_OPTS_NONE);
                 GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg);
+                break;
+
+            case NI_Sve_ConvertMaskToVector:
+                // PMOV would be ideal here, but it is in SVE2.1.
+                // Instead, use a predicated move: MOV <Zd>.<T>, <Pg>/Z, #1
+                GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op1Reg, 1, opt);
+                break;
+
+            case NI_Sve_ConvertVectorToMask:
+                // PMOV would be ideal here, but it is in SVE2.1.
+                // Instead, use a compare: CMPNE <Pd>.<T>, <Pg>/Z, <Zn>.<T>, #0
+                GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op1Reg, op2Reg, 0, opt);
+                break;
+
+            case NI_Sve_CreateTrueMaskAll:
+                // Must use the pattern variant, as the non-pattern varient is SVE2.1.
+                GetEmitter()->emitIns_R_PATTERN(ins, emitSize, targetReg, opt, SVE_PATTERN_ALL);
                 break;
 
             default:

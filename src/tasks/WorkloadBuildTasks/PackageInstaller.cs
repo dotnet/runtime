@@ -128,7 +128,7 @@ namespace Microsoft.Workload.Build.Tasks
     <ItemGroup>");
 
             foreach (var reference in references)
-                projectFileBuilder.AppendLine($"<PackageReference Include=\"{reference.Name}\" Version=\"{reference.Version}\" />");
+                projectFileBuilder.AppendLine($"<PackageDownload Include=\"{reference.Name}\" Version=\"[{reference.Version}]\" />");
 
             projectFileBuilder.Append(@"
     </ItemGroup>
