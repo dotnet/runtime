@@ -49,7 +49,8 @@ internal static partial class MsQuicConfiguration
         public readonly List<SslApplicationProtocol> ApplicationProtocols;
         public readonly QUIC_ALLOWED_CIPHER_SUITE_FLAGS AllowedCipherSuites;
 
-        [UnscopedRef] private readonly ReadOnlySpan<byte> SettingsSpan => MemoryMarshal.AsBytes(new ReadOnlySpan<QUIC_SETTINGS>(in Settings));
+        [UnscopedRef] 
+        private readonly ReadOnlySpan<byte> SettingsSpan => MemoryMarshal.AsBytes(new ReadOnlySpan<QUIC_SETTINGS>(in Settings));
 
         public CacheKey(QUIC_SETTINGS settings, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol> alpnProtocols, QUIC_ALLOWED_CIPHER_SUITE_FLAGS allowedCipherSuites)
         {
