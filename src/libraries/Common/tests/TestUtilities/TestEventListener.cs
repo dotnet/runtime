@@ -21,8 +21,6 @@ public sealed class TestEventListener : EventListener
 {
     public static string[] NetworkingEvents => new[]
     {
-        "System.Net.Http",
-        "Private.InternalDiagnostics.System.Net.Http",
         "Private.InternalDiagnostics.System.Net.Quic",
     };
 
