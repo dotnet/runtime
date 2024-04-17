@@ -36,9 +36,7 @@ namespace ILLink.RoslynAnalyzer
 
 		private protected override string RequiresAttributeName => RequiresAssemblyFilesAttribute;
 
-		internal override string FeatureName => "AssemblyFiles";
-
-		private protected override string RequiresAttributeFullyQualifiedName => RequiresAssemblyFilesAttributeFullyQualifiedName;
+		internal override string RequiresAttributeFullyQualifiedName => RequiresAssemblyFilesAttributeFullyQualifiedName;
 
 		private protected override DiagnosticTargets AnalyzerDiagnosticTargets => DiagnosticTargets.MethodOrConstructor | DiagnosticTargets.Property | DiagnosticTargets.Event;
 
@@ -61,7 +59,7 @@ namespace ILLink.RoslynAnalyzer
 			return true;
 		}
 
-		internal override bool IsRequiresCheck (Compilation compilation, IPropertySymbol propertySymbol)
+		private protected override bool IsRequiresCheck (IPropertySymbol propertySymbol, Compilation compilation)
 		{
 			// "IsAssemblyFilesSupported" is treated as a requires check for testing purposes only, and
 			// is not officially-supported product behavior.

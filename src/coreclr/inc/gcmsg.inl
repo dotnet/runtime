@@ -44,13 +44,13 @@
     static const char* gcDetailedStartMsg()
     {
         STATIC_CONTRACT_LEAF;
-        return "*GC* %d(gen0:%d)(%d)(alloc: %zd)(%s)(%d)";
+        return "*GC* %d(gen0:%d)(%d)(alloc: %zd)(%s)(%d)(%d)";
     }
 
     static const char* gcDetailedEndMsg()
     {
         STATIC_CONTRACT_LEAF;
-        return "*EGC* %zd(gen0:%zd)(%zd)(%d)(%s)(%s)(%s)(ml: %d->%d)";
+        return "*EGC* %zd(gen0:%zd)(%zd)(%d)(%s)(%s)(%s)(ml: %d->%d)\n";
     }
 
     static const char* gcStartMarkMsg()

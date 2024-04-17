@@ -346,7 +346,7 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::DeleteValue(KeyType p
     _ASSERTE (OwnLock());
 
     Thread *pThread = GetThreadNULLOk();
-    GCX_MAYBE_COOP_NO_THREAD_BROKEN(pThread ? !(pThread->m_StateNC & Thread::TSNC_UnsafeSkipEnterCooperative) : FALSE);
+    GCX_MAYBE_COOP_NO_THREAD_BROKEN(pThread != NULL);
 
     _ASSERTE(m_pVolatileBucketTable->m_dwNumBuckets != 0);
 
@@ -850,7 +850,7 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::
     _ASSERTE_IMPL(OwnLock());
 
     Thread *pThread = GetThreadNULLOk();
-    GCX_MAYBE_COOP_NO_THREAD_BROKEN(pThread ? !(pThread->m_StateNC & Thread::TSNC_UnsafeSkipEnterCooperative) : FALSE);
+    GCX_MAYBE_COOP_NO_THREAD_BROKEN(pThread != NULL);
 
     _ASSERTE(pIter->m_pTable == (void *) this);
 

@@ -7,7 +7,7 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        internal abstract partial class Iterator<TSource>
+        private abstract partial class Iterator<TSource>
         {
             /// <summary>
             /// Produce an array of the sequence through an optimized path.

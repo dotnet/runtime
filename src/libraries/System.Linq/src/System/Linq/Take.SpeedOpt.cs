@@ -10,7 +10,7 @@ namespace System.Linq
     {
         private static IEnumerable<TSource> TakeIterator<TSource>(IEnumerable<TSource> source, int count)
         {
-            Debug.Assert(source != null && !IsEmptyArray(source));
+            Debug.Assert(source is not null && !IsEmptyArray(source));
             Debug.Assert(count > 0);
 
             return
@@ -21,7 +21,7 @@ namespace System.Linq
 
         private static IEnumerable<TSource> TakeRangeIterator<TSource>(IEnumerable<TSource> source, int startIndex, int endIndex)
         {
-            Debug.Assert(source != null && !IsEmptyArray(source));
+            Debug.Assert(source is not null && !IsEmptyArray(source));
             Debug.Assert(startIndex >= 0 && startIndex < endIndex);
 
             return

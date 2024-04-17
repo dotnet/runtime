@@ -531,7 +531,7 @@ namespace System.IO
             if (GetType() == typeof(StreamWriter))
             {
                 TwoObjects two = new TwoObjects(arg0, arg1);
-                WriteFormatHelper(format, MemoryMarshal.CreateReadOnlySpan(ref two.Arg0, 2), appendNewLine: false);
+                WriteFormatHelper(format, two, appendNewLine: false);
             }
             else
             {
@@ -544,7 +544,7 @@ namespace System.IO
             if (GetType() == typeof(StreamWriter))
             {
                 ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
-                WriteFormatHelper(format, MemoryMarshal.CreateReadOnlySpan(ref three.Arg0, 3), appendNewLine: false);
+                WriteFormatHelper(format, three, appendNewLine: false);
             }
             else
             {
@@ -560,6 +560,23 @@ namespace System.IO
                 {
                     ArgumentNullException.Throw(format is null ? nameof(format) : nameof(arg)); // same as base logic
                 }
+                WriteFormatHelper(format, arg, appendNewLine: false);
+            }
+            else
+            {
+                base.Write(format, arg);
+            }
+        }
+
+        /// <summary>
+        /// Writes a formatted string to the stream, using the same semantics as <see cref="string.Format(string, ReadOnlySpan{object?})"/>.
+        /// </summary>
+        /// <param name="format">A composite format string.</param>
+        /// <param name="arg">An object span that contains zero or more objects to format and write.</param>
+        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
+        {
+            if (GetType() == typeof(StreamWriter))
+            {
                 WriteFormatHelper(format, arg, appendNewLine: false);
             }
             else
@@ -585,7 +602,7 @@ namespace System.IO
             if (GetType() == typeof(StreamWriter))
             {
                 TwoObjects two = new TwoObjects(arg0, arg1);
-                WriteFormatHelper(format, MemoryMarshal.CreateReadOnlySpan(ref two.Arg0, 2), appendNewLine: true);
+                WriteFormatHelper(format, two, appendNewLine: true);
             }
             else
             {
@@ -598,7 +615,7 @@ namespace System.IO
             if (GetType() == typeof(StreamWriter))
             {
                 ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
-                WriteFormatHelper(format, MemoryMarshal.CreateReadOnlySpan(ref three.Arg0, 3), appendNewLine: true);
+                WriteFormatHelper(format, three, appendNewLine: true);
             }
             else
             {
@@ -611,6 +628,23 @@ namespace System.IO
             if (GetType() == typeof(StreamWriter))
             {
                 ArgumentNullException.ThrowIfNull(arg);
+                WriteFormatHelper(format, arg, appendNewLine: true);
+            }
+            else
+            {
+                base.WriteLine(format, arg);
+            }
+        }
+
+        /// <summary>
+        /// Writes out a formatted string and a new line to the stream, using the same semantics as <see cref="string.Format(string, ReadOnlySpan{object?})"/>.
+        /// </summary>
+        /// <param name="format">A composite format string.</param>
+        /// <param name="arg">An object span that contains zero or more objects to format and write.</param>
+        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
+        {
+            if (GetType() == typeof(StreamWriter))
+            {
                 WriteFormatHelper(format, arg, appendNewLine: true);
             }
             else

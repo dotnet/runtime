@@ -525,7 +525,7 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
     }
     CONTRACTL_END;
 
-    if (m_hExposedClassObject == NULL)
+    if (m_hExposedClassObject == 0)
     {
         TypeHandle(this).AllocateManagedClassObject(&m_hExposedClassObject);
     }
@@ -549,7 +549,7 @@ OBJECTREF FnPtrTypeDesc::GetManagedClassObject()
     }
     CONTRACTL_END;
 
-    if (m_hExposedClassObject == NULL)
+    if (m_hExposedClassObject == 0)
     {
         TypeHandle(this).AllocateManagedClassObject(&m_hExposedClassObject);
     }
@@ -1497,7 +1497,7 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
                 return FALSE;
         }
 
-        if (thArg.IsByRefLike() && (specialConstraints & gpAcceptByRefLike) == 0)
+        if (thArg.IsByRefLike() && (specialConstraints & gpAllowByRefLike) == 0)
             return FALSE;
     }
 
@@ -1629,7 +1629,7 @@ OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
     }
     CONTRACTL_END;
 
-    if (m_hExposedClassObject == NULL)
+    if (m_hExposedClassObject == 0)
     {
         TypeHandle(this).AllocateManagedClassObject(&m_hExposedClassObject);
     }

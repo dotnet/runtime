@@ -4,7 +4,7 @@
 import CryptoKit
 import Foundation
 
-@_cdecl("AppleCryptoNative_ChaCha20Poly1305Encrypt")
+@_silgen_name("AppleCryptoNative_ChaCha20Poly1305Encrypt")
 public func AppleCryptoNative_ChaCha20Poly1305Encrypt(
     keyPtr: UnsafeMutableRawPointer,
     keyLength: Int32,
@@ -41,7 +41,7 @@ public func AppleCryptoNative_ChaCha20Poly1305Encrypt(
     return 1
  }
 
-@_cdecl("AppleCryptoNative_ChaCha20Poly1305Decrypt")
+@_silgen_name("AppleCryptoNative_ChaCha20Poly1305Decrypt")
 public func AppleCryptoNative_ChaCha20Poly1305Decrypt(
     keyPtr: UnsafeMutableRawPointer,
     keyLength: Int32,
@@ -86,7 +86,7 @@ public func AppleCryptoNative_ChaCha20Poly1305Decrypt(
     }
 }
 
-@_cdecl("AppleCryptoNative_AesGcmEncrypt")
+@_silgen_name("AppleCryptoNative_AesGcmEncrypt")
 public func AppleCryptoNative_AesGcmEncrypt(
     keyPtr: UnsafeMutableRawPointer,
     keyLength: Int32,
@@ -123,7 +123,7 @@ public func AppleCryptoNative_AesGcmEncrypt(
     return 1
  }
 
-@_cdecl("AppleCryptoNative_AesGcmDecrypt")
+@_silgen_name("AppleCryptoNative_AesGcmDecrypt")
 public func AppleCryptoNative_AesGcmDecrypt(
     keyPtr: UnsafeMutableRawPointer,
     keyLength: Int32,

@@ -582,7 +582,7 @@ int LinearScan::BuildNode(GenTree* tree)
 {
     assert(!tree->isContained());
     int       srcCount;
-    int       dstCount      = 0;
+    int       dstCount;
     regMaskTP killMask      = RBM_NONE;
     bool      isLocalDefUse = false;
 
@@ -740,6 +740,16 @@ int LinearScan::BuildNode(GenTree* tree)
             killMask = getKillSetForReturn();
             BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
             break;
+
+#ifdef SWIFT_SUPPORT
+        case GT_SWIFT_ERROR_RET:
+            BuildUse(tree->gtGetOp1(), RBM_SWIFT_ERROR);
+            // Plus one for error register
+            srcCount = BuildReturn(tree) + 1;
+            killMask = getKillSetForReturn();
+            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            break;
+#endif // SWIFT_SUPPORT
 
         case GT_RETFILT:
             assert(dstCount == 0);
@@ -1329,8 +1339,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     const HWIntrinsic intrin(intrinsicTree);
 
-    int srcCount = 0;
-    int dstCount = 0;
+    int       srcCount      = 0;
+    int       dstCount      = 0;
+    regMaskTP dstCandidates = RBM_NONE;
 
     if (HWIntrinsicInfo::IsMultiReg(intrin.id))
     {
@@ -1443,6 +1454,19 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         assert(intrin.op4->isContainedIntOrIImmed());
                         break;
 
+                    case NI_Sve_CreateTrueMaskByte:
+                    case NI_Sve_CreateTrueMaskDouble:
+                    case NI_Sve_CreateTrueMaskInt16:
+                    case NI_Sve_CreateTrueMaskInt32:
+                    case NI_Sve_CreateTrueMaskInt64:
+                    case NI_Sve_CreateTrueMaskSByte:
+                    case NI_Sve_CreateTrueMaskSingle:
+                    case NI_Sve_CreateTrueMaskUInt16:
+                    case NI_Sve_CreateTrueMaskUInt32:
+                    case NI_Sve_CreateTrueMaskUInt64:
+                        needBranchTargetReg = !intrin.op1->isContainedIntOrIImmed();
+                        break;
+
                     default:
                         unreached();
                 }
@@ -1530,6 +1554,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 BuildDelayFreeUses(use.GetNode(), intrinsicTree);
                 srcCount++;
             }
+        }
+        else if (HWIntrinsicInfo::IsMaskedOperation(intrin.id))
+        {
+            regMaskTP predMask = HWIntrinsicInfo::IsLowMaskedOperation(intrin.id) ? RBM_LOWMASK : RBM_ALLMASK;
+            srcCount += BuildOperandUses(intrin.op1, predMask);
         }
         else if (intrinsicTree->OperIsMemoryLoadOrStore())
         {
@@ -1730,6 +1759,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         return srcCount;
     }
+
     else if (intrin.op2 != nullptr)
     {
         // RMW intrinsic operands doesn't have to be delayFree when they can be assigned the same register as op1Reg
@@ -1784,11 +1814,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     if ((dstCount == 1) || (dstCount == 2))
     {
-        BuildDef(intrinsicTree);
+        BuildDef(intrinsicTree, dstCandidates);
 
         if (dstCount == 2)
         {
-            BuildDef(intrinsicTree, RBM_NONE, 1);
+            BuildDef(intrinsicTree, dstCandidates, 1);
         }
     }
     else

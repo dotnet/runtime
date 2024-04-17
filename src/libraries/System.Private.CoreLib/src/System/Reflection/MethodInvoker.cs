@@ -298,8 +298,8 @@ namespace System.Reflection
             Debug.Assert(_argCount <= MaxStackAllocArgCount);
 
             StackAllocatedArgumentsWithCopyBack stackArgStorage = default;
-            Span<object?> copyOfArgs = stackArgStorage._args.AsSpan(_argCount);
-            scoped Span<bool> shouldCopyBack = stackArgStorage._shouldCopyBack.AsSpan(_argCount);
+            Span<object?> copyOfArgs = ((Span<object?>)stackArgStorage._args).Slice(0, _argCount);
+            scoped Span<bool> shouldCopyBack = ((Span<bool>)stackArgStorage._shouldCopyBack).Slice(0, _argCount);
 
             for (int i = 0; i < _argCount; i++)
             {
@@ -332,7 +332,7 @@ namespace System.Reflection
         internal object? InvokeDirectByRef(object? obj, object? arg1 = null, object? arg2 = null, object? arg3 = null, object? arg4 = null)
         {
             StackAllocatedArguments stackStorage = new(arg1, arg2, arg3, arg4);
-            return InvokeDirectByRefWithFewArgs(obj, stackStorage._args.AsSpan(_argCount));
+            return InvokeDirectByRefWithFewArgs(obj, ((Span<object?>)stackStorage._args).Slice(0, _argCount));
         }
 
         internal unsafe object? InvokeDirectByRefWithFewArgs(object? obj, Span<object?> copyOfArgs)
