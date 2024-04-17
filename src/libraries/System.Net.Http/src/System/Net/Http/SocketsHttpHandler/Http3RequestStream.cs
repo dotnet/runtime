@@ -308,6 +308,16 @@ namespace System.Net.Http
                 _connection.Abort(ex);
                 throw new HttpRequestException(ex.HttpRequestError, SR.net_http_client_execution_error, ex);
             }
+            catch (QPackDecodingException ex)
+            {
+                Exception abortException = _connection.Abort(HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.QPackDecompressionFailed));
+                throw new HttpRequestException(HttpRequestError.InvalidResponse, SR.net_http_invalid_response, ex);
+            }
+            catch (QPackEncodingException ex)
+            {
+                _stream.Abort(QuicAbortDirection.Write, (long)Http3ErrorCode.InternalError);
+                throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_client_execution_error, ex);
+            }
             catch (Exception ex)
             {
                 _stream.Abort(QuicAbortDirection.Write, (long)Http3ErrorCode.InternalError);
@@ -315,6 +325,8 @@ namespace System.Net.Http
                 {
                     throw;
                 }
+                // all exceptions should be already handled above
+                Debug.Fail($"Unexpected exception type in Http3RequestStream.SendAsync: {ex}");
                 throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_client_execution_error, ex);
             }
             finally
