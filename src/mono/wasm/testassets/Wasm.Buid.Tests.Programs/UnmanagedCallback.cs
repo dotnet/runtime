@@ -13,7 +13,7 @@ file partial class Interop
     public static int ManagedFunc(int number)
     {
         // called UnmanagedFunc
-        Console.WriteLine($"MyExport({number}) -> 42");
+        Console.WriteLine($"ManagedFunc({number}) -> 42");
         return 42;
     }
 
