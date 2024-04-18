@@ -1676,7 +1676,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
     // the offsets of our fields will depend on this.
     if (bmtEnumFields->dwNumStaticFields != 0)
     {
-        // We will need statics
+        // We will need static variables
         bmtProp->fDynamicStatics = true;
 
         if (bmtGenerics->HasInstantiation())
