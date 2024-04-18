@@ -10,7 +10,7 @@ namespace System.Net.Test.Common
     {
         public static partial class Http
         {
-            private static readonly string DefaultHttp2AzureServer = "corefx-net-http2.azurewebsites.net";
+            private static readonly string DefaultHttp2AzureServer = "runtime-net-test-http2.mihubot.xyz";
 
             // for the local server hosted in XHarness we are passing also port as part of the environment variables, because it's bound to random port number
             public static string Host => GetValue("DOTNET_TEST_HTTPHOST", DefaultAzureServer);

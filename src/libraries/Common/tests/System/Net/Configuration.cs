@@ -6,7 +6,7 @@ namespace System.Net.Test.Common
     public static partial class Configuration
     {
         #pragma warning disable 414
-        private static readonly string DefaultAzureServer = "corefx-net-http11.azurewebsites.net";
+        private static readonly string DefaultAzureServer = "runtime-net-test-http11.mihubot.xyz";
         #pragma warning restore 414
 
         private static string GetValue(string envName, string defaultValue=null)
