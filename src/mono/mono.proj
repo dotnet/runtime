@@ -258,9 +258,11 @@ set DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EMSDK_PATH)
       <_EmscriptenPaths>
 import os
 
-LLVM_ROOT = os.path.expanduser('$(EMSDK_PATH)bin/')
-NODE_JS = os.path.expanduser('$(EMSDK_PATH)node/bin/node')
-BINARYEN_ROOT = os.path.expanduser('$(EMSDK_PATH)')
+emsdk_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+
+LLVM_ROOT = emsdk_path + '/bin'
+NODE_JS = emsdk_path + '/node/bin/node'
+BINARYEN_ROOT = emsdk_path
 
 FROZEN_CACHE = bool(os.getenv('FROZEN_CACHE', 'True'))
 
