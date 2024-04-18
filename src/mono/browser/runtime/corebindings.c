@@ -255,7 +255,7 @@ void mono_wasm_get_assembly_export (char *assembly_name, char *namespace, char *
 	assert (method);
 
 	*method_out = method;
-    // FIXME: free (assembly_name)?
+    free (assembly_name);
 	free (namespace);
 	free (classname);
 	free (methodname);
