@@ -5714,7 +5714,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
         //
         JITDUMP("--- delta bump %d for OSR + Tier0 frame\n", info.compPatchpointInfo->TotalFrameSize());
         delta += info.compPatchpointInfo->TotalFrameSize();
-#endif // !TARGET_LOONGARCH64 || !TARGET_RISCV64
+#endif // TARGET_AMD64 || TARGET_ARM64
     }
 
     JITDUMP("--- virtual stack offset to actual stack offset delta is %d\n", delta);
