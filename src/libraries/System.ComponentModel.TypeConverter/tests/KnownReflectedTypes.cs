@@ -36,7 +36,7 @@ namespace System.ComponentModel.Tests
                 typeConverter = properties[0].Converter;
                 Assert.IsType<NullableConverter>(typeConverter);
                 Assert.True(typeConverter.CanConvertTo(typeof(MyStruct)));
-                // Ensure the inner type is not trimmed.
+                // Ensure the inner type is not trimmed. Todo: add test where the inner type has its own provider
                 Assert.Equal("NullableStructWithCustomConverter", properties[1].Name);
                 typeConverter = properties[1].Converter;
                 Assert.IsType<NullableConverter>(typeConverter);
@@ -145,6 +145,46 @@ namespace System.ComponentModel.Tests
 
                 // Even though C1.Class.Base is not registered, we should still be able to get the properties of Base.
                 Assert.Equal("String", properties[1].GetChildProperties()[1].Name);
+            }, options).Dispose();
+        }
+
+        [Fact]
+        public static void GetPropertiesFromKnownTypeInstance()
+        {
+            TypeDescriptor.AddKnownReflectedType<C1>();
+            TypeDescriptor.AddKnownReflectedType<C2>();
+
+            PropertyDescriptorCollection properties = TypeDescriptor.GetPropertiesFromKnownType(new C1());
+            Assert.Equal("Int32", properties[0].Name);
+            Assert.Equal("Class", properties[1].Name);
+            Assert.Equal(2, properties[1].GetChildProperties().Count);
+            Assert.Equal("Bool", properties[1].GetChildProperties()[0].Name);
+
+            // Even though C1.Class.Base is not registered, we should still be able to get the properties of Base.
+            Assert.Equal("String", properties[1].GetChildProperties()[1].Name);
+        }
+
+        [Fact]
+        public static void GetPropertiesFromKnownTypeInstance_Trimmed()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.RuntimeConfigurationOptions[TypeDescriptorIsTrimmableSwitchName] = bool.TrueString;
+
+            RemoteExecutor.Invoke(() =>
+            {
+                GetPropertiesFromKnownTypeInstance();
+            }, options).Dispose();
+        }
+
+        [Fact]
+        public static void GetPropertiesFromKnownTypeInstance_Unregistered_Trimmed()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.RuntimeConfigurationOptions[TypeDescriptorIsTrimmableSwitchName] = bool.TrueString;
+
+            RemoteExecutor.Invoke(() =>
+            {
+                Assert.Throws<InvalidOperationException>(() => TypeDescriptor.GetPropertiesFromKnownType(new C1()));
             }, options).Dispose();
         }
 

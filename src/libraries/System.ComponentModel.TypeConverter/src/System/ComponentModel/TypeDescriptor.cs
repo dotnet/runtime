@@ -990,6 +990,18 @@ namespace System.ComponentModel
             return desc;
         }
 
+        internal static ICustomTypeDescriptor? GetDescriptorFromKnownType(object component)
+        {
+            ICustomTypeDescriptor? desc = NodeFor(component).GetTypeDescriptorFromKnownType(component);
+            ICustomTypeDescriptor? d = component as ICustomTypeDescriptor;
+            if (d != null)
+            {
+                desc = new MergedTypeDescriptor(d, desc!);
+            }
+
+            return desc;
+        }
+
         /// <summary>
         /// Returns an extended custom type descriptor for the given instance.
         /// </summary>
@@ -1002,6 +1014,16 @@ namespace System.ComponentModel
             }
 
             return NodeFor(component).GetExtendedTypeDescriptor(component);
+        }
+
+        internal static ICustomTypeDescriptor GetExtendedDescriptorFromKnownType(object component)
+        {
+            if (component == null)
+            {
+                throw new ArgumentException(nameof(component));
+            }
+
+            return NodeFor(component).GetExtendedTypeDescriptorFromKnownType(component);
         }
 
         /// <summary>
@@ -1344,6 +1366,14 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a collection of properties for a specified component.
         /// </summary>
+        public static PropertyDescriptorCollection GetPropertiesFromKnownType(object component)
+        {
+            return GetPropertiesFromKnownTypeImpl(component);
+        }
+
+        /// <summary>
+        /// Gets a collection of properties for a specified component.
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " The Type of component cannot be statically discovered.")]
         public static PropertyDescriptorCollection GetProperties(object component, bool noCustomTypeDesc)
@@ -1494,6 +1524,47 @@ namespace System.ComponentModel
             }
 
             throw new InvalidOperationException("TODO GetProvider");
+        }
+
+        /// <summary>
+        /// This is a copy of the above GetPropertiesImpl but only for known types,
+        /// and without support for additional parameters.
+        /// </summary>
+        private static PropertyDescriptorCollection GetPropertiesFromKnownTypeImpl(object component)
+        {
+            ArgumentNullException.ThrowIfNull(component);
+
+            ICustomTypeDescriptor typeDesc = GetDescriptorFromKnownType(component)!;
+            ICollection results;
+
+            if (component is ICustomTypeDescriptor)
+            {
+                results = typeDesc.GetPropertiesFromKnownType();
+                results = PipelineFilter(PIPELINE_PROPERTIES, results, component, null);
+            }
+            else
+            {
+                IDictionary? cache = GetCache(component);
+                results = typeDesc.GetPropertiesFromKnownType();
+                results = PipelineInitialize(PIPELINE_PROPERTIES, results, cache);
+                ICustomTypeDescriptor extDesc = GetExtendedDescriptorFromKnownType(component);
+                if (extDesc != null)
+                {
+                    ICollection extResults = extDesc.GetPropertiesFromKnownType();
+                    results = PipelineMerge(PIPELINE_PROPERTIES, results, extResults, cache);
+                }
+
+                results = PipelineFilter(PIPELINE_PROPERTIES, results, component, cache);
+            }
+
+            if (!(results is PropertyDescriptorCollection props))
+            {
+                PropertyDescriptor[] propArray = new PropertyDescriptor[results.Count];
+                results.CopyTo(propArray, 0);
+                props = new PropertyDescriptorCollection(propArray, true);
+            }
+
+            return props;
         }
 
         /// <summary>
@@ -3181,6 +3252,24 @@ namespace System.ComponentModel
                 return new DefaultExtendedTypeDescriptor(this, instance);
             }
 
+            /// <summary>
+            /// Implements GetExtendedTypeDescriptor. This creates a custom type
+            /// descriptor that walks the linked list for each of its calls.
+            /// </summary>
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The object is verified here to be a known type.")]
+            public override ICustomTypeDescriptor GetExtendedTypeDescriptorFromKnownType(object instance)
+            {
+                ArgumentNullException.ThrowIfNull(instance);
+
+                Type type = instance.GetType();
+                if (!Provider.IsKnownType(type))
+                {
+                    ThrowHelper.ThrowInvalidOperationException_AddKnownReflectedTypeRequired(type);
+                }
+
+                return new DefaultExtendedTypeDescriptor(this, instance);
+            }
+
             protected internal override IExtenderProvider[] GetExtenderProviders(object instance)
             {
                 ArgumentNullException.ThrowIfNull(instance);
@@ -3365,6 +3454,28 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
+                TypeConverter ICustomTypeDescriptor.GetConverterFromKnownType()
+                {
+                    // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
+                    // If so, we can call on it directly rather than creating another
+                    // custom type descriptor
+
+                    TypeDescriptionProvider p = _node.Provider;
+                    if (p is ReflectTypeDescriptionProvider rp)
+                    {
+                        return rp.GetConverterFromKnownType(_instance.GetType(), _instance);
+                    }
+
+                    ICustomTypeDescriptor? desc = p.GetTypeDescriptorFromKnownType(_instance);
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
+                    TypeConverter? converter = desc.GetConverterFromKnownType();
+                    if (converter == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetConverter"));
+                    return converter;
+                }
+
+                /// <summary>
+                /// ICustomTypeDescriptor implementation.
+                /// </summary>
                 [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
                 EventDescriptor? ICustomTypeDescriptor.GetDefaultEvent()
                 {
@@ -3450,6 +3561,27 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
+                EventDescriptorCollection ICustomTypeDescriptor.GetEventsFromKnownType()
+                {
+                    // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
+                    // If so, we can call on it directly rather than creating another
+                    // custom type descriptor
+                    TypeDescriptionProvider p = _node.Provider;
+                    if (p is ReflectTypeDescriptionProvider)
+                    {
+                        return ReflectTypeDescriptionProvider.GetExtendedEvents();
+                    }
+
+                    ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptorFromKnownType(_instance);
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptorFromKnownType"));
+                    EventDescriptorCollection events = desc.GetEventsFromKnownType();
+                    if (events == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetEventsFromKnownType"));
+                    return events;
+                }
+
+                /// <summary>
+                /// ICustomTypeDescriptor implementation.
+                /// </summary>
                 [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
                 EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[]? attributes)
                 {
@@ -3492,6 +3624,27 @@ namespace System.ComponentModel
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
                     if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
                     PropertyDescriptorCollection properties = desc.GetProperties();
+                    if (properties == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetProperties"));
+                    return properties;
+                }
+
+                /// <summary>
+                /// ICustomTypeDescriptor implementation.
+                /// </summary>
+                PropertyDescriptorCollection ICustomTypeDescriptor.GetPropertiesFromKnownType()
+                {
+                    // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
+                    // If so, we can call on it directly rather than creating another
+                    // custom type descriptor
+                    TypeDescriptionProvider p = _node.Provider;
+                    if (p is ReflectTypeDescriptionProvider rp)
+                    {
+                        return rp.GetExtendedPropertiesFromKnownType(_instance);
+                    }
+
+                    ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptorFromKnownType(_instance);
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
+                    PropertyDescriptorCollection properties = desc.GetPropertiesFromKnownType();
                     if (properties == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetProperties"));
                     return properties;
                 }
@@ -4017,7 +4170,7 @@ namespace System.ComponentModel
             internal static void ThrowNotSupportedException_KnownTypeMemberCalledOnLegacyProvider(string memberName) => throw new NotSupportedException($"todo: the member {memberName} was called on a provider that returned 'false' for SupportsKnownTypes.");
 
             [DoesNotReturn]
-            internal static void ThrowInvalidOperationException_AddKnownReflectedTypeRequired() => throw new InvalidOperationException($"todo: the Type must be registered with TypeDescriptor.AddKnownReflectedType().");
+            internal static void ThrowInvalidOperationException_AddKnownReflectedTypeRequired(Type type) => throw new InvalidOperationException($"todo: the Type {type.FullName} must be registered with TypeDescriptor.AddKnownReflectedType().");
         }
     }
 }

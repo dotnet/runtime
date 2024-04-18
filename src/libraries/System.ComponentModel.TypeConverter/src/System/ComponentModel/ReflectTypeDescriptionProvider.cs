@@ -288,6 +288,7 @@ namespace System.ComponentModel
         }
 
         public override bool SupportsKnownTypes => true;
+        public override bool IsKnownType(Type type) => _typeData != null ? _typeData.ContainsKey(type) : false;
 
         /// <summary>
         /// Helper method to create editors and type converters. This checks to see if the
@@ -547,6 +548,13 @@ namespace System.ComponentModel
         {
             return EventDescriptorCollection.Empty;
         }
+
+        /// <summary>
+        /// Retrieves the properties for this type.
+        /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Instance is verified to be a known type.")]
+        internal PropertyDescriptorCollection GetExtendedPropertiesFromKnownType(object instance) => GetExtendedProperties(instance);
 
         /// <summary>
         /// Retrieves the properties for this type.
@@ -936,7 +944,7 @@ namespace System.ComponentModel
 
                 if (TypeDescriptor.IsTrimmable && !IsIntrinsicType(type))
                 {
-                    TypeDescriptor.ThrowHelper.ThrowInvalidOperationException_AddKnownReflectedTypeRequired();
+                    TypeDescriptor.ThrowHelper.ThrowInvalidOperationException_AddKnownReflectedTypeRequired(type);
                 }
 
                 if (createIfNeeded)
@@ -959,7 +967,7 @@ namespace System.ComponentModel
                     return GetOrAddKnownReflectedType(type);
                 }
 
-                TypeDescriptor.ThrowHelper.ThrowInvalidOperationException_AddKnownReflectedTypeRequired();
+                TypeDescriptor.ThrowHelper.ThrowInvalidOperationException_AddKnownReflectedTypeRequired(type);
                 td = null;
             }
 

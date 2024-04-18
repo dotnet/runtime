@@ -1404,6 +1404,7 @@ namespace System.ComponentModel
         public virtual System.Collections.IDictionary? GetCache(object instance) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered.")]
         public virtual System.ComponentModel.ICustomTypeDescriptor GetExtendedTypeDescriptor(object instance) { throw null; }
+        public virtual System.ComponentModel.ICustomTypeDescriptor GetExtendedTypeDescriptorFromKnownType(object instance) { throw null; }
         protected internal virtual System.ComponentModel.IExtenderProvider[] GetExtenderProviders(object instance) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of component cannot be statically discovered.")]
         public virtual string? GetFullComponentName(object component) { throw null; }
@@ -1418,6 +1419,8 @@ namespace System.ComponentModel
         public System.ComponentModel.ICustomTypeDescriptor? GetTypeDescriptor(object instance) { throw null; }
         public System.ComponentModel.ICustomTypeDescriptor? GetTypeDescriptor([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type objectType) { throw null; }
         public virtual System.ComponentModel.ICustomTypeDescriptor? GetTypeDescriptor([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type objectType, object? instance) { throw null; }
+        public System.ComponentModel.ICustomTypeDescriptor? GetTypeDescriptorFromKnownType(object instance) { throw null; }
+        public virtual bool IsKnownType(System.Type type) { throw null; }
         public virtual bool IsSupportedType(System.Type type) { throw null; }
     }
     public sealed partial class TypeDescriptor
@@ -1537,6 +1540,7 @@ namespace System.ComponentModel
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public static System.ComponentModel.PropertyDescriptorCollection GetProperties([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType, System.Attribute[]? attributes) { throw null; }
         public static System.ComponentModel.PropertyDescriptorCollection GetPropertiesFromKnownType(System.Type componentType) { throw null; }
+        public static System.ComponentModel.PropertyDescriptorCollection GetPropertiesFromKnownType(object component) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.ComponentModel.TypeDescriptionProvider GetProvider(object instance) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
