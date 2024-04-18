@@ -7,11 +7,8 @@
     <Nullable>enable</Nullable>
     <!-- declare types in namespaces; ConfigureAwait; Prefer 'static readonly' fields; trim warnings -->
     <NoWarn>CA1050;CA2007;CA1861;IL2104</NoWarn>
-    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
     <WasmEnableThreads>true</WasmEnableThreads>
-     <!-- avoid loading .dat files that require integrity hash calculation -->
-    <InvariantGlobalization>true</InvariantGlobalization>
-    <StaticWebAssetBasePath>wasmbrowser</StaticWebAssetBasePath>
+    <StaticWebAssetBasePath>wasmclient</StaticWebAssetBasePath>
   </PropertyGroup>
 
   <ItemGroup>

@@ -12,28 +12,8 @@ using Microsoft.AspNetCore.StaticFiles;
 using Server;
 
 var builder = WebApplication.CreateBuilder(args);
-
-var client = builder.Configuration.GetValue<string>("client")?.ToLowerInvariant();
-if (string.IsNullOrEmpty(client))
-    throw new Exception($"Client arg cannot be empty. Choose: blazor or wasmbrowser");
-
-// Add services to the container.
-builder.Services.AddControllersWithViews();
-builder.Services.AddRazorPages();
 builder.Services.AddSignalR();
 var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseDeveloperExceptionPage();
-}
-else
-{
-    app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
-}
 
 // Add headers to enable SharedArrayBuffer
 app.Use(async (context, next) =>
@@ -45,38 +25,38 @@ app.Use(async (context, next) =>
     await next();
 });
 
-switch (client)
+app.UseDefaultFiles();
+
+var provider = new FileExtensionContentTypeProvider();
+provider.Mappings[".dll"] = "application/octet-stream";
+provider.Mappings[".pdb"] = "application/octet-stream";
+provider.Mappings[".dat"] = "application/octet-stream";
+app.UseStaticFiles(new StaticFileOptions
 {
-    case "wasmbrowser":
-        var staticFilesPath = Path.Combine(AppContext.BaseDirectory, $"publish/wwwroot/{client}");
-        app.UseDefaultFiles(new DefaultFilesOptions
-        {
-            FileProvider = new PhysicalFileProvider(staticFilesPath)
-        });
-        var provider = new FileExtensionContentTypeProvider();
-        provider.Mappings[".dll"] = "application/octet-stream";
-        provider.Mappings[".dat"] = "application/octet-stream";
-        app.UseStaticFiles(new StaticFileOptions
-        {
-            ContentTypeProvider = provider,
-            FileProvider = new PhysicalFileProvider(staticFilesPath)
-        });
-        break;
-    case "blazor":
-        app.UseBlazorFrameworkFiles();
-        app.UseStaticFiles();
-        break;
-    default:
-        throw new Exception($"Expected client to be wasmbrowser or blazor, not {client}.");
+    ContentTypeProvider = provider,
+});
 
-}
-app.UseRouting();
-
-app.MapRazorPages();
-app.MapControllers();
-
-app.MapFallbackToFile("index.html");
-
-app.MapHub<ChatHub>("/chathub");
+ConfigureClientApp(app, "wasmclient");
+ConfigureClientApp(app, "blazorclient");
 
 app.Run();
+
+
+static void ConfigureClientApp(WebApplication app, string clientAppPath)
+{
+    app.MapWhen(
+        ctx => ctx.Request.Path.StartsWithSegments($"/{clientAppPath}", out var rest),
+        clientApp =>
+        {
+            clientApp
+                .UseBlazorFrameworkFiles($"/{clientAppPath}")
+                .UsePathBase($"/{clientAppPath}")
+                .UseRouting()
+                .UseEndpoints(endpoints =>
+                {
+                    endpoints.MapHub<ChatHub>("/chathub");
+                    endpoints.MapFallbackToFile($"{clientAppPath}/index.html");
+                });
+        }
+    );
+}

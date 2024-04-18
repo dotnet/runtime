@@ -23,5 +23,5 @@ public class SignalRClientTests : SignalRTestsBase
     [InlineData("Debug", "WebSockets")]
     [InlineData("Release", "WebSockets")]
     public async Task SignalRPassMessageWasmBrowser(string config, string transport) =>
-        await SignalRPassMessage("wasmbrowser", config, transport);
+        await SignalRPassMessage("wasmclient", config, transport);
 }

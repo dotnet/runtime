@@ -25,6 +25,6 @@ public class SignalRClientTests : SignalRTestsBase
     [InlineData("Debug", "WebSockets")]
     [InlineData("Release", "WebSockets")]
     public async Task SignalRPassMessageBlazor(string config, string transport) =>
-        await SignalRPassMessage("blazor", config, transport);
+        await SignalRPassMessage("blazorclient", config, transport);
 }
 

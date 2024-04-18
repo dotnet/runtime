@@ -19,14 +19,14 @@ public class SignalRTestsBase : AppTestBase
     {
     }
 
-    protected async Task SignalRPassMessage(string client, string config, string transport)
+    protected async Task SignalRPassMessage(string staticWebAssetBasePath, string config, string transport)
     {
         CopyTestAsset("WasmOnAspNetCore", "SignalRClientTests", "AspNetCoreServer");
         PublishProject(config, runtimeType: RuntimeVariant.MultiThreaded, assertAppBundle: false);
 
         var result = await RunSdkStyleAppForBuild(new(
             Configuration: config,
-            ExtraArgs: $"--client {client}",
+            BrowserPath: staticWebAssetBasePath,
             BrowserQueryString: new Dictionary<string, string> { ["transport"] = transport, ["message"] = "ping" } ));
 
         string testOutput = string.Join("\n", result.TestOutput) ?? "";
