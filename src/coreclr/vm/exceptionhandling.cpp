@@ -5655,8 +5655,6 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
     args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(throwable);
     args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
 
-    FirstChanceExceptionNotification();
-
     pThread->IncPreventAbort();
 
     //Ex.RhThrowEx(throwable, &exInfo)
@@ -8127,6 +8125,7 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
     {
         GCX_COOP();
         pThread->SafeSetThrowables(pExInfo->m_exception);
+        FirstChanceExceptionNotification();
         EEToProfilerExceptionInterfaceWrapper::ExceptionThrown(pThread);
     }
     else // pExInfo->m_passNumber == 2

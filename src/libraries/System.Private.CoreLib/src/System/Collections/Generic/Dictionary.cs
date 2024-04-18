@@ -418,7 +418,6 @@ namespace System.Collections.Generic
                     i--; // Value in _buckets is 1-based; subtract 1 from i. We do it here so it fuses with the following conditional.
                     do
                     {
-                        // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                         // Test in if to drop range check for following array access
                         if ((uint)i >= (uint)entries.Length)
                         {
@@ -450,7 +449,6 @@ namespace System.Collections.Generic
                     i--; // Value in _buckets is 1-based; subtract 1 from i. We do it here so it fuses with the following conditional.
                     do
                     {
-                        // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                         // Test in if to drop range check for following array access
                         if ((uint)i >= (uint)entries.Length)
                         {
@@ -535,15 +533,8 @@ namespace System.Collections.Generic
                 comparer == null)
             {
                 // ValueType: Devirtualize with EqualityComparer<TKey>.Default intrinsic
-                while (true)
+                while ((uint)i < (uint)entries.Length)
                 {
-                    // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                    // Test uint in if rather than loop condition to drop range check for following array access
-                    if ((uint)i >= (uint)entries.Length)
-                    {
-                        break;
-                    }
-
                     if (entries[i].hashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entries[i].key, key))
                     {
                         if (behavior == InsertionBehavior.OverwriteExisting)
@@ -574,15 +565,8 @@ namespace System.Collections.Generic
             else
             {
                 Debug.Assert(comparer is not null);
-                while (true)
+                while ((uint)i < (uint)entries.Length)
                 {
-                    // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                    // Test uint in if rather than loop condition to drop range check for following array access
-                    if ((uint)i >= (uint)entries.Length)
-                    {
-                        break;
-                    }
-
                     if (entries[i].hashCode == hashCode && comparer.Equals(entries[i].key, key))
                     {
                         if (behavior == InsertionBehavior.OverwriteExisting)
@@ -690,15 +674,8 @@ namespace System.Collections.Generic
                     comparer == null)
                 {
                     // ValueType: Devirtualize with EqualityComparer<TKey>.Default intrinsic
-                    while (true)
+                    while ((uint)i < (uint)entries.Length)
                     {
-                        // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                        // Test uint in if rather than loop condition to drop range check for following array access
-                        if ((uint)i >= (uint)entries.Length)
-                        {
-                            break;
-                        }
-
                         if (entries[i].hashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entries[i].key, key))
                         {
                             exists = true;
@@ -720,15 +697,8 @@ namespace System.Collections.Generic
                 else
                 {
                     Debug.Assert(comparer is not null);
-                    while (true)
+                    while ((uint)i < (uint)entries.Length)
                     {
-                        // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                        // Test uint in if rather than loop condition to drop range check for following array access
-                        if ((uint)i >= (uint)entries.Length)
-                        {
-                            break;
-                        }
-
                         if (entries[i].hashCode == hashCode && comparer.Equals(entries[i].key, key))
                         {
                             exists = true;
