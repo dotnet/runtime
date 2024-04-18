@@ -16,6 +16,7 @@
     <SelfContained>true</SelfContained>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <UseLocalAppHostPack>true</UseLocalAppHostPack>
+    <UseAppHost Condition="'$(NativeAotSupported)' == 'true'">false</UseAppHost>
   </PropertyGroup>
 
   <Import Project="crossgen2.props" />
