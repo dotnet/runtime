@@ -102,8 +102,6 @@ DEFINE_DACVAR(PTR_ThreadStore, ThreadStore__s_pThreadStore, ThreadStore::s_pThre
 DEFINE_DACVAR(PTR_Thread, dac__g_pFinalizerThread, ::g_pFinalizerThread)
 DEFINE_DACVAR(PTR_Thread, dac__g_pSuspensionThread, ::g_pSuspensionThread)
 
-DEFINE_DACVAR(DPTR(LookupMap<PTR_MethodTable>), dac__g_pThreadStaticTypeIndices, ::g_pThreadStaticTypeIndices)
-
 DEFINE_DACVAR(DWORD, dac__g_heap_type, g_heap_type)
 DEFINE_DACVAR(PTR_GcDacVars, dac__g_gcDacGlobals, g_gcDacGlobals)
 

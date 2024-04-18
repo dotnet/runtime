@@ -3360,11 +3360,13 @@ public:
     }
 #endif //DACCESS_COMPILE
 
-    ThreadLocalData m_ThreadLocalDataThreadObjectCopy;
+    PTR_ThreadLocalData m_ThreadLocalDataPtr;
+    int32_t cLoaderHandles;
+    PTR_LOADERHANDLE pLoaderHandles;
     SpinLock m_TlsSpinLock;
-    ThreadLocalData* GetThreadLocalDataPtr() { LIMITED_METHOD_DAC_CONTRACT; return &m_ThreadLocalDataThreadObjectCopy; }
+    PTR_ThreadLocalData GetThreadLocalDataPtr() { LIMITED_METHOD_DAC_CONTRACT; return m_ThreadLocalDataPtr; }
 
-private:
+public:
 
     // Called during Thread death to clean up all structures
     // associated with thread statics

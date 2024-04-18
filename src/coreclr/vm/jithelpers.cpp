@@ -1398,7 +1398,7 @@ HCIMPLEND
 // the most optimal TLS access pattern for the platform when inlining the
 // GetThreadLocalStaticBaseIfExistsAndInitialized function
 #ifdef _MSC_VER
-__declspec(thread)  ThreadLocalData t_ThreadStatics;
+__declspec(selectany) __declspec(thread)  ThreadLocalData t_ThreadStatics;
 #else
 __thread ThreadLocalData t_ThreadStatics;
 #endif // _MSC_VER
@@ -1410,14 +1410,26 @@ FORCEINLINE void* GetThreadLocalStaticBaseIfExistsAndInitialized(TLSIndex index)
     LIMITED_METHOD_CONTRACT;
     TADDR pTLSBaseAddress = NULL;
 
-    int32_t cTLSData = t_ThreadStatics.cTLSData;
-    if (cTLSData <= index.GetIndexOffset())
+    if (index.GetTLSIndexType() == TLSIndexType::NonCollectible)
     {
-        return NULL;
+        PTRARRAYREF tlsArray = (PTRARRAYREF)UNCHECKED_OBJECTREF_TO_OBJECTREF(t_ThreadStatics.pNonCollectibleTlsReferenceData);
+        if (t_ThreadStatics.cNonCollectibleTlsData <= index.GetIndexOffset())
+        {
+            return NULL;
+        }
+        pTLSBaseAddress = (TADDR)OBJECTREFToObject(tlsArray->GetAt(index.GetIndexOffset() - NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY));
     }
+    else
+    {
+        int32_t cTLSData = t_ThreadStatics.cTLSData;
+        if (cTLSData <= index.GetIndexOffset())
+        {
+            return NULL;
+        }
 
-    TADDR pTLSArrayData = t_ThreadStatics.pTLSArrayData;
-    pTLSBaseAddress = *reinterpret_cast<TADDR*>(reinterpret_cast<uintptr_t*>(pTLSArrayData) + index.GetIndexOffset());
+        TADDR pTLSArrayData = t_ThreadStatics.pTLSArrayData;
+        pTLSBaseAddress = *reinterpret_cast<TADDR*>(reinterpret_cast<uintptr_t*>(pTLSArrayData) + index.GetIndexOffset());
+    }
     return reinterpret_cast<void*>(pTLSBaseAddress);
 }
 

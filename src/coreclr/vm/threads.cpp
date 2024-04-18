@@ -1611,6 +1611,8 @@ Thread::Thread()
     m_isInForbidSuspendForDebuggerRegion = false;
     m_hasPendingActivation = false;
 
+    m_ThreadLocalDataPtr = NULL;
+
 #ifdef _DEBUG
     memset(dangerousObjRefs, 0, sizeof(dangerousObjRefs));
 #endif // _DEBUG
@@ -7718,7 +7720,8 @@ void Thread::DeleteThreadStaticData()
     }
     CONTRACTL_END;
 
-    FreeThreadStaticData(&m_ThreadLocalDataThreadObjectCopy);
+    FreeLoaderAllocatorHandlesForTLSData(this);
+    FreeThreadStaticData(m_ThreadLocalDataPtr, this);
 }
 
 OBJECTREF Thread::GetCulture(BOOL bUICulture)

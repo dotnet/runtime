@@ -22,22 +22,39 @@ struct ThreadLocalLoaderAllocator
 typedef DPTR(ThreadLocalLoaderAllocator) PTR_ThreadLocalLoaderAllocator;
 
 // This can be used for out of thread access to TLS data.
-PTR_VOID GetThreadLocalStaticBaseNoCreate(ThreadLocalData* pThreadLocalData, TLSIndex index)
+PTR_VOID GetThreadLocalStaticBaseNoCreate(Thread* pThread, TLSIndex index)
 {
     LIMITED_METHOD_CONTRACT;
 #ifndef DACCESS_COMPILE
     // Since this api can be used from a different thread, we need a lock to keep it all safe
-    SpinLockHolder spinLock(&pThreadLocalData->pThread->m_TlsSpinLock);
+    SpinLockHolder spinLock(&pThread->m_TlsSpinLock);
 #endif
-    TADDR pTLSBaseAddress = NULL;
-    int32_t cTLSData = pThreadLocalData->cTLSData;
-    if (cTLSData <= index.GetIndexOffset())
-    {
-        return NULL;
-    }
 
-    TADDR pTLSArrayData = pThreadLocalData->pTLSArrayData;
-    pTLSBaseAddress = *(dac_cast<PTR_TADDR>(pTLSArrayData) + index.GetIndexOffset());
+    ThreadLocalData* pThreadLocalData = pThread->GetThreadLocalDataPtr();
+    if (pThreadLocalData == NULL)
+        return NULL;
+
+    TADDR pTLSBaseAddress = NULL;
+    if (index.GetTLSIndexType() == TLSIndexType::NonCollectible)
+    {
+        PTRARRAYREF tlsArray = (PTRARRAYREF)UNCHECKED_OBJECTREF_TO_OBJECTREF(pThreadLocalData->pNonCollectibleTlsReferenceData);
+        if (pThreadLocalData->cNonCollectibleTlsData <= index.GetIndexOffset())
+        {
+            return NULL;
+        }
+        pTLSBaseAddress = dac_cast<TADDR>(OBJECTREFToObject(tlsArray->GetAt(index.GetIndexOffset() - NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY)));
+    }
+    else
+    {
+        int32_t cTLSData = pThreadLocalData->cTLSData;
+        if (cTLSData <= index.GetIndexOffset())
+        {
+            return NULL;
+        }
+
+        TADDR pTLSArrayData = pThreadLocalData->pTLSArrayData;
+        pTLSBaseAddress = *(dac_cast<PTR_TADDR>(pTLSArrayData) + index.GetIndexOffset());
+    }
     if (pTLSBaseAddress == NULL)
     {
         // Maybe it is in the InFlightData
@@ -55,7 +72,8 @@ PTR_VOID GetThreadLocalStaticBaseNoCreate(ThreadLocalData* pThreadLocalData, TLS
     return dac_cast<PTR_VOID>(pTLSBaseAddress);
 }
 
-GPTR_IMPL(TLSIndexToMethodTableMap, g_pThreadStaticTypeIndices);
+TLSIndexToMethodTableMap *g_pThreadStaticCollectibleTypeIndices;
+TLSIndexToMethodTableMap *g_pThreadStaticNonCollectibleTypeIndices;
 
 PTR_MethodTable LookupMethodTableForThreadStaticKnownToBeAllocated(TLSIndex index)
 {
@@ -67,8 +85,14 @@ PTR_MethodTable LookupMethodTableForThreadStaticKnownToBeAllocated(TLSIndex inde
     }
     CONTRACTL_END;
 
-    // TODO, if and when we get array indices, we should be pickier.
-    return g_pThreadStaticTypeIndices->LookupTlsIndexKnownToBeAllocated(index);
+    if (index.GetTLSIndexType() == TLSIndexType::NonCollectible)
+    {
+        return g_pThreadStaticCollectibleTypeIndices->LookupTlsIndexKnownToBeAllocated(index);
+    }
+    else
+    {
+        return g_pThreadStaticNonCollectibleTypeIndices->LookupTlsIndexKnownToBeAllocated(index);
+    }
 }
 
 TADDR isGCFlag = 0x1;
@@ -82,8 +106,16 @@ PTR_MethodTable LookupMethodTableAndFlagForThreadStatic(TLSIndex index, bool *pI
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
-    // TODO, if and when we get array indices, we should be pickier.
-    PTR_MethodTable retVal = g_pThreadStaticTypeIndices->Lookup(index, pIsGCStatic, pIsCollectible);
+
+    PTR_MethodTable retVal;
+    if (index.GetTLSIndexType() == TLSIndexType::NonCollectible)
+    {
+        retVal = g_pThreadStaticNonCollectibleTypeIndices->Lookup(index, pIsGCStatic, pIsCollectible);
+    }
+    else
+    {
+        retVal = g_pThreadStaticCollectibleTypeIndices->Lookup(index, pIsGCStatic, pIsCollectible);
+    }
     return retVal;
 }
 
@@ -101,33 +133,16 @@ bool ReportTLSIndexCarefully(TLSIndex index, int32_t cLoaderHandles, PTR_LOADERH
     bool isGCStatic;
     bool isCollectible;
     PTR_MethodTable pMT = LookupMethodTableAndFlagForThreadStatic(index, &isGCStatic, &isCollectible);
-    if (pMT == NULL)
+    _ASSERTE(((pMT == NULL) || isCollectible) && index.GetTLSIndexType() == TLSIndexType::Collectible);
+    if (index.GetTLSIndexType() == TLSIndexType::Collectible && pLoaderHandles[index.GetIndexOffset()] == NULL)
     {
         // The TLS index is not in use. This either means that the TLS index was never used, or that it was
         // used for a collectible assembly, and that assembly has been freed. In the latter case, we may need to
         // clean this entry up
-        if (cLoaderHandles > index.GetIndexOffset())
-        {
-            pLoaderHandles[index.GetIndexOffset()] = NULL;
-            *ppTLSBaseAddress = NULL;
-        }
+        *ppTLSBaseAddress = NULL;
         return false;
     }
 
-    if (isCollectible)
-    {
-        // Check to see if the associated loaderallocator is still live
-        if (!pMT->GetLoaderAllocator()->IsExposedObjectLive())
-        {
-            if (cLoaderHandles > index.GetIndexOffset())
-            {
-                uintptr_t indexIntoLoaderHandleTable = index.GetIndexOffset();
-                pLoaderHandles[indexIntoLoaderHandleTable] = NULL;
-                *ppTLSBaseAddress = NULL;
-            }
-            return false;
-        }
-    }
     fn(ppTLSBaseAddress, sc, 0 /* could be GC_CALL_INTERIOR or GC_CALL_PINNED */);
     return true;
 }
@@ -143,7 +158,7 @@ void NotifyThreadStaticGCHappened()
 }
 #endif
 
-void ScanThreadStaticRoots(ThreadLocalData *pThreadLocalData, bool forGC, promote_func* fn, ScanContext* sc)
+void ScanThreadStaticRoots(Thread* pThread, bool forGC, promote_func* fn, ScanContext* sc)
 {
     CONTRACTL
     {
@@ -153,14 +168,42 @@ void ScanThreadStaticRoots(ThreadLocalData *pThreadLocalData, bool forGC, promot
     }
     CONTRACTL_END;
 
-    if (pThreadLocalData == NULL)
+#ifndef DACCESS_COMPILE
+    SpinLockHolder spinLock(&pThread->m_TlsSpinLock);
+#endif // !DACCESS_COMPILE
+
+    if (forGC)
+    {
+        // Clean out LoaderHandles for dead collectible assemblies
+        for (int32_t i = 0; i < pThread->cLoaderHandles; ++i)
+        {
+            TLSIndex index(TLSIndexType::Collectible, i);
+            PTR_LOADERHANDLE pLoaderHandle = pThread->pLoaderHandles + i;
+            if (*pLoaderHandle != NULL)
+            {
+                bool isGCStatic;
+                bool isCollectible;
+                PTR_MethodTable pMT = LookupMethodTableAndFlagForThreadStatic(index, &isGCStatic, &isCollectible);
+                _ASSERTE(isCollectible || pMT == NULL);
+
+                if (pMT == NULL || !pMT->GetLoaderAllocator()->IsExposedObjectLive())
+                {
+                    *pLoaderHandle = NULL;
+                }
+            }
+        }
+    }
+
+    if (pThread->m_ThreadLocalDataPtr == NULL)
         return;
 
-    int32_t cLoaderHandles = forGC ? pThreadLocalData->cLoaderHandles : 0; // We can only need to pass this to ReportTLSIndexCarefully if we are permitted to to clean out this array
+    ThreadLocalData *pThreadLocalData = pThread->m_ThreadLocalDataPtr;
+
+    int32_t cLoaderHandles = pThread->cLoaderHandles;
     PTR_InFlightTLSData pInFlightData = pThreadLocalData->pInFlightData;
     while (pInFlightData != NULL)
     {
-        if (!ReportTLSIndexCarefully(pInFlightData->tlsIndex, pThreadLocalData->cLoaderHandles, pThreadLocalData->pLoaderHandles, dac_cast<PTR_PTR_Object>(&pInFlightData->pTLSData), fn, sc))
+        if (!ReportTLSIndexCarefully(pInFlightData->tlsIndex, cLoaderHandles, pThread->pLoaderHandles, dac_cast<PTR_PTR_Object>(&pInFlightData->pTLSData), fn, sc))
         {
             // TLS index is now dead. We should delete it, as the ReportTLSIndexCarefully function will have already deleted any assocated LOADERHANDLE
 #ifndef DACCESS_COMPILE
@@ -175,14 +218,22 @@ void ScanThreadStaticRoots(ThreadLocalData *pThreadLocalData, bool forGC, promot
         }
         pInFlightData = pInFlightData->pNext;
     }
+    
     PTR_TADDR pTLSArrayData = dac_cast<PTR_TADDR>(pThreadLocalData->pTLSArrayData);
     int32_t cTLSData = pThreadLocalData->cTLSData;
     for (int32_t i = 0; i < cTLSData; ++i)
     {
-        TLSIndex index(i);
+        TLSIndex index(TLSIndexType::Collectible, i);
         TADDR *pTLSBaseAddress = pTLSArrayData + i;
-        ReportTLSIndexCarefully(index, pThreadLocalData->cLoaderHandles, pThreadLocalData->pLoaderHandles, dac_cast<PTR_PTR_Object>(pTLSBaseAddress), fn, sc);
+        ReportTLSIndexCarefully(index, cLoaderHandles, pThread->pLoaderHandles, dac_cast<PTR_PTR_Object>(pTLSBaseAddress), fn, sc);
     }
+
+    // Report non-collectible object array
+#ifndef DACCESS_COMPILE
+    fn(&pThreadLocalData->pNonCollectibleTlsReferenceData, sc, 0 /* could be GC_CALL_INTERIOR or GC_CALL_PINNED */);
+#else
+    fn(dac_cast<PTR_PTR_Object>(&pThreadLocalData->pNonCollectibleTlsReferenceData), sc, 0 /* could be GC_CALL_INTERIOR or GC_CALL_PINNED */);
+#endif
 }
 
 #ifndef DACCESS_COMPILE
@@ -197,10 +248,10 @@ void TLSIndexToMethodTableMap::Set(TLSIndex index, PTR_MethodTable pMT, bool isG
     }
     CONTRACTL_END;
 
-    if (index.TLSIndexRawIndex >= m_maxIndex)
+    if (index.GetIndexOffset() >= m_maxIndex)
     {
-        uint32_t newSize = max(m_maxIndex, 16);
-        while (index.TLSIndexRawIndex >= newSize)
+        int32_t newSize = max(m_maxIndex, 16);
+        while (index.GetIndexOffset() >= newSize)
         {
             newSize *= 2;
         }
@@ -225,8 +276,8 @@ void TLSIndexToMethodTableMap::Set(TLSIndex index, PTR_MethodTable pMT, bool isG
         rawValue |= IsCollectibleFlag();
         m_collectibleEntries++;
     }
-    _ASSERTE(pMap[index.TLSIndexRawIndex] == 0 || IsClearedValue(pMap[index.TLSIndexRawIndex]));
-    pMap[index.TLSIndexRawIndex] = rawValue;
+    _ASSERTE(pMap[index.GetIndexOffset()] == 0 || IsClearedValue(pMap[index.GetIndexOffset()]));
+    pMap[index.GetIndexOffset()] = rawValue;
 }
 
 void TLSIndexToMethodTableMap::Clear(TLSIndex index, uint8_t whenCleared)
@@ -239,16 +290,16 @@ void TLSIndexToMethodTableMap::Clear(TLSIndex index, uint8_t whenCleared)
     }
     CONTRACTL_END;
 
-    _ASSERTE(index.TLSIndexRawIndex < m_maxIndex);
-    TADDR rawValue = pMap[index.TLSIndexRawIndex];
+    _ASSERTE(index.GetIndexOffset() < m_maxIndex);
+    TADDR rawValue = pMap[index.GetIndexOffset()];
     _ASSERTE(rawValue & IsCollectibleFlag());
     if (rawValue & IsCollectibleFlag())
     {
         m_collectibleEntries--;
     }
-    pMap[index.TLSIndexRawIndex] = (whenCleared << 2) | 0x3;
-    _ASSERTE(GetClearedMarker(pMap[index.TLSIndexRawIndex]) == whenCleared);
-    _ASSERTE(IsClearedValue(pMap[index.TLSIndexRawIndex]));
+    pMap[index.GetIndexOffset()] = (whenCleared << 2) | 0x3;
+    _ASSERTE(GetClearedMarker(pMap[index.GetIndexOffset()]) == whenCleared);
+    _ASSERTE(IsClearedValue(pMap[index.GetIndexOffset()]));
 }
 
 bool TLSIndexToMethodTableMap::FindClearedIndex(uint8_t whenClearedMarkerToAvoid, TLSIndex* pIndex)
@@ -274,19 +325,31 @@ bool TLSIndexToMethodTableMap::FindClearedIndex(uint8_t whenClearedMarkerToAvoid
 }
 
 uint32_t g_NextTLSSlot = 1;
+uint32_t g_NextNonCollectibleTLSSlot = NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY;
 CrstStatic g_TLSCrst;
 
 void InitializeThreadStaticData()
 {
-    g_pThreadStaticTypeIndices = new TLSIndexToMethodTableMap();
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    g_pThreadStaticCollectibleTypeIndices = new TLSIndexToMethodTableMap(TLSIndexType::NonCollectible);
+    g_pThreadStaticNonCollectibleTypeIndices = new TLSIndexToMethodTableMap(TLSIndexType::NonCollectible);
     g_TLSCrst.Init(CrstThreadLocalStorageLock, CRST_UNSAFE_ANYMODE);
 }
 
 void InitializeCurrentThreadsStaticData(Thread* pThread)
 {
+    LIMITED_METHOD_CONTRACT;
+
     t_ThreadStatics.pThread = pThread;
-    t_ThreadStatics.pThread->m_ThreadLocalDataThreadObjectCopy = t_ThreadStatics;
-    t_ThreadStatics.pThread->m_TlsSpinLock.Init(LOCK_TLSDATA, TRUE);
+    t_ThreadStatics.pThread->m_ThreadLocalDataPtr = &t_ThreadStatics;
+    t_ThreadStatics.pThread->m_TlsSpinLock.Init(LOCK_TLSDATA, FALSE);
 }
 
 void AllocateThreadStaticBoxes(MethodTable *pMT, PTRARRAYREF *ppRef)
@@ -328,7 +391,7 @@ void AllocateThreadStaticBoxes(MethodTable *pMT, PTRARRAYREF *ppRef)
     }
 }
 
-void FreeThreadStaticData(ThreadLocalData *pThreadLocalData)
+void FreeLoaderAllocatorHandlesForTLSData(Thread *pThread)
 {
     CONTRACTL {
         NOTHROW;
@@ -337,19 +400,56 @@ void FreeThreadStaticData(ThreadLocalData *pThreadLocalData)
     }
     CONTRACTL_END;
 
-    if (pThreadLocalData->cLoaderHandles > 0)
+    if (pThread->cLoaderHandles > 0)
     {
         CrstHolder ch(&g_TLSCrst);
-        for (const auto& entry : g_pThreadStaticTypeIndices->CollectibleEntries())
+#ifdef _DEBUG
+        bool allRemainingIndicesAreNotValid = false;
+#endif
+        for (const auto& entry : g_pThreadStaticCollectibleTypeIndices->CollectibleEntries())
         {
-            pThreadLocalData->pLoaderHandles[entry.TlsIndex.GetIndexOffset()] = NULL;
+            _ASSERTE((entry.TlsIndex.GetIndexOffset() < pThread->cLoaderHandles) || allRemainingIndicesAreNotValid);
+            if (entry.TlsIndex.GetIndexOffset() >= pThread->cLoaderHandles)
+            {
+#ifndef _DEBUG
+                break;
+#else
+                allRemainingIndicesAreNotValid = true;
+#endif
+            }
+            else
+            {
+                if (pThread->pLoaderHandles[entry.TlsIndex.GetIndexOffset()] != NULL)
+                {
+                    entry.pMT->GetLoaderAllocator()->FreeHandle(pThread->pLoaderHandles[entry.TlsIndex.GetIndexOffset()]);
+                    pThread->pLoaderHandles[entry.TlsIndex.GetIndexOffset()] = NULL;
+                }
+            }
         }
+    }
+}
+
+void FreeThreadStaticData(ThreadLocalData *pThreadLocalData, Thread* pThread)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    SpinLockHolder spinLock(&pThread->m_TlsSpinLock);
+
+    if (pThreadLocalData->pThread == NULL)
+    {
+        return;
     }
 
     delete[] (uint8_t*)pThreadLocalData->pTLSArrayData;
 
     pThreadLocalData->pTLSArrayData = 0;
     pThreadLocalData->cTLSData = 0;
+    pThreadLocalData->pNonCollectibleTlsReferenceData = 0;
+    pThreadLocalData->cNonCollectibleTlsData = 0;
 
     while (pThreadLocalData->pInFlightData != NULL)
     {
@@ -357,10 +457,21 @@ void FreeThreadStaticData(ThreadLocalData *pThreadLocalData)
         pThreadLocalData->pInFlightData = pInFlightData->pNext;
         delete pInFlightData;
     }
-
-    pThreadLocalData->pThread = NULL;
+    pThreadLocalData->pThread->m_ThreadLocalDataPtr = NULL;
+    VolatileStoreWithoutBarrier(&pThreadLocalData->pThread, (Thread*)NULL);
 }
 
+void SetTLSBaseValue(TADDR *ppTLSBaseAddress, TADDR pTLSBaseAddress, bool useGCBarrier)
+{
+    if (useGCBarrier)
+    {
+        SetObjectReference((OBJECTREF *)ppTLSBaseAddress, (OBJECTREF)ObjectToOBJECTREF((Object*)pTLSBaseAddress));
+    }
+    else
+    {
+        *ppTLSBaseAddress = pTLSBaseAddress;
+    }
+}
 void* GetThreadLocalStaticBase(TLSIndex index)
 {
     CONTRACTL
@@ -373,49 +484,80 @@ void* GetThreadLocalStaticBase(TLSIndex index)
 
     bool isGCStatic;
     bool isCollectible;
+    bool useWriteBarrierToWriteTLSBase = false;
     MethodTable *pMT = LookupMethodTableAndFlagForThreadStatic(index, &isGCStatic, &isCollectible);
 
-    int32_t cTLSData = t_ThreadStatics.cTLSData;
-    if (cTLSData <= index.GetIndexOffset())
+    struct
     {
-        // Grow the underlying TLS array
-        SpinLockHolder spinLock(&t_ThreadStatics.pThread->m_TlsSpinLock);
-        int32_t newcTLSData = index.GetIndexOffset() + 8; // Leave a bit of margin
-        uintptr_t* pNewTLSArrayData = new uintptr_t[newcTLSData];
-        memset(pNewTLSArrayData, 0, newcTLSData * sizeof(uintptr_t));
-        if (cTLSData > 0)
-            memcpy(pNewTLSArrayData, (void*)t_ThreadStatics.pTLSArrayData, cTLSData * sizeof(uintptr_t));
-        uintptr_t* pOldArray = (uintptr_t*)t_ThreadStatics.pTLSArrayData;
-        t_ThreadStatics.pTLSArrayData = (TADDR)pNewTLSArrayData;
-        cTLSData = newcTLSData;
-        t_ThreadStatics.cTLSData = cTLSData;
-        delete[] pOldArray;
-        t_ThreadStatics.pThread->m_ThreadLocalDataThreadObjectCopy = t_ThreadStatics;
-    }
+        TADDR *ppTLSBaseAddress = NULL;
+        TADDR pTLSBaseAddress = NULL;
+    } gcBaseAddresses;
+    GCPROTECT_BEGININTERIOR(gcBaseAddresses);
 
-    if (isCollectible && t_ThreadStatics.cLoaderHandles <= index.GetIndexOffset())
+    if (index.GetTLSIndexType() == TLSIndexType::NonCollectible)
     {
-        // Grow the underlying TLS array
-        SpinLockHolder spinLock(&t_ThreadStatics.pThread->m_TlsSpinLock);
-        int32_t cNewTLSLoaderHandles = index.GetIndexOffset() + 8; // Leave a bit of margin
-        size_t cbNewTLSLoaderHandles = sizeof(LOADERHANDLE) * cNewTLSLoaderHandles;
-        LOADERHANDLE* pNewTLSLoaderHandles = new LOADERHANDLE[cNewTLSLoaderHandles];
-        memset(pNewTLSLoaderHandles, 0, cbNewTLSLoaderHandles);
-        if (cTLSData > 0)
-            memcpy(pNewTLSLoaderHandles, (void*)t_ThreadStatics.pLoaderHandles, t_ThreadStatics.cLoaderHandles * sizeof(LOADERHANDLE));
-
-        LOADERHANDLE* pOldArray = t_ThreadStatics.pLoaderHandles;
-        t_ThreadStatics.pLoaderHandles = pNewTLSLoaderHandles;
-        t_ThreadStatics.cLoaderHandles = cNewTLSLoaderHandles;
-        delete[] pOldArray;
-        t_ThreadStatics.pThread->m_ThreadLocalDataThreadObjectCopy = t_ThreadStatics;
+        PTRARRAYREF tlsArray = (PTRARRAYREF)UNCHECKED_OBJECTREF_TO_OBJECTREF(t_ThreadStatics.pNonCollectibleTlsReferenceData);
+        if (t_ThreadStatics.cNonCollectibleTlsData <= index.GetIndexOffset())
+        {
+            GCPROTECT_BEGIN(tlsArray);
+            PTRARRAYREF tlsArrayNew = (PTRARRAYREF)AllocateObjectArray(index.GetIndexOffset() + 8, g_pObjectClass);
+            if (tlsArray != NULL)
+            {
+                for (DWORD i = 0; i < tlsArray->GetNumComponents(); i++)
+                {
+                    tlsArrayNew->SetAt(i, tlsArray->GetAt(i));
+                }
+            }
+            t_ThreadStatics.pNonCollectibleTlsReferenceData = OBJECTREF_TO_UNCHECKED_OBJECTREF(tlsArrayNew);
+            tlsArray = tlsArrayNew;
+            t_ThreadStatics.cNonCollectibleTlsData = tlsArrayNew->GetNumComponents() + NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY;
+            GCPROTECT_END();
+        }
+        gcBaseAddresses.ppTLSBaseAddress = (TADDR*)(tlsArray->GetDataPtr() + (index.GetIndexOffset() - NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY)) ;
+        useWriteBarrierToWriteTLSBase = true;
     }
+    else
+    {
+        int32_t cTLSData = t_ThreadStatics.cTLSData;
+        if (cTLSData <= index.GetIndexOffset())
+        {
+            // Grow the underlying TLS array
+            SpinLockHolder spinLock(&t_ThreadStatics.pThread->m_TlsSpinLock);
+            int32_t newcTLSData = index.GetIndexOffset() + 8; // Leave a bit of margin
+            uintptr_t* pNewTLSArrayData = new uintptr_t[newcTLSData];
+            memset(pNewTLSArrayData, 0, newcTLSData * sizeof(uintptr_t));
+            if (cTLSData > 0)
+                memcpy(pNewTLSArrayData, (void*)t_ThreadStatics.pTLSArrayData, cTLSData * sizeof(uintptr_t));
+            uintptr_t* pOldArray = (uintptr_t*)t_ThreadStatics.pTLSArrayData;
+            t_ThreadStatics.pTLSArrayData = (TADDR)pNewTLSArrayData;
+            cTLSData = newcTLSData;
+            t_ThreadStatics.cTLSData = cTLSData;
+            delete[] pOldArray;
+        }
 
-    TADDR pTLSArrayData = t_ThreadStatics.pTLSArrayData;
-    TADDR *ppTLSBaseAddress = reinterpret_cast<TADDR*>(reinterpret_cast<uintptr_t*>(pTLSArrayData) + index.GetIndexOffset());
-    TADDR pTLSBaseAddress = *ppTLSBaseAddress;
+        if (isCollectible && t_ThreadStatics.pThread->cLoaderHandles <= index.GetIndexOffset())
+        {
+            // Grow the underlying TLS array
+            SpinLockHolder spinLock(&t_ThreadStatics.pThread->m_TlsSpinLock);
+            int32_t cNewTLSLoaderHandles = index.GetIndexOffset() + 8; // Leave a bit of margin
+            size_t cbNewTLSLoaderHandles = sizeof(LOADERHANDLE) * cNewTLSLoaderHandles;
+            LOADERHANDLE* pNewTLSLoaderHandles = new LOADERHANDLE[cNewTLSLoaderHandles];
+            memset(pNewTLSLoaderHandles, 0, cbNewTLSLoaderHandles);
+            if (cTLSData > 0)
+                memcpy(pNewTLSLoaderHandles, (void*)t_ThreadStatics.pThread->pLoaderHandles, t_ThreadStatics.pThread->cLoaderHandles * sizeof(LOADERHANDLE));
 
-    if (pTLSBaseAddress == NULL)
+            LOADERHANDLE* pOldArray = t_ThreadStatics.pThread->pLoaderHandles;
+            t_ThreadStatics.pThread->pLoaderHandles = pNewTLSLoaderHandles;
+            t_ThreadStatics.pThread->cLoaderHandles = cNewTLSLoaderHandles;
+            delete[] pOldArray;
+        }
+
+        TADDR pTLSArrayData = t_ThreadStatics.pTLSArrayData;
+        gcBaseAddresses.ppTLSBaseAddress = reinterpret_cast<TADDR*>(reinterpret_cast<uintptr_t*>(pTLSArrayData) + index.GetIndexOffset());
+    }
+    gcBaseAddresses.pTLSBaseAddress = *gcBaseAddresses.ppTLSBaseAddress;
+
+    if (gcBaseAddresses.pTLSBaseAddress == NULL)
     {
         // Maybe it is in the InFlightData
         InFlightTLSData* pInFlightData = t_ThreadStatics.pInFlightData;
@@ -424,22 +566,21 @@ void* GetThreadLocalStaticBase(TLSIndex index)
         {
             if (pInFlightData->tlsIndex == index)
             {
-                pTLSBaseAddress = pInFlightData->pTLSData;
+                gcBaseAddresses.pTLSBaseAddress = pInFlightData->pTLSData;
                 
                 if (pMT->IsClassInited())
                 {
                     SpinLockHolder spinLock(&t_ThreadStatics.pThread->m_TlsSpinLock);
-                    *ppTLSBaseAddress = pTLSBaseAddress;
+                    SetTLSBaseValue(gcBaseAddresses.ppTLSBaseAddress, gcBaseAddresses.pTLSBaseAddress, useWriteBarrierToWriteTLSBase);
                     *ppOldNextPtr = pInFlightData->pNext;
                     delete pInFlightData;
-                    t_ThreadStatics.pThread->m_ThreadLocalDataThreadObjectCopy = t_ThreadStatics;
                 }
                 break;
             }
             ppOldNextPtr = &pInFlightData->pNext;
             pInFlightData = pInFlightData->pNext;
         }
-        if (pTLSBaseAddress == NULL)
+        if (gcBaseAddresses.pTLSBaseAddress == NULL)
         {
             // Now we need to actually allocate the TLS data block
             struct 
@@ -477,7 +618,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
 
             if (isCollectible)
             {
-                LOADERHANDLE *pLoaderHandle = reinterpret_cast<LOADERHANDLE*>(reinterpret_cast<uintptr_t*>(pTLSArrayData) + index.GetIndexOffset());
+                LOADERHANDLE *pLoaderHandle = t_ThreadStatics.pThread->pLoaderHandles + index.GetIndexOffset();
                 // Note, that this can fail, but if it succeeds we don't have a holder in place to clean it up if future operations fail
                 // Add such a holder if we ever add a possibly failing operation after this
                 *pLoaderHandle = pMT->GetLoaderAllocator()->AllocateHandle(gc.tlsEntry);
@@ -488,25 +629,25 @@ void* GetThreadLocalStaticBase(TLSIndex index)
 
             {
                 GCX_FORBID();
-                pTLSBaseAddress = (TADDR)OBJECTREFToObject(gc.tlsEntry);
+                gcBaseAddresses.pTLSBaseAddress = (TADDR)OBJECTREFToObject(gc.tlsEntry);
                 if (pInFlightData == NULL)
                 {
-                    *ppTLSBaseAddress = pTLSBaseAddress;
+                    SetTLSBaseValue(gcBaseAddresses.ppTLSBaseAddress, gcBaseAddresses.pTLSBaseAddress, useWriteBarrierToWriteTLSBase);
                 }
                 else
                 {
                     SpinLockHolder spinLock(&t_ThreadStatics.pThread->m_TlsSpinLock);
                     pInFlightData->pNext = t_ThreadStatics.pInFlightData;
-                    pInFlightData->pTLSData = pTLSBaseAddress;
+                    pInFlightData->pTLSData = gcBaseAddresses.pTLSBaseAddress;
                     t_ThreadStatics.pInFlightData = pInFlightData;
-                    t_ThreadStatics.pThread->m_ThreadLocalDataThreadObjectCopy = t_ThreadStatics;
                 }
             }
             GCPROTECT_END();
         }
     }
-    _ASSERTE(pTLSBaseAddress != NULL);
-    return reinterpret_cast<void*>(pTLSBaseAddress);
+    GCPROTECT_END();
+    _ASSERTE(gcBaseAddresses.pTLSBaseAddress != NULL);
+    return reinterpret_cast<void*>(gcBaseAddresses.pTLSBaseAddress);
 }
 
 void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pIndex)
@@ -521,19 +662,25 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
     }
 
     TLSIndex newTLSIndex = TLSIndex::Unallocated();
-    if (!g_pThreadStaticTypeIndices->FindClearedIndex(s_GCsWhichDoRelocateAndCanEmptyOutTheTLSIndices, &newTLSIndex))
-    {
-        uint32_t tlsRawIndex = g_NextTLSSlot;
-        newTLSIndex = TLSIndex(tlsRawIndex);
-        g_NextTLSSlot += 1;
-    }
 
-    if (pMT->Collectible())
+    if (!pMT->Collectible())
     {
+        uint32_t tlsRawIndex = g_NextNonCollectibleTLSSlot++;
+        newTLSIndex = TLSIndex(TLSIndexType::NonCollectible, tlsRawIndex);
+        g_pThreadStaticNonCollectibleTypeIndices->Set(newTLSIndex, pMT, isGCFlag);
+    }
+    else
+    {
+        if (!g_pThreadStaticCollectibleTypeIndices->FindClearedIndex(s_GCsWhichDoRelocateAndCanEmptyOutTheTLSIndices, &newTLSIndex))
+        {
+            uint32_t tlsRawIndex = g_NextTLSSlot;
+            newTLSIndex = TLSIndex(TLSIndexType::Collectible, tlsRawIndex);
+            g_NextTLSSlot += 1;
+        }
+
+        g_pThreadStaticCollectibleTypeIndices->Set(newTLSIndex, pMT, (gcStatic ? isGCFlag : 0));
         pMT->GetLoaderAllocator()->GetTLSIndexList().Append(newTLSIndex);
     }
-
-    g_pThreadStaticTypeIndices->Set(newTLSIndex, pMT, (gcStatic ? isGCFlag : 0));
 
     *pIndex = newTLSIndex;
 }
@@ -557,7 +704,7 @@ void FreeTLSIndicesForLoaderAllocator(LoaderAllocator *pLoaderAllocator)
 
     while (current != end)
     {
-        g_pThreadStaticTypeIndices->Clear(tlsIndicesToCleanup[current], s_GCsWhichDoRelocateAndCanEmptyOutTheTLSIndices);
+        g_pThreadStaticCollectibleTypeIndices->Clear(tlsIndicesToCleanup[current], s_GCsWhichDoRelocateAndCanEmptyOutTheTLSIndices);
         ++current;
     }
 }
@@ -709,8 +856,8 @@ void GetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
     _ASSERTE_MSG(false, "Unsupported scenario of optimizing TLS access on Linux Arm32/x86");
 #endif // TARGET_WINDOWS
 
-    pInfo->offsetOfMaxThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadLocalData, cTLSData));
-    pInfo->offsetOfThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadLocalData, pTLSArrayData));
+    pInfo->offsetOfMaxThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadLocalData, cNonCollectibleTlsData));
+    pInfo->offsetOfThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadLocalData, pNonCollectibleTlsReferenceData));
 }
 #endif // !DACCESS_COMPILE
 

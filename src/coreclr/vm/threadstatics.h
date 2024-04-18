@@ -92,15 +92,18 @@ class Thread;
 
 enum class TLSIndexType
 {
-    Standard, // IndexOffset for this form of TLSIndex is scaled by sizeof(void*) and then added to ThreadLocalData::pTLSArrayData to get the final address
+    NonCollectible, // IndexOffset for this form of TLSIndex is scaled by sizeof(OBJECTREF) and used as an index into the array at ThreadLocalData::pNonCollectibleTlsReferenceData to get the final address
+    Collectible, // IndexOffset for this form of TLSIndex is scaled by sizeof(void*) and then added to ThreadLocalData::pTLSArrayData to get the final address
 };
 
 struct TLSIndex
 {
     TLSIndex() : TLSIndexRawIndex(0xFFFFFFFF) { }
     TLSIndex(uint32_t rawIndex) : TLSIndexRawIndex(rawIndex) { }
+    TLSIndex(TLSIndexType indexType, int32_t indexOffset) : TLSIndexRawIndex((((uint32_t)indexType) << 24) | (uint32_t)indexOffset) { }
     uint32_t TLSIndexRawIndex;
     int32_t GetIndexOffset() const { LIMITED_METHOD_DAC_CONTRACT; return TLSIndexRawIndex & 0xFFFFFF; }
+    TLSIndexType GetTLSIndexType() const { LIMITED_METHOD_DAC_CONTRACT; return (TLSIndexType)(TLSIndexRawIndex >> 24); }
     bool IsAllocated() const { LIMITED_METHOD_DAC_CONTRACT; return TLSIndexRawIndex != 0xFFFFFFFF;}
     static TLSIndex Unallocated() { LIMITED_METHOD_DAC_CONTRACT; return TLSIndex(0xFFFFFFFF); }
     bool operator == (TLSIndex index) const { LIMITED_METHOD_DAC_CONTRACT; return TLSIndexRawIndex == index.TLSIndexRawIndex; }
@@ -113,44 +116,47 @@ typedef DPTR(InFlightTLSData) PTR_InFlightTLSData;
 
 struct ThreadLocalData
 {
-    int32_t cTLSData; // Size in bytes of offset into the TLS array which is valid
-    int32_t cLoaderHandles;
+    int32_t cNonCollectibleTlsData; // Size of offset into the non-collectible TLS array which is valid, NOTE: this is relative to the start of the pNonCollectibleTlsReferenceData object, not the start of the data in the array
+    int32_t cTLSData; // Size of offset into the TLS array which is valid
+    PTR_Object pNonCollectibleTlsReferenceData;
     TADDR pTLSArrayData; // Points at the Thread local array data.
     Thread *pThread;
     PTR_InFlightTLSData pInFlightData; // Points at the in-flight TLS data (TLS data that exists before the class constructor finishes running)
-    PTR_LOADERHANDLE pLoaderHandles;
 };
 
 typedef DPTR(ThreadLocalData) PTR_ThreadLocalData;
 
 #ifndef DACCESS_COMPILE
 #ifdef _MSC_VER
-extern __declspec(thread)  ThreadLocalData t_ThreadStatics;
+extern __declspec(selectany) __declspec(thread)  ThreadLocalData t_ThreadStatics;
 #else
 extern __thread ThreadLocalData t_ThreadStatics;
 #endif // _MSC_VER
 #endif // DACCESS_COMPILE
 
+#define NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY 2
+
 class TLSIndexToMethodTableMap
 {
     PTR_TADDR pMap;
-    uint32_t m_maxIndex;
+    int32_t m_maxIndex;
     uint32_t m_collectibleEntries;
+    TLSIndexType m_indexType;
 
     TADDR IsGCFlag() const { return (TADDR)0x1; }
     TADDR IsCollectibleFlag() const { return (TADDR)0x2; }
     TADDR UnwrapValue(TADDR input) const { return input & ~3; }
 public:
-    TLSIndexToMethodTableMap() : pMap(dac_cast<PTR_TADDR>(dac_cast<TADDR>(0))), m_maxIndex(0), m_collectibleEntries(0) { }
+    TLSIndexToMethodTableMap(TLSIndexType indexType) : pMap(dac_cast<PTR_TADDR>(dac_cast<TADDR>(0))), m_maxIndex(0), m_collectibleEntries(0), m_indexType(indexType) { }
 
     PTR_MethodTable Lookup(TLSIndex index, bool *isGCStatic, bool *isCollectible) const
     {
         LIMITED_METHOD_CONTRACT;
         *isGCStatic = false;
         *isCollectible = false;
-        if (index.TLSIndexRawIndex < VolatileLoad(&m_maxIndex))
+        if (index.GetIndexOffset() < VolatileLoad(&m_maxIndex))
         {
-            TADDR rawValue = VolatileLoadWithoutBarrier(&VolatileLoad(&pMap)[index.TLSIndexRawIndex]);
+            TADDR rawValue = VolatileLoadWithoutBarrier(&VolatileLoad(&pMap)[index.GetIndexOffset()]);
             if (IsClearedValue(rawValue))
             {
                 return NULL;
@@ -165,9 +171,9 @@ public:
     PTR_MethodTable LookupTlsIndexKnownToBeAllocated(TLSIndex index) const
     {
         LIMITED_METHOD_CONTRACT;
-        if (index.TLSIndexRawIndex < VolatileLoad(&m_maxIndex))
+        if (index.GetIndexOffset() < VolatileLoad(&m_maxIndex))
         {
-            TADDR rawValue = VolatileLoadWithoutBarrier(&VolatileLoad(&pMap)[index.TLSIndexRawIndex]);
+            TADDR rawValue = VolatileLoadWithoutBarrier(&VolatileLoad(&pMap)[index.GetIndexOffset()]);
             return (PTR_MethodTable)UnwrapValue(rawValue);
         }
         return NULL;
@@ -190,9 +196,9 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         entry e(index);
-        if (index.TLSIndexRawIndex < VolatileLoad(&m_maxIndex))
+        if (index.GetIndexOffset() < VolatileLoad(&m_maxIndex))
         {
-            TADDR rawValue = VolatileLoadWithoutBarrier(&VolatileLoad(&pMap)[index.TLSIndexRawIndex]);
+            TADDR rawValue = VolatileLoadWithoutBarrier(&VolatileLoad(&pMap)[index.GetIndexOffset()]);
             if (!IsClearedValue(rawValue))
             {
                 e.pMT = (PTR_MethodTable)UnwrapValue(rawValue);
@@ -207,7 +213,7 @@ public:
         }
         else
         {
-            e.TlsIndex = TLSIndex(m_maxIndex);
+            e.TlsIndex = TLSIndex(m_indexType, m_maxIndex);
         }
         return e;
     }
@@ -217,7 +223,7 @@ public:
         friend class TLSIndexToMethodTableMap;
         const TLSIndexToMethodTableMap& m_pMap;
         entry m_entry;
-        iterator(const TLSIndexToMethodTableMap& pMap, uint32_t currentIndex) : m_pMap(pMap), m_entry(pMap.Lookup(TLSIndex(currentIndex))) {}
+        iterator(const TLSIndexToMethodTableMap& pMap, uint32_t currentIndex) : m_pMap(pMap), m_entry(pMap.Lookup(TLSIndex(pMap.m_indexType, currentIndex))) {}
         public:
         const entry&                           operator*() const { return m_entry; }
         const entry*                           operator->() const { return &m_entry; }
@@ -337,17 +343,15 @@ public:
 #endif
 };
 
-typedef DPTR(TLSIndexToMethodTableMap) PTR_TLSIndexToMethodTableMap;
-GPTR_DECL(TLSIndexToMethodTableMap, g_pThreadStaticTypeIndices);
-
-PTR_VOID GetThreadLocalStaticBaseNoCreate(ThreadLocalData *pThreadLocalData, TLSIndex index);
-void ScanThreadStaticRoots(ThreadLocalData *pThreadLocalData, bool forGC, promote_func* fn, ScanContext* sc);
+PTR_VOID GetThreadLocalStaticBaseNoCreate(Thread *pThreadLocalData, TLSIndex index);
+void ScanThreadStaticRoots(Thread* pThread, bool forGC, promote_func* fn, ScanContext* sc);
 
 #ifndef DACCESS_COMPILE
 PTR_MethodTable LookupMethodTableForThreadStaticKnownToBeAllocated(TLSIndex index);
 void InitializeThreadStaticData();
 void InitializeCurrentThreadsStaticData(Thread* pThread);
-void FreeThreadStaticData(ThreadLocalData *pThreadLocalData);
+void FreeLoaderAllocatorHandlesForTLSData(Thread* pThread);
+void FreeThreadStaticData(ThreadLocalData *pThreadLocalData, Thread* pThread);
 void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pIndex);
 void FreeTLSIndicesForLoaderAllocator(LoaderAllocator *pLoaderAllocator);
 void* GetThreadLocalStaticBase(TLSIndex index);

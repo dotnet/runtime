@@ -629,7 +629,6 @@ void EEStartupHelper()
         IfFailGo(ExecutableAllocator::StaticInitialize(FatalErrorHandler));
 
         Thread::StaticInitialize();
-        InitializeThreadStaticData();
 
         JITInlineTrackingMap::StaticInitialize();
         MethodDescBackpatchInfoTracker::StaticInitialize();
@@ -929,6 +928,8 @@ void EEStartupHelper()
         SystemDomain::System()->DefaultDomain()->LoadSystemAssemblies();
 
         SystemDomain::System()->DefaultDomain()->SetupSharedStatics();
+
+        InitializeThreadStaticData();
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
         // retrieve configured max size for the mini-metadata buffer (defaults to 64KB)
@@ -1720,6 +1721,7 @@ struct TlsDestructionMonitor
                     thread->m_pFrame = FRAME_TOP;
                     GCX_COOP_NO_DTOR_END();
                 }
+                FreeThreadStaticData(&t_ThreadStatics, thread);
                 thread->DetachThread(TRUE);
             }
 
