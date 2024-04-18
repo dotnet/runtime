@@ -824,7 +824,7 @@ extends:
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
             - normal
-            - WasmTestOnBrowser
+            - WasmTestOnChrome
 
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
@@ -833,7 +833,7 @@ extends:
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
-            - WasmTestOnBrowser
+            - WasmTestOnChrome
 
       # Library tests with full threading
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
@@ -846,7 +846,7 @@ extends:
           alwaysRun: ${{ variables.isRollingBuild }}
           shouldRunSmokeOnly: onLibrariesAndIllinkChanges
           scenarios:
-            - WasmTestOnBrowser
+            - WasmTestOnChrome
             #- WasmTestOnNodeJS - this is not supported yet, https://github.com/dotnet/runtime/issues/85592
 
       # EAT Library tests - only run on linux
@@ -935,7 +935,7 @@ extends:
           shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
           scenarios:
-            - normal
+            - WasmTestOnWasmtime
 
       - template: /eng/pipelines/common/templates/simple-wasm-build-tests.yml
         parameters:
