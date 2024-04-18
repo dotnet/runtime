@@ -457,15 +457,13 @@ namespace System.Net.Sockets.Tests
                 var connectSaea = new SocketAsyncEventArgs();
                 var tcs = new TaskCompletionSource<SocketError>();
                 connectSaea.Completed += (s, e) => tcs.SetResult(e.SocketError);
-                connectSaea.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listen.LocalEndPoint).Port);
+                connectSaea.RemoteEndPoint = listen.LocalEndPoint;
                 connectSaea.SetBuffer(sendBuffer, 0, size);
 
                 bool pending = client.ConnectAsync(connectSaea);
                 if (!pending) tcs.SetResult(connectSaea.SocketError);
-
                 Socket serverSocket = await listen.AcceptAsync();
 
-                await tcs.Task;
                 Assert.Equal(size, connectSaea.BytesTransferred);
                 // Close the client so we can get easily check the data on server side
                 client.Shutdown(SocketShutdown.Send);
@@ -495,7 +493,7 @@ namespace System.Net.Sockets.Tests
                 }
                 connectSaea = new SocketAsyncEventArgs();
                 connectSaea.Completed += (s, e) => tcs.SetResult(e.SocketError);
-                connectSaea.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listen.LocalEndPoint).Port);
+                connectSaea.RemoteEndPoint = listen.LocalEndPoint;
                 connectSaea.SetBuffer(new byte[size], 0, size);
 
                 pending = client.ConnectAsync(connectSaea);
@@ -519,6 +517,54 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(size + 1, offset);
 
                 serverSocket.Close();
+            }
+        }
+
+        [ConditionalTheory]
+        [InlineData(false, 1)]
+        [InlineData(false, 10_000)]
+        [InlineData(true, 1)]           // This should fit with SYN flag
+        [InlineData(true, 10_000)]      // This should be too big to fit completely to first packet.
+        public async Task Connect_WithData_OK(bool useFastOpen, int size)
+        {
+            if (useFastOpen && PlatformDetection.IsWindows && !PlatformDetection.IsWindows10OrLater)
+            {
+                // Old Windows versions do not support fast open and SetSocketOption fails with error.
+                throw new SkipTestException("TCP fast open is not supported");
+            }
+
+            using (var listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listen.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listen.Listen();
+
+                var client = new Socket(SocketType.Stream, ProtocolType.Tcp);
+                if (useFastOpen)
+                {
+                    listen.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.FastOpen, 1);
+                    client.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.FastOpen, 1);
+                }
+
+                var sendBuffer = new byte[size];
+                var receiveBuffer = new byte[size * 2];
+                Random.Shared.NextBytes(sendBuffer);
+
+                Task<Socket> serverTask = listen.AcceptAsync();
+                // use sync extension
+                client.Connect(listen.LocalEndPoint, sendBuffer, TestSettings.PassingTestTimeout);
+                Socket serverSocket = await serverTask;
+
+                client.Shutdown(SocketShutdown.Send);
+
+                int offset = 0;
+                int readBytes = 0;
+                do
+                {
+                    readBytes = await serverSocket.ReceiveAsync(new Memory<byte>(receiveBuffer, offset, receiveBuffer.Length - offset), default);
+                    offset += readBytes;
+                }
+                while (readBytes != 0);
+                Assert.Equal(size, offset);
             }
         }
 
@@ -1039,6 +1085,43 @@ namespace System.Net.Sockets.Tests
 
             result = await receiver2.ReceiveFromAsync(receiveBuffer, remoteEp).WaitAsync(TestSettings.PassingTestTimeout);
             Assert.Equal(sendBuffer.Length, result.ReceivedBytes);
+        }
+    }
+
+    internal static class ConnectExtensions
+    {
+        internal static void Connect(this Socket socket, EndPoint ep, Memory<byte> buffer, int timeout)
+        {
+            var re = new ManualResetEventSlim();
+            var saea = new SocketAsyncEventArgs();
+            saea.SetBuffer(buffer);
+            saea.RemoteEndPoint = ep;
+            saea.Completed += (_, __) => re.Set();
+            if (!socket.ConnectAsync(saea))
+            {
+                re.Wait(timeout);
+            }
+        }
+
+        internal static Task ConnectAsync(this Socket socket, EndPoint ep, Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            var tcs = new TaskCompletionSource<SocketError>(cancellationToken);
+            var saea = new SocketAsyncEventArgs();
+            saea.SetBuffer(buffer);
+            saea.RemoteEndPoint = ep;
+
+            saea.Completed += (s, e) =>
+            {
+                Console.WriteLine("saea.Completed called with {0} transferrred = {1} from {2}", e.SocketError, e.BytesTransferred, buffer.Length);
+                tcs.SetResult(e.SocketError);
+            };
+
+            if (!socket.ConnectAsync(saea))
+            {
+                tcs.SetResult(saea.SocketError);
+            }
+
+            return tcs.Task;
         }
     }
 }

@@ -1470,7 +1470,7 @@ namespace System.Net.Sockets
             if (optionLevel == SocketOptionLevel.Tcp && optionName == SocketOptionName.FastOpen)
             {
                 handle.TfoEnabled = optionValue != 0;
-                // Silently ignore errors - TFO is best effor and it may be disabled by configuration or not
+                // Silently ignore errors - TFO is best effort and it may be disabled by configuration or not
                 // supported by OS.
                 err = Interop.Error.SUCCESS;
             }
@@ -1607,7 +1607,7 @@ namespace System.Net.Sockets
 #if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
             // macOS fails to even query it if socket is not actively listening.
             // To provide consistent platform experience we will track if
-            // it was ret and we will use it later as needed.
+            // it was set and we will use it later as needed.
             if (optionLevel == SocketOptionLevel.Tcp && optionName == SocketOptionName.FastOpen && err != Interop.Error.SUCCESS)
             {
                 value = handle.TfoEnabled ? 1 : 0;
