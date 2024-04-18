@@ -177,7 +177,7 @@ public:
         CONTRACTL_END;
 
         const RUNTIMETYPEHANDLE handle = m_hExposedClassObject;
-        OBJECTREF retVal = ObjectToOBJECTREF((Object*)handle);
+        OBJECTREF retVal = ObjectToOBJECTREF(handle);
         return retVal;
     }
 #endif

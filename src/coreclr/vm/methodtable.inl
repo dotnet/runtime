@@ -1331,7 +1331,7 @@ FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists()
     LIMITED_METHOD_CONTRACT;
 
     const RUNTIMETYPEHANDLE handle = GetAuxiliaryData()->m_hExposedClassObject;
-    OBJECTREF retVal = ObjectToOBJECTREF((Object*)handle);
+    OBJECTREF retVal = ObjectToOBJECTREF(handle);
     return retVal;
 }
 #endif
