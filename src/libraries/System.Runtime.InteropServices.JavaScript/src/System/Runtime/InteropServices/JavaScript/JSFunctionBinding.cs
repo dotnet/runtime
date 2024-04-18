@@ -307,7 +307,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_MANAGED_THREADS
             else
             {
-                if (targetContext.IsPendingSynchronousCall && targetContext.IsMainThread)
+                if (targetContext.IsPendingSynchronousCall && targetContext.IsMainThread && !signature.IsDiscardNoWait)
                 {
                     throw new PlatformNotSupportedException("Cannot call synchronous JS function from inside a synchronous call to a C# method.");
                 }
