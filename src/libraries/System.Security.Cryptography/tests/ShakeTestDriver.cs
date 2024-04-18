@@ -56,8 +56,6 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        public static bool IsReadNotSupported => !IsReadSupported;
-
         [ConditionalFact(nameof(IsSupported))]
         public void KnownAnswerTests_Allocated_AllAtOnce()
         {
@@ -746,9 +744,15 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsReadNotSupported))]
+        [ConditionalFact(nameof(IsSupported))]
         public void Read_NotSupported()
         {
+            // This is testing when a TShake can be created, but the platform does not have Read.
+            if (IsReadSupported)
+            {
+                return;
+            }
+
             using (TShake shake = new TShake())
             {
                 Assert.Throws<PlatformNotSupportedException>(() => TShakeTrait.Read(shake, Span<byte>.Empty));
