@@ -9,22 +9,23 @@ parameters:
   crossBuild: false
   strategy: ''
   pool: ''
+  logsName: ''
 
   # arcade-specific parameters
   condition: ''
   continueOnError: false
   dependsOn: ''
-  dependOnEvaluatePaths: false
   displayName: ''
   timeoutInMinutes: ''
   enableMicrobuild: ''
   gatherAssetManifests: false
   disableComponentGovernance: ''
+  templatePath: 'templates'
 
   variables: {} ## any extra variables to add to the defaults defined below
 
 jobs:
-- template: /eng/common/templates/job/job.yml
+- template: /eng/common/${{ parameters.templatePath }}/job/job.yml
   parameters:
 
     name: ${{ parameters.name }}
@@ -32,8 +33,6 @@ jobs:
     container: ${{ parameters.container }}
     condition: ${{ parameters.condition }}
     dependsOn:
-      - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
-        - evaluate_paths
       - ${{ if ne(parameters.dependsOn, '') }}:
         - ${{ parameters.dependsOn }}
 
@@ -74,6 +73,12 @@ jobs:
     # that gathers asset manifests and publishes them to pipeline
     # storage. Only relevant for build jobs.
     enablePublishBuildAssets: ${{ parameters.gatherAssetManifests }}
+
+    artifacts:
+      publish:
+        ${{ if ne(parameters.logsName, '') }}:
+          logs:
+            name: '${{ parameters.logsName }}'
 
     variables:
     - name: buildConfig

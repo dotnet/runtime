@@ -1503,6 +1503,10 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
 
     // Clear gtInitClsHnd as a mark that we've already visited this call
     call->gtInitClsHnd = NO_CLASS_HANDLE;
+
+    // The blocks and statements have been modified enough to make the ending offset invalid.
+    block->bbCodeOffsEnd = BAD_IL_OFFSET;
+
     return true;
 }
 
@@ -1941,13 +1945,13 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
             isCastClass = false;
             break;
 
-        // These are never expanded:
-        // CORINFO_HELP_ISINSTANCEOF_EXCEPTION
-        // CORINFO_HELP_CHKCASTCLASS_SPECIAL
-        // CORINFO_HELP_READYTORUN_ISINSTANCEOF,
-        // CORINFO_HELP_READYTORUN_CHKCAST,
+            // These are never expanded:
+            // CORINFO_HELP_ISINSTANCEOF_EXCEPTION
+            // CORINFO_HELP_CHKCASTCLASS_SPECIAL
+            // CORINFO_HELP_READYTORUN_ISINSTANCEOF,
+            // CORINFO_HELP_READYTORUN_CHKCAST,
 
-        // Other helper calls are not cast helpers
+            // Other helper calls are not cast helpers
 
         default:
             return 0;
@@ -2436,7 +2440,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     if (typeCheckNotNeeded || (typeCheckFailedAction == TypeCheckFailedAction::CallHelper_AlwaysThrows))
     {
         // fallback call is used only to throw InvalidCastException
-        call->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
+        setCallDoesNotReturn(call);
         fallbackBb = fgNewBBFromTreeAfter(BBJ_THROW, lastTypeCheckBb, call, debugInfo, true);
     }
     else if (typeCheckFailedAction == TypeCheckFailedAction::ReturnNull)

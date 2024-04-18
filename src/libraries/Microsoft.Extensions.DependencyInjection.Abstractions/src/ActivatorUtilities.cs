@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.DependencyInjection
 #endif
 
         private static readonly MethodInfo GetServiceInfo =
-            GetMethodInfo<Func<IServiceProvider, Type, Type, bool, object?, object?>>((sp, t, r, c, k) => GetService(sp, t, r, c, k));
+            new Func<IServiceProvider, Type, Type, bool, object?, object?>(GetService).Method;
 
         /// <summary>
         /// Instantiate a type with constructor arguments provided directly and/or from an <see cref="IServiceProvider"/>.
@@ -374,12 +374,6 @@ namespace Microsoft.Extensions.DependencyInjection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
             return provider.GetService(type) ?? CreateInstance(provider, type);
-        }
-
-        private static MethodInfo GetMethodInfo<T>(Expression<T> expr)
-        {
-            var mc = (MethodCallExpression)expr.Body;
-            return mc.Method;
         }
 
         private static object? GetService(IServiceProvider sp, Type type, Type requiredBy, bool hasDefaultValue, object? key)

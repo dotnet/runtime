@@ -500,6 +500,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	}
 
 	klass->name = name;
+	klass->name_hash = mono_metadata_str_hash (name);
 	klass->name_space = nspace;
 
 	MONO_PROFILER_RAISE (class_loading, (klass));
@@ -909,6 +910,7 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 	}
 
 	klass->name = gklass->name;
+	klass->name_hash = gklass->name_hash;
 	klass->name_space = gklass->name_space;
 
 	klass->image = gklass->image;
@@ -1154,6 +1156,7 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	name [nsize + maxrank + bounded] = ']';
 	name [nsize + maxrank + bounded + 1] = 0;
 	klass->name = mm ? mono_mem_manager_strdup (mm, name) : mono_image_strdup (image, name);
+	klass->name_hash = mono_metadata_str_hash (klass->name);
 	g_free (name);
 
 	klass->type_token = 0;
@@ -1508,6 +1511,7 @@ mono_class_create_ptr (MonoType *type)
 	result->name_space = el_class->name_space;
 	name = g_strdup_printf ("%s*", el_class->name);
 	result->name = mm ? mono_mem_manager_strdup (mm, name) : mono_image_strdup (image, name);
+	result->name_hash = mono_metadata_str_hash (result->name);
 	result->class_kind = MONO_CLASS_POINTER;
 	g_free (name);
 
@@ -1585,6 +1589,7 @@ mono_class_create_fnptr (MonoMethodSignature *sig)
 	result->parent = NULL; /* no parent for PTR types */
 	result->name_space = "System";
 	result->name = "MonoFNPtrFakeClass";
+	result->name_hash = mono_metadata_str_hash (result->name);
 	result->class_kind = MONO_CLASS_POINTER;
 
 	result->image = mono_defaults.corlib; /* need to fix... */
@@ -2573,6 +2578,10 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_GENERICINST:
 			field_class = mono_class_from_mono_type_internal (field->type);
+			if (mono_class_is_ginst (field_class) && !mono_verifier_class_is_valid_generic_instantiation (field_class)) {
+				mono_class_set_type_load_failure (klass, "Field '%s' is an invalid generic instantiation of type %s", field->name, mono_type_get_full_name (field_class));
+				return;
+			}
 			break;
 		default:
 			break;

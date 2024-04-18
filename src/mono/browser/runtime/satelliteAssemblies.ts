@@ -5,7 +5,7 @@ import { loaderHelpers } from "./globals";
 import { load_satellite_assembly } from "./managed-exports";
 import { AssetEntry } from "./types";
 
-export async function loadSatelliteAssemblies(culturesToLoad: string[]): Promise<void> {
+export async function loadSatelliteAssemblies (culturesToLoad: string[]): Promise<void> {
     const satelliteResources = loaderHelpers.config.resources!.satelliteResources;
     if (!satelliteResources) {
         return;

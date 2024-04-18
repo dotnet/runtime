@@ -7,7 +7,7 @@ stages:
 - stage: PrepareForPublish
   displayName: Prepare for Publish
   variables:
-  - template: /eng/common/templates/variables/pool-providers.yml
+  - template: /eng/common/templates-official/variables/pool-providers.yml
   jobs:
   # Prep artifacts: sign them and upload pipeline artifacts expected by stages-based publishing.
   - template: /eng/pipelines/official/jobs/prepare-signed-artifacts.yml
@@ -15,7 +15,7 @@ stages:
       PublishRidAgnosticPackagesFromPlatform: ${{ parameters.PublishRidAgnosticPackagesFromPlatform }}
 
   # Publish to Build Asset Registry in order to generate the ReleaseConfigs artifact.
-  - template: /eng/common/templates/job/publish-build-assets.yml
+  - template: /eng/common/templates-official/job/publish-build-assets.yml
     parameters:
       publishUsingPipelines: true
       publishAssetsImmediately: true
@@ -26,7 +26,7 @@ stages:
       symbolPublishingAdditionalParameters: '/p:PublishSpecialClrFiles=true'
 
 # Stages-based publishing entry point
-- template: /eng/common/templates/post-build/post-build.yml
+- template: /eng/common/templates-official/post-build/post-build.yml
   parameters:
     publishingInfraVersion: ${{ parameters.publishingInfraVersion }}
     validateDependsOn:

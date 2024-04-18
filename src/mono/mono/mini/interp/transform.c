@@ -419,11 +419,12 @@ interp_create_var_explicit (TransformData *td, MonoType *type, int size)
 	if (td->vars_size == td->vars_capacity) {
 		td->vars_capacity *= 2;
 		if (td->vars_capacity == 0)
-			td->vars_capacity = 2;
+			td->vars_capacity = 16;
 		td->vars = (InterpVar*) g_realloc (td->vars, td->vars_capacity * sizeof (InterpVar));
 	}
 	int mt = mono_mint_type (type);
 	InterpVar *local = &td->vars [td->vars_size];
+	// FIXME: We don't need to do this memset unless we realloc'd, since we malloc0 vars initially
 	memset (local, 0, sizeof (InterpVar));
 
 	local->type = type;
@@ -449,6 +450,15 @@ interp_create_dummy_var (TransformData *td)
 	td->dummy_var = interp_create_var_explicit (td, m_class_get_byval_arg (mono_defaults.void_class), 8);
 	td->vars [td->dummy_var].offset = 0;
 	td->vars [td->dummy_var].global = TRUE;
+}
+
+static void
+interp_create_ref_handle_var (TransformData *td)
+{
+	int var = interp_create_var_explicit (td, m_class_get_byval_arg (mono_defaults.int_class), sizeof (gpointer));
+	td->vars [var].global = TRUE;
+	interp_alloc_global_var_offset (td, var);
+	td->ref_handle_var = var;
 }
 
 static int
@@ -549,6 +559,22 @@ static void
 set_simple_type_and_var (TransformData *td, StackInfo *sp, int type)
 {
 	set_type_and_var (td, sp, type, NULL);
+}
+
+static void
+push_mono_type (TransformData *td, MonoType *type, int mt, MonoClass *k)
+{
+	if (mt == -1)
+		mt = mono_mint_type (type);
+	if (!k)
+		k = mono_class_from_mono_type_internal (type);
+
+	g_assert (mt != MINT_TYPE_VT);
+
+	if (m_type_is_byref (type))
+		push_type_explicit (td, STACK_TYPE_MP, k, MINT_STACK_SLOT_SIZE);
+	else
+		push_type_explicit (td, stack_type [mt], k, MINT_STACK_SLOT_SIZE);
 }
 
 static void
@@ -1006,7 +1032,7 @@ load_arg(TransformData *td, int n)
 		if (hasthis && n == 0) {
 			mt = MINT_TYPE_I;
 			klass = NULL;
-			push_type (td, stack_type [mt], klass);
+			push_type (td, STACK_TYPE_MP, klass);
 		} else {
 			g_assert (size < G_MAXUINT16);
 			push_type_vt (td, klass, size);
@@ -1020,7 +1046,7 @@ load_arg(TransformData *td, int n)
 			if (mt == MINT_TYPE_O)
 				klass = mono_class_from_mono_type_internal (type);
 		}
-		push_type (td, stack_type [mt], klass);
+		push_mono_type (td, type, mt, klass);
 	}
 	interp_add_ins (td, interp_get_mov_for_type (mt, TRUE));
 	interp_ins_set_sreg (td->last_ins, n);
@@ -1069,7 +1095,7 @@ load_local (TransformData *td, int local)
 		MonoClass *klass = NULL;
 		if (mt == MINT_TYPE_O)
 			klass = mono_class_from_mono_type_internal (type);
-		push_type (td, stack_type [mt], klass);
+		push_mono_type (td, type, mt, klass);
 	}
 	interp_add_ins (td, interp_get_mov_for_type (mt, TRUE));
 	interp_ins_set_sreg (td->last_ins, local);
@@ -3699,7 +3725,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				return FALSE;
 			}
 		} else {
-			push_type (td, stack_type[mt], klass);
+			push_mono_type (td, csignature->ret, mt, klass);
 		}
 		dreg = td->sp [-1].var;
 	} else {
@@ -3740,6 +3766,10 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		td->last_ins->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (target_method));
 	} else {
 		if (is_delegate_invoke) {
+			// MINT_CALL_DELEGATE will store the delegate object into this slot so it is kept alive
+			// while the method is invoked
+			if (td->ref_handle_var == -1)
+				interp_create_ref_handle_var (td);
 			interp_add_ins (td, MINT_CALL_DELEGATE);
 			interp_ins_set_dreg (td->last_ins, dreg);
 			interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
@@ -4313,15 +4343,18 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	int num_args = sig->hasthis + sig->param_count;
 	int num_il_locals = header->num_locals;
 	int num_locals = num_args + num_il_locals;
+	// HACK: Pre-reserve extra space to reduce the number of times we realloc during codegen, since it's expensive
+	// 64 vars * 72 bytes = 4608 bytes. Many methods need less than this
+	int target_vars_capacity = num_locals + 64;
 
 	imethod->local_offsets = (guint32*)g_malloc (num_il_locals * sizeof(guint32));
-	td->vars = (InterpVar*)g_malloc0 (num_locals * sizeof (InterpVar));
+	td->vars = (InterpVar*)g_malloc0 (target_vars_capacity * sizeof (InterpVar));
 	td->vars_size = num_locals;
-	td->vars_capacity = td->vars_size;
+	td->vars_capacity = target_vars_capacity;
 
-	td->renamable_vars = (InterpRenamableVar*)g_malloc (num_locals * sizeof (InterpRenamableVar));
+	td->renamable_vars = (InterpRenamableVar*)g_malloc (target_vars_capacity * sizeof (InterpRenamableVar));
 	td->renamable_vars_size = 0;
-	td->renamable_vars_capacity = num_locals;
+	td->renamable_vars_capacity = target_vars_capacity;
 	offset = 0;
 
 	/*
@@ -4346,6 +4379,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		td->vars [i].size = size;
 		offset = ALIGN_TO (offset, align);
 		td->vars [i].offset = offset;
+		interp_mark_ref_slots_for_var (td, i);
 		offset += size;
 	}
 	offset = ALIGN_TO (offset, MINT_STACK_ALIGNMENT);
@@ -4371,6 +4405,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		td->vars [index].mt = mono_mint_type (header->locals [i]);
 		td->vars [index].ext_index = -1;
 		td->vars [index].size = size;
+		interp_mark_ref_slots_for_var (td, index);
 		// Every local takes a MINT_STACK_SLOT_SIZE so IL locals have same behavior as execution locals
 		offset += size;
 	}
@@ -4568,7 +4603,7 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 				interp_add_ins (td, interp_get_ldind_for_mt (mt));
 				interp_ins_set_sreg (td->last_ins, td->sp [-1].var);
 				td->sp--;
-				push_type (td, stack_type [mt], field_class);
+				push_mono_type (td, ftype, mt, field_class);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 			}
 		} else {
@@ -4595,14 +4630,14 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 				if (mt == MINT_TYPE_VT) {
 					push_type_vt (td, field_class, size);
 				} else {
-					push_type (td, stack_type [mt], field_class);
+					push_mono_type (td, ftype, mt, field_class);
 				}
 			} else if (mt == MINT_TYPE_VT) {
 				interp_add_ins (td, MINT_LDSFLD_VT);
 				push_type_vt (td, field_class, size);
 			} else {
 				interp_add_ins (td, MINT_LDSFLD_I1 + mt - MINT_TYPE_I1);
-				push_type (td, stack_type [mt], field_class);
+				push_mono_type (td, ftype, mt, field_class);
 			}
 			interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 		} else {
@@ -6709,7 +6744,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					if (mt == MINT_TYPE_VT)
 						push_type_vt (td, field_klass, field_size);
 					else
-						push_type (td, stack_type [mt], field_klass);
+						push_mono_type (td, ftype, mt, field_klass);
 					interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 				} else {
 					if (G_UNLIKELY (m_field_is_from_update (field))) {
@@ -6739,7 +6774,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					if (mt == MINT_TYPE_VT)
 						push_type_vt (td, field_klass, field_size);
 					else
-						push_type (td, stack_type [mt], field_klass);
+						push_mono_type (td, ftype, mt, field_klass);
 					interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 				}
 			}
@@ -7695,8 +7730,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					int param_offset = get_tos_offset (td);
 
 					if (!MONO_TYPE_IS_VOID (info->sig->ret)) {
-						mt = mono_mint_type (info->sig->ret);
-						push_simple_type (td, stack_type [mt]);
+						push_mono_type (td, info->sig->ret, -1, NULL);
 						dreg = td->sp [-1].var;
 					} else {
 						// dummy dreg
@@ -8507,6 +8541,80 @@ get_short_brop (int opcode)
 	return opcode;
 }
 
+static void
+interp_mark_ref_slots_for_vt (TransformData *td, int base_offset, MonoClass *klass)
+{
+	if (!m_class_has_references (klass) && !m_class_has_ref_fields (klass))
+		return;
+
+	gpointer iter = NULL;
+	MonoClassField *field;
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
+		MonoType *ftype = mono_field_get_type_internal (field);
+		if (ftype->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		int offset = base_offset + m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject);
+retry:
+		if (mini_type_is_reference (ftype) || ftype->type == MONO_TYPE_I || ftype->type == MONO_TYPE_U || m_type_is_byref (ftype)) {
+			int index = offset / sizeof (gpointer);
+			mono_bitset_set (td->ref_slots, index);
+			if (td->verbose_level)
+				g_print ("Stack ref slot vt field at off %d\n", offset);
+		} else if (ftype->type == MONO_TYPE_VALUETYPE || ftype->type == MONO_TYPE_GENERICINST) {
+			interp_mark_ref_slots_for_vt (td, offset, mono_class_from_mono_type_internal (ftype));
+		}
+
+		if (m_class_is_inlinearray (klass)) {
+			int max_offset = base_offset + m_class_get_instance_size (klass) - MONO_ABI_SIZEOF (MonoObject);
+	                int align;
+			int field_size = mono_type_size (ftype, &align);
+			offset += field_size;
+			offset = ALIGN_TO (offset, align);
+			if (offset < max_offset)
+				goto retry;
+		}
+	}
+}
+
+void
+interp_mark_ref_slots_for_var (TransformData *td, int var)
+{
+	if (!(mono_interp_opt & INTERP_OPT_PRECISE_GC))
+		return;
+
+	g_assert (td->vars [var].offset != -1);
+
+	gsize max_index = (td->vars [var].offset + td->vars [var].size) / sizeof (gpointer);
+
+	if (!td->ref_slots || max_index >= td->ref_slots->size) {
+		guint32 old_size = td->ref_slots ? (guint32)td->ref_slots->size : 0;
+		guint32 new_size = old_size ? old_size * 2 : 32;
+		while (new_size <= max_index)
+			new_size *= 2;
+
+		gpointer mem = mono_mempool_alloc0 (td->mempool, mono_bitset_alloc_size (new_size, 0));
+		MonoBitSet *new_ref_slots = mono_bitset_mem_new (mem, new_size, 0);
+
+		if (old_size)
+			memcpy (&new_ref_slots->data, &td->ref_slots->data, old_size / 8);
+		td->ref_slots = new_ref_slots;
+	}
+
+	MonoType *type = td->vars [var].type;
+	if (td->vars [var].mt == MINT_TYPE_VT) {
+		MonoClass *klass = mono_class_from_mono_type_internal (type);
+		interp_mark_ref_slots_for_vt (td, td->vars [var].offset, klass);
+	} else {
+		// Managed pointers in interp are normally MONO_TYPE_I
+		if (mini_type_is_reference (type) || type->type == MONO_TYPE_I || type->type == MONO_TYPE_U || m_type_is_byref (type)) {
+			int index = td->vars [var].offset / sizeof (gpointer);
+			mono_bitset_set (td->ref_slots, index);
+			if (td->verbose_level)
+				g_print ("Stack ref slot at off %d for var %d\n", index * sizeof (gpointer), var);
+		}
+	}
+}
+
 static int
 get_var_offset (TransformData *td, int var)
 {
@@ -8526,6 +8634,7 @@ get_var_offset (TransformData *td, int var)
 	g_assert (td->vars [var].execution_stack);
 
 	td->vars [var].offset = td->total_locals_size + td->vars [var].stack_offset;
+	interp_mark_ref_slots_for_var (td, var);
 	return td->vars [var].offset;
 }
 
@@ -8995,6 +9104,7 @@ retry:
 	td->n_data_items = 0;
 	td->max_data_items = 0;
 	td->dummy_var = -1;
+	td->ref_handle_var = -1;
 	td->data_items = NULL;
 	td->data_hash = g_hash_table_new (NULL, NULL);
 #ifdef ENABLE_EXPERIMENT_TIERED
@@ -9154,6 +9264,26 @@ retry:
 
 	mono_interp_register_imethod_data_items (rtm->data_items, td->imethod_items);
 	rtm->patchpoint_data = td->patchpoint_data;
+
+	if (td->ref_slots) {
+		gpointer ref_slots_mem = mono_mem_manager_alloc0 (td->mem_manager, mono_bitset_alloc_size (rtm->alloca_size / sizeof (gpointer), 0));
+		rtm->ref_slots = mono_bitset_mem_new (ref_slots_mem, rtm->alloca_size / sizeof (gpointer), 0);
+		gsize copy_size = rtm->ref_slots->size;
+		if (td->ref_slots->size < copy_size)
+			copy_size = td->ref_slots->size;
+		memcpy (&rtm->ref_slots->data, &td->ref_slots->data, copy_size / 8);
+		if (!td->optimized) {
+			// Unoptimized code can have some stack slot moving patterns as part of calls.
+			// Just conservatively mark all these slots as potentially containing refs.
+			for (guint32 offset = rtm->locals_size; offset < rtm->alloca_size; offset += sizeof (gpointer))
+				mono_bitset_set (rtm->ref_slots, offset / sizeof (gpointer));
+		}
+	}
+
+	if (td->ref_handle_var != -1)
+		rtm->ref_slot_offset = td->vars [td->ref_handle_var].offset;
+	else
+		rtm->ref_slot_offset = -1;
 
 	/* Save debug info */
 	interp_save_debug_info (rtm, header, td, td->line_numbers);

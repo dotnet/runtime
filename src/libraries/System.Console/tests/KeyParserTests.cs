@@ -42,7 +42,7 @@ public class KeyParserTests
             yield return ('.', ConsoleKey.OemPeriod);
             yield return (',', ConsoleKey.OemComma);
 
-            yield return ('\u001B', ConsoleKey.Escape);
+            yield return ('\e', ConsoleKey.Escape);
 
             for (char i = '0'; i <= '9'; i++)
             {
@@ -212,7 +212,7 @@ public class KeyParserTests
             yield return (GetString(33), ConsoleKey.F19);
             yield return (GetString(34), ConsoleKey.F20);
 
-            static string GetString(int i) => $"\u001B[{i}~";
+            static string GetString(int i) => $"\e[{i}~";
         }
     }
 
@@ -223,7 +223,7 @@ public class KeyParserTests
     [MemberData(nameof(VTSequencesArguments))]
     public void VTSequencesAreProperlyMapped(TerminalData terminalData, string input, ConsoleKey expectedKey)
     {
-        if (terminalData is RxvtUnicode && input == "\u001B[4~" && expectedKey == ConsoleKey.End)
+        if (terminalData is RxvtUnicode && input == "\e[4~" && expectedKey == ConsoleKey.End)
         {
             expectedKey = ConsoleKey.Select; // rxvt binds this key to Select in Terminfo and uses "^[[8~" for End key
         }
@@ -239,10 +239,10 @@ public class KeyParserTests
     {
         get
         {
-            yield return ("\u001BOa", ConsoleKey.UpArrow);
-            yield return ("\u001BOb", ConsoleKey.DownArrow);
-            yield return ("\u001BOc", ConsoleKey.RightArrow);
-            yield return ("\u001BOd", ConsoleKey.LeftArrow);
+            yield return ("\eOa", ConsoleKey.UpArrow);
+            yield return ("\eOb", ConsoleKey.DownArrow);
+            yield return ("\eOc", ConsoleKey.RightArrow);
+            yield return ("\eOd", ConsoleKey.LeftArrow);
         }
     }
 
@@ -272,9 +272,9 @@ public class KeyParserTests
             // Ctrl+Backspace
             yield return ("\b", new[] { new ConsoleKeyInfo('\b', ConsoleKey.Backspace, false, false, true) });
             // Alt+Backspace
-            yield return ("\u001B\u007F", new[] { new ConsoleKeyInfo((char)0x7F, ConsoleKey.Backspace, false, true, false) });
+            yield return ("\e\u007F", new[] { new ConsoleKeyInfo((char)0x7F, ConsoleKey.Backspace, false, true, false) });
             // Ctrl+Alt+Backspace
-            yield return ("\u001B\b", new[] { new ConsoleKeyInfo('\b', ConsoleKey.Backspace, false, true, true) });
+            yield return ("\e\b", new[] { new ConsoleKeyInfo('\b', ConsoleKey.Backspace, false, true, true) });
             // Enter
             yield return ("\r", new[] { new ConsoleKeyInfo('\r', ConsoleKey.Enter, false, false, false) });
             // Ctrl+Enter
@@ -283,18 +283,18 @@ public class KeyParserTests
             // Escape key pressed multiple times
             for (int i = 1; i <= 5; i++)
             {
-                yield return (new string('\u001B', i), Enumerable.Repeat(new ConsoleKeyInfo('\u001B', ConsoleKey.Escape, false, false, false), i).ToArray());
+                yield return (new string('\e', i), Enumerable.Repeat(new ConsoleKeyInfo('\e', ConsoleKey.Escape, false, false, false), i).ToArray());
             }
 
             // Home key (^[[H) followed by H key
-            yield return ("\u001B[HH", new[]
+            yield return ("\e[HH", new[]
             {
                 new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false),
                 new ConsoleKeyInfo('H', ConsoleKey.H, true, false, false)
             });
 
             // escape sequence (F12 '^[[24~') followed by an extra tylde:
-            yield return ($"\u001B[24~~", new[]
+            yield return ($"\e[24~~", new[]
             {
                 new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false),
                 new ConsoleKeyInfo('~', default, false, false, false),
@@ -304,9 +304,9 @@ public class KeyParserTests
             // Invalid modifiers (valid values are <2, 8>)
             foreach (int invalidModifier in new[] { 0, 1, 9 })
             {
-                yield return ($"\u001B[1;{invalidModifier}H", new[]
+                yield return ($"\e[1;{invalidModifier}H", new[]
                 {
-                    new ConsoleKeyInfo('\u001B', ConsoleKey.Escape, false, false, false),
+                    new ConsoleKeyInfo('\e', ConsoleKey.Escape, false, false, false),
                     new ConsoleKeyInfo('[', default, false, false, false),
                     new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false),
                     new ConsoleKeyInfo(';', default, false, false, false),
@@ -317,9 +317,9 @@ public class KeyParserTests
             // Invalid ID (valid values are <1, 34> except of 9, 16, 22, 27, 30 and 35)
             foreach (int invalidId in new[] { 16, 22, 27, 30, 35, 36, 77, 99 })
             {
-                yield return ($"\u001B[{invalidId}~", new[]
+                yield return ($"\e[{invalidId}~", new[]
                 {
-                    new ConsoleKeyInfo('\u001B', ConsoleKey.Escape, false, false, false),
+                    new ConsoleKeyInfo('\e', ConsoleKey.Escape, false, false, false),
                     new ConsoleKeyInfo('[', default, false, false, false),
                     new ConsoleKeyInfo((char)('0' + invalidId / 10), ConsoleKey.D0 + invalidId / 10, false, false, false),
                     new ConsoleKeyInfo((char)('0' + invalidId % 10), ConsoleKey.D0 + invalidId % 10, false, false, false),
@@ -327,9 +327,9 @@ public class KeyParserTests
                 });
             }
             // too long ID (more than 2 digits)
-            yield return ($"\u001B[111~", new[]
+            yield return ($"\e[111~", new[]
             {
-                new ConsoleKeyInfo('\u001B', ConsoleKey.Escape, false, false, false),
+                new ConsoleKeyInfo('\e', ConsoleKey.Escape, false, false, false),
                 new ConsoleKeyInfo('[', default, false, false, false),
                 new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false),
                 new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false),
@@ -337,9 +337,9 @@ public class KeyParserTests
                 new ConsoleKeyInfo('~', default, false, false, false),
             });
             // missing closing tag (tylde):
-            yield return ($"\u001B[24", new[]
+            yield return ($"\e[24", new[]
             {
-                new ConsoleKeyInfo('\u001B', ConsoleKey.Escape, false, false, false),
+                new ConsoleKeyInfo('\e', ConsoleKey.Escape, false, false, false),
                 new ConsoleKeyInfo('[', default, false, false, false),
                 new ConsoleKeyInfo('2', ConsoleKey.D2, false, false, false),
                 new ConsoleKeyInfo('4', ConsoleKey.D4, false, false, false),
@@ -386,7 +386,7 @@ public class KeyParserTests
     {
         XTermData xTerm = new();
 
-        ConsoleKeyInfo consoleKeyInfo = Parse("\u001BOM".ToCharArray(), xTerm.TerminalDb, xTerm.Verase, 3);
+        ConsoleKeyInfo consoleKeyInfo = Parse("\eOM".ToCharArray(), xTerm.TerminalDb, xTerm.Verase, 3);
 
         Assert.Equal(ConsoleKey.Enter, consoleKeyInfo.Key);
         Assert.Equal('\r', consoleKeyInfo.KeyChar);
@@ -398,7 +398,7 @@ public class KeyParserTests
     {
         XTermData xTerm = new();
 
-        ConsoleKeyInfo consoleKeyInfo = Parse("\u001B[Z".ToCharArray(), xTerm.TerminalDb, xTerm.Verase, 3);
+        ConsoleKeyInfo consoleKeyInfo = Parse("\e[Z".ToCharArray(), xTerm.TerminalDb, xTerm.Verase, 3);
 
         Assert.Equal(ConsoleKey.Tab, consoleKeyInfo.Key);
         Assert.Equal(default, consoleKeyInfo.KeyChar);

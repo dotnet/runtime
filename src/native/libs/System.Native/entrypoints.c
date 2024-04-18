@@ -160,6 +160,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_SetSendTimeout)
     DllImportEntry(SystemNative_Receive)
     DllImportEntry(SystemNative_ReceiveMessage)
+    DllImportEntry(SystemNative_ReceiveSocketError)
     DllImportEntry(SystemNative_Send)
     DllImportEntry(SystemNative_SendMessage)
     DllImportEntry(SystemNative_Accept)

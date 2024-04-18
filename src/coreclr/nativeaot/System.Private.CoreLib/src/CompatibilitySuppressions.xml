@@ -55,11 +55,11 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Internal.Metadata.NativeFormat.ConstantBoxedEnumValue</Target>
+    <Target>T:Internal.Metadata.NativeFormat.ConstantEnumValue</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Internal.Metadata.NativeFormat.ConstantBoxedEnumValueHandle</Target>
+    <Target>T:Internal.Metadata.NativeFormat.ConstantEnumValueHandle</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
