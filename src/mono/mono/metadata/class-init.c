@@ -735,6 +735,17 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		}
 	}
 
+	// compute is_exception_class, used by interp to avoid inlining exception handling code
+	if (
+		klass->parent && !m_class_is_valuetype (klass) &&
+		!m_class_is_interface (klass)
+	) {
+		if (klass->parent->is_exception_class)
+			klass->is_exception_class = 1;
+		else if (!strcmp (klass->name, "Exception") && !strcmp(klass->name_space, "System"))
+			klass->is_exception_class = 1;
+	}
+
 	mono_loader_unlock ();
 
 	MONO_PROFILER_RAISE (class_loaded, (klass));
