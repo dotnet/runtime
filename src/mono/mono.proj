@@ -258,7 +258,7 @@ set DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EMSDK_PATH)
       <_EmscriptenPaths>
 import os
 
-emsdk_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+emsdk_path = os.path.dirname(os.path.dirname(os.path.realpath(os.getenv('EM_CONFIG')).replace('\\', '/')))
 
 LLVM_ROOT = emsdk_path + '/bin'
 NODE_JS = emsdk_path + '/node/bin/node'
