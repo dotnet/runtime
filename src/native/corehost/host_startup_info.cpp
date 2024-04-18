@@ -18,8 +18,8 @@ host_startup_info_t::host_startup_info_t(
 // Determine if string is a valid path, and if so then fix up by using fullpath()
 bool get_path_from_argv(pal::string_t *path)
 {
-    // Assume all paths will have at least one separator. We want to detect path vs. file before calling realpath
-    // because realpath will expand a filename into a full path containing the current directory which may be
+    // Assume all paths will have at least one separator. We want to detect path vs. file before calling fullpath
+    // because fullpath will expand a filename into a full path containing the current directory which may be
     // the wrong location when filename ends up being found in %PATH% and not the current directory.
     if (path->find(DIR_SEPARATOR) != pal::string_t::npos)
     {
