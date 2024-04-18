@@ -63,16 +63,31 @@ public static unsafe class UnsafeAccessorsTestsGenerics
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/89439", TestRuntimes.Mono)]
-    public static void Verify_Generic_AccessStaticFieldClass()
+    public static void Verify_Generic_AccessStaticFieldClass_NonGenericMethod()
     {
-        Console.WriteLine($"Running {nameof(Verify_Generic_AccessStaticFieldClass)}");
+        Console.WriteLine($"Running {nameof(Verify_Generic_AccessStaticFieldClass_NonGenericMethod)}");
 
         Assert.Equal(typeof(int).ToString(), GetPrivateStaticFieldInt((MyList<int>)null));
 
         Assert.Equal(typeof(string).ToString(), GetPrivateStaticFieldString((MyList<string>)null));
 
         Assert.Equal(typeof(Struct).ToString(), GetPrivateStaticFieldStruct((MyList<Struct>)null));
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=MyList<int>.StaticFieldName)]
+        extern static ref string GetPrivateStaticFieldInt(MyList<int> d);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=MyList<string>.StaticFieldName)]
+        extern static ref string GetPrivateStaticFieldString(MyList<string> d);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=MyList<Struct>.StaticFieldName)]
+        extern static ref string GetPrivateStaticFieldStruct(MyList<Struct> d);
+    }
+
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/89439", TestRuntimes.Mono)]
+    public static void Verify_Generic_AccessStaticFieldClass_GenericMethod()
+    {
+        Console.WriteLine($"Running {nameof(Verify_Generic_AccessStaticFieldClass_GenericMethod)}");
 
         {
             int expected = 10;
@@ -84,15 +99,6 @@ public static unsafe class UnsafeAccessorsTestsGenerics
             MyList<string>.SetStaticGenericField(expected);
             Assert.Equal(expected, GetPrivateStaticField((MyList<string>)null));
         }
-
-        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=MyList<int>.StaticFieldName)]
-        extern static ref string GetPrivateStaticFieldInt(MyList<int> d);
-
-        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=MyList<string>.StaticFieldName)]
-        extern static ref string GetPrivateStaticFieldString(MyList<string> d);
-
-        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=MyList<Struct>.StaticFieldName)]
-        extern static ref string GetPrivateStaticFieldStruct(MyList<Struct> d);
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=MyList<int>.StaticGenericFieldName)]
         extern static ref V GetPrivateStaticField<V>(MyList<V> d);
@@ -284,7 +290,6 @@ public static unsafe class UnsafeAccessorsTestsGenerics
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/89439", TestRuntimes.Mono)]
     public static void Verify_Generic_GenericTypeNonGenericInstanceMethod()
     {
         Console.WriteLine($"Running {nameof(Verify_Generic_GenericTypeNonGenericInstanceMethod)}");
@@ -358,7 +363,6 @@ public static unsafe class UnsafeAccessorsTestsGenerics
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/89439", TestRuntimes.Mono)]
     public static void Verify_Generic_GenericTypeNonGenericStaticMethod()
     {
         Console.WriteLine($"Running {nameof(Verify_Generic_GenericTypeNonGenericStaticMethod)}");
