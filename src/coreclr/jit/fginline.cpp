@@ -910,6 +910,12 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
             noway_assert(fgMorphStmt->GetRootNode() == call);
             fgMorphStmt->SetRootNode(gtNewNothingNode());
         }
+
+        // Inlinee compiler may have determined call does not return; if so, update this compiler's state.
+        if (call->IsNoReturn())
+        {
+            setMethodHasNoReturnCalls();
+        }
     }
 }
 
@@ -1520,7 +1526,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     }
 
     //
-    // At this point, we have successully inserted inlinee's code.
+    // At this point, we have successfully inserted inlinee's code.
     //
 
     //
@@ -1580,6 +1586,9 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             fgPgoInlineeNoPgo++;
         }
     }
+
+    // Update no-return call count
+    optNoReturnCallCount += InlineeCompiler->optNoReturnCallCount;
 
     // Update optMethodFlags
 

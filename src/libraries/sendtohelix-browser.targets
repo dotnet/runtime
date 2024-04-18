@@ -10,7 +10,7 @@
 
       - In this `wasm.helix.targets` file, add to $(HelixExtensionTargets) to run your custom target
 
-          <PropertyGroup Condition="'$(IsRunningLibraryTests)' == 'true' and '$(Scenario)' == 'WasmTestOnBrowser'">
+          <PropertyGroup Condition="'$(IsRunningLibraryTests)' == 'true' and '$(Scenario)' == 'WasmTestOnChrome'">
             <HelixExtensionTargets>$(HelixExtensionTargets);_AddHelixCrypoItems</HelixExtensionTargets>
 
         - Useful properties to condition on: $(Scenario), $(IsRunningLibraryTests)
@@ -35,7 +35,7 @@
     <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(Scenario)' != ''">$(Scenario)-</WorkItemPrefix>
 
     <IsWasmDebuggerTests Condition="'$(Scenario)' == 'WasmDebuggerTests'">true</IsWasmDebuggerTests>
-    <IsRunningLibraryTests Condition="'$(Scenario)' == 'normal' or '$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'WasmTestOnNodeJS'">true</IsRunningLibraryTests>
+    <IsRunningLibraryTests Condition="'$(Scenario)' == 'normal' or '$(Scenario)' == 'WasmTestOnChrome' or '$(Scenario)' == 'WasmTestOnNodeJS'">true</IsRunningLibraryTests>
 
     <HelixExtensionTargets />
     <PrepareForBuildHelixWorkItems_WasmDependsOn>
@@ -56,7 +56,8 @@
     <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
     <NeedsEMSDK Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">true</NeedsEMSDK>
     <NeedsEMSDKNode Condition="'$(Scenario)' == 'WasmTestOnNodeJS' or '$(Scenario)' == 'BuildWasmApps'">false</NeedsEMSDKNode>
-    <NeedsToRunOnBrowser Condition="'$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnBrowser>
+    <NeedsToRunOnChrome Condition="'$(Scenario)' == 'WasmTestOnChrome' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnChrome>
+    <NeedsToRunOnFirefox Condition="'$(Scenario)' == 'WasmTestOnFirefox'">true</NeedsToRunOnFirefox>
     <NeedsToRunOnV8 Condition="'$(Scenario)' == '' or '$(Scenario)' == 'normal' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnV8>
     <NeedsBuiltNugets Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsBuiltNugets>
 
@@ -91,31 +92,33 @@
 
   <ItemGroup Condition="'$(WindowsShell)' != 'true'">
     <HelixPreCommand Condition="'$(Scenario)' != ''" Include="export SCENARIO=$(Scenario)" />
-    <HelixPreCommand Condition="'$(Scenario)' != 'WasmTestOnBrowser'" Include="export XHARNESS_COMMAND=test" />
-    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnBrowser'" Include="export XHARNESS_COMMAND=test-browser" />
+    <HelixPreCommand Condition="'$(Scenario)' != 'WasmTestOnChrome'" Include="export XHARNESS_COMMAND=test" />
+    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnChrome'" Include="export XHARNESS_COMMAND=test-browser" />
     <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnNodeJS'" Include="export JS_ENGINE=--engine=NodeJS" />
 
     <HelixPreCommand Include="export XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
 
-    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(ChromeDriverDirName):$PATH" />
-    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(ChromeDirName):$PATH" />
-
+    <HelixPreCommand Condition="'$(NeedsToRunOnChrome)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(ChromeDriverDirName):$PATH" />
+    <HelixPreCommand Condition="'$(NeedsToRunOnChrome)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(ChromeDirName):$PATH" />
+    <HelixPreCommand Condition="'$(NeedsToRunOnFirefox)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(GeckoDriverDirName):$PATH" />
+    <HelixPreCommand Condition="'$(NeedsToRunOnFirefox)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(FirefoxDirName):$PATH" />
     <HelixPreCommand Condition="'$(NeedsToRunOnV8)' == 'true'" Include="export V8_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/$(V8DirName)/$(V8BinaryName)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(WindowsShell)' == 'true'">
     <HelixPreCommand Condition="'$(Scenario)' != ''" Include="set SCENARIO=$(Scenario)" />
-    <HelixPreCommand Condition="'$(Scenario)' != 'WasmTestOnBrowser'" Include="set XHARNESS_COMMAND=test" />
-    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnBrowser'" Include="set XHARNESS_COMMAND=test-browser" />
+    <HelixPreCommand Condition="'$(Scenario)' != 'WasmTestOnChrome'" Include="set XHARNESS_COMMAND=test" />
+    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnChrome'" Include="set XHARNESS_COMMAND=test-browser" />
     <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnNodeJS'" Include="set &quot;JS_ENGINE=--engine^=NodeJS&quot;" />
 
     <HelixPreCommand Include="set XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="set XHARNESS_LOG_WITH_TIMESTAMPS=true" />
 
-    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDriverDirName)%3B%PATH%" />
-    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDirName)%3B%PATH%" />
-
+    <HelixPreCommand Condition="'$(NeedsToRunOnChrome)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDriverDirName)%3B%PATH%" />
+    <HelixPreCommand Condition="'$(NeedsToRunOnChrome)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDirName)%3B%PATH%" />
+    <HelixPreCommand Condition="'$(NeedsToRunOnFirefox)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(GeckoDriverDirName)%3B%PATH%" />
+    <HelixPreCommand Condition="'$(NeedsToRunOnFirefox)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(FirefoxDirName)%3B%PATH%" />
     <HelixPreCommand Condition="'$(NeedsToRunOnV8)' == 'true'" Include="set V8_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\$(V8DirName)\$(V8BinaryName)" />
   </ItemGroup>
 
@@ -176,24 +179,25 @@
   <Target Name="PrepareHelixCorrelationPayload_Wasm">
     <Message Condition="'$(NeedsEMSDK)' == 'true' or '$(NeedsEMSDKNode)' == 'true'" Importance="High" Text="Using emsdk: $(EmSdkDirForHelixPayload)" />
 
-    <Error Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome' and !Exists($(ChromeDir))"
+    <Error Condition="'$(NeedsToRunOnChrome)' == 'true' and '$(DebuggerHost)' == 'chrome' and !Exists($(ChromeDir))"
            Text="Could not find chrome at $(ChromeDir)" />
-    <Error Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome' and !Exists($(ChromeDriverDir))"
+    <Error Condition="'$(NeedsToRunOnChrome)' == 'true' and '$(DebuggerHost)' == 'chrome' and !Exists($(ChromeDriverDir))"
            Text="Could not find chromedriver at $(ChromeDriverDir)" />
     <Error Condition="'$(NeedsToRunOnV8)' == 'true' and !Exists($(V8BinaryPath))"
            Text="Could not find v8 at $(V8BinaryPath)" />
-    <Error Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'firefox' and !Exists($(FirefoxDir))"
+    <Error Condition="'$(NeedsToRunOnChrome)' == 'true' and '$(DebuggerHost)' == 'firefox' and !Exists($(FirefoxDir))"
            Text="Could not find firefox at $(FirefoxDir)" />
 
-    <ItemGroup Condition="'$(NeedsToRunOnBrowser)' == 'true'">
-      <HelixCorrelationPayload Condition="'$(DebuggerHost)' == 'chrome'" Include="$(ChromeDir)" />
-      <HelixCorrelationPayload Condition="'$(DebuggerHost)' == 'chrome'" Include="$(ChromeDriverDir)" />
-
-      <HelixCorrelationPayload Condition="'$(WindowsShell)' != 'true' and '$(DebuggerHost)' == 'firefox'" Include="$(FirefoxDir)" />
+    <ItemGroup Condition="'$(NeedsToRunOnChrome)' == 'true'">
+      <HelixCorrelationPayload Include="$(ChromeDir)" />
+      <HelixCorrelationPayload Include="$(ChromeDriverDir)" />
     </ItemGroup>
-
-    <ItemGroup>
-      <HelixCorrelationPayload Condition="'$(NeedsToRunOnV8)' == 'true'" Include="$(V8Dir)" Destination="$(V8DirName)" />
+    <ItemGroup Condition="'$(NeedsToRunOnFirefox)' == 'true'">
+      <HelixCorrelationPayload Include="$(FirefoxDir)" />
+      <HelixCorrelationPayload Include="$(GeckoDriverDir)" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(NeedsToRunOnV8)' == 'true'">
+      <HelixCorrelationPayload Include="$(V8Dir)" Destination="$(V8DirName)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(NeedsEMSDK)' == 'true'">
@@ -222,8 +226,9 @@
 
   <Target Name="_AddWorkItemsForLibraryTests" Condition="'$(IsRunningLibraryTests)' == 'true'">
     <ItemGroup Label="Add samples">
-      <_WasmWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip"     Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
-      <_WasmWorkItem Include="$(TestArchiveRoot)browserornodejs/**/*.zip" Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
+      <_WasmWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip"     Condition="'$(Scenario)' == 'WasmTestOnChrome'" />
+      <_WasmWorkItem Include="$(TestArchiveRoot)chromeonly/**/*.zip"      Condition="'$(Scenario)' == 'WasmTestOnChrome'" />
+      <_WasmWorkItem Include="$(TestArchiveRoot)browserornodejs/**/*.zip" Condition="'$(Scenario)' == 'WasmTestOnChrome'" />
       <_WasmWorkItem Include="$(TestArchiveRoot)browserornodejs/**/*.zip" Condition="'$(Scenario)' == 'WasmTestOnNodeJS'" />
       <_WasmWorkItem Include="$(TestArchiveRoot)nodejsonly/**/*.zip"      Condition="'$(Scenario)' == 'WasmTestOnNodeJS'" />
 
@@ -246,7 +251,7 @@
     <ItemGroup>
       <_WasmSampleZipFile Condition="'$(Scenario)' == 'normal' or '$(Scenario)' == ''" Include="$(TestArchiveRoot)runonly/**/*.Console.V8.*.Sample.zip" />
       <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnNodeJS'"              Include="$(TestArchiveRoot)runonly/**/*.Console.Node.*.Sample.zip" />
-      <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnBrowser'"             Include="$(TestArchiveRoot)runonly/**/*.Browser.*.Sample.zip" />
+      <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnChrome'"             Include="$(TestArchiveRoot)runonly/**/*.Browser.*.Sample.zip" />
 
       <HelixWorkItem Include="@(_WasmSampleZipFile -> '%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>

@@ -1466,7 +1466,6 @@ bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd,
         // Instead, all usages of the SwiftError* parameter will be redirected to this pseudolocal.
         lvaSwiftErrorLocal = lvaGrabTempWithImplicitUse(false DEBUGARG("SwiftError pseudolocal"));
         lvaSetStruct(lvaSwiftErrorLocal, typeHnd, false);
-        lvaSetVarAddrExposed(lvaSwiftErrorLocal DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
         return true;
     }
 
@@ -1805,7 +1804,8 @@ void Compiler::lvaClassifyParameterABI()
     }
     else
 #endif
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM) ||                    \
+    defined(TARGET_RISCV64)
     {
         PlatformClassifier classifier(cInfo);
         lvaClassifyParameterABI(classifier);
