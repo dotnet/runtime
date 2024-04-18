@@ -613,6 +613,23 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop, unsigned lclNum, Sc
     return true;
 }
 
+struct IVUseInfo;
+
+struct IVUseListNode
+{
+    BasicBlock* Block;
+    Statement* Stmt;
+    GenTree* Tree;
+    IVUseListNode* Next;
+    IVUseInfo* Parent;
+};
+
+struct IVUseInfo
+{
+    ScevAddRec* IV;
+    IVUseListNode* Uses;
+};
+
 //------------------------------------------------------------------------
 // optInductionVariables: Try and optimize induction variables in the method.
 //
@@ -647,12 +664,15 @@ PhaseStatus Compiler::optInductionVariables()
     ScalarEvolutionContext scevContext(this);
     JITDUMP("Optimizing induction variables:\n");
     ArrayStack<LocalOccurrence> ivOccurrences(getAllocator(CMK_LoopIVOpts));
+    ArrayStack<IVUseInfo> allIVs(getAllocator(CMK_LoopIVOpts));
+
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
         JITDUMP("Processing ");
         DBEXEC(verbose, FlowGraphNaturalLoop::Dump(loop));
         scevContext.ResetForLoop(loop);
 
+        allIVs.Reset();
         int numWidened = 0;
 
         for (Statement* stmt : loop->GetHeader()->Statements())
@@ -710,11 +730,6 @@ PhaseStatus Compiler::optInductionVariables()
 
                 for (GenTree* tree : stmt->TreeList())
                 {
-                    if (tree->OperIsLocal() && (tree->AsLclVarCommon()->GetLclNum() == lcl->GetLclNum()))
-                    {
-                        continue;
-                    }
-
                     Scev* otherScev = scevContext.Analyze(block, tree);
                     if (otherScev == nullptr)
                     {
@@ -730,6 +745,48 @@ PhaseStatus Compiler::optInductionVariables()
                     JITDUMP("[%06u] => ", dspTreeID(tree));
                     DBEXEC(verbose, otherScev->Dump(this));
                     JITDUMP("\n");
+
+                    IVUseInfo* foundIV = nullptr;
+                    for (int j = 0; j < allIVs.Height(); j++)
+                    {
+                        IVUseInfo& iv = allIVs.BottomRef(j);
+                        if (Scev::Equals(otherScev, allIVs.BottomRef(j).IV))
+                        {
+                            foundIV = &iv;
+                            break;
+                        }
+                    }
+
+                    if (foundIV == nullptr)
+                    {
+                        foundIV = new (this, CMK_LoopIVOpts) IVUseInfo;
+                        foundIV->IV = static_cast<ScevAddRec*>(otherScev);
+                        foundIV->Uses = nullptr;
+                    }
+                    else
+                    {
+                        bool duplicate = false;
+                        for (IVUseListNode* prevUse = foundIV->Uses; prevUse != nullptr; prevUse = prevUse->Next)
+                        {
+                            if (prevUse->Tree == tree)
+                            {
+                                duplicate = true;
+                                break;
+                            }
+                        }
+
+                        if (duplicate)
+                        {
+                            continue;
+                        }
+                    }
+
+                    IVUseListNode* newNode = new (this, CMK_LoopIVOpts) IVUseListNode;
+                    newNode->Block = block;
+                    newNode->Stmt = stmt;
+                    newNode->Tree = tree;
+                    newNode->Next = foundIV->Uses;
+                    newNode->Parent = nullptr;
                 }
             }
 

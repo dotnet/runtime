@@ -67,6 +67,8 @@ struct Scev
 
     bool GetConstantValue(Compiler* comp, int64_t* cns);
 
+    static bool Equals(Scev* left, Scev* right);
+
 #ifdef DEBUG
     void Dump(Compiler* comp);
 #endif

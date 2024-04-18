@@ -196,6 +196,60 @@ void Scev::Dump(Compiler* comp)
 #endif
 
 //------------------------------------------------------------------------
+// Scev::Equals: Check if two SCEV trees are equal.
+//
+// Parameters:
+//   left  - First scev
+//   right - Second scev
+//
+// Returns:
+//   True if they represent the same value; otherwise false.
+//
+bool Scev::Equals(Scev* left, Scev* right)
+{
+    if (left == right)
+    {
+        return true;
+    }
+
+    if ((left->Oper != right->Oper) || (left->Type != right->Type))
+    {
+        return false;
+    }
+
+    switch (left->Oper)
+    {
+        case ScevOper::Constant:
+            return static_cast<ScevConstant*>(left)->Value == static_cast<ScevConstant*>(right)->Value;
+        case ScevOper::Local:
+        {
+            ScevLocal* leftLocal = static_cast<ScevLocal*>(left);
+            ScevLocal* rightLocal = static_cast<ScevLocal*>(right);
+            return (leftLocal->LclNum == rightLocal->LclNum) && (leftLocal->SsaNum == rightLocal->SsaNum);
+        }
+        case ScevOper::ZeroExtend:
+        case ScevOper::SignExtend:
+            return Scev::Equals(static_cast<ScevUnop*>(left)->Op1, static_cast<ScevUnop*>(right)->Op1);
+        case ScevOper::Add:
+        case ScevOper::Mul:
+        case ScevOper::Lsh:
+        {
+            ScevBinop* leftBinop = static_cast<ScevBinop*>(left);
+            ScevBinop* rightBinop = static_cast<ScevBinop*>(right);
+            return Scev::Equals(leftBinop->Op1, rightBinop->Op1) && Scev::Equals(leftBinop->Op2, rightBinop->Op2);
+        }
+        case ScevOper::AddRec:
+        {
+            ScevAddRec* leftAddRec = static_cast<ScevAddRec*>(left);
+            ScevAddRec* rightAddRec = static_cast<ScevAddRec*>(right);
+            return Scev::Equals(leftAddRec->Start, rightAddRec->Start) && Scev::Equals(leftAddRec->Step, rightAddRec->Step);
+        }
+        default:
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------
 // ScalarEvolutionContext: Construct an instance of a context to do scalar evolution in.
 //
 // Parameters:
