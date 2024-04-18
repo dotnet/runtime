@@ -72,14 +72,14 @@ namespace System
             TSignificand ten = TSignificand.CreateTruncating(10);
             if (exponent < TDecimal.MinDecimalExponent)
             {
-                while (unsignedSignificand >= ten)
+                while (unsignedSignificand > TSignificand.Zero && exponent < TDecimal.MinDecimalExponent)
                 {
                     unsignedSignificand /= ten;
                     ++exponent;
                 }
-                if (exponent < TDecimal.MinDecimalExponent)
+                if (unsignedSignificand == TSignificand.Zero)
                 {
-                    throw new OverflowException(TDecimal.OverflowMessage);
+                    return TDecimal.Zero;
                 }
             }
 

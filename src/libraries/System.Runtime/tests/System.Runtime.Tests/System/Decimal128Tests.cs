@@ -42,6 +42,11 @@ namespace System.Tests
             yield return new object[] { (-567.89).ToString(), defaultStyle, null, new Decimal128(-56789, -2) };
             yield return new object[] { "0.666666666666666666666666666666666650000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, new Decimal128(Int128.Parse(new string('6', 34)), -34) };
 
+            yield return new object[] { "0." + new string('0', 6176) + "1", defaultStyle, invariantFormat, new Decimal128(0, 0) };
+            yield return new object[] { "-0." + new string('0', 6176) + "1", defaultStyle, invariantFormat, new Decimal128(0, 0) };
+            yield return new object[] { "0." + new string('0', 6175) + "1", defaultStyle, invariantFormat, new Decimal128(1, -6176) };
+            yield return new object[] { "-0." + new string('0', 6175) + "1", defaultStyle, invariantFormat, new Decimal128(-1, -6176) };
+
             yield return new object[] { emptyFormat.NumberDecimalSeparator + "234", defaultStyle, null, new Decimal128(234, -3) };
             yield return new object[] { "234" + emptyFormat.NumberDecimalSeparator, defaultStyle, null, new Decimal128(234, 0) };
             yield return new object[] { "7" + new string('0', 6144) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, new Decimal128(7, 6144) };
