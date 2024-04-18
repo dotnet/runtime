@@ -10,6 +10,7 @@
     <RunScriptCommand>$(ExecXHarnessCmd) wasm test-browser --app=. --browser=Chrome $(XHarnessBrowserPathArg) $(WasmXHarnessArgs) --html-file=index.html --output-directory=$(XHarnessOutput) -- $(MSBuildProjectName).dll</RunScriptCommand>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <TestArchiveTestsRoot>$(TestArchiveRoot)chromeonly/</TestArchiveTestsRoot>
+    <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
   </PropertyGroup>
 
   <ItemGroup>

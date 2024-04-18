@@ -89,7 +89,7 @@ jobs:
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       scenarios:
-        - normal
+        - WasmTestOnV8
         - WasmTestOnChrome
 
   # this only runs on the extra pipeline
@@ -183,7 +183,7 @@ jobs:
       shouldContinueOnError: ${{ not(parameters.isWasmOnlyBuild) }}
       alwaysRun: ${{ variables.isRollingBuild }}
       scenarios:
-        - normal
+        - WasmTestOnV8
 
   # Hybrid Globalization tests
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
@@ -197,7 +197,7 @@ jobs:
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       alwaysRun: true
       scenarios:
-        - normal
+        - WasmTestOnV8
         - WasmTestOnChrome
         - WasmTestOnNodeJS
 
@@ -214,7 +214,7 @@ jobs:
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       alwaysRun: true
       scenarios:
-        - normal
+        - WasmTestOnV8
         - WasmTestOnChrome
         - WasmTestOnNodeJS
 
@@ -321,4 +321,4 @@ jobs:
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       scenarios:
-        - normal
+        - WasmTestOnV8
