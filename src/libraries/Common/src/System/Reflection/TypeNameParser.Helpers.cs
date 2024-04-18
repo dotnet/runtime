@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using System.Text;
 
 #nullable enable
@@ -11,6 +12,7 @@ namespace System.Reflection
 {
     internal partial struct TypeNameParser
     {
+#if !MONO // Mono never needs unescaped names
         private const char EscapeCharacter = '\\';
 
         /// <summary>
@@ -47,46 +49,7 @@ namespace System.Reflection
 
             return sb.ToString();
         }
-
-        /// <summary>
-        /// Returns non-null array when some unescaping of nested names was required.
-        /// </summary>
-        private static string[]? UnescapeTypeNames(ReadOnlySpan<string> names)
-        {
-            if (names.IsEmpty) // nothing to check
-            {
-                return null;
-            }
-
-            int i = 0;
-            for (; i < names.Length; i++)
-            {
-#if NETCOREAPP
-                if (names[i].Contains(EscapeCharacter))
-#else
-                if (names[i].IndexOf(EscapeCharacter) >= 0)
 #endif
-                {
-                    break;
-                }
-            }
-
-            if (i == names.Length) // nothing to escape
-            {
-                return null;
-            }
-
-            string[] unescapedNames = new string[names.Length];
-            for (int j = 0; j < i; j++)
-            {
-                unescapedNames[j] = names[j]; // copy what not needed escaping
-            }
-            for (; i < names.Length; i++)
-            {
-                unescapedNames[i] = UnescapeTypeName(names[i]); // escape the rest
-            }
-            return unescapedNames;
-        }
 
         private static (string typeNamespace, string name) SplitFullTypeName(string typeName)
         {
@@ -129,10 +92,18 @@ namespace System.Reflection
                 current = typeName;
                 while (current is not null && current.IsNested)
                 {
+#if MONO
                     nestedTypeNames[--nestingDepth] = current.Name;
+#else // CLR, NativeAOT and tools require unescaped nested type names
+                    nestedTypeNames[--nestingDepth] = UnescapeTypeName(current.Name);
+#endif
                     current = current.DeclaringType;
                 }
+#if SYSTEM_PRIVATE_CORELIB
                 string nonNestedParentName = current!.FullName;
+#else // the tools require unescaped names
+                string nonNestedParentName = UnescapeTypeName(current!.FullName);
+#endif
 
                 Type? type = GetType(nonNestedParentName, nestedTypeNames, typeName.AssemblyName, typeName.FullName);
                 return Make(type, typeName);
@@ -158,7 +129,13 @@ namespace System.Reflection
             }
             else
             {
-                Type? type = GetType(typeName.FullName, nestedTypeNames: ReadOnlySpan<string>.Empty, typeName.AssemblyName, typeName.FullName);
+                Type? type = GetType(
+#if SYSTEM_PRIVATE_CORELIB
+                    typeName.FullName,
+#else // the tools require unescaped names
+                    UnescapeTypeName(typeName.FullName),
+#endif
+                    nestedTypeNames: ReadOnlySpan<string>.Empty, typeName.AssemblyName, typeName.FullName);
 
                 return Make(type, typeName);
             }

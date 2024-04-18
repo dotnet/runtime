@@ -171,13 +171,15 @@ namespace System.Reflection
                 }
                 else
                 {
+                    string? unescapedTypeName = UnescapeTypeName(escapedTypeName);
+
                     RuntimeAssemblyInfo? defaultAssembly = null;
                     if (_defaultAssemblyName != null)
                     {
                         defaultAssembly = RuntimeAssemblyInfo.GetRuntimeAssemblyIfExists(RuntimeAssemblyName.Parse(_defaultAssemblyName));
                         if (defaultAssembly != null)
                         {
-                            type = defaultAssembly.GetTypeCore(UnescapeTypeName(escapedTypeName), throwOnError: false, ignoreCase: _ignoreCase);
+                            type = defaultAssembly.GetTypeCore(unescapedTypeName, throwOnError: false, ignoreCase: _ignoreCase);
                         }
                     }
 
@@ -187,7 +189,7 @@ namespace System.Reflection
                         coreLib = (RuntimeAssemblyInfo)typeof(object).Assembly;
                         if (coreLib != assembly)
                         {
-                            type = coreLib.GetTypeCore(UnescapeTypeName(escapedTypeName), throwOnError: false, ignoreCase: _ignoreCase);
+                            type = coreLib.GetTypeCore(unescapedTypeName, throwOnError: false, ignoreCase: _ignoreCase);
                         }
                     }
 
@@ -195,7 +197,7 @@ namespace System.Reflection
                     {
                         if (_throwOnError)
                         {
-                            throw Helpers.CreateTypeLoadException(UnescapeTypeName(escapedTypeName), (defaultAssembly ?? coreLib).FullName);
+                            throw Helpers.CreateTypeLoadException(unescapedTypeName, (defaultAssembly ?? coreLib).FullName);
                         }
                         return null;
                     }
@@ -216,10 +218,9 @@ namespace System.Reflection
                 if (type is null && _ignoreCase && !_extensibleParser)
                 {
                     // Return the first name that matches. Which one gets returned on a multiple match is an implementation detail.
-                    string lowerName = nestedTypeNames[i].ToLowerInvariant();
                     foreach (Type nt in declaringType.GetNestedTypes(BindingFlags.NonPublic | BindingFlags.Public))
                     {
-                        if (nt.Name.ToLowerInvariant() == lowerName)
+                        if (nt.Name.Equals(nestedTypeNames[i], StringComparison.InvariantCultureIgnoreCase))
                         {
                             type = nt;
                             break;
