@@ -29,7 +29,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Constructs an instance from a 32-bit unsigned integer.
         /// </summary>
-        /// <param name="value">The integer vaule.</param>
+        /// <param name="value">The integer value.</param>
         public CULong(uint value)
         {
             _value = (NativeType)value;
@@ -38,7 +38,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Constructs an instance from a native sized unsigned integer.
         /// </summary>
-        /// <param name="value">The integer vaule.</param>
+        /// <param name="value">The integer value.</param>
         /// <exception cref="OverflowException"><paramref name="value"/> is outside the range of the underlying storage type.</exception>
         public CULong(nuint value)
         {
