@@ -19,8 +19,7 @@ namespace System.Security.Cryptography
     /// </remarks>
     public sealed partial class Shake128 : IDisposable
     {
-        // Some platforms have a mutable struct for LiteXof, do not mark this field as readonly.
-        private LiteXof _hashProvider;
+        private readonly LiteXof _hashProvider;
         private bool _disposed;
         private ConcurrencyBlock _block;
         private bool _reading;
