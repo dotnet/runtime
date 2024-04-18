@@ -3483,12 +3483,14 @@ class Generics
 
     class Test99198Regression
     {
-        delegate void Set<T>(ref T t);
+        delegate void Set<T>(ref T t, IFoo ifoo);
 
         interface IFoo
         {
             void Do<T>();
         }
+
+        class Atom { }
 
         struct Foo<T> : IFoo
         {
@@ -3503,10 +3505,30 @@ class Generics
 
         class C<T> where T : IFoo
         {
-            public static void Set(ref T t)
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static void Set(ref T t, IFoo ifoo)
             {
                 t.Do<T>();
+                ifoo.Do<T>();
             }
+        }
+
+        public static void RunDynamic<T>()
+        {
+            static Type GetObject() => typeof(Foo<T>);
+            var s = typeof(C<>).MakeGenericType(GetObject()).GetMethod("Set").CreateDelegate<Set<Foo<T>>>();
+
+            Foo<T> ob = default;
+            IFoo boxed = ob;
+
+            s(ref ob, boxed);
+
+            if (ob.Cookie1 != 42 || ob.Cookie2 != 0)
+                throw new Exception();
+
+            ob = (Foo<T>)boxed;
+            if (ob.Cookie1 != 42 || ob.Cookie2 != 0)
+                throw new Exception();
         }
 
         public static void Run()
@@ -3517,9 +3539,19 @@ class Generics
             var s = typeof(C<>).MakeGenericType(GetObject()).GetMethod("Set").CreateDelegate<Set<Foo<object>>>();
 
             Foo<object> ob = default;
-            s(ref ob);
+            IFoo boxed = ob;
+
+            s(ref ob, boxed);
+
             if (ob.Cookie1 != 42 || ob.Cookie2 != 0)
                 throw new Exception();
+
+            ob = (Foo<object>)boxed;
+            if (ob.Cookie1 != 42 || ob.Cookie2 != 0)
+                throw new Exception();
+
+            static Type GetAtom() => typeof(Atom);
+            typeof(Test99198Regression).GetMethod(nameof(RunDynamic)).MakeGenericMethod(GetAtom()).Invoke(null, []);
         }
     }
 
