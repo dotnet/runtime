@@ -163,16 +163,11 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
-      # SourceBuild Build
+      # Build Portable SourceBuild
       #
-      - template: /eng/pipelines/common/platform-matrix.yml
+      - template: /eng/common/templates/jobs/source-build.yml
         parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: Release
           platforms:
-          - SourceBuild_linux_x64
-          jobParameters:
-            nameSuffix: PortableSourceBuild
-            timeoutInMinutes: 95
-            condition:
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true)
+          - name: Linux_x64
+            targetRid: linux-x64
+            container: SourceBuild_linux_x64

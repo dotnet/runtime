@@ -2951,28 +2951,23 @@ PhaseStatus Compiler::fgIncorporateProfileData()
     {
         // If for some reason we have both block and edge counts, prefer the edge counts.
         //
-        bool dataIsGood = false;
-
         if (haveEdgeCounts)
         {
-            dataIsGood = fgIncorporateEdgeCounts();
+            fgIncorporateEdgeCounts();
         }
         else if (haveBlockCounts)
         {
-            dataIsGood = fgIncorporateBlockCounts();
+            fgIncorporateBlockCounts();
         }
 
-        // If profile incorporation hit fixable problems, run synthesis in blend mode.
+        // We now always run repair, to get consistent initial counts
         //
-        if (fgPgoHaveWeights && !dataIsGood)
-        {
-            JITDUMP("\nIncorporated count data had inconsistencies; repairing profile...\n");
-            ProfileSynthesis::Run(this, ProfileSynthesisOption::RepairLikelihoods);
-        }
+        JITDUMP("\n%sRepairing profile...\n", opts.IsOSR() ? "blending" : "repairing");
+        ProfileSynthesis::Run(this, ProfileSynthesisOption::RepairLikelihoods);
     }
 
 #ifdef DEBUG
-    // Optionally synthesize & blend
+    // Optionally blend and recompute counts.
     //
     if (JitConfig.JitSynthesizeCounts() == 3)
     {
@@ -4262,265 +4257,17 @@ bool Compiler::fgIncorporateEdgeCounts()
     return e.IsGood();
 }
 
-//------------------------------------------------------------------------
-// setEdgeWeightMinChecked: possibly update minimum edge weight
-//
-// Arguments:
-//    newWeight - proposed new weight
-//    bDst - destination block for edge
-//    slop - profile slush fund
-//    wbUsedSlop [out] - true if we tapped into the slush fund
-//
-// Returns:
-//    true if the edge weight was adjusted
-//    false if the edge weight update was inconsistent with the
-//      edge's current [min,max}
-//
-bool FlowEdge::setEdgeWeightMinChecked(weight_t newWeight, BasicBlock* bDst, weight_t slop, bool* wbUsedSlop)
-{
-    // Negative weights are nonsensical.
-    //
-    // If we can't cover the deficit with slop, fail.
-    // If we can, set the new weight to zero.
-    //
-    bool usedSlop = false;
-
-    if (newWeight < BB_ZERO_WEIGHT)
-    {
-        if ((newWeight + slop) < BB_ZERO_WEIGHT)
-        {
-            return false;
-        }
-
-        newWeight = BB_ZERO_WEIGHT;
-        usedSlop  = true;
-    }
-
-    bool result = false;
-
-    if ((newWeight <= m_edgeWeightMax) && (newWeight >= m_edgeWeightMin))
-    {
-        m_edgeWeightMin = newWeight;
-        result          = true;
-    }
-    else if (slop > 0)
-    {
-        // We allow for a small amount of inaccuracy in block weight counts.
-        if (m_edgeWeightMax < newWeight)
-        {
-            // We have already determined that this edge's weight
-            // is less than newWeight, so we just allow for the slop
-            if (newWeight <= (m_edgeWeightMax + slop))
-            {
-                result   = true;
-                usedSlop = true;
-
-                if (m_edgeWeightMax != BB_ZERO_WEIGHT)
-                {
-                    // We will raise m_edgeWeightMin and Max towards newWeight
-                    m_edgeWeightMin = m_edgeWeightMax;
-                    m_edgeWeightMax = newWeight;
-                }
-            }
-        }
-        else if (m_edgeWeightMin > newWeight)
-        {
-            // We have already determined that this edge's weight
-            // is more than newWeight, so we just allow for the slop
-            if ((newWeight + slop) >= m_edgeWeightMin)
-            {
-                result   = true;
-                usedSlop = true;
-
-                if (m_edgeWeightMax != BB_ZERO_WEIGHT)
-                {
-                    // We will lower m_edgeWeightMin towards newWeight
-                    // But not below zero.
-                    //
-                    m_edgeWeightMin = max(BB_ZERO_WEIGHT, newWeight);
-                }
-            }
-        }
-
-        // If we are returning true then we should have adjusted the range so that
-        // the newWeight is in new range [Min..Max] or fgEdgeWeightMax is zero.
-        //
-        if (result)
-        {
-            assert((m_edgeWeightMax == BB_ZERO_WEIGHT) ||
-                   ((newWeight <= m_edgeWeightMax) && (newWeight >= m_edgeWeightMin)));
-        }
-    }
-
-    if (result && usedSlop && (wbUsedSlop != nullptr))
-    {
-        *wbUsedSlop = true;
-    }
-
-#if DEBUG
-    if (result)
-    {
-        JITDUMP("Updated min weight of " FMT_BB " -> " FMT_BB " to [" FMT_WT ".." FMT_WT "]\n", getSourceBlock()->bbNum,
-                bDst->bbNum, m_edgeWeightMin, m_edgeWeightMax);
-    }
-    else
-    {
-        JITDUMP("Not adjusting min weight of " FMT_BB " -> " FMT_BB "; new value " FMT_WT " not in range [" FMT_WT
-                ".." FMT_WT "] (+/- " FMT_WT ")\n",
-                getSourceBlock()->bbNum, bDst->bbNum, newWeight, m_edgeWeightMin, m_edgeWeightMax, slop);
-        result = false; // break here
-    }
-#endif // DEBUG
-
-    return result;
-}
-
-//------------------------------------------------------------------------
-// setEdgeWeightMaxChecked: possibly update maximum edge weight
-//
-// Arguments:
-//    newWeight - proposed new weight
-//    bDst - destination block for edge
-//    slop - profile slush fund
-//    wbUsedSlop [out] - true if we tapped into the slush fund
-//
-// Returns:
-//    true if the edge weight was adjusted
-//    false if the edge weight update was inconsistent with the
-//      edge's current [min,max}
-//
-bool FlowEdge::setEdgeWeightMaxChecked(weight_t newWeight, BasicBlock* bDst, weight_t slop, bool* wbUsedSlop)
-{
-    // Negative weights are nonsensical.
-    //
-    // If we can't cover the deficit with slop, fail.
-    // If we can, set the new weight to zero.
-    //
-    bool usedSlop = false;
-
-    if (newWeight < BB_ZERO_WEIGHT)
-    {
-        if ((newWeight + slop) < BB_ZERO_WEIGHT)
-        {
-            return false;
-        }
-
-        newWeight = BB_ZERO_WEIGHT;
-        usedSlop  = true;
-    }
-
-    bool result = false;
-
-    if ((newWeight >= m_edgeWeightMin) && (newWeight <= m_edgeWeightMax))
-    {
-        m_edgeWeightMax = newWeight;
-        result          = true;
-    }
-    else if (slop > 0)
-    {
-        // We allow for a small amount of inaccuracy in block weight counts.
-        if (m_edgeWeightMax < newWeight)
-        {
-            // We have already determined that this edge's weight
-            // is less than newWeight, so we just allow for the slop
-            if (newWeight <= (m_edgeWeightMax + slop))
-            {
-                result   = true;
-                usedSlop = true;
-
-                if (m_edgeWeightMax != BB_ZERO_WEIGHT)
-                {
-                    // We will allow this to raise m_edgeWeightMax towards newWeight
-                    m_edgeWeightMax = newWeight;
-                }
-            }
-        }
-        else if (m_edgeWeightMin > newWeight)
-        {
-            // We have already determined that this edge's weight
-            // is more than newWeight, so we just allow for the slop
-            if ((newWeight + slop) >= m_edgeWeightMin)
-            {
-                result   = true;
-                usedSlop = true;
-
-                if (m_edgeWeightMax != BB_ZERO_WEIGHT)
-                {
-                    // We will allow this to lower m_edgeWeightMin and Max towards newWeight
-                    m_edgeWeightMax = m_edgeWeightMin;
-                    m_edgeWeightMin = newWeight;
-                }
-            }
-        }
-
-        // If we are returning true then we should have adjusted the range so that
-        // the newWeight is in new range [Min..Max] or fgEdgeWeightMax is zero
-        if (result)
-        {
-            assert((m_edgeWeightMax == BB_ZERO_WEIGHT) ||
-                   ((newWeight <= m_edgeWeightMax) && (newWeight >= m_edgeWeightMin)));
-        }
-    }
-
-    if (result && usedSlop && (wbUsedSlop != nullptr))
-    {
-        *wbUsedSlop = true;
-    }
-
-#if DEBUG
-    if (result)
-    {
-        JITDUMP("Updated max weight of " FMT_BB " -> " FMT_BB " to [" FMT_WT ".." FMT_WT "]\n", getSourceBlock()->bbNum,
-                bDst->bbNum, m_edgeWeightMin, m_edgeWeightMax);
-    }
-    else
-    {
-        JITDUMP("Not adjusting max weight of " FMT_BB " -> " FMT_BB "; new value " FMT_WT " not in range [" FMT_WT
-                ".." FMT_WT "] (+/- " FMT_WT ")\n",
-                getSourceBlock()->bbNum, bDst->bbNum, newWeight, m_edgeWeightMin, m_edgeWeightMax, slop);
-        result = false; // break here
-    }
-#endif // DEBUG
-
-    return result;
-}
-
-//------------------------------------------------------------------------
-// setEdgeWeights: Sets the minimum lower (m_edgeWeightMin) value
-//                  and the maximum upper (m_edgeWeightMax) value
-//                 Asserts that the max value is greater or equal to the min value
-//
-// Arguments:
-//    theMinWeight - the new minimum lower (m_edgeWeightMin)
-//    theMaxWeight - the new maximum upper (m_edgeWeightMin)
-//    bDst         - the destination block for the edge
-//
-void FlowEdge::setEdgeWeights(weight_t theMinWeight, weight_t theMaxWeight, BasicBlock* bDst)
-{
-    assert(theMinWeight <= theMaxWeight);
-    assert(theMinWeight >= 0.0);
-    assert(theMaxWeight >= 0.0);
-
-    JITDUMP("Setting edge weights for " FMT_BB " -> " FMT_BB " to [" FMT_WT " .. " FMT_WT "]\n",
-            getSourceBlock()->bbNum, bDst->bbNum, theMinWeight, theMaxWeight);
-
-    m_edgeWeightMin = theMinWeight;
-    m_edgeWeightMax = theMaxWeight;
-}
-
 //-------------------------------------------------------------
-// fgComputeBlockAndEdgeWeights: determine weights for blocks
-//   and optionally for edges
+// fgComputeBlockWeights: determine weights for blocks
 //
 // Returns:
 //    Suitable phase status
 //
-PhaseStatus Compiler::fgComputeBlockAndEdgeWeights()
+PhaseStatus Compiler::fgComputeBlockWeights()
 {
     const bool usingProfileWeights = fgIsUsingProfileWeights();
     bool       madeChanges         = false;
     fgModified                     = false;
-    fgHaveValidEdgeWeights         = false;
     fgCalledCount                  = BB_UNITY_WEIGHT;
 
 #if DEBUG
@@ -4542,13 +4289,6 @@ PhaseStatus Compiler::fgComputeBlockAndEdgeWeights()
     else
     {
         JITDUMP(" -- no profile data, so using default called count\n");
-    }
-
-    PhaseStatus edgeStatus = fgComputeEdgeWeights();
-
-    if (edgeStatus != PhaseStatus::MODIFIED_NOTHING)
-    {
-        return edgeStatus;
     }
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
@@ -4790,405 +4530,6 @@ bool Compiler::fgComputeCalledCount(weight_t returnWeight)
     return madeChanges;
 }
 
-//-------------------------------------------------------------
-// fgComputeEdgeWeights: compute edge weights from block weights
-//
-// Returns:
-//   Suitable phase status
-//
-PhaseStatus Compiler::fgComputeEdgeWeights()
-{
-    const bool isOptimizing        = opts.OptimizationEnabled();
-    const bool usingProfileWeights = fgIsUsingProfileWeights();
-
-    if (!isOptimizing || !usingProfileWeights)
-    {
-        JITDUMP(" -- not optimizing or no profile data, so not computing edge weights\n");
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
-    BasicBlock* bSrc;
-    BasicBlock* bDst;
-    weight_t    slop;
-    unsigned    goodEdgeCountCurrent     = 0;
-    unsigned    goodEdgeCountPrevious    = 0;
-    bool        inconsistentProfileData  = false;
-    bool        hasIncompleteEdgeWeights = false;
-    bool        usedSlop                 = false;
-    unsigned    numEdges                 = 0;
-    unsigned    iterations               = 0;
-
-    JITDUMP("Initial weight assignments\n\n");
-
-    // Now we will compute the initial m_edgeWeightMin and m_edgeWeightMax values
-    for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->Next())
-    {
-        weight_t bDstWeight = bDst->bbWeight;
-
-        // We subtract out the called count so that bDstWeight is
-        // the sum of all edges that go into this block from this method.
-        //
-        if (bDst == fgFirstBB)
-        {
-            bDstWeight -= fgCalledCount;
-        }
-
-        for (FlowEdge* const edge : bDst->PredEdges())
-        {
-            bool assignOK = true;
-
-            bSrc = edge->getSourceBlock();
-            // We are processing the control flow edge (bSrc -> bDst)
-
-            numEdges++;
-
-            //
-            // If the bSrc or bDst blocks do not have exact profile weights
-            // then we must reset any values that they currently have
-            //
-
-            if (!bSrc->hasProfileWeight() || !bDst->hasProfileWeight())
-            {
-                edge->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT, bDst);
-            }
-
-            slop = BasicBlock::GetSlopFraction(bSrc, bDst) + 1;
-            switch (bSrc->GetKind())
-            {
-                case BBJ_ALWAYS:
-                case BBJ_EHCATCHRET:
-                case BBJ_CALLFINALLY:
-                case BBJ_CALLFINALLYRET:
-                    // We know the exact edge weight
-                    assignOK &= edge->setEdgeWeightMinChecked(bSrc->bbWeight, bDst, slop, &usedSlop);
-                    assignOK &= edge->setEdgeWeightMaxChecked(bSrc->bbWeight, bDst, slop, &usedSlop);
-                    break;
-
-                case BBJ_COND:
-                case BBJ_SWITCH:
-                case BBJ_EHFINALLYRET:
-                case BBJ_EHFAULTRET:
-                case BBJ_EHFILTERRET:
-                    if (edge->edgeWeightMax() > bSrc->bbWeight)
-                    {
-                        // The maximum edge weight to block can't be greater than the weight of bSrc
-                        assignOK &= edge->setEdgeWeightMaxChecked(bSrc->bbWeight, bDst, slop, &usedSlop);
-                    }
-                    break;
-
-                default:
-                    // We should never have an edge that starts from one of these jump kinds
-                    noway_assert(!"Unexpected bbKind");
-                    break;
-            }
-
-            // The maximum edge weight to block can't be greater than the weight of bDst
-            if (edge->edgeWeightMax() > bDstWeight)
-            {
-                assignOK &= edge->setEdgeWeightMaxChecked(bDstWeight, bDst, slop, &usedSlop);
-            }
-
-            if (!assignOK)
-            {
-                // Here we have inconsistent profile data
-                inconsistentProfileData = true;
-                // No point in continuing
-                goto EARLY_EXIT;
-            }
-        }
-    }
-
-    fgEdgeCount = numEdges;
-
-    iterations = 0;
-
-    do
-    {
-        JITDUMP("\nSolver pass %u\n", iterations);
-
-        iterations++;
-        goodEdgeCountPrevious    = goodEdgeCountCurrent;
-        goodEdgeCountCurrent     = 0;
-        hasIncompleteEdgeWeights = false;
-
-        JITDUMP("\n -- step 1 --\n");
-        for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->Next())
-        {
-            for (FlowEdge* const edge : bDst->PredEdges())
-            {
-                bool assignOK = true;
-
-                // We are processing the control flow edge (bSrc -> bDst)
-                bSrc = edge->getSourceBlock();
-
-                slop = BasicBlock::GetSlopFraction(bSrc, bDst) + 1;
-                if (bSrc->KindIs(BBJ_COND))
-                {
-                    weight_t    diff;
-                    FlowEdge*   otherEdge;
-                    BasicBlock* otherDst;
-                    if (bSrc->FalseTargetIs(bDst))
-                    {
-                        otherEdge = bSrc->GetTrueEdge();
-                    }
-                    else
-                    {
-                        otherEdge = bSrc->GetFalseEdge();
-                    }
-                    otherDst = otherEdge->getDestinationBlock();
-
-                    // If we see min/max violations, just give up on the computations
-                    //
-                    const bool edgeWeightSensible      = edge->edgeWeightMin() <= edge->edgeWeightMax();
-                    const bool otherEdgeWeightSensible = otherEdge->edgeWeightMin() <= otherEdge->edgeWeightMax();
-
-                    assignOK &= edgeWeightSensible && otherEdgeWeightSensible;
-
-                    if (assignOK)
-                    {
-                        // Adjust edge->m_edgeWeightMin up or adjust otherEdge->m_edgeWeightMax down
-                        diff = bSrc->bbWeight - (edge->edgeWeightMin() + otherEdge->edgeWeightMax());
-                        if (diff > 0)
-                        {
-                            assignOK &=
-                                edge->setEdgeWeightMinChecked(edge->edgeWeightMin() + diff, bDst, slop, &usedSlop);
-                        }
-                        else if (diff < 0)
-                        {
-                            assignOK &= otherEdge->setEdgeWeightMaxChecked(otherEdge->edgeWeightMax() + diff, otherDst,
-                                                                           slop, &usedSlop);
-                        }
-
-                        // Adjust otherEdge->m_edgeWeightMin up or adjust edge->m_edgeWeightMax down
-                        diff = bSrc->bbWeight - (otherEdge->edgeWeightMin() + edge->edgeWeightMax());
-                        if (diff > 0)
-                        {
-                            assignOK &= otherEdge->setEdgeWeightMinChecked(otherEdge->edgeWeightMin() + diff, otherDst,
-                                                                           slop, &usedSlop);
-                        }
-                        else if (diff < 0)
-                        {
-                            assignOK &=
-                                edge->setEdgeWeightMaxChecked(edge->edgeWeightMax() + diff, bDst, slop, &usedSlop);
-                        }
-                    }
-
-                    if (!assignOK)
-                    {
-                        // Here we have inconsistent profile data
-                        inconsistentProfileData = true;
-                        // No point in continuing
-                        goto EARLY_EXIT;
-                    }
-#ifdef DEBUG
-                    // Now edge->m_edgeWeightMin and otherEdge->m_edgeWeightMax) should add up to bSrc->bbWeight
-                    diff = bSrc->bbWeight - (edge->edgeWeightMin() + otherEdge->edgeWeightMax());
-
-                    if (!((-slop) <= diff) && (diff <= slop))
-                    {
-                        JITDUMP("Edge weight discrepancy: " FMT_BB "[" FMT_WT "] -> {" FMT_BB "[min:" FMT_WT
-                                "], " FMT_BB "[max: " FMT_WT "]} diff " FMT_WT " exceeds slop " FMT_WT "\n",
-                                bSrc->bbNum, bSrc->bbWeight, bDst->bbNum, edge->edgeWeightMin(), otherDst->bbNum,
-                                otherEdge->edgeWeightMax(), diff, slop);
-                    }
-
-                    // Now otherEdge->m_edgeWeightMin and edge->m_edgeWeightMax) should add up to bSrc->bbWeight
-                    diff = bSrc->bbWeight - (otherEdge->edgeWeightMin() + edge->edgeWeightMax());
-                    if (!((-slop) <= diff) && (diff <= slop))
-                    {
-                        JITDUMP("Edge weight discrepancy: " FMT_BB "[" FMT_WT "] -> {" FMT_BB "[max:" FMT_WT
-                                "], " FMT_BB "[min: " FMT_WT "]} diff " FMT_WT " exceeds slop " FMT_WT "\n",
-                                bSrc->bbNum, bSrc->bbWeight, bDst->bbNum, edge->edgeWeightMax(), otherDst->bbNum,
-                                otherEdge->edgeWeightMin(), diff, slop);
-                    }
-#endif // DEBUG
-                }
-            }
-        }
-
-        JITDUMP("\n -- step 2 --\n");
-
-        for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->Next())
-        {
-            weight_t bDstWeight = bDst->bbWeight;
-
-            if (bDstWeight == BB_MAX_WEIGHT)
-            {
-                inconsistentProfileData = true;
-                // No point in continuing
-                goto EARLY_EXIT;
-            }
-            else
-            {
-                // We subtract out the called count so that bDstWeight is
-                // the sum of all edges that go into this block from this method.
-                //
-                if (bDst == fgFirstBB)
-                {
-                    bDstWeight -= fgCalledCount;
-                }
-
-                weight_t minEdgeWeightSum = 0;
-                weight_t maxEdgeWeightSum = 0;
-
-                // Calculate the sums of the minimum and maximum edge weights
-                for (FlowEdge* const edge : bDst->PredEdges())
-                {
-                    maxEdgeWeightSum += edge->edgeWeightMax();
-                    minEdgeWeightSum += edge->edgeWeightMin();
-                }
-
-                // maxEdgeWeightSum is the sum of all m_edgeWeightMax values into bDst
-                // minEdgeWeightSum is the sum of all m_edgeWeightMin values into bDst
-
-                for (FlowEdge* const edge : bDst->PredEdges())
-                {
-                    bool assignOK = true;
-
-                    // We are processing the control flow edge (bSrc -> bDst)
-                    bSrc = edge->getSourceBlock();
-                    slop = BasicBlock::GetSlopFraction(bSrc, bDst) + 1;
-
-                    // otherMaxEdgesWeightSum is the sum of all of the other edges m_edgeWeightMax values
-                    // This can be used to compute a lower bound for our minimum edge weight
-                    //
-                    weight_t const otherMaxEdgesWeightSum = maxEdgeWeightSum - edge->edgeWeightMax();
-
-                    if (otherMaxEdgesWeightSum >= BB_ZERO_WEIGHT)
-                    {
-                        if (bDstWeight >= otherMaxEdgesWeightSum)
-                        {
-                            // minWeightCalc is our minWeight when every other path to bDst takes it's m_edgeWeightMax
-                            // value
-                            weight_t minWeightCalc = (weight_t)(bDstWeight - otherMaxEdgesWeightSum);
-                            if (minWeightCalc > edge->edgeWeightMin())
-                            {
-                                assignOK &= edge->setEdgeWeightMinChecked(minWeightCalc, bDst, slop, &usedSlop);
-                            }
-                        }
-                    }
-
-                    // otherMinEdgesWeightSum is the sum of all of the other edges m_edgeWeightMin values
-                    // This can be used to compute an upper bound for our maximum edge weight
-                    //
-                    weight_t const otherMinEdgesWeightSum = minEdgeWeightSum - edge->edgeWeightMin();
-
-                    if (otherMinEdgesWeightSum >= BB_ZERO_WEIGHT)
-                    {
-                        if (bDstWeight >= otherMinEdgesWeightSum)
-                        {
-                            // maxWeightCalc is our maxWeight when every other path to bDst takes it's m_edgeWeightMin
-                            // value
-                            weight_t maxWeightCalc = (weight_t)(bDstWeight - otherMinEdgesWeightSum);
-                            if (maxWeightCalc < edge->edgeWeightMax())
-                            {
-                                assignOK &= edge->setEdgeWeightMaxChecked(maxWeightCalc, bDst, slop, &usedSlop);
-                            }
-                        }
-                    }
-
-                    if (!assignOK)
-                    {
-                        // Here we have inconsistent profile data
-                        JITDUMP("Inconsistent profile data at " FMT_BB " -> " FMT_BB ": dest weight " FMT_WT
-                                ", min/max into dest is " FMT_WT "/" FMT_WT ", edge " FMT_WT "/" FMT_WT "\n",
-                                bSrc->bbNum, bDst->bbNum, bDstWeight, minEdgeWeightSum, maxEdgeWeightSum,
-                                edge->edgeWeightMin(), edge->edgeWeightMax());
-
-                        inconsistentProfileData = true;
-                        // No point in continuing
-                        goto EARLY_EXIT;
-                    }
-
-                    // When m_edgeWeightMin equals m_edgeWeightMax we have a "good" edge weight
-                    if (edge->edgeWeightMin() == edge->edgeWeightMax())
-                    {
-                        // Count how many "good" edge weights we have
-                        // Each time through we should have more "good" weights
-                        // We exit the while loop when no longer find any new "good" edges
-                        goodEdgeCountCurrent++;
-                    }
-                    else
-                    {
-                        // Remember that we have seen at least one "Bad" edge weight
-                        // so that we will repeat the while loop again
-                        hasIncompleteEdgeWeights = true;
-                    }
-                }
-            }
-        }
-
-        assert(!inconsistentProfileData); // Should use EARLY_EXIT when it is false.
-
-        if (numEdges == goodEdgeCountCurrent)
-        {
-            noway_assert(hasIncompleteEdgeWeights == false);
-            break;
-        }
-
-    } while (hasIncompleteEdgeWeights && (goodEdgeCountCurrent > goodEdgeCountPrevious) && (iterations < 8));
-
-EARLY_EXIT:;
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        if (inconsistentProfileData)
-        {
-            printf("fgComputeEdgeWeights() found inconsistent profile data, not using the edge weights\n");
-        }
-        else
-        {
-            if (hasIncompleteEdgeWeights)
-            {
-                printf("fgComputeEdgeWeights() was able to compute exact edge weights for %3d of the %3d edges, using "
-                       "%d passes.\n",
-                       goodEdgeCountCurrent, numEdges, iterations);
-            }
-            else
-            {
-                printf("fgComputeEdgeWeights() was able to compute exact edge weights for all of the %3d edges, using "
-                       "%d passes.\n",
-                       numEdges, iterations);
-            }
-
-            fgPrintEdgeWeights();
-        }
-    }
-#endif // DEBUG
-
-    fgSlopUsedInEdgeWeights  = usedSlop;
-    fgRangeUsedInEdgeWeights = false;
-
-    // See if any edge weight are expressed in [min..max] form
-
-    for (BasicBlock* const bDst : Blocks())
-    {
-        if (bDst->bbPreds != nullptr)
-        {
-            for (FlowEdge* const edge : bDst->PredEdges())
-            {
-                // This is the control flow edge (edge->getBlock() -> bDst)
-
-                if (edge->edgeWeightMin() != edge->edgeWeightMax())
-                {
-                    fgRangeUsedInEdgeWeights = true;
-                    break;
-                }
-            }
-            if (fgRangeUsedInEdgeWeights)
-            {
-                break;
-            }
-        }
-    }
-
-    fgHaveValidEdgeWeights = !inconsistentProfileData;
-    fgEdgeWeightsComputed  = true;
-
-    return PhaseStatus::MODIFIED_EVERYTHING;
-}
-
 //------------------------------------------------------------------------
 // fgProfileWeightsEqual: check if two profile weights are equal
 //   (or nearly so)
@@ -5227,29 +4568,68 @@ bool Compiler::fgProfileWeightsConsistent(weight_t weight1, weight_t weight2)
     return fgProfileWeightsEqual(relativeDiff, BB_ZERO_WEIGHT);
 }
 
+//------------------------------------------------------------------------
+// fgProfileWeightsConsistentOrSmall: check if two profile weights are within
+//   some small percentage of one another, or are both less than some epsilon.
+//
+// Arguments:
+//   weight1 -- first weight
+//   weight2 -- second weight
+//   epsilon -- small weight threshold
+//
+bool Compiler::fgProfileWeightsConsistentOrSmall(weight_t weight1, weight_t weight2, weight_t epsilon)
+{
+    if (weight2 == BB_ZERO_WEIGHT)
+    {
+        return fgProfileWeightsEqual(weight1, weight2, epsilon);
+    }
+
+    weight_t const delta = fabs(weight2 - weight1);
+
+    if (delta <= epsilon)
+    {
+        return true;
+    }
+
+    weight_t const relativeDelta = delta / weight2;
+
+    return fgProfileWeightsEqual(relativeDelta, BB_ZERO_WEIGHT);
+}
+
 #ifdef DEBUG
 
 //------------------------------------------------------------------------
-// fgDebugCheckProfileWeights: verify profile weights are self-consistent
+// fgDebugCheckProfile: verify profile data on flow graph is self-consistent
 //   (or nearly so)
 //
+// Arguments:
+//   checks -- [optional] phase checks in force
+//
 // Notes:
-//   By default, just checks for each flow edge having likelihood.
+//   Will check full profile or just likelihoods, depending on the phase check arg.
+//
 //   Can be altered via external config.
 //
-void Compiler::fgDebugCheckProfileWeights()
+void Compiler::fgDebugCheckProfile(PhaseChecks checks)
 {
     const bool configEnabled = (JitConfig.JitProfileChecks() >= 0) && fgHaveProfileWeights() && fgPredsComputed;
+
+    assert(checks != PhaseChecks::CHECK_NONE);
 
     if (configEnabled)
     {
         fgDebugCheckProfileWeights((ProfileChecks)JitConfig.JitProfileChecks());
     }
-    else
+    else if (hasFlag(checks, PhaseChecks::CHECK_PROFILE))
     {
-        ProfileChecks checks =
+        ProfileChecks profileChecks = ProfileChecks::CHECK_LIKELY | ProfileChecks::RAISE_ASSERT;
+        fgDebugCheckProfileWeights(profileChecks);
+    }
+    else if (hasFlag(checks, PhaseChecks::CHECK_LIKELIHOODS))
+    {
+        ProfileChecks profileChecks =
             ProfileChecks::CHECK_HASLIKELIHOOD | ProfileChecks::CHECK_LIKELIHOODSUM | ProfileChecks::RAISE_ASSERT;
-        fgDebugCheckProfileWeights(checks);
+        fgDebugCheckProfileWeights(profileChecks);
     }
 }
 
@@ -5280,17 +4660,25 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
     //   and/or
     // new likelihood based weights.
     //
-    const bool verifyClassicWeights = fgEdgeWeightsComputed && hasFlag(checks, ProfileChecks::CHECK_CLASSIC);
-    const bool verifyLikelyWeights  = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
-    const bool verifyHasLikelihood  = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
-    const bool verifyLikelihoodSum  = hasFlag(checks, ProfileChecks::CHECK_LIKELIHOODSUM);
-    const bool assertOnFailure      = hasFlag(checks, ProfileChecks::RAISE_ASSERT);
-    const bool checkAllBlocks       = hasFlag(checks, ProfileChecks::CHECK_ALL_BLOCKS);
+    const bool verifyLikelyWeights = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
+    const bool verifyHasLikelihood = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
+    const bool verifyLikelihoodSum = hasFlag(checks, ProfileChecks::CHECK_LIKELIHOODSUM);
+    const bool assertOnFailure     = hasFlag(checks, ProfileChecks::RAISE_ASSERT) && fgPgoConsistent;
+    const bool checkAllBlocks      = hasFlag(checks, ProfileChecks::CHECK_ALL_BLOCKS);
 
-    if (!(verifyClassicWeights || verifyLikelyWeights || verifyHasLikelihood))
+    if (!verifyLikelyWeights && !verifyHasLikelihood)
     {
         JITDUMP("[profile weight checks disabled]\n");
         return true;
+    }
+
+    if (fgPgoDeferredInconsistency)
+    {
+        // We have a deferred consistency check failure. Just return w/o checking further
+        // We will assert later once we see the method has valid IL.
+        //
+        JITDUMP("[deferred prior check failed -- skipping this check]\n");
+        return false;
     }
 
     JITDUMP("Checking Profile Weights (flags:0x%x)\n", checks);
@@ -5299,6 +4687,7 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
     unsigned profiledBlocks   = 0;
     bool     entryProfiled    = false;
     bool     exitProfiled     = false;
+    bool     hasTry           = false;
     weight_t entryWeight      = 0;
     weight_t exitWeight       = 0;
 
@@ -5315,6 +4704,15 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
         // There is some profile data to check.
         //
         profiledBlocks++;
+
+        // If there is a try region in the method, we won't be able
+        // to reliably verify entry/exit counts.
+        //
+        // Technically this checking will fail only if there's a try that
+        // must be exited via exception, but that's not worth checking for,
+        // either here or in the solver.
+        //
+        hasTry |= block->hasTryIndex();
 
         // Currently using raw counts. Consider using normalized counts instead?
         //
@@ -5342,13 +4740,26 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
 
         // Exit blocks
         //
-        if (block->KindIs(BBJ_RETURN, BBJ_THROW))
+        if (block->KindIs(BBJ_RETURN))
         {
-            if (BasicBlock::sameHndRegion(block, fgFirstBB))
+            exitWeight += blockWeight;
+            exitProfiled   = true;
+            verifyOutgoing = false;
+        }
+        else if (block->KindIs(BBJ_THROW))
+        {
+            bool const isCatchableThrow = block->hasTryIndex();
+
+            if (isCatchableThrow)
+            {
+                assert(hasTry);
+            }
+            else
             {
                 exitWeight += blockWeight;
-                exitProfiled = !opts.IsOSR();
+                exitProfiled = true;
             }
+
             verifyOutgoing = false;
         }
 
@@ -5401,11 +4812,14 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
         }
     }
 
-    // Verify overall input-output balance.
+    // Verify overall entry-exit balance.
     //
-    if (verifyClassicWeights || verifyLikelyWeights)
+    if (verifyLikelyWeights)
     {
-        if (entryProfiled && exitProfiled)
+        // If there's a try, significant weight might pass along exception edges.
+        // We don't model that, and it can throw off entry-exit balance.
+        //
+        if (entryProfiled && exitProfiled && !hasTry)
         {
             // Note these may not agree, if fgEntryBB is a loop header.
             //
@@ -5429,7 +4843,7 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
         {
             JITDUMP("No blocks were profiled, so nothing to check\n");
         }
-        else if (verifyClassicWeights || verifyLikelyWeights)
+        else if (verifyLikelyWeights)
         {
             JITDUMP("Profile is self-consistent (%d profiled blocks, %d unprofiled)\n", profiledBlocks,
                     unprofiledBlocks);
@@ -5448,6 +4862,8 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
         JITDUMP("Profile is NOT self-consistent, found %d problems (%d profiled blocks, %d unprofiled)\n",
                 problemBlocks, profiledBlocks, unprofiledBlocks);
 
+        // Note we only assert when we think the profile data should be consistent.
+        //
         if (assertOnFailure)
         {
             assert(!"Inconsistent profile data");
@@ -5473,31 +4889,31 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
 //
 bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks checks)
 {
-    const bool verifyClassicWeights = fgEdgeWeightsComputed && hasFlag(checks, ProfileChecks::CHECK_CLASSIC);
-    const bool verifyLikelyWeights  = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
-    const bool verifyHasLikelihood  = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
+    const bool verifyLikelyWeights = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
+    const bool verifyHasLikelihood = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
 
-    if (!(verifyClassicWeights || verifyLikelyWeights || verifyHasLikelihood))
+    if (!verifyLikelyWeights && !verifyHasLikelihood)
     {
         return true;
     }
 
     weight_t const blockWeight          = block->bbWeight;
-    weight_t       incomingWeightMin    = 0;
-    weight_t       incomingWeightMax    = 0;
     weight_t       incomingLikelyWeight = 0;
     unsigned       missingLikelyWeight  = 0;
     bool           foundPreds           = false;
+    bool           foundEHPreds         = false;
 
     for (FlowEdge* const predEdge : block->PredEdges())
     {
-        incomingWeightMin += predEdge->edgeWeightMin();
-        incomingWeightMax += predEdge->edgeWeightMax();
         if (predEdge->hasLikelihood())
         {
             if (BasicBlock::sameHndRegion(block, predEdge->getSourceBlock()))
             {
                 incomingLikelyWeight += predEdge->getLikelyWeight();
+            }
+            else
+            {
+                foundEHPreds = true;
             }
         }
         else
@@ -5510,38 +4926,24 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
         foundPreds = true;
     }
 
-    bool classicWeightsValid = true;
-    bool likelyWeightsValid  = true;
-
-    if (foundPreds)
+    // We almost certainly won't get the likelihoods on a BBJ_EHFINALLYRET right,
+    // so special-case BBJ_CALLFINALLYRET incoming flow.
+    //
+    if (block->isBBCallFinallyPairTail())
     {
-        if (verifyClassicWeights)
-        {
-            if (!fgProfileWeightsConsistent(incomingWeightMin, incomingWeightMax))
-            {
-                JITDUMP("  " FMT_BB " - incoming min " FMT_WT " inconsistent with incoming max " FMT_WT "\n",
-                        block->bbNum, incomingWeightMin, incomingWeightMax);
-                classicWeightsValid = false;
-            }
+        incomingLikelyWeight = block->Prev()->bbWeight;
+        foundEHPreds         = false;
+    }
 
-            if (!fgProfileWeightsConsistent(blockWeight, incomingWeightMin))
-            {
-                JITDUMP("  " FMT_BB " - block weight " FMT_WT " inconsistent with incoming min " FMT_WT "\n",
-                        block->bbNum, blockWeight, incomingWeightMin);
-                classicWeightsValid = false;
-            }
+    bool likelyWeightsValid = true;
 
-            if (!fgProfileWeightsConsistent(blockWeight, incomingWeightMax))
-            {
-                JITDUMP("  " FMT_BB " - block weight " FMT_WT " inconsistent with incoming max " FMT_WT "\n",
-                        block->bbNum, blockWeight, incomingWeightMax);
-                classicWeightsValid = false;
-            }
-        }
-
+    // If we have EH preds we may not have consistent incoming flow.
+    //
+    if (foundPreds && !foundEHPreds)
+    {
         if (verifyLikelyWeights)
         {
-            if (!fgProfileWeightsConsistent(blockWeight, incomingLikelyWeight))
+            if (!fgProfileWeightsConsistentOrSmall(blockWeight, incomingLikelyWeight))
             {
                 JITDUMP("  " FMT_BB " - block weight " FMT_WT " inconsistent with incoming likely weight " FMT_WT "\n",
                         block->bbNum, blockWeight, incomingLikelyWeight);
@@ -5560,7 +4962,7 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
         }
     }
 
-    return classicWeightsValid && likelyWeightsValid;
+    return likelyWeightsValid;
 }
 
 //------------------------------------------------------------------------
@@ -5579,17 +4981,15 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
 //
 bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks checks)
 {
-    const bool verifyClassicWeights = fgEdgeWeightsComputed && hasFlag(checks, ProfileChecks::CHECK_CLASSIC);
-    const bool verifyHasLikelihood  = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
-    const bool verifyLikelihoodSum  = hasFlag(checks, ProfileChecks::CHECK_LIKELIHOODSUM);
+    const bool verifyHasLikelihood = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
+    const bool verifyLikelihoodSum = hasFlag(checks, ProfileChecks::CHECK_LIKELIHOODSUM);
 
-    if (!(verifyClassicWeights || verifyHasLikelihood || verifyLikelihoodSum))
+    if (!verifyHasLikelihood && !verifyLikelihoodSum)
     {
         return true;
     }
 
-    bool classicWeightsValid = true;
-    bool likelyWeightsValid  = true;
+    bool likelyWeightsValid = true;
 
     // We want switch targets unified, but not EH edges.
     //
@@ -5598,8 +4998,6 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
     if ((numSuccs > 0) && !block->KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET))
     {
         weight_t const blockWeight        = block->bbWeight;
-        weight_t       outgoingWeightMin  = 0;
-        weight_t       outgoingWeightMax  = 0;
         weight_t       outgoingLikelihood = 0;
 
         // Walk successor edges and add up flow counts.
@@ -5611,9 +5009,6 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
         {
             assert(succEdge != nullptr);
             BasicBlock* succBlock = succEdge->getDestinationBlock();
-
-            outgoingWeightMin += succEdge->edgeWeightMin();
-            outgoingWeightMax += succEdge->edgeWeightMax();
 
             if (succEdge->hasLikelihood())
             {
@@ -5629,32 +5024,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
         if (missingEdges > 0)
         {
             JITDUMP("  " FMT_BB " - missing %d successor edges\n", block->bbNum, missingEdges);
-            classicWeightsValid = false;
-            likelyWeightsValid  = false;
-        }
-
-        if (verifyClassicWeights)
-        {
-            if (!fgProfileWeightsConsistent(outgoingWeightMin, outgoingWeightMax))
-            {
-                JITDUMP("  " FMT_BB " - outgoing min " FMT_WT " inconsistent with outgoing max " FMT_WT "\n",
-                        block->bbNum, outgoingWeightMin, outgoingWeightMax);
-                classicWeightsValid = false;
-            }
-
-            if (!fgProfileWeightsConsistent(blockWeight, outgoingWeightMin))
-            {
-                JITDUMP("  " FMT_BB " - block weight " FMT_WT " inconsistent with outgoing min " FMT_WT "\n",
-                        block->bbNum, blockWeight, outgoingWeightMin);
-                classicWeightsValid = false;
-            }
-
-            if (!fgProfileWeightsConsistent(blockWeight, outgoingWeightMax))
-            {
-                JITDUMP("  " FMT_BB " - block weight " FMT_WT " inconsistent with outgoing max " FMT_WT "\n",
-                        block->bbNum, blockWeight, outgoingWeightMax);
-                classicWeightsValid = false;
-            }
+            likelyWeightsValid = false;
         }
 
         if (verifyHasLikelihood)
@@ -5707,7 +5077,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
         }
     }
 
-    return classicWeightsValid && likelyWeightsValid;
+    return likelyWeightsValid;
 }
 
 #endif // DEBUG

@@ -3300,7 +3300,7 @@ unsigned EEJitManager::InitializeEHEnumeration(const METHODTOKEN& MethodToken, E
     EE_ILEXCEPTION * EHInfo = GetCodeHeader(MethodToken)->GetEHInfo();
 
     pEnumState->iCurrentPos = 0;     // since the EH info is not compressed, the clause number is used to do the enumeration
-    pEnumState->pExceptionClauseArray = NULL;
+    pEnumState->pExceptionClauseArray = 0;
 
     if (!EHInfo)
         return 0;
@@ -4005,7 +4005,7 @@ TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC
     if ((currentPC < pHp->startAddress) ||
         (currentPC > pHp->endAddress))
     {
-        return NULL;
+        return 0;
     }
 
     TADDR base = pHp->mapBase;
@@ -4052,7 +4052,7 @@ TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC
     // previous DWORD, unless we are already on the first DWORD
 
     if (startPos < NIBBLES_PER_DWORD)
-        return NULL;
+        return 0;
 
     startPos = ((startPos >> LOG2_NIBBLES_PER_DWORD) << LOG2_NIBBLES_PER_DWORD) - 1;
 
@@ -4066,7 +4066,7 @@ TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC
     // This helps to catch degenerate error cases. This relies on the fact that
     // startPos cannot ever be bigger than MAX_UINT
     if (((INT_PTR)startPos) < 0)
-        return NULL;
+        return 0;
 
     // Find the nibble with the header in the DWORD
 
@@ -4077,7 +4077,7 @@ TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC
     }
 
     if (startPos == 0 && tmp == 0)
-        return NULL;
+        return 0;
 
     return base + POSOFF2ADDR(startPos, tmp & NIBBLE_MASK);
 }
@@ -4217,12 +4217,12 @@ void GetUnmanagedStackWalkInfo(IN  ULONG64   ControlPc,
 
     if (pModuleBase)
     {
-        *pModuleBase = NULL;
+        *pModuleBase = 0;
     }
 
     if (pFuncEntry)
     {
-        *pFuncEntry = NULL;
+        *pFuncEntry = 0;
     }
 
     PEDecoder peDecoder(DacGlobalBase());
@@ -4246,7 +4246,7 @@ void GetUnmanagedStackWalkInfo(IN  ULONG64   ControlPc,
             COUNT_T cbSize = 0;
             TADDR   pExceptionDir = peDecoder.GetDirectoryEntryData(IMAGE_DIRECTORY_ENTRY_EXCEPTION, &cbSize);
 
-            if (pExceptionDir != NULL)
+            if (pExceptionDir != 0)
             {
                 // Do a binary search on the static function table of mscorwks.dll.
                 HRESULT hr = E_FAIL;
@@ -4320,9 +4320,9 @@ extern "C" void GetRuntimeStackWalkInfo(IN  ULONG64   ControlPc,
     BEGIN_PRESERVE_LAST_ERROR;
 
     if (pModuleBase)
-        *pModuleBase = NULL;
+        *pModuleBase = 0;
     if (pFuncEntry)
-        *pFuncEntry = NULL;
+        *pFuncEntry = 0;
 
     EECodeInfo codeInfo((PCODE)ControlPc);
     if (!codeInfo.IsValid())
@@ -4467,7 +4467,7 @@ PCODE ExecutionManager::GetCodeStartAddress(PCODE currentPC)
 
     EECodeInfo codeInfo(currentPC);
     if (!codeInfo.IsValid())
-        return NULL;
+        return (PCODE)NULL;
     return PINSTRToPCODE(codeInfo.GetStartAddress());
 }
 

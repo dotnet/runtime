@@ -438,6 +438,52 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal(fixedPtr1, fixedPtr2);
         }
 
+        [InlineArray(3)]
+        private struct Byte3
+        {
+            public byte b1;
+        }
+
+        [Fact]
+        public static unsafe void SizeOf()
+        {
+            Assert.Equal(1, RuntimeHelpers.SizeOf(typeof(sbyte).TypeHandle));
+            Assert.Equal(1, RuntimeHelpers.SizeOf(typeof(byte).TypeHandle));
+            Assert.Equal(2, RuntimeHelpers.SizeOf(typeof(short).TypeHandle));
+            Assert.Equal(2, RuntimeHelpers.SizeOf(typeof(ushort).TypeHandle));
+            Assert.Equal(4, RuntimeHelpers.SizeOf(typeof(int).TypeHandle));
+            Assert.Equal(4, RuntimeHelpers.SizeOf(typeof(uint).TypeHandle));
+            Assert.Equal(8, RuntimeHelpers.SizeOf(typeof(long).TypeHandle));
+            Assert.Equal(8, RuntimeHelpers.SizeOf(typeof(ulong).TypeHandle));
+            Assert.Equal(4, RuntimeHelpers.SizeOf(typeof(float).TypeHandle));
+            Assert.Equal(8, RuntimeHelpers.SizeOf(typeof(double).TypeHandle));
+            Assert.Equal(3, RuntimeHelpers.SizeOf(typeof(Byte3).TypeHandle));
+            Assert.Equal(nint.Size, RuntimeHelpers.SizeOf(typeof(void*).TypeHandle));
+            Assert.Equal(nint.Size, RuntimeHelpers.SizeOf(typeof(delegate* <void>).TypeHandle));
+            Assert.Equal(nint.Size, RuntimeHelpers.SizeOf(typeof(int).MakeByRefType().TypeHandle));
+            Assert.Throws<ArgumentNullException>(() => RuntimeHelpers.SizeOf(default));
+            Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.SizeOf(typeof(List<>).TypeHandle));
+            Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.SizeOf(typeof(void).TypeHandle));
+        }
+
+        // We can't even get a RuntimeTypeHandle for a generic parameter type on NativeAOT,
+        // so we don't even get to the method we're testing.
+        // So, let's not even waste time running this test on NativeAOT
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        public static void SizeOfGenericParameter()
+        {
+            Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.SizeOf(typeof(List<>).GetGenericArguments()[0].TypeHandle));
+        }
+
+        // We can't even get a RuntimeTypeHandle for a partially-open-generic type on NativeAOT,
+        // so we don't even get to the method we're testing.
+        // So, let's not even waste time running this test on NativeAOT
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        public static void SizeOfPartiallyOpenGeneric()
+        {
+            Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.SizeOf(typeof(Dictionary<,>).MakeGenericType(typeof(object), typeof(Dictionary<,>).GetGenericArguments()[1]).TypeHandle));
+        }
+
         [Fact]
         public static void BoxPrimitive()
         {
@@ -498,7 +544,7 @@ namespace System.Runtime.CompilerServices.Tests
         {
             int value = 3;
             object result = RuntimeHelpers.Box(ref Unsafe.As<int, byte>(ref value), typeof(GenericStruct<int>).TypeHandle);
-            
+
             Assert.Equal(value, Assert.IsType<GenericStruct<int>>(result).data);
         }
 
@@ -507,7 +553,7 @@ namespace System.Runtime.CompilerServices.Tests
         {
             object value = new();
             object result = RuntimeHelpers.Box(ref Unsafe.As<object, byte>(ref value), typeof(GenericStruct<object>).TypeHandle);
-            
+
             Assert.Same(value, Assert.IsType<GenericStruct<object>>(result).data);
         }
 

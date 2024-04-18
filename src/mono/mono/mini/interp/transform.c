@@ -419,11 +419,12 @@ interp_create_var_explicit (TransformData *td, MonoType *type, int size)
 	if (td->vars_size == td->vars_capacity) {
 		td->vars_capacity *= 2;
 		if (td->vars_capacity == 0)
-			td->vars_capacity = 2;
+			td->vars_capacity = 16;
 		td->vars = (InterpVar*) g_realloc (td->vars, td->vars_capacity * sizeof (InterpVar));
 	}
 	int mt = mono_mint_type (type);
 	InterpVar *local = &td->vars [td->vars_size];
+	// FIXME: We don't need to do this memset unless we realloc'd, since we malloc0 vars initially
 	memset (local, 0, sizeof (InterpVar));
 
 	local->type = type;
@@ -449,6 +450,15 @@ interp_create_dummy_var (TransformData *td)
 	td->dummy_var = interp_create_var_explicit (td, m_class_get_byval_arg (mono_defaults.void_class), 8);
 	td->vars [td->dummy_var].offset = 0;
 	td->vars [td->dummy_var].global = TRUE;
+}
+
+static void
+interp_create_ref_handle_var (TransformData *td)
+{
+	int var = interp_create_var_explicit (td, m_class_get_byval_arg (mono_defaults.int_class), sizeof (gpointer));
+	td->vars [var].global = TRUE;
+	interp_alloc_global_var_offset (td, var);
+	td->ref_handle_var = var;
 }
 
 static int
@@ -3756,6 +3766,10 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		td->last_ins->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (target_method));
 	} else {
 		if (is_delegate_invoke) {
+			// MINT_CALL_DELEGATE will store the delegate object into this slot so it is kept alive
+			// while the method is invoked
+			if (td->ref_handle_var == -1)
+				interp_create_ref_handle_var (td);
 			interp_add_ins (td, MINT_CALL_DELEGATE);
 			interp_ins_set_dreg (td->last_ins, dreg);
 			interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
@@ -4329,15 +4343,18 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	int num_args = sig->hasthis + sig->param_count;
 	int num_il_locals = header->num_locals;
 	int num_locals = num_args + num_il_locals;
+	// HACK: Pre-reserve extra space to reduce the number of times we realloc during codegen, since it's expensive
+	// 64 vars * 72 bytes = 4608 bytes. Many methods need less than this
+	int target_vars_capacity = num_locals + 64;
 
 	imethod->local_offsets = (guint32*)g_malloc (num_il_locals * sizeof(guint32));
-	td->vars = (InterpVar*)g_malloc0 (num_locals * sizeof (InterpVar));
+	td->vars = (InterpVar*)g_malloc0 (target_vars_capacity * sizeof (InterpVar));
 	td->vars_size = num_locals;
-	td->vars_capacity = td->vars_size;
+	td->vars_capacity = target_vars_capacity;
 
-	td->renamable_vars = (InterpRenamableVar*)g_malloc (num_locals * sizeof (InterpRenamableVar));
+	td->renamable_vars = (InterpRenamableVar*)g_malloc (target_vars_capacity * sizeof (InterpRenamableVar));
 	td->renamable_vars_size = 0;
-	td->renamable_vars_capacity = num_locals;
+	td->renamable_vars_capacity = target_vars_capacity;
 	offset = 0;
 
 	/*
@@ -8540,7 +8557,7 @@ interp_mark_ref_slots_for_vt (TransformData *td, int base_offset, MonoClass *kla
 retry:
 		if (mini_type_is_reference (ftype) || ftype->type == MONO_TYPE_I || ftype->type == MONO_TYPE_U || m_type_is_byref (ftype)) {
 			int index = offset / sizeof (gpointer);
-			mono_bitset_set_fast (td->ref_slots, index);
+			mono_bitset_set (td->ref_slots, index);
 			if (td->verbose_level)
 				g_print ("Stack ref slot vt field at off %d\n", offset);
 		} else if (ftype->type == MONO_TYPE_VALUETYPE || ftype->type == MONO_TYPE_GENERICINST) {
@@ -8572,6 +8589,8 @@ interp_mark_ref_slots_for_var (TransformData *td, int var)
 	if (!td->ref_slots || max_index >= td->ref_slots->size) {
 		guint32 old_size = td->ref_slots ? (guint32)td->ref_slots->size : 0;
 		guint32 new_size = old_size ? old_size * 2 : 32;
+		while (new_size <= max_index)
+			new_size *= 2;
 
 		gpointer mem = mono_mempool_alloc0 (td->mempool, mono_bitset_alloc_size (new_size, 0));
 		MonoBitSet *new_ref_slots = mono_bitset_mem_new (mem, new_size, 0);
@@ -8589,7 +8608,7 @@ interp_mark_ref_slots_for_var (TransformData *td, int var)
 		// Managed pointers in interp are normally MONO_TYPE_I
 		if (mini_type_is_reference (type) || type->type == MONO_TYPE_I || type->type == MONO_TYPE_U || m_type_is_byref (type)) {
 			int index = td->vars [var].offset / sizeof (gpointer);
-			mono_bitset_set_fast (td->ref_slots, index);
+			mono_bitset_set (td->ref_slots, index);
 			if (td->verbose_level)
 				g_print ("Stack ref slot at off %d for var %d\n", index * sizeof (gpointer), var);
 		}
@@ -9085,6 +9104,7 @@ retry:
 	td->n_data_items = 0;
 	td->max_data_items = 0;
 	td->dummy_var = -1;
+	td->ref_handle_var = -1;
 	td->data_items = NULL;
 	td->data_hash = g_hash_table_new (NULL, NULL);
 #ifdef ENABLE_EXPERIMENT_TIERED
@@ -9259,6 +9279,11 @@ retry:
 				mono_bitset_set (rtm->ref_slots, offset / sizeof (gpointer));
 		}
 	}
+
+	if (td->ref_handle_var != -1)
+		rtm->ref_slot_offset = td->vars [td->ref_handle_var].offset;
+	else
+		rtm->ref_slot_offset = -1;
 
 	/* Save debug info */
 	interp_save_debug_info (rtm, header, td, td->line_numbers);

@@ -2790,10 +2790,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     fgPgoSource      = ICorJitInfo::PgoSource::Unknown;
     fgPgoHaveWeights = false;
     fgPgoSynthesized = false;
-
-#ifdef DEBUG
-    fgPgoConsistent = false;
-#endif
+    fgPgoConsistent  = false;
 
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
@@ -3031,7 +3028,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         codeGen->setVerbose(true);
     }
 
-    treesBeforeAfterMorph = (JitConfig.TreesBeforeAfterMorph() == 1);
+    treesBeforeAfterMorph = (JitConfig.JitDumpBeforeAfterMorph() == 1);
     morphNum              = 0; // Initialize the morphed-trees counting.
 
     expensiveDebugCheckLevel = JitConfig.JitExpensiveDebugCheckLevel();
@@ -4632,6 +4629,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_IMPORTATION, &Compiler::fgImport);
 
+    // Drop back to just checking profile likelihoods.
+    //
+    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
+    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
+
     // If this is a failed inline attempt, we're done.
     //
     if (compIsForInlining() && compInlineResult->IsFailure())
@@ -4716,6 +4718,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Add any internal blocks/trees we may need
     //
     DoPhase(this, PHASE_MORPH_ADD_INTERNAL, &Compiler::fgAddInternal);
+
+#ifdef SWIFT_SUPPORT
+    // Transform GT_RETURN nodes into GT_SWIFT_ERROR_RET nodes if this method has Swift error handling
+    //
+    DoPhase(this, PHASE_SWIFT_ERROR_RET, &Compiler::fgAddSwiftErrorReturns);
+#endif // SWIFT_SUPPORT
 
     // Remove empty try regions
     //
@@ -4902,9 +4910,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_GS_COOKIE, &Compiler::gsPhase);
 
-    // Compute the block and edge weights
+    // Compute the block weights
     //
-    DoPhase(this, PHASE_COMPUTE_EDGE_WEIGHTS, &Compiler::fgComputeBlockAndEdgeWeights);
+    DoPhase(this, PHASE_COMPUTE_BLOCK_WEIGHTS, &Compiler::fgComputeBlockWeights);
 
     if (UsesFunclets())
     {
@@ -5140,10 +5148,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // update the flowgraph if we modified it during the optimization phase
                 //
                 DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
-
-                // Recompute the edge weight if we have modified the flow graph
-                //
-                DoPhase(this, PHASE_COMPUTE_EDGE_WEIGHTS2, &Compiler::fgComputeEdgeWeights);
             }
 
             // Iterate if requested, resetting annotations first.
@@ -8402,7 +8406,7 @@ void Compiler::compCallArgStats()
 
                 if (call->AsCall()->gtCallThisArg == nullptr)
                 {
-                    if (call->AsCall()->gtCallType == CT_HELPER)
+                    if (call->AsCall()->IsHelperCall())
                     {
                         argHelperCalls++;
                     }
@@ -10913,10 +10917,6 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                 m_simdUserForcesDep++;
                 break;
 
-            case DoNotEnregisterReason::NonStandardParameter:
-                m_nonStandardParameter++;
-                break;
-
             default:
                 unreached();
                 break;
@@ -11044,7 +11044,6 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_returnSpCheck, notEnreg);
     PRINT_STATS(m_callSpCheck, notEnreg);
     PRINT_STATS(m_simdUserForcesDep, notEnreg);
-    PRINT_STATS(m_nonStandardParameter, notEnreg);
 
     fprintf(fout, "\nAddr exposed details:\n");
     if (m_addrExposed == 0)

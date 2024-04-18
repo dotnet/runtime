@@ -932,12 +932,14 @@ public:
         ValueNum vnBound;
         unsigned arrOper;
         ValueNum arrOp;
+        bool     arrOpLHS; // arrOp is on the left side of cmpOp expression
         unsigned cmpOper;
         ValueNum cmpOp;
         CompareCheckedBoundArithInfo()
             : vnBound(NoVN)
             , arrOper(GT_NONE)
             , arrOp(NoVN)
+            , arrOpLHS(false)
             , cmpOper(GT_NONE)
             , cmpOp(NoVN)
         {

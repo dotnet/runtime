@@ -898,7 +898,7 @@ void DynamicMethodDesc::Destroy()
         delete[] pszMethodName;
     }
 
-    if (pSig != NULL)
+    if (pSig != (PCODE)NULL)
     {
         delete[] (BYTE*)pSig;
     }

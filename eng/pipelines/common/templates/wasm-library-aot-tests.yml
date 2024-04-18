@@ -31,7 +31,9 @@ jobs:
       shouldRunSmokeOnly: ${{ parameters.shouldRunSmokeOnly }}
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       scenarios:
+        - ${{ if eq(platform, 'browser_wasm') }}:
+          - WasmTestOnV8
         - ${{ if eq(platform, 'browser_wasm_win') }}:
-          - WasmTestOnBrowser
-        - ${{ if ne(platform, 'browser_wasm_win') }}:
-          - normal
+          - WasmTestOnChrome
+        - ${{ if or(eq(platform, 'wasi_wasm_win'), eq(platform, 'wasi_wasm')) }}:
+          - WasmTestOnWasmtime
