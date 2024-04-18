@@ -48,6 +48,12 @@ namespace System.Net.NetworkInformation.Tests
 
                 _log.WriteLine("SupportsMulticast: " + nic.SupportsMulticast);
                 _log.WriteLine("GetPhysicalAddress(): " + nic.GetPhysicalAddress());
+
+                if (nic.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
+                {
+                    var physicalAddressLength = nic.GetPhysicalAddress().GetAddressBytes().Length;
+                    Assert.True(physicalAddressLength == 0 || physicalAddressLength == 6);
+                }
             }
         }
 
