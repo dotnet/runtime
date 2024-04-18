@@ -88,7 +88,7 @@
                                                  .Replace('{NetCoreAppMaximumVersion}', '$(NetCoreAppMaximumVersion)')
                                                  .Replace('{UseMonoRuntime}','$(UseMonoRuntime)')
                                                  .Replace('{RuntimeIdentifier}','%(TestConsoleApps.TestRuntimeIdentifier)')
-                                                 .Replace('{PublishAot}','$(IsNativeAotTestProject)')
+                                                 .Replace('{PublishAot}','$(RunNativeAotTestApps)')
                                                  .Replace('{ExtraTrimmerArgs}', '%(TestConsoleApps.ExtraTrimmerArgs)')
                                                  .Replace('{AdditionalProperties}', '$(_additionalPropertiesString)')
                                                  .Replace('{ToolsILLinkDir}', '$(ToolsILLinkDir)')
@@ -142,7 +142,7 @@
 
     <MSBuild Projects="@(TestConsoleApps)"
              Targets="Publish"
-             Properties="Configuration=$(Configuration);BuildProjectReferences=false;TargetOS=$(TargetOS);TargetArchitecture=$(TargetArchitecture)" />
+             Properties="Configuration=$(Configuration);BuildProjectReferences=false;TargetOS=$(TargetOS);TargetArchitecture=$(TargetArchitecture);_IsPublishing=true" />
   </Target>
 
   <Target Name="ExecuteApplications"
