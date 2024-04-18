@@ -452,6 +452,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
         }
 
         GCHandle keepObject = GCHandle.Alloc(this);
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} GC Handle allocated, will read from acceptQueue");
+        }
         try
         {
             QuicStream stream = await _acceptQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
@@ -561,6 +565,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
     private unsafe int HandleEventPeerStreamStarted(ref PEER_STREAM_STARTED_DATA data)
     {
         QuicStream stream = new QuicStream(_handle, data.Stream, data.Flags, _defaultStreamErrorCode);
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} Stream object has been created {stream}");
+        }
         if (!_acceptQueue.Writer.TryWrite(stream))
         {
             if (NetEventSource.Log.IsEnabled())
@@ -570,6 +578,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
             stream.Dispose();
             return QUIC_STATUS_SUCCESS;
+        }
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} Stream has been enqueued to the _acceptQueue {stream}");
         }
 
         data.Flags |= QUIC_STREAM_OPEN_FLAGS.DELAY_ID_FC_UPDATES;
