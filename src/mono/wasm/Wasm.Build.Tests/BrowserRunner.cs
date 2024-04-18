@@ -22,7 +22,7 @@ internal class BrowserRunner : IAsyncDisposable
     private static readonly Lazy<string> s_chromePath = new(() =>
     {
         string artifactsBinDir = Path.Combine(Path.GetDirectoryName(typeof(BuildTestBase).Assembly.Location)!, "..", "..", "..", "..");
-        return BrowserLocator.FindChrome(artifactsBinDir, "BROWSER_PATH_FOR_TESTS");
+        return BrowserLocator.FindChrome(artifactsBinDir, "CHROME_PATH_FOR_TESTS");
     });
 
     public IPlaywright? Playwright { get; private set; }

@@ -1831,8 +1831,7 @@ void CodeGen::genGenerateMachineCode()
 
         if (compiler->fgHaveProfileWeights())
         {
-            printf("; with %s: edge weights are %s, and fgCalledCount is " FMT_WT "\n",
-                   compiler->compGetPgoSourceName(), compiler->fgHaveValidEdgeWeights ? "valid" : "invalid",
+            printf("; with %s: fgCalledCount is " FMT_WT "\n", compiler->compGetPgoSourceName(),
                    compiler->fgCalledCount);
         }
 

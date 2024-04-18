@@ -4528,13 +4528,6 @@ AppDomain::RaiseAssemblyResolveEvent(
     }
     GCPROTECT_END();
 
-    if (pAssembly != NULL)
-    {
-        // Check that the public key token matches the one specified in the spec
-        // MatchPublicKeys throws as appropriate
-        pSpec->MatchPublicKeys(pAssembly);
-    }
-
     RETURN pAssembly;
 } // AppDomain::RaiseAssemblyResolveEvent
 
