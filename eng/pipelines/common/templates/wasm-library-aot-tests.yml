@@ -32,7 +32,7 @@ jobs:
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       scenarios:
         - ${{ if eq(platform, 'browser_wasm') }}:
-          - normal
+          - WasmTestOnV8
         - ${{ if eq(platform, 'browser_wasm_win') }}:
           - WasmTestOnChrome
         - ${{ if or(eq(platform, 'wasi_wasm_win'), eq(platform, 'wasi_wasm')) }}:
