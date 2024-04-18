@@ -642,6 +642,7 @@ public:
     bool IsExposedObjectLive();
 
 #ifndef DACCESS_COMPILE
+    bool InsertObjectIntoFieldWithLifetimeOfCollectibleLoaderAllocator(OBJECTREF value, Object** pField);
     LOADERHANDLE AllocateHandle(OBJECTREF value);
 
     void SetHandleValue(LOADERHANDLE handle, OBJECTREF value);
@@ -953,6 +954,41 @@ public:
 };
 
 typedef VPTR(AssemblyLoaderAllocator) PTR_AssemblyLoaderAllocator;
+
+#ifndef DACCESS_COMPILE
+class LOADERHANDLEHolder
+{
+    LOADERHANDLE _handle;
+    LoaderAllocator* _pLoaderAllocator;
+
+public:
+
+    LOADERHANDLEHolder(LOADERHANDLE handle, LoaderAllocator* pLoaderAllocator)
+    {
+        _handle = handle;
+        _pLoaderAllocator = pLoaderAllocator;
+        _ASSERTE(_pLoaderAllocator != NULL);
+    }
+
+    LOADERHANDLEHolder(const LOADERHANDLEHolder&) = delete;
+
+    LOADERHANDLE GetValue() const
+    {
+        return _handle;
+    }
+
+    void SuppressRelease()
+    {
+        _pLoaderAllocator = NULL;
+    }
+
+    ~LOADERHANDLEHolder()
+    {
+        if (_pLoaderAllocator != NULL)
+            _pLoaderAllocator->FreeHandle(_handle);
+    }
+};
+#endif
 
 #include "loaderallocator.inl"
 
