@@ -276,6 +276,32 @@ namespace System.Reflection.Emit.Tests
             implType.CreateType(); // succeeds
         }
 
+        public interface IConstructable<T>
+        {
+            static abstract T Create(int value);
+        }
+
+        [Fact]
+        public void DefineMethodOverride_ImplementStaticAbstractMethodOfGenericInterface()
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeBuilder);
+            Type intfType = typeof(IConstructable<>).MakeGenericType(typeBuilder);
+            typeBuilder.AddInterfaceImplementation(intfType);
+            ConstructorBuilder ctor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, [typeof(int)]);
+            var il = ctor.GetILGenerator();
+            il.Emit(OpCodes.Ret);
+
+            MethodBuilder impl = typeBuilder.DefineMethod("Create", MethodAttributes.Public | MethodAttributes.Static, typeBuilder, [typeof(int)]);
+            il = impl.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Call, ctor);
+            il.Emit(OpCodes.Ret);
+
+            MethodInfo intfMethod = TypeBuilder.GetMethod(intfType, typeof(IConstructable<>).GetMethod("Create")!)!;
+            typeBuilder.DefineMethodOverride(impl, intfMethod);
+            typeBuilder.CreateType(); // should succeed
+        }
+
         [Fact]
         public void TypeBuilderImplementsGenericInterfaceWithTypeBuilderGenericConstraint()
         {
