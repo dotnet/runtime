@@ -19,14 +19,14 @@ public class DataDescriptorModel
     public string Baseline { get; }
     public IReadOnlyDictionary<string, TypeModel> Types { get; }
     public IReadOnlyDictionary<string, GlobalModel> Globals { get; }
-    public IReadOnlyDictionary<string, ContractModel> Contracts { get; }
+    public IReadOnlyDictionary<string, int> Contracts { get; }
     [JsonIgnore]
     public uint PlatformFlags { get; }
     // The number of indirect globals plus 1 for the placeholder at index 0
     [JsonIgnore]
     public int PointerDataCount => 1 + Globals.Values.Count(g => g.Value.Indirect);
 
-    private DataDescriptorModel(string baseline, IReadOnlyDictionary<string, TypeModel> types, IReadOnlyDictionary<string, GlobalModel> globals, IReadOnlyDictionary<string, ContractModel> contracts, uint platformFlags)
+    private DataDescriptorModel(string baseline, IReadOnlyDictionary<string, TypeModel> types, IReadOnlyDictionary<string, GlobalModel> globals, IReadOnlyDictionary<string, int> contracts, uint platformFlags)
     {
         Baseline = baseline;
         Types = types;
@@ -65,7 +65,7 @@ public class DataDescriptorModel
         foreach (var (contractName, contract) in Contracts)
         {
             Console.WriteLine($"Contract: {contractName}");
-            Console.WriteLine($"  Version: {contract.Version}");
+            Console.WriteLine($"  Version: {contract}");
         }
     }
 
@@ -171,7 +171,7 @@ public class DataDescriptorModel
         {
             if (_baseline != "empty")
             {
-                throw new InvalidOperationException("TODO: implement baseline parsing");
+                throw new InvalidOperationException("TODO: [cdac] - implement baseline parsing");
             }
         }
 
@@ -196,7 +196,7 @@ public class DataDescriptorModel
                 }
                 globals[globalName] = new GlobalModel { Type = globalBuilder.Type, Value = v.Value };
             }
-            var contracts = new Dictionary<string, ContractModel>();
+            var contracts = new Dictionary<string, int>();
             foreach (var (contractName, contractBuilder) in _contracts)
             {
                 contracts[contractName] = contractBuilder.Build();
@@ -354,12 +354,6 @@ public class DataDescriptorModel
         public GlobalValue Value { get; init; }
     }
 
-    [JsonConverter(typeof(ContractModelJsonConverter))]
-    public readonly struct ContractModel
-    {
-        public int Version { get; init; }
-    }
-
     public class ContractBuilder
     {
         private int? _version;
@@ -380,13 +374,16 @@ public class DataDescriptorModel
             }
         }
 
-        public ContractModel Build()
+        // There is no ContractModel right now because the only info we keep is the version.
+        // As a result it is convenient to use a Dictionary<string,int> for the contracts since
+        // the JSON serialization coincides with what we want.
+        public int Build()
         {
             if (_version == null)
             {
                 throw new InvalidOperationException("Version must be set for contract");
             }
-            return new ContractModel { Version = _version.Value };
+            return _version.Value;
         }
     }
 }

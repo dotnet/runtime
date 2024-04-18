@@ -40,7 +40,7 @@ struct GlobalLiteralSpec
 struct GlobalPointerSpec
 {
     uint32_t Name;
-    uint32_t AuxIndex;
+    uint32_t PointerDataIndex;
 };
 
 #define CONCAT(token1,token2) token1 ## token2
@@ -275,7 +275,7 @@ struct MagicAndBlob BlobDataDescriptor = {
         },
 
         /* .GlobalPointerValues = */ {
-#define CDAC_GLOBAL_POINTER(name,value) { /* .Name = */ GET_GLOBAL_NAME(name), /* .AuxIndex = */ GET_GLOBAL_POINTER_INDEX(name) },
+#define CDAC_GLOBAL_POINTER(name,value) { /* .Name = */ GET_GLOBAL_NAME(name), /* .PointerDataIndex = */ GET_GLOBAL_POINTER_INDEX(name) },
 #include "datadescriptor.h"
         },
 
