@@ -67,16 +67,14 @@ FCIMPL11(FC_BOOL_RET, MetaDataImport::GetMarshalAs,
 }
 FCIMPLEND
 
-MDImpl5(HRESULT, MetaDataImport::GetDefaultValue, mdToken tk, INT64* pDefaultValue, BYTE** pStringValue, INT32* pLength, INT32* pCorElementType)
+FCIMPL6(HRESULT, MetaDataImport::GetDefaultValue, IMDInternalImport* pScope, mdToken tk, INT64* pDefaultValue, BYTE** pStringValue, INT32* pLength, INT32* pCorElementType)
 {
     FCALL_CONTRACT;
 
     HRESULT hr = S_OK;
 
-    IMDInternalImport *_pScope = pScope;
-
     MDDefaultValue value;
-    IfFailGo(_pScope->GetDefaultValue(tk, &value));
+    IfFailGo(pScope->GetDefaultValue(tk, &value));
 
     if (value.m_bType == ELEMENT_TYPE_STRING)
     {
@@ -97,15 +95,13 @@ ErrExit:
 }
 FCIMPLEND
 
-MDImpl3(HRESULT, MetaDataImport::GetCustomAttributeProps, mdCustomAttribute cv, mdToken* ptkType, ConstArray* ppBlob)
+FCIMPL4(HRESULT, MetaDataImport::GetCustomAttributeProps, IMDInternalImport* pScope, mdCustomAttribute cv, mdToken* ptkType, ConstArray* ppBlob)
 {
     FCALL_CONTRACT;
 
     HRESULT hr = S_OK;
-    IMDInternalImport *_pScope = pScope;
-
-    IfFailGo(_pScope->GetCustomAttributeProps(cv, ptkType));
-    IfFailGo(_pScope->GetCustomAttributeAsBlob(cv, (const void **)&ppBlob->m_array, (ULONG *)&ppBlob->m_count));
+    IfFailGo(pScope->GetCustomAttributeProps(cv, ptkType));
+    IfFailGo(pScope->GetCustomAttributeAsBlob(cv, (const void **)&ppBlob->m_array, (ULONG *)&ppBlob->m_count));
 ErrExit:
     return hr;
 }
@@ -115,63 +111,55 @@ FCIMPLEND
 #pragma optimize("y", on)   // Small critical routines, don't put in EBP frame
 #endif
 
-MDImpl1(FC_BOOL_RET, MetaDataImport::IsValidToken, mdToken tk)
+FCIMPL2(FC_BOOL_RET, MetaDataImport::IsValidToken, IMDInternalImport* pScope, mdToken tk)
 {
     FCALL_CONTRACT;
 
-    IMDInternalImport *_pScope = pScope;
-
-    FC_RETURN_BOOL(_pScope->IsValidToken(tk));
+    FC_RETURN_BOOL(pScope->IsValidToken(tk));
 }
 FCIMPLEND
 
-MDImpl3(HRESULT, MetaDataImport::GetClassLayout, mdTypeDef td, DWORD* pdwPackSize, ULONG* pulClassSize)
+FCIMPL4(HRESULT, MetaDataImport::GetClassLayout, IMDInternalImport* pScope, mdTypeDef td, DWORD* pdwPackSize, ULONG* pulClassSize)
 {
     FCALL_CONTRACT;
 
     HRESULT hr = S_OK;
 
+    if (pdwPackSize != NULL)
     {
-        IMDInternalImport *_pScope = pScope;
-
-        if (pdwPackSize != NULL)
+        hr = pScope->GetClassPackSize(td, (ULONG *)pdwPackSize);
+        if (hr == CLDB_E_RECORD_NOTFOUND)
         {
-            hr = _pScope->GetClassPackSize(td, (ULONG *)pdwPackSize);
-            if (hr == CLDB_E_RECORD_NOTFOUND)
-            {
-                *pdwPackSize = 0;
-                hr = S_OK;
-            }
-            IfFailGo(hr);
+            *pdwPackSize = 0;
+            hr = S_OK;
         }
+        IfFailGo(hr);
+    }
 
-        if (pulClassSize != NULL)
+    if (pulClassSize != NULL)
+    {
+        hr = pScope->GetClassTotalSize(td, pulClassSize);
+        if (hr == CLDB_E_RECORD_NOTFOUND)
         {
-            hr = _pScope->GetClassTotalSize(td, pulClassSize);
-            if (hr == CLDB_E_RECORD_NOTFOUND)
-            {
-                *pulClassSize = 0;
-                hr = S_OK;
-            }
-            IfFailGo(hr);
+            *pulClassSize = 0;
+            hr = S_OK;
         }
+        IfFailGo(hr);
     }
 ErrExit:
     return hr;
 }
 FCIMPLEND
 
-MDImpl4(FC_BOOL_RET, MetaDataImport::GetFieldOffset, mdTypeDef td, mdFieldDef target, DWORD* pdwFieldOffset, HRESULT* err)
+FCIMPL5(HRESULT, MetaDataImport::GetFieldOffset, IMDInternalImport* pScope, mdTypeDef td, mdFieldDef target, DWORD* pdwFieldOffset, CLR_BOOL* found)
 {
     FCALL_CONTRACT;
 
     HRESULT hr = S_OK;
-    *err = S_OK;
-    IMDInternalImport *_pScope = pScope;
     MD_CLASS_LAYOUT layout;
-    BOOL retVal = FALSE;
+    *found = FALSE;
 
-    IfFailGo(_pScope->GetClassLayoutInit(td, &layout));
+    IfFailGo(pScope->GetClassLayoutInit(td, &layout));
 
     ULONG cFieldOffset;
     cFieldOffset = layout.m_ridFieldEnd - layout.m_ridFieldCur;
@@ -180,72 +168,65 @@ MDImpl4(FC_BOOL_RET, MetaDataImport::GetFieldOffset, mdTypeDef td, mdFieldDef ta
     {
         mdFieldDef fd;
         ULONG offset;
-        IfFailGo(_pScope->GetClassLayoutNext(&layout, &fd, &offset));
+        IfFailGo(pScope->GetClassLayoutNext(&layout, &fd, &offset));
 
         if (fd == target)
         {
             *pdwFieldOffset = offset;
-            retVal = TRUE;
+            *found = TRUE;
             break;
         }
     }
 ErrExit:
-    if (FAILED(hr))
-    {
-        *err = hr;
-    }
-    FC_RETURN_BOOL(retVal);
+    return hr;
 }
 FCIMPLEND
 
-MDImpl3(HRESULT, MetaDataImport::GetUserString, mdToken tk, BYTE** pszName, ULONG* pCount)
+FCIMPL4(HRESULT, MetaDataImport::GetUserString, IMDInternalImport* pScope, mdToken tk, BYTE** pszName, ULONG* pCount)
 {
     FCALL_CONTRACT;
 
-    IMDInternalImport *_pScope = pScope;
     BOOL bHasExtendedChars;
-
-    return _pScope->GetUserString(tk, pCount, &bHasExtendedChars, (LPCWSTR *)pszName);
+    return pScope->GetUserString(tk, pCount, &bHasExtendedChars, (LPCWSTR *)pszName);
 }
 FCIMPLEND
 
-MDImpl2(HRESULT, MetaDataImport::GetName, mdToken tk, LPCSTR* pszName)
+FCIMPL3(HRESULT, MetaDataImport::GetName, IMDInternalImport* pScope, mdToken tk, LPCSTR* pszName)
 {
     FCALL_CONTRACT;
 
     HRESULT hr = S_OK;
-    IMDInternalImport *_pScope = pScope;
 
     if (TypeFromToken(tk) == mdtMethodDef)
     {
-        hr = _pScope->GetNameOfMethodDef(tk, pszName);
+        hr = pScope->GetNameOfMethodDef(tk, pszName);
     }
     else if (TypeFromToken(tk) == mdtParamDef)
     {
         USHORT seq;
         DWORD attr;
-        hr = _pScope->GetParamDefProps(tk, &seq, &attr, pszName);
+        hr = pScope->GetParamDefProps(tk, &seq, &attr, pszName);
     }
     else if (TypeFromToken(tk) == mdtFieldDef)
     {
-        hr = _pScope->GetNameOfFieldDef(tk, pszName);
+        hr = pScope->GetNameOfFieldDef(tk, pszName);
     }
     else if (TypeFromToken(tk) == mdtProperty)
     {
-        hr = _pScope->GetPropertyProps(tk, pszName, NULL, NULL, NULL);
+        hr = pScope->GetPropertyProps(tk, pszName, NULL, NULL, NULL);
     }
     else if (TypeFromToken(tk) == mdtEvent)
     {
-        hr = _pScope->GetEventProps(tk, pszName, NULL, NULL);
+        hr = pScope->GetEventProps(tk, pszName, NULL, NULL);
     }
     else if (TypeFromToken(tk) == mdtModule)
     {
-        hr = _pScope->GetModuleRefProps(tk, pszName);
+        hr = pScope->GetModuleRefProps(tk, pszName);
     }
     else if (TypeFromToken(tk) == mdtTypeDef)
     {
         LPCSTR szNamespace = NULL;
-        hr = _pScope->GetNameOfTypeDef(tk, pszName, &szNamespace);
+        hr = pScope->GetNameOfTypeDef(tk, pszName, &szNamespace);
     }
     else
     {
@@ -256,46 +237,39 @@ MDImpl2(HRESULT, MetaDataImport::GetName, mdToken tk, LPCSTR* pszName)
 }
 FCIMPLEND
 
-MDImpl2(HRESULT, MetaDataImport::GetNamespace, mdToken tk, LPCSTR* pszName)
+FCIMPL3(HRESULT, MetaDataImport::GetNamespace, IMDInternalImport* pScope, mdToken tk, LPCSTR* pszName)
 {
     FCALL_CONTRACT;
 
-    IMDInternalImport *_pScope = pScope;
     LPCSTR szName = NULL;
-
-    return _pScope->GetNameOfTypeDef(tk, &szName, pszName);
+    return pScope->GetNameOfTypeDef(tk, &szName, pszName);
 }
 FCIMPLEND
 
-MDImpl2(HRESULT, MetaDataImport::GetGenericParamProps, mdToken tk, DWORD* pAttributes)
+FCIMPL3(HRESULT, MetaDataImport::GetGenericParamProps, IMDInternalImport* pScope, mdToken tk, DWORD* pAttributes)
 {
     FCALL_CONTRACT;
 
-    IMDInternalImport *_pScope = pScope;
-
-    return _pScope->GetGenericParamProps(tk, NULL, pAttributes, NULL, NULL, NULL);
+    return pScope->GetGenericParamProps(tk, NULL, pAttributes, NULL, NULL, NULL);
 }
 FCIMPLEND
 
-MDImpl3(HRESULT, MetaDataImport::GetEventProps, mdToken tk, LPCSTR* pszName, INT32 *pdwEventFlags)
+FCIMPL4(HRESULT, MetaDataImport::GetEventProps, IMDInternalImport* pScope, mdToken tk, LPCSTR* pszName, INT32 *pdwEventFlags)
 {
     FCALL_CONTRACT;
 
-    IMDInternalImport *_pScope = pScope;
-
-    return _pScope->GetEventProps(tk, pszName, (DWORD*)pdwEventFlags, NULL);
+    return pScope->GetEventProps(tk, pszName, (DWORD*)pdwEventFlags, NULL);
 }
 FCIMPLEND
 
-MDImpl4(HRESULT, MetaDataImport::GetPInvokeMap, mdToken tk, DWORD* pMappingFlags, LPCSTR* pszImportName, LPCSTR* pszImportDll)
+FCIMPL5(HRESULT, MetaDataImport::GetPInvokeMap, IMDInternalImport* pScope, mdToken tk, DWORD* pMappingFlags, LPCSTR* pszImportName, LPCSTR* pszImportDll)
 {
     FCALL_CONTRACT;
 
     HRESULT hr;
-    IMDInternalImport *_pScope = pScope;
     mdModule tkModule;
 
-    hr = _pScope->GetPinvokeMap(tk, pMappingFlags, pszImportName, &tkModule);
+    hr = pScope->GetPinvokeMap(tk, pMappingFlags, pszImportName, &tkModule);
     if (FAILED(hr))
     {
         *pMappingFlags = 0;
@@ -305,25 +279,24 @@ MDImpl4(HRESULT, MetaDataImport::GetPInvokeMap, mdToken tk, DWORD* pMappingFlags
     }
     else
     {
-        hr = _pScope->GetModuleRefProps(tkModule, pszImportDll);
+        hr = pScope->GetModuleRefProps(tkModule, pszImportDll);
     }
     return hr;
 }
 FCIMPLEND
 
-MDImpl3(HRESULT, MetaDataImport::GetParamDefProps, mdToken tk, INT32* pSequence, INT32* pAttributes)
+FCIMPL4(HRESULT, MetaDataImport::GetParamDefProps, IMDInternalImport* pScope, mdToken tk, INT32* pSequence, INT32* pAttributes)
 {
     FCALL_CONTRACT;
 
     HRESULT hr;
-    IMDInternalImport *_pScope = pScope;
     USHORT usSequence = 0;
 
     // Is this a valid token?
-    if (_pScope->IsValidToken((mdParamDef)tk))
+    if (pScope->IsValidToken((mdParamDef)tk))
     {
         LPCSTR szParamName;
-        hr = _pScope->GetParamDefProps(tk, &usSequence, (DWORD *)pAttributes, &szParamName);
+        hr = pScope->GetParamDefProps(tk, &usSequence, (DWORD *)pAttributes, &szParamName);
     }
     else
     {
@@ -336,34 +309,29 @@ MDImpl3(HRESULT, MetaDataImport::GetParamDefProps, mdToken tk, INT32* pSequence,
 }
 FCIMPLEND
 
-MDImpl2(HRESULT, MetaDataImport::GetFieldDefProps, mdToken tk, INT32 *pdwFieldFlags)
+FCIMPL3(HRESULT, MetaDataImport::GetFieldDefProps, IMDInternalImport* pScope, mdToken tk, INT32 *pdwFieldFlags)
 {
     FCALL_CONTRACT;
 
-    IMDInternalImport *_pScope = pScope;
-
-    return _pScope->GetFieldDefProps(tk, (DWORD *)pdwFieldFlags);
+    return pScope->GetFieldDefProps(tk, (DWORD *)pdwFieldFlags);
 }
 FCIMPLEND
 
-MDImpl4(HRESULT, MetaDataImport::GetPropertyProps, mdToken tk, LPCSTR* pszName, INT32 *pdwPropertyFlags, ConstArray* ppValue)
+FCIMPL5(HRESULT, MetaDataImport::GetPropertyProps, IMDInternalImport* pScope, mdToken tk, LPCSTR* pszName, INT32 *pdwPropertyFlags, ConstArray* ppValue)
 {
     FCALL_CONTRACT;
 
-    IMDInternalImport *_pScope = pScope;
-
-    return _pScope->GetPropertyProps(tk, pszName, (DWORD*)pdwPropertyFlags, (PCCOR_SIGNATURE*)&ppValue->m_array, (ULONG*)&ppValue->m_count);
+    return pScope->GetPropertyProps(tk, pszName, (DWORD*)pdwPropertyFlags, (PCCOR_SIGNATURE*)&ppValue->m_array, (ULONG*)&ppValue->m_count);
  }
  FCIMPLEND
 
-MDImpl2(HRESULT, MetaDataImport::GetFieldMarshal, mdToken tk, ConstArray* ppValue)
+FCIMPL3(HRESULT, MetaDataImport::GetFieldMarshal, IMDInternalImport* pScope, mdToken tk, ConstArray* ppValue)
 {
     FCALL_CONTRACT;
 
     HRESULT hr;
-    IMDInternalImport *_pScope = pScope;
 
-    hr = _pScope->GetFieldMarshal(tk, (PCCOR_SIGNATURE *)&ppValue->m_array, (ULONG *)&ppValue->m_count);
+    hr = pScope->GetFieldMarshal(tk, (PCCOR_SIGNATURE *)&ppValue->m_array, (ULONG *)&ppValue->m_count);
     if (hr == CLDB_E_RECORD_NOTFOUND)
     {
         ppValue->m_array = NULL;
@@ -375,47 +343,40 @@ MDImpl2(HRESULT, MetaDataImport::GetFieldMarshal, mdToken tk, ConstArray* ppValu
 }
 FCIMPLEND
 
-MDImpl2(HRESULT, MetaDataImport::GetSigOfMethodDef, mdToken tk, ConstArray* ppValue)
+FCIMPL3(HRESULT, MetaDataImport::GetSigOfMethodDef, IMDInternalImport* pScope, mdToken tk, ConstArray* ppValue)
 {
     FCALL_CONTRACT;
 
-    IMDInternalImport *_pScope = pScope;
-
-    return _pScope->GetSigOfMethodDef(tk, (ULONG*)&ppValue->m_count, (PCCOR_SIGNATURE *)&ppValue->m_array);
+    return pScope->GetSigOfMethodDef(tk, (ULONG*)&ppValue->m_count, (PCCOR_SIGNATURE *)&ppValue->m_array);
 }
 FCIMPLEND
 
-MDImpl2(HRESULT, MetaDataImport::GetSignatureFromToken, mdToken tk, ConstArray* ppValue)
+FCIMPL3(HRESULT, MetaDataImport::GetSignatureFromToken, IMDInternalImport* pScope, mdToken tk, ConstArray* ppValue)
 {
     FCALL_CONTRACT;
 
-    IMDInternalImport *_pScope = pScope;
-
-    return _pScope->GetSigFromToken(tk, (ULONG*)&ppValue->m_count, (PCCOR_SIGNATURE *)&(ppValue->m_array));
+    return pScope->GetSigFromToken(tk, (ULONG*)&ppValue->m_count, (PCCOR_SIGNATURE *)&(ppValue->m_array));
 }
 FCIMPLEND
 
-MDImpl2(HRESULT, MetaDataImport::GetSigOfFieldDef, mdToken tk, ConstArray* ppValue)
+FCIMPL3(HRESULT, MetaDataImport::GetSigOfFieldDef, IMDInternalImport* pScope, mdToken tk, ConstArray* ppValue)
 {
     FCALL_CONTRACT;
 
-    IMDInternalImport *_pScope = pScope;
-
-    return _pScope->GetSigOfFieldDef(tk, (ULONG*)&ppValue->m_count, (PCCOR_SIGNATURE *)&ppValue->m_array);
+    return pScope->GetSigOfFieldDef(tk, (ULONG*)&ppValue->m_count, (PCCOR_SIGNATURE *)&ppValue->m_array);
 }
 FCIMPLEND
 
-MDImpl2(HRESULT, MetaDataImport::GetParentToken, mdToken tk, mdToken* ptk)
+FCIMPL3(HRESULT, MetaDataImport::GetParentToken, IMDInternalImport* pScope, mdToken tk, mdToken* ptk)
 {
     FCALL_CONTRACT;
 
     HRESULT hr;
-    IMDInternalImport *_pScope = pScope;
 
     switch (TypeFromToken(tk))
     {
     case mdtTypeDef:
-        hr = _pScope->GetNestedClassProps(tk, ptk);
+        hr = pScope->GetNestedClassProps(tk, ptk);
         if (hr == CLDB_E_RECORD_NOTFOUND)
         {
             *ptk = mdTypeDefNil;
@@ -424,7 +385,7 @@ MDImpl2(HRESULT, MetaDataImport::GetParentToken, mdToken tk, mdToken* ptk)
         break;
 
     case mdtGenericParam:
-        hr = _pScope->GetGenericParamProps(tk, NULL, NULL, ptk, NULL, NULL);
+        hr = pScope->GetGenericParamProps(tk, NULL, NULL, ptk, NULL, NULL);
         break;
 
     case mdtMethodDef:
@@ -435,7 +396,7 @@ MDImpl2(HRESULT, MetaDataImport::GetParentToken, mdToken tk, mdToken* ptk)
     case mdtCustomAttribute:
     case mdtEvent:
     case mdtProperty:
-        hr = _pScope->GetParentToken(tk, ptk);
+        hr = pScope->GetParentToken(tk, ptk);
         break;
 
     default:
@@ -447,27 +408,25 @@ MDImpl2(HRESULT, MetaDataImport::GetParentToken, mdToken tk, mdToken* ptk)
 }
 FCIMPLEND
 
-MDImpl1(HRESULT, MetaDataImport::GetScopeProps, GUID* pmvid)
+FCIMPL2(HRESULT, MetaDataImport::GetScopeProps, IMDInternalImport* pScope, GUID* pmvid)
 {
     FCALL_CONTRACT;
 
     LPCSTR szName;
-    IMDInternalImport *_pScope = pScope;
-    return _pScope->GetScopeProps(&szName, pmvid);
+    return pScope->GetScopeProps(&szName, pmvid);
 }
 FCIMPLEND
 
 
-MDImpl2(HRESULT, MetaDataImport::GetMemberRefProps,
+FCIMPL3(HRESULT, MetaDataImport::GetMemberRefProps,
+    IMDInternalImport* pScope,
     mdMemberRef mr,
     ConstArray* ppvSigBlob)
 {
     FCALL_CONTRACT;
 
-    IMDInternalImport *_pScope = pScope;
     LPCSTR szName_Ignore;
-
-    return _pScope->GetNameAndSigOfMemberRef(mr, (PCCOR_SIGNATURE*)&ppvSigBlob->m_array, (ULONG*)&ppvSigBlob->m_count, &szName_Ignore);
+    return pScope->GetNameAndSigOfMemberRef(mr, (PCCOR_SIGNATURE*)&ppvSigBlob->m_array, (ULONG*)&ppvSigBlob->m_count, &szName_Ignore);
 }
 FCIMPLEND
 
@@ -475,15 +434,35 @@ FCIMPLEND
 #pragma optimize("", on)    // restore command line optimization defaults
 #endif
 
-struct ResultMemory final
+class ResultMemory final
 {
-    INT32 length;
-    INT32* alloc;
+    INT32 _length;
+    INT32* _alloc;
+
+public:
+    ResultMemory() = default;
 
     ~ResultMemory()
     {
-        if (alloc != NULL)
-            ::free(alloc);
+        STANDARD_VM_CONTRACT;
+        delete[] _alloc;
+    }
+
+    INT32* AllocateUnmanagedArray(INT32 length)
+    {
+        CONTRACT(INT32*)
+        {
+            THROWS;
+            MODE_PREEMPTIVE;
+            PRECONDITION(_alloc == NULL);
+            POSTCONDITION((length == _length));
+            POSTCONDITION((RETVAL != NULL));
+        }
+        CONTRACT_END;
+
+        _alloc = new INT32[length];
+        _length = length;
+        RETURN _alloc;
     }
 
     void AllocateManagedArray(QCall::ObjectHandleOnStack& longResult)
@@ -492,15 +471,15 @@ struct ResultMemory final
         {
             THROWS;
             MODE_PREEMPTIVE;
-            PRECONDITION(alloc != NULL);
+            PRECONDITION(_alloc != NULL);
         }
         CONTRACTL_END;
 
         {
             GCX_COOP();
-            longResult.Set(AllocatePrimitiveArray(ELEMENT_TYPE_I4, length));
+            longResult.Set(AllocatePrimitiveArray(ELEMENT_TYPE_I4, _length));
             void* p = ((I4Array*)OBJECTREFToObject(longResult.Get()))->GetDirectPointerToNonObjectElements();
-            memcpyNoGCRefs(p, alloc, length * sizeof(INT32));
+            memcpyNoGCRefs(p, _alloc, _length * sizeof(INT32));
         }
     }
 };
@@ -522,24 +501,16 @@ static void* EnsureResultSize(
     CONTRACT_END;
 
     void* p;
-    INT32 resultInBytes;
     if (resultLength <= shortResultLen)
     {
-        resultInBytes = shortResultLen * sizeof(INT32);
         p = shortResult;
     }
     else
     {
         _ASSERTE(resultLength > 0);
-        resultInBytes = resultLength * sizeof(INT32);
-
-        resultMemory.length = resultLength;
-        resultMemory.alloc = (INT32*)::malloc(resultInBytes);
-        if (resultMemory.alloc == NULL)
-            ThrowOutOfMemory();
-        p = resultMemory.alloc;
+        p = resultMemory.AllocateUnmanagedArray(resultLength);
     }
-    ZeroMemory(p, resultInBytes);
+    ZeroMemory(p, (size_t)resultLength * sizeof(INT32));
     RETURN p;
 }
 
@@ -562,17 +533,15 @@ extern "C" void QCALLTYPE MetadataImport_Enum(
 
     BEGIN_QCALL;
 
-    IMDInternalImport *_pScope = pScope;
-
     ResultMemory memory{};
     ULONG resultLength;
     INT32 shortResultLen = *length;
     if (type == mdtTypeDef)
     {
-        IfFailThrow(_pScope->GetCountNestedClasses(tkParent, &resultLength));
+        IfFailThrow(pScope->GetCountNestedClasses(tkParent, &resultLength));
 
         mdTypeDef* arToken = (mdTypeDef*)EnsureResultSize(resultLength, shortResultLen, shortResult, memory);
-        IfFailThrow(_pScope->GetNestedClasses(tkParent, arToken, resultLength, &resultLength));
+        IfFailThrow(pScope->GetNestedClasses(tkParent, arToken, resultLength, &resultLength));
     }
     else if (type == mdtMethodDef && (TypeFromToken(tkParent) == mdtProperty || TypeFromToken(tkParent) == mdtEvent))
     {
@@ -587,7 +556,7 @@ extern "C" void QCALLTYPE MetadataImport_Enum(
         static_assert_no_msg(sizeof(ASSOCIATE_RECORD) == 2 * sizeof(INT32));
 
         ASSOCIATE_RECORD* arAssocRecord = (ASSOCIATE_RECORD*)EnsureResultSize(resultLength, shortResultLen, shortResult, memory);
-        IfFailThrow(_pScope->GetAllAssociates(&hEnum, arAssocRecord, associatesCount));
+        IfFailThrow(pScope->GetAllAssociates(&hEnum, arAssocRecord, associatesCount));
     }
     else
     {
@@ -597,7 +566,7 @@ extern "C" void QCALLTYPE MetadataImport_Enum(
         resultLength = hEnum.EnumGetCount();
 
         mdToken* arToken = (mdToken*)EnsureResultSize(resultLength, shortResultLen, shortResult, memory);
-        for(COUNT_T i = 0; i < resultLength && _pScope->EnumNext(&hEnum, &arToken[i]); i++);
+        for(COUNT_T i = 0; i < resultLength && pScope->EnumNext(&hEnum, &arToken[i]); i++);
     }
 
     // If the result was longer than the short, we need to allocate an array.

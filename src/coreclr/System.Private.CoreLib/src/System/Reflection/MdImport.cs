@@ -207,9 +207,9 @@ namespace System.Reflection
         private readonly IntPtr m_metadataImport2;
         private readonly object? m_keepalive;
 
-        #region Override methods from Object
-        internal static readonly MetadataImport EmptyImport = new MetadataImport(IntPtr.Zero, null);
+        internal static MetadataImport EmptyImport => new MetadataImport(IntPtr.Zero, null);
 
+        #region Override methods from Object
         public override int GetHashCode()
         {
             return HashCode.Combine(m_metadataImport2);
@@ -231,40 +231,46 @@ namespace System.Reflection
 
         #region Static Members
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe Interop.BOOL GetMarshalAs(
+        private static extern unsafe bool GetMarshalAs(
             IntPtr pNativeType,
             int cNativeType,
             out int unmanagedType,
             out int safeArraySubType,
-            out sbyte* safeArrayUserDefinedSubType,
+            out byte* safeArrayUserDefinedSubType,
             out int arraySubType,
             out int sizeParamIndex,
             out int sizeConst,
-            out sbyte* marshalType,
-            out sbyte* marshalCookie,
+            out byte* marshalType,
+            out byte* marshalCookie,
             out int iidParamIndex);
 
         internal static unsafe MarshalAsAttribute GetMarshalAs(ConstArray nativeType, RuntimeModule scope)
         {
-            if (GetMarshalAs(
+            if (!GetMarshalAs(
                     nativeType.Signature,
                     nativeType.Length,
                     out int unmanagedTypeRaw,
                     out int safeArraySubTypeRaw,
-                    out sbyte* safeArrayUserDefinedSubTypeRaw,
+                    out byte* safeArrayUserDefinedSubTypeRaw,
                     out int arraySubTypeRaw,
                     out int sizeParamIndex,
                     out int sizeConst,
-                    out sbyte* marshalTypeRaw,
-                    out sbyte* marshalCookieRaw,
-                    out int iidParamIndex) != Interop.BOOL.TRUE)
+                    out byte* marshalTypeRaw,
+                    out byte* marshalCookieRaw,
+                    out int iidParamIndex))
             {
-                throw new MetadataException(HResults.E_FAIL);
+                throw new BadImageFormatException();
             }
 
-            string? safeArrayUserDefinedTypeName = safeArrayUserDefinedSubTypeRaw == null ? null : new string(safeArrayUserDefinedSubTypeRaw);
-            string? marshalTypeName = marshalTypeRaw == null ? null : new string(marshalTypeRaw);
-            string? marshalCookie = marshalCookieRaw == null ? null : new string(marshalCookieRaw);
+            string? safeArrayUserDefinedTypeName = safeArrayUserDefinedSubTypeRaw == null
+                ? null
+                : Text.Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(safeArrayUserDefinedSubTypeRaw));
+            string? marshalTypeName = marshalTypeRaw == null
+                ? null
+                : Text.Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(marshalTypeRaw));
+            string? marshalCookie = marshalCookieRaw == null
+                ? null
+                : Text.Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(marshalCookieRaw));
 
             RuntimeType? safeArrayUserDefinedType = string.IsNullOrEmpty(safeArrayUserDefinedTypeName) ? null :
                 TypeNameParser.GetTypeReferencedByCustomAttribute(safeArrayUserDefinedTypeName, scope);
@@ -358,13 +364,10 @@ namespace System.Reflection
             out byte* stringMetadataEncoding,
             out int length,
             out int corElementType);
+
         public unsafe string? GetDefaultValue(int mdToken, out long value, out int length, out CorElementType corElementType)
         {
-            int hr = GetDefaultValue(m_metadataImport2, mdToken, out value, out byte* stringMetadataEncoding, out length, out int corElementTypeRaw);
-            if (hr < 0)
-            {
-                throw new BadImageFormatException();
-            }
+            ThrowBadImageExceptionForHR(GetDefaultValue(m_metadataImport2, mdToken, out value, out byte* stringMetadataEncoding, out length, out int corElementTypeRaw));
 
             corElementType = (CorElementType)corElementTypeRaw;
 
@@ -380,55 +383,42 @@ namespace System.Reflection
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe int GetUserString(IntPtr scope, int mdToken, out byte* stringMetadataEncoding, out int length);
+
         public unsafe string? GetUserString(int mdToken)
         {
-            int hr = GetUserString(m_metadataImport2, mdToken, out byte* stringMetadataEncoding, out int length);
-            if (hr < 0)
-            {
-                throw new BadImageFormatException();
-            }
+            ThrowBadImageExceptionForHR(GetUserString(m_metadataImport2, mdToken, out byte* stringMetadataEncoding, out int length));
 
-            // Metadata encoding is always UTF-16LE.
+            // Metadata encoding is always UTF-16LE, but user strings can be leveraged to encode invalid surrogates.
+            // This means we rely on the string's constructor rather than the stricter Encoding.Unicode API.
             return stringMetadataEncoding != null ?
-                Text.Encoding.Unicode.GetString(stringMetadataEncoding, length) :
+                new string((char*)stringMetadataEncoding, 0, length) :
                 null;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe int GetName(IntPtr scope, int mdToken, out byte* name);
+
         public unsafe MdUtf8String GetName(int mdToken)
         {
-            int hr = GetName(m_metadataImport2, mdToken, out byte* name);
-            if (hr < 0)
-            {
-                throw new BadImageFormatException();
-            }
-
+            ThrowBadImageExceptionForHR(GetName(m_metadataImport2, mdToken, out byte* name));
             return new MdUtf8String(name);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe int GetNamespace(IntPtr scope, int mdToken, out byte* namesp);
+
         public unsafe MdUtf8String GetNamespace(int mdToken)
         {
-            int hr = GetNamespace(m_metadataImport2, mdToken, out byte* namesp);
-            if (hr < 0)
-            {
-                throw new BadImageFormatException();
-            }
-
+            ThrowBadImageExceptionForHR(GetNamespace(m_metadataImport2, mdToken, out byte* namesp));
             return new MdUtf8String(namesp);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe int GetEventProps(IntPtr scope, int mdToken, out void* name, out int eventAttributes);
+
         public unsafe void GetEventProps(int mdToken, out void* name, out EventAttributes eventAttributes)
         {
-            int hr = GetEventProps(m_metadataImport2, mdToken, out name, out int eventAttributesRaw);
-            if (hr < 0)
-            {
-                throw new BadImageFormatException();
-            }
+            ThrowBadImageExceptionForHR(GetEventProps(m_metadataImport2, mdToken, out name, out int eventAttributesRaw));
             eventAttributes = (EventAttributes)eventAttributesRaw;
         }
 
@@ -437,11 +427,7 @@ namespace System.Reflection
 
         public void GetFieldDefProps(int mdToken, out FieldAttributes fieldAttributes)
         {
-            int hr = GetFieldDefProps(m_metadataImport2, mdToken, out int fieldAttributesRaw);
-            if (hr < 0)
-            {
-                throw new BadImageFormatException();
-            }
+            ThrowBadImageExceptionForHR(GetFieldDefProps(m_metadataImport2, mdToken, out int fieldAttributesRaw));
             fieldAttributes = (FieldAttributes)fieldAttributesRaw;
         }
 
@@ -450,11 +436,7 @@ namespace System.Reflection
 
         public unsafe void GetPropertyProps(int mdToken, out void* name, out PropertyAttributes propertyAttributes, out ConstArray signature)
         {
-            int hr = GetPropertyProps(m_metadataImport2, mdToken, out name, out int propertyAttributesRaw, out signature);
-            if (hr < 0)
-            {
-                throw new BadImageFormatException();
-            }
+            ThrowBadImageExceptionForHR(GetPropertyProps(m_metadataImport2, mdToken, out name, out int propertyAttributesRaw, out signature));
             propertyAttributes = (PropertyAttributes)propertyAttributesRaw;
         }
 
@@ -463,11 +445,7 @@ namespace System.Reflection
 
         public int GetParentToken(int tkToken)
         {
-            int hr = GetParentToken(m_metadataImport2, tkToken, out int tkParent);
-            if (hr < 0)
-            {
-                throw new BadImageFormatException();
-            }
+            ThrowBadImageExceptionForHR(GetParentToken(m_metadataImport2, tkToken, out int tkParent));
             return tkParent;
         }
 
@@ -476,11 +454,7 @@ namespace System.Reflection
 
         public void GetParamDefProps(int parameterToken, out int sequence, out ParameterAttributes attributes)
         {
-            int hr = GetParamDefProps(m_metadataImport2, parameterToken, out sequence, out int attributesRaw);
-            if (hr < 0)
-            {
-                throw new BadImageFormatException();
-            }
+            ThrowBadImageExceptionForHR(GetParamDefProps(m_metadataImport2, parameterToken, out sequence, out int attributesRaw));
             attributes = (ParameterAttributes)attributesRaw;
         }
 
@@ -491,11 +465,7 @@ namespace System.Reflection
             int genericParameter,
             out GenericParameterAttributes attributes)
         {
-            int hr = GetGenericParamProps(m_metadataImport2, genericParameter, out int attributesRaw);
-            if (hr < 0)
-            {
-                throw new BadImageFormatException();
-            }
+            ThrowBadImageExceptionForHR(GetGenericParamProps(m_metadataImport2, genericParameter, out int attributesRaw));
             attributes = (GenericParameterAttributes)attributesRaw;
         }
 
@@ -504,11 +474,7 @@ namespace System.Reflection
 
         public void GetScopeProps(out Guid mvid)
         {
-            int hr = GetScopeProps(m_metadataImport2, out mvid);
-            if (hr < 0)
-            {
-                throw new BadImageFormatException();
-            }
+            ThrowBadImageExceptionForHR(GetScopeProps(m_metadataImport2, out mvid));
         }
 
         public ConstArray GetMethodSignature(MetadataToken token)
@@ -525,11 +491,7 @@ namespace System.Reflection
         public ConstArray GetSigOfMethodDef(int methodToken)
         {
             ConstArray signature = default;
-            int hr = GetSigOfMethodDef(m_metadataImport2, methodToken, ref signature);
-            if (hr < 0)
-            {
-                throw new BadImageFormatException();
-            }
+            ThrowBadImageExceptionForHR(GetSigOfMethodDef(m_metadataImport2, methodToken, ref signature));
             return signature;
         }
 
@@ -539,11 +501,7 @@ namespace System.Reflection
         public ConstArray GetSignatureFromToken(int token)
         {
             ConstArray signature = default;
-            int hr = GetSignatureFromToken(m_metadataImport2, token, ref signature);
-            if (hr < 0)
-            {
-                throw new BadImageFormatException();
-            }
+            ThrowBadImageExceptionForHR(GetSignatureFromToken(m_metadataImport2, token, ref signature));
             return signature;
         }
 
@@ -552,11 +510,7 @@ namespace System.Reflection
 
         public ConstArray GetMemberRefProps(int memberTokenRef)
         {
-            int hr = GetMemberRefProps(m_metadataImport2, memberTokenRef, out ConstArray signature);
-            if (hr < 0)
-            {
-                throw new BadImageFormatException();
-            }
+            ThrowBadImageExceptionForHR(GetMemberRefProps(m_metadataImport2, memberTokenRef, out ConstArray signature));
             return signature;
         }
 
@@ -571,11 +525,7 @@ namespace System.Reflection
             out int constructorToken,
             out ConstArray signature)
         {
-            int hr = GetCustomAttributeProps(m_metadataImport2, customAttributeToken, out constructorToken, out signature);
-            if (hr < 0)
-            {
-                throw new BadImageFormatException();
-            }
+            ThrowBadImageExceptionForHR(GetCustomAttributeProps(m_metadataImport2, customAttributeToken, out constructorToken, out signature));
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -586,27 +536,23 @@ namespace System.Reflection
             out int packSize,
             out int classSize)
         {
-            int hr = GetClassLayout(m_metadataImport2, typeTokenDef, out packSize, out classSize);
-            if (hr < 0)
-            {
-                throw new BadImageFormatException();
-            }
+            ThrowBadImageExceptionForHR(GetClassLayout(m_metadataImport2, typeTokenDef, out packSize, out classSize));
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool GetFieldOffset(IntPtr scope, int typeTokenDef, int fieldTokenDef, out int offset, out int hr);
+        private static extern int GetFieldOffset(IntPtr scope, int typeTokenDef, int fieldTokenDef, out int offset, out bool found);
 
         public bool GetFieldOffset(
             int typeTokenDef,
             int fieldTokenDef,
             out int offset)
         {
-            bool res = GetFieldOffset(m_metadataImport2, typeTokenDef, fieldTokenDef, out offset, out int hr);
-            if (!res && hr < 0)
+            int hr = GetFieldOffset(m_metadataImport2, typeTokenDef, fieldTokenDef, out offset, out bool found);
+            if (!found && hr < 0)
             {
                 throw new BadImageFormatException();
             }
-            return res;
+            return found;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -615,11 +561,7 @@ namespace System.Reflection
         public ConstArray GetSigOfFieldDef(int fieldToken)
         {
             ConstArray sig = default;
-            int hr = GetSigOfFieldDef(m_metadataImport2, fieldToken, ref sig);
-            if (hr < 0)
-            {
-                throw new BadImageFormatException();
-            }
+            ThrowBadImageExceptionForHR(GetSigOfFieldDef(m_metadataImport2, fieldToken, ref sig));
             return sig;
         }
 
@@ -629,11 +571,7 @@ namespace System.Reflection
         public ConstArray GetFieldMarshal(int fieldToken)
         {
             ConstArray fieldMarshal = default;
-            int hr = GetFieldMarshal(m_metadataImport2, fieldToken, ref fieldMarshal);
-            if (hr < 0)
-            {
-                throw new BadImageFormatException();
-            }
+            ThrowBadImageExceptionForHR(GetFieldMarshal(m_metadataImport2, fieldToken, ref fieldMarshal));
             return fieldMarshal;
         }
 
@@ -641,8 +579,8 @@ namespace System.Reflection
         private static extern unsafe int GetPInvokeMap(IntPtr scope,
             int token,
             out int attributes,
-            out void* importName,
-            out void* importDll);
+            out byte* importName,
+            out byte* importDll);
 
         public unsafe void GetPInvokeMap(
             int token,
@@ -650,14 +588,10 @@ namespace System.Reflection
             out string importName,
             out string importDll)
         {
-            int hr = GetPInvokeMap(m_metadataImport2, token, out int attributesRaw, out void* importNameRaw, out void* importDllRaw);
-            if (hr < 0)
-            {
-                throw new BadImageFormatException();
-            }
+            ThrowBadImageExceptionForHR(GetPInvokeMap(m_metadataImport2, token, out int attributesRaw, out byte* importNameRaw, out byte* importDllRaw));
 
-            importName = new MdUtf8String(importNameRaw).ToString();
-            importDll = new MdUtf8String(importDllRaw).ToString();
+            importName = Text.Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(importNameRaw));
+            importDll = Text.Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(importDllRaw));
             attributes = (PInvokeAttributes)attributesRaw;
         }
 
@@ -669,13 +603,13 @@ namespace System.Reflection
             return IsValidToken(m_metadataImport2, token);
         }
         #endregion
-    }
 
-    internal sealed class MetadataException : Exception
-    {
-        private readonly int m_hr;
-        internal MetadataException(int hr) { m_hr = hr; }
-
-        public override string ToString() => $"{nameof(MetadataException)} HResult = {m_hr:x}.";
+        private static void ThrowBadImageExceptionForHR(int hr)
+        {
+            if (hr < 0)
+            {
+                throw new BadImageFormatException();
+            }
+        }
     }
 }
