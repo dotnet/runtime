@@ -17,7 +17,7 @@ public class GlobalModelJsonConverter : JsonConverter<DataDescriptorModel.Global
     {
         if (value.Type is null)
         {
-            // no type: just writer'value' or '[value]'
+            // no type: just write 'value' or '[value]'
             JsonSerializer.Serialize(writer, value.Value, options);
         }
         else
