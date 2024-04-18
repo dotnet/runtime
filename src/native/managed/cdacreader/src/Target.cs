@@ -17,8 +17,6 @@ public struct TargetPointer
 internal sealed unsafe class Target
 {
     private const int StackAllocByteThreshold = 1024;
-    private static readonly ReadOnlyMemory<byte> MagicLE = new byte[] { 0x44, 0x4e, 0x43, 0x43, 0x44, 0x41, 0x43, 0x00 }; // "DNCCDAC\0"
-    private static readonly ReadOnlyMemory<byte> MagicBE = new byte[] { 0x00, 0x43, 0x41, 0x44, 0x43, 0x43, 0x4e, 0x44 };
 
     private readonly delegate* unmanaged<ulong, byte*, uint, void*, int> _readFromTarget;
     private readonly void* _readContext;
@@ -45,8 +43,10 @@ internal sealed unsafe class Target
             throw new InvalidOperationException("Failed to read magic.");
 
         address += sizeof(ulong);
-        _isLittleEndian = buffer.SequenceEqual(MagicLE.Span);
-        if (!_isLittleEndian && !buffer.SequenceEqual(MagicBE.Span))
+        ReadOnlySpan<byte> magicLE = "DNCCDAC\0"u8;
+        ReadOnlySpan<byte> magicBE = "\0CADCCND"u8;
+        _isLittleEndian = buffer.SequenceEqual(magicLE);
+        if (!_isLittleEndian && !buffer.SequenceEqual(magicBE))
             throw new InvalidOperationException("Invalid magic.");
 
         // Flags - uint32_t
