@@ -228,7 +228,7 @@ int main(int argc, char* argv[])
 #ifdef HAS_ADDRESS_SANITIZER
 // We need to build the bootstrapper as a single object file, to ensure
 // the linker can detect that we have ASAN components early enough in the build.
-// Include our asan support sources for executable projects here to ensure they
+// Include our ASAN support sources for executable projects here to ensure they
 // are compiled into the bootstrapper object.
 #include "minipal/asansupport.cpp"
 #endif // HAS_ADDRESS_SANITIZER
