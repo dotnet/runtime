@@ -12,6 +12,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 #pragma warning disable 8500 // Allow taking address of managed types
 
@@ -768,7 +769,7 @@ namespace System
                     break;
             }
 
-            result = parsed ? InternalBoxEnum(rt, longScratch) : null;
+            result = parsed ? InternalBoxEnum(rt.TypeHandle, longScratch) : null;
             return parsed;
 
             [MethodImpl(MethodImplOptions.NoInlining)]
@@ -2225,31 +2226,47 @@ namespace System
 
         [CLSCompliant(false)]
         public static object ToObject(Type enumType, sbyte value) =>
-            InternalBoxEnum(ValidateRuntimeType(enumType), value);
+            InternalBoxEnum(ValidateRuntimeType(enumType).TypeHandle, value);
 
         public static object ToObject(Type enumType, short value) =>
-            InternalBoxEnum(ValidateRuntimeType(enumType), value);
+            InternalBoxEnum(ValidateRuntimeType(enumType).TypeHandle, value);
 
         public static object ToObject(Type enumType, int value) =>
-            InternalBoxEnum(ValidateRuntimeType(enumType), value);
+            InternalBoxEnum(ValidateRuntimeType(enumType).TypeHandle, value);
 
         public static object ToObject(Type enumType, byte value) =>
-            InternalBoxEnum(ValidateRuntimeType(enumType), value);
+            InternalBoxEnum(ValidateRuntimeType(enumType).TypeHandle, value);
 
         [CLSCompliant(false)]
         public static object ToObject(Type enumType, ushort value) =>
-            InternalBoxEnum(ValidateRuntimeType(enumType), value);
+            InternalBoxEnum(ValidateRuntimeType(enumType).TypeHandle, value);
 
         [CLSCompliant(false)]
         public static object ToObject(Type enumType, uint value) =>
-            InternalBoxEnum(ValidateRuntimeType(enumType), value);
+            InternalBoxEnum(ValidateRuntimeType(enumType).TypeHandle, value);
 
         public static object ToObject(Type enumType, long value) =>
-            InternalBoxEnum(ValidateRuntimeType(enumType), value);
+            InternalBoxEnum(ValidateRuntimeType(enumType).TypeHandle, value);
 
         [CLSCompliant(false)]
         public static object ToObject(Type enumType, ulong value) =>
-            InternalBoxEnum(ValidateRuntimeType(enumType), unchecked((long)value));
+            InternalBoxEnum(ValidateRuntimeType(enumType).TypeHandle, unchecked((long)value));
+
+        private static object InternalBoxEnum(RuntimeTypeHandle type, long value)
+        {
+            ReadOnlySpan<byte> rawData = MemoryMarshal.AsBytes(new ReadOnlySpan<long>(ref value));
+            // On little-endian systems, we can always use the pointer to the start of the scratch space
+            // as memory layout since the least-significant bit is at the lowest address.
+            // For big-endian systems, the least-significant bit is at the highest address, so we need to adjust
+            // our starting ref to the correct offset from the end of the scratch space to get the value to box.
+            if (!BitConverter.IsLittleEndian)
+            {
+                int size = RuntimeHelpers.SizeOf(type);
+                rawData = rawData.Slice(sizeof(long) - size);
+            }
+
+            return RuntimeHelpers.Box(ref MemoryMarshal.GetReference(rawData), type)!;
+        }
 
         internal static bool AreSequentialFromZero<TStorage>(TStorage[] values) where TStorage : struct, INumber<TStorage>
         {

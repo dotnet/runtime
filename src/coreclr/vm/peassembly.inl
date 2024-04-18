@@ -775,7 +775,7 @@ inline BOOL PEAssembly::IsStrongNamed()
 
     DWORD flags = 0;
     IfFailThrow(GetMDImport()->GetAssemblyProps(TokenFromRid(1, mdtAssembly), NULL, NULL, NULL, NULL, NULL, &flags));
-    return (flags & afPublicKey) != NULL;
+    return (flags & afPublicKey) != 0;
 }
 
 

@@ -4681,14 +4681,13 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static void WaitAll(params Task[] tasks)
         {
-#if DEBUG
-            bool waitResult =
-#endif
-            WaitAllCore(tasks, Timeout.Infinite, default);
+            if (tasks is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
+            }
 
-#if DEBUG
+            bool waitResult = WaitAllCore(tasks, Timeout.Infinite, default);
             Debug.Assert(waitResult, "expected wait to succeed");
-#endif
         }
 
         /// <summary>
@@ -4730,6 +4729,11 @@ namespace System.Threading.Tasks
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.timeout);
             }
 
+            if (tasks is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
+            }
+
             return WaitAllCore(tasks, (int)totalMilliseconds, default);
         }
 
@@ -4763,6 +4767,11 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static bool WaitAll(Task[] tasks, int millisecondsTimeout)
         {
+            if (tasks is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
+            }
+
             return WaitAllCore(tasks, millisecondsTimeout, default);
         }
 
@@ -4792,6 +4801,11 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static void WaitAll(Task[] tasks, CancellationToken cancellationToken)
         {
+            if (tasks is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
+            }
+
             WaitAllCore(tasks, Timeout.Infinite, cancellationToken);
         }
 
@@ -4831,18 +4845,48 @@ namespace System.Threading.Tasks
         /// </exception>
         [UnsupportedOSPlatform("browser")]
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
-        public static bool WaitAll(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken) =>
-            WaitAllCore(tasks, millisecondsTimeout, cancellationToken);
+        public static bool WaitAll(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken)
+        {
+            if (tasks is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
+            }
+
+            return WaitAllCore(tasks, millisecondsTimeout, cancellationToken);
+        }
+
+        /// <summary>Waits for all of the provided <see cref="Task"/> objects to complete execution unless the wait is cancelled.</summary>
+        /// <param name="tasks">An <see cref="IEnumerable{T}"/> of Task instances on which to wait.</param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the tasks to complete.</param>
+        /// <exception cref="ArgumentNullException">The <paramref name="tasks"/> argument is null.</exception>
+        /// <exception cref="ArgumentException">The <paramref name="tasks"/> argument contains a null element.</exception>
+        /// <exception cref="ObjectDisposedException">One or more of the <see cref="Task"/> objects in tasks has been disposed.</exception>
+        /// <exception cref="OperationCanceledException">The <paramref name="cancellationToken"/> was canceled.</exception>
+        /// <exception cref="AggregateException">
+        /// At least one of the <see cref="Task"/> instances was canceled. If a task was canceled, the <see cref="AggregateException"/>
+        /// contains an <see cref="OperationCanceledException"/> in its <see cref="AggregateException.InnerExceptions"/> collection.
+        /// </exception>
+        [UnsupportedOSPlatform("browser")]
+        public static void WaitAll(IEnumerable<Task> tasks, CancellationToken cancellationToken = default)
+        {
+            if (tasks is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
+            }
+
+            ReadOnlySpan<Task> span =
+                tasks is List<Task> list ? CollectionsMarshal.AsSpan(list) :
+                tasks is Task[] array ? array :
+                CollectionsMarshal.AsSpan(new List<Task>(tasks));
+
+            WaitAllCore(span, Timeout.Infinite, cancellationToken);
+        }
 
         // Separated out to allow it to be optimized (caller is marked NoOptimization for VS parallel debugger
         // to be able to see the method on the stack and inspect arguments).
         [UnsupportedOSPlatform("browser")]
-        private static bool WaitAllCore(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken)
+        private static bool WaitAllCore(ReadOnlySpan<Task> tasks, int millisecondsTimeout, CancellationToken cancellationToken)
         {
-            if (tasks == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
-            }
             if (millisecondsTimeout < -1)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.millisecondsTimeout);
@@ -4919,11 +4963,6 @@ namespace System.Threading.Tasks
                         if (task.IsWaitNotificationEnabled) AddToList(task, ref notificationTasks, initSize: 1);
                     }
                 }
-
-                // We need to prevent the tasks array from being GC'ed until we come out of the wait.
-                // This is necessary so that the Parallel Debugger can traverse it during the long wait and
-                // deduce waiter/waitee relationships
-                GC.KeepAlive(tasks);
             }
 
             // Now that we're done and about to exit, if the wait completed and if we have
