@@ -13,6 +13,8 @@ namespace System.Text.Json
     /// </summary>
     public struct JsonWriterOptions
     {
+        private static readonly string s_alternateNewLine = Environment.NewLine.Length == 2 ? JsonConstants.NewLineLineFeed : JsonConstants.NewLineCarriageReturnLineFeed;
+
         internal const int DefaultMaxDepth = 1000;
 
         private int _maxDepth;
@@ -68,11 +70,11 @@ namespace System.Text.Json
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> is out of the allowed range.</exception>
         public int IndentSize
         {
-            readonly get => EncodeIndentSize((_optionsMask & IndentSizeMask) >> 3);
+            readonly get => EncodeIndentSize((_optionsMask & IndentSizeMask) >> OptionsBitCount);
             set
             {
                 JsonWriterHelper.ValidateIndentSize(value);
-                _optionsMask = (_optionsMask & ~IndentSizeMask) | (EncodeIndentSize(value) << 3);
+                _optionsMask = (_optionsMask & ~IndentSizeMask) | (EncodeIndentSize(value) << OptionsBitCount);
             }
         }
 
@@ -135,11 +137,36 @@ namespace System.Text.Json
             }
         }
 
+        /// <summary>
+        /// Gets or sets the new line string to use when <see cref="Indented"/> is <see langword="true"/>.
+        /// The default is the value of <see cref="Environment.NewLine"/>.
+        /// </summary>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when the new line string is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown when the new line string is not <c>\n</c> or <c>\r\n</c>.
+        /// </exception>
+        public string NewLine
+        {
+            get => (_optionsMask & NewLineBit) != 0 ? s_alternateNewLine : Environment.NewLine;
+            set
+            {
+                JsonWriterHelper.ValidateNewLine(value);
+                if (value != Environment.NewLine)
+                    _optionsMask |= NewLineBit;
+                else
+                    _optionsMask &= ~NewLineBit;
+            }
+        }
+
         internal bool IndentedOrNotSkipValidation => (_optionsMask & (IndentBit | SkipValidationBit)) != SkipValidationBit;  // Equivalent to: Indented || !SkipValidation;
 
+        private const int OptionsBitCount = 4;
         private const int IndentBit = 1;
         private const int SkipValidationBit = 2;
-        private const int IndentCharacterBit = 4;
-        private const int IndentSizeMask = JsonConstants.MaximumIndentSize << 3;
+        private const int NewLineBit = 4;
+        private const int IndentCharacterBit = 8;
+        private const int IndentSizeMask = JsonConstants.MaximumIndentSize << OptionsBitCount;
     }
 }
