@@ -22,7 +22,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
   </ItemGroup>
 
