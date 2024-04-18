@@ -10,9 +10,6 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
     <GCStressIncompatible>true</GCStressIncompatible>
-
-    <!-- https://github.com/dotnet/runtime/issues/100125 -->
-    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>

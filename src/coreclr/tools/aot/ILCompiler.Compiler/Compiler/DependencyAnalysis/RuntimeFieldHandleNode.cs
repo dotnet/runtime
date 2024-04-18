@@ -38,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis
                 return ObjectNodeSection.DataSection;
         }
 
-        private static Utf8String s_NativeLayoutSignaturePrefix = new Utf8String("__RFHSignature_");
+        private static readonly Utf8String s_NativeLayoutSignaturePrefix = new Utf8String("__RFHSignature_");
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {

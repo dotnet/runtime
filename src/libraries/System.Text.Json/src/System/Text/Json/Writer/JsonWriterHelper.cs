@@ -37,6 +37,16 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ValidateNewLine(string value)
+        {
+            if (value is null)
+                ThrowHelper.ThrowArgumentNullException(nameof(value));
+
+            if (value is not JsonConstants.NewLineLineFeed and not JsonConstants.NewLineCarriageReturnLineFeed)
+                ThrowHelper.ThrowArgumentOutOfRangeException_NewLine(nameof(value));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateIndentCharacter(char value)
         {
             if (value is not JsonConstants.DefaultIndentCharacter and not JsonConstants.TabIndentCharacter)

@@ -115,10 +115,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Tanh(double value);
 
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern double FMod(double x, double y);
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe double ModF(double x, double* intptr);
 

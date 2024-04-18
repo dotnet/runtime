@@ -31,9 +31,6 @@ namespace HostApiInvokerApp
             Console.WriteLine("Hello World!");
             Console.WriteLine(string.Join(Environment.NewLine, args));
 
-            // Enable tracing so that test assertion failures are easier to diagnose.
-            Environment.SetEnvironmentVariable("COREHOST_TRACE", "1");
-
             // If requested, test multilevel lookup using fake Global SDK directories:
             //     1. using a fake ProgramFiles location
             //     2. using a fake SDK Self-Registered location
@@ -61,13 +58,13 @@ namespace HostApiInvokerApp
             }
 
             string apiToTest = args[0];
-            if (HostFXR.RunTest(apiToTest, args))
+            if (HostFXR.RunTest(apiToTest, args[1..]))
                 return;
 
-            if (HostPolicy.RunTest(apiToTest, args))
+            if (HostPolicy.RunTest(apiToTest, args[1..]))
                 return;
 
-            if (HostRuntimeContract.RunTest(apiToTest, args))
+            if (HostRuntimeContract.RunTest(apiToTest, args[1..]))
                 return;
 
             throw new ArgumentException($"Invalid API to test passed as args[0]): {apiToTest}");

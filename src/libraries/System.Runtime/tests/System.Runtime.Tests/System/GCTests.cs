@@ -1099,6 +1099,8 @@ namespace System.Tests
             byte* pointer = (byte*)Unsafe.AsPointer(ref array[0]); // Unsafe.AsPointer is safe since array is pinned
             var size = Unsafe.SizeOf<EmbeddedValueType<string>>();
 
+            GC.Collect();
+
             for(int i = 0; i < length; ++i)
             {
                 int idx = rng.Next(length);
