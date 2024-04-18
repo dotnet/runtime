@@ -230,7 +230,7 @@ void SpinWait(int iteration, int usecLimit)
     int64_t ticksPerSecond = PalQueryPerformanceFrequency();
     int64_t endTicks = startTicks + (usecLimit * ticksPerSecond) / 1000000;
 
-    int l = min((unsigned)iteration, 30);
+    int l = iteration >= 0 ? min(iteration, 30): 30;
     for (int i = 0; i < l; i++)
     {
         for (int j = 0; j < (1 << i); j++)

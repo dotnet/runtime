@@ -504,7 +504,7 @@ inline PCODE decodeBackToBackJump(PCODE pCode)
     if (isJumpRel64(pCode))
         return decodeJump64(pCode);
     else
-        return NULL;
+        return (PCODE)0;
 }
 
 extern "C" void setFPReturn(int fpSize, INT64 retVal);

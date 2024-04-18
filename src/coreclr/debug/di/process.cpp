@@ -6608,7 +6608,7 @@ HRESULT CordbProcess::ReadMemory(CORDB_ADDRESS address,
     VALIDATE_POINTER_TO_OBJECT_ARRAY(buffer, BYTE, size, true, true);
     VALIDATE_POINTER_TO_OBJECT(buffer, SIZE_T *);
 
-    if (address == NULL)
+    if (address == (CORDB_ADDRESS)NULL)
         return E_INVALIDARG;
 
     // If no read parameter is supplied, we ignore it. This matches the semantics of kernel32!ReadProcessMemory.
@@ -6706,8 +6706,8 @@ HRESULT CordbProcess::AdjustBuffer( CORDB_ADDRESS address,
     _ASSERTE(m_initialized);
     _ASSERTE(this->ThreadHoldsProcessLock());
 
-    if (    address == NULL
-         || size == NULL
+    if (    address == (CORDB_ADDRESS)NULL
+         || size == 0
          || buffer == NULL
          || (mode != AB_READ && mode != AB_WRITE) )
         return E_INVALIDARG;
@@ -7167,7 +7167,7 @@ HRESULT CordbProcess::WriteMemory(CORDB_ADDRESS address, DWORD size,
     _ASSERTE(m_runtimeOffsetsInitialized);
 
 
-    if (size == 0 || address == NULL)
+    if (size == 0 || address == (CORDB_ADDRESS)NULL)
         return E_INVALIDARG;
 
     VALIDATE_POINTER_TO_OBJECT_ARRAY(buffer, BYTE, size, true, true);
@@ -7500,9 +7500,9 @@ void CordbProcess::GetEventBlock(BOOL * pfBlockExists)
 
             // This is not technically necessary for Mac debugging.  The event channel doesn't rely on
             // knowing the target address of the DCB on the LS.
-            CORDB_ADDRESS pLeftSideDCB = NULL;
+            CORDB_ADDRESS pLeftSideDCB = (CORDB_ADDRESS)NULL;
             pLeftSideDCB = (GetDAC()->GetDebuggerControlBlockAddress());
-            if (pLeftSideDCB == NULL)
+            if (pLeftSideDCB == (CORDB_ADDRESS)NULL)
             {
                 *pfBlockExists = false;
                 ThrowHR(CORDBG_E_DEBUGGING_NOT_POSSIBLE);
@@ -9746,7 +9746,7 @@ bool CordbProcess::CopyManagedEventFromTarget(
     // Determine if the event is really a debug event, and for our instance.
     CORDB_ADDRESS ptrRemoteManagedEvent = IsEventDebuggerNotification(pRecord, m_clrInstanceId);
 
-    if (ptrRemoteManagedEvent == NULL)
+    if (ptrRemoteManagedEvent == (CORDB_ADDRESS)NULL)
     {
         return false;
     }
@@ -14913,7 +14913,7 @@ HRESULT CordbProcess::GetReferenceValueFromGCHandle(
 
     EX_TRY
     {
-        if (gcHandle == NULL)
+        if (gcHandle == (UINT_PTR)0)
         {
             ThrowHR(CORDBG_E_BAD_REFERENCE_VALUE);
         }

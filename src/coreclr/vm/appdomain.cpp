@@ -313,7 +313,7 @@ OBJECTREF* PinnedHeapHandleTable::AllocateHandles(DWORD nRequested)
     // Retrieve the remaining number of handles in the bucket.
     DWORD numRemainingHandlesInBucket = (m_pHead != NULL) ? m_pHead->GetNumRemainingHandles() : 0;
     PTRARRAYREF pinnedHandleArrayObj = NULL;
-    DWORD nextBucketSize = min(m_NextBucketSize * 2, MAX_BUCKETSIZE);
+    DWORD nextBucketSize = min<DWORD>(m_NextBucketSize * 2, MAX_BUCKETSIZE);
 
     // create a new block if this request doesn't fit in the current block
     if (nRequested > numRemainingHandlesInBucket)
@@ -4125,13 +4125,6 @@ AppDomain::RaiseAssemblyResolveEvent(
         }
     }
     GCPROTECT_END();
-
-    if (pAssembly != NULL)
-    {
-        // Check that the public key token matches the one specified in the spec
-        // MatchPublicKeys throws as appropriate
-        pSpec->MatchPublicKeys(pAssembly);
-    }
 
     RETURN pAssembly;
 } // AppDomain::RaiseAssemblyResolveEvent

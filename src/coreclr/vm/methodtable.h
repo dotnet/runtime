@@ -1003,13 +1003,11 @@ public:
     // during object construction.
     void CheckRunClassInitAsIfConstructingThrowing();
 
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    static bool IsOnlyOneField(MethodTable * pMT);
 #if defined(TARGET_LOONGARCH64)
+    static bool IsOnlyOneField(MethodTable * pMT);
     static int GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
 #elif defined(TARGET_RISCV64)
-    static int GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
-#endif
+    static int GetRiscV64PassStructInRegisterFlags(TypeHandle th);
 #endif
 
 #if defined(UNIX_AMD64_ABI_ITF)
@@ -3004,7 +3002,7 @@ public:
             MethodDesc      *m_pMD;             // The MethodDesc for this slot
 
           public:
-            inline MethodDataEntry() : m_slot(NULL)
+            inline MethodDataEntry() : m_slot((PCODE)NULL)
                 { WRAPPER_NO_CONTRACT; Init(); }
 
             inline void Init()
@@ -3012,7 +3010,7 @@ public:
                 LIMITED_METHOD_CONTRACT;
                 m_chainDeltaAndTableIndex = INVALID_CHAIN_AND_INDEX;
                 m_implSlotNum = INVALID_IMPL_SLOT_NUM;
-                m_slot = NULL;
+                m_slot = (PCODE)NULL;
                 m_pMD = NULL;
             }
 

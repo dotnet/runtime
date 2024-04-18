@@ -113,6 +113,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public static class ErrorCode
         {
+            public const int Success = 0;
             public const int InvalidArgFailure = unchecked((int)0x80008081);
             public const int CoreHostLibMissingFailure = unchecked((int)0x80008083);
             public const int ResolverInitFailure = unchecked((int)0x8000808b);

@@ -65,9 +65,14 @@ ValueNumFuncDef(ConvOverflowExc, 2, false, false, false, false)    // Cast conve
                                                             // - (shifted left one bit; low bit encode whether source is unsigned.)
 ValueNumFuncDef(DivideByZeroExc, 1, false, false, false, false)    // Division by zero check.  Args: 0: divisor value, throws when it is zero
 ValueNumFuncDef(IndexOutOfRangeExc, 2, false, false, false, false) // Array bounds check, Args: 0: array length; 1: index value, throws when the bounds check fails.
-ValueNumFuncDef(InvalidCastExc, 2, false, false, false, false)     // CastClass check, Args: 0: ref value being cast; 1: handle of type being cast to, throws when the cast fails.
+ValueNumFuncDef(InvalidCastExc, 2, false, false, false, false)     // CastClass check, Args: 0: ref value being cast; 1: handle of type being cast to
+ValueNumFuncDef(R2RInvalidCastExc, 2, false, false, false, false)  // CastClass check, Args: 0: ref value being cast; 1: entry point of R2R cast helper
 ValueNumFuncDef(NewArrOverflowExc, 1, false, false, false, false)  // Raises Integer overflow when Arg 0 is negative
-ValueNumFuncDef(HelperMultipleExc, 0, false, false, false, false)  // Represents one or more different exceptions that could be thrown by a Jit Helper method
+ValueNumFuncDef(ClassInitExc, 2, false, false, false, false)       // Represents exceptions thrown by static constructor for class. Args: 0: VN of module, 1: VN of class ID
+ValueNumFuncDef(R2RClassInitExc, 1, false, false, false, false)    // Represents exceptions thrown by static constructor for class. Args: 0: VN of R2R entry point
+ValueNumFuncDef(ClassInitGenericExc, 2, false, false, false, false)// Represents exceptions thrown by static constructor for generic class. Args: 0: VN of class handle
+ValueNumFuncDef(HelperOpaqueExc, 1, false, false, false, false)    // Represents opaque exceptions could be thrown by a JIT helper.
+                                                                   // Args: 0: Input to helper that uniquely determines exceptions thrown.
 
 ValueNumFuncDef(Abs, 1, false, false, false, false)
 ValueNumFuncDef(Acos, 1, false, false, false, false)
