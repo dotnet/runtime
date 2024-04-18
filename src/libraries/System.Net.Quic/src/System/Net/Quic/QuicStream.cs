@@ -162,13 +162,24 @@ public sealed partial class QuicStream
         try
         {
             QUIC_HANDLE* handle;
-            ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.StreamOpen(
+            int status = MsQuicApi.Api.StreamOpen(
                 connectionHandle,
                 type == QuicStreamType.Unidirectional ? QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL : QUIC_STREAM_OPEN_FLAGS.NONE,
                 &NativeCallback,
                 (void*)GCHandle.ToIntPtr(context),
-                &handle),
-                "StreamOpen failed");
+                &handle);
+
+            if (status == QUIC_STATUS_ABORTED)
+            {
+                // Connection has been closed by the peer (either at transport or application level),
+                // we won't be receiving any event callback for shutdown on this stream, so we don't
+                // necessarily know which error to report. So we throw an exception which we can distinguish
+                // at the caller (ConnectionAborted normally has App error code) and throw the correct
+                // exception from there.
+                throw new QuicException(QuicError.ConnectionAborted, null, "");
+            }
+
+            ThrowHelper.ThrowIfMsQuicError(status, "StreamOpen failed");
             _handle = new MsQuicContextSafeHandle(handle, context, SafeHandleType.Stream, connectionHandle);
             _handle.Disposable = _sendBuffers;
         }
@@ -245,6 +256,20 @@ public sealed partial class QuicStream
                 int status = MsQuicApi.Api.StreamStart(
                     _handle,
                     QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL | QUIC_STREAM_START_FLAGS.INDICATE_PEER_ACCEPT);
+
+                if (status == QUIC_STATUS_ABORTED)
+                {
+                    // Connection has been closed by the peer (either at transport or application level),
+                    // we won't be receiving any event callback for shutdown on this stream, so we don't
+                    // necessarily know which error to report. So we throw an exception which we can distinguish
+                    // at the caller (ConnectionAborted normally has App error code) and throw the correct
+                    // exception from there.
+                    //
+                    // Also, avoid setting _startedTcs so that we don't try to wait for SHUTDOWN_COMPLETE
+                    // in DisposeAsync().
+                    throw new QuicException(QuicError.ConnectionAborted, null, "");
+                }
+
                 if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception))
                 {
                     _startedTcs.TrySetException(exception);

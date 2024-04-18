@@ -1098,7 +1098,10 @@ namespace System.Net.Http.Functional.Tests
                     }
                     catch (Exception ex) // Ignore exception and continue until a viable connection is established.
                     {
+                        System.Console.WriteLine(ex.ToString());
                         _output.WriteLine(ex.ToString());
+                        var qe = Assert.IsType<QuicException>(ex);
+                        Assert.Equal(QuicError.ConnectionAborted, qe.QuicError);
                     }
                 }
                 await connection.HandleRequestAsync();

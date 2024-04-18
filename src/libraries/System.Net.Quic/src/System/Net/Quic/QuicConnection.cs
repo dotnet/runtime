@@ -424,7 +424,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
             await stream.StartAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch
+        catch (Exception ex)
         {
             if (stream is not null)
             {
@@ -433,8 +433,15 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
             // Propagate ODE if disposed in the meantime.
             ObjectDisposedException.ThrowIf(_disposed == 1, this);
+
+            // In case of an incoming race when the connection is closed by the peer just before we open the stream,
+            // we receive QUIC_STATUS_ABORTED from MsQuic, but we don't know how the connection was closed. To
+            // distinguish this case, we throw ConnectionAborted without ApplicationErrorCode. In such a case, we
+            // can expect the connection close exception to be already reported on the connection level (or very soon).
+            bool connectionAbortedByPeer = ex is QuicException qe && qe.QuicError == QuicError.ConnectionAborted && qe.ApplicationErrorCode is null;
+
             // Propagate connection error if present.
-            if (_acceptQueue.Reader.Completion.IsFaulted)
+            if (_acceptQueue.Reader.Completion.IsFaulted || connectionAbortedByPeer)
             {
                 await _acceptQueue.Reader.Completion.ConfigureAwait(false);
             }
