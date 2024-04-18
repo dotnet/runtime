@@ -7413,7 +7413,7 @@ void Debugger::SendExceptionEventsWorker(
         //
         // Send the first chance exception if we have not already and if it is not suppressed
         //
-        if (m_sendExceptionsOutsideOfJMC && !pExState->GetFlags()->SentDebugFirstChance()) //maybe do || in first condition with force
+        if (m_sendExceptionsOutsideOfJMC && !pExState->GetFlags()->SentDebugFirstChance())
         {
             // Blocking here is especially important so that the debugger can mark any code as JMC.
             hr = SendExceptionHelperAndBlock(
