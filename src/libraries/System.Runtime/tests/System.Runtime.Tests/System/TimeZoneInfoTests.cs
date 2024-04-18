@@ -3060,7 +3060,7 @@ namespace System.Tests
             // Note we cannot test the DisplayName, as it will contain the ID.
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(WasmSingleThreaded))]
         [PlatformSpecific(TestPlatforms.Browser)]
         [InlineData("America/Buenos_Aires")]
         [InlineData("America/Catamarca")]
