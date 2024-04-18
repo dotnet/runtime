@@ -5,7 +5,6 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import cwraps from "./cwraps";
 import { Module, loaderHelpers } from "./globals";
-import { forceThreadMemoryViewRefresh } from "./memory";
 
 let spread_timers_maximum = 0;
 let pump_count = 0;
@@ -79,9 +78,6 @@ export function mono_wasm_schedule_timer (shortestDueTimeMs: number): void {
 function mono_wasm_schedule_timer_tick () {
     if (WasmEnableThreads) return;
     Module.maybeExit();
-    if (WasmEnableThreads) {
-        forceThreadMemoryViewRefresh();
-    }
     if (!loaderHelpers.is_runtime_running()) {
         return;
     }

@@ -10,7 +10,6 @@ import { Module, loaderHelpers, runtimeHelpers } from "../globals";
 import { set_thread_prefix } from "../logging";
 import { monoMessageSymbol, PThreadPtrNull, WorkerToMainMessageType } from "../types/internal";
 import { threads_c_functions as tcwraps } from "../cwraps";
-import { forceThreadMemoryViewRefresh } from "../memory";
 
 // A duplicate in loader/assets.ts
 export const worker_empty_prefix = "          -    ";
@@ -76,7 +75,6 @@ export function exec_synchronization_context_pump (): void {
     if (!loaderHelpers.is_runtime_running()) {
         return;
     }
-    forceThreadMemoryViewRefresh();
     try {
         tcwraps.mono_wasm_synchronization_context_pump();
     } catch (ex) {

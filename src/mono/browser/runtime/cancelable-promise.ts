@@ -7,7 +7,7 @@ import { _lookup_js_owned_object, teardown_managed_proxy, upgrade_managed_proxy_
 import { createPromiseController, loaderHelpers, mono_assert } from "./globals";
 import { ControllablePromise, GCHandle, MarshalerToCs } from "./types/internal";
 import { ManagedObject } from "./marshal";
-import { compareExchangeI32, forceThreadMemoryViewRefresh } from "./memory";
+import { compareExchangeI32 } from "./memory";
 import { mono_log_debug } from "./logging";
 import { complete_task } from "./managed-exports";
 import { marshal_cs_object_to_cs } from "./marshal-to-cs";
@@ -75,7 +75,6 @@ export class PromiseHolder extends ManagedObject {
         if (!WasmEnableThreads || this.promiseHolderPtr === 0) {
             return true;
         }
-        forceThreadMemoryViewRefresh();
         if (compareExchangeI32(this.promiseHolderPtr + PromiseHolderState.IsResolving, 1, 0) === 0) {
             return true;
         }
@@ -166,9 +165,6 @@ export class PromiseHolder extends ManagedObject {
         try {
             mono_assert(!this.isPosted, "Promise is already posted to managed.");
             this.isPosted = true;
-            if (WasmEnableThreads) {
-                forceThreadMemoryViewRefresh();
-            }
 
             // we can unregister the GC handle just on JS side
             teardown_managed_proxy(this, this.gc_handle, /*skipManaged: */ true);

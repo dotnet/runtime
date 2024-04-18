@@ -18,7 +18,6 @@ import { postRunWorker, preRunWorker } from "../startup";
 import { mono_log_debug, mono_log_error } from "../logging";
 import { CharPtr } from "../types/emscripten";
 import { utf8ToString } from "../strings";
-import { forceThreadMemoryViewRefresh } from "../memory";
 
 // re-export some of the events types
 export {
@@ -70,7 +69,6 @@ function monoDedicatedChannelMessageFromMainToWorker (event: MessageEvent<string
 
 export function on_emscripten_thread_init (pthread_ptr: PThreadPtr) {
     runtimeHelpers.currentThreadTID = monoThreadInfo.pthreadId = pthread_ptr;
-    forceThreadMemoryViewRefresh();
 }
 
 /// Called by emscripten when a pthread is setup to run on a worker.  Can be called multiple times
@@ -79,7 +77,6 @@ export function on_emscripten_thread_init (pthread_ptr: PThreadPtr) {
 export function mono_wasm_pthread_on_pthread_created (): void {
     if (!WasmEnableThreads) return;
     try {
-        forceThreadMemoryViewRefresh();
         const pthread_id = mono_wasm_pthread_ptr();
         mono_assert(pthread_id == monoThreadInfo.pthreadId, `needs to match (mono_wasm_pthread_ptr ${pthread_id}, threadId from thread info ${monoThreadInfo.pthreadId})`);
 
