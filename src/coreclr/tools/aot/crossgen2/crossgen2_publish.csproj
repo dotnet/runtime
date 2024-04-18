@@ -13,7 +13,7 @@
     <NativeAotSupported Condition="'$(CrossBuild)' == 'true' and '$(TargetOS)' != '$(HostOS)'">false</NativeAotSupported>
     <PublishTrimmed>true</PublishTrimmed>
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
-    <SelfContained Condition="'$(NativeAotSupported)' != 'true'>true</SelfContained>
+    <SelfContained Condition="'$(NativeAotSupported)' != 'true'">true</SelfContained>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <UseLocalAppHostPack>true</UseLocalAppHostPack>
     <UseAppHost Condition="'$(NativeAotSupported)' == 'true'">false</UseAppHost>
