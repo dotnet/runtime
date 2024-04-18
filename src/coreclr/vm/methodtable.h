@@ -338,7 +338,7 @@ struct MethodTableAuxiliaryData
 
         enum_flag_IsInitError               = 0x0100,
         enum_flag_IsStaticDataAllocated     = 0x0200,
-        // unum_unused                      = 0x0400,     // Is any field type or sub field type overrode Equals or GetHashCode
+        // unum_unused                      = 0x0400,
         enum_flag_IsTlsIndexAllocated       = 0x0800,
         enum_flag_MayHaveOpenInterfaceInInterfaceMap = 0x1000,
         // enum_unused                      = 0x2000,

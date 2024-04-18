@@ -68,9 +68,10 @@ ValueNumFuncDef(IndexOutOfRangeExc, 2, false, false, false, false) // Array boun
 ValueNumFuncDef(InvalidCastExc, 2, false, false, false, false)     // CastClass check, Args: 0: ref value being cast; 1: handle of type being cast to
 ValueNumFuncDef(R2RInvalidCastExc, 2, false, false, false, false)  // CastClass check, Args: 0: ref value being cast; 1: entry point of R2R cast helper
 ValueNumFuncDef(NewArrOverflowExc, 1, false, false, false, false)  // Raises Integer overflow when Arg 0 is negative
-ValueNumFuncDef(ClassInitExc, 2, false, false, false, false)       // Represents exceptions thrown by static constructor for class. Args: 0: VN of module, 1: VN of class ID
+ValueNumFuncDef(DynamicClassInitExc, 1, false, false, false, false)       // Represents exceptions thrown by static constructor for class. Args: 0: VN of DynamicStaticsInfo
+ValueNumFuncDef(ThreadClassInitExc, 1, false, false, false, false)       // Represents exceptions thrown by static constructor for class. Args: 0: VN of ThreadStaticsInfo
 ValueNumFuncDef(R2RClassInitExc, 1, false, false, false, false)    // Represents exceptions thrown by static constructor for class. Args: 0: VN of R2R entry point
-ValueNumFuncDef(ClassInitGenericExc, 2, false, false, false, false)// Represents exceptions thrown by static constructor for generic class. Args: 0: VN of class handle
+ValueNumFuncDef(ClassInitGenericExc, 2, false, false, false, false)// Represents exceptions thrown by static constructor for class. Args: 0: VN of class handle
 ValueNumFuncDef(HelperOpaqueExc, 1, false, false, false, false)    // Represents opaque exceptions could be thrown by a JIT helper.
                                                                    // Args: 0: Input to helper that uniquely determines exceptions thrown.
 

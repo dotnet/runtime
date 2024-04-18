@@ -724,8 +724,8 @@ namespace System.Runtime.CompilerServices
         [FieldOffset(0)]
         private uint Flags;
 
-        private const uint enum_flag_CanCompareBitsOrUseFastGetHashCode = 0x0400;     // Is any field type or sub field type overrode Equals or GetHashCode
         private const uint enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode = 0x0002;  // Whether we have checked the overridden Equals or GetHashCode
+        private const uint enum_flag_CanCompareBitsOrUseFastGetHashCode = 0x0004;     // Is any field type or sub field type overrode Equals or GetHashCode
 
         public bool HasCheckedCanCompareBitsOrUseFastGetHashCode => (Flags & enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode) != 0;
 
