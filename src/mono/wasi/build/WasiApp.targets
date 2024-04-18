@@ -23,6 +23,16 @@
       _WasmGenerateNodeScripts;
     </WasmGenerateAppBundleDependsOn>
 
+    <WasiWriteRspForLinkingDependsOn>
+      $(WasiWriteRspForLinkingDependsOn);
+      _WasmSelectRuntimeComponentsForLinking;
+      _WasiGetWasiOutputFileName;
+    </WasiWriteRspForLinkingDependsOn>
+    <WasiWriteRspForLinkingDependsOn Condition="'$(UsingWasiRuntimeWorkload)' == 'true'">
+      $(WasiWriteRspForLinkingDependsOn);
+      _MonoSelectRuntimeComponents;
+    </WasiWriteRspForLinkingDependsOn>
+
     <SelfContained Condition="'$(IsWasiProject)' == 'true'">true</SelfContained>
 
     <!-- Temporarily `false`, till sdk gets a fix for supporting the new file -->
@@ -261,7 +271,7 @@
   </Target>
 
   <Target Name="_WasiWriteRspForLinking"
-          DependsOnTargets="_WasmSelectRuntimeComponentsForLinking;_WasiGetWasiOutputFileName"
+          DependsOnTargets="$(WasiWriteRspForLinkingDependsOn)"
           BeforeTargets="_WasmWriteRspForLinking"
           Returns="@(_WasmLinkStepArgs)">
 
@@ -297,11 +307,14 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <_MonoRuntimeComponentDontLink Include="wasm-bundled-timezones.a" Condition="'$(InvariantTimezone)' == 'true'"/>
+      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" Condition="'$(UsingWasiRuntimeWorkload)' != 'true'" /> <!-- Just for in-tree build + CI -->
+    </ItemGroup>
+
+    <ItemGroup>
       <!-- order matters -->
       <_WasmNativeFileForLinking Include="%(_BitcodeFile.ObjectFile)" />
       <!--<_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompile.ObjectFile)" />-->
-      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" />
-      <_MonoRuntimeComponentDontLink Include="wasm-bundled-timezones.a" Condition="'$(InvariantTimezone)' == 'true'"/>
 
       <_WasmNativeFileForLinking
           Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)*.a"
