@@ -15,7 +15,7 @@ namespace Internal.JitInterface
             ENREGISTERED_PARAMTYPE_MAXSIZE = 16,
             TARGET_POINTER_SIZE = 8;
 
-        private static bool HandleInlineArray(int elementTypeIndex, int nElements, StructFloatFieldInfoFlags[] types, ref int typeIndex)
+        private static bool HandleInlineArray(int elementTypeIndex, int nElements, Span<StructFloatFieldInfoFlags> types, ref int typeIndex)
         {
             int nFlattenedFieldsPerElement = typeIndex - elementTypeIndex;
             if (nFlattenedFieldsPerElement == 0)
@@ -38,7 +38,7 @@ namespace Internal.JitInterface
             return true;
         }
 
-        private static bool FlattenFieldTypes(TypeDesc td, StructFloatFieldInfoFlags[] types, ref int typeIndex)
+        private static bool FlattenFieldTypes(TypeDesc td, Span<StructFloatFieldInfoFlags> types, ref int typeIndex)
         {
             IEnumerable<FieldDesc> fields = td.GetFields();
             int nFields = 0;
@@ -93,7 +93,9 @@ namespace Internal.JitInterface
             if (td.GetElementSize().AsInt > ENREGISTERED_PARAMTYPE_MAXSIZE)
                 return (uint)STRUCT_NO_FLOAT_FIELD;
 
-            StructFloatFieldInfoFlags[] types = {STRUCT_NO_FLOAT_FIELD, STRUCT_NO_FLOAT_FIELD};
+            Span<StructFloatFieldInfoFlags> types = stackalloc StructFloatFieldInfoFlags[] {
+                STRUCT_NO_FLOAT_FIELD, STRUCT_NO_FLOAT_FIELD
+            };
             int nFields = 0;
             if (!FlattenFieldTypes(td, types, ref nFields) || nFields == 0)
                 return (uint)STRUCT_NO_FLOAT_FIELD;
