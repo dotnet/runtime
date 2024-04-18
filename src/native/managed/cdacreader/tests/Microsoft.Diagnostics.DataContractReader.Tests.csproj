@@ -5,8 +5,11 @@
   </PropertyGroup>
 
 
+  <Import Project="..\..\subproject.props" />
+
   <ItemGroup>
-    <ProjectReference Include="..\src\cdacreader.csproj" />
+      <ProjectReference Include="..\src\cdacreader.csproj"
+                        AdditionalProperties="$(SplitSubprojectProps)"/>
   </ItemGroup>
 
 </Project>
