@@ -2802,7 +2802,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-#if !defined(TARGET_RISCV64)
 struct RegNode;
 
 struct RegNodeEdge
@@ -3345,8 +3344,6 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
         }
     }
 }
-
-#endif
 
 // -----------------------------------------------------------------------------
 // genGetParameterHomingTempRegisterCandidates: Get the registers that are
