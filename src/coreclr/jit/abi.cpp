@@ -281,10 +281,7 @@ bool ABIPassingInformation::IsSplitAcrossRegistersAndStack() const
 //
 ABIPassingInformation ABIPassingInformation::FromSegment(Compiler* comp, const ABIPassingSegment& segment)
 {
-    ABIPassingInformation info;
-    info.NumSegments = 1;
-    info.Segments    = new (comp, CMK_ABI) ABIPassingSegment(segment);
-    return info;
+    return {1, new (comp, CMK_ABI) ABIPassingSegment(segment)};
 }
 
 #ifdef DEBUG

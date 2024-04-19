@@ -251,9 +251,16 @@
   <ItemGroup>
     <UpToDateCheckInput Include="@(NativeFileReference)" />
   </ItemGroup>
-
-  <ItemGroup Condition="'$(Configuration)' == 'Debug' and '@(_MonoComponent->Count())' == 0">
-    <_MonoComponent Include="hot_reload;debugger" />
+  
+  <PropertyGroup>
+    <_WasmDebuggerSupport Condition="'$(WasmDebugLevel)' != '' and '$(WasmDebugLevel)' != '0'">true</_WasmDebuggerSupport>
+    <_WasmDebuggerSupport Condition="'$(WasmDebugLevel)' != '' and '$(WasmDebugLevel)' == '0'">false</_WasmDebuggerSupport>
+    <_WasmDebuggerSupport Condition="'$(_WasmDebuggerSupport)' == '' and '$(WasmBuildingForNestedPublish)' == 'true'">false</_WasmDebuggerSupport> <!-- publish -->
+    <_WasmDebuggerSupport Condition="'$(_WasmDebuggerSupport)' == ''">true</_WasmDebuggerSupport>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(_WasmDebuggerSupport)' == 'true'">
+    <_MonoComponent Include="debugger" />
+    <_MonoComponent Include="hot_reload" />
   </ItemGroup>
   <!-- PUBLISH -->
 
@@ -590,7 +597,7 @@
   </Target>
 
   <Target Name="_ScanAssembliesDecideLightweightMarshaler">
-     <ItemGroup>
+    <ItemGroup>
       <_AssembliesToScan Include="@(_WasmAssembliesInternal)" />
     </ItemGroup>
 
