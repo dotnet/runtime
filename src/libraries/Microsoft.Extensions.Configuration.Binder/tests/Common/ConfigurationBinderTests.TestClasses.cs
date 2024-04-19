@@ -928,6 +928,24 @@ namespace Microsoft.Extensions
         {
             public string A { get; set; }
             public string B { get; set; }
+            public TestSettingsEnum E {get; set;}
+        }
+
+        public enum TestSettingsEnum2
+        {
+            OptionA = TestSettingsEnum.Option1,
+            OptionB = TestSettingsEnum.Option2,
+        }
+
+        public class DerivedClassWithHiddenMembers : SimplePoco
+        {
+            public new string A { get; } = "Derived";
+            public new int B { get; set; }
+            public new TestSettingsEnum2 E
+            {
+                get => (TestSettingsEnum2)base.E;
+                set => base.E = (TestSettingsEnum)value;
+            }
         }
 
     }
