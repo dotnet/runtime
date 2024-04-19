@@ -218,12 +218,17 @@ namespace System.Reflection
         }
 
         // internal test hook
-        private static bool s_forceNullEntryPoint;
+        private static Assembly? s_overriddenEntryAssembly;
+
+        public void SetEntryAssembly(Assembly newAssembly)
+        {
+            s_overriddenEntryAssembly = newAssembly;
+        }
 
         public static Assembly? GetEntryAssembly()
         {
-            if (s_forceNullEntryPoint)
-                return null;
+            if (s_overriddenEntryAssembly is not null)
+                return s_overriddenEntryAssembly;
 
             return GetEntryAssemblyInternal();
         }
