@@ -1,7 +1,10 @@
 <Project>
-  <!-- we don't trim cdac-build-tool; we don't need the live trimmer -->
   <PropertyGroup>
-    <_RequiresLiveILLink>false</_RequiresLiveILLink>
+    <!-- we don't ship cdac-build-tool, and don't need to pack it into a single file. -->
+    <!-- turning this off also turns off _RequiresLiveILLink which caused file access issues during
+         windows CI builds because it seems like something tries to write over the live
+         ILLink.Tasks.dll while it is used during the build of cdac-build-tool. -->
+    <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
   </PropertyGroup>
   <Import Project="..\Directory.Build.props" />
 </Project>
