@@ -1258,13 +1258,13 @@ See the big block comment at the start of [src\inc\contract.h][contract.h].
 
 ## <a name="2.11"></a>2.11 Using standard headers
 
-The C and C++ standard headers are available for usage in the CoreCLR code-base. However, there are a few restrictions on using the standard-provided APIs for code that will run as part of CoreCLR.
+The C and C++ standard headers are available for usage in the CoreCLR code-base. However, there are restrictions on using the standard-provided APIs for code that will run as part of CoreCLR.
 
-Code that will only run in other processes, such as createdump or other extraneous tools, do not have many of these restrictions.
+Code that will only run in other processes, such as `createdump` or other extraneous tools, do not have the same set of restrictions.
 
 ### <a name="2.11.1"></a> 2.11.1 Do not use wchar_t
 
-The `wchar_t` type is implementation-defined, with Windows and Unix-based platforms using different definitions (2 byte vs 4 byte). Use the `WCHAR` alias instead, which is always 2 bytes. The CoreCLR PAL provides implementations of a variety of the C standard `wchar_t` APIs with the `WCHAR` type instead. These methods, as well as the methods in the CoreCLR minipal and in the repo minipal should be used. If a CoreCLR minipal API exists, it should be used instead of the PAL API.
+The `wchar_t` type is implementation-defined, with Windows and Unix-based platforms using different definitions (2 byte vs 4 byte). Use the `WCHAR` alias instead, which is always 2 bytes. The CoreCLR PAL provides implementations of a variety of the C standard `wchar_t` APIs with the `WCHAR` type instead. These methods, as well as the methods in the [CoreCLR minipal](https://github.com/dotnet/runtime/tree/main/src/coreclr/minipal) and in the [repo minipal](https://github.com/dotnet/runtime/tree/main/src/native/minipal) should be used. In these minipals, the APIs may use `char16_t` or a locally-defined `CHAR16_T` type. In both cases, these types are compatible with the `WCHAR` alias in CoreCLR. If a minipal API exists, it should be used instead of the PAL API.
 
 ### <a name="2.11.2"></a> 2.11.2 Do not use C++ standard exceptions
 
@@ -1282,4 +1282,4 @@ Various tools (most notably the debugger and SOS) rely on portions of the CLR co
 
 - The best documentation is in the code itself. See the large comments at the top of [src\inc\daccess.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/daccess.h).
 
-C++ standard collections are not DAC-ized and cannot be DAC-ized, so they should never be used as fields in data structures or in global variables that need to be read by the DAC, even when using a CoreCLR compatible allocator.
+C++ standard collections are not DAC-ized and cannot be DAC-ized, so they should never be used as fields in data structures or in global variables that need to be read by the DAC, even when using a CoreCLR compatible allocator. They can be used as intermediate values; however. See [2.11](#2.11) for more rules about using C++ standard headers.
