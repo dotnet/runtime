@@ -6189,11 +6189,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					}
 					break;
 				case LLVMArgWasmVtypeAsScalar:
-					if (!addresses [ins->sreg1]) {
+					if (!addresses [ins->sreg1] && lhs) {
 						/* SIMD value */
-						g_assert (lhs);
 						retval = LLVMBuildBitCast (builder, lhs, ret_type, "");
 					} else {
+						g_assert (addresses [ins->sreg1]);
 						retval = LLVMBuildLoad2 (builder, ret_type, build_ptr_cast (builder, addresses [ins->sreg1]->value, pointer_type (ret_type)), "");
 					}
 					break;
