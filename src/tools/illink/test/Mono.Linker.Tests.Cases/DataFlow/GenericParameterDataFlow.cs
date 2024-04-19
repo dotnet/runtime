@@ -37,6 +37,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestStructConstraintSatisfiesParameterlessConstructor<TestStruct> ();
 			TestUnmanagedConstraintSatisfiesParameterlessConstructor<byte> ();
 
+			TestEnumConstraintSatisfiesPublicFields<Enum> ();
+
 			TestGenericParameterFlowsToField ();
 			TestGenericParameterFlowsToReturnValue ();
 
@@ -796,6 +798,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		static void RequiresParameterlessConstructor<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T> ()
 		{
+		}
+
+		static void TestEnumConstraintSatisfiesPublicFields<T> () where T : Enum
+		{
+			typeof (T).RequiresPublicFields ();
 		}
 
 		// Warn about calls to static methods:

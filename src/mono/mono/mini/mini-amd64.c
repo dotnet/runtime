@@ -7770,12 +7770,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					amd64_mov_membase_reg (code, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, gregs) + i * sizeof (target_mgreg_t), i, sizeof (target_mgreg_t));
 			break;
 		default:
-			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
+			g_warning ("unknown opcode " M_PRI_INST " in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();
 		}
 
 		g_assertf ((code - cfg->native_code - offset) <= max_len,
-			   "wrong maximal instruction length of instruction %s (expected %d, got %d)",
+			   "wrong maximal instruction length of instruction " M_PRI_INST " (expected %d, got %d)",
 			   mono_inst_name (ins->opcode), max_len, (int)(code - cfg->native_code - offset));
 	}
 

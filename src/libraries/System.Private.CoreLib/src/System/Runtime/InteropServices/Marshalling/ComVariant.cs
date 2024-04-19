@@ -404,7 +404,11 @@ namespace System.Runtime.InteropServices.Marshalling
                 (VarEnum.VT_UNKNOWN or VarEnum.VT_DISPATCH or VarEnum.VT_LPSTR or VarEnum.VT_BSTR or VarEnum.VT_LPWSTR or VarEnum.VT_SAFEARRAY
                     or VarEnum.VT_CLSID or VarEnum.VT_STREAM or VarEnum.VT_STREAMED_OBJECT or VarEnum.VT_STORAGE or VarEnum.VT_STORED_OBJECT or VarEnum.VT_CF or VT_VERSIONED_STREAM, _) when sizeof(T) == nint.Size => rawValue,
                 (VarEnum.VT_CY or VarEnum.VT_FILETIME, 8) => rawValue,
-                (VarEnum.VT_RECORD, _) when sizeof(T) == sizeof(Record) => rawValue,
+
+                // VT_RECORDs are weird in that regardless of whether the VT_BYREF flag is set or not
+                // they have the same internal representation.
+                (VarEnum.VT_RECORD or VarEnum.VT_RECORD | VarEnum.VT_BYREF, _) when sizeof(T) == sizeof(Record) => rawValue,
+
                 _ when vt.HasFlag(VarEnum.VT_BYREF) && sizeof(T) == nint.Size => rawValue,
                 _ when vt.HasFlag(VarEnum.VT_VECTOR) && sizeof(T) == sizeof(Vector<byte>) => rawValue,
                 _ when vt.HasFlag(VarEnum.VT_ARRAY) && sizeof(T) == nint.Size => rawValue,

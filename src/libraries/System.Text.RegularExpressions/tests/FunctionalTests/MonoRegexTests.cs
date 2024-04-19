@@ -55,7 +55,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 (string Pattern, RegexOptions Options, string Input, string Expected)[] allEngineCases = Cases(engine).ToArray();
 
-                Regex[] results = RegexHelpers.GetRegexesAsync(engine, allEngineCases.Select(c => (c.Pattern, (CultureInfo?)null, (RegexOptions?)c.Options, (TimeSpan?)null)).ToArray()).Result;
+                Regex[] results = RegexHelpers.GetRegexes(engine, allEngineCases.Select(c => (c.Pattern, (CultureInfo?)null, (RegexOptions?)c.Options, (TimeSpan?)null)).ToArray());
                 for (int i = 0; i < results.Length; i++)
                 {
                     string expected = allEngineCases[i].Expected;

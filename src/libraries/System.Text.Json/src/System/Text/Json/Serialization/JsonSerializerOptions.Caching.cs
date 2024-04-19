@@ -504,6 +504,7 @@ namespace System.Text.Json
                     left._unmappedMemberHandling == right._unmappedMemberHandling &&
                     left._defaultBufferSize == right._defaultBufferSize &&
                     left._maxDepth == right._maxDepth &&
+                    left.NewLine == right.NewLine && // Read through property due to lazy initialization of the backing field
                     left._allowOutOfOrderMetadataProperties == right._allowOutOfOrderMetadataProperties &&
                     left._allowTrailingCommas == right._allowTrailingCommas &&
                     left._ignoreNullValues == right._ignoreNullValues &&
@@ -561,6 +562,7 @@ namespace System.Text.Json
                 AddHashCode(ref hc, options._unmappedMemberHandling);
                 AddHashCode(ref hc, options._defaultBufferSize);
                 AddHashCode(ref hc, options._maxDepth);
+                AddHashCode(ref hc, options.NewLine); // Read through property due to lazy initialization of the backing field
                 AddHashCode(ref hc, options._allowOutOfOrderMetadataProperties);
                 AddHashCode(ref hc, options._allowTrailingCommas);
                 AddHashCode(ref hc, options._ignoreNullValues);
@@ -591,13 +593,13 @@ namespace System.Text.Json
 
                 static void AddHashCode<TValue>(ref HashCode hc, TValue? value)
                 {
-                    if (typeof(TValue).IsValueType)
+                    if (typeof(TValue).IsSealed)
                     {
                         hc.Add(value);
                     }
                     else
                     {
-                        Debug.Assert(!typeof(TValue).IsSealed, "Sealed reference types like string should not use this method.");
+                        // Use the built-in hashcode for types that could be overriding GetHashCode().
                         hc.Add(RuntimeHelpers.GetHashCode(value));
                     }
                 }

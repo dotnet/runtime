@@ -14,7 +14,7 @@ import { utf8ToString } from "./strings";
 // sendTo defaults to 'WebAssembly.Runtime::DumpAotProfileData'.
 // DumpAotProfileData stores the data into INTERNAL.aotProfileData.
 //
-export function mono_wasm_init_aot_profiler(options: AOTProfilerOptions): void {
+export function mono_wasm_init_aot_profiler (options: AOTProfilerOptions): void {
     mono_assert(runtimeHelpers.emscriptenBuildOptions.enableAotProfiler, "AOT profiler is not enabled, please use <WasmProfilers>aot;</WasmProfilers> in your project file.");
     if (options == null)
         options = {};
@@ -26,7 +26,7 @@ export function mono_wasm_init_aot_profiler(options: AOTProfilerOptions): void {
     cwraps.mono_wasm_profiler_init_aot(arg);
 }
 
-export function mono_wasm_init_browser_profiler(options: BrowserProfilerOptions): void {
+export function mono_wasm_init_browser_profiler (options: BrowserProfilerOptions): void {
     mono_assert(runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler, "Browser profiler is not enabled, please use <WasmProfilers>browser;</WasmProfilers> in your project file.");
     if (options == null)
         options = {};
@@ -59,14 +59,14 @@ export type TimeStamp = {
     __brand: "TimeStamp"
 }
 
-export function startMeasure(): TimeStamp {
+export function startMeasure (): TimeStamp {
     if (runtimeHelpers.enablePerfMeasure) {
         return globalThis.performance.now() as any;
     }
     return undefined as any;
 }
 
-export function endMeasure(start: TimeStamp, block: string, id?: string) {
+export function endMeasure (start: TimeStamp, block: string, id?: string) {
     if (runtimeHelpers.enablePerfMeasure && start) {
         const options = ENVIRONMENT_IS_WEB
             ? { start: start as any }
@@ -77,14 +77,14 @@ export function endMeasure(start: TimeStamp, block: string, id?: string) {
 }
 
 const stackFrames: number[] = [];
-export function mono_wasm_profiler_enter(): void {
+export function mono_wasm_profiler_enter (): void {
     if (runtimeHelpers.enablePerfMeasure) {
         stackFrames.push(globalThis.performance.now());
     }
 }
 
 const methodNames: Map<number, string> = new Map();
-export function mono_wasm_profiler_leave(method: MonoMethod): void {
+export function mono_wasm_profiler_leave (method: MonoMethod): void {
     if (runtimeHelpers.enablePerfMeasure) {
         const start = stackFrames.pop();
         const options = ENVIRONMENT_IS_WEB

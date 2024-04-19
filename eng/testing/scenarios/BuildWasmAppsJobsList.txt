@@ -36,7 +36,7 @@ Wasm.Build.Tests.TestAppScenarios.AppSettingsTests
 Wasm.Build.Tests.TestAppScenarios.LazyLoadingTests
 Wasm.Build.Tests.TestAppScenarios.LibraryInitializerTests
 Wasm.Build.Tests.TestAppScenarios.SatelliteLoadingTests
-Wasm.Build.Tests.TestAppScenarios.DownloadResourceProgressTests
+Wasm.Build.Tests.TestAppScenarios.ModuleConfigTests
 Wasm.Build.Tests.TestAppScenarios.SignalRClientTests
 Wasm.Build.Tests.WasmBuildAppTest
 Wasm.Build.Tests.WasmNativeDefaultsTests

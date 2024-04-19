@@ -19,6 +19,7 @@
     <!-- '/.dockerenv' - is to check if this is running in a codespace -->
     <!-- taken from tests.browser.targets -->
     <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and ('$(ContinuousIntegrationBuild)' == 'true' or Exists('/.dockerenv'))">true</InstallChromeForTests>
+    <InstallFirefoxForTests Condition="'$(InstallFirefoxForTests)' == '' and ('$(ContinuousIntegrationBuild)' == 'true' or Exists('/.dockerenv'))">true</InstallFirefoxForTests>
     <InstallV8ForTests Condition="'$(InstallV8ForTests)' == '' and ('$(ContinuousIntegrationBuild)' == 'true' or Exists('/.dockerenv'))">true</InstallV8ForTests>
 
     <!-- don't run any wasm build steps -->
@@ -30,8 +31,13 @@
   <Import Project="$(RepositoryEngineeringDir)testing\wasm-provisioning.targets" />
 
   <PropertyGroup>
-    <_WasmBrowserPathForTests Condition="'$(BROWSER_PATH_FOR_TESTS)' != ''">$(BROWSER_PATH_FOR_TESTS)</_WasmBrowserPathForTests>
-    <_WasmBrowserPathForTests Condition="'$(_WasmBrowserPathForTests)' == '' and '$(InstallChromeForTests)' == 'true'">$(ChromeBinaryPath)</_WasmBrowserPathForTests>
+    <_WasmChromePathForTests Condition="'$(CHROME_PATH_FOR_TESTS)' != ''">$(CHROME_PATH_FOR_TESTS)</_WasmChromePathForTests>
+    <_WasmChromePathForTests Condition="'$(_WasmChromePathForTests)' == '' and '$(InstallChromeForTests)' == 'true'">$(ChromeBinaryPath)</_WasmChromePathForTests>
+    <_WasmFirefoxPathForTests Condition="'$(FIREFOX_PATH_FOR_TESTS)' != ''">$(FIREFOX_PATH_FOR_TESTS)</_WasmFirefoxPathForTests>
+    <_WasmFirefoxPathForTests Condition="'$(_WasmFirefoxPathForTests)' == '' and '$(InstallFirefoxForTests)' == 'true'">$(FirefoxBinaryPath)</_WasmFirefoxPathForTests>
+
+    <_WasmFirefoxPathForTests Condition="'$(FIREFOX_PATH_FOR_TESTS)' != ''">$(FIREFOX_PATH_FOR_TESTS)</_WasmFirefoxPathForTests>
+    <_WasmFirefoxPathForTests Condition="'$(_WasmFirefoxPathForTests)' == '' and '$(InstallFirefoxForTests)' == 'true'">$(FirefoxBinaryPath)</_WasmFirefoxPathForTests>
 
     <RunScriptInputName Condition="'$(OS)' == 'Windows_NT'">RunScriptTemplate.cmd</RunScriptInputName>
     <RunScriptInputName Condition="'$(OS)' != 'Windows_NT'">RunScriptTemplate.sh</RunScriptInputName>
@@ -57,6 +63,11 @@
       <SetScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set PREPEND_PATH=$([System.IO.Path]::GetDirectoryName($(ChromeDriverBinaryPath)))" />
     </ItemGroup>
 
+    <ItemGroup Condition="'$(InstallFirefoxForTests)' == 'true' and '$(GeckoDriverBinaryPath)' != ''">
+      <SetScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export PREPEND_PATH=$([System.IO.Path]::GetDirectoryName($(GeckoDriverBinaryPath)))" />
+      <SetScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set PREPEND_PATH=$([System.IO.Path]::GetDirectoryName($(GeckoDriverBinaryPath)))" />
+    </ItemGroup>
+
     <ItemGroup Condition="'$(TestUsingWorkloads)' == 'true'">
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WORKLOAD_PACKS_VER=$(PackageVersionForWorkloadManifests)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WORKLOAD_PACKS_VER=$(PackageVersionForWorkloadManifests)" />
@@ -67,8 +78,11 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BASE_DIR=%24{HELIX_CORRELATION_PAYLOAD}" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BASE_DIR=%HELIX_CORRELATION_PAYLOAD%" />
 
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/$(ChromeDirName)/$(ChromeBinaryName)" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BROWSER_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDirName)\$(ChromeBinaryName)" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export CHROME_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/$(ChromeDirName)/$(ChromeBinaryName)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set CHROME_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDirName)\$(ChromeBinaryName)" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export FIREFOX_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/$(FirefoxDirName)/$(FirefoxBinaryName)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set FIREFOX_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\$(FirefoxDirName)\$(FirefoxBinaryName)" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export IS_RUNNING_ON_CI=true" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set IS_RUNNING_ON_CI=true" />
@@ -104,8 +118,8 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BASE_DIR=$(ArtifactsBinDir)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BASE_DIR=$(ArtifactsBinDir)" />
 
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_TESTS=$(_WasmBrowserPathForTests)" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BROWSER_PATH_FOR_TESTS=$(_WasmBrowserPathForTests)" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export CHROME_PATH_FOR_TESTS=$(_WasmChromePathForTests)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set CHROME_PATH_FOR_TESTS=$(_WasmChromePathForTests)" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export V8_PATH_FOR_TESTS=$(_WasmJSEnginePathForTests)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set V8_PATH_FOR_TESTS=$(_WasmJSEnginePathForTests)" />

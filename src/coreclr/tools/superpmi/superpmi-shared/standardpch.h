@@ -50,7 +50,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stddef.h>
-#include <malloc.h>
 #include <assert.h>
 #include <wchar.h>
 #include <specstrings.h>
@@ -59,21 +58,11 @@
 #include <ctype.h>
 #include <stdarg.h>
 
-// Getting STL to work with PAL is difficult, so reimplement STL functionality to not require it.
-#ifdef TARGET_UNIX
-#include "clr_std/utility"
-#include "clr_std/string"
-#include "clr_std/algorithm"
-#include "clr_std/vector"
-#else // !TARGET_UNIX
-#ifndef USE_STL
-#define USE_STL
-#endif // USE_STL
 #include <utility>
 #include <string>
 #include <algorithm>
 #include <vector>
-#endif // !TARGET_UNIX
+
 
 #ifdef USE_MSVCDIS
 #define DISLIB
@@ -127,6 +116,9 @@ static inline void __debugbreak()
   DebugBreak();
 }
 #endif
+
+using std::min;
+using std::max;
 
 #include <minipal/utils.h>
 

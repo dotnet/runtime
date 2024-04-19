@@ -1,3 +1,8 @@
+parameters:
+  - name: templatePath
+    type: string
+    default: 'templates'
+
 variables:
 
 # These values enable longer delays, configurable number of retries, and special understanding of TCP hang-up
@@ -54,3 +59,5 @@ variables:
                 eq(variables['isRollingBuild'], true))) ]
 
 - template: /eng/pipelines/common/perf-variables.yml
+
+- template: /eng/common/${{ parameters.templatePath }}/variables/pool-providers.yml

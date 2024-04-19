@@ -246,6 +246,11 @@ FORCEINLINE void* ClrMalloc(size_t size)
 
     p = HeapAlloc(hHeap, 0, size);
 #else
+    if (size == 0)
+    {
+        // Allocate at least one byte.
+        size = 1;
+    }
     p = malloc(size);
 #endif
 

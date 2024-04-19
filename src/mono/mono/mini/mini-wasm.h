@@ -100,11 +100,18 @@ typedef struct {
 // sdks/wasm/driver.c is C and uses this
 G_EXTERN_C void mono_wasm_enable_debugging (int log_level);
 
+#ifdef HOST_BROWSER
+
+//JS functions imported that we use
 #ifdef DISABLE_THREADS
+void mono_wasm_execute_timer (void);
 void mono_wasm_main_thread_schedule_timer (void *timerHandler, int shortestDueTimeMs);
 #endif // DISABLE_THREADS
 
 void mono_wasm_print_stack_trace (void);
+#endif // HOST_BROWSER
+
+
 
 gboolean
 mini_wasm_is_scalar_vtype (MonoType *type, MonoType **etype);

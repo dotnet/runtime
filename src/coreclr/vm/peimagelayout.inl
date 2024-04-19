@@ -80,7 +80,7 @@ inline BOOL PEImageLayout::CompareBase(UPTR base, UPTR mapping)
         MODE_ANY;
     }
     CONTRACTL_END;
-    if (base==NULL) //we were searching for 'Any'
+    if (base==0) //we were searching for 'Any'
         return TRUE;
     return ((PEImageLayout*)mapping)->GetBase()==((PEImageLayout*)(base<<1))->GetBase();
 

@@ -1969,6 +1969,12 @@ free_hash_table (gpointer key, gpointer val, gpointer user_data)
 	g_hash_table_destroy ((GHashTable*)val);
 }
 
+static void
+free_simdhash_table (const char *key, gpointer val, gpointer user_data)
+{
+	dn_simdhash_free ((dn_simdhash_t*)val);
+}
+
 /*
 static void
 free_mr_signatures (gpointer key, gpointer val, gpointer user_data)
@@ -2128,8 +2134,8 @@ mono_image_close_except_pools (MonoImage *image)
 	if (image->ptr_cache)
 		g_hash_table_destroy (image->ptr_cache);
 	if (image->name_cache) {
-		g_hash_table_foreach (image->name_cache, free_hash_table, NULL);
-		g_hash_table_destroy (image->name_cache);
+		dn_simdhash_string_ptr_foreach (image->name_cache, free_simdhash_table, NULL);
+		dn_simdhash_free (image->name_cache);
 	}
 
 	free_hash (image->icall_wrapper_cache);

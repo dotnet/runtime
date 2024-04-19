@@ -242,13 +242,13 @@ void CustomAssemblyBinder::PrepareForLoadContextRelease(INT_PTR ptrManagedStrong
 CustomAssemblyBinder::CustomAssemblyBinder()
 {
     m_pDefaultBinder = NULL;
-    m_ptrManagedStrongAssemblyLoadContext = NULL;
+    m_ptrManagedStrongAssemblyLoadContext = (INT_PTR)NULL;
 }
 
 void CustomAssemblyBinder::ReleaseLoadContext()
 {
-    VERIFY(GetManagedAssemblyLoadContext() != NULL);
-    VERIFY(m_ptrManagedStrongAssemblyLoadContext != NULL);
+    VERIFY(GetManagedAssemblyLoadContext() != (INT_PTR)NULL);
+    VERIFY(m_ptrManagedStrongAssemblyLoadContext != (INT_PTR)NULL);
 
     // This method is called to release the weak and strong handles on the managed AssemblyLoadContext
     // once the Unloading event has been fired
@@ -256,7 +256,7 @@ void CustomAssemblyBinder::ReleaseLoadContext()
     DestroyLongWeakHandle(handle);
     handle = reinterpret_cast<OBJECTHANDLE>(m_ptrManagedStrongAssemblyLoadContext);
     DestroyHandle(handle);
-    SetManagedAssemblyLoadContext(NULL);
+    SetManagedAssemblyLoadContext((INT_PTR)NULL);
 
     // The AssemblyLoaderAllocator is in a process of shutdown and should not be used 
     // after this point.

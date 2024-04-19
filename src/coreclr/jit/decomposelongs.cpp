@@ -188,7 +188,8 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
             break;
 
         case GT_RETURN:
-            assert(tree->AsOp()->gtOp1->OperGet() == GT_LONG);
+        case GT_SWIFT_ERROR_RET:
+            assert(tree->AsOp()->GetReturnValue()->OperIs(GT_LONG));
             break;
 
         case GT_STOREIND:
@@ -2169,7 +2170,6 @@ void DecomposeLongs::TryPromoteLongVar(unsigned lclNum)
     for (unsigned index = 0; index < 2; ++index)
     {
         // Grab the temp for the field local.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
         // Lifetime of field locals might span multiple BBs, so they are long lifetime temps.
         unsigned fieldLclNum = m_compiler->lvaGrabTemp(

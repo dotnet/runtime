@@ -116,7 +116,7 @@ OBJECTHANDLE ILStubResolver::ConstructStringLiteral(mdToken token)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(FALSE);
-    return NULL;
+    return (OBJECTHANDLE)NULL;
 }
 
 BOOL ILStubResolver::IsValidStringRef(mdToken metaTok)

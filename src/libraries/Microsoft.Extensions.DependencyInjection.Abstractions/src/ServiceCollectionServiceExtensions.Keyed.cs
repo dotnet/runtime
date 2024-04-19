@@ -327,7 +327,6 @@ namespace Microsoft.Extensions.DependencyInjection
             return services.AddKeyedScoped(typeof(TService), serviceKey, implementationFactory);
         }
 
-
         /// <summary>
         /// Adds a singleton service of the type specified in <paramref name="serviceType"/> with an
         /// implementation of the type specified in <paramref name="implementationType"/> to the

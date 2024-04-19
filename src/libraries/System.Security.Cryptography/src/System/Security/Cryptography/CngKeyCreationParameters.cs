@@ -36,7 +36,7 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Extra parameter values to set before the key is finalized
         /// </summary>
-        public CngPropertyCollection Parameters { get; private set; }
+        public CngPropertyCollection Parameters { get; }
 
         /// <summary>
         ///     Window handle to use as the parent for the dialog shown when the key is created

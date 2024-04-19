@@ -13,6 +13,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
+using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
 namespace ILLink.RoslynAnalyzer
 {
@@ -341,6 +342,15 @@ namespace ILLink.RoslynAnalyzer
 				containingSymbol,
 				incompatibleMembers,
 				out diagnostic);
+		}
+
+		internal virtual bool IsIntrinsicallyHandled (
+			IMethodSymbol calledMethod,
+			MultiValue instance,
+			ImmutableArray<MultiValue> arguments
+			)
+		{
+			return false;
 		}
 	}
 }

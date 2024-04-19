@@ -20,7 +20,7 @@ typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
 
 // Given a return address retrieved during stackwalk,
 // this is the offset by which it should be decremented to land at the call instruction.
-#define STACKWALK_CONTROLPC_ADJUST_OFFSET 8
+#define STACKWALK_CONTROLPC_ADJUST_OFFSET 4
 
 #define PRD_TYPE                               LONG
 #define CORDbg_BREAK_INSTRUCTION_SIZE 4

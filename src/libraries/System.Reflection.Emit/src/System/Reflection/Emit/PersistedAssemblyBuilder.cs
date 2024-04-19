@@ -98,10 +98,9 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(stream);
 
-            PopulateAssemblyMetadata(out BlobBuilder ilStream, out BlobBuilder fieldData);
+            PopulateAssemblyMetadata(out BlobBuilder ilStream, out BlobBuilder fieldData, out _);
             WritePEImage(stream, ilStream, fieldData);
         }
-
 
         /// <summary>
         /// Generates the metadata for the <see cref="PersistedAssemblyBuilder"/>.
@@ -110,16 +109,33 @@ namespace System.Reflection.Emit
         /// <param name="mappedFieldData">Outputs <see cref="BlobBuilder"/> bytes that includes all field RVA data defined in the assembly.</param>
         /// <returns>A <see cref="MetadataBuilder"/> that includes all members defined in the Assembly.</returns>
         /// <exception cref="InvalidOperationException">A module not defined for the assembly.</exception>
-        /// <exception cref="InvalidOperationException">The metadata already populated for the assembly before.</exception>
+        /// <exception cref="InvalidOperationException">The metadata already populated for the assembly previously.</exception>
         [CLSCompliant(false)]
         public MetadataBuilder GenerateMetadata(out BlobBuilder ilStream, out BlobBuilder mappedFieldData)
         {
-            PopulateAssemblyMetadata(out ilStream, out mappedFieldData);
+            PopulateAssemblyMetadata(out ilStream, out mappedFieldData, out _);
 
             return _metadataBuilder;
         }
 
-        private void PopulateAssemblyMetadata(out BlobBuilder ilStream, out BlobBuilder fieldData)
+        /// <summary>
+        /// Generates the metadata for the <see cref="PersistedAssemblyBuilder"/>.
+        /// </summary>
+        /// <param name="ilStream">Outputs <see cref="BlobBuilder"/> bytes that includes all method's IL (body) emitted.</param>
+        /// <param name="mappedFieldData">Outputs <see cref="BlobBuilder"/> bytes that includes all field RVA data defined in the assembly.</param>
+        /// <param name="pdbBuilder">Outputs <see cref="MetadataBuilder"/> that includes PDB metadata.</param>
+        /// <returns>A <see cref="MetadataBuilder"/> that includes all members defined in the Assembly.</returns>
+        /// <exception cref="InvalidOperationException">A module not defined for the assembly.</exception>
+        /// <exception cref="InvalidOperationException">The metadata already populated for the assembly previously.</exception>
+        [CLSCompliant(false)]
+        public MetadataBuilder GenerateMetadata(out BlobBuilder ilStream, out BlobBuilder mappedFieldData, out MetadataBuilder pdbBuilder)
+        {
+            PopulateAssemblyMetadata(out ilStream, out mappedFieldData, out pdbBuilder);
+
+            return _metadataBuilder;
+        }
+
+        private void PopulateAssemblyMetadata(out BlobBuilder ilStream, out BlobBuilder fieldData, out MetadataBuilder pdbBuilder)
         {
             if (_module == null)
             {
@@ -147,7 +163,7 @@ namespace System.Reflection.Emit
                );
 
             _module.WriteCustomAttributes(_customAttributes, assemblyHandle);
-            _module.AppendMetadata(new MethodBodyStreamEncoder(ilStream), fieldData);
+            _module.AppendMetadata(new MethodBodyStreamEncoder(ilStream), fieldData, out pdbBuilder);
             _isMetadataPopulated = true;
         }
 

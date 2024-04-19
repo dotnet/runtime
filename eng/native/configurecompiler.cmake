@@ -28,7 +28,6 @@ if (CLR_CMAKE_HOST_UNIX)
         add_compile_options(-Wno-null-conversion)
         add_compile_options(-glldb)
     else()
-        add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Werror=conversion-null>)
         add_compile_options(-g)
     endif()
 endif()
@@ -443,6 +442,8 @@ endif(CLR_CMAKE_HOST_WIN32)
 
 # Unconditionally define _FILE_OFFSET_BITS as 64 on all platforms.
 add_definitions(-D_FILE_OFFSET_BITS=64)
+# Unconditionally define _TIME_BITS as 64 on all platforms.
+add_definitions(-D_TIME_BITS=64)
 
 # Architecture specific files folder name
 if (CLR_CMAKE_TARGET_ARCH_AMD64)

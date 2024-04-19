@@ -535,25 +535,24 @@ namespace System.Text.RegularExpressions
 
             // For every entry, try to get the chars that make up the set, if there are few enough.
             // For any for which we couldn't get the small chars list, see if we can get other useful info.
-            Span<char> scratch = stackalloc char[128]; // limit based on what's currently efficiently handled by SearchValues
+            Span<char> scratch = stackalloc char[128];
             for (int i = 0; i < results.Count; i++)
             {
                 RegexFindOptimizations.FixedDistanceSet result = results[i];
                 result.Negated = RegexCharClass.IsNegated(result.Set);
 
-                int count = RegexCharClass.GetSetChars(result.Set, scratch);
-                if (count > 0)
+                if (RegexCharClass.TryGetSingleRange(result.Set, out char lowInclusive, out char highInclusive) &&
+                    (highInclusive - lowInclusive) > 1) // prefer IndexOfAny for tiny sets of 1 or 2 elements
                 {
-                    result.Chars = scratch.Slice(0, count).ToArray();
-                }
-
-                // Prefer IndexOfAnyInRange over IndexOfAny for sets of 3-5 values that fit in a single range.
-                if (thorough &&
-                    (result.Chars is null || result.Chars.Length > 2) &&
-                    RegexCharClass.TryGetSingleRange(result.Set, out char lowInclusive, out char highInclusive))
-                {
-                    result.Chars = null;
                     result.Range = (lowInclusive, highInclusive);
+                }
+                else
+                {
+                    int count = RegexCharClass.GetSetChars(result.Set, scratch);
+                    if (count > 0)
+                    {
+                        result.Chars = scratch.Slice(0, count).ToArray();
+                    }
                 }
 
                 results[i] = result;

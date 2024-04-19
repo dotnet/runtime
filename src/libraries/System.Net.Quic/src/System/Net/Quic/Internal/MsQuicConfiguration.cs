@@ -199,6 +199,15 @@ internal static partial class MsQuicConfiguration
 
     private static unsafe MsQuicConfigurationSafeHandle CreateInternal(QUIC_SETTINGS settings, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol> alpnProtocols, QUIC_ALLOWED_CIPHER_SUITE_FLAGS allowedCipherSuites)
     {
+        if (!MsQuicApi.UsesSChannelBackend && certificate is X509Certificate2 cert && intermediates is null)
+        {
+            // MsQuic will not lookup intermediates in local CA store if not explicitly provided,
+            // so we build the cert context to get on feature parity with SslStream. Note that this code
+            // path runs after the MsQuicConfigurationCache check.
+            SslStreamCertificateContext context = SslStreamCertificateContext.Create(cert, additionalCertificates: null, offline: true, trust: null);
+            intermediates = context.IntermediateCertificates;
+        }
+
         QUIC_HANDLE* handle;
 
         using MsQuicBuffers msquicBuffers = new MsQuicBuffers();

@@ -317,7 +317,7 @@ ExInfo::ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pEx
     m_kind(exceptionKind),
     m_passNumber(1),
     m_idxCurClause(0xffffffff),
-    m_notifyDebuggerSP(NULL),
+    m_notifyDebuggerSP{},
     m_pFrame(pThread->GetFrame()),
     m_ClauseForCatch({}),
 #ifdef HOST_UNIX

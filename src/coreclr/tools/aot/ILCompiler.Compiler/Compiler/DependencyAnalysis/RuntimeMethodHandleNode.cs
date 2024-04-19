@@ -66,7 +66,7 @@ namespace ILCompiler.DependencyAnalysis
             return dependencies;
         }
 
-        private static Utf8String s_NativeLayoutSignaturePrefix = new Utf8String("__RMHSignature_");
+        private static readonly Utf8String s_NativeLayoutSignaturePrefix = new Utf8String("__RMHSignature_");
 
         protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly = false)
         {

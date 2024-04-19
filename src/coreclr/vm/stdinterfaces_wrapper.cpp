@@ -45,17 +45,6 @@ struct IEnumConnectionPoints;
 // Common vtables for well-known COM interfaces
 // shared by all COM+ callable wrappers.
 
-namespace
-{
-    bool CanCallRuntimeInterfaceImplementations()
-    {
-        LIMITED_METHOD_CONTRACT;
-        // If we are finalizing all alive objects, or after this stage, we do not allow
-        // a thread to enter EE.
-        return !((g_fEEShutDown & ShutDown_Finalize2) || g_fForbidEnterEE);
-    }
-}
-
 //-------------------------------------------------------------------------
 // IUnknown methods
 
@@ -73,9 +62,6 @@ HRESULT STDMETHODCALLTYPE Unknown_QueryInterface(IUnknown* pUnk, REFIID riid, vo
         PRECONDITION(CheckPointer(ppv, NULL_OK));
     }
     CONTRACTL_END;
-
-    if (!CanCallRuntimeInterfaceImplementations())
-        return E_FAIL;
 
     ComCallWrapper* pWrap = MapIUnknownToWrapper(pUnk);
     return Unknown_QueryInterface_Internal(pWrap, pUnk, riid, ppv);
@@ -268,9 +254,6 @@ HRESULT STDMETHODCALLTYPE Dispatch_GetTypeInfoCount_Wrapper(IDispatch* pDisp, un
     }
     CONTRACTL_END;
     
-    if (!CanCallRuntimeInterfaceImplementations())
-        return E_FAIL;
-
     return Dispatch_GetTypeInfoCount(pDisp, pctinfo);
 }
 
@@ -287,10 +270,6 @@ HRESULT STDMETHODCALLTYPE Dispatch_GetTypeInfo_Wrapper(IDispatch* pDisp, unsigne
         PRECONDITION(CheckPointer(pptinfo, NULL_OK));
     }
     CONTRACTL_END;
-    
-    
-    if (!CanCallRuntimeInterfaceImplementations())
-        return E_FAIL;
 
     return Dispatch_GetTypeInfo(pDisp, itinfo, lcid, pptinfo);
 }
@@ -310,9 +289,6 @@ HRESULT STDMETHODCALLTYPE Dispatch_GetIDsOfNames_Wrapper(IDispatch* pDisp, REFII
         PRECONDITION(CheckPointer(rgdispid, NULL_OK));
     }
     CONTRACTL_END;
-    
-    if (!CanCallRuntimeInterfaceImplementations())
-        return E_FAIL;
 
     return Dispatch_GetIDsOfNames(pDisp, riid, rgszNames, cNames, lcid, rgdispid);
 }
@@ -333,9 +309,6 @@ HRESULT STDMETHODCALLTYPE InternalDispatchImpl_GetIDsOfNames_Wrapper(IDispatch* 
     }
     CONTRACTL_END;
     
-    if (!CanCallRuntimeInterfaceImplementations())
-        return E_FAIL;
-
     return InternalDispatchImpl_GetIDsOfNames(pDisp, riid, rgszNames, cNames, lcid, rgdispid);
 }
 
@@ -359,10 +332,6 @@ HRESULT STDMETHODCALLTYPE Dispatch_Invoke_Wrapper(IDispatch* pDisp, DISPID dispi
     }
     CONTRACTL_END;
     
-    
-    if (!CanCallRuntimeInterfaceImplementations())
-        return E_FAIL;
-
     return Dispatch_Invoke(pDisp, dispidMember, riid, lcid, wFlags, pdispparams, pvarResult, pexcepinfo, puArgErr);
 }
 
@@ -385,10 +354,6 @@ HRESULT STDMETHODCALLTYPE InternalDispatchImpl_Invoke_Wrapper(IDispatch* pDisp, 
     }
     CONTRACTL_END;
     
-    
-    if (!CanCallRuntimeInterfaceImplementations())
-        return E_FAIL;
-
     return InternalDispatchImpl_Invoke(pDisp, dispidMember, riid, lcid, wFlags, pdispparams, pvarResult, pexcepinfo, puArgErr);
 }
 
@@ -411,9 +376,6 @@ namespace
         }
         CONTRACTL_END;
     
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return ClassInfo_GetClassInfo(pUnk, ppTI);
     }
 
@@ -435,9 +397,6 @@ namespace
         }
         CONTRACTL_END;
     
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return SupportsErroInfo_IntfSupportsErrorInfo(pUnk, riid);
     }
 
@@ -457,9 +416,6 @@ namespace
         }
         CONTRACTL_END;
     
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return ErrorInfo_GetDescription(pUnk, pbstrDescription);
     }
 
@@ -477,9 +433,6 @@ namespace
         }
         CONTRACTL_END;
     
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return ErrorInfo_GetGUID(pUnk, pguid);
     }
 
@@ -497,10 +450,6 @@ namespace
         }
         CONTRACTL_END;
     
-    
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return ErrorInfo_GetHelpContext(pUnk, pdwHelpCtxt);
     }
 
@@ -518,9 +467,6 @@ namespace
         }
         CONTRACTL_END;
     
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return ErrorInfo_GetHelpFile(pUnk, pbstrHelpFile);
     }
 
@@ -538,9 +484,6 @@ namespace
         }
         CONTRACTL_END;
     
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return ErrorInfo_GetSource(pUnk, pbstrSource);
     }
 
@@ -561,9 +504,6 @@ namespace
         }
         CONTRACTL_END;
     
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return DispatchEx_GetTypeInfoCount(pDisp, pctinfo);
     }
 
@@ -581,9 +521,6 @@ namespace
         }
         CONTRACTL_END;
     
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return DispatchEx_GetTypeInfo(pDisp, itinfo, lcid, pptinfo);
     }
 
@@ -603,9 +540,6 @@ namespace
         }
         CONTRACTL_END;
     
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return DispatchEx_GetIDsOfNames(pDisp, riid, rgszNames, cNames, lcid, rgdispid);
     }
 
@@ -628,9 +562,6 @@ namespace
         }
         CONTRACTL_END;
 
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return DispatchEx_Invoke(pDisp, dispidMember, riid, lcid, wFlags, pdispparams, pvarResult, pexcepinfo, puArgErr);
     }
 
@@ -647,9 +578,6 @@ namespace
         }
         CONTRACTL_END;
     
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return DispatchEx_DeleteMemberByDispID(pDisp, id);
     }
 
@@ -665,9 +593,6 @@ namespace
             PRECONDITION(CheckPointer(pDisp));
         }
         CONTRACTL_END;
-
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
 
         return DispatchEx_DeleteMemberByName(pDisp, bstrName, grfdex);
     }
@@ -686,9 +611,6 @@ namespace
         }
         CONTRACTL_END;
     
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return DispatchEx_GetMemberName(pDisp, id, pbstrName);
     }
 
@@ -707,9 +629,6 @@ namespace
         }
         CONTRACTL_END;
 
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return DispatchEx_GetDispID(pDisp, bstrName, grfdex, pid);
     }
 
@@ -727,9 +646,6 @@ namespace
         }
         CONTRACTL_END;
     
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return DispatchEx_GetMemberProperties(pDisp, id, grfdexFetch, pgrfdex);
     }
 
@@ -747,9 +663,6 @@ namespace
         }
         CONTRACTL_END;
     
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return DispatchEx_GetNameSpaceParent(pDisp, ppunk);
     }
 
@@ -767,9 +680,6 @@ namespace
         }
         CONTRACTL_END;
     
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return DispatchEx_GetNextDispID(pDisp, grfdex, id, pid);
     }
 
@@ -791,9 +701,6 @@ namespace
         }
         CONTRACTL_END;
     
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return DispatchEx_InvokeEx(pDisp, id, lcid, wFlags, pdp, pVarRes, pei, pspCaller);
     }
 
@@ -817,9 +724,6 @@ namespace
         }
         CONTRACTL_END;
     
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return Marshal_GetUnmarshalClass(pMarsh, riid, pv, dwDestContext, pvDestContext, mshlflags, pclsid);
     }
 
@@ -840,9 +744,6 @@ namespace
         }
         CONTRACTL_END;
     
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return Marshal_GetMarshalSizeMax(pMarsh, riid, pv, dwDestContext, pvDestContext, mshlflags, pSize);
     }
 
@@ -862,9 +763,6 @@ namespace
         }
         CONTRACTL_END;
     
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return Marshal_MarshalInterface(pMarsh, pStm, riid, pv, dwDestContext, pvDestContext, mshlflags);
     }
 
@@ -883,9 +781,6 @@ namespace
         }
         CONTRACTL_END;
     
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return Marshal_UnmarshalInterface(pMarsh, pStm, riid, ppvObj);
     }
 
@@ -903,9 +798,6 @@ namespace
         }
         CONTRACTL_END;
     
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return Marshal_ReleaseMarshalData(pMarsh, pStm);
     }
 
@@ -922,9 +814,6 @@ namespace
         }
         CONTRACTL_END;
     
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return Marshal_DisconnectObject(pMarsh, dwReserved);
     }
 
@@ -945,9 +834,6 @@ namespace
         }
         CONTRACTL_END;
     
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return ConnectionPointContainer_EnumConnectionPoints(pUnk, ppEnum);
     }
 
@@ -965,9 +851,6 @@ namespace
         }
         CONTRACTL_END;
     
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return ConnectionPointContainer_FindConnectionPoint(pUnk, riid, ppCP);
     }
 
@@ -991,9 +874,6 @@ namespace
         }
         CONTRACTL_END;
     
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return ObjectSafety_GetInterfaceSafetyOptions(pUnk, riid, pdwSupportedOptions, pdwEnabledOptions);
     }
 
@@ -1011,9 +891,6 @@ namespace
         }
         CONTRACTL_END;
     
-        if (!CanCallRuntimeInterfaceImplementations())
-            return E_FAIL;
-
         return ObjectSafety_SetInterfaceSafetyOptions(pUnk, riid, dwOptionSetMask, dwEnabledOptions);
     }
 }

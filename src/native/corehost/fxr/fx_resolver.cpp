@@ -307,25 +307,6 @@ namespace
     }
 }
 
-StatusCode fx_resolver_t::reconcile_fx_references_helper(
-    const fx_reference_t& lower_fx_ref,
-    const fx_reference_t& higher_fx_ref,
-    /*out*/ fx_reference_t& effective_fx_ref)
-{
-    if (!lower_fx_ref.is_compatible_with_higher_version(higher_fx_ref.get_fx_version_number()))
-    {
-        // Error condition - not compatible with the other reference
-        display_incompatible_framework_error(higher_fx_ref.get_fx_version(), lower_fx_ref);
-        return StatusCode::FrameworkCompatFailure;
-    }
-
-    effective_fx_ref = fx_reference_t(higher_fx_ref); // copy
-    effective_fx_ref.merge_roll_forward_settings_from(lower_fx_ref);
-
-    display_compatible_framework_trace(higher_fx_ref.get_fx_version(), lower_fx_ref);
-    return StatusCode::Success;
-}
-
 // Reconciles two framework references into a new effective framework reference
 // This process is sometimes also called "soft roll forward" (soft as in no IO)
 // - fx_ref_a - one of the framework references to reconcile
@@ -341,16 +322,24 @@ StatusCode fx_resolver_t::reconcile_fx_references(
     const fx_reference_t& fx_ref_b,
     /*out*/ fx_reference_t& effective_fx_ref)
 {
-    // The function is split into the helper because the various tracing messages
+    // Determine which framework reference is higher to do the compat check. The various tracing messages
     // make more sense if they're always written with higher/lower versions ordered in particular way.
-    if (fx_ref_a.get_fx_version_number() >= fx_ref_b.get_fx_version_number())
+    bool is_a_higher_than_b = fx_ref_a.get_fx_version_number() >= fx_ref_b.get_fx_version_number();
+    const fx_reference_t& lower_fx_ref = is_a_higher_than_b ? fx_ref_b : fx_ref_a;
+    const fx_reference_t& higher_fx_ref = is_a_higher_than_b ? fx_ref_a : fx_ref_b;
+
+    if (!lower_fx_ref.is_compatible_with_higher_version(higher_fx_ref.get_fx_version_number()))
     {
-        return reconcile_fx_references_helper(fx_ref_b, fx_ref_a, effective_fx_ref);
+        // Error condition - not compatible with the other reference
+        display_incompatible_framework_error(higher_fx_ref.get_fx_version(), lower_fx_ref);
+        return StatusCode::FrameworkCompatFailure;
     }
-    else
-    {
-        return reconcile_fx_references_helper(fx_ref_a, fx_ref_b, effective_fx_ref);
-    }
+
+    effective_fx_ref = fx_reference_t(higher_fx_ref); // copy
+    effective_fx_ref.merge_roll_forward_settings_from(lower_fx_ref);
+
+    display_compatible_framework_trace(higher_fx_ref.get_fx_version(), lower_fx_ref);
+    return StatusCode::Success;
 }
 
 void fx_resolver_t::update_newest_references(
@@ -415,7 +404,7 @@ StatusCode fx_resolver_t::read_framework(
     // This reconciles duplicate references to minimize the number of resolve retries.
     update_newest_references(config);
 
-    StatusCode rc = StatusCode::Success;
+    StatusCode rc;
 
     // Loop through each reference and resolve the framework
     for (const fx_reference_t& original_fx_ref : config.get_frameworks())
@@ -432,23 +421,20 @@ StatusCode fx_resolver_t::read_framework(
         const fx_reference_t& current_effective_fx_ref = m_effective_fx_references[fx_name];
         fx_reference_t new_effective_fx_ref;
 
+        // Reconcile the framework reference with the most up to date so far we have for the framework.
+        // This does not read any physical framework folders yet.
+        rc = reconcile_fx_references(fx_ref, current_effective_fx_ref, new_effective_fx_ref);
+        if (rc != StatusCode::Success)
+            return rc;
+
         auto existing_framework = std::find_if(
             fx_definitions.begin(),
             fx_definitions.end(),
             [&](const std::unique_ptr<fx_definition_t> & fx) { return fx_name == fx->get_name(); });
-
         if (existing_framework == fx_definitions.end())
         {
-            // Reconcile the framework reference with the most up to date so far we have for the framework.
-            // This does not read any physical framework folders yet.
             // Since we didn't find the framework in the resolved list yet, it's OK to update the effective reference
             // as we haven't processed it yet.
-            rc = reconcile_fx_references(fx_ref, current_effective_fx_ref, new_effective_fx_ref);
-            if (rc)
-            {
-                break; // Error case
-            }
-
             m_effective_fx_references[fx_name] = new_effective_fx_ref;
 
             // Resolve the effective framework reference against the existing physical framework folders
@@ -463,7 +449,7 @@ StatusCode fx_resolver_t::read_framework(
                     app_display_name != nullptr ? app_display_name : host_info.host_path.c_str(),
                     get_current_arch_name());
                 display_missing_framework_error(fx_name, new_effective_fx_ref.get_fx_version(), pal::string_t(), host_info.dotnet_root, disable_multilevel_lookup);
-                return FrameworkMissingFailure;
+                return StatusCode::FrameworkMissingFailure;
             }
 
             // Do NOT update the effective reference to have the same version as the resolved framework.
@@ -492,23 +478,13 @@ StatusCode fx_resolver_t::read_framework(
             }
 
             rc = read_framework(host_info, disable_multilevel_lookup, override_settings, new_config, &new_effective_fx_ref, fx_definitions, app_display_name);
-            if (rc)
-            {
-                break; // Error case
-            }
+            if (rc != StatusCode::Success)
+                return rc;
         }
         else
         {
-            // Reconcile the framework reference with the most up to date so far we have for the framework.
-            // Note that since we found the framework in the already resolved frameworks
-            // any update to the effective framework reference needs to restart the resolution process
-            // so that we re-resolve the framework against disk.
-            rc = reconcile_fx_references(fx_ref, current_effective_fx_ref, new_effective_fx_ref);
-            if (rc)
-            {
-                break; // Error case
-            }
-
+            // Since we found the framework in the already resolved frameworks, any update to the effective framework
+            // reference needs to restart the resolution process so that we re-resolve the framework against disk.
             if (new_effective_fx_ref != current_effective_fx_ref)
             {
                 display_retry_framework_trace(current_effective_fx_ref, fx_ref);
@@ -522,11 +498,7 @@ StatusCode fx_resolver_t::read_framework(
         }
     }
 
-    return rc;
-}
-
-fx_resolver_t::fx_resolver_t()
-{
+    return StatusCode::Success;
 }
 
 StatusCode fx_resolver_t::resolve_frameworks_for_app(

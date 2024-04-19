@@ -1,0 +1,13 @@
+parameters:
+  - name: templatePath
+    type: string
+  - name: stages
+    type: stageList
+  - name: containers
+    type: object
+
+extends:
+  template: ${{ parameters.templatePath }}
+  parameters:
+    stages: ${{ parameters.stages }}
+    containers: ${{ parameters.containers }}

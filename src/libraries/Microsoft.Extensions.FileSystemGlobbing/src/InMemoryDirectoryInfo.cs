@@ -51,13 +51,14 @@ namespace Microsoft.Extensions.FileSystemGlobbing
                 // normalize
                 foreach (string file in files)
                 {
+                    string fileWithNormalSeparators = file.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
                     if (Path.IsPathRooted(file))
                     {
-                        fileList.Add(Path.GetFullPath(file.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar)));
+                        fileList.Add(Path.GetFullPath(fileWithNormalSeparators));
                     }
                     else
                     {
-                        fileList.Add(Path.Combine(normalizedRoot, file.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar)));
+                        fileList.Add(Path.GetFullPath(Path.Combine(normalizedRoot, fileWithNormalSeparators)));
                     }
                 }
 

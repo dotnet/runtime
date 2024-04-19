@@ -29,7 +29,6 @@
 #define CONTRACTL_END
 #define NOTHROW
 #define GC_NOTRIGGER
-#define HOST_NOCALLS
 
 #include "../../inc/gcdecoder.cpp"
 #include "../../inc/gc_unwind_x86.h"
@@ -435,8 +434,10 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
     PTR_uint8_t gcInfo;
     uint32_t codeOffset = GetCodeOffset(pMethodInfo, safePointAddress, &gcInfo);
 
+    bool executionAborted = ((CoffNativeMethodInfo *)pMethodInfo)->executionAborted;
+
     ICodeManagerFlags flags = (ICodeManagerFlags)0;
-    if (((CoffNativeMethodInfo *)pMethodInfo)->executionAborted)
+    if (executionAborted)
         flags = ICodeManagerFlags::ExecutionAborted;
 
     if (IsFilter(pMethodInfo))
@@ -446,14 +447,9 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
         flags = (ICodeManagerFlags)(flags | ICodeManagerFlags::ActiveStackFrame);
 
 #ifdef USE_GC_INFO_DECODER
-    if (!isActiveStackFrame)
+    if (!isActiveStackFrame && !executionAborted)
     {
-        // If we are not in the active method, we are currently pointing
-        // to the return address. That may not be reachable after a call (if call does not return)
-        // or reachable via a jump and thus have a different live set.
-        // Therefore we simply adjust the offset to inside of call instruction.
-        // NOTE: The GcInfoDecoder depends on this; if you change it, you must
-        // revisit the GcInfoEncoder/Decoder
+        // the reasons for this adjustment are explained in EECodeManager::EnumGcRefs
         codeOffset--;
     }
 

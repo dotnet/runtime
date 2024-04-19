@@ -141,7 +141,7 @@ void MD5::GetHashValue(MD5HASHDATA* phash)
     //
     // but our compiler has an intrinsic!
 
-    #if (defined(HOST_X86) || defined(HOST_ARM)) && defined(TARGET_UNIX)
+    #if (defined(HOST_X86) || defined(HOST_ARM) || !defined(__clang__)) && defined(TARGET_UNIX)
     #define ROL(x, n)        (((x) << (n)) | ((x) >> (32-(n))))
     #define ROTATE_LEFT(x,n) (x) = ROL(x,n)
     #else

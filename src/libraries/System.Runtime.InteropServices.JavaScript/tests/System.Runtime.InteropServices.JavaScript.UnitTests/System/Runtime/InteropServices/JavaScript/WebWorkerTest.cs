@@ -11,15 +11,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
     // TODO test:
     // JSExport 2x
-    // JSExport async
-    // lock
-    // thread allocation, many threads
     // ProxyContext flow, child thread, child task
     // use JSObject after JSWebWorker finished, especially HTTP
-    // WS on JSWebWorker
-    // HTTP continue on TP
     // event pipe
-    // FS
     // JS setTimeout till after JSWebWorker close
     // synchronous .Wait for JS setTimeout on the same thread -> deadlock problem **7)**
 
@@ -159,7 +153,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Unexpected exception " + ex);
+                    WebWorkerTestHelper.Log("Unexpected exception " + ex);
                     postReady.SetException(ex);
                     return Task.FromException(ex);
                 }
@@ -344,7 +338,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             using var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(() =>
             {
-                Console.WriteLine("C# Hello from ManagedThreadId: " + Environment.CurrentManagedThreadId);
+                WebWorkerTestHelper.Log("C# Hello from ManagedThreadId: " + Environment.CurrentManagedThreadId);
                 Console.Clear();
                 return Task.CompletedTask;
             }, cts.Token);
@@ -392,7 +386,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             await executor.Execute(async () =>
             {
                 TaskCompletionSource tcs = new TaskCompletionSource();
-                Console.WriteLine("ThreadingTimer: Start Time: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " ManagedThreadId: " + Environment.CurrentManagedThreadId + " NativeThreadId: " + WebWorkerTestHelper.NativeThreadId);
+                WebWorkerTestHelper.Log("ThreadingTimer: Start Time: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " ManagedThreadId: " + Environment.CurrentManagedThreadId + " NativeThreadId: " + WebWorkerTestHelper.NativeThreadId);
 
                 using var timer = new Timer(_ =>
                 {
@@ -405,7 +399,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 await tcs.Task;
             }, cts.Token);
 
-            Console.WriteLine("ThreadingTimer: End Time: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " ManagedThreadId: " + Environment.CurrentManagedThreadId + " NativeThreadId: " + WebWorkerTestHelper.NativeThreadId);
+            WebWorkerTestHelper.Log("ThreadingTimer: End Time: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " ManagedThreadId: " + Environment.CurrentManagedThreadId + " NativeThreadId: " + WebWorkerTestHelper.NativeThreadId);
             Assert.True(hit);
         }
 
@@ -496,7 +490,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Theory, MemberData(nameof(GetTargetThreadsAndBlockingCalls))]
-        public async Task WaitDoesNotAssertInAsyncCode(Executor executor, NamedCall method)
+        public async Task WaitInAsyncAssertsOnlyOnJSWebWorker(Executor executor, NamedCall method)
         {
             using var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(async () =>
@@ -513,7 +507,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     exception = ex;
                 }
 
-                Assert.Null(exception);
+                if (method.IsBlocking && executor.Type == ExecutorType.JSWebWorker)
+                {
+                    Assert.NotNull(exception);
+                    Assert.IsType<PlatformNotSupportedException>(exception);
+                }
+                else
+                {
+                    Assert.Null(exception);
+                }
             }, cts.Token);
         }
 
@@ -527,7 +529,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
                 Exception? exception = null;
                 // the callback will hit Main or JSWebWorker, not the original executor thread
-                await WebWorkerTestHelper.CallMeBackSync(() => {
+                await WebWorkerTestHelper.CallMeBackSync(() =>
+                {
                     // when we are inside of synchronous callback, all blocking .Wait is forbidden
                     try
                     {
@@ -539,9 +542,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     }
                 });
 
-                Console.WriteLine("WaitAssertsOnJSInteropThreads: ExecuterType: " + executor.Type + " ManagedThreadId: " + Environment.CurrentManagedThreadId + " NativeThreadId: " + WebWorkerTestHelper.NativeThreadId);
-                Assert.NotNull(exception);
-                Assert.IsType<PlatformNotSupportedException>(exception);
+                if (method.IsBlocking)
+                {
+                    Assert.NotNull(exception);
+                    Assert.IsType<PlatformNotSupportedException>(exception);
+                }
+                else
+                {
+                    Assert.Null(exception);
+                }
             }, cts.Token);
         }
 
@@ -558,9 +567,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 // the callback will hit Main or JSWebWorker, not the original executor thread
                 await WebWorkerTestHelper.CallExportBackSync(nameof(WebWorkerTestHelper.CallCurrentCallback));
 
-                Console.WriteLine("WaitAssertsOnJSInteropThreads: ExecuterType: " + executor.Type + " ManagedThreadId: " + Environment.CurrentManagedThreadId + " NativeThreadId: " + WebWorkerTestHelper.NativeThreadId);
-                Assert.NotNull(WebWorkerTestHelper.LastException);
-                Assert.IsType<PlatformNotSupportedException>(WebWorkerTestHelper.LastException);
+                if (method.IsBlocking)
+                {
+                    Assert.NotNull(WebWorkerTestHelper.LastException);
+                    Assert.IsType<PlatformNotSupportedException>(WebWorkerTestHelper.LastException);
+                }
+                else
+                {
+                    Assert.Null(WebWorkerTestHelper.LastException);
+                }
             }, cts.Token);
         }
 
@@ -574,6 +589,17 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
                 executor.AssertAwaitCapturedContext();
             }, cts.Token);
+        }
+
+        [Fact]
+        public async Task FinalizerWorks()
+        {
+            var ft = new FinalizerTest();
+            GC.Collect();
+            await Task.Delay(100);
+            GC.Collect();
+            await Task.Delay(100);
+            Assert.True(FinalizerTest.FinalizerHit);
         }
 
         #endregion

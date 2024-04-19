@@ -53,7 +53,7 @@ namespace System.Data
         private ListChangedEventArgs? _addNewMoved;
 
         private System.ComponentModel.ListChangedEventHandler? _onListChanged;
-        internal static ListChangedEventArgs s_resetEventArgs = new ListChangedEventArgs(ListChangedType.Reset, -1);
+        internal static readonly ListChangedEventArgs s_resetEventArgs = new ListChangedEventArgs(ListChangedType.Reset, -1);
 
         private DataTable? _delayedTable;
         private string? _delayedRowFilter;

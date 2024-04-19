@@ -13,6 +13,12 @@ namespace System.Text.Json
         public const string ExceptionSourceValueToRethrowAsJsonException = "System.Text.Json.Rethrowable";
 
         [DoesNotReturn]
+        public static void ThrowArgumentOutOfRangeException_NewLine(string parameterName)
+        {
+            throw GetArgumentOutOfRangeException(parameterName, SR.InvalidNewLine);
+        }
+
+        [DoesNotReturn]
         public static void ThrowArgumentOutOfRangeException_IndentCharacter(string parameterName)
         {
             throw GetArgumentOutOfRangeException(parameterName, SR.InvalidIndentCharacter);

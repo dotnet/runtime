@@ -64,7 +64,7 @@ patch_interp_data_items (InterpMethod *old_imethod, InterpMethod *new_imethod)
 	GSList *sites = g_hash_table_lookup (patch_sites_table, old_imethod);
 	g_slist_foreach (sites, patch_imethod_site, new_imethod);
 
-	g_hash_table_remove (patch_sites_table, sites);
+	g_hash_table_remove (patch_sites_table, old_imethod);
 	g_slist_free (sites);
 }
 

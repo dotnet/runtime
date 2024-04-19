@@ -26,7 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 specific unwind information.  Documentation about the exception handling
 ABI for the ARM architecture can be found at:
 http://infocenter.arm.com/help/topic/com.arm.doc.ihi0038a/IHI0038A_ehabi.pdf
-*/ 
+*/
 
 #include "libunwind_i.h"
 
@@ -151,7 +151,7 @@ arm_exidx_apply_cmd (struct arm_exbuf_data *edata, struct dwarf_cursor *c)
  * arm_exidx_apply_cmd that applies the command onto the dwarf_cursor.
  */
 HIDDEN int
-arm_exidx_decode (const uint8_t *buf, uint8_t len, struct dwarf_cursor *c)
+arm_exidx_decode (const uint8_t *buf, int len, struct dwarf_cursor *c)
 {
 #define READ_OP() *buf++
   assert(buf != NULL);
@@ -284,7 +284,7 @@ arm_exidx_decode (const uint8_t *buf, uint8_t len, struct dwarf_cursor *c)
 
 /**
  * Reads the entry from the given cursor and extracts the unwind instructions
- * into buf.  Returns the number of the extracted unwind insns or 
+ * into buf.  Returns the number of the extracted unwind insns or
  * -UNW_ESTOPUNWIND if the special bit pattern ARM_EXIDX_CANT_UNWIND (0x1) was
  * found.
  */
@@ -297,7 +297,7 @@ arm_exidx_extract (struct dwarf_cursor *c, uint8_t *buf)
   uint32_t data;
 
   /* An ARM unwind entry consists of a prel31 offset to the start of a
-     function followed by 31bits of data: 
+     function followed by 31bits of data:
        * if set to 0x1: the function cannot be unwound (EXIDX_CANTUNWIND)
        * if bit 31 is one: this is a table entry itself (ARM_EXIDX_COMPACT)
        * if bit 31 is zero: this is a prel31 offset of the start of the
@@ -317,9 +317,9 @@ arm_exidx_extract (struct dwarf_cursor *c, uint8_t *buf)
     {
       Debug (2, "%p compact model %d [%8.8x]\n", (void *)addr,
              (data >> 24) & 0x7f, data);
-      buf[nbuf++] = data >> 16;
-      buf[nbuf++] = data >> 8;
-      buf[nbuf++] = data;
+      buf[nbuf++] = (uint8_t) (data >> 16);
+      buf[nbuf++] = (uint8_t) (data >> 8);
+      buf[nbuf++] = (uint8_t) data;
     }
   else
     {
@@ -342,9 +342,11 @@ arm_exidx_extract (struct dwarf_cursor *c, uint8_t *buf)
               extbl_data += 4;
             }
           else
-            buf[nbuf++] = data >> 16;
-          buf[nbuf++] = data >> 8;
-          buf[nbuf++] = data;
+            {
+              buf[nbuf++] = (uint8_t) (data >> 16);
+            }
+          buf[nbuf++] = (uint8_t) (data >> 8);
+          buf[nbuf++] = (uint8_t) data;
         }
       else
         {
@@ -357,9 +359,9 @@ arm_exidx_extract (struct dwarf_cursor *c, uint8_t *buf)
                                        c->as_arg) < 0)
             return -UNW_EINVAL;
           n_table_words = data >> 24;
-          buf[nbuf++] = data >> 16;
-          buf[nbuf++] = data >> 8;
-          buf[nbuf++] = data;
+          buf[nbuf++] = (uint8_t) (data >> 16);
+          buf[nbuf++] = (uint8_t) (data >> 8);
+          buf[nbuf++] = (uint8_t) data;
           extbl_data += 8;
         }
       assert (n_table_words <= 5);
@@ -370,10 +372,10 @@ arm_exidx_extract (struct dwarf_cursor *c, uint8_t *buf)
                                        c->as_arg) < 0)
             return -UNW_EINVAL;
           extbl_data += 4;
-          buf[nbuf++] = data >> 24;
-          buf[nbuf++] = data >> 16;
-          buf[nbuf++] = data >> 8;
-          buf[nbuf++] = data >> 0;
+          buf[nbuf++] = (uint8_t) (data >> 24);
+          buf[nbuf++] = (uint8_t) (data >> 16);
+          buf[nbuf++] = (uint8_t) (data >> 8);
+          buf[nbuf++] = (uint8_t) data;
         }
     }
 
@@ -458,7 +460,7 @@ tdep_search_unwind_table (unw_addr_space_t as, unw_word_t ip,
            && di->format != UNW_INFO_FORMAT_ARM_EXIDX)
     return dwarf_search_unwind_table (as, ip, di, pi, need_unwind_info, arg);
 
-  return -UNW_ENOINFO; 
+  return -UNW_ENOINFO;
 }
 
 #ifndef UNW_REMOTE_ONLY

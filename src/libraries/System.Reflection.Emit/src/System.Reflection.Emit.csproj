@@ -23,6 +23,8 @@
     <Compile Include="System\Reflection\Emit\MethodBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\ModuleBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\ParameterBuilderImpl.cs" />
+    <Compile Include="System\Reflection\Emit\Pdb\SequencePoint.cs" />
+    <Compile Include="System\Reflection\Emit\Pdb\SymbolDocumentWriter.cs" />
     <Compile Include="System\Reflection\Emit\PersistedAssemblyBuilder.cs" />
     <Compile Include="System\Reflection\Emit\PropertyBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\PseudoCustomAttributesData.cs" />

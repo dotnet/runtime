@@ -54,6 +54,10 @@ namespace ILLink.Shared.TrimAnalysis
 		// the reflection body scanner.
 		RequiresReflectionBodyScanner_Sentinel = 1000,
 		/// <summary>
+		/// <see cref="System.Array.CreateInstance(System.Type, int)"/>
+		/// </summary>
+		Array_CreateInstance,
+		/// <summary>
 		/// <see cref="System.Type.MakeGenericType(System.Type[])"/>
 		/// </summary>
 		Type_MakeGenericType,

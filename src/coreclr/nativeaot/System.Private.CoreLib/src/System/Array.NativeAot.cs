@@ -143,14 +143,14 @@ namespace System
             if (constructorEntryPoint == IntPtr.Zero)
                 return;
 
-            var constructorFtn = (delegate*<ref byte, void>)RuntimeAugments.TypeLoaderCallbacks.ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(constructorEntryPoint, new RuntimeTypeHandle(pElementEEType));
+            IntPtr constructorFtn = RuntimeAugments.TypeLoaderCallbacks.ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(constructorEntryPoint, new RuntimeTypeHandle(pElementEEType));
 
             ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(this);
             nuint elementSize = ElementSize;
 
             for (int i = 0; i < Length; i++)
             {
-                constructorFtn(ref arrayRef);
+                RawCalliHelper.CallDefaultStructConstructor(constructorFtn, ref arrayRef);
                 arrayRef = ref Unsafe.Add(ref arrayRef, elementSize);
             }
         }

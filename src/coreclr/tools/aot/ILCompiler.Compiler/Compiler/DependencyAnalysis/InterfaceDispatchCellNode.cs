@@ -54,7 +54,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList result = new DependencyList();
 
-            if (!factory.VTable(_targetMethod.OwningType).HasFixedSlots)
+            if (!factory.VTable(_targetMethod.OwningType).HasKnownVirtualMethodUse)
             {
                 result.Add(factory.VirtualMethodUse(_targetMethod), "Interface method use");
             }

@@ -48,7 +48,9 @@ struct Scev
     const ScevOper  Oper;
     const var_types Type;
 
-    Scev(ScevOper oper, var_types type) : Oper(oper), Type(type)
+    Scev(ScevOper oper, var_types type)
+        : Oper(oper)
+        , Type(type)
     {
     }
 
@@ -74,7 +76,9 @@ struct Scev
 
 struct ScevConstant : Scev
 {
-    ScevConstant(var_types type, int64_t value) : Scev(ScevOper::Constant, type), Value(value)
+    ScevConstant(var_types type, int64_t value)
+        : Scev(ScevOper::Constant, type)
+        , Value(value)
     {
     }
 
@@ -84,7 +88,9 @@ struct ScevConstant : Scev
 struct ScevLocal : Scev
 {
     ScevLocal(var_types type, unsigned lclNum, unsigned ssaNum)
-        : Scev(ScevOper::Local, type), LclNum(lclNum), SsaNum(ssaNum)
+        : Scev(ScevOper::Local, type)
+        , LclNum(lclNum)
+        , SsaNum(ssaNum)
     {
     }
 
@@ -96,7 +102,9 @@ struct ScevLocal : Scev
 
 struct ScevUnop : Scev
 {
-    ScevUnop(ScevOper oper, var_types type, Scev* op1) : Scev(oper, type), Op1(op1)
+    ScevUnop(ScevOper oper, var_types type, Scev* op1)
+        : Scev(oper, type)
+        , Op1(op1)
     {
     }
 
@@ -105,7 +113,9 @@ struct ScevUnop : Scev
 
 struct ScevBinop : ScevUnop
 {
-    ScevBinop(ScevOper oper, var_types type, Scev* op1, Scev* op2) : ScevUnop(oper, type, op1), Op2(op2)
+    ScevBinop(ScevOper oper, var_types type, Scev* op1, Scev* op2)
+        : ScevUnop(oper, type, op1)
+        , Op2(op2)
     {
     }
 
@@ -118,7 +128,9 @@ struct ScevBinop : ScevUnop
 struct ScevAddRec : Scev
 {
     ScevAddRec(var_types type, Scev* start, Scev* step DEBUGARG(FlowGraphNaturalLoop* loop))
-        : Scev(ScevOper::AddRec, type), Start(start), Step(step) DEBUGARG(Loop(loop))
+        : Scev(ScevOper::AddRec, type)
+        , Start(start)
+        , Step(step) DEBUGARG(Loop(loop))
     {
     }
 
@@ -204,7 +216,7 @@ class ScalarEvolutionContext
     Scev* MakeAddRecFromRecursiveScev(Scev* start, Scev* scev, Scev* recursiveScev);
     Scev* CreateSimpleInvariantScev(GenTree* tree);
     Scev* CreateScevForConstant(GenTreeIntConCommon* tree);
-    void ExtractAddOperands(ScevBinop* add, ArrayStack<Scev*>& operands);
+    void  ExtractAddOperands(ScevBinop* add, ArrayStack<Scev*>& operands);
 
 public:
     ScalarEvolutionContext(Compiler* comp);
@@ -212,10 +224,10 @@ public:
     void ResetForLoop(FlowGraphNaturalLoop* loop);
 
     ScevConstant* NewConstant(var_types type, int64_t value);
-    ScevLocal* NewLocal(unsigned lclNum, unsigned ssaNum);
-    ScevUnop* NewExtension(ScevOper oper, var_types targetType, Scev* op);
-    ScevBinop* NewBinop(ScevOper oper, Scev* op1, Scev* op2);
-    ScevAddRec* NewAddRec(Scev* start, Scev* step);
+    ScevLocal*    NewLocal(unsigned lclNum, unsigned ssaNum);
+    ScevUnop*     NewExtension(ScevOper oper, var_types targetType, Scev* op);
+    ScevBinop*    NewBinop(ScevOper oper, Scev* op1, Scev* op2);
+    ScevAddRec*   NewAddRec(Scev* start, Scev* step);
 
     Scev* Analyze(BasicBlock* block, GenTree* tree);
     Scev* Simplify(Scev* scev);

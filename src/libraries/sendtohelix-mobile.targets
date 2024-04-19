@@ -81,7 +81,7 @@
                                                                                  Destination="build/BuildIntegration" />
       <HelixCorrelationPayload Include="$(CoreCLRAotSdkDir)"                     Condition="'$(RuntimeFlavor)' == 'coreclr'"
                                                                                  Destination="build/aotsdk" />
-      <HelixCorrelationPayload Include="$(ToolsILLinkDir)"                       Destination="build/microsoft.net.illink.tasks" />
+      <HelixCorrelationPayload Include="$(ToolsILLinkDir)"                       Destination="build" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'">
@@ -94,7 +94,7 @@
       </XHarnessAppBundleToTest>
 
       <!-- To save on overall size, we compress each app after building. -->
-      <XHarnessAppBundleToTest 
+      <XHarnessAppBundleToTest
         Include="$([System.IO.Directory]::GetFiles('$(TestArchiveTestsRoot)$(OSPlatformConfig)', '*.zip', System.IO.SearchOption.TopDirectoryOnly))"
         Exclude="$([System.IO.Directory]::GetFiles('$(TestArchiveRoot)', 'xharness-app-payload*', System.IO.SearchOption.AllDirectories))">
         <TestTarget>$(AppleTestTarget)</TestTarget>
@@ -116,8 +116,8 @@
       </XHarnessAppBundleToTest>
 
       <!-- To save on overall size, we compress each app after building. -->
-      <XHarnessAppBundleToTest Condition="Exists('$(TestArchiveRoot)runonly/$(OSPlatformConfig)') and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'ios'" 
-        Include="$([System.IO.Directory]::GetFiles('$(TestArchiveRoot)runonly/$(OSPlatformConfig)', '*.zip', System.IO.SearchOption.TopDirectoryOnly))" 
+      <XHarnessAppBundleToTest Condition="Exists('$(TestArchiveRoot)runonly/$(OSPlatformConfig)') and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'ios'"
+        Include="$([System.IO.Directory]::GetFiles('$(TestArchiveRoot)runonly/$(OSPlatformConfig)', '*.zip', System.IO.SearchOption.TopDirectoryOnly))"
         Exclude="$([System.IO.Directory]::GetFiles('$(TestArchiveRoot)runonly', 'xharness-app-payload*', System.IO.SearchOption.AllDirectories))">
         <!-- The sample app doesn't need test runner -->
         <IncludesTestRunner>false</IncludesTestRunner>

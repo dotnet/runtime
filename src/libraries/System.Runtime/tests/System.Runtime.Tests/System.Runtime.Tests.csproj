@@ -338,7 +338,9 @@
     <Compile Include="System\RealParserTests.cs" />
 
     <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Castle.xml" />
-    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+    <TrimmerRootDescriptor Condition="'$(TargetsAppleMobile)' != 'true' or '$(EnableAggressiveTrimming)' != 'true' or '$(UseNativeAotRuntime)' == 'true'" Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+    <!-- Apple mobile trimming descriptor for Mono runtime -->
+    <TrimmerRootDescriptor Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.iOS.xml" />
   </ItemGroup>
 
   <ItemGroup>

@@ -38,12 +38,12 @@ namespace System.Text.Unicode
         /// <summary>
         /// The first code point in this range.
         /// </summary>
-        public int FirstCodePoint { get; private set; }
+        public int FirstCodePoint { get; }
 
         /// <summary>
         /// The number of code points in this range.
         /// </summary>
-        public int Length { get; private set; }
+        public int Length { get; }
 
         /// <summary>
         /// Creates a new <see cref="UnicodeRange"/> from a span of characters.

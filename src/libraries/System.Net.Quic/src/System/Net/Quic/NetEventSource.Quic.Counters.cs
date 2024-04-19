@@ -14,7 +14,7 @@ namespace System.Net
 {
     internal sealed partial class NetEventSource
     {
-        private static Meter s_meter = new Meter("Private.InternalDiagnostics.System.Net.Quic.MsQuic");
+        private static readonly Meter s_meter = new Meter("Private.InternalDiagnostics.System.Net.Quic.MsQuic");
         private static long s_countersLastFetched;
         private static readonly long[] s_counters = new long[(int)QUIC_PERFORMANCE_COUNTERS.MAX];
         public static readonly ObservableCounter<long> s_CONN_CREATED = s_meter.CreateObservableCounter<long>(

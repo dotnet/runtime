@@ -4452,7 +4452,6 @@ free_jit_mem_manager (MonoMemoryManager *mem_manager)
 		g_hash_table_destroy (info->dyn_delegate_info_hash);
 	g_hash_table_destroy (info->static_rgctx_trampoline_hash);
 	g_hash_table_destroy (info->mrgctx_hash);
-	g_hash_table_destroy (info->interp_method_pointer_hash);
 	mono_conc_hashtable_destroy (info->runtime_invoke_hash);
 	g_hash_table_destroy (info->seq_points);
 	g_hash_table_destroy (info->arch_seq_points);

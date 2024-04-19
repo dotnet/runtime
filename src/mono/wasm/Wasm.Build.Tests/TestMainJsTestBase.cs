@@ -55,7 +55,7 @@ public abstract class TestMainJsTestBase : BuildTestBase
                 Path.Combine(_projectDir, "test-main.js")
             );
 
-            File.WriteAllText(Path.Combine(_projectDir!, "index.html"), @"<html><body><script type=""module"" src=""test-main.js""></script></body></html>");
+            File.WriteAllText(Path.Combine(_projectDir!, "index.html"), @"<!DOCTYPE html><html><body><script type=""module"" src=""test-main.js""></script></body></html>");
         }
         else if (_projectDir is null)
         {

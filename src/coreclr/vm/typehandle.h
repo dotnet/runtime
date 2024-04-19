@@ -331,22 +331,6 @@ public:
     // so the direct reference will be stored to the pDest argument. In case of unloadable
     // context, an index to the pinned table will be saved.
     void AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest);
-
-    FORCEINLINE static bool GetManagedClassObjectFromHandleFast(RUNTIMETYPEHANDLE handle, OBJECTREF* pRef)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        // For a non-unloadable context, handle is expected to be either null (is not cached yet)
-        // or be a direct pointer to a frozen RuntimeType object
-
-        if (handle & 1)
-        {
-            // Clear the "is pinned object" bit from the managed reference
-            *pRef = (OBJECTREF)(handle - 1);
-            return true;
-        }
-        return false;
-    }
 #endif
 
     // Similar to IsCanonicalSubtype, but applied to a vector.
@@ -518,7 +502,7 @@ public:
 #endif
 
     OBJECTREF GetManagedClassObject() const;
-    OBJECTREF GetManagedClassObjectFast() const;
+    OBJECTREF GetManagedClassObjectIfExists() const;
 
     static TypeHandle MergeArrayTypeHandlesToCommonParent(
         TypeHandle ta, TypeHandle tb);

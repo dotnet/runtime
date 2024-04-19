@@ -903,7 +903,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                     // Indicate that this is a stub method which takes a BOXed this pointer.
                     // An BoxedEntryPointStub may still be an InstantiatedMethodDesc
                     pResultMD->SetIsUnboxingStub();
-                    pResultMD->AsInstantiatedMethodDesc()->SetupWrapperStubWithInstantiations(pMDescInCanonMT, NULL, NULL);
+                    pResultMD->AsInstantiatedMethodDesc()->SetupWrapperStubWithInstantiations(pMDescInCanonMT, 0, NULL);
 
                     pResultMD->SetTemporaryEntryPoint(pAllocator, &amt);
 

@@ -3439,7 +3439,7 @@ loop_start:
 				temp->dreg = mono_alloc_ireg (cfg);
 				ins->sreg2 = temp->dreg;
 				if (opcode2 == -1)
-					g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (ins->opcode));
+					g_error ("mono_op_imm_to_op failed for " M_PRI_INST "\n", mono_inst_name (ins->opcode));
 				ins->opcode = GUINT32_TO_OPCODE (opcode2);
 			}
 			if (ins->opcode == OP_SBB || ins->opcode == OP_ISBB || ins->opcode == OP_SUBCC)
@@ -3497,7 +3497,7 @@ loop_start:
 			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
 			if (opcode2 == -1)
-				g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (ins->opcode));
+				g_error ("mono_op_imm_to_op failed for " M_PRI_INST "\n", mono_inst_name (ins->opcode));
 			ins->opcode = GINT32_TO_UINT16 (opcode2);
 			break;
 		}
@@ -5957,12 +5957,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					ARM_STR_IMM (code, i, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, regs) + i * sizeof (target_mgreg_t));
 			break;
 		default:
-			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
+			g_warning ("unknown opcode " M_PRI_INST " in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();
 		}
 
 		if ((cfg->opt & MONO_OPT_BRANCH) && ((code - cfg->native_code - offset) > max_len)) {
-			g_warning ("wrong maximal instruction length of instruction %s (expected %d, got %d)",
+			g_warning ("wrong maximal instruction length of instruction " M_PRI_INST " (expected %d, got %d)",
 				   mono_inst_name (ins->opcode), max_len, code - cfg->native_code - offset);
 			g_assert_not_reached ();
 		}

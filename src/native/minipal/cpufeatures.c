@@ -12,6 +12,10 @@
 
 #include <Windows.h>
 
+#ifndef PF_ARM_SVE_INSTRUCTIONS_AVAILABLE
+#define PF_ARM_SVE_INSTRUCTIONS_AVAILABLE (46)
+#endif
+
 #else // HOST_WINDOWS
 
 #include "minipalconfig.h"
@@ -457,6 +461,11 @@ int minipal_getcpufeatures(void)
     }
 
     // TODO: IsProcessorFeaturePresent doesn't support LRCPC2 yet.
+
+    if (IsProcessorFeaturePresent(PF_ARM_SVE_INSTRUCTIONS_AVAILABLE))
+    {
+        result |= ARM64IntrinsicConstants_Sve;
+    }
 
 #endif // HOST_WINDOWS
 

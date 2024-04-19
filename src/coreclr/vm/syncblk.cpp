@@ -2108,7 +2108,7 @@ void VoidDeleteSyncBlockMemory(SyncBlock* psb)
     SyncBlockCache::GetSyncBlockCache()->DeleteSyncBlockMemory(psb);
 }
 
-typedef Wrapper<SyncBlock*, DoNothing<SyncBlock*>, VoidDeleteSyncBlockMemory, NULL> SyncBlockMemoryHolder;
+typedef Wrapper<SyncBlock*, DoNothing<SyncBlock*>, VoidDeleteSyncBlockMemory, 0> SyncBlockMemoryHolder;
 
 
 // get the sync block for an existing object
@@ -2681,7 +2681,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
                 {
                     duration = end - start;
                 }
-                duration = min(duration, (DWORD)timeOut);
+                duration = min(duration, (ULONGLONG)timeOut);
                 timeOut -= (INT32)duration;
             }
         }

@@ -914,6 +914,15 @@ bool interceptor_ICJI::isExactType(CORINFO_CLASS_HANDLE cls)
     return temp;
 }
 
+// Returns whether a class handle represents a Nullable type, if that can be statically determined.
+TypeCompareState interceptor_ICJI::isNullableType(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("isNullableType");
+    TypeCompareState temp = original_ICorJitInfo->isNullableType(cls);
+    mc->recIsNullableType(cls, temp);
+    return temp;
+}
+
 // Returns TypeCompareState::Must if cls is known to be an enum.
 // For enums with known exact type returns the underlying
 // type in underlyingType when the provided pointer is

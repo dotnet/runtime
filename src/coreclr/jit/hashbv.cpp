@@ -824,7 +824,7 @@ void hashBv::setAll(indexType numToSet)
     for (unsigned int i = 0; i < numToSet; i += BITS_PER_NODE)
     {
         hashBvNode* node        = getOrAddNodeForIndex(i);
-        indexType   bits_to_set = min(BITS_PER_NODE, numToSet - i);
+        indexType   bits_to_set = min((indexType)BITS_PER_NODE, numToSet - i);
         node->setLowest(bits_to_set);
     }
 }
@@ -1948,7 +1948,7 @@ more_data:
         current_element++;
         // printf("current element is %d\n", current_element);
         // reached the end of this node
-        if (current_element == (indexType) this->currNode->numElements())
+        if (current_element == (indexType)this->currNode->numElements())
         {
             // printf("going to next node\n");
             this->nextNode();
@@ -1956,7 +1956,7 @@ more_data:
         }
         else
         {
-            assert(current_element < (indexType) this->currNode->numElements());
+            assert(current_element < (indexType)this->currNode->numElements());
             // printf("getting more data\n");
             current_data = this->currNode->elements[current_element];
             current_base = this->currNode->baseIndex + current_element * BITS_PER_ELEMENT;

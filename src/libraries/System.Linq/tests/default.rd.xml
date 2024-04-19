@@ -382,10 +382,5 @@
       </Type>
     </Assembly>
 
-    <!-- xUnit does this -->
-    <Assembly Name="System.Runtime">
-      <Type Name="System.IEquatable`1[[System.Linq.Tests.GroupJoinTests+JoinRec,System.Linq.Tests]]" Dynamic="Required All" />
-    </Assembly>
-
   </Application>
 </Directives>

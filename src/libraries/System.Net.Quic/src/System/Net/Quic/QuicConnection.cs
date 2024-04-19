@@ -187,13 +187,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// </summary>
     private SslApplicationProtocol _negotiatedApplicationProtocol;
 
-#if DEBUG
     /// <summary>
     /// Will contain TLS secret after CONNECTED event is received and store it into SSLKEYLOGFILE.
     /// MsQuic holds the underlying pointer so this object can be disposed only after connection native handle gets closed.
     /// </summary>
     private readonly MsQuicTlsSecret? _tlsSecret;
-#endif
 
     /// <summary>
     /// The remote endpoint used for this connection.
@@ -254,9 +252,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             throw;
         }
 
-#if DEBUG
         _tlsSecret = MsQuicTlsSecret.Create(_handle);
-#endif
     }
 
     /// <summary>
@@ -284,9 +280,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
         _remoteEndPoint = MsQuicHelpers.QuicAddrToIPEndPoint(info->RemoteAddress);
         _localEndPoint = MsQuicHelpers.QuicAddrToIPEndPoint(info->LocalAddress);
-#if DEBUG
         _tlsSecret = MsQuicTlsSecret.Create(_handle);
-#endif
     }
 
     private async ValueTask FinishConnectAsync(QuicClientConnectionOptions options, CancellationToken cancellationToken = default)
@@ -510,9 +504,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
         QuicAddr localAddress = MsQuicHelpers.GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_CONN_LOCAL_ADDRESS);
         _localEndPoint = MsQuicHelpers.QuicAddrToIPEndPoint(&localAddress);
 
-#if DEBUG
+        // Final (1-RTT) secrets have been derived, log them if desired to allow decrypting application traffic.
         _tlsSecret?.WriteSecret();
-#endif
 
         if (NetEventSource.Log.IsEnabled())
         {
@@ -535,6 +528,9 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
     private unsafe int HandleEventShutdownComplete()
     {
+        // make sure we log at least some secrets in case of shutdown before handshake completes.
+        _tlsSecret?.WriteSecret();
+
         Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(_disposed == 1 ? new ObjectDisposedException(GetType().FullName) : ThrowHelper.GetOperationAbortedException());
         _acceptQueue.Writer.TryComplete(exception);
         _connectedTcs.TrySetException(exception);
@@ -577,6 +573,9 @@ public sealed partial class QuicConnection : IAsyncDisposable
         // also prevents potential user RemoteCertificateValidationCallback from blocking MsQuic
         // worker threads.
         //
+
+        // Handshake keys should be available by now, log them now if desired.
+        _tlsSecret?.WriteSecret();
 
         var task = _sslConnectionOptions.StartAsyncCertificateValidation((IntPtr)data.Certificate, (IntPtr)data.Chain);
         if (task.IsCompletedSuccessfully)

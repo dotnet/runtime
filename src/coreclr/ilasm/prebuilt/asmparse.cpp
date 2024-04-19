@@ -2809,7 +2809,7 @@ case 231:
 case 232:
 #line 695 "asmparse.y"
 { yypvt[-1].binstr->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD);
-                                                               yyval.token = PASM->MakeMemberRef(NULL, yypvt[-0].string, yypvt[-1].binstr);
+                                                               yyval.token = PASM->MakeMemberRef(mdTokenNil, yypvt[-0].string, yypvt[-1].binstr);
                                                                PASM->SetMemberRefFixup(yyval.token,iOpcodeLen); } break;
 case 233:
 #line 698 "asmparse.y"
@@ -3162,13 +3162,13 @@ case 354:
                                                               PASM->m_pCurMethod->m_wVTSlot = (WORD)yypvt[-0].int32; } break;
 case 355:
 #line 919 "asmparse.y"
-{ PASM->AddMethodImpl(yypvt[-2].token,yypvt[-0].string,NULL,NULL,NULL,NULL); } break;
+{ PASM->AddMethodImpl(yypvt[-2].token,yypvt[-0].string,NULL,mdTokenNil,NULL,NULL); } break;
 case 356:
 #line 922 "asmparse.y"
 { PASM->AddMethodImpl(yypvt[-6].token,yypvt[-4].string,
                                                               (yypvt[-3].int32==0 ? parser->MakeSig(yypvt[-8].int32,yypvt[-7].binstr,yypvt[-1].binstr) :
                                                               parser->MakeSig(yypvt[-8].int32| IMAGE_CEE_CS_CALLCONV_GENERIC,yypvt[-7].binstr,yypvt[-1].binstr,yypvt[-3].int32))
-                                                              ,NULL,NULL,NULL);
+                                                              ,mdTokenNil,NULL,NULL);
                                                               PASM->ResetArgNameList();
                                                             } break;
 case 358:

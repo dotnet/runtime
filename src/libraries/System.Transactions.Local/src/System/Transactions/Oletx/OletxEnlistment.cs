@@ -846,7 +846,6 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
 
     public void Prepared()
     {
-        int hrResult = OletxHelper.S_OK;
         EnlistmentShim? localEnlistmentShim = null;
         Phase0EnlistmentShim? localPhase0Shim = null;
         bool localFabricateRollback = false;

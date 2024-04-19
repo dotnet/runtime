@@ -28,24 +28,6 @@ schedules:
       - main
     always: false # run only if there were changes since the last successful scheduled run.
 
-pr:
-  branches:
-    include:
-    - main
-    - release/*.*
-  paths:
-    include:
-    - '*'
-    exclude:
-    - '**.md'
-    - eng/Version.Details.xml
-    - .devcontainer/*
-    - .github/*
-    - docs/*
-    - LICENSE.TXT
-    - PATENTS.TXT
-    - THIRD-PARTY-NOTICES.TXT
-
 variables:
   - template: /eng/pipelines/common/variables.yml
 
@@ -117,8 +99,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMAOT
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-                      /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -136,8 +117,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMAOT
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-                      /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -149,55 +129,123 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          buildConfig: release
+          buildConfig: Release
           runtimeFlavor: mono
           platforms:
-          - linux_x64
-          # Disabled pending outcome of https://github.com/dotnet/runtime/issues/60234 investigation
-          #- linux_arm64
+            - linux_x64
+            # Disabled pending outcome of https://github.com/dotnet/runtime/issues/60234 investigation
+            #- linux_arm64
+          variables:
+            - name: timeoutPerTestInMinutes
+              value: 60
+            - name: timeoutPerTestCollectionInMinutes
+              value: 180
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMAOT_RuntimeTests
-            buildArgs: -s mono+clr.iltools+clr.hosts+libs+host+packs -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }}
-                      /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
-            postBuildSteps:
-              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
-                parameters:
-                  creator: dotnet-bot
-                  testRunNamePrefixSuffix: Mono_Release
-                  llvmAotStepContainer: linux_x64_llvmaot
-                  runtimeVariant: llvmaot
+            runtimeVariant: llvmaot
+            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} /p:MonoEnableLLVM=true
+            timeoutInMinutes: 360
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
+            postBuildSteps:
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  llvmAotStepContainer: linux_x64_llvmaot
+                  testRunNamePrefixSuffix: Mono_Release
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
+      #
+      # Mono CoreCLR runtime Test executions using live libraries and LLVM Full AOT
+      # Only when Mono is changed
+      # This job runs non-intrinsics runtime tests due to OOM issues
+      #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          buildConfig: release
+          buildConfig: Release
           runtimeFlavor: mono
           platforms:
-          - linux_x64
-          - linux_arm64
+            - linux_x64
+            # Tracking issue: https://github.com/dotnet/runtime/issues/90427
+            # - linux_arm64
+          variables:
+            - name: timeoutPerTestInMinutes
+              value: 60
+            - name: timeoutPerTestCollectionInMinutes
+              value: 180
           jobParameters:
             testGroup: innerloop
-            nameSuffix: AllSubsets_Mono_LLVMFullAOT_RuntimeTests
-            buildArgs: -s mono+clr.iltools+clr.hosts+libs+host+packs -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }}
-                      /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
-            postBuildSteps:
-              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
-                parameters:
-                  creator: dotnet-bot
-                  testRunNamePrefixSuffix: Mono_Release
-                  llvmAotStepContainer: linux_x64_llvmaot
-                  runtimeVariant: llvmfullaot
+            nameSuffix: AllSubsets_Mono_LLVMFULLAOT_RuntimeTests
+            runtimeVariant: llvmfullaot
+            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} /p:MonoEnableLLVM=true
+            timeoutInMinutes: 360
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
+            postBuildSteps:
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  llvmAotStepContainer: linux_x64_llvmaot
+                  testRunNamePrefixSuffix: Mono_Release
+                  testBuildArgs: >-
+                    -tree:CoreMangLib -tree:Exceptions -tree:GC -tree:Interop -tree:Loader -tree:Regressions -tree:baseservices
+                    -tree:ilasm -tree:ilverify -tree:managed -tree:profiler -tree:readytorun -tree:reflection -tree:tracing
+                    -tree:JIT/BBT -tree:JIT/CodeGenBringUpTests -tree:JIT/Directed -tree:JIT/Generics -tree:JIT/IL_Conformance
+                    -tree:JIT/Math -tree:JIT/Methodical -tree:JIT/PGO -tree:JIT/Performance -tree:JIT/Regression -tree:JIT/RyuJIT
+                    -tree:JIT/Stress -tree:JIT/common -tree:JIT/jit64 -tree:JIT/opt -tree:JIT/superpmi
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+
+      #
+      # Mono CoreCLR runtime Test executions using live libraries and LLVM Full AOT
+      # Only when Mono is changed
+      # This job runs the runtime intrinsics tests due to OOM issues
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: Release
+          runtimeFlavor: mono
+          platforms:
+            - linux_x64
+            # Tracking issue: https://github.com/dotnet/runtime/issues/90427
+            # - linux_arm64
+          variables:
+            - name: timeoutPerTestInMinutes
+              value: 60
+            - name: timeoutPerTestCollectionInMinutes
+              value: 180
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: AllSubsets_Mono_LLVMFULLAOT_RuntimeIntrinsicsTests
+            runtimeVariant: llvmfullaot
+            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} /p:MonoEnableLLVM=true
+            timeoutInMinutes: 360
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+            postBuildSteps:
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  llvmAotStepContainer: linux_x64_llvmaot
+                  testRunNamePrefixSuffix: Mono_Release
+                  testBuildArgs: -tree:JIT/Intrinsics -tree:JIT/HardwareIntrinsics -tree:JIT/SIMD
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml

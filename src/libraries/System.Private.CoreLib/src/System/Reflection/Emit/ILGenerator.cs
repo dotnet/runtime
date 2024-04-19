@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Diagnostics.SymbolStore;
 
 namespace System.Reflection.Emit
 {
@@ -199,6 +200,66 @@ namespace System.Reflection.Emit
 
         [CLSCompliant(false)]
         public void Emit(OpCode opcode, sbyte arg) => Emit(opcode, (byte)arg);
+
+        /// <summary>
+        /// Marks a sequence point in the Microsoft intermediate language (MSIL) stream.
+        /// </summary>
+        /// <param name="document">The document for which the sequence point is being defined.</param>
+        /// <param name="startLine">The line where the sequence point begins.</param>
+        /// <param name="startColumn">The column in the line where the sequence point begins.</param>
+        /// <param name="endLine">The line where the sequence point ends.</param>
+        /// <param name="endColumn">The column in the line where the sequence point ends.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="document"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="document"/> is not valid.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="startLine"/> is not within range [0, 0x20000000) or
+        /// <paramref name="endLine"/> is not within range [0, 0x20000000) or lower than <paramref name="startLine"/> or
+        /// <paramref name="startColumn"/> is not within range [0, 0x10000) or
+        /// <paramref name="endLine"/> is not within range [0, 0x10000) or
+        /// <paramref name="startLine"/> equal to <paramref name="endLine"/> and it is not hidden sequence point and <paramref name="endLine"/> lower than or equal to <paramref name="startLine"/>.
+        /// </exception>
+        /// <exception cref="NotSupportedException">Emitting debug info is not supported.</exception>"
+        public void MarkSequencePoint(ISymbolDocumentWriter document, int startLine, int startColumn, int endLine, int endColumn)
+        {
+            ArgumentNullException.ThrowIfNull(document);
+
+            if (startLine < 0 || startLine >= 0x20000000)
+            {
+                throw new ArgumentOutOfRangeException(nameof(startLine));
+            }
+
+            if (endLine < 0 || endLine >= 0x20000000 || startLine > endLine)
+            {
+                throw new ArgumentOutOfRangeException(nameof(endLine));
+            }
+
+            if (startColumn < 0 || startColumn >= 0x10000)
+            {
+                throw new ArgumentOutOfRangeException(nameof(startColumn));
+            }
+
+            if (endColumn < 0 || endColumn >= 0x10000 ||
+                (startLine == endLine && startLine != 0xfeefee && startColumn >= endColumn))
+            {
+                throw new ArgumentOutOfRangeException(nameof(endColumn));
+            }
+
+            MarkSequencePointCore(document, startLine, startColumn, endLine, endColumn);
+        }
+
+        /// <summary>
+        /// When overridden in a derived class, marks a sequence point in the Microsoft intermediate language (MSIL) stream.
+        /// </summary>
+        /// <param name="document">The document for which the sequence point is being defined.</param>
+        /// <param name="startLine">The line where the sequence point begins.</param>
+        /// <param name="startColumn">The column in the line where the sequence point begins.</param>
+        /// <param name="endLine">The line where the sequence point ends.</param>
+        /// <param name="endColumn">The column in the line where the sequence point ends.</param>
+        /// <exception cref="ArgumentException"><paramref name="document"/> is not valid.</exception>
+        /// <exception cref="NotSupportedException">Emitting debug info is not supported.</exception>"
+        /// <remarks>The parameters validated in the caller: <see cref="MarkSequencePoint"/>.</remarks>
+        protected virtual void MarkSequencePointCore(ISymbolDocumentWriter document, int startLine, int startColumn, int endLine, int endColumn) =>
+            throw new NotSupportedException(SR.NotSupported_EmitDebugInfo);
 
         #endregion
 

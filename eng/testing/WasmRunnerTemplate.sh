@@ -26,7 +26,7 @@ else
 fi
 
 if [[ -z "$XHARNESS_COMMAND" ]]; then
-	if [[ "$SCENARIO" == "WasmTestOnBrowser" || "$SCENARIO" == "wasmtestonbrowser" ]]; then
+	if [[ "$SCENARIO" == "WasmTestOnChrome" || "$SCENARIO" == "wasmtestonchrome" ]]; then
 		XHARNESS_COMMAND="test-browser"
 	else
 		XHARNESS_COMMAND="test"
@@ -87,6 +87,38 @@ echo MAIN_JS=$MAIN_JS
 echo JS_ENGINE=$JS_ENGINE
 echo JS_ENGINE_ARGS=$JS_ENGINE_ARGS
 echo XHARNESS_ARGS=$XHARNESS_ARGS
+
+function _buildAOTFunc()
+{
+	local projectFile=$1
+	local binLog=$2
+	shift 2
+
+	time dotnet msbuild $projectFile /bl:$binLog $*
+	local buildExitCode=$?
+
+	echo "\n** Performance summary for the build **\n"
+	dotnet msbuild $binLog -clp:PerformanceSummary -v:q -nologo
+	if [[ "$(uname -s)" == "Linux" && $buildExitCode -ne 0 ]]; then
+		echo "\nLast few messages from dmesg:\n"
+		local lastLines=`dmesg | tail -n 20`
+		echo $lastLines
+
+		if [[ "$lastLines" =~ "oom-kill" ]]; then
+			return 9200 # OOM
+		fi
+	fi
+
+	echo
+	echo
+
+    if [[ $buildExitCode -ne 0 ]]; then
+        return 9100 # aot build failure
+    fi
+
+	return 0
+}
+
 
 pushd $EXECUTION_DIR
 

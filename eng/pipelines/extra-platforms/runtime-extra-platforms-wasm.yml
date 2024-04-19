@@ -89,8 +89,8 @@ jobs:
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       scenarios:
-        - normal
-        - WasmTestOnBrowser
+        - WasmTestOnV8
+        - WasmTestOnChrome
 
   # this only runs on the extra pipeline
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
@@ -114,7 +114,7 @@ jobs:
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       scenarios:
-        - WasmTestOnBrowser
+        - WasmTestOnChrome
         - WasmTestOnNodeJS
 
   # EAT Library tests - only run on linux
@@ -183,7 +183,7 @@ jobs:
       shouldContinueOnError: ${{ not(parameters.isWasmOnlyBuild) }}
       alwaysRun: ${{ variables.isRollingBuild }}
       scenarios:
-        - normal
+        - WasmTestOnV8
 
   # Hybrid Globalization tests
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
@@ -197,8 +197,8 @@ jobs:
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       alwaysRun: true
       scenarios:
-        - normal
-        - WasmTestOnBrowser
+        - WasmTestOnV8
+        - WasmTestOnChrome
         - WasmTestOnNodeJS
 
   # Hybrid Globalization AOT tests
@@ -214,8 +214,8 @@ jobs:
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       alwaysRun: true
       scenarios:
-        - normal
-        - WasmTestOnBrowser
+        - WasmTestOnV8
+        - WasmTestOnChrome
         - WasmTestOnNodeJS
 
 - ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeNonLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
@@ -321,4 +321,4 @@ jobs:
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       scenarios:
-        - normal
+        - WasmTestOnV8

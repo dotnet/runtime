@@ -7,4 +7,5 @@ T:System.Diagnostics.DebugProvider
 M:System.Diagnostics.Debug.SetProvider(System.Diagnostics.DebugProvider)
 M:System.Threading.Thread.AssureBlockingPossible
 F:System.Threading.Thread.ThrowOnBlockingWaitOnJSInteropThread
+F:System.Threading.Thread.WarnOnBlockingWaitOnJSInteropThread
 F:System.Threading.Thread.ForceBlockingWait

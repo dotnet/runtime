@@ -13,7 +13,7 @@
 #include "crst.h"
 #include "callhelpers.h"
 #include "codeversion.h"
-#include "clr_std/type_traits"
+#include <type_traits>
 
 typedef SSIZE_T NativeInt;
 typedef SIZE_T NativeUInt;

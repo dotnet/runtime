@@ -38,7 +38,6 @@ namespace System.ComponentModel
         public AmbientValueAttribute(object? value) { }
         public AmbientValueAttribute(float value) { }
         public AmbientValueAttribute(string? value) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         public AmbientValueAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type type, string value) { }
         public object? Value { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
@@ -428,9 +427,8 @@ namespace System.ComponentModel
     }
     public partial class EnumConverter : System.ComponentModel.TypeConverter
     {
-        public EnumConverter([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type type) { }
+        public EnumConverter(System.Type type) { }
         protected virtual System.Collections.IComparer Comparer { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         protected System.Type EnumType { get { throw null; } }
         protected System.ComponentModel.TypeConverter.StandardValuesCollection? Values { get { throw null; } set { } }
         public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
@@ -1411,9 +1409,17 @@ namespace System.ComponentModel
         internal TypeDescriptor() { }
         [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         [System.ObsoleteAttribute("TypeDescriptor.ComNativeDescriptorHandler has been deprecated. Use a type description provider to supply type information for COM types instead.")]
-        public static System.ComponentModel.IComNativeDescriptorHandler? ComNativeDescriptorHandler { get { throw null; } set { } }
+        public static System.ComponentModel.IComNativeDescriptorHandler? ComNativeDescriptorHandler {
+            [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("COM type descriptors are not trim-compatible.")]
+            get { throw null; }
+            [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("COM type descriptors are not trim-compatible.")]
+            set { }
+        }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
-        public static System.Type ComObjectType { [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] get { throw null; } }
+        public static System.Type ComObjectType {
+            [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("COM type descriptors are not trim-compatible.")]
+            [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] get { throw null; }
+        }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.Type InterfaceType { [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] get { throw null; } }
         public static event System.ComponentModel.RefreshEventHandler? Refreshed { add { } remove { } }

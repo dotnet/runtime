@@ -65,7 +65,7 @@ extends:
                 - template: /eng/pipelines/libraries/helix.yml
                   parameters:
                     scenarios:
-                    - normal
+                    - WasmTestOnV8
                     testScope: outerloop
                     creator: dotnet-bot
                     testRunNamePrefixSuffix: Mono_$(_BuildConfig)

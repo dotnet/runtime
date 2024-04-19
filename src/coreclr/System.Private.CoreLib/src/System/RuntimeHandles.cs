@@ -87,6 +87,11 @@ namespace System
             return m_type == null;
         }
 
+        internal TypeHandle GetNativeTypeHandle()
+        {
+            return m_type.GetNativeTypeHandle();
+        }
+
         internal static bool IsTypeDefinition(RuntimeType type)
         {
             CorElementType corElemType = GetCorElementType(type);

@@ -34,6 +34,14 @@ HRESULT Assembler::InitMetaData()
     if (FAILED(hr))
         goto exit;
 
+    if(m_wzMetadataVersion)
+    {
+        VARIANT optionValue;
+        V_VT(&optionValue) = VT_BSTR;
+        V_BSTR(&optionValue) = m_wzMetadataVersion; // IMetaDataDispenserEx does not require proper BSTR
+        hr = m_pDisp->SetOption(MetaDataRuntimeVersion, &optionValue);
+    }
+
     hr = m_pDisp->DefineScope(CLSID_CorMetaDataRuntime, 0, IID_IMetaDataEmit3,
                         (IUnknown **)&m_pEmitter);
     if (FAILED(hr))
@@ -530,7 +538,7 @@ DWORD   Assembler::EmitExportStub(DWORD dwVTFSlotRVA)
     else
     {
         report->error("Unmanaged exports are not implemented for unknown platform");
-        return NULL;
+        return 0;
     }
     // Addr must be aligned, not the stub!
     if (FAILED(m_pCeeFileGen->GetSectionDataLen (m_pILSection, &PEFileOffset))) return 0;

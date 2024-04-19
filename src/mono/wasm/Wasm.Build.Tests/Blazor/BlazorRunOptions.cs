@@ -16,7 +16,6 @@ public record BlazorRunOptions
     bool CheckCounter = true,
     Dictionary<string, string>? ServerEnvironment = null,
     Func<IPage, Task>? Test = null,
-    Action<IPage>? OnPageLoaded = null,
     Action<IPage, IConsoleMessage>? OnConsoleMessage = null,
     Action<string>? OnServerMessage = null,
     Action<string>? OnErrorMessage = null,

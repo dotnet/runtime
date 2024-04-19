@@ -147,7 +147,7 @@ NOINLINE static ReflectClassBaseObject* GetRuntimeTypeHelper(LPVOID __me, TypeHa
 
     // RuntimeTypeHandle::GetRuntimeType has picked off the most common case, but does not cover array types.
     // Before we do the really heavy weight option of setting up a helper method frame, check if we have to.
-    OBJECTREF refType = typeHandle.GetManagedClassObjectFast();
+    OBJECTREF refType = typeHandle.GetManagedClassObjectIfExists();
     if (refType != NULL)
         return (ReflectClassBaseObject*)OBJECTREFToObject(refType);
 

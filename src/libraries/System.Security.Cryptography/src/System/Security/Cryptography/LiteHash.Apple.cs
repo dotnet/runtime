@@ -64,7 +64,7 @@ namespace System.Security.Cryptography
                 throw new PlatformNotSupportedException(
                     SR.Format(
                         SR.Cryptography_UnknownHashAlgorithm,
-                        Enum.GetName(typeof(PAL_HashAlgorithm), algorithm)));
+                        Enum.GetName(algorithm)));
             }
 
             if (_ctx.IsInvalid)
@@ -159,7 +159,7 @@ namespace System.Security.Cryptography
                 throw new PlatformNotSupportedException(
                     SR.Format(
                         SR.Cryptography_UnknownHashAlgorithm,
-                        Enum.GetName(typeof(Interop.AppleCrypto.PAL_HashAlgorithm), algorithm)));
+                        Enum.GetName(algorithm)));
             }
 
             if (_ctx.IsInvalid)

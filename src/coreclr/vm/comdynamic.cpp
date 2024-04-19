@@ -460,7 +460,7 @@ extern "C" void QCALLTYPE TypeBuilder_SetMethodIL(QCall::ModuleHandle pModule,
         // add the starting address of the il blob to the il blob hash table
         // we need to find this information from out of process for debugger inspection
         // APIs so we have to store this information where we can get it later
-        pModule->SetDynamicIL(mdToken(tk), TADDR(startBuf), FALSE);
+        pModule->SetDynamicIL(mdToken(tk), TADDR(startBuf));
 
         DWORD       dwImplFlags;
 

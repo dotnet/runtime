@@ -200,9 +200,9 @@ inline void PEDecoder::Reset()
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    m_base=NULL;
-    m_flags=NULL;
-    m_size=NULL;
+    m_base=(TADDR)0;
+    m_flags=0;
+    m_size=0;
     m_pNTHeaders=NULL;
     m_pCorHeader=NULL;
     m_pReadyToRunHeader=NULL;

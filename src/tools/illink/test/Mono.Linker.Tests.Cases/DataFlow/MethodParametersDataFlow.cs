@@ -35,7 +35,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.UnknownValueToUnAnnotatedParameterOnInterestingMethod ();
 			instance.WriteToParameterOnInstanceMethod (null);
 			instance.LongWriteToParameterOnInstanceMethod (0, 0, 0, 0, null);
-			instance.UnsupportedParameterType (null);
 
 			ParametersPassedToInstanceCtor (typeof (TestType), typeof (TestType));
 
@@ -44,7 +43,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 #if !NATIVEAOT
 			TestVarargsMethod (typeof (TestType), __arglist (0, 1, 2));
 #endif
-
+			AnnotationOnUnsupportedParameter.Test ();
 			WriteCapturedParameter.Test ();
 		}
 
@@ -199,11 +198,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequirePublicParameterlessConstructorAndNothing (typeof (TestType), this.GetType ());
 		}
 
-		[ExpectedWarning ("IL2098", "p1", nameof (UnsupportedParameterType))]
-		private void UnsupportedParameterType ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] object p1)
-		{
-		}
-
 		private class InstanceCtor
 		{
 			[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicConstructors))]
@@ -241,6 +235,37 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		static void TestVarargsMethod ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type, __arglist)
 		{
+		}
+
+		class AnnotationOnUnsupportedParameter
+		{
+			class UnsupportedType ()
+			{
+			}
+
+			static UnsupportedType GetUnsupportedTypeInstance () => null;
+
+			[ExpectedWarning ("IL2098", nameof (UnsupportedType))]
+			[ExpectedWarning ("IL2067", ProducedBy = Tool.Analyzer)] // https://github.com/dotnet/runtime/issues/101211
+			static void RequirePublicMethods (
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				UnsupportedType unsupportedTypeInstance)
+			{
+				RequirePublicFields (unsupportedTypeInstance);
+			}
+
+			[ExpectedWarning ("IL2098", nameof (UnsupportedType))]
+			static void RequirePublicFields (
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+				UnsupportedType unsupportedTypeInstance)
+			{
+			}
+
+			[ExpectedWarning ("IL2072", ProducedBy = Tool.Analyzer)] // https://github.com/dotnet/runtime/issues/101211
+			public static void Test () {
+				var t = GetUnsupportedTypeInstance ();
+				RequirePublicMethods (t);
+			}
 		}
 
 		class WriteCapturedParameter

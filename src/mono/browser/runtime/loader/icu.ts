@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { mono_log_error } from "./logging";
 import { GlobalizationMode, MonoConfig } from "../types";
 import { ENVIRONMENT_IS_WEB, loaderHelpers } from "./globals";
 import { mono_log_info, mono_log_debug } from "./logging";
 
-export function init_globalization() {
+export function init_globalization () {
     loaderHelpers.preferredIcuAsset = getIcuResourceName(loaderHelpers.config);
     let invariantMode = loaderHelpers.config.globalizationMode == GlobalizationMode.Invariant;
 
@@ -18,7 +19,7 @@ export function init_globalization() {
             loaderHelpers.preferredIcuAsset = null;
         } else {
             const msg = "invariant globalization mode is inactive and no ICU data archives are available";
-            loaderHelpers.err(`ERROR: ${msg}`);
+            mono_log_error(`ERROR: ${msg}`);
             throw new Error(msg);
         }
     }
@@ -28,8 +29,7 @@ export function init_globalization() {
     const env_variables = loaderHelpers.config.environmentVariables!;
     if (env_variables[hybridEnv] === undefined && loaderHelpers.config.globalizationMode === GlobalizationMode.Hybrid) {
         env_variables[hybridEnv] = "1";
-    }
-    else if (env_variables[invariantEnv] === undefined && invariantMode) {
+    } else if (env_variables[invariantEnv] === undefined && invariantMode) {
         env_variables[invariantEnv] = "1";
     }
     if (env_variables["TZ"] === undefined) {
@@ -45,7 +45,7 @@ export function init_globalization() {
     }
 }
 
-export function getIcuResourceName(config: MonoConfig): string | null {
+export function getIcuResourceName (config: MonoConfig): string | null {
     if (config.resources?.icu && config.globalizationMode != GlobalizationMode.Invariant) {
         // TODO: when starting on sidecar, we should pass default culture from UI thread
         const culture = config.applicationCulture || (ENVIRONMENT_IS_WEB ? (globalThis.navigator && globalThis.navigator.languages && globalThis.navigator.languages[0]) : Intl.DateTimeFormat().resolvedOptions().locale);
@@ -74,7 +74,7 @@ export function getIcuResourceName(config: MonoConfig): string | null {
     return null;
 }
 
-function getShardedIcuResourceName(culture: string): string {
+function getShardedIcuResourceName (culture: string): string {
     const prefix = culture.split("-")[0];
     if (prefix === "en" || ["fr", "fr-FR", "it", "it-IT", "de", "de-DE", "es", "es-ES"].includes(culture)) {
         return "icudt_EFIGS.dat";

@@ -5,7 +5,6 @@
     <DefineConstants>$(DefineConstants);ROSLYN4_0_OR_GREATER</DefineConstants>
     <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest>
     <EmccLinkOptimizationFlag Condition="'$(ContinuousIntegrationBuild)' == 'true'">-O1</EmccLinkOptimizationFlag>
-    <WasmNativeStrip>false</WasmNativeStrip>
     <!-- this Roslyn version brings in NS1.x dependencies -->
     <FlagNetStandard1XDependencies>false</FlagNetStandard1XDependencies>
   </PropertyGroup>

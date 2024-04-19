@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 /***********************************************************************
-*
-* File: disasm.cpp
-*
-*  This file handles disassembly for the "late disassembler".
-*
-***********************************************************************/
+ *
+ * File: disasm.cpp
+ *
+ *  This file handles disassembly for the "late disassembler".
+ *
+ ***********************************************************************/
 
 #include "jitpch.h"
 #ifdef _MSC_VER
@@ -23,7 +23,7 @@ FILE* g_disAsmFileCorDisTools;
 #endif // USE_COREDISTOOLS
 
 // Define DISASM_DEBUG to get verbose output of late disassembler inner workings.
-//#define DISASM_DEBUG
+// #define DISASM_DEBUG
 #ifdef DISASM_DEBUG
 #ifdef DEBUG
 #define DISASM_DUMP(...)                                                                                               \
@@ -96,12 +96,12 @@ typedef struct codeFix
 {
     codeFix* cfNext;
     unsigned cfFixup;
-} * codeFixPtr;
+}* codeFixPtr;
 
 typedef struct codeBlk
 {
     codeFix* cbFixupLst;
-} * codeBlkPtr;
+}* codeBlkPtr;
 
 #ifdef USE_MSVCDIS
 
@@ -139,7 +139,7 @@ size_t DisAssembler::disCchAddrMember(
 
     switch (terminationType)
     {
-        // int disCallSize;
+            // int disCallSize;
 
         case DISX86::trmtaJmpShort:
         case DISX86::trmtaJmpCcShort:
@@ -228,7 +228,7 @@ size_t DisAssembler::disCchAddrMember(
 
     switch (terminationType)
     {
-        // int disCallSize;
+            // int disCallSize;
 
         case DISARM64::TRMTA::trmtaBra:
         case DISARM64::TRMTA::trmtaBraCase:
@@ -620,7 +620,7 @@ size_t DisAssembler::disCchRegRelMember(
 
         case DISX86::trmtaFallThrough:
 
-        /* some instructions like division have a TRAP termination type - ignore it */
+            /* some instructions like division have a TRAP termination type - ignore it */
 
         case DISX86::trmtaTrap:
         case DISX86::trmtaTrapCc:
@@ -715,7 +715,7 @@ size_t DisAssembler::disCchRegRelMember(
 
         case DISARM64::TRMTA::trmtaFallThrough:
 
-        /* some instructions like division have a TRAP termination type - ignore it */
+            /* some instructions like division have a TRAP termination type - ignore it */
 
         case DISARM64::TRMTA::trmtaTrap:
         case DISARM64::TRMTA::trmtaTrapCc:
@@ -1261,7 +1261,7 @@ void DisAssembler::DisasmBuffer(FILE* pfile, bool printit)
 #elif defined(TARGET_AMD64)
     pdis = DIS::PdisNew(DIS::distX8664);
 #elif defined(TARGET_ARM64)
-    pdis                      = DIS::PdisNew(DIS::distArm64);
+    pdis = DIS::PdisNew(DIS::distArm64);
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif
@@ -1340,7 +1340,7 @@ void DisAssembler::DisasmBuffer(FILE* pfile, bool printit)
 #else
                            false // Display code bytes?
 #endif
-                           );
+        );
 
         ibCur += (unsigned)cb;
     }
@@ -1680,7 +1680,7 @@ bool DisAssembler::InitCoredistoolsLibrary()
 
     s_disCoreDisToolsLibraryLoadSuccessful = true; // We made it!
 
-// done initializing
+    // done initializing
 
 FinishedInitializing:
     InterlockedExchange(&s_disCoreDisToolsLibraryInitializing, 0); // unlock initialization
@@ -1703,7 +1703,7 @@ bool DisAssembler::InitCoredistoolsDisasm()
 #if defined(TARGET_ARM64)
     coreDisTargetArchitecture = Target_Arm64;
 #elif defined(TARGET_ARM)
-    coreDisTargetArchitecture        = Target_Thumb;
+    coreDisTargetArchitecture = Target_Thumb;
 #elif defined(TARGET_X86)
     coreDisTargetArchitecture = Target_X86;
 #elif defined(TARGET_AMD64)

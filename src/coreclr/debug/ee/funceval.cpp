@@ -1018,7 +1018,7 @@ static void GetFuncEvalArgValue(DebuggerEval *pDE,
                         }
                         else
                         {
-                            *pArgument = NULL;
+                            *pArgument = (ARG_SLOT)NULL;
                         }
                     }
                 }
@@ -1051,7 +1051,7 @@ static void GetFuncEvalArgValue(DebuggerEval *pDE,
                     }
                     else
                     {
-                        *pArgument = NULL;
+                        *pArgument = (ARG_SLOT)NULL;
                     }
                 }
                 else
@@ -1069,7 +1069,7 @@ static void GetFuncEvalArgValue(DebuggerEval *pDE,
                     }
                     else
                     {
-                        *pArgument = NULL;
+                        *pArgument = (ARG_SLOT)NULL;
                     }
                 }
                 else
@@ -2806,7 +2806,7 @@ void PackArgumentArray(DebuggerEval *pDE,
 
 #ifdef FEATURE_HFA
         // The buffer for HFAs has to be always ENREGISTERED_RETURNTYPE_MAXSIZE
-        size = max(size, ENREGISTERED_RETURNTYPE_MAXSIZE);
+        size = max(size, (unsigned)ENREGISTERED_RETURNTYPE_MAXSIZE);
 #endif
 
         BYTE * pTemp = new (interopsafe) BYTE[ALIGN_UP(sizeof(ValueClassInfo), 8) + size];

@@ -1371,7 +1371,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
                 LcMdArrayOptInfo* mdArrInfo = optInfo->AsLcMdArrayOptInfo();
                 LC_Array arrLen(LC_Array(LC_Array::MdArray, mdArrInfo->GetArrIndexForDim(getAllocator(CMK_LoopClone)),
                                          mdArrInfo->dim, LC_Array::None));
-                LC_Ident     arrLenIdent = LC_Ident::CreateArrAccess(arrLen);
+                LC_Ident arrLenIdent = LC_Ident::CreateArrAccess(arrLen);
                 LC_Condition cond(opLimitCondition, LC_Expr(ident), LC_Expr(arrLenIdent));
                 context->EnsureConditions(loop->GetIndex())->Push(cond);
 
@@ -1666,7 +1666,7 @@ void Compiler::optDebugLogLoopCloning(BasicBlock* block, Statement* insertBefore
 //      performs the optimizations assuming that the path in which the candidates
 //      were collected is the fast path in which the optimizations will be performed.
 //
-void Compiler::optPerformStaticOptimizations(FlowGraphNaturalLoop* loop,
+void Compiler::optPerformStaticOptimizations(FlowGraphNaturalLoop*     loop,
                                              LoopCloneContext* context DEBUGARG(bool dynamicPath))
 {
     JitExpandArrayStack<LcOptInfo*>* optInfos = context->GetLoopOptInfo(loop->GetIndex());
@@ -2073,7 +2073,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     FlowEdge* const falseEdge = fgAddRefPred(fastPreheader, condLast);
     condLast->SetFalseEdge(falseEdge);
     FlowEdge* const trueEdge = condLast->GetTrueEdge();
-    falseEdge->setLikelihood(max(0, 1.0 - trueEdge->getLikelihood()));
+    falseEdge->setLikelihood(max(0.0, 1.0 - trueEdge->getLikelihood()));
 }
 
 //-------------------------------------------------------------------------

@@ -30,7 +30,7 @@ internal sealed class OletxTransactionManager
     private readonly DtcTransactionManager _dtcTransactionManager;
     internal OletxInternalResourceManager InternalResourceManager;
 
-    internal static DtcProxyShimFactory ProxyShimFactory = null!; // Late initialization
+    internal static DtcProxyShimFactory ProxyShimFactory = null!; // Lazy initialization
 
     // Double-checked locking pattern requires volatile for read/write synchronization
     internal static volatile EventWaitHandle? _shimWaitHandle;

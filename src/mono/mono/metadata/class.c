@@ -3037,18 +3037,22 @@ mono_image_init_name_cache (MonoImage *image)
 	const char *name;
 	const char *nspace;
 	guint32 visib, nspace_index;
-	GHashTable *name_cache2, *nspace_table, *the_name_cache;
+	dn_simdhash_u32_ptr_t *name_cache2;
+	dn_simdhash_string_ptr_t *nspace_table, *the_name_cache;
 
 	if (image->name_cache)
 		return;
 
-	the_name_cache = g_hash_table_new (g_str_hash, g_str_equal);
+	// TODO: Figure out a good initial capacity for this table by doing a scan,
+	//  or just pre-reserve a reasonable amount of space based on how many nspaces
+	//  an image typically has
+	the_name_cache = dn_simdhash_string_ptr_new (0, NULL);
 
 	if (image_is_dynamic (image)) {
 		mono_image_lock (image);
 		if (image->name_cache) {
 			/* Somebody initialized it before us */
-			g_hash_table_destroy (the_name_cache);
+			dn_simdhash_free (the_name_cache);
 		} else {
 			mono_atomic_store_release (&image->name_cache, the_name_cache);
 		}
@@ -3057,7 +3061,7 @@ mono_image_init_name_cache (MonoImage *image)
 	}
 
 	/* Temporary hash table to avoid lookups in the nspace_table */
-	name_cache2 = g_hash_table_new (NULL, NULL);
+	name_cache2 = dn_simdhash_u32_ptr_new (0, NULL);
 
 	/* FIXME: metadata-update */
 	int rows = table_info_get_rows (t);
@@ -3074,14 +3078,13 @@ mono_image_init_name_cache (MonoImage *image)
 		nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
 
 		nspace_index = cols [MONO_TYPEDEF_NAMESPACE];
-		nspace_table = (GHashTable *)g_hash_table_lookup (name_cache2, GUINT_TO_POINTER (nspace_index));
-		if (!nspace_table) {
-			nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
-			g_hash_table_insert (the_name_cache, (char*)nspace, nspace_table);
-			g_hash_table_insert (name_cache2, GUINT_TO_POINTER (nspace_index),
-								 nspace_table);
+		if (!dn_simdhash_u32_ptr_try_get_value (name_cache2, nspace_index, (void **)&nspace_table)) {
+			// FIXME: Compute an appropriate capacity for this table to avoid growing it
+			nspace_table = dn_simdhash_string_ptr_new (0, NULL);
+			dn_simdhash_string_ptr_try_add (the_name_cache, nspace, nspace_table);
+			dn_simdhash_u32_ptr_try_add (name_cache2, nspace_index, nspace_table);
 		}
-		g_hash_table_insert (nspace_table, (char *) name, GUINT_TO_POINTER (i));
+		dn_simdhash_string_ptr_try_add (nspace_table, name, GUINT_TO_POINTER (i));
 	}
 
 	/* Load type names from EXPORTEDTYPES table */
@@ -3102,23 +3105,22 @@ mono_image_init_name_cache (MonoImage *image)
 			nspace = mono_metadata_string_heap (image, exptype_cols [MONO_EXP_TYPE_NAMESPACE]);
 
 			nspace_index = exptype_cols [MONO_EXP_TYPE_NAMESPACE];
-			nspace_table = (GHashTable *)g_hash_table_lookup (name_cache2, GUINT_TO_POINTER (nspace_index));
-			if (!nspace_table) {
-				nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
-				g_hash_table_insert (the_name_cache, (char*)nspace, nspace_table);
-				g_hash_table_insert (name_cache2, GUINT_TO_POINTER (nspace_index),
-									 nspace_table);
+			if (!dn_simdhash_u32_ptr_try_get_value (name_cache2, nspace_index, (void **)&nspace_table)) {
+				// FIXME: Compute an appropriate capacity for this table to avoid growing it
+				nspace_table = dn_simdhash_string_ptr_new (0, NULL);
+				dn_simdhash_string_ptr_try_add (the_name_cache, nspace, nspace_table);
+				dn_simdhash_u32_ptr_try_add (name_cache2, nspace_index, nspace_table);
 			}
-			g_hash_table_insert (nspace_table, (char *) name, GUINT_TO_POINTER (mono_metadata_make_token (MONO_TABLE_EXPORTEDTYPE, i + 1)));
+			dn_simdhash_string_ptr_try_add (nspace_table, name, GUINT_TO_POINTER (mono_metadata_make_token (MONO_TABLE_EXPORTEDTYPE, i + 1)));
 		}
 	}
 
-	g_hash_table_destroy (name_cache2);
+	dn_simdhash_free (name_cache2);
 
 	mono_image_lock (image);
 	if (image->name_cache) {
 		/* Somebody initialized it before us */
-		g_hash_table_destroy (the_name_cache);
+		dn_simdhash_free (the_name_cache);
 	} else {
 		mono_atomic_store_release (&image->name_cache, the_name_cache);
 	}
@@ -3133,23 +3135,19 @@ void
 mono_image_add_to_name_cache (MonoImage *image, const char *nspace,
 							  const char *name, guint32 index)
 {
-	GHashTable *nspace_table;
-	GHashTable *name_cache;
-	guint32 old_index;
+	dn_simdhash_string_ptr_t *nspace_table, *name_cache;
 
 	mono_image_init_name_cache (image);
 	mono_image_lock (image);
 
 	name_cache = image->name_cache;
-	if (!(nspace_table = (GHashTable *)g_hash_table_lookup (name_cache, nspace))) {
-		nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
-		g_hash_table_insert (name_cache, (char *)nspace, (char *)nspace_table);
+	if (!dn_simdhash_string_ptr_try_get_value (name_cache, nspace, (void **)&nspace_table)) {
+		nspace_table = dn_simdhash_string_ptr_new (0, NULL);
+		dn_simdhash_string_ptr_try_add (name_cache, nspace, nspace_table);
 	}
 
-	if ((old_index = GPOINTER_TO_UINT (g_hash_table_lookup (nspace_table, (char*) name))))
-		g_error ("overrwritting old token %x on image %s for type %s::%s", old_index, image->name, nspace, name);
-
-	g_hash_table_insert (nspace_table, (char *) name, GUINT_TO_POINTER (index));
+	if (!dn_simdhash_string_ptr_try_add (nspace_table, name, GUINT_TO_POINTER (index)))
+		g_error ("overrwritting old token ? on image %s for type %s::%s", image->name, nspace, name);
 
 	mono_image_unlock (image);
 }
@@ -3160,9 +3158,8 @@ typedef struct {
 } FindAllUserData;
 
 static void
-find_all_nocase (gpointer key, gpointer value, gpointer user_data)
+find_all_nocase (const char *name, gpointer value, gpointer user_data)
 {
-	char *name = (char*)key;
 	FindAllUserData *data = (FindAllUserData*)user_data;
 	if (mono_utf8_strcasecmp (name, (char*)data->key) == 0)
 		data->values = g_slist_prepend (data->values, value);
@@ -3174,9 +3171,8 @@ typedef struct {
 } FindUserData;
 
 static void
-find_nocase (gpointer key, gpointer value, gpointer user_data)
+find_nocase (const char *name, gpointer value, gpointer user_data)
 {
-	char *name = (char*)key;
 	FindUserData *data = (FindUserData*)user_data;
 
 	if (!data->value && (mono_utf8_strcasecmp (name, (char*)data->key) == 0))
@@ -3303,7 +3299,7 @@ search_modules (MonoImage *image, const char *name_space, const char *name, gboo
 static MonoClass *
 mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, const char *name, GHashTable* visited_images, gboolean case_sensitive, MonoError *error)
 {
-	GHashTable *nspace_table = NULL;
+	dn_simdhash_string_ptr_t *nspace_table = NULL;
 	MonoImage *loaded_image = NULL;
 	guint32 token = 0;
 	MonoClass *klass;
@@ -3350,10 +3346,11 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 	mono_image_lock (image);
 
 	if (case_sensitive) {
-		nspace_table = (GHashTable *)g_hash_table_lookup (image->name_cache, name_space);
-
-		if (nspace_table)
-			token = GPOINTER_TO_UINT (g_hash_table_lookup (nspace_table, name));
+		if (dn_simdhash_string_ptr_try_get_value (image->name_cache, name_space, (void **)&nspace_table)) {
+			void * temp;
+			if (dn_simdhash_string_ptr_try_get_value (nspace_table, name, &temp))
+				token = GPOINTER_TO_UINT(temp);
+		}
 	} else {
 		FindAllUserData all_user_data = { name_space, NULL };
 		FindUserData user_data = { name, NULL };
@@ -3361,12 +3358,12 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 
 		// We're forced to check all matching namespaces, not just the first one found,
 		// because our desired type could be in any of the ones that match case-insensitively.
-		g_hash_table_foreach (image->name_cache, find_all_nocase, &all_user_data);
+		dn_simdhash_string_ptr_foreach (image->name_cache, find_all_nocase, &all_user_data);
 
 		values = all_user_data.values;
 		while (values && !user_data.value) {
-			nspace_table = (GHashTable*)values->data;
-			g_hash_table_foreach (nspace_table, find_nocase, &user_data);
+			nspace_table = (dn_simdhash_string_ptr_t *)values->data;
+			dn_simdhash_string_ptr_foreach (nspace_table, find_nocase, &user_data);
 			values = values->next;
 		}
 

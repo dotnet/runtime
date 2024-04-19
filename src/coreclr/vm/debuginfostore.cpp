@@ -1036,7 +1036,7 @@ void DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlag
     CONTRACTL_END;
 
     PCODE addrCode = pMD->GetNativeCode();
-    if (addrCode == NULL)
+    if (addrCode == (PCODE)NULL)
     {
         return;
     }

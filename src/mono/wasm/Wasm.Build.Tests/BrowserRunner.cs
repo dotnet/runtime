@@ -22,7 +22,7 @@ internal class BrowserRunner : IAsyncDisposable
     private static readonly Lazy<string> s_chromePath = new(() =>
     {
         string artifactsBinDir = Path.Combine(Path.GetDirectoryName(typeof(BuildTestBase).Assembly.Location)!, "..", "..", "..", "..");
-        return BrowserLocator.FindChrome(artifactsBinDir, "BROWSER_PATH_FOR_TESTS");
+        return BrowserLocator.FindChrome(artifactsBinDir, "CHROME_PATH_FOR_TESTS");
     });
 
     public IPlaywright? Playwright { get; private set; }
@@ -122,7 +122,6 @@ internal class BrowserRunner : IAsyncDisposable
         string args,
         bool headless = true,
         Action<IPage, IConsoleMessage>? onConsoleMessage = null,
-        Action<IPage>? onPageLoaded = null,
         Action<string>? onServerMessage = null,
         Action<string>? onError = null,
         Func<string, string>? modifyBrowserUrl = null)
@@ -130,14 +129,13 @@ internal class BrowserRunner : IAsyncDisposable
         var urlString = await StartServerAndGetUrlAsync(cmd, args, onServerMessage);
         var browser = await SpawnBrowserAsync(urlString, headless);
         var context = await browser.NewContextAsync();
-        return await RunAsync(context, urlString, headless, onPageLoaded, onConsoleMessage, onError, modifyBrowserUrl);
+        return await RunAsync(context, urlString, headless, onConsoleMessage, onError, modifyBrowserUrl);
     }
 
     public async Task<IPage> RunAsync(
         IBrowserContext context,
         string browserUrl,
         bool headless = true,
-        Action<IPage>? onPageLoaded = null,
         Action<IPage, IConsoleMessage>? onConsoleMessage = null,
         Action<string>? onError = null,
         Func<string, string>? modifyBrowserUrl = null,
@@ -150,8 +148,6 @@ internal class BrowserRunner : IAsyncDisposable
             browserUrl = modifyBrowserUrl(browserUrl);
 
         IPage page = await context.NewPageAsync();
-        if (onPageLoaded is not null)
-            page.Load += (_, _) => onPageLoaded(page);
 
         if (onConsoleMessage is not null)
             page.Console += (_, msg) => onConsoleMessage(page, msg);

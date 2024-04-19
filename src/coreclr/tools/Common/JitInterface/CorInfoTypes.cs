@@ -1235,6 +1235,7 @@ namespace Internal.JitInterface
     //   bit 5: `1` means the second field's size is 8.
     //
     // Note that bit 0 and 3 cannot both be set.
+    [Flags]
     public enum StructFloatFieldInfoFlags
     {
         STRUCT_NO_FLOAT_FIELD         = 0x0,

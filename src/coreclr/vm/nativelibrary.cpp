@@ -295,11 +295,11 @@ INT_PTR NativeLibrary::GetNativeLibraryExport(NATIVE_LIBRARY_HANDLE handle, LPCW
 
 #ifndef TARGET_UNIX
     INT_PTR address = reinterpret_cast<INT_PTR>(GetProcAddress((HMODULE)handle, lpstr));
-    if ((address == NULL) && throwOnError)
+    if ((address == 0) && throwOnError)
         COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDR_WIN_DLL, symbolName);
 #else // !TARGET_UNIX
     INT_PTR address = reinterpret_cast<INT_PTR>(PAL_GetProcAddressDirect(handle, lpstr));
-    if ((address == NULL) && throwOnError)
+    if ((address == 0) && throwOnError)
         COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDR_UNIX_SO, symbolName);
 #endif // !TARGET_UNIX
 
@@ -386,7 +386,7 @@ namespace
         STANDARD_VM_CONTRACT;
 
         INT_PTR ptrManagedAssemblyLoadContext = GetManagedAssemblyLoadContext(pAssembly);
-        if (ptrManagedAssemblyLoadContext == NULL)
+        if (ptrManagedAssemblyLoadContext == 0)
         {
             return NULL;
         }

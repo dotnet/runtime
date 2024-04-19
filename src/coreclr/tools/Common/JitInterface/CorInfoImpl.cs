@@ -2941,6 +2941,14 @@ namespace Internal.JitInterface
             return _compilation.IsEffectivelySealed(type);
         }
 
+        private TypeCompareState isNullableType(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc type = HandleToObject(cls);
+            Debug.Assert(!type.IsGenericParameter);
+
+            return type.IsNullable ? TypeCompareState.Must : TypeCompareState.MustNot;
+        }
+
         private TypeCompareState isEnum(CORINFO_CLASS_STRUCT_* cls, CORINFO_CLASS_STRUCT_** underlyingType)
         {
             Debug.Assert(cls != null);
@@ -2951,11 +2959,7 @@ namespace Internal.JitInterface
             }
 
             TypeDesc type = HandleToObject(cls);
-
-            if (type.IsGenericParameter)
-            {
-                return TypeCompareState.May;
-            }
+            Debug.Assert(!type.IsGenericParameter);
 
             if (type.IsEnum)
             {

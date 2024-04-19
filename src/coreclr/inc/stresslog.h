@@ -539,7 +539,7 @@ typedef USHORT
 };
 
 #ifndef STRESS_LOG_ANALYZER
-typedef Holder<CRITSEC_COOKIE, StressLog::Enter, StressLog::Leave, NULL, CompareDefault<CRITSEC_COOKIE>> StressLogLockHolder;
+typedef Holder<CRITSEC_COOKIE, StressLog::Enter, StressLog::Leave, 0, CompareDefault<CRITSEC_COOKIE>> StressLogLockHolder;
 #endif //!STRESS_LOG_ANALYZER
 
 #if defined(DACCESS_COMPILE)

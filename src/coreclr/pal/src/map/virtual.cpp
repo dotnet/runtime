@@ -401,7 +401,7 @@ static BOOL VIRTUALStoreAllocationInfo(
         return FALSE;
     }
 
-    if (!(pNewEntry = (PCMI)InternalMalloc(sizeof(*pNewEntry))))
+    if (!(pNewEntry = (PCMI)malloc(sizeof(*pNewEntry))))
     {
         ERROR( "Unable to allocate memory for the structure.\n");
         return FALSE;

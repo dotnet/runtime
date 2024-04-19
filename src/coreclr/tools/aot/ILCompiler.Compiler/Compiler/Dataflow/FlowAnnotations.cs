@@ -253,7 +253,7 @@ namespace ILLink.Shared.TrimAnalysis
 
         public static bool IsTypeInterestingForDataflow(TypeDesc type)
         {
-            // NOTE: this method is not particulary fast. It's assumed that the caller limits
+            // NOTE: this method is not particularly fast. It's assumed that the caller limits
             // calls to this method as much as possible.
 
             if (type.IsWellKnownType(WellKnownType.String))

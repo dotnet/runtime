@@ -37,8 +37,8 @@ DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoader
     m_pLoaderAllocator(pLoaderAllocator),
     m_level(FILE_LOAD_CREATE),
     m_loading(TRUE),
-    m_hExposedModuleObject(NULL),
-    m_hExposedAssemblyObject(NULL),
+    m_hExposedModuleObject{},
+    m_hExposedAssemblyObject{},
     m_pError(NULL),
     m_bDisableActivationCheck(FALSE),
     m_fHostAssemblyPublished(FALSE),
@@ -332,12 +332,12 @@ OBJECTREF DomainAssembly::GetExposedModuleObject()
 
     LoaderAllocator * pLoaderAllocator = GetLoaderAllocator();
 
-    if (m_hExposedModuleObject == NULL)
+    if (m_hExposedModuleObject == (LOADERHANDLE)NULL)
     {
         // Atomically create a handle
         LOADERHANDLE handle = pLoaderAllocator->AllocateHandle(NULL);
 
-        InterlockedCompareExchangeT(&m_hExposedModuleObject, handle, static_cast<LOADERHANDLE>(NULL));
+        InterlockedCompareExchangeT(&m_hExposedModuleObject, handle, static_cast<LOADERHANDLE>(0));
     }
 
     if (pLoaderAllocator->GetHandleValue(m_hExposedModuleObject) == NULL)
@@ -648,13 +648,13 @@ OBJECTREF DomainAssembly::GetExposedAssemblyObject()
         return NULL;
     }
 
-    if (m_hExposedAssemblyObject == NULL)
+    if (m_hExposedAssemblyObject == (LOADERHANDLE)NULL)
     {
         // Atomically create a handle
 
         LOADERHANDLE handle = pLoaderAllocator->AllocateHandle(NULL);
 
-        InterlockedCompareExchangeT(&m_hExposedAssemblyObject, handle, static_cast<LOADERHANDLE>(NULL));
+        InterlockedCompareExchangeT(&m_hExposedAssemblyObject, handle, static_cast<LOADERHANDLE>(0));
     }
 
     if (pLoaderAllocator->GetHandleValue(m_hExposedAssemblyObject) == NULL)

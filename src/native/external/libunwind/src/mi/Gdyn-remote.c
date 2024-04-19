@@ -101,7 +101,7 @@ intern_array (unw_addr_space_t as, unw_accessors_t *a,
               unw_word_t *addr, unw_word_t table_len, unw_word_t **table_data,
               void *arg)
 {
-  unw_word_t i, *data = calloc (table_len, WSIZE);
+  unw_word_t i, *data = calloc ((size_t) table_len, WSIZE);
   int ret = 0;
 
   if (!data)

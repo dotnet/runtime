@@ -422,17 +422,6 @@ extern "C" void QCALLTYPE InterfaceMarshaler_ConvertToManaged(IUnknown** ppUnk, 
 
 #endif // FEATURE_COMINTEROP
 
-FCIMPL0(void, StubHelpers::SetLastError)
-{
-    // Make sure this is the first thing we do after returning from the target, as almost everything can cause the last error to get trashed
-    DWORD lastError = ::GetLastError();
-
-    FCALL_CONTRACT;
-
-    GetThread()->m_dwLastError = lastError;
-}
-FCIMPLEND
-
 FCIMPL0(void, StubHelpers::ClearLastError)
 {
     FCALL_CONTRACT;
@@ -443,7 +432,7 @@ FCIMPLEND
 
 FCIMPL1(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE)
 {
-    PCODE pEntryPoint = NULL;
+    PCODE pEntryPoint = (PCODE)NULL;
 
 #ifdef _DEBUG
     BEGIN_PRESERVE_LAST_ERROR;
@@ -517,7 +506,7 @@ FCIMPL3(SIZE_T, StubHelpers::ProfilerBeginTransitionCallback, SIZE_T pSecretPara
     // even if the profiler doesn't want to track transitions.
     if (!CORProfilerTrackTransitions())
     {
-        return NULL;
+        return 0;
     }
 
     MethodDesc* pRealMD = NULL;

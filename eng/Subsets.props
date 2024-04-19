@@ -124,7 +124,7 @@
     <NativeAotSupported Condition="'$(_NativeAotSupportedOS)' == 'true' and $(_NativeAotSupportedArch) == 'true'">true</NativeAotSupported>
 
     <!-- If we're building clr.nativeaotlibs and not building the CLR runtime, compile libraries against NativeAOT CoreLib -->
-    <UseNativeAotCoreLib Condition="'$(TestNativeAot)' == 'true' or ($(_subset.Contains('+clr.nativeaotlibs+')) and !$(_subset.Contains('+clr.native+')) and !$(_subset.Contains('+clr.runtime+')))">true</UseNativeAotCoreLib>
+    <UseNativeAotCoreLib Condition="'$(TestNativeAot)' == 'true' or ($(_subset.Contains('+clr.nativeaotlibs+')) and !$(_subset.Contains('+clr.native+')) and !$(_subset.Contains('+clr.runtime+')) and !$(_subset.Contains('+clr.corelib+')))">true</UseNativeAotCoreLib>
   </PropertyGroup>
 
   <ItemGroup>
@@ -500,7 +500,7 @@
 
   <!-- Host.pretest subset (consumes live built libraries assets so needs to come after libraries) -->
   <ItemGroup Condition="$(_subset.Contains('+host.pretest+'))">
-    <ProjectToBuild Include="$(InstallerProjectRoot)tests\Assets\Projects\**\*.csproj" Category="host" />
+    <ProjectToBuild Include="$(InstallerProjectRoot)tests\pretest.proj" Category="host" />
   </ItemGroup>
 
   <!-- Host.tests subset (consumes live built libraries assets so needs to come after libraries) -->

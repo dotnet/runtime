@@ -184,6 +184,17 @@ namespace Server.Contract
         void Pass_Through_LCID(out int lcid);
     }
 
+    [ComVisible(true)]
+    [Guid("7FBB8677-BDD0-4E5A-B38B-CA92A4555466")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    public interface IMiscTypesTesting
+    {
+        object Marshal_Variant(object obj);
+
+        // Test API for marshalling an arbitrary type via VARIANT
+        object Marshal_Instance_Variant([MarshalAs(UnmanagedType.LPWStr)] string init);
+    }
+
     public struct HResult
     {
         public int hr;

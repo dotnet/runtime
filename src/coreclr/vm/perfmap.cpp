@@ -46,7 +46,11 @@ void PerfMap::Initialize()
 
 const char * PerfMap::InternalConstructPath()
 {
+#ifdef HOST_WINDOWS
     CLRConfigNoCache value = CLRConfigNoCache::Get("PerfMapJitDumpPath");
+#else
+    CLRConfigNoCache value = CLRConfigNoCache::Get("PerfMapJitDumpPath", /* noPrefix */ false, &PAL_getenv);
+#endif
     if (value.IsSet())
     {
         return value.AsString();
@@ -123,7 +127,7 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
                     {
                         // Call GetMethodDesc_NoRestore instead of GetMethodDesc to avoid restoring methods.
                         MethodDesc *hotDesc = (MethodDesc *)mi.GetMethodDesc_NoRestore();
-                        if (hotDesc != nullptr && hotDesc->GetNativeCode() != NULL)
+                        if (hotDesc != nullptr && hotDesc->GetNativeCode() != (PCODE)NULL)
                         {
                             PerfMap::LogPreCompiledMethod(hotDesc, hotDesc->GetNativeCode());
                         }

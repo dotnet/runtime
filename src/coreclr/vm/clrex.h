@@ -934,7 +934,7 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
 // ---------------------------------------------------------------------------
 
 inline CLRException::CLRException()
-  : m_throwableHandle(NULL)
+  : m_throwableHandle{}
 {
     LIMITED_METHOD_CONTRACT;
 }

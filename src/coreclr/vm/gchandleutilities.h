@@ -53,7 +53,7 @@ inline BOOL IsHandleNullUnchecked(OBJECTHANDLE handle)
 {
     LIMITED_METHOD_CONTRACT;
 
-    return (handle == NULL || (*(_UNCHECKED_OBJECTREF *)handle) == NULL);
+    return (handle == (OBJECTHANDLE)NULL || (*(_UNCHECKED_OBJECTREF *)handle) == NULL);
 }
 
 inline BOOL ObjectHandleIsNull(OBJECTHANDLE handle)
@@ -138,6 +138,18 @@ inline OBJECTHANDLE CreateSizedRefHandle(IGCHandleStore* store, OBJECTREF object
 inline OBJECTHANDLE CreateDependentHandle(IGCHandleStore* store, OBJECTREF primary, OBJECTREF secondary)
 {
     OBJECTHANDLE hnd = store->CreateDependentHandle(OBJECTREFToObject(primary), OBJECTREFToObject(secondary));
+    if (!hnd)
+    {
+        COMPlusThrowOM();
+    }
+
+    DiagHandleCreated(hnd, primary);
+    return hnd;
+}
+
+inline OBJECTHANDLE CreateWeakInteriorHandle(IGCHandleStore* store, OBJECTREF primary, void* interiorPointerLocation)
+{
+    OBJECTHANDLE hnd = store->CreateHandleWithExtraInfo(OBJECTREFToObject(primary), HNDTYPE_WEAK_INTERIOR_POINTER, interiorPointerLocation);
     if (!hnd)
     {
         COMPlusThrowOM();
@@ -321,6 +333,11 @@ inline void DestroyGlobalRefcountedHandle(OBJECTHANDLE handle)
     DestroyHandleCommon(handle, HNDTYPE_REFCOUNTED);
 }
 
+inline void DestroyWeakInteriorHandle(OBJECTHANDLE handle)
+{
+    DestroyHandleCommon(handle, HNDTYPE_WEAK_INTERIOR_POINTER);
+}
+
 inline void DestroyTypedHandle(OBJECTHANDLE handle)
 {
     DiagHandleDestroyed(handle);
@@ -331,13 +348,14 @@ inline void DestroyTypedHandle(OBJECTHANDLE handle)
 
 #ifndef FEATURE_NATIVEAOT
 typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyHandle>                   OHWrapper;
-typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyPinningHandle, NULL>      PinningHandleHolder;
-typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyAsyncPinningHandle, NULL> AsyncPinningHandleHolder;
+typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyPinningHandle, 0>      PinningHandleHolder;
+typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyAsyncPinningHandle, 0> AsyncPinningHandleHolder;
 typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyRefcountedHandle>         RefCountedOHWrapper;
 
 typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyLongWeakHandle>            LongWeakHandleHolder;
 typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyGlobalStrongHandle>        GlobalStrongHandleHolder;
 typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyGlobalShortWeakHandle>     GlobalShortWeakHandleHolder;
+typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyWeakInteriorHandle>        WeakInteriorHandleHolder;
 typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, ResetOBJECTHANDLE>                ObjectInHandleHolder;
 
 class RCOBJECTHANDLEHolder : public RefCountedOHWrapper

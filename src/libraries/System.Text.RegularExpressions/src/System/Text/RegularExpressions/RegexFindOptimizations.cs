@@ -94,7 +94,7 @@ namespace System.Text.RegularExpressions
                 if (RegexPrefixAnalyzer.FindFirstCharClass(root) is string charClass)
                 {
                     // See if the set is limited to holding only a few characters.
-                    Span<char> scratch = stackalloc char[5]; // max efficiently optimized by IndexOfAny today
+                    Span<char> scratch = stackalloc char[5]; // max efficiently optimized by IndexOfAny today without SearchValues, which isn't used for RTL
                     int scratchCount;
                     char[]? chars = null;
                     if (!RegexCharClass.IsNegated(charClass) &&
@@ -278,7 +278,6 @@ namespace System.Text.RegularExpressions
         /// <summary>Data about a character class at a fixed offset from the start of any match to a pattern.</summary>
         public struct FixedDistanceSet(char[]? chars, string set, int distance)
         {
-
             /// <summary>The character class description.</summary>
             public string Set = set;
             /// <summary>Whether the <see cref="Set"/> is negated.</summary>
@@ -606,12 +605,22 @@ namespace System.Text.RegularExpressions
                 case FindNextStartingPositionMode.LeadingSet_LeftToRight:
                     {
                         FixedDistanceSet primarySet = FixedDistanceSets![0];
-                        char[]? chars = primarySet.Chars;
 
                         ReadOnlySpan<char> span = textSpan.Slice(pos);
+                        char[]? chars = primarySet.Chars;
                         if (chars is { Length: <= 5 }) // 5 == currently the max length efficiently handled by IndexOfAny{Except} without SearchValues
                         {
                             int i = primarySet.Negated ? span.IndexOfAnyExcept(chars) : span.IndexOfAny(chars);
+                            if (i >= 0)
+                            {
+                                pos += i;
+                                return true;
+                            }
+                        }
+                        else if (primarySet.Range is not null)
+                        {
+                            (char low, char high) = primarySet.Range.GetValueOrDefault();
+                            int i = primarySet.Negated ? span.IndexOfAnyExceptInRange(low, high) : span.IndexOfAnyInRange(low, high);
                             if (i >= 0)
                             {
                                 pos += i;

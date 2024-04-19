@@ -523,7 +523,7 @@ void Assembler::AddClass()
         m_pCurClass->m_Attr = attr;
         m_pCurClass->m_crExtends = (m_pCurClass->m_cl == m_tkSysObject)? mdTypeRefNil : crExtends;
 
-        if ((m_pCurClass->m_dwNumInterfaces = m_nImplList) != NULL)
+        if ((m_pCurClass->m_dwNumInterfaces = m_nImplList) != 0)
         {
             if(bIsEnum) report->error("Enum implementing interface(s)\n");
             if((m_pCurClass->m_crImplements = new mdTypeRef[m_nImplList+1]) != NULL)
@@ -2431,7 +2431,7 @@ HRESULT Assembler::SavePdbFile()
     if (FAILED(hr = (m_pPortablePdbWriter->GetEmitter() == NULL ? E_FAIL : S_OK))) goto exit;
     if (FAILED(hr = m_pCeeFileGen->GetEntryPoint(m_pCeeFile, &entryPoint))) goto exit;
     if (FAILED(hr = m_pPortablePdbWriter->BuildPdbStream(m_pEmitter, entryPoint))) goto exit;
-    if (FAILED(hr = m_pPortablePdbWriter->GetEmitter()->Save(m_wzPdbFileName, NULL))) goto exit;
+    if (FAILED(hr = m_pPortablePdbWriter->GetEmitter()->Save(m_wzPdbFileName, 0))) goto exit;
 
 exit:
     return hr;

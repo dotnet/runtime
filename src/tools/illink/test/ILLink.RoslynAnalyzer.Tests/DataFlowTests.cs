@@ -198,6 +198,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task MakeGenericDataflowIntrinsics ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task MethodByRefReturnDataFlow ()
 		{
 			return RunTest ();

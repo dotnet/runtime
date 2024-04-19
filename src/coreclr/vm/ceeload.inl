@@ -76,7 +76,7 @@ TYPE LookupMap<TYPE>::GetElement(DWORD rid, TADDR* pFlags)
     SUPPORTS_DAC;
 
     PTR_TADDR pElement = GetElementPtr(rid);
-    return (pElement != NULL) ? GetValueAt(pElement, pFlags, supportedFlags) : NULL;
+    return (pElement != NULL) ? GetValueAt(pElement, pFlags, supportedFlags) : (TYPE)(TADDR)0;
 }
 
 // Stores an association in a map that has been previously grown to
@@ -117,7 +117,7 @@ BOOL LookupMap<TYPE>::TrySetElement(DWORD rid, TYPE value, TADDR flags)
     _ASSERTE(oldValue == NULL || (oldValue == value && oldFlags == flags));
 #endif
     // Avoid unnecessary writes - do not overwrite existing value
-    if (*pElement == NULL)
+    if (*pElement == 0)
     {
         SetValueAt(pElement, value, flags);
     }
@@ -149,7 +149,7 @@ void LookupMap<TYPE>::AddElement(ModuleBase * pModule, DWORD rid, TYPE value, TA
     _ASSERTE(oldValue == NULL || (oldValue == value && oldFlags == flags));
 #endif
     // Avoid unnecessary writes - do not overwrite existing value
-    if (*pElement == NULL)
+    if (*pElement == 0)
     {
         SetValueAt(pElement, value, flags);
     }

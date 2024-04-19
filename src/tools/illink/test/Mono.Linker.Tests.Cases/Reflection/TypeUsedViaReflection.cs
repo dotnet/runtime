@@ -404,10 +404,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		public class GenericTypeWithAnnotations_InnerType
 		{
-			// NativeAOT: https://github.com/dotnet/runtime/issues/95140
-			[Kept (By = Tool.Trimmer)]
+			[Kept]
 			[KeptBackingField]
-			private static bool PrivateProperty { [Kept (By = Tool.Trimmer)] get; [Kept (By = Tool.Trimmer)] set; }
+			private static bool PrivateProperty { [Kept] get; [Kept] set; }
 
 			private static void PrivateMethod () { }
 		}

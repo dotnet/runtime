@@ -335,13 +335,12 @@ namespace System.Net.Security
     {
 #pragma warning disable 0649
         // This is used only by SslStream but it is included elsewhere
-        public X509Certificate? LocalCertificate;
+        public bool HasLocalCertificate;
 #pragma warning restore 0649
         public SafeFreeCredential_SECURITY() : base() { }
 
         protected override bool ReleaseHandle()
         {
-            LocalCertificate?.Dispose();
             return Interop.SspiCli.FreeCredentialsHandle(ref _handle) == 0;
         }
     }

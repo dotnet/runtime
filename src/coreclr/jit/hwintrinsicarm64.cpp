@@ -1836,7 +1836,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 unsigned tmp = lvaGrabTemp(true DEBUGARG("StoreVectorNx2 temp tree"));
 
-                impStoreTemp(tmp, op2, CHECK_SPILL_NONE);
+                impStoreToTemp(tmp, op2, CHECK_SPILL_NONE);
                 op2 = gtNewLclvNode(tmp, argType);
             }
             op2 = gtConvertTableOpToFieldList(op2, fieldCount);
@@ -1890,7 +1890,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     unsigned tmp = lvaGrabTemp(true DEBUGARG("StoreSelectedScalarN"));
 
-                    impStoreTemp(tmp, op2, CHECK_SPILL_NONE);
+                    impStoreToTemp(tmp, op2, CHECK_SPILL_NONE);
                     op2 = gtNewLclvNode(tmp, argType);
                 }
                 op2 = gtConvertTableOpToFieldList(op2, fieldCount);
@@ -2106,7 +2106,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 unsigned tmp = lvaGrabTemp(true DEBUGARG("LoadAndInsertScalar temp tree"));
 
-                impStoreTemp(tmp, op1, CHECK_SPILL_NONE);
+                impStoreToTemp(tmp, op1, CHECK_SPILL_NONE);
                 op1 = gtNewLclvNode(tmp, argType);
             }
 
@@ -2139,7 +2139,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     unsigned tmp = lvaGrabTemp(true DEBUGARG("VectorTableLookup temp tree"));
 
-                    impStoreTemp(tmp, op1, CHECK_SPILL_NONE);
+                    impStoreToTemp(tmp, op1, CHECK_SPILL_NONE);
                     op1 = gtNewLclvNode(tmp, argType);
                 }
 
@@ -2179,7 +2179,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     unsigned tmp = lvaGrabTemp(true DEBUGARG("VectorTableLookupExtension temp tree"));
 
-                    impStoreTemp(tmp, op2, CHECK_SPILL_NONE);
+                    impStoreToTemp(tmp, op2, CHECK_SPILL_NONE);
                     op2 = gtNewLclvNode(tmp, argType);
                 }
 

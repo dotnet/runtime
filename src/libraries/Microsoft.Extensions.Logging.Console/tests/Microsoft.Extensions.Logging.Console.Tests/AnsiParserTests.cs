@@ -11,12 +11,12 @@ namespace Microsoft.Extensions.Logging.Console.Test
 {
     public class AnsiParserTests
     {
-        private const char EscapeChar = '\x1B';
+        private const char EscapeChar = '\e';
 
         [Theory]
         [InlineData(1, "No Color", "No Color")]
-        [InlineData(2, "\x1B[41mColored\x1B[49mNo Color", "No Color")]
-        [InlineData(2, "\x1B[41m\x1B[1m\x1B[31mmColored\x1B[39m\x1B[49mNo Color", "No Color")]
+        [InlineData(2, "\e[41mColored\e[49mNo Color", "No Color")]
+        [InlineData(2, "\e[41m\e[1m\e[31mmColored\e[39m\e[49mNo Color", "No Color")]
         public void Parse_CheckTimesWrittenToConsole(int numSegments, string message, string lastSegment)
         {
             // Arrange
@@ -151,33 +151,33 @@ namespace Microsoft.Extensions.Logging.Console.Test
 
         [Theory]
         // supported
-        [InlineData("\x1B[77mInfo", "Info")]
-        [InlineData("\x1B[77m\x1B[1m\x1B[2m\x1B[0mInfo\x1B[1m", "Info")]
-        [InlineData("\x1B[7mInfo", "Info")]
-        [InlineData("\x1B[40m\x1B[1m\x1B[33mwarn\x1B[39m\x1B[22m\x1B[49m:", "warn", ":")]
+        [InlineData("\e[77mInfo", "Info")]
+        [InlineData("\e[77m\e[1m\e[2m\e[0mInfo\e[1m", "Info")]
+        [InlineData("\e[7mInfo", "Info")]
+        [InlineData("\e[40m\e[1m\e[33mwarn\e[39m\e[22m\e[49m:", "warn", ":")]
         // unsupported: skips
-        [InlineData("Info\x1B[77m:", "Info", ":")]
-        [InlineData("Info\x1B[7m:", "Info", ":")]
+        [InlineData("Info\e[77m:", "Info", ":")]
+        [InlineData("Info\e[7m:", "Info", ":")]
         // treats as content
-        [InlineData("\x1B", "\x1B")]
-        [InlineData("\x1B ", "\x1B ")]
-        [InlineData("\x1Bm", "\x1Bm")]
-        [InlineData("\x1B m", "\x1B m")]
-        [InlineData("\x1Bxym", "\x1Bxym")]
-        [InlineData("\x1B[", "\x1B[")]
-        [InlineData("\x1B[m", "\x1B[m")]
-        [InlineData("\x1B[ ", "\x1B[ ")]
-        [InlineData("\x1B[ m", "\x1B[ m")]
-        [InlineData("\x1B[xym", "\x1B[xym")]
-        [InlineData("\x1B[7777m", "\x1B[7777m")]
-        [InlineData("\x1B\x1B\x1B", "\x1B\x1B\x1B")]
-        [InlineData("Message\x1B\x1B\x1B", "Message\x1B\x1B\x1B")]
-        [InlineData("\x1B\x1BMessage\x1B", "\x1B\x1BMessage\x1B")]
-        [InlineData("\x1B\x1B\x1BMessage", "\x1B\x1B\x1BMessage")]
-        [InlineData("Message\x1B ", "Message\x1B ")]
-        [InlineData("\x1BmMessage", "\x1BmMessage")]
-        [InlineData("\x1B[77m\x1B m\x1B[40m", "\x1B m")]
-        [InlineData("\x1B mMessage\x1Bxym", "\x1B mMessage\x1Bxym")]
+        [InlineData("\e", "\e")]
+        [InlineData("\e ", "\e ")]
+        [InlineData("\em", "\em")]
+        [InlineData("\e m", "\e m")]
+        [InlineData("\exym", "\exym")]
+        [InlineData("\e[", "\e[")]
+        [InlineData("\e[m", "\e[m")]
+        [InlineData("\e[ ", "\e[ ")]
+        [InlineData("\e[ m", "\e[ m")]
+        [InlineData("\e[xym", "\e[xym")]
+        [InlineData("\e[7777m", "\e[7777m")]
+        [InlineData("\e\e\e", "\e\e\e")]
+        [InlineData("Message\e\e\e", "Message\e\e\e")]
+        [InlineData("\e\eMessage\e", "\e\eMessage\e")]
+        [InlineData("\e\e\eMessage", "\e\e\eMessage")]
+        [InlineData("Message\e ", "Message\e ")]
+        [InlineData("\emMessage", "\emMessage")]
+        [InlineData("\e[77m\e m\e[40m", "\e m")]
+        [InlineData("\e mMessage\exym", "\e mMessage\exym")]
         public void Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(string messageWithUnsupportedCode, params string[] output)
         {
             // Arrange

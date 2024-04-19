@@ -1237,8 +1237,8 @@ class CodeRegionInfo
 {
 public:
     CodeRegionInfo() :
-        m_addrOfHotCode(NULL),
-        m_addrOfColdCode(NULL),
+        m_addrOfHotCode((PCODE)NULL),
+        m_addrOfColdCode((PCODE)NULL),
         m_sizeOfHotCode(0),
         m_sizeOfColdCode(0)
     {
@@ -1273,7 +1273,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        if (m_addrOfHotCode != NULL)
+        if (m_addrOfHotCode != (PCODE)NULL)
         {
             if (offset < m_sizeOfHotCode)
             {
@@ -1289,7 +1289,7 @@ public:
         }
         else
         {
-            return NULL;
+            return (PCODE)NULL;
         }
     }
 
@@ -1312,7 +1312,7 @@ public:
         }
 
         _ASSERTE(!"addressToOffset called with invalid address");
-        return NULL;
+        return 0;
     }
 
     // Determines whether the address lies within the method

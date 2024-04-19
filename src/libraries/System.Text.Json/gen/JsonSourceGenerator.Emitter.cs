@@ -1147,6 +1147,9 @@ namespace System.Text.Json.SourceGeneration
                 if (optionsSpec.MaxDepth is int maxDepth)
                     writer.WriteLine($"MaxDepth = {maxDepth},");
 
+                if (optionsSpec.NewLine is string newLine)
+                    writer.WriteLine($"NewLine = {FormatStringLiteral(newLine)},");
+
                 if (optionsSpec.NumberHandling is JsonNumberHandling numberHandling)
                     writer.WriteLine($"NumberHandling = {FormatNumberHandling(numberHandling)},");
 

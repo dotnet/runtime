@@ -1525,7 +1525,7 @@ HRESULT DacReplacePatchesInHostMemory(MemoryRange range, PVOID pBuffer)
     {
         CORDB_ADDRESS patchAddress = (CORDB_ADDRESS)dac_cast<TADDR>(pPatch->address);
 
-        if (patchAddress != NULL)
+        if (patchAddress != (CORDB_ADDRESS)NULL)
         {
             PRD_TYPE opcode = pPatch->opcode;
 

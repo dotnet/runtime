@@ -36,7 +36,7 @@ namespace System.Text.Json.Serialization
         /// The type of the converter to create, or null if <see cref="CreateConverter(Type)"/> should be used to obtain the converter.
         /// </summary>
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-        public Type? ConverterType { get; private set; }
+        public Type? ConverterType { get; }
 
         /// <summary>
         /// If overridden and <see cref="ConverterType"/> is null, allows a custom attribute to create the converter in order to pass additional state.

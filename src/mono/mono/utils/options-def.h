@@ -58,13 +58,13 @@ DEFINE_BOOL_READONLY(readonly_flag, "readonly-flag", FALSE, "Example")
 */
 
 DEFINE_BOOL(wasm_exceptions, "wasm-exceptions", FALSE, "Enable codegen for WASM exceptions")
-DEFINE_BOOL(wasm_gc_safepoints, "wasm-gc-safepoints", FALSE, "Use GC safepoints on WASM")
 DEFINE_BOOL(aot_lazy_assembly_load, "aot-lazy-assembly-load", FALSE, "Load assemblies referenced by AOT images lazily")
 
 #if HOST_BROWSER
 DEFINE_BOOL(interp_pgo_recording, "interp-pgo-recording", TRUE, "Record interpreter tiering information for automatic PGO")
 #else
 DEFINE_BOOL(interp_pgo_recording, "interp-pgo-recording", FALSE, "Record interpreter tiering information for automatic PGO")
+DEFINE_BOOL(wasm_gc_safepoints, "wasm-gc-safepoints", FALSE, "Use GC safepoints on WASM")
 #endif
 DEFINE_BOOL(interp_pgo_logging, "interp-pgo-logging", FALSE, "Log messages when interpreter PGO optimizes a method or updates its table")
 DEFINE_BOOL(interp_codegen_timing, "interp-codegen-timing", FALSE, "Measure time spent generating interpreter code and log it periodically")
@@ -79,13 +79,17 @@ DEFINE_BOOL(jiterpreter_traces_enabled, "jiterpreter-traces-enabled", TRUE, "JIT
 DEFINE_BOOL(jiterpreter_interp_entry_enabled, "jiterpreter-interp-entry-enabled", TRUE, "JIT specialized WASM interp_entry wrappers")
 // jit_call_enabled controls whether do_jit_call will use specialized trampolines for hot call sites
 DEFINE_BOOL(jiterpreter_jit_call_enabled, "jiterpreter-jit-call-enabled", TRUE, "JIT specialized WASM do_jit_call trampolines")
+
+DEFINE_BOOL(wasm_gc_safepoints, "wasm-gc-safepoints", FALSE, "Use GC safepoints on WASM")
 #else
 // traces_enabled controls whether the jiterpreter will JIT individual interpreter opcode traces
-DEFINE_BOOL(jiterpreter_traces_enabled, "jiterpreter-traces-enabled", TRUE, "JIT interpreter opcode traces into WASM")
+DEFINE_BOOL_READONLY(jiterpreter_traces_enabled, "jiterpreter-traces-enabled", FALSE, "JIT interpreter opcode traces into WASM")
 // interp_entry_enabled controls whether specialized interp_entry wrappers will be jitted
 DEFINE_BOOL_READONLY(jiterpreter_interp_entry_enabled, "jiterpreter-interp-entry-enabled", FALSE, "JIT specialized WASM interp_entry wrappers")
 // jit_call_enabled controls whether do_jit_call will use specialized trampolines for hot call sites
 DEFINE_BOOL_READONLY(jiterpreter_jit_call_enabled, "jiterpreter-jit-call-enabled", FALSE, "JIT specialized WASM do_jit_call trampolines")
+
+DEFINE_BOOL_READONLY(wasm_gc_safepoints, "wasm-gc-safepoints", TRUE, "Use GC safepoints on WASM")
 #endif // DISABLE_THREADS
 
 // enables using WASM try/catch_all instructions where appropriate (currently only do_jit_call),

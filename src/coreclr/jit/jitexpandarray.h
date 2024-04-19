@@ -54,7 +54,10 @@ public:
     //    of size max(`minSize`, `idx`) is allocated.
     //
     JitExpandArray(CompAllocator alloc, unsigned minSize = 1)
-        : m_alloc(alloc), m_members(nullptr), m_size(0), m_minSize(minSize)
+        : m_alloc(alloc)
+        , m_members(nullptr)
+        , m_size(0)
+        , m_minSize(minSize)
     {
         assert(minSize > 0);
     }
@@ -219,7 +222,9 @@ public:
     // Notes:
     //    See JitExpandArray constructor notes.
     //
-    JitExpandArrayStack(CompAllocator alloc, unsigned minSize = 1) : JitExpandArray<T>(alloc, minSize), m_used(0)
+    JitExpandArrayStack(CompAllocator alloc, unsigned minSize = 1)
+        : JitExpandArray<T>(alloc, minSize)
+        , m_used(0)
     {
     }
 

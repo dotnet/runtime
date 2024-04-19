@@ -40,6 +40,7 @@
   &lt;/disabledPackageSources&gt;
 &lt;/configuration&gt;
     </NugetConfigContent>
+    <NugetPackagesPath>$(MSBuildThisFileDirectory)nugetPackages</NugetPackagesPath>
   </PropertyGroup>
 
   <Target Name="BuildWBT">
@@ -50,6 +51,8 @@
     </PropertyGroup>
 
     <Exec IgnoreExitCode="true" Command="$(_Dotnet) build $(MonoProjectRoot)wasm/Wasm.Build.Tests/Wasm.Build.Tests.csproj -c $(Configuration) -t:InstallWorkloadUsingArtifacts -p:TargetOS=browser -p:TargetArchitecture=wasm $(BuildAdditionalArgs)" />
+    <RemoveDir Directories="$(NugetPackagesPath)" />
+    <MakeDir Directories="$(NugetPackagesPath)" />
   </Target>
 
   <Target Name="PrepareBlazorTemplate" Condition="!Exists('$(MonoProjectRoot)sample/wasm/blazor-frame/blazor')">
@@ -68,12 +71,12 @@
         Overwrite="true"
         Lines="$(NugetConfigContent)" />
 
-    <Exec EnvironmentVariables="MSBuildSDKsPath=;DOTNET_ROOT=$(ArtifactsDir)bin/dotnet-latest;PATH=$(ArtifactsDir)bin/dotnet-latest:$(PATH)" WorkingDirectory="$(MSBuildThisFileDirectory)../blazor-frame/blazor" Command="dotnet new blazorwasm" />
+    <Exec EnvironmentVariables="MSBuildSDKsPath=;NUGET_PACKAGES=$(NugetPackagesPath);DOTNET_ROOT=$(ArtifactsDir)bin/dotnet-latest;PATH=$(ArtifactsDir)bin/dotnet-latest:$(PATH)" WorkingDirectory="$(MSBuildThisFileDirectory)../blazor-frame/blazor" Command="dotnet new blazorwasm" />
     <Exec WorkingDirectory="$(MSBuildThisFileDirectory)../blazor-frame" Command="git apply blazor-frame.diff" />
   </Target>
 
   <Target Name="BuildBlazorFrame" AfterTargets="BuildSampleInTree" Condition="'$(BlazorStartup)' == 'true'" DependsOnTargets="BuildWBT;PrepareBlazorTemplate">
-    <Exec EnvironmentVariables="MSBuildSDKsPath=;DOTNET_ROOT=$(ArtifactsDir)bin/dotnet-latest;PATH=$(ArtifactsDir)bin/dotnet-latest:$(PATH)" WorkingDirectory="$(MSBuildThisFileDirectory)../blazor-frame/blazor" Command="dotnet publish blazor.csproj -c $(Configuration) -p:WBTOverrideRuntimePack=true -p:TargetOS=browser -p:TargetArchitecture=wasm $(BuildAdditionalArgs)" />
+    <Exec EnvironmentVariables="MSBuildSDKsPath=;NUGET_PACKAGES=$(NugetPackagesPath);DOTNET_ROOT=$(ArtifactsDir)bin/dotnet-latest;PATH=$(ArtifactsDir)bin/dotnet-latest:$(PATH)" WorkingDirectory="$(MSBuildThisFileDirectory)../blazor-frame/blazor" Command="dotnet publish blazor.csproj -c $(Configuration) -p:WBTOverrideRuntimePack=true -p:TargetOS=browser -p:TargetArchitecture=wasm $(BuildAdditionalArgs)" />
 
     <ItemGroup>
         <BlazorSourceFiles Include="$(MSBuildThisFileDirectory)../blazor-frame/blazor/bin/$(Configuration)/$(NetCoreAppCurrent)/publish/wwwroot/blazor-template/**/*.*"/>
@@ -104,13 +107,13 @@
         Overwrite="true"
         Lines="$(NugetConfigContent)" />
 
-    <Exec EnvironmentVariables="MSBuildSDKsPath=;DOTNET_ROOT=$(ArtifactsDir)bin/dotnet-latest;PATH=$(ArtifactsDir)bin/dotnet-latest:$(PATH)" WorkingDirectory="$(MSBuildThisFileDirectory)../browser-frame/browser-frame/" Command="dotnet new wasmbrowser" />
+    <Exec EnvironmentVariables="MSBuildSDKsPath=;NUGET_PACKAGES=$(NugetPackagesPath);DOTNET_ROOT=$(ArtifactsDir)bin/dotnet-latest;PATH=$(ArtifactsDir)bin/dotnet-latest:$(PATH)" WorkingDirectory="$(MSBuildThisFileDirectory)../browser-frame/browser-frame/" Command="dotnet new wasmbrowser" />
     <Exec WorkingDirectory="$(MSBuildThisFileDirectory)../browser-frame" Command="git apply browser-frame.diff" />
   </Target>
 
   <Target Name="BuildBrowserFrame" AfterTargets="BuildSampleInTree" Condition="'$(BrowserStartup)' == 'true'" DependsOnTargets="BuildWBT;PrepareBrowserTemplate">
 
-    <Exec EnvironmentVariables="MSBuildSDKsPath=;DOTNET_ROOT=$(ArtifactsDir)bin/dotnet-latest;PATH=$(ArtifactsDir)bin/dotnet-latest:$(PATH)" WorkingDirectory="$(MSBuildThisFileDirectory)../browser-frame/browser-frame" Command="dotnet publish browser-frame.csproj -c $(Configuration) -p:WBTOverrideRuntimePack=true -p:TargetOS=browser -p:TargetArchitecture=wasm $(BuildAdditionalArgs)" />
+    <Exec EnvironmentVariables="MSBuildSDKsPath=;NUGET_PACKAGES=$(NugetPackagesPath);DOTNET_ROOT=$(ArtifactsDir)bin/dotnet-latest;PATH=$(ArtifactsDir)bin/dotnet-latest:$(PATH)" WorkingDirectory="$(MSBuildThisFileDirectory)../browser-frame/browser-frame" Command="dotnet publish browser-frame.csproj -c $(Configuration) -p:WBTOverrideRuntimePack=true -p:TargetOS=browser -p:TargetArchitecture=wasm $(BuildAdditionalArgs)" />
 
     <ItemGroup>
         <BrowserSourceFiles Include="$(MSBuildThisFileDirectory)../browser-frame/browser-frame/bin/$(Configuration)/$(NetCoreAppCurrent)/publish/wwwroot/**/*.*"/>

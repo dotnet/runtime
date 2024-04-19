@@ -573,7 +573,7 @@ CHECK PEDecoder::CheckOffset(COUNT_T fileOffset, IsNullOK ok) const
     }
     CONTRACT_CHECK_END;
 
-    if (fileOffset == NULL)
+    if (fileOffset == 0)
         CHECK_MSG(ok == NULL_OK, "Null pointer illegal");
     else
     {
@@ -842,7 +842,7 @@ TADDR PEDecoder::GetRvaData(RVA rva, IsNullOK ok /*= NULL_NOT_OK*/) const
     CONTRACT_END;
 
     if ((rva == 0)&&(ok == NULL_NOT_OK))
-        RETURN NULL;
+        RETURN (TADDR)NULL;
 
     RVA offset;
     if (IsMapped())
@@ -869,7 +869,7 @@ RVA PEDecoder::GetDataRva(const TADDR data) const
     }
     CONTRACT_END;
 
-    if (data == NULL)
+    if (data == (TADDR)NULL)
         RETURN 0;
 
     COUNT_T offset = (COUNT_T) (data - m_base);
@@ -917,7 +917,7 @@ TADDR PEDecoder::GetOffsetData(COUNT_T fileOffset, IsNullOK ok /*= NULL_NOT_OK*/
     CONTRACT_END;
 
     if ((fileOffset == 0)&&(ok == NULL_NOT_OK))
-        RETURN NULL;
+        RETURN (TADDR)NULL;
 
     RETURN GetRvaData(OffsetToRva(fileOffset));
 }
@@ -1085,7 +1085,7 @@ CHECK PEDecoder::CheckCorHeader() const
     COUNT_T ctMD = (COUNT_T)VAL32(pDirMD->Size);
     TADDR   pcMD = (TADDR)GetDirectoryData(pDirMD);
 
-    if(pcMD != NULL)
+    if(pcMD != (TADDR)NULL)
     {
         // Storage signature checks
         CHECK(ctMD >= sizeof(STORAGESIGNATURE));

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Threading;
+using Microsoft.DotNet.RemoteExecutor;
 using Test.Cryptography;
 using Xunit;
 
@@ -620,6 +622,106 @@ namespace System.Security.Cryptography.Tests
                     (IncrementalHash inc, Span<byte> dest, out int bytesWritten) =>
                         inc.TryGetHashAndReset(dest, out bytesWritten));
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void Hash_GetHashAndReset_ConcurrentUseDoesNotCrashProcess()
+        {
+            static void ThreadWork(object obj)
+            {
+                try
+                {
+                    IncrementalHash hash = (IncrementalHash)obj;
+
+                    for (int i = 0; i < 10_000; i++)
+                    {
+                        hash.AppendData("potatos and carrots make for a fine stew."u8);
+                        hash.GetHashAndReset();
+                    }
+                }
+                catch
+                {
+                    // Ignore all managed exceptions. IncrementalHash is not thread safe, but we don't want process
+                    // crashes.
+                }
+            }
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                foreach(object[] items in GetHashAlgorithms())
+                {
+                    if (items is [HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm])
+                    {
+                        referenceAlgorithm.Dispose();
+
+                        using (IncrementalHash hash = IncrementalHash.CreateHash(hashAlgorithm))
+                        {
+                            Thread thread1 = new(ThreadWork);
+                            Thread thread2 = new(ThreadWork);
+                            thread1.Start(hash);
+                            thread2.Start(hash);
+                            thread1.Join();
+                            thread2.Join();
+                        }
+                    }
+                    else
+                    {
+                        Assert.Fail("Test is not set up correctly.");
+                    }
+                }
+
+                return RemoteExecutor.SuccessExitCode;
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void HMAC_GetHashAndReset_ConcurrentUseDoesNotCrashProcess()
+        {
+            static void ThreadWork(object obj)
+            {
+                try
+                {
+                    IncrementalHash hash = (IncrementalHash)obj;
+
+                    for (int i = 0; i < 10_000; i++)
+                    {
+                        hash.AppendData("potatos and carrots make for a fine stew."u8);
+                        hash.GetHashAndReset();
+                    }
+                }
+                catch
+                {
+                    // Ignore all managed exceptions. IncrementalHash is not thread safe, but we don't want process
+                    // crashes.
+                }
+            }
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                foreach(object[] items in GetHMACs())
+                {
+                    if (items is [HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm])
+                    {
+                        referenceAlgorithm.Dispose();
+
+                        using (IncrementalHash hash = IncrementalHash.CreateHMAC(hashAlgorithm, [1, 2, 3, 4]))
+                        {
+                            Thread thread1 = new(ThreadWork);
+                            Thread thread2 = new(ThreadWork);
+                            thread1.Start(hash);
+                            thread2.Start(hash);
+                            thread1.Join();
+                            thread2.Join();
+                        }
+                    }
+                    else
+                    {
+                        Assert.Fail("Test is not set up correctly.");
+                    }
+                }
+
+                return RemoteExecutor.SuccessExitCode;
+            }).Dispose();
         }
 
         private static void VerifyGetCurrentHash(IncrementalHash single, IncrementalHash accumulated)

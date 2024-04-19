@@ -362,18 +362,18 @@ npm update --lockfile-version=1
 
 Tests are run with V8, Chrome, node, and wasmtime for the various jobs.
 
-- V8: the version used is from `eng/testing/ChromeVersions.props`. This is used for all the library tests, and WBT, but *not* runtime tests.
+- V8: the version used is from `eng/testing/BrowserVersions.props`. This is used for all the library tests, and WBT, but *not* runtime tests.
 - Chrome: Same as V8.
 - Node: fixed version from emsdk
 - wasmtime - fixed version in `src/mono/wasi/wasi-sdk-version.txt`.
 
-### `eng/testing/ChromeVersions.props`
+### `eng/testing/BrowserVersions.props`
 
 This file is updated once a week by a github action `.github/workflows/bump-chrome-version.yml`, and the version is obtained by `src/tasks/WasmBuildTasks/GetChromeVersions.cs` task.
 
 # Perf pipeline
 
-- V8 version used to run the microbenchmarks is from `eng/testing/ChromeVersions.props`
+- V8 version used to run the microbenchmarks is from `eng/testing/BrowserVersions.props`
 
 TBD
 

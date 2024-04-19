@@ -23,7 +23,7 @@ OBJECTHANDLE ThreadExceptionState::GetThrowableAsHandle()
         return m_pCurrentTracker->m_hThrowable;
     }
 
-    return NULL;
+    return (OBJECTHANDLE)NULL;
 #else // FEATURE_EH_FUNCLETS
     return m_currentExInfo.m_hThrowable;
 #endif // FEATURE_EH_FUNCLETS
