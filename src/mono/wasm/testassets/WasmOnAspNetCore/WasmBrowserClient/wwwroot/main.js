@@ -10,7 +10,8 @@ try {
         .withExitOnUnhandledError()
         .create();
     const config = dotnetRuntime.getConfig();
-    await dotnetRuntime.runMainAndExit(config.mainAssemblyName, [window.location.origin, window.location.href]);
+    var url = window.location.origin + window.location.pathname;
+    await dotnetRuntime.runMainAndExit(config.mainAssemblyName, [url, window.location.href]);
 
 }
 catch (err) {
