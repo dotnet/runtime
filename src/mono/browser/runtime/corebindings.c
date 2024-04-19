@@ -255,7 +255,8 @@ void mono_wasm_get_assembly_export (char *assembly_name, char *namespace, char *
 	assert (method);
 
 	*method_out = method;
-    free (assembly_name);
+    // This is freed by _mono_wasm_assembly_load for some reason
+    // free (assembly_name);
 	free (namespace);
 	free (classname);
 	free (methodname);
