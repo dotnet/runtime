@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace System.Globalization
 {
@@ -65,9 +66,13 @@ namespace System.Globalization
         private static unsafe CultureData JSLoadCultureInfoFromBrowser(string localeName, CultureData culture)
         {
             char* buffer = stackalloc char[CULTURE_INFO_BUFFER_LEN];
-            int resultLength = Interop.JsGlobalization.GetCultureInfo(localeName, buffer, CULTURE_INFO_BUFFER_LEN, out int exception, out object exResult);
-            if (exception != 0)
-                throw new Exception((string)exResult);
+            nint exceptionPtr = Interop.JsGlobalization.GetCultureInfo(localeName, buffer, CULTURE_INFO_BUFFER_LEN, out int resultLength);
+            if (exceptionPtr != IntPtr.Zero)
+            {
+                string message = Marshal.PtrToStringUni(exceptionPtr)!;
+                Marshal.FreeHGlobal(exceptionPtr);
+                throw new Exception(message);
+            }
             string result = new string(buffer, 0, resultLength);
             string[] subresults = result.Split("##");
             if (subresults.Length < 4)
@@ -93,11 +98,11 @@ namespace System.Globalization
 
         private static unsafe int GetFirstWeekOfYear(string localeName)
         {
-            int result = Interop.JsGlobalization.GetFirstWeekOfYear(localeName, out int exception, out object ex_result);
+             int result = Interop.JsGlobalization.GetFirstWeekOfYear(localeName, out int exception, out object ex_result);
             if (exception != 0)
             {
                 // Failed, just use 0
-                Debug.Fail($"[CultureData.GetFirstDayOfWeek()] failed with {ex_result}");
+                Debug.Fail($"[CultureData.GetFirstWeekOfYear()] failed with {ex_result}");
                 return 0;
             }
             return result;
