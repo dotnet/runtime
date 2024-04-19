@@ -23,6 +23,8 @@
 #include "dwreport.h"
 #include "primitives.h"
 #include "dbgutil.h"
+#include "cdac.h"
+#include <clrconfignocache.h>
 
 #ifdef USE_DAC_TABLE_RVA
 #include <dactablerva.h>
@@ -3034,6 +3036,7 @@ private:
 //----------------------------------------------------------------------------
 
 ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget/*=0*/)
+    : m_cdac{CDAC::Invalid()}
 {
     SUPPORTS_DAC_HOST_ONLY;     // ctor does no marshalling - don't check with DacCop
 
@@ -3123,7 +3126,6 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
     // see ClrDataAccess::VerifyDlls for details.
     m_fEnableDllVerificationAsserts = false;
 #endif
-
 }
 
 ClrDataAccess::~ClrDataAccess(void)
@@ -3230,6 +3232,10 @@ ClrDataAccess::QueryInterface(THIS_
     else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface13)))
     {
         ifaceRet = static_cast<ISOSDacInterface13*>(this);
+    }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface14)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface14*>(this);
     }
     else
     {
@@ -4320,7 +4326,7 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
     GcEvtArgs pubGcEvtArgs = {};
     ULONG32 notifyType = 0;
     DWORD catcherNativeOffset = 0;
-    TADDR nativeCodeLocation = NULL;
+    TADDR nativeCodeLocation = (TADDR)NULL;
 
     DAC_ENTER();
 
@@ -4702,7 +4708,7 @@ ClrDataAccess::SetAllCodeNotifications(
                 BOOL changedTable;
                 TADDR modulePtr = mod ?
                     PTR_HOST_TO_TADDR(((ClrDataModule*)mod)->GetModule()) :
-                    NULL;
+                    (TADDR)NULL;
 
                 if (jn.SetAllNotifications(modulePtr, (USHORT)flags, &changedTable))
                 {
@@ -4818,7 +4824,7 @@ ClrDataAccess::GetCodeNotifications(
             }
             else
             {
-                TADDR modulePtr = NULL;
+                TADDR modulePtr = (TADDR)NULL;
                 if (singleMod)
                 {
                     modulePtr = PTR_HOST_TO_TADDR(((ClrDataModule*)singleMod)->
@@ -4904,7 +4910,7 @@ ClrDataAccess::SetCodeNotifications(
                     goto Exit;
                 }
 
-                TADDR modulePtr = NULL;
+                TADDR modulePtr = (TADDR)NULL;
                 if (singleMod)
                 {
                     modulePtr =
@@ -5487,6 +5493,28 @@ ClrDataAccess::Initialize(void)
     IfFailRet(GetDacGlobalValues());
     IfFailRet(DacGetHostVtPtrs());
 
+    CLRConfigNoCache enable = CLRConfigNoCache::Get("ENABLE_CDAC");
+    if (enable.IsSet())
+    {
+        DWORD val;
+        if (enable.TryAsInteger(10, val) && val == 1)
+        {
+            // TODO: [cdac] Get contract descriptor from exported symbol
+            uint64_t contractDescriptorAddr = 0;
+            //if (TryGetSymbol(m_pTarget, m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
+            {
+                m_cdac = CDAC::Create(contractDescriptorAddr, m_pTarget);
+                if (m_cdac.IsValid())
+                {
+                    // Get SOS interfaces from the cDAC if available.
+                    IUnknown* unk = m_cdac.SosInterface();
+                    (void)unk->QueryInterface(__uuidof(ISOSDacInterface), (void**)&m_cdacSos);
+                    (void)unk->QueryInterface(__uuidof(ISOSDacInterface9), (void**)&m_cdacSos9);
+                }
+            }
+        }
+    }
+
     //
     // DAC is now setup and ready to use
     //
@@ -5789,7 +5817,7 @@ ClrDataAccess::RawGetMethodName(
             SIZE_T maxPrecodeSize = sizeof(StubPrecode);
 
 #ifdef HAS_THISPTR_RETBUF_PRECODE
-            maxPrecodeSize = max(maxPrecodeSize, sizeof(ThisPtrRetBufPrecode));
+            maxPrecodeSize = max((size_t)maxPrecodeSize, sizeof(ThisPtrRetBufPrecode));
 #endif
 
             for (SIZE_T i = 0; i < maxPrecodeSize / PRECODE_ALIGNMENT; i++)
@@ -5948,10 +5976,10 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
     COUNT_T countNativeVarInfo;
     NewHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
     TADDR nativeCodeStartAddr;
-    if (address != NULL)
+    if (address != (TADDR)NULL)
     {
         NativeCodeVersion requestedNativeCodeVersion = ExecutionManager::GetNativeCodeVersion(address);
-        if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == NULL)
+        if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == (PCODE)NULL)
         {
             return E_INVALIDARG;
         }
@@ -6006,10 +6034,10 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
     // Use the DebugInfoStore to get IL->Native maps.
     // It doesn't matter whether we're jitted, ngenned etc.
     TADDR nativeCodeStartAddr;
-    if (address != NULL)
+    if (address != (TADDR)NULL)
     {
         NativeCodeVersion requestedNativeCodeVersion = ExecutionManager::GetNativeCodeVersion(address);
-        if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == NULL)
+        if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == (PCODE)NULL)
         {
             return E_INVALIDARG;
         }
@@ -6943,7 +6971,7 @@ ClrDataAccess::GetDacGlobalValues()
     {
         return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
     }
-    if (m_dacGlobals.ThreadStore__s_pThreadStore == NULL)
+    if (m_dacGlobals.ThreadStore__s_pThreadStore == (TADDR)NULL)
     {
         return CORDBG_E_UNSUPPORTED;
     }
@@ -7742,6 +7770,8 @@ void CALLBACK DacHandleWalker::EnumCallback(PTR_UNCHECKED_OBJECTREF handle, uint
     data.Type = param->Type;
     if (param->Type == HNDTYPE_DEPENDENT)
         data.Secondary = GetDependentHandleSecondary(handle.GetAddr()).GetAddr();
+    else if (param->Type == HNDTYPE_WEAK_INTERIOR_POINTER)
+        data.Secondary = TO_CDADDR(HndGetHandleExtraInfo(handle.GetAddr()));
     else
         data.Secondary = 0;
     data.AppDomain = param->AppDomain;

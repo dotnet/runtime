@@ -37,7 +37,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             writer.WriteStringValue(
 #if NETCOREAPP
-                MemoryMarshal.CreateSpan(ref value, 1)
+                new ReadOnlySpan<char>(in value)
 #else
                 value.ToString()
 #endif
@@ -54,7 +54,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             writer.WritePropertyName(
 #if NETCOREAPP
-                MemoryMarshal.CreateSpan(ref value, 1)
+                new ReadOnlySpan<char>(in value)
 #else
                 value.ToString()
 #endif

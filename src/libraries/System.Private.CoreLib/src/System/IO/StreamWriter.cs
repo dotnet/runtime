@@ -531,7 +531,7 @@ namespace System.IO
             if (GetType() == typeof(StreamWriter))
             {
                 TwoObjects two = new TwoObjects(arg0, arg1);
-                WriteFormatHelper(format, MemoryMarshal.CreateReadOnlySpan(ref two.Arg0, 2), appendNewLine: false);
+                WriteFormatHelper(format, two, appendNewLine: false);
             }
             else
             {
@@ -544,7 +544,7 @@ namespace System.IO
             if (GetType() == typeof(StreamWriter))
             {
                 ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
-                WriteFormatHelper(format, MemoryMarshal.CreateReadOnlySpan(ref three.Arg0, 3), appendNewLine: false);
+                WriteFormatHelper(format, three, appendNewLine: false);
             }
             else
             {
@@ -585,7 +585,7 @@ namespace System.IO
             if (GetType() == typeof(StreamWriter))
             {
                 TwoObjects two = new TwoObjects(arg0, arg1);
-                WriteFormatHelper(format, MemoryMarshal.CreateReadOnlySpan(ref two.Arg0, 2), appendNewLine: true);
+                WriteFormatHelper(format, two, appendNewLine: true);
             }
             else
             {
@@ -598,7 +598,7 @@ namespace System.IO
             if (GetType() == typeof(StreamWriter))
             {
                 ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
-                WriteFormatHelper(format, MemoryMarshal.CreateReadOnlySpan(ref three.Arg0, 3), appendNewLine: true);
+                WriteFormatHelper(format, three, appendNewLine: true);
             }
             else
             {

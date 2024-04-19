@@ -6,7 +6,8 @@
 
 struct simd8_t
 {
-    union {
+    union
+    {
         float    f32[2];
         double   f64[1];
         int8_t   i8[8];
@@ -58,7 +59,8 @@ static_assert_no_msg(sizeof(simd8_t) == 8);
 #include <pshpack4.h>
 struct simd12_t
 {
-    union {
+    union
+    {
         float    f32[3];
         int8_t   i8[12];
         int16_t  i16[6];
@@ -116,7 +118,8 @@ static_assert_no_msg(sizeof(simd12_t) == 12);
 
 struct simd16_t
 {
-    union {
+    union
+    {
         float    f32[4];
         double   f64[2];
         int8_t   i8[16];
@@ -170,7 +173,8 @@ static_assert_no_msg(sizeof(simd16_t) == 16);
 #if defined(TARGET_XARCH)
 struct simd32_t
 {
-    union {
+    union
+    {
         float    f32[8];
         double   f64[4];
         int8_t   i8[32];
@@ -224,7 +228,8 @@ static_assert_no_msg(sizeof(simd32_t) == 32);
 
 struct simd64_t
 {
-    union {
+    union
+    {
         float    f32[16];
         double   f64[8];
         int8_t   i8[64];
@@ -276,6 +281,56 @@ struct simd64_t
     }
 };
 static_assert_no_msg(sizeof(simd64_t) == 64);
+
+struct simdmask_t
+{
+    union
+    {
+        int8_t   i8[8];
+        int16_t  i16[4];
+        int32_t  i32[2];
+        int64_t  i64[1];
+        uint8_t  u8[8];
+        uint16_t u16[4];
+        uint32_t u32[2];
+        uint64_t u64[1];
+    };
+
+    bool operator==(const simdmask_t& other) const
+    {
+        return (u64[0] == other.u64[0]);
+    }
+
+    bool operator!=(const simdmask_t& other) const
+    {
+        return !(*this == other);
+    }
+
+    static simdmask_t AllBitsSet()
+    {
+        simdmask_t result;
+
+        result.u64[0] = 0xFFFFFFFFFFFFFFFF;
+
+        return result;
+    }
+
+    bool IsAllBitsSet() const
+    {
+        return *this == AllBitsSet();
+    }
+
+    bool IsZero() const
+    {
+        return *this == Zero();
+    }
+
+    static simdmask_t Zero()
+    {
+        return {};
+    }
+};
+static_assert_no_msg(sizeof(simdmask_t) == 8);
 
 typedef simd64_t simd_t;
 #else

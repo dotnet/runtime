@@ -2172,7 +2172,7 @@ STDMETHODIMP RegMeta::GetUserString(          // S_OK or error.
         memcpy(
             wszString,
             userString.GetDataPointer(),
-            min(userString.GetSize(), cbStringSize));
+            min((ULONG)userString.GetSize(), cbStringSize));
         if (cbStringSize < userString.GetSize())
         {
             if ((wszString != NULL) && (cchStringSize > 0))

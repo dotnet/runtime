@@ -1107,6 +1107,44 @@ void Thread::SetActivationPending(bool isPending)
     }
 }
 
+#ifdef TARGET_X86
+
+void Thread::SetPendingRedirect(PCODE eip)
+{
+    m_LastRedirectIP = eip;
+    m_SpinCount = 0;
+}
+
+bool Thread::CheckPendingRedirect(PCODE eip)
+{
+    if (eip == m_LastRedirectIP)
+    {
+        // We need to test for an infinite loop in assembly, as this will break the heuristic we
+        // are using.
+        const BYTE short_jmp = 0xeb;    // Machine code for a short jump.
+        const BYTE self = 0xfe;         // -2.  Short jumps are calculated as [ip]+2+[second_byte].
+
+        // If we find that we are in an infinite loop, we'll set the last redirected IP to 0 so that we will
+        // redirect the next time we attempt it.  Delaying one interation allows us to narrow the window of
+        // the race we are working around in this corner case.
+        BYTE *ip = (BYTE *)m_LastRedirectIP;
+        if (ip[0] == short_jmp && ip[1] == self)
+            m_LastRedirectIP = 0;
+
+        // We set a hard limit of 5 times we will spin on this to avoid any tricky race which we have not
+        // accounted for.
+        m_SpinCount++;
+        if (m_SpinCount >= 5)
+            m_LastRedirectIP = 0;
+
+        return true;
+    }
+
+    return false;
+}
+
+#endif // TARGET_X86
+
 #endif // !DACCESS_COMPILE
 
 void Thread::ValidateExInfoStack()

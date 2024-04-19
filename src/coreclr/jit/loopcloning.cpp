@@ -1371,7 +1371,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
                 LcMdArrayOptInfo* mdArrInfo = optInfo->AsLcMdArrayOptInfo();
                 LC_Array arrLen(LC_Array(LC_Array::MdArray, mdArrInfo->GetArrIndexForDim(getAllocator(CMK_LoopClone)),
                                          mdArrInfo->dim, LC_Array::None));
-                LC_Ident     arrLenIdent = LC_Ident::CreateArrAccess(arrLen);
+                LC_Ident arrLenIdent = LC_Ident::CreateArrAccess(arrLen);
                 LC_Condition cond(opLimitCondition, LC_Expr(ident), LC_Expr(arrLenIdent));
                 context->EnsureConditions(loop->GetIndex())->Push(cond);
 
@@ -1666,7 +1666,7 @@ void Compiler::optDebugLogLoopCloning(BasicBlock* block, Statement* insertBefore
 //      performs the optimizations assuming that the path in which the candidates
 //      were collected is the fast path in which the optimizations will be performed.
 //
-void Compiler::optPerformStaticOptimizations(FlowGraphNaturalLoop* loop,
+void Compiler::optPerformStaticOptimizations(FlowGraphNaturalLoop*     loop,
                                              LoopCloneContext* context DEBUGARG(bool dynamicPath))
 {
     JitExpandArrayStack<LcOptInfo*>* optInfos = context->GetLoopOptInfo(loop->GetIndex());
@@ -1976,11 +1976,6 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", fastPreheader->bbNum, preheader->bbNum);
     fastPreheader->bbWeight = fastPreheader->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
 
-    if (fastPreheader->NextIs(loop->GetHeader()))
-    {
-        fastPreheader->SetFlags(BBF_NONE_QUIRK);
-    }
-
     assert(preheader->KindIs(BBJ_ALWAYS));
     assert(preheader->TargetIs(loop->GetHeader()));
 
@@ -2073,14 +2068,12 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
         preheader->SetTargetEdge(newEdge);
     }
 
-    preheader->SetFlags(BBF_NONE_QUIRK);
-
     // And make sure we insert a pred link for the final fallthrough into the fast preheader.
     assert(condLast->NextIs(fastPreheader));
     FlowEdge* const falseEdge = fgAddRefPred(fastPreheader, condLast);
     condLast->SetFalseEdge(falseEdge);
     FlowEdge* const trueEdge = condLast->GetTrueEdge();
-    falseEdge->setLikelihood(max(0, 1.0 - trueEdge->getLikelihood()));
+    falseEdge->setLikelihood(max(0.0, 1.0 - trueEdge->getLikelihood()));
 }
 
 //-------------------------------------------------------------------------

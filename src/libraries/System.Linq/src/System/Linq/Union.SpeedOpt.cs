@@ -24,7 +24,7 @@ namespace System.Linq
                 }
             }
 
-            public override TSource[] ToArray() => HashSetToArray(FillSet());
+            public override TSource[] ToArray() => ICollectionToArray(FillSet());
 
             public override List<TSource> ToList() => new List<TSource>(FillSet());
 

@@ -202,7 +202,6 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         var page = await runner.RunAsync(
             runCommand,
             runArgs,
-            onPageLoaded: runOptions.OnPageLoaded,
             onConsoleMessage: OnConsoleMessage,
             onServerMessage: runOptions.OnServerMessage,
             onError: OnErrorMessage,
@@ -218,6 +217,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
             Assert.Equal("Current count: 0", txt);
 
             await page.Locator("text=\"Click me\"").ClickAsync();
+            await Task.Delay(300);
             txt = await page.Locator("p[role='status']").InnerHTMLAsync();
             Assert.Equal("Current count: 1", txt);
         }

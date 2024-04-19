@@ -602,7 +602,7 @@ mono_decompose_op_imm (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 	mono_bblock_insert_before_ins (bb, ins, temp);
 
 	if (opcode2 == -1)
-		g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (ins->opcode));
+		g_error ("mono_op_imm_to_op failed for " M_PRI_INST "\n", mono_inst_name (ins->opcode));
 	ins->opcode = GINT_TO_OPCODE (opcode2);
 
 	if (ins->opcode == OP_LOCALLOC)
@@ -4322,6 +4322,7 @@ mini_handle_call_res_devirt (MonoMethod *cmethod)
 
 		inst = mono_class_inflate_generic_class_checked (mono_class_get_iequatable_class (), &ctx, error);
 		mono_error_assert_ok (error);
+		g_assert (inst);
 
 		// EqualityComparer<T>.Default returns specific types depending on T
 		// FIXME: Special case more types: byte, string, nullable, enum ?

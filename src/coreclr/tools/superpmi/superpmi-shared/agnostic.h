@@ -423,7 +423,14 @@ struct Agnostic_CheckMethodModifier
 struct Agnostic_EmbedGenericHandle
 {
     Agnostic_CORINFO_RESOLVED_TOKEN ResolvedToken;
+    DWORDLONG                       hCallerHandle;
     DWORD                           fEmbedParent;
+};
+
+struct Agnostic_ExpandRawHandleIntrinsic
+{
+    Agnostic_CORINFO_RESOLVED_TOKENin ResolvedToken;
+    DWORDLONG                         hCallerHandle;
 };
 
 struct Agnostic_CORINFO_GENERICHANDLE_RESULT
@@ -687,6 +694,7 @@ struct GetReadyToRunHelper_TOKENin
     Agnostic_CORINFO_RESOLVED_TOKEN ResolvedToken;
     Agnostic_CORINFO_LOOKUP_KIND    GenericLookupKind;
     DWORD                           id;
+    DWORDLONG                       callerHandle;
 };
 
 struct GetReadyToRunHelper_TOKENout
@@ -700,6 +708,7 @@ struct GetReadyToRunDelegateCtorHelper_TOKENIn
     Agnostic_CORINFO_RESOLVED_TOKEN TargetMethod;
     mdToken                         targetConstraint;
     DWORDLONG                       delegateType;
+    DWORDLONG                       callerHandle;
 };
 
 struct Agnostic_RecordRelocation

@@ -44,6 +44,8 @@ export const enum JiterpMember {
     ClassRank,
     ClassElementClass,
     BoxedValueData,
+    BackwardBranchTaken,
+    BailoutOpcodeCount,
 }
 
 // keep in sync with jiterpreter.c, see mono_jiterp_write_number_unaligned

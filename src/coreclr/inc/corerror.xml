@@ -172,12 +172,6 @@
 	<Comment> The located assembly's manifest definition does not match the assembly reference. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131044">
-	<SymbolicName>FUSION_E_PRIVATE_ASM_DISALLOWED</SymbolicName>
-	<Message>"A strongly-named assembly is required."</Message>
-	<Comment> A strongly-named assembly is required. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131047">
 	<SymbolicName>FUSION_E_INVALID_NAME</SymbolicName>
 	<Message>"The given assembly name was invalid."</Message>
