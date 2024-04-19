@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -209,7 +210,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 		{
 			switch (attribute.Name.ToString () + "Attribute") {
 			case nameof (ExpectedWarningAttribute):
-			case nameof (ExpectedMissingWarningAttribute):
 			case nameof (UnexpectedWarningAttribute):
 			case nameof (LogContainsAttribute):
 				var args = LinkerTestBase.GetAttributeArguments (attribute);
@@ -217,34 +217,44 @@ namespace ILLink.RoslynAnalyzer.Tests
 					// Skip if this warning is not expected to be produced by any of the analyzers that we are currently testing.
 					return GetProducedBy (producedBy).HasFlag (Tool.Analyzer);
 				}
+				var toolArg = args.Where (arg => arg.Key.StartsWith ('#')).Count () - 2;
+				if (args.TryGetValue ($"#{toolArg}", out var maybeProducedBy) && TryGetProducedBy (maybeProducedBy, out Tool producedByTool)) {
+					return producedByTool.HasFlag (Tool.Analyzer);
+				}
 
 				return true;
 			default:
 				return false;
 			}
 
-			static Tool GetProducedBy (ExpressionSyntax expression)
+			static bool TryGetProducedBy (ExpressionSyntax expression, out Tool producedBy)
 			{
-				var producedBy = (Tool) 0x0;
+				producedBy = (Tool) 0x0;
 				switch (expression) {
-				case BinaryExpressionSyntax binaryExpressionSyntax:
+				case BinaryExpressionSyntax binaryExpressionSyntax when binaryExpressionSyntax.Kind () == SyntaxKind.BitwiseOrExpression:
 					if (!Enum.TryParse<Tool> ((binaryExpressionSyntax.Left as MemberAccessExpressionSyntax)!.Name.Identifier.ValueText, out var besProducedBy))
-						throw new ArgumentException ("Expression must be a ProducedBy value", nameof (expression));
+						return false;
 					producedBy |= besProducedBy;
 					producedBy |= GetProducedBy (binaryExpressionSyntax.Right);
 					break;
 
 				case MemberAccessExpressionSyntax memberAccessExpressionSyntax:
 					if (!Enum.TryParse<Tool> (memberAccessExpressionSyntax.Name.Identifier.ValueText, out var maeProducedBy))
-						throw new ArgumentException ("Expression must be a ProducedBy value", nameof (expression));
+						return false;
 					producedBy |= maeProducedBy;
 					break;
 
 				default:
-					break;
+					return false;
+					//break;
 				}
 
-				return producedBy;
+				return true;
+			}
+
+			static Tool GetProducedBy (ExpressionSyntax expression)
+			{
+				return TryGetProducedBy (expression, out var tool) ? tool : throw new ArgumentException ("Expression must be a ProducedBy value", nameof (expression));
 			}
 		}
 
@@ -252,7 +262,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 		{
 			switch (attribute.Name.ToString () + "Attribute") {
 			case nameof (ExpectedWarningAttribute):
-			case nameof (ExpectedMissingWarningAttribute):
 			case nameof (UnexpectedWarningAttribute):
 				return TryValidateExpectedWarningAttribute (attribute!, diagnostics, out matchIndex, out missingDiagnosticMessage);
 			case nameof (LogContainsAttribute):
@@ -271,11 +280,24 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 			if (!expectedWarningCode.StartsWith ("IL"))
 				throw new InvalidOperationException ($"Expected warning code should start with \"IL\" prefix.");
-
-			List<string> expectedMessages = args
-				.Where (arg => arg.Key.StartsWith ("#") && arg.Key != "#0")
-				.Select (arg => LinkerTestBase.GetStringFromExpression (arg.Value, _semanticModel))
-				.ToList ();
+			List<string> expectedMessages = ((IMethodSymbol) (_semanticModel.GetSymbolInfo (attribute).Symbol!)).Parameters switch {
+			[var warningCodeExpr, { IsParams: true }]
+				=> args
+					.Where (arg => arg.Key.StartsWith ('#') && arg.Key != "#0")
+					.Select (arg => LinkerTestBase.GetStringFromExpression (arg.Value, _semanticModel))
+					.ToList (),
+					[var warningCodeExpr, { Type.TypeKind: TypeKind.Array }, _, _]
+							=> ((CollectionExpressionSyntax) args["#1"]).Elements
+								.Select (arg => LinkerTestBase.GetStringFromExpression (((ExpressionElementSyntax) arg).Expression, _semanticModel))
+								.ToList (),
+								[var warningCodeExpr, { Type.SpecialType: SpecialType.System_String }, _, _]
+							=> [LinkerTestBase.GetStringFromExpression (args["#1"], _semanticModel)],
+							[var warningCodeExpr, { Type.SpecialType: SpecialType.System_String }, { Type.SpecialType: SpecialType.System_String }, _, _]
+						=> [LinkerTestBase.GetStringFromExpression (args["#1"], _semanticModel), LinkerTestBase.GetStringFromExpression (args["#2"], _semanticModel)],
+						[var warningCodeExpr, _, _]
+						=> [],
+				_ => throw new UnreachableException (),
+			};
 
 			for (int i = 0; i < diagnostics.Count; i++) {
 				if (Matches (diagnostics[i])) {

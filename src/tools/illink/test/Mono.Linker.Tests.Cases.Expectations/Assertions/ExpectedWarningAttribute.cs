@@ -14,6 +14,22 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	/// </summary>
 	public class ExpectedWarningAttribute : EnableLoggerAttribute
 	{
+		public ExpectedWarningAttribute (string warningCode, string[] messageContains, Tool producedBy, string issueLinkOrReason)
+		{
+		}
+
+		public ExpectedWarningAttribute (string warningCode, string messageContains, Tool producedBy, string issueLinkOrReason)
+		{
+		}
+
+		public ExpectedWarningAttribute (string warningCode, string messageContains, string messageContains2, Tool producedBy, string issueLinkOrReason)
+		{
+		}
+
+		public ExpectedWarningAttribute (string warningCode, Tool producedBy, string issueLinkOrReason)
+		{
+		}
+
 		public ExpectedWarningAttribute (string warningCode, params string[] messageContains)
 		{
 		}

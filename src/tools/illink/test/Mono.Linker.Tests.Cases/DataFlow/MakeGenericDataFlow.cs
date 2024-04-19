@@ -551,7 +551,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// https://github.com/dotnet/linker/issues/2158 - analyzer doesn't work the same as ILLink, it simply doesn't handle refs
-			[ExpectedMissingWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod), Tool.Trimmer | Tool.NativeAot, "")]
 			static void TestWithArrayUnknownIndexSetByRef (int indexToSet)
 			{
 				Type[] types = new Type[1];

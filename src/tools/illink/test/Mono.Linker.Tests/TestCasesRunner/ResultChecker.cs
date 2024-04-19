@@ -733,6 +733,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		static bool IsProducedByLinker (CustomAttribute attr)
 		{
+			if (attr.Constructor.Parameters.Count > 2 && attr.ConstructorArguments[^2].Type.Name == "Tool") {
+				return ((Tool)attr.ConstructorArguments[^2].Value).HasFlag (Tool.Trimmer) == true;
+			}
 			var producedBy = attr.GetPropertyValue ("ProducedBy");
 			return producedBy is null ? true : ((Tool) producedBy).HasFlag (Tool.Trimmer);
 		}
@@ -793,17 +796,24 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						}
 						break;
 
-					case nameof (ExpectedMissingWarningAttribute) or nameof (UnexpectedWarningAttribute) or nameof(ExpectedWarningAttribute): {
-							(string expectedWarningCode, string[] expectedMessageContains) = attr.ConstructorArguments switch {
-								[{Value: string warningCode }, {Value: CustomAttributeArgument[] messageContains }, ..]
-									=> (warningCode, messageContains.Select(a => (string) a.Value).ToArray()),
-									[{ Value: string warningCode}, { Value: string messageContains}, ..]
-									=> (warningCode, [messageContains]),
-								_ => throw new NotImplementedException ()
-							};
+					case nameof (ExpectedWarningAttribute) or nameof(UnexpectedWarningAttribute): {
+							var expectedWarningCode = (string) attr.GetConstructorArgumentValue (0);
 							if (!expectedWarningCode.StartsWith ("IL")) {
 								Assert.Fail ($"The warning code specified in {attr.AttributeType.Name} must start with the 'IL' prefix. Specified value: '{expectedWarningCode}'.");
 							}
+							IEnumerable<string> expectedMessageContains = attr.Constructor.Parameters switch
+                            {
+                                [_, { ParameterType.IsArray: true }, ..]
+                                    => ((CustomAttributeArgument[])attr.ConstructorArguments[1].Value)
+                                        .Select(caa => (string)caa.Value),
+                                [_, { ParameterType.Name: "String" }, { ParameterType.Name: "String" }, { ParameterType.Name: "Tool" }, _]
+                                    => [(string)attr.GetConstructorArgumentValue(1), (string)attr.GetConstructorArgumentValue(2)],
+                                [_, { ParameterType.Name: "String" }, { ParameterType.Name: "Tool" }, _]
+									=> [(string)attr.GetConstructorArgumentValue(1)],
+								[_, { ParameterType.Name: "Tool" }, _]
+									=> [],
+								_ => throw new UnreachableException(),
+							};
 							string fileName = (string) attr.GetPropertyValue ("FileName");
 							int? sourceLine = (int?) attr.GetPropertyValue ("SourceLine");
 							int? sourceColumn = (int?) attr.GetPropertyValue ("SourceColumn");

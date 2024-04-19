@@ -54,7 +54,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			private static Type FieldWithAnnotationMismatch;
 		}
 
-		[UnexpectedWarning ("IL2111", IssueLinkOrReason = "https://github.com/dotnet/runtime/issues/101195", ProducedBy = Tool.Trimmer)]
+		[UnexpectedWarning ("IL2111", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/101195")]
 		[UnsafeAccessor (UnsafeAccessorKind.StaticMethod)]
 		extern static void MethodWithAnnotatedParameter (Target target, [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type);
 
@@ -63,23 +63,23 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 		extern static Type StaticMethodWithAnnotatedReturnValue (Target target);
 
-		[UnexpectedWarning ("IL2111", IssueLinkOrReason = "https://github.com/dotnet/runtime/issues/101195", ProducedBy = Tool.Trimmer)]
+		[UnexpectedWarning ("IL2111", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/101195")]
 		[UnsafeAccessor (UnsafeAccessorKind.Method)]
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 		extern static Type VirtualMethodWithAnnotatedReturnValue (Target target);
 
-		[UnexpectedWarning ("IL2110", IssueLinkOrReason = "https://github.com/dotnet/runtime/issues/101195", ProducedBy = Tool.Trimmer)]
+		[UnexpectedWarning ("IL2110", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/101195")]
 		[UnsafeAccessor (UnsafeAccessorKind.StaticField)]
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 		extern static ref Type AnnotatedField (Target target);
 
-		[UnexpectedWarning ("IL2111", IssueLinkOrReason = "https://github.com/dotnet/runtime/issues/101195", ProducedBy = Tool.Trimmer)]
-		[ExpectedMissingWarning ("IL2067", IssueLinkOrReason = "https://github.com/dotnet/runtime/issues/101195", ProducedBy = Tool.NativeAot)]
+		[UnexpectedWarning ("IL2111", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/101195")]
+		[ExpectedWarning ("IL2067", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101195")]
 		[UnsafeAccessor (UnsafeAccessorKind.StaticMethod)]
 		extern static void MethodWithAnnotationMismatch (Target target, [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type type);
 
-		[UnexpectedWarning ("IL2110", IssueLinkOrReason = "https://github.com/dotnet/runtime/issues/101195", ProducedBy = Tool.Trimmer)]
-		[ExpectedMissingWarning ("IL2078", IssueLinkOrReason = "https://github.com/dotnet/runtime/issues/101195", ProducedBy = Tool.NativeAot)]
+		[UnexpectedWarning ("IL2110", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/101195")]
+		[ExpectedWarning ("IL2078", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101195")]
 		[UnsafeAccessor (UnsafeAccessorKind.StaticField)]
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 		extern static ref Type FieldWithAnnotationMismatch (Target target);
