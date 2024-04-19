@@ -143,14 +143,14 @@ namespace System
             if (constructorEntryPoint == IntPtr.Zero)
                 return;
 
-            var constructorFtn = (delegate*<ref byte, void>)RuntimeAugments.TypeLoaderCallbacks.ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(constructorEntryPoint, new RuntimeTypeHandle(pElementEEType));
+            IntPtr constructorFtn = RuntimeAugments.TypeLoaderCallbacks.ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(constructorEntryPoint, new RuntimeTypeHandle(pElementEEType));
 
             ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(this);
             nuint elementSize = ElementSize;
 
             for (int i = 0; i < Length; i++)
             {
-                constructorFtn(ref arrayRef);
+                RawCalliHelper.CallDefaultStructConstructor(constructorFtn, ref arrayRef);
                 arrayRef = ref Unsafe.Add(ref arrayRef, elementSize);
             }
         }
@@ -494,7 +494,7 @@ namespace System
             // Copy scenario: ValueType-array to value-type array with no embedded gc-refs.
             nuint elementSize = sourceArray.ElementSize;
 
-            Buffer.Memmove(
+            SpanHelpers.Memmove(
                 ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(destinationArray), (nuint)destinationIndex * elementSize),
                 ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(sourceArray), (nuint)sourceIndex * elementSize),
                 elementSize * (nuint)length);
@@ -534,7 +534,7 @@ namespace System
                 if (sourceElementType == destElementType)
                 {
                     // Multidim arrays and enum->int copies can still reach this path.
-                    Buffer.Memmove(ref *data, ref *srcData, (nuint)length * srcElementSize);
+                    SpanHelpers.Memmove(ref *data, ref *srcData, (nuint)length * srcElementSize);
                     return;
                 }
 

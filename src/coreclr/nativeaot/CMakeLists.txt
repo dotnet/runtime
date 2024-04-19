@@ -1,5 +1,6 @@
 if(WIN32)
   add_definitions(-DUNICODE=1)
+  add_compile_definitions(NOMINMAX)
 endif (WIN32)
 
 if(MSVC)
@@ -15,6 +16,7 @@ endif (MSVC)
 
 if(CLR_CMAKE_HOST_UNIX)
   add_compile_options(-fno-exceptions)    # Native AOT runtime doesn't use C++ exception handling
+  add_compile_options(-fno-asynchronous-unwind-tables)
   add_compile_options(-nostdlib)
 
   if(CLR_CMAKE_TARGET_APPLE)

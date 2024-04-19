@@ -689,7 +689,7 @@ void ComMTMemberInfoMap::GetMethodPropsForMeth(
     rProps[ix].bFunction2Getter = FALSE;
 
     // See if there is property information for this member.
-    hr = pMeth->GetModule()->GetPropertyInfoForMethodDef(pMeth->GetMemberDef(), &pd, &pPropName, &uSemantic);
+    hr = pMeth->GetMDImport()->GetPropertyInfoForMethodDef(pMeth->GetMemberDef(), &pd, &pPropName, &uSemantic);
     IfFailThrow(hr);
 
     if (hr == S_OK)

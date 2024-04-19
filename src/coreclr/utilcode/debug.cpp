@@ -20,9 +20,8 @@
 
 #include "log.h"
 
-extern "C" _CRTIMP int __cdecl _flushall(void);
-
 #ifdef HOST_WINDOWS
+extern "C" _CRTIMP int __cdecl _flushall(void);
 void CreateCrashDumpIfEnabled(bool stackoverflow = false);
 #endif
 
@@ -51,7 +50,11 @@ static void DECLSPEC_NORETURN FailFastOnAssert()
     WRAPPER_NO_CONTRACT; // If we're calling this, we're well past caring about contract consistency!
 
     FlushLogging(); // make certain we get the last part of the log
+#ifdef HOST_WINDOWS
     _flushall();
+#else
+    fflush(NULL);
+#endif
 
     ShutdownLogging();
 #ifdef HOST_WINDOWS
@@ -254,7 +257,7 @@ bool _DbgBreakCheck(
     if (formattedMessages)
     {
         OutputDebugStringUtf8(formatBuffer);
-        fprintf(stderr, formatBuffer);
+        fprintf(stderr, "%s", formatBuffer);
     }
     else
     {
@@ -407,12 +410,6 @@ VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr)
         DebugBreak();
 
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-
-    // Raising the assert dialog can cause us to re-enter the host when allocating
-    // memory for the string.  Since this is debug-only code, we can safely skip
-    // violation asserts here, particularly since they can also cause infinite
-    // recursion.
-    PERMANENT_CONTRACT_VIOLATION(HostViolation, ReasonDebugOnly);
 
     dbgForceToMemory = &szFile;     //make certain these args are available in the debugger
     dbgForceToMemory = &iLine;

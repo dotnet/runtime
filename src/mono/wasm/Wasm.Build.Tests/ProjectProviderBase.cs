@@ -490,10 +490,10 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         Assert.Equal(expected, actualFileNames);
     }
 
-    public virtual string FindBinFrameworkDir(string config, bool forPublish, string framework, string? bundleDirName = null)
+    public virtual string FindBinFrameworkDir(string config, bool forPublish, string framework, string? bundleDirName = null, string? projectDir = null)
     {
         EnsureProjectDirIsSet();
-        string basePath = Path.Combine(ProjectDir!, "bin", config, framework);
+        string basePath = Path.Combine(projectDir ?? ProjectDir!, "bin", config, framework);
         if (forPublish)
             basePath = FindSubDirIgnoringCase(basePath, "publish");
 

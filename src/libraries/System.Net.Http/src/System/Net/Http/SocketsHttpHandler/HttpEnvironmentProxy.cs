@@ -170,16 +170,9 @@ namespace System.Net.Http
             int separatorIndex = value.LastIndexOf('@');
             if (separatorIndex != -1)
             {
-                string auth = value.Substring(0, separatorIndex);
-
                 // The User and password may or may not be URL encoded.
-                // Curl seems to accept both. To match that,
-                // we do opportunistic decode and we use original string if it fails.
-                try
-                {
-                    auth = Uri.UnescapeDataString(auth);
-                }
-                catch { };
+                // Curl seems to accept both. To match that, we also decode the value.
+                string auth = Uri.UnescapeDataString(value.AsSpan(0, separatorIndex));
 
                 value = value.Substring(separatorIndex + 1);
                 separatorIndex = auth.IndexOf(':');

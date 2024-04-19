@@ -25,7 +25,7 @@ type SessionType =
     };
 
 
-function createSessionWithPtrCB(sessionIdOutPtr: VoidPtr, options: EventPipeCreateSessionOptions, sessionType: SessionType): false | EventPipeSessionIDImpl {
+function createSessionWithPtrCB (sessionIdOutPtr: VoidPtr, options: EventPipeCreateSessionOptions, sessionType: SessionType): false | EventPipeSessionIDImpl {
     memory.setI32(sessionIdOutPtr, 0);
     let tracePath: string | null;
     let ipcStreamAddr: VoidPtr;
@@ -43,10 +43,10 @@ function createSessionWithPtrCB(sessionIdOutPtr: VoidPtr, options: EventPipeCrea
     }
 }
 
-export function createEventPipeStreamingSession(ipcStreamAddr: VoidPtr, options: EventPipeCreateSessionOptions): EventPipeSessionIDImpl | false {
+export function createEventPipeStreamingSession (ipcStreamAddr: VoidPtr, options: EventPipeCreateSessionOptions): EventPipeSessionIDImpl | false {
     return memory.withStackAlloc(sizeOfInt32, createSessionWithPtrCB, options, { type: "stream", stream: ipcStreamAddr });
 }
 
-export function createEventPipeFileSession(tracePath: string, options: EventPipeCreateSessionOptions): EventPipeSessionIDImpl | false {
+export function createEventPipeFileSession (tracePath: string, options: EventPipeCreateSessionOptions): EventPipeSessionIDImpl | false {
     return memory.withStackAlloc(sizeOfInt32, createSessionWithPtrCB, options, { type: "file", filePath: tracePath });
 }

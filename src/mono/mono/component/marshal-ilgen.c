@@ -2247,6 +2247,12 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			encoding = cb_to_mono->get_string_encoding (m->piinfo, spec);
 			conv = cb_to_mono->get_ptr_to_stringbuilder_conv (m->piinfo, spec, &need_free);
 
+			if (conv == MONO_MARSHAL_CONV_INVALID) {
+				char *msg = g_strdup_printf ("stringbuilder marshalling conversion %d not implemented", encoding);
+				cb_to_mono->methodBuilder.emit_exception_marshal_directive (mb, msg);
+				break;
+			}
+
 			g_assert (encoding != -1);
 
 			if (m_type_is_byref (t)) {

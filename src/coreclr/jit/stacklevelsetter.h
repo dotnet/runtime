@@ -20,8 +20,8 @@ private:
     void SetThrowHelperBlock(SpecialCodeKind kind, BasicBlock* block);
 
     unsigned PopArgumentsFromCall(GenTreeCall* call);
-    void AddStackLevel(unsigned value);
-    void SubStackLevel(unsigned value);
+    void     AddStackLevel(unsigned value);
+    void     SubStackLevel(unsigned value);
 
     void CheckArgCnt();
     void CheckAdditionalArgs();

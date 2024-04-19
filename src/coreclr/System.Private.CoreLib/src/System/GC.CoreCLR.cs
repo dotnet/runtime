@@ -865,7 +865,9 @@ namespace System
                 Configurations = new Dictionary<string, object>()
             };
 
-            _EnumerateConfigurationValues(Unsafe.AsPointer(ref context), &ConfigCallback);
+#pragma warning disable CS8500 // takes address of managed type
+            _EnumerateConfigurationValues(&context, &ConfigCallback);
+#pragma warning restore CS8500
             return context.Configurations!;
         }
 

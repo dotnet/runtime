@@ -2320,16 +2320,13 @@ emit_type_load_failure (MonoCompile* cfg, MonoClass* klass)
 }
 
 static void
-emit_invalid_program_with_msg (MonoCompile *cfg, MonoError *error_msg, MonoMethod *caller, MonoMethod *callee)
+emit_invalid_program_with_msg (MonoCompile *cfg, char *error_msg)
 {
-	g_assert (!is_ok (error_msg));
-
-	char *str = mono_mem_manager_strdup (cfg->mem_manager, mono_error_get_message (error_msg));
 	MonoInst *iargs[1];
 	if (cfg->compile_aot)
-		EMIT_NEW_LDSTRLITCONST (cfg, iargs [0], str);
+		EMIT_NEW_LDSTRLITCONST (cfg, iargs [0], error_msg);
 	else
-		EMIT_NEW_PCONST (cfg, iargs [0], str);
+		EMIT_NEW_PCONST (cfg, iargs [0], error_msg);
 	mono_emit_jit_icall (cfg, mono_throw_invalid_program, iargs);
 }
 
@@ -3416,8 +3413,8 @@ mini_emit_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_us
 	MonoInst *alloc, *ins;
 
 	if (G_UNLIKELY (m_class_is_byreflike (klass))) {
-		mono_error_set_bad_image (cfg->error, m_class_get_image (cfg->method->klass), "Cannot box IsByRefLike type '%s.%s'", m_class_get_name_space (klass), m_class_get_name (klass));
-		mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
+		mono_error_set_invalid_program (cfg->error, "Cannot box IsByRefLike type '%s.%s'", m_class_get_name_space (klass), m_class_get_name (klass));
+		mono_cfg_set_exception (cfg, MONO_EXCEPTION_INVALID_PROGRAM);
 		return NULL;
 	}
 
@@ -4735,11 +4732,11 @@ mini_inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *
 }
 
 static gboolean
-aggressive_inline_method (MonoMethod *cmethod)
+aggressive_inline_method (MonoCompile *cfg, MonoMethod *cmethod)
 {
 	gboolean aggressive_inline = m_method_is_aggressive_inlining (cmethod);
 	if (aggressive_inline)
-		aggressive_inline = !mono_simd_unsupported_aggressive_inline_intrinsic_type (cmethod);
+		aggressive_inline = !mono_simd_unsupported_aggressive_inline_intrinsic_type (cfg, cmethod);
 	return aggressive_inline;
 }
 
@@ -4868,7 +4865,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	cfg->disable_inline = prev_disable_inline;
 	cfg->inline_depth --;
 
-	if ((costs >= 0 && costs < 60) || inline_always || (costs >= 0 && aggressive_inline_method (cmethod))) {
+	if ((costs >= 0 && costs < 60) || inline_always || (costs >= 0 && aggressive_inline_method (cfg, cmethod))) {
 		if (cfg->verbose_level > 2)
 			printf ("INLINE END %s -> %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
 
@@ -7548,6 +7545,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					if (cfg->compile_aot)
 						cfg->pinvoke_calli_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->pinvoke_calli_signatures, fsig);
 
+					if (fsig->has_type_parameters) {
+						cfg->prefer_instances = TRUE;
+						GENERIC_SHARING_FAILURE (CEE_CALLI);
+					}
+
 					/* Call the wrapper that will do the GC transition instead */
 					MonoMethod *wrapper = mono_marshal_get_native_func_wrapper_indirect (method->klass, fsig, cfg->compile_aot);
 
@@ -8930,6 +8932,11 @@ calli_end:
 			ins->sreg2 = sp [1]->dreg;
 			type_from_op (cfg, ins, sp [0], sp [1]);
 			CHECK_TYPE (ins);
+
+			if (((sp [0]->type == STACK_R4 && sp [1]->type == STACK_R8) ||
+			     (sp [0]->type == STACK_R8 && sp [1]->type == STACK_R4)))
+				add_widen_op (cfg, ins, &sp [0], &sp [1]);
+
 			ins->dreg = alloc_dreg ((cfg), (MonoStackType)(ins)->type);
 
 			/* Use the immediate opcodes if possible */
@@ -9272,7 +9279,7 @@ calli_end:
 
 			mono_save_token_info (cfg, image, token, cmethod);
 
-			if (!mono_class_init_internal (cmethod->klass))
+			if (mono_class_has_failure (cmethod->klass) || !mono_class_init_internal (cmethod->klass))
 				TYPE_LOAD_ERROR (cmethod->klass);
 
 			context_used = mini_method_check_context_used (cfg, cmethod);
@@ -9985,8 +9992,8 @@ calli_end:
 		case MONO_CEE_STSFLD: {
 			MonoClassField *field;
 			guint foffset;
-			gboolean is_instance;
 			gpointer addr = NULL;
+			gboolean is_instance;
 			gboolean is_special_static;
 			MonoType *ftype;
 			MonoInst *store_val = NULL;
@@ -10070,6 +10077,7 @@ calli_end:
 				}
 				is_instance = FALSE;
 			}
+
 
 			context_used = mini_class_check_context_used (cfg, klass);
 
@@ -10553,7 +10561,6 @@ field_access_end:
 
 			context_used = mini_class_check_context_used (cfg, klass);
 
-#ifndef TARGET_S390X
 			if (sp [0]->type == STACK_I8 && TARGET_SIZEOF_VOID_P == 4) {
 				MONO_INST_NEW (cfg, ins, OP_LCONV_TO_OVF_U4);
 				ins->sreg1 = sp [0]->dreg;
@@ -10562,7 +10569,8 @@ field_access_end:
 				MONO_ADD_INS (cfg->cbb, ins);
 				*sp = mono_decompose_opcode (cfg, ins);
 			}
-#else
+
+#if defined(TARGET_S390X) || defined(TARGET_POWERPC64)
 			/* The array allocator expects a 64-bit input, and we cannot rely
 			   on the high bits of a 32-bit result, so we have to extend.  */
 			if (sp [0]->type == STACK_I4 && TARGET_SIZEOF_VOID_P == 8) {
@@ -11835,7 +11843,8 @@ mono_ldptr:
 					/* if we couldn't create a wrapper because cmethod isn't supposed to have an
 					UnmanagedCallersOnly attribute, follow CoreCLR behavior and throw when the
 					method with the ldftn is executing, not when it is being compiled. */
-					emit_invalid_program_with_msg (cfg, wrapper_error, method, cmethod);
+					char *err_msg = mono_mem_manager_strdup (cfg->mem_manager, mono_error_get_message (wrapper_error));
+					emit_invalid_program_with_msg (cfg, err_msg);
 					mono_error_cleanup (wrapper_error);
 					EMIT_NEW_PCONST (cfg, ins, NULL);
 					*sp++ = ins;

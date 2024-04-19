@@ -16,8 +16,8 @@ using HttpStress;
 using System.Net.Quic;
 using Microsoft.Quic;
 
-[assembly:SupportedOSPlatform("windows")]
-[assembly:SupportedOSPlatform("linux")]
+[assembly: SupportedOSPlatform("windows")]
+[assembly: SupportedOSPlatform("linux")]
 
 namespace HttpStress
 {
@@ -185,24 +185,6 @@ namespace HttpStress
             Console.WriteLine("Max Content Size: " + config.MaxContentLength);
             Console.WriteLine("Query Parameters: " + config.MaxParameters);
             Console.WriteLine();
-
-            if (config.HttpVersion == HttpVersion.Version30 && IsQuicSupported)
-            {
-                unsafe
-                {
-                    // If the system gets overloaded, MsQuic has a tendency to drop incoming connections, see https://github.com/dotnet/runtime/issues/55979.
-                    // So in case we're running H/3 stress test, we're using the same hack as for System.Net.Quic tests, which increases the time limit for pending operations in MsQuic thread pool.
-                    object msQuicApiInstance = msQuicApiType.GetProperty("Api", BindingFlags.NonPublic | BindingFlags.Static)!.GetGetMethod(true)!.Invoke(null, Array.Empty<object?>())!;
-                    QUIC_API_TABLE* apiTable = (QUIC_API_TABLE*)(Pointer.Unbox(msQuicApiType.GetProperty("ApiTable")!.GetGetMethod()!.Invoke(msQuicApiInstance, Array.Empty<object?>())!));
-                    QUIC_SETTINGS settings = default(QUIC_SETTINGS);
-                    settings.IsSet.MaxWorkerQueueDelayUs = 1;
-                    settings.MaxWorkerQueueDelayUs = 2_500_000u; // 2.5s, 10x the default
-                    if (MsQuic.StatusFailed(apiTable->SetParam(null, MsQuic.QUIC_PARAM_GLOBAL_SETTINGS, (uint)sizeof(QUIC_SETTINGS), (byte*)&settings)))
-                    {
-                        Console.WriteLine($"Unable to set MsQuic MaxWorkerQueueDelayUs.");
-                    }
-                }
-            }
 
             StressServer? server = null;
             if (config.RunMode.HasFlag(RunMode.server))

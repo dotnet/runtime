@@ -30,7 +30,7 @@
     <ProjectReference Include="Microsoft.NET.Runtime.LibraryBuilder.Sdk\Microsoft.NET.Runtime.LibraryBuilder.Sdk.pkgproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
+  <ItemGroup Condition="'$(DotNetBuildSourceOnly)' != 'true'">
     <ProjectReference Include="Microsoft.NET.Runtime.MonoTargets.Sdk\Microsoft.NET.Runtime.MonoTargets.Sdk.pkgproj" />
   </ItemGroup>
 </Project>

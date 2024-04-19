@@ -31,6 +31,7 @@ namespace ILCompiler.ObjectWriter
         public const uint Tag_ABI_align_needed = 24;
         public const uint Tag_ABI_align_preserved = 25;
         public const uint Tag_ABI_enum_size = 26;
+        public const uint Tag_ABI_VFP_args = 28;
         public const uint Tag_ABI_optimization_goals = 30;
         public const uint Tag_CPU_unaligned_access = 34;
         public const uint Tag_ABI_FP_16bit_format = 38;

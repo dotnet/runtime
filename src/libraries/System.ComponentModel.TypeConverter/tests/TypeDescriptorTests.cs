@@ -1395,7 +1395,7 @@ namespace System.ComponentModel.Tests
 
         [Theory]
         [MemberData(nameof(GetConverter_ByMultithread_ReturnsExpected_TestData))]
-        public async void GetConverter_ByMultithread_ReturnsExpected(Type typeForGetConverter, Type expectedConverterType)
+        public async Task GetConverter_ByMultithread_ReturnsExpected(Type typeForGetConverter, Type expectedConverterType)
         {
             TypeConverter[] actualConverters = await Task.WhenAll(
                 Enumerable.Range(0, 100).Select(_ =>
@@ -1415,7 +1415,7 @@ namespace System.ComponentModel.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]  // Mock will try to JIT
         [MemberData(nameof(GetConverterWithAddProvider_ByMultithread_Success_TestData))]
-        public async void GetConverterWithAddProvider_ByMultithread_Success(Type typeForGetConverter, Type expectedConverterType)
+        public async Task GetConverterWithAddProvider_ByMultithread_Success(Type typeForGetConverter, Type expectedConverterType)
         {
             TypeConverter[] actualConverters = await Task.WhenAll(
                 Enumerable.Range(0, 200).Select(_ =>

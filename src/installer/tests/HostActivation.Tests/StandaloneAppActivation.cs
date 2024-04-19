@@ -133,7 +133,7 @@ namespace HostActivation.Tests
                 .DotNetRoot(app.Location)
                 .Execute(expectedToFail: true)
                 .Should().Fail()
-                .And.HaveUsedDotNetRootInstallLocation(Path.GetFullPath(app.Location), TestContext.TargetRID)
+                .And.HaveUsedDotNetRootInstallLocation(Path.GetFullPath(app.Location), TestContext.BuildRID)
                 .And.HaveStdErrContaining($"The required library {Binaries.HostFxr.FileName} could not be found.");
         }
 

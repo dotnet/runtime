@@ -32,7 +32,6 @@ Abstract:
 // instantiation time.
 #include "pal/threadinfo.hpp"
 #include "pal/thread.hpp"
-#include "pal/printfcpp.hpp"
 #include "pal/mutex.hpp"
 #include "pal/init.h"
 #if !HAVE_MACH_EXCEPTIONS

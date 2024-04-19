@@ -212,7 +212,7 @@ namespace System.Diagnostics.Tracing
     /// [EventSource(Name="Samples.Demos.Minimal")]
     /// sealed class MinimalEventSource : EventSource
     /// {
-    ///     public static MinimalEventSource Log = new MinimalEventSource();
+    ///     public static readonly MinimalEventSource Log = new MinimalEventSource();
     ///     public void Load(long ImageBase, string Name) { WriteEvent(1, ImageBase, Name); }
     ///     public void Unload(long ImageBase) { WriteEvent(2, ImageBase); }
     ///     private MinimalEventSource() {}
@@ -1118,6 +1118,14 @@ namespace System.Diagnostics.Tracing
                     }
                 }
             }
+        }
+
+        // Returns the object as a IntPtr - safe when only used for logging
+        internal static unsafe nint ObjectIDForEvents(object? o)
+        {
+#pragma warning disable CS8500 // takes address of managed type
+            return *(nint*)&o;
+#pragma warning restore CS8500
         }
 
 #pragma warning restore 1591
@@ -4843,12 +4851,12 @@ namespace System.Diagnostics.Tracing
         /// <param name="eventId">ID of the ETW event (an integer between 1 and 65535)</param>
         public EventAttribute(int eventId)
         {
-            this.EventId = eventId;
+            EventId = eventId;
             Level = EventLevel.Informational;
         }
 
         /// <summary>Event's ID</summary>
-        public int EventId { get; private set; }
+        public int EventId { get; }
         /// <summary>Event's severity level: indicates the severity or verbosity of the event</summary>
         public EventLevel Level { get; set; }
         /// <summary>Event's keywords: allows classification of events by "categories"</summary>
@@ -4859,8 +4867,8 @@ namespace System.Diagnostics.Tracing
             get => m_opcode;
             set
             {
-                this.m_opcode = value;
-                this.m_opcodeSet = true;
+                m_opcode = value;
+                m_opcodeSet = true;
             }
         }
 
@@ -5490,7 +5498,7 @@ namespace System.Diagnostics.Tracing
                     if (channelInfo.Attribs != null)
                     {
                         EventChannelAttribute attribs = channelInfo.Attribs;
-                        if (Enum.IsDefined(typeof(EventChannelType), attribs.EventChannelType))
+                        if (Enum.IsDefined(attribs.EventChannelType))
                             channelType = attribs.EventChannelType.ToString();
                         enabled = attribs.Enabled;
                     }

@@ -93,7 +93,7 @@ namespace System.Runtime.InteropServices
             {
                 nuint size = (nuint)RuntimeInteropData.GetStructUnsafeStructSize(structureTypeHandle);
 
-                Buffer.Memmove(ref structure.GetRawData(), ref *(byte*)ptr, size);
+                SpanHelpers.Memmove(ref structure.GetRawData(), ref *(byte*)ptr, size);
             }
         }
 
@@ -180,7 +180,7 @@ namespace System.Runtime.InteropServices
             {
                 nuint size = (nuint)RuntimeInteropData.GetStructUnsafeStructSize(structureTypeHandle);
 
-                Buffer.Memmove(ref *(byte*)ptr, ref structure.GetRawData(), size);
+                SpanHelpers.Memmove(ref *(byte*)ptr, ref structure.GetRawData(), size);
             }
         }
 

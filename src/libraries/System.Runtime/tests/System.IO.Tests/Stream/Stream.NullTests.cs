@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -196,14 +198,93 @@ namespace System.IO.Tests
         [MemberData(nameof(NullWriters))]
         public static void TextNullTextWriter(TextWriter output)
         {
-            output.Flush();
-            output.Dispose();
+            // Use every method to make sure they don't throw
 
-            output.WriteLine(decimal.MinValue);
-            output.WriteLine(Math.PI);
-            output.WriteLine();
-            output.Flush();
+            output.Close();
             output.Dispose();
+            Assert.True(output.DisposeAsync().IsCompletedSuccessfully);
+
+            Assert.NotNull(output.Encoding);
+            Assert.Same(CultureInfo.InvariantCulture, output.FormatProvider);
+            Assert.Equal(Environment.NewLine, output.NewLine);
+            output.NewLine = "hello";
+            Assert.Equal(Environment.NewLine, output.NewLine);
+
+            output.Flush();
+            Assert.True(output.FlushAsync().IsCompletedSuccessfully);
+            Assert.True(output.FlushAsync(CancellationToken.None).IsCompletedSuccessfully);
+            Assert.True(output.FlushAsync(new CancellationToken(true)).IsCompletedSuccessfully);
+
+            output.Write('a');
+            output.Write((char[])null);
+            output.Write(new char[] { 'b', 'c' });
+            output.Write(42m);
+            output.Write(43d);
+            output.Write(44f);
+            output.Write(45);
+            output.Write(46L);
+            output.Write(DayOfWeek.Monday);
+            output.Write((string)null);
+            output.Write("Tuesday");
+            output.Write((StringBuilder)null);
+            output.Write(new StringBuilder("Wednesday"));
+            output.Write(47u);
+            output.Write(48ul);
+            output.Write("Thursday".AsSpan());
+            output.Write(" {0} ", "Friday");
+            output.Write(" {0}{1} ", "Saturday", "Sunday");
+            output.Write(" {0} {1}  {2}", TimeSpan.FromSeconds(1), TimeSpan.FromMinutes(2), TimeSpan.FromDays(3));
+            output.Write(" {0} {1}  {2}    {3}", (Int128)4, (UInt128)5, (nint)6, (nuint)7);
+            output.WriteLine();
+            output.WriteLine(true);
+            output.WriteLine('a');
+            output.WriteLine((char[])null);
+            output.WriteLine(new char[] { 'b', 'c' });
+            output.WriteLine(42m);
+            output.WriteLine(43d);
+            output.WriteLine(44f);
+            output.WriteLine(45);
+            output.WriteLine(46L);
+            output.WriteLine(DayOfWeek.Monday);
+            output.WriteLine((string)null);
+            output.WriteLine("Tuesday");
+            output.WriteLine((StringBuilder)null);
+            output.WriteLine(new StringBuilder("Wednesday"));
+            output.WriteLine(47u);
+            output.WriteLine(48ul);
+            output.WriteLine("Thursday".AsSpan());
+            output.WriteLine(" {0} ", "Friday");
+            output.WriteLine(" {0}{1} ", "Saturday", "Sunday");
+            output.WriteLine(" {0} {1}  {2}", TimeSpan.FromSeconds(1), TimeSpan.FromMinutes(2), TimeSpan.FromDays(3));
+            output.WriteLine(" {0} {1}  {2}    {3}", (Int128)4, (UInt128)5, (nint)6, (nuint)7);
+            Assert.True(output.WriteAsync('a').IsCompletedSuccessfully);
+            Assert.True(output.WriteAsync((char[])null).IsCompletedSuccessfully);
+            Assert.True(output.WriteAsync(new char[] { 'b', 'c' }).IsCompletedSuccessfully);
+            Assert.True(output.WriteAsync((string)null).IsCompletedSuccessfully);
+            Assert.True(output.WriteAsync("Tuesday").IsCompletedSuccessfully);
+            Assert.True(output.WriteAsync((StringBuilder)null).IsCompletedSuccessfully);
+            Assert.True(output.WriteAsync(new StringBuilder("Wednesday")).IsCompletedSuccessfully);
+            Assert.True(output.WriteLineAsync().IsCompletedSuccessfully);
+            Assert.True(output.WriteLineAsync('a').IsCompletedSuccessfully);
+            Assert.True(output.WriteLineAsync((char[])null).IsCompletedSuccessfully);
+            Assert.True(output.WriteLineAsync(new char[] { 'b', 'c' }).IsCompletedSuccessfully);
+            Assert.True(output.WriteLineAsync((string)null).IsCompletedSuccessfully);
+            Assert.True(output.WriteLineAsync("Tuesday").IsCompletedSuccessfully);
+            Assert.True(output.WriteLineAsync((StringBuilder)null).IsCompletedSuccessfully);
+            Assert.True(output.WriteLineAsync(new StringBuilder("Wednesday")).IsCompletedSuccessfully);
+
+            if (output is StreamWriter sw)
+            {
+                Assert.False(sw.AutoFlush);
+                sw.AutoFlush = true;
+                Assert.False(sw.AutoFlush);
+
+                Assert.Same(Stream.Null, sw.BaseStream);
+            }
+
+            // Use some parallelism in an attempt to validate statelessness
+            string longLine = new string('#', 100_000);
+            Parallel.For(0, 25, i => output.WriteLine(longLine));
         }
 
         [Theory]
@@ -248,7 +329,6 @@ namespace System.IO.Tests
             {
                 yield return new object[] { TextReader.Null };
                 yield return new object[] { StreamReader.Null };
-                yield return new object[] { StringReader.Null };
             }
         }
 
@@ -258,7 +338,6 @@ namespace System.IO.Tests
             {
                 yield return new object[] { TextWriter.Null };
                 yield return new object[] { StreamWriter.Null };
-                yield return new object[] { StringWriter.Null };
             }
         }
 

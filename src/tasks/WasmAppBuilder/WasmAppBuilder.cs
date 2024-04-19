@@ -23,12 +23,14 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 {
     public ITaskItem[]? RemoteSources { get; set; }
     public bool IncludeThreadsWorker { get; set; }
-    public int PThreadPoolSize { get; set; }
+    public int PThreadPoolInitialSize { get; set; }
+    public int PThreadPoolUnusedSize { get; set; }
     public bool UseWebcil { get; set; }
     public bool WasmIncludeFullIcuData { get; set; }
     public string? WasmIcuDataFileName { get; set; }
     public string? RuntimeAssetsLocation { get; set; }
     public bool CacheBootResources { get; set; }
+    public int DebugLevel { get; set; }
 
     private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions
     {
@@ -333,13 +335,22 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
         var extraConfiguration = new Dictionary<string, object?>();
 
-        if (PThreadPoolSize < -1)
+        if (PThreadPoolInitialSize < -1)
         {
-            throw new LogAsErrorException($"PThreadPoolSize must be -1, 0 or positive, but got {PThreadPoolSize}");
+            throw new LogAsErrorException($"PThreadPoolInitialSize must be -1, 0 or positive, but got {PThreadPoolInitialSize}");
         }
-        else if (PThreadPoolSize > -1)
+        else if (PThreadPoolInitialSize > -1)
         {
-            bootConfig.pthreadPoolSize = PThreadPoolSize;
+            bootConfig.pthreadPoolInitialSize = PThreadPoolInitialSize;
+        }
+
+        if (PThreadPoolUnusedSize < -1)
+        {
+            throw new LogAsErrorException($"PThreadPoolUnusedSize must be -1, 0 or positive, but got {PThreadPoolUnusedSize}");
+        }
+        else if (PThreadPoolUnusedSize > -1)
+        {
+            bootConfig.pthreadPoolUnusedSize = PThreadPoolUnusedSize;
         }
 
         foreach (ITaskItem extra in ExtraConfig ?? Enumerable.Empty<ITaskItem>())
