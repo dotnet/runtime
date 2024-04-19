@@ -880,9 +880,9 @@ mono_runtime_install_appctx_properties (void)
 	for (int i = 0; i < n_appctx_props; ++i) {
 		glong num_chars;
 		combined_keys [i] = g_utf8_to_utf16 (appctx_keys [i], -1, NULL, &num_chars, NULL);
-		combined_key_lengths[i] = GLONG_TO_UINT32(num_chars);
+		combined_key_lengths [i] = GLONG_TO_UINT32 (num_chars);
 		combined_values [i] = g_utf8_to_utf16 (appctx_values [i], -1, NULL, &num_chars, NULL);
-		combined_value_lengths[i] = GLONG_TO_UINT32(num_chars);
+		combined_value_lengths [i] = GLONG_TO_UINT32 (num_chars);
 	}
 
 	runtimeconfig_json_read_props (

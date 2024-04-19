@@ -68,7 +68,8 @@ namespace System.Collections.Generic
             {
                 _comparer = comparer ?? EqualityComparer<TKey>.Default;
 
-                if (!useProvidedComparer) {
+                if (!useProvidedComparer)
+                {
                     // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
                     // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
                     // hash buckets become unbalanced.
