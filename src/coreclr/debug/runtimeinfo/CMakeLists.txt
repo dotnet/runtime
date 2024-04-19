@@ -75,7 +75,7 @@ else()
   add_custom_command(
     OUTPUT "${CONTRACT_DESCRIPTOR_OUTPUT}"
     VERBATIM
-    COMMAND dotnet ${CDAC_BUILD_TOOL_BINARY_PATH} compose -o "${CONTRACT_DESCRIPTOR_OUTPUT}" -c "${CONTRACT_FILE}" $<TARGET_OBJECTS:cdac_data_descriptor>
+    COMMAND ${CLR_DOTNET_HOST_PATH} ${CDAC_BUILD_TOOL_BINARY_PATH} compose -o "${CONTRACT_DESCRIPTOR_OUTPUT}" -c "${CONTRACT_FILE}" $<TARGET_OBJECTS:cdac_data_descriptor>
     DEPENDS cdac_data_descriptor cee_wks_core $<TARGET_OBJECTS:cdac_data_descriptor> "${CONTRACT_FILE}"
     USES_TERMINAL
   )
