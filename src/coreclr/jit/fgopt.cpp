@@ -3602,54 +3602,43 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                 {
                     noway_assert(bPrev->KindIs(BBJ_COND));
                     //
-                    // We will reverse branch if the taken-jump to bDest ratio (i.e. 'takenRatio')
-                    // is more than 51%
+                    // We will reverse branch if the true edge's likelihood is more than 51%.
                     //
-                    // We will setup profHotWeight to be maximum bbWeight that a block
-                    // could have for us not to want to reverse the conditional branch
+                    // We will set up profHotWeight to be maximum bbWeight that a block
+                    // could have for us not to want to reverse the conditional branch.
                     //
                     // We will consider all blocks that have less weight than profHotWeight to be
-                    // uncommonly run blocks as compared with the hot path of bPrev taken-jump to bDest
+                    // uncommonly run blocks compared to the weight of bPrev's true edge.
                     //
-                    // We will check that the weight of the bPrev to bDest edge
-                    //  is more than twice the weight of the bPrev to block edge.
+                    // We will check if bPrev's true edge weight
+                    // is more than twice bPrev's false edge weight.
                     //
-                    //                  bPrev -->   [BB04, weight 31]
+                    //                  bPrev -->   [BB04, weight 100]
                     //                                     |         \.
-                    //          edgeToBlock -------------> O          \.
-                    //          [min=8,max=10]             V           \.
-                    //                  block -->   [BB05, weight 10]   \.
+                    //          falseEdge ---------------> O          \.
+                    //          [likelihood=0.33]          V           \.
+                    //                  block -->   [BB05, weight 33]   \.
                     //                                                   \.
-                    //          edgeToDest ----------------------------> O
-                    //          [min=21,max=23]                          |
+                    //          trueEdge ------------------------------> O
+                    //          [likelihood=0.67]                        |
                     //                                                   V
-                    //                  bDest --------------->   [BB08, weight 21]
+                    //                  bDest --------------->   [BB08, weight 67]
                     //
                     assert(bPrev->FalseTargetIs(block));
-                    FlowEdge* edgeToDest  = bPrev->GetTrueEdge();
-                    FlowEdge* edgeToBlock = bPrev->GetFalseEdge();
-                    noway_assert(edgeToDest != nullptr);
-                    noway_assert(edgeToBlock != nullptr);
-                    //
-                    // Calculate the taken ratio
-                    //   A takenRatio of 0.10 means taken 10% of the time, not taken 90% of the time
-                    //   A takenRatio of 0.50 means taken 50% of the time, not taken 50% of the time
-                    //   A takenRatio of 0.90 means taken 90% of the time, not taken 10% of the time
-                    //
-                    double takenCount    = edgeToDest->getLikelyWeight();
-                    double notTakenCount = edgeToBlock->getLikelyWeight();
-                    double totalCount    = takenCount + notTakenCount;
+                    FlowEdge* trueEdge  = bPrev->GetTrueEdge();
+                    FlowEdge* falseEdge = bPrev->GetFalseEdge();
+                    noway_assert(trueEdge != nullptr);
+                    noway_assert(falseEdge != nullptr);
 
-                    // If the takenRatio (takenCount / totalCount) is greater or equal to 51% then we will reverse
-                    // the branch
-                    if (takenCount < (0.51 * totalCount))
+                    // If we take the true branch more than half the time, we will reverse the branch.
+                    if (trueEdge->getLikelihood() < 0.51)
                     {
                         reorderBlock = false;
                     }
                     else
                     {
                         // set profHotWeight
-                        profHotWeight = edgeToBlock->getLikelyWeight() - 1;
+                        profHotWeight = falseEdge->getLikelyWeight() - 1;
                     }
                 }
             }

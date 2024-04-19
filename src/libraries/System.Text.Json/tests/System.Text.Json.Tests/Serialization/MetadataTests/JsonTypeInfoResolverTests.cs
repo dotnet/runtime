@@ -7,46 +7,32 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public class JsonTypeInfoResolverCombineArrayTests : JsonTypeInfoResolverCombineTests
+    public static partial class JsonTypeInfoResolverTests
     {
-        public override IJsonTypeInfoResolver Combine(params IJsonTypeInfoResolver?[] resolvers) =>
-            JsonTypeInfoResolver.Combine(resolvers);
-
         [Fact]
-        public void CombineNullArgument()
+        public static void CombineNullArgument()
         {
             IJsonTypeInfoResolver[] resolvers = null;
-            Assert.Throws<ArgumentNullException>(() => Combine(resolvers));
+            Assert.Throws<ArgumentNullException>(() => JsonTypeInfoResolver.Combine(resolvers));
         }
-    }
-
-    public class JsonTypeInfoResolverCombineSpanTests : JsonTypeInfoResolverCombineTests
-    {
-        public override IJsonTypeInfoResolver Combine(params IJsonTypeInfoResolver?[] resolvers) =>
-            JsonTypeInfoResolver.Combine((ReadOnlySpan<IJsonTypeInfoResolver>)resolvers);
-    }
-
-    public abstract class JsonTypeInfoResolverCombineTests
-    {
-        public abstract IJsonTypeInfoResolver Combine(params IJsonTypeInfoResolver?[] resolvers);
 
         [Fact]
-        public void Combine_ShouldFlattenResolvers()
+        public static void Combine_ShouldFlattenResolvers()
         {
             DefaultJsonTypeInfoResolver nonNullResolver1 = new();
             DefaultJsonTypeInfoResolver nonNullResolver2 = new();
             DefaultJsonTypeInfoResolver nonNullResolver3 = new();
 
-            ValidateCombinations(Array.Empty<IJsonTypeInfoResolver>(), Combine());
-            ValidateCombinations(Array.Empty<IJsonTypeInfoResolver>(), Combine(new IJsonTypeInfoResolver[] { null }));
-            ValidateCombinations(Array.Empty<IJsonTypeInfoResolver>(), Combine(null, null));
-            ValidateCombinations(new[] { nonNullResolver1 }, Combine(nonNullResolver1, null));
-            ValidateCombinations(new[] { nonNullResolver1, nonNullResolver2 }, Combine(nonNullResolver1, nonNullResolver2, null));
-            ValidateCombinations(new[] { nonNullResolver1, nonNullResolver2 }, Combine(nonNullResolver1, null, nonNullResolver2));
-            ValidateCombinations(new[] { nonNullResolver1, nonNullResolver2, nonNullResolver3 }, Combine(Combine(Combine(nonNullResolver1), nonNullResolver2), nonNullResolver3));
-            ValidateCombinations(new[] { nonNullResolver1, nonNullResolver2, nonNullResolver3 }, Combine(Combine(nonNullResolver1, null, nonNullResolver2), nonNullResolver3));
+            ValidateCombinations(Array.Empty<IJsonTypeInfoResolver>(), JsonTypeInfoResolver.Combine());
+            ValidateCombinations(Array.Empty<IJsonTypeInfoResolver>(), JsonTypeInfoResolver.Combine(new IJsonTypeInfoResolver[] { null }));
+            ValidateCombinations(Array.Empty<IJsonTypeInfoResolver>(), JsonTypeInfoResolver.Combine(null, null));
+            ValidateCombinations(new[] { nonNullResolver1 }, JsonTypeInfoResolver.Combine(nonNullResolver1, null));
+            ValidateCombinations(new[] { nonNullResolver1, nonNullResolver2 }, JsonTypeInfoResolver.Combine(nonNullResolver1, nonNullResolver2, null));
+            ValidateCombinations(new[] { nonNullResolver1, nonNullResolver2 }, JsonTypeInfoResolver.Combine(nonNullResolver1, null, nonNullResolver2));
+            ValidateCombinations(new[] { nonNullResolver1, nonNullResolver2, nonNullResolver3 }, JsonTypeInfoResolver.Combine(JsonTypeInfoResolver.Combine(JsonTypeInfoResolver.Combine(nonNullResolver1), nonNullResolver2), nonNullResolver3));
+            ValidateCombinations(new[] { nonNullResolver1, nonNullResolver2, nonNullResolver3 }, JsonTypeInfoResolver.Combine(JsonTypeInfoResolver.Combine(nonNullResolver1, null, nonNullResolver2), nonNullResolver3));
 
-            void ValidateCombinations(IJsonTypeInfoResolver[] expectedResolvers, IJsonTypeInfoResolver combinedResolver)
+            static void ValidateCombinations(IJsonTypeInfoResolver[] expectedResolvers, IJsonTypeInfoResolver combinedResolver)
             {
                 if (expectedResolvers.Length == 1)
                 {
@@ -60,9 +46,9 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void CombiningZeroResolversProducesValidResolver()
+        public static void CombiningZeroResolversProducesValidResolver()
         {
-            IJsonTypeInfoResolver resolver = Combine();
+            IJsonTypeInfoResolver resolver = JsonTypeInfoResolver.Combine();
             Assert.NotNull(resolver);
 
             // calling twice to make sure we get the same answer
@@ -71,7 +57,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void CombiningSingleResolverProducesSameAnswersAsInputResolver()
+        public static void CombiningSingleResolverProducesSameAnswersAsInputResolver()
         {
             JsonSerializerOptions options = new();
             JsonTypeInfo t1 = JsonTypeInfo.CreateJsonTypeInfo(typeof(int), options);
@@ -88,7 +74,7 @@ namespace System.Text.Json.Serialization.Tests
                 return null;
             });
 
-            IJsonTypeInfoResolver combined = Combine(resolver);
+            IJsonTypeInfoResolver combined = JsonTypeInfoResolver.Combine(resolver);
 
             Assert.Same(t1, combined.GetTypeInfo(typeof(int), options));
             Assert.Same(t2, combined.GetTypeInfo(typeof(uint), options));
@@ -98,7 +84,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void CombiningUsesAndRespectsAllResolversInOrder()
+        public static void CombiningUsesAndRespectsAllResolversInOrder()
         {
             JsonSerializerOptions options = new();
             JsonTypeInfo t1 = JsonTypeInfo.CreateJsonTypeInfo(typeof(int), options);
@@ -135,7 +121,7 @@ namespace System.Text.Json.Serialization.Tests
                 return null;
             });
 
-            IJsonTypeInfoResolver combined = Combine(r1, r2, r3);
+            IJsonTypeInfoResolver combined = JsonTypeInfoResolver.Combine(r1, r2, r3);
 
             resolverId = 1;
             Assert.Same(t1, combined.GetTypeInfo(typeof(int), options));
@@ -158,7 +144,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(4, resolverId);
         }
 
-        private IList<IJsonTypeInfoResolver> GetAndValidateCombinedResolvers(IJsonTypeInfoResolver resolver)
+        private static IList<IJsonTypeInfoResolver> GetAndValidateCombinedResolvers(IJsonTypeInfoResolver resolver)
         {
             var list = (IList<IJsonTypeInfoResolver>)resolver;
 
@@ -169,12 +155,8 @@ namespace System.Text.Json.Serialization.Tests
             return list;
         }
 
-    }
-
-    public class JsonTypeInfoResolverTests
-    {
         [Fact]
-        public void WithAddedModifier_CallsModifierOnResolvedMetadata()
+        public static void WithAddedModifier_CallsModifierOnResolvedMetadata()
         {
             int modifierInvocationCount = 0;
             JsonSerializerOptions options = new();
@@ -193,11 +175,11 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void WithAddedModifier_DoesNotCallModifierOnUnResolvedMetadata()
+        public static void WithAddedModifier_DoesNotCallModifierOnUnResolvedMetadata()
         {
             int modifierInvocationCount = 0;
             JsonSerializerOptions options = new();
-            TestResolver resolver = new((_, _) => null);
+            TestResolver resolver = new((_,_) => null);
 
             IJsonTypeInfoResolver resolverWithModifier = resolver.WithAddedModifier(_ => modifierInvocationCount++);
 
@@ -209,7 +191,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void WithAddedModifier_CanChainMultipleModifiers()
+        public static void WithAddedModifier_CanChainMultipleModifiers()
         {
             int modifier1InvocationCount = 0;
             int modifier2InvocationCount = 0;
@@ -226,7 +208,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void WithAddedModifier_ChainingDoesNotMutateIntermediateResolvers()
+        public static void WithAddedModifier_ChainingDoesNotMutateIntermediateResolvers()
         {
             int modifier1InvocationCount = 0;
             int modifier2InvocationCount = 0;
@@ -251,7 +233,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void WithAddedModifier_ThrowsOnNullArguments()
+        public static void WithAddedModifier_ThrowsOnNullArguments()
         {
             TestResolver resolver = new(JsonTypeInfo.CreateJsonTypeInfo);
 
@@ -260,7 +242,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void NullResolver_ReturnsObjectMetadata()
+        public static void NullResolver_ReturnsObjectMetadata()
         {
             var options = new JsonSerializerOptions();
             var resolver = new NullResolver();

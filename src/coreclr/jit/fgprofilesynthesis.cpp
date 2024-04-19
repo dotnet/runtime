@@ -811,7 +811,12 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
 
                 for (FlowEdge* const edge : block->PredEdges())
                 {
-                    if (BasicBlock::sameHndRegion(block, edge->getSourceBlock()))
+                    BasicBlock* const sourceBlock = edge->getSourceBlock();
+
+                    // Ignore flow across EH, or from preds not in the loop.
+                    // Latter can happen if there are unreachable blocks that flow into the loop.
+                    //
+                    if (BasicBlock::sameHndRegion(block, sourceBlock) && loop->ContainsBlock(sourceBlock))
                     {
                         newWeight += edge->getLikelyWeight();
                     }

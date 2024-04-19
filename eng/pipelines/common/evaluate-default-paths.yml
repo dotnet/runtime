@@ -7,7 +7,7 @@ parameters:
   _const_paths:
     _wasm_specific_only: [
         eng/testing/bump-chrome-version.proj
-        eng/testing/ChromeVersions.props
+        eng/testing/BrowserVersions.props
         eng/testing/WasmRunner*
         eng/testing/WasiRunner*
         eng/testing/scenarios/BuildWasiAppsJobsList.txt
@@ -58,7 +58,7 @@ parameters:
     ]
     _wasm_chrome: [
         eng/testing/bump-chrome-version.proj
-        eng/testing/ChromeVersions.props
+        eng/testing/BrowserVersions.props
     ]
     _perf_pipeline_specific_only: [
         eng/pipelines/runtime-wasm-perf.yml
