@@ -27,7 +27,7 @@ if [%XHARNESS_CLI_PATH%] NEQ [] (
 )
 
 if [%XHARNESS_COMMAND%] == [] (
-    if /I [%SCENARIO%]==[WasmTestOnBrowser] (
+    if /I [%SCENARIO%]==[WasmTestOnChrome] (
         set XHARNESS_COMMAND=test-browser
     ) else (
         set XHARNESS_COMMAND=test

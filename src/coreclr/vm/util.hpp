@@ -542,7 +542,7 @@ FORCEINLINE void VoidFreeNativeLibrary(NATIVE_LIBRARY_HANDLE h)
 #endif
 }
 
-typedef Wrapper<NATIVE_LIBRARY_HANDLE, DoNothing<NATIVE_LIBRARY_HANDLE>, VoidFreeNativeLibrary, NULL> NativeLibraryHandleHolder;
+typedef Wrapper<NATIVE_LIBRARY_HANDLE, DoNothing<NATIVE_LIBRARY_HANDLE>, VoidFreeNativeLibrary, 0> NativeLibraryHandleHolder;
 
 extern thread_local size_t t_CantStopCount;
 
@@ -587,7 +587,7 @@ struct JITNotification
 
     JITNotification() { SetFree(); }
     BOOL IsFree() { return state == CLRDATA_METHNOTIFY_NONE; }
-    void SetFree() { state = CLRDATA_METHNOTIFY_NONE; clrModule = NULL; methodToken = 0; }
+    void SetFree() { state = CLRDATA_METHNOTIFY_NONE; clrModule = 0; methodToken = 0; }
     void SetState(TADDR moduleIn, mdToken tokenIn, USHORT NType)
     {
         _ASSERTE(IsValidMethodCodeNotification(NType));

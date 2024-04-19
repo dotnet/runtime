@@ -567,7 +567,7 @@ extends:
           jobParameters:
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
-            buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release /p:RunAnalyzers=false
+            buildArgs: -s clr.aot+libs -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
             postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
@@ -606,7 +606,7 @@ extends:
           jobParameters:
             timeoutInMinutes: 180
             nameSuffix: NativeAOT
-            buildArgs: -s clr.aot+host.native+libs.native+libs.sfx -rc $(_BuildConfig) -lc Release -hc Release /p:RunAnalyzers=false
+            buildArgs: -s clr.aot+libs.native+libs.sfx -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
             postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
@@ -651,7 +651,7 @@ extends:
             testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
-            buildArgs: -s clr.aot+host.native+libs+tools.illink -c $(_BuildConfig) -rc $(_BuildConfig) -lc Release -hc Release /p:RunAnalyzers=false
+            buildArgs: -s clr.aot+libs+tools.illink -c $(_BuildConfig) -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
             postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
@@ -688,7 +688,7 @@ extends:
             testGroup: innerloop
             isSingleFile: true
             nameSuffix: NativeAOT_Libraries
-            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true /p:RunAnalyzers=false
+            buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true /p:RunAnalyzers=false
             timeoutInMinutes: 240 # Doesn't actually take long, but we've seen the ARM64 Helix queue often get backlogged for 2+ hours
             # extra steps, run tests
             postBuildSteps:
@@ -713,7 +713,7 @@ extends:
           jobParameters:
             timeoutInMinutes: 120
             nameSuffix: CLR_Tools_Tests
-            buildArgs: -s clr.aot+clr.iltools+libs.sfx+clr.toolstests -c $(_BuildConfig) -test
+            buildArgs: -s clr.aot+clr.iltools+libs.sfx+clr.toolstests+tools.cdacreadertests -c $(_BuildConfig) -test
             enablePublishTestResults: true
             testResultsFormat: 'xunit'
             # We want to run AOT tests when illink changes because there's share code and tests from illink which are used by AOT
@@ -721,6 +721,7 @@ extends:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_cdacreader.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
       #
       # Build CrossDacs
@@ -823,8 +824,8 @@ extends:
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
-            - normal
-            - WasmTestOnBrowser
+            - WasmTestOnV8
+            - WasmTestOnChrome
 
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
@@ -833,7 +834,7 @@ extends:
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
-            - WasmTestOnBrowser
+            - WasmTestOnChrome
 
       # Library tests with full threading
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
@@ -846,7 +847,7 @@ extends:
           alwaysRun: ${{ variables.isRollingBuild }}
           shouldRunSmokeOnly: onLibrariesAndIllinkChanges
           scenarios:
-            - WasmTestOnBrowser
+            - WasmTestOnChrome
             #- WasmTestOnNodeJS - this is not supported yet, https://github.com/dotnet/runtime/issues/85592
 
       # EAT Library tests - only run on linux
@@ -935,7 +936,7 @@ extends:
           shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
           scenarios:
-            - normal
+            - WasmTestOnWasmtime
 
       - template: /eng/pipelines/common/templates/simple-wasm-build-tests.yml
         parameters:
@@ -1009,7 +1010,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono
-            buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true
+            buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true /p:EnableAggressiveTrimming=true
             timeoutInMinutes: 480
             condition: >-
               or(
@@ -1878,36 +1879,29 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
-      #
-      # Sourcebuild legs
-      # We have 3 important legs for source-build:
-      # - Centos.8 (ensures that known non-portable RID is working)
-      # - Linux-x64 portable (used for dependency flow and downstream PR verification)
-      # - Banana.24 - Non-existent RID to ensure we don't break RIDs we don't know about.
-      #
-      # Running all of these everywhere is wasteful. Run Banana.24 and CentOS.8 in rolling CI,
-      # Run Linux-x64 in PR.
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: Release
-          helixQueueGroup: pr
-          platforms:
-          - SourceBuild_centos8_x64
-          jobParameters:
-            nameSuffix: centos8SourceBuild
-            timeoutInMinutes: 95
-            condition: eq(variables['isRollingBuild'], true)
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: Release
-          helixQueueGroup: pr
-          platforms:
-          - SourceBuild_banana24_x64
-          jobParameters:
-            nameSuffix: banana24SourceBuild
-            timeoutInMinutes: 95
-            condition: eq(variables['isRollingBuild'], true)
+    - stage: SourceBuild
+      displayName: Source Build Validation
+      dependsOn: []
+      condition: eq(variables['isRollingBuild'], true)
+      jobs:
+        #
+        # Sourcebuild legs
+        # We have 3 important legs for source-build:
+        # - Centos.8 (ensures that known non-portable RID is working)
+        # - Linux-x64 portable (used for dependency flow and downstream PR verification)
+        # - Banana.24 - Non-existent RID to ensure we don't break RIDs we don't know about.
+        #
+        # Running all of these everywhere is wasteful. Run Banana.24 and CentOS.8 in rolling CI,
+        # Run Linux-x64 in PR.
+        - template: /eng/common/templates/jobs/source-build.yml
+          parameters:
+            platforms:
+              - name: CentOS8
+                targetRid: centos.8-x64
+                nonPortable: true
+                container: SourceBuild_centos_x64
+              - name: NonexistentRID
+                baseOS: linux
+                targetRid: banana.24-x64
+                nonPortable: true
+                container: SourceBuild_centos_x64

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+  </PropertyGroup>
+
+
+  <Import Project="..\..\subproject.props" />
+
+  <ItemGroup>
+      <ProjectReference Include="..\src\cdacreader.csproj"
+                        AdditionalProperties="$(SplitSubprojectProps)"/>
+  </ItemGroup>
+
+</Project>

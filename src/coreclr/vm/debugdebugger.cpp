@@ -765,7 +765,7 @@ extern MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip)
 }
 
 FORCEINLINE void HolderDestroyStrongHandle(OBJECTHANDLE h) { if (h != NULL) DestroyStrongHandle(h); }
-typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, HolderDestroyStrongHandle, NULL> StrongHandleHolder;
+typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, HolderDestroyStrongHandle, 0> StrongHandleHolder;
 
 // receives a custom notification object from the target and sends it to the RS via
 // code:Debugger::SendCustomDebuggerNotification
@@ -977,7 +977,7 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
     }
     else
     {
-        ip = NULL;
+        ip = (PCODE)NULL;
         dwNativeOffset = 0;
     }
 
@@ -1162,7 +1162,7 @@ void DebugStackTrace::DebugStackTraceElement::InitPass2()
 
 #ifdef DEBUGGING_SUPPORTED
     // Calculate the IL offset using the debugging services
-    if ((this->ip != NULL) && g_pDebugInterface)
+    if ((this->ip != (PCODE)NULL) && g_pDebugInterface)
     {
         // To get the source line number of the actual code that threw an exception, the dwOffset needs to be
         // adjusted in certain cases when calculating the IL offset.

@@ -104,7 +104,7 @@ extern "C" BOOL QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregister
 
     if (th.IsBlittable())
     {
-        *pStructMarshalStub = NULL;
+        *pStructMarshalStub = (PCODE)NULL;
         *pSize = th.GetMethodTable()->GetNativeSize();
         ret = TRUE;
     }
@@ -131,7 +131,7 @@ extern "C" BOOL QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregister
     }
     else
     {
-        *pStructMarshalStub = NULL;
+        *pStructMarshalStub = (PCODE)NULL;
         *pSize = 0;
     }
 
