@@ -15,11 +15,13 @@ namespace System.Globalization
         private unsafe bool JSLoadCalendarDataFromBrowser(string localeName, CalendarId calendarId)
         {
             char* buffer = stackalloc char[CALENDAR_INFO_BUFFER_LEN];
-            int exception;
-            object exResult;
-            int resultLength = Interop.JsGlobalization.GetCalendarInfo(localeName, calendarId, buffer, CALENDAR_INFO_BUFFER_LEN, out exception, out exResult);
-            if (exception != 0)
-                throw new Exception((string)exResult);
+            nint exceptionPtr = Interop.JsGlobalization.GetCalendarInfo(localeName, calendarId, buffer, CALENDAR_INFO_BUFFER_LEN, out int resultLength);
+            if (exceptionPtr != IntPtr.Zero) // JSFunctionBinding.cs
+            {
+                string message = Marshal.PtrToStringUni(exceptionPtr)!;
+                Marshal.FreeHGlobal(exceptionPtr);
+                throw new Exception(message);
+            }
             string result = new string(buffer, 0, resultLength);
             string[] subresults = result.Split("##");
             if (subresults.Length < 14)

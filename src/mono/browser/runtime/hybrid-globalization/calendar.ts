@@ -3,20 +3,19 @@
 
 /* eslint-disable no-inner-declarations */
 import { mono_wasm_new_external_root } from "../roots";
-import { monoStringToString, stringToUTF16 } from "../strings";
-import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
-import { Int32Ptr } from "../types/emscripten";
-import { wrap_error_root, wrap_no_error_root } from "./helpers";
+import { monoStringToString, stringToUTF16, stringToUTF16Ptr } from "../strings";
+import { MonoString, MonoStringRef, VoidPtrNull } from "../types/internal";
+import { Int32Ptr, VoidPtr } from "../types/emscripten";
 import { INNER_SEPARATOR, OUTER_SEPARATOR, normalizeSpaces } from "./helpers";
+import { setI32 } from "../memory";
 
 const MONTH_CODE = "MMMM";
 const YEAR_CODE = "yyyy";
 const DAY_CODE = "d";
 
 // this function joins all calendar info with OUTER_SEPARATOR into one string and returns it back to managed code
-export function mono_wasm_get_calendar_info (culture: MonoStringRef, calendarId: number, dst: number, dstLength: number, isException: Int32Ptr, exAddress: MonoObjectRef): number {
-    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
-        exceptionRoot = mono_wasm_new_external_root<MonoObject>(exAddress);
+export function mono_wasm_get_calendar_info (culture: MonoStringRef, calendarId: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
+    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
     try {
         const cultureName = monoStringToString(cultureRoot);
         const locale = cultureName ? cultureName : undefined;
@@ -56,18 +55,16 @@ export function mono_wasm_get_calendar_info (culture: MonoStringRef, calendarId:
         calendarInfo.AbbreviatedEraNames = eraNames.abbreviatedEraNames;
 
         const result = Object.values(calendarInfo).join(OUTER_SEPARATOR);
-        if (result.length > dstLength) {
-            throw new Error(`Calendar info exceeds length of ${dstLength}.`);
+        if (result.length > dstMaxLength) {
+            throw new Error(`Calendar info exceeds length of ${dstMaxLength}.`);
         }
         stringToUTF16(dst, dst + 2 * result.length, result);
-        wrap_no_error_root(isException, exceptionRoot);
-        return result.length;
+        setI32(dstLength, result.length);
+        return VoidPtrNull;
     } catch (ex: any) {
-        wrap_error_root(isException, ex, exceptionRoot);
-        return -1;
+        return stringToUTF16Ptr((ex));
     } finally {
         cultureRoot.release();
-        exceptionRoot.release();
     }
 }
 
