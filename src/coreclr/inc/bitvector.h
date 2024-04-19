@@ -32,7 +32,9 @@
 #define UNDEF_ASSERTE
 #endif
 
+#ifndef FEATURE_NATIVEAOT
 #define USE_BITVECTOR 1
+#endif
 #if USE_BITVECTOR
 
 /* The bitvector class is meant to be a drop in replacement for an integer

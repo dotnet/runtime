@@ -20,6 +20,7 @@ declare interface Int32Ptr extends NativePointer {
 declare interface EmscriptenModule {
     _malloc(size: number): VoidPtr;
     _free(ptr: VoidPtr): void;
+    _sbrk(size: number): VoidPtr;
     out(message: string): void;
     err(message: string): void;
     ccall<T>(ident: string, returnType?: string | null, argTypes?: string[], args?: any[], opts?: any): T;
@@ -31,6 +32,7 @@ declare interface EmscriptenModule {
     UTF8ToString(ptr: CharPtr, maxBytesToRead?: number): string;
     UTF8ArrayToString(u8Array: Uint8Array, idx?: number, maxBytesToRead?: number): string;
     stringToUTF8Array(str: string, heap: Uint8Array, outIdx: number, maxBytesToWrite: number): void;
+    lengthBytesUTF8(str: string): number;
     FS_createPath(parent: string, path: string, canRead?: boolean, canWrite?: boolean): string;
     FS_createDataFile(parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
     addFunction(fn: Function, signature: string): number;
@@ -189,11 +191,11 @@ type MonoConfig = {
     /**
      * initial number of workers to add to the emscripten pthread pool
      */
-    pthreadPoolSize?: number;
+    pthreadPoolInitialSize?: number;
     /**
-     * If true, the snapshot of runtime's memory will be stored in the browser and used for faster startup next time. Default is false.
+     * number of unused workers kept in the emscripten pthread pool after startup
      */
-    startupMemoryCache?: boolean;
+    pthreadPoolUnusedSize?: number;
     /**
      * If true, a list of the methods optimized by the interpreter will be saved and used for faster startup
      *  on future runs of the application
@@ -356,7 +358,15 @@ type SingleAssetBehaviors =
 /**
  * Typically blazor.boot.json
  */
- | "manifest";
+ | "manifest"
+/**
+ * The debugging symbols
+ */
+ | "symbols"
+/**
+ * Load segmentation rules file for Hybrid Globalization.
+ */
+ | "segmentation-rules";
 type AssetBehaviors = SingleAssetBehaviors | 
 /**
  * Load asset as a managed resource assembly.
@@ -385,15 +395,7 @@ type AssetBehaviors = SingleAssetBehaviors |
 /**
  * The javascript module that came from nuget package .
  */
- | "js-module-library-initializer"
-/**
- * The javascript module for threads.
- */
- | "symbols"
-/**
- * Load segmentation rules file for Hybrid Globalization.
- */
- | "segmentation-rules";
+ | "js-module-library-initializer";
 declare const enum GlobalizationMode {
     /**
      * Load sharded ICU data.
@@ -443,6 +445,13 @@ type APIType = {
      */
     runMainAndExit: (mainAssemblyName?: string, args?: string[]) => Promise<number>;
     /**
+     * Exits the runtime.
+     * Note: after the runtime exits, it would reject all further calls to the API.
+     * @param code "process" exit code.
+     * @param reason could be a string or an Error object.
+     */
+    exit: (code: number, reason?: any) => void;
+    /**
      * Sets the environment variable for the "process"
      * @param name
      * @param value
@@ -472,6 +481,10 @@ type APIType = {
      * Writes to the WASM linear memory
      */
     setHeapB32: (offset: NativePointer, value: number | boolean) => void;
+    /**
+     * Writes to the WASM linear memory
+     */
+    setHeapB8: (offset: NativePointer, value: number | boolean) => void;
     /**
      * Writes to the WASM linear memory
      */
@@ -520,6 +533,10 @@ type APIType = {
      * Reads from the WASM linear memory
      */
     getHeapB32: (offset: NativePointer) => boolean;
+    /**
+     * Reads from the WASM linear memory
+     */
+    getHeapB8: (offset: NativePointer) => boolean;
     /**
      * Reads from the WASM linear memory
      */
@@ -609,6 +626,9 @@ type RuntimeAPI = {
         productVersion: string;
         gitHash: string;
         buildConfiguration: string;
+        wasmEnableThreads: boolean;
+        wasmEnableSIMD: boolean;
+        wasmEnableExceptionHandling: boolean;
     };
 } & APIType;
 type ModuleAPI = {

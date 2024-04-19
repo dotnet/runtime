@@ -32,7 +32,7 @@ namespace System.Reflection.Emit
         {
             FieldBuilder fieldBuilder = _typeBuilder.DefineField(
                 literalName,
-                _typeBuilder,
+                this,
                 FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal);
             fieldBuilder.SetConstant(literalValue);
             return fieldBuilder;

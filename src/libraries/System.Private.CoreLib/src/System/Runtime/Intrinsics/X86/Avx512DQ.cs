@@ -323,6 +323,16 @@ namespace System.Runtime.Intrinsics.X86
         ///   VCVTUQQ2PS ymm1 {k1}{z}, zmm2/m512/m64bcst
         /// </summary>
         public static Vector256<float> ConvertToVector256Single(Vector512<ulong> value) => ConvertToVector256Single(value);
+        /// <summary>
+        /// __m256 _mm512_cvt_roundepi64_ps (__m512i a, int r)
+        ///   VCVTQQ2PS ymm1, zmm2 {er}
+        /// </summary>
+        public static Vector256<float> ConvertToVector256Single(Vector512<long> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToVector256Single(value, mode);
+        /// <summary>
+        /// __m256 _mm512_cvt_roundepu64_ps (__m512i a, int r)
+        ///   VCVTUQQ2PS ymm1, zmm2 {er}
+        /// </summary>
+        public static Vector256<float> ConvertToVector256Single(Vector512<ulong> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToVector256Single(value, mode);
 
         /// <summary>
         /// __m512d _mm512_cvtepi64_pd (__m512i a)
@@ -335,6 +345,17 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector512<double> ConvertToVector512Double(Vector512<ulong> value) => ConvertToVector512Double(value);
         /// <summary>
+        /// __m512d _mm512_cvt_roundepi64_pd (__m512i a, int r)
+        ///   VCVTQQ2PD zmm1, zmm2 {er}
+        /// </summary>
+        public static Vector512<double> ConvertToVector512Double(Vector512<long> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToVector512Double(value, mode);
+        /// <summary>
+        /// __m512d _mm512_cvt_roundepu64_pd (__m512i a, int r)
+        ///   VCVTUQQ2PD zmm1, zmm2 {er}
+        /// </summary>
+        public static Vector512<double> ConvertToVector512Double(Vector512<ulong> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToVector512Double(value, mode);
+
+        /// <summary>
         /// __m512i _mm512_cvtps_epi64 (__m512 a)
         ///   VCVTPS2QQ zmm1 {k1}{z}, ymm2/m256/m32bcst{er}
         /// </summary>
@@ -344,6 +365,17 @@ namespace System.Runtime.Intrinsics.X86
         ///   VCVTPD2QQ zmm1 {k1}{z}, zmm2/m512/m64bcst{er}
         /// </summary>
         public static Vector512<long> ConvertToVector512Int64(Vector512<double> value) => ConvertToVector512Int64(value);
+        /// <summary>
+        /// __m512i _mm512_cvt_roundps_epi64 (__m512 a, int r)
+        ///   VCVTPS2QQ zmm1, ymm2 {er}
+        /// </summary>
+        public static Vector512<long> ConvertToVector512Int64(Vector256<float> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToVector512Int64(value, mode);
+        /// <summary>
+        /// __m512i _mm512_cvt_roundpd_epi64 (__m512d a, int r)
+        ///   VCVTPD2QQ zmm1, zmm2 {er}
+        /// </summary>
+        public static Vector512<long> ConvertToVector512Int64(Vector512<double> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToVector512Int64(value, mode);
+
         /// <summary>
         /// __m512i _mm512_cvttps_epi64 (__m512 a)
         ///   VCVTTPS2QQ zmm1 {k1}{z}, ymm2/m256/m32bcst{er}
@@ -364,6 +396,16 @@ namespace System.Runtime.Intrinsics.X86
         ///   VCVTPD2UQQ zmm1 {k1}{z}, zmm2/m512/m64bcst{er}
         /// </summary>
         public static Vector512<ulong> ConvertToVector512UInt64(Vector512<double> value) => ConvertToVector512UInt64(value);
+        /// <summary>
+        /// __m512i _mm512_cvt_roundps_epu64 (__m512 a, int r)
+        ///   VCVTPS2UQQ zmm1 {k1}{z}, ymm2/m256/m32bcst{er}
+        /// </summary>
+        public static Vector512<ulong> ConvertToVector512UInt64(Vector256<float> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToVector512UInt64(value, mode);
+        /// <summary>
+        /// __m512i _mm512_cvt_roundpd_epu64 (__m512d a, int r)
+        ///   VCVTPD2UQQ zmm1 {k1}{z}, zmm2/m512/m64bcst{er}
+        /// </summary>
+        public static Vector512<ulong> ConvertToVector512UInt64(Vector512<double> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToVector512UInt64(value, mode);
         /// <summary>
         /// __m512i _mm512_cvttps_epu64 (__m512 a)
         ///   VCVTTPS2UQQ zmm1 {k1}{z}, ymm2/m256/m32bcst{er}

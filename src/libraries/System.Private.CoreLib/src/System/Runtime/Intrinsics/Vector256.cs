@@ -36,6 +36,9 @@ namespace System.Runtime.Intrinsics
         internal const int Alignment = 8;
 #elif TARGET_ARM64
         internal const int Alignment = 16;
+#elif TARGET_RISCV64
+        // TODO-RISCV64: Update alignment to proper value when we implement RISC-V intrinsic.
+        internal const int Alignment = 16;
 #else
         internal const int Alignment = 32;
 #endif

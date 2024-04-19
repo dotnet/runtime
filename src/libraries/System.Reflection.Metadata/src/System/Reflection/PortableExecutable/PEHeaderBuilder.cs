@@ -105,7 +105,7 @@ namespace System.Reflection.PortableExecutable
             return new PEHeaderBuilder(imageCharacteristics: Characteristics.ExecutableImage | Characteristics.Dll);
         }
 
-        internal bool Is32Bit => Machine != Machine.Amd64 && Machine != Machine.IA64 && Machine != Machine.Arm64 && Machine != (Machine)0x5064; /* TODO: update with RiscV64 */
+        internal bool Is32Bit => Machine != Machine.Amd64 && Machine != Machine.IA64 && Machine != Machine.Arm64 && Machine != Machine.RiscV64;
 
         internal int ComputeSizeOfPEHeaders(int sectionCount) =>
             PEBuilder.DosHeaderSize +

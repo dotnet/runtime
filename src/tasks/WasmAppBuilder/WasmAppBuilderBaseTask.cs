@@ -38,7 +38,6 @@ public abstract class WasmAppBuilderBaseTask : Task
     // https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
     public string[] IcuDataFileNames { get; set; } = Array.Empty<string>();
 
-    public int DebugLevel { get; set; }
     public ITaskItem[] SatelliteAssemblies { get; set; } = Array.Empty<ITaskItem>();
     public bool HybridGlobalization { get; set; }
     public bool InvariantGlobalization { get; set; }

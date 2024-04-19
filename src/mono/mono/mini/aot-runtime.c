@@ -1971,6 +1971,12 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	if (mono_aot_mode == MONO_AOT_MODE_NONE)
 		return;
 
+#ifdef HOST_BROWSER
+	// This indicates that we were not built for AOT, so there's no need to probe for AOT modules.
+	if (mono_aot_mode == MONO_AOT_MODE_INTERP_ONLY)
+		return;
+#endif
+
 	if (assembly->image->aot_module)
 		/*
 		 * Already loaded. This can happen because the assembly loading code might invoke
@@ -2480,7 +2486,7 @@ load_container_amodule (MonoAssemblyLoadContext *alc)
 
 	mono_loader_lock ();
 	// There might be several threads that passed the first check
-	// Adding another check to ensure single load of a container assembly due to race condition 
+	// Adding another check to ensure single load of a container assembly due to race condition
 	if (!container_amodule) {
 		ERROR_DECL (error);
 
@@ -3395,10 +3401,13 @@ decode_exception_debug_info (MonoAotModule *amodule,
 			MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
 			jit_mm_lock (jit_mm);
 			/* This could be set already since this function can be called more than once for the same method */
-			if (!g_hash_table_lookup (jit_mm->seq_points, method))
+			MonoSeqPointInfo *existing_seq_points = NULL;
+			if (!g_hash_table_lookup_extended (jit_mm->seq_points, method, NULL, (gpointer *)&existing_seq_points)) {
 				g_hash_table_insert (jit_mm->seq_points, method, seq_points);
-			else
+			} else {
 				mono_seq_point_info_free (seq_points);
+				seq_points = existing_seq_points;
+			}
 			jit_mm_unlock (jit_mm);
 		}
 

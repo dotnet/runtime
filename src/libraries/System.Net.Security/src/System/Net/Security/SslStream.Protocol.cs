@@ -16,6 +16,39 @@ namespace System.Net.Security
 {
     public partial class SslStream
     {
+        private const string DisableTlsResumeCtxSwitch = "System.Net.Security.DisableTlsResume";
+        private const string DisableTlsResumeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_DISABLETLSRESUME";
+
+        private static volatile int s_disableTlsResume = -1;
+
+        internal static bool DisableTlsResume
+        {
+            get
+            {
+                int disableTlsResume = s_disableTlsResume;
+                if (disableTlsResume != -1)
+                {
+                    return disableTlsResume != 0;
+                }
+
+                // First check for the AppContext switch, giving it priority over the environment variable.
+                if (AppContext.TryGetSwitch(DisableTlsResumeCtxSwitch, out bool value))
+                {
+                    s_disableTlsResume = value ? 1 : 0;
+                }
+                else
+                {
+                    // AppContext switch wasn't used. Check the environment variable.
+                    s_disableTlsResume =
+                        Environment.GetEnvironmentVariable(DisableTlsResumeEnvironmentVariable) is string envVar &&
+                        (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? 1 : 0;
+                }
+
+                return s_disableTlsResume != 0;
+            }
+        }
+
+
         private SafeFreeCredentials? _credentialsHandle;
         private SafeDeleteSslContext? _securityContext;
 
@@ -23,6 +56,9 @@ namespace System.Net.Security
         private X509Certificate? _selectedClientCertificate;
         private X509Certificate2? _remoteCertificate;
         private bool _remoteCertificateExposed;
+
+        // -1 for uninitialized, 0 for false, 1 for true, should be accessed via IsLocalClientCertificateUsed property
+        private int _localClientCertificateUsed = -1;
 
         // These are the MAX encrypt buffer output sizes, not the actual sizes.
         private int _headerSize = 5; //ATTN must be set to at least 5 by default
@@ -49,11 +85,28 @@ namespace System.Net.Security
             }
         }
 
+        // IsLocalCertificateUsed is expensive, but it does not change during the lifetime of the SslStream except for renegotiation, so we
+        // can cache the value.
+        private bool IsLocalClientCertificateUsed
+        {
+            get
+            {
+                if (_localClientCertificateUsed == -1)
+                {
+                    _localClientCertificateUsed = CertificateValidationPal.IsLocalCertificateUsed(_credentialsHandle, _securityContext!)
+                        ? 1
+                        : 0;
+                }
+
+                return _localClientCertificateUsed == 1;
+            }
+        }
+
         internal X509Certificate? LocalClientCertificate
         {
             get
             {
-                if (_selectedClientCertificate != null && CertificateValidationPal.IsLocalCertificateUsed(_credentialsHandle, _securityContext!))
+                if (_selectedClientCertificate != null && IsLocalClientCertificateUsed)
                 {
                     return _selectedClientCertificate;
                 }

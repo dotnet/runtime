@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // and would also allow the JS function to be collected
 
 
-                Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
+                Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[2];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
                 ref JSMarshalerArgument args_return = ref arguments[1];
 #if FEATURE_WASM_MANAGED_THREADS
@@ -51,7 +51,7 @@ namespace System.Runtime.InteropServices.JavaScript
             public void InvokeJS(T arg1)
             {
 
-                Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
+                Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[3];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
                 ref JSMarshalerArgument args_return = ref arguments[1];
                 ref JSMarshalerArgument args_arg1 = ref arguments[2];
@@ -258,7 +258,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // JSObject (held by this lambda) would be collected by GC after the lambda is collected
                 // and would also allow the JS function to be collected
 
-                Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
+                Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[2];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
                 ref JSMarshalerArgument args_return = ref arguments[1];
 #if FEATURE_WASM_MANAGED_THREADS
@@ -295,7 +295,7 @@ namespace System.Runtime.InteropServices.JavaScript
             public TResult InvokeJS(T arg1)
             {
 
-                Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
+                Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[3];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
                 ref JSMarshalerArgument args_return = ref arguments[1];
                 ref JSMarshalerArgument args_arg1 = ref arguments[2];

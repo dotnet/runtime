@@ -218,6 +218,7 @@ namespace System.Threading.RateLimiting
                 {
                     _cachedLimiters.Clear();
                     _cachedLimiters.AddRange(_limiters);
+                    _cacheInvalid = false;
                 }
             }
 

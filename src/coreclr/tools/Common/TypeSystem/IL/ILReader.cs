@@ -1,42 +1,27 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Buffers.Binary;
+
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL
 {
-    internal struct ILReader
+    internal ref struct ILReader
     {
         private int _currentOffset;
-        private readonly byte[] _ilBytes;
+        private readonly ReadOnlySpan<byte> _ilBytes;
 
-        public int Offset
-        {
-            get
-            {
-                return _currentOffset;
-            }
-        }
+        public readonly int Offset => _currentOffset;
 
-        public int Size
-        {
-            get
-            {
-                return _ilBytes.Length;
-            }
-        }
+        public readonly int Size => _ilBytes.Length;
 
-        public bool HasNext
-        {
-            get
-            {
-                return _currentOffset < _ilBytes.Length;
-            }
-        }
+        public readonly bool HasNext => _currentOffset < _ilBytes.Length;
 
-        public ILReader(byte[] ilBytes, int currentOffset = 0)
+        public ILReader(ReadOnlySpan<byte> ilBytes, int currentOffset = 0)
         {
             _ilBytes = ilBytes;
             _currentOffset = currentOffset;
@@ -56,22 +41,20 @@ namespace Internal.IL
 
         public ushort ReadILUInt16()
         {
-            if (_currentOffset + 2 > _ilBytes.Length)
+            if (!BinaryPrimitives.TryReadUInt16LittleEndian(_ilBytes.Slice(_currentOffset), out ushort value))
                 ThrowHelper.ThrowInvalidProgramException();
 
-            ushort val = (ushort)(_ilBytes[_currentOffset] + (_ilBytes[_currentOffset + 1] << 8));
-            _currentOffset += 2;
-            return val;
+            _currentOffset += sizeof(ushort);
+            return value;
         }
 
         public uint ReadILUInt32()
         {
-            if (_currentOffset + 4 > _ilBytes.Length)
+            if (!BinaryPrimitives.TryReadUInt32LittleEndian(_ilBytes.Slice(_currentOffset), out uint value))
                 ThrowHelper.ThrowInvalidProgramException();
 
-            uint val = (uint)(_ilBytes[_currentOffset] + (_ilBytes[_currentOffset + 1] << 8) + (_ilBytes[_currentOffset + 2] << 16) + (_ilBytes[_currentOffset + 3] << 24));
-            _currentOffset += 4;
-            return val;
+            _currentOffset += sizeof(uint);
+            return value;
         }
 
         public int ReadILToken()
@@ -81,21 +64,29 @@ namespace Internal.IL
 
         public ulong ReadILUInt64()
         {
-            ulong value = ReadILUInt32();
-            value |= (((ulong)ReadILUInt32()) << 32);
+            if (!BinaryPrimitives.TryReadUInt64LittleEndian(_ilBytes.Slice(_currentOffset), out ulong value))
+                ThrowHelper.ThrowInvalidProgramException();
+
+            _currentOffset += sizeof(ulong);
             return value;
         }
 
-        public unsafe float ReadILFloat()
+        public float ReadILFloat()
         {
-            uint value = ReadILUInt32();
-            return *(float*)(&value);
+            if (!BinaryPrimitives.TryReadSingleLittleEndian(_ilBytes.Slice(_currentOffset), out float value))
+                ThrowHelper.ThrowInvalidProgramException();
+
+            _currentOffset += sizeof(float);
+            return value;
         }
 
         public unsafe double ReadILDouble()
         {
-            ulong value = ReadILUInt64();
-            return *(double*)(&value);
+            if (!BinaryPrimitives.TryReadDoubleLittleEndian(_ilBytes.Slice(_currentOffset), out double value))
+                ThrowHelper.ThrowInvalidProgramException();
+
+            _currentOffset += sizeof(double);
+            return value;
         }
 
         public ILOpcode ReadILOpcode()

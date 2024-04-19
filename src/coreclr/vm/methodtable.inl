@@ -1078,8 +1078,6 @@ inline DWORD MethodTable::GetOptionalMembersSize()
     return GetEndOffsetOfOptionalMembers() - GetStartOffsetOfOptionalMembers();
 }
 
-#ifndef DACCESS_COMPILE
-
 //==========================================================================================
 inline PTR_BYTE MethodTable::GetNonGCStaticsBasePointer()
 {
@@ -1093,6 +1091,8 @@ inline PTR_BYTE MethodTable::GetGCStaticsBasePointer()
     WRAPPER_NO_CONTRACT;
     return GetDomainLocalModule()->GetGCStaticsBasePointer(this);
 }
+
+#ifndef DACCESS_COMPILE
 
 //==========================================================================================
 inline PTR_BYTE MethodTable::GetNonGCThreadStaticsBasePointer()
@@ -1331,15 +1331,7 @@ FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists()
     LIMITED_METHOD_CONTRACT;
 
     const RUNTIMETYPEHANDLE handle = GetAuxiliaryData()->m_hExposedClassObject;
-
-    OBJECTREF retVal;
-    if (!TypeHandle::GetManagedClassObjectFromHandleFast(handle, &retVal) &&
-        !GetLoaderAllocator()->GetHandleValueFastPhase2(handle, &retVal))
-    {
-        return NULL;
-    }
-
-    COMPILER_ASSUME(retVal != NULL);
+    OBJECTREF retVal = ObjectToOBJECTREF(handle);
     return retVal;
 }
 #endif
@@ -1367,7 +1359,6 @@ FORCEINLINE BOOL MethodTable::ImplementsInterfaceInline(MethodTable *pInterface)
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(pInterface->IsInterface()); // class we are looking up should be an interface
-        PRECONDITION(!pInterface->IsSpecialMarkerTypeForGenericCasting());
     }
     CONTRACTL_END;
 
@@ -1400,7 +1391,7 @@ FORCEINLINE BOOL MethodTable::ImplementsInterfaceInline(MethodTable *pInterface)
     while (--numInterfaces);
 
     // Second scan, looking for the curiously recurring generic scenario
-    if (pInterface->HasInstantiation() && !ContainsGenericVariables() && pInterface->GetInstantiation().ContainsAllOneType(this))
+    if (pInterface->HasInstantiation() && !GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap() && pInterface->GetInstantiation().ContainsAllOneType(this))
     {
         numInterfaces = GetNumInterfaces();
         pInfo = GetInterfaceMap();

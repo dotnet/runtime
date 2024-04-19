@@ -60,7 +60,7 @@ NativeCodeVersionNode::NativeCodeVersionNode(
     PatchpointInfo* patchpointInfo,
     unsigned ilOffset)
     :
-    m_pNativeCode(NULL),
+    m_pNativeCode{},
     m_pMethodDesc(pMethodDesc),
     m_parentId(parentId),
     m_pNextMethodDescSibling(NULL),
@@ -303,7 +303,7 @@ void NativeCodeVersion::SetActiveChildFlag(BOOL isActive)
     {
         if (isActive &&
             !CodeVersionManager::InitialNativeCodeVersionMayNotBeTheDefaultNativeCodeVersion() &&
-            GetMethodDesc()->GetNativeCode() == NULL)
+            GetMethodDesc()->GetNativeCode() == (PCODE)NULL)
         {
             CodeVersionManager::SetInitialNativeCodeVersionMayNotBeTheDefaultNativeCodeVersion();
         }
@@ -920,7 +920,7 @@ PTR_COR_ILMETHOD ILCodeVersion::GetIL() const
         PTR_MethodDesc pMethodDesc = dac_cast<PTR_MethodDesc>(pModule->LookupMethodDef(GetMethodDef()));
         if (pMethodDesc != NULL)
         {
-            pIL = dac_cast<PTR_COR_ILMETHOD>(pMethodDesc->GetILHeader(TRUE));
+            pIL = dac_cast<PTR_COR_ILMETHOD>(pMethodDesc->GetILHeader());
         }
     }
 
@@ -1520,7 +1520,7 @@ HRESULT CodeVersionManager::SetActiveILCodeVersions(ILCodeVersion* pActiveVersio
     CONTRACTL_END;
     _ASSERTE(!IsLockOwnedByCurrentThread());
     HRESULT hr = S_OK;
-    
+
 #if DEBUG
     for (DWORD i = 0; i < cActiveVersions; i++)
     {
@@ -1690,7 +1690,7 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
         // CodeVersionManager is set (not a typical case, may be possible with profilers). So, if the flag is not set and the
         // default native code version does not have native code, then it must be the active code version.
         pCode = pMethodDesc->GetNativeCode();
-        if (pCode == NULL && !CodeVersionManager::InitialNativeCodeVersionMayNotBeTheDefaultNativeCodeVersion())
+        if (pCode == (PCODE)NULL && !CodeVersionManager::InitialNativeCodeVersionMayNotBeTheDefaultNativeCodeVersion())
         {
             activeVersion = NativeCodeVersion(pMethodDesc);
             break;
@@ -1699,7 +1699,7 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
         if (!pMethodDesc->IsPointingToPrestub())
         {
             *doFullBackpatchRef = true;
-            return NULL;
+            return (PCODE)NULL;
         }
 
         LockHolder codeVersioningLockHolder;
@@ -1713,7 +1713,7 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
         _ASSERTE(hr == E_OUTOFMEMORY);
         ReportCodePublishError(pMethodDesc, hr);
         *doBackpatchRef = false;
-        return pCode != NULL ? pCode : pMethodDesc->PrepareInitialCode(callerGCMode);
+        return pCode != (PCODE)NULL ? pCode : pMethodDesc->PrepareInitialCode(callerGCMode);
     } while (false);
 
     while (true)
@@ -1724,7 +1724,7 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
         bool profilerMayHaveActivatedNonDefaultCodeVersion = false;
 
         // Compile the code if needed
-        if (pCode == NULL)
+        if (pCode == (PCODE)NULL)
         {
             PrepareCodeConfigBuffer configBuffer(activeVersion);
             PrepareCodeConfig *config = configBuffer.GetConfig();
@@ -1919,12 +1919,12 @@ HRESULT CodeVersionManager::PublishNativeCodeVersion(MethodDesc* pMethod, Native
     _ASSERTE(pMethod->IsVersionable());
 
     HRESULT hr = S_OK;
-    PCODE pCode = nativeCodeVersion.IsNull() ? NULL : nativeCodeVersion.GetNativeCode();
+    PCODE pCode = nativeCodeVersion.IsNull() ? (PCODE)NULL : nativeCodeVersion.GetNativeCode();
     if (pMethod->IsVersionable())
     {
         EX_TRY
         {
-            if (pCode == NULL)
+            if (pCode == (PCODE)NULL)
             {
                 pMethod->ResetCodeEntryPoint();
             }
@@ -1991,12 +1991,10 @@ HRESULT CodeVersionManager::EnumerateClosedMethodDescs(
     // It's impossible to get to any other kind of domain from the profiling API
     Module* pModule = pMD->GetModule();
     mdMethodDef methodDef = pMD->GetMemberDef();
-    BaseDomain * pBaseDomainFromModule = pModule->GetDomain();
-    _ASSERTE(pBaseDomainFromModule->IsAppDomain());
 
     // Module is unshared, so just use the module's domain to find instantiations.
     hr = EnumerateDomainClosedMethodDescs(
-        pBaseDomainFromModule->AsAppDomain(),
+        AppDomain::GetCurrentDomain(),
         pModule,
         methodDef,
         pClosedMethodDescs,
@@ -2036,15 +2034,7 @@ HRESULT CodeVersionManager::EnumerateDomainClosedMethodDescs(
 
     HRESULT hr;
 
-    BaseDomain * pDomainContainingGenericDefinition = pModuleContainingMethodDef->GetDomain();
-
-#ifdef _DEBUG
-    // If the generic definition is not loaded domain-neutral, then all its
-    // instantiations will also be non-domain-neutral and loaded into the same
-    // domain as the generic definition.  So the caller may only pass the
-    // domain containing the generic definition as pAppDomainToSearch
-    _ASSERTE(pDomainContainingGenericDefinition == pAppDomainToSearch);
-#endif //_DEBUG
+    _ASSERTE(AppDomain::GetCurrentDomain() == pAppDomainToSearch);
 
     // these are the default flags which won't actually be used in shared mode other than
     // asserting they were specified with their default values
@@ -2078,12 +2068,6 @@ HRESULT CodeVersionManager::EnumerateDomainClosedMethodDescs(
             }
             continue;
         }
-
-#ifdef _DEBUG
-        // Method's instantiation must be defined in the AD we're iterating over (pAppDomainToSearch, which, as
-        // asserted above, must be the same domain as the generic's definition)
-        _ASSERTE(pLoadedMD->GetDomain() == pAppDomainToSearch);
-#endif // _DEBUG
 
         MethodDesc ** ppMD = pClosedMethodDescs->Append();
         if (ppMD == NULL)

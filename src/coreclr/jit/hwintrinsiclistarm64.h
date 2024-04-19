@@ -806,6 +806,8 @@ HARDWARE_INTRINSIC(Sha256,        ScheduleUpdate1,                              
 
 #endif // FEATURE_HW_INTRINSIC
 
+#include "hwintrinsiclistarm64sve.h"
+
 #undef HARDWARE_INTRINSIC
 
 // clang-format on

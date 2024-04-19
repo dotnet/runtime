@@ -7,6 +7,7 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 
 using MethodTable = Internal.Runtime.MethodTable;
+using EETypeElementType = Internal.Runtime.EETypeElementType;
 
 namespace System
 {
@@ -126,65 +127,65 @@ namespace System
                 return CreateChangeTypeException(srcEEType, dstEEType, semantics);
             }
 
-            CorElementType dstCorElementType = new EETypePtr(dstEEType).CorElementType;
-            if (!new EETypePtr(srcEEType).CorElementTypeInfo.CanWidenTo(dstCorElementType))
+            EETypeElementType dstElementType = dstEEType->ElementType;
+            if (!CanPrimitiveWiden(dstElementType, srcEEType->ElementType))
             {
                 dstObject = null;
                 return CreateChangeTypeArgumentException(srcEEType, dstEEType);
             }
 
-            switch (dstCorElementType)
+            switch (dstElementType)
             {
-                case CorElementType.ELEMENT_TYPE_BOOLEAN:
+                case EETypeElementType.Boolean:
                     dstObject = Convert.ToBoolean(srcObject);
                     break;
 
-                case CorElementType.ELEMENT_TYPE_CHAR:
+                case EETypeElementType.Char:
                     char charValue = Convert.ToChar(srcObject);
                     dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, charValue) : charValue;
                     break;
 
-                case CorElementType.ELEMENT_TYPE_I1:
+                case EETypeElementType.SByte:
                     sbyte sbyteValue = Convert.ToSByte(srcObject);
                     dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, sbyteValue) : sbyteValue;
                     break;
 
-                case CorElementType.ELEMENT_TYPE_I2:
+                case EETypeElementType.Int16:
                     short shortValue = Convert.ToInt16(srcObject);
                     dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, shortValue) : shortValue;
                     break;
 
-                case CorElementType.ELEMENT_TYPE_I4:
+                case EETypeElementType.Int32:
                     int intValue = Convert.ToInt32(srcObject);
                     dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, intValue) : intValue;
                     break;
 
-                case CorElementType.ELEMENT_TYPE_I8:
+                case EETypeElementType.Int64:
                     long longValue = Convert.ToInt64(srcObject);
                     dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, longValue) : longValue;
                     break;
 
-                case CorElementType.ELEMENT_TYPE_U1:
+                case EETypeElementType.Byte:
                     byte byteValue = Convert.ToByte(srcObject);
                     dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, byteValue) : byteValue;
                     break;
 
-                case CorElementType.ELEMENT_TYPE_U2:
+                case EETypeElementType.UInt16:
                     ushort ushortValue = Convert.ToUInt16(srcObject);
                     dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, ushortValue) : ushortValue;
                     break;
 
-                case CorElementType.ELEMENT_TYPE_U4:
+                case EETypeElementType.UInt32:
                     uint uintValue = Convert.ToUInt32(srcObject);
                     dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, uintValue) : uintValue;
                     break;
 
-                case CorElementType.ELEMENT_TYPE_U8:
+                case EETypeElementType.UInt64:
                     ulong ulongValue = Convert.ToUInt64(srcObject);
                     dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, (long)ulongValue) : ulongValue;
                     break;
 
-                case CorElementType.ELEMENT_TYPE_R4:
+                case EETypeElementType.Single:
                     if (new EETypePtr(srcEEType).CorElementType == CorElementType.ELEMENT_TYPE_CHAR)
                     {
                         dstObject = (float)(char)srcObject;
@@ -195,7 +196,7 @@ namespace System
                     }
                     break;
 
-                case CorElementType.ELEMENT_TYPE_R8:
+                case EETypeElementType.Double:
                     if (new EETypePtr(srcEEType).CorElementType == CorElementType.ELEMENT_TYPE_CHAR)
                     {
                         dstObject = (double)(char)srcObject;
@@ -207,13 +208,41 @@ namespace System
                     break;
 
                 default:
-                    Debug.Fail("Unexpected CorElementType: " + dstCorElementType + ": Not a valid widening target.");
+                    Debug.Fail("Unexpected CorElementType: " + dstElementType + ": Not a valid widening target.");
                     dstObject = null;
                     return CreateChangeTypeException(srcEEType, dstEEType, semantics);
             }
 
             Debug.Assert(dstObject.GetMethodTable() == dstEEType);
             return null;
+        }
+
+        private static bool CanPrimitiveWiden(EETypeElementType destType, EETypeElementType srcType)
+        {
+            Debug.Assert(destType is < EETypeElementType.ValueType and >= EETypeElementType.Boolean);
+            Debug.Assert(srcType is < EETypeElementType.ValueType and >= EETypeElementType.Boolean);
+
+            ReadOnlySpan<ushort> primitiveAttributes = [
+                0x0000, // Unknown
+                0x0000, // Void
+                0x0004, // Boolean (W = BOOL)
+                0xCf88, // Char (W = U2, CHAR, I4, U4, I8, U8, R4, R8)
+                0xC550, // SByte (W = I1, I2, I4, I8, R4, R8)
+                0xCFE8, // Byte (W = CHAR, U1, I2, U2, I4, U4, I8, U8, R4, R8)
+                0xC540, // Int16 (W = I2, I4, I8, R4, R8)
+                0xCF88, // UInt16 (W = U2, CHAR, I4, U4, I8, U8, R4, R8)
+                0xC500, // Int32 (W = I4, I8, R4, R8)
+                0xCE00, // UInt32 (W = U4, I8, R4, R8)
+                0xC400, // Int64 (W = I8, R4, R8)
+                0xC800, // UInt64 (W = U8, R4, R8)
+                0x0000, // IntPtr
+                0x0000, // UIntPtr
+                0xC000, // Single (W = R4, R8)
+                0x8000, // Double (W = R8)
+            ];
+
+            ushort mask = (ushort)(1 << (byte)destType);
+            return (primitiveAttributes[(int)srcType & 0xF] & mask) != 0;
         }
 
         private static Exception ConvertPointerIfPossible(object srcObject, MethodTable* dstEEType, CheckArgumentSemantics semantics, out object dstPtr)

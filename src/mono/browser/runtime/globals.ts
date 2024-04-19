@@ -9,7 +9,7 @@
 import gitHash from "consts:gitHash";
 
 import { RuntimeAPI } from "./types/index";
-import type { GlobalObjects, EmscriptenInternals, RuntimeHelpers, LoaderHelpers, DotnetModuleInternal, PromiseAndController } from "./types/internal";
+import type { GlobalObjects, EmscriptenInternals, RuntimeHelpers, LoaderHelpers, DotnetModuleInternal, PromiseAndController, EmscriptenBuildOptions, GCHandle } from "./types/internal";
 import { mono_log_error } from "./logging";
 
 // these are our public API (except internal)
@@ -30,30 +30,21 @@ export let exportedRuntimeAPI: RuntimeAPI = null as any;
 export let runtimeHelpers: RuntimeHelpers = null as any;
 export let loaderHelpers: LoaderHelpers = null as any;
 
-export let linkerWasmEnableSIMD = true;
-export let linkerWasmEnableEH = true;
-export let linkerEnableAotProfiler = false;
-export let linkerEnableBrowserProfiler = false;
-export let linkerRunAOTCompilation = false;
 export let _runtimeModuleLoaded = false; // please keep it in place also as rollup guard
 
-export function passEmscriptenInternals(internals: EmscriptenInternals): void {
+export function passEmscriptenInternals (internals: EmscriptenInternals, emscriptenBuildOptions: EmscriptenBuildOptions): void {
+    runtimeHelpers.emscriptenBuildOptions = emscriptenBuildOptions;
+
     ENVIRONMENT_IS_PTHREAD = internals.isPThread;
-    linkerWasmEnableSIMD = internals.linkerWasmEnableSIMD;
-    linkerWasmEnableEH = internals.linkerWasmEnableEH;
-    linkerEnableAotProfiler = internals.linkerEnableAotProfiler;
-    linkerEnableBrowserProfiler = internals.linkerEnableBrowserProfiler;
-    linkerRunAOTCompilation = internals.linkerRunAOTCompilation;
     runtimeHelpers.quit = internals.quit_;
     runtimeHelpers.ExitStatus = internals.ExitStatus;
-    runtimeHelpers.moduleGitHash = internals.gitHash;
     runtimeHelpers.getMemory = internals.getMemory;
     runtimeHelpers.getWasmIndirectFunctionTable = internals.getWasmIndirectFunctionTable;
     runtimeHelpers.updateMemoryViews = internals.updateMemoryViews;
 }
 
 // NOTE: this is called AFTER the config is loaded
-export function setRuntimeGlobals(globalObjects: GlobalObjects) {
+export function setRuntimeGlobals (globalObjects: GlobalObjects) {
     if (_runtimeModuleLoaded) {
         throw new Error("Runtime module already loaded");
     }
@@ -64,7 +55,7 @@ export function setRuntimeGlobals(globalObjects: GlobalObjects) {
     loaderHelpers = globalObjects.loaderHelpers;
     exportedRuntimeAPI = globalObjects.api;
 
-    Object.assign(runtimeHelpers, {
+    const rh: Partial<RuntimeHelpers> = {
         gitHash,
         allAssetsInMemory: createPromiseController<void>(),
         dotnetReady: createPromiseController<any>(),
@@ -73,15 +64,18 @@ export function setRuntimeGlobals(globalObjects: GlobalObjects) {
         afterPreInit: createPromiseController<void>(),
         afterPreRun: createPromiseController<void>(),
         beforeOnRuntimeInitialized: createPromiseController<void>(),
+        afterMonoStarted: createPromiseController<GCHandle | undefined>(),
+        afterIOStarted: createPromiseController<void>(),
         afterOnRuntimeInitialized: createPromiseController<void>(),
         afterPostRun: createPromiseController<void>(),
-        mono_wasm_exit: () => {
-            throw new Error("Mono shutdown");
+        nativeAbort: (reason: any) => {
+            throw reason || new Error("abort");
         },
-        abort: (reason: any) => {
-            throw reason;
-        }
-    });
+        nativeExit: (code: number) => {
+            throw new Error("exit:" + code);
+        },
+    };
+    Object.assign(runtimeHelpers, rh);
 
     Object.assign(globalObjects.module.config!, {}) as any;
     Object.assign(globalObjects.api, {
@@ -92,14 +86,14 @@ export function setRuntimeGlobals(globalObjects: GlobalObjects) {
     });
 }
 
-export function createPromiseController<T>(afterResolve?: () => void, afterReject?: () => void): PromiseAndController<T> {
+export function createPromiseController<T> (afterResolve?: () => void, afterReject?: () => void): PromiseAndController<T> {
     return loaderHelpers.createPromiseController<T>(afterResolve, afterReject);
 }
 
 // this will abort the program if the condition is false
 // see src\mono\browser\runtime\rollup.config.js
 // we inline the condition, because the lambda could allocate closure on hot path otherwise
-export function mono_assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
+export function mono_assert (condition: unknown, messageFactory: string | (() => string)): asserts condition {
     if (condition) return;
     const message = "Assert failed: " + (typeof messageFactory === "function"
         ? messageFactory()

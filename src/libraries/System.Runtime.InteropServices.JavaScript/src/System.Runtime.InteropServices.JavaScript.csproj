@@ -68,6 +68,7 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(FeatureWasmManagedThreads)' == 'true'">
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSWebWorker.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSSynchronizationContext.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSAsyncTaskScheduler.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
     <ApiCompatSuppressionFile Include="CompatibilitySuppressions.xml;CompatibilitySuppressions.WasmThreads.xml" />

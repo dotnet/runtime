@@ -522,12 +522,16 @@ namespace System.Tests
                                   BitConverter.UInt16BitsToHalf(0b0_11001_0000000100)), // 1027.5 rounds to even
                 (BitConverter.Int32BitsToSingle(0b0_10001001_00000000110111111111111),
                                   BitConverter.UInt16BitsToHalf(0b0_11001_0000000011)), // 1027.5-ULP rounds down
+                (BitConverter.Int32BitsToSingle(0b0_10001001_00000000101000000000000),
+                                  BitConverter.UInt16BitsToHalf(0b0_11001_0000000010)), // 1026.5 rounds to even
                 (BitConverter.Int32BitsToSingle(unchecked((int)0b1_10001001_00000000110111111111111)),
                                                  BitConverter.UInt16BitsToHalf(0b1_11001_0000000011)), // -1027.5+ULP rounds towards zero
                 (BitConverter.Int32BitsToSingle(unchecked((int)0b1_10001001_00000000111000000000000)),
                                                  BitConverter.UInt16BitsToHalf(0b1_11001_0000000100)), // -1027.5 rounds to even
                 (BitConverter.Int32BitsToSingle(unchecked((int)0b1_10001001_00000000111000000000001)),
                                                  BitConverter.UInt16BitsToHalf(0b1_11001_0000000100)), // -1027.5-ULP rounds away from zero
+                (BitConverter.Int32BitsToSingle(unchecked((int)0b1_10001001_00000000101000000000000)),
+                                                 BitConverter.UInt16BitsToHalf(0b1_11001_0000000010)), // -1026.5 rounds to even
                 (BitConverter.Int32BitsToSingle(0b0_01110000_00000001110000000000001),
                                  BitConverter.UInt16BitsToHalf(0b0_00000_1000000100)), // subnormal + ULP rounds up
                 (BitConverter.Int32BitsToSingle(0b0_01110000_00000001110000000000000),
@@ -538,8 +542,8 @@ namespace System.Tests
                                                 BitConverter.UInt16BitsToHalf(0b1_00000_1000000011)), // neg subnormal + ULP rounds higher
                 (BitConverter.Int32BitsToSingle(unchecked((int)0b1_01110000_00000001110000000000000)),
                                                 BitConverter.UInt16BitsToHalf(0b1_00000_1000000100)), // neg subnormal rounds to even
-                (BitConverter.Int32BitsToSingle(unchecked((int)0b1_01110000_00000001101111111111111)),
-                                                BitConverter.UInt16BitsToHalf(0b1_00000_1000000011)), // neg subnormal - ULP rounds lower,
+                (BitConverter.Int32BitsToSingle(unchecked((int)0b1_01110000_00000001110000000000001)),
+                                                BitConverter.UInt16BitsToHalf(0b1_00000_1000000100)), // neg subnormal - ULP rounds lower,
                 (BitConverter.Int32BitsToSingle(0x33000000), BitConverter.UInt16BitsToHalf(0b0_00000_000000000)), // (half-precision minimum subnormal / 2) should underflow to zero
             };
 
@@ -616,12 +620,16 @@ namespace System.Tests
                     BitConverter.UInt16BitsToHalf(0b0_11001_0000000100)), // 1027.5 rounds to even
                 (BitConverter.Int64BitsToDouble(0x40900DFFFFFFFFFF),
                     BitConverter.UInt16BitsToHalf(0b0_11001_0000000011)), // 1027.5-ULP rounds down
+                (BitConverter.Int64BitsToDouble(0x40900A0000000000),
+                    BitConverter.UInt16BitsToHalf(0b0_11001_0000000010)), // 1026.5 rounds to even
                 (BitConverter.Int64BitsToDouble(unchecked((long)0xC0900DFFFFFFFFFF)),
                     BitConverter.UInt16BitsToHalf(0b1_11001_0000000011)), // -1027.5+ULP rounds towards zero
                 (BitConverter.Int64BitsToDouble(unchecked((long)0xC0900E0000000000)),
                     BitConverter.UInt16BitsToHalf(0b1_11001_0000000100)), // -1027.5 rounds to even
                 (BitConverter.Int64BitsToDouble(unchecked((long)0xC0900E0000000001)),
                     BitConverter.UInt16BitsToHalf(0b1_11001_0000000100)), // -1027.5-ULP rounds away from zero
+                (BitConverter.Int64BitsToDouble(unchecked((long)0xC0900A0000000000)),
+                    BitConverter.UInt16BitsToHalf(0b1_11001_0000000010)), // -1026.5 rounds to even
                 (BitConverter.Int64BitsToDouble(0x3F001C0000000001),
                     BitConverter.UInt16BitsToHalf(0b0_00000_1000000100)), // subnormal + ULP rounds up
                 (BitConverter.Int64BitsToDouble(0x3F001C0000000001),
@@ -1115,6 +1123,14 @@ namespace System.Tests
             float value = o_value is float floatValue ? floatValue : (float)(Half)o_value;
             Half result = Half.Parse(value.ToString("R"));
             AssertExtensions.Equal((Half)value, result);
+        }
+
+        [Fact] // https://github.com/dotnet/runtime/issues/98841
+        public static void ToString_MaxPrecision()
+        {
+            Half value = BitConverter.Int16BitsToHalf(0x07FF);
+            string str = value.ToString("F24");
+            Assert.Equal("0.000122010707855224609375", str);
         }
 
         public static IEnumerable<object[]> RoundTripFloat_CornerCases()

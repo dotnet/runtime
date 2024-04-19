@@ -18,9 +18,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
         public SharedTestStateBase()
         {
-            BaseDirectory = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "nativeHosting"));
-            _baseDirArtifact = new TestArtifact(BaseDirectory);
-            Directory.CreateDirectory(BaseDirectory);
+            _baseDirArtifact = TestArtifact.Create("nativeHosting");
+            BaseDirectory = _baseDirArtifact.Location;
 
             string nativeHostName = Binaries.GetExeFileNameForCurrentPlatform("nativehost");
             NativeHostPath = Path.Combine(BaseDirectory, nativeHostName);

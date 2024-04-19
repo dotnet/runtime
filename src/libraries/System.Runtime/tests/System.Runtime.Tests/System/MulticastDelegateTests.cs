@@ -67,6 +67,21 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void ArrayDelegates()
+        {
+            // Delegate implementation may use Delegate[] arrays as sentinels. Validate that
+            // the sentinels are not confused with user provided targets.
+
+            Action da = new Delegate[5].MyExtension;
+            Assert.True(da.HasSingleTarget);
+            Assert.Equal(1, da.GetInvocationList().Length);
+
+            Func<int, int> dd = new Delegate[10].GetLength;
+            Assert.True(dd.HasSingleTarget);
+            Assert.Equal(1, dd.GetInvocationList().Length);
+        }
+
+        [Fact]
         public static void CombineReturn()
         {
             Tracker t = new Tracker();
@@ -199,7 +214,7 @@ namespace System.Tests
             {
                 CheckIsSingletonDelegate((D)(expected[i]), (D)(invokeList[i]), target);
             }
-            Assert.Same(combo.Target, expected[expected.Length - 1].Target);
+            Assert.Same(combo.Target, expected[^1].Target);
             Assert.Same(combo.Target, target);
             Assert.Equal(combo.HasSingleTarget, invokeList.Length == 1);
             int count = 0;
@@ -209,6 +224,7 @@ namespace System.Tests
                 count++;
             }
             Assert.Equal(count, invokeList.Length);
+            Assert.Equal(combo.Method, invokeList[^1].Method);
         }
 
         private static void CheckIsSingletonDelegate(D expected, D actual, Tracker target)
@@ -281,6 +297,13 @@ namespace System.Tests
             public string Foo(int x) => new string('A', x);
 
             public string Goo(int x) => new string('A', x);
+        }
+    }
+
+    static class MulticastDelegateTestsExtensions
+    {
+        public static void MyExtension(this Delegate[] delegates)
+        {
         }
     }
 }

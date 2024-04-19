@@ -1524,6 +1524,7 @@ static size_t *sweep_num_blocks;
 
 static volatile size_t num_major_sections_before_sweep;
 static volatile size_t num_major_sections_freed_in_sweep;
+static volatile size_t num_major_sections_survived_in_sweep;
 
 static void
 sgen_worker_clear_free_block_lists (WorkerData *worker)
@@ -1707,6 +1708,7 @@ ensure_block_is_checked_for_sweeping (guint32 block_index, gboolean wait, gboole
 
 		/* FIXME: Do we need the heap boundaries while we do nursery collections? */
 		update_heap_boundaries_for_block (block);
+		SGEN_ATOMIC_ADD_P (num_major_sections_survived_in_sweep, 1);
 	} else {
 		/*
 		 * Blocks without live objects are removed from the
@@ -1842,6 +1844,7 @@ major_sweep (void)
 
 	num_major_sections_before_sweep = num_major_sections;
 	num_major_sections_freed_in_sweep = 0;
+	num_major_sections_survived_in_sweep = 0;
 
 	SGEN_ASSERT (0, !sweep_job, "We haven't finished the last sweep?");
 	if (concurrent_sweep) {
@@ -2317,6 +2320,28 @@ static size_t
 get_num_major_sections (void)
 {
 	return num_major_sections;
+}
+
+// Conservative values for computing trigger size, without needing concurrent sweep to finish
+// As concurrent sweep job advances in execution, these values get closer to the real value.
+// This contains at least the number of blocks determined to be live by sweep job (which increases
+// as sweep progresses) plus any new blocks allocated by the application.
+static size_t
+get_min_live_major_sections (void)
+{
+	// Note that num_major_sections gets decremented for each freed block, so to obtain the real block count
+	// we would need to add back num_major_sections_freed_in_sweep, but this is racy so we are being conservative.
+	if (num_major_sections > num_major_sections_before_sweep)
+		return num_major_sections_survived_in_sweep + (num_major_sections - num_major_sections_before_sweep);
+	else
+		return num_major_sections_survived_in_sweep;
+}
+
+static size_t
+get_max_last_major_survived_sections (void)
+{
+	// num_major_sections_freed_in_sweep increases as sweep progresses.
+	return num_major_sections_before_sweep - num_major_sections_freed_in_sweep;
 }
 
 static size_t
@@ -2886,6 +2911,8 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->ptr_is_from_pinned_alloc = ptr_is_from_pinned_alloc;
 	collector->report_pinned_memory_usage = major_report_pinned_memory_usage;
 	collector->get_num_major_sections = get_num_major_sections;
+	collector->get_min_live_major_sections = get_min_live_major_sections;
+	collector->get_max_last_major_survived_sections = get_max_last_major_survived_sections;
 	collector->get_num_empty_blocks = get_num_empty_blocks;
 	collector->get_bytes_survived_last_sweep = get_bytes_survived_last_sweep;
 	collector->handle_gc_param = major_handle_gc_param;

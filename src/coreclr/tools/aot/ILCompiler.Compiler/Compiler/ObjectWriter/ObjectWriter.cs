@@ -338,6 +338,13 @@ namespace ILCompiler.ObjectWriter
             INodeWithDebugInfo debugNode,
             bool hasSequencePoints);
 
+        private protected virtual void EmitDebugThunkInfo(
+            string methodName,
+            SymbolDefinition methodSymbol,
+            INodeWithDebugInfo debugNode)
+        {
+        }
+
         private protected abstract void EmitDebugSections(IDictionary<string, SymbolDefinition> definedSymbols);
 
         private void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, IObjectDumper dumper, Logger logger)
@@ -490,15 +497,21 @@ namespace ILCompiler.ObjectWriter
                         _userDefinedTypeDescriptor.GetTypeIndex(methodTable.Type, needsCompleteType: true);
                     }
 
-                    if (node is INodeWithDebugInfo debugNode and ISymbolDefinitionNode symbolDefinitionNode and IMethodNode methodNode)
+                    if (node is INodeWithDebugInfo debugNode and ISymbolDefinitionNode symbolDefinitionNode)
                     {
-                        bool hasSequencePoints = debugNode.GetNativeSequencePoints().Any();
-                        uint methodTypeIndex = hasSequencePoints ? _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method) : 0;
                         string methodName = GetMangledName(symbolDefinitionNode);
-
                         if (_definedSymbols.TryGetValue(methodName, out var methodSymbol))
                         {
-                            EmitDebugFunctionInfo(methodTypeIndex, methodName, methodSymbol, debugNode, hasSequencePoints);
+                            if (node is IMethodNode methodNode)
+                            {
+                                bool hasSequencePoints = debugNode.GetNativeSequencePoints().Any();
+                                uint methodTypeIndex = hasSequencePoints ? _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method) : 0;
+                                EmitDebugFunctionInfo(methodTypeIndex, methodName, methodSymbol, debugNode, hasSequencePoints);
+                            }
+                            else
+                            {
+                                EmitDebugThunkInfo(methodName, methodSymbol, debugNode);
+                            }
                         }
                     }
                 }
@@ -526,21 +539,13 @@ namespace ILCompiler.ObjectWriter
 
         public static void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, NodeFactory factory, ObjectWritingOptions options, IObjectDumper dumper, Logger logger)
         {
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
+            var stopwatch = Stopwatch.StartNew();
 
-            if (Environment.GetEnvironmentVariable("DOTNET_USE_LLVM_OBJWRITER") == "1")
-            {
-                LegacyObjectWriter.EmitObject(objectFilePath, nodes, factory, options, dumper, logger);
-            }
-            else
-            {
-                ObjectWriter objectWriter =
-                    factory.Target.IsApplePlatform ? new MachObjectWriter(factory, options) :
-                    factory.Target.OperatingSystem == TargetOS.Windows ? new CoffObjectWriter(factory, options) :
-                    new ElfObjectWriter(factory, options);
-                objectWriter.EmitObject(objectFilePath, nodes, dumper, logger);
-            }
+            ObjectWriter objectWriter =
+                factory.Target.IsApplePlatform ? new MachObjectWriter(factory, options) :
+                factory.Target.OperatingSystem == TargetOS.Windows ? new CoffObjectWriter(factory, options) :
+                new ElfObjectWriter(factory, options);
+            objectWriter.EmitObject(objectFilePath, nodes, dumper, logger);
 
             stopwatch.Stop();
             if (logger.IsVerbose)

@@ -153,6 +153,7 @@ private:
         LONG                m_lock;     // LONG used in interlocked exchange
     };
 
+#ifdef _DEBUG
     enum SpinLockState
     {
         UnInitialized,
@@ -163,7 +164,6 @@ private:
     Volatile<SpinLockState>      m_Initialized; // To verify initialized
                                         // And initialize once
 
-#ifdef _DEBUG
     LOCK_TYPE           m_LockType;     // lock type to track statistics
 
     // Check for dead lock situation.

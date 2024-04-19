@@ -77,15 +77,18 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			DiagnosticContext diagnosticContext = new (Operation.Syntax.GetLocation ());
 			if (context.EnableTrimAnalyzer &&
 				!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope(out _) &&
-				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.UnreferencedCode))
+				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute))
 			{
 				TrimAnalysisVisitor.HandleCall(Operation, OwningSymbol, CalledMethod, Instance, Arguments, diagnosticContext, default, out var _);
 			}
 
 			foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers)
 			{
-				if (requiresAnalyzer.CheckAndCreateRequiresDiagnostic(Operation, CalledMethod, OwningSymbol, context, FeatureContext, out Diagnostic? diag))
-					diagnosticContext.AddDiagnostic(diag);
+				if (requiresAnalyzer.CheckAndCreateRequiresDiagnostic (Operation, CalledMethod, OwningSymbol, context, FeatureContext, out Diagnostic? diag)
+					&& !requiresAnalyzer.IsIntrinsicallyHandled (CalledMethod, Instance, Arguments))
+				{
+					diagnosticContext.AddDiagnostic (diag);
+				}
 			}
 
 			return diagnosticContext.Diagnostics;

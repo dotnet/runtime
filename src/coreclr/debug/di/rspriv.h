@@ -3475,7 +3475,7 @@ public:
      * are passed in, while going through the table we'll undo patches
      * in buffer at the same time
      */
-    HRESULT RefreshPatchTable(CORDB_ADDRESS address = NULL, SIZE_T size = NULL, BYTE buffer[] = NULL);
+    HRESULT RefreshPatchTable(CORDB_ADDRESS address = 0, SIZE_T size = 0, BYTE buffer[] = NULL);
 
     // Find if a patch exists at a given address.
     HRESULT FindPatchByAddress(CORDB_ADDRESS address, bool *patchFound, bool *patchIsUnmanaged);
@@ -3975,9 +3975,9 @@ public:
 
     // CORDB_ADDRESS's are UINT_PTR's (64 bit under HOST_64BIT, 32 bit otherwise)
 #if defined(TARGET_64BIT)
-#define MAX_ADDRESS     (_UI64_MAX)
+#define MAX_ADDRESS     (UINT64_MAX)
 #else
-#define MAX_ADDRESS     (_UI32_MAX)
+#define MAX_ADDRESS     (UINT32_MAX)
 #endif
 #define MIN_ADDRESS     (0x0)
     CORDB_ADDRESS       m_minPatchAddr; //smallest patch in table
@@ -5934,7 +5934,7 @@ public:
     ULONG32 GetColdSize();
 
     // Return true if the Code is split into hot + cold regions.
-    bool HasColdRegion() { return m_rgCodeRegions[kCold].pAddress != NULL; }
+    bool HasColdRegion() { return m_rgCodeRegions[kCold].pAddress != (CORDB_ADDRESS)NULL; }
 
     // Get the number of fixed arguments for this function (the "this"
     // but not varargs)
@@ -7325,7 +7325,8 @@ public:
                     GENERICS_TYPE_TOKEN   exactGenericArgsToken,
                     DWORD                 dwExactGenericArgsTokenIndex,
                     bool                  fVarArgFnx,
-                    CordbReJitILCode *    pReJitCode);
+                    CordbReJitILCode *    pReJitCode,
+                    bool                  fAdjustedIP);
     HRESULT Init();
     virtual ~CordbJITILFrame();
     virtual void Neuter();
@@ -7436,6 +7437,7 @@ public:
 
     CordbILCode* GetOriginalILCode();
     CordbReJitILCode* GetReJitILCode();
+    void AdjustIPAfterException();
 
 private:
     void    RefreshCachedVarArgSigParserIfNeeded();
@@ -7503,6 +7505,7 @@ public:
 
     // if this frame is instrumented with rejit, this will point to the instrumented IL code
     RSSmartPtr<CordbReJitILCode> m_pReJitCode;
+    BOOL m_adjustedIP;
 };
 
 /* ------------------------------------------------------------------------- *
@@ -8403,7 +8406,7 @@ public:
 
     // gets the remote address for the value or returns NULL if none exists
     virtual
-    CORDB_ADDRESS GetAddress() { return NULL; };
+    CORDB_ADDRESS GetAddress() { return (CORDB_ADDRESS)NULL; };
 
     // Gets a value and returns it in dest
     virtual
@@ -8922,7 +8925,7 @@ public:
         FAIL_IF_NEUTERED(this);
         VALIDATE_POINTER_TO_OBJECT_OR_NULL(pAddress, CORDB_ADDRESS *);
 
-        *pAddress = m_pValueHome ? m_pValueHome->GetAddress() : NULL;
+        *pAddress = m_pValueHome ? m_pValueHome->GetAddress() : (CORDB_ADDRESS)NULL;
         return (S_OK);
     }
 
@@ -9167,6 +9170,7 @@ class CordbObjectValue : public CordbValue,
                          public ICorDebugHeapValue3,
                          public ICorDebugHeapValue4,
                          public ICorDebugExceptionObjectValue,
+                         public ICorDebugExceptionObjectValue2,
                          public ICorDebugComObjectValue,
                          public ICorDebugDelegateObjectValue
 {
@@ -9288,6 +9292,11 @@ public:
     // ICorDebugExceptionObjectValue
     //-----------------------------------------------------------
     COM_METHOD EnumerateExceptionCallStack(ICorDebugExceptionObjectCallStackEnum** ppCallStackEnum);
+
+    //-----------------------------------------------------------
+    // ICorDebugExceptionObjectValue2
+    //-----------------------------------------------------------
+    COM_METHOD ForceCatchHandlerFoundEvents(BOOL enableEvents);
 
     //-----------------------------------------------------------
     // ICorDebugComObjectValue

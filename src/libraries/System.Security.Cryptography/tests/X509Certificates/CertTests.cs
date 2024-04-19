@@ -28,6 +28,108 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void PrivateKey_FromCertificate_CanExportPrivate_ECDsa()
+        {
+            using (ECDsa ca = ECDsa.Create(ECCurve.NamedCurves.nistP256))
+            {
+                CertificateRequest req = new("CN=potatos", ca, HashAlgorithmName.SHA256);
+
+                using (X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddDays(3)))
+                using (ECDsa certKey = cert.GetECDsaPrivateKey())
+                {
+                    ECParameters certParameters = certKey.ExportParameters(true);
+                    ECParameters originalParameters = ca.ExportParameters(true);
+                    AssertExtensions.SequenceEqual(originalParameters.D, certParameters.D);
+                }
+            }
+        }
+
+        [Fact]
+        public static void PrivateKey_FromCertificate_CanExportPrivate_RSA()
+        {
+            using (RSA ca = RSA.Create(2048))
+            {
+                CertificateRequest req = new("CN=potatos", ca, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+
+                using (X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddDays(3)))
+                using (RSA certKey = cert.GetRSAPrivateKey())
+                {
+                    RSAParameters certParameters = certKey.ExportParameters(true);
+                    RSAParameters originalParameters = ca.ExportParameters(true);
+                    AssertExtensions.SequenceEqual(originalParameters.P, certParameters.P);
+                    AssertExtensions.SequenceEqual(originalParameters.Q, certParameters.Q);
+                }
+            }
+        }
+
+        [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        public static void PrivateKey_FromCertificate_CanExportPrivate_DSA()
+        {
+            DSAParameters originalParameters = DSATestData.GetDSA1024Params();
+
+            using (DSA ca = DSA.Create())
+            {
+                ca.ImportParameters(originalParameters);
+                DSAX509SignatureGenerator gen = new DSAX509SignatureGenerator(ca);
+                X500DistinguishedName dn = new X500DistinguishedName("CN=potatos");
+
+                CertificateRequest req = new CertificateRequest(
+                    dn,
+                    gen.PublicKey,
+                    HashAlgorithmName.SHA1);
+
+                using (X509Certificate2 cert = req.Create(dn, gen, DateTimeOffset.Now, DateTimeOffset.Now.AddDays(3), [1, 2, 3]))
+                using (X509Certificate2 certWithKey = cert.CopyWithPrivateKey(ca))
+                using (DSA certKey = certWithKey.GetDSAPrivateKey())
+                {
+                    DSAParameters certParameters = certKey.ExportParameters(true);
+                    AssertExtensions.SequenceEqual(originalParameters.X, certParameters.X);
+                }
+            }
+        }
+
+        [Fact]
+        public static void PrivateKey_FromCertificate_CanExportPrivate_ECDiffieHellman()
+        {
+            using (ECDsa ca = ECDsa.Create(ECCurve.NamedCurves.nistP256))
+            using (ECDiffieHellman ecdh = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256))
+            {
+                CertificateRequest issuerRequest = new CertificateRequest(
+                    new X500DistinguishedName("CN=root"),
+                    ca,
+                    HashAlgorithmName.SHA256);
+
+                issuerRequest.CertificateExtensions.Add(
+                    new X509BasicConstraintsExtension(true, false, 0, true));
+
+                CertificateRequest request = new CertificateRequest(
+                    new X500DistinguishedName("CN=potato"),
+                    new PublicKey(ecdh),
+                    HashAlgorithmName.SHA256);
+
+                request.CertificateExtensions.Add(
+                    new X509BasicConstraintsExtension(false, false, 0, true));
+                request.CertificateExtensions.Add(
+                    new X509KeyUsageExtension(X509KeyUsageFlags.KeyAgreement, true));
+
+                DateTimeOffset notBefore = DateTimeOffset.UtcNow;
+                DateTimeOffset notAfter = notBefore.AddDays(30);
+                byte[] serial = [1, 2, 3, 4, 5, 6, 7, 8];
+
+                using (X509Certificate2 issuer = issuerRequest.CreateSelfSigned(notBefore, notAfter))
+                using (X509Certificate2 cert = request.Create(issuer, notBefore, notAfter, serial))
+                using (X509Certificate2 certWithKey = cert.CopyWithPrivateKey(ecdh))
+                using (ECDiffieHellman certKey = certWithKey.GetECDiffieHellmanPrivateKey())
+                {
+                    ECParameters certParameters = certKey.ExportParameters(true);
+                    ECParameters originalParameters = ecdh.ExportParameters(true);
+                    AssertExtensions.SequenceEqual(originalParameters.D, certParameters.D);
+                }
+            }
+        }
+
+        [Fact]
         public static void PublicPrivateKey_IndependentLifetimes_ECDsa()
         {
             X509Certificate2 loaded;
@@ -589,6 +691,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.ThrowsAny<CryptographicException>(() => c.Extensions);
                 Assert.ThrowsAny<CryptographicException>(() => c.PrivateKey);
             }
+        }
+
+        [Fact]
+        public static void EmptyPkcs7ThrowsException()
+        {
+            Assert.ThrowsAny<CryptographicException>(() => new X509Certificate2(TestData.EmptyPkcs7));
         }
 
         [Fact]

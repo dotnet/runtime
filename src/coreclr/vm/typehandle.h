@@ -331,22 +331,6 @@ public:
     // so the direct reference will be stored to the pDest argument. In case of unloadable
     // context, an index to the pinned table will be saved.
     void AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest);
-
-    FORCEINLINE static bool GetManagedClassObjectFromHandleFast(RUNTIMETYPEHANDLE handle, OBJECTREF* pRef)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        // For a non-unloadable context, handle is expected to be either null (is not cached yet)
-        // or be a direct pointer to a frozen RuntimeType object
-
-        if (handle & 1)
-        {
-            // Clear the "is pinned object" bit from the managed reference
-            *pRef = (OBJECTREF)(handle - 1);
-            return true;
-        }
-        return false;
-    }
 #endif
 
     // Similar to IsCanonicalSubtype, but applied to a vector.
@@ -456,13 +440,6 @@ public:
     // The assembly that defined this type (== GetModule()->GetAssembly())
     Assembly * GetAssembly() const;
 
-    // GetDomain on an instantiated type, e.g. C<ty1,ty2> returns the SharedDomain if all the
-    // constituent parts of the type are SharedDomain (i.e. domain-neutral),
-    // and returns an AppDomain if any of the parts are from an AppDomain,
-    // i.e. are domain-bound.  If any of the parts are domain-bound
-    // then they will all belong to the same domain.
-    PTR_BaseDomain GetDomain() const;
-
     PTR_LoaderAllocator GetLoaderAllocator() const;
 
     // Get the class token, assuming the type handle represents a named type,
@@ -525,7 +502,7 @@ public:
 #endif
 
     OBJECTREF GetManagedClassObject() const;
-    OBJECTREF GetManagedClassObjectFast() const;
+    OBJECTREF GetManagedClassObjectIfExists() const;
 
     static TypeHandle MergeArrayTypeHandlesToCommonParent(
         TypeHandle ta, TypeHandle tb);
@@ -654,9 +631,7 @@ inline CHECK CheckPointer(TypeHandle th, IsNullOK ok = NULL_NOT_OK)
 
 /*************************************************************************/
 // Instantiation is representation of generic instantiation.
-// It is simple read-only array of TypeHandles. In NGen, the type handles
-// may be encoded using indirections. That's one reason why it is convenient
-// to have wrapper class that performs the decoding.
+// It is simple read-only array of TypeHandles.
 class Instantiation
 {
 public:
@@ -701,6 +676,14 @@ public:
         _ASSERTE(m_nArgs == 0 || m_pArgs != NULL);
     }
 #endif
+
+    Instantiation& operator=(const Instantiation& inst)
+    {
+        _ASSERTE(this != &inst);
+        m_pArgs = inst.m_pArgs;
+        m_nArgs = inst.m_nArgs;
+        return *this;
+    }
 
     // Return i-th instantiation argument
     TypeHandle operator[](DWORD iArg) const

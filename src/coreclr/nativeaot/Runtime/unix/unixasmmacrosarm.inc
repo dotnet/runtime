@@ -77,13 +77,13 @@ C_FUNC(\Name):
 
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg
         movw \HelperReg, #:lower16:C_FUNC(\Name) - (. + 12)
-        movt \HelperReg, #:upper16:C_FUNC(\Name) - (. + 12)
+        movt \HelperReg, #:upper16:C_FUNC(\Name) - (. + 8)
         add \HelperReg, pc
 .endm
 
 .macro PREPARE_EXTERNAL_VAR_INDIRECT Name, HelperReg
         movw \HelperReg, #:lower16:C_FUNC(\Name) - (. + 12)
-        movt \HelperReg, #:upper16:C_FUNC(\Name) - (. + 12)
+        movt \HelperReg, #:upper16:C_FUNC(\Name) - (. + 8)
         add \HelperReg, pc
         ldr \HelperReg, [\HelperReg]
 .endm
@@ -276,8 +276,12 @@ C_FUNC(\Name):
 .endm
 
 .macro INLINE_GETTHREAD
+#ifdef FEATURE_EMULATED_TLS
+        bl C_FUNC(RhpGetThread)
+#else
         // Inlined version of call C_FUNC(RhpGetThread)
         INLINE_GET_TLS_VAR tls_CurrentThread
+#endif
 .endm
 
 .macro INLINE_THREAD_UNHIJACK threadReg, trashReg1, trashReg2

@@ -184,6 +184,9 @@
   <data name="DiscardOnlyVoid" xml:space="preserve">
     <value>'JSType.Discard' could be only used with void return argument.</value>
   </data>
+  <data name="DiscardNoWaitOnlyVoid" xml:space="preserve">
+    <value>'JSType.DiscardNoWait' could be only used with void returning method.</value>
+  </data>
   <data name="FuncArgumentNotSupported" xml:space="preserve">
     <value>Type {0} is not supported as argument of marshaled function.</value>
     <comment>{0} is a type of the argument</comment>

@@ -89,7 +89,7 @@ class OffsetsTool:
 
 		if "wasm" in args.abi:
 			if args.wasi_path != None:
-				self.sys_includes = [args.wasi_path + "/share/wasi-sysroot/include", args.wasi_path + "/lib/clang/16/include", args.mono_path + "/wasi/mono-include"]
+				self.sys_includes = [args.wasi_path + "/share/wasi-sysroot/include", args.wasi_path + "/lib/clang/17/include", args.mono_path + "/wasi/mono-include"]
 				self.target = Target ("TARGET_WASI", None, ["TARGET_WASM"] + WASI_DEFINES)
 				self.target_args += ["-target", args.abi]
 			else:
@@ -245,7 +245,6 @@ class OffsetsTool:
 			"MonoArrayBounds",
 			"MonoSafeHandle",
 			"MonoHandleRef",
-			"MonoComInteropProxy",
 			"MonoString",
 			"MonoException",
 			"MonoTypedRef",

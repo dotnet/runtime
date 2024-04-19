@@ -3095,14 +3095,22 @@ namespace System.Net.Sockets
             ArgumentNullException.ThrowIfNull(e);
 
             EndPoint? endPointSnapshot = e.RemoteEndPoint;
-            if (e._socketAddress == null)
-            {
-                if (endPointSnapshot == null)
-                {
-                    throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "e.RemoteEndPoint"), nameof(e));
-                }
 
-                // Prepare SocketAddress
+            // RemoteEndPoint should be set unless somebody used SendTo with their own SA.
+            // In that case RemoteEndPoint will be null and we take provided SA as given.
+            if (endPointSnapshot == null && e._socketAddress == null)
+            {
+                throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "e.RemoteEndPoint"), nameof(e));
+            }
+
+            if (e._socketAddress != null && endPointSnapshot is IPEndPoint ipep && e._socketAddress.Family == endPointSnapshot?.AddressFamily)
+            {
+                // we have matching SocketAddress. Since this is only used internally, it is ok to overwrite it without
+                ipep.Serialize(e._socketAddress.Buffer.Span);
+            }
+            else if (endPointSnapshot != null)
+            {
+                // Prepare new SocketAddress
                 e._socketAddress = Serialize(ref endPointSnapshot);
             }
 

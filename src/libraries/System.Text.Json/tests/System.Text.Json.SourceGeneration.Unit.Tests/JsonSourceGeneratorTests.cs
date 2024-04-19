@@ -10,6 +10,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
     [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/71962", ~RuntimeConfiguration.Release)]
+    [SkipOnMono("https://github.com/dotnet/runtime/issues/92467")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotX86Process))] // https://github.com/dotnet/runtime/issues/71962
     public class GeneratorTests
     {
         [Fact]
@@ -795,5 +797,32 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CompilationHelper.RunJsonSourceGenerator(compilation);
         }
 #endif
+
+        [Fact]
+        public void FastPathWithReservedKeywordPropertyNames_CompilesSuccessfully()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/98050
+
+            string source = """
+                using System.Text.Json.Serialization;
+
+                public class Model
+                {
+                    public string type { get; set; }
+                    public string alias { get; set; }
+                    public string @class { get; set; }
+                    public string @struct { get; set; }
+                }
+
+                [JsonSourceGenerationOptions(DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
+                [JsonSerializable(typeof(Model))]
+                internal partial class ModelContext : JsonSerializerContext
+                {
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            CompilationHelper.RunJsonSourceGenerator(compilation);
+        }
     }
 }

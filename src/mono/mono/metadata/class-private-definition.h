@@ -66,12 +66,7 @@ struct _MonoClass {
 	guint has_ref_fields  : 1; /* it has byref fields */
 	guint has_static_refs : 1; /* it has static fields that are GC-tracked */
 	guint no_special_static_fields : 1; /* has no thread/context static fields */
-	/* directly or indirectly derives from ComImport attributed class.
-	 * this means we need to create a proxy for instances of this class
-	 * for COM Interop. set this flag on loading so all we need is a quick check
-	 * during object creation rather than having to traverse supertypes
-	 */
-	guint is_com_object : 1;
+
 	guint nested_classes_inited : 1; /* Whenever nested_class is initialized */
 
 	/* next byte*/
@@ -104,7 +99,8 @@ struct _MonoClass {
 	guint16    *interface_offsets_packed;
 	guint8     *interface_bitmap;
 
-	gint32 inlinearray_value; /* System.Runtime.CompilerServices.InlineArrayAttribute length value */
+	gint32      inlinearray_value; /* System.Runtime.CompilerServices.InlineArrayAttribute length value */
+	guint       name_hash;
 
 	MonoClass **interfaces;
 

@@ -477,8 +477,6 @@ public:
 
     InstantiatedMethodDesc* AsInstantiatedMethodDesc() const;
 
-    BaseDomain *GetDomain();
-
 #ifdef FEATURE_CODE_VERSIONING
     CodeVersionManager* GetCodeVersionManager();
 #endif
@@ -787,7 +785,7 @@ public:
         return IsIL() && !IsUnboxingStub() && GetRVA();
     }
 
-    COR_ILMETHOD* GetILHeader(BOOL fAllowOverrides = FALSE);
+    COR_ILMETHOD* GetILHeader();
 
     BOOL HasStoredSig()
     {
@@ -1370,7 +1368,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return GetNativeCode() != NULL;
+        return GetNativeCode() != (PCODE)0;
     }
 
     // Perf warning: takes the CodeVersionManagerLock on every call
@@ -1378,10 +1376,10 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return GetNativeCodeAnyVersion() != NULL;
+        return GetNativeCodeAnyVersion() != (PCODE)0;
     }
 
-    BOOL SetNativeCodeInterlocked(PCODE addr, PCODE pExpected = NULL);
+    BOOL SetNativeCodeInterlocked(PCODE addr, PCODE pExpected = 0);
 
     PTR_PCODE GetAddrOfNativeCodeSlot();
 
@@ -2164,7 +2162,7 @@ public:
         }
         CONTRACTL_END;
 
-        if (GetTemporaryEntryPoints() == NULL)
+        if (GetTemporaryEntryPoints() == (TADDR)0)
             CreateTemporaryEntryPoints(pLoaderAllocator, pamTracker);
     }
 
@@ -2358,7 +2356,7 @@ public:
     bool HasStoredMethodSig(void)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_pSig != NULL;
+        return m_pSig != 0;
     }
     PCCOR_SIGNATURE GetStoredMethodSig(DWORD* sigLen = NULL)
     {

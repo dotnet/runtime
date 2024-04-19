@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 {
-    public class AdditionalDeps : DependencyResolutionBase, IClassFixture<AdditionalDeps.SharedTestState>
+    public class AdditionalDeps : IClassFixture<AdditionalDeps.SharedTestState>
     {
         private SharedTestState SharedState { get; }
 
@@ -41,13 +41,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         [InlineData("4.1.2-preview.2",  new string[] { "4.0.0", "4.1.2", "4.2.0" },     null)]
         public void DepsDirectory(string fxVersion, string[] versions, string usedVersion)
         {
-            string additionalDepsDirectory = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(SharedState.Location, "additionalDeps"));
-            using (TestArtifact artifact = new TestArtifact(additionalDepsDirectory))
+            using (TestArtifact additionalDeps = TestArtifact.Create("additionalDeps"))
             {
                 string depsJsonName = Path.GetFileName(SharedState.AdditionalDepsComponent.DepsJson);
                 foreach (string version in versions)
                 {
-                    string path = Path.Combine(additionalDepsDirectory, "shared", MicrosoftNETCoreApp, version);
+                    string path = Path.Combine(additionalDeps.Location, "shared", Constants.MicrosoftNETCoreApp, version);
                     Directory.CreateDirectory(path);
                     File.Copy(
                         SharedState.AdditionalDepsComponent.DepsJson,
@@ -61,12 +60,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     // Make a copy of the app and update its framework version
                     app = SharedState.FrameworkReferenceApp.Copy();
                     RuntimeConfig.FromFile(app.RuntimeConfigJson)
-                        .RemoveFramework(MicrosoftNETCoreApp)
-                        .WithFramework(MicrosoftNETCoreApp, fxVersion)
+                        .RemoveFramework(Constants.MicrosoftNETCoreApp)
+                        .WithFramework(Constants.MicrosoftNETCoreApp, fxVersion)
                         .Save();
                 }
 
-                CommandResult result = SharedState.DotNetWithNetCoreApp.Exec(Constants.AdditionalDeps.CommandLineArgument, additionalDepsDirectory, app.AppDll)
+                CommandResult result = SharedState.DotNetWithNetCoreApp.Exec(Constants.AdditionalDeps.CommandLineArgument, additionalDeps.Location, app.AppDll)
                     .EnableTracingAndCaptureOutputs()
                     .Execute();
 
@@ -77,7 +76,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 }
                 else
                 {
-                    result.Should().HaveUsedAdditionalDeps(Path.Combine(additionalDepsDirectory, "shared", MicrosoftNETCoreApp, usedVersion, depsJsonName));
+                    result.Should().HaveUsedAdditionalDeps(Path.Combine(additionalDeps.Location, "shared", Constants.MicrosoftNETCoreApp, usedVersion, depsJsonName));
                 }
             }
         }
@@ -138,7 +137,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             }
         }
 
-        public class SharedTestState : DependencyResolutionBase.SharedTestStateBase
+        public class SharedTestState : SharedTestStateBase
         {
             public DotNetCli DotNetWithNetCoreApp { get; }
 
@@ -155,7 +154,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
                 AdditionalDepsComponent = CreateComponentWithNoDependencies();
 
-                FrameworkReferenceApp = CreateFrameworkReferenceApp(MicrosoftNETCoreApp, NetCoreAppVersion);
+                FrameworkReferenceApp = CreateFrameworkReferenceApp(Constants.MicrosoftNETCoreApp, NetCoreAppVersion);
 
                 // Copy dependency next to app
                 File.Copy(AdditionalDepsComponent.AppDll, Path.Combine(FrameworkReferenceApp.Location, $"{AdditionalDepsComponent.AssemblyName}.dll"));

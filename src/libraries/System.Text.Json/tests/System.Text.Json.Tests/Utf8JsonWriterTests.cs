@@ -1442,7 +1442,7 @@ namespace System.Text.Json.Tests
 
             json.Flush();
 
-            return HandleIndent(Encoding.UTF8.GetString(ms.ToArray()), options);
+            return HandleFormatting(Encoding.UTF8.GetString(ms.ToArray()), options);
         }
 
         [Theory]
@@ -2683,12 +2683,12 @@ namespace System.Text.Json.Tests
             for (int i = 0; i < 100; i++)
             {
                 if (options.Indented)
-                    sb.Append(Environment.NewLine);
+                    sb.Append(options.NewLine);
                 sb.Append("]");
             }
             sb.Append(",");
             if (options.Indented)
-                sb.Append(Environment.NewLine);
+                sb.Append(options.NewLine);
             sb.Append("[]");
 
             JsonTestHelper.AssertContents(sb.ToString(), output);
@@ -2722,7 +2722,7 @@ namespace System.Text.Json.Tests
 
             json.Flush();
 
-            string expectedStr = HandleIndent(stringWriter.ToString(), options);
+            string expectedStr = HandleFormatting(stringWriter.ToString(), options);
 
             using var jsonUtf8 = new Utf8JsonWriter(output, options);
             jsonUtf8.WriteStartObject();
@@ -3072,6 +3072,7 @@ namespace System.Text.Json.Tests
         [Theory]
         [MemberData(nameof(JsonOptions_TestData))]
         [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", ~RuntimeConfiguration.Release)]
+        [OuterLoop("Too slow", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         public void Writing3MBBase64Bytes(JsonWriterOptions options)
         {
             byte[] value = new byte[3 * 1024 * 1024];
@@ -3082,7 +3083,7 @@ namespace System.Text.Json.Tests
             Base64.EncodeToUtf8(value, base64StringUtf8, out _, out int bytesWritten);
             string expectedValue = Encoding.UTF8.GetString(base64StringUtf8.AsSpan(0, bytesWritten).ToArray());
 
-            string expectedJson = options.Indented ? $"{{{Environment.NewLine}{GetIndentText(options)}\"foo\": \"{expectedValue}\"{Environment.NewLine}}}" : $"{{\"foo\":\"{expectedValue}\"}}";
+            string expectedJson = options.Indented ? $"{{{options.NewLine}{GetIndentText(options)}\"foo\": \"{expectedValue}\"{options.NewLine}}}" : $"{{\"foo\":\"{expectedValue}\"}}";
 
             var output = new ArrayBufferWriter<byte>(1024);
 
@@ -3558,14 +3559,14 @@ namespace System.Text.Json.Tests
 
             Assert.Equal(0, jsonUtf8.BytesCommitted);
             if (options.Indented)
-                Assert.Equal(26 + options.IndentSize + Environment.NewLine.Length + 1, jsonUtf8.BytesPending); // new lines, indentation, white space
+                Assert.Equal(26 + options.IndentSize + options.NewLine.Length + 1, jsonUtf8.BytesPending); // new lines, indentation, white space
             else
                 Assert.Equal(26, jsonUtf8.BytesPending);
 
             jsonUtf8.Flush();
 
             if (options.Indented)
-                Assert.Equal(26 + options.IndentSize + Environment.NewLine.Length + 1, jsonUtf8.BytesCommitted); // new lines, indentation, white space
+                Assert.Equal(26 + options.IndentSize + options.NewLine.Length + 1, jsonUtf8.BytesCommitted); // new lines, indentation, white space
             else
                 Assert.Equal(26, jsonUtf8.BytesCommitted);
 
@@ -3575,19 +3576,19 @@ namespace System.Text.Json.Tests
             jsonUtf8.WriteEndObject();
 
             if (options.Indented)
-                Assert.Equal(26 + options.IndentSize + Environment.NewLine.Length + 1, jsonUtf8.BytesCommitted);
+                Assert.Equal(26 + options.IndentSize + options.NewLine.Length + 1, jsonUtf8.BytesCommitted);
             else
                 Assert.Equal(26, jsonUtf8.BytesCommitted);
 
             if (options.Indented)
-                Assert.Equal(27 + options.IndentSize + (2 * Environment.NewLine.Length) + 1, jsonUtf8.BytesPending); // new lines, indentation, white space
+                Assert.Equal(27 + options.IndentSize + (2 * options.NewLine.Length) + 1, jsonUtf8.BytesPending); // new lines, indentation, white space
             else
                 Assert.Equal(27, jsonUtf8.BytesPending);
 
             jsonUtf8.Flush();
 
             if (options.Indented)
-                Assert.Equal(53 + (2 * options.IndentSize) + (3 * Environment.NewLine.Length) + (1 * 2), jsonUtf8.BytesCommitted); // new lines, indentation, white space
+                Assert.Equal(53 + (2 * options.IndentSize) + (3 * options.NewLine.Length) + (1 * 2), jsonUtf8.BytesCommitted); // new lines, indentation, white space
             else
                 Assert.Equal(53, jsonUtf8.BytesCommitted);
 
@@ -3675,14 +3676,14 @@ namespace System.Text.Json.Tests
 
             Assert.Equal(0, jsonUtf8.BytesCommitted);
             if (options.Indented)
-                Assert.Equal(17 + options.IndentSize + Environment.NewLine.Length + 1, jsonUtf8.BytesPending); // new lines, indentation, white space
+                Assert.Equal(17 + options.IndentSize + options.NewLine.Length + 1, jsonUtf8.BytesPending); // new lines, indentation, white space
             else
                 Assert.Equal(17, jsonUtf8.BytesPending);
 
             jsonUtf8.Flush();
 
             if (options.Indented)
-                Assert.Equal(17 + options.IndentSize + Environment.NewLine.Length + 1, jsonUtf8.BytesCommitted); // new lines, indentation, white space
+                Assert.Equal(17 + options.IndentSize + options.NewLine.Length + 1, jsonUtf8.BytesCommitted); // new lines, indentation, white space
             else
                 Assert.Equal(17, jsonUtf8.BytesCommitted);
 
@@ -3692,19 +3693,19 @@ namespace System.Text.Json.Tests
             jsonUtf8.WriteEndObject();
 
             if (options.Indented)
-                Assert.Equal(17 + options.IndentSize + Environment.NewLine.Length + 1, jsonUtf8.BytesCommitted);
+                Assert.Equal(17 + options.IndentSize + options.NewLine.Length + 1, jsonUtf8.BytesCommitted);
             else
                 Assert.Equal(17, jsonUtf8.BytesCommitted);
 
             if (options.Indented)
-                Assert.Equal(18 + options.IndentSize + (2 * Environment.NewLine.Length) + 1, jsonUtf8.BytesPending); // new lines, indentation, white space
+                Assert.Equal(18 + options.IndentSize + (2 * options.NewLine.Length) + 1, jsonUtf8.BytesPending); // new lines, indentation, white space
             else
                 Assert.Equal(18, jsonUtf8.BytesPending);
 
             jsonUtf8.Flush();
 
             if (options.Indented)
-                Assert.Equal(35 + (2 * options.IndentSize) + (3 * Environment.NewLine.Length) + (1 * 2), jsonUtf8.BytesCommitted); // new lines, indentation, white space
+                Assert.Equal(35 + (2 * options.IndentSize) + (3 * options.NewLine.Length) + (1 * 2), jsonUtf8.BytesCommitted); // new lines, indentation, white space
             else
                 Assert.Equal(35, jsonUtf8.BytesCommitted);
 
@@ -4078,7 +4079,7 @@ namespace System.Text.Json.Tests
 
             json.Flush();
 
-            return HandleIndent(Encoding.UTF8.GetString(ms.ToArray()), options);
+            return HandleFormatting(Encoding.UTF8.GetString(ms.ToArray()), options);
         }
 
         [Theory]
@@ -4421,6 +4422,7 @@ namespace System.Text.Json.Tests
 
         [Theory]
         [MemberData(nameof(JsonOptions_TestData))]
+        [OuterLoop("Too slow", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         public void EscapeCharacters(JsonWriterOptions options)
         {
             // Do not include surrogate pairs.
@@ -5303,6 +5305,7 @@ namespace System.Text.Json.Tests
         [Theory]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [MemberData(nameof(WriteValue_TestData))]
+        [OuterLoop("Too slow", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         public void WriteNumbers(JsonWriterOptions options, string keyString)
         {
             var random = new Random(42);
@@ -6970,7 +6973,7 @@ namespace System.Text.Json.Tests
 
             json.Flush();
 
-            return HandleIndent(Encoding.UTF8.GetString(ms.ToArray()), options);
+            return HandleFormatting(Encoding.UTF8.GetString(ms.ToArray()), options);
         }
 
         private static string GetBase64ExpectedString(JsonWriterOptions options, string propertyName, byte[] value)
@@ -6998,7 +7001,7 @@ namespace System.Text.Json.Tests
 
             json.Flush();
 
-            return HandleIndent(Encoding.UTF8.GetString(ms.ToArray()), options);
+            return HandleFormatting(Encoding.UTF8.GetString(ms.ToArray()), options);
         }
 
         private static string GetCommentInArrayExpectedString(JsonWriterOptions options, string comment)
@@ -7032,7 +7035,7 @@ namespace System.Text.Json.Tests
             json.WriteComment(comment);
             json.Flush();
 
-            return HandleIndent(Encoding.UTF8.GetString(ms.ToArray()), options);
+            return HandleFormatting(Encoding.UTF8.GetString(ms.ToArray()), options);
         }
 
         private static string GetCommentInObjectExpectedString(JsonWriterOptions options, string comment)
@@ -7098,7 +7101,7 @@ namespace System.Text.Json.Tests
             json.WriteComment(comment);
             json.Flush();
 
-            return HandleIndent(Encoding.UTF8.GetString(ms.ToArray()), options);
+            return HandleFormatting(Encoding.UTF8.GetString(ms.ToArray()), options);
         }
 
         private static string GetStringsExpectedString(JsonWriterOptions options, string value)
@@ -7118,7 +7121,7 @@ namespace System.Text.Json.Tests
 
             json.Flush();
 
-            return HandleIndent(Encoding.UTF8.GetString(ms.ToArray()), options);
+            return HandleFormatting(Encoding.UTF8.GetString(ms.ToArray()), options);
         }
 
         private static string GetEscapedExpectedString(JsonWriterOptions options, string propertyName, string value, StringEscapeHandling escaping, bool escape = true)
@@ -7136,7 +7139,7 @@ namespace System.Text.Json.Tests
                 json.WriteEnd();
 
                 json.Flush();
-                return HandleIndent(stringWriter.ToString(), options);
+                return HandleFormatting(stringWriter.ToString(), options);
             }
         }
 
@@ -7160,7 +7163,7 @@ namespace System.Text.Json.Tests
 
             json.Flush();
 
-            return HandleIndent(Encoding.UTF8.GetString(ms.ToArray()), options);
+            return HandleFormatting(Encoding.UTF8.GetString(ms.ToArray()), options);
         }
 
         private static string GetStartEndExpectedString(JsonWriterOptions options)
@@ -7180,7 +7183,7 @@ namespace System.Text.Json.Tests
 
             json.Flush();
 
-            return HandleIndent(Encoding.UTF8.GetString(ms.ToArray()), options);
+            return HandleFormatting(Encoding.UTF8.GetString(ms.ToArray()), options);
         }
 
         private static string GetStartEndWithPropertyArrayExpectedString(JsonWriterOptions options)
@@ -7201,7 +7204,7 @@ namespace System.Text.Json.Tests
 
             json.Flush();
 
-            return HandleIndent(Encoding.UTF8.GetString(ms.ToArray()), options);
+            return HandleFormatting(Encoding.UTF8.GetString(ms.ToArray()), options);
         }
 
         private static string GetStartEndWithPropertyArrayExpectedString(string key, JsonWriterOptions options, bool escape = false)
@@ -7223,7 +7226,7 @@ namespace System.Text.Json.Tests
 
             json.Flush();
 
-            return HandleIndent(Encoding.UTF8.GetString(ms.ToArray()), options);
+            return HandleFormatting(Encoding.UTF8.GetString(ms.ToArray()), options);
         }
 
         private static string GetStartEndWithPropertyObjectExpectedString(JsonWriterOptions options)
@@ -7244,7 +7247,7 @@ namespace System.Text.Json.Tests
 
             json.Flush();
 
-            return HandleIndent(Encoding.UTF8.GetString(ms.ToArray()), options);
+            return HandleFormatting(Encoding.UTF8.GetString(ms.ToArray()), options);
         }
 
         private static string GetStartEndWithPropertyObjectExpectedString(string key, JsonWriterOptions options, bool escape = false)
@@ -7266,7 +7269,7 @@ namespace System.Text.Json.Tests
 
             json.Flush();
 
-            return HandleIndent(Encoding.UTF8.GetString(ms.ToArray()), options);
+            return HandleFormatting(Encoding.UTF8.GetString(ms.ToArray()), options);
         }
 
         private static string GetArrayWithPropertyExpectedString(JsonWriterOptions options)
@@ -7286,7 +7289,7 @@ namespace System.Text.Json.Tests
             json.WriteEndObject();
             json.Flush();
 
-            return HandleIndent(Encoding.UTF8.GetString(ms.ToArray()), options);
+            return HandleFormatting(Encoding.UTF8.GetString(ms.ToArray()), options);
         }
 
         private static string GetBooleanExpectedString(JsonWriterOptions options, string keyString, bool value, bool escape = false)
@@ -7316,7 +7319,7 @@ namespace System.Text.Json.Tests
 
             json.Flush();
 
-            return HandleIndent(Encoding.UTF8.GetString(ms.ToArray()), options);
+            return HandleFormatting(Encoding.UTF8.GetString(ms.ToArray()), options);
         }
 
         private static string GetNullExpectedString(JsonWriterOptions options, string keyString, bool escape = false)
@@ -7346,7 +7349,7 @@ namespace System.Text.Json.Tests
 
             json.Flush();
 
-            return HandleIndent(Encoding.UTF8.GetString(ms.ToArray()), options);
+            return HandleFormatting(Encoding.UTF8.GetString(ms.ToArray()), options);
         }
 
         private static string GetPropertyExpectedString<T>(JsonWriterOptions options, T value)
@@ -7366,7 +7369,7 @@ namespace System.Text.Json.Tests
 
             json.Flush();
 
-            return HandleIndent(sb.ToString(), options);
+            return HandleFormatting(sb.ToString(), options);
         }
 
         private static string GetNumbersExpectedString(JsonWriterOptions options, string keyString, int[] ints, uint[] uints, long[] longs, ulong[] ulongs, float[] floats, double[] doubles, decimal[] decimals, bool escape = false)
@@ -7432,7 +7435,7 @@ namespace System.Text.Json.Tests
 
             json.Flush();
 
-            return HandleIndent(Encoding.UTF8.GetString(ms.ToArray()), options);
+            return HandleFormatting(Encoding.UTF8.GetString(ms.ToArray()), options);
         }
 
         private static string GetExpectedString_RelaxedEscaping(bool prettyPrint, string keyString)
@@ -7492,7 +7495,7 @@ namespace System.Text.Json.Tests
 
             json.Flush();
 
-            return HandleIndent(Encoding.UTF8.GetString(ms.ToArray()), options);
+            return HandleFormatting(Encoding.UTF8.GetString(ms.ToArray()), options);
         }
 
         private static string GetNumbersExpectedString<T>(JsonWriterOptions options, int numberOfElements, T value)
@@ -7514,7 +7517,7 @@ namespace System.Text.Json.Tests
 
             json.Flush();
 
-            return HandleIndent(sb.ToString(), options);
+            return HandleFormatting(sb.ToString(), options);
         }
 
         private static string GetDatesExpectedString(JsonWriterOptions options, string keyString, DateTime[] dates, bool escape = false)
@@ -7546,7 +7549,7 @@ namespace System.Text.Json.Tests
 
             json.Flush();
 
-            return HandleIndent(Encoding.UTF8.GetString(ms.ToArray()), options);
+            return HandleFormatting(Encoding.UTF8.GetString(ms.ToArray()), options);
         }
 
         private static string GetDatesExpectedString(JsonWriterOptions options, string keyString, DateTimeOffset[] dates, bool escape = false)
@@ -7578,7 +7581,7 @@ namespace System.Text.Json.Tests
 
             json.Flush();
 
-            return HandleIndent(Encoding.UTF8.GetString(ms.ToArray()), options);
+            return HandleFormatting(Encoding.UTF8.GetString(ms.ToArray()), options);
         }
 
         private static void CompensateWhitespaces(bool prettyPrint, JsonTextWriter json, TextWriter streamWriter, int whitespaceCount = 1)
@@ -7599,9 +7602,16 @@ namespace System.Text.Json.Tests
             }
         }
 
-        private static string HandleIndent(string text, JsonWriterOptions options)
+        private static string HandleFormatting(string text, JsonWriterOptions options)
         {
-            return text.Replace("  ", GetIndentText(options));
+            var normalized = text.Replace("  ", GetIndentText(options));
+
+            if (options.NewLine != Environment.NewLine)
+            {
+                normalized = normalized.Replace(Environment.NewLine, options.NewLine);
+            }
+
+            return normalized;
         }
 
         private static string GetIndentText(JsonWriterOptions options) => new(options.IndentCharacter, options.IndentSize);
@@ -7628,13 +7638,15 @@ namespace System.Text.Json.Tests
                    from skipValidation in new[] { true, false }
                    from indentCharacter in indented ? new char?[] { null, ' ', '\t' } : []
                    from indentSize in indented ? new int?[] { null, 0, 1, 2, 127 } : []
-                   select CreateOptions(indented, indentCharacter, indentSize, skipValidation);
+                   from newLine in indented ? new string?[] { null, "\n", "\r\n" } : []
+                   select CreateOptions(indented, indentCharacter, indentSize, skipValidation, newLine);
 
-            static JsonWriterOptions CreateOptions(bool indented, char? indentCharacter, int? indentSize, bool skipValidation)
+            static JsonWriterOptions CreateOptions(bool indented, char? indentCharacter, int? indentSize, bool skipValidation, string? newLine)
             {
                 var options = new JsonWriterOptions { Indented = indented, SkipValidation = skipValidation };
                 if (indentCharacter is not null) options.IndentCharacter = (char)indentCharacter;
                 if (indentSize is not null) options.IndentSize = (int)indentSize;
+                if (newLine is not null) options.NewLine = newLine;
                 return options;
             }
         }

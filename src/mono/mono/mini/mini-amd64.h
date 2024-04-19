@@ -552,7 +552,7 @@ typedef union _UNWIND_CODE {
         guchar CodeOffset;
         guchar UnwindOp : 4;
         guchar OpInfo   : 4;
-    };
+    } UnwindCode;
     gushort FrameOffset;
 } UNWIND_CODE, *PUNWIND_CODE;
 

@@ -165,9 +165,6 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
     fi
     ReleaseLock
   fi
-
-  export DOTNET_ZapRequire=$(ZapRequire)
-  export DOTNET_ZapRequireList=$(AssemblyName)
 fi
         ]]>
       </CrossgenBashScript>
@@ -339,9 +336,6 @@ if defined RunCrossGen2 (
         ECHO R2RDump failed with exitcode - !R2RDumpStatus!
         Exit /b 1
     )
-
-  set DOTNET_ZapRequire=$(ZapRequire)
-  set DOTNET_ZapRequireList=$(AssemblyName)
 )
         ]]>
       </CrossgenBatchScript>

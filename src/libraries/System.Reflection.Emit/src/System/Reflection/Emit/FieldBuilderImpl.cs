@@ -74,8 +74,14 @@ namespace System.Reflection.Emit
                     {
                         underlyingType = enumBldr.GetEnumUnderlyingType();
 
-                        if (sourceType != enumBldr._typeBuilder.UnderlyingSystemType && sourceType != underlyingType)
+                        if (sourceType != enumBldr._typeBuilder.UnderlyingSystemType &&
+                            sourceType != underlyingType &&
+                            // If the source type is an enum, should not throw when the underlying types match
+                            sourceType.IsEnum &&
+                            sourceType.GetEnumUnderlyingType() != underlyingType)
+                        {
                             throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
+                        }
                     }
                     else if (destinationType is TypeBuilderImpl typeBldr)
                     {

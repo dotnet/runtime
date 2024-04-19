@@ -1,0 +1,3 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)..\Sdk\Sdk.targets" />
+</Project>

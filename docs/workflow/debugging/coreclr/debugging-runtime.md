@@ -150,7 +150,7 @@ It might also be the case that you would need the latest changes in SOS, or you'
 **NOTE**: Only `lldb` is supported to use with SOS. You can also use `gdb`, `cgdb`, or other debuggers, but you might not have access to SOS.
 
 1. Perform a build of the _clr_ subset of the runtime repo.
-2. Start lldb passing `corerun`, the app to run (e.g. `HelloWorld.dll`), and any arguments this app might need: `lldb /path/to/corerun /path/to/app.dll <app args go here>`
+2. Start lldb passing `corerun`, the app to run (e.g. `HelloWorld.dll`), and any arguments this app might need: `lldb -- /path/to/corerun /path/to/app.dll <app args go here>`
 3. If you're using the installed version of SOS, you can skip this step. If you built SOS manually, you have to load it before starting the debugging session: `plugin load /path/to/built/sos/libsosplugin.so`. Note that `.so` is for Linux, and `.dylib` is for macOS. You can find more information in the diagnostics repo [private sos build doc](https://github.com/dotnet/diagnostics/blob/main/documentation/using-sos-private-build.md).
 4. Launch program: `process launch -s`
 5. To stop breaks on _SIGUSR1_ signals used by the runtime run the following command: `process handle -s false SIGUSR1`

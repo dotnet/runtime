@@ -315,5 +315,6 @@ private:
     LPCUTF8         m_strCookie;
 };
 
+extern "C" void QCALLTYPE CustomMarshaler_GetMarshalerObject(CustomMarshalerHelper* pCMHelper, QCall::ObjectHandleOnStack retObject);
 
 #endif // _CUSTOMMARSHALERINFO_H_

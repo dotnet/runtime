@@ -536,6 +536,61 @@ struct DebuggerPendingFuncEval
 typedef DPTR(struct DebuggerPendingFuncEval) PTR_DebuggerPendingFuncEval;
 
 /* ------------------------------------------------------------------------ *
+ * SHash to hold weak object handles of exceptions with ForceCatchHandlerFound equal to true
+ * ------------------------------------------------------------------------ */
+#ifndef DACCESS_COMPILE
+class EMPTY_BASES_DECL ForceCatchHandlerFoundSHashTraits : public DefaultSHashTraits<OBJECTHANDLE>
+{
+    public:
+        typedef OBJECTHANDLE element_t;
+        typedef OBJECTHANDLE key_t;
+        static const bool s_supports_autoremove = true;
+        static const bool s_NoThrow = false;
+        static const bool s_RemovePerEntryCleanupAction = true;
+
+        static BOOL Equals(const OBJECTHANDLE &e, const OBJECTHANDLE &f)
+        {
+            return ObjectFromHandle(e) == ObjectFromHandle(f);
+        }
+        static OBJECTHANDLE GetKey(const OBJECTHANDLE &e)
+        {
+            return e;
+        }
+        static INT32 Hash(const OBJECTHANDLE &e)
+        {
+            return ObjectFromHandle(e)->GetHashCodeEx();
+        }
+        static bool ShouldDelete(const OBJECTHANDLE &e)
+        {
+            return ObjectHandleIsNull(e);
+        }
+        static OBJECTHANDLE Null()
+        {
+            OBJECTHANDLE e = (OBJECTHANDLE)(TADDR)0;
+            return e;
+        }
+        static bool IsNull(const OBJECTHANDLE &e)
+        {
+            return e == (OBJECTHANDLE)(TADDR)0;
+        }
+        static OBJECTHANDLE Deleted()
+        {
+            OBJECTHANDLE e = (OBJECTHANDLE)(TADDR)-1;
+            return e;
+        }
+        static bool IsDeleted(const OBJECTHANDLE &e)
+        {
+            return e == (OBJECTHANDLE)(TADDR)-1;
+        }
+        static void OnRemovePerEntryCleanupAction(const OBJECTHANDLE &e)
+        {
+            DestroyLongWeakHandle(e);
+        }
+};
+typedef SHash<ForceCatchHandlerFoundSHashTraits> ForceCatchHandlerFoundTable;
+#endif
+
+/* ------------------------------------------------------------------------ *
  * DebuggerRCThread class -- the Runtime Controller thread.
  * ------------------------------------------------------------------------ */
 
@@ -1237,8 +1292,8 @@ class CodeRegionInfo
 {
 public:
     CodeRegionInfo() :
-        m_addrOfHotCode(NULL),
-        m_addrOfColdCode(NULL),
+        m_addrOfHotCode((PCODE)NULL),
+        m_addrOfColdCode((PCODE)NULL),
         m_sizeOfHotCode(0),
         m_sizeOfColdCode(0)
     {
@@ -1273,7 +1328,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        if (m_addrOfHotCode != NULL)
+        if (m_addrOfHotCode != (PCODE)NULL)
         {
             if (offset < m_sizeOfHotCode)
             {
@@ -1289,7 +1344,7 @@ public:
         }
         else
         {
-            return NULL;
+            return (PCODE)NULL;
         }
     }
 
@@ -1312,7 +1367,7 @@ public:
         }
 
         _ASSERTE(!"addressToOffset called with invalid address");
-        return NULL;
+        return 0;
     }
 
     // Determines whether the address lies within the method
@@ -1917,6 +1972,8 @@ public:
                                          Module *classModule,
                                          BOOL fIsLoadEvent);
 
+    BOOL ShouldSendCatchHandlerFound(Thread* pThread);
+
     void SendCatchHandlerFound(Thread *pThread,
                                FramePointer fp,
                                SIZE_T nOffset,
@@ -2218,6 +2275,7 @@ public:
     HRESULT DeoptimizeMethod(Module* pModule, mdMethodDef methodDef);
 #endif //DACCESS_COMPILE
     HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult);
+    HRESULT UpdateForceCatchHandlerFoundTable(BOOL enableEvents, OBJECTREF exObj, AppDomain *pAppDomain);
 
     //
     // The debugger mutex is used to protect any "global" Left Side
@@ -2806,6 +2864,11 @@ private:
     BOOL                  m_unrecoverableError;
     BOOL                  m_ignoreThreadDetach;
     PTR_DebuggerMethodInfoTable   m_pMethodInfos;
+    #ifdef DACCESS_COMPILE
+    VOID * m_pForceCatchHandlerFoundEventsTable;
+    #else
+    ForceCatchHandlerFoundTable *m_pForceCatchHandlerFoundEventsTable;
+    #endif
 
 
     // This is the main debugger lock. It is a large lock and used to synchronize complex operations
@@ -3892,8 +3955,6 @@ HANDLE OpenWin32EventOrThrow(
 // Returns true if the specified IL offset has a special meaning (eg. prolog, etc.)
 bool DbgIsSpecialILOffset(DWORD offset);
 
-#if !defined(TARGET_X86)
 void FixupDispatcherContext(T_DISPATCHER_CONTEXT* pDispatcherContext, T_CONTEXT* pContext, PEXCEPTION_ROUTINE pUnwindPersonalityRoutine = NULL);
-#endif
 
 #endif /* DEBUGGER_H_ */

@@ -2,6 +2,10 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <ItemGroup>
+    <TestConsoleAppSourceFiles Include="AggressiveAttributeTrimmingTest.cs">
+      <EnabledProperties>_AggressiveAttributeTrimming</EnabledProperties>
+      <DisabledProperties>SuppressTrimAnalysisWarnings;TrimmerSingleWarn</DisabledProperties>
+    </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="AppDomainGetThreadGenericPrincipalTest.cs" />
     <TestConsoleAppSourceFiles Include="AppDomainGetThreadWindowsPrincipalTest.cs">
       <SkipOnTestRuntimes>osx-x64;linux-x64;browser-wasm</SkipOnTestRuntimes>
