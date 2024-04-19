@@ -16,14 +16,16 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="System\Numerics\Tensors\netcore\TensorExtensions.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Tensor.Factory.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Tensor.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\ITensor.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\SpanNDDebugView.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\SpanNDExtensions.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\ReadOnlySpanND.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\SpanHelpers.ByteMemOps.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\SpanHelpers.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\SpanHelpers.T.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\SpanNDHelpers.ByteMemOps.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\SpanNDHelpers.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\SpanNDHelpers.T.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\SpanND.cs" />
     <Compile Include="System\NativeIndex.cs" />
     <Compile Include="System\NativeRange.cs" />
