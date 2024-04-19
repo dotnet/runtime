@@ -2471,5 +2471,19 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             IConfigurationSection IConfiguration.GetSection(string key) =>
                 this[key] is null ? null : new ConfigurationSection(this, key);
         }
+
+        [Fact]
+        public void CanBindToClassWithNewProperties()
+        {
+            var config = TestHelpers.GetConfigurationFromJsonString(@"{""A"":""Should not bind"", ""B"":""5"", ""E"":""OptionB""}");
+            var obj = new DerivedClassWithHiddenMembers();
+            string initialA = obj.A;
+
+            config.Bind(obj);
+
+            Assert.Equal(initialA, obj.A);
+            Assert.Equal(5, obj.B);
+            Assert.Equal(TestSettingsEnum2.OptionB, obj.E);
+        }
     }
 }
