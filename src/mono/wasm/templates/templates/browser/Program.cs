@@ -5,6 +5,9 @@ using System.Threading.Tasks;
 
 Console.WriteLine("Hello, Browser!");
 
+if (args.Length == 1 && args[0] == "start")
+    StopwatchSample.Start();
+
 while(true) 
 {
     StopwatchSample.Render();
@@ -13,8 +16,9 @@ while(true)
 
 partial class StopwatchSample
 {
-    private static Stopwatch stopwatch = Stopwatch.StartNew();
+    private static Stopwatch stopwatch = new();
 
+    public static void Start() => stopwatch.Start();
     public static void Render() => SetInnerText("#time", stopwatch.Elapsed.ToString(@"mm\:ss"));
     
     [JSImport("dom.setInnerText", "main.js")]

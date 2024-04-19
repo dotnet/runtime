@@ -3,7 +3,9 @@
 
 import { dotnet } from './_framework/dotnet.js'
 
-const { setModuleImports, getAssemblyExports, getConfig } = await dotnet.create();
+const { setModuleImports, getAssemblyExports, getConfig } = await dotnet
+    .withApplicationArguments("start")
+    .create();
 
 setModuleImports('main.js', {
     dom: {
