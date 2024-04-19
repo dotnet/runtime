@@ -238,11 +238,23 @@ public sealed partial class QuicListener : IAsyncDisposable
             handshakeTimeout = options.HandshakeTimeout;
             linkedCts.CancelAfter(handshakeTimeout);
 
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(this, $"{connection} Finishing handshake with options: {options}");
+            }
             await connection.FinishHandshakeAsync(options, clientHello.ServerName, cancellationToken).ConfigureAwait(false);
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(this, $"{connection} Finished handshake with options: {options}");
+            }
             if (!_acceptQueue.Writer.TryWrite(connection))
             {
                 // Channel has been closed, dispose the connection as it'll never be handed out.
                 await connection.DisposeAsync().ConfigureAwait(false);
+            }
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(this, $"{connection} has been enqueued to the _acceptQueue");
             }
         }
         catch (OperationCanceledException) when (connection.ConnectionShutdownToken.IsCancellationRequested)
@@ -337,6 +349,10 @@ public sealed partial class QuicListener : IAsyncDisposable
         QuicConnection connection = new QuicConnection(data.Connection, data.Info);
         SslClientHelloInfo clientHello = new SslClientHelloInfo(data.Info->ServerNameLength > 0 ? Marshal.PtrToStringUTF8((IntPtr)data.Info->ServerName, data.Info->ServerNameLength) : "", SslProtocols.Tls13);
 
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{connection} Starting the handshake process for connection.");
+        }
         // Kicks off the rest of the handshake in the background, the process itself will enqueue the result in the accept queue.
         StartConnectionHandshake(connection, clientHello);
 

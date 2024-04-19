@@ -34,12 +34,17 @@ namespace System.Net.Test.Common
         public bool CanRead => _stream.CanRead;
         public bool CanWrite => _stream.CanWrite;
 
-        public Http3LoopbackStream(QuicStream stream)
+        private Xunit.Abstractions.ITestOutputHelper? _output;
+
+        public Http3LoopbackStream(QuicStream stream, Xunit.Abstractions.ITestOutputHelper? output)
         {
             _stream = stream;
+            _output = output;
         }
 
         public ValueTask DisposeAsync() => _stream.DisposeAsync();
+
+        public QuicStream Stream => _stream;
 
         public long StreamId => _stream.Id;
 

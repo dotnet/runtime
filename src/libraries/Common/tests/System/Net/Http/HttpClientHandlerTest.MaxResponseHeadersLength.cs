@@ -74,7 +74,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(15)]
         public async Task LargeSingleHeader_ThrowsException(int maxResponseHeadersLength)
         {
-            Console.WriteLine("Test start");
             using TestEventListener listener = new TestEventListener(_output, TestEventListener.NetworkingEvents);
             using HttpClientHandler handler = CreateHttpClientHandler();
             handler.MaxResponseHeadersLength = maxResponseHeadersLength;
@@ -91,6 +90,7 @@ namespace System.Net.Http.Functional.Tests
             },
             async server =>
             {
+                _output.WriteLine($"Listening on {server.Address}");
                 try
                 {
                     await server.HandleRequestAsync(headers: new[] { new HttpHeaderData("Foo", new string('a', handler.MaxResponseHeadersLength * 1024)) });

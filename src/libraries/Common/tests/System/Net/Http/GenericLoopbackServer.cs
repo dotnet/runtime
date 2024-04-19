@@ -188,6 +188,7 @@ namespace System.Net.Test.Common
 #if !NETSTANDARD2_0 && !NETFRAMEWORK
         public SslStreamCertificateContext? CertificateContext { get; set; }
 #endif
+        public Xunit.Abstractions.ITestOutputHelper? TestOutputHelper { get; set; }
     }
 
     public struct HttpHeaderData

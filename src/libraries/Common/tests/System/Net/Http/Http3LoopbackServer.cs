@@ -16,6 +16,7 @@ namespace System.Net.Test.Common
     {
         private X509Certificate2 _cert;
         private QuicListener _listener;
+        private Xunit.Abstractions.ITestOutputHelper? _output;
 
         public override Uri Address => new Uri($"https://{_listener.LocalEndPoint}/");
 
@@ -58,6 +59,8 @@ namespace System.Net.Test.Common
             ValueTask<QuicListener> valueTask = QuicListener.ListenAsync(listenerOptions);
             Debug.Assert(valueTask.IsCompleted);
             _listener = valueTask.Result;
+            _output = options.TestOutputHelper;
+            _output?.WriteLine($"{this} Http3LoopbackServer created.");
         }
 
         public override void Dispose()
@@ -68,8 +71,10 @@ namespace System.Net.Test.Common
 
         private async Task<Http3LoopbackConnection> EstablishHttp3ConnectionAsync(params SettingsEntry[] settingsEntries)
         {
+            _output?.WriteLine($"{this} Accepting connection");
             QuicConnection con = await _listener.AcceptConnectionAsync().ConfigureAwait(false);
-            Http3LoopbackConnection connection = new Http3LoopbackConnection(con);
+            _output?.WriteLine($"{this} Connection accepted: {con}");
+            Http3LoopbackConnection connection = new Http3LoopbackConnection(con, _output);
 
             await connection.EstablishControlStreamAsync(settingsEntries);
             return connection;
