@@ -479,7 +479,7 @@ public:
             GCX_COOP();
             longResult.Set(AllocatePrimitiveArray(ELEMENT_TYPE_I4, _length));
             void* p = ((I4Array*)OBJECTREFToObject(longResult.Get()))->GetDirectPointerToNonObjectElements();
-            memcpyNoGCRefs(p, _alloc, _length * sizeof(INT32));
+            memcpyNoGCRefs(p, _alloc, (size_t)_length * sizeof(INT32));
         }
     }
 };
