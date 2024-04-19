@@ -152,10 +152,26 @@ namespace System
             }
         }
 
+        private sealed class AppContextKeyComparer : IEqualityComparer<string?>
+        {
+            public bool Equals(string? x, string? y) => string.Equals(x, y);
+
+            public int GetHashCode(string? obj)
+            {
+                Debug.Assert(obj != null, "This implementation is only called from first-party collection types that guarantee non-null parameters.");
+                return obj.GetNonRandomizedHashCode();
+            }
+        }
+
         internal static unsafe void Setup(char** pNames, uint** pNameLengths, char** pValues, uint** pValueLengths, int count)
         {
             Debug.Assert(s_dataStore == null, "s_dataStore is not expected to be inited before Setup is called");
-            s_dataStore = new Dictionary<string, object?>(count, StringComparer.Ordinal);
+            // HACK: Use a special comparer that does not pull in all the dependencies that
+            //  the default BCL string comparers pull in
+            IEqualityComparer<string?> comparer = new AppContextKeyComparer();
+            // HACK: Use a special version of the Dictionary constructor that does not pull in a
+            //  large amount of extra code in order to instantiate this dictionary
+            s_dataStore = new Dictionary<string, object?>(count, comparer, true);
             for (int i = 0; i < count; i++)
             {
                 s_dataStore.Add(new string(pNames[i], 0, (int)pNameLengths[i]), new string(pValues[i], 0, (int)pValueLengths[i]));
