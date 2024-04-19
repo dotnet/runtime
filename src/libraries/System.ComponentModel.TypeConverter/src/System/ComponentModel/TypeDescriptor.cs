@@ -840,6 +840,16 @@ namespace System.ComponentModel
         }
 
         /// <summary>
+        /// Gets a type converter for the type of the specified component.
+        /// </summary>
+        public static TypeConverter GetConverterFromKnownType(object component)
+        {
+            TypeConverter? converter = GetDescriptorFromKnownType(component)!.GetConverterFromKnownType();
+            Debug.Assert(converter != null, "Unexpected null TypeConverter.");
+            return converter;
+        }
+
+        /// <summary>
         /// Gets a type converter for the specified type.
         /// </summary>
         [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
