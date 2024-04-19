@@ -7215,7 +7215,7 @@ StackFrame ExceptionTracker::FindParentStackFrameHelper(CrawlFrame* pCF,
             {
                 sfResult = (StackFrame)pCurrentExInfo->m_csfEnclosingClause;
                 break;
-            }          
+            }
         }
 
         goto lExit;
@@ -7559,7 +7559,7 @@ void MarkInlinedCallFrameAsFuncletCall(Frame* pFrame)
 {
     _ASSERTE(pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr());
     InlinedCallFrame* pInlinedCallFrame = (InlinedCallFrame*)pFrame;
-    pInlinedCallFrame->m_Datum = (PTR_NDirectMethodDesc)((TADDR)pInlinedCallFrame->m_Datum | (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper | (TADDR)InlinedCallFrameMarker::SecondPassFuncletCaller); 
+    pInlinedCallFrame->m_Datum = (PTR_NDirectMethodDesc)((TADDR)pInlinedCallFrame->m_Datum | (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper | (TADDR)InlinedCallFrameMarker::SecondPassFuncletCaller);
 }
 
 // Mark the pinvoke frame as invoking any exception handling helper
@@ -7582,7 +7582,7 @@ static TADDR GetSpForDiagnosticReporting(REGDISPLAY *pRD)
 extern "C" void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack exceptionObj, SIZE_T ip, SIZE_T sp, int flags, ExInfo *pExInfo)
 {
     QCALL_CONTRACT;
-    
+
     BEGIN_QCALL;
 
     Thread* pThread = GET_THREAD();
@@ -7622,7 +7622,7 @@ extern "C" void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack e
 
 UINT_PTR GetEstablisherFrame(REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 {
-#ifdef HOST_AMD64        
+#ifdef HOST_AMD64
     _ASSERTE(exInfo->m_frameIter.m_crawl.GetRegisterSet() == pvRegDisplay);
     if (exInfo->m_frameIter.m_crawl.GetCodeInfo()->HasFrameRegister())
     {
@@ -7643,7 +7643,7 @@ UINT_PTR GetEstablisherFrame(REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
     return pvRegDisplay->SP;
 #elif defined(HOST_LOONGARCH64)
     return pvRegDisplay->SP;
-#endif        
+#endif
 }
 
 extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptionObj, BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
@@ -7669,7 +7669,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
         throwable = PossiblyUnwrapThrowable(throwable, exInfo->m_frameIter.m_crawl.GetAssembly());
 
         UINT_PTR establisherFrame = GetEstablisherFrame(pvRegDisplay, exInfo);
-        
+
         exInfo->m_csfEHClause = CallerStackFrame((UINT_PTR)GetCurrentSP());
         exInfo->m_csfEnclosingClause = CallerStackFrame::FromRegDisplay(exInfo->m_frameIter.m_crawl.GetRegisterSet());
 
@@ -7679,7 +7679,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
         exInfo->MakeCallbacksRelatedToHandler(true, pThread, pMD, &exInfo->m_ClauseForCatch, (DWORD_PTR)pHandlerIP, spForDebugger);
 
 #ifdef USE_FUNCLET_CALL_HELPER
-        // Invoke the catch funclet. 
+        // Invoke the catch funclet.
         // Since the actual caller of the funclet is the assembly helper, pass the reference
         // to the CallerStackFrame instance so that it can be updated.
         CallerStackFrame* pCallerStackFrame = &exInfo->m_csfEHClause;
@@ -7690,7 +7690,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
                                    pFuncletCallerSP);
 #else
         dwResumePC = pfnHandler(establisherFrame, OBJECTREFToObject(throwable));
-#endif            
+#endif
         // Profiler, debugger and ETW events
         exInfo->MakeCallbacksRelatedToHandler(false, pThread, pMD, &exInfo->m_ClauseForCatch, (DWORD_PTR)pHandlerIP, spForDebugger);
         SetIP(pvRegDisplay->pCurrentContext, dwResumePC);
@@ -7786,7 +7786,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
     {
         if (fIntercepted)
         {
-            ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext);    
+            ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext);
         }
 #ifdef HOST_UNIX
         if (propagateExceptionCallback)
@@ -7818,7 +7818,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
         SetSP(pvRegDisplay->pCurrentContext, targetSp - 8);
 #elif defined(HOST_X86)
         SetSP(pvRegDisplay->pCurrentContext, targetSp - 4);
-#endif            
+#endif
 #ifdef HOST_AMD64
 #ifdef UNIX_AMD64_ABI
 #define FIRST_ARG_REG Rdi
@@ -7850,7 +7850,7 @@ extern "C" void QCALLTYPE ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
 
     Frame* pFrame = pThread->GetFrame();
     MarkInlinedCallFrameAsFuncletCall(pFrame);
-    
+
     UINT_PTR targetSp = GetSP(pvRegDisplay->pCurrentContext);
     ExInfo *pExInfo = (PTR_ExInfo)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
@@ -7883,7 +7883,7 @@ extern "C" void QCALLTYPE ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
     uResumePC = codeInfo.GetJitManager()->GetCodeAddressForRelOffset(codeInfo.GetMethodToken(), static_cast<DWORD>(ulRelOffset));
 
     SetIP(pvRegDisplay->pCurrentContext, uResumePC);
-    ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext);    
+    ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext);
 }
 
 extern "C" void QCALLTYPE CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
@@ -7908,7 +7908,7 @@ extern "C" void QCALLTYPE CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvReg
     TADDR spForDebugger = GetSpForDiagnosticReporting(pvRegDisplay);
     exInfo->MakeCallbacksRelatedToHandler(true, pThread, pMD, &exInfo->m_CurrentClause, (DWORD_PTR)pHandlerIP, spForDebugger);
 #ifdef USE_FUNCLET_CALL_HELPER
-    // Invoke the finally funclet. 
+    // Invoke the finally funclet.
     // Since the actual caller of the funclet is the assembly helper, pass the reference
     // to the CallerStackFrame instance so that it can be updated.
     CallerStackFrame* pCallerStackFrame = &exInfo->m_csfEHClause;
@@ -7919,7 +7919,7 @@ extern "C" void QCALLTYPE CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvReg
                                          pFuncletCallerSP);
 #else
     DWORD_PTR dwResumePC = pfnHandler(establisherFrame, NULL);
-#endif        
+#endif
 
     pThread->IncPreventAbort();
 
@@ -7956,7 +7956,7 @@ extern "C" BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack exception
     EX_TRY
     {
 #ifdef USE_FUNCLET_CALL_HELPER
-        // Invoke the filter funclet. 
+        // Invoke the filter funclet.
         // Since the actual caller of the funclet is the assembly helper, pass the reference
         // to the CallerStackFrame instance so that it can be updated.
         CallerStackFrame* pCallerStackFrame = &pExInfo->m_csfEHClause;
@@ -8403,7 +8403,7 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
         else
         {
             // TODO-NewEH: Currently there are two other cases of internal VM->managed transitions. The FastCallFinalize and COMToCLRDispatchHelperWithStack
-            // Either add handling those here as well or rewrite all these perf critical places in C#, so that CallDescrWorker is the only path that 
+            // Either add handling those here as well or rewrite all these perf critical places in C#, so that CallDescrWorker is the only path that
             // needs to be handled here.
             size_t CallDescrWorkerInternalReturnAddress = (size_t)CallDescrWorkerInternal + CallDescrWorkerInternalReturnAddressOffset;
             if (GetIP(pThis->m_crawl.GetRegisterSet()->pCallerContext) == CallDescrWorkerInternalReturnAddress)
@@ -8490,7 +8490,7 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
                     {
                         // Unwind the CallCatchFunclet
                         retVal = MoveToNextNonSkippedFrame(pThis);
-                        
+
                         if (retVal == SWA_FAILED)
                         {
                             _ASSERTE_MSG(FALSE, "StackFrameIterator::Next failed");
