@@ -691,7 +691,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |-----------------------|
  *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
  *      |-----------------------|
- *      |Callee saved registers | // multiple of 8 bytes, not includting FP/RA
+ *      |Callee saved registers | // multiple of 8 bytes, not including FP/RA
  *      |-----------------------|
  *      |      Saved FP, RA     | // 16 bytes
  *      |-----------------------|

@@ -787,7 +787,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |-----------------------|
  *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned
  *      |-----------------------|
- *      |Callee saved registers | // multiple of 8 bytes, not includting FP/RA
+ *      |Callee saved registers | // multiple of 8 bytes, not including FP/RA
  *      |-----------------------|
  *      |      Saved FP, RA     | // 16 bytes
  *      |-----------------------|
