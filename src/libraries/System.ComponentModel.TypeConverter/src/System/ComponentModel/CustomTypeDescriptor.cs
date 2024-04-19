@@ -73,11 +73,7 @@ namespace System.ComponentModel
                 TypeDescriptor.ThrowHelper.ThrowNotSupportedException_KnownTypeMemberCalledOnLegacyProvider(nameof(GetAttributesFromKnownType));
             }
 
-            return FallBackToLegacyProvider();
-
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Chaining from known type provider to legacy provider is supported when TypeDescriptor.IsTrimmable is false.")]
-            AttributeCollection FallBackToLegacyProvider() => GetAttributes();
+            return GetAttributes();
         }
 
         /// <summary>
