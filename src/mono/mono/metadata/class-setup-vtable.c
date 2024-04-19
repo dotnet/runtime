@@ -773,7 +773,9 @@ mono_method_get_method_definition (MonoMethod *method)
 static gboolean
 verify_class_overrides (MonoClass *klass, MonoMethod **overrides, int onum)
 {
-#ifndef DEBUG
+	// on windows and arm, we define NDEBUG for release builds
+	// on browser and wasi, we define DEBUG for debug builds
+#if defined(NDEBUG) || !defined(DEBUG)
 	if (klass->image == mono_defaults.corlib)
 		return TRUE;
 #endif
