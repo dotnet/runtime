@@ -3,25 +3,27 @@
 
 import { dotnet } from './_framework/dotnet.js'
 
-const { setModuleImports, getAssemblyExports, getConfig, runMain } = await dotnet
-    .withDiagnosticTracing(false)
-    .withApplicationArgumentsFromQuery()
-    .create();
+const { setModuleImports, getAssemblyExports, getConfig } = await dotnet.create();
 
 setModuleImports('main.js', {
-    window: {
-        location: {
-            href: () => globalThis.window.location.href
-        }
+    dom: {
+        setInnerText: (selector, time) => document.querySelector(selector).innerText = time
     }
 });
 
 const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
-const text = exports.MyClass.Greeting();
-console.log(text);
 
-document.getElementById('out').innerHTML = text;
+document.getElementById('reset').addEventListener('click', e => {
+    exports.StopwatchSample.Reset();
+    e.preventDefault();
+});
 
-// run the C# Main() method and keep the runtime process running and executing further API calls
-await runMain();
+const pauseButton = document.getElementById('pause');
+pauseButton.addEventListener('click', e => {
+    const isRunning = exports.StopwatchSample.Toggle();
+    pauseButton.innerText = isRunning ? 'Pause' : 'Start';
+    e.preventDefault();
+});
+
+await dotnet.run();
