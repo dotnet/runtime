@@ -627,8 +627,102 @@ struct IVUseListNode
 struct IVUseInfo
 {
     ScevAddRec* IV;
-    IVUseListNode* Uses;
+    IVUseListNode* Uses = nullptr;
+    // LclNum of the IV if this IV is a primary IV.
+    unsigned PrimaryLclNum = BAD_VAR_NUM;
+
+    IVUseInfo(ScevAddRec* iv) : IV(iv)
+    {
+    }
 };
+
+void Compiler::optScoreNewPrimaryIV(FlowGraphNaturalLoop* loop, ArrayStack<IVUseInfo>& ivs, const IVUseInfo& iv, weight_t* cycleImprovement, weight_t* sizeImprovement)
+{
+
+}
+
+//------------------------------------------------------------------------
+// optStrengthReduce: Find derived IVs in "ivs" to turn into primary IVs.
+//
+// Parameters:
+//   loop - The loop with the IVs
+//   ivs  - Information about IVs used inside the loop
+//
+void Compiler::optStrengthReduce(FlowGraphNaturalLoop* loop, ArrayStack<IVUseInfo>& ivs)
+{
+    JITDUMP("Evaluating whether to strength reduce derived IVs\n");
+
+    for (int iteration = 1;; iteration++)
+    {
+        if (iteration > 1)
+        {
+            JITDUMP("\n  Iteration %d\n", iteration + 1);
+        }
+
+        const IVUseInfo* bestIV = nullptr;
+        weight_t bestCycleImprovement = 0;
+        weight_t bestSizeImprovement = 0;
+
+        for (int i = 0; i < ivs.Height(); i++)
+        {
+            const IVUseInfo& derivedIV = ivs.BottomRef(i);
+            if (derivedIV.PrimaryLclNum != BAD_VAR_NUM)
+            {
+                continue;
+            }
+
+            weight_t cycleImprovement;
+            weight_t sizeImprovement;
+            optScoreNewPrimaryIV(loop, ivs, derivedIV, &cycleImprovement, &sizeImprovement);
+
+            const weight_t ALLOWED_SIZE_REGRESSION_PER_CYCLE_IMPROVEMENT = 2;
+            const weight_t ALLOWED_CYCLE_REGRESSION_PER_SIZE_IMPROVEMENT = 0.01;
+
+            JITDUMP("  [%d]: %s ", i, varTypeName(derivedIV.IV->Type));
+            derivedIV.IV->Dump(this);
+            JITDUMP("\n");
+            JITDUMP("    Estimated cycle improvement: " FMT_WT " cycles per invocation\n", cycleImprovement);
+            JITDUMP("    Estimated size improvement: " FMT_WT " bytes\n", sizeImprovement);
+
+            bool profitableForCycles = (cycleImprovement > 0) && ((cycleImprovement * ALLOWED_SIZE_REGRESSION_PER_CYCLE_IMPROVEMENT) >= -sizeImprovement);
+            bool profitableForSize = (sizeImprovement > 0) && ((sizeImprovement * ALLOWED_CYCLE_REGRESSION_PER_SIZE_IMPROVEMENT) >= -cycleImprovement);
+
+            if (profitableForCycles)
+            {
+                JITDUMP("    Candidate for new primary IV (cycle improvement)\n");
+            }
+            else if (profitableForSize)
+            {
+                JITDUMP("    Candidate for new primary IV (size improvement)\n");
+            }
+            else if (compStressCompile(STRESS_STRENGTH_REDUCTION_COST, 15))
+            {
+                JITDUMP("    Candidate for new primary IV (stress)\n");
+            }
+            else
+            {
+                continue;
+            }
+
+            if ((bestIV == nullptr) ||
+                (cycleImprovement > bestCycleImprovement) ||
+                ((fabs(cycleImprovement - bestCycleImprovement) < 0.01) && (sizeImprovement > bestSizeImprovement)))
+            {
+                bestIV = &derivedIV;
+                bestCycleImprovement = cycleImprovement;
+                sizeImprovement = bestSizeImprovement;
+            }
+        }
+
+        if (bestIV == nullptr)
+        {
+            break;
+        }
+
+        JITDUMP("\n  Strength reducing ");
+        bestIV->IV->Dump(this);
+    }
+}
 
 //------------------------------------------------------------------------
 // optInductionVariables: Try and optimize induction variables in the method.
@@ -674,6 +768,129 @@ PhaseStatus Compiler::optInductionVariables()
 
         allIVs.Reset();
         int numWidened = 0;
+        int numStrengthReduced = 0;
+
+        loop->VisitLoopBlocks([this, loop, &scevContext, &allIVs](BasicBlock* block) {
+            for (Statement* stmt : block->Statements())
+            {
+                DISPSTMT(stmt);
+
+                for (GenTree* tree : stmt->TreeList())
+                {
+                    JITDUMP("  [%06u] => ", dspTreeID(tree));
+
+                    Scev* scev = scevContext.Analyze(block, tree);
+                    if (scev == nullptr)
+                    {
+                        JITDUMP("Cannot analyze\n");
+                        continue;
+                    }
+
+                    Scev* simplifiedScev = scevContext.Simplify(scev);
+
+                    DBEXEC(verbose, simplifiedScev->Dump(this));
+                    JITDUMP("\n");
+
+                    if (!simplifiedScev->OperIs(ScevOper::AddRec))
+                    {
+                        continue;
+                    }
+
+                    IVUseInfo* foundIV = nullptr;
+                    for (int j = 0; j < allIVs.Height(); j++)
+                    {
+                        IVUseInfo& iv = allIVs.BottomRef(j);
+                        if (Scev::Equals(simplifiedScev, allIVs.BottomRef(j).IV))
+                        {
+                            foundIV = &iv;
+                            break;
+                        }
+                    }
+
+                    if (foundIV == nullptr)
+                    {
+                        allIVs.Push(IVUseInfo(static_cast<ScevAddRec*>(simplifiedScev)));
+                        foundIV = &allIVs.TopRef(0);
+                    }
+
+                    if (tree->IsPhiDefn() && (block == loop->GetHeader()))
+                    {
+                        if (foundIV->PrimaryLclNum == BAD_VAR_NUM)
+                        {
+                            foundIV->PrimaryLclNum = tree->AsLclVarCommon()->GetLclNum();
+                        }
+
+                        continue;
+                    }
+
+                    if (tree->IsPhiNode() || tree->OperIsLocalStore())
+                    {
+                        continue;
+                    }
+
+                    IVUseListNode* newNode = new (this, CMK_LoopIVOpts) IVUseListNode;
+                    newNode->Block = block;
+                    newNode->Stmt = stmt;
+                    newNode->Tree = tree;
+                    newNode->Next = foundIV->Uses;
+                    newNode->Parent = nullptr;
+                    foundIV->Uses = newNode;
+                }
+
+                JITDUMP("\n");
+            }
+
+            return BasicBlockVisit::Continue;
+            });
+
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("Found %d different induction variables\n", allIVs.Height());
+
+            for (int i = 0; i < allIVs.Height(); i++)
+            {
+                IVUseInfo& info = allIVs.BottomRef(i);
+                printf("  [%d]: %s ", i, varTypeName(info.IV->Type));
+                info.IV->Dump(this);
+                int numUses = 0;
+                for (IVUseListNode* node = info.Uses; node != nullptr; node = node->Next)
+                {
+                    numUses++;
+                }
+
+                if (info.PrimaryLclNum != BAD_VAR_NUM)
+                    printf(" (primary IV V%02u,", info.PrimaryLclNum);
+                else
+                    printf(" (derived IV,");
+
+                printf(" %d uses)", numUses);
+
+                const char* sep = "\n    ";
+                for (IVUseListNode* node = info.Uses; node != nullptr; node = node->Next)
+                {
+                    printf("%s[%06u]", sep, dspTreeID(node->Tree));
+                    sep = " ";
+                }
+                printf("\n");
+            }
+        }
+#endif
+
+        optStrengthReduce(loop, allIVs);
+
+        //for (int i = 0; i < allIVs.Height(); i++)
+        //{
+        //    const IVUseInfo& info = allIVs.Bottom(i);
+        //    if (info.PrimaryLclNum != BAD_VAR_NUM)
+        //    {
+        //        for (IVUseListNode* node = info.Uses; node != nullptr; node = node->Next)
+        //        {
+        //            JITDUMP("Checking [%06u]\n", node->Tree->gtTreeID);
+        //            assert(node->Tree->OperIsScalarLocal() && (node->Tree->AsLclVarCommon()->GetLclNum() == info.PrimaryLclNum));
+        //        }
+        //    }
+        //}
 
         for (Statement* stmt : loop->GetHeader()->Statements())
         {
@@ -708,6 +925,8 @@ PhaseStatus Compiler::optInductionVariables()
             GenTreeLclVarCommon* lcl    = stmt->GetRootNode()->AsLclVarCommon();
             JITDUMP("  V%02u is a primary induction variable in " FMT_LP "\n", lcl->GetLclNum(), loop->GetIndex());
 
+            Scev* simplifiedAddRec = scevContext.Simplify(addRec);
+
             ivOccurrences.Reset();
             loop->VisitLoopBlocks([=, &ivOccurrences](BasicBlock* block) {
                 optFindLocalOccurrences(block, lcl->GetLclNum(), [=, &ivOccurrences](Statement* stmt) {
@@ -716,79 +935,6 @@ PhaseStatus Compiler::optInductionVariables()
 
                 return BasicBlockVisit::Continue;
                 });
-
-            // Look for secondary IVs.
-            JITDUMP("  Looking for secondary IVs based on this primary IV\n");
-            for (int i = 0; i < ivOccurrences.Height(); i++)
-            {
-                LocalOccurrence& occurrence = ivOccurrences.BottomRef(i);
-                BasicBlock* block = occurrence.Block;
-                Statement* stmt = occurrence.Stmt;
-                JITDUMP("    Looking in statement:\n");
-                DISPSTMT(stmt);
-                JITDUMP("\n");
-
-                for (GenTree* tree : stmt->TreeList())
-                {
-                    Scev* otherScev = scevContext.Analyze(block, tree);
-                    if (otherScev == nullptr)
-                    {
-                        continue;
-                    }
-
-                    otherScev = scevContext.Simplify(otherScev);
-                    if (!otherScev->OperIs(ScevOper::AddRec))
-                    {
-                        continue;
-                    }
-
-                    JITDUMP("[%06u] => ", dspTreeID(tree));
-                    DBEXEC(verbose, otherScev->Dump(this));
-                    JITDUMP("\n");
-
-                    IVUseInfo* foundIV = nullptr;
-                    for (int j = 0; j < allIVs.Height(); j++)
-                    {
-                        IVUseInfo& iv = allIVs.BottomRef(j);
-                        if (Scev::Equals(otherScev, allIVs.BottomRef(j).IV))
-                        {
-                            foundIV = &iv;
-                            break;
-                        }
-                    }
-
-                    if (foundIV == nullptr)
-                    {
-                        foundIV = new (this, CMK_LoopIVOpts) IVUseInfo;
-                        foundIV->IV = static_cast<ScevAddRec*>(otherScev);
-                        foundIV->Uses = nullptr;
-                    }
-                    else
-                    {
-                        bool duplicate = false;
-                        for (IVUseListNode* prevUse = foundIV->Uses; prevUse != nullptr; prevUse = prevUse->Next)
-                        {
-                            if (prevUse->Tree == tree)
-                            {
-                                duplicate = true;
-                                break;
-                            }
-                        }
-
-                        if (duplicate)
-                        {
-                            continue;
-                        }
-                    }
-
-                    IVUseListNode* newNode = new (this, CMK_LoopIVOpts) IVUseListNode;
-                    newNode->Block = block;
-                    newNode->Stmt = stmt;
-                    newNode->Tree = tree;
-                    newNode->Next = foundIV->Uses;
-                    newNode->Parent = nullptr;
-                }
-            }
 
             if (optWidenPrimaryIV(loop, lcl->GetLclNum(), addRec, ivOccurrences))
             {

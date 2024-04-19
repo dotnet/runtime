@@ -341,7 +341,26 @@ ScevUnop* ScalarEvolutionContext::NewExtension(ScevOper oper, var_types targetTy
 ScevBinop* ScalarEvolutionContext::NewBinop(ScevOper oper, Scev* op1, Scev* op2)
 {
     assert((op1 != nullptr) && (op2 != nullptr));
-    ScevBinop* binop = new (m_comp, CMK_LoopIVOpts) ScevBinop(oper, op1->Type, op1, op2);
+    var_types resultType = op1->Type;
+    if (oper == ScevOper::Add)
+    {
+        if (varTypeIsGC(op1->Type))
+        {
+            assert(op2->Type == TYP_I_IMPL);
+            resultType = TYP_BYREF;
+        }
+        else if (varTypeIsGC(op2->Type))
+        {
+            assert(op1->Type == TYP_I_IMPL);
+            resultType = TYP_BYREF;
+        }
+        else
+        {
+            assert(op1->Type == op2->Type);
+        }
+    }
+
+    ScevBinop* binop = new (m_comp, CMK_LoopIVOpts) ScevBinop(oper, resultType, op1, op2);
     return binop;
 }
 
@@ -631,6 +650,15 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int d
                     oper = ScevOper::Add;
                     break;
                 case GT_SUB:
+                    if (varTypeIsGC(op2->Type))
+                    {
+                        // We represent x - y as x + (-1)*y, which does not
+                        // work if y is a GC type. If we wanted to support this
+                        // we would need to add an explicit ScevOper::Sub
+                        // operator.
+                        return nullptr;
+                    }
+
                     oper = ScevOper::Add;
                     op2  = NewBinop(ScevOper::Mul, op2, NewConstant(op2->Type, -1));
                     break;
@@ -997,9 +1025,13 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev)
 
             if (op1->OperIs(ScevOper::AddRec))
             {
-                // TODO-Cleanup: This requires some proof that it is ok, but
-                // currently we do not rely on this.
-                return op1;
+                // TODO-Bug: This requires some proof that it is ok. If the
+                // original TYP_INT AddRec can overflow then this new TYP_LONG
+                // AddRec won't.
+                ScevAddRec* addRec = (ScevAddRec*)op1;
+                Scev* newStart = Simplify(NewExtension(unop->Oper, TYP_LONG, addRec->Start));
+                Scev* newStep = Simplify(NewExtension(unop->Oper, TYP_LONG, addRec->Step));
+                return NewAddRec(newStart, newStep);
             }
 
             return (op1 == unop->Op1) ? unop : NewExtension(unop->Oper, unop->Type, op1);

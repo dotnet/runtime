@@ -7474,6 +7474,9 @@ public:
     void optReplaceWidenedIV(unsigned lclNum, unsigned ssaNum, unsigned newLclNum, Statement* stmt);
     void optSinkWidenedIV(unsigned lclNum, unsigned newLclNum, FlowGraphNaturalLoop* loop);
 
+    void optStrengthReduce(FlowGraphNaturalLoop* loop, ArrayStack<struct IVUseInfo>& ivs);
+    void optScoreNewPrimaryIV(FlowGraphNaturalLoop* loop, ArrayStack<struct IVUseInfo>& ivs, const IVUseInfo& iv, weight_t* cycleImprovement, weight_t* sizeImprovement);
+
     // Redundant branch opts
     //
     PhaseStatus   optRedundantBranches();
@@ -10110,6 +10113,7 @@ public:
         STRESS_MODE(UNWIND) /* stress unwind info; e.g., create function fragments */           \
         STRESS_MODE(OPT_REPEAT) /* stress JitOptRepeat */                                       \
         STRESS_MODE(INITIAL_PARAM_REG) /* Stress initial register assigned to parameters */     \
+        STRESS_MODE(STRENGTH_REDUCTION_COST) /* Do strength reductions regardless of cost */    \
                                                                                                 \
         /* After COUNT_VARN, stress level 2 does all of these all the time */                   \
                                                                                                 \
