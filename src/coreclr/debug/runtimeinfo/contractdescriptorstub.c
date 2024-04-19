@@ -27,7 +27,7 @@ const uintptr_t contractDescriptorPointerData[] = { (uintptr_t)0 };
 
 DLLEXPORT struct DotNetRuntimeContractDescriptor DotNetRuntimeContractDescriptor;
 
-#define STUB_DESCRIPTOR "{\"version\":0,\"baseline\":\"empty\",\"contracts\":\"\",\"types\":{},\"globals\":\"\"}"
+#define STUB_DESCRIPTOR "{\"version\":0,\"baseline\":\"empty\",\"contracts\":{},\"types\":{},\"globals\":{}}"
 
 DLLEXPORT struct DotNetRuntimeContractDescriptor DotNetRuntimeContractDescriptor = {
     .magic = 0x0043414443434e44ull, // "DNCCDAC\0"
