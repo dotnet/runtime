@@ -9,8 +9,6 @@ include_directories("../inc")
 # See https://github.com/dotnet/runtime/issues/33541
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 11.0)
   add_compile_options(-Wno-error)
-else()
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/WX->) # don't treat warnings as errors
 endif()
 
 if (MSVC)

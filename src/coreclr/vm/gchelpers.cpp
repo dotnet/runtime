@@ -397,13 +397,9 @@ void PublishObjectAndNotify(TObj* &orObject, size_t size, GC_ALLOC_FLAGS flags, 
         ETW::TypeSystemLog::SendObjectAllocatedEvent(orObject);
     }
 
-    // TODO: not sure it is worth emitting the event here instead of in Alloc
-    //       because it is needed to pass the size + the isSampled flag
-    //       so all caller of PublishObjectAndNotify should pass the size and the isSampled flag
     if (isSampled && EventPipeEventEnabledAllocationSampled())
     {
-        // TODO: this code is duplicated from GCToCLREventSink::FireGCAllocationTick_V4
-        //       --> should we refactor into a common helper?
+        // Note: this code is duplicated from GCToCLREventSink::FireGCAllocationTick_V4
         void* typeId = nullptr;
         const WCHAR* name = nullptr;
         InlineSString<MAX_CLASSNAME_LENGTH> strTypeName;

@@ -91,50 +91,6 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
     {
     }
 
-    internal class Object2 : Object0
-    {
-        private readonly byte _x1;
-        private readonly byte _x2;
-    }
-
-    internal class Object4 : Object0
-    {
-        private readonly UInt16 _x1;
-        private readonly UInt16 _x2;
-    }
-
-    internal class Object8 : Object0
-    {
-        private readonly UInt32 _x1;
-        private readonly UInt32 _x2;
-    }
-
-    internal class Object16 : Object0
-    {
-        private readonly UInt64 _x1;
-        private readonly UInt64 _x2;
-    }
-
-    internal class Object32 : Object0
-    {
-        private readonly UInt64 _x1;
-        private readonly UInt64 _x2;
-        private readonly UInt64 _x3;
-        private readonly UInt64 _x4;
-    }
-
-    internal class Object64 : Object0
-    {
-        private readonly UInt64 _x1;
-        private readonly UInt64 _x2;
-        private readonly UInt64 _x3;
-        private readonly UInt64 _x4;
-        private readonly UInt64 _x5;
-        private readonly UInt64 _x6;
-        private readonly UInt64 _x7;
-        private readonly UInt64 _x8;
-    }
-
     internal class Object128 : Object0
     {
         private readonly UInt64 _x1;
