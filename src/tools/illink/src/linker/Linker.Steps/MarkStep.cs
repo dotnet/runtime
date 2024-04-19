@@ -230,7 +230,7 @@ namespace Mono.Linker.Steps
 			_pending_isinst_instr = new List<(TypeDefinition, MethodBody, Instruction)> ();
 			_entireTypesMarked = new HashSet<TypeDefinition> ();
 			_compilerGeneratedMethodRequiresScanner = new Dictionary<MethodBody, bool> ();
-			_analyzer = new DependencyAnalyzer<NoLogStrategy<MarkStepNodeFactory>, MarkStepNodeFactory> (new MarkStepNodeFactory(this), null);
+			_analyzer = new DependencyAnalyzer<NoLogStrategy<MarkStepNodeFactory>, MarkStepNodeFactory> (new MarkStepNodeFactory (this), null);
 		}
 
 		public AnnotationStore Annotations => Context.Annotations;
@@ -393,7 +393,7 @@ namespace Mono.Linker.Steps
 				ProcessMarkedPending () ||
 				ProcessLazyAttributes () ||
 				ProcessLateMarkedAttributes () ||
-				MarkFullyPreservedAssemblies () ;
+				MarkFullyPreservedAssemblies ();
 		}
 
 		public class MarkStepNodeFactory (MarkStep markStep)
@@ -408,7 +408,7 @@ namespace Mono.Linker.Steps
 
 			public ProcessCallbackDependencyNode (Func<bool> action) => _processAction = action;
 
-			public void Process()
+			public void Process ()
 			{
 				_dependencies = new DependencyList ();
 				if (_processAction ()) {
@@ -431,9 +431,14 @@ namespace Mono.Linker.Steps
 			protected override string GetName (MarkStepNodeFactory context) => "Process";
 		}
 
-		public class TypeDependencyNode: DependencyNodeCore<MarkStepNodeFactory>
+		public class TypeDependencyNode : DependencyNodeCore<MarkStepNodeFactory>
 		{
-			public TypeDependencyNode(TypeReference reference, DependencyInfo reason, MessageOrigin? origin, MarkStep markStep)
+			readonly TypeReference reference;
+			readonly DependencyInfo reason;
+			readonly MessageOrigin? origin;
+			readonly MarkStep markStep;
+
+			public TypeDependencyNode (TypeReference reference, DependencyInfo reason, MessageOrigin? origin, MarkStep markStep)
 			{
 				this.reference = reference;
 				this.reason = reason;
@@ -448,14 +453,9 @@ namespace Mono.Linker.Steps
 
 			public override bool StaticDependenciesAreComputed => true;
 
-			TypeReference reference { get; }
-			DependencyInfo reason { get; }
-			MessageOrigin? origin { get; }
-
-			MarkStep markStep { get; }
-
 			public override IEnumerable<DependencyListEntry>? GetStaticDependencies (MarkStepNodeFactory context)
 			{
+				// Add other types that are marked in MarkType
 				yield break;
 			}
 
@@ -470,7 +470,7 @@ namespace Mono.Linker.Steps
 
 		protected internal virtual void MarkType (TypeReference reference, DependencyInfo reason, MessageOrigin? origin = null)
 		{
-			_analyzer.AddRoot(new TypeDependencyNode(reference, reason, origin, this), "MarkedType");
+			_analyzer.AddRoot (new TypeDependencyNode (reference, reason, origin, this), "MarkedType");
 		}
 
 		static bool IsFullyPreservedAction (AssemblyAction action) => action == AssemblyAction.Copy || action == AssemblyAction.Save;
@@ -756,7 +756,7 @@ namespace Mono.Linker.Steps
 							MarkMethod (dimInfo.Override, new DependencyInfo (DependencyKind.Override, dimInfo.Base), ScopeStack.CurrentScope.Origin);
 					}
 				}
-				List<OverrideInformation>? overridingMethods = (List<OverrideInformation>?)Annotations.GetOverrides (method);
+				List<OverrideInformation>? overridingMethods = (List<OverrideInformation>?) Annotations.GetOverrides (method);
 				if (overridingMethods is not null) {
 					for (int i = 0; i < overridingMethods.Count; i++) {
 						OverrideInformation ov = overridingMethods[i];
