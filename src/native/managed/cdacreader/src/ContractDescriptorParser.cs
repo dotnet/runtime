@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -23,6 +24,8 @@ public partial class ContractDescriptorParser
     /// <summary>
     ///  Parses the "compact" representation of a contract descriptor.
     /// </summary>
+    // Workaround for https://github.com/dotnet/runtime/issues/101205
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Root))]
     public static ContractDescriptor? ParseCompact(ReadOnlySpan<byte> json)
     {
         return JsonSerializer.Deserialize(json, ContractDescriptorContext.Default.ContractDescriptor);
