@@ -19,6 +19,7 @@
     <!-- '/.dockerenv' - is to check if this is running in a codespace -->
     <!-- taken from tests.browser.targets -->
     <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and ('$(ContinuousIntegrationBuild)' == 'true' or Exists('/.dockerenv'))">true</InstallChromeForTests>
+    <InstallFirefoxForTests Condition="'$(InstallFirefoxForTests)' == '' and ('$(ContinuousIntegrationBuild)' == 'true' or Exists('/.dockerenv'))">true</InstallFirefoxForTests>
     <InstallV8ForTests Condition="'$(InstallV8ForTests)' == '' and ('$(ContinuousIntegrationBuild)' == 'true' or Exists('/.dockerenv'))">true</InstallV8ForTests>
 
     <!-- don't run any wasm build steps -->
@@ -32,6 +33,9 @@
   <PropertyGroup>
     <_WasmChromePathForTests Condition="'$(CHROME_PATH_FOR_TESTS)' != ''">$(CHROME_PATH_FOR_TESTS)</_WasmChromePathForTests>
     <_WasmChromePathForTests Condition="'$(_WasmChromePathForTests)' == '' and '$(InstallChromeForTests)' == 'true'">$(ChromeBinaryPath)</_WasmChromePathForTests>
+    <_WasmFirefoxPathForTests Condition="'$(FIREFOX_PATH_FOR_TESTS)' != ''">$(FIREFOX_PATH_FOR_TESTS)</_WasmFirefoxPathForTests>
+    <_WasmFirefoxPathForTests Condition="'$(_WasmFirefoxPathForTests)' == '' and '$(InstallFirefoxForTests)' == 'true'">$(FirefoxBinaryPath)</_WasmFirefoxPathForTests>
+
     <_WasmFirefoxPathForTests Condition="'$(FIREFOX_PATH_FOR_TESTS)' != ''">$(FIREFOX_PATH_FOR_TESTS)</_WasmFirefoxPathForTests>
     <_WasmFirefoxPathForTests Condition="'$(_WasmFirefoxPathForTests)' == '' and '$(InstallFirefoxForTests)' == 'true'">$(FirefoxBinaryPath)</_WasmFirefoxPathForTests>
 
@@ -63,6 +67,7 @@
       <SetScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export PREPEND_PATH=$([System.IO.Path]::GetDirectoryName($(GeckoDriverBinaryPath)))" />
       <SetScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set PREPEND_PATH=$([System.IO.Path]::GetDirectoryName($(GeckoDriverBinaryPath)))" />
     </ItemGroup>
+
     <ItemGroup Condition="'$(TestUsingWorkloads)' == 'true'">
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WORKLOAD_PACKS_VER=$(PackageVersionForWorkloadManifests)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WORKLOAD_PACKS_VER=$(PackageVersionForWorkloadManifests)" />
