@@ -46,7 +46,7 @@
       Projects="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.sfxproj" />
 
     <MSBuild Condition="'$(Crossgen2Supported)' == 'true'"
-      Targets="Build"
+      Targets="Publish"
       BuildInParallel="true"
       Properties="NativeAotSupported=$(NativeAotSupported);PublishDir=$(CORE_ROOT)\crossgen2;"
       Projects="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.sfxproj" />
