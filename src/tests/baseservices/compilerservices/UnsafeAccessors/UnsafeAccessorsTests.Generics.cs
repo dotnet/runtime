@@ -98,7 +98,6 @@ public static unsafe class UnsafeAccessorsTestsGenerics
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/89439", TestRuntimes.Mono)]
     public static void Verify_Generic_AccessFieldClass()
     {
         Console.WriteLine($"Running {nameof(Verify_Generic_AccessFieldClass)}");
