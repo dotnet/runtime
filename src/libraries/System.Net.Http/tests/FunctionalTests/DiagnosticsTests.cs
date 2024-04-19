@@ -18,7 +18,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public abstract class DiagnosticsTest : HttpClientHandlerTestBase
+    public abstract class DiagnosticsTest : DiagnosticsTestBase
     {
         private const string EnableActivityPropagationEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_ENABLEACTIVITYPROPAGATION";
         private const string EnableActivityPropagationAppCtxSettingName = "System.Net.Http.EnableActivityPropagation";
@@ -377,6 +377,89 @@ namespace System.Net.Http.Functional.Tests
                     Assert.False(responseLogged, "Response was logged when Activity logging was enabled.");
                 }
             }, UseVersion.ToString(), TestAsync.ToString(), idFormat.ToString()).Dispose();
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(200)]
+        [InlineData(404)]
+        public void SendAsync_ExpectedTagsLogged(int statusCode)
+        {
+            RemoteExecutor.Invoke(async (useVersion, testAsync, statusCodeStr) =>
+            {
+                TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                Activity parentActivity = new Activity("parent");
+                parentActivity.Start();
+
+                Uri? currentUri = null;
+
+                var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
+                {
+                    Assert.NotNull(currentUri);
+
+                    if (!kvp.Key.StartsWith("System.Net.Http.HttpRequestOut"))
+                    {
+                        return;
+                    }
+                    Activity activity = Activity.Current;
+                    Assert.NotNull(activity);
+                    Assert.Equal(parentActivity, Activity.Current.Parent);
+                    IEnumerable<KeyValuePair<string, object?>> tags = activity.TagObjects;
+
+                    VerifyTag(tags, "server.address", currentUri.Host);
+                    VerifyTag(tags, "server.port", currentUri.Port);
+                    VerifyTag(tags, "http.request.method", "GET");
+
+                    if (kvp.Key.EndsWith(".Stop"))
+                    {
+                        VerifyTag(tags, "network.protocol.version", GetVersionString(Version.Parse(useVersion)));
+                        VerifyTag(tags, "http.response.status_code", int.Parse(statusCodeStr));
+
+                        if (statusCodeStr != "200")
+                        {
+                            string errorType = (string)tags.Single(t => t.Key == "error.type").Value;
+                            Assert.Equal(statusCodeStr, errorType);
+                        }
+                        else
+                        {
+                            Assert.DoesNotContain(tags, t => t.Key == "error.type");
+                        }
+
+                        activityStopTcs.SetResult();
+                    }
+                });
+
+                using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
+                {
+                    diagnosticListenerObserver.Enable(s => s.Contains("HttpRequestOut"));
+
+                    await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
+                        async uri =>
+                        {
+                            currentUri = uri;
+                            await GetAsync(useVersion, testAsync, uri);
+                            await activityStopTcs.Task;
+                        },
+                        async server =>
+                        {
+                            HttpRequestData requestData = await server.AcceptConnectionSendResponseAndCloseAsync(
+                                statusCode: (HttpStatusCode)int.Parse(statusCodeStr));
+                            AssertHeadersAreInjected(requestData, parentActivity);
+                        });
+                }
+            }, UseVersion.ToString(), TestAsync.ToString(), statusCode.ToString()).Dispose();
+        }
+
+        protected static void VerifyTag<T>(KeyValuePair<string, object?>[] tags, string name, T value)
+        {
+            if (value is null)
+            {
+                Assert.DoesNotContain(tags, t => t.Key == name);
+            }
+            else
+            {
+                Assert.Equal(value, (T)tags.Single(t => t.Key == name).Value);
+            }
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
