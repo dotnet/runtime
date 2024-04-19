@@ -196,32 +196,37 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
     size_t samplingBudget = (size_t)(pEEAllocContext->alloc_sampling - pAllocContext->alloc_ptr);
     size_t availableSpace = (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr);
     auto pCurrentThread = GetThread();
-    if (flags & GC_ALLOC_USER_OLD_HEAP)
-    {
-        // if sampling is on, decide if this object should be sampled.
-        // the provided allocation context fields are not used for LOH/POH allocations
-        // (only its alloc_bytes_uoh field will be updated),
-        // so get a random size in the distribution and if it is less than the size of the object
-        // then this object should be sampled
-        isSampled = ee_alloc_context::IsSampled(pCurrentThread->GetRandom(), size);
-    }
-    else
-    {
-        // there are 4 scenarios to deal with here:
-        // 1. the allocation context is empty (alloc_ptr, alloc_limit == nullptr) at the beginning
-        // 2. the previous allocated object was too big for the allocation context
-        //    - alloc_sampling, alloc_ptr, alloc_limit have the same value (could be null - the first POH allocation for example)
-        // 3. the previous allocation context returned by the GC was not sampled (alloc_sampling == alloc_limit)
-        // 4. the previous allocation context returned by the GC was sampled (alloc_sampling < alloc_limit)
-        isSampled =
-            (pEEAllocContext->alloc_sampling != pAllocContext->alloc_limit) &&
-            (size > samplingBudget);
 
-        // if the object overflows the AC so we need to sample the remaining bytes
-        // the sampling budget only included at most the bytes inside the AC
-        if (size > availableSpace && !isSampled)
+    isSampled = false;
+    if (EventPipeEventEnabledAllocationSampled())
+    {
+        if (flags & GC_ALLOC_USER_OLD_HEAP)
         {
-            isSampled = ee_alloc_context::IsSampled(pCurrentThread->GetRandom(), size - availableSpace);
+            // if sampling is on, decide if this object should be sampled.
+            // the provided allocation context fields are not used for LOH/POH allocations
+            // (only its alloc_bytes_uoh field will be updated),
+            // so get a random size in the distribution and if it is less than the size of the object
+            // then this object should be sampled
+            isSampled = ee_alloc_context::IsSampled(pCurrentThread->GetRandom(), size);
+        }
+        else
+        {
+            // there are 4 scenarios to deal with here:
+            // 1. the allocation context is empty (alloc_ptr, alloc_limit == nullptr) at the beginning
+            // 2. the previous allocated object was too big for the allocation context
+            //    - alloc_sampling, alloc_ptr, alloc_limit have the same value (could be null - the first POH allocation for example)
+            // 3. the previous allocation context returned by the GC was not sampled (alloc_sampling == alloc_limit)
+            // 4. the previous allocation context returned by the GC was sampled (alloc_sampling < alloc_limit)
+            isSampled =
+                (pEEAllocContext->alloc_sampling != pAllocContext->alloc_limit) &&
+                (size > samplingBudget);
+
+            // if the object overflows the AC so we need to sample the remaining bytes
+            // the sampling budget only included at most the bytes inside the AC
+            if (size > availableSpace && !isSampled)
+            {
+                isSampled = ee_alloc_context::IsSampled(pCurrentThread->GetRandom(), size - availableSpace);
+            }
         }
     }
 

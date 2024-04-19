@@ -446,7 +446,7 @@ gc_alloc_context * GCToEEInterface::GetAllocContext()
 
 void InvokeGCAllocCallback(ee_alloc_context* pEEAllocContext, enum_alloc_context_func* fn, void* param)
 {
-    // the allocation context can be null initially, so we need to take that case into account: skip the threshold management
+    // NOTE: Its possible that alloc_ptr = alloc_limit = alloc_sampling = NULL at this point
     gc_alloc_context* pAllocContext = &pEEAllocContext->gc_alloc_context;
 
     // The allocation context might be modified by the callback, so we need to save

@@ -40,20 +40,29 @@ typedef struct _ee_alloc_context
 
     inline void ComputeSamplingLimit(CLRRandom* pRandomizer)
     {
-        // TODO: maybe it is easier to assume that the caller of this function will check if sampling is on/off
-        // If sampling is off this is just setting alloc_sampling = alloc_limit
+        // the caller of this function does not have to check if sampling is on/off
+        // If sampling is off, this is just setting alloc_sampling = alloc_limit
         // If sampling is on then we'd do some pseudo-random number generation to decide what is
         // the next sampled byte in the gc_alloc_context, if any.
+        if (EventPipeEventEnabledAllocationSampled())
+        {
+            // compute the next sampling limit based on a geometric distribution
+            size_t threshold = ComputeExponentialRandom(pRandomizer);
 
-        // compute the next sampling limit based on a geometric distribution
-        size_t threshold = ComputeExponentialRandom(pRandomizer);
-
-        // if the threshold is larger than the allocation context, no sampling will occur
-        alloc_sampling = Min(gc_alloc_context.alloc_ptr + threshold, gc_alloc_context.alloc_limit);
+            // if the threshold is larger than the allocation context, no sampling will occur
+            alloc_sampling = Min(gc_alloc_context.alloc_ptr + threshold, gc_alloc_context.alloc_limit);
+        }
+        else
+        {
+            alloc_sampling = gc_alloc_context.alloc_limit;
+        }
     }
 
+    // it is expected that the caller of this function has already checked if sampling is on/off
     static inline bool IsSampled(CLRRandom* pRandomizer, size_t range)
     {
+        assert(EventPipeEventEnabledAllocationSampled());
+
         size_t threshold = ComputeExponentialRandom(pRandomizer);
         return (threshold < range);
     }
