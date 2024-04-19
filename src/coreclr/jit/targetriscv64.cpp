@@ -36,6 +36,7 @@ RiscV64Classifier::RiscV64Classifier(const ClassifierInfo& info)
     , m_intRegs(intArgRegs, ArrLen(intArgRegs))
     , m_floatRegs(fltArgRegs, ArrLen(fltArgRegs))
 {
+    assert(!m_info.IsVarArgs); // TODO: varargs currently not supported on RISC-V
 }
 
 //-----------------------------------------------------------------------------
@@ -57,8 +58,6 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
                                                   ClassLayout* structLayout,
                                                   WellKnownArg /*wellKnownParam*/)
 {
-    assert(!m_info.IsVarArgs); // TODO: varargs currently not supported on RISC-V
-
     StructFloatFieldInfoFlags flags     = STRUCT_NO_FLOAT_FIELD;
     unsigned                  intFields = 0, floatFields = 0;
     unsigned                  passedSize;
@@ -93,17 +92,14 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
     }
     else
     {
-        assert(genTypeSize(type) <= TARGET_POINTER_SIZE);
-
-        if (varTypeIsFloating(type))
-            floatFields = 1;
-
         passedSize = genTypeSize(type);
+        assert(passedSize <= TARGET_POINTER_SIZE);
+        floatFields = varTypeIsFloating(type) ? 1 : 0;
     }
 
     assert((floatFields > 0) || (intFields == 0));
 
-    auto PassSlot = [this](bool inFloatReg, unsigned offset, unsigned size) -> ABIPassingSegment {
+    auto passSlot = [this](bool inFloatReg, unsigned offset, unsigned size) -> ABIPassingSegment {
         assert(size > 0);
         assert(size <= TARGET_POINTER_SIZE);
         if (inFloatReg)
@@ -151,8 +147,8 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
             bool isSecondFloat = (flags & (STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_SECOND)) != 0;
             assert(isFirstFloat || isSecondFloat);
 
-            return {2, new (comp, CMK_ABI) ABIPassingSegment[]{PassSlot(isFirstFloat, 0, firstSize),
-                                                               PassSlot(isSecondFloat, offset, secondSize)}};
+            return {2, new (comp, CMK_ABI) ABIPassingSegment[]{passSlot(isFirstFloat, 0, firstSize),
+                                                               passSlot(isSecondFloat, offset, secondSize)}};
         }
     }
     else
@@ -160,18 +156,16 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         // Integer calling convention
         if (passedSize <= TARGET_POINTER_SIZE)
         {
-            return ABIPassingInformation::FromSegment(comp, PassSlot(false, 0, passedSize));
+            return ABIPassingInformation::FromSegment(comp, passSlot(false, 0, passedSize));
         }
         else
         {
             assert(varTypeIsStruct(type));
             return {2, new (comp, CMK_ABI)
-                           ABIPassingSegment[]{PassSlot(false, 0, TARGET_POINTER_SIZE),
-                                               PassSlot(false, TARGET_POINTER_SIZE, passedSize - TARGET_POINTER_SIZE)}};
+                           ABIPassingSegment[]{passSlot(false, 0, TARGET_POINTER_SIZE),
+                                               passSlot(false, TARGET_POINTER_SIZE, passedSize - TARGET_POINTER_SIZE)}};
         }
     }
-
-    unreached();
 }
 
 #endif // TARGET_RISCV64

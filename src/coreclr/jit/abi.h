@@ -51,8 +51,8 @@ struct ABIPassingInformation
     // - On loongarch64/riscv64, structs can be passed in two registers or
     // can be split out over register and stack, giving
     // multiple register segments and a struct segment.
-    unsigned           NumSegments = 0;
-    ABIPassingSegment* Segments    = nullptr;
+    unsigned           NumSegments;
+    ABIPassingSegment* Segments;
 
     ABIPassingInformation(unsigned numSegments = 0, ABIPassingSegment* segments = nullptr)
         : NumSegments(numSegments)
