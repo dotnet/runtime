@@ -760,11 +760,14 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 
                         // We updated the weight of fromBlock above.
                         //
-                        // Set the likelhoods such that the addtional weight flows to toBlock
+                        // Set the likelihoods such that the additional weight flows to toBlock
                         // (and so the "normal path" profile out of fromBlock to newBlock is unaltered)
                         //
+                        // In some stress cases we may have a zero-weight OSR entry.
+                        // Tolerate this by capping the fromToLikelihood.
+                        //
                         weight_t const fromWeight       = fromBlock->bbWeight;
-                        weight_t const fromToLikelihood = entryWeight / fromWeight;
+                        weight_t const fromToLikelihood = min(1.0, entryWeight / fromWeight);
 
                         osrTryEntryEdge->setLikelihood(fromToLikelihood);
                         normalTryEntryEdge->setLikelihood(1.0 - fromToLikelihood);
