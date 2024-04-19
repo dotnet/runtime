@@ -81,6 +81,9 @@
       <_additionalPropertiesString>@(_propertiesAsItems->'&lt;%(Identity)&gt;%(Value)&lt;/%(Identity)&gt;', '%0a    ')</_additionalPropertiesString>
     </PropertyGroup>
 
+    <!-- RunNativeAotTestApps trumps TestTrimming, same as PublishAot trumps PublishTrimmed -->
+    <Error Condition="'$(RunNativeAotTestApps)' == 'true' and '$(TestTrimming)' == 'true'" Text="Not possible to test both IL trimming and AOT at the same time" />
+
     <MakeDir Directories="$(_projectDir)" />
     <WriteLinesToFile File="$(_projectFile)"
                       Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)')
