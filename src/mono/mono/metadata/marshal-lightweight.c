@@ -2322,6 +2322,7 @@ method_sig_from_accessor_sig (MonoMethodBuilder *mb, gboolean hasthis, MonoMetho
 	ret->hasthis = hasthis;
 	for (int i = 1; i < ret->param_count; i++)
 		ret->params [i - 1] = ret->params [i];
+	memset (&ret->params[ret->param_count - 1], 0, sizeof (MonoType*)); // just in case
 	ret->param_count--;
 	return ret;
 }
