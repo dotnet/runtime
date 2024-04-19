@@ -76,7 +76,8 @@ public class Repro
     private static int s_field59 = 59;
 
     [Fact]
-    public static int TestEntryPoint()
+        [OuterLoop]
+        public static int TestEntryPoint()
     {
         s_field0 = 2;
         if (s_field0 == 2)

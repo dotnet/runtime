@@ -28,7 +28,8 @@ public class Class1
         testLog = new TestUtil.TestLog(expectedOut);
     }
     [Fact]
-    public static int TestEntryPoint()
+        [OuterLoop]
+        public static int TestEntryPoint()
     {
         //Start recording
         testLog.StartRecording();

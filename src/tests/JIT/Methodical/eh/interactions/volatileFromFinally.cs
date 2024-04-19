@@ -41,7 +41,8 @@ public class Test
     }
 
     [Fact]
-    public static int TestEntryPoint()
+        [OuterLoop]
+        public static int TestEntryPoint()
     {
         //Console.WriteLine("64 bit = {0}", Environment.Is64BitProcess);
 

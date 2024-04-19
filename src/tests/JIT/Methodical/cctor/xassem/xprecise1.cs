@@ -7,7 +7,8 @@ namespace Precise {
 public class Driver_xprecise1
 {
 	[Fact]
-	public static int TestEntryPoint()
+        [OuterLoop]
+        public static int TestEntryPoint()
 	{
 		try {
 			byte b = 0xF;

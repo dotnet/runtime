@@ -35,6 +35,7 @@ public class ushortMDArrTest
     static ushort[][, ,] ja2_b = new ushort[2][, ,];
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
 

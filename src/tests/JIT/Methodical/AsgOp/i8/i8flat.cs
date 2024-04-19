@@ -9,7 +9,8 @@ namespace Test_i8flat_cs
 public class test
 {
     [Fact]
-    public static int TestEntryPoint()
+        [OuterLoop]
+        public static int TestEntryPoint()
     {
         Int64 x;
         Int64 y;

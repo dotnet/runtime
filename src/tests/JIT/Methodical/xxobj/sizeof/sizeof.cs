@@ -52,7 +52,8 @@ namespace JitTest
 	public struct Test
 	{
 		[Fact]
-		public static unsafe int TestEntryPoint()
+            [OuterLoop]
+            public static unsafe int TestEntryPoint()
 		{
 			if (sizeof(SimpleStruct) != 32)
 			{

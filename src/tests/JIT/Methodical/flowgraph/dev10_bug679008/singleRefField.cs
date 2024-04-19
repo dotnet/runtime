@@ -70,7 +70,8 @@ public class Repro
     }
 
     [Fact]
-    public static void TestEntryPoint()
+        [OuterLoop]
+        public static void TestEntryPoint()
     {
         new Repro().Bug(new MB8(), "Test");
     }

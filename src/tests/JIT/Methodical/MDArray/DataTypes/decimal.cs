@@ -35,6 +35,7 @@ public class decimalMDArrTest
     static decimal[][, ,] ja2_b = new decimal[2][, ,];
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
 

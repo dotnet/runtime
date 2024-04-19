@@ -23,6 +23,7 @@ namespace JitTest_array2_refany_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             ulong[,] aul2 = new ulong[,] { { 1, 2, 3 }, { 4, 5, 6 } };

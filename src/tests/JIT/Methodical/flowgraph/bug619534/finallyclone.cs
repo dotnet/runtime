@@ -20,7 +20,8 @@ class ApplicationException : Exception { }
 public class TestClass
 {
     [Fact]
-    public static int TestEntryPoint()
+        [OuterLoop]
+        public static int TestEntryPoint()
     {
         //this should return true;
         return Test() ? 100 : 101;

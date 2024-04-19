@@ -36,6 +36,7 @@ public class byteMDArrTest
     static byte[][, ,] ja2_b = new byte[2][, ,];
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
 

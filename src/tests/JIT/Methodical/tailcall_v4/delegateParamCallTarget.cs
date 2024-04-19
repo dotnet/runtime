@@ -44,7 +44,8 @@ public class Repro
     }
 
     [Fact]
-    public static int TestEntryPoint()
+        [OuterLoop]
+        public static int TestEntryPoint()
     {
         Repro r = new Repro();
         DoIt d = r.DoItRight;

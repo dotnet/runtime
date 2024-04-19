@@ -10,6 +10,7 @@ namespace SinCalc_against_sinlib_cs
     public class SinCalc
     {
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             object i;

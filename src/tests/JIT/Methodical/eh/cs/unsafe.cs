@@ -54,7 +54,8 @@ public class Test
     }
 
     [Fact]
-    public static int TestEntryPoint()
+        [OuterLoop]
+        public static int TestEntryPoint()
     {
         //Start recording
         testLog.StartRecording();

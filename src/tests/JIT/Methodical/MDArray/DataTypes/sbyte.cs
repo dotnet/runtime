@@ -35,6 +35,7 @@ public class sbyteMDArrTest
     static sbyte[][, ,] ja2_b = new sbyte[2][, ,];
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
 

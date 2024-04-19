@@ -9,7 +9,8 @@ namespace Test_r8flat_cs
 public class test
 {
     [Fact]
-    public static int TestEntryPoint()
+        [OuterLoop]
+        public static int TestEntryPoint()
     {
         double x;
         double y;

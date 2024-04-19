@@ -32,7 +32,8 @@ public class Test
     }
 
     [Fact]
-    public static int TestEntryPoint()
+        [OuterLoop]
+        public static int TestEntryPoint()
     {
         Test t = TwoEndFinallys(new string[] {});
         if (t._temp == 101)

@@ -304,7 +304,8 @@ public class FloatOvfToInt
     }
 
     [Fact]
-    public static int TestEntryPoint()
+        [OuterLoop]
+        public static int TestEntryPoint()
     {
         int res = TestValues();
         Console.WriteLine("Test " + (res == 100 ? "passed" : "failed"));

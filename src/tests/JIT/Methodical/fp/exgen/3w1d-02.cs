@@ -36,7 +36,8 @@ public unsafe class testout1
     }
 
     [Fact]
-    public static int TestEntryPoint()
+        [OuterLoop]
+        public static int TestEntryPoint()
     {
         vtstatic_0.arr3d_0[4, 0, 3] = 1UL;
 

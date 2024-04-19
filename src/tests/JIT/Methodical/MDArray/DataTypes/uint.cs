@@ -35,6 +35,7 @@ public class uintMDArrTest
     static uint[][, ,] ja2_b = new uint[2][, ,];
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
 

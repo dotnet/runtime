@@ -35,6 +35,7 @@ public class ulongMDArrTest
     static ulong[][, ,] ja2_b = new ulong[2][, ,];
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
 

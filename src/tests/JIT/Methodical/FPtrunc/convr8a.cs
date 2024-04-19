@@ -87,6 +87,7 @@ public class ConvR8test
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         bool pass = true;

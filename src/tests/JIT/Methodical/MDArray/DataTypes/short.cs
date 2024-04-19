@@ -35,6 +35,7 @@ public class shortMDArrTest
     static short[][, ,] ja2_b = new short[2][, ,];
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
 

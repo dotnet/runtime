@@ -44,6 +44,7 @@ public class intMDArrTest
 
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
 

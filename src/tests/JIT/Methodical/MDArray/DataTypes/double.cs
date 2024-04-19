@@ -35,6 +35,7 @@ public class doubleMDArrTest
     static double[][, ,] ja2_b = new double[2][, ,];
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
 

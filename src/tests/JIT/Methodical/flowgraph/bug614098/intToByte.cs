@@ -35,7 +35,8 @@ public class Program
     static private MyStruct[] s_myObjects = { new MyStruct(0x0100) };
 
     [Fact]
-    public static int TestEntryPoint()
+        [OuterLoop]
+        public static int TestEntryPoint()
     {
         MyStruct obj = s_myObjects[0];
         ushort value = obj.value;

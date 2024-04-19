@@ -8,7 +8,8 @@ namespace Test_ptuple_lost
 public class A
 {
     [Fact]
-    public static int TestEntryPoint()
+        [OuterLoop]
+        public static int TestEntryPoint()
     {
         int[] arr = new int[10];
 

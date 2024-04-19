@@ -43,6 +43,7 @@ public class longMDArrTest
     static long[][, ,] ja2_c = new long[2][, ,];
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
 

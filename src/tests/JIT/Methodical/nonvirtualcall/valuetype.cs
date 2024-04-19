@@ -35,7 +35,8 @@ namespace Test
         }
 
         [Fact]
-        public static int TestEntryPoint()
+            [OuterLoop]
+            public static int TestEntryPoint()
         {
             try
             {

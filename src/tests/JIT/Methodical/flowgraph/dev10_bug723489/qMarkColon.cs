@@ -18,7 +18,8 @@ public class Repro
     }
 
     [Fact]
-    public static int TestEntryPoint()
+        [OuterLoop]
+        public static int TestEntryPoint()
     {
         Version ver0 = null;
         Version ver1 = null;

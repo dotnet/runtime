@@ -17,7 +17,8 @@ public static class Repro
         return a.GetType() == typeof(Action<object>);
     }
     [Fact]
-    public static int TestEntryPoint()
+        [OuterLoop]
+        public static int TestEntryPoint()
     {
         Action<string> a = (Action<object>)Console.WriteLine;
         if (CheckType(a))

@@ -27,6 +27,7 @@ public class charMDArrTest
     static char[][, ,] ja2 = new char[2][, ,];
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
 

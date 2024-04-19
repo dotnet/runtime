@@ -63,7 +63,8 @@ public static class Repro
     }
 
     [Fact]
-    public static int TestEntryPoint()
+        [OuterLoop]
+        public static int TestEntryPoint()
     {
         MyStruct[] ms = InitMS(5); //InitMS(args.Length > 0 ? int.Parse(args[0]) : 5);
                                    //Do not expect to take in any arguments here for simplicity sake.

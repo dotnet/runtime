@@ -42,6 +42,7 @@ namespace strswitch_switchincatch_cs
         /// The main entry point for the application.
         /// </summary>
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             string[] s = { "one", "two", "three", "four", "five", "six" };

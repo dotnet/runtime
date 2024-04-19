@@ -27,6 +27,7 @@ public class Bool2D3DArrTest
     static bool[][, ,] ja2 = new bool[2][, ,];
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
 

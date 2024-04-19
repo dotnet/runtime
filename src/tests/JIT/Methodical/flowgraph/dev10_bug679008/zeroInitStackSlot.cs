@@ -35,7 +35,8 @@ internal delegate bool WarehouseRowVersionQueryDelegate(WarehouseResultDatabase 
 public class Repro
 {
     [Fact]
-    public static void TestEntryPoint()
+        [OuterLoop]
+        public static void TestEntryPoint()
     {
         new Repro().ProcessResults(Query);
     }

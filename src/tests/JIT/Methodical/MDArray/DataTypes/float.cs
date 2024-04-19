@@ -35,6 +35,7 @@ public class floatMDArrTest
     static float[][, ,] ja2_b = new float[2][, ,];
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
 

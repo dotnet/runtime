@@ -16,7 +16,8 @@ public class LocallocTest
     private static int s_locallocSize = 0;
 
     [Fact]
-    public static unsafe int TestEntryPoint()
+        [OuterLoop]
+        public static unsafe int TestEntryPoint()
     {
         ulong local1 = Global.INITIAL_VALUE;
         ulong local2 = local1 + 1;

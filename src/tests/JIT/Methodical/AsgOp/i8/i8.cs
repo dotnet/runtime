@@ -670,7 +670,8 @@ public class test
 
 
     [Fact]
-    public static int TestEntryPoint()
+        [OuterLoop]
+        public static int TestEntryPoint()
     {
         Int64 x;
         bool pass = true;
