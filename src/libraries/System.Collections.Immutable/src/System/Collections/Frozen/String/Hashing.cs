@@ -151,7 +151,7 @@ namespace System.Collections.Frozen
                 stackalloc char[256] :
                 (rentedArray = ArrayPool<char>.Shared.Rent(length));
 
-            length = s.ToUpperInvariant(scratch); // NOTE: this really should be the (non-existent) ToUpperOrdinal
+            length = s.ToUpperInvariant(scratch); // NOTE: this both allocates and really should be the (non-existent) ToUpperOrdinal
             int hash = GetHashCodeOrdinal(scratch.Slice(0, length));
 
             if (rentedArray is not null)

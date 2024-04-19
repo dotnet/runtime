@@ -186,7 +186,7 @@ namespace System.Collections.Frozen
 
         private delegate ReadOnlySpan<char> GetSpan(string s, int index, int count);
 
-        internal static bool AreAllAscii(ReadOnlySpan<string> strings)
+        private static bool AreAllAscii(ReadOnlySpan<string> strings)
         {
             foreach (string s in strings)
             {
