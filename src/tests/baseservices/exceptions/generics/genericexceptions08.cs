@@ -3,6 +3,7 @@
 using System;
 using System.Globalization;
 using System.IO;
+using Xunit;
 
 class MyException : Exception
 {
@@ -53,7 +54,8 @@ public class GenericExceptions
         (new Struct<MyException>()).StructInstanceFunctionWithManyArgs(1, 2, 3, Help.s_object);
     }
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

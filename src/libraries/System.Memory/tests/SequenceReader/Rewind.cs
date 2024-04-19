@@ -83,7 +83,7 @@ namespace System.Memory.Tests.SequenceReader
             try
             {
                 reader.Rewind(1);
-                Assert.True(false, "no exception thrown");
+                Assert.Fail("no exception thrown");
             }
             catch (ArgumentOutOfRangeException)
             {
@@ -95,7 +95,7 @@ namespace System.Memory.Tests.SequenceReader
             try
             {
                 reader.Rewind(2);
-                Assert.True(false, "no exception thrown");
+                Assert.Fail("no exception thrown");
             }
             catch (ArgumentOutOfRangeException)
             {

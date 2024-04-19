@@ -42,7 +42,7 @@ namespace System.Security.Cryptography
                 {
                     Span<byte> iBuffer = stackalloc byte[sizeof(uint)];
                     Span<byte> lBuffer = stackalloc byte[sizeof(uint)];
-                    ReadOnlySpan<byte> zero = stackalloc byte[] { 0 };
+                    ReadOnlySpan<byte> zero = [0];
                     Span<byte> hmacBuffer = stackalloc byte[512 / 8]; // Largest HMAC supported is SHA512
                     int hmacBufferWritten = 0;
 

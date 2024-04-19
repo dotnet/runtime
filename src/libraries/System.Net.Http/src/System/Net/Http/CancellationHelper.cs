@@ -36,9 +36,17 @@ namespace System.Net.Http
         /// <param name="cancellationToken">The token to check for a cancellation request.</param>
         internal static void ThrowIfCancellationRequested(CancellationToken cancellationToken)
         {
+            ThrowIfCancellationRequested(innerException: null, cancellationToken);
+        }
+
+        /// <summary>Throws a cancellation exception if cancellation has been requested via <paramref name="cancellationToken"/>.</summary>
+        /// <param name="innerException">The inner exception to wrap. May be null.</param>
+        /// <param name="cancellationToken">The token to check for a cancellation request.</param>
+        internal static void ThrowIfCancellationRequested(Exception? innerException, CancellationToken cancellationToken)
+        {
             if (cancellationToken.IsCancellationRequested)
             {
-                ThrowOperationCanceledException(innerException: null, cancellationToken);
+                ThrowOperationCanceledException(innerException, cancellationToken);
             }
         }
     }

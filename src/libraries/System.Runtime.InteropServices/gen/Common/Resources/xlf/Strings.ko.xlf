@@ -149,12 +149,12 @@
       </trans-unit>
       <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesMessageWithDetails">
         <source>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations. {0}</source>
-        <target state="new">The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations. {0}</target>
+        <target state="translated">'GeneratedComInterfaceAttribute' 사용법이 권장 사항을 따르지 않습니다. {0}</target>
         <note />
       </trans-unit>
       <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesTitle">
         <source>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations.</source>
-        <target state="new">The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations.</target>
+        <target state="translated">'GeneratedComInterfaceAttribute' 사용법이 권장 사항을 따르지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ComMethodReturningIntWillBeOutParameterMessage">
@@ -449,17 +449,17 @@
       </trans-unit>
       <trans-unit id="HResultTypeWillBeTreatedAsStructMessage">
         <source>The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</source>
-        <target state="new">The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</target>
+        <target state="translated">'{0}' 형식은 네이티브 HRESULT가 아니라 네이티브 서명에서 구조체로 처리됩니다. HRESULT로 처리하려면 메서드에 '[return:MarshalAs(UnmanagedType.Error)]'를 추가하세요.</target>
         <note />
       </trans-unit>
       <trans-unit id="HResultTypeWillBeTreatedAsStructTitle">
         <source>This type will be treated as a struct in the native signature, not as a native HRESULT</source>
-        <target state="new">This type will be treated as a struct in the native signature, not as a native HRESULT</target>
+        <target state="translated">이 형식은 네이티브 HRESULT가 아니라 네이티브 서명의 구조체로 처리됩니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InAttributeNotSupportedOnByValueParameters">
         <source>The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</source>
-        <target state="new">The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</target>
+        <target state="translated">'[In]' 특성은 배열 매개 변수에서만 지원됩니다. 값별 매개 변수는 기본적으로 읽기 전용으로 간주됩니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InAttributeNotSupportedWithoutOutBlittableArray">
@@ -484,12 +484,17 @@
       </trans-unit>
       <trans-unit id="InOutAttributeNotSupportedOnByValueParameters">
         <source>The '[In]' and '[Out]' attributes are only supported on array parameters. Consider using the 'ref' keyword to make the parameter mutable.</source>
-        <target state="new">The '[In]' and '[Out]' attributes are only supported on array parameters. Consider using the 'ref' keyword to make the parameter mutable.</target>
+        <target state="translated">'[In]' 및 '[Out]' 특성은 배열 매개 변수에서만 지원됩니다. 매개 변수를 변경 가능하게 만들려면 'ref' 키워드를 사용하는 것이 좋습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InOutAttributes">
         <source>[In] and [Out] attributes</source>
         <target state="translated">[In] 및 [Out] 속성</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InVariantShouldBeRef">
+        <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
+        <target state="new">Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
@@ -724,12 +729,12 @@
       </trans-unit>
       <trans-unit id="LibraryImportUsageDoesNotFollowBestPracticesMessageWithDetails">
         <source>The usage of 'LibraryImportAttribute' does not follow recommendations. {0}</source>
-        <target state="new">The usage of 'LibraryImportAttribute' does not follow recommendations. {0}</target>
+        <target state="translated">'LibraryImportAttribute' 사용법이 권장 사항을 따르지 않습니다. {0}</target>
         <note />
       </trans-unit>
       <trans-unit id="LibraryImportUsageDoesNotFollowBestPracticesTitle">
         <source>The usage of 'LibraryImportAttribute' does not follow recommendations.</source>
-        <target state="new">The usage of 'LibraryImportAttribute' does not follow recommendations.</target>
+        <target state="translated">'LibraryImportAttribute' 사용법이 권장 사항을 따르지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionElementTypesMustMatchDescription">
@@ -934,7 +939,7 @@
       </trans-unit>
       <trans-unit id="OutAttributeNotSupportedOnByValueParameters">
         <source>The '[Out]' attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
-        <target state="new">The '[Out]' attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</target>
+        <target state="translated">'[Out]' 특성은 배열 매개 변수에서만 지원됩니다. 매개 변수를 변경할 수 있도록 'out' 또는 'ref' 키워드를 사용하는 것이 좋습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
@@ -949,7 +954,7 @@
       </trans-unit>
       <trans-unit id="PreferExplicitInOutAttributesOnArrays">
         <source>It is recommended to use explicit '[In]' and '[Out]' attributes on array parameters.</source>
-        <target state="new">It is recommended to use explicit '[In]' and '[Out]' attributes on array parameters.</target>
+        <target state="translated">배열 매개 변수에는 명시적인 '[In]' 및 '[Out]' 특성을 사용하는 것이 좋습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescriptionCom">
@@ -1020,11 +1025,6 @@
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
         <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
         <target state="translated">이 형식의 마샬링을 활성화하려면 어셈블리에 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute'를 적용하여 이 프로젝트에서 런타임 마샬링을 비활성화해야 합니다.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="SafeHandleByRefMustBeConcrete">
-        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
-        <target state="translated">'SafeHandle'에서 파생된 추상 형식은 참조로 마샬링할 수 없습니다. 제공된 형식은 구체적이어야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam">

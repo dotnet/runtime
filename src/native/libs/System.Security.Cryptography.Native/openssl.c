@@ -627,8 +627,8 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
                 break;
         }
 
-        STACK_OF(GENERAL_NAME)* altNames = (STACK_OF(GENERAL_NAME)*)(
-            X509_get_ext_d2i(x509, forIssuer ? NID_issuer_alt_name : NID_subject_alt_name, NULL, NULL));
+        GENERAL_NAMES* altNames = (GENERAL_NAMES*)
+            X509_get_ext_d2i(x509, forIssuer ? NID_issuer_alt_name : NID_subject_alt_name, NULL, NULL);
 
         if (altNames)
         {
@@ -668,8 +668,11 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
                                 if (sizeof(szOidUpn) == cchLocalOid &&
                                     0 == strncmp(localOid, szOidUpn, sizeof(szOidUpn)))
                                 {
-                                    // OTHERNAME->ASN1_TYPE->union.field
-                                    str = value->value->value.asn1_string;
+                                    if (value->value)
+                                    {
+                                        // OTHERNAME->ASN1_TYPE->union.field
+                                        str = value->value->value.asn1_string;
+                                    }
                                 }
                             }
 
@@ -681,13 +684,13 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
                     {
                         BIO* b = BIO_new(BIO_s_mem());
                         ASN1_STRING_print_ex(b, str, ASN1_STRFLGS_UTF8_CONVERT);
-                        sk_GENERAL_NAME_free(altNames);
+                        GENERAL_NAMES_free(altNames);
                         return b;
                     }
                 }
             }
 
-            sk_GENERAL_NAME_free(altNames);
+            GENERAL_NAMES_free(altNames);
         }
     }
 

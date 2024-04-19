@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Testing;
+using Microsoft.DotNet.XUnitExtensions.Attributes;
 using Microsoft.Interop;
 using Microsoft.Interop.UnitTests;
 using Xunit;
@@ -906,6 +907,25 @@ namespace ComInterfaceGenerator.Unit.Tests
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck | TestBehaviors.SkipGeneratedCodeCheck,
             };
             test.ExpectedDiagnostics.AddRange(diagnostics);
+            test.DisabledDiagnostics.Remove(GeneratorDiagnostics.Ids.NotRecommendedGeneratedComInterfaceUsage);
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task ByRefInVariant_ReportsNotRecommendedDiagnostic()
+        {
+            CodeSnippets codeSnippets = new CodeSnippets(GeneratorKind.ComInterfaceGeneratorManagedObjectWrapper);
+
+            var test = new VerifyComInterfaceGenerator.Test(referenceAncillaryInterop: false)
+            {
+                TestCode = codeSnippets.MarshalAsParameterAndModifiers("object", System.Runtime.InteropServices.UnmanagedType.Struct),
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck | TestBehaviors.SkipGeneratedCodeCheck,
+            };
+            test.ExpectedDiagnostics.Add(
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.GeneratedComInterfaceUsageDoesNotFollowBestPractices)
+                    .WithLocation(2)
+                    .WithArguments(SR.InVariantShouldBeRef));
             test.DisabledDiagnostics.Remove(GeneratorDiagnostics.Ids.NotRecommendedGeneratedComInterfaceUsage);
             await test.RunAsync();
         }

@@ -52,7 +52,7 @@ namespace System
 
             for (i = 0; i < candidates.Length; i++)
             {
-                ParameterInfo[] par = candidates[i]!.GetParametersNoCopy();
+                ReadOnlySpan<ParameterInfo> par = candidates[i]!.GetParametersAsSpan();
 
                 // args.Length + 1 takes into account the possibility of a last paramArray that can be omitted
                 paramOrder[i] = new int[(par.Length > args.Length) ? par.Length : args.Length];
@@ -104,7 +104,7 @@ namespace System
                 if (candidates[i] == null)
                     continue;
 
-                ParameterInfo[] par = candidates[i]!.GetParametersNoCopy();
+                ReadOnlySpan<ParameterInfo> par = candidates[i]!.GetParametersAsSpan();
 
 #region Match method by parameter count
                 if (par.Length == 0)
@@ -306,7 +306,7 @@ namespace System
 
                 // If the parameters and the args are not the same length or there is a paramArray
                 //  then we need to create a argument array.
-                ParameterInfo[] parms = candidates[0]!.GetParametersNoCopy();
+                ReadOnlySpan<ParameterInfo> parms = candidates[0]!.GetParametersAsSpan();
 
                 if (parms.Length == args.Length)
                 {
@@ -397,7 +397,7 @@ namespace System
 
             // If the parameters and the args are not the same length or there is a paramArray
             //  then we need to create a argument array.
-            ParameterInfo[] parameters = bestMatch.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> parameters = bestMatch.GetParametersAsSpan();
             if (parameters.Length == args.Length)
             {
                 if (paramArrayTypes[currentMin] != null)
@@ -562,7 +562,7 @@ namespace System
             int CurIdx = 0;
             for (i = 0; i < candidates.Length; i++)
             {
-                ParameterInfo[] par = candidates[i].GetParametersNoCopy();
+                ReadOnlySpan<ParameterInfo> par = candidates[i].GetParametersAsSpan();
                 if (par.Length != types.Length)
                     continue;
                 for (j = 0; j < types.Length; j++)
@@ -797,7 +797,7 @@ namespace System
 
             for (int i = 0; i < match.Length; i++)
             {
-                ParameterInfo[] par = match[i].GetParametersNoCopy();
+                ReadOnlySpan<ParameterInfo> par = match[i].GetParametersAsSpan();
                 if (par.Length == 0)
                 {
                     continue;
@@ -861,8 +861,8 @@ namespace System
             return bestMatch;
         }
 
-        private static int FindMostSpecific(ParameterInfo[] p1, int[] paramOrder1, Type? paramArrayType1,
-                                            ParameterInfo[] p2, int[] paramOrder2, Type? paramArrayType2,
+        private static int FindMostSpecific(ReadOnlySpan<ParameterInfo> p1, int[] paramOrder1, Type? paramArrayType1,
+                                            ReadOnlySpan<ParameterInfo> p2, int[] paramOrder2, Type? paramArrayType2,
                                             Type[] types, object?[]? args)
         {
             // A method using params is always less specific than one not using params
@@ -1016,8 +1016,8 @@ namespace System
                                                   Type[] types, object?[]? args)
         {
             // Find the most specific method based on the parameters.
-            int res = FindMostSpecific(m1.GetParametersNoCopy(), paramOrder1, paramArrayType1,
-                                       m2.GetParametersNoCopy(), paramOrder2, paramArrayType2, types, args);
+            int res = FindMostSpecific(m1.GetParametersAsSpan(), paramOrder1, paramArrayType1,
+                                       m2.GetParametersAsSpan(), paramOrder2, paramArrayType2, types, args);
 
             // If the match was not ambiguous then return the result.
             if (res != 0)
@@ -1096,8 +1096,8 @@ namespace System
 
         public static bool CompareMethodSig(MethodBase m1, MethodBase m2)
         {
-            ParameterInfo[] params1 = m1.GetParametersNoCopy();
-            ParameterInfo[] params2 = m2.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> params1 = m1.GetParametersAsSpan();
+            ReadOnlySpan<ParameterInfo> params2 = m2.GetParametersAsSpan();
 
             if (params1.Length != params2.Length)
                 return false;
@@ -1181,7 +1181,7 @@ namespace System
         //  as the values and maps to the parameters of the method.  We store the mapping
         //  from the parameters to the names in the paramOrder array.  All parameters that
         //  don't have matching names are then stored in the array in order.
-        private static bool CreateParamOrder(int[] paramOrder, ParameterInfo[] pars, string[] names)
+        private static bool CreateParamOrder(int[] paramOrder, ReadOnlySpan<ParameterInfo> pars, string[] names)
         {
             bool[] used = new bool[pars.Length];
 
@@ -1235,13 +1235,14 @@ namespace System
                 (source == typeof(UIntPtr) && target == typeof(UIntPtr)))
                 return true;
 
-            Primitives widerCodes = s_primitiveConversions[(int)(Type.GetTypeCode(source))];
+            Primitives widerCodes = PrimitiveConversions[(int)(Type.GetTypeCode(source))];
             Primitives targetCode = (Primitives)(1 << (int)(Type.GetTypeCode(target)));
 
             return (widerCodes & targetCode) != 0;
         }
 
-        private static readonly Primitives[] s_primitiveConversions = {
+        private static ReadOnlySpan<Primitives> PrimitiveConversions =>
+        [
             /* Empty    */  0, // not primitive
             /* Object   */  0, // not primitive
             /* DBNull   */  0, // not primitive
@@ -1261,7 +1262,7 @@ namespace System
             /* DateTime */  Primitives.DateTime,
             /* [Unused] */  0,
             /* String   */  Primitives.String,
-        };
+        ];
 
         [Flags]
         private enum Primitives

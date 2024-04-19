@@ -1,0 +1,25 @@
+<Project>
+  <PropertyGroup>
+    <TargetArchitecture>wasm</TargetArchitecture>
+    <UseMonoRuntime>true</UseMonoRuntime>
+
+    <!-- Top level -->
+    <WasmBuildAppDependsOn>
+      _WasmBuildAppCore;
+    </WasmBuildAppDependsOn>
+
+    <_WasmBuildAppCoreDependsOn>
+      _InitializeCommonProperties;
+      PrepareInputsForWasmBuild;
+      _WasmResolveReferences;
+      _WasmBuildNativeCore;
+      WasmGenerateAppBundle;
+      _EmitWasmAssembliesFinal;
+    </_WasmBuildAppCoreDependsOn>
+
+    <WasmNestedPublishAppDependsOn>
+      _PrepareForNestedPublish;
+      _WasmBuildAppCore;
+    </WasmNestedPublishAppDependsOn>
+  </PropertyGroup>
+</Project>

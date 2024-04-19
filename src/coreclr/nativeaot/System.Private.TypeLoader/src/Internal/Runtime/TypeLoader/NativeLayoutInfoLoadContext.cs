@@ -3,15 +3,14 @@
 
 
 using System;
-using System.Reflection;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 
+using Internal.NativeFormat;
 using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
-
-using Internal.NativeFormat;
 using Internal.TypeSystem;
 using Internal.TypeSystem.NoMetadata;
 

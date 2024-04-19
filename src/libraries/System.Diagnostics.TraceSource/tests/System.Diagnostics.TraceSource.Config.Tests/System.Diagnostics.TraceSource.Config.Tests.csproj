@@ -20,7 +20,8 @@
                  testhost_RemoveSource_before.config;
                  testhost_RemoveSwitch_after.config;
                  testhost_RemoveSwitch_before.config;
-                 testhost_Switch_MissingValue_Throws.config"
+                 testhost_Switch_MissingValue_Throws.config;
+                 testhost_UnsupportedAttribute_Throws.config"
           CopyToOutputDirectory="Always" />
   </ItemGroup>
   <ItemGroup>

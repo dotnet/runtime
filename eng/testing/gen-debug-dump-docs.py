@@ -2,6 +2,11 @@ import os
 import sys
 import platform
 
+scriptname = os.path.basename(__file__)
+
+def print_detail(str):
+    print(f"{scriptname}: {str}")
+
 build_id = ''
 job_id = ''
 workitem = ''
@@ -16,7 +21,7 @@ while idx < args_len:
     idx += 1
     if arg == '-buildid':
         if idx >= args_len or sys.argv[idx].startswith('-'):
-            print("Must specify a value for -buildid")
+            print_detail("Must specify a value for -buildid")
             exit(1)
 
         build_id = sys.argv[idx]
@@ -24,7 +29,7 @@ while idx < args_len:
 
     if arg == '-jobid':
         if idx >= args_len or sys.argv[idx].startswith('-'):
-            print("Must specify a value for -jobid")
+            print_detail("Must specify a value for -jobid")
             exit(1)
 
         job_id = sys.argv[idx]
@@ -32,7 +37,7 @@ while idx < args_len:
 
     if arg == '-workitem':
         if idx >= args_len or sys.argv[idx].startswith('-'):
-            print("Must specify a value for -workitem")
+            print_detail("Must specify a value for -workitem")
             exit(1)
 
         workitem = sys.argv[idx]
@@ -40,7 +45,7 @@ while idx < args_len:
 
     if arg == '-templatedir':
         if idx >= args_len or sys.argv[idx].startswith('-'):
-            print("Must specify a value for -templatedir")
+            print_detail("Must specify a value for -templatedir")
             exit(1)
 
         template_dir = sys.argv[idx]
@@ -48,7 +53,7 @@ while idx < args_len:
 
     if arg == '-outdir':
         if idx >= args_len or sys.argv[idx].startswith('-'):
-            print("Must specify a value for -outdir")
+            print_detail("Must specify a value for -outdir")
             exit(1)
 
         out_dir = sys.argv[idx]
@@ -56,7 +61,7 @@ while idx < args_len:
 
     if arg == '-dumpdir':
         if idx >= args_len or sys.argv[idx].startswith('-'):
-            print("Must specify a value for -dumpdir")
+            print_detail("Must specify a value for -dumpdir")
             exit(1)
 
         dump_dir = sys.argv[idx]
@@ -64,7 +69,7 @@ while idx < args_len:
 
     if arg == '-productver':
         if idx >= args_len or sys.argv[idx].startswith('-'):
-            print("Must specify a value for -productver")
+            print_detail("Must specify a value for -productver")
             exit(1)
 
         product_ver = sys.argv[idx]
@@ -77,23 +82,23 @@ if dump_dir != '':
             dump_names.append(filename)
 
 if len(dump_names) == 0:
-    print("Did not find dumps, skipping dump docs generation.")
+    print_detail("Did not find dumps, skipping dump docs generation.")
     exit(0)
 
 if build_id == '':
-    print("ERROR: unespecified required argument -buildid")
+    print_detail("ERROR: unespecified required argument -buildid")
     exit(1)
 
 if workitem == '':
-    print("ERROR: unespecified required argument -workitem")
+    print_detail("ERROR: unespecified required argument -workitem")
     exit(1)
 
 if job_id == '':
-    print("ERROR: unespecified required argument -jobid")
+    print_detail("ERROR: unespecified required argument -jobid")
     exit(1)
 
 if product_ver == '':
-    print("ERROR: unespecified required argument -productver")
+    print_detail("ERROR: unespecified required argument -productver")
     exit(1)
 
 replace_string = ''
@@ -104,7 +109,7 @@ source_file = template_dir + dir_separator + 'debug-dump-template.md'
 with open(source_file, 'r') as f:
     file_text = f.read()
 
-    print('read file: ' + source_file)
+    print_detail('read file: ' + source_file)
 
     replace_string = file_text.replace('%JOBID%', job_id)
     replace_string = replace_string.replace('%WORKITEM%', workitem)
@@ -115,7 +120,7 @@ with open(source_file, 'r') as f:
 
 output_file = out_dir + dir_separator + 'how-to-debug-dump.md'
 with open(output_file, 'w+') as output:
-    print('writing output file: ' + output_file)
+    print_detail('writing output file: ' + output_file)
 
     lines = replace_string.split(os.linesep)
     lin_dump_dir= workitem + "/workitems/" + workitem + "/"
@@ -133,4 +138,4 @@ with open(output_file, 'w+') as output:
         else:
             output.write(line + os.linesep)
 
-print('done writing debug dump information')
+print_detail('done writing debug dump information')

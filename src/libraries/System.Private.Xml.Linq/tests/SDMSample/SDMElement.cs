@@ -977,7 +977,7 @@ namespace XDocumentTests.SDMSample
                         b4 = true;
                         break;
                     default:
-                        Assert.True(false, string.Format("Uexpected element '{0}'", child.Name));
+                        Assert.Fail(string.Format("Uexpected element '{0}'", child.Name));
                         break;
                 }
             }

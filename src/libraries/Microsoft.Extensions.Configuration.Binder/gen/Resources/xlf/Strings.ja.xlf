@@ -9,7 +9,7 @@
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoMessageFormat">
         <source>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls, passing boxed objects, and passing types that are not 'public' or 'internal'.</source>
-        <target state="needs-review-translation">バインダー呼び出しのバインド ロジックが生成されませんでした。サポートされていない入力パターンとしては、ジェネリック呼び出し、ボックス化されたオブジェクトの受け渡しなどがあります。</target>
+        <target state="translated">バインダー呼び出しのバインド ロジックが生成されませんでした。サポートされていない入力パターンには、ジェネリック呼び出し、ボックス化されたオブジェクトの受け渡し、および 'public' または 'internal' ではない型の受け渡しが含まれます。</target>
         <note />
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoTitle">
@@ -27,14 +27,14 @@
         <target state="translated">コレクション要素型はサポートされていません: '{0}'。</target>
         <note />
       </trans-unit>
-      <trans-unit id="Language VersionIsNotSupportedMessageFormat">
+      <trans-unit id="LanguageVersionIsNotSupportedMessageFormat">
         <source>The project's language version has to be at least 'C# 12'.</source>
-        <target state="needs-review-translation">プロジェクトの言語バージョンは少なくとも 'C# 11' である必要があります。</target>
+        <target state="new">The project's language version has to be at least 'C# 12'.</target>
         <note />
       </trans-unit>
       <trans-unit id="LanguageVersionIsNotSupportedTitle">
         <source>Language version is required to be at least C# 12</source>
-        <target state="needs-review-translation">言語バージョンは少なくとも C# 11 である必要があります</target>
+        <target state="translated">言語バージョンは少なくとも C# 12 である必要があります</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingPublicInstanceConstructor">

@@ -6,9 +6,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Net.Security;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
-using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
@@ -420,12 +420,6 @@ namespace Microsoft.Win32.SafeHandles
                 _writeBio?.Dispose();
             }
 
-            if (AlpnHandle.IsAllocated)
-            {
-                Interop.Ssl.SslSetData(handle, IntPtr.Zero);
-                AlpnHandle.Free();
-            }
-
             base.Dispose(disposing);
         }
 
@@ -437,6 +431,12 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             SslContextHandle?.DangerousRelease();
+
+            if (AlpnHandle.IsAllocated)
+            {
+                Interop.Ssl.SslSetData(handle, IntPtr.Zero);
+                AlpnHandle.Free();
+            }
 
             IntPtr h = handle;
             SetHandle(IntPtr.Zero);

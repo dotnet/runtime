@@ -3,9 +3,8 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection.Metadata;
-
 using System.IO.Compression;
+using System.Reflection.Metadata;
 
 namespace System.Reflection.PortableExecutable
 {

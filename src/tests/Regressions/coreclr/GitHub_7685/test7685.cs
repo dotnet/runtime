@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Reflection;
+using Xunit;
 
 public class Test7685
 {
@@ -12,7 +13,8 @@ public class Test7685
     static RectangleLSmall passedLongSmallStruct;
     static RectangleNestedF passedNestedSmallFStruct;
      
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int iRetVal = 100;
         

@@ -101,7 +101,8 @@ namespace System
             private const int MaxInt64Scale = 19;
 
             // Fast access for 10^n where n is 0-9
-            private static ReadOnlySpan<uint> UInt32Powers10 => new uint[] {
+            private static ReadOnlySpan<uint> UInt32Powers10 =>
+            [
                 1,
                 10,
                 100,
@@ -112,10 +113,11 @@ namespace System
                 10000000,
                 100000000,
                 1000000000
-            };
+            ];
 
             // Fast access for 10^n where n is 1-19
-            private static ReadOnlySpan<ulong> UInt64Powers10 => new ulong[] {
+            private static ReadOnlySpan<ulong> UInt64Powers10 =>
+            [
                 10,
                 100,
                 1000,
@@ -135,9 +137,10 @@ namespace System
                 100000000000000000,
                 1000000000000000000,
                 10000000000000000000,
-            };
+            ];
 
-            private static ReadOnlySpan<double> DoublePowers10 => new double[] {
+            private static ReadOnlySpan<double> DoublePowers10 =>
+            [
                 1, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9,
                 1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19,
                 1e20, 1e21, 1e22, 1e23, 1e24, 1e25, 1e26, 1e27, 1e28, 1e29,
@@ -147,7 +150,7 @@ namespace System
                 1e60, 1e61, 1e62, 1e63, 1e64, 1e65, 1e66, 1e67, 1e68, 1e69,
                 1e70, 1e71, 1e72, 1e73, 1e74, 1e75, 1e76, 1e77, 1e78, 1e79,
                 1e80
-            };
+            ];
 
 #region Decimal Math Helpers
 
@@ -174,27 +177,9 @@ namespace System
                 return (uint)(BitConverter.DoubleToUInt64Bits(d) >> 52) & 0x7FFu;
             }
 
-            private static ulong UInt32x32To64(uint a, uint b)
-            {
-                return (ulong)a * (ulong)b;
-            }
-
             private static void UInt64x64To128(ulong a, ulong b, ref DecCalc result)
             {
-                ulong low = UInt32x32To64((uint)a, (uint)b); // lo partial prod
-                ulong mid = UInt32x32To64((uint)a, (uint)(b >> 32)); // mid 1 partial prod
-                ulong high = UInt32x32To64((uint)(a >> 32), (uint)(b >> 32));
-                high += mid >> 32;
-                low += mid <<= 32;
-                if (low < mid)  // test for carry
-                    high++;
-
-                mid = UInt32x32To64((uint)(a >> 32), (uint)b);
-                high += mid >> 32;
-                low += mid <<= 32;
-                if (low < mid)  // test for carry
-                    high++;
-
+                ulong high = Math.BigMul(a, b, out ulong low);
                 if (high > uint.MaxValue)
                     Number.ThrowOverflowException(SR.Overflow_Decimal);
                 result.Low64 = low;
@@ -247,20 +232,20 @@ namespace System
 #else
                 // 32-bit RyuJIT doesn't convert 64-bit division by constant into multiplication by reciprocal. Do half-width divisions instead.
                 Debug.Assert(pow <= ushort.MaxValue);
-                uint num, mid32, low16, div;
+                uint num, mid32, low16, div, rem;
                 if (high64 <= uint.MaxValue)
                 {
                     num = (uint)high64;
-                    mid32 = num / pow;
-                    num = (num - mid32 * pow) << 16;
+                    (mid32, rem) = Math.DivRem(num, pow);
+                    num = rem << 16;
 
                     num += low >> 16;
-                    low16 = num / pow;
-                    num = (num - low16 * pow) << 16;
+                    (low16, rem) = Math.DivRem(num, pow);
+                    num = rem << 16;
 
                     num += (ushort)low;
-                    div = num / pow;
-                    if (num == div * pow)
+                    (div, rem) = Math.DivRem(num, pow);
+                    if (rem == 0)
                     {
                         high64 = mid32;
                         low = (low16 << 16) + div;
@@ -270,25 +255,25 @@ namespace System
                 else
                 {
                     num = (uint)(high64 >> 32);
-                    uint high32 = num / pow;
-                    num = (num - high32 * pow) << 16;
+                    (uint high32, rem) = Math.DivRem(num, pow);
+                    num = rem << 16;
 
                     num += (uint)high64 >> 16;
-                    mid32 = num / pow;
-                    num = (num - mid32 * pow) << 16;
+                    (mid32, rem) = Math.DivRem(num, pow);
+                    num = rem << 16;
 
                     num += (ushort)high64;
-                    div = num / pow;
-                    num = (num - div * pow) << 16;
+                    (div, rem) = Math.DivRem(num, pow);
+                    num = rem << 16;
                     mid32 = div + (mid32 << 16);
 
                     num += low >> 16;
-                    low16 = num / pow;
-                    num = (num - low16 * pow) << 16;
+                    (low16, rem) = Math.DivRem(num, pow);
+                    num = rem << 16;
 
                     num += (ushort)low;
-                    div = num / pow;
-                    if (num == div * pow)
+                    (div, rem) = Math.DivRem(num, pow);
+                    if (rem == 0)
                     {
                         high64 = ((ulong)high32 << 32) | mid32;
                         low = (low16 << 16) + div;
@@ -337,7 +322,6 @@ namespace System
             private static uint Div96By64(ref Buf12 bufNum, ulong den)
             {
                 Debug.Assert(den > bufNum.High64);
-                uint quo;
                 ulong num;
                 uint num2 = bufNum.U2;
                 if (num2 == 0)
@@ -347,13 +331,11 @@ namespace System
                         // Result is zero.  Entire dividend is remainder.
                         return 0;
 
-                    // TODO: https://github.com/dotnet/runtime/issues/5213
-                    quo = (uint)(num / den);
-                    num -= quo * den; // remainder
-                    bufNum.Low64 = num;
-                    return quo;
+                    (ulong quo64, bufNum.Low64) = Math.DivRem(num, den);
+                    return (uint)quo64;
                 }
 
+                uint quo;
                 uint denHigh32 = (uint)(den >> 32);
                 if (num2 >= denHigh32)
                 {
@@ -391,7 +373,7 @@ namespace System
 
                 // Compute full remainder, rem = dividend - (quo * divisor).
                 //
-                ulong prod = UInt32x32To64(quo, (uint)den); // quo * lo divisor
+                ulong prod = Math.BigMul(quo, (uint)den); // quo * lo divisor
                 num -= prod;
 
                 if (num > ~prod)
@@ -437,8 +419,8 @@ namespace System
 
                 // Compute full remainder, rem = dividend - (quo * divisor).
                 //
-                ulong prod1 = UInt32x32To64(quo, bufDen.U0); // quo * lo divisor
-                ulong prod2 = UInt32x32To64(quo, bufDen.U1); // quo * mid divisor
+                ulong prod1 = Math.BigMul(quo, bufDen.U0); // quo * lo divisor
+                ulong prod2 = Math.BigMul(quo, bufDen.U1); // quo * mid divisor
                 prod2 += prod1 >> 32;
                 prod1 = (uint)prod1 | (prod2 << 32);
                 prod2 >>= 32;
@@ -497,23 +479,23 @@ PosRem:
             /// <returns>Returns highest 32 bits of product</returns>
             private static uint IncreaseScale(ref Buf12 bufNum, uint power)
             {
-                ulong tmp = UInt32x32To64(bufNum.U0, power);
+                ulong tmp = Math.BigMul(bufNum.U0, power);
                 bufNum.U0 = (uint)tmp;
                 tmp >>= 32;
-                tmp += UInt32x32To64(bufNum.U1, power);
+                tmp += Math.BigMul(bufNum.U1, power);
                 bufNum.U1 = (uint)tmp;
                 tmp >>= 32;
-                tmp += UInt32x32To64(bufNum.U2, power);
+                tmp += Math.BigMul(bufNum.U2, power);
                 bufNum.U2 = (uint)tmp;
                 return (uint)(tmp >> 32);
             }
 
             private static void IncreaseScale64(ref Buf12 bufNum, uint power)
             {
-                ulong tmp = UInt32x32To64(bufNum.U0, power);
+                ulong tmp = Math.BigMul(bufNum.U0, power);
                 bufNum.U0 = (uint)tmp;
                 tmp >>= 32;
-                tmp += UInt32x32To64(bufNum.U1, power);
+                tmp += Math.BigMul(bufNum.U1, power);
                 bufNum.High64 = tmp;
             }
 
@@ -689,7 +671,7 @@ ThrowOverflow:
             private static unsafe uint DivByConst(uint* result, uint hiRes, out uint quotient, out uint remainder, uint power)
             {
                 uint high = result[hiRes];
-                remainder = high - (quotient = high / power) * power;
+                (quotient, remainder) = Math.DivRem(high, power);
                 for (uint i = hiRes - 1; (int)i >= 0; i--)
                 {
 #if TARGET_64BIT
@@ -705,13 +687,11 @@ ThrowOverflow:
 #endif
                     // byte* is used here because Roslyn doesn't do constant propagation for pointer arithmetic
                     uint num = *(ushort*)((byte*)result + i * 4 + high16) + (remainder << 16);
-                    uint div = num / power;
-                    remainder = num - div * power;
+                    (uint div, remainder) = Math.DivRem(num, power);
                     *(ushort*)((byte*)result + i * 4 + high16) = (ushort)div;
 
                     num = *(ushort*)((byte*)result + i * 4 + low16) + (remainder << 16);
-                    div = num / power;
-                    remainder = num - div * power;
+                    (div, remainder) = Math.DivRem(num, power);
                     *(ushort*)((byte*)result + i * 4 + low16) = (ushort)div;
 #endif
                 }
@@ -931,11 +911,11 @@ ThrowOverflow:
                             {
                                 if (scale <= MaxInt32Scale)
                                 {
-                                    low64 = UInt32x32To64((uint)low64, UInt32Powers10[scale]);
+                                    low64 = Math.BigMul((uint)low64, UInt32Powers10[scale]);
                                     goto AlignedAdd;
                                 }
                                 scale -= MaxInt32Scale;
-                                low64 = UInt32x32To64((uint)low64, TenToPowerNine);
+                                low64 = Math.BigMul((uint)low64, TenToPowerNine);
                             } while (low64 <= uint.MaxValue);
                         }
 
@@ -944,8 +924,8 @@ ThrowOverflow:
                             power = TenToPowerNine;
                             if (scale < MaxInt32Scale)
                                 power = UInt32Powers10[scale];
-                            tmpLow = UInt32x32To64((uint)low64, power);
-                            tmp64 = UInt32x32To64((uint)(low64 >> 32), power) + (tmpLow >> 32);
+                            tmpLow = Math.BigMul((uint)low64, power);
+                            tmp64 = Math.BigMul((uint)(low64 >> 32), power) + (tmpLow >> 32);
                             low64 = (uint)tmpLow + (tmp64 << 32);
                             high = (uint)(tmp64 >> 32);
                             if ((scale -= MaxInt32Scale) <= 0)
@@ -960,11 +940,11 @@ ThrowOverflow:
                         power = TenToPowerNine;
                         if (scale < MaxInt32Scale)
                             power = UInt32Powers10[scale];
-                        tmpLow = UInt32x32To64((uint)low64, power);
-                        tmp64 = UInt32x32To64((uint)(low64 >> 32), power) + (tmpLow >> 32);
+                        tmpLow = Math.BigMul((uint)low64, power);
+                        tmp64 = Math.BigMul((uint)(low64 >> 32), power) + (tmpLow >> 32);
                         low64 = (uint)tmpLow + (tmp64 << 32);
                         tmp64 >>= 32;
-                        tmp64 += UInt32x32To64(high, power);
+                        tmp64 += Math.BigMul(high, power);
 
                         scale -= MaxInt32Scale;
                         if (tmp64 > uint.MaxValue)
@@ -996,7 +976,7 @@ ThrowOverflow:
                         for (uint cur = 0; ;)
                         {
                             Debug.Assert(cur < Buf24.Length);
-                            tmp64 += UInt32x32To64(rgulNum[cur], power);
+                            tmp64 += Math.BigMul(rgulNum[cur], power);
                             rgulNum[cur] = (uint)tmp64;
                             cur++;
                             tmp64 >>= 32;
@@ -1199,10 +1179,10 @@ ReturnResult:
                     if (pdecIn.High != 0)
                         goto ThrowOverflow;
                     uint pwr = UInt32Powers10[-scale];
-                    ulong high = UInt32x32To64(pwr, pdecIn.Mid);
+                    ulong high = Math.BigMul(pwr, pdecIn.Mid);
                     if (high > uint.MaxValue)
                         goto ThrowOverflow;
-                    ulong low = UInt32x32To64(pwr, pdecIn.Low);
+                    ulong low = Math.BigMul(pwr, pdecIn.Low);
                     low += high <<= 32;
                     if (low < high)
                         goto ThrowOverflow;
@@ -1287,11 +1267,11 @@ ThrowOverflow:
                     do
                     {
                         uint power = scale >= MaxInt32Scale ? TenToPowerNine : UInt32Powers10[scale];
-                        ulong tmpLow = UInt32x32To64((uint)low64, power);
-                        ulong tmp = UInt32x32To64((uint)(low64 >> 32), power) + (tmpLow >> 32);
+                        ulong tmpLow = Math.BigMul((uint)low64, power);
+                        ulong tmp = Math.BigMul((uint)(low64 >> 32), power) + (tmpLow >> 32);
                         low64 = (uint)tmpLow + (tmp << 32);
                         tmp >>= 32;
-                        tmp += UInt32x32To64(high, power);
+                        tmp += Math.BigMul(high, power);
                         // If the scaled value has more than 96 significant bits then it's greater than d2
                         if (tmp > uint.MaxValue)
                             return sign;
@@ -1334,7 +1314,7 @@ ThrowOverflow:
                     {
                         // Upper 64 bits are zero.
                         //
-                        ulong low64 = UInt32x32To64(d1.Low, d2.Low);
+                        ulong low64 = Math.BigMul(d1.Low, d2.Low);
                         if (scale > DEC_SCALE_MAX)
                         {
                             // Result scale is too big.  Divide result by power of 10 to reduce it.
@@ -1347,10 +1327,7 @@ ThrowOverflow:
                             scale -= DEC_SCALE_MAX + 1;
                             ulong power = UInt64Powers10[scale];
 
-                            // TODO: https://github.com/dotnet/runtime/issues/5213
-                            tmp = low64 / power;
-                            ulong remainder = low64 - tmp * power;
-                            low64 = tmp;
+                            (low64, ulong remainder) = Math.DivRem(low64, power);
 
                             // Round result.  See if remainder >= 1/2 of divisor.
                             // Divisor is a power of 10, so it is always even.
@@ -1368,16 +1345,16 @@ ThrowOverflow:
                     else
                     {
                         // Left value is 32-bit, result fits in 4 uints
-                        tmp = UInt32x32To64(d1.Low, d2.Low);
+                        tmp = Math.BigMul(d1.Low, d2.Low);
                         bufProd.U0 = (uint)tmp;
 
-                        tmp = UInt32x32To64(d1.Low, d2.Mid) + (tmp >> 32);
+                        tmp = Math.BigMul(d1.Low, d2.Mid) + (tmp >> 32);
                         bufProd.U1 = (uint)tmp;
                         tmp >>= 32;
 
                         if (d2.High != 0)
                         {
-                            tmp += UInt32x32To64(d1.Low, d2.High);
+                            tmp += Math.BigMul(d1.Low, d2.High);
                             if (tmp > uint.MaxValue)
                             {
                                 bufProd.Mid64 = tmp;
@@ -1392,16 +1369,16 @@ ThrowOverflow:
                 else if ((d2.High | d2.Mid) == 0)
                 {
                     // Right value is 32-bit, result fits in 4 uints
-                    tmp = UInt32x32To64(d2.Low, d1.Low);
+                    tmp = Math.BigMul(d2.Low, d1.Low);
                     bufProd.U0 = (uint)tmp;
 
-                    tmp = UInt32x32To64(d2.Low, d1.Mid) + (tmp >> 32);
+                    tmp = Math.BigMul(d2.Low, d1.Mid) + (tmp >> 32);
                     bufProd.U1 = (uint)tmp;
                     tmp >>= 32;
 
                     if (d1.High != 0)
                     {
-                        tmp += UInt32x32To64(d2.Low, d1.High);
+                        tmp += Math.BigMul(d2.Low, d1.High);
                         if (tmp > uint.MaxValue)
                         {
                             bufProd.Mid64 = tmp;
@@ -1436,12 +1413,12 @@ ThrowOverflow:
                     // [p-5][p-4][p-3][p-2][p-1][p-0]      prod[] array
                     //
 
-                    tmp = UInt32x32To64(d1.Low, d2.Low);
+                    tmp = Math.BigMul(d1.Low, d2.Low);
                     bufProd.U0 = (uint)tmp;
 
-                    ulong tmp2 = UInt32x32To64(d1.Low, d2.Mid) + (tmp >> 32);
+                    ulong tmp2 = Math.BigMul(d1.Low, d2.Mid) + (tmp >> 32);
 
-                    tmp = UInt32x32To64(d1.Mid, d2.Low);
+                    tmp = Math.BigMul(d1.Mid, d2.Low);
                     tmp += tmp2; // this could generate carry
                     bufProd.U1 = (uint)tmp;
                     if (tmp < tmp2) // detect carry
@@ -1449,39 +1426,39 @@ ThrowOverflow:
                     else
                         tmp2 = tmp >> 32;
 
-                    tmp = UInt32x32To64(d1.Mid, d2.Mid) + tmp2;
+                    tmp = Math.BigMul(d1.Mid, d2.Mid) + tmp2;
 
                     if ((d1.High | d2.High) > 0)
                     {
                         // Highest 32 bits is non-zero.     Calculate 5 more partial products.
                         //
-                        tmp2 = UInt32x32To64(d1.Low, d2.High);
+                        tmp2 = Math.BigMul(d1.Low, d2.High);
                         tmp += tmp2; // this could generate carry
                         uint tmp3 = 0;
                         if (tmp < tmp2) // detect carry
                             tmp3 = 1;
 
-                        tmp2 = UInt32x32To64(d1.High, d2.Low);
+                        tmp2 = Math.BigMul(d1.High, d2.Low);
                         tmp += tmp2; // this could generate carry
                         bufProd.U2 = (uint)tmp;
                         if (tmp < tmp2) // detect carry
                             tmp3++;
                         tmp2 = ((ulong)tmp3 << 32) | (tmp >> 32);
 
-                        tmp = UInt32x32To64(d1.Mid, d2.High);
+                        tmp = Math.BigMul(d1.Mid, d2.High);
                         tmp += tmp2; // this could generate carry
                         tmp3 = 0;
                         if (tmp < tmp2) // detect carry
                             tmp3 = 1;
 
-                        tmp2 = UInt32x32To64(d1.High, d2.Mid);
+                        tmp2 = Math.BigMul(d1.High, d2.Mid);
                         tmp += tmp2; // this could generate carry
                         bufProd.U3 = (uint)tmp;
                         if (tmp < tmp2) // detect carry
                             tmp3++;
                         tmp = ((ulong)tmp3 << 32) | (tmp >> 32);
 
-                        bufProd.High64 = UInt32x32To64(d1.High, d2.High) + tmp;
+                        bufProd.High64 = Math.BigMul(d1.High, d2.High) + tmp;
 
                         hiProd = 5;
                     }
@@ -1604,7 +1581,7 @@ ReturnZero:
                     power = -power;
                     if (power < 10)
                     {
-                        result.Low64 = UInt32x32To64(mant, UInt32Powers10[power]);
+                        result.Low64 = Math.BigMul(mant, UInt32Powers10[power]);
                     }
                     else
                     {
@@ -1612,14 +1589,14 @@ ReturnZero:
                         //
                         if (power > 18)
                         {
-                            ulong low64 = UInt32x32To64(mant, UInt32Powers10[power - 18]);
+                            ulong low64 = Math.BigMul(mant, UInt32Powers10[power - 18]);
                             UInt64x64To128(low64, TenToPowerEighteen, ref result);
                         }
                         else
                         {
-                            ulong low64 = UInt32x32To64(mant, UInt32Powers10[power - 9]);
-                            ulong hi64 = UInt32x32To64(TenToPowerNine, (uint)(low64 >> 32));
-                            low64 = UInt32x32To64(TenToPowerNine, (uint)low64);
+                            ulong low64 = Math.BigMul(mant, UInt32Powers10[power - 9]);
+                            ulong hi64 = Math.BigMul(TenToPowerNine, (uint)(low64 >> 32));
+                            low64 = Math.BigMul(TenToPowerNine, (uint)low64);
                             result.Low = (uint)low64;
                             hi64 += low64 >> 32;
                             result.Mid = (uint)hi64;
@@ -1644,9 +1621,8 @@ ReturnZero:
 
                     if ((mant & 0xF) == 0 && lmax >= 4)
                     {
-                        const uint den = 10000;
-                        uint div = mant / den;
-                        if (mant == div * den)
+                        (uint div, uint rem) = Math.DivRem(mant, 10000);
+                        if (rem == 0)
                         {
                             mant = div;
                             power -= 4;
@@ -1656,9 +1632,8 @@ ReturnZero:
 
                     if ((mant & 3) == 0 && lmax >= 2)
                     {
-                        const uint den = 100;
-                        uint div = mant / den;
-                        if (mant == div * den)
+                        (uint div, uint rem) = Math.DivRem(mant, 100);
+                        if (rem == 0)
                         {
                             mant = div;
                             power -= 2;
@@ -1668,9 +1643,8 @@ ReturnZero:
 
                     if ((mant & 1) == 0 && lmax >= 1)
                     {
-                        const uint den = 10;
-                        uint div = mant / den;
-                        if (mant == div * den)
+                        (uint div, uint rem) = Math.DivRem(mant, 10);
+                        if (rem == 0)
                         {
                             mant = div;
                             power--;
@@ -1772,8 +1746,8 @@ ReturnZero:
                     if (power < 10)
                     {
                         uint pow10 = UInt32Powers10[power];
-                        ulong low64 = UInt32x32To64((uint)mant, pow10);
-                        ulong hi64 = UInt32x32To64((uint)(mant >> 32), pow10);
+                        ulong low64 = Math.BigMul((uint)mant, pow10);
+                        ulong hi64 = Math.BigMul((uint)(mant >> 32), pow10);
                         result.Low = (uint)low64;
                         hi64 += low64 >> 32;
                         result.Mid = (uint)hi64;
@@ -1977,7 +1951,7 @@ ReturnZero:
                         if (IncreaseScale(ref bufQuo, power) != 0)
                             goto ThrowOverflow;
 
-                        ulong num = UInt32x32To64(remainder, power);
+                        ulong num = Math.BigMul(remainder, power);
                         // TODO: https://github.com/dotnet/runtime/issues/5213
                         uint div = (uint)(num / den);
                         remainder = (uint)num - div * den;
@@ -2210,7 +2184,7 @@ ThrowOverflow:
                     do
                     {
                         uint power = scale >= MaxInt32Scale ? TenToPowerNine : UInt32Powers10[scale];
-                        ulong tmp = UInt32x32To64(d2.Low, power);
+                        ulong tmp = Math.BigMul(d2.Low, power);
                         d2.Low = (uint)tmp;
                         tmp >>= 32;
                         tmp += (d2.Mid + ((ulong)d2.High << 32)) * power;
@@ -2237,7 +2211,7 @@ ThrowOverflow:
                                 break;
                             uint power = iCurScale >= MaxInt32Scale ? TenToPowerNine : UInt32Powers10[iCurScale];
                             scale += iCurScale;
-                            ulong tmp = UInt32x32To64(bufQuo.U0, power);
+                            ulong tmp = Math.BigMul(bufQuo.U0, power);
                             bufQuo.U0 = (uint)tmp;
                             tmp >>= 32;
                             bufQuo.High64 = tmp + bufQuo.High64 * power;
@@ -2298,12 +2272,12 @@ ThrowOverflow:
                 {
                     uint power = scale <= -MaxInt32Scale ? TenToPowerNine : UInt32Powers10[-scale];
                     uint* buf = (uint*)&b;
-                    ulong tmp64 = UInt32x32To64(b.Buf24.U0, power);
+                    ulong tmp64 = Math.BigMul(b.Buf24.U0, power);
                     b.Buf24.U0 = (uint)tmp64;
                     for (int i = 1; i <= high; i++)
                     {
                         tmp64 >>= 32;
-                        tmp64 += UInt32x32To64(buf[i], power);
+                        tmp64 += Math.BigMul(buf[i], power);
                         buf[i] = (uint)tmp64;
                     }
                     // The high bit of the dividend must not be set.
@@ -2387,8 +2361,7 @@ ThrowOverflow:
                     else
                     {
                         uint q;
-                        d.uhi = q = n / divisor;
-                        remainder = n - q * divisor;
+                        (d.uhi, remainder) = Math.DivRem(n, divisor);
                         n = d.umid;
                         if ((n | remainder) != 0)
                         {
@@ -2429,8 +2402,7 @@ ThrowOverflow:
                     else
                     {
                         uint q;
-                        d.uhi = q = n / power;
-                        remainder = n - q * power;
+                        (d.uhi, remainder) = Math.DivRem(n, power);
                         n = d.umid;
                         if ((n | remainder) != 0)
                         {

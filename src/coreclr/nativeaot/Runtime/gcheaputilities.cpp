@@ -38,7 +38,7 @@ GPTR_IMPL(GcDacVars, g_gcDacGlobals);
 
 // GC entrypoints for the linked-in GC. These symbols are invoked
 // directly if we are not using a standalone GC.
-extern "C" HRESULT GC_Initialize(
+extern "C" HRESULT LOCALGC_CALLCONV GC_Initialize(
     /* In  */ IGCToCLR* clrToGC,
     /* Out */ IGCHeap** gcHeap,
     /* Out */ IGCHandleManager** gcHandleManager,
@@ -46,6 +46,18 @@ extern "C" HRESULT GC_Initialize(
 );
 
 #ifndef DACCESS_COMPILE
+
+HRESULT InitializeGCSelector();
+
+HRESULT GCHeapUtilities::InitializeGC()
+{
+    return InitializeGCSelector();
+}
+
+HRESULT InitializeDefaultGC()
+{
+    return GCHeapUtilities::InitializeDefaultGC();
+}
 
 // Initializes a non-standalone GC. The protocol for initializing a non-standalone GC
 // is similar to loading a standalone one, except that the GC_VersionInfo and
@@ -73,12 +85,6 @@ HRESULT GCHeapUtilities::InitializeDefaultGC()
     }
 
     return initResult;
-}
-
-void GCHeapUtilities::RecordEventStateChange(bool isPublicProvider, GCEventKeyword keywords, GCEventLevel level)
-{
-    // NativeAOT does not support standalone GC. Call GCEventStatus directly to keep things simple.
-    GCEventStatus::Set(isPublicProvider ? GCEventProvider_Default : GCEventProvider_Private, keywords, level);
 }
 
 #endif // DACCESS_COMPILE

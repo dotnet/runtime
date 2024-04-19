@@ -33,11 +33,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.WriteUnknownValue ();
 
 			WriteCapturedField.Test ();
+			WriteFieldOfCapturedInstance.Test ();
 
 			_ = _annotationOnWrongType;
 
 			TestStringEmpty ();
 
+			AnnotationOnUnsupportedField.Test ();
 			WriteArrayField.Test ();
 			AccessReturnedInstanceField.Test ();
 		}
@@ -192,6 +194,35 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
+		class WriteFieldOfCapturedInstance
+		{
+			class ClassWithAnnotatedField
+			{
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
+				public Type field;
+			}
+
+			[ExpectedWarning ("IL2074", nameof (GetUnknownType), nameof (ClassWithAnnotatedField.field))]
+			static void TestNullCoalesce ()
+			{
+				ClassWithAnnotatedField? instance = null;
+				(instance ?? new ClassWithAnnotatedField ()).field = GetUnknownType ();
+			}
+
+			[ExpectedWarning ("IL2074", nameof (GetUnknownType), nameof (ClassWithAnnotatedField.field))]
+			static void TestNullCoalescingAssignment ()
+			{
+				ClassWithAnnotatedField? instance = null;
+				(instance ??= new ClassWithAnnotatedField ()).field = GetUnknownType ();
+			}
+
+			public static void Test ()
+			{
+				TestNullCoalesce ();
+				TestNullCoalescingAssignment ();
+			}
+		}
+
 		class AccessReturnedInstanceField
 		{
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -289,6 +320,39 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 			public static Type _staticTypeWithPublicParameterlessConstructor;
+		}
+
+		class AnnotationOnUnsupportedField
+		{
+			class UnsupportedType
+			{
+			}
+
+			static UnsupportedType GetUnsupportedTypeInstance () => null;
+
+			[ExpectedWarning ("IL2097")]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			static UnsupportedType unsupportedTypeInstance;
+
+			[ExpectedWarning ("IL2098")]
+			static void RequirePublicFields (
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+				UnsupportedType unsupportedTypeInstance)
+			{
+			}
+
+			[ExpectedWarning ("IL2077", ProducedBy = Tool.Analyzer)] // https://github.com/dotnet/runtime/issues/101211
+			static void TestFlowOutOfField ()
+			{
+				RequirePublicFields (unsupportedTypeInstance);
+			}
+
+			[ExpectedWarning ("IL2074", ProducedBy = Tool.Analyzer)] // https://github.com/dotnet/runtime/issues/101211
+			public static void Test () {
+				var t = GetUnsupportedTypeInstance ();
+				unsupportedTypeInstance = t;
+				TestFlowOutOfField ();
+			}
 		}
 
 		class WriteArrayField

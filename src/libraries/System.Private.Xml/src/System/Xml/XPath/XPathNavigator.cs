@@ -1,19 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
-using System.IO;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Xml.Schema;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
 using System.Security;
 using System.Text;
 using System.Xml;
+using System.Xml.Schema;
 using MS.Internal.Xml.Cache;
 using MS.Internal.Xml.XPath;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.XPath
 {

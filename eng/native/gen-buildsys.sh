@@ -104,9 +104,6 @@ if [[ "$host_arch" == "wasm" ]]; then
     fi
 fi
 
-# We have to be able to build with CMake 3.6.2, so we can't use the -S or -B options
-pushd "$2"
-
 $cmake_command \
   --no-warn-unused-cli \
   -G "$generator" \
@@ -114,6 +111,7 @@ $cmake_command \
   "-DCMAKE_INSTALL_PREFIX=$__CMakeBinDir" \
   $cmake_extra_defines \
   $__UnprocessedCMakeArgs \
-  "$1"
+  -S "$1" \
+  -B "$2"
 
-popd
+# don't add anything after this line so the cmake exit code gets propagated correctly

@@ -12,6 +12,10 @@
 
 #include <Windows.h>
 
+#ifndef PF_ARM_SVE_INSTRUCTIONS_AVAILABLE
+#define PF_ARM_SVE_INSTRUCTIONS_AVAILABLE (46)
+#endif
+
 #else // HOST_WINDOWS
 
 #include "minipalconfig.h"
@@ -33,6 +37,9 @@
 #endif
 #ifndef HWCAP_ASIMDDP
 #define HWCAP_ASIMDDP   (1 << 20)
+#endif
+#ifndef HWCAP_SVE
+#define HWCAP_SVE   (1 << 22)
 #endif
 
 #endif
@@ -274,6 +281,28 @@ int minipal_getcpufeatures(void)
                                             {
                                                 result |= XArchIntrinsicConstants_AvxVnni;
                                             }
+
+                                            if ((cpuidInfo[CPUID_EDX] & (1 << 19)) != 0)                                // Avx10
+                                            {
+                                                __cpuidex(cpuidInfo, 0x00000024, 0x00000000);
+                                                if((cpuidInfo[CPUID_EBX] & 0xFF) >= 1)                                  // Avx10v1 - CPUID.(EAX=24H, ECX=00H):EBX[7:0] >= 1
+                                                {
+                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0)
+                                                    {
+                                                        result |= XArchIntrinsicConstants_Avx10v1;
+                                                    }
+
+                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0)
+                                                    {
+                                                        result |= XArchIntrinsicConstants_Avx10v1_V256;
+                                                    }
+
+                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 18)) != 0)
+                                                    {
+                                                        result |= XArchIntrinsicConstants_Avx10v1_V512;
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -356,6 +385,9 @@ int minipal_getcpufeatures(void)
     if (hwCap & HWCAP_ASIMDRDM)
         result |= ARM64IntrinsicConstants_Rdm;
 
+    if (hwCap & HWCAP_SVE)
+        result |= ARM64IntrinsicConstants_Sve;
+
 #else // !HAVE_AUXV_HWCAP_H
 
 #if HAVE_SYSCTLBYNAME
@@ -429,6 +461,11 @@ int minipal_getcpufeatures(void)
     }
 
     // TODO: IsProcessorFeaturePresent doesn't support LRCPC2 yet.
+
+    if (IsProcessorFeaturePresent(PF_ARM_SVE_INSTRUCTIONS_AVAILABLE))
+    {
+        result |= ARM64IntrinsicConstants_Sve;
+    }
 
 #endif // HOST_WINDOWS
 

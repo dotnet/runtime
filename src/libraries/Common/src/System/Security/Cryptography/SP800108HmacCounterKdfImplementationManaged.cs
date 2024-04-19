@@ -3,8 +3,8 @@
 
 using System.Buffers.Binary;
 using System.Diagnostics;
-using System.Threading;
 using System.Runtime.Versioning;
+using System.Threading;
 
 #pragma warning disable CA1513
 

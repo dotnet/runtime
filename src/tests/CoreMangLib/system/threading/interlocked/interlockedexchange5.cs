@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Threading;
+using Xunit;
 
 // Tests that Exchange(Int64, Int64)
 // actually switches values
@@ -9,7 +10,8 @@ public class InterlockedExchange5
 {
     private const int c_NUM_LOOPS = 100;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         InterlockedExchange5 test = new InterlockedExchange5();
 

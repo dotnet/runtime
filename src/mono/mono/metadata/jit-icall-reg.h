@@ -118,15 +118,6 @@ MONO_JIT_ICALL (__emul_rconv_to_ovf_u8) \
 MONO_JIT_ICALL (__emul_rconv_to_u4)	\
 MONO_JIT_ICALL (__emul_rconv_to_u8) \
 MONO_JIT_ICALL (__emul_rrem) \
-MONO_JIT_ICALL (cominterop_get_ccw) \
-MONO_JIT_ICALL (cominterop_get_ccw_object) \
-MONO_JIT_ICALL (cominterop_get_function_pointer) \
-MONO_JIT_ICALL (cominterop_get_interface) \
-MONO_JIT_ICALL (cominterop_get_method_interface) \
-MONO_JIT_ICALL (cominterop_object_is_rcw) \
-MONO_JIT_ICALL (cominterop_restore_domain) \
-MONO_JIT_ICALL (cominterop_set_ccw_object_domain) \
-MONO_JIT_ICALL (cominterop_type_from_handle) \
 MONO_JIT_ICALL (g_free) \
 MONO_JIT_ICALL (interp_to_native_trampoline)	\
 MONO_JIT_ICALL (mini_llvm_init_method) \
@@ -242,13 +233,6 @@ MONO_JIT_ICALL (mono_marshal_free_array) \
 MONO_JIT_ICALL (mono_marshal_free_asany) \
 MONO_JIT_ICALL (mono_marshal_get_type_object) \
 MONO_JIT_ICALL (mono_marshal_isinst_with_cache) \
-MONO_JIT_ICALL (mono_marshal_safearray_begin) \
-MONO_JIT_ICALL (mono_marshal_safearray_create) \
-MONO_JIT_ICALL (mono_marshal_safearray_end) \
-MONO_JIT_ICALL (mono_marshal_safearray_free_indices) \
-MONO_JIT_ICALL (mono_marshal_safearray_get_value) \
-MONO_JIT_ICALL (mono_marshal_safearray_next) \
-MONO_JIT_ICALL (mono_marshal_safearray_set_value) \
 MONO_JIT_ICALL (mono_marshal_set_domain_by_id) \
 MONO_JIT_ICALL (mono_marshal_set_last_error) \
 MONO_JIT_ICALL (mono_marshal_set_last_error_windows) \
@@ -312,6 +296,7 @@ MONO_JIT_ICALL (mono_throw_bad_image) \
 MONO_JIT_ICALL (mono_throw_not_supported) \
 MONO_JIT_ICALL (mono_throw_platform_not_supported) \
 MONO_JIT_ICALL (mono_throw_invalid_program) \
+MONO_JIT_ICALL (mono_throw_type_load) \
 MONO_JIT_ICALL (mono_trace_enter_method) \
 MONO_JIT_ICALL (mono_trace_leave_method) \
 MONO_JIT_ICALL (mono_trace_tail_method) \
@@ -355,6 +340,7 @@ MONO_JIT_ICALLS
 #undef MONO_JIT_ICALL
 } MonoJitICallId;
 
+MONO_DISABLE_WARNING(4201) // nonstandard extension used: nameless struct/union
 typedef union MonoJitICallInfos {
 	struct {
 #define MONO_JIT_ICALL(x) MonoJitICallInfo x;
@@ -363,6 +349,7 @@ MONO_JIT_ICALLS
 	};
 	MonoJitICallInfo array [MONO_JIT_ICALL_count];
 } MonoJitICallInfos;
+MONO_RESTORE_WARNING
 
 extern MonoJitICallInfos mono_jit_icall_info;
 

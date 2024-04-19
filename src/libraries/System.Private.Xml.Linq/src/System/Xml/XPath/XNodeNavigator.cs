@@ -16,7 +16,8 @@ namespace System.Xml.XPath
             (1 << (int)XmlNodeType.Element) |
             (1 << (int)XmlNodeType.ProcessingInstruction) |
             (1 << (int)XmlNodeType.Comment);
-        private static ReadOnlySpan<int> ElementContentMasks => new int[] {
+        private static ReadOnlySpan<int> ElementContentMasks =>
+        [
             0,                                              // Root
             (1 << (int)XmlNodeType.Element),                // Element
             0,                                              // Attribute
@@ -32,7 +33,7 @@ namespace System.Xml.XPath
             (1 << (int)XmlNodeType.Text) |
             (1 << (int)XmlNodeType.ProcessingInstruction) |
             (1 << (int)XmlNodeType.Comment)                 // All
-        };
+        ];
         private const int TextMask =
             (1 << (int)XmlNodeType.CDATA) |
             (1 << (int)XmlNodeType.Text);

@@ -13,9 +13,9 @@
 #pragma warning disable IDE0036, SA1129
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Internal.NativeFormat;
 
@@ -123,7 +123,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ArraySignatureHandle handle)
+        public static implicit operator Handle(ArraySignatureHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -236,7 +236,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ByReferenceSignatureHandle handle)
+        public static implicit operator Handle(ByReferenceSignatureHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -348,7 +348,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantBooleanArrayHandle handle)
+        public static implicit operator Handle(ConstantBooleanArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -460,7 +460,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantBooleanValueHandle handle)
+        public static implicit operator Handle(ConstantBooleanValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -500,130 +500,6 @@ namespace Internal.Metadata.NativeFormat
             return string.Format("{0:X8}", _value);
         } // ToString
     } // ConstantBooleanValueHandle
-
-#if SYSTEM_PRIVATE_CORELIB
-    [CLSCompliant(false)]
-#endif
-    public partial struct ConstantBoxedEnumValue
-    {
-        internal MetadataReader _reader;
-        internal ConstantBoxedEnumValueHandle _handle;
-
-        public ConstantBoxedEnumValueHandle Handle
-        {
-            get
-            {
-                return _handle;
-            }
-        } // Handle
-        /// One of: ConstantByteValue, ConstantSByteValue, ConstantInt16Value, ConstantUInt16Value, ConstantInt32Value, ConstantUInt32Value, ConstantInt64Value, ConstantUInt64Value
-
-        public Handle Value
-        {
-            get
-            {
-                return _value;
-            }
-        } // Value
-
-        internal Handle _value;
-        /// One of: TypeDefinition, TypeReference, TypeSpecification
-
-        public Handle Type
-        {
-            get
-            {
-                return _type;
-            }
-        } // Type
-
-        internal Handle _type;
-    } // ConstantBoxedEnumValue
-
-#if SYSTEM_PRIVATE_CORELIB
-    [CLSCompliant(false)]
-#endif
-    public partial struct ConstantBoxedEnumValueHandle
-    {
-        public override bool Equals(object obj)
-        {
-            if (obj is ConstantBoxedEnumValueHandle)
-                return _value == ((ConstantBoxedEnumValueHandle)obj)._value;
-            else if (obj is Handle)
-                return _value == ((Handle)obj)._value;
-            else
-                return false;
-        } // Equals
-
-        public bool Equals(ConstantBoxedEnumValueHandle handle)
-        {
-            return _value == handle._value;
-        } // Equals
-
-        public bool Equals(Handle handle)
-        {
-            return _value == handle._value;
-        } // Equals
-
-        public override int GetHashCode()
-        {
-            return (int)_value;
-        } // GetHashCode
-
-        internal int _value;
-
-        internal ConstantBoxedEnumValueHandle(Handle handle) : this(handle._value)
-        {
-        }
-
-        internal ConstantBoxedEnumValueHandle(int value)
-        {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantBoxedEnumValue || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantBoxedEnumValue) << 24);
-            _Validate();
-        }
-
-        public static implicit operator  Handle(ConstantBoxedEnumValueHandle handle)
-        {
-            return new Handle(handle._value);
-        } // Handle
-
-        internal int Offset
-        {
-            get
-            {
-                return (this._value & 0x00FFFFFF);
-            }
-        } // Offset
-
-        public ConstantBoxedEnumValue GetConstantBoxedEnumValue(MetadataReader reader)
-        {
-            return reader.GetConstantBoxedEnumValue(this);
-        } // GetConstantBoxedEnumValue
-
-        public bool IsNull(MetadataReader reader)
-        {
-            return reader.IsNull(this);
-        } // IsNull
-
-        public Handle ToHandle(MetadataReader reader)
-        {
-            return reader.ToHandle(this);
-        } // ToHandle
-
-        [System.Diagnostics.Conditional("DEBUG")]
-        internal void _Validate()
-        {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantBoxedEnumValue)
-                throw new ArgumentException();
-        } // _Validate
-
-        public override string ToString()
-        {
-            return string.Format("{0:X8}", _value);
-        } // ToString
-    } // ConstantBoxedEnumValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
@@ -696,7 +572,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantByteArrayHandle handle)
+        public static implicit operator Handle(ConstantByteArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -808,7 +684,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantByteValueHandle handle)
+        public static implicit operator Handle(ConstantByteValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -920,7 +796,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantCharArrayHandle handle)
+        public static implicit operator Handle(ConstantCharArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -1032,7 +908,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantCharValueHandle handle)
+        public static implicit operator Handle(ConstantCharValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -1144,7 +1020,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantDoubleArrayHandle handle)
+        public static implicit operator Handle(ConstantDoubleArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -1256,7 +1132,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantDoubleValueHandle handle)
+        public static implicit operator Handle(ConstantDoubleValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -1378,7 +1254,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantEnumArrayHandle handle)
+        public static implicit operator Handle(ConstantEnumArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -1418,6 +1294,128 @@ namespace Internal.Metadata.NativeFormat
             return string.Format("{0:X8}", _value);
         } // ToString
     } // ConstantEnumArrayHandle
+
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
+    public partial struct ConstantEnumValue
+    {
+        internal MetadataReader _reader;
+        internal ConstantEnumValueHandle _handle;
+
+        public ConstantEnumValueHandle Handle
+        {
+            get
+            {
+                return _handle;
+            }
+        } // Handle
+
+        public Handle Value
+        {
+            get
+            {
+                return _value;
+            }
+        } // Value
+
+        internal Handle _value;
+
+        public Handle Type
+        {
+            get
+            {
+                return _type;
+            }
+        } // Type
+
+        internal Handle _type;
+    } // ConstantEnumValue
+
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
+    public partial struct ConstantEnumValueHandle
+    {
+        public override bool Equals(object obj)
+        {
+            if (obj is ConstantEnumValueHandle)
+                return _value == ((ConstantEnumValueHandle)obj)._value;
+            else if (obj is Handle)
+                return _value == ((Handle)obj)._value;
+            else
+                return false;
+        } // Equals
+
+        public bool Equals(ConstantEnumValueHandle handle)
+        {
+            return _value == handle._value;
+        } // Equals
+
+        public bool Equals(Handle handle)
+        {
+            return _value == handle._value;
+        } // Equals
+
+        public override int GetHashCode()
+        {
+            return (int)_value;
+        } // GetHashCode
+
+        internal int _value;
+
+        internal ConstantEnumValueHandle(Handle handle) : this(handle._value)
+        {
+        }
+
+        internal ConstantEnumValueHandle(int value)
+        {
+            HandleType hType = (HandleType)(value >> 24);
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantEnumValue || hType == HandleType.Null);
+            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantEnumValue) << 24);
+            _Validate();
+        }
+
+        public static implicit operator Handle(ConstantEnumValueHandle handle)
+        {
+            return new Handle(handle._value);
+        } // Handle
+
+        internal int Offset
+        {
+            get
+            {
+                return (this._value & 0x00FFFFFF);
+            }
+        } // Offset
+
+        public ConstantEnumValue GetConstantEnumValue(MetadataReader reader)
+        {
+            return reader.GetConstantEnumValue(this);
+        } // GetConstantEnumValue
+
+        public bool IsNull(MetadataReader reader)
+        {
+            return reader.IsNull(this);
+        } // IsNull
+
+        public Handle ToHandle(MetadataReader reader)
+        {
+            return reader.ToHandle(this);
+        } // ToHandle
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        internal void _Validate()
+        {
+            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantEnumValue)
+                throw new ArgumentException();
+        } // _Validate
+
+        public override string ToString()
+        {
+            return string.Format("{0:X8}", _value);
+        } // ToString
+    } // ConstantEnumValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
@@ -1490,7 +1488,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantHandleArrayHandle handle)
+        public static implicit operator Handle(ConstantHandleArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -1602,7 +1600,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantInt16ArrayHandle handle)
+        public static implicit operator Handle(ConstantInt16ArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -1714,7 +1712,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantInt16ValueHandle handle)
+        public static implicit operator Handle(ConstantInt16ValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -1826,7 +1824,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantInt32ArrayHandle handle)
+        public static implicit operator Handle(ConstantInt32ArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -1938,7 +1936,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantInt32ValueHandle handle)
+        public static implicit operator Handle(ConstantInt32ValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -2050,7 +2048,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantInt64ArrayHandle handle)
+        public static implicit operator Handle(ConstantInt64ArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -2162,7 +2160,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantInt64ValueHandle handle)
+        public static implicit operator Handle(ConstantInt64ValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -2264,7 +2262,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantReferenceValueHandle handle)
+        public static implicit operator Handle(ConstantReferenceValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -2376,7 +2374,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantSByteArrayHandle handle)
+        public static implicit operator Handle(ConstantSByteArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -2488,7 +2486,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantSByteValueHandle handle)
+        public static implicit operator Handle(ConstantSByteValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -2600,7 +2598,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantSingleArrayHandle handle)
+        public static implicit operator Handle(ConstantSingleArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -2712,7 +2710,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantSingleValueHandle handle)
+        public static implicit operator Handle(ConstantSingleValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -2825,7 +2823,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantStringArrayHandle handle)
+        public static implicit operator Handle(ConstantStringArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -2937,7 +2935,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantStringValueHandle handle)
+        public static implicit operator Handle(ConstantStringValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -3049,7 +3047,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantUInt16ArrayHandle handle)
+        public static implicit operator Handle(ConstantUInt16ArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -3161,7 +3159,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantUInt16ValueHandle handle)
+        public static implicit operator Handle(ConstantUInt16ValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -3273,7 +3271,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantUInt32ArrayHandle handle)
+        public static implicit operator Handle(ConstantUInt32ArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -3385,7 +3383,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantUInt32ValueHandle handle)
+        public static implicit operator Handle(ConstantUInt32ValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -3497,7 +3495,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantUInt64ArrayHandle handle)
+        public static implicit operator Handle(ConstantUInt64ArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -3609,7 +3607,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantUInt64ValueHandle handle)
+        public static implicit operator Handle(ConstantUInt64ValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -3676,7 +3674,7 @@ namespace Internal.Metadata.NativeFormat
         } // Constructor
 
         internal Handle _constructor;
-        /// One of: TypeDefinition, TypeReference, TypeSpecification, ConstantBooleanArray, ConstantBooleanValue, ConstantByteArray, ConstantByteValue, ConstantCharArray, ConstantCharValue, ConstantDoubleArray, ConstantDoubleValue, ConstantEnumArray, ConstantHandleArray, ConstantInt16Array, ConstantInt16Value, ConstantInt32Array, ConstantInt32Value, ConstantInt64Array, ConstantInt64Value, ConstantReferenceValue, ConstantSByteArray, ConstantSByteValue, ConstantSingleArray, ConstantSingleValue, ConstantStringArray, ConstantStringValue, ConstantUInt16Array, ConstantUInt16Value, ConstantUInt32Array, ConstantUInt32Value, ConstantUInt64Array, ConstantUInt64Value
+        /// One of: TypeDefinition, TypeReference, TypeSpecification, ConstantBooleanArray, ConstantBooleanValue, ConstantByteArray, ConstantByteValue, ConstantCharArray, ConstantCharValue, ConstantDoubleArray, ConstantDoubleValue, ConstantEnumArray, ConstantEnumValue, ConstantHandleArray, ConstantInt16Array, ConstantInt16Value, ConstantInt32Array, ConstantInt32Value, ConstantInt64Array, ConstantInt64Value, ConstantReferenceValue, ConstantSByteArray, ConstantSByteValue, ConstantSingleArray, ConstantSingleValue, ConstantStringArray, ConstantStringValue, ConstantUInt16Array, ConstantUInt16Value, ConstantUInt32Array, ConstantUInt32Value, ConstantUInt64Array, ConstantUInt64Value
 
         public HandleCollection FixedArguments
         {
@@ -3743,7 +3741,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(CustomAttributeHandle handle)
+        public static implicit operator Handle(CustomAttributeHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -3896,7 +3894,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(EventHandle handle)
+        public static implicit operator Handle(EventHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -3982,7 +3980,7 @@ namespace Internal.Metadata.NativeFormat
         } // Signature
 
         internal FieldSignatureHandle _signature;
-        /// One of: TypeDefinition, TypeReference, TypeSpecification, ConstantBooleanArray, ConstantBooleanValue, ConstantByteArray, ConstantByteValue, ConstantCharArray, ConstantCharValue, ConstantDoubleArray, ConstantDoubleValue, ConstantEnumArray, ConstantHandleArray, ConstantInt16Array, ConstantInt16Value, ConstantInt32Array, ConstantInt32Value, ConstantInt64Array, ConstantInt64Value, ConstantReferenceValue, ConstantSByteArray, ConstantSByteValue, ConstantSingleArray, ConstantSingleValue, ConstantStringArray, ConstantStringValue, ConstantUInt16Array, ConstantUInt16Value, ConstantUInt32Array, ConstantUInt32Value, ConstantUInt64Array, ConstantUInt64Value
+        /// One of: TypeDefinition, TypeReference, TypeSpecification, ConstantBooleanArray, ConstantBooleanValue, ConstantByteArray, ConstantByteValue, ConstantCharArray, ConstantCharValue, ConstantDoubleArray, ConstantDoubleValue, ConstantEnumArray, ConstantEnumValue, ConstantHandleArray, ConstantInt16Array, ConstantInt16Value, ConstantInt32Array, ConstantInt32Value, ConstantInt64Array, ConstantInt64Value, ConstantReferenceValue, ConstantSByteArray, ConstantSByteValue, ConstantSingleArray, ConstantSingleValue, ConstantStringArray, ConstantStringValue, ConstantUInt16Array, ConstantUInt16Value, ConstantUInt32Array, ConstantUInt32Value, ConstantUInt64Array, ConstantUInt64Value
 
         public Handle DefaultValue
         {
@@ -4059,7 +4057,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(FieldHandle handle)
+        public static implicit operator Handle(FieldHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -4172,7 +4170,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(FieldSignatureHandle handle)
+        public static implicit operator Handle(FieldSignatureHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -4284,7 +4282,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(FunctionPointerSignatureHandle handle)
+        public static implicit operator Handle(FunctionPointerSignatureHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -4447,7 +4445,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(GenericParameterHandle handle)
+        public static implicit operator Handle(GenericParameterHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -4581,7 +4579,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(MemberReferenceHandle handle)
+        public static implicit operator Handle(MemberReferenceHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -4753,7 +4751,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(MethodHandle handle)
+        public static implicit operator Handle(MethodHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -4877,7 +4875,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(MethodInstantiationHandle handle)
+        public static implicit operator Handle(MethodInstantiationHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -4999,7 +4997,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(MethodSemanticsHandle handle)
+        public static implicit operator Handle(MethodSemanticsHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -5154,7 +5152,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(MethodSignatureHandle handle)
+        public static implicit operator Handle(MethodSignatureHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -5266,7 +5264,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(MethodTypeVariableSignatureHandle handle)
+        public static implicit operator Handle(MethodTypeVariableSignatureHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -5400,7 +5398,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ModifiedTypeHandle handle)
+        public static implicit operator Handle(ModifiedTypeHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -5487,7 +5485,7 @@ namespace Internal.Metadata.NativeFormat
         } // Type
 
         internal Handle _type;
-        /// One of: TypeDefinition, TypeReference, TypeSpecification, ConstantBooleanArray, ConstantBooleanValue, ConstantByteArray, ConstantByteValue, ConstantCharArray, ConstantCharValue, ConstantDoubleArray, ConstantDoubleValue, ConstantEnumArray, ConstantHandleArray, ConstantInt16Array, ConstantInt16Value, ConstantInt32Array, ConstantInt32Value, ConstantInt64Array, ConstantInt64Value, ConstantReferenceValue, ConstantSByteArray, ConstantSByteValue, ConstantSingleArray, ConstantSingleValue, ConstantStringArray, ConstantStringValue, ConstantUInt16Array, ConstantUInt16Value, ConstantUInt32Array, ConstantUInt32Value, ConstantUInt64Array, ConstantUInt64Value
+        /// One of: TypeDefinition, TypeReference, TypeSpecification, ConstantBooleanArray, ConstantBooleanValue, ConstantByteArray, ConstantByteValue, ConstantCharArray, ConstantCharValue, ConstantDoubleArray, ConstantDoubleValue, ConstantEnumArray, ConstantEnumValue, ConstantHandleArray, ConstantInt16Array, ConstantInt16Value, ConstantInt32Array, ConstantInt32Value, ConstantInt64Array, ConstantInt64Value, ConstantReferenceValue, ConstantSByteArray, ConstantSByteValue, ConstantSingleArray, ConstantSingleValue, ConstantStringArray, ConstantStringValue, ConstantUInt16Array, ConstantUInt16Value, ConstantUInt32Array, ConstantUInt32Value, ConstantUInt64Array, ConstantUInt64Value
 
         public Handle Value
         {
@@ -5544,7 +5542,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(NamedArgumentHandle handle)
+        public static implicit operator Handle(NamedArgumentHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -5697,7 +5695,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(NamespaceDefinitionHandle handle)
+        public static implicit operator Handle(NamespaceDefinitionHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -5820,7 +5818,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(NamespaceReferenceHandle handle)
+        public static implicit operator Handle(NamespaceReferenceHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -5906,7 +5904,7 @@ namespace Internal.Metadata.NativeFormat
         } // Name
 
         internal ConstantStringValueHandle _name;
-        /// One of: TypeDefinition, TypeReference, TypeSpecification, ConstantBooleanArray, ConstantBooleanValue, ConstantByteArray, ConstantByteValue, ConstantCharArray, ConstantCharValue, ConstantDoubleArray, ConstantDoubleValue, ConstantEnumArray, ConstantHandleArray, ConstantInt16Array, ConstantInt16Value, ConstantInt32Array, ConstantInt32Value, ConstantInt64Array, ConstantInt64Value, ConstantReferenceValue, ConstantSByteArray, ConstantSByteValue, ConstantSingleArray, ConstantSingleValue, ConstantStringArray, ConstantStringValue, ConstantUInt16Array, ConstantUInt16Value, ConstantUInt32Array, ConstantUInt32Value, ConstantUInt64Array, ConstantUInt64Value
+        /// One of: TypeDefinition, TypeReference, TypeSpecification, ConstantBooleanArray, ConstantBooleanValue, ConstantByteArray, ConstantByteValue, ConstantCharArray, ConstantCharValue, ConstantDoubleArray, ConstantDoubleValue, ConstantEnumArray, ConstantEnumValue, ConstantHandleArray, ConstantInt16Array, ConstantInt16Value, ConstantInt32Array, ConstantInt32Value, ConstantInt64Array, ConstantInt64Value, ConstantReferenceValue, ConstantSByteArray, ConstantSByteValue, ConstantSingleArray, ConstantSingleValue, ConstantStringArray, ConstantStringValue, ConstantUInt16Array, ConstantUInt16Value, ConstantUInt32Array, ConstantUInt32Value, ConstantUInt64Array, ConstantUInt64Value
 
         public Handle DefaultValue
         {
@@ -5973,7 +5971,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ParameterHandle handle)
+        public static implicit operator Handle(ParameterHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -6086,7 +6084,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(PointerSignatureHandle handle)
+        public static implicit operator Handle(PointerSignatureHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -6182,7 +6180,7 @@ namespace Internal.Metadata.NativeFormat
         } // MethodSemantics
 
         internal MethodSemanticsHandleCollection _methodSemantics;
-        /// One of: TypeDefinition, TypeReference, TypeSpecification, ConstantBooleanArray, ConstantBooleanValue, ConstantByteArray, ConstantByteValue, ConstantCharArray, ConstantCharValue, ConstantDoubleArray, ConstantDoubleValue, ConstantEnumArray, ConstantHandleArray, ConstantInt16Array, ConstantInt16Value, ConstantInt32Array, ConstantInt32Value, ConstantInt64Array, ConstantInt64Value, ConstantReferenceValue, ConstantSByteArray, ConstantSByteValue, ConstantSingleArray, ConstantSingleValue, ConstantStringArray, ConstantStringValue, ConstantUInt16Array, ConstantUInt16Value, ConstantUInt32Array, ConstantUInt32Value, ConstantUInt64Array, ConstantUInt64Value
+        /// One of: TypeDefinition, TypeReference, TypeSpecification, ConstantBooleanArray, ConstantBooleanValue, ConstantByteArray, ConstantByteValue, ConstantCharArray, ConstantCharValue, ConstantDoubleArray, ConstantDoubleValue, ConstantEnumArray, ConstantEnumValue, ConstantHandleArray, ConstantInt16Array, ConstantInt16Value, ConstantInt32Array, ConstantInt32Value, ConstantInt64Array, ConstantInt64Value, ConstantReferenceValue, ConstantSByteArray, ConstantSByteValue, ConstantSingleArray, ConstantSingleValue, ConstantStringArray, ConstantStringValue, ConstantUInt16Array, ConstantUInt16Value, ConstantUInt32Array, ConstantUInt32Value, ConstantUInt64Array, ConstantUInt64Value
 
         public Handle DefaultValue
         {
@@ -6249,7 +6247,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(PropertyHandle handle)
+        public static implicit operator Handle(PropertyHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -6383,7 +6381,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(PropertySignatureHandle handle)
+        public static implicit operator Handle(PropertySignatureHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -6505,7 +6503,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(QualifiedFieldHandle handle)
+        public static implicit operator Handle(QualifiedFieldHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -6627,7 +6625,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(QualifiedMethodHandle handle)
+        public static implicit operator Handle(QualifiedMethodHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -6740,7 +6738,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(SZArraySignatureHandle handle)
+        public static implicit operator Handle(SZArraySignatureHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -7002,7 +7000,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ScopeDefinitionHandle handle)
+        public static implicit operator Handle(ScopeDefinitionHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -7184,7 +7182,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ScopeReferenceHandle handle)
+        public static implicit operator Handle(ScopeReferenceHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -7438,7 +7436,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(TypeDefinitionHandle handle)
+        public static implicit operator Handle(TypeDefinitionHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -7570,7 +7568,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(TypeForwarderHandle handle)
+        public static implicit operator Handle(TypeForwarderHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -7694,7 +7692,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(TypeInstantiationSignatureHandle handle)
+        public static implicit operator Handle(TypeInstantiationSignatureHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -7817,7 +7815,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(TypeReferenceHandle handle)
+        public static implicit operator Handle(TypeReferenceHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -7930,7 +7928,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(TypeSpecificationHandle handle)
+        public static implicit operator Handle(TypeSpecificationHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -8042,7 +8040,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(TypeVariableSignatureHandle handle)
+        public static implicit operator Handle(TypeVariableSignatureHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -9833,11 +9831,6 @@ namespace Internal.Metadata.NativeFormat
             return new ConstantBooleanValueHandle(this);
         } // ToConstantBooleanValueHandle
 
-        public ConstantBoxedEnumValueHandle ToConstantBoxedEnumValueHandle(MetadataReader reader)
-        {
-            return new ConstantBoxedEnumValueHandle(this);
-        } // ToConstantBoxedEnumValueHandle
-
         public ConstantByteArrayHandle ToConstantByteArrayHandle(MetadataReader reader)
         {
             return new ConstantByteArrayHandle(this);
@@ -9872,6 +9865,11 @@ namespace Internal.Metadata.NativeFormat
         {
             return new ConstantEnumArrayHandle(this);
         } // ToConstantEnumArrayHandle
+
+        public ConstantEnumValueHandle ToConstantEnumValueHandle(MetadataReader reader)
+        {
+            return new ConstantEnumValueHandle(this);
+        } // ToConstantEnumValueHandle
 
         public ConstantHandleArrayHandle ToConstantHandleArrayHandle(MetadataReader reader)
         {
@@ -10246,17 +10244,6 @@ namespace Internal.Metadata.NativeFormat
             return record;
         } // GetConstantBooleanValue
 
-        public ConstantBoxedEnumValue GetConstantBoxedEnumValue(ConstantBoxedEnumValueHandle handle)
-        {
-            ConstantBoxedEnumValue record;
-            record._reader = this;
-            record._handle = handle;
-            var offset = (uint)handle.Offset;
-            offset = _streamReader.Read(offset, out record._value);
-            offset = _streamReader.Read(offset, out record._type);
-            return record;
-        } // GetConstantBoxedEnumValue
-
         public ConstantByteArray GetConstantByteArray(ConstantByteArrayHandle handle)
         {
             ConstantByteArray record;
@@ -10327,6 +10314,17 @@ namespace Internal.Metadata.NativeFormat
             offset = _streamReader.Read(offset, out record._value);
             return record;
         } // GetConstantEnumArray
+
+        public ConstantEnumValue GetConstantEnumValue(ConstantEnumValueHandle handle)
+        {
+            ConstantEnumValue record;
+            record._reader = this;
+            record._handle = handle;
+            var offset = (uint)handle.Offset;
+            offset = _streamReader.Read(offset, out record._value);
+            offset = _streamReader.Read(offset, out record._type);
+            return record;
+        } // GetConstantEnumValue
 
         public ConstantHandleArray GetConstantHandleArray(ConstantHandleArrayHandle handle)
         {
@@ -10952,11 +10950,6 @@ namespace Internal.Metadata.NativeFormat
             return new Handle(handle._value);
         } // ToHandle
 
-        internal Handle ToHandle(ConstantBoxedEnumValueHandle handle)
-        {
-            return new Handle(handle._value);
-        } // ToHandle
-
         internal Handle ToHandle(ConstantByteArrayHandle handle)
         {
             return new Handle(handle._value);
@@ -10988,6 +10981,11 @@ namespace Internal.Metadata.NativeFormat
         } // ToHandle
 
         internal Handle ToHandle(ConstantEnumArrayHandle handle)
+        {
+            return new Handle(handle._value);
+        } // ToHandle
+
+        internal Handle ToHandle(ConstantEnumValueHandle handle)
         {
             return new Handle(handle._value);
         } // ToHandle
@@ -11267,11 +11265,6 @@ namespace Internal.Metadata.NativeFormat
             return new ConstantBooleanValueHandle(handle._value);
         } // ToConstantBooleanValueHandle
 
-        internal ConstantBoxedEnumValueHandle ToConstantBoxedEnumValueHandle(Handle handle)
-        {
-            return new ConstantBoxedEnumValueHandle(handle._value);
-        } // ToConstantBoxedEnumValueHandle
-
         internal ConstantByteArrayHandle ToConstantByteArrayHandle(Handle handle)
         {
             return new ConstantByteArrayHandle(handle._value);
@@ -11306,6 +11299,11 @@ namespace Internal.Metadata.NativeFormat
         {
             return new ConstantEnumArrayHandle(handle._value);
         } // ToConstantEnumArrayHandle
+
+        internal ConstantEnumValueHandle ToConstantEnumValueHandle(Handle handle)
+        {
+            return new ConstantEnumValueHandle(handle._value);
+        } // ToConstantEnumValueHandle
 
         internal ConstantHandleArrayHandle ToConstantHandleArrayHandle(Handle handle)
         {
@@ -11582,11 +11580,6 @@ namespace Internal.Metadata.NativeFormat
             return (handle._value & 0x00FFFFFF) == 0;
         } // IsNull
 
-        internal bool IsNull(ConstantBoxedEnumValueHandle handle)
-        {
-            return (handle._value & 0x00FFFFFF) == 0;
-        } // IsNull
-
         internal bool IsNull(ConstantByteArrayHandle handle)
         {
             return (handle._value & 0x00FFFFFF) == 0;
@@ -11618,6 +11611,11 @@ namespace Internal.Metadata.NativeFormat
         } // IsNull
 
         internal bool IsNull(ConstantEnumArrayHandle handle)
+        {
+            return (handle._value & 0x00FFFFFF) == 0;
+        } // IsNull
+
+        internal bool IsNull(ConstantEnumValueHandle handle)
         {
             return (handle._value & 0x00FFFFFF) == 0;
         } // IsNull

@@ -316,6 +316,50 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public async Task ReadAsStreamShouldRewindOffset()
+        {
+            using (MemoryStream textMemoryStream = new MemoryStream(Encoding.UTF8.GetBytes("Hello World")))
+            using (StreamContent streamContent = new StreamContent(textMemoryStream))
+            {
+                using (MemoryStream copyToDestinationMemoryStream = new MemoryStream())
+                {
+                    await streamContent.CopyToAsync(copyToDestinationMemoryStream);
+                    using (StreamReader streamReader = new StreamReader(copyToDestinationMemoryStream))
+                    {
+                        streamReader.ReadToEnd();
+
+                        using (Stream resultStream = streamContent.ReadAsStream())
+                        {
+                            Assert.Equal(0, resultStream.Position);
+                        }
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public async Task ReadAsStreamAsyncShouldRewindOffset()
+        {
+            using (MemoryStream textMemoryStream = new MemoryStream(Encoding.UTF8.GetBytes("Hello World")))
+            using (StreamContent streamContent = new StreamContent(textMemoryStream))
+            {
+                using (MemoryStream copyToDestinationMemoryStream = new MemoryStream())
+                {
+                    await streamContent.CopyToAsync(copyToDestinationMemoryStream);
+                    using (StreamReader streamReader = new StreamReader(copyToDestinationMemoryStream))
+                    {
+                        streamReader.ReadToEnd();
+
+                        using (Stream resultStream = await streamContent.ReadAsStreamAsync())
+                        {
+                            Assert.Equal(0, resultStream.Position);
+                        }
+                    }
+                }
+            }
+        }
+
+        [Fact]
         public async Task LoadIntoBufferAsync_BufferSizeSmallerThanContentSizeWithCalculatedContentLength_ThrowsHttpRequestException()
         {
             var content = new MockContent(MockOptions.CanCalculateLength);

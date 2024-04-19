@@ -80,7 +80,9 @@ struct Access
 #endif
 
     Access(unsigned offset, var_types accessType, ClassLayout* layout)
-        : Layout(layout), Offset(offset), AccessType(accessType)
+        : Layout(layout)
+        , Offset(offset)
+        , AccessType(accessType)
     {
     }
 
@@ -220,7 +222,8 @@ bool AggregateInfo::OverlappingReplacements(unsigned      offset,
 //   numLocals - Number of locals to support in the map
 //
 AggregateInfoMap::AggregateInfoMap(CompAllocator allocator, unsigned numLocals)
-    : m_aggregates(allocator), m_numLocals(numLocals)
+    : m_aggregates(allocator)
+    , m_numLocals(numLocals)
 {
     m_lclNumToAggregateIndex = new (allocator) unsigned[numLocals];
     for (unsigned i = 0; i < numLocals; i++)
@@ -277,7 +280,9 @@ struct PrimitiveAccess
     unsigned  Offset;
     var_types AccessType;
 
-    PrimitiveAccess(unsigned offset, var_types accessType) : Offset(offset), AccessType(accessType)
+    PrimitiveAccess(unsigned offset, var_types accessType)
+        : Offset(offset)
+        , AccessType(accessType)
     {
     }
 };
@@ -290,7 +295,8 @@ class LocalUses
 
 public:
     LocalUses(Compiler* comp)
-        : m_accesses(comp->getAllocator(CMK_Promotion)), m_inducedAccesses(comp->getAllocator(CMK_Promotion))
+        : m_accesses(comp->getAllocator(CMK_Promotion))
+        , m_inducedAccesses(comp->getAllocator(CMK_Promotion))
     {
     }
 
@@ -802,14 +808,27 @@ public:
         if ((cycleImprovementPerInvoc > 0) &&
             ((cycleImprovementPerInvoc * ALLOWED_SIZE_REGRESSION_PER_CYCLE_IMPROVEMENT) >= -sizeImprovement))
         {
-            JITDUMP("  Promoting replacement\n\n");
+            JITDUMP("  Promoting replacement (cycle improvement)\n\n");
+            return true;
+        }
+
+        // Similarly, even for a cycle-wise regression, if we see a large size
+        // wise improvement we may want to promote. The main case is where all
+        // uses are in blocks with bbWeight=0, but we still estimate a
+        // size-wise improvement.
+        const weight_t ALLOWED_CYCLE_REGRESSION_PER_SIZE_IMPROVEMENT = 0.01;
+
+        if ((sizeImprovement > 0) &&
+            ((sizeImprovement * ALLOWED_CYCLE_REGRESSION_PER_SIZE_IMPROVEMENT) >= -cycleImprovementPerInvoc))
+        {
+            JITDUMP("  Promoting replacement (size improvement)\n\n");
             return true;
         }
 
 #ifdef DEBUG
         if (comp->compStressCompile(Compiler::STRESS_PHYSICAL_PROMOTION_COST, 25))
         {
-            JITDUMP("  Promoting replacement due to stress\n\n");
+            JITDUMP("  Promoting replacement (stress)\n\n");
             return true;
         }
 #endif
@@ -960,7 +979,7 @@ public:
         , m_prom(prom)
         , m_candidateStores(prom->m_compiler->getAllocator(CMK_Promotion))
     {
-        m_uses = new (prom->m_compiler, CMK_Promotion) LocalUses*[prom->m_compiler->lvaCount]{};
+        m_uses = new (prom->m_compiler, CMK_Promotion) LocalUses* [prom->m_compiler->lvaCount] {};
     }
 
     //------------------------------------------------------------------------
@@ -1192,6 +1211,8 @@ public:
             }
         }
 
+        m_compiler->Metrics.PhysicallyPromotedFields += totalNumPromotions;
+
         if (totalNumPromotions <= 0)
         {
             return false;
@@ -1206,13 +1227,8 @@ public:
             for (Replacement& rep : reps)
             {
 #ifdef DEBUG
-                char buf[32];
-                sprintf_s(buf, sizeof(buf), "V%02u.[%03u..%03u)", agg->LclNum, rep.Offset,
-                          rep.Offset + genTypeSize(rep.AccessType));
-                size_t len  = strlen(buf) + 1;
-                char*  bufp = new (m_compiler, CMK_DebugOnly) char[len];
-                strcpy_s(bufp, len, buf);
-                rep.Description = bufp;
+                rep.Description = m_compiler->printfAlloc("V%02u.[%03u..%03u)", agg->LclNum, rep.Offset,
+                                                          rep.Offset + genTypeSize(rep.AccessType));
 #endif
 
                 rep.LclNum     = m_compiler->lvaGrabTemp(false DEBUGARG(rep.Description));
@@ -1229,19 +1245,18 @@ public:
             }
 #endif
 
-            StructSegments unpromotedParts =
-                m_prom->SignificantSegments(m_compiler->lvaGetDesc(agg->LclNum)->GetLayout());
+            agg->Unpromoted = m_prom->SignificantSegments(m_compiler->lvaGetDesc(agg->LclNum)->GetLayout());
             for (Replacement& rep : reps)
             {
-                unpromotedParts.Subtract(StructSegments::Segment(rep.Offset, rep.Offset + genTypeSize(rep.AccessType)));
+                agg->Unpromoted.Subtract(StructSegments::Segment(rep.Offset, rep.Offset + genTypeSize(rep.AccessType)));
             }
 
             JITDUMP("  Unpromoted remainder: ");
-            DBEXEC(m_compiler->verbose, unpromotedParts.Dump());
+            DBEXEC(m_compiler->verbose, agg->Unpromoted.Dump());
             JITDUMP("\n\n");
 
             StructSegments::Segment unpromotedSegment;
-            if (unpromotedParts.CoveringSegment(&unpromotedSegment))
+            if (agg->Unpromoted.CoveringSegment(&unpromotedSegment))
             {
                 agg->UnpromotedMin = unpromotedSegment.Start;
                 agg->UnpromotedMax = unpromotedSegment.End;
@@ -1431,9 +1446,8 @@ private:
             flags |= AccessKindFlags::IsStoreSource;
         }
 
-        if (user->OperIs(GT_RETURN))
+        if (user->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
         {
-            assert(user->gtGetOp1()->gtEffectiveVal() == lcl);
             flags |= AccessKindFlags::IsReturned;
         }
 #endif
@@ -1488,6 +1502,31 @@ bool StructSegments::Segment::IntersectsOrAdjacent(const Segment& other) const
     }
 
     if (other.End < Start)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// Intersects:
+//   Check if this segment intersects another segment.
+//
+// Parameters:
+//   other - The other segment.
+//
+// Returns:
+//    True if so.
+//
+bool StructSegments::Segment::Intersects(const Segment& other) const
+{
+    if (End <= other.Start)
+    {
+        return false;
+    }
+
+    if (other.End <= Start)
     {
         return false;
     }
@@ -1586,7 +1625,7 @@ void StructSegments::Subtract(const Segment& segment)
         return;
     }
 
-    assert(m_segments[index].IntersectsOrAdjacent(segment));
+    assert(m_segments[index].Intersects(segment));
 
     if (m_segments[index].Contains(segment))
     {
@@ -1676,6 +1715,46 @@ bool StructSegments::CoveringSegment(Segment* result)
 
     result->Start = m_segments[0].Start;
     result->End   = m_segments[m_segments.size() - 1].End;
+    return true;
+}
+
+//------------------------------------------------------------------------
+// Intersects:
+//   Check if a segment intersects with any segment in this segment tree.
+//
+// Parameters:
+//   segment - The segment.
+//
+// Returns:
+//   True if the input segment intersects with any segment in the tree;
+//   otherwise false.
+//
+bool StructSegments::Intersects(const Segment& segment)
+{
+    size_t index = Promotion::BinarySearch<Segment, &Segment::End>(m_segments, segment.Start);
+    if ((ssize_t)index < 0)
+    {
+        index = ~index;
+    }
+    else
+    {
+        // Start == segment[index].End, which makes it non-interesting.
+        index++;
+    }
+
+    if (index >= m_segments.size())
+    {
+        return false;
+    }
+
+    // Here we know Start < segment[index].End. Do they not intersect at all?
+    if (m_segments[index].Start >= segment.End)
+    {
+        // Does not intersect any segment.
+        return false;
+    }
+
+    assert(m_segments[index].Intersects(segment));
     return true;
 }
 
@@ -2195,7 +2274,9 @@ void ReplaceVisitor::InsertPreStatementWriteBacks()
             DoPreOrder = true,
         };
 
-        Visitor(Compiler* comp, ReplaceVisitor* replacer) : GenTreeVisitor(comp), m_replacer(replacer)
+        Visitor(Compiler* comp, ReplaceVisitor* replacer)
+            : GenTreeVisitor(comp)
+            , m_replacer(replacer)
         {
         }
 
@@ -2464,7 +2545,7 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
         JITDUMP("Processing struct use [%06u] of V%02u.[%03u..%03u)\n", Compiler::dspTreeID(lcl), lclNum, offs,
                 offs + lcl->GetLayout(m_compiler)->GetSize());
 
-        assert(effectiveUser->OperIs(GT_CALL, GT_RETURN));
+        assert(effectiveUser->OperIs(GT_CALL, GT_RETURN, GT_SWIFT_ERROR_RET));
         unsigned size = lcl->GetLayout(m_compiler)->GetSize();
         WriteBackBeforeUse(use, lclNum, lcl->GetLclOffs(), size);
 
@@ -2642,8 +2723,8 @@ void ReplaceVisitor::WriteBackBeforeUse(GenTree** use, unsigned lcl, unsigned of
 
         GenTreeOp* comma = m_compiler->gtNewOperNode(GT_COMMA, (*use)->TypeGet(),
                                                      Promotion::CreateWriteBack(m_compiler, lcl, rep), *use);
-        *use = comma;
-        use  = &comma->gtOp2;
+        *use             = comma;
+        use              = &comma->gtOp2;
 
         ClearNeedsWriteBack(rep);
         m_madeChanges = true;

@@ -198,7 +198,8 @@ copy_stack_data_internal (MonoThreadInfo *info, MonoStackData *stackdata_begin, 
 #ifdef _MSC_VER
 typedef void (*CopyStackDataFunc)(MonoThreadInfo *, MonoStackData *, gconstpointer, gconstpointer);
 
-#ifdef HOST_AMD64
+#if defined(HOST_AMD64) || defined(HOST_ARM64)
+#include <intrin.h>
 #include <emmintrin.h>
 // Implementation of __builtin_unwind_init under MSVC, dumping nonvolatile registers into MonoBuiltinUnwindInfo.
 typedef struct {
@@ -206,9 +207,11 @@ typedef struct {
 	host_mgreg_t gregs [8];
 } MonoBuiltinUnwindInfo;
 
+#if defined(HOST_AMD64)
 // Defined in win64.asm
 G_EXTERN_C void
 copy_stack_data_internal_win32_wrapper (MonoThreadInfo *, MonoStackData *, MonoBuiltinUnwindInfo *, CopyStackDataFunc);
+#endif
 #else
 // Implementation of __builtin_unwind_init under MSVC, dumping nonvolatile registers into MonoBuiltinUnwindInfo.
 typedef struct {
@@ -238,8 +241,10 @@ copy_stack_data_internal_win32_wrapper (MonoThreadInfo *info, MonoStackData *sta
 static void
 copy_stack_data (MonoThreadInfo *info, MonoStackData *stackdata_begin)
 {
+#if defined(HOST_AMD64)
 	MonoBuiltinUnwindInfo unwind_info_data;
 	copy_stack_data_internal_win32_wrapper (info, stackdata_begin, &unwind_info_data, copy_stack_data_internal);
+#endif
 }
 #else
 static void

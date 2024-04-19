@@ -22,6 +22,8 @@ public abstract class WasmAppBuilderBaseTask : Task
     [Required]
     public string[] Assemblies { get; set; } = Array.Empty<string>();
 
+    public string? RuntimeConfigJsonPath { get; set; }
+
     // files like dotnet.native.wasm, icudt.dat etc
     [NotNull]
     [Required]
@@ -36,7 +38,6 @@ public abstract class WasmAppBuilderBaseTask : Task
     // https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
     public string[] IcuDataFileNames { get; set; } = Array.Empty<string>();
 
-    public int DebugLevel { get; set; }
     public ITaskItem[] SatelliteAssemblies { get; set; } = Array.Empty<ITaskItem>();
     public bool HybridGlobalization { get; set; }
     public bool InvariantGlobalization { get; set; }
@@ -89,6 +90,15 @@ public abstract class WasmAppBuilderBaseTask : Task
 
     protected virtual void UpdateRuntimeConfigJson()
     {
+        if (string.IsNullOrEmpty(RuntimeConfigJsonPath))
+            return;
+
+        if (!File.Exists(RuntimeConfigJsonPath))
+        {
+            Log.LogMessage(MessageImportance.Low, $"Could not find {nameof(RuntimeConfigJsonPath)}={RuntimeConfigJsonPath}. Ignoring.");
+            return;
+        }
+
         string[] matchingAssemblies = Assemblies.Where(asm => Path.GetFileName(asm) == MainAssemblyName).ToArray();
         if (matchingAssemblies.Length == 0)
             throw new LogAsErrorException($"Could not find main assembly named {MainAssemblyName} in the list of assemblies");
@@ -96,23 +106,16 @@ public abstract class WasmAppBuilderBaseTask : Task
         if (matchingAssemblies.Length > 1)
             throw new LogAsErrorException($"Found more than one assembly matching the main assembly name {MainAssemblyName}: {string.Join(",", matchingAssemblies)}");
 
-        string runtimeConfigPath = Path.ChangeExtension(matchingAssemblies[0], ".runtimeconfig.json");
-        if (!File.Exists(runtimeConfigPath))
-        {
-            Log.LogMessage(MessageImportance.Low, $"Could not find {runtimeConfigPath}. Ignoring.");
-            return;
-        }
-
-        var rootNode = JsonNode.Parse(File.ReadAllText(runtimeConfigPath),
+        var rootNode = JsonNode.Parse(File.ReadAllText(RuntimeConfigJsonPath),
                                             new JsonNodeOptions { PropertyNameCaseInsensitive = true });
         if (rootNode == null)
-            throw new LogAsErrorException($"Failed to parse {runtimeConfigPath}");
+            throw new LogAsErrorException($"Failed to parse {RuntimeConfigJsonPath}");
 
         JsonObject? rootObject = rootNode.AsObject();
         if (!rootObject.TryGetPropertyValue("runtimeOptions", out JsonNode? runtimeOptionsNode)
                 || !(runtimeOptionsNode is JsonObject runtimeOptionsObject))
         {
-            throw new LogAsErrorException($"Could not find node named 'runtimeOptions' in {runtimeConfigPath}");
+            throw new LogAsErrorException($"Could not find node named 'runtimeOptions' in {RuntimeConfigJsonPath}");
         }
 
         JsonObject wasmHostProperties = runtimeOptionsObject.GetOrCreate<JsonObject>("wasmHostProperties", () => new JsonObject());
@@ -151,13 +154,13 @@ public abstract class WasmAppBuilderBaseTask : Task
 
         AddToRuntimeConfig(wasmHostProperties: wasmHostProperties, runtimeArgsArray: runtimeArgsArray, perHostConfigs: perHostConfigs);
 
-        string dstPath = Path.Combine(AppDir!, Path.GetFileName(runtimeConfigPath));
-        using FileStream? fs = File.OpenWrite(dstPath);
+        string dstPath = Path.Combine(AppDir!, Path.GetFileName(RuntimeConfigJsonPath));
+        using FileStream? fs = new FileStream(dstPath, FileMode.Create, FileAccess.Write, FileShare.None);
         using var writer = new Utf8JsonWriter(fs, new JsonWriterOptions { Indented = true });
         rootObject.WriteTo(writer);
         _fileWrites.Add(dstPath);
 
-        Log.LogMessage(MessageImportance.Low, $"Generated {dstPath} from {runtimeConfigPath}");
+        Log.LogMessage(MessageImportance.Low, $"Generated {dstPath} from {RuntimeConfigJsonPath}");
     }
 
     protected virtual void AddToRuntimeConfig(JsonObject wasmHostProperties, JsonArray runtimeArgsArray, JsonArray perHostConfigs)

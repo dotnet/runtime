@@ -7,7 +7,7 @@
 # In SslStress it's a thin utility to generate a runscript for running the app with the live-built testhost.
 # The main reason to use an equivalent solution in SslStress is consistency with HttpStress.
 
-$Version="8.0"
+$Version="9.0"
 $RepoRoot="$(git rev-parse --show-toplevel)"
 $DailyDotnetRoot= "./.dotnet-daily"
 

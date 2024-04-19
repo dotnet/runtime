@@ -242,9 +242,8 @@ void PromotionLiveness::MarkUseDef(GenTreeLclVarCommon* lcl, BitVec& useSet, Bit
             }
 
             bool isFullDefOfRemainder = isDef && (agg->UnpromotedMin >= offs) && (agg->UnpromotedMax <= (offs + size));
-            // TODO-CQ: We could also try to figure out if a use actually touches the remainder, e.g. in some cases
-            // a struct use may consist only of promoted fields and does not actually use the remainder.
-            MarkIndex(baseIndex, isUse, isFullDefOfRemainder, useSet, defSet);
+            bool isUseOfRemainder     = isUse && agg->Unpromoted.Intersects(StructSegments::Segment(offs, offs + size));
+            MarkIndex(baseIndex, isUseOfRemainder, isFullDefOfRemainder, useSet, defSet);
         }
     }
     else
@@ -300,9 +299,9 @@ void PromotionLiveness::InterBlockLiveness()
     {
         changed = false;
 
-        for (BasicBlock* block = m_compiler->fgLastBB; block != nullptr; block = block->bbPrev)
+        for (BasicBlock* block = m_compiler->fgLastBB; block != nullptr; block = block->Prev())
         {
-            m_hasPossibleBackEdge |= block->bbNext && (block->bbNext->bbNum <= block->bbNum);
+            m_hasPossibleBackEdge |= !block->IsLast() && (block->Next()->bbNum <= block->bbNum);
             changed |= PerBlockLiveness(block);
         }
 
@@ -387,52 +386,10 @@ void PromotionLiveness::AddHandlerLiveVars(BasicBlock* block, BitVec& ehLiveVars
 {
     assert(block->HasPotentialEHSuccs(m_compiler));
 
-    if (m_compiler->ehBlockHasExnFlowDsc(block))
-    {
-        EHblkDsc* HBtab = m_compiler->ehGetBlockExnFlowDsc(block);
-
-        do
-        {
-            // Either we enter the filter first or the catch/finally
-            if (HBtab->HasFilter())
-            {
-                BitVecOps::UnionD(m_bvTraits, ehLiveVars, m_bbInfo[HBtab->ebdFilter->bbNum].LiveIn);
-#if defined(FEATURE_EH_FUNCLETS)
-                // The EH subsystem can trigger a stack walk after the filter
-                // has returned, but before invoking the handler, and the only
-                // IP address reported from this method will be the original
-                // faulting instruction, thus everything in the try body
-                // must report as live any variables live-out of the filter
-                // (which is the same as those live-in to the handler)
-                BitVecOps::UnionD(m_bvTraits, ehLiveVars, m_bbInfo[HBtab->ebdHndBeg->bbNum].LiveIn);
-#endif // FEATURE_EH_FUNCLETS
-            }
-            else
-            {
-                BitVecOps::UnionD(m_bvTraits, ehLiveVars, m_bbInfo[HBtab->ebdHndBeg->bbNum].LiveIn);
-            }
-
-            // If we have nested try's edbEnclosing will provide them
-            assert((HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) ||
-                   (HBtab->ebdEnclosingTryIndex > m_compiler->ehGetIndex(HBtab)));
-
-            unsigned outerIndex = HBtab->ebdEnclosingTryIndex;
-            if (outerIndex == EHblkDsc::NO_ENCLOSING_INDEX)
-            {
-                break;
-            }
-            HBtab = m_compiler->ehGetDsc(outerIndex);
-
-        } while (true);
-    }
-
-    if (m_compiler->bbInFilterBBRange(block))
-    {
-        block->VisitEHSecondPassSuccs(m_compiler, [this, &ehLiveVars](BasicBlock* succ) {
-            BitVecOps::UnionD(m_bvTraits, ehLiveVars, m_bbInfo[succ->bbNum].LiveIn);
-            return BasicBlockVisit::Continue;
-        });
-    }
+    block->VisitEHSuccs(m_compiler, [=, &ehLiveVars](BasicBlock* succ) {
+        BitVecOps::UnionD(m_bvTraits, ehLiveVars, m_bbInfo[succ->bbNum].LiveIn);
+        return BasicBlockVisit::Continue;
+    });
 }
 
 //------------------------------------------------------------------------
@@ -609,11 +566,9 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTre
             }
             else
             {
-                // TODO-CQ: We could also try to figure out if a use actually touches the remainder, e.g. in some cases
-                // a struct use may consist only of promoted fields and does not actually use the remainder.
                 BitVecOps::AddElemD(&aggTraits, aggDeaths, 0);
 
-                if (isUse)
+                if (isUse && agg->Unpromoted.Intersects(StructSegments::Segment(offs, offs + size)))
                 {
                     BitVecOps::AddElemD(m_bvTraits, life, baseIndex);
                 }

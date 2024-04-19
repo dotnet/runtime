@@ -292,7 +292,7 @@ namespace System.ComponentModel
             /// <summary>
             /// Retrieves the editor for the given base type.
             /// </summary>
-            [RequiresUnreferencedCode(TypeDescriptor.EditorRequiresUnreferencedCode + " The Type of instance cannot be statically discovered.")]
+            [RequiresUnreferencedCode(TypeDescriptor.DesignTimeAttributeTrimmed + " The Type of instance cannot be statically discovered.")]
             internal object? GetEditor(object? instance, Type editorBaseType)
             {
                 EditorAttribute? typeAttr;
@@ -391,6 +391,7 @@ namespace System.ComponentModel
             /// <summary>
             /// Helper method to return an editor attribute of the correct base type.
             /// </summary>
+            [RequiresUnreferencedCode("The type referenced by the Editor attribute may be trimmed away.")]
             private static EditorAttribute? GetEditorAttribute(AttributeCollection attributes, Type editorBaseType)
             {
                 foreach (Attribute attr in attributes)

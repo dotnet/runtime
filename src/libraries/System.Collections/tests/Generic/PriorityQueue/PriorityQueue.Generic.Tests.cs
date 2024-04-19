@@ -93,7 +93,7 @@ namespace System.Collections.Tests
 
         #endregion
 
-        #region Enqueue, Dequeue, Peek, EnqueueDequeue, DequeueEnqueue
+        #region Enqueue, Dequeue, Peek, EnqueueDequeue, DequeueEnqueue, Remove
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
@@ -244,6 +244,35 @@ namespace System.Collections.Tests
 
             IEnumerable<(TElement Element, TPriority Priority)> expectedItems = itemsToEnqueue.Where(item => !dequeuedItems.Contains(item, EqualityComparer<(TElement, TPriority)>.Default));
             AssertExtensions.CollectionEqual(expectedItems, queue.UnorderedItems, EqualityComparer<(TElement, TPriority)>.Default);
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void PriorityQueue_Remove_AllElements(int count)
+        {
+            bool result;
+            TElement removedElement;
+            TPriority removedPriority;
+
+            PriorityQueue<TElement, TPriority> queue = CreatePriorityQueue(count, count, out List<(TElement element, TPriority priority)> generatedItems);
+
+            for (int i = count - 1; i >= 0; i--)
+            {
+                (TElement element, TPriority priority) = generatedItems[i];
+                
+                result = queue.Remove(element, out removedElement, out removedPriority);
+
+                Assert.True(result);
+                Assert.Equal(element, removedElement);
+                Assert.Equal(priority, removedPriority);
+                Assert.Equal(i, queue.Count);
+            }
+
+            result = queue.Remove(default, out removedElement, out removedPriority);
+
+            Assert.False(result);
+            Assert.Equal(default, removedElement);
+            Assert.Equal(default, removedPriority);
         }
 
         #endregion

@@ -204,6 +204,7 @@ public:
     enable_no_gc_region_callback_status EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, uint64_t callback_threshold);
     FinalizerWorkItem* GetExtraWorkForFinalization();
     uint64_t GetGenerationBudget(int generation);
+    size_t GetLOHThreshold();
 
     unsigned GetGcCount();
 

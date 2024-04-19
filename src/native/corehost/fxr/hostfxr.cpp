@@ -699,7 +699,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_runtime_delegate(
         context = fx_muxer_t::get_active_host_context();
         if (context == nullptr)
         {
-            trace::error(_X("Hosting components context has not been initialized. Cannot get runtime properties."));
+            trace::error(_X("Hosting components context has not been initialized. Cannot get runtime delegate."));
             return StatusCode::HostInvalidState;
         }
     }

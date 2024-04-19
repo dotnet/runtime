@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
 using System.Reflection.Runtime.General;
 
 namespace System.Reflection.Runtime.TypeInfos
@@ -19,13 +19,9 @@ namespace System.Reflection.Runtime.TypeInfos
         {
         }
 
-        protected sealed override bool IsArrayImpl() => false;
-        public sealed override bool IsSZArray => false;
-        public sealed override bool IsVariableBoundArray => false;
-        protected sealed override bool IsByRefImpl() => true;
-        protected sealed override bool IsPointerImpl() => false;
+        public override bool IsByRef => true;
 
-        protected sealed override string Suffix
+        protected override string Suffix
         {
             get
             {

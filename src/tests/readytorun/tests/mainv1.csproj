@@ -1,9 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>exe</OutputType>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
     <CrossGenTest>false</CrossGenTest>
     <!-- https://github.com/dotnet/runtime/issues/73138 -->
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <!-- This test launches crossgen2 with dotnet, so we would need a non-sanitzed jitinterface library. To simplify our infrastructure, we'll instead skip this test. -->
+    <CLRTestTargetUnsupported Condition="'$(EnableNativeSanitizers)' != ''">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="fieldgetter.ilproj" />
@@ -43,7 +46,7 @@ if not exist IL_DLLS\mainv1.dll (
 )
 IF "%__TestDotNetCmd%"=="" set __TestDotNetCmd=dotnet
 
-%__TestDotNetCmd% %Core_Root%\crossgen2\crossgen2.dll --map -r:%Core_Root%\*.dll -r:%25CD%\IL_DLLS\fieldgetter.dll -r:%25CD%\IL_DLLS\mainv1.dll -o:test.dll ..\testv1\test\test.dll
+%__TestDotNetCmd% %Core_Root%\crossgen2\crossgen2.dll --map -r:%Core_Root%\*.dll -r:%25CD%\IL_DLLS\fieldgetter.dll -r:%25CD%\IL_DLLS\mainv1.dll -o:test.dll testv1\test.dll
 
 set CrossGenStatus=!ERRORLEVEL!
 IF NOT !CrossGenStatus!==0 (
@@ -55,7 +58,7 @@ if not exist test.map (
     exit /b 1
 )
 
-%__TestDotNetCmd% %Core_Root%\crossgen2\crossgen2.dll --map -r:%Core_Root%\*.dll -r:%25CD%\IL_DLLS\mainv1.dll -r:..\testv1\test\test.dll -o:fieldgetter.dll IL_DLLS\fieldgetter.dll
+%__TestDotNetCmd% %Core_Root%\crossgen2\crossgen2.dll --map -r:%Core_Root%\*.dll -r:%25CD%\IL_DLLS\mainv1.dll -r:testv1\test.dll -o:fieldgetter.dll IL_DLLS\fieldgetter.dll
 
 set CrossGenStatus=!ERRORLEVEL!
 IF NOT !CrossGenStatus!==0 (
@@ -67,7 +70,7 @@ if not exist fieldgetter.map (
     exit /b 1
 )
 
-%__TestDotNetCmd% %Core_Root%\crossgen2\crossgen2.dll --map -r:%Core_Root%\*.dll -r:%25CD%\IL_DLLS\fieldgetter.dll -r:..\testv1\test\test.dll --opt-cross-module:test -o:mainv1.dll IL_DLLS\mainv1.dll
+%__TestDotNetCmd% %Core_Root%\crossgen2\crossgen2.dll --map -r:%Core_Root%\*.dll -r:%25CD%\IL_DLLS\fieldgetter.dll -r:testv1\test.dll --opt-cross-module:test -o:mainv1.dll IL_DLLS\mainv1.dll
 
 set CrossGenStatus=!ERRORLEVEL!
 IF NOT !CrossGenStatus!==0 (
@@ -109,7 +112,7 @@ then
   exit 1
 fi
 
-$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:IL_DLLS/fieldgetter.dll -r:IL_DLLS/mainv1.dll -o:test.dll ../testv1/test/test.dll
+$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:IL_DLLS/fieldgetter.dll -r:IL_DLLS/mainv1.dll -o:test.dll testv1/test.dll
 
 __cgExitCode=$?
 if [ $__cgExitCode -ne 0 ]
@@ -123,7 +126,7 @@ then
   exit 1
 fi
 
-$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:../testv1/test/test.dll -r:IL_DLLS/mainv1.dll -o:fieldgetter.dll IL_DLLS/fieldgetter.dll
+$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:testv1/test.dll -r:IL_DLLS/mainv1.dll -o:fieldgetter.dll IL_DLLS/fieldgetter.dll
 
 __cgExitCode=$?
 if [ $__cgExitCode -ne 0 ]
@@ -137,7 +140,7 @@ then
   exit 1
 fi
 
-$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:../testv1/test/test.dll -r:IL_DLLS/fieldgetter.dll --opt-cross-module:test -o:mainv1.dll IL_DLLS/mainv1.dll
+$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:testv1/test.dll -r:IL_DLLS/fieldgetter.dll --opt-cross-module:test -o:mainv1.dll IL_DLLS/mainv1.dll
 
 __cgExitCode=$?
 if [ $__cgExitCode -ne 0 ]
@@ -154,4 +157,15 @@ fi
 export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
 ]]></CLRTestBashPreCommands>
   </PropertyGroup>
+
+  <Target Name="CopyTestAssemblyToOutputs" AfterTargets="Build" Condition="'$(CLRTestTargetUnsupported)' != 'true'">
+    <PropertyGroup>
+      <TestAssemblyName>test.dll</TestAssemblyName>
+      <TestAssemblySourcePath>$(OutputPath)/../testv1/test/</TestAssemblySourcePath>
+      <TestAssemblyTargetPath>$(OutputPath)/testv1</TestAssemblyTargetPath>
+    </PropertyGroup>
+    
+    <MakeDir Directories="$(TestAssemblyTargetPath)" />
+    <Copy SourceFiles="$(TestAssemblySourcePath)$(TestAssemblyName)" DestinationFolder="$(TestAssemblyTargetPath)" />
+  </Target>
 </Project>

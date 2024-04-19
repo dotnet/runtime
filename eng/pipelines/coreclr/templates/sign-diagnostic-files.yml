@@ -12,7 +12,7 @@ steps:
       version: '6.0.x'
       installationPath: '$(Agent.TempDirectory)/dotnet'
 
-  - task: EsrpCodeSigning@1
+  - task: EsrpCodeSigning@4
     displayName: Sign Diagnostic Binaries
     inputs:
       ConnectedServiceName: 'dotnetesrp-diagnostics-dnceng'
@@ -48,6 +48,7 @@ steps:
       SessionTimeout: ${{ parameters.timeoutInMinutes }}
       MaxConcurrency: '50'
       MaxRetryAttempts: '5'
+      PendingAnalysisWaitTimeoutMinutes: '5'
     env:
       DOTNET_MULTILEVEL_LOOKUP: 0
       DOTNET_ROOT: '$(Agent.TempDirectory)/dotnet'

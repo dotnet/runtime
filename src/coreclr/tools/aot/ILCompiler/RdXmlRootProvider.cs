@@ -71,7 +71,7 @@ namespace ILCompiler
 
                 foreach (TypeDesc type in ((EcmaModule)assembly).GetAllTypes())
                 {
-                    RootingHelpers.TryRootType(rootProvider, type, "RD.XML root");
+                    RootingHelpers.TryRootType(rootProvider, type, rootBaseTypes: true, "RD.XML root");
                 }
             }
 
@@ -103,7 +103,7 @@ namespace ILCompiler
                 if (dynamicDegreeAttribute.Value != "Required All")
                     throw new NotSupportedException($"\"{dynamicDegreeAttribute.Value}\" is not a supported value for the \"Dynamic\" attribute of the \"Type\" Runtime Directive. Supported values are \"Required All\".");
 
-                RootingHelpers.RootType(rootProvider, type, "RD.XML root");
+                RootingHelpers.RootType(rootProvider, type, rootBaseTypes: true, "RD.XML root");
             }
 
             var marshalStructureDegreeAttribute = typeElement.Attribute("MarshalStructure");

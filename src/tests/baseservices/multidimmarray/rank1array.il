@@ -7,6 +7,7 @@
 // at the expected memory locations.
 
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 
 .assembly rank1array
 {
@@ -16,8 +17,12 @@
 .subsystem 0x0003
 .corflags 0x00000001
 
+.class public auto ansi rank1array {
 .method public hidebysig static int32 Main () cil managed
 {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .locals init(
         [0] int32[] szArray,
         [1] int32[0...] mdArray
@@ -156,4 +161,5 @@ DifferentTypes:
 
     ldc.i4 100
     ret
+}
 }

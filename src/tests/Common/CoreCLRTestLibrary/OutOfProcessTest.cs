@@ -89,7 +89,7 @@ namespace TestLibrary
 
             if (infraEx != null)
             {
-                Assert.True(false, "Test Infrastructure Failure: " + infraEx.ToString());
+                Assert.Fail("Test Infrastructure Failure: " + infraEx.ToString());
             }
             else
             {

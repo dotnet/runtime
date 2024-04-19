@@ -135,18 +135,6 @@ typedef enum tagEFaultRepRetVal
 
 #include "pal.h"
 
-#ifndef PAL_STDCPP_COMPAT
-#ifdef __cplusplus
-#ifndef __PLACEMENT_NEW_INLINE
-#define __PLACEMENT_NEW_INLINE
-inline void *__cdecl operator new(size_t, void *_P)
-{
-    return (_P);
-}
-#endif // __PLACEMENT_NEW_INLINE
-#endif // __cplusplus
-#endif // !PAL_STDCPP_COMPAT
-
 #include <pal_assert.h>
 
 #define NTAPI       __cdecl
@@ -280,9 +268,7 @@ typedef union _ULARGE_INTEGER {
         DWORD HighPart;
 #endif
     }
-#ifndef PAL_STDCPP_COMPAT
     u
-#endif // PAL_STDCPP_COMPAT
      ;
     ULONGLONG QuadPart;
 } ULARGE_INTEGER, *PULARGE_INTEGER;
@@ -681,9 +667,9 @@ inline int __cdecl _vscprintf_unsafe(const char *_Format, va_list _ArgList)
     }
 }
 
-inline errno_t __cdecl _wfopen_unsafe(PAL_FILE * *ff, const WCHAR *fileName, const WCHAR *mode)
+inline errno_t __cdecl _wfopen_unsafe(FILE * *ff, const WCHAR *fileName, const WCHAR *mode)
 {
-    PAL_FILE *result = _wfopen(fileName, mode);
+    FILE *result = _wfopen(fileName, mode);
     if(result == 0) {
         return 1;
     } else {
@@ -692,9 +678,9 @@ inline errno_t __cdecl _wfopen_unsafe(PAL_FILE * *ff, const WCHAR *fileName, con
     }
 }
 
-inline errno_t __cdecl _fopen_unsafe(PAL_FILE * *ff, const char *fileName, const char *mode)
+inline errno_t __cdecl _fopen_unsafe(FILE * *ff, const char *fileName, const char *mode)
 {
-  PAL_FILE *result = PAL_fopen(fileName, mode);
+  FILE *result = fopen(fileName, mode);
   if(result == 0) {
     return 1;
   } else {

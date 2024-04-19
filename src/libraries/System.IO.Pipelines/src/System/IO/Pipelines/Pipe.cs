@@ -500,6 +500,7 @@ namespace System.IO.Pipelines
                     _lastExaminedIndex = examinedSegment.RunningIndex + examinedIndex;
 
                     Debug.Assert(_unconsumedBytes >= 0, "Length has gone negative");
+                    Debug.Assert(ResumeWriterThreshold >= 1, "ResumeWriterThreshold is less than 1");
 
                     if (oldLength >= ResumeWriterThreshold &&
                         _unconsumedBytes < ResumeWriterThreshold)

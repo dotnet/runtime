@@ -20,7 +20,7 @@ internal static partial class Interop
             CRYPT_VERIFYCONTEXT = 0xF0000000      // CRYPT_VERIFYCONTEXT
         }
 
-        [LibraryImport(Libraries.Advapi32, EntryPoint = "CryptAcquireContextW",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.Advapi32, EntryPoint = "CryptAcquireContextW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptAcquireContext(
             out SafeProvHandle phProv,

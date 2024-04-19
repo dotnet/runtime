@@ -153,6 +153,14 @@ namespace Internal.IL
                     {
                         _dependencies.Add(_factory.NecessaryTypeSymbol(method.OwningType), reason);
                     }
+
+                    if (_canonMethod.IsCanonicalMethod(CanonicalFormKind.Any))
+                    {
+                        _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetHelperEntryPoint("SynchronizedMethodHelpers", "GetSyncFromClassHandle")), reason);
+
+                        if (_canonMethod.RequiresInstMethodDescArg())
+                            _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetHelperEntryPoint("SynchronizedMethodHelpers", "GetClassFromMethodParam")), reason);
+                    }
                 }
                 else
                 {
@@ -352,8 +360,9 @@ namespace Internal.IL
                     }
                     else
                     {
-                        MethodDesc ctor = Compilation.GetConstructorForCreateInstanceIntrinsic(method.Instantiation[0]);
-                        _dependencies.Add(_factory.CanonicalEntrypoint(ctor), reason);
+                        TypeDesc type = method.Instantiation[0];
+                        MethodDesc ctor = Compilation.GetConstructorForCreateInstanceIntrinsic(type);
+                        _dependencies.Add(type.IsValueType ? _factory.ExactCallableAddress(ctor) : _factory.CanonicalEntrypoint(ctor), reason);
                     }
 
                     return;
@@ -699,11 +708,7 @@ namespace Internal.IL
                     _dependencies.Add(_factory.InterfaceDispatchCell(method), reason);
                 }
             }
-            else if (_compilation.HasFixedSlotVTable(method.OwningType))
-            {
-                // No dependencies: virtual call through the vtable
-            }
-            else
+            else if (_compilation.NeedsSlotUseTracking(method.OwningType))
             {
                 MethodDesc slotDefiningMethod = targetMethod.IsNewSlot ?
                         targetMethod : MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(targetMethod);
@@ -974,12 +979,34 @@ namespace Internal.IL
             _isReadOnly = true;
         }
 
-        private void ImportFieldAccess(int token, bool isStatic, string reason)
+        private void ImportFieldAccess(int token, bool isStatic, bool? write, string reason)
         {
             var field = (FieldDesc)_methodIL.GetObject(token);
             var canonField = (FieldDesc)_canonMethodIL.GetObject(token);
 
             _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _compilation.NodeFactory, _canonMethodIL, canonField);
+
+            // `write` will be null for ld(s)flda. Consider address loads write unless they were
+            // for initonly static fields. We'll trust the initonly that this is not a write.
+            write ??= !field.IsInitOnly || !field.IsStatic;
+
+            if (write.Value)
+            {
+                bool isInitOnlyWrite = field.OwningType == _methodIL.OwningMethod.OwningType
+                    && ((field.IsStatic && _methodIL.OwningMethod.IsStaticConstructor)
+                        || (!field.IsStatic && _methodIL.OwningMethod.IsConstructor));
+
+                if (!isInitOnlyWrite)
+                {
+                    FieldDesc fieldToReport = canonField;
+                    DefType fieldOwningType = canonField.OwningType;
+                    TypeDesc canonFieldOwningType = fieldOwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                    if (fieldOwningType != canonFieldOwningType)
+                        fieldToReport = _factory.TypeSystemContext.GetFieldForInstantiatedType(fieldToReport.GetTypicalFieldDefinition(), (InstantiatedType)canonFieldOwningType);
+
+                    _dependencies.Add(_factory.NotReadOnlyField(fieldToReport), "Field written outside initializer");
+                }
+            }
 
             // Covers both ldsfld/ldsflda and ldfld/ldflda with a static field
             if (isStatic || field.IsStatic)
@@ -1034,23 +1061,22 @@ namespace Internal.IL
 
         private void ImportLoadField(int token, bool isStatic)
         {
-            ImportFieldAccess(token, isStatic, isStatic ? "ldsfld" : "ldfld");
+            ImportFieldAccess(token, isStatic, write: false, isStatic ? "ldsfld" : "ldfld");
         }
 
         private void ImportAddressOfField(int token, bool isStatic)
         {
-            ImportFieldAccess(token, isStatic, isStatic ? "ldsflda" : "ldflda");
+            ImportFieldAccess(token, isStatic, write: null, isStatic ? "ldsflda" : "ldflda");
         }
 
         private void ImportStoreField(int token, bool isStatic)
         {
-            ImportFieldAccess(token, isStatic, isStatic ? "stsfld" : "stfld");
+            ImportFieldAccess(token, isStatic, write: true, isStatic ? "stsfld" : "stfld");
         }
 
         private void ImportLoadString(int token)
         {
-            // If we care, this can include allocating the frozen string node.
-            _dependencies.Add(_factory.SerializedStringObject(""), "ldstr");
+            _dependencies.Add(_factory.SerializedStringObject((string)_methodIL.GetObject(token)), "ldstr");
         }
 
         private void ImportBox(int token)
@@ -1195,7 +1221,7 @@ namespace Internal.IL
                     break;
                 case ILOpcode.mul_ovf:
                 case ILOpcode.mul_ovf_un:
-                    if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
+                    if (_compilation.TypeSystemContext.Target.PointerSize == 4)
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.LMulOfv), "_lmulovf");
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ULMulOvf), "_ulmulovf");
@@ -1205,31 +1231,49 @@ namespace Internal.IL
                     break;
                 case ILOpcode.div:
                 case ILOpcode.div_un:
-                    if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
+                    if (_compilation.TypeSystemContext.Target.Architecture is TargetArchitecture.ARM or TargetArchitecture.X86)
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ULDiv), "_uldiv");
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.LDiv), "_ldiv");
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.UDiv), "_udiv");
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Div), "_div");
+
+                        if (_compilation.TypeSystemContext.Target.Architecture is TargetArchitecture.ARM)
+                        {
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.UDiv), "_udiv");
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Div), "_div");
+                        }
                     }
                     else if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM64)
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ThrowDivZero), "_divbyzero");
+                        if (opcode == ILOpcode.div)
+                        {
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Overflow), "_ovf");
+                        }
                     }
                     break;
                 case ILOpcode.rem:
                 case ILOpcode.rem_un:
-                    if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
+                    if (_compilation.TypeSystemContext.Target.Architecture is TargetArchitecture.ARM or TargetArchitecture.X86)
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ULMod), "_ulmod");
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.LMod), "_lmod");
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.UMod), "_umod");
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Mod), "_mod");
+                        if (_compilation.TypeSystemContext.Target.Architecture is TargetArchitecture.ARM)
+                        {
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.UMod), "_umod");
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Mod), "_mod");
+                        }
                     }
                     else if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM64)
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ThrowDivZero), "_divbyzero");
+                        if (opcode == ILOpcode.rem)
+                        {
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Overflow), "_ovf");
+                        }
                     }
+
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.DblRem), "rem");
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.FltRem), "rem");
                     break;
             }
         }
@@ -1325,13 +1369,12 @@ namespace Internal.IL
 
         private static bool IsEETypePtrOf(MethodDesc method)
         {
-            if (method.IsIntrinsic && (method.Name == "EETypePtrOf" || method.Name == "Of") && method.Instantiation.Length == 1)
+            if (method.IsIntrinsic && method.Name == "Of" && method.Instantiation.Length == 1)
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return (owningType.Name == "EETypePtr" && owningType.Namespace == "System")
-                        || (owningType.Name == "MethodTable" && owningType.Namespace == "Internal.Runtime");
+                    return owningType.Name == "MethodTable" && owningType.Namespace == "Internal.Runtime";
                 }
             }
 

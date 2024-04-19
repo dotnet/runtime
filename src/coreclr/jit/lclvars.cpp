@@ -35,6 +35,8 @@ unsigned Compiler::s_lvaDoubleAlignedProcsCount = 0;
 
 void Compiler::lvaInit()
 {
+    lvaParameterPassingInfo = nullptr;
+
     /* We haven't allocated stack variables yet */
     lvaRefCountState = RCS_INVALID;
 
@@ -46,9 +48,9 @@ void Compiler::lvaInit()
     lvaTrackedFixed = false; // false: We can still add new tracked variables
 
     lvaDoneFrameLayout = NO_FRAME_LAYOUT;
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
     lvaShadowSPslotsVar = BAD_VAR_NUM;
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
     lvaInlinedPInvokeFrameVar = BAD_VAR_NUM;
     lvaReversePInvokeFrameVar = BAD_VAR_NUM;
 #if FEATURE_FIXED_OUT_ARGS
@@ -69,12 +71,15 @@ void Compiler::lvaInit()
     lvaMonAcquired      = BAD_VAR_NUM;
     lvaRetAddrVar       = BAD_VAR_NUM;
 
+#ifdef SWIFT_SUPPORT
+    lvaSwiftSelfArg  = BAD_VAR_NUM;
+    lvaSwiftErrorArg = BAD_VAR_NUM;
+#endif
+
     lvaInlineeReturnSpillTemp = BAD_VAR_NUM;
 
     gsShadowVarInfo = nullptr;
-#if defined(FEATURE_EH_FUNCLETS)
-    lvaPSPSym = BAD_VAR_NUM;
-#endif
+    lvaPSPSym       = BAD_VAR_NUM;
 #if FEATURE_SIMD
     lvaSIMDInitTempVarNum = BAD_VAR_NUM;
 #endif // FEATURE_SIMD
@@ -88,7 +93,7 @@ void Compiler::lvaInit()
     lvaCallSpCheck = BAD_VAR_NUM;
 #endif
 
-    structPromotionHelper = new (this, CMK_Generic) StructPromotionHelper(this);
+    structPromotionHelper = new (this, CMK_Promotion) StructPromotionHelper(this);
 }
 
 /*****************************************************************************/
@@ -164,6 +169,28 @@ void Compiler::lvaInitTypeRef()
     {
         info.compRetBuffArg = BAD_VAR_NUM;
     }
+
+#if defined(DEBUG) && defined(SWIFT_SUPPORT)
+    if (verbose && (info.compCallConv == CorInfoCallConvExtension::Swift) && varTypeIsStruct(info.compRetType))
+    {
+        CORINFO_CLASS_HANDLE          retTypeHnd = info.compMethodInfo->args.retTypeClass;
+        const CORINFO_SWIFT_LOWERING* lowering   = GetSwiftLowering(retTypeHnd);
+        if (lowering->byReference)
+        {
+            printf("Swift compilation returns %s by reference\n", typGetObjLayout(retTypeHnd)->GetClassName());
+        }
+        else
+        {
+            printf("Swift compilation returns %s as %d primitive(s) in registers\n",
+                   typGetObjLayout(retTypeHnd)->GetClassName(), lowering->numLoweredElements);
+            for (size_t i = 0; i < lowering->numLoweredElements; i++)
+            {
+                printf("    [%zu] @ +%02u: %s\n", i, lowering->offsets[i],
+                       varTypeName(JitType2PreciseVarType(lowering->loweredElements[i])));
+            }
+        }
+    }
+#endif
 
     /* There is a 'hidden' cookie pushed last when the
        calling convention is varargs */
@@ -259,9 +286,9 @@ void Compiler::lvaInitTypeRef()
     LclVarDsc*              varDsc    = varDscInfo.varDsc;
     CORINFO_ARG_LIST_HANDLE localsSig = info.compMethodInfo->locals.args;
 
-#ifdef TARGET_ARM
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
     compHasSplitParam = varDscInfo.hasSplitParam;
-#endif
+#endif // TARGET_ARM || TARGET_RISCV64
 
     for (unsigned i = 0; i < info.compMethodInfo->locals.numArgs;
          i++, varNum++, varDsc++, localsSig = info.compCompHnd->getArgNext(localsSig))
@@ -304,9 +331,9 @@ void Compiler::lvaInitTypeRef()
     }
 
     if ( // If there already exist unsafe buffers, don't mark more structs as unsafe
-        // as that will cause them to be placed along with the real unsafe buffers,
-        // unnecessarily exposing them to overruns. This can affect GS tests which
-        // intentionally do buffer-overruns.
+         // as that will cause them to be placed along with the real unsafe buffers,
+         // unnecessarily exposing them to overruns. This can affect GS tests which
+         // intentionally do buffer-overruns.
         !getNeedsGSSecurityCookie() &&
         // GS checks require the stack to be re-ordered, which can't be done with EnC
         !opts.compDbgEnC && compStressCompile(STRESS_UNSAFE_BUFFER_CHECKS, 25))
@@ -387,7 +414,7 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
 
     //----------------------------------------------------------------------
 
-    /* Is there a "this" pointer ? */
+    // Is there a "this" pointer ?
     lvaInitThisPtr(varDscInfo);
 
     unsigned numUserArgsToSkip = 0;
@@ -412,7 +439,7 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
         lvaInitRetBuffArg(varDscInfo, true);
     }
 
-//======================================================================
+    //======================================================================
 
 #if USER_ARGS_COME_LAST
     //@GENERICS: final instantiation-info argument for shared generic methods
@@ -440,10 +467,14 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
 
     // We have set info.compArgsCount in compCompile()
     noway_assert(varDscInfo->varNum == info.compArgsCount);
+
     assert(varDscInfo->intRegArgNum <= MAX_REG_ARG);
 
     codeGen->intRegState.rsCalleeRegArgCount   = varDscInfo->intRegArgNum;
     codeGen->floatRegState.rsCalleeRegArgCount = varDscInfo->floatRegArgNum;
+
+    // Now we have parameters created in the right order. Figure out how they're passed.
+    lvaClassifyParameterABI();
 
 #if FEATURE_FASTTAILCALL
     // Save the stack usage information
@@ -490,7 +521,8 @@ void Compiler::lvaInitThisPtr(InitVarDscInfo* varDscInfo)
         varDsc->lvIsRegArg = 1;
         noway_assert(varDscInfo->intRegArgNum == 0);
 
-        varDsc->SetArgReg(genMapRegArgNumToRegNum(varDscInfo->allocRegArg(TYP_INT), varDsc->TypeGet()));
+        varDsc->SetArgReg(
+            genMapRegArgNumToRegNum(varDscInfo->allocRegArg(TYP_INT), varDsc->TypeGet(), info.compCallConv));
 #if FEATURE_MULTIREG_ARGS
         varDsc->SetOtherArgReg(REG_NA);
 #endif
@@ -504,8 +536,7 @@ void Compiler::lvaInitThisPtr(InitVarDscInfo* varDscInfo)
 #endif
         compArgSize += TARGET_POINTER_SIZE;
 
-        varDscInfo->varNum++;
-        varDscInfo->varDsc++;
+        varDscInfo->nextParam();
     }
 }
 
@@ -521,16 +552,22 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
         varDsc->lvIsParam  = 1;
         varDsc->lvIsRegArg = 0;
 
-        if (useFixedRetBufReg && hasFixedRetBuffReg())
+        if (useFixedRetBufReg && hasFixedRetBuffReg(info.compCallConv))
         {
             varDsc->lvIsRegArg = 1;
-            varDsc->SetArgReg(theFixedRetBuffReg());
+            varDsc->SetArgReg(theFixedRetBuffReg(info.compCallConv));
         }
         else if (varDscInfo->canEnreg(TYP_INT))
         {
             varDsc->lvIsRegArg     = 1;
             unsigned retBuffArgNum = varDscInfo->allocRegArg(TYP_INT);
-            varDsc->SetArgReg(genMapIntRegArgNumToRegNum(retBuffArgNum));
+            varDsc->SetArgReg(genMapIntRegArgNumToRegNum(retBuffArgNum, info.compCallConv));
+        }
+        else
+        {
+            varDscInfo->stackArgSize = roundUp(varDscInfo->stackArgSize, TARGET_POINTER_SIZE);
+            varDsc->SetStackOffset(varDscInfo->stackArgSize);
+            varDscInfo->stackArgSize += TARGET_POINTER_SIZE;
         }
 
 #if FEATURE_MULTIREG_ARGS
@@ -538,7 +575,7 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
 #endif
         varDsc->lvOnFrame = true; // The final home for this incoming register might be our local stack frame
 
-        assert(!varDsc->lvIsRegArg || isValidIntArgReg(varDsc->GetArgReg()));
+        assert(!varDsc->lvIsRegArg || isValidIntArgReg(varDsc->GetArgReg(), info.compCallConv));
 
 #ifdef DEBUG
         if (varDsc->lvIsRegArg && verbose)
@@ -547,11 +584,9 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
         }
 #endif
 
-        /* Update the total argument size, count and varDsc */
-
         compArgSize += TARGET_POINTER_SIZE;
-        varDscInfo->varNum++;
-        varDscInfo->varDsc++;
+
+        varDscInfo->nextParam();
     }
 }
 
@@ -566,9 +601,9 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
 //
 void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, unsigned takeArgs)
 {
-//-------------------------------------------------------------------------
-// Walk the function signature for the explicit arguments
-//-------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
+    // Walk the function signature for the explicit arguments
+    //-------------------------------------------------------------------------
 
 #if defined(TARGET_X86)
     // Only (some of) the implicit args are enregistered for varargs
@@ -586,7 +621,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
     const unsigned argSigLen = info.compMethodInfo->args.numArgs;
 
     // We will process at most takeArgs arguments from the signature after skipping skipArgs arguments
-    const int64_t numUserArgs = min(takeArgs, (argSigLen - (int64_t)skipArgs));
+    const int64_t numUserArgs = min((int64_t)takeArgs, (argSigLen - (int64_t)skipArgs));
 
     // If there are no user args or less than skipArgs args, return here since there's no work to do.
     if (numUserArgs <= 0)
@@ -605,8 +640,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
     }
 
     // Process each user arg.
-    for (unsigned i = 0; i < numUserArgs;
-         i++, varDscInfo->varNum++, varDscInfo->varDsc++, argLst = info.compCompHnd->getArgNext(argLst))
+    for (unsigned i = 0; i < numUserArgs; i++, varDscInfo->nextParam(), argLst = info.compCompHnd->getArgNext(argLst))
     {
         LclVarDsc*           varDsc  = varDscInfo->varDsc;
         CORINFO_CLASS_HANDLE typeHnd = nullptr;
@@ -622,6 +656,33 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             lvaSetClass(varDscInfo->varNum, clsHnd);
         }
 
+        // The final home for this incoming parameter might be our local stack frame.
+        varDsc->lvOnFrame = true;
+
+#ifdef SWIFT_SUPPORT
+        if (info.compCallConv == CorInfoCallConvExtension::Swift)
+        {
+            if (varTypeIsSIMD(varDsc))
+            {
+                IMPL_LIMITATION("SIMD types are currently unsupported in Swift reverse pinvokes");
+            }
+
+            if (lvaInitSpecialSwiftParam(argLst, varDscInfo, strip(corInfoType), typeHnd))
+            {
+                continue;
+            }
+
+            if (varDsc->TypeGet() == TYP_STRUCT)
+            {
+                // Struct parameters are lowered to separate primitives in the
+                // Swift calling convention. We cannot handle these patterns
+                // efficiently, so we always DNER them and home them to stack
+                // in the prolog.
+                lvaSetVarDoNotEnregister(varDscInfo->varNum DEBUGARG(DoNotEnregisterReason::IsStructArg));
+            }
+        }
+#endif
+
         // For ARM, ARM64, LOONGARCH64, RISCV64 and AMD64 varargs, all arguments go in integer registers
         var_types argType = mangleVarArgsType(varDsc->TypeGet());
 
@@ -631,7 +692,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         // Otherwise there appear too many surplus pre-spills and other memory operations
         // with the associated locations .
         bool     isSoftFPPreSpill = opts.compUseSoftFP && varTypeIsFloating(varDsc->TypeGet());
-        unsigned argSize          = eeGetArgSize(argLst, &info.compMethodInfo->args);
+        unsigned argSize          = eeGetArgSize(strip(corInfoType), typeHnd);
         unsigned cSlots =
             (argSize + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE; // the total number of slots of this argument
         bool      isHfaArg = false;
@@ -695,6 +756,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     !varDscInfo->canEnreg(TYP_INT, cSlots)) // The end of the struct can't fit in a register
                 {
                     cSlotsToEnregister = 1; // Force the split
+                    varDscInfo->stackArgSize += TARGET_POINTER_SIZE;
                 }
             }
         }
@@ -718,8 +780,6 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 // arguments passed in the integer registers but get homed immediately after the prolog.
                 if (!isHfaArg)
                 {
-                    // TODO-Arm32-Windows: vararg struct should be forced to split like
-                    // ARM64 above.
                     cSlotsToEnregister = 1; // HFAs must be totally enregistered or not, but other structs can be split.
                     preSpill           = true;
                 }
@@ -820,10 +880,6 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             }
         }
 #endif // UNIX_AMD64_ABI
-
-        // The final home for this incoming register might be our local stack frame.
-        // For System V platforms the final home will always be on the local stack frame.
-        varDsc->lvOnFrame = true;
 
         bool canPassArgInRegisters = false;
 
@@ -996,17 +1052,19 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 #ifdef TARGET_ARM64
             if (argType == TYP_STRUCT)
             {
-                varDsc->SetArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, TYP_I_IMPL));
+                varDsc->SetArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, TYP_I_IMPL, info.compCallConv));
                 if (cSlots == 2)
                 {
-                    varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum + 1, TYP_I_IMPL));
+                    varDsc->SetOtherArgReg(
+                        genMapRegArgNumToRegNum(firstAllocatedRegArgNum + 1, TYP_I_IMPL, info.compCallConv));
                     varDsc->lvIsMultiRegArg = true;
                 }
             }
 #elif defined(UNIX_AMD64_ABI)
             if (varTypeIsStruct(argType))
             {
-                varDsc->SetArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, firstEightByteType));
+                varDsc->SetArgReg(
+                    genMapRegArgNumToRegNum(firstAllocatedRegArgNum, firstEightByteType, info.compCallConv));
 
                 // If there is a second eightbyte, get a register for it too and map the arg to the reg number.
                 if (structDesc.eightByteCount >= 2)
@@ -1018,20 +1076,25 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
                 if (secondEightByteType != TYP_UNDEF)
                 {
-                    varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(secondAllocatedRegArgNum, secondEightByteType));
+                    varDsc->SetOtherArgReg(
+                        genMapRegArgNumToRegNum(secondAllocatedRegArgNum, secondEightByteType, info.compCallConv));
                 }
+
+                assert(structDesc.eightByteCount <= 2);
             }
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             if (argType == TYP_STRUCT)
             {
                 if (argRegTypeInStruct1 != TYP_UNKNOWN)
                 {
-                    varDsc->SetArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, argRegTypeInStruct1));
+                    varDsc->SetArgReg(
+                        genMapRegArgNumToRegNum(firstAllocatedRegArgNum, argRegTypeInStruct1, info.compCallConv));
                     varDsc->lvIs4Field1 = (genTypeSize(argRegTypeInStruct1) == 4) ? 1 : 0;
                     if (argRegTypeInStruct2 != TYP_UNKNOWN)
                     {
                         secondAllocatedRegArgNum = varDscInfo->allocRegArg(argRegTypeInStruct2, 1);
-                        varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(secondAllocatedRegArgNum, argRegTypeInStruct2));
+                        varDsc->SetOtherArgReg(
+                            genMapRegArgNumToRegNum(secondAllocatedRegArgNum, argRegTypeInStruct2, info.compCallConv));
                         varDsc->lvIs4Field2 = (genTypeSize(argRegTypeInStruct2) == 4) ? 1 : 0;
                     }
                     else if (cSlots > 1)
@@ -1041,55 +1104,69 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                         varDsc->lvIsSplit = 1;
                         varDsc->SetOtherArgReg(REG_STK);
                         varDscInfo->setAllRegArgUsed(argRegTypeInStruct1);
-#if FEATURE_FASTTAILCALL
                         varDscInfo->stackArgSize += TARGET_POINTER_SIZE;
+#ifdef TARGET_RISCV64
+                        varDscInfo->hasSplitParam = true;
 #endif
                     }
                 }
                 else
                 {
-                    varDsc->SetArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, TYP_I_IMPL));
+                    varDsc->SetArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, TYP_I_IMPL, info.compCallConv));
                     if (cSlots == 2)
                     {
-                        varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum + 1, TYP_I_IMPL));
+                        varDsc->SetOtherArgReg(
+                            genMapRegArgNumToRegNum(firstAllocatedRegArgNum + 1, TYP_I_IMPL, info.compCallConv));
                     }
+
+                    assert(cSlots <= 2);
                 }
             }
 #else  // ARM32
             if (varTypeIsStruct(argType))
             {
-                varDsc->SetArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, TYP_I_IMPL));
+                varDsc->SetArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, TYP_I_IMPL, info.compCallConv));
             }
 #endif // ARM32
             else
 #endif // FEATURE_MULTIREG_ARGS
             {
-                varDsc->SetArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, argType));
+                varDsc->SetArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, argType, info.compCallConv));
             }
 
 #ifdef TARGET_ARM
             if (varDsc->TypeGet() == TYP_LONG)
             {
-                varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum + 1, TYP_INT));
+                varDsc->SetOtherArgReg(
+                    genMapRegArgNumToRegNum(firstAllocatedRegArgNum + 1, TYP_INT, info.compCallConv));
             }
 
-#if FEATURE_FASTTAILCALL
+            unsigned numEnregistered = 0;
+            unsigned stackSize       = 0;
             // Check if arg was split between registers and stack.
             if (varTypeUsesIntReg(argType))
             {
-                unsigned firstRegArgNum = genMapIntRegNumToRegArgNum(varDsc->GetArgReg());
+                unsigned firstRegArgNum = genMapIntRegNumToRegArgNum(varDsc->GetArgReg(), info.compCallConv);
                 unsigned lastRegArgNum  = firstRegArgNum + cSlots - 1;
                 if (lastRegArgNum >= varDscInfo->maxIntRegArgNum)
                 {
                     assert(varDscInfo->stackArgSize == 0);
-                    unsigned numEnregistered = varDscInfo->maxIntRegArgNum - firstRegArgNum;
+                    numEnregistered = varDscInfo->maxIntRegArgNum - firstRegArgNum;
                     varDsc->SetStackOffset(-(int)numEnregistered * REGSIZE_BYTES);
-                    varDscInfo->stackArgSize += (cSlots - numEnregistered) * REGSIZE_BYTES;
+                    stackSize = (cSlots - numEnregistered) * REGSIZE_BYTES;
+                    varDscInfo->stackArgSize += stackSize;
                     varDscInfo->hasSplitParam = true;
                     JITDUMP("set user arg V%02u offset to %d\n", varDscInfo->varNum, varDsc->GetStackOffset());
                 }
+                else
+                {
+                    numEnregistered = cSlots;
+                }
             }
-#endif
+            else
+            {
+                numEnregistered = cSlots;
+            }
 #endif // TARGET_ARM
 
 #ifdef DEBUG
@@ -1108,7 +1185,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     else
                     {
                         printf("firstEightByte: %s",
-                               getRegName(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, firstEightByteType)));
+                               getRegName(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, firstEightByteType,
+                                                                  info.compCallConv)));
                     }
 
                     if (secondEightByteType == TYP_UNDEF)
@@ -1118,7 +1196,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     else
                     {
                         printf(", secondEightByte: %s",
-                               getRegName(genMapRegArgNumToRegNum(secondAllocatedRegArgNum, secondEightByteType)));
+                               getRegName(genMapRegArgNumToRegNum(secondAllocatedRegArgNum, secondEightByteType,
+                                                                  info.compCallConv)));
                     }
                 }
                 else
@@ -1132,7 +1211,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     else
                     {
                         printf("first: %s",
-                               getRegName(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, argRegTypeInStruct1)));
+                               getRegName(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, argRegTypeInStruct1,
+                                                                  info.compCallConv)));
                     }
                     if (argRegTypeInStruct2 == TYP_UNKNOWN)
                     {
@@ -1141,7 +1221,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     else
                     {
                         printf(", second: %s",
-                               getRegName(genMapRegArgNumToRegNum(secondAllocatedRegArgNum, argRegTypeInStruct2)));
+                               getRegName(genMapRegArgNumToRegNum(secondAllocatedRegArgNum, argRegTypeInStruct2,
+                                                                  info.compCallConv)));
                     }
                 }
                 else
@@ -1150,7 +1231,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     assert(varTypeUsesFloatReg(argType) || varTypeUsesIntReg(argType));
 
                     bool     isFloat   = varTypeUsesFloatReg(argType);
-                    unsigned regArgNum = genMapRegNumToRegArgNum(varDsc->GetArgReg(), argType);
+                    unsigned regArgNum = genMapRegNumToRegArgNum(varDsc->GetArgReg(), argType, info.compCallConv);
 
                     for (unsigned ix = 0; ix < cSlots; ix++, regArgNum++)
                     {
@@ -1159,9 +1240,9 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                             printf(",");
                         }
 
-                        if (!isFloat && (regArgNum >= varDscInfo->maxIntRegArgNum)) // a struct has been split between
-                                                                                    // registers and stack
+                        if (!isFloat && (regArgNum >= varDscInfo->maxIntRegArgNum))
                         {
+                            // a struct has been split between registers and stack
                             printf(" stack slots:%d", cSlots - ix);
                             break;
                         }
@@ -1173,8 +1254,9 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                             if (argType == TYP_DOUBLE)
                             {
                                 // Print both registers, just to be clear
-                                printf("%s/%s", getRegName(genMapRegArgNumToRegNum(regArgNum, argType)),
-                                       getRegName(genMapRegArgNumToRegNum(regArgNum + 1, argType)));
+                                printf("%s/%s",
+                                       getRegName(genMapRegArgNumToRegNum(regArgNum, argType, info.compCallConv)),
+                                       getRegName(genMapRegArgNumToRegNum(regArgNum + 1, argType, info.compCallConv)));
 
                                 // doubles take 2 slots
                                 assert(ix + 1 < cSlots);
@@ -1183,13 +1265,14 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                             }
                             else
                             {
-                                printf("%s", getRegName(genMapRegArgNumToRegNum(regArgNum, argType)));
+                                printf("%s",
+                                       getRegName(genMapRegArgNumToRegNum(regArgNum, argType, info.compCallConv)));
                             }
                         }
                         else
 #endif // TARGET_ARM
                         {
-                            printf("%s", getRegName(genMapRegArgNumToRegNum(regArgNum, argType)));
+                            printf("%s", getRegName(genMapRegArgNumToRegNum(regArgNum, argType, info.compCallConv)));
                         }
                     }
                 }
@@ -1221,23 +1304,21 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
 #endif // TARGET_XXX
 
-#if FEATURE_FASTTAILCALL
 #ifdef TARGET_ARM
             unsigned argAlignment = cAlign * TARGET_POINTER_SIZE;
 #else
             unsigned argAlignment = eeGetArgSizeAlignment(origArgType, (hfaType == TYP_FLOAT));
             // We expect the following rounding operation to be a noop on all
-            // ABIs except ARM (where we have 8-byte aligned args) and macOS
+            // ABIs except ARM (where we have 8-byte aligned args) and Apple
             // ARM64 (that allows to pack multiple smaller parameters in a
             // single stack slot).
-            assert(compMacOsArm64Abi() || ((varDscInfo->stackArgSize % argAlignment) == 0));
+            assert(compAppleArm64Abi() || ((varDscInfo->stackArgSize % argAlignment) == 0));
 #endif
             varDscInfo->stackArgSize = roundUp(varDscInfo->stackArgSize, argAlignment);
 
             JITDUMP("set user arg V%02u offset to %u\n", varDscInfo->varNum, varDscInfo->stackArgSize);
             varDsc->SetStackOffset(varDscInfo->stackArgSize);
             varDscInfo->stackArgSize += argSize;
-#endif // FEATURE_FASTTAILCALL
         }
 
 #ifdef UNIX_AMD64_ABI
@@ -1253,8 +1334,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 #if defined(TARGET_X86)
             varDsc->SetStackOffset(compArgSize);
 #else  // !TARGET_X86
-            // TODO-CQ: We shouldn't have to go as far as to declare these
-            // address-exposed -- DoNotEnregister should suffice.
+       // TODO-CQ: We shouldn't have to go as far as to declare these
+       // address-exposed -- DoNotEnregister should suffice.
 
             lvaSetVarAddrExposed(varDscInfo->varNum DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
 #endif // !TARGET_X86
@@ -1298,6 +1379,100 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 #endif // TARGET_ARM
 }
 
+#ifdef SWIFT_SUPPORT
+//-----------------------------------------------------------------------------
+// lvaInitSpecialSwiftParam: Initialize SwiftSelf/SwiftError* parameters.
+//
+// Parameters:
+//   argHnd  - Handle for this parameter in the method's signature
+//   varDsc  - LclVarDsc* for the parameter
+//   type    - Type of the parameter
+//   typeHnd - Class handle for the type of the parameter
+//
+// Returns:
+//   true if parameter was initialized
+//
+bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd,
+                                        InitVarDscInfo*         varDscInfo,
+                                        CorInfoType             type,
+                                        CORINFO_CLASS_HANDLE    typeHnd)
+{
+    const bool argIsByrefOrPtr = (type == CORINFO_TYPE_BYREF) || (type == CORINFO_TYPE_PTR);
+
+    if (argIsByrefOrPtr)
+    {
+        // For primitive types, we don't expect to be passed a CORINFO_CLASS_HANDLE; look up the actual handle
+        assert(typeHnd == nullptr);
+        CORINFO_CLASS_HANDLE clsHnd = info.compCompHnd->getArgClass(&info.compMethodInfo->args, argHnd);
+        type                        = info.compCompHnd->getChildType(clsHnd, &typeHnd);
+    }
+
+    if (type != CORINFO_TYPE_VALUECLASS)
+    {
+        return false;
+    }
+
+    if (!info.compCompHnd->isIntrinsicType(typeHnd))
+    {
+        return false;
+    }
+
+    const char* namespaceName;
+    const char* className = info.compCompHnd->getClassNameFromMetadata(typeHnd, &namespaceName);
+    if ((strcmp(className, "SwiftSelf") == 0) && (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
+    {
+        if (argIsByrefOrPtr)
+        {
+            BADCODE("Expected SwiftSelf struct, got pointer/reference");
+        }
+
+        if (lvaSwiftSelfArg != BAD_VAR_NUM)
+        {
+            BADCODE("Duplicate SwiftSelf parameter");
+        }
+
+        LclVarDsc* const varDsc = varDscInfo->varDsc;
+        varDsc->SetArgReg(REG_SWIFT_SELF);
+        varDsc->SetOtherArgReg(REG_NA);
+        varDsc->lvIsRegArg = true;
+
+        compArgSize += TARGET_POINTER_SIZE;
+
+        lvaSwiftSelfArg = varDscInfo->varNum;
+        return true;
+    }
+
+    if ((strcmp(className, "SwiftError") == 0) && (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
+    {
+        if (!argIsByrefOrPtr)
+        {
+            BADCODE("Expected SwiftError pointer/reference, got struct");
+        }
+
+        if (lvaSwiftErrorArg != BAD_VAR_NUM)
+        {
+            BADCODE("Duplicate SwiftError* parameter");
+        }
+
+        // We won't actually be passing this SwiftError* in REG_SWIFT_ERROR (or any register, for that matter).
+        // We will check for this quirk when generating the prolog,
+        // and ensure this fake parameter doesn't take any registers/stack space
+        LclVarDsc* const varDsc = varDscInfo->varDsc;
+        varDsc->SetArgReg(REG_SWIFT_ERROR);
+        varDsc->SetOtherArgReg(REG_NA);
+        varDsc->lvIsRegArg = true;
+        lvaSwiftErrorArg   = varDscInfo->varNum;
+
+        // Instead, all usages of the SwiftError* parameter will be redirected to this pseudolocal.
+        lvaSwiftErrorLocal = lvaGrabTempWithImplicitUse(false DEBUGARG("SwiftError pseudolocal"));
+        lvaSetStruct(lvaSwiftErrorLocal, typeHnd, false);
+        return true;
+    }
+
+    return false;
+}
+#endif
+
 /*****************************************************************************/
 void Compiler::lvaInitGenericsCtxt(InitVarDscInfo* varDscInfo)
 {
@@ -1316,7 +1491,8 @@ void Compiler::lvaInitGenericsCtxt(InitVarDscInfo* varDscInfo)
             /* Another register argument */
 
             varDsc->lvIsRegArg = 1;
-            varDsc->SetArgReg(genMapRegArgNumToRegNum(varDscInfo->regArgNum(TYP_INT), varDsc->TypeGet()));
+            varDsc->SetArgReg(
+                genMapRegArgNumToRegNum(varDscInfo->regArgNum(TYP_INT), varDsc->TypeGet(), info.compCallConv));
 #if FEATURE_MULTIREG_ARGS
             varDsc->SetOtherArgReg(REG_NA);
 #endif
@@ -1336,10 +1512,8 @@ void Compiler::lvaInitGenericsCtxt(InitVarDscInfo* varDscInfo)
             // We need to mark these as being on the stack, as this is not done elsewhere in the case that canEnreg
             // returns false.
             varDsc->lvOnFrame = true;
-#if FEATURE_FASTTAILCALL
             varDsc->SetStackOffset(varDscInfo->stackArgSize);
             varDscInfo->stackArgSize += TARGET_POINTER_SIZE;
-#endif // FEATURE_FASTTAILCALL
         }
 
         compArgSize += TARGET_POINTER_SIZE;
@@ -1349,8 +1523,7 @@ void Compiler::lvaInitGenericsCtxt(InitVarDscInfo* varDscInfo)
             varDsc->SetStackOffset(compArgSize);
 #endif // TARGET_X86
 
-        varDscInfo->varNum++;
-        varDscInfo->varDsc++;
+        varDscInfo->nextParam();
     }
 }
 
@@ -1374,8 +1547,6 @@ void Compiler::lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo)
 
         assert(mostRecentlyActivePhase == PHASE_PRE_IMPORT);
 
-        // TODO-Cleanup: this is preImportation phase, why do we try to work with regs here?
-        // Should it be just deleted?
         if (varDscInfo->canEnreg(TYP_I_IMPL))
         {
             /* Another register argument */
@@ -1383,7 +1554,7 @@ void Compiler::lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo)
             unsigned varArgHndArgNum = varDscInfo->allocRegArg(TYP_I_IMPL);
 
             varDsc->lvIsRegArg = 1;
-            varDsc->SetArgReg(genMapRegArgNumToRegNum(varArgHndArgNum, TYP_I_IMPL));
+            varDsc->SetArgReg(genMapRegArgNumToRegNum(varArgHndArgNum, TYP_I_IMPL, info.compCallConv));
 #if FEATURE_MULTIREG_ARGS
             varDsc->SetOtherArgReg(REG_NA);
 #endif
@@ -1410,18 +1581,15 @@ void Compiler::lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo)
             // We need to mark these as being on the stack, as this is not done elsewhere in the case that canEnreg
             // returns false.
             varDsc->lvOnFrame = true;
-#if FEATURE_FASTTAILCALL
             varDsc->SetStackOffset(varDscInfo->stackArgSize);
             varDscInfo->stackArgSize += TARGET_POINTER_SIZE;
-#endif // FEATURE_FASTTAILCALL
         }
 
         /* Update the total argument size, count and varDsc */
 
         compArgSize += TARGET_POINTER_SIZE;
 
-        varDscInfo->varNum++;
-        varDscInfo->varDsc++;
+        varDscInfo->nextParam();
 
 #if defined(TARGET_X86)
         varDsc->SetStackOffset(compArgSize);
@@ -1510,6 +1678,245 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
 #endif // FEATURE_MULTIREG_ARGS
 }
 
+//-----------------------------------------------------------------------------
+// lvaClassifyParameterABI:
+//  Classify the ABI information for all parameters.
+//
+// Type parameters:
+//   Classifier - The type of classifier to use.
+//
+// Parameters:
+//   classifier - The classifier to use
+//
+template <typename Classifier>
+void Compiler::lvaClassifyParameterABI(Classifier& classifier)
+{
+    lvaParameterPassingInfo = new (this, CMK_LvaTable) ABIPassingInformation[info.compArgsCount];
+
+    for (unsigned i = 0; i < info.compArgsCount; i++)
+    {
+        LclVarDsc*   dsc          = lvaGetDesc(i);
+        ClassLayout* structLayout = varTypeIsStruct(dsc) ? dsc->GetLayout() : nullptr;
+
+        WellKnownArg wellKnownArg = WellKnownArg::None;
+        if (i == info.compRetBuffArg)
+        {
+            wellKnownArg = WellKnownArg::RetBuffer;
+        }
+#ifdef SWIFT_SUPPORT
+        else if (i == lvaSwiftSelfArg)
+        {
+            wellKnownArg = WellKnownArg::SwiftSelf;
+        }
+        else if (i == lvaSwiftErrorArg)
+        {
+            wellKnownArg = WellKnownArg::SwiftError;
+        }
+#endif
+
+        lvaParameterPassingInfo[i] = classifier.Classify(this, dsc->TypeGet(), structLayout, wellKnownArg);
+
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("Parameter V%02u ABI info: ", i);
+            lvaParameterPassingInfo[i].Dump();
+        }
+#endif
+    }
+}
+
+//-----------------------------------------------------------------------------
+// lvaClassifyParameterABI:
+//  Classify the ABI information for all parameters.
+//
+void Compiler::lvaClassifyParameterABI()
+{
+    if (info.compArgsCount == 0)
+    {
+        return;
+    }
+
+    ClassifierInfo cInfo;
+    cInfo.CallConv   = info.compCallConv;
+    cInfo.IsVarArgs  = info.compIsVarArgs;
+    cInfo.HasThis    = info.compThisArg != BAD_VAR_NUM;
+    cInfo.HasRetBuff = info.compRetBuffArg != BAD_VAR_NUM;
+
+#ifdef SWIFT_SUPPORT
+    if (info.compCallConv == CorInfoCallConvExtension::Swift)
+    {
+        SwiftABIClassifier classifier(cInfo);
+        lvaClassifyParameterABI(classifier);
+
+        regMaskTP argRegs = RBM_NONE;
+
+        // The calling convention details computed by the old ABI classifier
+        // are wrong since it does not handle the Swift ABI for structs
+        // appropriately. Grab them from the new ABI information.
+        for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+        {
+            LclVarDsc*                   dsc     = lvaGetDesc(lclNum);
+            const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
+
+            if (dsc->TypeGet() == TYP_STRUCT)
+            {
+                const CORINFO_SWIFT_LOWERING* lowering = GetSwiftLowering(dsc->GetLayout()->GetClassHandle());
+                dsc->lvIsImplicitByRef                 = lowering->byReference;
+            }
+
+            if ((dsc->TypeGet() == TYP_STRUCT) && !lvaIsImplicitByRefLocal(lclNum) &&
+                !abiInfo.HasExactlyOneStackSegment())
+            {
+                dsc->lvIsRegArg = false;
+            }
+            else
+            {
+                assert(abiInfo.NumSegments == 1);
+                if (abiInfo.Segments[0].IsPassedInRegister())
+                {
+                    dsc->lvIsRegArg = true;
+                    dsc->SetArgReg(abiInfo.Segments[0].GetRegister());
+                    dsc->SetOtherArgReg(REG_NA);
+                }
+                else
+                {
+                    dsc->lvIsRegArg = false;
+                    dsc->SetArgReg(REG_STK);
+                    dsc->SetOtherArgReg(REG_NA);
+                    dsc->SetStackOffset(abiInfo.Segments[0].GetStackOffset());
+                }
+            }
+
+            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            {
+                const ABIPassingSegment& segment = abiInfo.Segments[i];
+                if (segment.IsPassedInRegister())
+                {
+                    argRegs |= segment.GetRegisterMask();
+                }
+            }
+        }
+
+        // genFnPrologCalleeRegArgs expect these to be the counts of registers it knows how to handle.
+        codeGen->intRegState.rsCalleeRegArgCount   = genCountBits(argRegs & RBM_ARG_REGS);
+        codeGen->floatRegState.rsCalleeRegArgCount = genCountBits(argRegs & RBM_FLTARG_REGS);
+    }
+    else
+#endif
+    {
+        PlatformClassifier classifier(cInfo);
+        lvaClassifyParameterABI(classifier);
+    }
+
+#ifdef DEBUG
+    if (lvaParameterPassingInfo == nullptr)
+    {
+        return;
+    }
+
+    for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+    {
+        LclVarDsc*                   dsc     = lvaGetDesc(lclNum);
+        const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
+
+        assert(abiInfo.NumSegments > 0);
+
+        if ((dsc->TypeGet() == TYP_STRUCT) && (info.compCallConv == CorInfoCallConvExtension::Swift))
+        {
+            continue;
+        }
+
+        unsigned numSegmentsToCompare = abiInfo.NumSegments;
+        if (dsc->lvIsHfa())
+        {
+            // LclVarDsc only has one register set for HFAs
+            numSegmentsToCompare = 1;
+        }
+
+#ifdef TARGET_ARM
+        // On arm the old representation only represents the start register for
+        // struct multireg args.
+        if (varTypeIsStruct(dsc))
+        {
+            numSegmentsToCompare = 1;
+        }
+
+        // And also for TYP_DOUBLE on soft FP
+        if (opts.compUseSoftFP && (dsc->TypeGet() == TYP_DOUBLE))
+        {
+            numSegmentsToCompare = 1;
+        }
+#endif
+
+        for (unsigned i = 0; i < numSegmentsToCompare; i++)
+        {
+            const ABIPassingSegment& expected = abiInfo.Segments[i];
+            regNumber                reg      = REG_NA;
+            if (i == 0)
+            {
+                reg = dsc->GetArgReg();
+            }
+#if FEATURE_MULTIREG_ARGS
+            else if (i == 1)
+            {
+                reg = dsc->GetOtherArgReg();
+            }
+#endif
+
+            if (expected.IsPassedOnStack())
+            {
+                if (i == 0)
+                {
+                    assert(reg == REG_STK);
+
+// On x86, varargs methods access stack args off of a base pointer, and the
+// first stack arg is not considered to be at offset 0.
+// TODO-Cleanup: Unify things so that x86 is consistent with other platforms
+// here and change fgMorphExpandStackArgForVarArgs to account for that.
+#ifndef TARGET_X86
+                    assert((unsigned)dsc->GetStackOffset() == expected.GetStackOffset());
+#endif
+                }
+            }
+            else
+            {
+                assert(reg == expected.GetRegister());
+            }
+        }
+    }
+#endif // DEBUG
+}
+
+//--------------------------------------------------------------------------------------------
+// lvaHaveSwiftStructStackParamsToReassemble:
+//   Check if this compilation has any Swift parameters that are passed on the
+//   stack and that need to be reassembled on the local stack frame.
+//
+// Return value:
+//   True if so.
+//
+bool Compiler::lvaHasAnySwiftStackParamToReassemble()
+{
+#ifdef SWIFT_SUPPORT
+    if (info.compCallConv != CorInfoCallConvExtension::Swift)
+    {
+        return false;
+    }
+
+    for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+    {
+        const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
+        if (abiInfo.HasAnyStackSegment() && !abiInfo.HasExactlyOneStackSegment())
+        {
+            return true;
+        }
+    }
+#endif
+
+    return false;
+}
+
 /*****************************************************************************
  * Returns our internal varNum for a given IL variable.
  * Asserts assume it is called after lvaTable[] has been set up.
@@ -1537,7 +1944,7 @@ unsigned Compiler::compMapILvarNum(unsigned ILvarNum)
     else if (ILvarNum == (unsigned)ICorDebugInfo::TYPECTXT_ILNUM)
     {
         noway_assert(info.compTypeCtxtArg >= 0);
-        varNum = unsigned(info.compTypeCtxtArg);
+        varNum = info.compTypeCtxtArg;
     }
     else if (ILvarNum < info.compILargsCount)
     {
@@ -1590,7 +1997,7 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
 
     // We create an extra argument for the type context parameter
     // needed for shared generic code.
-    if ((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) && varNum == (unsigned)info.compTypeCtxtArg)
+    if ((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) && varNum == info.compTypeCtxtArg)
     {
         return (unsigned)ICorDebugInfo::TYPECTXT_ILNUM;
     }
@@ -1603,7 +2010,7 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
 #endif // FEATURE_FIXED_OUT_ARGS
 
     // Now mutate varNum to remove extra parameters from the count.
-    if ((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) && varNum > (unsigned)info.compTypeCtxtArg)
+    if ((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) && varNum > info.compTypeCtxtArg)
     {
         varNum--;
     }
@@ -1672,7 +2079,9 @@ void Compiler::lvSetMinOptsDoNotEnreg()
 // Arguments:
 //   compiler - pointer to a compiler to get access to an allocator, compHandle etc.
 //
-Compiler::StructPromotionHelper::StructPromotionHelper(Compiler* compiler) : compiler(compiler), structPromotionInfo()
+Compiler::StructPromotionHelper::StructPromotionHelper(Compiler* compiler)
+    : compiler(compiler)
+    , structPromotionInfo()
 {
 }
 
@@ -1744,7 +2153,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
 #if defined(FEATURE_SIMD)
     // getMaxVectorByteLength() represents the size of the largest primitive type that we can struct promote.
     const unsigned maxSize =
-        MAX_NumOfFieldsInPromotableStruct * max(compiler->getMaxVectorByteLength(), sizeof(double));
+        MAX_NumOfFieldsInPromotableStruct * max(compiler->getMaxVectorByteLength(), (uint32_t)sizeof(double));
 #else  // !FEATURE_SIMD
     // sizeof(double) represents the size of the largest primitive type that we can struct promote.
     const unsigned maxSize = MAX_NumOfFieldsInPromotableStruct * sizeof(double);
@@ -2075,6 +2484,17 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
         return false;
     }
 
+#ifdef SWIFT_SUPPORT
+    // Swift structs are not passed in a way that match their layout and
+    // require reassembling on the local stack frame. Skip promotion for these
+    // (which would result in dependent promotion anyway).
+    if ((compiler->info.compCallConv == CorInfoCallConvExtension::Swift) && varDsc->lvIsParam)
+    {
+        JITDUMP("  struct promotion of V%02u is disabled because it is a parameter to a Swift function");
+        return false;
+    }
+#endif
+
     CORINFO_CLASS_HANDLE typeHnd = varDsc->GetLayout()->GetClassHandle();
     assert(typeHnd != NO_CLASS_HANDLE);
 
@@ -2190,7 +2610,7 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
     //
     // TODO: Ideally we would want to consider the impact of whether the struct is
     // passed as a parameter or assigned the return value of a call. Because once promoted,
-    // struct copying is done by field by field assignment instead of a more efficient
+    // struct copying is done by field by field store instead of a more efficient
     // rep.stos or xmm reg based copy.
     if (structPromotionInfo.fieldCnt > 3 && !varDsc->lvFieldAccessed)
     {
@@ -2251,12 +2671,12 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
             //             with something else occupying the same 4-byte slot, it will
             //             overwrite other fields.
             if (structPromotionInfo.fieldCnt != 1)
-        {
-            JITDUMP("Not promoting promotable struct local V%02u, because lvIsParam is true and #fields = "
-                    "%d.\n",
-                    lclNum, structPromotionInfo.fieldCnt);
-            shouldPromote = false;
-        }
+            {
+                JITDUMP("Not promoting promotable struct local V%02u, because lvIsParam is true and #fields = "
+                        "%d.\n",
+                        lclNum, structPromotionInfo.fieldCnt);
+                shouldPromote = false;
+            }
     }
     else if ((lclNum == compiler->genReturnLocal) && (structPromotionInfo.fieldCnt > 1))
     {
@@ -2278,7 +2698,6 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
     // In that case, we would like to avoid promortion.
     // However we haven't yet computed the lvRefCnt values so we can't do that.
     //
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
     return shouldPromote;
 }
@@ -2295,8 +2714,8 @@ void Compiler::StructPromotionHelper::SortStructFields()
     {
         jitstd::sort(structPromotionInfo.fields, structPromotionInfo.fields + structPromotionInfo.fieldCnt,
                      [](const lvaStructFieldInfo& lhs, const lvaStructFieldInfo& rhs) {
-                         return lhs.fldOffset < rhs.fldOffset;
-                     });
+            return lhs.fldOffset < rhs.fldOffset;
+        });
         structPromotionInfo.fieldsSorted = true;
     }
 }
@@ -2351,19 +2770,15 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
             compiler->compFloatingPointUsed = true;
         }
 
-// Now grab the temp for the field local.
+        // Now grab the temp for the field local.
 
 #ifdef DEBUG
-        char        buf[200];
         char        fieldNameBuffer[128];
         const char* fieldName =
             compiler->eeGetFieldName(pFieldInfo->diagFldHnd, false, fieldNameBuffer, sizeof(fieldNameBuffer));
-        sprintf_s(buf, sizeof(buf), "field V%02u.%s (fldOffset=0x%x)", lclNum, fieldName, pFieldInfo->fldOffset);
 
-        // We need to copy 'buf' as lvaGrabTemp() below caches a copy to its argument.
-        size_t len  = strlen(buf) + 1;
-        char*  bufp = compiler->getAllocator(CMK_DebugOnly).allocate<char>(len);
-        strcpy_s(bufp, len, buf);
+        const char* bufp =
+            compiler->printfAlloc("field V%02u.%s (fldOffset=0x%x)", lclNum, fieldName, pFieldInfo->fldOffset);
 
         if (index > 0)
         {
@@ -2387,6 +2802,11 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
         fieldVarDsc->lvIsParam           = varDsc->lvIsParam;
         fieldVarDsc->lvIsOSRLocal        = varDsc->lvIsOSRLocal;
         fieldVarDsc->lvIsOSRExposedLocal = varDsc->lvIsOSRExposedLocal;
+
+        if (varDsc->IsSpan() && fieldVarDsc->lvFldOffset == OFFSETOF__CORINFO_Span__length)
+        {
+            fieldVarDsc->SetIsNeverNegative(true);
+        }
 
         // This new local may be the first time we've seen a long typed local.
         if (fieldVarDsc->lvType == TYP_LONG)
@@ -2756,6 +3176,43 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
 }
 
 //------------------------------------------------------------------------
+// lvaIsArgAccessedViaVarArgsCookie: Check if a parameter has to be accessed
+// indirectly via the varargs cookie.
+//
+// Arguments:
+//    lclNum - The local in question
+//
+// Return Value:
+//    True if it does.
+//
+// Remarks:
+//    Parameters passed on the stack in x86 varargs methods require special
+//    treatment for accesses and GC as their offsets are not known at compile
+//    time.
+//
+bool Compiler::lvaIsArgAccessedViaVarArgsCookie(unsigned lclNum)
+{
+#ifdef TARGET_X86
+    if (!info.compIsVarArgs)
+    {
+        return false;
+    }
+
+    LclVarDsc* varDsc = lvaGetDesc(lclNum);
+    if (!varDsc->lvIsParam || (lclNum == lvaVarargsHandleArg))
+    {
+        return false;
+    }
+
+    const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
+    assert(abiInfo.HasExactlyOneStackSegment() || abiInfo.HasExactlyOneRegisterSegment());
+    return abiInfo.HasExactlyOneStackSegment();
+#else
+    return false;
+#endif
+}
+
+//------------------------------------------------------------------------
 // lvaIsImplicitByRefLocal: Is the local an "implicit byref" parameter?
 //
 // We term structs passed via pointers to shadow copies "implicit byrefs".
@@ -2871,7 +3328,7 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
             if (varDsc->lvIsParam && !varDsc->lvIsStructField)
             {
                 structPassingKind howToReturnStruct;
-                getArgTypeForStruct(layout->GetClassHandle(), &howToReturnStruct, this->info.compIsVarArgs,
+                getArgTypeForStruct(layout->GetClassHandle(), &howToReturnStruct, info.compIsVarArgs,
                                     varDsc->lvExactSize());
 
                 if (howToReturnStruct == SPK_ByReference)
@@ -2928,6 +3385,8 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
             varDsc->lvStructDoubleAlign = 1;
         }
 #endif // not TARGET_64BIT
+
+        varDsc->SetIsSpan(this->isSpanClass(layout->GetClassHandle()));
 
         // Check whether this local is an unsafe value type and requires GS cookie protection.
         // GS checks require the stack to be re-ordered, which can't be done with EnC.
@@ -3140,7 +3599,7 @@ void Compiler::lvaSetClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HANDLE 
 //
 // Notes:
 //
-//    This method models the type update rule for an assignment.
+//    This method models the type update rule for a store.
 //
 //    Updates currently should only happen for single-def user args or
 //    locals, when we are processing the expression actually being
@@ -3548,8 +4007,8 @@ void Compiler::lvaSortByRefCount()
         if (varDsc->IsAddressExposed())
         {
             varDsc->lvTracked = 0;
-            assert(varDsc->lvType != TYP_STRUCT ||
-                   varDsc->lvDoNotEnregister); // For structs, should have set this when we set m_addrExposed.
+            assert(varDsc->lvType != TYP_STRUCT || varDsc->lvDoNotEnregister); // For structs, should have set this when
+                                                                               // we set m_addrExposed.
         }
         if (varTypeIsStruct(varDsc))
         {
@@ -3606,8 +4065,9 @@ void Compiler::lvaSortByRefCount()
         {
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::NoRegVars));
         }
-#if defined(JIT32_GCENCODER) && defined(FEATURE_EH_FUNCLETS)
-        if (lvaIsOriginalThisArg(lclNum) && (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0)
+#if defined(JIT32_GCENCODER)
+        if (UsesFunclets() && lvaIsOriginalThisArg(lclNum) &&
+            (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0)
         {
             // For x86/Linux, we need to track "this".
             // However we cannot have it in tracked variables, so we set "this" pointer always untracked
@@ -3641,6 +4101,7 @@ void Compiler::lvaSortByRefCount()
 #if defined(TARGET_XARCH)
                 case TYP_SIMD32:
                 case TYP_SIMD64:
+                case TYP_MASK:
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
                 case TYP_STRUCT:
@@ -3780,8 +4241,8 @@ unsigned LclVarDsc::lvSize() const // Size needed for storage representation. On
 }
 
 /**********************************************************************************
-* Get stack size of the varDsc.
-*/
+ * Get stack size of the varDsc.
+ */
 size_t LclVarDsc::lvArgStackSize() const
 {
     // Make sure this will have a stack size
@@ -3899,14 +4360,14 @@ var_types LclVarDsc::GetRegisterType() const
 //   when moving locals between register and stack. Because of this the
 //   returned type is usually at least one 4-byte stack slot. However, there
 //   are certain exceptions for promoted fields in OSR methods (that may refer
-//   back to the original frame) and due to macOS arm64 where subsequent small
+//   back to the original frame) and due to Apple arm64 where subsequent small
 //   parameters can be packed into the same stack slot.
 //
 var_types LclVarDsc::GetStackSlotHomeType() const
 {
     if (varTypeIsSmall(TypeGet()))
     {
-        if (compMacOsArm64Abi() && lvIsParam && !lvIsRegArg)
+        if (compAppleArm64Abi() && lvIsParam && !lvIsRegArg)
         {
             // Allocated by caller and potentially only takes up a small slot
             return GetRegisterType();
@@ -4014,7 +4475,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
     /* Is this a call to unmanaged code ? */
     if (tree->IsCall() && compMethodRequiresPInvokeFrame())
     {
-        assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
+        assert(!opts.ShouldUsePInvokeHelpers() || (info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!opts.ShouldUsePInvokeHelpers())
         {
             /* Get the special variable descriptor */
@@ -4081,9 +4542,9 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
             return;
         }
 
-        if (fgDomsComputed && IsDominatedByExceptionalEntry(block))
+        if ((m_domTree != nullptr) && IsDominatedByExceptionalEntry(block))
         {
-            SetVolatileHint(varDsc);
+            SetHasExceptionalUsesHint(varDsc);
         }
 
         if (tree->OperIs(GT_STORE_LCL_VAR))
@@ -4097,8 +4558,8 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
             if (!varDsc->lvDisqualifySingleDefRegCandidate) // If this var is already disqualified, we can skip this
             {
-                bool bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
-                bool bbIsReturn = block->bbJumpKind == BBJ_RETURN;
+                bool bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);
+                bool bbIsReturn = block->KindIs(BBJ_RETURN);
                 // TODO: Zero-inits in LSRA are created with below condition. But if filter out based on that condition
                 // we filter a lot of interesting variables that would benefit otherwise with EH var enregistration.
                 // bool needsExplicitZeroInit = !varDsc->lvIsParam && (info.compInitMem ||
@@ -4129,7 +4590,6 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
                 {
                     // Variables can be marked as DoNotEngister in earlier stages like LocalAddressVisitor.
                     // No need to track them for single-def.
-                    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
                     // TODO-CQ: If the varType needs partial callee save, conservatively do not enregister
@@ -4146,7 +4606,6 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
         // Check that the LCL_VAR node has the same type as the underlying variable, save a few mismatches we allow.
         assert(tree->TypeIs(varDsc->TypeGet(), genActualType(varDsc)) ||
-               (tree->TypeIs(TYP_I_IMPL) && (varDsc->TypeGet() == TYP_BYREF)) || // Created for spill clique import.
                (tree->TypeIs(TYP_BYREF) && (varDsc->TypeGet() == TYP_I_IMPL)) || // Created by inliner substitution.
                (tree->TypeIs(TYP_INT) && (varDsc->TypeGet() == TYP_LONG)));      // Created by "optNarrowTree".
     }
@@ -4160,19 +4619,19 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 //
 bool Compiler::IsDominatedByExceptionalEntry(BasicBlock* block)
 {
-    assert(fgDomsComputed);
+    assert(m_domTree != nullptr);
     return block->IsDominatedByExceptionalEntryFlag();
 }
 
 //------------------------------------------------------------------------
-// SetVolatileHint: Set a local var's volatile hint.
+// SetHasExceptionalUsesHint: Set that a local var has exceptional uses.
 //
 // Arguments:
 //    varDsc - the local variable that needs the hint.
 //
-void Compiler::SetVolatileHint(LclVarDsc* varDsc)
+void Compiler::SetHasExceptionalUsesHint(LclVarDsc* varDsc)
 {
-    varDsc->lvVolatileHint = true;
+    varDsc->lvHasExceptionalUsesHint = true;
 }
 
 //------------------------------------------------------------------------
@@ -4202,7 +4661,10 @@ void Compiler::lvaMarkLocalVars(BasicBlock* block, bool isRecompute)
         };
 
         MarkLocalVarsVisitor(Compiler* compiler, BasicBlock* block, Statement* stmt, bool isRecompute)
-            : GenTreeVisitor<MarkLocalVarsVisitor>(compiler), m_block(block), m_stmt(stmt), m_isRecompute(isRecompute)
+            : GenTreeVisitor<MarkLocalVarsVisitor>(compiler)
+            , m_block(block)
+            , m_stmt(stmt)
+            , m_isRecompute(isRecompute)
         {
         }
 
@@ -4247,7 +4709,7 @@ PhaseStatus Compiler::lvaMarkLocalVars()
     // If we have direct pinvokes, verify the frame list root local was set up properly
     if (compMethodRequiresPInvokeFrame())
     {
-        assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
+        assert(!opts.ShouldUsePInvokeHelpers() || (info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!opts.ShouldUsePInvokeHelpers())
         {
             noway_assert(info.compLvFrameListRoot >= info.compLocalsCount && info.compLvFrameListRoot < lvaCount);
@@ -4256,11 +4718,11 @@ PhaseStatus Compiler::lvaMarkLocalVars()
 
     unsigned const lvaCountOrig = lvaCount;
 
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
 
     // Grab space for exception handling
 
-    if (ehNeedsShadowSPslots())
+    if (!UsesFunclets() && ehNeedsShadowSPslots())
     {
         // The first slot is reserved for ICodeManager::FixContext(ppEndRegion)
         // ie. the offset of the end-of-last-executed-filter
@@ -4283,43 +4745,41 @@ PhaseStatus Compiler::lvaMarkLocalVars()
         lvaSetVarAddrExposed(lvaShadowSPslotsVar DEBUGARG(AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICITLY));
     }
 
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
 
-    // PSPSym and LocAllocSPvar are not used by the NativeAOT ABI
+    // PSPSym is not used by the NativeAOT ABI
     if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
-#if defined(FEATURE_EH_FUNCLETS)
-        if (ehNeedsPSPSym())
+        if (UsesFunclets() && ehNeedsPSPSym())
         {
             lvaPSPSym            = lvaGrabTempWithImplicitUse(false DEBUGARG("PSPSym"));
             LclVarDsc* lclPSPSym = lvaGetDesc(lvaPSPSym);
             lclPSPSym->lvType    = TYP_I_IMPL;
             lvaSetVarDoNotEnregister(lvaPSPSym DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
         }
-#endif // FEATURE_EH_FUNCLETS
+    }
 
 #ifdef JIT32_GCENCODER
-        // LocAllocSPvar is only required by the implicit frame layout expected by the VM on x86. Whether
-        // a function contains a Localloc is conveyed in the GC information, in the InfoHdrSmall.localloc
-        // field. The function must have an EBP frame. Then, the VM finds the LocAllocSP slot by assuming
-        // the following stack layout:
-        //
-        //      -- higher addresses --
-        //      saved EBP                       <-- EBP points here
-        //      other callee-saved registers    // InfoHdrSmall.savedRegsCountExclFP specifies this size
-        //      optional GS cookie              // InfoHdrSmall.security is 1 if this exists
-        //      LocAllocSP slot
-        //      -- lower addresses --
-        //
-        // See also eetwain.cpp::GetLocallocSPOffset() and its callers.
-        if (compLocallocUsed)
-        {
-            lvaLocAllocSPvar         = lvaGrabTempWithImplicitUse(false DEBUGARG("LocAllocSPvar"));
-            LclVarDsc* locAllocSPvar = lvaGetDesc(lvaLocAllocSPvar);
-            locAllocSPvar->lvType    = TYP_I_IMPL;
-        }
-#endif // JIT32_GCENCODER
+    // LocAllocSPvar is only required by the implicit frame layout expected by the VM on x86. Whether
+    // a function contains a Localloc is conveyed in the GC information, in the InfoHdrSmall.localloc
+    // field. The function must have an EBP frame. Then, the VM finds the LocAllocSP slot by assuming
+    // the following stack layout:
+    //
+    //      -- higher addresses --
+    //      saved EBP                       <-- EBP points here
+    //      other callee-saved registers    // InfoHdrSmall.savedRegsCountExclFP specifies this size
+    //      optional GS cookie              // InfoHdrSmall.security is 1 if this exists
+    //      LocAllocSP slot
+    //      -- lower addresses --
+    //
+    // See also eetwain.cpp::GetLocallocSPOffset() and its callers.
+    if (compLocallocUsed)
+    {
+        lvaLocAllocSPvar         = lvaGrabTempWithImplicitUse(false DEBUGARG("LocAllocSPvar"));
+        LclVarDsc* locAllocSPvar = lvaGetDesc(lvaLocAllocSPvar);
+        locAllocSPvar->lvType    = TYP_I_IMPL;
     }
+#endif // JIT32_GCENCODER
 
     // Ref counting is now enabled normally.
     lvaRefCountState = RCS_NORMAL;
@@ -4351,7 +4811,7 @@ PhaseStatus Compiler::lvaMarkLocalVars()
     else if (lvaReportParamTypeArg())
     {
         // We should have a context arg.
-        assert(info.compTypeCtxtArg != (int)BAD_VAR_NUM);
+        assert(info.compTypeCtxtArg != BAD_VAR_NUM);
         lvaGetDesc(info.compTypeCtxtArg)->lvImplicitlyReferenced = reportParamTypeArg;
     }
 
@@ -4403,7 +4863,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             // and not tracked.
             for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
             {
-                const bool isSpecialVarargsParam = varDsc->lvIsParam && raIsVarargsStackArg(lclNum);
+                const bool isSpecialVarargsParam = varDsc->lvIsParam && lvaIsArgAccessedViaVarArgsCookie(lclNum);
 
                 if (isSpecialVarargsParam)
                 {
@@ -4435,7 +4895,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
 
             // Special case for some varargs params ... these must
             // remain unreferenced.
-            const bool isSpecialVarargsParam = varDsc->lvIsParam && raIsVarargsStackArg(lclNum);
+            const bool isSpecialVarargsParam = varDsc->lvIsParam && lvaIsArgAccessedViaVarArgsCookie(lclNum);
 
             if (!isSpecialVarargsParam)
             {
@@ -4583,7 +5043,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             // to track them for GC info (which is not possible since we
             // don't know their offset in the stack).  See the assert at the
             // end of raMarkStkVars and bug #28949 for more info.
-            if (!raIsVarargsStackArg(lclNum))
+            if (!lvaIsArgAccessedViaVarArgsCookie(lclNum))
             {
                 varDsc->lvImplicitlyReferenced = 1;
             }
@@ -4627,11 +5087,11 @@ inline void Compiler::lvaIncrementFrameSize(unsigned size)
 }
 
 /****************************************************************************
-*
-*  Return true if absolute offsets of temps are larger than vars, or in other
-*  words, did we allocate temps before of after vars.  The /GS buffer overrun
-*  checks want temps to be at low stack addresses than buffers
-*/
+ *
+ *  Return true if absolute offsets of temps are larger than vars, or in other
+ *  words, did we allocate temps before of after vars.  The /GS buffer overrun
+ *  checks want temps to be at low stack addresses than buffers
+ */
 bool Compiler::lvaTempsHaveLargerOffsetThanVars()
 {
 #ifdef TARGET_ARM
@@ -4650,10 +5110,10 @@ bool Compiler::lvaTempsHaveLargerOffsetThanVars()
 }
 
 /****************************************************************************
-*
-*  Return an upper bound estimate for the size of the compiler spill temps
-*
-*/
+ *
+ *  Return an upper bound estimate for the size of the compiler spill temps
+ *
+ */
 unsigned Compiler::lvaGetMaxSpillTempSize()
 {
     unsigned result = 0;
@@ -5162,7 +5622,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 {
     LclVarDsc* varDsc;
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_AMD64)
+#if defined(TARGET_AMD64)
     if (lvaPSPSym != BAD_VAR_NUM)
     {
         // We need to fix the offset of the PSPSym so there is no padding between it and the outgoing argument space.
@@ -5220,7 +5680,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
     if (opts.IsOSR())
     {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // Stack offset includes Tier0 frame.
         //
         JITDUMP("--- delta bump %d for OSR + Tier0 frame\n", info.compPatchpointInfo->TotalFrameSize());
@@ -5260,17 +5720,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
         if (!varDsc->lvOnFrame)
         {
-            if (!varDsc->lvIsParam
-#if !defined(TARGET_AMD64)
-                || (varDsc->lvIsRegArg
-#if defined(TARGET_ARM) && defined(PROFILING_SUPPORTED)
-                    && compIsProfilerHookNeeded() &&
-                    !lvaIsPreSpilled(lclNum, codeGen->regSet.rsMaskPreSpillRegs(false)) // We need assign stack offsets
-                                                                                        // for prespilled arguments
-#endif
-                    )
-#endif // !defined(TARGET_AMD64)
-                    )
+            if (!varDsc->lvIsParam || lvaParamHasLocalStackSpace(lclNum))
             {
                 doAssignStkOffs = false; // Not on frame or an incoming stack arg
             }
@@ -5291,8 +5741,8 @@ void Compiler::lvaFixVirtualFrameOffsets()
                     // We need to re-adjust the offsets of the parameters so they are EBP
                     // relative rather than stack/frame pointer relative
 
-                    varDsc->SetStackOffset(varDsc->GetStackOffset() +
-                                           (2 * TARGET_POINTER_SIZE)); // return address and pushed EBP
+                    varDsc->SetStackOffset(varDsc->GetStackOffset() + (2 * TARGET_POINTER_SIZE)); // return address and
+                                                                                                  // pushed EBP
 
                     noway_assert(varDsc->GetStackOffset() >= FIRST_ARG_STACK_OFFS);
                 }
@@ -5325,7 +5775,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
 #endif // FEATURE_FIXED_OUT_ARGS
 
-#if defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM64)
     // We normally add alignment below the locals between them and the outgoing
     // arg space area. When we store fp/lr(ra) at the bottom, however, this will
     // be below the alignment. So we should not apply the alignment adjustment to
@@ -5337,11 +5787,11 @@ void Compiler::lvaFixVirtualFrameOffsets()
     {
         lvaTable[lvaRetAddrVar].SetStackOffset(REGSIZE_BYTES);
     }
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     assert(codeGen->isFramePointerUsed());
     if (lvaRetAddrVar != BAD_VAR_NUM)
     {
-        // For LoongArch64, the RA is below the fp. see the `genPushCalleeSavedRegisters`
+        // For LoongArch64 and RISCV64, the RA is below the fp. see the `genPushCalleeSavedRegisters`
         lvaTable[lvaRetAddrVar].SetStackOffset(-REGSIZE_BYTES);
     }
 #endif // !TARGET_LOONGARCH64
@@ -5434,7 +5884,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     /* Update the argOffs to reflect arguments that are passed in registers */
 
     noway_assert(codeGen->intRegState.rsCalleeRegArgCount <= MAX_REG_ARG);
-    noway_assert(compMacOsArm64Abi() || compArgSize >= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES);
+    noway_assert(compAppleArm64Abi() || compArgSize >= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES);
 
     if (info.compArgOrder == Target::ARG_ORDER_L2R)
     {
@@ -5443,6 +5893,27 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
 
     // Update the arg initial register locations.
     lvaUpdateArgsWithInitialReg();
+
+#ifdef SWIFT_SUPPORT
+    if (info.compCallConv == CorInfoCallConvExtension::Swift)
+    {
+        // We already assigned argument offsets in lvaClassifyParameterABI.
+        // Just get them from there.
+        // TODO-Cleanup: We can use similar logic for all backends once we have
+        // the new ABI info for all targets.
+        for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+        {
+            LclVarDsc*                   dsc     = lvaGetDesc(lclNum);
+            const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
+
+            if (abiInfo.HasExactlyOneStackSegment())
+            {
+                dsc->SetStackOffset(abiInfo.Segments[0].GetStackOffset());
+            }
+        }
+        return;
+    }
+#endif
 
     /* Is there a "this" argument? */
 
@@ -5470,7 +5941,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
             argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs);
         }
 #elif !defined(UNIX_AMD64_ABI)
-        argOffs              = lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs);
+        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs);
 #endif // TARGET_X86
         lclNum++;
         userArgsToSkip++;
@@ -5492,7 +5963,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     //@GENERICS: extra argument for instantiation info
     if (info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE)
     {
-        noway_assert(lclNum == (unsigned)info.compTypeCtxtArg);
+        noway_assert(lclNum == info.compTypeCtxtArg);
         argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, REGSIZE_BYTES,
                                                    argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
     }
@@ -5552,8 +6023,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     {
         if (lvaIsPreSpilled(preSpillLclNum, preSpillMask))
         {
-            unsigned argSize = eeGetArgSize(argLst, &info.compMethodInfo->args);
-            argOffs          = lvaAssignVirtualFrameOffsetToArg(preSpillLclNum, argSize, argOffs);
+            CORINFO_CLASS_HANDLE argClass = NO_CLASS_HANDLE;
+            CorInfoType argTypeJit = strip(info.compCompHnd->getArgType(&info.compMethodInfo->args, argLst, &argClass));
+            unsigned    argSize    = eeGetArgSize(argTypeJit, argClass);
+            argOffs                = lvaAssignVirtualFrameOffsetToArg(preSpillLclNum, argSize, argOffs);
             argLcls++;
 
             // Early out if we can. If size is 8 and base reg is 2, then the mask is 0x1100
@@ -5575,7 +6048,9 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     {
         if (!lvaIsPreSpilled(stkLclNum, preSpillMask))
         {
-            const unsigned argSize = eeGetArgSize(argLst, &info.compMethodInfo->args);
+            CORINFO_CLASS_HANDLE argClass = NO_CLASS_HANDLE;
+            CorInfoType argTypeJit = strip(info.compCompHnd->getArgType(&info.compMethodInfo->args, argLst, &argClass));
+            const unsigned argSize = eeGetArgSize(argTypeJit, argClass);
             argOffs                = lvaAssignVirtualFrameOffsetToArg(stkLclNum, argSize, argOffs);
             argLcls++;
         }
@@ -5586,9 +6061,11 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
 #else  // !TARGET_ARM
     for (unsigned i = 0; i < argSigLen; i++)
     {
-        unsigned argumentSize = eeGetArgSize(argLst, &info.compMethodInfo->args);
+        CORINFO_CLASS_HANDLE argClass = NO_CLASS_HANDLE;
+        CorInfoType argTypeJit   = strip(info.compCompHnd->getArgType(&info.compMethodInfo->args, argLst, &argClass));
+        unsigned    argumentSize = eeGetArgSize(argTypeJit, argClass);
 
-        assert(compMacOsArm64Abi() || argumentSize % TARGET_POINTER_SIZE == 0);
+        assert(compAppleArm64Abi() || argumentSize % TARGET_POINTER_SIZE == 0);
 
         argOffs =
             lvaAssignVirtualFrameOffsetToArg(lclNum++, argumentSize, argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
@@ -5601,7 +6078,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     //@GENERICS: extra argument for instantiation info
     if (info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE)
     {
-        noway_assert(lclNum == (unsigned)info.compTypeCtxtArg);
+        noway_assert(lclNum == info.compTypeCtxtArg);
         argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, REGSIZE_BYTES,
                                                    argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
     }
@@ -5625,8 +6102,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
 //        ret address slot, stack frame padding, alloca instructions, etc.
 //  Note: This is the implementation for UNIX_AMD64 System V platforms.
 //
-int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
-                                               unsigned argSize,
+int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned    lclNum,
+                                               unsigned    argSize,
                                                int argOffs UNIX_AMD64_ABI_ONLY_ARG(int* callerArgOffset))
 {
     noway_assert(lclNum < info.compArgsCount);
@@ -5717,8 +6194,8 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
 //        The final offset is calculated in lvaFixVirtualFrameOffsets method. It accounts for FP existence,
 //        ret address slot, stack frame padding, alloca instructions, etc.
 //  Note: This implementation for all the platforms but UNIX_AMD64 OSs (System V 64 bit.)
-int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
-                                               unsigned argSize,
+int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned    lclNum,
+                                               unsigned    argSize,
                                                int argOffs UNIX_AMD64_ABI_ONLY_ARG(int* callerArgOffset))
 {
     noway_assert(lclNum < info.compArgsCount);
@@ -5739,7 +6216,6 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
     {
         /* Argument is passed in a register, don't count it
          * when updating the current offset on the stack */
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if !defined(TARGET_ARMARCH) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 #if DEBUG
@@ -5926,7 +6402,6 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
             // r3    int             a2 --> pushed (not pre-spilled) for alignment of a0 by lvaInitUserArgs.
             // r2    struct { int }  a1
             // r0-r1 struct { long } a0
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef PROFILING_SUPPORTED
             // On Arm under profiler, r0-r3 are always prespilled on stack.
@@ -5946,8 +6421,8 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
                             (codeGen->regSet.rsMaskPreSpillAlign & genRegMask(REG_ARG_LAST));
 
                 noway_assert(cond);
-                noway_assert(sizeofPreSpillRegArgs <=
-                             argOffs + TARGET_POINTER_SIZE); // at most one register of alignment
+                noway_assert(sizeofPreSpillRegArgs <= argOffs + TARGET_POINTER_SIZE); // at most one register of
+                                                                                      // alignment
             }
             argOffs = sizeofPreSpillRegArgs;
         }
@@ -5977,7 +6452,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
 #endif // TARGET_ARM
         const bool     isFloatHfa   = (varDsc->lvIsHfa() && (varDsc->GetHfaType() == TYP_FLOAT));
         const unsigned argAlignment = eeGetArgSizeAlignment(varDsc->lvType, isFloatHfa);
-        if (compMacOsArm64Abi())
+        if (compAppleArm64Abi())
         {
             argOffs = roundUp(argOffs, argAlignment);
         }
@@ -5990,7 +6465,6 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
     // For struct promoted parameters we need to set the offsets for both LclVars.
     //
     // For a dependent promoted struct we also assign the struct fields stack offset
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
     if (varDsc->lvPromoted)
     {
@@ -6118,8 +6592,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         stkOffs -= initialStkOffs;
     }
 
-    if (codeGen->IsSaveFpLrWithAllCalleeSavedRegisters() ||
-        !isFramePointerUsed()) // Note that currently we always have a frame pointer
+    if (codeGen->IsSaveFpLrWithAllCalleeSavedRegisters() || !isFramePointerUsed()) // Note that currently we always have
+                                                                                   // a frame pointer
     {
         stkOffs -= compCalleeRegsPushed * REGSIZE_BYTES;
     }
@@ -6130,17 +6604,11 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         stkOffs -= (compCalleeRegsPushed - 2) * REGSIZE_BYTES;
     }
 
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     assert(compCalleeRegsPushed >= 2);
 
-#elif defined(TARGET_RISCV64)
-
-    // Subtract off FP and RA.
-    assert(compCalleeRegsPushed >= 2);
-    stkOffs -= (compCalleeRegsPushed - 2) * REGSIZE_BYTES;
-
-#else // !TARGET_RISCV64
+#else // !TARGET_LOONGARCH64 && !TARGET_RISCV64
 #ifdef TARGET_ARM
     // On ARM32 LR is part of the pushed registers and is always stored at the
     // top.
@@ -6151,7 +6619,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #endif
 
     stkOffs -= compCalleeRegsPushed * REGSIZE_BYTES;
-#endif // !TARGET_RISCV64
+#endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
     // (2) Account for the remainder of the frame
     //
@@ -6263,7 +6731,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         }
     }
 
-#if defined(FEATURE_EH_FUNCLETS) && (defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64))
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     if (lvaPSPSym != BAD_VAR_NUM)
     {
         // On ARM/ARM64, if we need a PSPSym we allocate it early since funclets
@@ -6272,7 +6740,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         noway_assert(codeGen->isFramePointerUsed()); // We need an explicit frame pointer
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaPSPSym, TARGET_POINTER_SIZE, stkOffs);
     }
-#endif // FEATURE_EH_FUNCLETS && (TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64)
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 
     if (mustDoubleAlign)
     {
@@ -6367,9 +6835,9 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif
 
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
     /* If we need space for slots for shadow SP, reserve it now */
-    if (ehNeedsShadowSPslots())
+    if (!UsesFunclets() && ehNeedsShadowSPslots())
     {
         noway_assert(codeGen->isFramePointerUsed()); // else offsets of locals of frameless methods will be incorrect
         if (!lvaReportParamTypeArg())
@@ -6386,7 +6854,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         }
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaShadowSPslotsVar, lvaLclSize(lvaShadowSPslotsVar), stkOffs);
     }
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
 
     if (compGSReorderStackLayout)
     {
@@ -6587,12 +7055,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
             // These need to be located as the very first variables (highest memory address)
             // and so they have already been assigned an offset
-            if (
-#if defined(FEATURE_EH_FUNCLETS)
-                lclNum == lvaPSPSym ||
-#else
+            if (lclNum == lvaPSPSym ||
+#if defined(FEATURE_EH_WINDOWS_X86)
                 lclNum == lvaShadowSPslotsVar ||
-#endif // FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
 #ifdef JIT32_GCENCODER
                 lclNum == lvaLocAllocSPvar ||
 #endif // JIT32_GCENCODER
@@ -6625,45 +7091,21 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
             if (varDsc->lvIsParam)
             {
-#if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
-
-                // On Windows AMD64 we can use the caller-reserved stack area that is already setup
-                assert(varDsc->GetStackOffset() != BAD_STK_OFFS);
-                continue;
-
-#else // !TARGET_AMD64
-
-                //  A register argument that is not enregistered ends up as
-                //  a local variable which will need stack frame space.
-                //
-                if (!varDsc->lvIsRegArg)
-                {
-                    continue;
-                }
-
 #ifdef TARGET_ARM64
-                if (info.compIsVarArgs && varDsc->GetArgReg() != theFixedRetBuffArgNum())
+                if (info.compIsVarArgs && varDsc->lvIsRegArg &&
+                    (varDsc->GetArgReg() != theFixedRetBuffReg(info.compCallConv)))
                 {
                     // Stack offset to varargs (parameters) should point to home area which will be preallocated.
-                    const unsigned regArgNum = genMapIntRegNumToRegArgNum(varDsc->GetArgReg());
+                    const unsigned regArgNum = genMapIntRegNumToRegArgNum(varDsc->GetArgReg(), info.compCallConv);
                     varDsc->SetStackOffset(-initialStkOffs + regArgNum * REGSIZE_BYTES);
                     continue;
                 }
-
 #endif
 
-#ifdef TARGET_ARM
-                // On ARM we spill the registers in codeGen->regSet.rsMaskPreSpillRegArg
-                // in the prolog, thus they don't need stack frame space.
-                //
-                if ((codeGen->regSet.rsMaskPreSpillRegs(false) & genRegMask(varDsc->GetArgReg())) != 0)
+                if (!lvaParamHasLocalStackSpace(lclNum))
                 {
-                    assert(varDsc->GetStackOffset() != BAD_STK_OFFS);
                     continue;
                 }
-#endif
-
-#endif // !TARGET_AMD64
             }
 
             /* Make sure the type is appropriate */
@@ -6853,7 +7295,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         }
     }
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_AMD64)
+#if defined(TARGET_AMD64)
     if (lvaPSPSym != BAD_VAR_NUM)
     {
         // On AMD64, if we need a PSPSym, allocate it last, immediately above the outgoing argument
@@ -6862,21 +7304,16 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         noway_assert(codeGen->isFramePointerUsed()); // We need an explicit frame pointer
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaPSPSym, TARGET_POINTER_SIZE, stkOffs);
     }
-#endif // FEATURE_EH_FUNCLETS && defined(TARGET_AMD64)
+#endif // TARGET_AMD64
 
 #ifdef TARGET_ARM64
-    if (!codeGen->IsSaveFpLrWithAllCalleeSavedRegisters() &&
-        isFramePointerUsed()) // Note that currently we always have a frame pointer
+    if (!codeGen->IsSaveFpLrWithAllCalleeSavedRegisters() && isFramePointerUsed()) // Note that currently we always have
+                                                                                   // a frame pointer
     {
         // Create space for saving FP and LR.
         stkOffs -= 2 * REGSIZE_BYTES;
     }
 #endif // TARGET_ARM64
-
-#if defined(TARGET_RISCV64)
-    assert(isFramePointerUsed()); // Note that currently we always have a frame pointer
-    stkOffs -= 2 * REGSIZE_BYTES;
-#endif // TARGET_RISCV64
 
 #if FEATURE_FIXED_OUT_ARGS
     if (lvaOutgoingArgSpaceSize > 0)
@@ -6894,8 +7331,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif // FEATURE_FIXED_OUT_ARGS
 
-#ifdef TARGET_LOONGARCH64
-    // For LoongArch64, CalleeSavedRegs are at bottom.
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    // For LoongArch64 and RISCV64, CalleeSavedRegs are at bottom.
     int pushedCount = 0;
 #else
     // compLclFrameSize equals our negated virtual stack offset minus the pushed registers and return address
@@ -6920,6 +7357,58 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
     noway_assert(compLclFrameSize + originalFrameSize ==
                  (unsigned)-(stkOffs + (pushedCount * (int)TARGET_POINTER_SIZE)));
+}
+
+//------------------------------------------------------------------------
+// lvaParamHasLocalStackSpace: Check if a local that represents a parameter has
+// space allocated for it in the local stack frame.
+//
+// Arguments:
+//   lclNum - the variable number
+//
+// Return Value:
+//   true if the local does not have reusable stack space created by the caller
+//   already.
+//
+bool Compiler::lvaParamHasLocalStackSpace(unsigned lclNum)
+{
+    LclVarDsc* varDsc = lvaGetDesc(lclNum);
+
+#ifdef SWIFT_SUPPORT
+    if ((info.compCallConv == CorInfoCallConvExtension::Swift) && !lvaIsImplicitByRefLocal(lclNum) &&
+        !lvaGetParameterABIInfo(lclNum).HasExactlyOneStackSegment())
+    {
+        return true;
+    }
+#endif
+
+#if defined(WINDOWS_AMD64_ABI)
+    // On Windows AMD64 we can use the caller-reserved stack area that is already setup
+    return false;
+#else // !WINDOWS_AMD64_ABI
+
+    //  A register argument that is not enregistered ends up as
+    //  a local variable which will need stack frame space.
+    //
+    if (!varDsc->lvIsRegArg)
+    {
+        return false;
+    }
+
+#ifdef TARGET_ARM
+    // On ARM we spill the registers in codeGen->regSet.rsMaskPreSpillRegArg
+    // in the prolog, thus they don't need stack frame space.
+    //
+    if ((codeGen->regSet.rsMaskPreSpillRegs(false) & genRegMask(varDsc->GetArgReg())) != 0)
+    {
+        assert(varDsc->GetStackOffset() != BAD_STK_OFFS);
+        return false;
+    }
+#endif
+
+#endif // !WINDOWS_AMD64_ABI
+
+    return true;
 }
 
 int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, int stkOffs)
@@ -7068,7 +7557,6 @@ void Compiler::lvaAlignFrame()
 
     // If this isn't the final frame layout, assume we have to push an extra QWORD
     // Just so the offsets are true upper limits.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef UNIX_AMD64_ABI
     // The compNeedToAlignFrame flag  is indicating if there is a need to align the frame.
@@ -7156,9 +7644,9 @@ void Compiler::lvaAlignFrame()
         }
 
         // Align the stack with STACK_ALIGN value.
-        int  adjustFrameSize = compLclFrameSize;
+        int adjustFrameSize = compLclFrameSize;
 #if defined(UNIX_X86_ABI)
-        bool isEbpPushed     = codeGen->isFramePointerUsed();
+        bool isEbpPushed = codeGen->isFramePointerUsed();
 #if DOUBLE_ALIGN
         isEbpPushed |= genDoubleAlign();
 #endif
@@ -7190,8 +7678,6 @@ void Compiler::lvaAssignFrameOffsetsToPromotedStructs()
         // assign their offsets in lvaAssignVirtualFrameOffsetToArg().
         // This is not true for the System V systems since there is no
         // outgoing args space. Assign the dependently promoted fields properly.
-        //
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM) || defined(TARGET_X86)
         // ARM: lo/hi parts of a promoted long arg need to be updated.
@@ -7204,9 +7690,9 @@ void Compiler::lvaAssignFrameOffsetsToPromotedStructs()
         //
         const bool mustProcessParams = true;
 #else
-        // OSR must also assign offsets here.
+        // OSR/Swift must also assign offsets here.
         //
-        const bool mustProcessParams = opts.IsOSR();
+        const bool mustProcessParams = opts.IsOSR() || (info.compCallConv == CorInfoCallConvExtension::Swift);
 #endif // defined(UNIX_AMD64_ABI) || defined(TARGET_ARM) || defined(TARGET_X86)
 
         if (varDsc->lvIsStructField && (!varDsc->lvIsParam || mustProcessParams))
@@ -7267,7 +7753,6 @@ int Compiler::lvaAllocateTemps(int stkOffs, bool mustDoubleAlign)
             /* Figure out and record the stack offset of the temp */
 
             /* Need to align the offset? */
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_64BIT
             if (varTypeIsGC(tempType) && ((stkOffs % TARGET_POINTER_SIZE) != 0))
@@ -7570,6 +8055,14 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     {
         printf(" tier0-frame");
     }
+    if (varDsc->lvIsHoist)
+    {
+        printf(" hoist");
+    }
+    if (varDsc->lvIsMultiDefCSE)
+    {
+        printf(" multi-def");
+    }
 
 #ifndef TARGET_64BIT
     if (varDsc->lvStructDoubleAlign)
@@ -7628,9 +8121,9 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
 }
 
 /*****************************************************************************
-*
-*  dump the lvaTable
-*/
+ *
+ *  dump the lvaTable
+ */
 
 void Compiler::lvaTableDump(FrameLayoutState curState)
 {
@@ -7808,7 +8301,7 @@ unsigned Compiler::lvaFrameSize(FrameLayoutState curState)
 //
 // Return Value:
 //    The offset.
-
+//
 int Compiler::lvaGetSPRelativeOffset(unsigned varNum)
 {
     assert(!compLocallocUsed);
@@ -7874,7 +8367,7 @@ int Compiler::lvaToCallerSPRelativeOffset(int offset, bool isFpBased, bool forRo
         offset += codeGen->genCallerSPtoInitialSPdelta();
     }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     if (forRootFrame && opts.IsOSR())
     {
         const PatchpointInfo* const ppInfo = info.compPatchpointInfo;
@@ -7893,7 +8386,7 @@ int Compiler::lvaToCallerSPRelativeOffset(int offset, bool isFpBased, bool forRo
         //
         const int adjustment = ppInfo->TotalFrameSize() + REGSIZE_BYTES;
 
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
         const int adjustment = ppInfo->TotalFrameSize();
 #endif
@@ -8051,7 +8544,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         // TYP_BLK locals.
         // TODO-Cleanup: Can probably be removed now since TYP_BLK does not
         // exist anymore.
-        if (pComp->compMayConvertTailCallToLoop)
+        if (pComp->doesMethodHaveRecursiveTailcall())
         {
             varDsc->lvNoLclFldStress = true;
             return WALK_CONTINUE;

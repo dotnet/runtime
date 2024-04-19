@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.ExceptionServices;
 
 namespace System.Threading.Tasks
 {
@@ -285,6 +286,76 @@ namespace System.Threading.Tasks
             }
 
             return rval;
+        }
+
+        /// <summary>
+        /// Transition the underlying <see cref="Task{TResult}"/> into the same completion state as the specified <paramref name="completedTask"/>.
+        /// </summary>
+        /// <param name="completedTask">The completed task whose completion status (including result, exception, or cancellation information) should be copied to the underlying task.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="completedTask"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="completedTask"/> is not completed.</exception>
+        /// <exception cref="InvalidOperationException">
+        /// The underlying <see cref="Task{TResult}"/> is already in one of the three final states:
+        /// <see cref="TaskStatus.RanToCompletion"/>, <see cref="TaskStatus.Faulted"/>, or <see cref="TaskStatus.Canceled"/>.
+        /// </exception>
+        /// <remarks>
+        /// This operation will return false if the <see cref="Task{TResult}"/> is already in one of the three final states:
+        /// <see cref="TaskStatus.RanToCompletion"/>, <see cref="TaskStatus.Faulted"/>, or <see cref="TaskStatus.Canceled"/>.
+        /// </remarks>
+        public void SetFromTask(Task<TResult> completedTask)
+        {
+            if (!TrySetFromTask(completedTask))
+            {
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted);
+            }
+        }
+
+        /// <summary>
+        /// Attempts to transition the underlying <see cref="Task{TResult}"/> into the same completion state as the specified <paramref name="completedTask"/>.
+        /// </summary>
+        /// <param name="completedTask">The completed task whose completion status (including result, exception, or cancellation information) should be copied to the underlying task.</param>
+        /// <returns><see langword="true"/> if the operation was successful; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="completedTask"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="completedTask"/> is not completed.</exception>
+        /// <remarks>
+        /// This operation will return false if the <see cref="Task{TResult}"/> is already in one of the three final states:
+        /// <see cref="TaskStatus.RanToCompletion"/>, <see cref="TaskStatus.Faulted"/>, or <see cref="TaskStatus.Canceled"/>.
+        /// </remarks>
+        public bool TrySetFromTask(Task<TResult> completedTask)
+        {
+            ArgumentNullException.ThrowIfNull(completedTask);
+            if (!completedTask.IsCompleted)
+            {
+                throw new ArgumentException(SR.Task_MustBeCompleted, nameof(completedTask));
+            }
+
+            // Try to transition to the appropriate final state based on the state of completedTask.
+            bool result = false;
+            switch (completedTask.Status)
+            {
+                case TaskStatus.RanToCompletion:
+                    result = _task.TrySetResult(completedTask.Result);
+                    break;
+
+                case TaskStatus.Canceled:
+                    result = _task.TrySetCanceled(completedTask.CancellationToken, completedTask.GetCancellationExceptionDispatchInfo());
+                    break;
+
+                case TaskStatus.Faulted:
+                    result = _task.TrySetException(completedTask.GetExceptionDispatchInfos());
+                    break;
+            }
+
+            // If we successfully transitioned to a final state, we're done. If we didn't, it's possible a concurrent operation
+            // is still in the process of completing the task, and callers of this method expect the task to already be fully
+            // completed when this method returns. As such, we spin until the task is completed, and then return whether this
+            // call successfully did the transition.
+            if (!result && !_task.IsCompleted)
+            {
+                _task.SpinUntilCompleted();
+            }
+
+            return result;
         }
     }
 }

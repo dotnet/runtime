@@ -9,10 +9,10 @@ namespace System.ServiceProcess
 #if NETCOREAPP
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly | AttributeTargets.Event, AllowMultiple = true, Inherited = false )]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly | AttributeTargets.Event, AllowMultiple = true, Inherited = false)]
     public class ServiceControllerPermissionAttribute : CodeAccessSecurityAttribute
     {
-        public ServiceControllerPermissionAttribute(SecurityAction action): base(action) { }
+        public ServiceControllerPermissionAttribute(SecurityAction action) : base(action) { }
         public string MachineName { get => null; set { } }
         public ServiceControllerPermissionAccess PermissionAccess { get => default(ServiceControllerPermissionAccess); set { } }
         public string ServiceName { get => null; set { } }

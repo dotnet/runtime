@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 /* RDawson - 11/2/200
 
   Check that a standard .ctor is valid.
@@ -24,7 +25,7 @@
 	}
 }
 
-.class value sealed Foo2 extends [mscorlib]System.ValueType{
+.class public value sealed Foo2 extends [mscorlib]System.ValueType{
 	.field public int32 foofield
 	.method public void .ctor(){
 //		ldarg.0
@@ -40,6 +41,9 @@
 }
 
 .method public static int32 main(){
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 	.maxstack 8
 	newobj instance	void Foo::.ctor()

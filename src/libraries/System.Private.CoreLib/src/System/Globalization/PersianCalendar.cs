@@ -30,7 +30,7 @@ namespace System.Globalization
         private const int DatePartDay = 3;
         private const int MonthsPerYear = 12;
 
-        private static ReadOnlySpan<int> DaysToMonth => new int[] { 0, 31, 62, 93, 124, 155, 186, 216, 246, 276, 306, 336, 366 };
+        private static ReadOnlySpan<int> DaysToMonth => [0, 31, 62, 93, 124, 155, 186, 216, 246, 276, 306, 336, 366];
 
         private const int MaxCalendarYear = 9378;
         private const int MaxCalendarMonth = 10;

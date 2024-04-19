@@ -7,61 +7,39 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        public static IEnumerable<TResult> GroupJoin<TOuter, TInner, TKey, TResult>(this IEnumerable<TOuter> outer, IEnumerable<TInner> inner, Func<TOuter, TKey> outerKeySelector, Func<TInner, TKey> innerKeySelector, Func<TOuter, IEnumerable<TInner>, TResult> resultSelector)
-        {
-            if (outer == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.outer);
-            }
-
-            if (inner == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.inner);
-            }
-
-            if (outerKeySelector == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.outerKeySelector);
-            }
-
-            if (innerKeySelector == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.innerKeySelector);
-            }
-
-            if (resultSelector == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.resultSelector);
-            }
-
-            return GroupJoinIterator(outer, inner, outerKeySelector, innerKeySelector, resultSelector, null);
-        }
+        public static IEnumerable<TResult> GroupJoin<TOuter, TInner, TKey, TResult>(this IEnumerable<TOuter> outer, IEnumerable<TInner> inner, Func<TOuter, TKey> outerKeySelector, Func<TInner, TKey> innerKeySelector, Func<TOuter, IEnumerable<TInner>, TResult> resultSelector) =>
+            GroupJoin(outer, inner, outerKeySelector, innerKeySelector, resultSelector, comparer: null);
 
         public static IEnumerable<TResult> GroupJoin<TOuter, TInner, TKey, TResult>(this IEnumerable<TOuter> outer, IEnumerable<TInner> inner, Func<TOuter, TKey> outerKeySelector, Func<TInner, TKey> innerKeySelector, Func<TOuter, IEnumerable<TInner>, TResult> resultSelector, IEqualityComparer<TKey>? comparer)
         {
-            if (outer == null)
+            if (outer is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.outer);
             }
 
-            if (inner == null)
+            if (inner is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.inner);
             }
 
-            if (outerKeySelector == null)
+            if (outerKeySelector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.outerKeySelector);
             }
 
-            if (innerKeySelector == null)
+            if (innerKeySelector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.innerKeySelector);
             }
 
-            if (resultSelector == null)
+            if (resultSelector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.resultSelector);
+            }
+
+            if (IsEmptyArray(outer))
+            {
+                return [];
             }
 
             return GroupJoinIterator(outer, inner, outerKeySelector, innerKeySelector, resultSelector, comparer);

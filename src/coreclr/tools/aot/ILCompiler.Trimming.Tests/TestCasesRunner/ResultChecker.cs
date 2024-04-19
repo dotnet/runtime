@@ -8,13 +8,11 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using FluentAssertions;
 using ILCompiler.Logging;
 using Internal.TypeSystem;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Extensions;
 using Xunit;
 
@@ -303,18 +301,19 @@ namespace Mono.Linker.Tests.TestCasesRunner
 											loggedMessages.Remove (loggedMessage);
 											break;
 										}
-										if (actualName?.StartsWith (expectedTypeName) == true &&
-											actualName?.Contains (".cctor") == true &&
-											(expectedMember is FieldDefinition || expectedMember is PropertyDefinition)) {
-											expectedWarningFound = true;
-											loggedMessages.Remove (loggedMessage);
-											break;
-										}
-										if (methodDesc.IsConstructor &&
-											new AssemblyQualifiedToken (methodDesc.OwningType).Equals(new AssemblyQualifiedToken (expectedMember))) {
-											expectedWarningFound = true;
-											loggedMessages.Remove (loggedMessage);
-											break;
+										if (actualName?.StartsWith (expectedTypeName) == true) {
+											if (actualName?.Contains (".cctor") == true &&
+												(expectedMember is FieldDefinition || expectedMember is PropertyDefinition)) {
+												expectedWarningFound = true;
+												loggedMessages.Remove (loggedMessage);
+												break;
+											}
+											if (methodDesc.IsConstructor &&
+												(expectedMember is FieldDefinition || expectedMember is PropertyDefinition || new AssemblyQualifiedToken (methodDesc.OwningType).Equals(new AssemblyQualifiedToken (expectedMember)))) {
+												expectedWarningFound = true;
+												loggedMessages.Remove (loggedMessage);
+												break;
+											}
 										}
 									} else if (attrProvider is AssemblyDefinition expectedAssembly) {
 										// Allow assembly-level attributes to match warnings from compiler-generated Main

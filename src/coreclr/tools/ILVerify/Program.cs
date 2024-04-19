@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
-using System.CommandLine.Parsing;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Metadata;
@@ -152,12 +151,9 @@ namespace ILVerify
 
             MetadataReader metadataReader = module.MetadataReader;
 
-            TypeDefinition typeDef = metadataReader.GetTypeDefinition(metadataReader.GetMethodDefinition(result.Method).GetDeclaringType());
-            string typeNamespace = metadataReader.GetString(typeDef.Namespace);
-            Write(typeNamespace);
-            Write(".");
-            string typeName = metadataReader.GetString(typeDef.Name);
-            Write(typeName);
+            TypeDefinitionHandle typeDef = metadataReader.GetMethodDefinition(result.Method).GetDeclaringType();
+            string fullClassName = GetFullClassName(metadataReader, typeDef);
+            Write(fullClassName);
 
             Write("::");
             var method = (EcmaMethod)module.GetMethod(result.Method);
@@ -352,6 +348,35 @@ namespace ILVerify
         }
 
         /// <summary>
+        /// Returns full class name, includes parent class for nested class.
+        /// </summary>
+        private string GetFullClassName(MetadataReader metadataReader, TypeDefinitionHandle typeDefinitionHandle)
+        {
+            var typeDef = metadataReader.GetTypeDefinition(typeDefinitionHandle);
+
+            var fullName = new StringBuilder();
+
+            var declaringType = typeDef.GetDeclaringType();
+            if (!declaringType.IsNil)
+            {
+                fullName.Append(GetFullClassName(metadataReader, declaringType));
+                fullName.Append('+');
+            }
+            
+            var namespaceName = metadataReader.GetString(typeDef.Namespace);
+            if (!string.IsNullOrEmpty(namespaceName))
+            {
+                fullName.Append(namespaceName);
+                fullName.Append('.');
+            }
+
+            var typeName = metadataReader.GetString(typeDef.Name);
+            fullName.Append(typeName);
+            
+            return fullName.ToString();
+        }
+
+        /// <summary>
         /// This method returns the fully qualified class name.
         /// </summary>
         private string GetQualifiedClassName(MetadataReader metadataReader, TypeDefinitionHandle typeHandle)
@@ -456,8 +481,7 @@ namespace ILVerify
         private static int Main(string[] args) =>
             new CliConfiguration(new ILVerifyRootCommand().UseVersion())
             {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
-                EnableParseErrorReporting = true
+                ResponseFileTokenReplacer = Helpers.TryReadResponseFile
             }.Invoke(args);
     }
 }

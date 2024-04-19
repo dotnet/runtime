@@ -88,7 +88,7 @@ namespace System.Collections.Generic
 
         public void Insert(int index, scoped ReadOnlySpan<T> source)
         {
-            Debug.Assert(index >= 0 && index <= _pos);
+            Debug.Assert(index == 0, "Implementation currently only supports index == 0");
 
             if ((uint)(_pos + source.Length) > (uint)_span.Length)
             {

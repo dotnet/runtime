@@ -19,8 +19,8 @@ namespace System.Buffers.Text.Tests
                     if (ftd.FormatSymbol != default(char))
                         continue;
 
-                    MutableDecimal d = ftd.Value.ToMutableDecimal();
-                    if (d.High == 0 && d.Mid == 0 && d.Low == 0 && d.IsNegative)
+                    decimal d = ftd.Value;
+                    if (d == 0 && decimal.IsNegative(d))
                         continue; // -0 is not roundtrippable
 
                     foreach (ParserTestData<decimal> testData in new FormatterTestData<decimal>[] { ftd }.ToParserTheoryDataCollection())
@@ -35,8 +35,8 @@ namespace System.Buffers.Text.Tests
                 }
 
                 yield return new ParserTestData<decimal>("1e" + int.MaxValue, default, 'E', expectedSuccess: false);
-                yield return new ParserTestData<decimal>("0.01e" + int.MinValue, new MutableDecimal() { Scale = 28 }.ToDecimal(), 'E', expectedSuccess: true);
-                yield return new ParserTestData<decimal>("-0.01e" + int.MinValue, new MutableDecimal() { Scale = 28, IsNegative = true }.ToDecimal(), 'E', expectedSuccess: true);
+                yield return new ParserTestData<decimal>("0.01e" + int.MinValue, new decimal(0, 0, 0, isNegative: false, scale: 28), 'E', expectedSuccess: true);
+                yield return new ParserTestData<decimal>("-0.01e" + int.MinValue, new decimal(0, 0, 0, isNegative: true, scale: 28), 'E', expectedSuccess: true);
             }
         }
 

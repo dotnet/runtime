@@ -170,10 +170,16 @@ namespace ILCompiler
             get;
         }
 
-        private DelegateCreationInfo(IMethodNode constructor, MethodDesc targetMethod, TypeDesc constrainedType, TargetKind targetKind, IMethodNode thunk = null)
+        public TypeDesc DelegateType
+        {
+            get;
+        }
+
+        private DelegateCreationInfo(TypeDesc delegateType, IMethodNode constructor, MethodDesc targetMethod, TypeDesc constrainedType, TargetKind targetKind, IMethodNode thunk = null)
         {
             Debug.Assert(targetKind != TargetKind.VTableLookup
                 || MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(targetMethod) == targetMethod);
+            DelegateType = delegateType;
             Constructor = constructor;
             _targetMethod = targetMethod;
             _constrainedType = constrainedType;
@@ -230,6 +236,7 @@ namespace ILCompiler
                     invokeThunk = context.GetMethodForInstantiatedType(invokeThunk, instantiatedDelegateType);
 
                 return new DelegateCreationInfo(
+                    delegateType,
                     factory.MethodEntrypoint(initMethod),
                     targetMethod,
                     constrainedType,
@@ -289,6 +296,7 @@ namespace ILCompiler
 
                 Debug.Assert(constrainedType == null);
                 return new DelegateCreationInfo(
+                    delegateType,
                     factory.MethodEntrypoint(systemDelegate.GetKnownMethod(initializeMethodName, null)),
                     targetMethod,
                     constrainedType,

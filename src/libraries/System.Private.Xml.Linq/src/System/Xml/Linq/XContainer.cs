@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Debug = System.Diagnostics.Debug;
 using IEnumerable = System.Collections.IEnumerable;
-using StringBuilder = System.Text.StringBuilder;
 using Interlocked = System.Threading.Interlocked;
-using System.Diagnostics.CodeAnalysis;
+using StringBuilder = System.Text.StringBuilder;
 
 namespace System.Xml.Linq
 {

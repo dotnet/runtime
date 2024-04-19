@@ -22,7 +22,11 @@ NESTED_ENTRY RhCommonStub, _TEXT, NoHandler
 
           mov          r4, r12
 
+#ifdef FEATURE_EMULATED_TLS
+          bl           C_FUNC(RhpGetThunkData)
+#else
           INLINE_GET_TLS_VAR  tls_thunkData
+#endif
 
           // r0 = base address of TLS data
           // r4 = address of context cell in thunk's data
@@ -42,19 +46,7 @@ NESTED_END RhCommonStub, _TEXT
 // IntPtr RhGetCommonStubAddress()
 //
 LEAF_ENTRY RhGetCommonStubAddress, _TEXT
-          ldr           r0, =C_FUNC(RhCommonStub)
+          PREPARE_EXTERNAL_VAR RhCommonStub, r0
           bx            lr
 LEAF_END RhGetCommonStubAddress, _TEXT
 
-//
-// IntPtr RhGetCurrentThunkContext()
-//
-LEAF_ENTRY RhGetCurrentThunkContext, _TEXT
-
-          PROLOG_PUSH   "{r12, lr}"
-
-          INLINE_GET_TLS_VAR  tls_thunkData
-
-          ldr           r0, [r0]
-          EPILOG_POP    "{r12, pc}"
-LEAF_END RhGetCurrentThunkContext, _TEXT

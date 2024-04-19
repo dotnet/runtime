@@ -21,7 +21,7 @@
 // generics: nongeneric
 // depends on nested: static field
 
-.class private abstract EnclType
+.class public abstract EnclType
 {
    // enclosing member visibility: assembly
   .field assembly static class EnclType/NestedType nestField

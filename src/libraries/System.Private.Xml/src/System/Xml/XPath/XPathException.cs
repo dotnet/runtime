@@ -3,9 +3,9 @@
 
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Resources;
 using System.Runtime.Serialization;
-using System.Diagnostics;
 
 namespace System.Xml.XPath
 {

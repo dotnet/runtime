@@ -9,11 +9,13 @@
 
 using System;
 using System.Runtime.ExceptionServices;
+using Xunit;
 
 public class Program
 {
     [HandleProcessCorruptedStateExceptions]
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int ret = 99;
 

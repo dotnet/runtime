@@ -735,7 +735,11 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
 #endif
 
     st = unw_step(&cursor);
-    if (st < 0)
+    if (st == -UNW_ESTOPUNWIND)
+    {
+        st = 0;
+    }
+    else if (st < 0)
     {
         return FALSE;
     }

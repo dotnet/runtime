@@ -258,7 +258,7 @@ namespace System.Xml.XmlSchemaTests
                 }
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
     }
 }

@@ -377,7 +377,7 @@ namespace System.Net.Tests
             if (clientConnectTask == await Task.WhenAny(serverContextTask, clientConnectTask))
             {
                 await clientConnectTask;
-                Assert.True(false, "Client should not have completed prior to server sending response");
+                Assert.Fail("Client should not have completed prior to server sending response");
             }
 
             HttpListenerContext context = await serverContextTask;
@@ -428,7 +428,7 @@ namespace System.Net.Tests
             if (ClientConnectTask == await Task.WhenAny(serverContextTask, ClientConnectTask))
             {
                 await ClientConnectTask;
-                Assert.True(false, "Client should not have completed prior to server sending response");
+                Assert.Fail("Client should not have completed prior to server sending response");
             }
 
             HttpListenerContext context = await serverContextTask;

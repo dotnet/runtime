@@ -3,6 +3,9 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.LinkXml
 {
+	[IgnoreTestCase ("NativeAOT doesn't implement 'visible' rooting behavior", IgnoredBy = Tool.NativeAot)]
+	[KeptAttributeAttribute (typeof (IgnoreTestCaseAttribute), By = Tool.Trimmer)]
+
 	[SetupLinkerDescriptorFile ("UsedNonRequiredExportedTypeIsKeptWhenRooted.xml")]
 	[SetupLinkerArgument ("-a", "libfwd.dll", "visible")]
 

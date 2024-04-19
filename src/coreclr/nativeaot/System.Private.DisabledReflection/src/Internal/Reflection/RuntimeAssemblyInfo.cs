@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 
-using Internal.Reflection.Core.NonPortable;
-
 namespace Internal.Reflection
 {
     internal sealed class RuntimeAssemblyInfo : RuntimeAssembly

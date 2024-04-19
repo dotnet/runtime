@@ -1,0 +1,65 @@
+# Variables to resolve the paths and artifact names for the test assets used and produced to run the tests
+# in the src/tests tree.
+parameters:
+  runtimeFlavor: 'coreclr'
+  runtimeVariant: ''
+  liveLibrariesBuildConfig: ''
+  testGroup: 'innerloop'
+  configOverride: ''
+
+variables:
+  - name: binTestsPath
+    value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr'
+
+  # Build product defines what we are trying to build, either coreclr or mono
+  - name: buildProductRootFolderPath
+    value: '$(Build.SourcesDirectory)/artifacts/bin/${{ parameters.runtimeFlavor }}/$(osGroup).$(archType).$(buildConfigUpper)'
+
+  - ${{ if ne(parameters.runtimeFlavor, 'mono') }}:
+    - name: managedGenericTestArtifactName
+      value: 'CoreCLRManagedTestArtifacts_AnyOS_AnyCPU_$(buildConfig)'
+  - ${{ else }}:
+    - name: managedGenericTestArtifactName
+      value: 'MonoManagedTestArtifacts_AnyOS_AnyCPU_$(buildConfig)'
+
+  - name: managedTestArtifactRootFolderPath
+    value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
+
+  - name: nativeTestArtifactConfig
+    value: $(_BuildConfig)
+
+  - ${{ if ne(parameters.configOverride, '') }}:
+    - name: nativeTestArtifactConfig
+      value: ${{ parameters.configOverride }}
+
+  - name: nativeTestArtifactName
+    value: 'CoreCLRNativeTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(nativeTestArtifactConfig)'
+
+  - name: nativeTestArtifactRootFolderPath
+    value: '$(binTestsPath)/obj/$(osGroup).$(archType).$(nativeTestArtifactConfig)'
+
+  - name: microsoftNetSdkIlFolderPath
+    value: '$(Build.SourcesDirectory)/.packages/microsoft.net.sdk.il'
+
+  - name: microsoftNetSdkIlArtifactName
+    value: 'MicrosoftNetSdkIlPackage_AnyOS_AnyCPU_$(buildConfig)'
+
+  - name: librariesOverrideArg
+    value : ''
+
+  - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+    - name: librariesOverrideArg
+      value : ' /p:LibrariesConfiguration=${{ parameters.liveLibrariesBuildConfig }}'
+
+  - name: priorityArg
+    value: ''
+
+  # 'innerloop' and 'clrinterpreter' jobs run the Priority 0 tests; everything else runs the Priority 1 tests.
+  # 'gc-standalone' is forced to run pri0 as well to start with.
+  - ${{ if and(ne(parameters.testGroup, 'innerloop'), ne(parameters.testGroup, 'clrinterpreter'), ne(parameters.testGroup, 'gc-standalone'), ne(parameters.testGroup, 'gc-standalone-server') ) }}:
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - name: priorityArg
+        value: 'priority1'
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - name: priorityArg
+        value: '-priority 1'

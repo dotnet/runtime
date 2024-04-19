@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 
 public class Class1
@@ -10,7 +11,8 @@ public class Class1
     [DllImport("fpcw.dll")]
     private static extern int RaiseFPException();
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int retVal = RaiseFPException();
 

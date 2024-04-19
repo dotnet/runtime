@@ -8,6 +8,7 @@ using static DisabledRuntimeMarshallingNative;
 
 namespace DisabledRuntimeMarshalling.PInvokeAssemblyMarshallingEnabled;
 
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public class PInvokes
 {
     public static bool IsWindowsX86Process => OperatingSystem.IsWindows() && RuntimeInformation.ProcessArchitecture == Architecture.X86;

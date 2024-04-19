@@ -33,17 +33,6 @@
 #include <sys/time.h>
 
 void
-g_get_current_time (GTimeVal *result)
-{
-	struct timeval tv;
-
-	g_return_if_fail (result != NULL);
-	gettimeofday (&tv, NULL);
-	result->tv_sec = tv.tv_sec;
-	result->tv_usec = tv.tv_usec;
-}
-
-void
 g_usleep (gulong microseconds)
 {
 #if defined(HAVE_CLOCK_NANOSLEEP) && !defined(__PASE__)

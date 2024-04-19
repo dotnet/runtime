@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Cryptography;
-using Microsoft.Win32.SafeHandles;
 using System.Buffers;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -13,6 +11,8 @@ using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Security.Cryptography.Asn1.Pkcs12;
 using System.Text;
+using Internal.Cryptography;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -348,7 +348,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         private static byte[] GetCertHash(HashAlgorithmName hashAlgorithm, ICertificatePalCore certPal)
         {
-            return HashOneShotHelpers.HashData(hashAlgorithm, certPal.RawData);
+            return CryptographicOperations.HashData(hashAlgorithm, certPal.RawData);
         }
 
         public virtual bool TryGetCertHash(
@@ -358,7 +358,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ThrowIfInvalid();
 
-            return HashOneShotHelpers.TryHashData(hashAlgorithm, Pal.RawData, destination, out bytesWritten);
+            return CryptographicOperations.TryHashData(hashAlgorithm, Pal.RawData, destination, out bytesWritten);
         }
 
         public virtual string GetCertHashString()

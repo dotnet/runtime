@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
@@ -259,21 +260,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[Kept]
-			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (DataFlowTypeExtensions.RequiresAll))]
-			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicConstructors), nameof (DataFlowTypeExtensions.RequiresAll))]
-			// ILLink/ILCompiler analysis hole: https://github.com/dotnet/runtime/issues/90335
-			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicFields), nameof (DataFlowTypeExtensions.RequiresAll), ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicFields), nameof (DataFlowTypeExtensions.RequiresAll), ProducedBy = Tool.Analyzer)]
-			static void TestArrayElementAssignment (bool b = true)
-			{
-				var arr1 = new Type[] { GetUnknownType () };
-				var arr2 = new Type[] { GetTypeWithPublicConstructors () };
-				(b ? arr1 : arr2)[0] = GetTypeWithPublicFields ();
-				arr1[0].RequiresAll ();
-				arr2[0].RequiresAll ();
-			}
-
-			[Kept]
 			[ExpectedWarning ("IL2074", nameof (_publicMethodsField), nameof (GetUnknownType))]
 			[ExpectedWarning ("IL2074", nameof (_publicPropertiesField), nameof (GetUnknownType))]
 			static void TestNullCoalescingAssignment (bool b = true)
@@ -320,7 +306,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TestParameterAssignment ();
 				TestLocalAssignment ();
 				TestArrayElementReferenceAssignment ();
-				TestArrayElementAssignment ();
 				TestNullCoalescingAssignment ();
 				TestNullCoalescingAssignmentComplex ();
 				TestDataFlowOnRightHandOfAssignment ();

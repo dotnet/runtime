@@ -4,7 +4,7 @@
 namespace Internal.TypeSystem
 {
     // Dummy implementation of diagnostic names that just forwards to Name
-    partial class MethodDesc
+    public partial class MethodDesc
     {
         public string DiagnosticName => Name;
     }

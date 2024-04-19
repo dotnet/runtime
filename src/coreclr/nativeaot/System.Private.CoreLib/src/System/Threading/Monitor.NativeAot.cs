@@ -41,7 +41,8 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void Enter(object obj)
         {
-            int resultOrIndex = ObjectHeader.Acquire(obj);
+            int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
+            int resultOrIndex = ObjectHeader.Acquire(obj, currentThreadID);
             if (resultOrIndex < 0)
                 return;
 
@@ -49,7 +50,7 @@ namespace System.Threading
                 ObjectHeader.GetLockObject(obj) :
                 SyncTable.GetLockObject(resultOrIndex);
 
-            TryAcquireSlow(lck, obj, Timeout.Infinite);
+            lck.TryEnterSlow(Timeout.Infinite, currentThreadID);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -66,7 +67,8 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool TryEnter(object obj)
         {
-            int resultOrIndex = ObjectHeader.TryAcquire(obj);
+            int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
+            int resultOrIndex = ObjectHeader.TryAcquire(obj, currentThreadID);
             if (resultOrIndex < 0)
                 return true;
 
@@ -74,7 +76,13 @@ namespace System.Threading
                 return false;
 
             Lock lck = SyncTable.GetLockObject(resultOrIndex);
-            return lck.TryAcquire(0);
+
+            // The one-shot fast path is not covered by the slow path below for a zero timeout when the thread ID is
+            // initialized, so cover it here in case it wasn't already done
+            if (currentThreadID != 0 && lck.TryEnterOneShot(currentThreadID))
+                return true;
+
+            return lck.TryEnterSlow(0, currentThreadID);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -92,7 +100,8 @@ namespace System.Threading
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
-            int resultOrIndex = ObjectHeader.TryAcquire(obj);
+            int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
+            int resultOrIndex = ObjectHeader.TryAcquire(obj, currentThreadID);
             if (resultOrIndex < 0)
                 return true;
 
@@ -100,10 +109,12 @@ namespace System.Threading
                 ObjectHeader.GetLockObject(obj) :
                 SyncTable.GetLockObject(resultOrIndex);
 
-            if (millisecondsTimeout == 0)
-                return lck.TryAcquireNoSpin();
+            // The one-shot fast path is not covered by the slow path below for a zero timeout when the thread ID is
+            // initialized, so cover it here in case it wasn't already done
+            if (millisecondsTimeout == 0 && currentThreadID != 0 && lck.TryEnterOneShot(currentThreadID))
+                return true;
 
-            return TryAcquireSlow(lck, obj, millisecondsTimeout);
+            return lck.TryEnterSlow(millisecondsTimeout, currentThreadID);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -135,12 +146,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public static bool Wait(object obj, int millisecondsTimeout)
         {
-            Condition condition = GetCondition(obj);
-
-            using (new DebugBlockingScope(obj, DebugBlockingItemType.MonitorEvent, millisecondsTimeout, out _))
-            {
-                return condition.Wait(millisecondsTimeout);
-            }
+            return GetCondition(obj).Wait(millisecondsTimeout, obj);
         }
 
         public static void Pulse(object obj)
@@ -159,98 +165,12 @@ namespace System.Threading
 
         #endregion
 
-        #region Slow path for Entry/TryEnter methods.
-
-        internal static bool TryAcquireSlow(Lock lck, object obj, int millisecondsTimeout)
-        {
-            using (new DebugBlockingScope(obj, DebugBlockingItemType.MonitorCriticalSection, millisecondsTimeout, out _))
-            {
-                return lck.TryAcquireSlow(Environment.CurrentManagedThreadId, millisecondsTimeout, trackContentions: true);
-            }
-        }
-
-        #endregion
-
-        #region Debugger support
-
-        // The debugger binds to the fields below by name. Do not change any names or types without
-        // updating the debugger!
-
-        // The head of the list of DebugBlockingItem stack objects used by the debugger to implement
-        // ICorDebugThread4::GetBlockingObjects. Usually the list either is empty or contains a single
-        // item. However, a wait on an STA thread may reenter via the message pump and cause the thread
-        // to be blocked on a second object.
-        [ThreadStatic]
-        private static IntPtr t_firstBlockingItem;
-
-        // Different ways a thread can be blocked that the debugger will expose.
-        // Do not change or add members without updating the debugger code.
-        private enum DebugBlockingItemType
-        {
-            MonitorCriticalSection = 0,
-            MonitorEvent = 1
-        }
-
-        // Represents an item a thread is blocked on. This structure is allocated on the stack and accessed by the debugger.
-        private struct DebugBlockingItem
-        {
-            // The object the thread is waiting on
-            public object _object;
-
-            // Indicates how the thread is blocked on the item
-            public DebugBlockingItemType _blockingType;
-
-            // Blocking timeout in milliseconds or Timeout.Infinite for no timeout
-            public int _timeout;
-
-            // Next pointer in the linked list of DebugBlockingItem records
-            public IntPtr _next;
-        }
-
-        private unsafe struct DebugBlockingScope : IDisposable
-        {
-            public DebugBlockingScope(object obj, DebugBlockingItemType blockingType, int timeout, out DebugBlockingItem blockingItem)
-            {
-                blockingItem._object = obj;
-                blockingItem._blockingType = blockingType;
-                blockingItem._timeout = timeout;
-                blockingItem._next = t_firstBlockingItem;
-
-                t_firstBlockingItem = (IntPtr)Unsafe.AsPointer(ref blockingItem);
-            }
-
-            public void Dispose()
-            {
-                t_firstBlockingItem = Unsafe.Read<DebugBlockingItem>((void*)t_firstBlockingItem)._next;
-            }
-        }
-
-        #endregion
-
         #region Metrics
-
-        private static readonly ThreadInt64PersistentCounter s_lockContentionCounter = new ThreadInt64PersistentCounter();
-
-        [ThreadStatic]
-        private static object t_ContentionCountObject;
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static object CreateThreadLocalContentionCountObject()
-        {
-            Debug.Assert(t_ContentionCountObject == null);
-
-            object threadLocalContentionCountObject = s_lockContentionCounter.CreateThreadLocalCountObject();
-            t_ContentionCountObject = threadLocalContentionCountObject;
-            return threadLocalContentionCountObject;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void IncrementLockContentionCount() => ThreadInt64PersistentCounter.Increment(t_ContentionCountObject ?? CreateThreadLocalContentionCountObject());
 
         /// <summary>
         /// Gets the number of times there was contention upon trying to take a <see cref="Monitor"/>'s lock so far.
         /// </summary>
-        public static long LockContentionCount => s_lockContentionCounter.Count;
+        public static long LockContentionCount => Lock.ContentionCount;
 
         #endregion
     }

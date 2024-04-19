@@ -44,7 +44,6 @@
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/profiler-private.h>
-#include <mono/metadata/coree.h>
 #include <mono/metadata/jit-info.h>
 #include <mono/utils/w32subset.h>
 #include "external-only.h"

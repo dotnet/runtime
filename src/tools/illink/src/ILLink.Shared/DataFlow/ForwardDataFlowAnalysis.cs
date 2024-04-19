@@ -13,22 +13,23 @@ namespace ILLink.Shared.DataFlow
 	// A generic implementation of a forward dataflow analysis. Forward means that it flows facts
 	// across code in the order of execution, starting from the beginning of a method,
 	// and merging values from predecessors.
-	public abstract class ForwardDataFlowAnalysis<TValue, TState, TLattice, TBlock, TRegion, TControlFlowGraph, TTransfer>
+	public abstract class ForwardDataFlowAnalysis<TValue, TState, TLattice, TBlock, TRegion, TControlFlowGraph, TTransfer, TConditionValue>
 		where TValue : struct, IEquatable<TValue>
 		where TState : class, IDataFlowState<TValue, TLattice>, new()
 		where TLattice : ILattice<TValue>
-		where TTransfer : ITransfer<TBlock, TValue, TState, TLattice>
-		where TBlock : IEquatable<TBlock>
+		where TTransfer : ITransfer<TBlock, TValue, TState, TLattice, TConditionValue>
+		where TBlock : struct, IBlock<TBlock>
 		where TRegion : IRegion<TRegion>
 		where TControlFlowGraph : IControlFlowGraph<TBlock, TRegion>
+		where TConditionValue : struct, INegate<TConditionValue>
 	{
 
 		// Data structure to store dataflow states for every basic block in the control flow graph,
 		// keeping the exception states shared across different basic blocks owned by the same try or catch region.
-		private struct ControlFlowGraphState
+		internal struct ControlFlowGraphState
 		{
 			// Dataflow states for each basic block
-			private readonly Dictionary<TBlock, TState> blockOutput;
+			private readonly Dictionary<IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch, TState> branchInput;
 
 			// The control flow graph doesn't contain edges for exceptional control flow:
 			// - From any point in a try region to the start of any catch or finally
@@ -46,7 +47,7 @@ namespace ILLink.Shared.DataFlow
 			// propagated out of the finally.
 
 			// Dataflow states for finally blocks when exception propagate through the finally region
-			private readonly Dictionary<TBlock, TValue> exceptionFinallyState;
+			private readonly Dictionary<IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch, TValue> exceptionFinallyState;
 
 			// Finally regions may be reached (along non-exceptional paths)
 			// from multiple branches. This gets updated to track the normal finally input
@@ -55,14 +56,26 @@ namespace ILLink.Shared.DataFlow
 			private readonly TControlFlowGraph cfg;
 			private readonly TLattice lattice;
 
-			public ControlFlowGraphState (TControlFlowGraph cfg, TLattice lattice)
+			public ControlFlowGraphState (TControlFlowGraph cfg, TLattice lattice, TValue entryValue)
 			{
-				blockOutput = new ();
+				branchInput = new ();
 				exceptionState = new ();
 				exceptionFinallyState = new ();
 				finallyInputState = new ();
 				this.cfg = cfg;
 				this.lattice = lattice;
+
+				var entryOut = cfg.GetFallThroughSuccessor (cfg.Entry);
+				Debug.Assert (entryOut != null);
+				Debug.Assert (cfg.GetConditionalSuccessor (cfg.Entry) == null);
+				if (entryOut == null)
+					return;
+
+				branchInput[entryOut!.Value] = new TState () {
+					Lattice = lattice,
+					Current = entryValue,
+					Exception = null
+				};
 			}
 
 			public Box<TValue> GetExceptionState (TRegion tryOrCatchOrFilterRegion)
@@ -107,37 +120,38 @@ namespace ILLink.Shared.DataFlow
 				finallyInputState[finallyRegion] = state;
 			}
 
-			public bool TryGetExceptionFinallyState (TBlock block, out TValue state)
+			public bool TryGetExceptionFinallyState (IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch branch, out TValue state)
 			{
 				state = default;
-				if (!cfg.TryGetEnclosingFinally (block, out _))
+				if (!cfg.TryGetEnclosingFinally (branch.Source, out _))
 					return false;
 
-				if (!exceptionFinallyState.TryGetValue (block, out state)) {
+				if (!exceptionFinallyState.TryGetValue (branch, out state)) {
 					state = lattice.Top;
-					exceptionFinallyState.Add (block, state);
+					exceptionFinallyState.Add (branch, state);
 				}
+
 				return true;
 			}
 
-			public void SetExceptionFinallyState (TBlock block, TValue state)
+			public void SetExceptionFinallyState (IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch branch, TValue state)
 			{
-				if (!cfg.TryGetEnclosingFinally (block, out _))
+				if (!cfg.TryGetEnclosingFinally (branch.Source, out _))
 					throw new InvalidOperationException ();
 
-				exceptionFinallyState[block] = state;
+				exceptionFinallyState[branch] = state;
 			}
 
-			public TState Get (TBlock block)
+			public TState Get (IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch branch)
 			{
-				if (!blockOutput.TryGetValue (block, out TState? state)) {
-					TryGetExceptionState (block, out Box<TValue>? exceptionState);
+				if (!branchInput.TryGetValue (branch, out TState? state)) {
+					TryGetExceptionState (branch.Source, out Box<TValue>? exceptionState);
 					state = new TState () {
 						Lattice = lattice,
 						Current = lattice.Top,
 						Exception = exceptionState
 					};
-					blockOutput.Add (block, state);
+					branchInput.Add (branch, state);
 				}
 				return state;
 			}
@@ -155,14 +169,61 @@ namespace ILLink.Shared.DataFlow
 		[Conditional ("DEBUG")]
 		public virtual void TraceBlockOutput (TValue normalState, TValue? exceptionState, TValue? exceptionFinallyState) { }
 
+		protected readonly TLattice lattice;
+
+		private readonly TValue entryValue;
+
+		protected ForwardDataFlowAnalysis (TLattice lattice, TValue entryValue)
+		{
+			this.lattice = lattice;
+			this.entryValue = entryValue;
+		}
+
+		void TransferOut (TTransfer transfer, TControlFlowGraph cfg, TBlock block, TState state,
+			Action<IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch, TValue> updateState
+		)
+		{
+			TConditionValue? conditionValue = transfer.Transfer (block, state);
+
+			if (cfg.GetConditionalSuccessor (block) is IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch conditionalBranch) {
+				// Duplicate the current state so that it's not shared with fall-through state.
+				TValue conditionalCurrentState = lattice.Meet (lattice.Top, state.Current);
+
+				if (conditionValue != null) {
+					transfer.ApplyCondition (
+						// ConditionKind 'WhenTrue' means the condition is true in the conditional branch.
+						block.ConditionKind is ConditionKind.WhenTrue
+							? conditionValue.Value
+							: conditionValue.Value.Negate (),
+						ref conditionalCurrentState);
+				}
+
+				updateState (conditionalBranch, conditionalCurrentState);
+			}
+
+			if (cfg.GetFallThroughSuccessor (block) is IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch fallThroughBranch) {
+				TValue fallThroughCurrentState = state.Current;
+				if (conditionValue != null) {
+					transfer.ApplyCondition (
+						// ConditionKind 'WhenFalse' means the condition is true in the fall-through branch (false in the conditional branch).
+						block.ConditionKind is ConditionKind.WhenFalse
+							? conditionValue.Value
+							: conditionValue.Value.Negate (),
+						ref fallThroughCurrentState);
+				}
+
+				updateState (fallThroughBranch, fallThroughCurrentState);
+			}
+		}
+
 		// This just runs a dataflow algorithm until convergence. It doesn't cache any results,
 		// allowing each particular kind of analysis to decide what is worth saving.
-		public void Fixpoint (TControlFlowGraph cfg, TLattice lattice, TTransfer transfer)
+		public void Fixpoint (TControlFlowGraph cfg, TTransfer transfer)
 		{
 			TraceStart (cfg);
 
 			// Initialize output of each block to the Top value of the lattice
-			var cfgState = new ControlFlowGraphState (cfg, lattice);
+			var cfgState = new ControlFlowGraphState (cfg, lattice, entryValue);
 
 			// For now, the actual dataflow algorithm is the simplest possible version.
 			// It is written to be obviously correct, but has not been optimized for performance
@@ -216,24 +277,9 @@ namespace ILLink.Shared.DataFlow
 					// Compute the dataflow state at the beginning of this block.
 					TValue currentState = lattice.Top;
 					foreach (var predecessor in cfg.GetPredecessors (block)) {
-						TValue predecessorState = cfgState.Get (predecessor.Block).Current;
+						TValue predecessorState = cfgState.Get (predecessor).Current;
 
-						// Propagate state through all finally blocks.
-						foreach (var exitedFinally in predecessor.FinallyRegions) {
-							TValue oldFinallyInputState = cfgState.GetFinallyInputState (exitedFinally);
-							TValue finallyInputState = lattice.Meet (oldFinallyInputState, predecessorState);
-
-							cfgState.SetFinallyInputState (exitedFinally, finallyInputState);
-
-							// Note: the current approach here is inefficient for long chains of finally regions because
-							// the states will not converge until we have visited each block along the chain
-							// and propagated the new states along this path.
-							if (!changed && !finallyInputState.Equals (oldFinallyInputState))
-								changed = true;
-
-							TBlock lastFinallyBlock = cfg.LastBlock (exitedFinally);
-							predecessorState = cfgState.Get (lastFinallyBlock).Current;
-						}
+						FlowStateThroughExitedFinallys (predecessor, ref predecessorState);
 
 						currentState = lattice.Meet (currentState, predecessorState);
 					}
@@ -265,9 +311,12 @@ namespace ILLink.Shared.DataFlow
 						// Using predecessors in the finally. But not from outside the finally.
 						exceptionFinallyState = lattice.Top;
 						foreach (var predecessor in cfg.GetPredecessors (block)) {
-							var isPredecessorInFinally = cfgState.TryGetExceptionFinallyState (predecessor.Block, out TValue predecessorFinallyState);
+							var isPredecessorInFinally = cfgState.TryGetExceptionFinallyState (predecessor, out TValue predecessorState);
 							Debug.Assert (isPredecessorInFinally);
-							exceptionFinallyState = lattice.Meet (exceptionFinallyState.Value, predecessorFinallyState);
+
+							FlowStateThroughExitedFinallys (predecessor, ref predecessorState);
+
+							exceptionFinallyState = lattice.Meet (exceptionFinallyState.Value, predecessorState);
 						}
 
 						// For first block, also initialize it from the try or catch blocks.
@@ -285,8 +334,7 @@ namespace ILLink.Shared.DataFlow
 					// Initialize the exception state at the start of try/catch regions. Control flow edges from predecessors
 					// within the same try or catch region don't need to be handled here because the transfer functions update
 					// the exception state to reflect every operation in the region.
-					TState currentBlockState = cfgState.Get (block);
-					Box<TValue>? exceptionState = currentBlockState.Exception;
+					cfgState.TryGetExceptionState (block, out Box<TValue>? exceptionState);
 					TValue? oldExceptionState = exceptionState?.Value;
 					if (isTryStart || isCatchOrFilterStart) {
 						// Catch/filter regions get the initial state from the exception state of the corresponding try region.
@@ -309,25 +357,29 @@ namespace ILLink.Shared.DataFlow
 
 					state.Current = currentState;
 					state.Exception = exceptionState;
-					transfer.Transfer (block, state);
+					TransferOut (transfer, cfg, block, state,
+						updateState: (branch, newValue) => {
+							TState state = cfgState.Get (branch);
+							if (!changed && !newValue.Equals (state.Current))
+								changed = true;
+							state.Current = newValue;
+						}
+					);
 
-					if (!changed && !cfgState.Get (block).Current.Equals (state.Current))
-						changed = true;
-
-					cfgState.Get (block).Current = state.Current;
-					Debug.Assert (cfgState.Get (block).Exception == state.Exception);
-
-					if (cfgState.TryGetExceptionFinallyState (block, out TValue oldFinallyState)) {
+					if (isFinallyBlock) {
 						// Independently apply transfer functions for the exception finally state in finally regions.
 						finallyState.Current = exceptionFinallyState!.Value;
 						finallyState.Exception = exceptionState;
-						transfer.Transfer (block, finallyState);
 
-						if (!changed && !oldFinallyState.Equals (finallyState.Current))
-							changed = true;
-
-						Debug.Assert (cfgState.Get (block).Exception == state.Exception);
-						cfgState.SetExceptionFinallyState (block, finallyState.Current);
+						TransferOut (transfer, cfg, block, finallyState,
+							updateState: (branch, newValue) => {
+								bool result = cfgState.TryGetExceptionFinallyState (branch, out TValue value);
+								Debug.Assert (result);
+								if (!changed && !newValue.Equals (value))
+									changed = true;
+								cfgState.SetExceptionFinallyState (branch, newValue);
+							}
+						);
 					}
 
 					// Either the normal transfer or the finally transfer might change
@@ -348,6 +400,32 @@ namespace ILLink.Shared.DataFlow
 					}
 
 					TraceBlockOutput (state.Current, exceptionState?.Value, exceptionFinallyState);
+				}
+			}
+
+			void FlowStateThroughExitedFinallys (
+				IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch predecessor,
+				ref TValue predecessorState)
+			{
+				foreach (var exitedFinally in predecessor.FinallyRegions) {
+					TValue oldFinallyInputState = cfgState.GetFinallyInputState (exitedFinally);
+					TValue finallyInputState = lattice.Meet (oldFinallyInputState, predecessorState);
+
+					cfgState.SetFinallyInputState (exitedFinally, finallyInputState);
+
+					// Note: the current approach here is inefficient for long chains of finally regions because
+					// the states will not converge until we have visited each block along the chain
+					// and propagated the new states along this path.
+					if (!changed && !finallyInputState.Equals (oldFinallyInputState))
+						changed = true;
+
+					TBlock lastFinallyBlock = cfg.LastBlock (exitedFinally);
+					Debug.Assert (cfg.GetConditionalSuccessor (lastFinallyBlock) == null);
+					IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch? finallyExit = cfg.GetFallThroughSuccessor (lastFinallyBlock);
+					Debug.Assert (finallyExit != null);
+					if (finallyExit == null)
+						continue;
+					predecessorState = cfgState.Get (finallyExit.Value).Current;
 				}
 			}
 		}

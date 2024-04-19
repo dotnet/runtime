@@ -401,7 +401,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
             for (int i = collection.Count - 1; i >= 0; i--)
             {
                 ServiceDescriptor? descriptor = collection[i];
-                if (descriptor.ServiceType == serviceType && descriptor.ServiceKey == serviceKey)
+                if (descriptor.ServiceType == serviceType && object.Equals(descriptor.ServiceKey, serviceKey))
                 {
                     collection.RemoveAt(i);
                 }

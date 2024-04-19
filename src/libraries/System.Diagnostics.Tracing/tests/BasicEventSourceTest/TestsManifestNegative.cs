@@ -94,11 +94,6 @@ namespace BasicEventSourceTests
                     GetResourceString("EventSource_KeywordCollision", "Session3", "Kwd1", "0x100000000000")),
                 e);
 
-#if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-            e = AssertExtensions.Throws<ArgumentException>(GetResourceString("EventSource_MaxChannelExceeded"),
-                () => EventSource.GenerateManifest(typeof(Sdt.TooManyChannelsEventSource), string.Empty));
-#endif
-
             if (PlatformDetection.IsWindows)
             {
                 e = AssertExtensions.Throws<ArgumentException>(null, () => EventSource.GenerateManifest(typeof(Sdt.EventWithAdminChannelNoMessageEventSource), string.Empty, strictOptions));

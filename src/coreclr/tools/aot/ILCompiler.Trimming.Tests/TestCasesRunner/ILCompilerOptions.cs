@@ -16,5 +16,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public List<string> Descriptors = new List<string> ();
 		public bool FrameworkCompilation;
 		public bool SingleWarn;
+		public List<string> SubstitutionFiles = new List<string> ();
+		public bool TreatWarningsAsErrors;
+		public Dictionary<int, bool> WarningsAsErrors = new Dictionary<int, bool> ();
 	}
 }

@@ -7,7 +7,7 @@
 
 .class interface private abstract auto ansi IFoo
 {
-  .method private hidebysig specialname rtspecialname static 
+  .method private hidebysig specialname rtspecialname static
           void  .cctor() cil managed
   {
     .maxstack  8
@@ -16,7 +16,7 @@
     ret
   }
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance void Frob() cil managed
   {
     .maxstack  8
@@ -24,11 +24,11 @@
   }
 }
 
-.class private auto ansi beforefieldinit Fooer
+.class public auto ansi beforefieldinit Fooer
        extends [mscorlib]System.Object
        implements IFoo
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     .maxstack  8
@@ -40,16 +40,20 @@
 
 .field public static int32 s_result
 
-.method private hidebysig static int32 
-        Main() cil managed
+.class public auto ansi abstract sealed beforefieldinit interfacecctor
+    extends [mscorlib]System.Object
 {
-  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-      01 00 00 00
-  )
-  .entrypoint
-  .maxstack  8
-  newobj     instance void Fooer::.ctor()
-  callvirt   instance void IFoo::Frob()
-  ldsfld int32 s_result
-  ret
+  .method public hidebysig static int32
+          Main() cil managed
+  {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
+    .entrypoint
+    .maxstack  8
+    newobj     instance void Fooer::.ctor()
+    callvirt   instance void IFoo::Frob()
+    ldsfld int32 s_result
+    ret
+  }
 }

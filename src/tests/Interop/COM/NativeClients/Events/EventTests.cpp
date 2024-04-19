@@ -104,13 +104,13 @@ namespace
 
     public: // IDispatch
         virtual HRESULT STDMETHODCALLTYPE GetTypeInfoCount(
-            /* [out] */ __RPC__out UINT* pctinfo)
+            /* [out] */ __RPC__out uint32_t* pctinfo)
         {
             return E_NOTIMPL;
         }
 
         virtual HRESULT STDMETHODCALLTYPE GetTypeInfo(
-            /* [in] */ UINT iTInfo,
+            /* [in] */ uint32_t iTInfo,
             /* [in] */ LCID lcid,
             /* [out] */ __RPC__deref_out_opt ITypeInfo** ppTInfo)
         {
@@ -120,7 +120,7 @@ namespace
         virtual HRESULT STDMETHODCALLTYPE GetIDsOfNames(
             /* [in] */ __RPC__in REFIID riid,
             /* [size_is][in] */ __RPC__in_ecount_full(cNames) LPOLESTR* rgszNames,
-            /* [range][in] */ __RPC__in_range(0, 16384) UINT cNames,
+            /* [range][in] */ __RPC__in_range(0, 16384) uint32_t cNames,
             /* [in] */ LCID lcid,
             /* [size_is][out] */ __RPC__out_ecount_full(cNames) DISPID* rgDispId)
         {
@@ -135,7 +135,7 @@ namespace
             /* [annotation][in] */
             _In_  LCID lcid,
             /* [annotation][in] */
-            _In_  WORD wFlags,
+            _In_  uint16_t wFlags,
             /* [annotation][out][in] */
             _In_  DISPPARAMS* pDispParams,
             /* [annotation][out] */
@@ -143,7 +143,7 @@ namespace
             /* [annotation][out] */
             _Out_opt_  EXCEPINFO* pExcepInfo,
             /* [annotation][out] */
-            _Out_opt_  UINT* puArgErr)
+            _Out_opt_  uint32_t* puArgErr)
         {
             //
             // Note that arguments are received in reverse order for IDispatch::Invoke()

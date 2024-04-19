@@ -18,13 +18,13 @@ namespace System.IO
         }
 
         public PathTooLongException(string? message)
-            : base(message)
+            : base(message ?? SR.IO_PathTooLong)
         {
             HResult = HResults.COR_E_PATHTOOLONG;
         }
 
         public PathTooLongException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.IO_PathTooLong, innerException)
         {
             HResult = HResults.COR_E_PATHTOOLONG;
         }

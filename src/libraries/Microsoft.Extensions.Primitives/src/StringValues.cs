@@ -71,7 +71,7 @@ namespace Microsoft.Extensions.Primitives
         /// Returns <c>null</c> where <see cref="StringValues"/> has been initialized from an empty string array or is <see cref="StringValues.Empty"/>.
         /// </remarks>
         /// <param name="values">A <see cref="StringValues"/> to implicitly convert.</param>
-        public static implicit operator string? (StringValues values)
+        public static implicit operator string?(StringValues values)
         {
             return values.GetStringValue();
         }
@@ -80,7 +80,7 @@ namespace Microsoft.Extensions.Primitives
         /// Defines an implicit conversion of a given <see cref="StringValues"/> to a string array.
         /// </summary>
         /// <param name="value">A <see cref="StringValues"/> to implicitly convert.</param>
-        public static implicit operator string?[]? (StringValues value)
+        public static implicit operator string?[]?(StringValues value)
         {
             return value.GetArrayValue();
         }

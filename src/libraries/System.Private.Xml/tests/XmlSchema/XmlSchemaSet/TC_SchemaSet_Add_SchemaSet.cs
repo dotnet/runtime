@@ -32,7 +32,7 @@ namespace System.Xml.XmlSchemaTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //-----------------------------------------------------------------------------------
@@ -139,7 +139,7 @@ namespace System.Xml.XmlSchemaTests
             {
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //-----------------------------------------------------------------------------------
@@ -167,7 +167,7 @@ namespace System.Xml.XmlSchemaTests
             {
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //-----------------------------------------------------------------------------------
@@ -194,7 +194,7 @@ namespace System.Xml.XmlSchemaTests
             {
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //-----------------------------------------------------------------------------------
@@ -230,7 +230,7 @@ namespace System.Xml.XmlSchemaTests
             }
 
             Assert.Equal(0, schemaSet2.Count); // no schema should be added
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Fact]
@@ -261,7 +261,7 @@ namespace System.Xml.XmlSchemaTests
             }
             catch (XmlSchemaException)
             {
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }

@@ -84,6 +84,7 @@ namespace System
 
         internal const ulong BiasedExponentMask = 0x7FF0_0000_0000_0000;
         internal const int BiasedExponentShift = 52;
+        internal const int BiasedExponentLength = 11;
         internal const ushort ShiftedExponentMask = (ushort)(BiasedExponentMask >> BiasedExponentShift);
 
         internal const ulong TrailingSignificandMask = 0x000F_FFFF_FFFF_FFFF;
@@ -104,6 +105,18 @@ namespace System
 
         internal const int TrailingSignificandLength = 52;
         internal const int SignificandLength = TrailingSignificandLength + 1;
+
+        // Constants representing the private bit-representation for various default values
+
+        internal const ulong PositiveZeroBits = 0x0000_0000_0000_0000;
+        internal const ulong NegativeZeroBits = 0x8000_0000_0000_0000;
+
+        internal const ulong EpsilonBits = 0x0000_0000_0000_0001;
+
+        internal const ulong PositiveInfinityBits = 0x7FF0_0000_0000_0000;
+        internal const ulong NegativeInfinityBits = 0xFFF0_0000_0000_0000;
+
+        internal const ulong SmallestNormalBits = 0x0010_0000_0000_0000;
 
         internal ushort BiasedExponent
         {
@@ -150,27 +163,28 @@ namespace System
         }
 
         /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
+        /// <remarks>This effectively checks the value is not NaN and not infinite.</remarks>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool IsFinite(double d)
+        public static bool IsFinite(double d)
         {
-            long bits = BitConverter.DoubleToInt64Bits(d);
-            return (bits & 0x7FFFFFFFFFFFFFFF) < 0x7FF0000000000000;
+            ulong bits = BitConverter.DoubleToUInt64Bits(d);
+            return (~bits & PositiveInfinityBits) != 0;
         }
 
         /// <summary>Determines whether the specified value is infinite.</summary>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool IsInfinity(double d)
+        public static bool IsInfinity(double d)
         {
-            long bits = BitConverter.DoubleToInt64Bits(d);
-            return (bits & 0x7FFFFFFFFFFFFFFF) == 0x7FF0000000000000;
+            ulong bits = BitConverter.DoubleToUInt64Bits(d);
+            return (bits & ~SignMask) == PositiveInfinityBits;
         }
 
         /// <summary>Determines whether the specified value is NaN.</summary>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool IsNaN(double d)
+        public static bool IsNaN(double d)
         {
             // A NaN will never equal itself so this is an
             // easy and efficient way to check for NaN.
@@ -180,10 +194,18 @@ namespace System
             #pragma warning restore CS1718
         }
 
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsNaNOrZero(double d)
+        {
+            ulong bits = BitConverter.DoubleToUInt64Bits(d);
+            return ((bits - 1) & ~SignMask) >= PositiveInfinityBits;
+        }
+
         /// <summary>Determines whether the specified value is negative.</summary>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool IsNegative(double d)
+        public static bool IsNegative(double d)
         {
             return BitConverter.DoubleToInt64Bits(d) < 0;
         }
@@ -196,14 +218,14 @@ namespace System
             return d == NegativeInfinity;
         }
 
-        /// <summary>Determines whether the specified value is normal.</summary>
+        /// <summary>Determines whether the specified value is normal (finite, but not zero or subnormal).</summary>
+        /// <remarks>This effectively checks the value is not NaN, not infinite, not subnormal, and not zero.</remarks>
         [NonVersionable]
-        // This is probably not worth inlining, it has branches and should be rarely called
-        public static unsafe bool IsNormal(double d)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsNormal(double d)
         {
-            long bits = BitConverter.DoubleToInt64Bits(d);
-            bits &= 0x7FFFFFFFFFFFFFFF;
-            return (bits < 0x7FF0000000000000) && (bits != 0) && ((bits & 0x7FF0000000000000) != 0);
+            ulong bits = BitConverter.DoubleToUInt64Bits(d);
+            return ((bits & ~SignMask) - SmallestNormalBits) < (PositiveInfinityBits - SmallestNormalBits);
         }
 
         /// <summary>Determines whether the specified value is positive infinity.</summary>
@@ -214,14 +236,21 @@ namespace System
             return d == PositiveInfinity;
         }
 
-        /// <summary>Determines whether the specified value is subnormal.</summary>
+        /// <summary>Determines whether the specified value is subnormal (finite, but not zero or normal).</summary>
+        /// <remarks>This effectively checks the value is not NaN, not infinite, not normal, and not zero.</remarks>
         [NonVersionable]
-        // This is probably not worth inlining, it has branches and should be rarely called
-        public static unsafe bool IsSubnormal(double d)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsSubnormal(double d)
         {
-            long bits = BitConverter.DoubleToInt64Bits(d);
-            bits &= 0x7FFFFFFFFFFFFFFF;
-            return (bits < 0x7FF0000000000000) && (bits != 0) && ((bits & 0x7FF0000000000000) == 0);
+            ulong bits = BitConverter.DoubleToUInt64Bits(d);
+            return ((bits & ~SignMask) - 1) < MaxTrailingSignificand;
+        }
+
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsZero(double d)
+        {
+            return d == 0;
         }
 
         // Compares this object to another object, returning an instance of System.Relation.
@@ -233,56 +262,45 @@ namespace System
         //
         public int CompareTo(object? value)
         {
-            if (value == null)
+            if (value is not double other)
             {
-                return 1;
+                return (value is null) ? 1 : throw new ArgumentException(SR.Arg_MustBeDouble);
             }
-
-            if (value is double d)
-            {
-                if (m_value < d) return -1;
-                if (m_value > d) return 1;
-                if (m_value == d) return 0;
-
-                // At least one of the values is NaN.
-                if (IsNaN(m_value))
-                    return IsNaN(d) ? 0 : -1;
-                else
-                    return 1;
-            }
-
-            throw new ArgumentException(SR.Arg_MustBeDouble);
+            return CompareTo(other);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int CompareTo(double value)
         {
-            if (m_value < value) return -1;
-            if (m_value > value) return 1;
-            if (m_value == value) return 0;
+            if (m_value < value)
+            {
+                return -1;
+            }
 
-            // At least one of the values is NaN.
-            if (IsNaN(m_value))
-                return IsNaN(value) ? 0 : -1;
-            else
+            if (m_value > value)
+            {
                 return 1;
+            }
+
+            if (m_value == value)
+            {
+                return 0;
+            }
+
+            if (IsNaN(m_value))
+            {
+                return IsNaN(value) ? 0 : -1;
+            }
+
+            Debug.Assert(IsNaN(value));
+            return 1;
         }
 
         // True if obj is another Double with the same value as the current instance.  This is
         // a method of object equality, that only returns true if obj is also a double.
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (!(obj is double))
-            {
-                return false;
-            }
-            double temp = ((double)obj).m_value;
-            // This code below is written this way for performance reasons i.e the != and == check is intentional.
-            if (temp == m_value)
-            {
-                return true;
-            }
-            return IsNaN(temp) && IsNaN(m_value);
+            return (obj is double other) && Equals(other);
         }
 
         /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
@@ -323,13 +341,12 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // 64-bit constants make the IL unusually large that makes the inliner to reject the method
         public override int GetHashCode()
         {
-            long bits = Unsafe.As<double, long>(ref Unsafe.AsRef(in m_value));
+            ulong bits = BitConverter.DoubleToUInt64Bits(m_value);
 
-            // Optimized check for IsNan() || IsZero()
-            if (((bits - 1) & 0x7FFFFFFFFFFFFFFF) >= 0x7FF0000000000000)
+            if (IsNaNOrZero(m_value))
             {
                 // Ensure that all NaNs and both zeros have the same hash code
-                bits &= 0x7FF0000000000000;
+                bits &= PositiveInfinityBits;
             }
 
             return unchecked((int)bits) ^ ((int)(bits >> 32));
@@ -1113,7 +1130,7 @@ namespace System
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
-        static bool INumberBase<double>.IsZero(double value) => (value == 0);
+        static bool INumberBase<double>.IsZero(double value) => IsZero(value);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         [Intrinsic]

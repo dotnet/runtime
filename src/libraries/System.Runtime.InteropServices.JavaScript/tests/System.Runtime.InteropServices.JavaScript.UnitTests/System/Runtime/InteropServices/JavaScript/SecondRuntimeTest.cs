@@ -14,10 +14,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNodeJS))]
         public static async Task RunSecondRuntimeAndTestStaticState()
         {
-            await JSHost.ImportAsync("SecondRuntimeTest", "../SecondRuntimeTest.js");
+            var runId = Guid.NewGuid().ToString();
+            await JSHost.ImportAsync("SecondRuntimeTest", "../SecondRuntimeTest.js?run=" + runId);
 
             Interop.State = 42;
-            var state2 = await Interop.RunSecondRuntimeAndTestStaticState();
+            var state2 = await Interop.RunSecondRuntimeAndTestStaticState(runId);
             Assert.Equal(44, Interop.State);
             Assert.Equal(3, state2);
         }
@@ -31,7 +32,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             [JSImport("runSecondRuntimeAndTestStaticState", "SecondRuntimeTest")]
             [return: JSMarshalAs<JSType.Promise<JSType.Number>>]
-            internal static partial Task<int> RunSecondRuntimeAndTestStaticState();
+            internal static partial Task<int> RunSecondRuntimeAndTestStaticState(string guid);
         }
     }
 }

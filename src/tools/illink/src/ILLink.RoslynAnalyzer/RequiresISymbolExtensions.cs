@@ -18,6 +18,9 @@ namespace ILLink.RoslynAnalyzer
 			if (!member.IsStaticConstructor () && member.TryGetAttribute (requiresAttribute, out requiresAttributeData))
 				return true;
 
+			if (member is IMethodSymbol { AssociatedSymbol: { } associated } && associated.TryGetAttribute (requiresAttribute, out requiresAttributeData))
+				return true;
+
 			// Also check the containing type
 			if (member.IsStatic || member.IsConstructor ())
 				return member.ContainingType.TryGetAttribute (requiresAttribute, out requiresAttributeData);
@@ -25,28 +28,16 @@ namespace ILLink.RoslynAnalyzer
 			return false;
 		}
 
+		public static bool IsInRequiresScope (this ISymbol member, string attributeName)
+		{
+			return member.IsInRequiresScope (attributeName, out _);
+		}
+
 		// TODO: Consider sharing with ILLink IsInRequiresScope method
 		/// <summary>
 		/// True if the source of a call is considered to be annotated with the Requires... attribute
 		/// </summary>
 		public static bool IsInRequiresScope (this ISymbol member, string attributeName, [NotNullWhen (true)] out AttributeData? requiresAttribute)
-		{
-			return member.IsInRequiresScope (attributeName, true, out requiresAttribute);
-		}
-
-		/// <summary>
-		/// True if member of a call is considered to be annotated with the Requires... attribute.
-		/// Doesn't check the associated symbol for overrides and virtual methods because the analyzer should warn on mismatched between the property AND the accessors
-		/// </summary>
-		/// <param name="member">
-		/// Symbol that is either an overriding member or an overriden/virtual member
-		/// </param>
-		public static bool IsOverrideInRequiresScope (this ISymbol member, string requiresAttribute)
-		{
-			return member.IsInRequiresScope (requiresAttribute, false, out _);
-		}
-
-		private static bool IsInRequiresScope (this ISymbol member, string attributeName, bool checkAssociatedSymbol, [NotNullWhen (true)] out AttributeData? requiresAttribute)
 		{
 			// Requires attribute on a type does not silence warnings that originate
 			// from the type directly. We also only check the containing type for members
@@ -67,8 +58,7 @@ namespace ILLink.RoslynAnalyzer
 			if (member.ContainingType is ITypeSymbol containingType && containingType.TryGetAttribute (attributeName, out requiresAttribute))
 				return true;
 
-			// Only check associated symbol if not override or virtual method
-			if (checkAssociatedSymbol && member is IMethodSymbol { AssociatedSymbol: { } associated } && associated.TryGetAttribute (attributeName, out requiresAttribute))
+			if (member is IMethodSymbol { AssociatedSymbol: { } associated } && associated.TryGetAttribute (attributeName, out requiresAttribute))
 				return true;
 
 			// When using instance fields suppress the warning if the constructor has already the Requires annotation

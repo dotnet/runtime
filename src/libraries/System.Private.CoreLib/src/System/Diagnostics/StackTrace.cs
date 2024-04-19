@@ -279,17 +279,19 @@ namespace System.Diagnostics
                         sb.Append(']');
                     }
 
-                    ParameterInfo[]? pi = null;
+                    ReadOnlySpan<ParameterInfo> pi = default;
+                    bool appendParameters = true;
                     try
                     {
-                        pi = mb.GetParameters();
+                        pi = mb.GetParametersAsSpan();
                     }
                     catch
                     {
                         // The parameter info cannot be loaded, so we don't
                         // append the parameter list.
+                        appendParameters = false;
                     }
-                    if (pi != null)
+                    if (appendParameters)
                     {
                         // arguments printing
                         sb.Append('(');
@@ -345,7 +347,7 @@ namespace System.Diagnostics
                                 sb.Append(' ');
                                 sb.AppendFormat(CultureInfo.InvariantCulture, inFileILOffset, assemblyName, token, sf.GetILOffset());
                             }
-                            catch (InvalidOperationException) {}
+                            catch (InvalidOperationException) { }
                         }
                     }
 

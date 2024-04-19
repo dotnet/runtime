@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Net;
 using System.Runtime.InteropServices;
-using System.Collections;
 using System.Text;
-
 using INTPTR_INTPTRCAST = System.IntPtr;
 
 namespace System.DirectoryServices
@@ -289,7 +288,7 @@ namespace System.DirectoryServices
                     }
                     finally
                     {
-                        SafeNativeMethods.FreeADsMem(pszColumnName);
+                        Interop.Activeds.FreeADsMem(pszColumnName);
                     }
                     hr = _results.SearchObject.GetNextColumnName(_results.Handle, (INTPTR_INTPTRCAST)(&pszColumnName));
                 }
@@ -351,7 +350,7 @@ namespace System.DirectoryServices
                         }
 
                         // not the case that server still has result, we are done here
-                        if (errorCode != SafeNativeMethods.ERROR_MORE_DATA)
+                        if (errorCode != Interop.Errors.ERROR_MORE_DATA)
                         {
                             // get the dirsync cookie as we finished all the rows
                             if (_results.srch.directorySynchronizationSpecified)
@@ -398,14 +397,15 @@ namespace System.DirectoryServices
 
             private void CleanLastError()
             {
-                SafeNativeMethods.ADsSetLastError(SafeNativeMethods.ERROR_SUCCESS, null, null);
+                Interop.Activeds.ADsSetLastError(Interop.Errors.ERROR_SUCCESS, null, null);
             }
 
-            private unsafe int GetLastError(ref int errorCode)
+            private int GetLastError(ref int errorCode)
             {
-                char c1 = '\0', c2 = '\0';
-                errorCode = SafeNativeMethods.ERROR_SUCCESS;
-                return SafeNativeMethods.ADsGetLastError(out errorCode, &c1, 0, &c2, 0);
+                char[] errorBuffer = Array.Empty<char>();
+                char[] nameBuffer = Array.Empty<char>();
+                errorCode = Interop.Errors.ERROR_SUCCESS;
+                return Interop.Activeds.ADsGetLastError(out errorCode, errorBuffer, errorBuffer.Length, nameBuffer, nameBuffer.Length);
             }
         }
     }

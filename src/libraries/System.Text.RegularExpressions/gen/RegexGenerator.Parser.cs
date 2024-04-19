@@ -177,6 +177,10 @@ namespace System.Text.RegularExpressions.Generator
                 ns ?? string.Empty,
                 $"{typeDec.Identifier}{typeDec.TypeParameterList}");
 
+            var compilationData = compilation is CSharpCompilation { LanguageVersion: LanguageVersion langVersion, Options: CSharpCompilationOptions compilationOptions }
+                ? new CompilationData(compilationOptions.AllowUnsafe, compilationOptions.CheckOverflow, langVersion)
+                : default;
+
             var result = new RegexPatternAndSyntax(
                 regexType,
                 GetComparableLocation(methodSyntax),
@@ -185,7 +189,8 @@ namespace System.Text.RegularExpressions.Generator
                 pattern,
                 regexOptions,
                 matchTimeout,
-                culture);
+                culture,
+                compilationData);
 
             RegexType current = regexType;
             var parent = typeDec.Parent as TypeDeclarationSyntax;
@@ -203,12 +208,12 @@ namespace System.Text.RegularExpressions.Generator
 
             return result;
 
-            static bool IsAllowedKind(SyntaxKind kind) =>
-                kind == SyntaxKind.ClassDeclaration ||
-                kind == SyntaxKind.StructDeclaration ||
-                kind == SyntaxKind.RecordDeclaration ||
-                kind == SyntaxKind.RecordStructDeclaration ||
-                kind == SyntaxKind.InterfaceDeclaration;
+            static bool IsAllowedKind(SyntaxKind kind) => kind is
+                SyntaxKind.ClassDeclaration or
+                SyntaxKind.StructDeclaration or
+                SyntaxKind.RecordDeclaration or
+                SyntaxKind.RecordStructDeclaration or
+                SyntaxKind.InterfaceDeclaration;
 
             // Get a Location object that doesn't store a reference to the compilation.
             // That allows it to compare equally across compilations.
@@ -220,10 +225,10 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Data about a regex directly from the GeneratedRegex attribute.</summary>
-        internal sealed record RegexPatternAndSyntax(RegexType DeclaringType, Location DiagnosticLocation, string MethodName, string Modifiers, string Pattern, RegexOptions Options, int? MatchTimeout, CultureInfo Culture);
+        internal sealed record RegexPatternAndSyntax(RegexType DeclaringType, Location DiagnosticLocation, string MethodName, string Modifiers, string Pattern, RegexOptions Options, int? MatchTimeout, CultureInfo Culture, CompilationData CompilationData);
 
         /// <summary>Data about a regex, including a fully parsed RegexTree and subsequent analysis.</summary>
-        internal sealed record RegexMethod(RegexType DeclaringType, Location DiagnosticLocation, string MethodName, string Modifiers, string Pattern, RegexOptions Options, int? MatchTimeout, RegexTree Tree, AnalysisResults Analysis)
+        internal sealed record RegexMethod(RegexType DeclaringType, Location DiagnosticLocation, string MethodName, string Modifiers, string Pattern, RegexOptions Options, int? MatchTimeout, RegexTree Tree, AnalysisResults Analysis, CompilationData CompilationData)
         {
             public string? GeneratedName { get; set; }
             public bool IsDuplicate { get; set; }

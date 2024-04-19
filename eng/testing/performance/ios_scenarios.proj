@@ -15,10 +15,13 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <LlvmPath>nollvm</LlvmPath>
-    <LlvmPath Condition="'$(iOSLlvmBuild)' == 'True'">llvm</LlvmPath>
-    <SymbolsPath>symbols</SymbolsPath>
-    <SymbolsPath Condition="'$(iOSStripSymbols)' == 'True'">nosymbols</SymbolsPath>
+    <LlvmPath> nollvm</LlvmPath>
+    <LlvmPath Condition="'$(iOSLlvmBuild)' == 'True'"> llvm</LlvmPath>
+    <SymbolsPath> symbols</SymbolsPath>
+    <SymbolsPath Condition="'$(iOSStripSymbols)' == 'True'"> nosymbols</SymbolsPath>
+    <!-- For non-default configurations, add the configuration to the name of the test (in the matching format), otherwise don't add anything.
+    This will ensure that PowerBI's using the test name rather than the run configuration for the data continue to work properly and defaults are connected -->
+    <RunConfigsString>$(LlvmPath)$(SymbolsPath)</RunConfigsString>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
@@ -30,19 +33,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <HelixWorkItem Include="SOD - iOS HelloWorld $(RuntimeType) .app Size $(LlvmPath) $(SymbolsPath)">
+    <HelixWorkItem Include="SOD - iOS HelloWorld $(RuntimeType) .app Size$(RunConfigsString)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands>cd $(ScenarioDirectory)helloios;cp -rf $HELIX_CORRELATION_PAYLOAD/iosHelloWorld ./app;$(Python) pre.py --name app</PreCommands>
       <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
-    <HelixWorkItem Include="SOD - iOS HelloWorld $(RuntimeType) Zip Size $(LlvmPath) $(SymbolsPath)">
+    <HelixWorkItem Include="SOD - iOS HelloWorld $(RuntimeType) Zip Size$(RunConfigsString)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands>cd $(ScenarioDirectory)helloios;cp -v $HELIX_CORRELATION_PAYLOAD/iosHelloWorldZip/iOSSampleApp.zip .;$(Python) pre.py --name iOSSampleApp.zip</PreCommands>
       <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
-    <XHarnessAppBundleToTest Include="Device Startup - iOS $(RuntimeType) HelloWorld $(LlvmPath) $(SymbolsPath)">
+    <XHarnessAppBundleToTest Include="Device Startup - iOS $(RuntimeType) HelloWorld$(RunConfigsString)">
       <AppBundlePath>$(WorkItemDirectory).zip</AppBundlePath>
       <WorkItemTimeout>00:15:00</WorkItemTimeout>
       <TestTarget>ios-device</TestTarget>
@@ -61,7 +64,7 @@
           # Testing commands
           $(Python) test.py devicestartup --device-type ios --package-path HelloiOS.app --package-name net.dot.HelloiOS --scenario-name "%(Identity)"
           ((result=$?))
-          
+
           # Post commands
           $(Python) post.py
           exit $result

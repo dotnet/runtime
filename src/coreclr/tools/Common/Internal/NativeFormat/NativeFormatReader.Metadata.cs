@@ -67,7 +67,7 @@ namespace Internal.NativeFormat
                 parser.SkipInteger();
             }
 
-            return new NativeParser();
+            return default(NativeParser);
         }
     }
 }

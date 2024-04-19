@@ -15,6 +15,7 @@ using System.Text.Json.Serialization;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using Microsoft.NET.Sdk.WebAssembly;
+using WasmAppBuilder;
 
 namespace Microsoft.WebAssembly.Build.Tasks;
 
@@ -22,12 +23,14 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 {
     public ITaskItem[]? RemoteSources { get; set; }
     public bool IncludeThreadsWorker { get; set; }
-    public int PThreadPoolSize { get; set; }
+    public int PThreadPoolInitialSize { get; set; }
+    public int PThreadPoolUnusedSize { get; set; }
     public bool UseWebcil { get; set; }
     public bool WasmIncludeFullIcuData { get; set; }
     public string? WasmIcuDataFileName { get; set; }
     public string? RuntimeAssetsLocation { get; set; }
     public bool CacheBootResources { get; set; }
+    public int DebugLevel { get; set; }
 
     private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions
     {
@@ -93,6 +96,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
     protected override bool ExecuteInternal()
     {
         var helper = new BootJsonBuilderHelper(Log);
+        var logAdapter = new LogAdapter(Log);
 
         if (!ValidateArguments())
             return false;
@@ -131,11 +135,11 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         {
             if (UseWebcil)
             {
-                var tmpWebcil = Path.GetTempFileName();
-                var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: assembly, outputPath: tmpWebcil, logger: Log);
+                using TempFileName tmpWebcil = new();
+                var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: assembly, outputPath: tmpWebcil.Path, logger: logAdapter);
                 webcilWriter.ConvertToWebcil();
                 var finalWebcil = Path.Combine(runtimeAssetsPath, Path.ChangeExtension(Path.GetFileName(assembly), Utils.WebcilInWasmExtension));
-                if (Utils.CopyIfDifferent(tmpWebcil, finalWebcil, useHash: true))
+                if (Utils.CopyIfDifferent(tmpWebcil.Path, finalWebcil, useHash: true))
                     Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
                 else
                     Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
@@ -229,11 +233,11 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             Directory.CreateDirectory(cultureDirectory);
             if (UseWebcil)
             {
-                var tmpWebcil = Path.GetTempFileName();
-                var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: args.fullPath, outputPath: tmpWebcil, logger: Log);
+                using TempFileName tmpWebcil = new();
+                var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: args.fullPath, outputPath: tmpWebcil.Path, logger: logAdapter);
                 webcilWriter.ConvertToWebcil();
                 var finalWebcil = Path.Combine(cultureDirectory, Path.ChangeExtension(name, Utils.WebcilInWasmExtension));
-                if (Utils.CopyIfDifferent(tmpWebcil, finalWebcil, useHash: true))
+                if (Utils.CopyIfDifferent(tmpWebcil.Path, finalWebcil, useHash: true))
                     Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
                 else
                     Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
@@ -331,13 +335,22 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
         var extraConfiguration = new Dictionary<string, object?>();
 
-        if (PThreadPoolSize < -1)
+        if (PThreadPoolInitialSize < -1)
         {
-            throw new LogAsErrorException($"PThreadPoolSize must be -1, 0 or positive, but got {PThreadPoolSize}");
+            throw new LogAsErrorException($"PThreadPoolInitialSize must be -1, 0 or positive, but got {PThreadPoolInitialSize}");
         }
-        else if (PThreadPoolSize > -1)
+        else if (PThreadPoolInitialSize > -1)
         {
-            bootConfig.pthreadPoolSize = PThreadPoolSize;
+            bootConfig.pthreadPoolInitialSize = PThreadPoolInitialSize;
+        }
+
+        if (PThreadPoolUnusedSize < -1)
+        {
+            throw new LogAsErrorException($"PThreadPoolUnusedSize must be -1, 0 or positive, but got {PThreadPoolUnusedSize}");
+        }
+        else if (PThreadPoolUnusedSize > -1)
+        {
+            bootConfig.pthreadPoolUnusedSize = PThreadPoolUnusedSize;
         }
 
         foreach (ITaskItem extra in ExtraConfig ?? Enumerable.Empty<ITaskItem>())
@@ -371,8 +384,8 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             };
         }
 
-        string tmpMonoConfigPath = Path.GetTempFileName();
-        using (var sw = File.CreateText(tmpMonoConfigPath))
+        using TempFileName tmpMonoConfigPath = new();
+        using (var sw = File.CreateText(tmpMonoConfigPath.Path))
         {
             helper.ComputeResourcesHash(bootConfig);
 
@@ -381,7 +394,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         }
 
         string monoConfigPath = Path.Combine(runtimeAssetsPath, "blazor.boot.json"); // TODO: Unify with Wasm SDK
-        Utils.CopyIfDifferent(tmpMonoConfigPath, monoConfigPath, useHash: false);
+        Utils.CopyIfDifferent(tmpMonoConfigPath.Path, monoConfigPath, useHash: false);
         _fileWrites.Add(monoConfigPath);
 
         foreach (ITaskItem item in ExtraFilesToDeploy!)

@@ -1,0 +1,6 @@
+Wasi.Build.Tests.InvariantTests
+Wasi.Build.Tests.ILStripTests
+Wasi.Build.Tests.SdkMissingTests
+Wasi.Build.Tests.RuntimeConfigTests
+Wasi.Build.Tests.WasiTemplateTests
+Wasi.Build.Tests.PInvokeTableGeneratorTests

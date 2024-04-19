@@ -63,9 +63,11 @@ unsafe partial class GenericsNative
     public static extern Vector<uint> AddVectorU256s(in Vector<uint> pValues, int count);
 }
 
-unsafe partial class GenericsTest
+public unsafe partial class GenericsTest
 {
-    private static void TestVectorU()
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/177", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    public static void TestVectorU()
     {
         if (Vector<uint>.Count == 8)
         {
@@ -73,29 +75,29 @@ unsafe partial class GenericsTest
         }
         else
         {
-            Assert.Equal(Vector<uint>.Count, 4);
+            Assert.Equal(4, Vector<uint>.Count);
             TestVectorU128();
         }
     }
 
-    private static void TestVectorU128()
+    public static void TestVectorU128()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorU128(1u, 2u, 3u, 4u));
 
         Vector<uint> value2;
         GenericsNative.GetVectorU128Out(1u, 2u, 3u, 4u, &value2);
-        Assert.Equal(value2[0], 1u);
-        Assert.Equal(value2[1], 2u);
-        Assert.Equal(value2[2], 3u);
-        Assert.Equal(value2[3], 4u);
+        Assert.Equal(1u, value2[0]);
+        Assert.Equal(2u, value2[1]);
+        Assert.Equal(3u, value2[2]);
+        Assert.Equal(4u, value2[3]);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorU128Out(1u, 2u, 3u, 4u, out Vector<uint> value3));
 
         Vector<uint>* value4 = GenericsNative.GetVectorU128Ptr(1u, 2u, 3u, 4u);
-        Assert.Equal((*value4)[0], 1u);
-        Assert.Equal((*value4)[1], 2u);
-        Assert.Equal((*value4)[2], 3u);
-        Assert.Equal((*value4)[3], 4u);
+        Assert.Equal(1u, (*value4)[0]);
+        Assert.Equal(2u, (*value4)[1]);
+        Assert.Equal(3u, (*value4)[2]);
+        Assert.Equal(4u, (*value4)[3]);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorU128Ref(1u, 2u, 3u, 4u));
 
@@ -121,32 +123,32 @@ unsafe partial class GenericsTest
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.AddVectorU128s(in values[0], values.Length));
     }
 
-    private static void TestVectorU256()
+    public static void TestVectorU256()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorU256(1u, 2u, 3u, 4u, 5u, 6u, 7u, 8u));
 
         Vector<uint> value2;
         GenericsNative.GetVectorU256Out(1u, 2u, 3u, 4u, 5u, 6u, 7u, 8u, &value2);
-        Assert.Equal(value2[0], 1u);
-        Assert.Equal(value2[1], 2u);
-        Assert.Equal(value2[2], 3u);
-        Assert.Equal(value2[3], 4u);
-        Assert.Equal(value2[4], 5u);
-        Assert.Equal(value2[5], 6u);
-        Assert.Equal(value2[6], 7u);
-        Assert.Equal(value2[7], 8u);
+        Assert.Equal(1u, value2[0]);
+        Assert.Equal(2u, value2[1]);
+        Assert.Equal(3u, value2[2]);
+        Assert.Equal(4u, value2[3]);
+        Assert.Equal(5u, value2[4]);
+        Assert.Equal(6u, value2[5]);
+        Assert.Equal(7u, value2[6]);
+        Assert.Equal(8u, value2[7]);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorU256Out(1u, 2u, 3u, 4u, 5u, 6u, 7u, 8u, out Vector<uint> value3));
 
         Vector<uint>* value4 = GenericsNative.GetVectorU256Ptr(1u, 2u, 3u, 4u, 5u, 6u, 7u, 8u);
-        Assert.Equal((*value4)[0], 1u);
-        Assert.Equal((*value4)[1], 2u);
-        Assert.Equal((*value4)[2], 3u);
-        Assert.Equal((*value4)[3], 4u);
-        Assert.Equal((*value4)[4], 5u);
-        Assert.Equal((*value4)[5], 6u);
-        Assert.Equal((*value4)[6], 7u);
-        Assert.Equal((*value4)[7], 8u);
+        Assert.Equal(1u, (*value4)[0]);
+        Assert.Equal(2u, (*value4)[1]);
+        Assert.Equal(3u, (*value4)[2]);
+        Assert.Equal(4u, (*value4)[3]);
+        Assert.Equal(5u, (*value4)[4]);
+        Assert.Equal(6u, (*value4)[5]);
+        Assert.Equal(7u, (*value4)[6]);
+        Assert.Equal(8u, (*value4)[7]);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorU256Ref(1u, 2u, 3u, 4u, 5u, 6u, 7u, 8u));
 

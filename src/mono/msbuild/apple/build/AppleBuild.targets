@@ -4,7 +4,7 @@
     <AppleGenerateAppBundle Condition="'$(AppleGenerateAppBundle)' == ''">true</AppleGenerateAppBundle>
     <!-- Unable to properly integrate nativelib into app build, so not supported for now. -->
     <AppleGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true' and '$(ForceLibraryModeGenerateAppBundle)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">false</AppleGenerateAppBundle>
-    <_ProcessRuntimeComponentsForLibraryMode Condition="'$(_IsLibraryMode)' == 'true'">_ProcessRuntimeComponentsForLibraryMode</_ProcessRuntimeComponentsForLibraryMode>
+    <_ProcessRuntimeComponentsForLibraryMode Condition="'$(_IsLibraryMode)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">_ProcessRuntimeComponentsForLibraryMode</_ProcessRuntimeComponentsForLibraryMode>
     <EnableDefaultAssembliesToBundle Condition="'$(EnableDefaultAssembliesToBundle)' == ''">false</EnableDefaultAssembliesToBundle>
   </PropertyGroup>
 
@@ -58,9 +58,11 @@
       <AppName Condition="'$(AppName)' == ''">$(AssemblyName)</AppName>
     </PropertyGroup>
 
-    <PropertyGroup>
-      <RuntimeComponents Condition="'$(RuntimeComponents)' == '' and '$(UseNativeAOTRuntime)' != 'true'">marshal-ilgen</RuntimeComponents>
-    </PropertyGroup>
+    <ItemGroup Condition="'$(UseNativeAOTRuntime)' != 'true'">
+      <RuntimeComponents Condition="'$(UseAllRuntimeComponents)' == 'true'" Include="@(_MonoRuntimeAvailableComponents)"/>
+      <!-- Make sure marshal-ilgen is included in the components list. -->
+      <RuntimeComponents Condition="'$(UseAllRuntimeComponents)' != 'true'" Include="marshal-ilgen" KeepDuplicates="false"/>
+    </ItemGroup>
 
     <!-- common linker arguments for app and library builds -->
     <ItemGroup>
@@ -71,6 +73,7 @@
       <_CommonLinkerArgs Include="-lz" />
       <_CommonLinkerArgs Include="-lc++" />
       <_CommonLinkerArgs Include="-liconv" />
+      <_CommonLinkerArgs Include="-licucore" />
       <_CommonLinkerArgs Include="-framework Foundation" />
       <_CommonLinkerArgs Include="-framework Security" />
       <_CommonLinkerArgs Include="-framework UIKit" />
@@ -106,47 +109,35 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_ScanAssembliesDecideLightweightMarshaler" DependsOnTargets="_AppleResolveReferences" Condition="'$(UseNativeAOTRuntime)' != 'true'">
-    <PropertyGroup Condition="'$(RuntimeComponents)'=='*'">
-      <ForceAllComponents>true</ForceAllComponents>
-    </PropertyGroup>
+  <Target Name="_ScanAssembliesDecideLightweightMarshaler" DependsOnTargets="_AppleResolveReferences" Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(UseAllRuntimeComponents)' != 'true'">
 
-    <ItemGroup Condition="'$(ForceAllComponents)'!='true'">
-      <RuntimeComponentList Include="$(RuntimeComponents)" />
+    <ItemGroup>
       <AssembliesToScan Include="@(_AssembliesToBundleInternal)" />
     </ItemGroup>
 
-    <MarshalingPInvokeScanner Assemblies ="@(AssembliesToScan)" Condition="'$(ForceAllComponents)'!='true'">
+    <MarshalingPInvokeScanner Assemblies="@(AssembliesToScan)">
       <Output TaskParameter="IncompatibleAssemblies" ItemName="MonoLightweightMarshallerIncompatibleAssemblies" />
     </MarshalingPInvokeScanner>
 
     <ItemGroup Condition="'@(MonoLightweightMarshallerIncompatibleAssemblies->Count())' > 0">
-      <RuntimeComponentList Include="marshal-ilgen" KeepDuplicates="false"/>
+      <RuntimeComponents Include="marshal-ilgen" KeepDuplicates="false"/>
     </ItemGroup>
     <ItemGroup Condition="'@(MonoLightweightMarshallerIncompatibleAssemblies->Count())' == 0">
-      <RuntimeComponentList Remove="marshal-ilgen" />
+      <RuntimeComponents Remove="marshal-ilgen" />
     </ItemGroup>
 
-    <PropertyGroup Condition="'$(ForceAllComponents)'!='true' and '@(RuntimeComponentList->Count())' > 0">
-      <RuntimeComponents>@(RuntimeComponentList)</RuntimeComponents>
-    </PropertyGroup>
   </Target>
 
   <Target Name="_ProcessRuntimeComponentsForLibraryMode" DependsOnTargets="_ScanAssembliesDecideLightweightMarshaler" BeforeTargets="_BuildNativeLibrary">
     <ItemGroup>
-      <!-- add all non stub libs first -->
-      <!-- if runtimecompoents is empty, exclude -static.a and include -stub-static.a instead -->
-      <!-- if runtimecomponents is *, we're ok because all -static.a is included -->
-      <!-- if runtimecomponents is a list, add to items and only pull in -static.a -->
-
-      <_UsedComponents 
-        Condition="'$(RuntimeComponents)' != '' and '$(RuntimeComponents)' != '*'"
-        Include="$(RuntimeComponents)" />
-
+      <!-- include all libraries except components -->
       <_RuntimeLibraries Include="$(AppleBuildDir)\*.a" Exclude="$(AppleBuildDir)\libmono-component-*.a" />
+      <!-- include all component stub libraries -->
       <_RuntimeLibraries Include="$(AppleBuildDir)\libmono-component-*-stub-static.a" />
-      <_RuntimeLibraries Remove="$(AppleBuildDir)\libmono-component-%(_UsedComponents.Identity)-stub-static.a" />
-      <_RuntimeLibraries Include="$(AppleBuildDir)\libmono-component-%(_UsedComponents.Identity)-static.a" />
+      <!-- if RuntimeComponents is not empty, remove stubs for the required components and include the actual component library -->
+      <_RuntimeLibraries Condition="'@(RuntimeComponents)' != ''" Remove="$(AppleBuildDir)\libmono-component-%(RuntimeComponents.Identity)-stub-static.a" />
+      <_RuntimeLibraries Condition="'@(RuntimeComponents)' != ''" Include="$(AppleBuildDir)\libmono-component-%(RuntimeComponents.Identity)-static.a" />
+      <!-- if RuntimeComponents is empty, do nothing as we already included all the component stubs above -->
     </ItemGroup>
   </Target>
 
@@ -276,7 +267,7 @@
   </Target>
 
   <Target Name="_AppleNativeAotCompile"
-          DependsOnTargets="SetupProperties;ComputeIlcCompileInputs;IlcCompile" />
+          DependsOnTargets="SetupProperties;ComputeIlcCompileInputs;IlcCompile;$(_IlcLibraryBuildDependsOn)" />
 
   <Target Name="_AppleGenerateAppBundle" 
           Condition="'$(AppleGenerateAppBundle)' == 'true'"
@@ -284,17 +275,18 @@
     <!-- Run App bundler, it uses AOT libs (if needed), link all native bits, compile simple UI (written in ObjC)
          and produce an app bundle (with xcode project) -->
 
+    <Error Condition="'$(NativeMainSource)' != '' and !Exists('$(NativeMainSource)')" Text="Project property NativeMainSource is defined, but the specified file: '$(NativeMainSource)' does not exist." />
+
     <ItemGroup>
       <ExtraAppLinkerArgs Include="@(_CommonLinkerArgs)" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
+    <ItemGroup Condition="'$(_IsLibraryMode)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">
       <NativeDependencies Include="$(LibraryOutputPath)" />
     </ItemGroup>
 
-    <Error Condition="'$(NativeMainSource)' != '' and !Exists('$(NativeMainSource)')" Text="Project property NativeMainSource is defined, but the specified file: '$(NativeMainSource)' does not exist." />
-
-    <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
+    <!-- Only pass additional linker flags with NativeAOT when we are not in the library mode -->
+    <ItemGroup Condition="'$(_IsLibraryMode)' != 'true' and '$(UseNativeAOTRuntime)' == 'true'">
       <NativeDependencies Condition="$(NativeDependencies) == ''" Include="%(ManagedBinary.IlcOutputFile)" />
       <_LinkerFlagsToDrop Include="@(NativeFramework->'-framework %(Identity)')" />
       <LinkerArg Remove="@(_LinkerFlagsToDrop)" />
@@ -325,7 +317,7 @@
       Optimized="$(Optimized)"
       OutputDirectory="$(AppleBundleDir)"
       ProjectName="$(AppName)"
-      RuntimeComponents="$(RuntimeComponents)"
+      RuntimeComponents="@(RuntimeComponents)"
       StripSymbolTable="$(StripDebugSymbols)"
       TargetOS="$(TargetOS)"
       UseConsoleUITemplate="$(UseConsoleUITemplate)"

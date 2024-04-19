@@ -500,6 +500,8 @@ void FinalizerThread::FinalizerThreadWait(DWORD timeout)
     // Can't call this from within a finalized method.
     if (!IsCurrentThreadFinalizer())
     {
+        GCX_PREEMP();
+
 #ifdef FEATURE_COMINTEROP
         // To help combat finalizer thread starvation, we check to see if there are any wrappers
         // scheduled to be cleaned up for our context.  If so, we'll do them here to avoid making
@@ -507,8 +509,6 @@ void FinalizerThread::FinalizerThreadWait(DWORD timeout)
         if (g_pRCWCleanupList != NULL)
             g_pRCWCleanupList->CleanupWrappersInCurrentCtxThread();
 #endif // FEATURE_COMINTEROP
-
-        GCX_PREEMP();
 
         ULONGLONG startTime = CLRGetTickCount64();
         ULONGLONG endTime;

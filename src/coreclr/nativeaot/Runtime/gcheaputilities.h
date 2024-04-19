@@ -89,8 +89,14 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
+    // Initializes the GC
+    static HRESULT InitializeGC();
+
     // Initializes a non-standalone GC.
     static HRESULT InitializeDefaultGC();
+
+    // Initializes a standalone GC.
+    static HRESULT InitializeStandaloneGC();
 
     // Records a change in eventing state. This ultimately will inform the GC that it needs to be aware
     // of new events being enabled.

@@ -108,21 +108,21 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__ComPlusCallInfo__m_pILStub
 
 #endif // FEATURE_COMINTEROP
 
-#define               OFFSETOF__Thread__m_fPreemptiveGCDisabled     0x0C
+#define               OFFSETOF__Thread__m_fPreemptiveGCDisabled     0x04
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_fPreemptiveGCDisabled
                     == offsetof(Thread, m_fPreemptiveGCDisabled));
 #define Thread_m_fPreemptiveGCDisabled OFFSETOF__Thread__m_fPreemptiveGCDisabled
 
-#define               OFFSETOF__Thread__m_pFrame                    0x10
+#define               OFFSETOF__Thread__m_pFrame                    0x08
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pFrame
                     == offsetof(Thread, m_pFrame));
 #define Thread_m_pFrame OFFSETOF__Thread__m_pFrame
 
 
-#define               OFFSET__Thread__m_alloc_context__alloc_ptr 0x58
+#define               OFFSET__Thread__m_alloc_context__alloc_ptr 0x50
 ASMCONSTANTS_C_ASSERT(OFFSET__Thread__m_alloc_context__alloc_ptr == offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
 
-#define               OFFSET__Thread__m_alloc_context__alloc_limit 0x60
+#define               OFFSET__Thread__m_alloc_context__alloc_limit 0x58
 ASMCONSTANTS_C_ASSERT(OFFSET__Thread__m_alloc_context__alloc_limit == offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_limit));
 
 #define               OFFSETOF__gc_alloc_context__alloc_ptr 0x0
@@ -169,11 +169,11 @@ ASMCONSTANTS_C_ASSERT(METHODTABLE_OFFSET_VTABLE == sizeof(MethodTable));
 
 #define               OFFSETOF__MethodTable__m_ElementType      DBG_FRE(0x38, 0x30)
 ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_ElementType
-                    == offsetof(MethodTable, m_pMultipurposeSlot1));
+                    == offsetof(MethodTable, m_ElementTypeHnd));
 
 #define               OFFSETOF__MethodTable__m_pInterfaceMap    DBG_FRE(0x40, 0x38)
 ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_pInterfaceMap
-                    == offsetof(MethodTable, m_pMultipurposeSlot2));
+                    == offsetof(MethodTable, m_pInterfaceMap));
 
 
 #define MethodTable_VtableSlotsPerChunk     8

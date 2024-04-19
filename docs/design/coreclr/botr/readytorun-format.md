@@ -908,4 +908,4 @@ enum ReadyToRunHelper
 
 # References
 
-[ECMA-335](http://www.ecma-international.org/publications/standards/Ecma-335.htm)
+[ECMA-335](https://www.ecma-international.org/publications-and-standards/standards/ecma-335)

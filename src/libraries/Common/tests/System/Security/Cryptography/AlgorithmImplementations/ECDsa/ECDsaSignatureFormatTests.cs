@@ -360,7 +360,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 Assert.Equal(0, written);
             }
 
-            Assert.True(false, $"TrySignHash eventually succeeds with a {expectedSize}/{maxSize}-byte destination");
+            Assert.Fail($"TrySignHash eventually succeeds with a {expectedSize}/{maxSize}-byte destination");
         }
 
         [Fact]
@@ -390,7 +390,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 Assert.Equal(0, written);
             }
 
-            Assert.True(false, $"TrySignData eventually succeeds with a {expectedSize}/{maxSize}-byte destination");
+            Assert.Fail($"TrySignData eventually succeeds with a {expectedSize}/{maxSize}-byte destination");
         }
     }
 }

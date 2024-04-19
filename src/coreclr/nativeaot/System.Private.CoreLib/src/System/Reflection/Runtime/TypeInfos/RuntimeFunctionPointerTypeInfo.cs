@@ -19,39 +19,11 @@ namespace System.Reflection.Runtime.TypeInfos
             _key = key;
         }
 
-        public override bool IsTypeDefinition => false;
-        public override bool IsGenericTypeDefinition => false;
-        protected override bool HasElementTypeImpl() => false;
-        protected override bool IsArrayImpl() => false;
-        public override bool IsSZArray => false;
-        public override bool IsVariableBoundArray => false;
-        protected override bool IsByRefImpl() => false;
-        protected override bool IsPointerImpl() => false;
-        public override bool IsConstructedGenericType => false;
-        public override bool IsGenericParameter => false;
-        public override bool IsGenericTypeParameter => false;
-        public override bool IsGenericMethodParameter => false;
-        public override bool IsByRefLike => false;
-
-        //
-        // Implements IKeyedItem.PrepareKey.
-        //
-        // This method is the keyed item's chance to do any lazy evaluation needed to produce the key quickly.
-        // Concurrent unifiers are guaranteed to invoke this method at least once and wait for it
-        // to complete before invoking the Key property. The unifier lock is NOT held across the call.
-        //
-        // PrepareKey() must be idempodent and thread-safe. It may be invoked multiple times and concurrently.
-        //
-        public void PrepareKey()
-        {
-        }
-
         //
         // Implements IKeyedItem.Key.
         //
         // Produce the key. This is a high-traffic property and is called while the hash table's lock is held. Thus, it should
-        // return a precomputed stored value and refrain from invoking other methods. If the keyed item wishes to
-        // do lazy evaluation of the key, it should do so in the PrepareKey() method.
+        // return a precomputed stored value and refrain from invoking other methods.
         //
         public UnificationKey Key
         {
@@ -85,7 +57,7 @@ namespace System.Reflection.Runtime.TypeInfos
             ArgumentNullException.ThrowIfNull(other);
 
             // This logic is written to match CoreCLR's behavior.
-            return other is Type && other is IRuntimeMemberInfoWithNoMetadataDefinition;
+            return other is RuntimeType runtimeType && runtimeType.GetRuntimeTypeInfo() is IRuntimeMemberInfoWithNoMetadataDefinition;
         }
 
         public override bool IsFunctionPointer => true;
@@ -93,16 +65,15 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public override Type[] GetFunctionPointerParameterTypes()
         {
-
             if (_key.ParameterTypes.Length == 0)
-                return EmptyTypes;
+                return Type.EmptyTypes;
 
             Type[] result = new Type[_key.ParameterTypes.Length];
             Array.Copy(_key.ParameterTypes, result, result.Length);
             return result;
         }
 
-        public override Type GetFunctionPointerReturnType() => _key.ReturnType;
+        public override Type GetFunctionPointerReturnType() => _key.ReturnType.ToType();
 
         public override string Namespace => null!;
 
@@ -131,9 +102,9 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        protected override TypeAttributes GetAttributeFlagsImpl() => TypeAttributes.Public;
-        protected override int InternalGetHashCode() =>_key.GetHashCode();
-        internal override Type InternalDeclaringType => null;
+        public override TypeAttributes Attributes => TypeAttributes.Public;
+        public override int GetHashCode() => _key.GetHashCode();
+        internal override RuntimeTypeInfo InternalDeclaringType => null;
         public override string Name => string.Empty;
         internal override string InternalFullNameOfAssembly => string.Empty;
         internal override RuntimeTypeHandle InternalTypeHandleIfAvailable => _key.TypeHandle;

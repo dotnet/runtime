@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <DefineConstants> $(DefineConstants);FEATURE_FAST_CREATE</DefineConstants>
@@ -8,10 +9,13 @@
       with a wrong value at library build time and the substitution can still be selected at publish time.
     -->
     <ILLinkDisableIPConstProp>true</ILLinkDisableIPConstProp>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <ItemGroup>
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
   </ItemGroup>
+
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
@@ -80,6 +84,7 @@
     <Compile Include="System\Runtime\CompilerServices\RuntimeOps.MergedRuntimeVariables.cs" />
     <Compile Include="System\Runtime\CompilerServices\ReadOnlyCollectionBuilder.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Compile Include="System\Linq\Expressions\DynamicExpressionVisitor.cs" />
     <Compile Include="System\Linq\Expressions\DynamicExpression.cs" />
@@ -128,6 +133,7 @@
     <Compile Include="System\Dynamic\UnaryOperationBinder.cs" />
     <Compile Include="System\Dynamic\IInvokeOnGetBinder.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Compile Include="System\Linq\Expressions\Compiler\AssemblyGen.cs" />
     <Compile Include="System\Dynamic\Utils\Helpers.cs" />
@@ -160,6 +166,7 @@
     <Compile Include="System\Runtime\CompilerServices\RuntimeOps.ExpressionQuoter.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeOps.RuntimeVariableList.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Compile Include="System\Dynamic\Utils\DelegateHelpers.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\AddInstruction.cs" />
@@ -208,6 +215,7 @@
     <Compile Include="System\Linq\Expressions\Interpreter\TypeOperations.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\Utilities.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Linq" />
@@ -219,4 +227,5 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Threading" />
   </ItemGroup>
+
 </Project>

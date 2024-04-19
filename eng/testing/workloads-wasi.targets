@@ -1,0 +1,24 @@
+<Project>
+  <Import Project="workloads-wasm.targets" />
+
+  <PropertyGroup>
+    <GetWorkloadInputsDependsOn>_GetWorkloadsToInstall;$(GetWorkloadInputsDependsOn)</GetWorkloadInputsDependsOn>
+    <GetNuGetsToBuildForWorkloadTestingDependsOn>_GetNugetsForAOT;$(GetNuGetsToBuildForWorkloadTestingDependsOn)</GetNuGetsToBuildForWorkloadTestingDependsOn>
+  </PropertyGroup>
+
+  <Target Name="_GetWorkloadsToInstall" DependsOnTargets="_SetPackageVersionForWorkloadsTesting" Returns="@(WorkloadIdForTesting);@(WorkloadCombinationsToInstall)">
+    <Error Condition="'$(RIDForWorkload)' == ''" Text="$(RIDForWorkload) is unset" />
+    <ItemGroup>
+      <WorkloadIdForTesting Include="wasi-experimental"
+                            ManifestName="Microsoft.NET.Workload.Mono.ToolChain.Current"
+                            Variant="latest"
+                            Version="$(PackageVersionForWorkloadManifests)" />
+
+      <WorkloadIdForTesting Include="wasi-experimental-net8;wasi-experimental"
+                            ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net8"
+                            Variant="net8"
+                            Version="$(PackageVersionForWorkloadManifests)" />
+      <WorkloadCombinationsToInstall Include="latest" Variants="latest;net8" />
+    </ItemGroup>
+  </Target>
+</Project>

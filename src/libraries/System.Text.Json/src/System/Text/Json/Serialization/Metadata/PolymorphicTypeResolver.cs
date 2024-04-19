@@ -75,20 +75,19 @@ namespace System.Text.Json.Serialization.Metadata
                 }
 
                 string propertyName = polymorphismOptions.TypeDiscriminatorPropertyName;
-
-                JsonEncodedText jsonEncodedName = propertyName == JsonSerializer.TypePropertyName
-                    ? JsonSerializer.s_metadataType
-                    : JsonEncodedText.Encode(propertyName, options.Encoder);
-
-                // Check if the property name conflicts with other metadata property names
-                if ((JsonSerializer.GetMetadataPropertyName(jsonEncodedName.EncodedUtf8Bytes, resolver: null) & ~MetadataPropertyName.Type) != 0)
+                if (!propertyName.Equals(JsonSerializer.TypePropertyName, StringComparison.Ordinal))
                 {
-                    ThrowHelper.ThrowInvalidOperationException_InvalidCustomTypeDiscriminatorPropertyName();
-                }
+                    byte[] utf8EncodedName = Encoding.UTF8.GetBytes(propertyName);
 
-                TypeDiscriminatorPropertyName = propertyName;
-                TypeDiscriminatorPropertyNameUtf8 = jsonEncodedName.EncodedUtf8Bytes.ToArray();
-                CustomTypeDiscriminatorPropertyNameJsonEncoded = jsonEncodedName;
+                    // Check if the property name conflicts with other metadata property names
+                    if ((JsonSerializer.GetMetadataPropertyName(utf8EncodedName, resolver: null) & ~MetadataPropertyName.Type) != 0)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_InvalidCustomTypeDiscriminatorPropertyName();
+                    }
+
+                    CustomTypeDiscriminatorPropertyNameUtf8 = utf8EncodedName;
+                    CustomTypeDiscriminatorPropertyNameJsonEncoded = JsonEncodedText.Encode(propertyName, options.Encoder);
+                }
             }
         }
 
@@ -96,8 +95,7 @@ namespace System.Text.Json.Serialization.Metadata
         public JsonUnknownDerivedTypeHandling UnknownDerivedTypeHandling { get; }
         public bool UsesTypeDiscriminators { get; }
         public bool IgnoreUnrecognizedTypeDiscriminators { get; }
-        public string? TypeDiscriminatorPropertyName { get; }
-        public byte[]? TypeDiscriminatorPropertyNameUtf8 { get; }
+        public byte[]? CustomTypeDiscriminatorPropertyNameUtf8 { get; }
         public JsonEncodedText? CustomTypeDiscriminatorPropertyNameJsonEncoded { get; }
 
         public bool TryGetDerivedJsonTypeInfo(Type runtimeType, [NotNullWhen(true)] out JsonTypeInfo? jsonTypeInfo, out object? typeDiscriminator)

@@ -69,6 +69,10 @@ InteropSyncBlockInfo::~InteropSyncBlockInfo()
     CONTRACTL_END;
 
     FreeUMEntryThunk();
+
+#if defined(FEATURE_COMWRAPPERS)
+    delete m_managedObjectComWrapperMap;
+#endif // FEATURE_COMWRAPPERS
 }
 
 #ifndef TARGET_UNIX
@@ -2104,7 +2108,7 @@ void VoidDeleteSyncBlockMemory(SyncBlock* psb)
     SyncBlockCache::GetSyncBlockCache()->DeleteSyncBlockMemory(psb);
 }
 
-typedef Wrapper<SyncBlock*, DoNothing<SyncBlock*>, VoidDeleteSyncBlockMemory, NULL> SyncBlockMemoryHolder;
+typedef Wrapper<SyncBlock*, DoNothing<SyncBlock*>, VoidDeleteSyncBlockMemory, 0> SyncBlockMemoryHolder;
 
 
 // get the sync block for an existing object
@@ -2677,7 +2681,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
                 {
                     duration = end - start;
                 }
-                duration = min(duration, (DWORD)timeOut);
+                duration = min(duration, (ULONGLONG)timeOut);
                 timeOut -= (INT32)duration;
             }
         }
@@ -2850,6 +2854,7 @@ BOOL SyncBlock::Wait(INT32 timeOut)
     PendingSync   syncState(walk);
 
     OBJECTREF     obj = m_Monitor.GetOwningObject();
+    syncState.m_Object = OBJECTREFToObject(obj);
 
     m_Monitor.IncrementTransientPrecious();
 

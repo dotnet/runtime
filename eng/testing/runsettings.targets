@@ -14,18 +14,22 @@
     <!-- Use an intermediate runsettings file if the app hasn't been built yet to enable VSTest discovery. -->
     <RunSettingsFilePath Condition="'$(RunSettingsFilePath)' == '' and Exists('$(RunSettingsIntermediateOutputFilePath)')">$(RunSettingsIntermediateOutputFilePath)</RunSettingsFilePath>
 
+    <GenerateRunSettingsFileDependsOn Condition="'$(EnableCoverageSupport)' == 'true'">$(GenerateRunSettingsFileDependsOn);SetupCoverageFilter</GenerateRunSettingsFileDependsOn>
     <PrepareForRunDependsOn>GenerateRunSettingsFile;$(PrepareForRunDependsOn)</PrepareForRunDependsOn>
   </PropertyGroup>
 
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(RunSettingsTestCaseFilter)' == ''">
     <_testFilter Condition="'$(_withCategories)' != ''">$(_withCategories.Replace(';', '&amp;amp;category='))</_testFilter>
     <_testFilter Condition="'$(_withoutCategories)' != ''">$(_testFilter)$(_withoutCategories.Replace(';', '&amp;amp;category!='))</_testFilter>
     <_testFilter>$(_testFilter.Trim('&amp;amp;'))</_testFilter>
   </PropertyGroup>
 
   <Target Name="GenerateRunSettingsFile"
-          DependsOnTargets="SetupCoverageFilter">
+          DependsOnTargets="$(GenerateRunSettingsFileDependsOn)">
     <PropertyGroup>
+      <RunSettingsDotNetHostPath Condition="'$(RunSettingsDotNetHostPath)' == ''">$(NetCoreAppCurrentTestHostPath)$([System.IO.Path]::GetFileName('$(DotNetTool)'))</RunSettingsDotNetHostPath>
+      <RunSettingsTestCaseFilter Condition="'$(RunSettingsTestCaseFilter)' == ''">$(_testFilter)</RunSettingsTestCaseFilter>
+
       <RunSettingsFileContent>$([System.IO.File]::ReadAllText('$(RunSettingsInputFilePath)'))</RunSettingsFileContent>
       <RunSettingsFileContent Condition="'$(TestDisableParallelization)' == 'true'">$(RunSettingsFileContent.Replace('$$MAXCPUCOUNT$$', '1'))</RunSettingsFileContent>
       <RunSettingsFileContent Condition="'$(TestDisableParallelization)' != 'true'">$(RunSettingsFileContent.Replace('$$MAXCPUCOUNT$$', '0'))</RunSettingsFileContent>
@@ -38,21 +42,21 @@
                                                       .Replace('$$COVERAGE_ENABLED$$', '$([MSBuild]::ValueOrDefault('$(Coverage)', 'false'))')
                                                       .Replace('$$DISABLEPARALLELIZATION$$', '$([MSBuild]::ValueOrDefault('$(TestDisableParallelization)', 'false'))')
                                                       .Replace('$$DISABLEAPPDOMAIN$$', '$([MSBuild]::ValueOrDefault('$(TestDisableAppDomain)', 'false'))')
-                                                      .Replace('$$TESTCASEFILTER$$', '$(_testFilter)')
-                                                      .Replace('$$DOTNETHOSTPATH$$', '$(NetCoreAppCurrentTestHostPath)$([System.IO.Path]::GetFileName('$(DotNetTool)'))'))</RunSettingsFileContent>
+                                                      .Replace('$$TESTCASEFILTER$$', '$(RunSettingsTestCaseFilter)')
+                                                      .Replace('$$DOTNETHOSTPATH$$', '$(RunSettingsDotNetHostPath)'))</RunSettingsFileContent>
     </PropertyGroup>
 
     <WriteLinesToFile File="$(RunSettingsOutputFilePath)"
                       Lines="$(RunSettingsFileContent)"
                       WriteOnlyWhenDifferent="true"
                       Overwrite="true" />
-    
+
     <WriteLinesToFile File="$(VsCodeRunSettingsOutputFilePath)"
                       Lines="$(RunSettingsFileContent)"
                       WriteOnlyWhenDifferent="true"
                       Overwrite="true"
                       Condition="'$(CreateVsCodeRunSettingsFile)' == 'true'" />
-    
+
     <!-- Set RunSettingsFilePath property which is read by VSTest. -->
     <PropertyGroup>
       <RunSettingsFilePath>$(RunSettingsOutputFilePath)</RunSettingsFilePath>

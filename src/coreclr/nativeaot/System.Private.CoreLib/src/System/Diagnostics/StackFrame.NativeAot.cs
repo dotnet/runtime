@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 
 using Internal.DeveloperExperience;
+using Internal.Reflection.Augments;
 
 namespace System.Diagnostics
 {
@@ -55,7 +56,7 @@ namespace System.Diagnostics
 
             IntPtr methodStartAddress = _ipAddress - _nativeOffset;
             Debug.Assert(RuntimeImports.RhFindMethodStartAddress(_ipAddress) == methodStartAddress);
-            DeveloperExperience.Default.TryGetMethodBase(methodStartAddress, out _method);
+            _method = ReflectionAugments.ReflectionCoreCallbacks.GetMethodBaseFromStartAddressIfAvailable(methodStartAddress);
             if (_method == null)
             {
                 _noMethodBaseAvailable = true;

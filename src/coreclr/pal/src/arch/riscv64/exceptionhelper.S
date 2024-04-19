@@ -44,5 +44,5 @@ LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
 
     // The PAL_SEHException pointer
     addi a0, a1, 0
-    j    ThrowExceptionHelper
+    tail ThrowExceptionHelper
 LEAF_END ThrowExceptionFromContextInternal, _TEXT

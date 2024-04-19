@@ -20,7 +20,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
-		public Task GenericParameterWarningLocation ()
+		public Task MakeGenericDataflowIntrinsics ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}

@@ -3,14 +3,16 @@
 
 
 using System;
-using Internal.TypeSystem;
+using System.Collections.Generic;
+using System.Reflection.Runtime.General;
+
+using Internal.NativeFormat;
 using Internal.Runtime.Augments;
 using Internal.Runtime.TypeLoader;
-using Debug = System.Diagnostics.Debug;
-using Internal.NativeFormat;
-using System.Collections.Generic;
+using Internal.TypeSystem;
 using Internal.TypeSystem.NoMetadata;
-using System.Reflection.Runtime.General;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {

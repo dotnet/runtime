@@ -127,10 +127,8 @@ namespace System.Xml.Schema
         // Number of days in 400 years
         private const int DaysPer400Years = DaysPer100Years * 4 + 1; // 146097
 
-        private static ReadOnlySpan<int> DaysToMonth365 => new int[] {
-            0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
-        private static ReadOnlySpan<int> DaysToMonth366 => new int[] {
-            0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366};
+        private static ReadOnlySpan<int> DaysToMonth365 => [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365];
+        private static ReadOnlySpan<int> DaysToMonth366 => [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366];
 
         private const int CharStackBufferSize = 64;
 
@@ -398,6 +396,7 @@ namespace System.Xml.Schema
             {
                 case DateTimeTypeCode.GMonth:
                 case DateTimeTypeCode.GDay:
+                    // codeql[cs/leap-year/unsafe-date-construction-from-two-elements] - The XML specification does not explicitly define this behavior for parsing in a non-leap year. We intentionally throw here. Altering this behavior to be more resilient, producing dates like 2/28 or 3/1, could introduce unintended consequences and may not be desirable for user.
                     result = new DateTime(DateTime.Now.Year, xdt.Month, xdt.Day);
                     break;
                 case DateTimeTypeCode.Time:
@@ -924,7 +923,7 @@ namespace System.Xml.Schema
                 return false;
             }
 
-            private static ReadOnlySpan<int> Power10 => new int[MaxFractionDigits] { -1, 10, 100, 1000, 10000, 100000, 1000000 };
+            private static ReadOnlySpan<int> Power10 => [-1, 10, 100, 1000, 10000, 100000, 1000000];
             private bool ParseTime(ref int start)
             {
                 if (

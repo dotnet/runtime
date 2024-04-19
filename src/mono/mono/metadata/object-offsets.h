@@ -118,8 +118,6 @@ DECL_OFFSET(MonoSafeHandle, handle)
 
 DECL_OFFSET(MonoHandleRef, handle)
 
-DECL_OFFSET(MonoComInteropProxy, com_object)
-
 DECL_OFFSET(MonoString, length)
 DECL_OFFSET(MonoString, chars)
 

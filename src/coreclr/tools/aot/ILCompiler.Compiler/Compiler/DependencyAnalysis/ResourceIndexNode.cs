@@ -74,7 +74,8 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (ResourceIndexData indexData in _resourceDataNode.GetOrCreateIndexData(factory))
             {
-                Vertex asmName = nativeWriter.GetStringConstant(indexData.AssemblyName);
+                string assemblyName = indexData.Assembly.GetName().FullName;
+                Vertex asmName = nativeWriter.GetStringConstant(assemblyName);
                 Vertex resourceName = nativeWriter.GetStringConstant(indexData.ResourceName);
                 Vertex offsetVertex = nativeWriter.GetUnsignedConstant((uint)indexData.NativeOffset);
                 Vertex lengthVertex = nativeWriter.GetUnsignedConstant((uint)indexData.Length);
@@ -83,7 +84,7 @@ namespace ILCompiler.DependencyAnalysis
                 indexVertex = nativeWriter.GetTuple(indexVertex, offsetVertex);
                 indexVertex = nativeWriter.GetTuple(indexVertex, lengthVertex);
 
-                int hashCode = TypeHashingAlgorithms.ComputeNameHashCode(indexData.AssemblyName);
+                int hashCode = TypeHashingAlgorithms.ComputeNameHashCode(assemblyName);
                 indexHashtable.Append((uint)hashCode, indexHashtableSection.Place(indexVertex));
             }
 

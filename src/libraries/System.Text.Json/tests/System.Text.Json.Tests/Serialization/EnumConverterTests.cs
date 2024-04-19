@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -117,6 +118,27 @@ namespace System.Text.Json.Serialization.Tests
             // Not permitting integers should throw
             options = CreateStringEnumOptionsForType<DayOfWeek>(useGenericVariant, allowIntegerValues: false);
             Assert.Throws<JsonException>(() => JsonSerializer.Serialize((DayOfWeek)(-1), options));
+
+            // Quoted numbers should throw
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>("1", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>("-1", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>(@"""1""", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>(@"""+1""", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>(@"""-1""", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>(@""" 1 """, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>(@""" +1 """, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>(@""" -1 """, options));
+
+            day = JsonSerializer.Deserialize<DayOfWeek>(@"""Monday""", options);
+            Assert.Equal(DayOfWeek.Monday, day);
+
+            // Numbers-formatted json string should first consider naming policy
+            options = CreateStringEnumOptionsForType<DayOfWeek>(useGenericVariant, new ToEnumNumberNamingPolicy<DayOfWeek>(), false);
+            day = JsonSerializer.Deserialize<DayOfWeek>(@"""1""", options);
+            Assert.Equal(DayOfWeek.Monday, day);
+
+            options = CreateStringEnumOptionsForType<DayOfWeek>(useGenericVariant, new ToLowerNamingPolicy(), false);
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>(@"""1""", options));
         }
 
         public class ToLowerNamingPolicy : JsonNamingPolicy
@@ -174,12 +196,25 @@ namespace System.Text.Json.Serialization.Tests
             json = JsonSerializer.Serialize((FileAttributes)(-1), options);
             Assert.Equal(@"-1", json);
 
-            // Not permitting integers should throw
             options = CreateStringEnumOptionsForType<FileAttributes>(useGenericVariant, allowIntegerValues: false);
+            // Not permitting integers should throw
             Assert.Throws<JsonException>(() => JsonSerializer.Serialize((FileAttributes)(-1), options));
 
+            // Numbers should throw
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<FileAttributes>("1", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<FileAttributes>("-1", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<FileAttributes>(@"""1""", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<FileAttributes>(@"""+1""", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<FileAttributes>(@"""-1""", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<FileAttributes>(@""" 1 """, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<FileAttributes>(@""" +1 """, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<FileAttributes>(@""" -1 """, options));
+
+            attributes = JsonSerializer.Deserialize<FileAttributes>(@"""ReadOnly""", options);
+            Assert.Equal(FileAttributes.ReadOnly, attributes);
+
             // Flag values honor naming policy correctly
-            options = CreateStringEnumOptionsForType<FileAttributes>(useGenericVariant, new SimpleSnakeCasePolicy());
+            options = CreateStringEnumOptionsForType<FileAttributes>(useGenericVariant, JsonNamingPolicy.SnakeCaseLower);
 
             json = JsonSerializer.Serialize(
                 FileAttributes.Directory | FileAttributes.Compressed | FileAttributes.IntegrityStream,
@@ -654,7 +689,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(true)]
         public static void Honor_EnumNamingPolicy_On_Deserialization(bool useGenericVariant)
         {
-            JsonSerializerOptions options = CreateStringEnumOptionsForType<BindingFlags>(useGenericVariant, new SimpleSnakeCasePolicy());
+            JsonSerializerOptions options = CreateStringEnumOptionsForType<BindingFlags>(useGenericVariant, JsonNamingPolicy.SnakeCaseLower);
 
             BindingFlags bindingFlags = JsonSerializer.Deserialize<BindingFlags>(@"""non_public""", options);
             Assert.Equal(BindingFlags.NonPublic, bindingFlags);
@@ -679,9 +714,8 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(true)]
         public static void EnumDictionaryKeyDeserialization(bool useGenericVariant)
         {
-            JsonNamingPolicy snakeCasePolicy = new SimpleSnakeCasePolicy();
             JsonSerializerOptions options = CreateStringEnumOptionsForType<BindingFlags>(useGenericVariant);
-            options.DictionaryKeyPolicy = snakeCasePolicy;
+            options.DictionaryKeyPolicy = JsonNamingPolicy.SnakeCaseLower;
 
             // Baseline.
             var dict = JsonSerializer.Deserialize<Dictionary<BindingFlags, int>>(@"{""NonPublic, Public"": 1}", options);
@@ -694,12 +728,30 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<BindingFlags, int>>(@"{""non_public, static"": 0, ""NonPublic, Public"": 1}", options));
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void StringEnumWithNamingPolicyKeyDeserialization(bool useGenericVariant)
+        {
+            JsonSerializerOptions options = CreateStringEnumOptionsForType<BindingFlags>(useGenericVariant, JsonNamingPolicy.SnakeCaseLower);
+            options.DictionaryKeyPolicy = JsonNamingPolicy.KebabCaseUpper;
+
+            // DictionaryKeyPolicy not honored for dict key deserialization.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<BindingFlags, int>>(@"{""NON-PUBLIC, PUBLIC"": 1}", options));
+
+            // EnumConverter naming policy honored.
+            Dictionary<BindingFlags, int> result = JsonSerializer.Deserialize<Dictionary<BindingFlags, int>>(@"{""non_public, static"": 0, ""NonPublic, Public"": 1, ""create_instance"": 2 }", options);
+            Assert.Contains(BindingFlags.NonPublic | BindingFlags.Static, result);
+            Assert.Contains(BindingFlags.NonPublic | BindingFlags.Public, result);
+            Assert.Contains(BindingFlags.CreateInstance, result);
+        }
+
         [Fact]
         public static void EnumDictionaryKeySerialization()
         {
             JsonSerializerOptions options = new()
             {
-                DictionaryKeyPolicy = new SimpleSnakeCasePolicy()
+                DictionaryKeyPolicy = JsonNamingPolicy.SnakeCaseLower
             };
 
             Dictionary<BindingFlags, int> dict = new()
@@ -716,22 +768,69 @@ namespace System.Text.Json.Serialization.Tests
             JsonTestHelper.AssertJsonEqual(expected, JsonSerializer.Serialize(dict, options));
         }
 
+        [Theory]
+        [InlineData(typeof(SampleEnumByte), true)]
+        [InlineData(typeof(SampleEnumByte), false)]
+        [InlineData(typeof(SampleEnumSByte), true)]
+        [InlineData(typeof(SampleEnumSByte), false)]
+        [InlineData(typeof(SampleEnumInt16), true)]
+        [InlineData(typeof(SampleEnumInt16), false)]
+        [InlineData(typeof(SampleEnumUInt16), true)]
+        [InlineData(typeof(SampleEnumUInt16), false)]
+        [InlineData(typeof(SampleEnumInt32), true)]
+        [InlineData(typeof(SampleEnumInt32), false)]
+        [InlineData(typeof(SampleEnumUInt32), true)]
+        [InlineData(typeof(SampleEnumUInt32), false)]
+        [InlineData(typeof(SampleEnumInt64), true)]
+        [InlineData(typeof(SampleEnumInt64), false)]
+        [InlineData(typeof(SampleEnumUInt64), true)]
+        [InlineData(typeof(SampleEnumUInt64), false)]
+        public static void DeserializeNumericStringWithAllowIntegerValuesAsFalse(Type enumType, bool useGenericVariant)
+        {
+            JsonSerializerOptions options = CreateStringEnumOptionsForType(enumType, useGenericVariant, allowIntegerValues: false);
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@"""1""", enumType, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@"""+1""", enumType, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@"""-1""", enumType, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@""" 1 """, enumType, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@""" +1 """, enumType, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@""" -1 """, enumType, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@$"""{ulong.MaxValue}""", enumType, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@$""" {ulong.MaxValue} """, enumType, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@$"""+{ulong.MaxValue}""", enumType, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@$""" +{ulong.MaxValue} """, enumType, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@$"""{long.MinValue}""", enumType, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@$""" {long.MinValue} """, enumType, options));
+        }
+
+        private class ToEnumNumberNamingPolicy<T> : JsonNamingPolicy where T : struct, Enum
+        {
+            public override string ConvertName(string name) => Enum.TryParse(name, out T value) ? value.ToString("D") : name;
+        }
+
         private class ZeroAppenderPolicy : JsonNamingPolicy
         {
             public override string ConvertName(string name) => name + "0";
         }
 
-        private static JsonSerializerOptions CreateStringEnumOptionsForType<TEnum>(bool useGenericVariant, JsonNamingPolicy? namingPolicy = null, bool allowIntegerValues = true) where TEnum : struct, Enum
+        private static JsonSerializerOptions CreateStringEnumOptionsForType(Type enumType, bool useGenericVariant, JsonNamingPolicy? namingPolicy = null, bool allowIntegerValues = true)
         {
+            Debug.Assert(enumType.IsEnum);
+
             return new JsonSerializerOptions
             {
                 Converters =
                 {
                     useGenericVariant
-                    ? new JsonStringEnumConverter<TEnum>(namingPolicy, allowIntegerValues)
-                    : new JsonStringEnumConverter(namingPolicy, allowIntegerValues)
+                        ? (JsonConverter)Activator.CreateInstance(typeof(JsonStringEnumConverter<>).MakeGenericType(enumType), namingPolicy, allowIntegerValues)
+                        : new JsonStringEnumConverter(namingPolicy, allowIntegerValues)
                 }
             };
+        }
+
+        private static JsonSerializerOptions CreateStringEnumOptionsForType<TEnum>(bool useGenericVariant, JsonNamingPolicy? namingPolicy = null, bool allowIntegerValues = true) where TEnum : struct, Enum
+        {
+            return CreateStringEnumOptionsForType(typeof(TEnum), useGenericVariant, namingPolicy, allowIntegerValues);
         }
     }
 }

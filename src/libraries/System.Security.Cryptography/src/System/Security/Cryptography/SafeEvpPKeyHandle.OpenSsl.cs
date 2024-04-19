@@ -7,7 +7,7 @@ using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
-    public sealed class SafeEvpPKeyHandle : SafeHandle
+    public sealed partial class SafeEvpPKeyHandle : SafeHandle
     {
         internal static readonly SafeEvpPKeyHandle InvalidHandle = new SafeEvpPKeyHandle();
 
@@ -72,20 +72,6 @@ namespace System.Security.Cryptography
             safeHandle.SetHandle(handle);
             return safeHandle;
         }
-
-        /// <summary>
-        /// The runtime version number for the loaded version of OpenSSL.
-        /// </summary>
-        /// <remarks>
-        /// For OpenSSL 1.1+ this is the result of <code>OpenSSL_version_num()</code>,
-        /// for OpenSSL 1.0.x this is the result of <code>SSLeay()</code>.
-        /// </remarks>
-        [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("windows")]
-        public static long OpenSslVersion { get; } = Interop.OpenSsl.OpenSslVersionNumber();
 
         /// <summary>
         ///   Open a named private key using a named OpenSSL <code>ENGINE</code>.

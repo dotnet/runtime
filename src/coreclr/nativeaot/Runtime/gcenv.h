@@ -35,7 +35,6 @@
 #include "ObjectLayout.h"
 #include "PalRedhawkCommon.h"
 #include "PalRedhawk.h"
-#include "gcrhinterface.h"
 #include "gcenv.interlocked.inl"
 
 #include "slist.h"
@@ -48,6 +47,8 @@
 #include "gcenv.inl"
 
 #include "stressLog.h"
+
+#ifndef SKIP_TRACING_DEFINITIONS
 #ifdef FEATURE_EVENT_TRACE
 
     #include "clretwallmain.h"
@@ -59,6 +60,7 @@
     #define ETW_EVENT_ENABLED(e,f) false
 
 #endif // FEATURE_EVENT_TRACE
+#endif //SKIP_TRACING_DEFINITIONS
 
 #define LOG(x)
 

@@ -552,17 +552,14 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 VerifyMutable();
 
-                if (value is not null)
+                if (Kind != JsonTypeInfoKind.Object)
                 {
-                    if (Kind != JsonTypeInfoKind.Object)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
-                    }
+                    ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
+                }
 
-                    if (!JsonSerializer.IsValidCreationHandlingValue(value.Value))
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(value));
-                    }
+                if (value is not null && !JsonSerializer.IsValidCreationHandlingValue(value.Value))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
                 _preferredPropertyObjectCreationHandling = value;
@@ -620,7 +617,12 @@ namespace System.Text.Json.Serialization.Metadata
         internal bool IsConfigured => _configurationState == ConfigurationState.Configured;
         internal bool IsConfigurationStarted => _configurationState is not ConfigurationState.NotConfigured;
         private volatile ConfigurationState _configurationState;
-        private enum ConfigurationState : byte { NotConfigured = 0, Configuring = 1, Configured = 2 };
+        private enum ConfigurationState : byte
+        {
+            NotConfigured = 0,
+            Configuring = 1,
+            Configured = 2
+        };
 
         private ExceptionDispatchInfo? _cachedConfigureError;
 
@@ -684,7 +686,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 ConfigureProperties();
 
-                if (Converter.ConstructorIsParameterized)
+                if (DetermineUsesParameterizedConstructor())
                 {
                     ConfigureConstructorParameters();
                 }
@@ -807,6 +809,12 @@ namespace System.Text.Json.Serialization.Metadata
         /// to establish a base case for recursive types and any JsonIgnored property types.
         /// </summary>
         private bool IsCompatibleWithCurrentOptions { get; set; } = true;
+
+        /// <summary>
+        /// Determine if the current configuration is compatible with using a parameterized constructor.
+        /// </summary>
+        internal bool DetermineUsesParameterizedConstructor()
+            => Converter.ConstructorIsParameterized && CreateObject is null;
 
 #if DEBUG
         internal string GetPropertyDebugInfo(ReadOnlySpan<byte> unescapedPropertyName)
@@ -989,10 +997,9 @@ namespace System.Text.Json.Serialization.Metadata
         internal abstract ValueTask<object?> DeserializeAsObjectAsync(Stream utf8Json, CancellationToken cancellationToken);
         internal abstract object? DeserializeAsObject(Stream utf8Json);
 
-        internal ref struct PropertyHierarchyResolutionState
+        internal ref struct PropertyHierarchyResolutionState(JsonSerializerOptions options)
         {
-            public PropertyHierarchyResolutionState() { }
-            public Dictionary<string, (JsonPropertyInfo, int index)> AddedProperties = new();
+            public Dictionary<string, (JsonPropertyInfo, int index)> AddedProperties = new(options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
             public Dictionary<string, JsonPropertyInfo>? IgnoredProperties;
             public bool IsPropertyOrderSpecified;
         }
@@ -1107,7 +1114,7 @@ namespace System.Text.Json.Serialization.Metadata
         internal void ConfigureConstructorParameters()
         {
             Debug.Assert(Kind == JsonTypeInfoKind.Object);
-            Debug.Assert(Converter.ConstructorIsParameterized);
+            Debug.Assert(DetermineUsesParameterizedConstructor());
             Debug.Assert(PropertyCache is not null);
             Debug.Assert(ParameterCache is null);
 

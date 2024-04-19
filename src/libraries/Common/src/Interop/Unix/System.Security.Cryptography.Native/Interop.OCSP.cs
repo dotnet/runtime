@@ -29,27 +29,30 @@ internal static partial class Interop
             int len,
             SafeOcspRequestHandle req,
             IntPtr subject,
-            IntPtr issuer,
+            IntPtr* issuers,
+            int issuersLen,
             ref long expiration);
 
         internal static unsafe bool X509DecodeOcspToExpiration(
             ReadOnlySpan<byte> buf,
             SafeOcspRequestHandle request,
             IntPtr x509Subject,
-            IntPtr x509Issuer,
+            ReadOnlySpan<IntPtr> x509Issuers,
             out DateTimeOffset expiration)
         {
             long timeT = 0;
             int ret;
 
             fixed (byte* pBuf = buf)
+            fixed (IntPtr* pIssuers = x509Issuers)
             {
                 ret = CryptoNative_X509DecodeOcspToExpiration(
                     pBuf,
                     buf.Length,
                     request,
                     x509Subject,
-                    x509Issuer,
+                    pIssuers,
+                    x509Issuers.Length,
                     ref timeT);
             }
 

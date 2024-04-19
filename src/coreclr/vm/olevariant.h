@@ -25,7 +25,7 @@
 
 
 //These types must be kept in sync with the CorElementTypes defined in cor.h
-//NOTE: If you add values to this enum you need to look at COMOAVariant.cpp.  There is
+//NOTE: If you add values to this enum you need to look at OAVariant.cpp.  There is
 //      a mapping between CV type and VT types found there.
 //NOTE: This is also found in a table in OleVariant.cpp.
 //NOTE: These are also found in Variant.cs

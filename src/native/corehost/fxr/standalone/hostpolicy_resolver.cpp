@@ -36,14 +36,14 @@ namespace
 
         // Look up the root package instead of the "runtime" package because we can't do a full rid resolution.
         // i.e., look for "Microsoft.NETCore.DotNetHostPolicy/" followed by version.
-        pal::string_t prefix = _X("Microsoft.NETCore.DotNetHostPolicy/");
+        const pal::char_t prefix[] = _X("Microsoft.NETCore.DotNetHostPolicy/");
         for (const auto& library : json.document()[_X("libraries")].GetObject())
         {
             pal::string_t lib_name{library.name.GetString()};
-            if (starts_with(lib_name, prefix, false))
+            if (utils::starts_with(lib_name, prefix, false))
             {
                 // Extract the version information that occurs after '/'
-                retval = lib_name.substr(prefix.size());
+                retval = lib_name.substr(utils::strlen(prefix));
                 break;
             }
         }
@@ -76,7 +76,7 @@ namespace
         append_path(&path, rel_dir.c_str());                  // relative dir containing hostpolicy library
 
                                                             // Check if "path" contains the required library.
-        if (!library_exists_in_dir(path, LIBHOSTPOLICY_NAME, nullptr))
+        if (!file_exists_in_dir(path, LIBHOSTPOLICY_NAME, nullptr))
         {
             trace::verbose(_X("Did not find %s in directory %s"), LIBHOSTPOLICY_NAME, path.c_str());
             return false;
@@ -175,7 +175,7 @@ int hostpolicy_resolver::load(
     if (g_hostpolicy == nullptr)
     {
         pal::string_t host_path;
-        if (!library_exists_in_dir(lib_dir, LIBHOSTPOLICY_NAME, &host_path))
+        if (!file_exists_in_dir(lib_dir, LIBHOSTPOLICY_NAME, &host_path))
         {
             return StatusCode::CoreHostLibMissingFailure;
         }
@@ -289,7 +289,7 @@ bool hostpolicy_resolver::try_get_dir(
 
     // Check if hostpolicy exists in "expected" directory.
     trace::verbose(_X("The expected %s directory is [%s]"), LIBHOSTPOLICY_NAME, expected.c_str());
-    if (library_exists_in_dir(expected, LIBHOSTPOLICY_NAME, nullptr))
+    if (file_exists_in_dir(expected, LIBHOSTPOLICY_NAME, nullptr))
     {
         impl_dir->assign(expected);
         return true;

@@ -650,7 +650,7 @@ namespace System.Text.Json.Serialization.Tests
             try
             {
                 JsonSerializer.Deserialize<POCO>(ref reader);
-                Assert.True(false, "Expected exception.");
+                Assert.Fail("Expected exception.");
             }
             catch (JsonException) { }
 

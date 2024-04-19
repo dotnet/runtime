@@ -21,9 +21,6 @@ namespace Microsoft.Interop
             _getPinnableReferenceType = getPinnableReferenceType;
         }
 
-        public bool IsSupported(TargetFramework target, Version version)
-            => _innerMarshallingGenerator.IsSupported(target, version);
-
         public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context)
         {
             if (IsPinningPathSupported(info, context))

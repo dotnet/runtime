@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {

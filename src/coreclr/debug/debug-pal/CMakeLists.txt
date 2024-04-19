@@ -2,8 +2,6 @@ include_directories(../inc)
 include_directories(../../pal/inc)
 include_directories(${EP_GENERATED_HEADER_PATH})
 
-add_definitions(-DPAL_STDCPP_COMPAT)
-
 set(SHARED_EVENTPIPE_SOURCE_PATH ${CLR_SRC_NATIVE_DIR}/eventpipe)
 add_definitions(-DFEATURE_CORECLR)
 add_definitions(-DFEATURE_PERFTRACING)
@@ -46,6 +44,4 @@ if(CLR_CMAKE_HOST_UNIX)
 
 endif(CLR_CMAKE_HOST_UNIX)
 
-add_library_clr(debug-pal_obj OBJECT ${TWO_WAY_PIPE_SOURCES})
-add_library(debug-pal INTERFACE)
-target_sources(debug-pal INTERFACE $<TARGET_OBJECTS:debug-pal_obj>)
+add_library_clr(debug-pal OBJECT ${TWO_WAY_PIPE_SOURCES})

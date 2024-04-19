@@ -624,10 +624,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			static void TestCallUnused ()
 			{
-				// Analyzer emits warnings for code in unused local functions.
-				[ExpectedWarning ("IL2026", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
-				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
-				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
+				// No warning for code in unused local functions.
 				void LocalFunction () => MethodWithRequires ();
 			}
 
@@ -647,10 +644,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			static void TestCallWithClosureUnused (int p = 0)
 			{
-				// Analyzer emits warnings for code in unused local functions.
-				[ExpectedWarning ("IL2026", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
-				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
-				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
+				// No warning for code in unused local functions.
 				void LocalFunction ()
 				{
 					p++;
@@ -933,12 +927,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					// ILLink isn't able to figure out which user method this local function
 					// belongs to, but it doesn't warn because it is only accessed via reflection.
 					// Instead this warns on the reflection access.
-					[ExpectedWarning ("IL2026", "--MethodWithRequires--",
-						ProducedBy = Tool.Analyzer)]
-					[ExpectedWarning ("IL3002", "--MethodWithRequires--",
-						ProducedBy = Tool.Analyzer)]
-					[ExpectedWarning ("IL3050", "--MethodWithRequires--",
-						ProducedBy = Tool.Analyzer)]
+					// No warning for code in unused local functions.
 					void LocalFunction () => MethodWithRequires ();
 				}
 			}

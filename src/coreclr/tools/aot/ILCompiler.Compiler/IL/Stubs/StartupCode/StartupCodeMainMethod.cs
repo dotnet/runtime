@@ -254,6 +254,25 @@ namespace Internal.IL.Stubs.StartupCode
                 }
             }
 
+            public override bool IsNoOptimization
+            {
+                get
+                {
+                    // Mark as no optimization so that Main doesn't get inlined
+                    // into this method. We want Main to be visible in stack traces.
+                    return true;
+                }
+            }
+
+            public override bool IsNoInlining
+            {
+                get
+                {
+                    // Mark NoInlining so that IsNoOptimization is guaranteed to kick in.
+                    return true;
+                }
+            }
+
             public override MethodIL EmitIL()
             {
                 ILEmitter emit = new ILEmitter();
@@ -268,6 +287,9 @@ namespace Internal.IL.Stubs.StartupCode
                 if (Context.Target.IsWindows)
                     codeStream.MarkDebuggerStepInPoint();
 
+                // This would be tail call eligible but we don't do tail calls
+                // if the method is marked NoInlining and we just did it above.
+                codeStream.Emit(ILOpcode.tail);
                 codeStream.Emit(ILOpcode.call, emit.NewToken(WrappedMethod));
 
                 codeStream.Emit(ILOpcode.ret);

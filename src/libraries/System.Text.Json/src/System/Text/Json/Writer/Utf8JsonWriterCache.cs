@@ -13,7 +13,10 @@ namespace System.Text.Json
         [ThreadStatic]
         private static ThreadLocalState? t_threadLocalState;
 
-        public static Utf8JsonWriter RentWriterAndBuffer(JsonSerializerOptions options, out PooledByteBufferWriter bufferWriter)
+        public static Utf8JsonWriter RentWriterAndBuffer(JsonSerializerOptions options, out PooledByteBufferWriter bufferWriter) =>
+            RentWriterAndBuffer(options.GetWriterOptions(), options.DefaultBufferSize, out bufferWriter);
+
+        public static Utf8JsonWriter RentWriterAndBuffer(JsonWriterOptions options, int defaultBufferSize, out PooledByteBufferWriter bufferWriter)
         {
             ThreadLocalState state = t_threadLocalState ??= new();
             Utf8JsonWriter writer;
@@ -24,14 +27,14 @@ namespace System.Text.Json
                 bufferWriter = state.BufferWriter;
                 writer = state.Writer;
 
-                bufferWriter.InitializeEmptyInstance(options.DefaultBufferSize);
-                writer.Reset(bufferWriter, options.GetWriterOptions());
+                bufferWriter.InitializeEmptyInstance(defaultBufferSize);
+                writer.Reset(bufferWriter, options);
             }
             else
             {
                 // We're in a recursive JsonSerializer call -- return fresh instances.
-                bufferWriter = new PooledByteBufferWriter(options.DefaultBufferSize);
-                writer = new Utf8JsonWriter(bufferWriter, options.GetWriterOptions());
+                bufferWriter = new PooledByteBufferWriter(defaultBufferSize);
+                writer = new Utf8JsonWriter(bufferWriter, options);
             }
 
             return writer;

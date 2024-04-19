@@ -3,8 +3,8 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Xml;
 using System.Diagnostics.CodeAnalysis;
+using System.Xml;
 
 namespace System.ServiceModel.Syndication
 {

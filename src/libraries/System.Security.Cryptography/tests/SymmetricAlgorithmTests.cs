@@ -436,7 +436,7 @@ namespace System.Security.Cryptography.Tests
                 PaddingMode paddingMode,
                 out int bytesWritten)
             {
-                Assert.True(false, "Initialization vector was not validated, core should not have been called.");
+                Assert.Fail("Initialization vector was not validated, core should not have been called.");
                 bytesWritten = 0;
                 return false;
             }
@@ -470,7 +470,7 @@ namespace System.Security.Cryptography.Tests
                 PaddingMode paddingMode,
                 out int bytesWritten)
             {
-                Assert.True(false, "Initialization vector was not validated, core should not have been called.");
+                Assert.Fail("Initialization vector was not validated, core should not have been called.");
                 bytesWritten = 0;
                 return false;
             }
@@ -673,7 +673,7 @@ namespace System.Security.Cryptography.Tests
                 int feedbackSizeInBits,
                 out int bytesWritten)
             {
-                Assert.True(false, "Initialization vector was not validated, core should not have been called.");
+                Assert.Fail("Initialization vector was not validated, core should not have been called.");
                 bytesWritten = 0;
                 return false;
             }
@@ -708,7 +708,7 @@ namespace System.Security.Cryptography.Tests
                 int feedbackSizeInBits,
                 out int bytesWritten)
             {
-                Assert.True(false, "Initialization vector was not validated, core should not have been called.");
+                Assert.Fail("Initialization vector was not validated, core should not have been called.");
                 bytesWritten = 0;
                 return false;
             }
@@ -747,7 +747,7 @@ namespace System.Security.Cryptography.Tests
                 int feedbackSizeInBits,
                 out int bytesWritten)
             {
-                Assert.True(false, "Feedback size was not validated, core should not have been called.");
+                Assert.Fail("Feedback size was not validated, core should not have been called.");
                 bytesWritten = 0;
                 return false;
             }
@@ -786,7 +786,7 @@ namespace System.Security.Cryptography.Tests
                 int feedbackSizeInBits,
                 out int bytesWritten)
             {
-                Assert.True(false, "Feedback size was not validated, core should not have been called.");
+                Assert.Fail("Feedback size was not validated, core should not have been called.");
                 bytesWritten = 0;
                 return false;
             }

@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
+using WasmAppBuilder;
 
 namespace Microsoft.WebAssembly.Build.Tasks;
 
@@ -35,10 +36,7 @@ public class ManagedToNativeGenerator : Task
     [Output]
     public string[]? FileWrites { get; private set; }
 
-    private static readonly char[] s_charsToReplace = new[] { '.', '-', '+' };
-
-    // Avoid sharing this cache with all the invocations of this task throughout the build
-    private readonly Dictionary<string, string> _symbolNameFixups = new();
+    private static readonly char[] s_charsToReplace = new[] { '.', '-', '+', '<', '>' };
 
     public override bool Execute()
     {
@@ -56,7 +54,8 @@ public class ManagedToNativeGenerator : Task
 
         try
         {
-            ExecuteInternal();
+            var logAdapter = new LogAdapter(Log);
+            ExecuteInternal(logAdapter);
             return !Log.HasLoggedErrors;
         }
         catch (LogAsErrorException e)
@@ -66,19 +65,20 @@ public class ManagedToNativeGenerator : Task
         }
     }
 
-    private void ExecuteInternal()
+    private void ExecuteInternal(LogAdapter log)
     {
+        Dictionary<string, string> _symbolNameFixups = new();
         List<string> managedAssemblies = FilterOutUnmanagedBinaries(Assemblies);
         if (ShouldRun(managedAssemblies))
         {
-            var pinvoke = new PInvokeTableGenerator(FixupSymbolName, Log);
-            var icall = new IcallTableGenerator(RuntimeIcallTableFile, FixupSymbolName, Log);
+            var pinvoke = new PInvokeTableGenerator(FixupSymbolName, log);
+            var icall = new IcallTableGenerator(RuntimeIcallTableFile, FixupSymbolName, log);
 
             var resolver = new PathAssemblyResolver(managedAssemblies);
             using var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
             foreach (string asmPath in managedAssemblies)
             {
-                Log.LogMessage(MessageImportance.Low, $"Loading {asmPath} to scan for pinvokes, and icalls");
+                log.LogMessage(MessageImportance.Low, $"Loading {asmPath} to scan for pinvokes, and icalls");
                 Assembly asm = mlc.LoadFromAssemblyPath(asmPath);
                 pinvoke.ScanAssembly(asm);
                 icall.ScanAssembly(asm);
@@ -88,7 +88,7 @@ public class ManagedToNativeGenerator : Task
                 pinvoke.Generate(PInvokeModules, PInvokeOutputPath),
                 icall.Generate(IcallOutputPath));
 
-            var m2n = new InterpToNativeGenerator(Log);
+            var m2n = new InterpToNativeGenerator(log);
             m2n.Generate(cookies, InterpToNativeOutputPath);
 
             if (!string.IsNullOrEmpty(CacheFilePath))
@@ -102,6 +102,40 @@ public class ManagedToNativeGenerator : Task
             fileWritesList.Add(CacheFilePath);
 
         FileWrites = fileWritesList.ToArray();
+
+        string FixupSymbolName(string name)
+        {
+            if (_symbolNameFixups.TryGetValue(name, out string? fixedName))
+                return fixedName;
+
+            UTF8Encoding utf8 = new();
+            byte[] bytes = utf8.GetBytes(name);
+            StringBuilder sb = new();
+
+            foreach (byte b in bytes)
+            {
+                if ((b >= (byte)'0' && b <= (byte)'9') ||
+                    (b >= (byte)'a' && b <= (byte)'z') ||
+                    (b >= (byte)'A' && b <= (byte)'Z') ||
+                    (b == (byte)'_'))
+                {
+                    sb.Append((char)b);
+                }
+                else if (s_charsToReplace.Contains((char)b))
+                {
+                    sb.Append('_');
+                }
+                else
+                {
+                    sb.Append($"_{b:X}_");
+                }
+            }
+
+            fixedName = sb.ToString();
+            _symbolNameFixups[name] = fixedName;
+            return fixedName;
+        }
+
     }
 
     private bool ShouldRun(IList<string> managedAssemblies)
@@ -156,39 +190,6 @@ public class ManagedToNativeGenerator : Task
             oldestDt = utc < oldestDt ? utc : oldestDt;
             return false;
         }
-    }
-
-    public string FixupSymbolName(string name)
-    {
-        if (_symbolNameFixups.TryGetValue(name, out string? fixedName))
-            return fixedName;
-
-        UTF8Encoding utf8 = new();
-        byte[] bytes = utf8.GetBytes(name);
-        StringBuilder sb = new();
-
-        foreach (byte b in bytes)
-        {
-            if ((b >= (byte)'0' && b <= (byte)'9') ||
-                (b >= (byte)'a' && b <= (byte)'z') ||
-                (b >= (byte)'A' && b <= (byte)'Z') ||
-                (b == (byte)'_'))
-            {
-                sb.Append((char)b);
-            }
-            else if (s_charsToReplace.Contains((char)b))
-            {
-                sb.Append('_');
-            }
-            else
-            {
-                sb.Append($"_{b:X}_");
-            }
-        }
-
-        fixedName = sb.ToString();
-        _symbolNameFixups[name] = fixedName;
-        return fixedName;
     }
 
     private List<string> FilterOutUnmanagedBinaries(string[] assemblies)

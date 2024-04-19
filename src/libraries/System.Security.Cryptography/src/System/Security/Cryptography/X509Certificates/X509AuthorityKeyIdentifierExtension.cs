@@ -508,7 +508,7 @@ namespace System.Security.Cryptography.X509Certificates
                     certificate.SerialNumberBytes.Span);
             }
 
-            ReadOnlySpan<byte> emptyExtension = new byte[] { 0x30, 0x00 };
+            ReadOnlySpan<byte> emptyExtension = [0x30, 0x00];
             return new X509AuthorityKeyIdentifierExtension(emptyExtension);
         }
 

@@ -3,8 +3,8 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Composition.Diagnostics;
 using System.ComponentModel.Composition.Primitives;
+using System.Composition.Diagnostics;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -28,7 +28,7 @@ namespace System.ComponentModel.Composition.Hosting
             RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 #endif
 
-        private readonly Lock _thisLock = new Lock();
+        private readonly ReadWriteLock _thisLock = new ReadWriteLock();
         private readonly ICompositionElement? _definitionOrigin;
         private ComposablePartCatalogCollection _catalogCollection;
         private Dictionary<string, AssemblyCatalog> _assemblyCatalogs;

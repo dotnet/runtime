@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Threading;
+using Xunit;
 
 public class InterlockedDecrement1
 {
     private const int c_NUM_LOOPS = 100;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         InterlockedDecrement1 test = new InterlockedDecrement1();
 

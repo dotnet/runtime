@@ -29,12 +29,6 @@ namespace Internal.IL
                 return GenerateAccessorBadImageFailure(method);
             }
 
-            // Block generic support early
-            if (method.HasInstantiation || method.OwningType.HasInstantiation)
-            {
-                return GenerateAccessorBadImageFailure(method);
-            }
-
             if (!TryParseUnsafeAccessorAttribute(method, decodedAttribute.Value, out UnsafeAccessorKind kind, out string name))
             {
                 return GenerateAccessorBadImageFailure(method);
@@ -54,7 +48,7 @@ namespace Internal.IL
                 firstArgType = sig[0];
             }
 
-            bool isAmbiguous = false;
+            SetTargetResult result;
 
             // Using the kind type, perform the following:
             //  1) Validate the basic type information from the signature.
@@ -71,16 +65,16 @@ namespace Internal.IL
                         return GenerateAccessorBadImageFailure(method);
                     }
 
-                    const string ctorName = ".ctor";
-                    context.TargetType = ValidateTargetType(retType);
-                    if (context.TargetType == null)
+                    if (!ValidateTargetType(retType, out context.TargetType))
                     {
                         return GenerateAccessorBadImageFailure(method);
                     }
 
-                    if (!TrySetTargetMethod(ref context, ctorName, out isAmbiguous))
+                    const string ctorName = ".ctor";
+                    result = TrySetTargetMethod(ref context, ctorName);
+                    if (result is not SetTargetResult.Success)
                     {
-                        return GenerateAccessorSpecificFailure(ref context, ctorName, isAmbiguous);
+                        return GenerateAccessorSpecificFailure(ref context, ctorName, result);
                     }
                     break;
                 case UnsafeAccessorKind.Method:
@@ -100,16 +94,16 @@ namespace Internal.IL
                         return GenerateAccessorBadImageFailure(method);
                     }
 
-                    context.TargetType = ValidateTargetType(firstArgType);
-                    if (context.TargetType == null)
+                    if (!ValidateTargetType(firstArgType, out context.TargetType))
                     {
                         return GenerateAccessorBadImageFailure(method);
                     }
 
                     context.IsTargetStatic = kind == UnsafeAccessorKind.StaticMethod;
-                    if (!TrySetTargetMethod(ref context, name, out isAmbiguous))
+                    result = TrySetTargetMethod(ref context, name);
+                    if (result is not SetTargetResult.Success)
                     {
-                        return GenerateAccessorSpecificFailure(ref context, name, isAmbiguous);
+                        return GenerateAccessorSpecificFailure(ref context, name, result);
                     }
                     break;
 
@@ -132,16 +126,16 @@ namespace Internal.IL
                         return GenerateAccessorBadImageFailure(method);
                     }
 
-                    context.TargetType = ValidateTargetType(firstArgType);
-                    if (context.TargetType == null)
+                    if (!ValidateTargetType(firstArgType, out context.TargetType))
                     {
                         return GenerateAccessorBadImageFailure(method);
                     }
 
                     context.IsTargetStatic = kind == UnsafeAccessorKind.StaticField;
-                    if (!TrySetTargetField(ref context, name, ((ParameterizedType)retType).GetParameterType()))
+                    result = TrySetTargetField(ref context, name, ((ParameterizedType)retType).GetParameterType());
+                    if (result is not SetTargetResult.Success)
                     {
-                        return GenerateAccessorSpecificFailure(ref context, name, isAmbiguous);
+                        return GenerateAccessorSpecificFailure(ref context, name, result);
                     }
                     break;
 
@@ -221,7 +215,7 @@ namespace Internal.IL
             public FieldDesc TargetField;
         }
 
-        private static TypeDesc ValidateTargetType(TypeDesc targetTypeMaybe)
+        private static bool ValidateTargetType(TypeDesc targetTypeMaybe, out TypeDesc validated)
         {
             TypeDesc targetType = targetTypeMaybe.IsByRef
                 ? ((ParameterizedType)targetTypeMaybe).ParameterType
@@ -232,10 +226,17 @@ namespace Internal.IL
             if ((targetType.IsParameterizedType && !targetType.IsArray)
                 || targetType.IsFunctionPointer)
             {
-                ThrowHelper.ThrowBadImageFormatException();
+                targetType = null;
             }
 
-            return targetType;
+            // We do not support signature variables as a target (for example, VAR and MVAR).
+            if (targetType is SignatureVariable)
+            {
+                targetType = null;
+            }
+
+            validated = targetType;
+            return validated != null;
         }
 
         private static bool DoesMethodMatchUnsafeAccessorDeclaration(ref GenerationContext context, MethodDesc method, bool ignoreCustomModifiers)
@@ -368,7 +369,45 @@ namespace Internal.IL
             return true;
         }
 
-        private static bool TrySetTargetMethod(ref GenerationContext context, string name, out bool isAmbiguous, bool ignoreCustomModifiers = true)
+        private static bool VerifyDeclarationSatisfiesTargetConstraints(MethodDesc declaration, TypeDesc targetType, MethodDesc targetMethod)
+        {
+            Debug.Assert(declaration != null);
+            Debug.Assert(targetType != null);
+            Debug.Assert(targetMethod != null);
+
+            if (targetType.HasInstantiation)
+            {
+                Instantiation declClassInst = declaration.OwningType.Instantiation;
+                var instType = targetType.Context.GetInstantiatedType((MetadataType)targetType.GetTypeDefinition(), declClassInst);
+                if (!instType.CheckConstraints())
+                {
+                    return false;
+                }
+
+                targetMethod = instType.FindMethodOnExactTypeWithMatchingTypicalMethod(targetMethod);
+            }
+
+            if (targetMethod.HasInstantiation)
+            {
+                Instantiation declMethodInst = declaration.Instantiation;
+                var instMethod = targetType.Context.GetInstantiatedMethod(targetMethod, declMethodInst);
+                if (!instMethod.CheckConstraints())
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private enum SetTargetResult
+        {
+            Success,
+            Missing,
+            Ambiguous,
+            Invalid,
+        }
+
+        private static SetTargetResult TrySetTargetMethod(ref GenerationContext context, string name, bool ignoreCustomModifiers = true)
         {
             TypeDesc targetType = context.TargetType;
 
@@ -401,23 +440,39 @@ namespace Internal.IL
                         // We have detected ambiguity when ignoring custom modifiers.
                         // Start over, but look for a match requiring custom modifiers
                         // to match precisely.
-                        if (TrySetTargetMethod(ref context, name, out isAmbiguous, ignoreCustomModifiers: false))
-                            return true;
+                        if (SetTargetResult.Success == TrySetTargetMethod(ref context, name, ignoreCustomModifiers: false))
+                            return SetTargetResult.Success;
                     }
-
-                    isAmbiguous = true;
-                    return false;
+                    return SetTargetResult.Ambiguous;
                 }
 
                 targetMaybe = md;
             }
 
-            isAmbiguous = false;
+            if (targetMaybe != null)
+            {
+                if (!VerifyDeclarationSatisfiesTargetConstraints(context.Declaration, targetType, targetMaybe))
+                {
+                    return SetTargetResult.Invalid;
+                }
+
+                if (targetMaybe.HasInstantiation)
+                {
+                    TypeDesc[] methodInstantiation = new TypeDesc[targetMaybe.Instantiation.Length];
+                    for (int i = 0; i < methodInstantiation.Length; ++i)
+                    {
+                        methodInstantiation[i] = targetMaybe.Context.GetSignatureVariable(i, true);
+                    }
+                    targetMaybe = targetMaybe.Context.GetInstantiatedMethod(targetMaybe, new Instantiation(methodInstantiation));
+                }
+                Debug.Assert(targetMaybe is not null);
+            }
+
             context.TargetMethod = targetMaybe;
-            return context.TargetMethod != null;
+            return context.TargetMethod != null ? SetTargetResult.Success : SetTargetResult.Missing;
         }
 
-        private static bool TrySetTargetField(ref GenerationContext context, string name, TypeDesc fieldType)
+        private static SetTargetResult TrySetTargetField(ref GenerationContext context, string name, TypeDesc fieldType)
         {
             TypeDesc targetType = context.TargetType;
 
@@ -433,10 +488,10 @@ namespace Internal.IL
                     && fieldType == fd.FieldType)
                 {
                     context.TargetField = fd;
-                    return true;
+                    return SetTargetResult.Success;
                 }
             }
-            return false;
+            return SetTargetResult.Missing;
         }
 
         private static MethodIL GenerateAccessor(ref GenerationContext context)
@@ -488,7 +543,7 @@ namespace Internal.IL
             return emit.Link(context.Declaration);
         }
 
-        private static MethodIL GenerateAccessorSpecificFailure(ref GenerationContext context, string name, bool ambiguous)
+        private static MethodIL GenerateAccessorSpecificFailure(ref GenerationContext context, string name, SetTargetResult result)
         {
             ILEmitter emit = new ILEmitter();
             ILCodeStream codeStream = emit.NewCodeStream();
@@ -498,14 +553,19 @@ namespace Internal.IL
 
             MethodDesc thrower;
             TypeSystemContext typeSysContext = context.Declaration.Context;
-            if (ambiguous)
+            if (result is SetTargetResult.Ambiguous)
             {
                 codeStream.EmitLdc((int)ExceptionStringID.AmbiguousMatchUnsafeAccessor);
                 thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowAmbiguousMatchException");
             }
+            else if (result is SetTargetResult.Invalid)
+            {
+                codeStream.EmitLdc((int)ExceptionStringID.InvalidProgramDefault);
+                thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowInvalidProgramException");
+            }
             else
             {
-
+                Debug.Assert(result is SetTargetResult.Missing);
                 ExceptionStringID id;
                 if (context.Kind == UnsafeAccessorKind.Field || context.Kind == UnsafeAccessorKind.StaticField)
                 {

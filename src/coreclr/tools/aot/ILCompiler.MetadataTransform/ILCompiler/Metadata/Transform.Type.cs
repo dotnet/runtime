@@ -287,6 +287,9 @@ namespace ILCompiler.Metadata
                 {
                     if (IsBlocked(interfaceType))
                         continue;
+                    if (!_policy.GeneratesInterfaceImpl(entity, (Cts.MetadataType)interfaceType))
+                        continue;
+
                     record.Interfaces.Add(HandleType(interfaceType));
                 }
             }

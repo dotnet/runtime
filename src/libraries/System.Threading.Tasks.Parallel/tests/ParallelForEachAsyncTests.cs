@@ -56,7 +56,7 @@ namespace System.Threading.Tasks.Tests
 
             Func<int, CancellationToken, ValueTask> body = (item, cancellationToken) =>
             {
-                Assert.False(true, "Should not have been invoked");
+                Assert.Fail("Should not have been invoked");
                 return default;
             };
 

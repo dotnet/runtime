@@ -414,7 +414,7 @@ namespace ILCompiler.IBC
                 if (method.Name == methodName)
                 {
                     EcmaMethod ecmaCandidateMethod = method as EcmaMethod;
-                    if (method == null)
+                    if (ecmaCandidateMethod == null)
                         continue;
 
                     MetadataReader metadataReader = ecmaCandidateMethod.MetadataReader;

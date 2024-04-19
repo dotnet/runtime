@@ -135,11 +135,11 @@ namespace System
                 if (!fatalOutOfMemory)
                     ex.AppendStackIP(IP, isFirstRethrowFrame);
 
- #if FEATURE_PERFTRACING
+#if FEATURE_PERFTRACING
                 if (isFirstFrame)
                 {
-                    string typeName = !fatalOutOfMemory  ? ex.GetType().ToString() : "System.OutOfMemoryException";
-                    string message = !fatalOutOfMemory  ? ex.Message :
+                    string typeName = !fatalOutOfMemory ? ex.GetType().ToString() : "System.OutOfMemoryException";
+                    string message = !fatalOutOfMemory ? ex.Message :
                         "Insufficient memory to continue the execution of the program.";
 
                     unsafe

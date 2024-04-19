@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+
 using Internal.Runtime;
 using Internal.Runtime.Augments;
 
@@ -35,20 +36,22 @@ namespace Internal.Reflection.Execution.FieldAccessors
 
         protected sealed override unsafe void UncheckedSetFieldBypassCctor(object value)
         {
+            Debug.Assert(value.GetType() == typeof(UIntPtr) || value.GetType() == typeof(IntPtr));
+
             if (FieldBase == FieldTableFlags.GCStatic)
             {
                 object gcStaticsRegion = RuntimeAugments.LoadReferenceTypeField(StaticsBase);
-                RuntimeAugments.StoreValueTypeField(gcStaticsRegion, FieldOffset, value, typeof(IntPtr).TypeHandle);
+                RuntimeAugments.StoreValueTypeField(gcStaticsRegion, FieldOffset, value, value.GetType().TypeHandle);
             }
             else if (FieldBase == FieldTableFlags.NonGCStatic)
             {
-                RuntimeAugments.StoreValueTypeField(StaticsBase + FieldOffset, value, typeof(IntPtr).TypeHandle);
+                RuntimeAugments.StoreValueTypeField(StaticsBase + FieldOffset, value, value.GetType().TypeHandle);
             }
             else
             {
                 Debug.Assert(FieldBase == FieldTableFlags.ThreadStatic);
                 object threadStaticsRegion = RuntimeAugments.GetThreadStaticBase(StaticsBase);
-                RuntimeAugments.StoreValueTypeField(threadStaticsRegion, FieldOffset, value, typeof(IntPtr).TypeHandle);
+                RuntimeAugments.StoreValueTypeField(threadStaticsRegion, FieldOffset, value, value.GetType().TypeHandle);
             }
         }
     }

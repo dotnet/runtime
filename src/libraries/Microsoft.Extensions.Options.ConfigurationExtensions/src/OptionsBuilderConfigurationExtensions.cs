@@ -77,7 +77,12 @@ namespace Microsoft.Extensions.DependencyInjection
                     : config.GetSection(configSectionPath);
                 section.Bind(opts, configureBinder);
             });
-            optionsBuilder.Services.AddSingleton<IOptionsChangeTokenSource<TOptions>, ConfigurationChangeTokenSource<TOptions>>();
+
+            optionsBuilder.Services.AddSingleton<IOptionsChangeTokenSource<TOptions>, ConfigurationChangeTokenSource<TOptions>>(sp =>
+            {
+                return new ConfigurationChangeTokenSource<TOptions>(optionsBuilder.Name, sp.GetRequiredService<IConfiguration>());
+            });
+
             return optionsBuilder;
         }
     }

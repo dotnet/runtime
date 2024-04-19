@@ -21,7 +21,6 @@
 #include "Crst.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "gcrhinterface.h"
 #include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
@@ -30,9 +29,7 @@
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "thread.inl"
-
-template<typename T> inline T VolatileLoad(T const * pt) { return *(T volatile const *)pt; }
-template<typename T> inline void VolatileStore(T* pt, T val) { *(T volatile *)pt = val; }
+#include "volatile.h"
 
 #ifdef STRESS_LOG
 

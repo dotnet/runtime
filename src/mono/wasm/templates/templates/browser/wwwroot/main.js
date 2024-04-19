@@ -3,7 +3,7 @@
 
 import { dotnet } from './_framework/dotnet.js'
 
-const { setModuleImports, getAssemblyExports, getConfig } = await dotnet
+const { setModuleImports, getAssemblyExports, getConfig, runMain } = await dotnet
     .withDiagnosticTracing(false)
     .withApplicationArgumentsFromQuery()
     .create();
@@ -22,4 +22,6 @@ const text = exports.MyClass.Greeting();
 console.log(text);
 
 document.getElementById('out').innerHTML = text;
-await dotnet.run();
+
+// run the C# Main() method and keep the runtime process running and executing further API calls
+await runMain();

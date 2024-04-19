@@ -1,10 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-solaris;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious)-freebsd;$(NetCoreAppPrevious)-illumos;$(NetCoreAppPrevious)-solaris;$(NetCoreAppPrevious)-linux;$(NetCoreAppPrevious)-osx;$(NetCoreAppPrevious)-ios;$(NetCoreAppPrevious)-tvos;$(NetCoreAppPrevious);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum)-freebsd;$(NetCoreAppMinimum)-linux;$(NetCoreAppMinimum)-osx;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum)-unix;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks Condition="'$(NetCoreAppPrevious)' != ''">$(TargetFrameworks);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious)-unix;$(NetCoreAppPrevious)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CA2249;CA1838</NoWarn>
     <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides a collection of classes used to access an ODBC data source in the managed space
 
@@ -136,14 +138,9 @@ System.Data.Odbc.OdbcTransaction</PackageDescription>
              Link="Common\System\Runtime\InteropServices\HandleRefMarshaller.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'freebsd' or '$(TargetPlatformIdentifier)' == 'illumos' or '$(TargetPlatformIdentifier)' == 'solaris'">
-    <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs"
-             Link="Common\Interop\Linux\Interop.Libraries.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">
-    <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
-             Link="Common\Interop\OSX\Interop.Libraries.cs" />
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Odbc.cs"
+             Link="Common\Interop\Unix\Interop.Odbc.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">

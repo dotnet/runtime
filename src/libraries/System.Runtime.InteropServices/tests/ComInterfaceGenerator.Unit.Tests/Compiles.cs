@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions.Attributes;
 using Microsoft.Interop.UnitTests;
 using Xunit;
 using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator>;
@@ -339,6 +340,14 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new object[] { ID(), codeSnippets.ComInterfaceParameters };
         }
 
+        public static IEnumerable<object[]> ManagedToUnmanagedComInterfaceSnippetsToCompile()
+        {
+            CodeSnippets codeSnippets = new(GeneratorKind.ComInterfaceGeneratorComObjectWrapper);
+
+            // MarshalAs
+            yield return new[] { ID(), codeSnippets.MarshalAsParameterAndModifiers("object", System.Runtime.InteropServices.UnmanagedType.Struct) };
+        }
+
         [Theory]
         [MemberData(nameof(CodeSnippetsToCompile), GeneratorKind.ComInterfaceGenerator)]
         [MemberData(nameof(CustomCollections), GeneratorKind.ComInterfaceGenerator)]
@@ -346,6 +355,7 @@ namespace ComInterfaceGenerator.Unit.Tests
         [MemberData(nameof(UnmanagedToManagedCodeSnippetsToCompile), GeneratorKind.ComInterfaceGeneratorManagedObjectWrapper)]
         [MemberData(nameof(CustomCollectionsManagedToUnmanaged), GeneratorKind.ComInterfaceGeneratorComObjectWrapper)]
         [MemberData(nameof(ComInterfaceSnippetsToCompile))]
+        [MemberData(nameof(ManagedToUnmanagedComInterfaceSnippetsToCompile))]
         public async Task ValidateComInterfaceSnippets(string id, string source)
         {
             _ = id;

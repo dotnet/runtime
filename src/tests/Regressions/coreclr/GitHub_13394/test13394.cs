@@ -3,20 +3,21 @@
 
 using System;
 using System.Numerics;
+using Xunit;
 
-struct MyValueType
+public struct MyValueType
 {
     object o;
 }
 
-abstract class Test_test13394
+public abstract class Test_test13394
 {
     public abstract void M(MyValueType v);
 
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         new Concrete().M(default);
-        return 100;
     }
 }
 

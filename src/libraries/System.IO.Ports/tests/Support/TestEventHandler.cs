@@ -145,7 +145,7 @@ namespace Legacy.Support
                     }
                 }
             }
-            Assert.True(false, $"Failed to validate event type {eventType}. Received: {string.Join(", ", _eventTypes)}");
+            Assert.Fail($"Failed to validate event type {eventType}. Received: {string.Join(", ", _eventTypes)}");
         }
 
         public int NumberOfOccurrencesOfType(T eventType)

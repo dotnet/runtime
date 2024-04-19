@@ -41,6 +41,11 @@ namespace System.Text.Json.Serialization
         }
 
         /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.AllowOutOfOrderMetadataProperties"/> when set.
+        /// </summary>
+        public bool AllowOutOfOrderMetadataProperties { get; set; }
+
+        /// <summary>
         /// Specifies the default value of <see cref="JsonSerializerOptions.AllowTrailingCommas"/> when set.
         /// </summary>
         public bool AllowTrailingCommas { get; set; }
@@ -126,6 +131,16 @@ namespace System.Text.Json.Serialization
         public bool WriteIndented { get; set; }
 
         /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.IndentCharacter"/> when set.
+        /// </summary>
+        public char IndentCharacter { get; set; }
+
+        /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.IndentCharacter"/> when set.
+        /// </summary>
+        public int IndentSize { get; set; }
+
+        /// <summary>
         /// Specifies the default source generation mode for type declarations that don't set a <see cref="JsonSerializableAttribute.GenerationMode"/>.
         /// </summary>
         public JsonSourceGenerationMode GenerationMode { get; set; }
@@ -135,5 +150,10 @@ namespace System.Text.Json.Serialization
         /// instead of numeric serialization for all enum types encountered in its type graph.
         /// </summary>
         public bool UseStringEnumConverter { get; set; }
+
+        /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.NewLine"/> when set.
+        /// </summary>
+        public string? NewLine { get; set; }
     }
 }

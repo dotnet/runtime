@@ -29,20 +29,26 @@ public interface ITestReporterWrapper
 
 public sealed class BasicTestMethod : ITestInfo
 {
-    public BasicTestMethod(IMethodSymbol method, string externAlias, ImmutableArray<string> arguments = default, string? displayNameExpression = null)
+    public BasicTestMethod(IMethodSymbol method,
+                           string externAlias,
+                           ImmutableArray<string> arguments = default,
+                           string? displayNameExpression = null)
     {
         var args = arguments.IsDefaultOrEmpty ? "" : string.Join(", ", arguments);
-        ContainingType = method.ContainingType.ToDisplayString(XUnitWrapperGenerator.FullyQualifiedWithoutGlobalNamespace);
+
+        ContainingType = method.ContainingType.ToDisplayString(XUnitWrapperGenerator
+                                                               .FullyQualifiedWithoutGlobalNamespace);
         Method = method.Name;
         DisplayNameForFiltering = $"{ContainingType}.{Method}({args})";
         TestNameExpression = displayNameExpression ?? $"\"{externAlias}::{ContainingType}.{Method}({args})\"";
+
         if (method.IsStatic)
         {
-            ExecutionStatement = $"{externAlias}::{ContainingType}.{Method}({args});";
+            _executionStatement = $"{externAlias}::{ContainingType}.{Method}({args});";
         }
         else
         {
-            ExecutionStatement = $"using ({externAlias}::{ContainingType} obj = new()) obj.{Method}({args});";
+            _executionStatement = $"using ({externAlias}::{ContainingType} obj = new()) obj.{Method}({args});";
         }
     }
 
@@ -50,11 +56,13 @@ public sealed class BasicTestMethod : ITestInfo
     public string DisplayNameForFiltering { get; }
     public string Method { get; }
     public string ContainingType { get; }
-    private string ExecutionStatement { get; }
+
+    private string _executionStatement { get; }
 
     public CodeBuilder GenerateTestExecution(ITestReporterWrapper testReporterWrapper)
     {
-        return testReporterWrapper.WrapTestExecutionWithReporting(CodeBuilder.CreateNewLine(ExecutionStatement), this);
+        return testReporterWrapper.WrapTestExecutionWithReporting(CodeBuilder.CreateNewLine(_executionStatement),
+                                                                  this);
     }
 
     public override bool Equals(object obj)
@@ -63,7 +71,7 @@ public sealed class BasicTestMethod : ITestInfo
             && TestNameExpression == other.TestNameExpression
             && Method == other.Method
             && ContainingType == other.ContainingType
-            && ExecutionStatement == other.ExecutionStatement;
+            && _executionStatement == other._executionStatement;
     }
 
     public override int GetHashCode()
@@ -72,7 +80,7 @@ public sealed class BasicTestMethod : ITestInfo
         hash = hash * 23 + (TestNameExpression?.GetHashCode() ?? 0);
         hash = hash * 23 + (Method?.GetHashCode() ?? 0);
         hash = hash * 23 + (ContainingType?.GetHashCode() ?? 0);
-        hash = hash * 23 + (ExecutionStatement?.GetHashCode() ?? 0);
+        hash = hash * 23 + (_executionStatement?.GetHashCode() ?? 0);
         return hash;
     }
 }
@@ -81,23 +89,26 @@ public sealed class LegacyStandaloneEntryPointTestMethod : ITestInfo
 {
     public LegacyStandaloneEntryPointTestMethod(IMethodSymbol method, string externAlias)
     {
-        ContainingType = method.ContainingType.ToDisplayString(XUnitWrapperGenerator.FullyQualifiedWithoutGlobalNamespace);
+        ContainingType = method.ContainingType.ToDisplayString(XUnitWrapperGenerator
+                                                               .FullyQualifiedWithoutGlobalNamespace);
         Method = method.Name;
         TestNameExpression = $"\"{externAlias}::{ContainingType}.{Method}()\"";
         DisplayNameForFiltering = $"{ContainingType}.{Method}()";
-        ExecutionStatement = $"Xunit.Assert.Equal(100, {externAlias}::{ContainingType}.{Method}());";
+
+        _executionStatement = $"Xunit.Assert.Equal(100, {externAlias}::{ContainingType}.{Method}());";
     }
 
     public string TestNameExpression { get; }
     public string DisplayNameForFiltering { get; }
-
     public string Method { get; }
     public string ContainingType { get; }
-    private string ExecutionStatement { get; }
+
+    private string _executionStatement { get; }
 
     public CodeBuilder GenerateTestExecution(ITestReporterWrapper testReporterWrapper)
     {
-        return testReporterWrapper.WrapTestExecutionWithReporting(CodeBuilder.CreateNewLine(ExecutionStatement), this);
+        return testReporterWrapper.WrapTestExecutionWithReporting(CodeBuilder.CreateNewLine(_executionStatement),
+                                                                  this);
     }
 
     public override bool Equals(object obj)
@@ -120,17 +131,16 @@ public sealed class LegacyStandaloneEntryPointTestMethod : ITestInfo
 
 public sealed class ConditionalTest : ITestInfo
 {
-    private ITestInfo _innerTest;
-    private string _condition;
     public ConditionalTest(ITestInfo innerTest, string condition)
     {
-        _innerTest = innerTest;
-        _condition = condition;
         TestNameExpression = innerTest.TestNameExpression;
         DisplayNameForFiltering = innerTest.DisplayNameForFiltering;
         Method = innerTest.Method;
         ContainingType = innerTest.ContainingType;
-    }
+
+        _innerTest = innerTest;
+        _condition = condition;
+   }
 
     public ConditionalTest(ITestInfo innerTest, Xunit.TestPlatforms platform)
         : this(innerTest, GetPlatformConditionFromTestPlatform(platform))
@@ -138,23 +148,28 @@ public sealed class ConditionalTest : ITestInfo
     }
 
     public string TestNameExpression { get; }
-
     public string DisplayNameForFiltering { get; }
-
     public string Method { get; }
     public string ContainingType { get; }
+
+    private ITestInfo _innerTest;
+    private string _condition;
 
     public CodeBuilder GenerateTestExecution(ITestReporterWrapper testReporterWrapper)
     {
         CodeBuilder builder = new();
         builder.AppendLine($"if ({_condition})");
+
         using (builder.NewBracesScope())
         {
             builder.Append(_innerTest.GenerateTestExecution(testReporterWrapper));
         }
+
         builder.AppendLine($"else");
+
         using (builder.NewBracesScope())
         {
+            builder.AppendLine("string reason = string.Empty;");
             builder.AppendLine(testReporterWrapper.GenerateSkippedTestReporting(_innerTest));
         }
         return builder;
@@ -184,6 +199,7 @@ public sealed class ConditionalTest : ITestInfo
     private static string GetPlatformConditionFromTestPlatform(Xunit.TestPlatforms platform)
     {
         List<string> platformCheckConditions = new();
+
         if (platform.HasFlag(Xunit.TestPlatforms.Windows))
         {
             platformCheckConditions.Add("global::System.OperatingSystem.IsWindows()");
@@ -210,7 +226,8 @@ public sealed class ConditionalTest : ITestInfo
         }
         if (platform.HasFlag(Xunit.TestPlatforms.iOS))
         {
-            platformCheckConditions.Add("(global::System.OperatingSystem.IsIOS() && !global::System.OperatingSystem.IsMacCatalyst())");
+            platformCheckConditions.Add("(global::System.OperatingSystem.IsIOS()"
+                                      + " && !global::System.OperatingSystem.IsMacCatalyst())");
         }
         if (platform.HasFlag(Xunit.TestPlatforms.tvOS))
         {
@@ -232,43 +249,56 @@ public sealed class ConditionalTest : ITestInfo
         {
             platformCheckConditions.Add(@"global::System.OperatingSystem.IsOSPlatform(""NetBSD"")");
         }
+
         return string.Join(" || ", platformCheckConditions);
     }
 }
 
 public sealed class MemberDataTest : ITestInfo
 {
-    private ITestInfo _innerTest;
-    private string _memberInvocation;
-    private string _loopVarIdentifier;
-    public MemberDataTest(ISymbol referencedMember, ITestInfo innerTest, string externAlias, string argumentLoopVarIdentifier)
-    {
-        TestNameExpression = innerTest.TestNameExpression;
-        Method = innerTest.Method;
-        ContainingType = innerTest.ContainingType;
-        DisplayNameForFiltering = $"{ContainingType}.{Method}(...)";
-        _innerTest = innerTest;
-        _loopVarIdentifier = argumentLoopVarIdentifier;
-
-        string containingType = referencedMember.ContainingType.ToDisplayString(XUnitWrapperGenerator.FullyQualifiedWithoutGlobalNamespace);
-        _memberInvocation = referencedMember switch
-        {
-            IPropertySymbol { IsStatic: true } => $"{externAlias}::{containingType}.{referencedMember.Name}",
-            IMethodSymbol { IsStatic: true, Parameters.Length: 0 } => $"{externAlias}::{containingType}.{referencedMember.Name}()",
-            _ => throw new ArgumentException("MemberDataTest only supports properties and parameterless methods", nameof(referencedMember))
-        };
-    }
-
     public string TestNameExpression { get; }
     public string DisplayNameForFiltering { get; }
     public string Method { get; }
     public string ContainingType { get; }
 
+    private ITestInfo _innerTest;
+    private string _memberInvocation;
+    private string _loopVarIdentifier;
+
+    public MemberDataTest(ISymbol referencedMember,
+                          ITestInfo innerTest,
+                          string externAlias,
+                          string argumentLoopVarIdentifier)
+    {
+        TestNameExpression = innerTest.TestNameExpression;
+        Method = innerTest.Method;
+        ContainingType = innerTest.ContainingType;
+        DisplayNameForFiltering = $"{ContainingType}.{Method}(...)";
+
+        _innerTest = innerTest;
+        _loopVarIdentifier = argumentLoopVarIdentifier;
+
+        string containingType = referencedMember.ContainingType.ToDisplayString(XUnitWrapperGenerator
+                                                                                .FullyQualifiedWithoutGlobalNamespace);
+        _memberInvocation = referencedMember switch
+        {
+            IPropertySymbol { IsStatic: true } => $"{externAlias}::{containingType}.{referencedMember.Name}",
+
+            IMethodSymbol { IsStatic: true, Parameters.Length: 0 } =>
+                $"{externAlias}::{containingType}.{referencedMember.Name}()",
+
+            _ => throw new ArgumentException("MemberDataTest only supports properties and parameterless methods",
+                                             nameof(referencedMember))
+        };
+    }
+
     public CodeBuilder GenerateTestExecution(ITestReporterWrapper testReporterWrapper)
     {
         CodeBuilder builder = new();
+
         builder.AppendLine();
         builder.AppendLine($@"foreach (object[] {_loopVarIdentifier} in {_memberInvocation})");
+
         using (builder.NewBracesScope())
         {
             builder.Append(_innerTest.GenerateTestExecution(testReporterWrapper));
@@ -298,34 +328,34 @@ public sealed class MemberDataTest : ITestInfo
 
 public sealed class OutOfProcessTest : ITestInfo
 {
+    public string TestNameExpression { get; }
+    public string DisplayNameForFiltering { get; }
+    public string Method { get; }
+    public string ContainingType => "OutOfProcessTest";
+
+    private CodeBuilder _executionStatement { get; }
+    private string RelativeAssemblyPath { get; }
+
     public OutOfProcessTest(string displayName, string relativeAssemblyPath)
     {
         Method = displayName;
         DisplayNameForFiltering = displayName;
         TestNameExpression = $"@\"{displayName}\"";
         RelativeAssemblyPath = relativeAssemblyPath;
-        ExecutionStatement = new CodeBuilder();
-        ExecutionStatement.AppendLine();
-        ExecutionStatement.AppendLine("if (TestLibrary.OutOfProcessTest.OutOfProcessTestsSupported)");
-        using (ExecutionStatement.NewBracesScope())
+
+        _executionStatement = new CodeBuilder();
+        _executionStatement.AppendLine();
+        _executionStatement.AppendLine("if (TestLibrary.OutOfProcessTest.OutOfProcessTestsSupported)");
+
+        using (_executionStatement.NewBracesScope())
         {
-            ExecutionStatement.AppendLine($@"TestLibrary.OutOfProcessTest.RunOutOfProcessTest(@""{relativeAssemblyPath}"");");
+            _executionStatement.AppendLine($@"TestLibrary.OutOfProcessTest"
+                                        + $@".RunOutOfProcessTest(@""{relativeAssemblyPath}"");");
         }
     }
 
-    public string TestNameExpression { get; }
-
-    public string DisplayNameForFiltering { get; }
-
-    private string RelativeAssemblyPath { get; }
-
-    public string Method { get; }
-
-    public string ContainingType => "OutOfProcessTest";
-
-    private CodeBuilder ExecutionStatement { get; }
-
-    public CodeBuilder GenerateTestExecution(ITestReporterWrapper testReporterWrapper) => testReporterWrapper.WrapTestExecutionWithReporting(ExecutionStatement, this);
+    public CodeBuilder GenerateTestExecution(ITestReporterWrapper testReporterWrapper) =>
+        testReporterWrapper.WrapTestExecutionWithReporting(_executionStatement, this);
 
     public override bool Equals(object obj)
     {
@@ -345,6 +375,11 @@ public sealed class OutOfProcessTest : ITestInfo
 
 public sealed class TestWithCustomDisplayName : ITestInfo
 {
+    public string DisplayNameForFiltering { get; }
+    public string TestNameExpression => $@"""{DisplayNameForFiltering.Replace(@"\", @"\\")}""";
+    public string Method => _inner.Method;
+    public string ContainingType => _inner.ContainingType;
+
     private ITestInfo _inner;
 
     public TestWithCustomDisplayName(ITestInfo inner, string displayName)
@@ -352,14 +387,6 @@ public sealed class TestWithCustomDisplayName : ITestInfo
         _inner = inner;
         DisplayNameForFiltering = displayName;
     }
-
-    public string TestNameExpression => $@"""{DisplayNameForFiltering.Replace(@"\", @"\\")}""";
-
-    public string DisplayNameForFiltering { get; }
-
-    public string Method => _inner.Method;
-
-    public string ContainingType => _inner.ContainingType;
 
     public CodeBuilder GenerateTestExecution(ITestReporterWrapper testReporterWrapper)
     {
@@ -397,41 +424,72 @@ public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
     private readonly string _filterLocalIdentifier;
     private readonly string _outputRecorderIdentifier;
 
-    public WrapperLibraryTestSummaryReporting(string summaryLocalIdentifier, string filterLocalIdentifier, string outputRecorderIdentifier)
+    public WrapperLibraryTestSummaryReporting(string summaryLocalIdentifier,
+                                              string filterLocalIdentifier,
+                                              string outputRecorderIdentifier)
     {
         _summaryLocalIdentifier = summaryLocalIdentifier;
         _filterLocalIdentifier = filterLocalIdentifier;
         _outputRecorderIdentifier = outputRecorderIdentifier;
     }
 
-    public CodeBuilder WrapTestExecutionWithReporting(CodeBuilder testExecutionExpression, ITestInfo test)
+    public CodeBuilder WrapTestExecutionWithReporting(CodeBuilder testExecutionExpression,
+                                                      ITestInfo test)
     {
         CodeBuilder builder = new();
-        builder.AppendLine($"if ({_filterLocalIdentifier} is null || {_filterLocalIdentifier}.ShouldRunTest(@\"{test.ContainingType}.{test.Method}\","
+
+        builder.AppendLine($"if ({_filterLocalIdentifier} is null"
+                         + $" || {_filterLocalIdentifier}.ShouldRunTest(@\"{test.ContainingType}.{test.Method}\","
                          + $" {test.TestNameExpression}))");
+
         using (builder.NewBracesScope())
         {
             builder.AppendLine($"System.TimeSpan testStart = stopwatch.Elapsed;");
             builder.AppendLine("try");
+
             using (builder.NewBracesScope())
             {
-                builder.AppendLine($"{_summaryLocalIdentifier}.ReportStartingTest({test.TestNameExpression}, System.Console.Out);");
+                builder.AppendLine($"{_summaryLocalIdentifier}.ReportStartingTest("
+                                 + $"{test.TestNameExpression},"
+                                 + $" System.Console.Out);");
+
                 builder.AppendLine($"{_outputRecorderIdentifier}.ResetTestOutput();");
                 builder.Append(testExecutionExpression);
 
-                builder.AppendLine($"{_summaryLocalIdentifier}.ReportPassedTest({test.TestNameExpression}, \"{test.ContainingType}\", @\"{test.Method}\","
-                                 + $" stopwatch.Elapsed - testStart, {_outputRecorderIdentifier}.GetTestOutput(), System.Console.Out, tempLogSw, statsCsvSw);");
+                builder.AppendLine($"{_summaryLocalIdentifier}.ReportPassedTest("
+                                 + $"{test.TestNameExpression},"
+                                 + $" \"{test.ContainingType}\","
+                                 + $" @\"{test.Method}\","
+                                 + $" stopwatch.Elapsed - testStart,"
+                                 + $" {_outputRecorderIdentifier}.GetTestOutput(),"
+                                 + $" System.Console.Out,"
+                                 + $" tempLogSw,"
+                                 + $" statsCsvSw);");
             }
+
             builder.AppendLine("catch (System.Exception ex)");
+
             using (builder.NewBracesScope())
             {
-                builder.AppendLine($"{_summaryLocalIdentifier}.ReportFailedTest({test.TestNameExpression}, \"{test.ContainingType}\", @\"{test.Method}\","
-                                 + $" stopwatch.Elapsed - testStart, ex, {_outputRecorderIdentifier}.GetTestOutput(), System.Console.Out, tempLogSw, statsCsvSw);");
+                builder.AppendLine($"{_summaryLocalIdentifier}.ReportFailedTest("
+                                 + $"{test.TestNameExpression},"
+                                 + $" \"{test.ContainingType}\","
+                                 + $" @\"{test.Method}\","
+                                 + $" stopwatch.Elapsed - testStart,"
+                                 + $" ex,"
+                                 + $" {_outputRecorderIdentifier}.GetTestOutput(),"
+                                 + $" System.Console.Out,"
+                                 + $" tempLogSw,"
+                                 + $" statsCsvSw);");
             }
         }
+
         builder.AppendLine("else");
+
         using (builder.NewBracesScope())
         {
+            builder.AppendLine($"string reason = {_filterLocalIdentifier}"
+                             + $".GetTestExclusionReason({test.TestNameExpression});");
             builder.AppendLine(GenerateSkippedTestReporting(test));
         }
         return builder;
@@ -439,7 +497,13 @@ public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
 
     public string GenerateSkippedTestReporting(ITestInfo skippedTest)
     {
-        return $"{_summaryLocalIdentifier}.ReportSkippedTest({skippedTest.TestNameExpression}, \"{skippedTest.ContainingType}\", @\"{skippedTest.Method}\","
-             + $" System.TimeSpan.Zero, string.Empty, tempLogSw, statsCsvSw);";
+        return $"{_summaryLocalIdentifier}.ReportSkippedTest("
+             + $"{skippedTest.TestNameExpression},"
+             + $" \"{skippedTest.ContainingType}\","
+             + $" @\"{skippedTest.Method}\","
+             + $" System.TimeSpan.Zero,"
+             + $" reason,"
+             + $" tempLogSw,"
+             + $" statsCsvSw);";
     }
 }

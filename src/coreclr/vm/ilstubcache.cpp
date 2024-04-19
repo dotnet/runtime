@@ -18,20 +18,20 @@
 
 const char* FormatSig(MethodDesc* pMD, LoaderHeap *pHeap, AllocMemTracker *pamTracker);
 
-ILStubCache::ILStubCache(LoaderHeap *pHeap)
+ILStubCache::ILStubCache(LoaderAllocator *pAllocator)
     : m_crst(CrstStubCache, CRST_UNSAFE_ANYMODE)
-    , m_heap(pHeap)
+    , m_pAllocator(pAllocator)
     , m_pStubMT(NULL)
 {
     WRAPPER_NO_CONTRACT;
 }
 
-void ILStubCache::Init(LoaderHeap* pHeap)
+void ILStubCache::Init(LoaderAllocator* pAllocator)
 {
     LIMITED_METHOD_CONTRACT;
 
-    CONSISTENCY_CHECK(NULL == m_heap);
-    m_heap = pHeap;
+    CONSISTENCY_CHECK(NULL == m_pAllocator);
+    m_pAllocator = pAllocator;
 }
 
 #ifndef DACCESS_COMPILE
@@ -394,7 +394,7 @@ MethodTable* ILStubCache::GetOrCreateStubMethodTable(Module* pModule)
         if (NULL == m_pStubMT)
         {
             AllocMemTracker amt;
-            MethodTable* pNewMT = CreateMinimalMethodTable(pModule, m_heap, &amt);
+            MethodTable* pNewMT = CreateMinimalMethodTable(pModule, m_pAllocator, &amt);
             amt.SuppressRelease();
             VolatileStore<MethodTable*>(&m_pStubMT, pNewMT);
         }
@@ -427,7 +427,7 @@ MethodDesc* ILStubCache::InsertStubMethodDesc(MethodDesc *pMD, ILStubHashBlob* p
     const ILStubCacheEntry* phe = m_hashMap.LookupPtr(pHashBlob);
     if (phe == NULL)
     {
-        AllocMemHolder<ILStubHashBlob> pBlobHolder( m_heap->AllocMem(S_SIZE_T(cbSizeOfBlob)) );
+        AllocMemHolder<ILStubHashBlob> pBlobHolder( m_pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbSizeOfBlob)) );
         ILStubHashBlob* pBlob = pBlobHolder;
         _ASSERTE(pHashBlob->m_cbSizeOfBlob == cbSizeOfBlob);
         memcpy(pBlob, pHashBlob, cbSizeOfBlob);
@@ -500,8 +500,10 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
     ILStubHashBlob* pHashBlob,
     DWORD dwStubFlags,
     Module* pSigModule,
+    Module* pSigLoaderModule,
     PCCOR_SIGNATURE pSig,
     DWORD cbSig,
+    SigTypeContext* pTypeContext,
     AllocMemTracker* pamTracker,
     bool& bILStubCreator,
     MethodDesc *pLastMD)
@@ -538,22 +540,23 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
         // Couldn't find it, let's make a new one.
         //
 
-        Module *pContainingModule = pSigModule;
-        if (pTargetMD != NULL)
+        if (pSigLoaderModule == NULL)
         {
-            // loader module may be different from signature module for generic targets
-            pContainingModule = pTargetMD->GetLoaderModule();
+            pSigLoaderModule = (pTargetMD != NULL) ? pTargetMD->GetLoaderModule() : pSigModule;
         }
-
-        MethodTable *pStubMT = GetOrCreateStubMethodTable(pContainingModule);
 
         SigTypeContext typeContext;
-        if (pTargetMD != NULL)
+        if (pTypeContext == NULL)
         {
-            SigTypeContext::InitTypeContext(pTargetMD, &typeContext);
+            if (pTargetMD != NULL)
+            {
+                SigTypeContext::InitTypeContext(pTargetMD, &typeContext);
+            }
+            pTypeContext = &typeContext;
         }
 
-        pMD = ILStubCache::CreateNewMethodDesc(m_heap, pStubMT, dwStubFlags, pSigModule, pSig, cbSig, &typeContext, pamTracker);
+        MethodTable *pStubMT = GetOrCreateStubMethodTable(pSigLoaderModule);
+        pMD = ILStubCache::CreateNewMethodDesc(m_pAllocator->GetHighFrequencyHeap(), pStubMT, dwStubFlags, pSigModule, pSig, cbSig, pTypeContext, pamTracker);
 
         if (SF_IsSharedStub(dwStubFlags))
         {
@@ -564,7 +567,7 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
             const ILStubCacheEntry* phe = m_hashMap.LookupPtr(pHashBlob);
             if (phe == NULL)
             {
-                AllocMemHolder<ILStubHashBlob> pBlobHolder( m_heap->AllocMem(S_SIZE_T(cbSizeOfBlob)) );
+                AllocMemHolder<ILStubHashBlob> pBlobHolder( m_pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbSizeOfBlob)) );
                 pBlob = pBlobHolder;
                 _ASSERTE(pHashBlob->m_cbSizeOfBlob == cbSizeOfBlob);
                 memcpy(pBlob, pHashBlob, cbSizeOfBlob);

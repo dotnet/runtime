@@ -32,7 +32,13 @@ CompileResult::CompileResult()
     allocGCInfoDets.retval = nullptr;
     allocGCInfoDets.size   = 0;
 
+    MethodFullName = nullptr;
+    TieringName = nullptr;
     memoryTracker = nullptr;
+
+#define JITMETADATAINFO(name, type, flags)
+#define JITMETADATAMETRIC(name, type, flags) name = 0;
+#include "jitmetadatalist.h"
 }
 
 CompileResult::~CompileResult()
@@ -685,6 +691,18 @@ const char* relocationTypeToString(uint16_t fRelocType)
         // From corinfo.h
         case IMAGE_REL_BASED_REL32:
             return "rel32";
+        case IMAGE_REL_SECREL:
+            return "secrel";
+        case IMAGE_REL_TLSGD:
+            return "tlsgd";
+        case IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21:
+            return "tlsdesc_high21";
+        case IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
+            return "tlsdesc_lo12";
+        case IMAGE_REL_AARCH64_TLSDESC_ADD_LO12:
+            return "tlsdesc_add_lo12";
+        case IMAGE_REL_AARCH64_TLSDESC_CALL:
+            return "tlsdesc_call";
         case IMAGE_REL_BASED_THUMB_BRANCH24:
             return "thumb_branch24";
         default:
@@ -845,6 +863,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                 break;
 
                 case IMAGE_REL_ARM64_PAGEBASE_REL21: // ADRP 21 bit PC-relative page address
+                case IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21: // ADRP 21 bit for TLSDesc
                 {
                     if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                     {
@@ -865,6 +884,16 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                         INT32 imm12 = (INT32)(SIZE_T)tmp.target & 0xFFFLL;
                         PutArm64Rel12((UINT32*)address, imm12);
                     }
+                    wasRelocHandled = true;
+                }
+                break;
+
+                case IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
+                case IMAGE_REL_AARCH64_TLSDESC_ADD_LO12: // TLSDESC ADD for corresponding ADRP
+                case IMAGE_REL_AARCH64_TLSDESC_CALL:
+                {
+                    // These are patched later by linker during actual execution
+                    // and do not need relocation.
                     wasRelocHandled = true;
                 }
                 break;
@@ -896,13 +925,19 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
 
                 wasRelocHandled = true;
             }
+            else if (relocType == IMAGE_REL_TLSGD)
+            {
+                // These are patched later by linker during actual execution
+                // and do not need relocation.
+                wasRelocHandled = true;
+            }
         }
 
         if (wasRelocHandled)
             continue;
 
         // Now do all-platform relocations.
-        if (tmp.fRelocType == IMAGE_REL_BASED_REL32)
+        if ((tmp.fRelocType == IMAGE_REL_BASED_REL32) || (tmp.fRelocType == IMAGE_REL_SECREL))
         {
             DWORDLONG fixupLocation = tmp.location;
 
@@ -935,23 +970,6 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                         {
                             DWORDLONG key   = tmp.target;
                             int       index = rc->mc->GetRelocTypeHint->GetIndex(key);
-                            if (index == -1)
-                            {
-                                // See if the original address is in the replay address map. This happens for
-                                // relocations on static field addresses found via getFieldInfo().
-                                void* origAddr = repAddressMap((void*)tmp.target);
-                                if ((origAddr != (void*)-1) && (origAddr != nullptr))
-                                {
-                                    key   = CastPointer(origAddr);
-                                    index = rc->mc->GetRelocTypeHint->GetIndex(key);
-                                    if (index != -1)
-                                    {
-                                        LogDebug("    Using address map: target %016" PRIX64 ", original target %016" PRIX64,
-                                            tmp.target, key);
-                                    }
-                                }
-                            }
-
                             if (index != -1)
                             {
                                 WORD retVal = (WORD)rc->mc->GetRelocTypeHint->Get(key);
@@ -1131,52 +1149,6 @@ const char* CompileResult::repProcessName()
         return (const char*)ProcessName->GetBuffer(ProcessName->Get((DWORD)0));
     }
     return nullptr;
-}
-
-void CompileResult::recAddressMap(void* originalAddress, void* replayAddress, unsigned int size)
-{
-    if (AddressMap == nullptr)
-        AddressMap = new LightWeightMap<DWORDLONG, Agnostic_AddressMap>();
-
-    Agnostic_AddressMap value;
-
-    value.Address = CastPointer(originalAddress);
-    value.size    = (DWORD)size;
-
-    AddressMap->Add(CastPointer(replayAddress), value);
-}
-void CompileResult::dmpAddressMap(DWORDLONG key, const Agnostic_AddressMap& value)
-{
-    printf("AddressMap key %016" PRIX64 ", value addr-%016" PRIX64 ", size-%u", key, value.Address, value.size);
-}
-void* CompileResult::repAddressMap(void* replayAddress)
-{
-    if (AddressMap == nullptr)
-        return nullptr;
-
-    int index = AddressMap->GetIndex(CastPointer(replayAddress));
-
-    if (index != -1)
-    {
-        Agnostic_AddressMap value;
-        value = AddressMap->Get(CastPointer(replayAddress));
-        return (void*)value.Address;
-    }
-
-    return nullptr;
-}
-void* CompileResult::searchAddressMap(void* newAddress)
-{
-    if (AddressMap == nullptr)
-        return (void*)-1;
-    for (unsigned int i = 0; i < AddressMap->GetCount(); i++)
-    {
-        DWORDLONG           replayAddress = AddressMap->GetRawKeys()[i];
-        Agnostic_AddressMap value         = AddressMap->Get(replayAddress);
-        if ((replayAddress <= CastPointer(newAddress)) && (CastPointer(newAddress) < (replayAddress + value.size)))
-            return (void*)(value.Address + (CastPointer(newAddress) - replayAddress));
-    }
-    return (void*)-1;
 }
 
 void CompileResult::recReserveUnwindInfo(BOOL isFunclet, BOOL isColdCode, ULONG unwindSize)

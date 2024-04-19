@@ -34,17 +34,7 @@ namespace System.Text.Json.Serialization
 
             if (typeInfo.CreateObject is null)
             {
-                // The contract model was not able to produce a default constructor for two possible reasons:
-                // 1. Either the declared collection type is abstract and cannot be instantiated.
-                // 2. The collection type does not specify a default constructor.
-                if (Type.IsAbstract || Type.IsInterface)
-                {
-                    ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(Type, ref reader, ref state);
-                }
-                else
-                {
-                    ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(Type, ref reader, ref state);
-                }
+                ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(typeInfo, ref reader, ref state);
             }
 
             state.Current.ReturnValue = typeInfo.CreateObject();
@@ -206,13 +196,13 @@ namespace System.Text.Json.Serialization
                     {
                         if (state.Current.PropertyState < StackFramePropertyState.ReadValue)
                         {
-                            state.Current.PropertyState = StackFramePropertyState.ReadValue;
-
-                            if (!SingleValueReadWithReadAhead(elementConverter.RequiresReadAhead, ref reader, ref state))
+                            if (!reader.TryAdvanceWithOptionalReadAhead(elementConverter.RequiresReadAhead))
                             {
                                 value = default;
                                 return false;
                             }
+
+                            state.Current.PropertyState = StackFramePropertyState.ReadValue;
                         }
 
                         if (state.Current.PropertyState < StackFramePropertyState.ReadValueIsEnd)
@@ -246,8 +236,6 @@ namespace System.Text.Json.Serialization
 
                 if (state.Current.ObjectState < StackFrameObjectState.EndToken)
                 {
-                    state.Current.ObjectState = StackFrameObjectState.EndToken;
-
                     // Array payload is nested inside a $values metadata property.
                     if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Values) != 0)
                     {
@@ -257,6 +245,8 @@ namespace System.Text.Json.Serialization
                             return false;
                         }
                     }
+
+                    state.Current.ObjectState = StackFrameObjectState.EndToken;
                 }
 
                 if (state.Current.ObjectState < StackFrameObjectState.EndTokenValidation)
@@ -267,7 +257,17 @@ namespace System.Text.Json.Serialization
                         if (reader.TokenType != JsonTokenType.EndObject)
                         {
                             Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
-                            ThrowHelper.ThrowJsonException_MetadataInvalidPropertyInArrayMetadata(ref state, typeToConvert, reader);
+                            if (options.AllowOutOfOrderMetadataProperties)
+                            {
+                                Debug.Assert(JsonSerializer.IsMetadataPropertyName(reader.GetUnescapedSpan(), (state.Current.BaseJsonTypeInfo ?? jsonTypeInfo).PolymorphicTypeResolver), "should only be hit if metadata property.");
+                                bool result = reader.TrySkipPartial(reader.CurrentDepth - 1); // skip to the end of the object
+                                Debug.Assert(result, "Metadata reader must have buffered all contents.");
+                                Debug.Assert(reader.TokenType is JsonTokenType.EndObject);
+                            }
+                            else
+                            {
+                                ThrowHelper.ThrowJsonException_MetadataInvalidPropertyInArrayMetadata(ref state, typeToConvert, reader);
+                            }
                         }
                     }
                 }

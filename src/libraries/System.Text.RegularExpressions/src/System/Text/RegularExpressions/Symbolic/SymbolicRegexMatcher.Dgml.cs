@@ -32,7 +32,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 {
                     string info = CharKind.DescribePrev(state.PrevCharKind);
                     string deriv = WebUtility.HtmlEncode(state.Node.ToString());
-                    string nodeDgmlView = $"{(info == string.Empty ? info : $"Previous: {info}&#13;")}{(deriv == string.Empty ? "()" : deriv)}";
+                    string nodeDgmlView = $"{(string.IsNullOrEmpty(info) ? info : $"Previous: {info}&#13;")}{(string.IsNullOrEmpty(deriv) ? "()" : deriv)}";
 
                     writer.WriteLine("        <Node Id=\"{0}\" Label=\"{0}\" Category=\"State\" Group=\"Collapsed\" StateInfo=\"{1}\">", state.Id, nodeDgmlView);
                     if (_stateFlagsArray[state.Id].IsInitial())

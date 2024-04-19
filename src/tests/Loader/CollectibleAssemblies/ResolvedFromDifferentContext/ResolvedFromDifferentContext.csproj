@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for UnloadabilityIncompatible, GC.WaitForPendingFinalizers -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Test creates non-collectible AssemblyLoadContext -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <CLRTestPriority>1</CLRTestPriority>
@@ -8,4 +9,21 @@
   <ItemGroup>
     <Compile Include="ResolvedFromDifferentContext.cs" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="TestInterface.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="TestClass.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TestClassOutputPath>$(OutputPath)/../TestClass</TestClassOutputPath>
+    <TestInterfaceOutputPath>$(OutputPath)/../TestInterface</TestInterfaceOutputPath>
+  </PropertyGroup>
+
+  <Target Name="CopySupportAssembliesToOutputSubfolders" AfterTargets="Build">
+    <MakeDir Directories="$(TestClassOutputPath);$(TestInterfaceOutputPath)" />
+    <Copy SourceFiles="$(TestClassOutputPath)/TestClass.dll" DestinationFolder="$(OutputPath)/TestClass" />
+    <Copy SourceFiles="$(TestInterfaceOutputPath)/TestInterface.dll" DestinationFolder="$(OutputPath)/TestInterface" />
+  </Target>
+
 </Project>

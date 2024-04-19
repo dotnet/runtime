@@ -17,13 +17,13 @@ namespace System.Reflection
         }
 
         public AmbiguousMatchException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_AmbiguousMatchException_NoMessage)
         {
             HResult = HResults.COR_E_AMBIGUOUSMATCH;
         }
 
         public AmbiguousMatchException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_AmbiguousMatchException_NoMessage, inner)
         {
             HResult = HResults.COR_E_AMBIGUOUSMATCH;
         }

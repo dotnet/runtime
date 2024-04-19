@@ -109,7 +109,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 Assert.True(tokenInfo.HasExtensions, "tokenInfo.HasExtensions");
                 Assert.NotNull(tokenInfo.GetExtensions());
 
-                Assert.True(false, "A test handler has been written for extensions...");
+                Assert.Fail("A test handler has been written for extensions...");
 
                 // GetExtensions always returns a new collection.
                 Assert.NotSame(tokenInfo.GetExtensions(), tokenInfo.GetExtensions());
@@ -494,7 +494,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 Assert.True(tokenInfo.HasExtensions, "tokenInfo.HasExtensions");
                 Assert.NotNull(tokenInfo.GetExtensions());
 
-                Assert.True(false, "A test handler has been written for extensions...");
+                Assert.Fail("A test handler has been written for extensions...");
 
                 // GetExtensions always returns a new collection.
                 Assert.NotSame(tokenInfo.GetExtensions(), tokenInfo.GetExtensions());

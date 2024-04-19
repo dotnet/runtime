@@ -49,6 +49,7 @@ public class NativeLibraryTests : IDisposable
     [Fact]
     public void LoadLibraryRelativePaths_NameOnly()
     {
+        
         {
             string libName = Path.Combine("..", NativeLibraryToLoad.InvalidName, NativeLibraryToLoad.GetLibraryFileName(NativeLibraryToLoad.InvalidName));
             EXPECT(LoadLibrary_NameOnly(libName), TestResult.DllNotFound);
@@ -181,7 +182,7 @@ public class NativeLibraryTests : IDisposable
 
         string subdirectory = Path.Combine(testBinDir, "subdirectory");
 
-        if (!TestLibrary.Utilities.IsNativeAot && !TestLibrary.PlatformDetection.IsMonoLLVMFULLAOT)
+        if (!TestLibrary.Utilities.IsNativeAot && !TestLibrary.PlatformDetection.IsMonoFULLAOT)
         {
             // Library should be found in the assembly directory
             Assembly assemblyInSubdirectory = Assembly.LoadFile(Path.Combine(subdirectory, $"{assembly.GetName().Name}{suffix}.dll"));

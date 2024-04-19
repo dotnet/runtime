@@ -1,8 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using ILCompiler.DependencyAnalysis;
+
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
@@ -73,6 +77,7 @@ namespace ILCompiler
             return null;
         }
 
+#if !READYTORUN
         /// <summary>
         /// Determine whether a method can go into the sealed vtable of a type. Such method must be a sealed virtual
         /// method that is not overriding any method on a base type.
@@ -82,25 +87,43 @@ namespace ILCompiler
         /// since all of their collection interface methods are sealed and implemented on the System.Array and
         /// System.Array&lt;T&gt; base types, and therefore we can minimize the vtable sizes of all derived array types.
         /// </summary>
-        public static bool CanMethodBeInSealedVTable(this MethodDesc method)
+        public static bool CanMethodBeInSealedVTable(this MethodDesc method, NodeFactory factory)
         {
-            bool isInterfaceMethod = method.OwningType.IsInterface;
+            Debug.Assert(!method.OwningType.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true));
 
-            // Methods on interfaces never go into sealed vtable
-            // We would hit this code path for default implementations of interface methods (they are newslot+final).
-            // Interface types don't get physical slots, but they have logical slot numbers and that logic shouldn't
-            // attempt to place final+newslot methods differently.
-            if (method.IsFinal && method.IsNewSlot && !isInterfaceMethod)
+            TypeDesc owningType = method.OwningType;
+
+            // Interface types don't have physical slots so we never optimize to sealed slots
+            if (owningType.IsInterface)
+                return false;
+
+            // Implementations of static virtual methods go into the sealed vtable.
+            if (method.Signature.IsStatic)
                 return true;
 
-            // Implementations of static virtual method also go into the sealed vtable.
-            // Again, we don't let that happen for interface methods because the slot numbers are only logical,
-            // not physical.
-            if (method.Signature.IsStatic && !isInterfaceMethod)
+            // If the owning type is already considered sealed, there's little benefit in placing the slots
+            // in the sealed vtable: the sealed vtable has these properties:
+            //
+            // 1. We don't need to repeat them in derived classes.
+            // 2. The slots use 4-byte relative pointers, so they can be smaller.
+            // 3. The sealed vtable is shared among canonically-equivalent types.
+            //
+            // Benefit 1 doesn't apply to sealed types by definition. Benefit 2 doesn't manifest itself
+            // when data dehydration is enabled (which is the default) since pointers are compressed either way.
+            // Benefit 3 is still real, so we condition this opt out on type not having a canonical form.
+            if (factory.DevirtualizationManager.IsEffectivelySealed(owningType)
+                && !owningType.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                return false;
+            }
+
+            // Newslot final methods go into the sealed vtable.
+            if (method.IsNewSlot && factory.DevirtualizationManager.IsEffectivelySealed(method))
                 return true;
 
             return false;
         }
+#endif
 
         public static bool NotCallableWithoutOwningEEType(this MethodDesc method)
         {

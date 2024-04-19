@@ -1,14 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using Microsoft.Win32.SafeHandles;
 
 using PAL_KeyAlgorithm = Interop.AndroidCrypto.PAL_KeyAlgorithm;
 using PAL_SSLStreamStatus = Interop.AndroidCrypto.PAL_SSLStreamStatus;
@@ -121,17 +119,17 @@ namespace System.Net
 
         internal int BytesReadyForConnection => _outputBuffer.ActiveLength;
 
-        internal byte[]? ReadPendingWrites()
+        internal void ReadPendingWrites(ref ProtocolToken token)
         {
             if (_outputBuffer.ActiveLength == 0)
             {
-                return null;
+                token.Size = 0;
+                token.Payload = null;
+                return;
             }
 
-            byte[] buffer = _outputBuffer.ActiveSpan.ToArray();
+            token.SetPayload(_outputBuffer.ActiveSpan);
             _outputBuffer.Discard(_outputBuffer.ActiveLength);
-
-            return buffer;
         }
 
         internal int ReadPendingWrites(byte[] buf, int offset, int count)

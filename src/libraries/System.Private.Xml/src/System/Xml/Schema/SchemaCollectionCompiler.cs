@@ -2073,7 +2073,7 @@ namespace System.Xml.Schema
                     else
                     {
                         decl.Presence = SchemaDeclBase.Use.Fixed;
-                        decl.DefaultValueRaw = decl.DefaultValueExpanded = xa.FixedValue;
+                        decl.DefaultValueRaw = decl.DefaultValueExpanded = xa.FixedValue!;
                     }
                     if (decl.Datatype != null)
                     {

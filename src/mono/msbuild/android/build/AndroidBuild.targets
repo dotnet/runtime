@@ -41,15 +41,11 @@
       <_MonoHeaderPath>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))</_MonoHeaderPath>
     </PropertyGroup>
 
-    <!-- Make sure marshal-ilgen is included in the components list. -->
-    <ItemGroup Condition="'$(RuntimeComponents)' != '*'">
-      <_RuntimeComponentList Include="$(RuntimeComponents)" />
-      <_RuntimeComponentList Include="marshal-ilgen" KeepDuplicates="false"/>
+    <ItemGroup Condition="'$(UseNativeAOTRuntime)' != 'true'">
+      <RuntimeComponents Condition="'$(UseAllRuntimeComponents)' == 'true'" Include="@(_MonoRuntimeAvailableComponents)" />
+      <!-- Make sure marshal-ilgen is included in the components list. -->
+      <RuntimeComponents Condition="'$(UseAllRuntimeComponents)' != 'true'" Include="marshal-ilgen" KeepDuplicates="false" />
     </ItemGroup>
-
-    <PropertyGroup Condition="'$(RuntimeComponents)' != '*'">
-      <RuntimeComponents>@(_RuntimeComponentList)</RuntimeComponents>
-    </PropertyGroup>
 
     <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
       <_CommonLinkerArgs Include="-l:libz.so" />
@@ -58,23 +54,14 @@
       <_CommonLinkerArgs Include="-l:libm.so" />
       <_CommonLinkerArgs Include="--build-id=sha1" />
 
-      <!-- add all non stub libs first -->
-      <!-- if RuntimeComponents is empty, exclude -static.a and include -stub-static.a instead -->
-      <!-- if RuntimeComponents is *, we're ok because all -static.a is included -->
-      <!-- if RuntimeComponents is a list, add to items and only pull in -static.a -->
-
-      <_UsedComponents 
-        Condition="'$(RuntimeComponents)' != '' and '$(RuntimeComponents)' != '*'"
-        Include="$(RuntimeComponents)" />
-
-      <_RuntimeLibraries 
-        Include="$(AndroidBuildDir)\*-stub-static.a" />
-      <_RuntimeLibraries 
-        Include="$(AndroidBuildDir)\*.a"
-        Exclude="$(AndroidBuildDir)\*-static.a" />
-
-      <_RuntimeLibraries Remove="$(AndroidBuildDir)\libmono-component-%(_UsedComponents.Identity)-stub-static.a" />
-      <_RuntimeLibraries Include="$(AndroidBuildDir)\libmono-component-%(_UsedComponents.Identity)-static.a" />
+      <!-- include all libraries except components -->
+      <_RuntimeLibraries Include="$(AndroidBuildDir)\*.a" Exclude="$(AndroidBuildDir)\libmono-component-*.a" />
+      <!-- include all component stub libraries -->
+      <_RuntimeLibraries Include="$(AndroidBuildDir)\libmono-component-*-stub-static.a" />
+      <!-- if RuntimeComponents is not empty, remove stubs for the required components and include the actual component library -->
+      <_RuntimeLibraries Condition="'@(RuntimeComponents)' != ''" Remove="$(AndroidBuildDir)\libmono-component-%(RuntimeComponents.Identity)-stub-static.a" />
+      <_RuntimeLibraries Condition="'@(RuntimeComponents)' != ''" Include="$(AndroidBuildDir)\libmono-component-%(RuntimeComponents.Identity)-static.a" />
+      <!-- if RuntimeComponents is empty, do nothing as we already included all the component stubs above -->
     </ItemGroup>
   </Target>
 
@@ -283,7 +270,7 @@
         NativeDependencies="@(_NativeDependencies)"
         OutputDir="$(AndroidBundleDir)"
         ProjectName="$(AssemblyName)"
-        RuntimeComponents="$(RuntimeComponents)"
+        RuntimeComponents="@(RuntimeComponents)"
         RuntimeIdentifier="$(RuntimeIdentifier)"
         StripDebugSymbols="False">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />

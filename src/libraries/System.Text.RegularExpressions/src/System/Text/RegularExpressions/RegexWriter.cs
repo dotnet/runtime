@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Runtime.InteropServices;
 
 namespace System.Text.RegularExpressions
@@ -29,8 +28,8 @@ namespace System.Text.RegularExpressions
 #if DEBUG
         static RegexWriter()
         {
-            Debug.Assert(!Enum.IsDefined(typeof(RegexNodeKind), BeforeChild));
-            Debug.Assert(!Enum.IsDefined(typeof(RegexNodeKind), AfterChild));
+            Debug.Assert(!Enum.IsDefined(BeforeChild));
+            Debug.Assert(!Enum.IsDefined(AfterChild));
         }
 #endif
 

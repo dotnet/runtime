@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using ILLink.RoslynAnalyzer;
 using Microsoft.CodeAnalysis;
 
@@ -22,18 +23,38 @@ namespace ILLink.Shared.TrimAnalysis
 
 		public static DiagnosticContext CreateDisabled () => new () { Location = null };
 
+		public Diagnostic CreateDiagnostic (DiagnosticId id, params string[] args)
+		{
+			return Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (id), Location, args);
+		}
+
+		public void AddDiagnostic (Diagnostic diagnostic)
+		{
+			if (Location == null)
+				return;
+
+			Diagnostics.Add (diagnostic);
+		}
+
 		public partial void AddDiagnostic (DiagnosticId id, params string[] args)
 		{
 			if (Location == null)
 				return;
 
-			Diagnostics.Add (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (id), Location, args));
+			Diagnostics.Add (CreateDiagnostic (id, args));
 		}
 
 		public partial void AddDiagnostic (DiagnosticId id, ValueWithDynamicallyAccessedMembers actualValue, ValueWithDynamicallyAccessedMembers expectedAnnotationsValue, params string[] args)
 		{
 			if (Location == null)
 				return;
+
+			Diagnostics.Add (CreateDiagnostic (id, actualValue, expectedAnnotationsValue, args));
+		}
+
+		private Diagnostic CreateDiagnostic (DiagnosticId id, ValueWithDynamicallyAccessedMembers actualValue, ValueWithDynamicallyAccessedMembers expectedAnnotationsValue, params string[] args)
+		{
+			Debug.Assert (Location != null);
 
 			if (actualValue is NullableValueWithDynamicallyAccessedMembers nv)
 				actualValue = nv.UnderlyingTypeValue;
@@ -66,7 +87,7 @@ namespace ILLink.Shared.TrimAnalysis
 				sourceLocation = new Location[] { symbolLocation };
 			}
 
-			Diagnostics.Add (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (id), Location, sourceLocation, DAMArgument?.ToImmutableDictionary (), args));
+			return Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (id), Location, sourceLocation, DAMArgument?.ToImmutableDictionary (), args);
 		}
 	}
 }

@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         public void Log_TimestampFormatSet_ContainsTimestamp()
         {
             // Arrange
-            var t = SetUp(
+            using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
                 simpleOptions: null,
                 systemdOptions: null,
@@ -82,7 +82,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         public void Log_NullMessage_LogsWhenMessageIsNotProvided()
         {
             // Arrange
-            var t = SetUp(
+            using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
                 simpleOptions: null,
                 systemdOptions: null,
@@ -126,7 +126,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         public void Log_ExceptionWithMessage_ExtractsInfo()
         {
             // Arrange
-            var t = SetUp(
+            using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
                 simpleOptions: null,
                 systemdOptions: null,
@@ -180,7 +180,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         public void Log_IncludeScopes_ContainsDuplicateNamedPropertiesInScope_AcceptableJson()
         {
             // Arrange
-            var t = SetUp(
+            using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
                 simpleOptions: null,
                 systemdOptions: null,
@@ -213,7 +213,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         public void Log_StateAndScopeAreCollections_IncludesMessageAndCollectionValues()
         {
             // Arrange
-            var t = SetUp(
+            using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
                 simpleOptions: null,
                 systemdOptions: null,
@@ -249,7 +249,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         public void Log_StateAndScopeContainsSpecialCaseValue_SerializesValueAsExpected(object value, string expectedJsonValue)
         {
             // Arrange
-            var t = SetUp(
+            using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
                 simpleOptions: null,
                 systemdOptions: null,
@@ -279,7 +279,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         public void Log_StateAndScopeContainsFloatingPointType_SerializesValue(object value)
         {
             // Arrange
-            var t = SetUp(
+            using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
                 simpleOptions: null,
                 systemdOptions: null,
@@ -317,7 +317,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         public void Log_StateAndScopeContainsNullValue_SerializesNull()
         {
             // Arrange
-            var t = SetUp(
+            using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
                 simpleOptions: null,
                 systemdOptions: null,
@@ -346,7 +346,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         public void Log_ScopeIsIEnumerable_SerializesKeyValuePair()
         {
             // Arrange
-            var t = SetUp(
+            using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
                 simpleOptions: null,
                 systemdOptions: null,

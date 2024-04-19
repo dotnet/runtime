@@ -10,6 +10,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
   .ver 7:0:0:0
 }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
@@ -83,7 +84,7 @@
 
 } // end of class Final
 
-.class private auto ansi beforefieldinit Program
+.class public auto ansi beforefieldinit Program
        extends [System.Runtime]System.Object
 {
   .method private hidebysig static void  CallSVM<(class IBase`1<!!U>) T,U>() cil managed
@@ -97,9 +98,12 @@
     IL_000d:  ret
   } // end of method Program::CallSVM
 
-  .method private hidebysig static int32 
+  .method public hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // 
     .maxstack  1

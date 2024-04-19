@@ -9,11 +9,9 @@
   -->
   <Target Name="CopyRelinkedPackage" AfterTargets="WasmBuildApp" DependsOnTargets="Build" Inputs="
           $(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet.d.ts;
-          $(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet-legacy.d.ts;
           $(MicrosoftNetCoreAppRuntimePackNativeDir)/package.json;" Outputs="bin/$(Configuration)/AppBundle/.npm-stamp">
     <ItemGroup>
       <NpmPackageFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet.d.ts"/>
-      <NpmPackageFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet-legacy.d.ts"/>
       <NpmPackageFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)/package.json"/>
     </ItemGroup>
     <Copy SourceFiles="@(NpmPackageFiles)" DestinationFolder="bin/$(Configuration)/AppBundle" SkipUnchangedFiles="true"/>

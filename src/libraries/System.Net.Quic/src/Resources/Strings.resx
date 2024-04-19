@@ -142,7 +142,10 @@
     <value>Writing is not allowed on stream.</value>
   </data>
   <data name="net_quic_in_range" xml:space="preserve">
-    <value>'{0}'' should be within [0, {1}) range.</value>
+    <value>'{0}' should be within [0, {1}) range.</value>
+  </data>
+  <data name="net_quic_power_of_2" xml:space="preserve">
+    <value>'{0}' must be a power of 2.</value>
   </data>
   <data name="net_quic_not_null_listener" xml:space="preserve">
     <value>'{0}' must be specified to start the listener.</value>
@@ -229,6 +232,9 @@
   </data>
   <data name="net_quic_callback_error" xml:space="preserve">
     <value>User configured callback failed.</value>
+  </data>
+  <data name="net_auth_ephemeral" xml:space="preserve">
+    <value>Authentication failed because the platform does not support ephemeral keys.</value>
   </data>
 </root>
 

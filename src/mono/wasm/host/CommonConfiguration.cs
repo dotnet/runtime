@@ -125,18 +125,18 @@ internal sealed class CommonConfiguration
     public static void CheckPathOrInAppPath(string appPath, string? path, string argName)
     {
         if (string.IsNullOrEmpty(path))
-            throw new ArgumentNullException($"Missing value for {argName}");
+            throw new CommandLineException($"Missing value for {argName}");
 
         if (Path.IsPathRooted(path))
         {
             if (!File.Exists(path))
-                throw new ArgumentException($"Cannot find {argName}: {path}");
+                throw new CommandLineException($"Cannot find {argName}: {path}");
         }
         else
         {
             string fullPath = Path.Combine(appPath, path);
             if (!File.Exists(fullPath))
-                throw new ArgumentException($"Cannot find {argName} {path} in app directory {appPath}");
+                throw new CommandLineException($"Cannot find {argName} {path} in app directory {appPath}");
         }
     }
 }

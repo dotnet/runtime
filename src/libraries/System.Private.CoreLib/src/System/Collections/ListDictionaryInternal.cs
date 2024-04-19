@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -418,15 +419,15 @@ namespace System.Collections
             }
 
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public KeyValuePairs[] Items
+            public DebugViewDictionaryItem<object, object?>[] Items
             {
                 get
                 {
-                    var array = new KeyValuePairs[_list.count];
+                    var array = new DebugViewDictionaryItem<object, object?>[_list.count];
                     int index = 0;
                     for (DictionaryNode? node = _list.head; node != null; node = node.next)
                     {
-                        array[index++] = new KeyValuePairs(node.key, node.value);
+                        array[index++] = new DebugViewDictionaryItem<object, object?>(node.key, node.value);
                     }
                     return array;
                 }

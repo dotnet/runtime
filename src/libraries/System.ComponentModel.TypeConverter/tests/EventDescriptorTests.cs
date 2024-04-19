@@ -27,7 +27,7 @@ namespace System.ComponentModel.Tests
         public void RemoveAddedEventHandler()
         {
             var component = new DescriptorTestComponent();
-            Action eventHandler = () => Assert.True(false, "EventDescriptor failed to remove an event handler");
+            Action eventHandler = () => Assert.Fail("EventDescriptor failed to remove an event handler");
             EventDescriptor eventDescriptor = TypeDescriptor.CreateEvent(component.GetType(), nameof(component.ActionEvent), typeof(Action));
 
             eventDescriptor.AddEventHandler(component, eventHandler);

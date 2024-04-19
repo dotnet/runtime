@@ -73,6 +73,10 @@ namespace System.IO.Compression
             // payload being 0 length before it reads the final buffer-full.
             int minCompressedSize = 3 * actualBufferSize;
 
+            // A single empty chunk in a GZIP header/footer. This is writing the bytes directly
+            // as the implementation now avoids writing 0-length chunks.
+            byte[] payload = [31, 139, 8, 0, 0, 0, 0, 0, 2, 10, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
             using (Stream compressedStream = new DerivedMemoryStream())
             {
                 using (var gz = new GZipStream(compressedStream, CompressionLevel.NoCompression, leaveOpen: true))
@@ -83,10 +87,7 @@ namespace System.IO.Compression
 
                 while (compressedStream.Length < minCompressedSize)
                 {
-                    using (var gz = new GZipStream(compressedStream, CompressionLevel.NoCompression, leaveOpen: true))
-                    {
-                        gz.Write(Array.Empty<byte>());
-                    }
+                    compressedStream.Write(payload);
                 }
 
                 compressedStream.Seek(0, SeekOrigin.Begin);

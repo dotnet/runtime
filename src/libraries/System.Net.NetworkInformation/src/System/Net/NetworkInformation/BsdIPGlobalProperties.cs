@@ -53,12 +53,12 @@ namespace System.Net.NetworkInformation
 
         public override TcpConnectionInformation[] GetActiveTcpConnections()
         {
-            return GetTcpConnections(listeners:false);
+            return GetTcpConnections(listeners: false);
         }
 
         public override IPEndPoint[] GetActiveTcpListeners()
         {
-            TcpConnectionInformation[] allConnections = GetTcpConnections(listeners:true);
+            TcpConnectionInformation[] allConnections = GetTcpConnections(listeners: true);
             var endPoints = new IPEndPoint[allConnections.Length];
             for (int i = 0; i < allConnections.Length; i++)
             {

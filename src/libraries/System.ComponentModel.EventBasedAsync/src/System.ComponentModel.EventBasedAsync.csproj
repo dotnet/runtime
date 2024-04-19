@@ -1,7 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\ComponentModel\AsyncCompletedEvent.cs" />
     <Compile Include="System\ComponentModel\AsyncOperation.cs" />
@@ -11,10 +14,12 @@
     <Compile Include="System\ComponentModel\DoWorkEvent.cs" />
     <Compile Include="System\ComponentModel\RunWorkerCompletedEvent.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.ComponentModel" />
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Threading" />
   </ItemGroup>
+
 </Project>

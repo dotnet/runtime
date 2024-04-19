@@ -10,7 +10,25 @@
 
 #ifdef FEATURE_ETW
 
-#include "EtwEvents.h"
+#include <evntprov.h>
+extern "C" {
+    VOID EtwCallback(
+        _In_ const GUID * SourceId,
+        _In_ uint32_t ControlCode,
+        _In_ uint8_t Level,
+        _In_ uint64_t MatchAnyKeyword,
+        _In_ uint64_t MatchAllKeyword,
+        _In_opt_ EVENT_FILTER_DESCRIPTOR * FilterData,
+        _Inout_opt_ void * CallbackContext);
+}
+
+//
+// Python script generated code will call this function when MCGEN_PRIVATE_ENABLE_CALLBACK_V2 is defined
+// to enable runtime events
+#define MCGEN_PRIVATE_ENABLE_CALLBACK_V2(SourceId, ControlCode, Level, MatchAnyKeyword, MatchAllKeyword, FilterData, CallbackContext) \
+        EtwCallback(SourceId, ControlCode, Level, MatchAnyKeyword, MatchAllKeyword, FilterData, CallbackContext)
+
+#include "ClrEtwAll.h"
 
 #undef ETW_TRACING_INITIALIZED
 #define ETW_TRACING_INITIALIZED(RegHandle) (RegHandle != NULL)

@@ -1,9 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Test creates non-collectible AssemblyLoadContext -->
-    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
-    <!-- Dynamic assembly loads -->
-    <NativeAotIncompatible>true</NativeAotIncompatible>
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BinderTracingTest.EventHandlers.cs" />

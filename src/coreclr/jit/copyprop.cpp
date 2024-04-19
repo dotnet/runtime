@@ -110,12 +110,12 @@ int Compiler::optCopyProp_LclVarScore(const LclVarDsc* lclVarDsc, const LclVarDs
 {
     int score = 0;
 
-    if (lclVarDsc->lvVolatileHint)
+    if (lclVarDsc->lvHasExceptionalUsesHint)
     {
         score += 4;
     }
 
-    if (copyVarDsc->lvVolatileHint)
+    if (copyVarDsc->lvHasExceptionalUsesHint)
     {
         score -= 4;
     }
@@ -291,8 +291,8 @@ void Compiler::optCopyPropPushDef(GenTree* defNode, GenTreeLclVarCommon* lclNode
 {
     unsigned lclNum = lclNode->GetLclNum();
 
-    // Shadowed parameters are special: they will (at most) have one use, that is one on the RHS of an
-    // assignment to their shadow, and we must not substitute them anywhere. So we'll not push any defs.
+    // Shadowed parameters are special: they will (at most) have one use, as values in a store
+    // to their shadow, and we must not substitute them anywhere. So we'll not push any defs.
     if ((gsShadowVarInfo != nullptr) && lvaGetDesc(lclNum)->lvIsParam &&
         (gsShadowVarInfo[lclNum].shadowCopy != BAD_VAR_NUM))
     {
@@ -462,7 +462,7 @@ PhaseStatus Compiler::optVnCopyProp()
 
     public:
         CopyPropDomTreeVisitor(Compiler* compiler)
-            : DomTreeVisitor(compiler, compiler->fgSsaDomTree)
+            : DomTreeVisitor(compiler)
             , m_curSsaName(compiler->getAllocator(CMK_CopyProp))
             , m_madeChanges(false)
         {
@@ -487,7 +487,7 @@ PhaseStatus Compiler::optVnCopyProp()
 
         void PropagateCopies()
         {
-            WalkTree();
+            WalkTree(m_compiler->m_domTree);
 
 #ifdef DEBUG
             // Verify the definitions remaining are only those we pushed for parameters.

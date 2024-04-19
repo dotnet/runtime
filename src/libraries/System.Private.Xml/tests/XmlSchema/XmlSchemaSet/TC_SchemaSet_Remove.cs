@@ -35,7 +35,7 @@ namespace System.Xml.XmlSchemaTests
                 // GLOBALIZATION
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //-----------------------------------------------------------------------------------
@@ -108,7 +108,7 @@ namespace System.Xml.XmlSchemaTests
             }
             catch (Exception)
             {
-                Assert.True(false);
+                Assert.Fail();
             }
 
             return;
@@ -140,7 +140,7 @@ namespace System.Xml.XmlSchemaTests
             }
             catch (Exception)
             {
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -168,7 +168,7 @@ namespace System.Xml.XmlSchemaTests
             }
             catch (Exception)
             {
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -201,7 +201,7 @@ namespace System.Xml.XmlSchemaTests
             }
             catch (Exception)
             {
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -245,7 +245,7 @@ namespace System.Xml.XmlSchemaTests
             catch (Exception e)
             {
                 _output.WriteLine(e.ToString());
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -296,7 +296,7 @@ namespace System.Xml.XmlSchemaTests
             catch (Exception e)
             {
                 _output.WriteLine(e.ToString());
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -322,7 +322,7 @@ namespace System.Xml.XmlSchemaTests
             {
                 _output.WriteLine("Exception : " + e.Message);
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation(Desc = "v11.2 - Remove: A(ns-a) improts B (ns-b), Remove imported schema", Priority = 2, Params = new object[] { "import_v2_a.xsd", "import_v2_b.xsd" })]
@@ -349,7 +349,7 @@ namespace System.Xml.XmlSchemaTests
             catch (Exception e)
             {
                 _output.WriteLine(e.ToString());
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }

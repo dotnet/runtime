@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using System.Threading;
 
 namespace System.Text.Json
 {
@@ -24,7 +25,13 @@ namespace System.Text.Json
             get
             {
                 Debug.Assert(IsReadOnly);
-                return _cachingContext ??= TrackedCachingContexts.GetOrCreate(this);
+                return _cachingContext ?? GetOrCreate();
+
+                CachingContext GetOrCreate()
+                {
+                    CachingContext ctx = TrackedCachingContexts.GetOrCreate(this);
+                    return Interlocked.CompareExchange(ref _cachingContext, ctx, null) ?? ctx;
+                }
             }
         }
 
@@ -497,6 +504,8 @@ namespace System.Text.Json
                     left._unmappedMemberHandling == right._unmappedMemberHandling &&
                     left._defaultBufferSize == right._defaultBufferSize &&
                     left._maxDepth == right._maxDepth &&
+                    left.NewLine == right.NewLine && // Read through property due to lazy initialization of the backing field
+                    left._allowOutOfOrderMetadataProperties == right._allowOutOfOrderMetadataProperties &&
                     left._allowTrailingCommas == right._allowTrailingCommas &&
                     left._ignoreNullValues == right._ignoreNullValues &&
                     left._ignoreReadOnlyProperties == right._ignoreReadOnlyProperties &&
@@ -504,6 +513,8 @@ namespace System.Text.Json
                     left._includeFields == right._includeFields &&
                     left._propertyNameCaseInsensitive == right._propertyNameCaseInsensitive &&
                     left._writeIndented == right._writeIndented &&
+                    left._indentCharacter == right._indentCharacter &&
+                    left._indentSize == right._indentSize &&
                     left._typeInfoResolver == right._typeInfoResolver &&
                     CompareLists(left._converters, right._converters);
 
@@ -551,6 +562,8 @@ namespace System.Text.Json
                 AddHashCode(ref hc, options._unmappedMemberHandling);
                 AddHashCode(ref hc, options._defaultBufferSize);
                 AddHashCode(ref hc, options._maxDepth);
+                AddHashCode(ref hc, options.NewLine); // Read through property due to lazy initialization of the backing field
+                AddHashCode(ref hc, options._allowOutOfOrderMetadataProperties);
                 AddHashCode(ref hc, options._allowTrailingCommas);
                 AddHashCode(ref hc, options._ignoreNullValues);
                 AddHashCode(ref hc, options._ignoreReadOnlyProperties);
@@ -558,6 +571,8 @@ namespace System.Text.Json
                 AddHashCode(ref hc, options._includeFields);
                 AddHashCode(ref hc, options._propertyNameCaseInsensitive);
                 AddHashCode(ref hc, options._writeIndented);
+                AddHashCode(ref hc, options._indentCharacter);
+                AddHashCode(ref hc, options._indentSize);
                 AddHashCode(ref hc, options._typeInfoResolver);
                 AddListHashCode(ref hc, options._converters);
 
@@ -578,13 +593,13 @@ namespace System.Text.Json
 
                 static void AddHashCode<TValue>(ref HashCode hc, TValue? value)
                 {
-                    if (typeof(TValue).IsValueType)
+                    if (typeof(TValue).IsSealed)
                     {
                         hc.Add(value);
                     }
                     else
                     {
-                        Debug.Assert(!typeof(TValue).IsSealed, "Sealed reference types like string should not use this method.");
+                        // Use the built-in hashcode for types that could be overriding GetHashCode().
                         hc.Add(RuntimeHelpers.GetHashCode(value));
                     }
                 }

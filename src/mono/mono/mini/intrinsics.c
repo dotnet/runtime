@@ -82,17 +82,13 @@ mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 	if (!(cfg->opt & MONO_OPT_INTRINS))
 		return ins;
 
-#ifdef MONO_ARCH_SIMD_INTRINSICS
-	if (cfg->opt & MONO_OPT_SIMD) {
-		ins = mono_emit_simd_intrinsics (cfg, cmethod, fsig, args);
-		if (ins)
-			return ins;
-	}
+	ins = mono_emit_simd_intrinsics (cfg, cmethod, fsig, args);
+	if (ins)
+		return ins;
 
 	ins = mono_emit_common_intrinsics (cfg, cmethod, fsig, args);
 	if (ins)
 		return ins;
-#endif
 
 	return ins;
 }
@@ -935,10 +931,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		} else
 			return NULL;
 	} else if (cmethod->klass == runtime_helpers_class) {
-		if (strcmp (cmethod->name, "get_OffsetToStringData") == 0 && fsig->param_count == 0) {
-			EMIT_NEW_ICONST (cfg, ins, MONO_STRUCT_OFFSET (MonoString, chars));
-			return ins;
-		} else if (!strcmp (cmethod->name, "GetRawData")) {
+		if (!strcmp (cmethod->name, "GetRawData")) {
 			int dreg = alloc_preg (cfg);
 			EMIT_NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, dreg, args [0]->dreg, MONO_ABI_SIZEOF (MonoObject));
 			return ins;
@@ -2098,17 +2091,13 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 	}
 
-#ifdef MONO_ARCH_SIMD_INTRINSICS
-	if (cfg->opt & MONO_OPT_SIMD) {
-		ins = mono_emit_simd_intrinsics (cfg, cmethod, fsig, args);
-		if (ins)
-			return ins;
-	}
+	ins = mono_emit_simd_intrinsics (cfg, cmethod, fsig, args);
+	if (ins)
+		return ins;
 
 	ins = mono_emit_common_intrinsics (cfg, cmethod, fsig, args);
 	if (ins)
 		return ins;
-#endif
 
 	/* Fallback if SIMD is disabled */
 	if (in_corlib && 

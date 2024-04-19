@@ -31,8 +31,15 @@ namespace System.Runtime.Loader
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromPath", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void LoadFromPath(IntPtr ptrNativeAssemblyBinder, string? ilPath, string? niPath, ObjectHandleOnStack retAssembly);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Assembly[] GetLoadedAssemblies();
+        internal static Assembly[] GetLoadedAssemblies()
+        {
+            Assembly[]? assemblies = null;
+            GetLoadedAssemblies(ObjectHandleOnStack.Create(ref assemblies));
+            return assemblies!;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetLoadedAssemblies")]
+        private static partial void GetLoadedAssemblies(ObjectHandleOnStack retAssemblies);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsTracingEnabled();

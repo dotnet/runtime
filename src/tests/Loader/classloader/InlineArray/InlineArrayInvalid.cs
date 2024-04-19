@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 using Xunit;
 
-unsafe class Validate
+public unsafe class Validate
 {
     [Fact]
     public static void Explicit_Fails()
@@ -38,7 +38,7 @@ unsafe class Validate
         });
     }
 
-    [InlineArray(0x20000000)]
+    [InlineArray(16777216)]
     private struct TooLarge
     {
         public long field;

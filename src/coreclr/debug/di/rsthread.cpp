@@ -656,7 +656,7 @@ void CordbThread::RefreshHandle(HANDLE * phThread)
                                    hThread,
                                    GetCurrentProcess(),
                                    &m_hCachedThread,
-                                   NULL,
+                                   0,
                                    FALSE,
                                    DUPLICATE_SAME_ACCESS);
         *phThread = m_hCachedThread;
@@ -2844,15 +2844,6 @@ CordbUnmanagedThread::~CordbUnmanagedThread()
     CONSISTENCY_CHECK_MSGF(!HasOOBEvent(), ("Deleting thread w/ outstanding OOB event:this=%p,event-code=%d\n", this, OOBEvent()->m_currentDebugEvent.dwDebugEventCode));
 }
 
-#define WINNT_TLS_OFFSET_X86    0xe10     // TLS[0] at fs:[WINNT_TLS_OFFSET]
-#define WINNT_TLS_OFFSET_AMD64  0x1480
-#define WINNT_TLS_OFFSET_ARM    0xe10
-#define WINNT_TLS_OFFSET_ARM64  0x1480
-#define WINNT5_TLSEXPANSIONPTR_OFFSET_X86   0xf94 // TLS[64] at [fs:[WINNT5_TLSEXPANSIONPTR_OFFSET]]
-#define WINNT5_TLSEXPANSIONPTR_OFFSET_AMD64 0x1780
-#define WINNT5_TLSEXPANSIONPTR_OFFSET_ARM   0xf94
-#define WINNT5_TLSEXPANSIONPTR_OFFSET_ARM64 0x1780
-
 HRESULT CordbUnmanagedThread::LoadTLSArrayPtr(void)
 {
     FAIL_IF_NEUTERED(this);
@@ -2860,20 +2851,9 @@ HRESULT CordbUnmanagedThread::LoadTLSArrayPtr(void)
     HRESULT hr = S_OK;
     _ASSERTE(GetProcess()->ThreadHoldsProcessLock());
 
-
     // Just simple math on NT with a small tls index.
     // The TLS slots for 0-63 are embedded in the TIB.
-#if defined(TARGET_X86)
-    m_pTLSArray = (BYTE*) m_threadLocalBase + WINNT_TLS_OFFSET_X86;
-#elif defined(TARGET_AMD64)
-    m_pTLSArray = (BYTE*) m_threadLocalBase + WINNT_TLS_OFFSET_AMD64;
-#elif defined(TARGET_ARM)
-    m_pTLSArray = (BYTE*) m_threadLocalBase + WINNT_TLS_OFFSET_ARM;
-#elif defined(TARGET_ARM64)
-    m_pTLSArray = (BYTE*) m_threadLocalBase + WINNT_TLS_OFFSET_ARM64;
-#else
-    PORTABILITY_ASSERT("Implement OOP TLS on your platform");
-#endif
+    m_pTLSArray = (BYTE*) m_threadLocalBase + offsetof(TEB, TlsSlots);
 
     // Extended slot is lazily initialized, so check every time.
     if (m_pTLSExtendedArray == NULL)
@@ -2884,17 +2864,7 @@ HRESULT CordbUnmanagedThread::LoadTLSArrayPtr(void)
         // never move once we find it for a given thread, so we
         // cache it here so we don't always have to perform two
         // ReadProcessMemory's.
-#if defined(TARGET_X86)
-        void *ppTLSArray = (BYTE*) m_threadLocalBase + WINNT5_TLSEXPANSIONPTR_OFFSET_X86;
-#elif defined(TARGET_AMD64)
-        void *ppTLSArray = (BYTE*) m_threadLocalBase + WINNT5_TLSEXPANSIONPTR_OFFSET_AMD64;
-#elif defined(TARGET_ARM)
-        void *ppTLSArray = (BYTE*) m_threadLocalBase + WINNT5_TLSEXPANSIONPTR_OFFSET_ARM;
-#elif defined(TARGET_ARM64)
-        void *ppTLSArray = (BYTE*) m_threadLocalBase + WINNT5_TLSEXPANSIONPTR_OFFSET_ARM64;
-#else
-        PORTABILITY_ASSERT("Implement OOP TLS on your platform");
-#endif
+        void *ppTLSArray = (BYTE*) m_threadLocalBase + offsetof(TEB, TlsExpansionSlots);
 
         hr = GetProcess()->SafeReadStruct(PTR_TO_CORDB_ADDRESS(ppTLSArray), &m_pTLSExtendedArray);
     }
@@ -5152,7 +5122,7 @@ HRESULT CordbValueEnum::Next(ULONG celt, ICorDebugValue *values[], ULONG *pceltF
 
     HRESULT hr = S_OK;
 
-    int iMax = min( m_iMax, m_iCurrent+celt);
+    int iMax = (int)min( (ULONG)m_iMax, m_iCurrent+celt);
     int i;
     for (i = m_iCurrent; i< iMax;i++)
     {
@@ -5365,11 +5335,11 @@ HRESULT CordbInternalFrame::GetStackRange(CORDB_ADDRESS *pStart,
     {
         if (pStart != NULL)
         {
-            *pStart = NULL;
+            *pStart = (CORDB_ADDRESS)NULL;
         }
         if (pEnd != NULL)
         {
-            *pEnd = NULL;
+            *pEnd = (CORDB_ADDRESS)NULL;
         }
         return E_NOTIMPL;
     }
@@ -5986,11 +5956,11 @@ HRESULT CordbNativeFrame::GetStackRange(CORDB_ADDRESS *pStart,
     {
         if (pStart != NULL)
         {
-            *pStart = NULL;
+            *pStart = (CORDB_ADDRESS)NULL;
         }
         if (pEnd != NULL)
         {
-            *pEnd = NULL;
+            *pEnd = (CORDB_ADDRESS)NULL;
         }
         return E_NOTIMPL;
     }
@@ -6356,6 +6326,126 @@ UINT_PTR * CordbNativeFrame::GetAddressOfRegister(CorDebugRegister regNum) const
 
     case REGISTER_ARM64_PC:
         ret = (UINT_PTR*)&m_rd.PC;
+        break;
+#elif defined(TARGET_RISCV64)
+    case REGISTER_RISCV64_PC:
+        ret = (UINT_PTR*)&m_rd.PC;
+        break;
+
+    case REGISTER_RISCV64_RA:
+        ret = (UINT_PTR*)&m_rd.RA;
+        break;
+
+    case REGISTER_RISCV64_GP:
+        ret = (UINT_PTR*)&m_rd.GP;
+        break;
+
+    case REGISTER_RISCV64_TP:
+        ret = (UINT_PTR*)&m_rd.TP;
+        break;
+
+    case REGISTER_RISCV64_T0:
+        ret = (UINT_PTR*)&m_rd.T0;
+        break;
+
+    case REGISTER_RISCV64_T1:
+        ret = (UINT_PTR*)&m_rd.T1;
+        break;
+
+    case REGISTER_RISCV64_T2:
+        ret = (UINT_PTR*)&m_rd.T2;
+        break;
+
+    case REGISTER_RISCV64_S1:
+        ret = (UINT_PTR*)&m_rd.S1;
+        break;
+
+    case REGISTER_RISCV64_A0:
+        ret = (UINT_PTR*)&m_rd.A0;
+        break;
+
+    case REGISTER_RISCV64_A1:
+        ret = (UINT_PTR*)&m_rd.A1;
+        break;
+
+    case REGISTER_RISCV64_A2:
+        ret = (UINT_PTR*)&m_rd.A2;
+        break;
+
+    case REGISTER_RISCV64_A3:
+        ret = (UINT_PTR*)&m_rd.A3;
+        break;
+
+    case REGISTER_RISCV64_A4:
+        ret = (UINT_PTR*)&m_rd.A4;
+        break;
+
+    case REGISTER_RISCV64_A5:
+        ret = (UINT_PTR*)&m_rd.A5;
+        break;
+
+    case REGISTER_RISCV64_A6:
+        ret = (UINT_PTR*)&m_rd.A6;
+        break;
+
+    case REGISTER_RISCV64_A7:
+        ret = (UINT_PTR*)&m_rd.A7;
+        break;
+
+    case REGISTER_RISCV64_S2:
+        ret = (UINT_PTR*)&m_rd.S2;
+        break;
+
+    case REGISTER_RISCV64_S3:
+        ret = (UINT_PTR*)&m_rd.S3;
+        break;
+
+    case REGISTER_RISCV64_S4:
+        ret = (UINT_PTR*)&m_rd.S4;
+        break;
+
+    case REGISTER_RISCV64_S5:
+        ret = (UINT_PTR*)&m_rd.S5;
+        break;
+
+    case REGISTER_RISCV64_S6:
+        ret = (UINT_PTR*)&m_rd.S6;
+        break;
+
+    case REGISTER_RISCV64_S7:
+        ret = (UINT_PTR*)&m_rd.S7;
+        break;
+
+    case REGISTER_RISCV64_S8:
+        ret = (UINT_PTR*)&m_rd.S8;
+        break;
+
+    case REGISTER_RISCV64_S9:
+        ret = (UINT_PTR*)&m_rd.S9;
+        break;
+
+    case REGISTER_RISCV64_S10:
+        ret = (UINT_PTR*)&m_rd.S10;
+        break;
+
+    case REGISTER_RISCV64_S11:
+        ret = (UINT_PTR*)&m_rd.S11;
+        break;
+
+    case REGISTER_RISCV64_T3:
+        ret = (UINT_PTR*)&m_rd.T3;
+        break;
+
+    case REGISTER_RISCV64_T4:
+        ret = (UINT_PTR*)&m_rd.T4;
+        break;
+
+    case REGISTER_RISCV64_T5:
+        ret = (UINT_PTR*)&m_rd.T5;
+        break;
+
+    case REGISTER_RISCV64_T6:
+        ret = (UINT_PTR*)&m_rd.T6;
         break;
 #endif
 
@@ -7214,7 +7304,7 @@ SIZE_T CordbNativeFrame::GetInspectionIP()
 bool CordbNativeFrame::IsFunclet()
 {
 #ifdef FEATURE_EH_FUNCLETS
-    return (m_misc.parentIP != NULL);
+    return (m_misc.parentIP != (SIZE_T)NULL);
 #else
     return false;
 #endif // FEATURE_EH_FUNCLETS
@@ -7306,7 +7396,8 @@ CordbJITILFrame::CordbJITILFrame(CordbNativeFrame *    pNativeFrame,
                                  GENERICS_TYPE_TOKEN   exactGenericArgsToken,
                                  DWORD                 dwExactGenericArgsTokenIndex,
                                  bool                  fVarArgFnx,
-                                 CordbReJitILCode *    pRejitCode)
+                                 CordbReJitILCode *    pRejitCode,
+                                 bool                  fAdjustedIP)
   : CordbBase(pNativeFrame->GetProcess(), 0, enumCordbJITILFrame),
     m_nativeFrame(pNativeFrame),
     m_ilCode(pCode),
@@ -7315,13 +7406,14 @@ CordbJITILFrame::CordbJITILFrame(CordbNativeFrame *    pNativeFrame,
     m_fVarArgFnx(fVarArgFnx),
     m_allArgsCount(0),
     m_rgbSigParserBuf(NULL),
-    m_FirstArgAddr(NULL),
+    m_FirstArgAddr((CORDB_ADDRESS)NULL),
     m_rgNVI(NULL),
     m_genericArgs(),
     m_genericArgsLoaded(false),
     m_frameParamsToken(exactGenericArgsToken),
     m_dwFrameParamsTokenIndex(dwExactGenericArgsTokenIndex),
-    m_pReJitCode(pRejitCode)
+    m_pReJitCode(pRejitCode),
+    m_adjustedIP(fAdjustedIP)
 {
     // We'll initialize the SigParser in CordbJITILFrame::Init().
     m_sigParserCached = SigParser(NULL, 0);
@@ -7441,7 +7533,7 @@ HRESULT CordbJITILFrame::Init()
         // The stackwalking code can't always successfully retrieve the generics type token.
         // For example, on 64-bit, the JIT only encodes the generics type token location if
         // a method has catch clause for a generic exception (e.g. "catch(MyException<string> e)").
-        if ((m_dwFrameParamsTokenIndex != (DWORD)ICorDebugInfo::MAX_ILNUM) && (m_frameParamsToken == NULL))
+        if ((m_dwFrameParamsTokenIndex != (DWORD)ICorDebugInfo::MAX_ILNUM) && (m_frameParamsToken == (GENERICS_TYPE_TOKEN)NULL))
         {
             // All variables are unavailable in the prolog and the epilog.
             // This includes the generics type token.  Failing to get the token just means that
@@ -8094,7 +8186,7 @@ HRESULT CordbJITILFrame::FabricateNativeInfo(DWORD dwIndex,
             // first argument, but thereafter we have to decrement it
             // before getting the variable's location from it.  So increment
             // it here to be consistent later.
-            rpCur += max(cbType, cbArchitectureMin);
+            rpCur += max((ULONG)cbType, cbArchitectureMin);
 #endif
 
             // Grab the IL code's function's method signature so we can see if it's static.
@@ -8127,7 +8219,7 @@ HRESULT CordbJITILFrame::FabricateNativeInfo(DWORD dwIndex,
                 IfFailThrow(pArgType->GetUnboxedObjectSize(&cbType));
 
 #if defined(TARGET_X86) // STACK_GROWS_DOWN_ON_ARGS_WALK
-                rpCur -= max(cbType, cbArchitectureMin);
+                rpCur -= max((ULONG)cbType, cbArchitectureMin);
                 m_rgNVI[i].loc.vlFixedVarArg.vlfvOffset =
                     (unsigned)(m_FirstArgAddr - rpCur);
 
@@ -8137,7 +8229,7 @@ HRESULT CordbJITILFrame::FabricateNativeInfo(DWORD dwIndex,
 #else // STACK_GROWS_UP_ON_ARGS_WALK
                 m_rgNVI[i].loc.vlFixedVarArg.vlfvOffset =
                     (unsigned)(rpCur - m_FirstArgAddr);
-                rpCur += max(cbType, cbArchitectureMin);
+                rpCur += max((ULONG)cbType, cbArchitectureMin);
                 AlignAddressForType(pArgType, rpCur);
 #endif
 
@@ -8937,6 +9029,21 @@ CordbReJitILCode* CordbJITILFrame::GetReJitILCode()
     return m_pReJitCode;
 }
 
+void CordbJITILFrame::AdjustIPAfterException()
+{
+    CordbNativeFrame* nativeFrameToAdjustIP = m_nativeFrame;
+    if (!m_adjustedIP)
+    {
+        DWORD nativeOffsetToMap = (DWORD)nativeFrameToAdjustIP->m_ip - STACKWALK_CONTROLPC_ADJUST_OFFSET;
+        CorDebugMappingResult mappingType;
+        ULONG uILOffset = nativeFrameToAdjustIP->m_nativeCode->GetSequencePoints()->MapNativeOffsetToIL(
+                nativeOffsetToMap,
+                &mappingType);
+        m_ip= uILOffset;
+        m_adjustedIP = true;
+    }
+}
+
 /* ------------------------------------------------------------------------- *
  * Eval class
  * ------------------------------------------------------------------------- */
@@ -9207,7 +9314,7 @@ HRESULT CordbEval::GatherArgInfo(ICorDebugValue *pValue,
             argData->fullArgType = buffer;
             argData->fullArgTypeNodeCount = fullArgTypeNodeCount;
             // Is it enregistered?
-            if ((addr == NULL) && (pVCObjVal->GetValueHome() != NULL))
+            if ((addr == (CORDB_ADDRESS)NULL) && (pVCObjVal->GetValueHome() != NULL))
             {
                 pVCObjVal->GetValueHome()->CopyToIPCEType(&(argData->argHome));
             }
@@ -9225,7 +9332,7 @@ HRESULT CordbEval::GatherArgInfo(ICorDebugValue *pValue,
         CordbGenericValue *gv = (CordbGenericValue*)pValue;
         argData->argIsLiteral = gv->CopyLiteralData(argData->argLiteralData);
         // Is it enregistered?
-        if ((addr == NULL) && (gv->GetValueHome() != NULL))
+        if ((addr == (CORDB_ADDRESS)NULL) && (gv->GetValueHome() != NULL))
         {
             gv->GetValueHome()->CopyToIPCEType(&(argData->argHome));
         }
@@ -10770,7 +10877,7 @@ HRESULT CordbCodeEnum::Next(ULONG celt, ICorDebugCode *values[], ULONG *pceltFet
 
     HRESULT hr = S_OK;
 
-    int iMax = min( m_iMax, m_iCurrent+celt);
+    int iMax = (int)min( (ULONG)m_iMax, m_iCurrent+celt);
     int i;
 
     for (i = m_iCurrent; i < iMax; i++)

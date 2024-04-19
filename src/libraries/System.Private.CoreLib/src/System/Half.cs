@@ -8,7 +8,6 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics;
 
 namespace System
 {
@@ -38,6 +37,7 @@ namespace System
 
         internal const ushort BiasedExponentMask = 0x7C00;
         internal const int BiasedExponentShift = 10;
+        internal const int BiasedExponentLength = 5;
         internal const byte ShiftedBiasedExponentMask = BiasedExponentMask >> BiasedExponentShift;
 
         internal const ushort TrailingSignificandMask = 0x03FF;
@@ -77,6 +77,8 @@ namespace System
 
         private const ushort PositiveOneBits = 0x3C00;
         private const ushort NegativeOneBits = 0xBC00;
+
+        private const ushort SmallestNormalBits = 0x0400;
 
         private const ushort EBits = 0x4170;
         private const ushort PiBits = 0x4248;
@@ -227,59 +229,81 @@ namespace System
         }
 
         /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
+        /// <remarks>This effectively checks the value is not NaN and not infinite.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsFinite(Half value)
         {
-            return StripSign(value) < PositiveInfinityBits;
+            uint bits = value._value;
+            return (~bits & PositiveInfinityBits) != 0;
         }
 
         /// <summary>Determines whether the specified value is infinite.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsInfinity(Half value)
         {
-            return StripSign(value) == PositiveInfinityBits;
+            uint bits = value._value;
+            return (bits & ~SignMask) == PositiveInfinityBits;
         }
 
         /// <summary>Determines whether the specified value is NaN.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNaN(Half value)
         {
-            return StripSign(value) > PositiveInfinityBits;
+            uint bits = value._value;
+            return (bits & ~SignMask) > PositiveInfinityBits;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsNaNOrZero(Half value)
+        {
+            uint bits = value._value;
+            return ((bits - 1) & ~SignMask) >= PositiveInfinityBits;
         }
 
         /// <summary>Determines whether the specified value is negative.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNegative(Half value)
         {
             return (short)(value._value) < 0;
         }
 
         /// <summary>Determines whether the specified value is negative infinity.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNegativeInfinity(Half value)
         {
             return value._value == NegativeInfinityBits;
         }
 
-        /// <summary>Determines whether the specified value is normal.</summary>
-        // This is probably not worth inlining, it has branches and should be rarely called
+        /// <summary>Determines whether the specified value is normal (finite, but not zero or subnormal).</summary>
+        /// <remarks>This effectively checks the value is not NaN, not infinite, not subnormal, and not zero.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNormal(Half value)
         {
-            uint absValue = StripSign(value);
-            return (absValue < PositiveInfinityBits)    // is finite
-                && (absValue != 0)                      // is not zero
-                && ((absValue & BiasedExponentMask) != 0);    // is not subnormal (has a non-zero exponent)
+            uint bits = value._value;
+            return (ushort)((bits & ~SignMask) - SmallestNormalBits) < (PositiveInfinityBits - SmallestNormalBits);
         }
 
         /// <summary>Determines whether the specified value is positive infinity.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsPositiveInfinity(Half value)
         {
             return value._value == PositiveInfinityBits;
         }
 
-        /// <summary>Determines whether the specified value is subnormal.</summary>
-        // This is probably not worth inlining, it has branches and should be rarely called
+        /// <summary>Determines whether the specified value is subnormal (finite, but not zero or normal).</summary>
+        /// <remarks>This effectively checks the value is not NaN, not infinite, not normal, and not zero.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsSubnormal(Half value)
         {
-            uint absValue = StripSign(value);
-            return (absValue < PositiveInfinityBits)    // is finite
-                && (absValue != 0)                      // is not zero
-                && ((absValue & BiasedExponentMask) == 0);    // is subnormal (has a zero exponent)
+            uint bits = value._value;
+            return (ushort)((bits & ~SignMask) - 1) < MaxTrailingSignificand;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsZero(Half value)
+        {
+            uint bits = value._value;
+            return (bits & ~SignMask) == 0;
         }
 
         /// <summary>
@@ -395,17 +419,7 @@ namespace System
             // IEEE defines that positive and negative zero are equal, this gives us a quick equality check
             // for two values by or'ing the private bits together and stripping the sign. They are both zero,
             // and therefore equivalent, if the resulting value is still zero.
-            return (ushort)((left._value | right._value) & ~SignMask) == 0;
-        }
-
-        private static bool IsNaNOrZero(Half value)
-        {
-            return ((value._value - 1) & ~SignMask) >= PositiveInfinityBits;
-        }
-
-        private static uint StripSign(Half value)
-        {
-            return (ushort)(value._value & ~SignMask);
+            return ((left._value | right._value) & ~SignMask) == 0;
         }
 
         /// <summary>
@@ -415,11 +429,11 @@ namespace System
         /// <exception cref="ArgumentException">Thrown when <paramref name="obj"/> is not of type <see cref="Half"/>.</exception>
         public int CompareTo(object? obj)
         {
-            if (!(obj is Half))
+            if (obj is not Half other)
             {
                 return (obj is null) ? 1 : throw new ArgumentException(SR.Arg_MustBeHalf);
             }
-            return CompareTo((Half)(obj));
+            return CompareTo(other);
         }
 
         /// <summary>
@@ -475,12 +489,15 @@ namespace System
         /// </summary>
         public override int GetHashCode()
         {
+            uint bits = _value;
+
             if (IsNaNOrZero(this))
             {
-                // All NaNs should have the same hash code, as should both Zeros.
-                return _value & PositiveInfinityBits;
+                // Ensure that all NaNs and both zeros have the same hash code
+                bits &= PositiveInfinityBits;
             }
-            return _value;
+
+            return (int)bits;
         }
 
         /// <summary>
@@ -592,7 +609,7 @@ namespace System
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
         public static explicit operator Half(long value) => (Half)(float)value;
 
-        /// <summary>Explicitly converts a <see cref="System.IntPtr" /> value to its nearest representable half-precision floating-point value.</summary>
+        /// <summary>Explicitly converts a <see cref="nint" /> value to its nearest representable half-precision floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
         public static explicit operator Half(nint value) => (Half)(float)value;
@@ -781,7 +798,7 @@ namespace System
         [CLSCompliant(false)]
         public static explicit operator Half(ulong value) => (Half)(float)value;
 
-        /// <summary>Explicitly converts a <see cref="System.UIntPtr" /> value to its nearest representable half-precision floating-point value.</summary>
+        /// <summary>Explicitly converts a <see cref="nuint" /> value to its nearest representable half-precision floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
         [CLSCompliant(false)]
@@ -1044,7 +1061,7 @@ namespace System
             // BitConverter.SingleToUInt32Bits(1.0f) - ((uint)BitConverter.HalfToUInt16Bits((Half)1.0f) << 13)
             const uint ExponentOffset = 0x3800_0000u;
             // Mask for sign bit in Single
-            const uint FloatSignMask = float.SignMask;
+            const uint SingleSignMask = float.SignMask;
             // Mask for exponent bits in Half
             const uint HalfExponentMask = BiasedExponentMask;
             // Mask for bits in Single converted from Half
@@ -1052,7 +1069,7 @@ namespace System
             // Extract the internal representation of value
             short valueInInt16Bits = BitConverter.HalfToInt16Bits(value);
             // Extract sign bit of value
-            uint sign = (uint)(int)valueInInt16Bits & FloatSignMask;
+            uint sign = (uint)(int)valueInInt16Bits & SingleSignMask;
             // Copy sign bit to upper bits
             uint bitValueInProcess = (uint)valueInInt16Bits;
             // Extract exponent bits of value (BiasedExponent is not for here as it performs unnecessary shift)
@@ -1228,29 +1245,25 @@ namespace System
         /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_BitwiseAnd(TSelf, TOther)" />
         static Half IBitwiseOperators<Half, Half, Half>.operator &(Half left, Half right)
         {
-            ushort bits = (ushort)(BitConverter.HalfToUInt16Bits(left) & BitConverter.HalfToUInt16Bits(right));
-            return BitConverter.UInt16BitsToHalf(bits);
+            return new Half((ushort)(left._value & right._value));
         }
 
         /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_BitwiseOr(TSelf, TOther)" />
         static Half IBitwiseOperators<Half, Half, Half>.operator |(Half left, Half right)
         {
-            ushort bits = (ushort)(BitConverter.HalfToUInt16Bits(left) | BitConverter.HalfToUInt16Bits(right));
-            return BitConverter.UInt16BitsToHalf(bits);
+            return new Half((ushort)(left._value | right._value));
         }
 
         /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_ExclusiveOr(TSelf, TOther)" />
         static Half IBitwiseOperators<Half, Half, Half>.operator ^(Half left, Half right)
         {
-            ushort bits = (ushort)(BitConverter.HalfToUInt16Bits(left) ^ BitConverter.HalfToUInt16Bits(right));
-            return BitConverter.UInt16BitsToHalf(bits);
+            return new Half((ushort)(left._value ^ right._value));
         }
 
         /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_OnesComplement(TSelf)" />
         static Half IBitwiseOperators<Half, Half, Half>.operator ~(Half value)
         {
-            ushort bits = (ushort)(~BitConverter.HalfToUInt16Bits(value));
-            return BitConverter.UInt16BitsToHalf(bits);
+            return new Half((ushort)(~value._value));
         }
 
         //
@@ -1456,9 +1469,9 @@ namespace System
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
         public static Half BitDecrement(Half x)
         {
-            ushort bits = x._value;
+            uint bits = x._value;
 
-            if ((bits & PositiveInfinityBits) >= PositiveInfinityBits)
+            if (!IsFinite(x))
             {
                 // NaN returns NaN
                 // -Infinity returns -Infinity
@@ -1475,16 +1488,23 @@ namespace System
             // Negative values need to be incremented
             // Positive values need to be decremented
 
-            bits += (ushort)(((short)bits < 0) ? +1 : -1);
-            return new Half(bits);
+            if (IsNegative(x))
+            {
+                bits += 1;
+            }
+            else
+            {
+                bits -= 1;
+            }
+            return new Half((ushort)bits);
         }
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitIncrement(TSelf)" />
         public static Half BitIncrement(Half x)
         {
-            ushort bits = x._value;
+            uint bits = x._value;
 
-            if ((bits & PositiveInfinityBits) >= PositiveInfinityBits)
+            if (!IsFinite(x))
             {
                 // NaN returns NaN
                 // -Infinity returns MinValue
@@ -1501,8 +1521,15 @@ namespace System
             // Negative values need to be decremented
             // Positive values need to be incremented
 
-            bits += (ushort)(((short)bits < 0) ? -1 : +1);
-            return new Half(bits);
+            if (IsNegative(x))
+            {
+                bits -= 1;
+            }
+            else
+            {
+                bits += 1;
+            }
+            return new Half((ushort)bits);
         }
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
@@ -1512,7 +1539,32 @@ namespace System
         public static Half Ieee754Remainder(Half left, Half right) => (Half)MathF.IEEERemainder((float)left, (float)right);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
-        public static int ILogB(Half x) => MathF.ILogB((float)x);
+        public static int ILogB(Half x)
+        {
+            // This code is based on `ilogbf` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            if (!IsNormal(x)) // x is zero, subnormal, infinity, or NaN
+            {
+                if (IsZero(x))
+                {
+                    return int.MinValue;
+                }
+
+                if (!IsFinite(x)) // infinity or NaN
+                {
+                    return int.MaxValue;
+                }
+
+                Debug.Assert(IsSubnormal(x));
+                return MinExponent - (BitOperations.TrailingZeroCount(x.TrailingSignificand) - BiasedExponentLength);
+            }
+
+            return x.Exponent;
+        }
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Lerp(TSelf, TSelf, TSelf)" />
         public static Half Lerp(Half value1, Half value2, Half amount) => (Half)float.Lerp((float)value1, (float)value2, (float)amount);
@@ -1614,7 +1666,17 @@ namespace System
         public static Half Clamp(Half value, Half min, Half max) => (Half)Math.Clamp((float)value, (float)min, (float)max);
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
-        public static Half CopySign(Half value, Half sign) => (Half)MathF.CopySign((float)value, (float)sign);
+        public static Half CopySign(Half value, Half sign)
+        {
+            // This method is required to work for all inputs,
+            // including NaN, so we operate on the raw bits.
+            uint xbits = value._value;
+            uint ybits = sign._value;
+
+            // Remove the sign from x, and remove everything but the sign from y
+            // Then, simply OR them to get the correct sign
+            return new Half((ushort)((xbits & ~SignMask) | (ybits & SignMask)));
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static Half Max(Half x, Half y) => (Half)MathF.Max((float)x, (float)y);
@@ -1667,7 +1729,24 @@ namespace System
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static int Sign(Half value) => MathF.Sign((float)value);
+        public static int Sign(Half value)
+        {
+            if (IsNaN(value))
+            {
+                throw new ArithmeticException(SR.Arithmetic_NaN);
+            }
+
+            if (IsZero(value))
+            {
+                return 0;
+            }
+            else if (IsNegative(value))
+            {
+                return -1;
+            }
+
+            return +1;
+        }
 
         //
         // INumberBase
@@ -1683,7 +1762,7 @@ namespace System
         public static Half Zero => new Half(PositiveZeroBits);
 
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
-        public static Half Abs(Half value) => (Half)MathF.Abs((float)value);
+        public static Half Abs(Half value) => new Half((ushort)(value._value & ~SignMask));
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1775,7 +1854,7 @@ namespace System
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
-        static bool INumberBase<Half>.IsZero(Half value) => (value == Zero);
+        static bool INumberBase<Half>.IsZero(Half value) => IsZero(value);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         public static Half MaxMagnitude(Half x, Half y) => (Half)MathF.MaxMagnitude((float)x, (float)y);

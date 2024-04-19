@@ -79,7 +79,7 @@ namespace Wasm.Build.Tests
                 prefix: "build_publish", config: buildArgs.Config, appendUnicode: testUnicode);
 
             buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = ExpandBuildArgs(buildArgs, extraProperties: "<_WasmDevel>true</_WasmDevel>");
+            buildArgs = ExpandBuildArgs(buildArgs);
 
             // no relinking for build
             bool relinked = false;
@@ -158,7 +158,7 @@ namespace Wasm.Build.Tests
         {
             if (testUnicode)
             {
-                string projectNameCore = buildArgs.ProjectName.Trim(new char[] {s_unicodeChar});
+                string projectNameCore = buildArgs.ProjectName.Replace(s_unicodeChars, "");
                 TestUtils.AssertMatches(@$"{projectNameCore}\S+.dll -> {projectNameCore}\S+.dll.bc", buildOutput, contains: expectAOT);
                 TestUtils.AssertMatches(@$"{projectNameCore}\S+.dll.bc -> {projectNameCore}\S+.dll.o", buildOutput, contains: expectAOT);
             }

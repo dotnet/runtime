@@ -73,11 +73,7 @@ extern void DECLSPEC_NORETURN noWayAssertBody(const char* cond, const char* file
 // Conditionally invoke the noway assert body. The conditional predicate is evaluated using a method on the tlsCompiler.
 // If a noway_assert is hit, we ask the Compiler whether to raise an exception (i.e., conditionally raise exception.)
 // To have backward compatibility between v4.5 and v4.0, in min-opts we take a shot at codegen rather than rethrow.
-extern void ANALYZER_NORETURN noWayAssertBodyConditional(
-#ifdef FEATURE_TRACELOGGING
-    const char* file, unsigned line
-#endif
-    );
+extern void ANALYZER_NORETURN noWayAssertBodyConditional();
 
 extern void ANALYZER_NORETURN noWayAssertBodyConditional(const char* cond, const char* file, unsigned line);
 
@@ -135,25 +131,19 @@ extern void RecordNowayAssertGlobal(const char* filename, unsigned line, const c
 // limitations (that could be removed in the future)
 #define IMPL_LIMITATION(msg) implLimitation()
 
-#ifdef FEATURE_TRACELOGGING
-#define NOWAY_ASSERT_BODY_ARGUMENTS __FILE__, __LINE__
-#else
-#define NOWAY_ASSERT_BODY_ARGUMENTS
-#endif
-
 #define noway_assert(cond)                                                                                             \
     do                                                                                                                 \
     {                                                                                                                  \
         RECORD_NOWAY_ASSERT(#cond)                                                                                     \
         if (!(cond))                                                                                                   \
         {                                                                                                              \
-            noWayAssertBodyConditional(NOWAY_ASSERT_BODY_ARGUMENTS);                                                   \
+            noWayAssertBodyConditional();                                                                              \
         }                                                                                                              \
     } while (0)
 #define unreached() noWayAssertBody()
 
-#define NOWAY_MSG(msg) noWayAssertBodyConditional(NOWAY_ASSERT_BODY_ARGUMENTS)
-#define NOWAY_MSG_FILE_AND_LINE(msg, file, line) noWayAssertBodyConditional(NOWAY_ASSERT_BODY_ARGUMENTS)
+#define NOWAY_MSG(msg) noWayAssertBodyConditional()
+#define NOWAY_MSG_FILE_AND_LINE(msg, file, line) noWayAssertBodyConditional()
 
 #endif // !DEBUG
 

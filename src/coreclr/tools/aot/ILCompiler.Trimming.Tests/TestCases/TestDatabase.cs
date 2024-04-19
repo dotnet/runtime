@@ -29,7 +29,22 @@ namespace Mono.Linker.Tests.TestCases
 			return TestNamesBySuiteName ();
 		}
 
-		public static IEnumerable<object[]> LinkXml()
+		public static IEnumerable<object[]> InlineArrays ()
+		{
+			return TestNamesBySuiteName();
+		}
+
+        public static IEnumerable<object[]> Inheritance_Interaces()
+        {
+            return TestNamesBySuiteName("Inheritance.Interfaces");
+        }
+
+        public static IEnumerable<object[]> Libraries()
+        {
+            return TestNamesBySuiteName();
+        }
+
+        public static IEnumerable<object[]> LinkXml()
 		{
 			return TestNamesBySuiteName();
 		}
@@ -50,6 +65,11 @@ namespace Mono.Linker.Tests.TestCases
 		}
 
 		public static IEnumerable<object[]> SingleFile ()
+		{
+			return TestNamesBySuiteName ();
+		}
+
+		public static IEnumerable<object[]> Substitutions ()
 		{
 			return TestNamesBySuiteName ();
 		}

@@ -202,7 +202,7 @@ namespace System.Text.Json.Serialization.Tests
             try
             {
                 JsonSerializer.Deserialize(ref reader, typeof(int[]));
-                Assert.True(false, "Expected ReadValue to throw JsonException for invalid JSON.");
+                Assert.Fail("Expected ReadValue to throw JsonException for invalid JSON.");
             }
             catch (JsonException) { }
 
@@ -243,7 +243,7 @@ namespace System.Text.Json.Serialization.Tests
             try
             {
                 JsonSerializer.Deserialize<SimpleTypeWithArray>(ref reader);
-                Assert.True(false, "Expected ReadValue to throw JsonException for type mismatch.");
+                Assert.Fail("Expected ReadValue to throw JsonException for type mismatch.");
             }
             catch (JsonException) { }
 
@@ -301,7 +301,7 @@ namespace System.Text.Json.Serialization.Tests
                 try
                 {
                     JsonSerializer.Deserialize<SimpleTypeWithArray>(ref reader);
-                    Assert.True(false, "Expected ReadValue to throw JsonException for not enough data.");
+                    Assert.Fail("Expected ReadValue to throw JsonException for not enough data.");
                 }
                 catch (JsonException) { }
 
@@ -321,7 +321,7 @@ namespace System.Text.Json.Serialization.Tests
                 try
                 {
                     JsonSerializer.Deserialize<SimpleTypeWithArray>(ref reader);
-                    Assert.True(false, "Expected ReadValue to throw JsonException for not enough data.");
+                    Assert.Fail("Expected ReadValue to throw JsonException for not enough data.");
                 }
                 catch (JsonException) { }
 
@@ -344,7 +344,7 @@ namespace System.Text.Json.Serialization.Tests
             try
             {
                 JsonSerializer.Deserialize<SimpleTypeWithArray>(ref reader);
-                Assert.True(false, "Expected ReadValue to throw JsonException for invalid token.");
+                Assert.Fail("Expected ReadValue to throw JsonException for invalid token.");
             }
             catch (JsonException ex)
             {
@@ -361,7 +361,7 @@ namespace System.Text.Json.Serialization.Tests
             try
             {
                 JsonSerializer.Deserialize<SimpleTypeWithArray>(ref reader);
-                Assert.True(false, "Expected ReadValue to throw JsonException for invalid token.");
+                Assert.Fail("Expected ReadValue to throw JsonException for invalid token.");
             }
             catch (JsonException ex)
             {
@@ -664,7 +664,7 @@ namespace System.Text.Json.Serialization.Tests
             try
             {
                 JsonSerializer.Deserialize<int[]>(ref reader);
-                Assert.True(false, "Expected exception.");
+                Assert.Fail("Expected exception.");
             }
             catch (JsonException) { }
 

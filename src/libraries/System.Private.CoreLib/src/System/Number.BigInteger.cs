@@ -3,8 +3,8 @@
 
 using System.Diagnostics;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -33,8 +33,8 @@ namespace System
             private const int BitsPerBlock = sizeof(int) * 8;
             private const int MaxBlockCount = (MaxBits + (BitsPerBlock - 1)) / BitsPerBlock;
 
-            private static ReadOnlySpan<uint> Pow10UInt32Table => new uint[]
-            {
+            private static ReadOnlySpan<uint> Pow10UInt32Table =>
+            [
                 1,          // 10^0
                 10,         // 10^1
                 100,        // 10^2
@@ -46,10 +46,10 @@ namespace System
                 // These last two are accessed only by MultiplyPow10.
                 100000000,  // 10^8
                 1000000000  // 10^9
-            };
+            ];
 
-            private static ReadOnlySpan<int> Pow10BigNumTableIndices => new int[]
-            {
+            private static ReadOnlySpan<int> Pow10BigNumTableIndices =>
+            [
                 0,          // 10^8
                 2,          // 10^16
                 5,          // 10^32
@@ -58,10 +58,10 @@ namespace System
                 33,         // 10^256
                 61,         // 10^512
                 116,        // 10^1024
-            };
+            ];
 
-            private static ReadOnlySpan<uint> Pow10BigNumTable => new uint[]
-            {
+            private static ReadOnlySpan<uint> Pow10BigNumTable =>
+            [
                 // 10^8
                 1,          // _length
                 100000000,  // _blocks
@@ -312,7 +312,7 @@ namespace System
                 0x00000000,
                 0x00000000,
                 0x00000000,
-            };
+            ];
 
             private int _length;
             private fixed uint _blocks[MaxBlockCount];

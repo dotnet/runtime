@@ -15,6 +15,16 @@ namespace System.Runtime.CompilerServices
     {
         public CallConvStdcall() { }
     }
+    /// <summary>
+    /// Indicates that a method should using the <see href="https://github.com/apple/swift/blob/main/docs/ABIStabilityManifesto.md#calling-convention">Swift</see>calling convention.
+    /// </summary>
+    public class CallConvSwift
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CallConvSwift" /> class.
+        /// </summary>
+        public CallConvSwift() { }
+    }
 
     /// <summary>
     /// Indicates that a method should suppress the GC transition as part of the calling convention.

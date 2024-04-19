@@ -43,8 +43,8 @@ WARNING:   When setting properties based on their current state (for example:
   <Target Name="GetIlasmRoundTripBashScript"
           Returns="$(IlasmRoundTripBashScript);$(BashIlrtTestLaunchCmds)">
     <PropertyGroup>
-      <DisassemblyName>$(AssemblyName).dasm.il</DisassemblyName>
-      <TargetAssemblyName>$(AssemblyName).asm.dll</TargetAssemblyName>
+      <DisassemblyName>IL-RT/$(AssemblyName).il</DisassemblyName>
+      <TargetAssemblyName>IL-RT/$(AssemblyName).dll</TargetAssemblyName>
 
       <IlasmRoundTripBashScript Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
 # IlasmRoundTrip Script
@@ -62,72 +62,24 @@ export RunningIlasmRoundTrip=
 
 if [ -z "$DoLink" -a ! -z "$RunningIlasmRoundTrip" ];
 then
-  echo "$CORE_ROOT/ildasm" -raweh -unicode -out=$(DisassemblyName) $(InputAssemblyName)
-  "$CORE_ROOT/ildasm" -raweh -unicode -out=$(DisassemblyName) $(InputAssemblyName)
+  python3 $(AssemblyName)_ilasmroundtrip.py
   ERRORLEVEL=$?
   if [ $ERRORLEVEL -ne 0 ]
   then
-    echo EXECUTION OF ILDASM - FAILED $ERRORLEVEL
-    exit 1
-  fi
-  if [ ! -f "$(DisassemblyName)" ]
-  then
-    echo "EXECUTION OF ILDASM - FAILED $(DisassemblyName) is missing"
-    exit 1
-  fi
-
-  ilasm_count=1
-  while true
-  do
-    echo "$CORE_ROOT/ilasm" -output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
-    "$CORE_ROOT/ilasm" -output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
-    ERRORLEVEL=$?
-    if [ $ERRORLEVEL -eq 0 ]
-    then
-      break
-    fi
-
-    echo EXECUTION $ilasm_count OF ILASM - FAILED with $ERRORLEVEL
-
-    if [ $ilasm_count -eq 3 ]
-    then
-      break
-    fi
-
-    ((ilasm_count++))
-    echo Trying again
-    sleep 10
-  done
-
-  if [ $ERRORLEVEL -ne 0 ]
-  then
+    echo ILASM ROUND-TRIP - FAILED $ERRORLEVEL
     exit 1
   fi
 fi
 ]]>
       </IlasmRoundTripBashScript>
-      <BashIlrtTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'"><![CDATA[
-if [ -z "$DoLink" -a ! -z "$RunningIlasmRoundTrip" ];
-then
-  echo $LAUNCHER $(TargetAssemblyName) %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
-  $LAUNCHER $(TargetAssemblyName) "${CLRTestExecutionArguments[@]}"
-  ERRORLEVEL=$?
-  if [ $ERRORLEVEL -ne $CLRTestExpectedExitCode ]
-  then
-    echo END EXECUTION OF IL{D}ASM BINARY - FAILED $ERRORLEVEL vs $CLRTestExpectedExitCode
-    exit 1
-  fi
-fi
-]]>
-      </BashIlrtTestLaunchCmds>
     </PropertyGroup>
   </Target>
 
   <Target Name="GetIlasmRoundTripBatchScript"
           Returns="$(IlasmRoundTripBatchScript);$(BatchIlrtTestLaunchCmds)">
     <PropertyGroup>
-      <DisassemblyName>$(AssemblyName).dasm.il</DisassemblyName>
-      <TargetAssemblyName>$(AssemblyName).asm.dll</TargetAssemblyName>
+      <DisassemblyName>IL-RT\$(AssemblyName).il</DisassemblyName>
+      <TargetAssemblyName>IL-RT\$(AssemblyName).dll</TargetAssemblyName>
 
       <IlasmRoundTripBatchScript Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
 REM IlasmRoundTrip Script
@@ -142,52 +94,18 @@ set RunningIlasmRoundTrip=
 REM IlasmRoundTrip Script
 REM Disable Ilasm round-tripping for Linker tests.
 REM Todo: Ilasm round-trip on linked binaries.
+
 IF NOT DEFINED DoLink (
   IF DEFINED RunningIlasmRoundTrip (
-    ECHO %CORE_ROOT%\ildasm.exe /raweh /unicode /out=$(DisassemblyName) $(InputAssemblyName)
-    %CORE_ROOT%\ildasm.exe /raweh /unicode /out=$(DisassemblyName) $(InputAssemblyName)
-
+    python $(AssemblyName)_ilasmroundtrip.py
     IF NOT "!ERRORLEVEL!"=="0" (
-      ECHO EXECUTION OF ILDASM - FAILED !ERRORLEVEL!
-      Exit /b 1
-    )
-    IF NOT EXIST $(DisassemblyName) (
-      ECHO EXECUTION OF ILDASM - FAILED $(DisassemblyName) is missing
-      Exit /b 1
-    )
-
-   set ilasm_count=1
-:Try_ilasm
-    ECHO %CORE_ROOT%\ilasm.exe /output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
-    %CORE_ROOT%\ilasm.exe /output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
-    IF NOT "!ERRORLEVEL!"=="0" (
-      ECHO EXECUTION OF ILASM - Try !ilasm_count! FAILED with status !ERRORLEVEL! 
-      IF !ilasm_count! LEQ 3 (
-        ECHO Trying again
-        set /A ilasm_count=ilasm_count+1
-        timeout /t 10 /nobreak
-        goto :Try_ilasm
-      )
-      ECHO EXECUTION OF ILASM - FAILED
+      ECHO ILASM ROUND-TRIP - FAILED !ERRORLEVEL!
       Exit /b 1
     )
   )
 )
 ]]>
       </IlasmRoundTripBatchScript>
-      <BatchIlrtTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'"><![CDATA[
-IF NOT DEFINED DoLink (
-  if defined RunningIlasmRoundTrip (
-    ECHO %LAUNCHER% $(TargetAssemblyName) %CLRTestExecutionArguments%
-    %LAUNCHER% $(TargetAssemblyName) %CLRTestExecutionArguments%
-    IF NOT "!ERRORLEVEL!"=="%CLRTestExpectedExitCode%" (
-      ECHO END EXECUTION OF IL{D}ASM BINARY - FAILED !ERRORLEVEL! vs %CLRTestExpectedExitCode%
-      Exit /b 1
-    )
-  )
-)
-]]>
-      </BatchIlrtTestLaunchCmds>
     </PropertyGroup>
   </Target>
 
@@ -234,7 +152,7 @@ if [[ ( -z "$DOTNET_JitStress" ) && ( -z "$DOTNET_JitStressRegs" ) && ( -z "$DOT
     ERRORLEVEL=$?
     export DOTNET_JitDisasm=`cat $(BashDisasmListOutputFile)`
     export DOTNET_JitDisasmTesting=1
-    export DOTNET_JitDiffableDasm=1
+    export DOTNET_JitDisasmDiffable=1
     export DOTNET_JitStdOutFile=$(BashDisasmOutputFile)
     rm -f $(BashDisasmOutputFile)
     if [[ $ERRORLEVEL -ne 0 ]]
@@ -282,7 +200,7 @@ IF "%DOTNET_JitStress%"=="" IF "%DOTNET_JitStressRegs%"=="" IF "%DOTNET_Tailcall
     )', '%0d%0a')
     for /F "delims=" %%g in ($(BatchDisasmListOutputFile)) do set DOTNET_JitDisasm=%%g
     set DOTNET_JitDisasmTesting=1
-    set DOTNET_JitDiffableDasm=1
+    set DOTNET_JitDisasmDiffable=1
     set DOTNET_JitStdOutFile=$(BatchDisasmOutputFile)
     del $(BatchDisasmOutputFile) >nul 2>&1
 )
@@ -359,6 +277,109 @@ set DOTNET_JitPath=%CORE_ROOT%\superpmi-shim-collector.dll
 ]]>
       </SuperPMICollectionBatchScript>
     </PropertyGroup>
+  </Target>
+
+  <!--
+  ***********************************************************************************************
+  IlasmRoundTrip for merged tests
+  ***********************************************************************************************
+  -->
+
+  <Target Name="IlasmRoundTripCommand" AfterTargets="AfterBuild" Condition="'$(IlasmRoundTripIncompatible)' != 'true'">
+    <PropertyGroup>
+      <InputAssemblyName>$(AssemblyName).dll</InputAssemblyName>
+      <DisassemblyName>IL-RT/$(AssemblyName).il</DisassemblyName>
+      <TargetAssemblyName>IL-RT/$(AssemblyName).dll</TargetAssemblyName>
+      <_IlasmRoundTripScriptText><![CDATA[
+import os
+import shutil
+import subprocess
+import sys
+import glob
+
+def is_managed_assembly(file):
+    proc = subprocess.Popen([f'{os.environ["CORE_ROOT"]}/corerun', f'{os.environ["CORE_ROOT"]}/AssemblyChecker/AssemblyChecker.dll', file])
+
+    try:
+        proc.communicate()
+        return proc.returncode == 0
+    except:
+        proc.kill()
+        return False
+
+def is_managed_debug_assembly(file):
+    proc = subprocess.Popen([f'{os.environ["CORE_ROOT"]}/corerun', f'{os.environ["CORE_ROOT"]}/AssemblyChecker/AssemblyChecker.dll', "--is-debug", file])
+
+    try:
+        proc.communicate()
+        return proc.returncode == 0
+    except:
+        proc.kill()
+        return False
+
+def is_managed_exe_assembly(file):
+    proc = subprocess.Popen([f'{os.environ["CORE_ROOT"]}/corerun', f'{os.environ["CORE_ROOT"]}/AssemblyChecker/AssemblyChecker.dll', "--is-exe", file])
+
+    try:
+        proc.communicate()
+        return proc.returncode == 0
+    except:
+        proc.kill()
+        return False
+
+print("")
+print("ILASM RoundTrips")
+
+if not os.path.exists("IL-RT"):
+  os.mkdir("IL-RT")
+
+for inputAssemblyName in glob.glob("*.dll"):
+  if is_managed_assembly(inputAssemblyName):
+      print("ILASM RoundTrip for " + inputAssemblyName)
+
+      ilasmSwitches = ""
+
+      if not is_managed_exe_assembly(inputAssemblyName):
+        ilasmSwitches = ilasmSwitches + " -DLL"
+
+      if is_managed_debug_assembly(inputAssemblyName):
+        ilasmSwitches = ilasmSwitches + " -DEBUG"
+
+      disassemblyName = os.path.join("IL-RT", os.path.splitext(os.path.basename(inputAssemblyName))[0] + ".il")
+      targetAssemblyName = os.path.join("IL-RT", os.path.basename(inputAssemblyName))
+
+      shutil.copyfile(inputAssemblyName, targetAssemblyName)
+
+      ildasm_args = f'{os.environ["CORE_ROOT"]}/ildasm -raweh -unicode -out={disassemblyName} {targetAssemblyName}'
+      print(ildasm_args)
+      proc = subprocess.Popen(ildasm_args, shell=True)
+
+      try:
+          proc.communicate()
+      except:
+          proc.kill()
+          sys.exit(1)
+
+      ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output={inputAssemblyName} {ilasmSwitches} {disassemblyName}'
+      print(ilasm_args)
+      proc = subprocess.Popen(ilasm_args, shell=True)
+
+      try:
+          proc.communicate()
+      except:
+          proc.kill()
+          sys.exit(1)
+
+      print("")
+
+print("")
+
+]]></_IlasmRoundTripScriptText>
+    </PropertyGroup>
+    <WriteLinesToFile
+      File="$(OutputPath)$(AssemblyName)_ilasmroundtrip.py"
+      Lines="$(_IlasmRoundTripScriptText)"
+      Overwrite="true" />
   </Target>
 
   <!--

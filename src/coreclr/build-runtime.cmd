@@ -211,8 +211,13 @@ if NOT "%__BuildType%"=="Release" (
     set __PgoOptimize=0
 )
 
-set "__BinDir=%__RootBinDir%\bin\coreclr\%__TargetOS%.%__TargetArch%.%__BuildType%"
-set "__IntermediatesDir=%__RootBinDir%\obj\coreclr\%__TargetOS%.%__TargetArch%.%__BuildType%"
+set __TargetOSDirName=%__TargetOS%
+if "%__TargetOS%"=="alpine" (
+    set __TargetOSDirName=linux_musl
+)
+
+set "__BinDir=%__RootBinDir%\bin\coreclr\%__TargetOSDirName%.%__TargetArch%.%__BuildType%"
+set "__IntermediatesDir=%__RootBinDir%\obj\coreclr\%__TargetOSDirName%.%__TargetArch%.%__BuildType%"
 set "__LogsDir=%__RootBinDir%\log\!__BuildType!"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 set "__ArtifactsIntermediatesDir=%__RepoRootDir%\artifacts\obj\coreclr\"
@@ -427,10 +432,6 @@ if %__BuildNative% EQU 1 (
         echo     !__BuildErr!
         goto ExitWithCode
     )
-
-    @REM Temporarily disabling PGO until updated files with new linker flag are available.
-    @REM https://github.com/dotnet/runtime/pull/89311
-    GOTO :SkipNativeBuild
 
     if %__EnforcePgo% EQU 1 (
         set PgoCheckCmd="!PYTHON!" "!__ProjectDir!\scripts\pgocheck.py" "!__BinDir!\coreclr.dll" "!__BinDir!\clrjit.dll"

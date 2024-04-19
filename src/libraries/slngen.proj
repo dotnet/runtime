@@ -19,7 +19,7 @@
     <!-- Copy template files, required by slngen -->
     <Copy SourceFiles="$(ProjTemplatePath)"
           DestinationFiles="%(SolutionFile.ProjFilePath)" />
-    
+
     <!-- Invoke slngen -->
     <Exec Command="&quot;$(RepoRoot)dotnet$(ScriptExt)&quot; slngen -p SlnGenMainProject=%(SolutionFile.Filename) --launch false --nologo &quot;%(SolutionFile.ProjFilePath)&quot;" />
 

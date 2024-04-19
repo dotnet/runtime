@@ -49,6 +49,21 @@ namespace Microsoft.DotNet.CoreSetup.Test
             public const string RuntimeConfigPropertyName = "additionalProbingPaths";
         }
 
+        public static class Breadcrumbs
+        {
+            public const string EnvironmentVariable = "CORE_BREADCRUMBS";
+        }
+
+        public static class BundleExtractBase
+        {
+            public const string EnvironmentVariable = "DOTNET_BUNDLE_EXTRACT_BASE_DIR";
+        }
+
+        public static class CoreServicing
+        {
+            public const string EnvironmentVariable = "CORE_SERVICING";
+        }
+
         public static class DepsFile
         {
             public const string CommandLineArgument = "--depsfile";
@@ -98,6 +113,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public static class ErrorCode
         {
+            public const int Success = 0;
             public const int InvalidArgFailure = unchecked((int)0x80008081);
             public const int CoreHostLibMissingFailure = unchecked((int)0x80008083);
             public const int ResolverInitFailure = unchecked((int)0x8000808b);

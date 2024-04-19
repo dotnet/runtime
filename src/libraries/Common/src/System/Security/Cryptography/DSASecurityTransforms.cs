@@ -120,7 +120,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
                 }
 
-                return HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
+                return CryptographicOperations.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
             }
 
             protected override void Dispose(bool disposing)

@@ -309,5 +309,111 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Contains("!", ex.ToString());
             }
         }
+
+        [Theory]
+        [InlineData(typeof(ClassDeserializedFromLargeJson))]
+        [InlineData(typeof(StructDeserializedFromLargeJson))]
+        [InlineData(typeof(ClassWithSmallConstructorDeserializedFromLargeJson))]
+        [InlineData(typeof(ClassWithLargeConstructorDeserializedFromLargeJson))]
+        public async Task ReadTypeFromJsonWithLargeIgnoredProperties(Type type)
+        {
+            const int MinLength = 1024 * 1024; // 1 MiB
+            await ReadTypeFromJsonWithLargeIgnoredPropertiesCore(type, MinLength);
+        }
+
+        [Theory]
+        [OuterLoop]
+        [InlineData(typeof(ClassDeserializedFromLargeJson))]
+        [InlineData(typeof(StructDeserializedFromLargeJson))]
+        [InlineData(typeof(ClassWithSmallConstructorDeserializedFromLargeJson))]
+        [InlineData(typeof(ClassWithLargeConstructorDeserializedFromLargeJson))]
+        public async Task ReadTypeFromJsonWithLargeIgnoredProperties_OuterLoop(Type type)
+        {
+            const long MinLength = 5L * 1024 * 1024 * 1024; // 5 GiB
+
+            if (Serializer.ForceSmallBufferInOptions)
+            {
+                // Using tiny serialization buffers would take too long to process a file that large (~2 minutes).
+                return;
+            }
+
+            await ReadTypeFromJsonWithLargeIgnoredPropertiesCore(type, MinLength);
+        }
+
+        private async Task ReadTypeFromJsonWithLargeIgnoredPropertiesCore(Type type, long minLength)
+        {
+            using var stream = new ChunkedReaderStream(GenerateLargeJsonObjectAsFragments(minLength));
+            var result = (ITypeDeserializedFromLargeJson)await Serializer.DeserializeWrapper(stream, type);
+            Assert.Equal(42, result.FirstValue);
+            Assert.Equal(42, result.LastValue);
+
+            static IEnumerable<byte[]> GenerateLargeJsonObjectAsFragments(long minLength)
+            {
+                long length = 0;
+
+                byte[] documentStart = """{ "FirstValue" : 42, "LargeIgnoredProperty" : { """u8.ToArray();
+                yield return documentStart;
+                length += documentStart.Length;
+
+                byte[] nestedPropertyValue = "\"Property\" : \"This is a rather large property value that should help contribute to the bulk of the ignored payload.\""u8.ToArray();
+                byte[] commaSeparator = ", "u8.ToArray();
+                while (true)
+                {
+                    yield return nestedPropertyValue;
+                    length += nestedPropertyValue.Length;
+
+                    if (length < minLength)
+                    {
+                        yield return commaSeparator;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                yield return """ }, "LastValue" : 42 }"""u8.ToArray();
+            }
+        }
+
+        public interface ITypeDeserializedFromLargeJson
+        {
+            int FirstValue { get; }
+            int LastValue { get; } 
+        }
+
+        public class ClassDeserializedFromLargeJson : ITypeDeserializedFromLargeJson
+        {
+            public int FirstValue { get; set; }
+            public int LastValue { get; set; }
+        }
+
+        public struct StructDeserializedFromLargeJson : ITypeDeserializedFromLargeJson
+        {
+            public int FirstValue { get; set; }
+            public int LastValue { get; set; }
+        }
+
+        public class ClassWithSmallConstructorDeserializedFromLargeJson(int firstValue, int lastValue) : ITypeDeserializedFromLargeJson
+        {
+            public int FirstValue { get; } = firstValue;
+            public int LastValue { get; } = lastValue;
+        }
+
+        public class ClassWithLargeConstructorDeserializedFromLargeJson(
+                int firstValue, int lastValue, int unusedParam2, int unusedParam3, int unusedParam4,
+                int unusedParam5, int unusedParam6, int unusedParam7, int unusedParam8, int unusedParam9) : ITypeDeserializedFromLargeJson
+        {
+            public int FirstValue { get; } = firstValue;
+            public int LastValue { get; } = lastValue;
+            public int UnusedParam2 { get; } = unusedParam2;
+            public int UnusedParam3 { get; } = unusedParam3;
+            public int UnusedParam4 { get; } = unusedParam4;
+            public int UnusedParam5 { get; } = unusedParam5;
+            public int UnusedParam6 { get; } = unusedParam6;
+            public int UnusedParam7 { get; } = unusedParam7;
+            public int UnusedParam8 { get; } = unusedParam8;
+            public int UnusedParam9 { get; } = unusedParam9;
+        }
     }
 }

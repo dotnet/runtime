@@ -3,8 +3,8 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using System.IO;
+using System.Text;
 
 namespace System.Net.Sockets
 {

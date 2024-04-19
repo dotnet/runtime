@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <NoWarn>$(NoWarn),CS1574</NoWarn>
     <Nullable>disable</Nullable>
     <DefineConstants>TYPE_LOADER_IMPLEMENTATION;$(DefineConstants)</DefineConstants>
     <DefineConstants Condition="'$(TYPE_LOADER_TRACE)' != ''">TYPE_LOADER_TRACE;$(DefineConstants)</DefineConstants>
@@ -9,6 +8,8 @@
     <DefineConstants Condition="'$(GENERICS_FORCE_USG)' != ''">GENERICS_FORCE_USG;$(DefineConstants)</DefineConstants>
     <!-- we access a lot of internals of System.Private.CoreLib, disable compiling against the ref assembly for now so we don't need to update it -->
     <CompileUsingReferenceAssemblies>false</CompileUsingReferenceAssemblies>
+    <!-- CA2252: Opt in to preview features before using them (Lock) -->
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
@@ -220,7 +221,6 @@
     <Compile Include="Internal\Runtime\TypeLoader\CanonicallyEquivalentEntryLocator.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\MethodTable.Runtime.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\EETypeCreator.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\Empty.cs" />
     <Compile Include="Internal\Reflection\Execution\AssemblyBinderImplementation.cs" />
     <Compile Include="$(CompilerCommonPath)\Internal\Metadata\NativeFormat\MetadataTypeHashingAlgorithms.cs" />
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\TypeHashingAlgorithms.cs" />
@@ -248,7 +248,6 @@
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.LdTokenResultLookup.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.Metadata.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.MetadataSignatureParsing.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.MethodAddress.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.SignatureParsing.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.StaticsLookup.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderLogger.cs" />

@@ -247,6 +247,13 @@ class Diff:
         overall_md_asmdiffs_summary_file_target = os.path.join(self.log_directory, "superpmi_asmdiffs_summary_{}_{}.md".format(self.target_os, self.arch_name))
         self.summary_md_files.append((overall_md_asmdiffs_summary_file, overall_md_asmdiffs_summary_file_target))
 
+        short_md_asmdiffs_summary_file = os.path.join(self.spmi_location, "diff_short_summary.md")
+        if os.path.isfile(short_md_asmdiffs_summary_file):
+            os.remove(short_md_asmdiffs_summary_file)
+
+        short_md_asmdiffs_summary_file_target = os.path.join(self.log_directory, "superpmi_asmdiffs_short_summary_{}_{}.md".format(self.target_os, self.arch_name))
+        self.summary_md_files.append((short_md_asmdiffs_summary_file, short_md_asmdiffs_summary_file_target))
+
         _, _, return_code = run_command([
             self.python_path,
             os.path.join(self.script_dir, "superpmi.py"),
@@ -290,6 +297,13 @@ class Diff:
 
         overall_md_tpdiff_summary_file_target = os.path.join(self.log_directory, "superpmi_tpdiff_summary_{}_{}.md".format(self.target_os, self.arch_name))
         self.summary_md_files.append((overall_md_tpdiff_summary_file, overall_md_tpdiff_summary_file_target))
+
+        short_md_tpdiff_summary_file = os.path.join(self.spmi_location, "tpdiff_short_summary.md")
+        if os.path.isfile(short_md_tpdiff_summary_file):
+            os.remove(short_md_tpdiff_summary_file)
+
+        short_md_tpdiff_summary_file_target = os.path.join(self.log_directory, "superpmi_tpdiff_short_summary_{}_{}.md".format(self.target_os, self.arch_name))
+        self.summary_md_files.append((short_md_tpdiff_summary_file, short_md_tpdiff_summary_file_target))
 
         _, _, return_code = run_command([
             self.python_path,

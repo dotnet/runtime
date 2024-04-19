@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Uses a custom AppManifest -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <ApplicationManifest>App.manifest</ApplicationManifest>
     <UseManagedCOMServer>true</UseManagedCOMServer>
     <!--  Suppress warning about conflicting type names. This occurs because of the reference to NETServer.
@@ -16,7 +17,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../NETServer/NETServer.csproj" />
-    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
   <ItemGroup>
     <None Include="CoreShim.X.manifest">

@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.Diagnostics;
 using System.Data.Common;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -38,7 +38,9 @@ namespace System.Data.OleDb
             Debug.Assert(flags == CreateObjectFlags.UniqueInstance);
 
             Guid errorInfoIID = IID_IErrorInfo;
+#pragma warning disable CS9191 // The 'ref' modifier for argument 1 corresponding to 'in' parameter is equivalent to 'in'. Consider using 'in' instead.
             int hr = Marshal.QueryInterface(externalComObject, ref errorInfoIID, out IntPtr comObject);
+#pragma warning restore CS9191
             if (hr == S_OK)
             {
                 return new ErrorInfoWrapper(comObject);

@@ -9,6 +9,7 @@ add_definitions(-DHAVE___THREAD=0)
 add_definitions(-D_GNU_SOURCE)
 add_definitions(-DPACKAGE_STRING="")
 add_definitions(-DPACKAGE_BUGREPORT="")
+add_definitions(-DHAVE_DL_ITERATE_PHDR=1)
 
 if(CLR_CMAKE_HOST_UNIX)
     if (CLR_CMAKE_HOST_ARCH_AMD64)
@@ -139,7 +140,6 @@ if(CLR_CMAKE_HOST_WIN32)
 
     # Warnings in release builds
     add_compile_options(-wd4068) # ignore unknown pragma warnings (gcc pragmas)
-    add_compile_options(-wd4244) # possible loss of data
     add_compile_options(-wd4334) # 32-bit shift implicitly converted to 64 bits
 
     # Disable warning due to incorrect format specifier in debugging printf via the Debug macro

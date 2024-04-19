@@ -189,7 +189,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             Assert.Equal(key1, key2);
         }
 
-        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctionalP256))]
         [OuterLoop("Hardware backed key generation takes several seconds.")]
         public static void PlatformCryptoProvider_DeriveKeyMaterial()
         {

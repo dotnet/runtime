@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime;
 using static System.Reflection.InvokerEmitUtil;
 using static System.Reflection.MethodBase;
 using static System.Reflection.MethodInvokerCommon;
@@ -130,7 +130,7 @@ namespace System.Reflection
         /// <param name="arg3">The third argument for the invoked method.</param>
         public object Invoke(object? arg1, object? arg2, object? arg3)
         {
-            if (_argCount !=3)
+            if (_argCount != 3)
             {
                 MethodBaseInvoker.ThrowTargetParameterCountException();
             }
@@ -245,8 +245,8 @@ namespace System.Reflection
             Debug.Assert(_argCount <= MaxStackAllocArgCount);
 
             StackAllocatedArgumentsWithCopyBack stackArgStorage = default;
-            Span<object?> copyOfArgs = stackArgStorage._args.AsSpan(_argCount);
-            scoped Span<bool> shouldCopyBack = stackArgStorage._shouldCopyBack.AsSpan(_argCount);
+            Span<object?> copyOfArgs = ((Span<object?>)stackArgStorage._args).Slice(0, _argCount);
+            scoped Span<bool> shouldCopyBack = ((Span<bool>)stackArgStorage._shouldCopyBack).Slice(0, _argCount);
 
             for (int i = 0; i < _argCount; i++)
             {
@@ -258,7 +258,7 @@ namespace System.Reflection
             // Check fast path first.
             if (_invokeFunc_ObjSpanArgs is not null)
             {
-                return _invokeFunc_ObjSpanArgs(obj : null, copyOfArgs)!;
+                return _invokeFunc_ObjSpanArgs(obj: null, copyOfArgs)!;
                 // No need to call CopyBack here since there are no ref values.
             }
 
@@ -279,7 +279,7 @@ namespace System.Reflection
         internal object InvokeDirectByRef(object? arg1 = null, object? arg2 = null, object? arg3 = null, object? arg4 = null)
         {
             StackAllocatedArguments stackStorage = new(arg1, arg2, arg3, arg4);
-            return InvokeDirectByRefWithFewArgs(stackStorage._args.AsSpan(_argCount));
+            return InvokeDirectByRefWithFewArgs(((Span<object?>)stackStorage._args).Slice(0, _argCount));
         }
 
         internal unsafe object InvokeDirectByRefWithFewArgs(Span<object?> copyOfArgs)

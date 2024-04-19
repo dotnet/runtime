@@ -63,7 +63,7 @@ namespace System.Resources.Extensions
                     // incorrect ResXSerialization binder.
                     typeName = typeName + ", " + assemblyName;
 
-                    type = Type.GetType(typeName, throwOnError: false, ignoreCase:false);
+                    type = Type.GetType(typeName, throwOnError: false, ignoreCase: false);
                 }
 
                 // if type is null we'll fall back to the default type binder which is preferable

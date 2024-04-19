@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Numerics;
-using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace BigIntTools
@@ -34,43 +33,29 @@ namespace BigIntTools
             }
         }
 
-        private static TypeInfo InternalCalculator
+        public static void RunWithFakeThreshold(in int field, int value, Action action)
         {
-            get
-            {
-                if (s_lazyInternalCalculator == null)
-                {
-                    Type t = typeof(BigInteger).Assembly.GetType("System.Numerics.BigIntegerCalculator");
-                    if (t != null)
-                    {
-                        s_lazyInternalCalculator = t.GetTypeInfo();
-                    }
-                }
-                return s_lazyInternalCalculator;
-            }
-        }
+            int lastValue = field;
 
-        private static volatile TypeInfo s_lazyInternalCalculator;
+            // This is tricky hack. If only DEBUG build is targeted,
+            // `RunWithFakeThreshold(ref int field, int value, Action action action)` would be more appropriate.
+            // However, in RELEASE build, the code should be like this.
+            // This is because const fields cannot be passed as ref arguments.
+            // When a const field is passed to the in argument, a local
+            // variable reference is implicitly passed to the in argument
+            // so that the original const field value is never rewritten.
+            ref int reference = ref Unsafe.AsRef(in field);
 
-        public static void RunWithFakeThreshold(string name, int value, Action action)
-        {
-            TypeInfo internalCalculator = InternalCalculator;
-            if (internalCalculator == null)
-                return; // Internal frame types are not reflectable on AoT platforms. Skip the test.
-
-            FieldInfo field = internalCalculator.GetDeclaredField(name);
-            if (field is null || field.IsLiteral)
-                return; // in Release config the field may be const
-
-            int lastValue = (int)field.GetValue(null);
-            field.SetValue(null, value);
             try
             {
+                reference = value;
+                if (field != value)
+                    return; // In release build, the test will be skipped.
                 action();
             }
             finally
             {
-                field.SetValue(null, lastValue);
+                reference = lastValue;
             }
         }
     }

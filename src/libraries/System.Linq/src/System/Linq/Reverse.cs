@@ -10,9 +10,14 @@ namespace System.Linq
     {
         public static IEnumerable<TSource> Reverse<TSource>(this IEnumerable<TSource> source)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            if (IsEmptyArray(source))
+            {
+                return [];
             }
 
             return new ReverseIterator<TSource>(source);
@@ -29,11 +34,11 @@ namespace System.Linq
 
             public ReverseIterator(IEnumerable<TSource> source)
             {
-                Debug.Assert(source != null);
+                Debug.Assert(source is not null);
                 _source = source;
             }
 
-            public override Iterator<TSource> Clone() => new ReverseIterator<TSource>(_source);
+            private protected override Iterator<TSource> Clone() => new ReverseIterator<TSource>(_source);
 
             public override bool MoveNext()
             {
@@ -54,9 +59,9 @@ namespace System.Linq
                         // Iteration has just started. Capture the source into an array and set _state to 2 + the count.
                         // Having an extra field for the count would be more readable, but we save it into _state with a
                         // bias instead to minimize field size of the iterator.
-                        Buffer<TSource> buffer = new Buffer<TSource>(_source);
-                        _buffer = buffer._items;
-                        _state = buffer._count + 2;
+                        TSource[] buffer = _source.ToArray();
+                        _buffer = buffer;
+                        _state = buffer.Length + 2;
                         goto default;
                     default:
                         // At this stage, _state starts from 2 + the count. _state - 3 represents the current index into the
@@ -65,7 +70,7 @@ namespace System.Linq
                         int index = _state - 3;
                         if (index != -1)
                         {
-                            Debug.Assert(_buffer != null);
+                            Debug.Assert(_buffer is not null);
                             _current = _buffer[index];
                             --_state;
                             return true;

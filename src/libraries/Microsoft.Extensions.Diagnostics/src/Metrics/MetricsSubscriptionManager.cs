@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Diagnostics.Metrics
 {
-    internal sealed class MetricsSubscriptionManager
+    internal sealed class MetricsSubscriptionManager : IDisposable
     {
         private readonly ListenerSubscription[] _listeners;
         private readonly IDisposable? _changeTokenRegistration;

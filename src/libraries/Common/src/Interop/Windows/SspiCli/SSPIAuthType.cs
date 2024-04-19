@@ -50,28 +50,30 @@ namespace System.Net
             return SafeFreeCredentials.AcquireCredentialsHandle(moduleName, usage, authdata, out outCredential);
         }
 
-        public int AcceptSecurityContext(SafeFreeCredentials? credential, ref SafeDeleteSslContext? context, InputSecurityBuffers inputBuffers, Interop.SspiCli.ContextFlags inFlags, Interop.SspiCli.Endianness endianness, ref SecurityBuffer outputBuffer, ref Interop.SspiCli.ContextFlags outFlags)
+        public int AcceptSecurityContext(SafeFreeCredentials? credential, ref SafeDeleteSslContext? context, InputSecurityBuffers inputBuffers, Interop.SspiCli.ContextFlags inFlags, Interop.SspiCli.Endianness endianness, ref ProtocolToken outToken, ref Interop.SspiCli.ContextFlags outFlags)
         {
-            return SafeDeleteContext.AcceptSecurityContext(ref credential, ref context, inFlags, endianness, inputBuffers, ref outputBuffer, ref outFlags);
+            return SafeDeleteContext.AcceptSecurityContext(ref credential, ref context, inFlags, endianness, inputBuffers, ref outToken, ref outFlags);
         }
 
-        public int InitializeSecurityContext(ref SafeFreeCredentials? credential, ref SafeDeleteSslContext? context, string? targetName, Interop.SspiCli.ContextFlags inFlags, Interop.SspiCli.Endianness endianness, InputSecurityBuffers inputBuffers, ref SecurityBuffer outputBuffer, ref Interop.SspiCli.ContextFlags outFlags)
+        public int InitializeSecurityContext(ref SafeFreeCredentials? credential, ref SafeDeleteSslContext? context, string? targetName, Interop.SspiCli.ContextFlags inFlags, Interop.SspiCli.Endianness endianness, InputSecurityBuffers inputBuffers, ref ProtocolToken outToken, ref Interop.SspiCli.ContextFlags outFlags)
         {
-            return SafeDeleteContext.InitializeSecurityContext(ref credential, ref context, targetName, inFlags, endianness, inputBuffers, ref outputBuffer, ref outFlags);
+            return SafeDeleteContext.InitializeSecurityContext(ref credential, ref context, targetName, inFlags, endianness, inputBuffers, ref outToken, ref outFlags);
         }
 
         public int EncryptMessage(SafeDeleteContext context, ref Interop.SspiCli.SecBufferDesc inputOutput, uint qop)
         {
+            bool mustRelease = false;
             try
             {
-                bool ignore = false;
-
-                context.DangerousAddRef(ref ignore);
+                context.DangerousAddRef(ref mustRelease);
                 return Interop.SspiCli.EncryptMessage(ref context._handle, qop, ref inputOutput, 0);
             }
             finally
             {
-                context.DangerousRelease();
+                if (mustRelease)
+                {
+                    context.DangerousRelease();
+                }
             }
         }
 
@@ -80,15 +82,18 @@ namespace System.Net
             int status = (int)Interop.SECURITY_STATUS.InvalidHandle;
             uint qopTemp = 0;
 
+            bool mustRelease = false;
             try
             {
-                bool ignore = false;
-                context.DangerousAddRef(ref ignore);
+                context.DangerousAddRef(ref mustRelease);
                 status = Interop.SspiCli.DecryptMessage(ref context._handle, ref inputOutput, 0, &qopTemp);
             }
             finally
             {
-                context.DangerousRelease();
+                if (mustRelease)
+                {
+                    context.DangerousRelease();
+                }
             }
 
             qop = qopTemp;
@@ -101,6 +106,11 @@ namespace System.Net
             throw new NotSupportedException();
         }
 
+        public unsafe int QueryContextAttributes(SafeDeleteContext context, Interop.SspiCli.ContextAttribute attribute, IntPtr* refHandle)
+        {
+            return SafeFreeContextBuffer.QueryContextAttributes(context, attribute, refHandle);
+        }
+
         public unsafe int QueryContextAttributes(SafeDeleteContext context, Interop.SspiCli.ContextAttribute attribute, Span<byte> buffer, Type? handleType, out SafeHandle? refHandle)
         {
             refHandle = null;
@@ -109,10 +119,6 @@ namespace System.Net
                 if (handleType == typeof(SafeFreeContextBuffer))
                 {
                     refHandle = SafeFreeContextBuffer.CreateEmptyHandle();
-                }
-                else if (handleType == typeof(SafeFreeCertContext))
-                {
-                    refHandle = new SafeFreeCertContext();
                 }
                 else
                 {
@@ -138,15 +144,18 @@ namespace System.Net
 
         private static int GetSecurityContextToken(SafeDeleteContext phContext, out SecurityContextTokenHandle safeHandle)
         {
+            bool mustRelease = false;
             try
             {
-                bool ignore = false;
-                phContext.DangerousAddRef(ref ignore);
+                phContext.DangerousAddRef(ref mustRelease);
                 return Interop.SspiCli.QuerySecurityContextToken(ref phContext._handle, out safeHandle);
             }
             finally
             {
-                phContext.DangerousRelease();
+                if (mustRelease)
+                {
+                    phContext.DangerousRelease();
+                }
             }
         }
 

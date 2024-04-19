@@ -17,10 +17,11 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Microsoft.Win32
 {
-    internal static class OAVariantLib
+    internal static unsafe partial class OAVariantLib
     {
         #region Constants
 
@@ -65,6 +66,8 @@ namespace Microsoft.Win32
 
         #region Internal Methods
 
+#pragma warning disable CS8500
+
         /**
          * Changes a Variant from one type to another, calling the OLE
          * Automation VariantChangeTypeEx routine.  Note the legal types here are
@@ -78,11 +81,20 @@ namespace Microsoft.Win32
             ArgumentNullException.ThrowIfNull(culture);
 
             Variant result = default;
-            ChangeTypeEx(ref result, ref source,
-                         culture.LCID,
-                         targetClass.TypeHandle.Value, GetCVTypeFromClass(targetClass), options);
+            ChangeType(
+                &result,
+                &source,
+                culture.LCID,
+                targetClass.TypeHandle.Value,
+                GetCVTypeFromClass(targetClass),
+                options);
             return result;
         }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "OAVariant_ChangeType")]
+        private static partial void ChangeType(Variant* result, Variant* source, int lcid, IntPtr typeHandle, int cvType, short flags);
+
+#pragma warning restore CS8500
 
         #endregion
 
@@ -94,7 +106,10 @@ namespace Microsoft.Win32
             Debug.Assert(ctype != null);
             Debug.Assert(ClassTypes[CV_OBJECT] == typeof(object), "OAVariantLib::ClassTypes[CV_OBJECT] == Object.class");
 
-            int cvtype = -1;
+            // OleAut Binder works better if unrecognized
+            // types were changed to Object.
+            int cvtype = CV_OBJECT;
+
             for (int i = 0; i < ClassTypes.Length; i++)
             {
                 if (ctype.Equals(ClassTypes[i]))
@@ -104,21 +119,8 @@ namespace Microsoft.Win32
                 }
             }
 
-            // OleAut Binder works better if unrecognized
-            // types were changed to Object.  So don't throw here.
-            if (cvtype == -1)
-                cvtype = CV_OBJECT;
-
             return cvtype;
         }
-
-        #endregion
-
-
-        #region Private FCalls
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void ChangeTypeEx(ref Variant result, ref Variant source, int lcid, IntPtr typeHandle, int cvType, short flags);
 
         #endregion
     }

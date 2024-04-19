@@ -1,8 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System.Runtime.Intrinsics;
+using Xunit;
 
-class Test27937
+public class Test27937
 {
     static unsafe void calc(float* fa, float* fb)
     {
@@ -26,13 +27,12 @@ class Test27937
         } while (pb < eb);
     }
 
-    static unsafe int Main()
+    [Fact]
+    public static unsafe void TestEntryPoint()
     {
         float* a = stackalloc float[16];
         float* b = stackalloc float[16];
 
         calc(a, b);
-
-        return 100;
     }
 }

@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides types supporting Code Access Security (CAS).</PackageDescription>
     <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
@@ -221,4 +223,5 @@
     <Reference Include="System.Transactions" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
+
 </Project>

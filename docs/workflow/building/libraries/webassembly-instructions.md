@@ -1,39 +1,20 @@
-# Build for WebAssembly
+# Build libraries for WebAssembly
 
 ## Prerequisites
 
 If you haven't already done so, please read [this document](../../README.md#Build_Requirements) to understand the build requirements for your operating system.
 
-The **correct version** of Emscripten SDK (emsdk) needs to be installed.
-* Run `make -C src/mono/wasm provision-wasm` to install emsdk into `src/mono/wasm/emsdk`.
-* Alternatively follow the [installation guide](https://emscripten.org/docs/getting_started/downloads.html#sdk-download-and-install).
-Do not install `latest` but rather specific version e.g. `./emsdk install 2.0.23`. See [emscripten-version.txt](../../../../src/mono/wasm/emscripten-version.txt)
+## Building
 
-Once installed the `EMSDK_PATH` environment variable needs to be set:
-
-On Linux and macOS:
-
-```bash
-export EMSDK_PATH=<FULL_PATH_TO_SDK_INSTALL>/emsdk
-```
-
-## Building everything
-
-At this time no other build dependencies are necessary to start building for WebAssembly.
+At this time no other build dependencies are necessary to start building for WebAssembly. Emscripten will be downloaded and installed automatically in the build process. To read how to build on specific platforms, see [Building](../../../../src/mono/wasm/README.md#building).
 
 This document explains how to work on the runtime or libraries. If you haven't already done so, please read [this document](../../README.md#Configurations) to understand configurations.
 
-For Linux and macOS:
-
-```bash
-./build.sh -os browser -configuration Release
-```
-
-Artifacts will be placed in `artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Release/`. When rebuilding with `build.sh` after a code change, you need to ensure that the `mono.wasmruntime` and `libs.pretest` subsets are included even for a Mono-only change or this directory will not be updated (details below).
+When rebuilding with `build.sh` after a code change, you need to ensure that the `mono.wasmruntime` and `libs.pretest` subsets are included even for a Mono-only change or this directory will not be updated (details below).
 
 ### Note: do not mix runtime and library configurations
 
-At this time, it is not possible to specify different configurations for the runtime and libraries.  That is mixing a Release `-runtimeConfiguration` with a Debug `-libraryConfiguration` (or `-configuration`), or vice versa will not work.
+At this time, it is not possible to specify different configurations for the runtime and libraries. That is mixing a Release `-runtimeConfiguration` with a Debug `-libraryConfiguration` (or `-configuration`), or vice versa will not work. The same applies to single and multithreaded configurations.
 
 Please only use the `-configuration` option with `Debug` or `Release`, and do not specify a `-runtimeConfiguration` and `-libraryConfiguration`.
 
@@ -68,7 +49,7 @@ Building both Mono/System.Private.CoreLib and the managed libraries:
 
 ## Building the WebAssembly runtime files
 
-The WebAssembly implementation files are built after the libraries source build and made available in the artifacts folder.  If you are working on the code base and need to compile just these modules then building the `Mono.WasmRuntime` subset will allow one to do that:
+The WebAssembly implementation files are built after the libraries source build and made available in the artifacts folder. If you are working on the code base and need to compile just these modules then building the `Mono.WasmRuntime` subset will allow one to do that:
 
 ```bash
 ./build.sh mono.wasmruntime -os browser -c Debug|Release
@@ -174,3 +155,7 @@ container:
 ```
 
 Open a PR request with the new image.
+
+# Test libraries
+
+You can read about running library tests in [Libraries tests](../../../../src/mono/wasm/README.md#libraries-tests).

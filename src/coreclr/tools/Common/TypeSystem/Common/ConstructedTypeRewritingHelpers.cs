@@ -78,7 +78,6 @@ namespace Internal.TypeSystem
             if (type.HasInstantiation)
             {
                 TypeDesc[] newInstantiation = null;
-                Debug.Assert(type is InstantiatedType);
                 int instantiationIndex = 0;
                 for (; instantiationIndex < type.Instantiation.Length; instantiationIndex++)
                 {

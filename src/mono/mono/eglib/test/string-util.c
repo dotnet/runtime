@@ -340,39 +340,6 @@ cleanup:
 }
 
 static RESULT
-test_strjoin (void)
-{
-	char *s;
-
-	s = g_strjoin (NULL, "a", "b", (const char*)NULL);
-	if (strcmp (s, "ab") != 0)
-		return FAILED ("Join of two strings with no separator fails");
-	g_free (s);
-
-	s = g_strjoin ("", "a", "b", (const char*)NULL);
-	if (strcmp (s, "ab") != 0)
-		return FAILED ("Join of two strings with empty separator fails");
-	g_free (s);
-
-	s = g_strjoin ("-", "a", "b", (const char*)NULL);
-	if (strcmp (s, "a-b") != 0)
-		return FAILED ("Join of two strings with separator fails");
-	g_free (s);
-
-	s = g_strjoin ("-", "aaaa", "bbbb", "cccc", "dddd", (const char*)NULL);
-	if (strcmp (s, "aaaa-bbbb-cccc-dddd") != 0)
-		return FAILED ("Join of multiple strings fails");
-	g_free (s);
-
-	s = g_strjoin ("-", (const char*)NULL);
-	if (s == NULL || (strcmp (s, "") != 0))
-		return FAILED ("Failed to join empty arguments");
-	g_free (s);
-
-	return OK;
-}
-
-static RESULT
 test_strchug (void)
 {
 	char *str = g_strdup (" \t\n hola");
@@ -602,7 +569,6 @@ static Test strutil_tests [] = {
 	{"g_strsplit", test_split},
 	{"g_strsplit_set", test_split_set},
 	{"g_strreverse", test_strreverse},
-	{"g_strjoin", test_strjoin},
 	{"g_strchug", test_strchug},
 	{"g_strchomp", test_strchomp},
 	{"g_strstrip", test_strstrip},

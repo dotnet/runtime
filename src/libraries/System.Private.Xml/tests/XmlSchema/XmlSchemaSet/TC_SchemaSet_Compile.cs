@@ -76,7 +76,7 @@ namespace System.Xml.XmlSchemaTests
                 // GLOBALIZATION
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Fact]

@@ -15,7 +15,7 @@
 
 // The major version of the IGCToCLR interface. Breaking changes to this interface
 // require bumps in the major version number.
-#define EE_INTERFACE_MAJOR_VERSION 1
+#define EE_INTERFACE_MAJOR_VERSION 2
 
 struct ScanContext;
 struct gc_alloc_context;
@@ -502,7 +502,17 @@ typedef enum
      *       but we are keeping it here for backward compatibility purposes"
      *
      */
-    HNDTYPE_WEAK_NATIVE_COM   = 9
+    HNDTYPE_WEAK_NATIVE_COM   = 9,
+
+    /*
+     * INTERIOR POINTER HANDLES
+     *
+     * Interior pointer handles allow the vm to request that the GC keep an interior pointer to
+     * a given object updated to keep pointing at the same location within an object. These handles
+     * have an extra pointer which points at an interior pointer into the first object.
+     *
+     */
+    HNDTYPE_WEAK_INTERIOR_POINTER = 10
 } HandleType;
 
 typedef enum
@@ -1013,6 +1023,8 @@ public:
     virtual FinalizerWorkItem* GetExtraWorkForFinalization() PURE_VIRTUAL
 
     virtual uint64_t GetGenerationBudget(int generation) PURE_VIRTUAL
+
+    virtual size_t GetLOHThreshold() PURE_VIRTUAL
 };
 
 #ifdef WRITE_BARRIER_CHECK

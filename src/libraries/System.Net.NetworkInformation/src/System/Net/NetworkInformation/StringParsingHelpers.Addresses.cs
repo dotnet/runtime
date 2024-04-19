@@ -57,9 +57,9 @@ namespace System.Net.NetworkInformation
             {
                 if (line.StartsWith("00000000000000000000000000000000", StringComparison.Ordinal))
                 {
-                   string[] token = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                   if (token.Length > 9 && token[4] != "00000000000000000000000000000000")
-                   {
+                    string[] token = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    if (token.Length > 9 && token[4] != "00000000000000000000000000000000")
+                    {
                         if (!string.IsNullOrEmpty(interfaceName) && interfaceName != token[9])
                         {
                             continue;

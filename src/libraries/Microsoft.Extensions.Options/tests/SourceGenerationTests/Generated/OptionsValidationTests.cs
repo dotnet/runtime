@@ -4,6 +4,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
+using System.Linq;
 using Microsoft.Extensions.Options;
 using TestClasses.OptionsValidation;
 using Xunit;
@@ -438,5 +439,42 @@ public class OptionsValidationTests
 
         var modelValidator = new AttributePropertyModelValidator();
         Utils.VerifyValidateOptionsResult(modelValidator.Validate(nameof(validModel), validModel), 1);
+    }
+
+    [Fact]
+    public void OptionsUsingRangeWithTimeSpanValid()
+    {
+        var validModel = new OptionsUsingRangeWithTimeSpan
+        {
+            P1 = TimeSpan.FromSeconds(1),
+            P2 = TimeSpan.FromSeconds(2),
+            P3 = "00:00:03",
+            P4 = "00:00:04",
+        };
+
+        var modelValidator = new OptionsUsingRangeWithTimeSpanValidator();
+        ValidateOptionsResult result = modelValidator.Validate(nameof(validModel), validModel);
+        Assert.Equal(ValidateOptionsResult.Success, result);
+
+        var invalidModel = new OptionsUsingRangeWithTimeSpan
+        {
+            P1 = TimeSpan.FromSeconds(11),
+            P2 = TimeSpan.FromSeconds(-2),
+            P3 = "01:00:03",
+            P4 = "02:00:04",
+        };
+        result = modelValidator.Validate(nameof(invalidModel), invalidModel);
+        Assert.Equal(4, result.Failures.Count());
+
+        // null values pass the validation!
+        invalidModel = new OptionsUsingRangeWithTimeSpan
+        {
+            P1 = TimeSpan.FromSeconds(100),
+            P2 = null,
+            P3 = "00:01:00",
+            P4 = null,
+        };
+        result = modelValidator.Validate(nameof(invalidModel), invalidModel);
+        Assert.Equal(2, result.Failures.Count());
     }
 }

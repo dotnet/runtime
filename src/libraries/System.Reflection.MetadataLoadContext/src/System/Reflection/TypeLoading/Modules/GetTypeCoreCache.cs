@@ -25,7 +25,7 @@ namespace System.Reflection.TypeLoading
 
         public RoDefinitionType GetOrAdd(ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name, int hashCode, RoDefinitionType type)
         {
-            if ( _container.TryGetValue(ns, name, hashCode, out RoDefinitionType? prior))
+            if (_container.TryGetValue(ns, name, hashCode, out RoDefinitionType? prior))
                 return prior;
 
             Monitor.Enter(_lock);

@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Xml;
 using System.Xml.XPath;
-using System.Diagnostics;
 
 namespace System.Xml.Xsl.Runtime
 {

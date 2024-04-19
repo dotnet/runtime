@@ -11,6 +11,7 @@
 **
 ===========================================================*/
 
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -581,13 +582,9 @@ namespace System.Collections
             CopyEntries(array, arrayIndex);
         }
 
-        // Copies the values in this Hashtable to an KeyValuePairs array.
-        // KeyValuePairs is different from Dictionary Entry in that it has special
-        // debugger attributes on its fields.
-
-        internal virtual KeyValuePairs[] ToKeyValuePairsArray()
+        internal virtual DebugViewDictionaryItem<object, object?>[] ToDebugViewDictionaryItemArray()
         {
-            KeyValuePairs[] array = new KeyValuePairs[_count];
+            var array = new DebugViewDictionaryItem<object, object?>[_count];
             int index = 0;
             Bucket[] lbuckets = _buckets;
             for (int i = lbuckets.Length; --i >= 0;)
@@ -595,7 +592,7 @@ namespace System.Collections
                 object? keyv = lbuckets[i].key;
                 if ((keyv != null) && (keyv != _buckets))
                 {
-                    array[index++] = new KeyValuePairs(keyv, lbuckets[i].val);
+                    array[index++] = new DebugViewDictionaryItem<object, object?>(keyv, lbuckets[i].val);
                 }
             }
 
@@ -1385,9 +1382,9 @@ namespace System.Collections
                 // call OnDeserialization on our parent table.
             }
 
-            internal override KeyValuePairs[] ToKeyValuePairsArray()
+            internal override DebugViewDictionaryItem<object, object?>[] ToDebugViewDictionaryItemArray()
             {
-                return _table.ToKeyValuePairsArray();
+                return _table.ToDebugViewDictionaryItemArray();
             }
         }
 
@@ -1509,7 +1506,7 @@ namespace System.Collections
             }
 
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public KeyValuePairs[] Items => _hashtable.ToKeyValuePairsArray();
+            public DebugViewDictionaryItem<object, object?>[] Items => _hashtable.ToDebugViewDictionaryItemArray();
         }
     }
 }

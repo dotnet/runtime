@@ -9,7 +9,7 @@
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoMessageFormat">
         <source>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls, passing boxed objects, and passing types that are not 'public' or 'internal'.</source>
-        <target state="needs-review-translation">No se generó la lógica de enlace para una llamada de enlazador. Los patrones de entrada no admitidos incluyen llamadas genéricas y pasar objetos en cuadros.</target>
+        <target state="translated">No se ha generado la lógica de enlace para una llamada de enlace. Entre los patrones de entrada no admitidos se incluyen las llamadas genéricas, el paso de objetos en caja y el paso de tipos que no son "públicos" o "internos".</target>
         <note />
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoTitle">
@@ -27,14 +27,14 @@
         <target state="translated">No se admite el tipo de elemento de colección: "{0}".</target>
         <note />
       </trans-unit>
-      <trans-unit id="Language VersionIsNotSupportedMessageFormat">
+      <trans-unit id="LanguageVersionIsNotSupportedMessageFormat">
         <source>The project's language version has to be at least 'C# 12'.</source>
-        <target state="needs-review-translation">La versión del lenguaje del proyecto debe ser al menos "C# 11".</target>
+        <target state="new">The project's language version has to be at least 'C# 12'.</target>
         <note />
       </trans-unit>
       <trans-unit id="LanguageVersionIsNotSupportedTitle">
         <source>Language version is required to be at least C# 12</source>
-        <target state="needs-review-translation">La versión del lenguaje debe ser al menos C# 11</target>
+        <target state="translated">La versión del lenguaje debe ser al menos C# 12</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingPublicInstanceConstructor">

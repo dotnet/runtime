@@ -122,10 +122,7 @@ namespace System.IO.Compression
         internal unsafe void SetInput(ReadOnlyMemory<byte> inputBuffer)
         {
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
-            if (0 == inputBuffer.Length)
-            {
-                return;
-            }
+            Debug.Assert(!inputBuffer.IsEmpty);
 
             lock (SyncLock)
             {
@@ -140,11 +137,7 @@ namespace System.IO.Compression
         {
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
             Debug.Assert(inputBufferPtr != null);
-
-            if (count == 0)
-            {
-                return;
-            }
+            Debug.Assert(count > 0);
 
             lock (SyncLock)
             {

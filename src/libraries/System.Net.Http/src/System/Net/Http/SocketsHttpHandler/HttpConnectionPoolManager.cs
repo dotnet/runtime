@@ -5,10 +5,10 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Net.NetworkInformation;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Net.NetworkInformation;
 
 namespace System.Net.Http
 {
@@ -174,9 +174,29 @@ namespace System.Net.Http
                 return;
             }
 
-            using (ExecutionContext.SuppressFlow())
+            // RFC: https://tools.ietf.org/html/rfc7838#section-2.2
+            //    When alternative services are used to send a client to the most
+            //    optimal server, a change in network configuration can result in
+            //    cached values becoming suboptimal.  Therefore, clients SHOULD remove
+            //    from cache all alternative services that lack the "persist" flag with
+            //    the value "1" when they detect such a change, when information about
+            //    network state is available.
+            try
             {
-                NetworkChange.NetworkAddressChanged += networkChangedDelegate;
+                using (ExecutionContext.SuppressFlow())
+                {
+                    NetworkChange.NetworkAddressChanged += networkChangedDelegate;
+                }
+            }
+            catch (NetworkInformationException e)
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Exception when subscribing to NetworkChange.NetworkAddressChanged: {e}");
+
+                // We can't monitor network changes, so technically "information
+                // about network state is not available" and we can just keep
+                // all Alt-Svc entries until their expiration time.
+                //
+                // keep the _networkChangeCleanup field assigned so we don't try again needlessly
             }
         }
 

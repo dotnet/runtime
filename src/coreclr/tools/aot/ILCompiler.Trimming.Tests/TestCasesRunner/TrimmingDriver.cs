@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Xml;
 using ILCompiler;
 using ILCompiler.Dataflow;
 using ILLink.Shared.TrimAnalysis;
@@ -84,15 +85,34 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				options.SingleWarn,
 				singleWarnEnabledModules: Enumerable.Empty<string> (),
 				singleWarnDisabledModules: Enumerable.Empty<string> (),
-				suppressedCategories: Enumerable.Empty<string> ());
+				suppressedCategories: Enumerable.Empty<string> (),
+				treatWarningsAsErrors: options.TreatWarningsAsErrors,
+				warningsAsErrors: options.WarningsAsErrors);
 
 			foreach (var descriptor in options.Descriptors) {
 				if (!File.Exists (descriptor))
 					throw new FileNotFoundException ($"'{descriptor}' doesn't exist");
 				compilationRoots.Add (new ILCompiler.DependencyAnalysis.TrimmingDescriptorNode (descriptor));
 			}
-			
-			ilProvider = new FeatureSwitchManager (ilProvider, logger, options.FeatureSwitches, default);
+
+			var featureSwitches = options.FeatureSwitches;
+			BodyAndFieldSubstitutions substitutions = default;
+			IReadOnlyDictionary<ModuleDesc, IReadOnlySet<string>>? resourceBlocks = default;
+			foreach (string substitutionFilePath in options.SubstitutionFiles)
+			{
+				using FileStream fs = File.OpenRead(substitutionFilePath);
+				substitutions.AppendFrom(BodySubstitutionsParser.GetSubstitutions(
+					logger, typeSystemContext, XmlReader.Create(fs), substitutionFilePath, featureSwitches));
+
+				fs.Seek(0, SeekOrigin.Begin);
+
+				resourceBlocks = ManifestResourceBlockingPolicy.UnionBlockings(resourceBlocks,
+					ManifestResourceBlockingPolicy.SubstitutionsReader.GetSubstitutions(
+						logger, typeSystemContext, XmlReader.Create(fs), substitutionFilePath, featureSwitches));
+			}
+
+			SubstitutionProvider substitutionProvider = new SubstitutionProvider(logger, featureSwitches, substitutions);
+			ilProvider = new SubstitutedILProvider(ilProvider, substitutionProvider);
 
 			CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState (ilProvider, logger);
 
@@ -103,7 +123,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				new ManifestResourceBlockingPolicy (logger, options.FeatureSwitches, new Dictionary<ModuleDesc, IReadOnlySet<string>>()),
 				logFile: null,
 				new NoStackTraceEmissionPolicy (),
-				new NoDynamicInvokeThunkGenerationPolicy (),
+				new DefaultDynamicInvokeThunkGenerationPolicy (),
 				new FlowAnnotations (logger, ilProvider, compilerGeneratedState),
 				UsageBasedMetadataGenerationOptions.ReflectionILScanning,
 				options: default,

@@ -9,7 +9,7 @@
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoMessageFormat">
         <source>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls, passing boxed objects, and passing types that are not 'public' or 'internal'.</source>
-        <target state="needs-review-translation">未为联编程序调用生成绑定逻辑。不支持的输入模式包括泛型调用和传递装箱对象。</target>
+        <target state="translated">没有为绑定器调用生成绑定逻辑。不支持的输入模式包括泛型调用、传递装箱对象和传递不是“public”或“internal”的类型。</target>
         <note />
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoTitle">
@@ -27,14 +27,14 @@
         <target state="translated">不支持此集合元素类型: '{0}'。</target>
         <note />
       </trans-unit>
-      <trans-unit id="Language VersionIsNotSupportedMessageFormat">
+      <trans-unit id="LanguageVersionIsNotSupportedMessageFormat">
         <source>The project's language version has to be at least 'C# 12'.</source>
-        <target state="needs-review-translation">项目的语言版本必须至少为 "C# 11"。</target>
+        <target state="new">The project's language version has to be at least 'C# 12'.</target>
         <note />
       </trans-unit>
       <trans-unit id="LanguageVersionIsNotSupportedTitle">
         <source>Language version is required to be at least C# 12</source>
-        <target state="needs-review-translation">语言版本必须至少为 C# 11</target>
+        <target state="translated">语言版本必须至少为 C# 12</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingPublicInstanceConstructor">

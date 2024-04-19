@@ -27,7 +27,7 @@ internal static partial class Interop
                 {
                     result = ForkAndExecProcess(
                         filename, argvPtr, envpPtr, cwd,
-                        redirectStdin ? 1 : 0, redirectStdout ? 1 : 0, redirectStderr ? 1 :0,
+                        redirectStdin ? 1 : 0, redirectStdout ? 1 : 0, redirectStderr ? 1 : 0,
                         setUser ? 1 : 0, userId, groupId, pGroups, groups?.Length ?? 0,
                         out lpChildPid, out stdinFd, out stdoutFd, out stderrFd);
                 }

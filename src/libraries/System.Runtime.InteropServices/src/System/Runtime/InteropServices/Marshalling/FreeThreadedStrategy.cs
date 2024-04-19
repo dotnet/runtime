@@ -18,7 +18,7 @@ namespace System.Runtime.InteropServices.Marshalling
 
         unsafe int IIUnknownStrategy.QueryInterface(void* thisPtr, in Guid handle, out void* ppObj)
         {
-            int hr = Marshal.QueryInterface((nint)thisPtr, in handle, out nint ppv);
+            int hr = Marshal.QueryInterface((nint)thisPtr, handle, out nint ppv);
             if (hr < 0)
             {
                 ppObj = null;

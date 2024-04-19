@@ -36,7 +36,7 @@ namespace System.Diagnostics
             MethodBase? method = null;
             string? fileName = null;
             bool success = GetFrameInfo(skipFrames + SystemDiagnosticsStackDepth, needFileInfo,
-                                        ObjectHandleOnStack.Create (ref method), ObjectHandleOnStack.Create (ref fileName),
+                                        ObjectHandleOnStack.Create(ref method), ObjectHandleOnStack.Create(ref fileName),
                                         out int ilOffset, out int nativeOffset, out int line, out int column);
             if (!success)
                 return;

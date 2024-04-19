@@ -165,4 +165,24 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         UnorderedTrueSignaling = 31,
     }
+
+    public enum FloatRoundingMode : byte
+    {
+        /// <summary>
+        /// _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC
+        /// </summary>
+        ToEven = 0x08,
+        /// <summary>
+        /// _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC
+        /// </summary>
+        ToNegativeInfinity = 0x09,
+        /// <summary>
+        /// _MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC
+        /// </summary>
+        ToPositiveInfinity = 0x0A,
+        /// <summary>
+        /// _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC
+        /// </summary>
+        ToZero = 0x0B,
+    }
 }

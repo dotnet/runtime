@@ -3,6 +3,8 @@
 
 using System.Linq;
 
+namespace NativeFormatGen;
+
 //
 // This class generates the common API declarations that any metadata reader must implement.
 // In general, this script consumes the metadata record schema defined in SchemaDef.cs and
@@ -24,7 +26,7 @@ using System.Linq;
 // the implementation be supplied by the reader.
 //
 
-class PublicGen : CsWriter
+internal sealed class PublicGen : CsWriter
 {
     public PublicGen(string fileName)
         : base(fileName)
@@ -34,8 +36,8 @@ class PublicGen : CsWriter
     public void EmitSource()
     {
         WriteLine("using System;");
-        WriteLine("using System.Reflection;");
         WriteLine("using System.Collections.Generic;");
+        WriteLine("using System.Reflection;");
         WriteLine("using System.Runtime.CompilerServices;");
         WriteLine();
 

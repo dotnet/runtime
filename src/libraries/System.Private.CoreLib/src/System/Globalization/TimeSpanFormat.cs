@@ -99,7 +99,12 @@ namespace System.Globalization
             return new string(destination.Slice(0, charsWritten));
         }
 
-        internal enum StandardFormat { C, G, g }
+        internal enum StandardFormat
+        {
+            C,
+            G,
+            g
+        }
 
         internal static unsafe bool TryFormatStandard<TChar>(TimeSpan value, StandardFormat format, ReadOnlySpan<TChar> decimalSeparator, Span<TChar> destination, out int written) where TChar : unmanaged, IUtfChar<TChar>
         {
@@ -263,12 +268,11 @@ namespace System.Globalization
                 // Write fraction and separator, if necessary
                 if (fractionDigits != 0)
                 {
-                    Debug.Assert(format == StandardFormat.C || decimalSeparator != null);
                     if (format == StandardFormat.C)
                     {
                         *p++ = TChar.CastFrom('.');
                     }
-                    else if (decimalSeparator!.Length == 1)
+                    else if (decimalSeparator.Length == 1)
                     {
                         *p++ = decimalSeparator[0];
                     }

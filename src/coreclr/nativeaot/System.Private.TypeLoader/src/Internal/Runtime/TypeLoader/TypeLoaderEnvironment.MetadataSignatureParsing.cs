@@ -4,15 +4,14 @@
 using System;
 using System.Diagnostics;
 using System.Reflection;
+using System.Reflection.Runtime.General;
 using System.Runtime;
 
-using Internal.Runtime.CompilerServices;
 using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
-using Internal.Runtime.TypeLoader;
 using Internal.Runtime.Augments;
-
-using System.Reflection.Runtime.General;
+using Internal.Runtime.CompilerServices;
+using Internal.Runtime.TypeLoader;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -398,30 +397,6 @@ namespace Internal.Runtime.TypeLoader
         {
             return (callingConvention.HasFlag(MethodCallingConvention.Static) == _isStatic) &&
                 (callingConvention.HasFlag(MethodCallingConvention.Generic) == _isGeneric);
-        }
-
-        private static bool CanGetTypeHandle(Type type)
-        {
-            if (type.HasElementType)
-            {
-                return CanGetTypeHandle(type.GetElementType());
-            }
-            else if (type.IsConstructedGenericType)
-            {
-                foreach (var typeArg in type.GenericTypeArguments)
-                {
-                    if (!CanGetTypeHandle(typeArg))
-                    {
-                        return false;
-                    }
-                }
-            }
-            else if (type.IsGenericParameter)
-            {
-                return false;
-            }
-
-            return true;
         }
     }
 }

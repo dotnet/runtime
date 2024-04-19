@@ -6,18 +6,4 @@
     <DiagnosticId>CP0003</DiagnosticId>
     <Target>System.Reflection.Context, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</Target>
   </Suppression>
-  <Suppression>
-    <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Runtime, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>lib/net6.0/System.Reflection.Context.dll</Left>
-    <Right>lib/netstandard2.1/System.Reflection.Context.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Runtime, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>lib/net7.0/System.Reflection.Context.dll</Left>
-    <Right>lib/netstandard2.1/System.Reflection.Context.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
 </Suppressions>

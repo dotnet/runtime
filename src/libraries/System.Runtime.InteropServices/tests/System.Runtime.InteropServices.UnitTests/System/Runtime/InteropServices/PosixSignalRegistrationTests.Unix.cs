@@ -132,7 +132,7 @@ namespace System.Tests
 
             PosixSignalRegistration.Create(signal, ctx =>
             {
-                Assert.False(true, "Signal handler was called.");
+                Assert.Fail("Signal handler was called.");
             }).Dispose();
 
             kill(signal);
@@ -156,7 +156,7 @@ namespace System.Tests
             {
                 PosixSignalRegistration.Create(signal, ctx =>
                 {
-                    Assert.False(true, "Signal handler was called.");
+                    Assert.Fail("Signal handler was called.");
                 });
             }
         }

@@ -17,6 +17,7 @@
     <WasmAppDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\AppBundle\</WasmAppDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
     <WasmNativeStrip>false</WasmNativeStrip>
   </PropertyGroup>
 
@@ -35,5 +36,5 @@
   </ItemGroup>
 
   <!-- Import late, so properties like $(ArtifactsBinDir) are set -->
-  <Import Project="$(MonoProjectRoot)wasm\build\WasmApp.InTree.props" />
+  <Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.props" />
 </Project>

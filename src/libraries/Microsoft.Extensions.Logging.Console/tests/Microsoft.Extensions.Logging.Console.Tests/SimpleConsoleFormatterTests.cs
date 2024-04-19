@@ -13,10 +13,11 @@ namespace Microsoft.Extensions.Logging.Console.Test
         [InlineData(LoggerColorBehavior.Default)]
         [InlineData(LoggerColorBehavior.Enabled)]
         [InlineData(LoggerColorBehavior.Disabled)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/97382", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void Log_WritingScopes_LogsWithCorrectColorsWhenColorEnabled(LoggerColorBehavior colorBehavior)
         {
             // Arrange
-            var t = SetUp(
+            using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Simple },
                 new SimpleConsoleFormatterOptions { IncludeScopes = true, ColorBehavior = colorBehavior }
                 );
@@ -57,7 +58,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         public void Log_NoLogScope_DoesNotWriteAnyScopeContentToOutput()
         {
             // Arrange
-            var t = SetUp(
+            using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Simple },
                 new SimpleConsoleFormatterOptions { IncludeScopes = true, ColorBehavior = LoggerColorBehavior.Enabled }
             );
@@ -81,7 +82,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         public void Log_SingleLine_LogsWhenMessageIsNotProvided()
         {
             // Arrange
-            var t = SetUp(
+            using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Simple },
                 new SimpleConsoleFormatterOptions { SingleLine = true, ColorBehavior = LoggerColorBehavior.Enabled }
             );
@@ -112,7 +113,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         public void Log_SingleLine_LogsWhenBothMessageAndExceptionProvided()
         {
             // Arrange
-            var t = SetUp(
+            using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Simple },
                 new SimpleConsoleFormatterOptions { SingleLine = true, ColorBehavior = LoggerColorBehavior.Enabled }
             );

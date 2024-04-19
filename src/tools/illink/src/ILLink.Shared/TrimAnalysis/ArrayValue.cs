@@ -34,7 +34,7 @@ namespace ILLink.Shared.TrimAnalysis
 			// So we will simply treat array value as an element value as "too complex to analyze" and give up by storing Unknown instead
 
 			bool needSanitization = false;
-			foreach (var v in input) {
+			foreach (var v in input.AsEnumerable ()) {
 				if (v is ArrayValue)
 					needSanitization = true;
 			}
@@ -42,7 +42,7 @@ namespace ILLink.Shared.TrimAnalysis
 			if (!needSanitization)
 				return input;
 
-			return new(input.Select (v => v is ArrayValue ? UnknownValue.Instance : v));
+			return new(input.AsEnumerable ().Select (v => v is ArrayValue ? UnknownValue.Instance : v));
 		}
 	}
 }

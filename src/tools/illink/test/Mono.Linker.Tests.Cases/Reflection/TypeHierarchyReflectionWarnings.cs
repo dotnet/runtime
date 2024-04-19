@@ -246,15 +246,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			public delegate void MyEventHandler (object sender, int i);
 
 			[Kept]
-			// ILLink always keeps event methods when an event is kept, so this generates warnings
-			// on the event itself (since an event access is considered to reference the annotated add method),
-			// and on the add method (if it is accessed through reflection).
-			[ExpectedWarning ("IL2026", "--RUC on add_RUCEvent--", ProducedBy = Tool.Trimmer)]
-			[ExpectedWarning ("IL2026", "--RUC on add_RUCEvent--", ProducedBy = Tool.Trimmer)]
-			[ExpectedWarning ("IL2026", "--RUC on add_RUCEvent--", ProducedBy = Tool.Trimmer)]
 			public event MyEventHandler RUCEvent {
 				[Kept]
 				[ExpectedWarning ("IL2112", nameof (AnnotatedPublicEvents), "--RUC on add_RUCEvent--")]
+				// https://github.com/dotnet/runtime/issues/100499
+				[ExpectedWarning ("IL2112", nameof (AnnotatedPublicEvents), "--RUC on add_RUCEvent--", ProducedBy = Tool.Trimmer)]
 				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode ("--RUC on add_RUCEvent--")]
 				add { }
@@ -938,7 +934,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		class CompilerGeneratedCodeDAM
 		{
 			[Kept]
-			[ExpectedWarning ("IL2111", nameof (LambdaWithDAM))]
+			[ExpectedWarning ("IL2111")]
 			static void LambdaWithDAM ()
 			{
 				Action<Type> a =

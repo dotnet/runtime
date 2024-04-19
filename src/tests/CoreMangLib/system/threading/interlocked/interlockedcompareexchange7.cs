@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Threading;
+using Xunit;
 
 // This tests CompareExchange<object>.
 // It just casts a bunch of different types to object,
@@ -12,7 +13,8 @@ public class InterlockedCompareExchange7
     private const int c_MIN_STRING_LEN = 5;
     private const int c_MAX_STRING_LEN = 128;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         InterlockedCompareExchange7 test = new InterlockedCompareExchange7();
 

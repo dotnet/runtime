@@ -5,10 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-
-#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
 #pragma warning disable 8500 // sizeof of managed types
 
@@ -16,6 +13,7 @@ namespace System
 {
     internal static partial class SpanHelpers // .T
     {
+        [Intrinsic] // Unrolled for small sizes
         public static unsafe void Fill<T>(ref T refData, nuint numElements, T value)
         {
             // Early checks to see if it's even possible to vectorize - JIT will turn these checks into consts.
@@ -226,7 +224,7 @@ namespace System
         }
 
         // Adapted from IndexOf(...)
-        public static unsafe bool Contains<T>(ref T searchSpace, T value, int length) where T : IEquatable<T>?
+        public static bool Contains<T>(ref T searchSpace, T value, int length) where T : IEquatable<T>?
         {
             Debug.Assert(length >= 0);
 
@@ -298,7 +296,7 @@ namespace System
             return true;
         }
 
-        public static unsafe int IndexOf<T>(ref T searchSpace, T value, int length) where T : IEquatable<T>?
+        public static int IndexOf<T>(ref T searchSpace, T value, int length) where T : IEquatable<T>?
         {
             Debug.Assert(length >= 0);
 
@@ -1077,7 +1075,7 @@ namespace System
         {
             Debug.Assert(length >= 0, "Expected non-negative length");
 
-            for (int i = length -1; i >= 0; i--)
+            for (int i = length - 1; i >= 0; i--)
             {
                 if (!EqualityComparer<T>.Default.Equals(Unsafe.Add(ref searchSpace, i), value0))
                 {
@@ -1305,11 +1303,11 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe bool ContainsValueType<T>(ref T searchSpace, T value, int length) where T : struct, INumber<T>
+        internal static bool ContainsValueType<T>(ref T searchSpace, T value, int length) where T : struct, INumber<T>
         {
             if (PackedSpanHelpers.PackedIndexOfIsSupported && typeof(T) == typeof(short) && PackedSpanHelpers.CanUsePackedIndexOf(value))
             {
-                return PackedSpanHelpers.Contains(ref Unsafe.As<T, short>(ref searchSpace), *(short*)&value, length);
+                return PackedSpanHelpers.Contains(ref Unsafe.As<T, short>(ref searchSpace), Unsafe.BitCast<T, short>(value), length);
             }
 
             return NonPackedContainsValueType(ref searchSpace, value, length);
@@ -1479,15 +1477,15 @@ namespace System
             => IndexOfValueType<T, Negate<T>>(ref searchSpace, value, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe int IndexOfValueType<TValue, TNegator>(ref TValue searchSpace, TValue value, int length)
+        private static int IndexOfValueType<TValue, TNegator>(ref TValue searchSpace, TValue value, int length)
             where TValue : struct, INumber<TValue>
             where TNegator : struct, INegator<TValue>
         {
             if (PackedSpanHelpers.PackedIndexOfIsSupported && typeof(TValue) == typeof(short) && PackedSpanHelpers.CanUsePackedIndexOf(value))
             {
                 return typeof(TNegator) == typeof(DontNegate<short>)
-                    ? PackedSpanHelpers.IndexOf(ref Unsafe.As<TValue, char>(ref searchSpace), *(char*)&value, length)
-                    : PackedSpanHelpers.IndexOfAnyExcept(ref Unsafe.As<TValue, char>(ref searchSpace), *(char*)&value, length);
+                    ? PackedSpanHelpers.IndexOf(ref Unsafe.As<TValue, char>(ref searchSpace), Unsafe.BitCast<TValue, char>(value), length)
+                    : PackedSpanHelpers.IndexOfAnyExcept(ref Unsafe.As<TValue, char>(ref searchSpace), Unsafe.BitCast<TValue, char>(value), length);
             }
 
             return NonPackedIndexOfValueType<TValue, TNegator>(ref searchSpace, value, length);
@@ -1666,15 +1664,33 @@ namespace System
             => IndexOfAnyValueType<T, Negate<T>>(ref searchSpace, value0, value1, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe int IndexOfAnyValueType<TValue, TNegator>(ref TValue searchSpace, TValue value0, TValue value1, int length)
+        private static int IndexOfAnyValueType<TValue, TNegator>(ref TValue searchSpace, TValue value0, TValue value1, int length)
             where TValue : struct, INumber<TValue>
             where TNegator : struct, INegator<TValue>
         {
             if (PackedSpanHelpers.PackedIndexOfIsSupported && typeof(TValue) == typeof(short) && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1))
             {
+                char char0 = Unsafe.BitCast<TValue, char>(value0);
+                char char1 = Unsafe.BitCast<TValue, char>(value1);
+
+                if (RuntimeHelpers.IsKnownConstant(value0) && RuntimeHelpers.IsKnownConstant(value1))
+                {
+                    // If the values differ only in the 0x20 bit, we can optimize the search by reducing the number of comparisons.
+                    // This optimization only applies to a small subset of values and the throughput difference is not too significant.
+                    // We avoid introducing per-call overhead for non-constant values by guarding this optimization behind RuntimeHelpers.IsKnownConstant.
+                    if ((char0 ^ char1) == 0x20)
+                    {
+                        char lowerCase = (char)Math.Max(char0, char1);
+
+                        return typeof(TNegator) == typeof(DontNegate<short>)
+                            ? PackedSpanHelpers.IndexOfAnyIgnoreCase(ref Unsafe.As<TValue, char>(ref searchSpace), lowerCase, length)
+                            : PackedSpanHelpers.IndexOfAnyExceptIgnoreCase(ref Unsafe.As<TValue, char>(ref searchSpace), lowerCase, length);
+                    }
+                }
+
                 return typeof(TNegator) == typeof(DontNegate<short>)
-                    ? PackedSpanHelpers.IndexOfAny(ref Unsafe.As<TValue, char>(ref searchSpace), *(char*)&value0, *(char*)&value1, length)
-                    : PackedSpanHelpers.IndexOfAnyExcept(ref Unsafe.As<TValue, char>(ref searchSpace), *(char*)&value0, *(char*)&value1, length);
+                    ? PackedSpanHelpers.IndexOfAny(ref Unsafe.As<TValue, char>(ref searchSpace), char0, char1, length)
+                    : PackedSpanHelpers.IndexOfAnyExcept(ref Unsafe.As<TValue, char>(ref searchSpace), char0, char1, length);
             }
 
             return NonPackedIndexOfAnyValueType<TValue, TNegator>(ref searchSpace, value0, value1, length);
@@ -1874,15 +1890,15 @@ namespace System
             => IndexOfAnyValueType<T, Negate<T>>(ref searchSpace, value0, value1, value2, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe int IndexOfAnyValueType<TValue, TNegator>(ref TValue searchSpace, TValue value0, TValue value1, TValue value2, int length)
+        private static int IndexOfAnyValueType<TValue, TNegator>(ref TValue searchSpace, TValue value0, TValue value1, TValue value2, int length)
             where TValue : struct, INumber<TValue>
             where TNegator : struct, INegator<TValue>
         {
             if (PackedSpanHelpers.PackedIndexOfIsSupported && typeof(TValue) == typeof(short) && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1) && PackedSpanHelpers.CanUsePackedIndexOf(value2))
             {
                 return typeof(TNegator) == typeof(DontNegate<short>)
-                    ? PackedSpanHelpers.IndexOfAny(ref Unsafe.As<TValue, char>(ref searchSpace), *(char*)&value0, *(char*)&value1, *(char*)&value2, length)
-                    : PackedSpanHelpers.IndexOfAnyExcept(ref Unsafe.As<TValue, char>(ref searchSpace), *(char*)&value0, *(char*)&value1, *(char*)&value2, length);
+                    ? PackedSpanHelpers.IndexOfAny(ref Unsafe.As<TValue, char>(ref searchSpace), Unsafe.BitCast<TValue, char>(value0), Unsafe.BitCast<TValue, char>(value1), Unsafe.BitCast<TValue, char>(value2), length)
+                    : PackedSpanHelpers.IndexOfAnyExcept(ref Unsafe.As<TValue, char>(ref searchSpace), Unsafe.BitCast<TValue, char>(value0), Unsafe.BitCast<TValue, char>(value1), Unsafe.BitCast<TValue, char>(value2), length);
             }
 
             return NonPackedIndexOfAnyValueType<TValue, TNegator>(ref searchSpace, value0, value1, value2, length);
@@ -2475,90 +2491,49 @@ namespace System
             }
             else if (Vector512.IsHardwareAccelerated && length >= Vector512<TValue>.Count)
             {
-                Vector512<TValue> current, values = Vector512.Create(value);
-                nint offset = length - Vector512<TValue>.Count;
-
-                // Loop until either we've finished all elements -or- there's one or less than a vector's-worth remaining.
-                while (offset > 0)
-                {
-                    current = Vector512.LoadUnsafe(ref searchSpace, (nuint)(offset));
-
-                    if (TNegator.HasMatch(values, current))
-                    {
-                        return ComputeLastIndex(offset, TNegator.GetMatchMask(values, current));
-                    }
-
-                    offset -= Vector512<TValue>.Count;
-                }
-
-                // Process the first vector in the search space.
-
-                current = Vector512.LoadUnsafe(ref searchSpace);
-
-                if (TNegator.HasMatch(values, current))
-                {
-                    return ComputeLastIndex(offset: 0, TNegator.GetMatchMask(values, current));
-                }
+                return SimdImpl<Vector512<TValue>>(ref searchSpace, value, length);
             }
             else if (Vector256.IsHardwareAccelerated && length >= Vector256<TValue>.Count)
             {
-                Vector256<TValue> equals, values = Vector256.Create(value);
-                nint offset = length - Vector256<TValue>.Count;
-
-                // Loop until either we've finished all elements -or- there's one or less than a vector's-worth remaining.
-                while (offset > 0)
-                {
-                    equals = TNegator.NegateIfNeeded(Vector256.Equals(values, Vector256.LoadUnsafe(ref searchSpace, (nuint)(offset))));
-
-                    if (equals == Vector256<TValue>.Zero)
-                    {
-                        offset -= Vector256<TValue>.Count;
-                        continue;
-                    }
-
-                    return ComputeLastIndex(offset, equals);
-                }
-
-                // Process the first vector in the search space.
-
-                equals = TNegator.NegateIfNeeded(Vector256.Equals(values, Vector256.LoadUnsafe(ref searchSpace)));
-
-                if (equals != Vector256<TValue>.Zero)
-                {
-                    return ComputeLastIndex(offset: 0, equals);
-                }
+                return SimdImpl<Vector256<TValue>>(ref searchSpace, value, length);
             }
             else
             {
-                Vector128<TValue> equals, values = Vector128.Create(value);
-                nint offset = length - Vector128<TValue>.Count;
+                return SimdImpl<Vector128<TValue>>(ref searchSpace, value, length);
+            }
+
+            static int SimdImpl<TVector>(ref TValue searchSpace, TValue value, int length)
+                where TVector : struct, ISimdVector<TVector, TValue>
+            {
+                TVector current;
+                TVector values = TVector.Create(value);
+
+                int offset = length - TVector.Count;
 
                 // Loop until either we've finished all elements -or- there's one or less than a vector's-worth remaining.
                 while (offset > 0)
                 {
-                    equals = TNegator.NegateIfNeeded(Vector128.Equals(values, Vector128.LoadUnsafe(ref searchSpace, (nuint)(offset))));
+                    current = TVector.LoadUnsafe(ref searchSpace, (uint)(offset));
 
-                    if (equals == Vector128<TValue>.Zero)
+                    if (TNegator.HasMatch(values, current))
                     {
-                        offset -= Vector128<TValue>.Count;
-                        continue;
+                        return offset + TVector.IndexOfLastMatch(TNegator.GetMatchMask(values, current));
                     }
 
-                    return ComputeLastIndex(offset, equals);
+                    offset -= TVector.Count;
                 }
-
 
                 // Process the first vector in the search space.
 
-                equals = TNegator.NegateIfNeeded(Vector128.Equals(values, Vector128.LoadUnsafe(ref searchSpace)));
+                current = TVector.LoadUnsafe(ref searchSpace);
 
-                if (equals != Vector128<TValue>.Zero)
+                if (TNegator.HasMatch(values, current))
                 {
-                    return ComputeLastIndex(offset: 0, equals);
+                    return TVector.IndexOfLastMatch(TNegator.GetMatchMask(values, current));
                 }
-            }
 
-            return -1;
+                return -1;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -3402,39 +3377,62 @@ namespace System
             static abstract Vector256<T> NegateIfNeeded(Vector256<T> equals);
             static abstract Vector512<T> NegateIfNeeded(Vector512<T> equals);
 
-            // The V512 APIs assume use for IndexOf where `DontNegate` is
+            // The generic vector APIs assume use for IndexOf where `DontNegate` is
             // for `IndexOfAny` and `Negate` is for `IndexOfAnyExcept`
 
-            static abstract bool HasMatch(Vector512<T> left, Vector512<T> right);
-            static abstract Vector512<T> GetMatchMask(Vector512<T> left, Vector512<T> right);
+            static abstract bool HasMatch<TVector>(TVector left, TVector right)
+                where TVector : struct, ISimdVector<TVector, T>;
+
+            static abstract TVector GetMatchMask<TVector>(TVector left, TVector right)
+                where TVector : struct, ISimdVector<TVector, T>;
         }
 
-        internal readonly struct DontNegate<T> : INegator<T> where T : struct
+        internal readonly struct DontNegate<T> : INegator<T>
+            where T : struct
         {
             public static bool NegateIfNeeded(bool equals) => equals;
             public static Vector128<T> NegateIfNeeded(Vector128<T> equals) => equals;
             public static Vector256<T> NegateIfNeeded(Vector256<T> equals) => equals;
             public static Vector512<T> NegateIfNeeded(Vector512<T> equals) => equals;
 
-            // The V512 APIs assume use for `IndexOfAny` where we
+            // The generic vector APIs assume use for `IndexOfAny` where we
             // want "HasMatch" to mean any of the two elements match.
 
-            public static bool HasMatch(Vector512<T> left, Vector512<T> right) => Vector512.EqualsAny(left, right);
-            public static Vector512<T> GetMatchMask(Vector512<T> left, Vector512<T> right) => Vector512.Equals(left, right);
+            public static bool HasMatch<TVector>(TVector left, TVector right)
+                where TVector : struct, ISimdVector<TVector, T>
+            {
+                return TVector.EqualsAny(left, right);
+            }
+
+            public static TVector GetMatchMask<TVector>(TVector left, TVector right)
+                where TVector : struct, ISimdVector<TVector, T>
+            {
+                return TVector.Equals(left, right);
+            }
         }
 
-        internal readonly struct Negate<T> : INegator<T> where T : struct
+        internal readonly struct Negate<T> : INegator<T>
+            where T : struct
         {
             public static bool NegateIfNeeded(bool equals) => !equals;
             public static Vector128<T> NegateIfNeeded(Vector128<T> equals) => ~equals;
             public static Vector256<T> NegateIfNeeded(Vector256<T> equals) => ~equals;
             public static Vector512<T> NegateIfNeeded(Vector512<T> equals) => ~equals;
 
-            // The V512 APIs assume use for `IndexOfAnyExcept` where we
+            // The generic vector APIs assume use for `IndexOfAnyExcept` where we
             // want "HasMatch" to mean any of the two elements don't match
 
-            public static bool HasMatch(Vector512<T> left, Vector512<T> right) => !Vector512.EqualsAll(left, right);
-            public static Vector512<T> GetMatchMask(Vector512<T> left, Vector512<T> right) => ~Vector512.Equals(left, right);
+            public static bool HasMatch<TVector>(TVector left, TVector right)
+                where TVector : struct, ISimdVector<TVector, T>
+            {
+                return !TVector.EqualsAll(left, right);
+            }
+
+            public static TVector GetMatchMask<TVector>(TVector left, TVector right)
+                where TVector : struct, ISimdVector<TVector, T>
+            {
+                return ~TVector.Equals(left, right);
+            }
         }
 
         internal static int IndexOfAnyInRange<T>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
@@ -3476,15 +3474,15 @@ namespace System
             IndexOfAnyInRangeUnsignedNumber<T, Negate<T>>(ref searchSpace, lowInclusive, highInclusive, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe int IndexOfAnyInRangeUnsignedNumber<T, TNegator>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
+        private static int IndexOfAnyInRangeUnsignedNumber<T, TNegator>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
             where T : struct, IUnsignedNumber<T>, IComparisonOperators<T, T, bool>
             where TNegator : struct, INegator<T>
         {
             if (PackedSpanHelpers.PackedIndexOfIsSupported && typeof(T) == typeof(ushort) && PackedSpanHelpers.CanUsePackedIndexOf(lowInclusive) && PackedSpanHelpers.CanUsePackedIndexOf(highInclusive) && highInclusive >= lowInclusive)
             {
                 ref char charSearchSpace = ref Unsafe.As<T, char>(ref searchSpace);
-                char charLowInclusive = *(char*)&lowInclusive;
-                char charRange = (char)(*(char*)&highInclusive - charLowInclusive);
+                char charLowInclusive = Unsafe.BitCast<T, char>(lowInclusive);
+                char charRange = (char)(Unsafe.BitCast<T, char>(highInclusive) - charLowInclusive);
 
                 return typeof(TNegator) == typeof(DontNegate<ushort>)
                     ? PackedSpanHelpers.IndexOfAnyInRange(ref charSearchSpace, charLowInclusive, charRange, length)

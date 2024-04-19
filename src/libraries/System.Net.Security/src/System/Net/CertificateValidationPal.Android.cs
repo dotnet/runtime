@@ -18,7 +18,7 @@ namespace System.Net
             string? hostName)
         {
             if (remoteCertificate == null)
-                return  SslPolicyErrors.RemoteCertificateNotAvailable;
+                return SslPolicyErrors.RemoteCertificateNotAvailable;
 
             SslPolicyErrors errors = chain.Build(remoteCertificate)
                 ? SslPolicyErrors.None

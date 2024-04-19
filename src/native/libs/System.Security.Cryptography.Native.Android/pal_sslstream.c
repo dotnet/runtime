@@ -65,16 +65,38 @@ static bool IsHandshaking(int handshakeStatus)
 ARGS_NON_NULL(1, 2) static jobject GetSslSession(JNIEnv* env, SSLStream* sslStream, int handshakeStatus)
 {
     // During the initial handshake our sslStream->sslSession doesn't have access to the peer certificates
-    // which we need for hostname verification. Luckily, the SSLEngine has a getter for the handshake SSLSession.
+    // which we need for hostname verification. There are different ways to access the handshake session
+    // in different Android API levels.
     // SSLEngine.getHandshakeSession() is available since API 24.
+    // In older Android versions (API 21-23) we need to access the handshake session by accessing
+    // a private field instead.
 
-    jobject sslSession = IsHandshaking(handshakeStatus) && g_SSLEngineGetHandshakeSession != NULL
-        ? (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeSession)
-        : (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetSession);
-    if (CheckJNIExceptions(env))
+    if (g_SSLEngineGetHandshakeSession != NULL)
+    {
+        jobject sslSession = IsHandshaking(handshakeStatus)
+            ? (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeSession)
+            : (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetSession);
+        if (CheckJNIExceptions(env))
+            return NULL;
+
+        return sslSession;
+    }
+    else if (g_ConscryptOpenSSLEngineImplHandshakeSessionField != NULL)
+    {
+        jobject sslSession = IsHandshaking(handshakeStatus)
+            ? (*env)->GetObjectField(env, sslStream->sslEngine, g_ConscryptOpenSSLEngineImplHandshakeSessionField)
+            : (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetSession);
+        if (CheckJNIExceptions(env))
+            return NULL;
+
+        return sslSession;
+    }
+    else
+    {
+        LOG_ERROR("Unable to get the current SSLSession from SSLEngine.");
+        assert(false && "Unable to get the current SSLSession from SSLEngine.");
         return NULL;
-
-    return sslSession;
+    }
 }
 
 ARGS_NON_NULL_ALL static jobject GetCurrentSslSession(JNIEnv* env, SSLStream* sslStream)

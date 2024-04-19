@@ -54,8 +54,6 @@ typedef struct {
 	MonoInternalHashTable interp_code_hash;
 	/* Maps MonoMethod -> 	MonoMethodRuntimeGenericContext */
 	GHashTable *mrgctx_hash;
-	/* Maps gpointer -> InterpMethod */
-	GHashTable *interp_method_pointer_hash;
 	/* Protected by 'jit_code_hash_lock' */
 	MonoInternalHashTable jit_code_hash;
 	mono_mutex_t    jit_code_hash_lock;
@@ -658,6 +656,9 @@ mono_post_native_crash_handler (const char *signal, MonoContext *mctx, MONO_SIG_
 
 gboolean
 mono_is_addr_implicit_null_check (void *addr);
+
+gboolean
+mono_jit_call_can_be_supported_by_interp (MonoMethod *method, MonoMethodSignature *sig, gboolean is_llvm_only);
 
 /*
  * Signal handling

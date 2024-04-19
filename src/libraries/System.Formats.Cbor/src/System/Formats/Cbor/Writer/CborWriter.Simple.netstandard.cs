@@ -21,7 +21,14 @@ namespace System.Formats.Cbor
         {
             EnsureWriteCapacity(1 + sizeof(ushort));
             WriteInitialByte(new CborInitialByte(CborMajorType.Simple, CborAdditionalInfo.Additional16BitData));
-            CborHelpers.WriteHalfBigEndian(_buffer.AsSpan(_offset), value);
+            if (HalfHelpers.HalfIsNaN(value) && !CborConformanceModeHelpers.RequiresPreservingFloatPrecision(ConformanceMode))
+            {
+                BinaryPrimitives.WriteUInt16BigEndian(_buffer.AsSpan(_offset), PositiveQNaNBitsHalf);
+            }
+            else
+            {
+                CborHelpers.WriteHalfBigEndian(_buffer.AsSpan(_offset), value);
+            }
             _offset += sizeof(ushort);
             AdvanceDataItemCounters();
         }
@@ -30,7 +37,7 @@ namespace System.Formats.Cbor
         internal static bool TryConvertSingleToHalf(float value, out ushort result)
         {
             result = HalfHelpers.FloatToHalf(value);
-            return CborHelpers.SingleToInt32Bits(HalfHelpers.HalfToFloat(result)) == CborHelpers.SingleToInt32Bits(value);
+            return float.IsNaN(value) || CborHelpers.SingleToInt32Bits(HalfHelpers.HalfToFloat(result)) == CborHelpers.SingleToInt32Bits(value);
         }
     }
 }

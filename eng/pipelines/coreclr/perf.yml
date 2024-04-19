@@ -3,7 +3,7 @@ trigger:
   branches:
     include:
     - main
-    - release/8.0-rc1
+    - release/8.0
   paths:
     include:
     - '*'
@@ -27,13 +27,13 @@ variables:
 # Since, we are not running *any* perf jobs, none of these builds are needed,
 # thus the whole scheduled run can be disabled.
 #
-#schedules:
-#- cron: "30 2 * * *"
-  #displayName: Every night at 2:30AM
-  #branches:
-    #include:
-    #- main
-  #always: true
+schedules:
+- cron: "0 0 * * 1"
+  displayName: Weekly Monday 12am UTC Build
+  branches:
+    include:
+    - main
+  always: true
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -47,7 +47,7 @@ extends:
           collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
           #${{ and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
           #  runProfile: 'non-v8'
-          ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
+          ${{ if ne(variables['System.TeamProject'], 'public') }}:
             runProfile: 'v8'
 
       - template: /eng/pipelines/coreclr/perf-non-wasm-jobs.yml

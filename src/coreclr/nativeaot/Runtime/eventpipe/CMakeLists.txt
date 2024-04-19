@@ -39,6 +39,32 @@ set_source_files_properties(${EventingHeaders} PROPERTIES GENERATED TRUE)
 
 add_custom_target(aot_eventing_headers DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/aot_eventing_headers.timestamp)
 
+if(CLR_CMAKE_TARGET_WIN32)
+
+  set(ETW_PROVIDER_SCRIPT ${CLR_DIR}/scripts/genEtwProvider.py)
+
+  set (ETW_PROVIDER_OUTPUTS
+    ${GENERATED_INCLUDE_DIR}/etw/ClrEtwAll.h
+    ${GENERATED_INCLUDE_DIR}/etw/ClrEtwAll.rc
+    ${GENERATED_INCLUDE_DIR}/etw/etwmacros.h
+    ${GENERATED_INCLUDE_DIR}/etw/ClrEtwAll_MSG00001.bin
+    ${GENERATED_INCLUDE_DIR}/etw/ClrEtwAllTEMP.bin
+    ${GENERATED_INCLUDE_DIR}/clrxplatevents.h
+  )
+
+  set_source_files_properties(${ETW_PROVIDER_OUTPUTS} PROPERTIES GENERATED TRUE)
+
+  add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/eventprovider.timestamp
+    COMMAND ${Python_EXECUTABLE} ${ETW_PROVIDER_SCRIPT} --man ${EVENT_MANIFEST} --exc ${EVENT_EXCLUSIONS} --intermediate ${GENERATED_INCLUDE_DIR}
+    COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/eventprovider.timestamp
+    DEPENDS ${EVENT_MANIFEST} ${EVENT_EXCLUSIONS} ${ETW_PROVIDER_SCRIPT}
+  )
+
+  add_custom_target(aot_etw_headers DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/eventprovider.timestamp)
+
+endif()
+
 # EventPipe provider source, currently dotnetruntime provider and helper file
 set(GENERATE_EVENTPIPE_SCRIPT ${CLR_DIR}/scripts/genEventPipe.py)
 set(GENERATE_COMMAND ${Python_EXECUTABLE} ${GENERATE_EVENTPIPE_SCRIPT} --man ${EVENT_MANIFEST} --exc ${EVENT_EXCLUSIONS} --inc ${EVENT_INCLUSION_FILE} --intermediate ${CMAKE_CURRENT_BINARY_DIR} --runtimeflavor nativeaot ${NONEXTERN_ARG})
@@ -72,6 +98,11 @@ set_source_files_properties(${GEN_EVENTPIPE_PROVIDER_SOURCES} PROPERTIES GENERAT
 set(EP_GENERATED_HEADER_PATH "${GENERATED_INCLUDE_DIR}")
 include (${CLR_SRC_NATIVE_DIR}/eventpipe/configure.cmake)
 include_directories(${EP_GENERATED_HEADER_PATH})
+
+if (CLR_CMAKE_TARGET_WIN32)
+  set(EP_ETW_GENERATED_HEADER_PATH "${GENERATED_INCLUDE_DIR}/etw")
+  include_directories(${EP_ETW_GENERATED_HEADER_PATH})
+endif()
 
 set(AOT_EVENTPIPE_SHIM_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 
@@ -151,7 +182,7 @@ if(CLR_CMAKE_HOST_UNIX)
     set_source_files_properties(${EVENTPIPE_SOURCES} PROPERTIES COMPILE_OPTIONS -xc++)
 endif(CLR_CMAKE_HOST_UNIX)
 
-if (WIN32)
+if (CLR_CMAKE_TARGET_WIN32)
     set_source_files_properties(${EVENTPIPE_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
 endif()
 
@@ -190,7 +221,15 @@ if (FEATURE_EVENT_TRACE)
       ${RUNTIME_DIR}/eventtrace_gcheap.cpp
     )
   endif()
+
+  if(CLR_CMAKE_TARGET_WIN32)
+    set_source_files_properties(${GEN_EVENTPIPE_PROVIDER_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
+    set_source_files_properties(${GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
+    set_source_files_properties(${AOT_EVENTTRACE_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
+  endif()
 endif()
+
+
 
 list(APPEND EVENTPIPE_SOURCES
   ${AOT_EVENTPIPE_SHIM_SOURCES}
@@ -215,6 +254,9 @@ list(APPEND AOT_EVENTPIPE_DISABLED_SOURCES
 
 add_library(eventpipe-enabled STATIC ${EVENTPIPE_SOURCES})
 add_dependencies(eventpipe-enabled aot_eventing_headers)
+if(CLR_CMAKE_TARGET_WIN32)
+  add_dependencies(eventpipe-enabled aot_etw_headers)
+endif()
 
 add_library(eventpipe-disabled STATIC ${AOT_EVENTPIPE_DISABLED_SOURCES})
 add_dependencies(eventpipe-disabled aot_eventing_headers)
@@ -222,6 +264,7 @@ add_dependencies(eventpipe-disabled aot_eventing_headers)
 if (CLR_CMAKE_TARGET_WIN32)
   add_library(eventpipe-enabled.GuardCF STATIC ${EVENTPIPE_SOURCES})
   add_dependencies(eventpipe-enabled.GuardCF aot_eventing_headers)
+  add_dependencies(eventpipe-enabled.GuardCF aot_etw_headers)
   add_library(eventpipe-disabled.GuardCF STATIC ${AOT_EVENTPIPE_DISABLED_SOURCES})
   add_dependencies(eventpipe-disabled.GuardCF aot_eventing_headers)
   set_target_properties(eventpipe-enabled.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)

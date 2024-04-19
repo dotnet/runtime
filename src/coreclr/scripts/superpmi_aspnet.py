@@ -230,7 +230,7 @@ def build_and_run(coreclr_args):
             crank_arguments = ["--config", configFile,
                                "--profile", benchmark_machine,
                                "--scenario", scenario,
-                               "--application.framework", "net8.0",
+                               "--application.framework", "net9.0",
                                "--application.channel", "edge",
                                "--application.sdkVersion", "latest",
                                "--application.environmentVariables", "DOTNET_JitName=" + spminame,

@@ -153,6 +153,9 @@
           <GenericArgument Name="System.Int16,System.Runtime" />
         </Method>
         <Method Name="Max_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.Char,System.Runtime" />
+        </Method>
+        <Method Name="Max_AllTypes" Dynamic="Required All">
           <GenericArgument Name="System.UInt32,System.Runtime" />
         </Method>
         <Method Name="Max_AllTypes" Dynamic="Required All">
@@ -178,6 +181,12 @@
         </Method>
         <Method Name="Max_AllTypes" Dynamic="Required All">
           <GenericArgument Name="System.UIntPtr,System.Runtime" />
+        </Method>
+        <Method Name="Max_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.Int128,System.Runtime" />
+        </Method>
+        <Method Name="Max_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.UInt128,System.Runtime" />
         </Method>
       </Type>
 
@@ -371,11 +380,6 @@
           <GenericArgument Name="System.String, System.Runtime" />
         </Method>
       </Type>
-    </Assembly>
-
-    <!-- xUnit does this -->
-    <Assembly Name="System.Runtime">
-      <Type Name="System.IEquatable`1[[System.Linq.Tests.GroupJoinTests+JoinRec,System.Linq.Tests]]" Dynamic="Required All" />
     </Assembly>
 
   </Application>

@@ -300,7 +300,7 @@ namespace System.Text.Json.Serialization.Tests
             try
             {
                 JsonSerializer.Deserialize<Level1>(json, options);
-                Assert.True(false, "Expected exception");
+                Assert.Fail("Expected exception");
             }
             catch (JsonException ex)
             {
@@ -320,7 +320,7 @@ namespace System.Text.Json.Serialization.Tests
             try
             {
                 JsonSerializer.Deserialize<Level1>(json, options);
-                Assert.True(false, "Expected exception");
+                Assert.Fail("Expected exception");
             }
             catch (JsonException ex)
             {
@@ -352,7 +352,7 @@ namespace System.Text.Json.Serialization.Tests
                 l1.Level2.Level3s[0].ReadWriteTooMuch = true;
 
                 JsonSerializer.Serialize(l1, options);
-                Assert.True(false, "Expected exception");
+                Assert.Fail("Expected exception");
             }
             catch (JsonException ex)
             {

@@ -120,7 +120,19 @@
   <data name="Argument_DestinationTooShort" xml:space="preserve">
     <value>Destination is too short.</value>
   </data>
+  <data name="Argument_SpansMustBeNonEmpty" xml:space="preserve">
+    <value>Input span arguments must not be empty.</value>
+  </data>
   <data name="Argument_SpansMustHaveSameLength" xml:space="preserve">
     <value>Input span arguments must all have the same length.</value>
+  </data>
+  <data name="Argument_InputAndDestinationSpanMustNotOverlap" xml:space="preserve">
+    <value>The destination span may only overlap with an input span if the two spans start at the same memory location.</value>
+  </data>
+  <data name="Overflow_NegateTwosCompNum" xml:space="preserve">
+    <value>Negating the minimum value of a twos complement number is invalid.</value>
+  </data>
+  <data name="Argument_InvalidEnumValue" xml:space="preserve">
+    <value>The value '{0}' is not valid for this usage of the type {1}.</value>
   </data>
 </root>

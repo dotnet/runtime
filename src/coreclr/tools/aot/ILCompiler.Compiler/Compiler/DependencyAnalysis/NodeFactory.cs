@@ -39,7 +39,8 @@ namespace ILCompiler.DependencyAnalysis
             DictionaryLayoutProvider dictionaryLayoutProvider,
             InlinedThreadStatics inlinedThreadStatics,
             ImportedNodeProvider importedNodeProvider,
-            PreinitializationManager preinitializationManager)
+            PreinitializationManager preinitializationManager,
+            DevirtualizationManager devirtualizationManager)
         {
             _target = context.Target;
             _context = context;
@@ -54,6 +55,7 @@ namespace ILCompiler.DependencyAnalysis
             LazyGenericsPolicy = lazyGenericsPolicy;
             _importedNodeProvider = importedNodeProvider;
             PreinitializationManager = preinitializationManager;
+            DevirtualizationManager = devirtualizationManager;
         }
 
         public void SetMarkingComplete()
@@ -99,6 +101,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public PreinitializationManager PreinitializationManager
+        {
+            get;
+        }
+
+        public DevirtualizationManager DevirtualizationManager
         {
             get;
         }
@@ -304,6 +311,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new DelegateTargetVirtualMethodNode(method);
             });
 
+            _reflectedDelegates = new NodeCache<TypeDesc, ReflectedDelegateNode>(type =>
+            {
+                return new ReflectedDelegateNode(type);
+            });
+
             _reflectedMethods = new NodeCache<MethodDesc, ReflectedMethodNode>(method =>
             {
                 return new ReflectedMethodNode(method);
@@ -316,7 +328,13 @@ namespace ILCompiler.DependencyAnalysis
 
             _reflectedTypes = new NodeCache<TypeDesc, ReflectedTypeNode>(type =>
             {
+                TypeSystemContext.EnsureLoadableType(type);
                 return new ReflectedTypeNode(type);
+            });
+
+            _notReadOnlyFields = new NodeCache<FieldDesc, NotReadOnlyFieldNode>(field =>
+            {
+                return new NotReadOnlyFieldNode(field);
             });
 
             _genericStaticBaseInfos = new NodeCache<MetadataType, GenericStaticBaseInfoNode>(type =>
@@ -343,9 +361,14 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // We don't need to track virtual method uses for types that have a vtable with a known layout.
                 // It's a waste of CPU time and memory.
-                Debug.Assert(!VTable(method.OwningType).HasFixedSlots);
+                Debug.Assert(method.OwningType.IsGenericDefinition || !VTable(method.OwningType).HasKnownVirtualMethodUse);
 
                 return new VariantInterfaceMethodUseNode(method);
+            });
+
+            _interfaceUses = new NodeCache<TypeDesc, InterfaceUseNode>((TypeDesc type) =>
+            {
+                return new InterfaceUseNode(type);
             });
 
             _readyToRunHelpers = new NodeCache<ReadyToRunHelperKey, ISymbolNode>(CreateReadyToRunHelperNode);
@@ -355,12 +378,22 @@ namespace ILCompiler.DependencyAnalysis
 
             _frozenStringNodes = new NodeCache<string, FrozenStringNode>((string data) =>
             {
-                return new FrozenStringNode(data, Target);
+                return new FrozenStringNode(data, TypeSystemContext);
             });
 
-            _frozenObjectNodes = new NodeCache<SerializedFrozenObjectKey, FrozenObjectNode>(key =>
+            _frozenObjectNodes = new NodeCache<SerializedFrozenObjectKey, SerializedFrozenObjectNode>(key =>
             {
-                return new FrozenObjectNode(key.OwnerType, key.AllocationSiteId, key.SerializableObject);
+                return new SerializedFrozenObjectNode(key.OwnerType, key.AllocationSiteId, key.SerializableObject);
+            });
+
+            _frozenConstructedRuntimeTypeNodes = new NodeCache<TypeDesc, FrozenRuntimeTypeNode>(key =>
+            {
+                return new FrozenRuntimeTypeNode(key, constructed: true);
+            });
+
+            _frozenNecessaryRuntimeTypeNodes = new NodeCache<TypeDesc, FrozenRuntimeTypeNode>(key =>
+            {
+                return new FrozenRuntimeTypeNode(key, constructed: false);
             });
 
             _interfaceDispatchCells = new NodeCache<DispatchCellKey, InterfaceDispatchCellNode>(callSiteCell =>
@@ -458,12 +491,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _typesWithMetadata = new NodeCache<MetadataType, TypeMetadataNode>(type =>
             {
-                return new TypeMetadataNode(type, includeCustomAttributes: true);
-            });
-
-            _typesWithMetadataWithoutCustomAttributes = new NodeCache<MetadataType, TypeMetadataNode>(type =>
-            {
-                return new TypeMetadataNode(type, includeCustomAttributes: false);
+                return new TypeMetadataNode(type);
             });
 
             _methodsWithMetadata = new NodeCache<MethodDesc, MethodMetadataNode>(method =>
@@ -798,6 +826,12 @@ namespace ILCompiler.DependencyAnalysis
             return _externSymbols.GetOrAdd(name);
         }
 
+        public ISortableSymbolNode ExternVariable(string name)
+        {
+            string mangledName = NameMangler.NodeMangler.ExternVariable(name);
+            return _externSymbols.GetOrAdd(mangledName);
+        }
+
         private NodeCache<string, ExternSymbolNode> _externIndirectSymbols;
 
         public ISortableSymbolNode ExternIndirectSymbol(string name)
@@ -985,6 +1019,16 @@ namespace ILCompiler.DependencyAnalysis
             return _delegateTargetMethods.GetOrAdd(method);
         }
 
+        private ReflectedDelegateNode _unknownReflectedDelegate = new ReflectedDelegateNode(null);
+        private NodeCache<TypeDesc, ReflectedDelegateNode> _reflectedDelegates;
+        public ReflectedDelegateNode ReflectedDelegate(TypeDesc type)
+        {
+            if (type == null)
+                return _unknownReflectedDelegate;
+
+            return _reflectedDelegates.GetOrAdd(type);
+        }
+
         private NodeCache<MethodDesc, ReflectedMethodNode> _reflectedMethods;
         public ReflectedMethodNode ReflectedMethod(MethodDesc method)
         {
@@ -1001,6 +1045,12 @@ namespace ILCompiler.DependencyAnalysis
         public ReflectedTypeNode ReflectedType(TypeDesc type)
         {
             return _reflectedTypes.GetOrAdd(type);
+        }
+
+        private NodeCache<FieldDesc, NotReadOnlyFieldNode> _notReadOnlyFields;
+        public NotReadOnlyFieldNode NotReadOnlyField(FieldDesc field)
+        {
+            return _notReadOnlyFields.GetOrAdd(field);
         }
 
         private NodeCache<MetadataType, GenericStaticBaseInfoNode> _genericStaticBaseInfos;
@@ -1109,7 +1159,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // We don't need to track virtual method uses for types that have a vtable with a known layout.
                 // It's a waste of CPU time and memory.
-                Debug.Assert(!_factory.VTable(key.OwningType).HasFixedSlots);
+                Debug.Assert(!_factory.VTable(key.OwningType).HasKnownVirtualMethodUse);
                 return new VirtualMethodUseNode(key);
             }
             protected override int GetKeyHashCode(MethodDesc key) => key.GetHashCode();
@@ -1128,6 +1178,13 @@ namespace ILCompiler.DependencyAnalysis
         public DependencyNodeCore<NodeFactory> VariantInterfaceMethodUse(MethodDesc decl)
         {
             return _variantMethods.GetOrAdd(decl);
+        }
+
+        private NodeCache<TypeDesc, InterfaceUseNode> _interfaceUses;
+
+        public DependencyNodeCore<NodeFactory> InterfaceUse(TypeDesc type)
+        {
+            return _interfaceUses.GetOrAdd(type);
         }
 
         private NodeCache<ReadyToRunHelperKey, ISymbolNode> _readyToRunHelpers;
@@ -1159,16 +1216,6 @@ namespace ILCompiler.DependencyAnalysis
             // in the dependency graph otherwise.
             Debug.Assert(MetadataManager is UsageBasedMetadataManager);
             return _typesWithMetadata.GetOrAdd(type);
-        }
-
-        private NodeCache<MetadataType, TypeMetadataNode> _typesWithMetadataWithoutCustomAttributes;
-
-        internal TypeMetadataNode TypeMetadataWithoutCustomAttributes(MetadataType type)
-        {
-            // These are only meaningful for UsageBasedMetadataManager. We should not have them
-            // in the dependency graph otherwise.
-            Debug.Assert(MetadataManager is UsageBasedMetadataManager);
-            return _typesWithMetadataWithoutCustomAttributes.GetOrAdd(type);
         }
 
         private NodeCache<MethodDesc, MethodMetadataNode> _methodsWithMetadata;
@@ -1224,11 +1271,32 @@ namespace ILCompiler.DependencyAnalysis
             return _frozenStringNodes.GetOrAdd(data);
         }
 
-        private NodeCache<SerializedFrozenObjectKey, FrozenObjectNode> _frozenObjectNodes;
+        private NodeCache<SerializedFrozenObjectKey, SerializedFrozenObjectNode> _frozenObjectNodes;
 
-        public FrozenObjectNode SerializedFrozenObject(MetadataType owningType, int allocationSiteId, TypePreinit.ISerializableReference data)
+        public SerializedFrozenObjectNode SerializedFrozenObject(MetadataType owningType, int allocationSiteId, TypePreinit.ISerializableReference data)
         {
             return _frozenObjectNodes.GetOrAdd(new SerializedFrozenObjectKey(owningType, allocationSiteId, data));
+        }
+
+        public FrozenRuntimeTypeNode SerializedMaximallyConstructableRuntimeTypeObject(TypeDesc type)
+        {
+            if (ConstructedEETypeNode.CreationAllowed(type))
+                return SerializedConstructedRuntimeTypeObject(type);
+            return SerializedNecessaryRuntimeTypeObject(type);
+        }
+
+        private NodeCache<TypeDesc, FrozenRuntimeTypeNode> _frozenConstructedRuntimeTypeNodes;
+
+        public FrozenRuntimeTypeNode SerializedConstructedRuntimeTypeObject(TypeDesc type)
+        {
+            return _frozenConstructedRuntimeTypeNodes.GetOrAdd(type);
+        }
+
+        private NodeCache<TypeDesc, FrozenRuntimeTypeNode> _frozenNecessaryRuntimeTypeNodes;
+
+        public FrozenRuntimeTypeNode SerializedNecessaryRuntimeTypeObject(TypeDesc type)
+        {
+            return _frozenNecessaryRuntimeTypeNodes.GetOrAdd(type);
         }
 
         private NodeCache<MethodDesc, EmbeddedObjectNode> _eagerCctorIndirectionNodes;
@@ -1299,7 +1367,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected internal TypeManagerIndirectionNode TypeManagerIndirection = new TypeManagerIndirectionNode();
 
-        protected internal TlsRootNode TlsRoot = new TlsRootNode();
+        public TlsRootNode TlsRoot = new TlsRootNode();
 
         public virtual void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {

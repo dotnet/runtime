@@ -36,22 +36,24 @@ unsafe partial class GenericsNative
     public static extern Vector128<long> AddVector128Ls(in Vector128<long> pValues, int count);
 }
 
-unsafe partial class GenericsTest
+public unsafe partial class GenericsTest
 {
-    private static void TestVector128L()
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/177", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    public static void TestVector128L()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector128L(1L, 2L));
 
         Vector128<long> value2;
         GenericsNative.GetVector128LOut(1L, 2L, &value2);
-        Assert.Equal(value2.GetElement(0), 1L);
-        Assert.Equal(value2.GetElement(1), 2L);
+        Assert.Equal(1L, value2.GetElement(0));
+        Assert.Equal(2L, value2.GetElement(1));
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector128LOut(1L, 2L, out Vector128<long> value3));
 
         Vector128<long>* value4 = GenericsNative.GetVector128LPtr(1L, 2L);
-        Assert.Equal(value4->GetElement(0), 1L);
-        Assert.Equal(value4->GetElement(1), 2L);
+        Assert.Equal(1L, value4->GetElement(0));
+        Assert.Equal(2L, value4->GetElement(1));
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector128LRef(1L, 2L));
 

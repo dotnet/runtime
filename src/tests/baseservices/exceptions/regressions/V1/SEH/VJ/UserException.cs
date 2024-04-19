@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Threading;
+using Xunit;
 
 public class UserException : Exception {
-	public static int Main() {
+	[Fact]
+	public static int TestEntryPoint() {
 			int counter = 0;
 			String str = "Done";
 

@@ -30,7 +30,7 @@ internal sealed class OletxTransactionManager
     private readonly DtcTransactionManager _dtcTransactionManager;
     internal OletxInternalResourceManager InternalResourceManager;
 
-    internal static DtcProxyShimFactory ProxyShimFactory = null!; // Late initialization
+    internal static DtcProxyShimFactory ProxyShimFactory = null!; // Lazy initialization
 
     // Double-checked locking pattern requires volatile for read/write synchronization
     internal static volatile EventWaitHandle? _shimWaitHandle;
@@ -399,7 +399,7 @@ internal sealed class OletxTransactionManager
         _configuredTransactionOptions.IsolationLevel = _isolationLevelProperty = TransactionManager.DefaultIsolationLevel;
         _configuredTransactionOptions.Timeout = _timeoutProperty = TransactionManager.DefaultTimeout;
 
-        InternalResourceManager = new OletxInternalResourceManager( this );
+        InternalResourceManager = new OletxInternalResourceManager(this);
 
         DtcTransactionManagerLock.AcquireWriterLock(-1);
         try
@@ -579,7 +579,7 @@ internal sealed class OletxTransactionManager
     {
         get
         {
-            if (DtcTransactionManagerLock.IsReaderLockHeld ||DtcTransactionManagerLock.IsWriterLockHeld)
+            if (DtcTransactionManagerLock.IsReaderLockHeld || DtcTransactionManagerLock.IsWriterLockHeld)
             {
                 if (_dtcTransactionManager == null)
                 {

@@ -9,6 +9,8 @@ set(utils_win32_sources
 
 if(HOST_WIN32 AND HOST_AMD64)
     enable_language(ASM_MASM)
+    add_compile_options($<$<COMPILE_LANGUAGE:ASM_MASM>:/Zi>)      # enable debugging information
+    add_compile_options($<$<COMPILE_LANGUAGE:ASM_MASM>:/nologo>)  # Don't display the output header when building asm files
     set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded         "")
     set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL      "")
     set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebug    "")
@@ -71,7 +73,6 @@ set(utils_common_sources
     mono-flight-recorder.c
     mono-os-wait.h
     mono-coop-mutex.h
-    mono-once.h
     mono-lazy-init.h
     mono-proclib.c
     mono-proclib.h
@@ -79,16 +80,10 @@ set(utils_common_sources
     mono-string.h
     mono-time.c
     mono-time.h
-    strenc-internals.h
-    strenc.h
-    strenc.c
-    mono-uri.c
-    mono-poll.c
     mono-path.c
     mono-os-semaphore.h
     mono-coop-semaphore.h
     mono-sigcontext.h
-    mono-stdlib.c
     mono-property-hash.h
     mono-property-hash.c
     freebsd-dwarf.h
@@ -102,9 +97,6 @@ set(utils_common_sources
     mono-machine.h
     mono-math.h
     mono-path.h
-    mono-poll.h
-    mono-uri.h
-    mono-stdlib.h
     valgrind.h
     mach-support.h
     memcheck.h
@@ -186,6 +178,8 @@ set(utils_common_sources
     ftnptr.h
     wasm-module-reader.h
     wasm-module-reader.c
+    mono-bitutils.h
+    mono-bitutils.c
   )
 
 if(MONO_CROSS_COMPILE)

@@ -8,6 +8,8 @@
     <NativeFormatCommonPath>$(CompilerCommonPath)\Internal\NativeFormat</NativeFormatCommonPath>
     <!-- we access a lot of internals of System.Private.CoreLib, disable compiling against the ref assembly for now so we don't need to update it -->
     <CompileUsingReferenceAssemblies>false</CompileUsingReferenceAssemblies>
+    <!-- CA2252: Opt in to preview features before using them (Lock) -->
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(NativeFormatCommonPath)\NativeFormat.cs" />
@@ -22,13 +24,10 @@
     <Compile Include="Internal\Reflection\Execution\TypeLoader\ConstraintValidatorSupport.cs" />
     <Compile Include="Internal\Reflection\Execution\TypeLoader\TypeCast.cs" />
     <Compile Include="Internal\Reflection\Execution\ReflectionExecution.cs" />
-    <Compile Include="Internal\Reflection\Execution\ReflectionDomainSetupImplementation.cs" />
     <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.cs" />
     <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.Runtime.cs" />
     <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.MappingTables.cs" />
-    <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.MetadataTable.cs" />
     <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.ManifestResources.cs" />
-    <Compile Include="Internal\Reflection\Execution\ReflectionExecutionDomainCallbacksImplementation.cs" />
     <Compile Include="Internal\Reflection\Execution\MetadataReaderExtensions.cs" />
     <Compile Include="Internal\Reflection\Execution\MethodInvokeInfo.cs" />
     <Compile Include="Internal\Reflection\Execution\RuntimeHandlesExtensions.cs" />

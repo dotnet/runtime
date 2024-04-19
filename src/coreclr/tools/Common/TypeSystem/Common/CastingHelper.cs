@@ -101,7 +101,7 @@ namespace Internal.TypeSystem
             return thisType.IsCompatibleWith(otherType, null);
         }
 
-        internal  static bool IsCompatibleWith(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect visited)
+        internal static bool IsCompatibleWith(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect visited)
         {
             // Structs can be cast to the interfaces they implement, but they are not compatible according to ECMA I.8.7.1
             bool isCastFromValueTypeToReferenceType = otherType.IsValueType && !thisType.IsValueType;

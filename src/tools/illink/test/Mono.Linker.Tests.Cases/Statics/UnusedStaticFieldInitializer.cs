@@ -7,6 +7,8 @@ namespace Mono.Linker.Tests.Cases.Statics
 		public static void Main ()
 		{
 			C.Foo ();
+
+			new C2 (123);
 		}
 
 		static class C
@@ -17,6 +19,17 @@ namespace Mono.Linker.Tests.Cases.Statics
 			public static void Foo ()
 			{
 			}
+		}
+
+		class C2
+		{
+			public static object o = new object ();
+
+			[Kept]
+			public int Field;
+
+			[Kept]
+			public C2 (int val) => Field = val;
 		}
 	}
 }

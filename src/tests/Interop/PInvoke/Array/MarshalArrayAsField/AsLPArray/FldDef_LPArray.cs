@@ -4,6 +4,8 @@
 using System;
 using System.Runtime.InteropServices;
 
+namespace MarshalArrayAsField.LPArray;
+
 #region Sequential
 #region sequential struct definition
 [StructLayout(LayoutKind.Sequential)]

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.TypeInfos;
+
 using Internal.Reflection.Core.Execution;
 
 namespace System.Reflection.Runtime.MethodInfos
@@ -35,7 +36,7 @@ namespace System.Reflection.Runtime.MethodInfos
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) { throw NotImplemented.ByDesign; }
         public sealed override MethodImplAttributes MethodImplementationFlags { get { throw NotImplemented.ByDesign; } }
         public sealed override Module Module { get { throw NotImplemented.ByDesign; } }
-        public sealed override MethodBase MetadataDefinitionMethod { get { throw NotImplemented.ByDesign; } }
+        internal sealed override MethodBase MetadataDefinitionMethod { get { throw NotImplemented.ByDesign; } }
         public sealed override int MetadataToken { get { throw NotImplemented.ByDesign; } }
         public sealed override RuntimeMethodHandle MethodHandle { get { throw NotImplemented.ByDesign; } }
         protected sealed override MethodBaseInvoker UncachedMethodInvoker { get { throw NotImplemented.ByDesign; } }

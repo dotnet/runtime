@@ -163,7 +163,7 @@ namespace System.Threading.Tasks
 
             if (timeout == TimeSpan.Zero)
             {
-                Task.FromException(new TimeoutException());
+                return Task.FromException(new TimeoutException());
             }
 
             if (cancellationToken.IsCancellationRequested)

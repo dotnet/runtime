@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 
 [StructLayout(LayoutKind.Sequential, Pack=8)]	
@@ -68,7 +69,8 @@ public class Test_Positive009
 	
 	}
 	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 
 		Eval(new GenTest().Test_Positive009());

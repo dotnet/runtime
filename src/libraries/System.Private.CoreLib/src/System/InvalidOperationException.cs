@@ -21,13 +21,13 @@ namespace System
         }
 
         public InvalidOperationException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_InvalidOperationException)
         {
             HResult = HResults.COR_E_INVALIDOPERATION;
         }
 
         public InvalidOperationException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_InvalidOperationException, innerException)
         {
             HResult = HResults.COR_E_INVALIDOPERATION;
         }

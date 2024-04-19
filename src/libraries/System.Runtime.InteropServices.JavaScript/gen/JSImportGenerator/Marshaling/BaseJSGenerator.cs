@@ -22,7 +22,6 @@ namespace Microsoft.Interop.JavaScript
         }
 
         public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _inner.AsNativeType(info);
-        public bool IsSupported(TargetFramework target, Version version) => _inner.IsSupported(target, version);
         public virtual bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => _inner.UsesNativeIdentifier(info, context);
         public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info) => _inner.GetNativeSignatureBehavior(info);
         public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context) => _inner.GetValueBoundaryBehavior(info, context);

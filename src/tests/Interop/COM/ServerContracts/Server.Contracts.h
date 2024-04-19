@@ -366,6 +366,18 @@ IStringTesting : IUnknown
         /*[out]*/ LCID* outLcid) = 0;
 };
 
+struct __declspec(uuid("7FBB8677-BDD0-4E5A-B38B-CA92A4555466"))
+IMiscTypesTesting : IUnknown
+{
+      virtual HRESULT STDMETHODCALLTYPE Marshal_Variant (
+        /*[in]*/ VARIANT obj,
+        /*[out,retval]*/ VARIANT* result) = 0;
+
+      virtual HRESULT STDMETHODCALLTYPE Marshal_Instance_Variant (
+        /*[in]*/ LPCWSTR init,
+        /*[out,retval]*/ VARIANT* result) = 0;
+};
+
 struct __declspec(uuid("592386a5-6837-444d-9de3-250815d18556"))
 IErrorMarshalTesting : IUnknown
 {
@@ -385,6 +397,7 @@ enum IDispatchTesting_Exception
 {
     IDispatchTesting_Exception_Disp,
     IDispatchTesting_Exception_HResult,
+    IDispatchTesting_Exception_Int,
 };
 
 struct __declspec(uuid("a5e04c1c-474e-46d2-bbc0-769d04e12b54"))

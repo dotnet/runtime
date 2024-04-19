@@ -1,7 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- Requires explicit Main as it supports command-line arguments for local testing. -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
-    <OutputType>exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <!-- Tracing tests routinely time out with jitstress and gcstress -->
@@ -10,7 +13,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
-    <ProjectReference Include="../common/common.csproj" />
-    <ProjectReference Include="$(TestSourceDir)Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="../common/eventpipe_common.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

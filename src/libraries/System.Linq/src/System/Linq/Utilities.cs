@@ -6,7 +6,7 @@ using System.Collections.Generic;
 namespace System.Linq
 {
     /// <summary>
-    /// Contains helper methods for System.Linq. Please put enumerable-related methods in <see cref="EnumerableHelpers"/>.
+    /// Contains helper methods for System.Linq.
     /// </summary>
     internal static class Utilities
     {
@@ -26,7 +26,7 @@ namespace System.Linq
 
             var defaultComparer = EqualityComparer<TSource>.Default;
 
-            if (left == null)
+            if (left is null)
             {
                 // Micro-opt: Typically it's impossible to get a different instance
                 // of the default comparer without reflection/serialization.
@@ -34,7 +34,7 @@ namespace System.Linq
                 return right == defaultComparer || right!.Equals(defaultComparer);
             }
 
-            if (right == null)
+            if (right is null)
             {
                 return left == defaultComparer || left.Equals(defaultComparer);
             }

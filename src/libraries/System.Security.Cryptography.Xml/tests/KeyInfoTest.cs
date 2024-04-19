@@ -336,7 +336,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 }
                 else
                 {
-                    Assert.True(false, $"Unexpected clause type: {clause.GetType().FullName}");
+                    Assert.Fail($"Unexpected clause type: {clause.GetType().FullName}");
                 }
             }
 

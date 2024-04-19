@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading;
+using Xunit;
 
 class ExternalClass {
 	ExternalException ee = new ExternalException();
@@ -18,7 +19,8 @@ public class ExternalException : Exception {
 
         static int retVal = 100;
 
-	public static int Main() {
+	[Fact]
+	public static int TestEntryPoint() {
 		Thread mv_Thread;
 		String str = "Done";
 		ExternalException ee = new ExternalException();

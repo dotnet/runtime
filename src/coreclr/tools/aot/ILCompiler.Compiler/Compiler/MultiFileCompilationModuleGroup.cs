@@ -78,14 +78,6 @@ namespace ILCompiler
         {
             return false;
         }
-
-        public override bool CanHaveReferenceThroughImportTable
-        {
-            get
-            {
-                return false;
-            }
-        }
     }
 
     /// <summary>

@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Reflection;
+using Xunit;
 
 
 class MyTypeClass
@@ -29,7 +30,8 @@ class MyTypeClass
 
 public class TypeGetType1
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         TypeGetType1 getType1 = new TypeGetType1();
         TestLibrary.TestFramework.BeginScenario("Testing System.Type.GetType()...");

@@ -260,7 +260,9 @@ ds_rt_server_log_pause_message (void)
 #if WCHAR_MAX == 0xFFFF
 	wchar_t* ports_wcs = ports ? (wchar_t *)g_utf8_to_utf16 ((const gchar *)ports, -1, NULL, NULL, NULL) : NULL;
 #else
-	wchar_t* ports_wcs = ports ? (wchar_t *)g_utf8_to_ucs4 ((const gchar *)ports, -1, NULL, NULL, NULL) : NULL;
+	gunichar2 *ports_utf16 = g_utf8_to_utf16 ((const gchar *)ports, -1, NULL, NULL, NULL);
+	wchar_t* ports_wcs = (wchar_t *)g_utf16_to_ucs4 (ports_utf16, -1, NULL, NULL, NULL);
+	g_free (ports_utf16);
 #endif
 	uint32_t port_suspended = ds_rt_config_value_get_default_port_suspend ();
 

@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
+    <!-- Without process isolation, this support assembly gets copied to the merged wrapper folder -->
+    <!-- where it subsequently crashes the LLVM AOT compiler. -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <OutputType>Library</OutputType>
+    <CLRTestKind>SharedLibrary</CLRTestKind>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="genmeth.il" />

@@ -4,29 +4,23 @@
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin
 
-#if TARGET_WINDOWS
-#define FEATURE_MANAGED_ETW
-#endif // TARGET_WINDOWS
-
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
-using System.Runtime.CompilerServices;
 namespace System.Diagnostics.Tracing
 {
     public partial class EventSource
     {
-#if FEATURE_MANAGED_ETW
         private byte[]? m_providerMetadata;
         private protected virtual ReadOnlySpan<byte> ProviderMetadata => m_providerMetadata;
         private const string EventSourceRequiresUnreferenceMessage = "EventSource will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed.";
         private const string EventSourceSuppressMessage = "Parameters to this method are primitive and are trimmer safe";
-#endif
 
 #if FEATURE_PERFTRACING
         private readonly TraceLoggingEventHandleTable m_eventHandleTable = null!;
@@ -399,7 +393,6 @@ namespace System.Diagnostics.Tracing
             Guid* childActivityID,
             params object?[] values)
         {
-#if FEATURE_MANAGED_ETW
             int identity = 0;
             byte level = (options.valuesSet & EventSourceOptions.levelSet) != 0
                 ? options.level
@@ -479,7 +472,6 @@ namespace System.Diagnostics.Tracing
                     WriteCleanup(pins, pinCount);
                 }
             }
-#endif // FEATURE_MANAGED_ETW
         }
 
         /// <summary>
@@ -520,7 +512,6 @@ namespace System.Diagnostics.Tracing
             Guid* childActivityID,
             EventData* data)
         {
-#if FEATURE_MANAGED_ETW
             if (!this.IsEnabled())
             {
                 return;
@@ -581,7 +572,6 @@ namespace System.Diagnostics.Tracing
                         (IntPtr)descriptors);
                 }
             }
-#endif // FEATURE_MANAGED_ETW
         }
 
         private unsafe void WriteImpl(
@@ -610,7 +600,6 @@ namespace System.Diagnostics.Tracing
                     IntPtr eventHandle = IntPtr.Zero;
 #endif
 
-#if FEATURE_MANAGED_ETW
                     int pinCount = eventTypes.pinCount;
                     byte* scratch = stackalloc byte[eventTypes.scratchSize];
                     EventData* descriptors = stackalloc EventData[eventTypes.dataCount + 3];
@@ -630,7 +619,6 @@ namespace System.Diagnostics.Tracing
                         descriptors[0].SetMetadata(pMetadata0, providerMetadata.Length, 2);
                         descriptors[1].SetMetadata(pMetadata1, nameInfo.nameMetadata.Length, 1);
                         descriptors[2].SetMetadata(pMetadata2, eventTypes.typeMetadata.Length, 1);
-#endif // FEATURE_MANAGED_ETW
 
                         EventOpcode opcode = (EventOpcode)descriptor.Opcode;
 
@@ -657,7 +645,6 @@ namespace System.Diagnostics.Tracing
 
                         try
                         {
-#if FEATURE_MANAGED_ETW
                             DataCollector.ThreadInstance.Enable(
                                 scratch,
                                 eventTypes.scratchSize,
@@ -677,7 +664,6 @@ namespace System.Diagnostics.Tracing
                                 pRelatedActivityId,
                                 (int)(DataCollector.ThreadInstance.Finish() - descriptors),
                                 (IntPtr)descriptors);
-#endif // FEATURE_MANAGED_ETW
 
                             // TODO enable filtering for listeners.
                             if (m_Dispatchers != null)
@@ -693,13 +679,11 @@ namespace System.Diagnostics.Tracing
                             else
                                 ThrowEventSourceException(eventName, ex);
                         }
-#if FEATURE_MANAGED_ETW
                         finally
                         {
                             WriteCleanup(pins, pinCount);
                         }
                     }
-#endif // FEATURE_MANAGED_ETW
                 }
             }
             catch (Exception ex)
@@ -748,7 +732,6 @@ namespace System.Diagnostics.Tracing
 
         private void InitializeProviderMetadata()
         {
-#if FEATURE_MANAGED_ETW
             bool hasProviderMetadata = ProviderMetadata.Length > 0;
 #if !DEBUG
             if (hasProviderMetadata)
@@ -807,7 +790,6 @@ namespace System.Diagnostics.Tracing
                 Debug.Assert(ProviderMetadata.SequenceEqual(m_providerMetadata));
             }
 #endif
-#endif //FEATURE_MANAGED_ETW
         }
 
         private static int AddValueToMetaData(List<byte> metaData, string value)

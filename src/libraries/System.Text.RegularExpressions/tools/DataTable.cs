@@ -112,7 +112,7 @@ namespace GenerateRegexCasingTable
             {
                 List<ushort> firstLevelLookupTable = FlattenFirstLevelLookupTable();
 
-                writer.Write($"        private static ReadOnlySpan<ushort> EquivalenceFirstLevelLookup => new ushort[{firstLevelLookupTable.Count}]\n        {{\n");
+                writer.Write($"        private static ReadOnlySpan<ushort> EquivalenceFirstLevelLookup => // {firstLevelLookupTable.Count}\n        [\n");
 
                 writer.Write("            0x{0:x4}", firstLevelLookupTable[0]);
                 for (var i = 1; i < firstLevelLookupTable.Count; i++)
@@ -120,7 +120,7 @@ namespace GenerateRegexCasingTable
                     writer.Write(i % 16 == 0 ? ",\n            " : ", ");
                     writer.Write("0x{0:x4}", firstLevelLookupTable[i]);
                 }
-                writer.Write("\n        };\n");
+                writer.Write("\n        ];\n");
             }
 
             List<ushort> FlattenFirstLevelLookupTable()
@@ -149,7 +149,7 @@ namespace GenerateRegexCasingTable
             {
                 List<ushort> flattenedMap = FlattenMapDictionary();
 
-                writer.Write($"        private static ReadOnlySpan<ushort> EquivalenceCasingMap => new ushort[{flattenedMap.Count}]\n        {{\n");
+                writer.Write($"        private static ReadOnlySpan<ushort> EquivalenceCasingMap => // {flattenedMap.Count}]\n        [\n");
 
                 writer.Write("            0x{0:x4}", flattenedMap[0]);
                 for (var i = 1; i < flattenedMap.Count; i++)
@@ -157,7 +157,7 @@ namespace GenerateRegexCasingTable
                     writer.Write(i % 16 == 0 ? $",\n            " : ", ");
                     writer.Write("0x{0:x4}", flattenedMap[i]);
                 }
-                writer.Write("\n        };\n");
+                writer.Write("\n        ];\n");
             }
 
             List<ushort> FlattenMapDictionary()
@@ -193,7 +193,7 @@ namespace GenerateRegexCasingTable
             {
                 List<ushort> flattenedValues = FlattenValuesDictionary();
 
-                writer.Write("        private static ReadOnlySpan<char> EquivalenceCasingValues => new char[" + flattenedValues.Count + "]\n        {\n");
+                writer.Write($"        private static ReadOnlySpan<char> EquivalenceCasingValues => // {flattenedValues.Count}\n        [\n");
 
                 writer.Write("            \'\\u{0:X4}\'", flattenedValues[0]);
                 for (var i = 1; i < flattenedValues.Count; i++)
@@ -201,7 +201,7 @@ namespace GenerateRegexCasingTable
                     writer.Write(i % 16 == 0 ? ",\n            " : ", ");
                     writer.Write("\'\\u{0:X4}\'", flattenedValues[i]);
                 }
-                writer.Write("\n        };\n");
+                writer.Write("\n        ];\n");
             }
 
             List<ushort> FlattenValuesDictionary()
@@ -213,7 +213,7 @@ namespace GenerateRegexCasingTable
                 {
                     // Add a mapping that we will later use to match a character to the position of the values list
                     _mapAndValueMapping.Add(i, valuesSize);
-                    foreach(char value in _values[i])
+                    foreach (char value in _values[i])
                     {
                         Debug.Assert(value < 0xFFFF);
                         values.Add(value);

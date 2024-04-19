@@ -3,8 +3,6 @@
 
 using System.Collections.Generic;
 using System.Globalization;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Tests;
 using System.Threading.Tasks;
 using Xunit;
@@ -83,7 +81,7 @@ namespace System.Text.RegularExpressions.Tests
 
         public static IEnumerable<object[]> EnginesThatSupportBackreferences()
         {
-            foreach(RegexEngine engine in RegexHelpers.AvailableEngines)
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
                 if (engine == RegexEngine.NonBacktracking) // Nonbacktracking engine doesn't yet support backreferences.
                     continue;
@@ -203,7 +201,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
                 {
-                    yield return new object[] { engine, culture, RegexOptions.None};
+                    yield return new object[] { engine, culture, RegexOptions.None };
                     if (string.IsNullOrEmpty(culture))
                     {
                         // For the Invariant culture equivalences also test to get the same behavior with RegexOptions.CultureInvariant.

@@ -112,7 +112,7 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public static void ICollectionOfT_CopyTo()
         {
-            string[] expected = new[] { "212-555-6666", "212", "555-6666" };
+            string[] expected = ["212-555-6666", "212", "555-6666"];
             ICollection<Group> collection = CreateCollection();
 
             Group[] array = new Group[collection.Count];
@@ -173,7 +173,7 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public static void DebuggerAttributeTests_Null()
         {
-            TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(GroupCollection), null));
+            TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.CreateDebuggerTypeProxyWithNullArgument(typeof(GroupCollection)));
             Assert.IsType<ArgumentNullException>(ex.InnerException);
         }
     }

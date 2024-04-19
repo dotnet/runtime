@@ -141,11 +141,11 @@ namespace Dynamic
         private void VarArgs()
         {
             VarEnum[] ret = obj.VarArgs();
-            Assert.Equal(0, ret.Length);
+            Assert.Empty(ret);
 
             // COM server returns the type of each variant
             ret = obj.VarArgs(false);
-            Assert.Equal(1, ret.Length);
+            Assert.Single(ret);
             AssertExtensions.CollectionEqual(new [] { VarEnum.VT_BOOL }, ret);
 
             VarEnum[] expected = { VarEnum.VT_BSTR, VarEnum.VT_R8, VarEnum.VT_DATE, VarEnum.VT_I4 };

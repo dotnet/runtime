@@ -69,12 +69,12 @@
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
         <source>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</source>
-        <target state="new">The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</target>
+        <target state="translated">记录源生成器在 C#“{0}”中不可用。请使用{1}或更高版本的语言版本。</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionTitle">
         <source>C# language version not supported by the source generator.</source>
-        <target state="new">C# language version not supported by the source generator.</target>
+        <target state="translated">源生成器不支持 C# 语言版本。</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">

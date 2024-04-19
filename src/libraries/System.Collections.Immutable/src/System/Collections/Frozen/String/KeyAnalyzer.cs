@@ -46,29 +46,35 @@ namespace System.Collections.Frozen
         /// <summary>Try to find the minimal unique substring index/length to use for comparisons.</summary>
         private static bool TryUseSubstring(ReadOnlySpan<string> uniqueStrings, bool ignoreCase, int minLength, int maxLength, out AnalysisResults results)
         {
-            const int MaxSubstringLengthLimit = 8; // arbitrary small-ish limit... t's not worth the increase in algorithmic complexity to analyze longer substrings
+            const int MaxSubstringLengthLimit = 8; // arbitrary small-ish limit... it's not worth the increase in algorithmic complexity to analyze longer substrings
+            int uniqueStringsLength = uniqueStrings.Length;
+
+            // Sufficient uniqueness factor of 95% is good enough.
+            // Instead of ensuring that 95% of data is good, we stop when we know that at least 5% is bad.
+            int acceptableNonUniqueCount = uniqueStringsLength / 20;
 
             SubstringComparer comparer = ignoreCase ? new JustifiedCaseInsensitiveSubstringComparer() : new JustifiedSubstringComparer();
             HashSet<string> set = new HashSet<string>(
 #if NET6_0_OR_GREATER
-                uniqueStrings.Length,
+                uniqueStringsLength,
 #endif
                 comparer);
 
-            // For each substring length...
+            // For each substring length...preferring the shortest length that provides
+            // enough uniqueness
             int maxSubstringLength = Math.Min(minLength, MaxSubstringLengthLimit);
             for (int count = 1; count <= maxSubstringLength; count++)
             {
                 comparer.IsLeft = true;
                 comparer.Count = count;
 
-                // For each index, get a uniqueness factor for the left-justified substrings.
+                // For each index from, get a uniqueness factor for the left-justified substrings.
                 // If any is above our threshold, we're done.
                 for (int index = 0; index <= minLength - count; index++)
                 {
                     comparer.Index = index;
 
-                    if (HasSufficientUniquenessFactor(set, uniqueStrings))
+                    if (HasSufficientUniquenessFactor(set, uniqueStrings, acceptableNonUniqueCount))
                     {
                         results = CreateAnalysisResults(
                             uniqueStrings, ignoreCase, minLength, maxLength, index, count,
@@ -90,10 +96,9 @@ namespace System.Collections.Frozen
                     // If any is above our threshold, we're done.
                     for (int index = 0; index <= minLength - count; index++)
                     {
-                        // Get a uniqueness factor for the right-justified substrings.
-                        // If it's above our threshold, we're done.
                         comparer.Index = -index - count;
-                        if (HasSufficientUniquenessFactor(set, uniqueStrings))
+
+                        if (HasSufficientUniquenessFactor(set, uniqueStrings, acceptableNonUniqueCount))
                         {
                             results = CreateAnalysisResults(
                                 uniqueStrings, ignoreCase, minLength, maxLength, comparer.Index, count,
@@ -110,7 +115,7 @@ namespace System.Collections.Frozen
         }
 
         private static AnalysisResults CreateAnalysisResults(
-            ReadOnlySpan<string> uniqueStrings, bool ignoreCase, int minLength, int maxLength, int index, int count, GetSpan getSubstringSpan)
+            ReadOnlySpan<string> uniqueStrings, bool ignoreCase, int minLength, int maxLength, int index, int count, GetSpan getHashString)
         {
             // Start off by assuming all strings are ASCII
             bool allAsciiIfIgnoreCase = true;
@@ -120,35 +125,47 @@ namespace System.Collections.Frozen
             // substrings are ASCII, so we check each.
             if (ignoreCase)
             {
-                // Further, if the ASCII substrings don't contain any letters, then we can
-                // actually perform the comparison as case-sensitive even if case-insensitive
-                // was requested, as there's nothing that would compare equally to the substring
-                // other than the substring itself.
-                bool canSwitchIgnoreCaseToCaseSensitive = true;
+                // Further, if the ASCII keys (in their entirety) don't contain any letters,
+                // then we can actually perform the comparison as case-sensitive even if
+                // case-insensitive was requested, as there's nothing that would compare
+                // equally to the key other than the key itself.
+                bool canSwitchIgnoreCaseHashToCaseSensitive = true;
 
-                foreach (string s in uniqueStrings)
+                foreach (string uniqueString in uniqueStrings)
                 {
-                    // Get the span for the substring.
-                    ReadOnlySpan<char> substring = getSubstringSpan(s, index, count);
+                    // Get a span representing the slice of the uniqueString which will be hashed.
+                    ReadOnlySpan<char> hashString = getHashString(uniqueString, index, count);
 
-                    // If the substring isn't ASCII, bail out to return the results.
-                    if (!IsAllAscii(substring))
+                    // If the slice isn't ASCII, bail out to return the results.
+                    if (!IsAllAscii(hashString))
                     {
                         allAsciiIfIgnoreCase = false;
-                        canSwitchIgnoreCaseToCaseSensitive = false;
+                        canSwitchIgnoreCaseHashToCaseSensitive = false;
                         break;
                     }
 
-                    // All substrings so far are still ASCII only.  If this one contains any ASCII
-                    // letters, mark that we can't switch to case-sensitive.
-                    if (canSwitchIgnoreCaseToCaseSensitive && ContainsAnyLetters(substring))
+                    // The hash string is ASCII only.  We disable the switch to
+                    // case sensitive if by examining the entire uniqueString we
+                    // find that it is not ASCII, or that it contains ASCII letters.
+                    if (canSwitchIgnoreCaseHashToCaseSensitive)
                     {
-                        canSwitchIgnoreCaseToCaseSensitive = false;
+                        // If count is 0 then uniqueString equals hashString,
+                        // and as we have just checked that IsAllAscii(hashString) is true
+                        // then we know IsAllAscii(uniqueString) must be true,
+                        // so we can skip the check.
+                        if (count > 0 && !IsAllAscii(uniqueString.AsSpan()))
+                        {
+                            canSwitchIgnoreCaseHashToCaseSensitive = false;
+                        }
+                        else if (ContainsAnyAsciiLetters(uniqueString.AsSpan()))
+                        {
+                            canSwitchIgnoreCaseHashToCaseSensitive = false;
+                        }
                     }
                 }
 
                 // If we can switch to case-sensitive, do so.
-                if (canSwitchIgnoreCaseToCaseSensitive)
+                if (canSwitchIgnoreCaseHashToCaseSensitive)
                 {
                     ignoreCase = false;
                 }
@@ -202,7 +219,7 @@ namespace System.Collections.Frozen
 #if NET8_0_OR_GREATER
         private static readonly SearchValues<char> s_asciiLetters = SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
 #endif
-        private static bool ContainsAnyLetters(ReadOnlySpan<char> s)
+        internal static bool ContainsAnyAsciiLetters(ReadOnlySpan<char> s)
         {
             Debug.Assert(IsAllAscii(s));
 
@@ -221,13 +238,9 @@ namespace System.Collections.Frozen
 #endif
         }
 
-        private static bool HasSufficientUniquenessFactor(HashSet<string> set, ReadOnlySpan<string> uniqueStrings)
+        internal static bool HasSufficientUniquenessFactor(HashSet<string> set, ReadOnlySpan<string> uniqueStrings, int acceptableNonUniqueCount)
         {
             set.Clear();
-
-            // Sufficient uniqueness factor of 95% is good enough.
-            // Instead of ensuring that 95% of data is good, we stop when we know that at least 5% is bad.
-            int acceptableNonUniqueCount = uniqueStrings.Length / 20;
 
             foreach (string s in uniqueStrings)
             {

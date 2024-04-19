@@ -135,3 +135,9 @@ x86_64_sigreturn (unw_cursor_t *cursor)
 }
 
 #endif
+
+HIDDEN int
+x86_64_os_step(struct cursor *c)
+{
+  return (0);
+}

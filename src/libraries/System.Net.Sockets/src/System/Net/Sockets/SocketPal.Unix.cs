@@ -515,7 +515,7 @@ namespace System.Net.Sockets
             if (socketAddressLen == 0)
             {
                 // We can fail to get peer address on TCP
-                socketAddressLen =  socketAddress.Length;
+                socketAddressLen = socketAddress.Length;
                 SocketAddressPal.Clear(socketAddress);
             }
             ipPacketInformation = GetIPPacketInformation(&messageHeader, isIPv4, isIPv6);
@@ -528,7 +528,6 @@ namespace System.Net.Sockets
             out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out Interop.Error errno)
         {
             Debug.Assert(socket.IsSocket);
-            Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
 
             int buffersCount = buffers.Count;
             bool allocOnStack = buffersCount <= IovStackThreshold;
@@ -810,7 +809,6 @@ namespace System.Net.Sockets
                 {
                     Debug.Assert(flags == SocketFlags.None);
                     Debug.Assert(buffers == null);
-                    Debug.Assert(socketAddress == null);
 
                     receivedFlags = default;
                     received = SysRead(socket, buffer, out errno);
@@ -886,7 +884,7 @@ namespace System.Net.Sockets
                     if (socketAddress.Length > 0 && receivedSocketAddressLength == 0)
                     {
                         // We can fail to get peer address on TCP
-                        receivedSocketAddressLength =  socketAddress.Length;
+                        receivedSocketAddressLength = socketAddress.Length;
                         SocketAddressPal.Clear(socketAddress.Span);
                     }
                     bytesReceived = received;
@@ -956,7 +954,7 @@ namespace System.Net.Sockets
                     {
                         sent = buffers != null ?
                             SysSend(socket, flags, buffers, ref bufferIndex, ref offset, socketAddress, out errno) :
-                            socketAddress == null ? SysSend(socket, flags, buffer, ref offset, ref count, out errno) :
+                            socketAddress.IsEmpty ? SysSend(socket, flags, buffer, ref offset, ref count, out errno) :
                                                     SysSend(socket, flags, buffer, ref offset, ref count, socketAddress, out errno);
                     }
                 }

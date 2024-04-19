@@ -166,12 +166,12 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (_customTrustStore?.Count > 0)
             {
-               clone.CustomTrustStore.AddRange(_customTrustStore);
+                clone.CustomTrustStore.AddRange(_customTrustStore);
             }
 
             if (_extraStore?.Count > 0)
             {
-               clone.ExtraStore.AddRange(_extraStore);
+                clone.ExtraStore.AddRange(_extraStore);
             }
 
             return clone;

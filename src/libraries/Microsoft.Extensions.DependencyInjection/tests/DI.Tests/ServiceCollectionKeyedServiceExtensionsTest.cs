@@ -170,6 +170,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     { collection => collection.TryAddKeyedTransient<IFakeService, FakeService>("key-2"), serviceType, "key-2", implementationType, ServiceLifetime.Transient },
                     { collection => collection.TryAddKeyedTransient<IFakeService>("key-3"), serviceType, "key-3", serviceType, ServiceLifetime.Transient },
                     { collection => collection.TryAddKeyedTransient(implementationType, "key-4"), implementationType, "key-4", implementationType, ServiceLifetime.Transient },
+                    { collection => collection.TryAddKeyedTransient(implementationType, 9), implementationType, 9, implementationType, ServiceLifetime.Transient },
 
                     { collection => collection.TryAddKeyedScoped(serviceType, "key-1", implementationType), serviceType, "key-1", implementationType, ServiceLifetime.Scoped },
                     { collection => collection.TryAddKeyedScoped<IFakeService, FakeService>("key-2"), serviceType, "key-2", implementationType, ServiceLifetime.Scoped },
@@ -261,18 +262,19 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 var serviceType = typeof(IFakeService);
                 var implementationType = typeof(FakeService);
-                return new TheoryData<ServiceDescriptor, Type, object, Type, ServiceLifetime>
+                return new TheoryData<Func<ServiceDescriptor>, Type, object, Type, ServiceLifetime>
                 {
-                    { ServiceDescriptor.KeyedTransient<IFakeService, FakeService>("service1"), serviceType, "service1", implementationType, ServiceLifetime.Transient },
-                    { ServiceDescriptor.KeyedTransient<IFakeService, FakeService>("service2", (s,k) => new FakeService()), serviceType, "service2", implementationType, ServiceLifetime.Transient },
+                    { () => ServiceDescriptor.KeyedTransient<IFakeService, FakeService>("service1"), serviceType, "service1", implementationType, ServiceLifetime.Transient },
+                    { () => ServiceDescriptor.KeyedTransient<IFakeService, FakeService>("service2", (s,k) => new FakeService()), serviceType, "service2", implementationType, ServiceLifetime.Transient },
+                    { () => ServiceDescriptor.KeyedTransient<IFakeService, FakeService>(7), serviceType, 7, implementationType, ServiceLifetime.Transient },
 
-                    { ServiceDescriptor.KeyedScoped<IFakeService, FakeService>("service3"), serviceType, "service3", implementationType, ServiceLifetime.Scoped },
-                    { ServiceDescriptor.KeyedScoped<IFakeService, FakeService>("service4", (s,k) => new FakeService()), serviceType, "service4", implementationType, ServiceLifetime.Scoped },
+                    { () => ServiceDescriptor.KeyedScoped<IFakeService, FakeService>("service3"), serviceType, "service3", implementationType, ServiceLifetime.Scoped },
+                    { () => ServiceDescriptor.KeyedScoped<IFakeService, FakeService>("service4", (s,k) => new FakeService()), serviceType, "service4", implementationType, ServiceLifetime.Scoped },
 
-                    { ServiceDescriptor.KeyedSingleton<IFakeService, FakeService>("service5"), serviceType, "service5", implementationType, ServiceLifetime.Singleton },
-                    { ServiceDescriptor.KeyedSingleton<IFakeService, FakeService>("service6", (s,k) => new FakeService()), serviceType, "service6", implementationType, ServiceLifetime.Singleton },
+                    { () => ServiceDescriptor.KeyedSingleton<IFakeService, FakeService>("service5"), serviceType, "service5", implementationType, ServiceLifetime.Singleton },
+                    { () => ServiceDescriptor.KeyedSingleton<IFakeService, FakeService>("service6", (s,k) => new FakeService()), serviceType, "service6", implementationType, ServiceLifetime.Singleton },
 
-                    { ServiceDescriptor.KeyedSingleton<IFakeService>("service6", _instance), serviceType, "service6", implementationType, ServiceLifetime.Singleton },
+                    { () => ServiceDescriptor.KeyedSingleton<IFakeService>("service6", _instance), serviceType, "service6", implementationType, ServiceLifetime.Singleton },
                 };
             }
         }
@@ -280,7 +282,7 @@ namespace Microsoft.Extensions.DependencyInjection
         [Theory]
         [MemberData(nameof(TryAddEnumerableImplementationTypeData))]
         public void TryAddEnumerable_AddsService(
-            ServiceDescriptor descriptor,
+            Func<ServiceDescriptor> createDescriptor,
             Type expectedServiceType,
             object expectedKey,
             Type expectedImplementationType,
@@ -290,7 +292,7 @@ namespace Microsoft.Extensions.DependencyInjection
             var collection = new ServiceCollection();
 
             // Act
-            collection.TryAddEnumerable(descriptor);
+            collection.TryAddEnumerable(createDescriptor());
 
             // Assert
             var d = Assert.Single(collection);
@@ -304,7 +306,7 @@ namespace Microsoft.Extensions.DependencyInjection
         [Theory]
         [MemberData(nameof(TryAddEnumerableImplementationTypeData))]
         public void TryAddEnumerable_DoesNotAddDuplicate(
-            ServiceDescriptor descriptor,
+            Func<ServiceDescriptor> createDescriptor,
             Type expectedServiceType,
             object expectedKey,
             Type expectedImplementationType,
@@ -312,10 +314,10 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             // Arrange
             var collection = new ServiceCollection();
-            collection.TryAddEnumerable(descriptor);
+            collection.TryAddEnumerable(createDescriptor());
 
             // Act
-            collection.TryAddEnumerable(descriptor);
+            collection.TryAddEnumerable(createDescriptor());
 
             // Assert
             var d = Assert.Single(collection);
@@ -413,6 +415,24 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [Fact]
+        public void Replace_ReplacesFirstServiceWithMatchingServiceTypeWhenKeyIsInt()
+        {
+            // Arrange
+            var collection = new ServiceCollection();
+            var descriptor1 = new ServiceDescriptor(typeof(IFakeService), 1, typeof(FakeService), ServiceLifetime.Transient);
+            var descriptor2 = new ServiceDescriptor(typeof(IFakeService), 1, typeof(FakeService), ServiceLifetime.Transient);
+            collection.Add(descriptor1);
+            collection.Add(descriptor2);
+            var descriptor3 = new ServiceDescriptor(typeof(IFakeService), 1, typeof(FakeService), ServiceLifetime.Singleton);
+
+            // Act
+            collection.Replace(descriptor3);
+
+            // Assert
+            Assert.Equal(new[] { descriptor2, descriptor3 }, collection);
+        }
+
+        [Fact]
         public void RemoveAll_RemovesAllServicesWithMatchingServiceType()
         {
             // Arrange
@@ -426,6 +446,44 @@ namespace Microsoft.Extensions.DependencyInjection
 
             // Act
             collection.RemoveAllKeyed<IFakeService>("key1");
+
+            // Assert
+            Assert.Equal(new[] { descriptor }, collection);
+        }
+
+        private enum ServiceKeyEnum { First, Second }
+
+        [Fact]
+        public void RemoveAll_RemovesAllMatchingServicesWhenKeyIsEnum()
+        {
+            var descriptor = new ServiceDescriptor(typeof(IFakeService), ServiceKeyEnum.First, typeof(FakeService), ServiceLifetime.Transient);
+            var collection = new ServiceCollection
+            {
+                descriptor,
+                new ServiceDescriptor(typeof(IFakeService), ServiceKeyEnum.Second, typeof(FakeService), ServiceLifetime.Transient),
+                new ServiceDescriptor(typeof(IFakeService), ServiceKeyEnum.Second, typeof(FakeService), ServiceLifetime.Transient),
+            };
+
+            // Act
+            collection.RemoveAllKeyed<IFakeService>(ServiceKeyEnum.Second);
+
+            // Assert
+            Assert.Equal(new[] { descriptor }, collection);
+        }
+
+        [Fact]
+        public void RemoveAll_RemovesAllMatchingServicesWhenKeyIsInt()
+        {
+            var descriptor = new ServiceDescriptor(typeof(IFakeService), 1, typeof(FakeService), ServiceLifetime.Transient);
+            var collection = new ServiceCollection
+            {
+                descriptor,
+                new ServiceDescriptor(typeof(IFakeService), 2, typeof(FakeService), ServiceLifetime.Transient),
+                new ServiceDescriptor(typeof(IFakeService), 2, typeof(FakeService), ServiceLifetime.Transient),
+            };
+
+            // Act
+            collection.RemoveAllKeyed<IFakeService>(2);
 
             // Assert
             Assert.Equal(new[] { descriptor }, collection);

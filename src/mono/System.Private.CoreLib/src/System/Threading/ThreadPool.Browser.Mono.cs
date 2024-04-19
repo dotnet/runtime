@@ -1,20 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.Win32.SafeHandles;
 
 #pragma warning disable IDE0060
 
 namespace System.Threading
 {
-#if FEATURE_WASM_THREADS
-#error when compiled with FEATURE_WASM_THREADS, we use PortableThreadPool.WorkerThread.Browser.Threads.Mono.cs
+#if FEATURE_WASM_MANAGED_THREADS
+#error when compiled with FEATURE_WASM_MANAGED_THREADS, we use PortableThreadPool.WorkerThread.Browser.Threads.Mono.cs
 #endif
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public sealed class RegisteredWaitHandle : MarshalByRefObject
@@ -122,7 +122,7 @@ namespace System.Threading
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
 #pragma warning restore CS3016
         // this callback will arrive on the bound thread, called from mono_background_exec
-        private static void BackgroundJobHandler ()
+        private static void BackgroundJobHandler()
         {
             try
             {

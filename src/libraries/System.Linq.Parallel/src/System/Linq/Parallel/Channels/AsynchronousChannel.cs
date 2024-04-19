@@ -7,9 +7,9 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System.Threading;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace System.Linq.Parallel
 {
@@ -17,7 +17,9 @@ namespace System.Linq.Parallel
     /// This is a bounded channel meant for single-producer/single-consumer scenarios.
     /// </summary>
     /// <typeparam name="T">Specifies the type of data in the channel.</typeparam>
+#if !FEATURE_WASM_MANAGED_THREADS
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+#endif
     internal sealed class AsynchronousChannel<T> : IDisposable
     {
         // The producer will be blocked once the channel reaches a capacity, and unblocked

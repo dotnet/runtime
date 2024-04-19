@@ -52,7 +52,8 @@ namespace System.Text.RegularExpressions.Tests
             // all patterns have an implicit 0-start-capture node \u230A\u2080 and
             // 0-end-capture node \u2070\u2309 and thus also two extra cocatenation nodes
             // let the safe size of a pattern X be denoted by #(X)
-            (string, int)[] patternData = new (string, int)[]{
+            (string, int)[] patternData =
+            [
                 // no singletons
                 ("()", 1),
                 ("()*", 1),
@@ -80,7 +81,7 @@ namespace System.Text.RegularExpressions.Tests
                 ("(a{2147483647,})", 2),
                 // typical case that blows up the DFA size to 2^100 when .* is added at the beginning (below)
                 ("a.{100}b", 103)
-            };
+            ];
 
             foreach ((string Pattern, int ExpectedSafeSize) in patternData)
             {
@@ -94,7 +95,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 RegexNode tree = RegexParser.Parse(".*?" + Pattern, options | RegexOptions.ExplicitCapture, CultureInfo.CurrentCulture).Root;
                 SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(tree);
-                yield return new object[] { bddBuilder, rootNode, 1 + ExpectedSafeSize};
+                yield return new object[] { bddBuilder, rootNode, 1 + ExpectedSafeSize };
             }
 
             // use of anchors increases the estimate by 5x in general but in reality much less, at most 3x
@@ -204,7 +205,8 @@ namespace System.Text.RegularExpressions.Tests
             RegexOptions options = RegexOptions.NonBacktracking | RegexOptions.ExplicitCapture;
 
             // patterns with large counters
-            string[] patternData = new string[]{
+            string[] patternData =
+            [
                 // simple counters that are too large
                 "((ab){0,9000})",
                 "((ab){1000})",
@@ -218,7 +220,7 @@ namespace System.Text.RegularExpressions.Tests
                 "((ab){1000}){1000}",          // more than 1000^2
                 "((ab){99999999}){99999999}",  // multiply: much more than int.MaxValue
                 "(ab){0,1234567890}|(cd){1234567890,}",// sum: more than int.MaxValue
-            };
+            ];
 
             foreach (string Pattern in patternData)
             {

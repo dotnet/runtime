@@ -40,7 +40,7 @@ namespace
         append_path(&fxr_root, max_ver_str.c_str());
         trace::info(_X("Detected latest fxr version=[%s]..."), fxr_root.c_str());
 
-        if (library_exists_in_dir(fxr_root, LIBFXR_NAME, out_fxr_path))
+        if (file_exists_in_dir(fxr_root, LIBFXR_NAME, out_fxr_path))
         {
             trace::info(_X("Resolved fxr [%s]..."), out_fxr_path->c_str());
             return true;
@@ -58,7 +58,7 @@ bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* o
     // For apphost and libhost, root_path is expected to be a directory.
     // For libhost, it may be empty if app-local search is not desired (e.g. com/ijw/winrt hosts, nethost when no assembly path is specified)
     // If a hostfxr exists in root_path, then assume self-contained.
-    if (root_path.length() > 0 && library_exists_in_dir(root_path, LIBFXR_NAME, out_fxr_path))
+    if (root_path.length() > 0 && file_exists_in_dir(root_path, LIBFXR_NAME, out_fxr_path))
     {
         trace::info(_X("Resolved fxr [%s]..."), out_fxr_path->c_str());
         out_dotnet_root->assign(root_path);

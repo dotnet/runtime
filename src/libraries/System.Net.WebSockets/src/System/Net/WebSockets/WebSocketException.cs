@@ -24,7 +24,7 @@ namespace System.Net.WebSockets
         {
         }
 
-        public WebSocketException(WebSocketError error, string? message) : base(message)
+        public WebSocketException(WebSocketError error, string? message) : base(message ?? SR.net_WebSockets_Generic)
         {
             _webSocketErrorCode = error;
         }
@@ -35,7 +35,7 @@ namespace System.Net.WebSockets
         }
 
         public WebSocketException(WebSocketError error, string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.net_WebSockets_Generic, innerException)
         {
             _webSocketErrorCode = error;
         }
@@ -67,7 +67,7 @@ namespace System.Net.WebSockets
         }
 
         public WebSocketException(WebSocketError error, int nativeError, string? message)
-            : base(message)
+            : base(message ?? SR.net_WebSockets_Generic)
         {
             _webSocketErrorCode = error;
             SetErrorCodeOnError(nativeError);
@@ -79,19 +79,19 @@ namespace System.Net.WebSockets
         }
 
         public WebSocketException(WebSocketError error, int nativeError, string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.net_WebSockets_Generic, innerException)
         {
             _webSocketErrorCode = error;
             SetErrorCodeOnError(nativeError);
         }
 
         public WebSocketException(string? message)
-            : base(message)
+            : base(message ?? SR.net_WebSockets_Generic)
         {
         }
 
         public WebSocketException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.net_WebSockets_Generic, innerException)
         {
         }
 

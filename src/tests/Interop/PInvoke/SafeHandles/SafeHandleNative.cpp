@@ -66,12 +66,12 @@ extern "C" void DLL_EXPORT GetHandleAndCookie(void** pCookie, intptr_t value, HA
     *pCookie = (void*)4567; // the value here does not matter. It just needs to not be nullptr.
 }
 
-extern "C" void DLL_EXPORT GetHandleAndArray(/*out*/SHORT* arrSize, SHORT** ppActual, intptr_t value, HANDLE* handle)
+extern "C" void DLL_EXPORT GetHandleAndArray(/*out*/int16_t* arrSize, int16_t** ppActual, intptr_t value, HANDLE* handle)
 {
     *arrSize = -1; // minus one is going to make this throw on unmarshal
 
     // Still need to provide something allocated using an expected allocator so that the marshaller can unalloc
-    *ppActual = (SHORT*)CoreClrAlloc(sizeof(SHORT));
+    *ppActual = (int16_t*)CoreClrAlloc(sizeof(int16_t));
 
     *handle = (HANDLE)value;
 }

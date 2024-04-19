@@ -4,12 +4,6 @@ if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CM
     add_definitions(-DHAS_CONSOLE_SIGNALS)
 endif ()
 
-if (CLR_CMAKE_TARGET_LINUX_MUSL)
-    # Fix up the thread stack size for MUSL to more reasonable size.
-    # TODO: https://github.com/dotnet/runtimelab/issues/791
-    add_definitions(-DENSURE_PRIMARY_STACK_SIZE)
-endif ()
-
 if (CLR_CMAKE_TARGET_OSX)
     add_definitions(-D_DARWIN_C_SOURCE)
 endif ()

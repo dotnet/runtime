@@ -1,6 +1,7 @@
 <Project>
   <!-- This depends on the root Directory.Build.targets imported this file -->
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
+  <UsingTask TaskName="ILStrip" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
   <UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
   <!-- TODO: this breaks runtime tests on Helix due to the file not being there for some reason. Once this is fixed we can remove the UpdateRuntimePack target here -->
@@ -17,14 +18,6 @@
         <HostConfig Include="node" Host="nodejs" js-path="$(_WasmMainJSFileName)" />
         <HostConfig Include="browser" Host="browser" html-path="index.html" />
     </ItemGroup>
-  </Target>
-
-  <Target Name="UpdateRuntimePackToAddNewRID" BeforeTargets="ProcessFrameworkReferences">
-    <Message Text="KnownRuntimePack: %(KnownRuntimePack.Identity), %(KnownRuntimePack.RuntimePackLabels), %(KnownRuntimePack.RuntimePackRuntimeIdentifiers)" />
-    <ItemGroup>
-      <KnownRuntimePack Condition="%(RuntimePackLabels) == 'Mono'" RuntimePackRuntimeIdentifiers="%(RuntimePackRuntimeIdentifiers);wasi-wasm" />
-    </ItemGroup>
-    <Message Text="KnownRuntimePack: %(KnownRuntimePack.Identity), %(KnownRuntimePack.RuntimePackLabels), %(KnownRuntimePack.RuntimePackRuntimeIdentifiers)" />
   </Target>
 
   <!-- Use local runtime pack -->

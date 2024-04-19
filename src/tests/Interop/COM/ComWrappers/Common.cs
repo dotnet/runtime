@@ -4,6 +4,7 @@
 namespace ComWrappersTests.Common
 {
     using System;
+    using System.Diagnostics;
     using System.Threading;
     using System.Runtime.InteropServices;
 
@@ -97,6 +98,7 @@ namespace ComWrappersTests.Common
     {
         private readonly ITestVtbl._SetValue _setValue;
         private readonly IntPtr _ptr;
+        private bool _released;
 
         public ITestObjectWrapper(IntPtr ptr)
         {
@@ -104,11 +106,20 @@ namespace ComWrappersTests.Common
             VtblPtr inst = Marshal.PtrToStructure<VtblPtr>(ptr);
             ITestVtbl _vtbl = Marshal.PtrToStructure<ITestVtbl>(inst.Vtbl);
             _setValue = Marshal.GetDelegateForFunctionPointer<ITestVtbl._SetValue>(_vtbl.SetValue);
+            _released = false;
+        }
+
+        public int FinalRelease()
+        {
+            Debug.Assert(!_released);
+            int count = Marshal.Release(_ptr);
+            _released = true;
+            return count;
         }
 
         ~ITestObjectWrapper()
         {
-            if (_ptr != IntPtr.Zero)
+            if (_ptr != IntPtr.Zero && !_released)
             {
                 Marshal.Release(_ptr);
             }
@@ -314,7 +325,7 @@ namespace ComWrappersTests.Common
             const int S_OK = 0;
             const int E_NOINTERFACE = unchecked((int)0x80004002);
 
-            int hr = Marshal.QueryInterface(this.classNative.Inner, in iid, out ppv);
+            int hr = Marshal.QueryInterface(this.classNative.Inner, iid, out ppv);
             if (hr == S_OK)
             {
                 return CustomQueryInterfaceResult.Handled;
@@ -391,7 +402,7 @@ namespace ComWrappersTests.Common
                 // it should answer immediately without going through the outer. Either way
                 // the reference count will go to the new instance.
                 IntPtr queryForTracker = isAggregation ? classNative.Inner : classNative.Instance;
-                int hr = Marshal.QueryInterface(queryForTracker, in IID_IReferenceTracker, out classNative.ReferenceTracker);
+                int hr = Marshal.QueryInterface(queryForTracker, IID_IReferenceTracker, out classNative.ReferenceTracker);
                 if (hr != 0)
                 {
                     classNative.ReferenceTracker = default;

@@ -88,7 +88,7 @@ namespace System.Security.Permissions.Tests
             try
             {
                 new SecurityElement(tagName);
-                Assert.False(true);
+                Assert.Fail();
             }
             catch (ArgumentException ex)
             {
@@ -106,7 +106,7 @@ namespace System.Security.Permissions.Tests
             try
             {
                 new SecurityElement(null);
-                Assert.False(true);
+                Assert.Fail();
             }
             catch (ArgumentNullException ex)
             {
@@ -136,7 +136,7 @@ namespace System.Security.Permissions.Tests
             try
             {
                 new SecurityElement(invalid, "text");
-                Assert.False(true);
+                Assert.Fail();
             }
             catch (ArgumentException ex)
             {
@@ -154,7 +154,7 @@ namespace System.Security.Permissions.Tests
             try
             {
                 new SecurityElement(null, "text");
-                Assert.False(true);
+                Assert.Fail();
             }
             catch (ArgumentNullException ex)
             {
@@ -183,7 +183,7 @@ namespace System.Security.Permissions.Tests
             try
             {
                 elem.AddAttribute(null, "valid");
-                Assert.False(true);
+                Assert.Fail();
             }
             catch (ArgumentNullException ex)
             {
@@ -202,7 +202,7 @@ namespace System.Security.Permissions.Tests
             try
             {
                 elem.AddAttribute("valid", null);
-                Assert.False(true);
+                Assert.Fail();
             }
             catch (ArgumentNullException ex)
             {
@@ -266,7 +266,7 @@ namespace System.Security.Permissions.Tests
             try
             {
                 elem.AddChild(null);
-                Assert.False(true);
+                Assert.Fail();
             }
             catch (ArgumentNullException ex)
             {
@@ -306,7 +306,7 @@ namespace System.Security.Permissions.Tests
             try
             {
                 elem.Attributes = h;
-                Assert.False(true);
+                Assert.Fail();
             }
             catch (ArgumentException ex)
             {
@@ -411,7 +411,7 @@ namespace System.Security.Permissions.Tests
             try
             {
                 elem.SearchForChildByTag(null);
-                Assert.False(true);
+                Assert.Fail();
             }
             catch (ArgumentNullException ex)
             {
@@ -445,7 +445,7 @@ namespace System.Security.Permissions.Tests
             try
             {
                 elem.SearchForTextOfTag(null);
-                Assert.False(true);
+                Assert.Fail();
             }
             catch (ArgumentNullException ex)
             {
@@ -499,7 +499,7 @@ namespace System.Security.Permissions.Tests
             try
             {
                 se.Tag = invalid;
-                Assert.False(true);
+                Assert.Fail();
             }
             catch (ArgumentException ex)
             {
@@ -518,7 +518,7 @@ namespace System.Security.Permissions.Tests
             try
             {
                 elem.Tag = null;
-                Assert.False(true);
+                Assert.Fail();
             }
             catch (ArgumentNullException ex)
             {
@@ -553,7 +553,7 @@ namespace System.Security.Permissions.Tests
             try
             {
                 elem.Text = invalid;
-                Assert.False(true);
+                Assert.Fail();
             }
             catch (ArgumentException ex)
             {
@@ -582,7 +582,7 @@ namespace System.Security.Permissions.Tests
             try
             {
                 SecurityElement.FromString(null);
-                Assert.False(true);
+                Assert.Fail();
             }
             catch (ArgumentNullException ex)
             {

@@ -31,13 +31,13 @@ namespace System
         }
 
         public ArgumentNullException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.ArgumentNull_Generic, innerException)
         {
             HResult = HResults.E_POINTER;
         }
 
         public ArgumentNullException(string? paramName, string? message)
-            : base(message, paramName)
+            : base(message ?? SR.ArgumentNull_Generic, paramName)
         {
             HResult = HResults.E_POINTER;
         }
@@ -56,6 +56,14 @@ namespace System
             if (argument is null)
             {
                 Throw(paramName);
+            }
+        }
+
+        internal static void ThrowIfNull([NotNull] object? argument, ExceptionArgument paramName)
+        {
+            if (argument is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(paramName);
             }
         }
 

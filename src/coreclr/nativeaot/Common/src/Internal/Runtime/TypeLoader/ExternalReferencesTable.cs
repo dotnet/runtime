@@ -2,10 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+
 using Internal.Runtime.Augments;
 
 namespace Internal.Runtime.TypeLoader
 {
+#if TYPE_LOADER_IMPLEMENTATION
+    public
+#else
+    internal
+#endif
     partial struct ExternalReferencesTable
     {
         private IntPtr _elements;

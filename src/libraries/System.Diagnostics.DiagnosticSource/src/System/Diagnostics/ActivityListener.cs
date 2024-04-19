@@ -51,5 +51,5 @@ namespace System.Diagnostics
         /// Dispose will unregister this <see cref="ActivityListener"/> object from listening to <see cref="Activity"/> events.
         /// </summary>
         public void Dispose() => ActivitySource.DetachListener(this);
-   }
+    }
 }

@@ -86,7 +86,7 @@ There is another random number generator in `upstream/emscripten/src/determinist
 which needs the same treatment.
 
 Running `make patch-deterministic` in `src/mono/wasm` will patch the
-emscripten installation in `src/mono/wasm/emsdk` with these changes.
+emscripten installation in `src/mono/browser/emsdk` with these changes.
 
 # Debugging signature mismatch errors
 
@@ -180,8 +180,8 @@ $func166 @ dotnet.wasm:0xba0a
 $func2810 @ dotnet.wasm:0xabacf
 $func1615 @ dotnet.wasm:0x6f8eb
 $func1619 @ dotnet.wasm:0x6ff58
-$mono_wasm_invoke_method @ dotnet.wasm:0x96c9
-Module._mono_wasm_invoke_method @ dotnet.6.0.1.hopd7ipo8x.js:1
+$mono_wasm_invoke_jsexport @ dotnet.wasm:0x96c9
+Module.mono_wasm_invoke_jsexport @ dotnet.6.0.1.hopd7ipo8x.js:1
 managed__Microsoft_AspNetCore_Components_WebAssembly__Microsoft_AspNetCore_Components_WebAssembly_Services_DefaultWebAssemblyJSRuntime_BeginInvokeDotNet @ managed__Microsoft_AspNetCore_Components_WebAssembly__Microsoft_AspNetCore_Components_WebAssembly_Services_DefaultWebAssemblyJSRuntime_BeginInvokeDotNet:19
 beginInvokeDotNetFromJS @ blazor.webassembly.js:1
 b @ blazor.webassembly.js:1
@@ -244,8 +244,8 @@ $mono_jit_runtime_invoke @ dotnet.wasm:0x1dec32
 $do_runtime_invoke @ dotnet.wasm:0x95fca
 $mono_runtime_try_invoke @ dotnet.wasm:0x966fe
 $mono_runtime_invoke @ dotnet.wasm:0x98982
-$mono_wasm_invoke_method @ dotnet.wasm:0x227de2
-Module._mono_wasm_invoke_method @ dotnet..y6ggkhlo8e.js:9927
+$mono_wasm_invoke_jsexport @ dotnet.wasm:0x227de2
+Module.mono_wasm_invoke_jsexport @ dotnet..y6ggkhlo8e.js:9927
 managed__Microsoft_AspNetCore_Components_WebAssembly__Microsoft_AspNetCore_Components_WebAssembly_Services_DefaultWebAssemblyJSRuntime_BeginInvokeDotNet @ managed__Microsoft_AspNetCore_Components_WebAssembly__Microsoft_AspNetCore_Components_WebAssembly_Services_DefaultWebAssemblyJSRuntime_BeginInvokeDotNet:19
 beginInvokeDotNetFromJS @ blazor.webassembly.js:1
 b @ blazor.webassembly.js:1
@@ -256,4 +256,88 @@ S @ blazor.webassembly.js:1
 C @ blazor.webassembly.js:1
 dispatchGlobalEventToAllElements @ blazor.webassembly.js:1
 onGlobalEvent @ blazor.webassembly.js:1
+```
+
+# Enabling additional logging in Blazor
+
+In .NET 8+, Blazor startup can be controlled by setting the `autostart="false"` attribute on the
+`<script>` tag that loads the blazor webassembly framework.  After that, a call to the
+`globalThis.Blazor.start()` JavaScript function can be passed additional configuration options,
+including setting mono environment variables, or additional command line arguments.
+
+The name of the script and the location of the `<script>` tag depends on whether the project was a
+Blazor WebAssembly project (template `blazorwasm`) or a Blazor project (template `blazor`).
+
+See the runtime `DotnetHostBuilder` interface in
+[dotnet.d.ts](../../../../src/mono/wasm/runtime/dotnet.d.ts) for additional configuration functions.
+
+## Blazor WebAssembly
+
+In a `blazorwasm` project, the script is `_framework/blazor.webassembly.js` and it is loaded in `wwwroot/index.html`:
+
+```html
+<body>
+    <div id="app">
+      ...
+  </div>
+
+  <div id="blazor-error-ui">
+    ...
+  </div>
+    <script src="_framework/blazor.webassembly.js"></script>
+</body>
+```
+
+Replace it with this:
+
+```html
+<body>
+    <div id="app">
+        ...
+    </div>
+
+    <div id="blazor-error-ui">
+        ...
+    </div>
+    <script src="_framework/blazor.webassembly.js" autostart="false"></script>
+
+    <script>
+        Blazor.start({
+            configureRuntime: dotnet => {
+                dotnet.withEnvironmentVariable("MONO_LOG_LEVEL", "debug");
+                dotnet.withEnvironmentVariable("MONO_LOG_MASK", "all");
+            }
+        });
+    </script></body>
+```
+
+## Blazor
+
+In a `blazor` project, the script is `_framework/blazor.web.js` and it is loaded by `Components/App.razor` in the server-side project:
+
+```html
+<body>
+    <Routes />
+    <script src="_framework/blazor.web.js"></script>
+</body>
+```
+
+Replace it with this (note that for a `blazor` project, `Blazor.start` needs an extra dictionary with a `webAssembly` key):
+
+```html
+<body>
+    <Routes />
+    <script src="_framework/blazor.web.js" autostart="false"></script>
+    <script>
+        Blazor.start({
+            webAssembly: {
+                configureRuntime: dotnet => {
+                    console.log("in configureRuntime");
+                    dotnet.withEnvironmentVariable("MONO_LOG_LEVEL", "debug");
+                    dotnet.withEnvironmentVariable("MONO_LOG_MASK", "all");
+                }
+            }
+        });
+    </script>
+</body>
 ```

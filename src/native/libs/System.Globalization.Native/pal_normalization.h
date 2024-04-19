@@ -17,7 +17,6 @@ typedef enum
     FormKC = 0x5,
     FormKD = 0x6
 } NormalizationForm;
-
 PALEXPORT int32_t GlobalizationNative_IsNormalized(NormalizationForm normalizationForm,
                                                    const UChar* lpStr,
                                                    int32_t cwStrLength);
@@ -27,8 +26,7 @@ PALEXPORT int32_t GlobalizationNative_NormalizeString(NormalizationForm normaliz
                                                       int32_t cwSrcLength,
                                                       UChar* lpDst,
                                                       int32_t cwDstLength);
-
-#ifdef __APPLE__
+#if defined(APPLE_HYBRID_GLOBALIZATION)
 PALEXPORT int32_t GlobalizationNative_IsNormalizedNative(NormalizationForm normalizationForm,
                                                          const uint16_t* lpStr,
                                                          int32_t cwStrLength);

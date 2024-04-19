@@ -44,12 +44,6 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			if (assignment?.Target == flowCaptureReference)
 				return true;
 
-			if (flowCaptureReference.Parent is IArrayElementReferenceOperation arrayAlementRef) {
-				assignment = arrayAlementRef.Parent as IAssignmentOperation;
-				if (assignment?.Target == arrayAlementRef)
-					return true;
-			}
-
 			assignment = null;
 			return flowCaptureReference.IsInLeftOfDeconstructionAssignment (out _);
 		}

@@ -85,7 +85,7 @@ namespace System.IO.Pipes
         // processes. For now, people do it via command line arguments.
         public string GetClientHandleAsString()
         {
-            _clientHandleExposedAsString =_clientHandleExposed = true;
+            _clientHandleExposedAsString = _clientHandleExposed = true;
             GC.SuppressFinalize(_clientHandle);
             return _clientHandle.DangerousGetHandle().ToString();
         }

@@ -67,12 +67,12 @@ namespace System.Diagnostics.Metrics
             ts_tags = tags;
         }
 
-         /// <summary>
+        /// <summary>
         /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listening to this instrument.
         /// </summary>
         /// <param name="measurement">The measurement value.</param>
         /// <param name="tagList">A <see cref="T:System.Diagnostics.TagList" /> of tags associated with the measurement.</param>
-       protected void RecordMeasurement(T measurement, in TagList tagList)
+        protected void RecordMeasurement(T measurement, in TagList tagList)
         {
             KeyValuePair<string, object?>[]? tags = tagList.Tags;
             if (tags is not null)

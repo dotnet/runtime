@@ -4,8 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.Text.RegularExpressions.Symbolic
@@ -64,7 +62,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// the property that all NFA states are small integers in one interval.
         /// The valid entries are 0 to the size of <see cref="_nfaIdByCoreId"/> - 1.
         /// </summary>
-        private int[] _nfaCoreIdArray = Array.Empty<int>();
+        private int[] _nfaCoreIdArray = [];
 
         /// <summary>
         /// Maps the id of a MatchingState to the NFA state id that it is being identifed with in the NFA.
@@ -79,7 +77,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Each list of target states is without repetitions.
         /// If the entry is null then the targets states have not been computed yet.
         /// </summary>
-        private int[]?[] _nfaDelta = Array.Empty<int[]>();
+        private int[]?[] _nfaDelta = [];
 
         /// <summary>
         /// The transition function for <see cref="FindSubcaptures(ReadOnlySpan{char}, int, int, PerThreadData)"/>,
@@ -87,7 +85,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Each entry is an array of pairs of target state and effects to be applied when taking the transition.
         /// If the entry is null then the transition has not been computed yet.
         /// </summary>
-        private (int, DerivativeEffect[])[]?[] _capturingNfaDelta = Array.Empty<(int, DerivativeEffect[])[]?>();
+        private (int, DerivativeEffect[])[]?[] _capturingNfaDelta = [];
 
         /// <summary>
         /// Implements a version of <see cref="Array.Resize"/> that is guaranteed to not publish an array before values

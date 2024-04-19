@@ -2,20 +2,6 @@
 <!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
-    <DiagnosticId>CP0008</DiagnosticId>
-    <Target>T:System.Diagnostics.CounterSample</Target>
-    <Left>lib/net6.0/System.Diagnostics.PerformanceCounter.dll</Left>
-    <Right>lib/netstandard2.0/System.Diagnostics.PerformanceCounter.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0008</DiagnosticId>
-    <Target>T:System.Diagnostics.CounterSample</Target>
-    <Left>lib/net7.0/System.Diagnostics.PerformanceCounter.dll</Left>
-    <Right>lib/netstandard2.0/System.Diagnostics.PerformanceCounter.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
     <Target>F:System.Diagnostics.PerformanceCounter.DefaultFileMappingSize:[T:System.ObsoleteAttribute]</Target>
     <Left>lib/netstandard2.0/System.Diagnostics.PerformanceCounter.dll</Left>
@@ -50,19 +36,5 @@
     <Target>M:System.Diagnostics.PerformanceCounterManager.#ctor:[T:System.ObsoleteAttribute]</Target>
     <Left>lib/netstandard2.0/System.Diagnostics.PerformanceCounter.dll</Left>
     <Right>lib/net462/System.Diagnostics.PerformanceCounter.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.ComponentModel.Primitives, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>lib/net6.0/System.Diagnostics.PerformanceCounter.dll</Left>
-    <Right>lib/netstandard2.0/System.Diagnostics.PerformanceCounter.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.ComponentModel.Primitives, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>lib/net7.0/System.Diagnostics.PerformanceCounter.dll</Left>
-    <Right>lib/netstandard2.0/System.Diagnostics.PerformanceCounter.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
 </Suppressions>

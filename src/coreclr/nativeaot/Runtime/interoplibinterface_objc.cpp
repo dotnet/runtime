@@ -10,7 +10,6 @@
 #include "rhassert.h"
 #include "slist.h"
 #include "holder.h"
-#include "gcrhinterface.h"
 #include "shash.h"
 #include "rhbinder.h"
 #include "Crst.h"
@@ -25,6 +24,7 @@
 #include "thread.h"
 #include "threadstore.h"
 #include "threadstore.inl"
+#include "thread.inl"
 
 #include "interoplibinterface.h"
 
@@ -71,7 +71,7 @@ namespace
 
     bool TryGetTaggedMemory(_In_ Object * obj, _Out_ void ** tagged)
     {
-        void* fn = obj->get_EEType()
+        void* fn = obj->GetMethodTable()
                        ->GetTypeManagerPtr()
                        ->AsTypeManager()
                        ->GetClasslibFunction(ClasslibFunctionId::ObjectiveCMarshalTryGetTaggedMemory);
@@ -91,7 +91,7 @@ namespace
     // Not for use with ObjectiveCMarshalTryGetTaggedMemory.
     void * GetCallbackViaClasslibCallback(_In_ Object * object, _In_ ClasslibFunctionId id)
     {
-        void* fn = object->get_EEType()
+        void* fn = object->GetMethodTable()
                         ->GetTypeManagerPtr()
                         ->AsTypeManager()
                         ->GetClasslibFunction(id);

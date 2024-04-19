@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Collections.Generic;
 using System.Text;
 
 namespace System.Reflection
@@ -25,7 +25,7 @@ namespace System.Reflection
             this.marshalAs = marshalAs;
         }
 
-        internal static void FormatParameters(StringBuilder sb, ParameterInfo[] p, CallingConventions callingConvention)
+        internal static void FormatParameters(StringBuilder sb, ReadOnlySpan<ParameterInfo> p, CallingConventions callingConvention)
         {
             for (int i = 0; i < p.Length; ++i)
             {

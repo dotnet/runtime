@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
@@ -106,6 +106,7 @@
     <Compile Include="Generic\PriorityQueue\PriorityQueue.Generic.Tests.cs" />
     <Compile Include="Generic\PriorityQueue\PriorityQueue.PropertyTests.cs" />
     <Compile Include="Generic\PriorityQueue\PriorityQueue.Tests.cs" />
+    <Compile Include="Generic\PriorityQueue\PriorityQueue.Tests.Dijkstra.cs" />
     <Compile Include="Generic\Queue\Queue.Generic.cs" />
     <Compile Include="Generic\Queue\Queue.Generic.Tests.cs" />
     <Compile Include="Generic\Queue\Queue.Tests.cs" />

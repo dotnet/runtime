@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
@@ -24,11 +24,6 @@ namespace System.Threading
             if (mutexHandle.IsInvalid)
             {
                 mutexHandle.SetHandleAsInvalid();
-#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
-                if (errorCode == Interop.Errors.ERROR_FILENAME_EXCED_RANGE)
-                    // On Unix, length validation is done by CoreCLR's PAL after converting to utf-8
-                    throw new ArgumentException(SR.Argument_WaitHandleNameTooLong, nameof(name));
-#endif
                 if (errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
                     throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
 
@@ -56,13 +51,6 @@ namespace System.Threading
 
                 myHandle.Dispose();
 
-#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
-                if (errorCode == Interop.Errors.ERROR_FILENAME_EXCED_RANGE)
-                {
-                    // On Unix, length validation is done by CoreCLR's PAL after converting to utf-8
-                    throw new ArgumentException(SR.Argument_WaitHandleNameTooLong, nameof(name));
-                }
-#endif
                 if (Interop.Errors.ERROR_FILE_NOT_FOUND == errorCode || Interop.Errors.ERROR_INVALID_NAME == errorCode)
                     return OpenExistingResult.NameNotFound;
                 if (Interop.Errors.ERROR_PATH_NOT_FOUND == errorCode)

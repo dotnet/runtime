@@ -75,7 +75,7 @@ namespace System.Reflection.Tests
             else if (type.IsGenericParameter)
                 type.TestGenericParameterInvariants();
             else
-                Assert.True(false, "Type does not identify as any of the known flavors: " + type);
+                Assert.Fail("Type does not identify as any of the known flavors: " + type);
         }
 
         internal static void TestTypeDefinitionInvariants(this Type type)
@@ -135,7 +135,7 @@ namespace System.Reflection.Tests
             else if (type.IsVariableBoundArray())
                 type.TestMdArrayInvariants();
             else
-                Assert.True(false, "Array type does not identify as either Sz or VariableBound: " + type);
+                Assert.Fail("Array type does not identify as either Sz or VariableBound: " + type);
 
             BindingFlags bf = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
             MemberInfo[] mems;

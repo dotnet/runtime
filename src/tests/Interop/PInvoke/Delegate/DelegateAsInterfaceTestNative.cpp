@@ -21,7 +21,7 @@ namespace
 
         if (FAILED(hr))
         {
-            printf("\nERROR: Invoke failed: 0x%x\n", (unsigned int)hr);
+            printf("\nERROR: Invoke failed: 0x%x\n", (uint32_t)hr);
             return hr;
         }
 

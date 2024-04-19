@@ -7,9 +7,9 @@
 
 class TrackMyLifetimeTesting : public UnknownImpl, public ITrackMyLifetimeTesting
 {
-    static std::atomic<ULONG> _instanceCount;
+    static std::atomic<uint32_t> _instanceCount;
 
-    static ULONG GetAllocatedTypes()
+    static uint32_t GetAllocatedTypes()
     {
         return _instanceCount;
     }
@@ -45,4 +45,4 @@ public: // IUnknown
     DEFINE_REF_COUNTING();
 };
 
-std::atomic<ULONG> TrackMyLifetimeTesting::_instanceCount = 0;
+std::atomic<uint32_t> TrackMyLifetimeTesting::_instanceCount = 0;

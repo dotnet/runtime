@@ -2497,14 +2497,9 @@ ClrDataModule::GetFlags(
         }
 
         PTR_Assembly pAssembly = m_module->GetAssembly();
-        PTR_BaseDomain pBaseDomain = pAssembly->GetDomain();
-        if (pBaseDomain->IsAppDomain())
+        if (pAssembly == AppDomain::GetCurrentDomain()->GetRootAssembly())
         {
-            PTR_AppDomain pAppDomain = pBaseDomain->AsAppDomain();
-            if (pAssembly == pAppDomain->GetRootAssembly())
-            {
-                (*flags) |= CLRDATA_MODULE_IS_MAIN_MODULE;
-            }
+            (*flags) |= CLRDATA_MODULE_IS_MAIN_MODULE;
         }
         status = S_OK;
     }
@@ -5127,7 +5122,7 @@ EnumMethodDefinitions::CdStart(Module* mod,
 {
     HRESULT status;
 
-    *handle = NULL;
+    *handle = 0;
 
     if (!mod)
     {

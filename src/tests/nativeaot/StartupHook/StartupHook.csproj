@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>0</CLRTestPriority>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <StartupHookSupport>true</StartupHookSupport>
+    <NoWarn>$(NoWarn);IL2026</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="StartupHook.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <CLRTestEnvironmentVariable Include="DOTNET_STARTUP_HOOKS" Value="StartupHook" />
+  </ItemGroup>
+</Project>

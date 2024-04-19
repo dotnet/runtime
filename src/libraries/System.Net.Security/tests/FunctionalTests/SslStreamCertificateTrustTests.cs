@@ -22,7 +22,7 @@ namespace System.Net.Security.Tests
         [SkipOnPlatform(TestPlatforms.Windows, "CertificateCollection-based SslCertificateTrust is not Supported on Windows")]
         public async Task SslStream_SendCertificateTrust_CertificateCollection()
         {
-            (X509Certificate2 certificate, X509Certificate2Collection caCerts) = TestHelper.GenerateCertificates(nameof(SslStream_SendCertificateTrust_CertificateCollection));
+            (X509Certificate2 certificate, X509Certificate2Collection caCerts) = Configuration.Certificates.GenerateCertificates(nameof(SslStream_SendCertificateTrust_CertificateCollection));
 
             SslCertificateTrust trust = SslCertificateTrust.CreateForX509Collection(caCerts, sendTrustInHandshake: true);
             string[] acceptableIssuers = await ConnectAndGatherAcceptableIssuers(trust);
@@ -94,7 +94,7 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void SslStream_SendCertificateTrust_CertificateCollection_ThrowsOnWindows()
         {
-            (X509Certificate2 certificate, X509Certificate2Collection caCerts) = TestHelper.GenerateCertificates(nameof(SslStream_SendCertificateTrust_CertificateCollection));
+            (X509Certificate2 certificate, X509Certificate2Collection caCerts) = Configuration.Certificates.GenerateCertificates(nameof(SslStream_SendCertificateTrust_CertificateCollection));
 
             Assert.Throws<PlatformNotSupportedException>(() => SslCertificateTrust.CreateForX509Collection(caCerts, sendTrustInHandshake: true));
         }
@@ -103,7 +103,7 @@ namespace System.Net.Security.Tests
         [SkipOnPlatform(TestPlatforms.Windows, "Windows tested separately")]
         public void SslStream_SendCertificateTrust_ThrowsOnUnsupportedPlatform()
         {
-            (X509Certificate2 certificate, X509Certificate2Collection caCerts) = TestHelper.GenerateCertificates(nameof(SslStream_SendCertificateTrust_CertificateCollection));
+            (X509Certificate2 certificate, X509Certificate2Collection caCerts) = Configuration.Certificates.GenerateCertificates(nameof(SslStream_SendCertificateTrust_CertificateCollection));
 
             using X509Store store = new X509Store("Root", StoreLocation.LocalMachine);
 

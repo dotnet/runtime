@@ -154,7 +154,8 @@ size_t            GCDump::DumpInfoHdr (PTR_CBYTE      gcInfoBlock,
                                 gcPrintf("    GuardStack cookie  = [%s%u]\n",
                                           header->ebpFrame ? "EBP-" : "ESP+", header->gsCookieOffset);
     if (header->syncStartOffset != INVALID_SYNC_OFFSET)
-                                gcPrintf("    Sync region = [%u,%u]\n",
+                                gcPrintf("    Sync region = [%u,%u] ([0x%x,0x%x])\n",
+                                          header->syncStartOffset, header->syncEndOffset,
                                           header->syncStartOffset, header->syncEndOffset);
 
     if  (header->epilogCount > 1 || (header->epilogCount != 0 &&
@@ -455,10 +456,10 @@ size_t              GCDump::DumpGCTable(PTR_CBYTE      table,
                     /* non-ptr arg push */
 
                     curOffs += (val & 0x07);
-#ifndef UNIX_X86_ABI
-                    // For x86/Linux, non-ptr arg pushes can be reported even for EBP frames
+#ifndef FEATURE_EH_FUNCLETS
+                    // For funclets, non-ptr arg pushes can be reported even for EBP frames
                     _ASSERTE(!header.ebpFrame);
-#endif // UNIX_X86_ABI
+#endif // FEATURE_EH_FUNCLETS
                     argCnt++;
 
                     DumpEncoding(bp, table-bp); bp = table;

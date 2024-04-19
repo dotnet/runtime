@@ -20,8 +20,8 @@ cd src/tests
 ./build.sh mono <release|debug>
 ```
 
-To build an individual test, test directory, or a whole subdirectory tree, use the `-test:`, `-dir:` or `-tree:` options (without the src/tests prefix)
-For example: `./build.sh mono release -test:JIT/opt/InstructionCombining/DivToMul.csproj`
+To build an individual test, test directory, or a whole subdirectory tree, use the `-test:`, `-dir:` or `-tree:` options (without the src/tests prefix).
+For example: `./build.sh mono release -test:JIT/opt/InstructionCombining/DivToMul.csproj`. To generate executable `.sh` files for tests that are not set to be run individualy it is necessary to `export BuildAsStandalone=true` before building the tests.
 
 
 Run individual test:

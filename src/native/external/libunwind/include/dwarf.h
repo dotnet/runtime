@@ -32,11 +32,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 struct dwarf_cursor;    /* forward-declaration */
 struct elf_dyn_info;
 
-#include "dwarf-config.h"
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
+
+#include "dwarf-config.h"
 
 #ifndef UNW_REMOTE_ONLY
   #if defined(HAVE_LINK_H)

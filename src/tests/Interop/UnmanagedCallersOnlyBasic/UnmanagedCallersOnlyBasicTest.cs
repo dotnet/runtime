@@ -45,6 +45,7 @@ public unsafe class UnmanagedCallersOnlyBasicTest
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static void TestUnmanagedCallersOnlyValid()
     {
         Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid)}...");

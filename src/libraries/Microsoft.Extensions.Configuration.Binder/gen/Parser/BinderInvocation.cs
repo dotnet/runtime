@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+﻿﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -9,8 +9,17 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    internal sealed record BinderInvocation(IInvocationOperation Operation, Location Location)
+    internal sealed class BinderInvocation
     {
+        private BinderInvocation(IInvocationOperation operation, Location location)
+        {
+            Operation = operation;
+            Location = location;
+        }
+
+        public IInvocationOperation Operation { get; }
+        public Location Location { get; }
+
         public static BinderInvocation? Create(GeneratorSyntaxContext context, CancellationToken cancellationToken)
         {
             Debug.Assert(IsCandidateSyntaxNode(context.Node));
@@ -35,8 +44,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             } && IsCandidateBindingMethodName(memberName);
 
             static bool IsCandidateBindingMethodName(string name) =>
-                IsCandidateMethodName_ConfigurationBinder(name) ||
-                IsCandidateMethodName_OptionsBuilderConfigurationExtensions(name) ||
+                IsValidMethodName_ConfigurationBinder(name) ||
+                IsValidMethodName_OptionsBuilderConfigurationExtensions(name) ||
                 IsValidMethodName_OptionsConfigurationServiceCollectionExtensions(name);
         }
 
@@ -62,10 +71,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 "ConfigurationBinder" =>
                     containingNamespaceName is "Microsoft.Extensions.Configuration" &&
-                    IsCandidateMethodName_ConfigurationBinder(methodName),
+                    IsValidMethodName_ConfigurationBinder(methodName),
                 "OptionsBuilderConfigurationExtensions" =>
                     containingNamespaceName is "Microsoft.Extensions.DependencyInjection" &&
-                    IsCandidateMethodName_OptionsBuilderConfigurationExtensions(methodName),
+                    IsValidMethodName_OptionsBuilderConfigurationExtensions(methodName),
                 "OptionsConfigurationServiceCollectionExtensions" =>
                     containingNamespaceName is "Microsoft.Extensions.DependencyInjection" &&
                     IsValidMethodName_OptionsConfigurationServiceCollectionExtensions(methodName),
@@ -73,16 +82,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             };
         }
 
-        private static bool IsCandidateMethodName_ConfigurationBinder(string name) => name is
-            nameof(MethodsToGen_ConfigurationBinder.Bind) or
-            nameof(MethodsToGen_ConfigurationBinder.Get) or
-            nameof(MethodsToGen_ConfigurationBinder.GetValue);
+        private static bool IsValidMethodName_ConfigurationBinder(string name) => name is "Bind" or "Get" or "GetValue";
 
-        private static bool IsCandidateMethodName_OptionsBuilderConfigurationExtensions(string name) => name is
-            nameof(MethodsToGen_Extensions_OptionsBuilder.Bind) or
-            nameof(MethodsToGen_Extensions_OptionsBuilder.BindConfiguration);
+        private static bool IsValidMethodName_OptionsBuilderConfigurationExtensions(string name) => name is "Bind" or "BindConfiguration";
 
-        private static bool IsValidMethodName_OptionsConfigurationServiceCollectionExtensions(string name) => name is
-            nameof(MethodsToGen_Extensions_ServiceCollection.Configure);
+        private static bool IsValidMethodName_OptionsConfigurationServiceCollectionExtensions(string name) => name is "Configure";
     }
 }

@@ -112,7 +112,7 @@ namespace System.Net.WebSockets.Client.Tests
                 WebSocketException ex = await Assert.ThrowsAsync<WebSocketException>(() =>
                     ConnectAsync(cws, server, cts.Token));
 
-                if (PlatformDetection.IsNetCore && !PlatformDetection.IsInAppContainer) // bug fix in netcoreapp: https://github.com/dotnet/corefx/pull/35960
+                if (!PlatformDetection.IsInAppContainer) // bug fix in netcoreapp: https://github.com/dotnet/corefx/pull/35960
                 {
                     Assert.Equal(errorCode, ex.WebSocketErrorCode);
                 }
@@ -268,11 +268,8 @@ namespace System.Net.WebSockets.Client.Tests
                 WebSocketException ex = await Assert.ThrowsAsync<WebSocketException>(() =>
                     ConnectAsync(cws, ub.Uri, cts.Token));
                 _output.WriteLine(ex.Message);
-                if (PlatformDetection.IsNetCore) // bug fix in netcoreapp: https://github.com/dotnet/corefx/pull/35960
-                {
-                    Assert.True(ex.WebSocketErrorCode == WebSocketError.Faulted ||
-                        ex.WebSocketErrorCode == WebSocketError.NotAWebSocket, $"Actual WebSocketErrorCode {ex.WebSocketErrorCode} {ex.InnerException?.Message} \n {ex}");
-                }
+                Assert.True(ex.WebSocketErrorCode == WebSocketError.Faulted ||
+                    ex.WebSocketErrorCode == WebSocketError.NotAWebSocket, $"Actual WebSocketErrorCode {ex.WebSocketErrorCode} {ex.InnerException?.Message} \n {ex}");
                 Assert.Equal(WebSocketState.Closed, cws.State);
             }
         }

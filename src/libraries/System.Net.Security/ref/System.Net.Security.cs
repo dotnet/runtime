@@ -57,6 +57,8 @@ namespace System.Net.Security
         public System.Net.Security.NegotiateAuthenticationStatusCode Unwrap(System.ReadOnlySpan<byte> input, System.Buffers.IBufferWriter<byte> outputWriter, out bool wasEncrypted) { throw null; }
         public System.Net.Security.NegotiateAuthenticationStatusCode UnwrapInPlace(System.Span<byte> input, out int unwrappedOffset, out int unwrappedLength, out bool wasEncrypted) { throw null; }
         public System.Net.Security.NegotiateAuthenticationStatusCode Wrap(System.ReadOnlySpan<byte> input, System.Buffers.IBufferWriter<byte> outputWriter, bool requestEncryption, out bool isEncrypted) { throw null; }
+        public void ComputeIntegrityCheck(System.ReadOnlySpan<byte> message, System.Buffers.IBufferWriter<byte> signatureWriter) { }
+        public bool VerifyIntegrityCheck(System.ReadOnlySpan<byte> message, System.ReadOnlySpan<byte> signature) { throw null; }
     }
     public partial class NegotiateAuthenticationClientOptions
     {

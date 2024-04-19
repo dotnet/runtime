@@ -24,12 +24,12 @@ namespace System.Security.Cryptography
         }
 
         public CryptographicException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_CryptographyException)
         {
         }
 
         public CryptographicException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_CryptographyException, inner)
         {
         }
 

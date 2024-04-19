@@ -42,24 +42,9 @@ namespace Microsoft.Interop
                     if (typeInfo.ManagedIndex != TypePositionInfo.UnsetIndex
                         && typeInfo.ManagedIndex != TypePositionInfo.ReturnIndex)
                     {
-                        SyntaxTokenList tokens = TokenList();
-
-                        // "out" parameters are implicitly scoped, so we can't put the "scoped" keyword on them.
-                        // All other cases of explicit parameters are only scoped when the "scoped" keyword is present.
-                        // When the "scoped" keyword is present, it must be present on all declarations.
-                        if (typeInfo.ScopedKind != ScopedKind.None && typeInfo.RefKind != RefKind.Out)
-                        {
-                            tokens = tokens.Add(Token(SyntaxKind.ScopedKeyword));
-                        }
-
-                        if (typeInfo.IsByRef)
-                        {
-                            tokens = tokens.Add(Token(typeInfo.RefKindSyntax));
-                        }
-
                         yield return Parameter(Identifier(typeInfo.InstanceIdentifier))
                             .WithType(typeInfo.ManagedType.Syntax)
-                            .WithModifiers(tokens);
+                            .WithModifiers(MarshallerHelpers.GetManagedParameterModifiers(typeInfo));
                     }
                 }
             }
@@ -71,32 +56,30 @@ namespace Microsoft.Interop
             IMethodSymbol method,
             MarshallingInfoParser marshallingInfoParser,
             StubEnvironment env,
+            CodeEmitOptions options,
             Assembly generatorInfoAssembly)
         {
             ImmutableArray<TypePositionInfo> typeInfos = GenerateTypeInformation(method, marshallingInfoParser, env);
 
             ImmutableArray<AttributeListSyntax>.Builder additionalAttrs = ImmutableArray.CreateBuilder<AttributeListSyntax>();
 
-            if (env.TargetFramework != TargetFramework.Unknown)
-            {
-                string generatorName = generatorInfoAssembly.GetName().Name;
-                string generatorVersion = generatorInfoAssembly.GetName().Version.ToString();
-                // Define additional attributes for the stub definition.
-                additionalAttrs.Add(
-                    AttributeList(
-                        SingletonSeparatedList(
-                            Attribute(
-                                NameSyntaxes.System_CodeDom_Compiler_GeneratedCodeAttribute,
-                                AttributeArgumentList(
-                                    SeparatedList(
-                                        new[]
-                                        {
+            string generatorName = generatorInfoAssembly.GetName().Name;
+            string generatorVersion = generatorInfoAssembly.GetName().Version.ToString();
+            // Define additional attributes for the stub definition.
+            additionalAttrs.Add(
+                AttributeList(
+                    SingletonSeparatedList(
+                        Attribute(
+                            NameSyntaxes.System_CodeDom_Compiler_GeneratedCodeAttribute,
+                            AttributeArgumentList(
+                                SeparatedList(
+                                    new[]
+                                    {
                                             AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(generatorName))),
                                             AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(generatorVersion)))
-                                        }))))));
-            }
+                                    }))))));
 
-            if (env.TargetFrameworkVersion >= new Version(5, 0) && !MethodIsSkipLocalsInit(env, method))
+            if (options.SkipInit && !MethodIsSkipLocalsInit(env, method))
             {
                 additionalAttrs.Add(
                     AttributeList(
@@ -165,7 +148,7 @@ namespace Microsoft.Interop
 
         private static bool MethodIsSkipLocalsInit(StubEnvironment env, IMethodSymbol method)
         {
-            if (env.ModuleSkipLocalsInit)
+            if (env.EnvironmentFlags.HasFlag(EnvironmentFlags.SkipLocalsInit))
             {
                 return true;
             }

@@ -230,7 +230,7 @@ namespace System.Net.Http
 #pragma warning restore CA5351
             }
 
-            return HexConverter.ToString(hashBuffer.Slice(0, written), HexConverter.Casing.Lower);
+            return Convert.ToHexStringLower(hashBuffer.Slice(0, written));
         }
 
         internal sealed class DigestResponse

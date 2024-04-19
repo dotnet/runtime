@@ -258,7 +258,7 @@ namespace Microsoft.Extensions.Primitives
         [Fact]
         public void NullTokenDisposeShouldNotThrow()
         {
-            ChangeToken.OnChange(() => null, () => Assert.True(false)).Dispose();
+            ChangeToken.OnChange(() => null, () => Assert.Fail()).Dispose();
         }
 
         public class TrackableChangeTokenProvider

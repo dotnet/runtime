@@ -3,15 +3,12 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-osx</TargetFrameworks>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs"
              Link="Common\System\Collections\DictionaryExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"
              Link="Common\System\Security\Cryptography\ByteUtils.cs" />
-    <Compile Include="$(CommonPath)Interop\Linux\cgroups\Interop.cgroups.cs"
-             Link="Common\Interop\Linux\cgroups\Interop.cgroups.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcFsStat.cs"
              Link="Common\Interop\Linux\procfs\Interop.ProcFsStat.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcFsStat.TryReadStatusFile.cs"
@@ -22,14 +19,8 @@
              Link="Common\SourceGenerators\SourceWriter.cs" />
     <Compile Include="$(CommonPath)System\CharArrayHelpers.cs"
              Link="Common\System\CharArrayHelpers.cs" />
-    <Compile Include="$(CommonPath)System\StringExtensions.cs"
-             Link="Common\System\StringExtensions.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs"
              Link="Common\System\Collections\Generic\ArrayBuilder.cs" />
-    <Compile Include="$(CommonPath)System\Collections\Generic\LargeArrayBuilder.cs"
-             Link="Common\System\Collections\Generic\LargeArrayBuilder.cs" />
-    <Compile Include="$(CommonPath)System\Collections\Generic\LargeArrayBuilder.SpeedOpt.cs"
-             Link="Common\System\Collections\Generic\LargeArrayBuilder.SpeedOpt.cs" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs"
              Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
     <Compile Include="$(CommonPath)System\IO\RowConfigReader.cs"
@@ -80,7 +71,6 @@
              Link="Common\System\Security\IdentityHelper.cs" />
     <Compile Include="$(CoreLibSharedDir)System\PasteArguments.cs"
              Link="System\PasteArguments.cs" />
-    <Compile Include="Tests\Interop\cgroupsTests.cs" />
     <Compile Include="Tests\Interop\procfsTests.cs" />
     <Compile Include="Tests\Interop\OSReleaseTests.cs" />
     <Compile Include="Tests\SourceGenerators\SourceWriterTests.cs" />
@@ -91,9 +81,7 @@
     <Compile Include="Tests\System\Security\IdentityHelperTests.cs" />
     <Compile Include="Tests\System\Text\SimpleRegexTests.cs" />
     <Compile Include="Tests\System\Text\ValueStringBuilderTests.cs" />
-    <Compile Include="Tests\System\StringExtensions.Tests.cs" />
     <Compile Include="Tests\System\Collections\Generic\ArrayBuilderTests.cs" />
-    <Compile Include="Tests\System\Collections\Generic\LargeArrayBuilderTests.cs" />
     <Compile Include="Tests\System\IO\RowConfigReaderTests.cs" />
     <Compile Include="Tests\System\Net\HttpKnownHeaderNamesTests.cs" />
     <Compile Include="Tests\System\Net\MultiArrayBufferTests.cs" />
@@ -132,20 +120,30 @@
              Link="System\PasteArguments.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs" />
     <Compile Include="Tests\System\IO\PathInternal.Unix.Tests.cs" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.Unix.cs"
              Link="System\IO\PathInternal.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PathConf.cs"
              Link="Common\Interop\Unix\Interop.PathConf.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.FormatInfo.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.MountPoints.FormatInfo.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CoreLibSharedDir)System\PasteArguments.Unix.cs"
              Link="System\PasteArguments.Unix.cs" />
   </ItemGroup>
-  <!-- Linux specific files -->
+  <!-- Linux and browser specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs"
              Link="Common\Interop\Linux\Interop.Libraries.cs" />
+  </ItemGroup>
+  <!-- Linux specific files -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux'">
+    <Compile Include="Tests\Interop\cgroupsTests.cs" />
+    <Compile Include="$(CommonPath)Interop\Linux\cgroups\Interop.cgroups.cs"
+             Link="Common\Interop\Linux\cgroups\Interop.cgroups.cs" />
   </ItemGroup>
   <!-- OSX specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx'">

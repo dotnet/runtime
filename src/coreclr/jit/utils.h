@@ -16,7 +16,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define _UTILS_H_
 
 #include "safemath.h"
-#include "clr_std/type_traits"
+#include <type_traits>
 #include "iallocator.h"
 #include "hostallocator.h"
 #include "cycletimer.h"
@@ -88,7 +88,9 @@ class IteratorPair
     TIterator m_end;
 
 public:
-    IteratorPair(TIterator begin, TIterator end) : m_begin(begin), m_end(end)
+    IteratorPair(TIterator begin, TIterator end)
+        : m_begin(begin)
+        , m_end(end)
     {
     }
 
@@ -116,7 +118,8 @@ struct ConstLog2
 {
     enum
     {
-        value = ConstLog2<val / 2, acc + 1>::value
+        value = ConstLog2 < val / 2,
+        acc + 1 > ::value
     };
 };
 
@@ -160,7 +163,7 @@ int signum(T val)
     }
 }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
 // ConfigMethodRange describes a set of methods, specified via their
 // hash codes. This can be used for binary search and/or specifying an
@@ -241,7 +244,79 @@ private:
     Range*   m_ranges;    // ranges of functions to include
 };
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+// ConfigInArray is an integer-valued array
+//
+class ConfigIntArray
+{
+public:
+    ConfigIntArray()
+        : m_values(nullptr)
+        , m_length(0)
+    {
+    }
+
+    // Ensure the string has been parsed.
+    void EnsureInit(const WCHAR* str)
+    {
+        if (m_values == nullptr)
+        {
+            Init(str);
+        }
+    }
+
+    void Dump();
+    int* GetData() const
+    {
+        return m_values;
+    }
+    unsigned GetLength() const
+    {
+        return m_length;
+    }
+
+private:
+    void     Init(const WCHAR* str);
+    int*     m_values;
+    unsigned m_length;
+};
+
+// ConfigDoubleArray is an double-valued array
+//
+class ConfigDoubleArray
+{
+public:
+    ConfigDoubleArray()
+        : m_values(nullptr)
+        , m_length(0)
+    {
+    }
+
+    // Ensure the string has been parsed.
+    void EnsureInit(const WCHAR* str)
+    {
+        if (m_values == nullptr)
+        {
+            Init(str);
+        }
+    }
+
+    void    Dump();
+    double* GetData() const
+    {
+        return m_values;
+    }
+    unsigned GetLength() const
+    {
+        return m_length;
+    }
+
+private:
+    void     Init(const WCHAR* str);
+    double*  m_values;
+    unsigned m_length;
+};
+
+#endif // defined(DEBUG)
 
 class Compiler;
 
@@ -321,7 +396,7 @@ int SimpleSprintf_s(_In_reads_(cbBufSize - (pWriteStart - pBufStart)) char* pWri
                     ...);
 
 #ifdef DEBUG
-void hexDump(FILE* dmpf, const char* name, BYTE* addr, size_t size);
+void hexDump(FILE* dmpf, BYTE* addr, size_t size);
 #endif // DEBUG
 
 /******************************************************************************
@@ -336,7 +411,8 @@ template <typename T>
 class ScopedSetVariable
 {
 public:
-    ScopedSetVariable(T* pVariable, T value) : m_pVariable(pVariable)
+    ScopedSetVariable(T* pVariable, T value)
+        : m_pVariable(pVariable)
     {
         m_oldValue   = *m_pVariable;
         *m_pVariable = value;
@@ -374,7 +450,8 @@ class PhasedVar
 public:
     PhasedVar()
 #ifdef DEBUG
-        : m_initialized(false), m_writePhase(true)
+        : m_initialized(false)
+        , m_writePhase(true)
 #endif // DEBUG
     {
     }
@@ -636,7 +713,9 @@ class MethodSet
         MethodInfo* m_next;
 
         MethodInfo(char* methodName, int methodHash)
-            : m_MethodName(methodName), m_MethodHash(methodHash), m_next(nullptr)
+            : m_MethodName(methodName)
+            , m_MethodHash(methodHash)
+            , m_next(nullptr)
         {
         }
     };
@@ -718,8 +797,8 @@ unsigned CountDigits(double num, unsigned base = 10);
 #endif // DEBUG
 
 /*****************************************************************************
-* Floating point utility class
-*/
+ * Floating point utility class
+ */
 class FloatingPointUtils
 {
 public:
@@ -752,6 +831,10 @@ public:
     static bool isAllBitsSet(float val);
 
     static bool isAllBitsSet(double val);
+
+    static bool isFinite(float val);
+
+    static bool isFinite(double val);
 
     static bool isNegative(float val);
 
@@ -798,6 +881,10 @@ public:
     static float minimumNumber(float val1, float val2);
 
     static double normalize(double x);
+
+    static int ilogb(double x);
+
+    static int ilogb(float f);
 };
 
 class BitOperations
@@ -943,7 +1030,7 @@ private:
     CRITSEC_COOKIE m_pCs;
 
     // No copying or assignment allowed.
-    CritSecObject(const CritSecObject&) = delete;
+    CritSecObject(const CritSecObject&)            = delete;
     CritSecObject& operator=(const CritSecObject&) = delete;
 };
 
@@ -953,7 +1040,8 @@ private:
 class CritSecHolder
 {
 public:
-    CritSecHolder(CritSecObject& critSec) : m_CritSec(critSec)
+    CritSecHolder(CritSecObject& critSec)
+        : m_CritSec(critSec)
     {
         ClrEnterCriticalSection(m_CritSec.Val());
     }
@@ -967,7 +1055,7 @@ private:
     CritSecObject& m_CritSec;
 
     // No copying or assignment allowed.
-    CritSecHolder(const CritSecHolder&) = delete;
+    CritSecHolder(const CritSecHolder&)            = delete;
     CritSecHolder& operator=(const CritSecHolder&) = delete;
 };
 
@@ -983,7 +1071,7 @@ int32_t GetSigned32Magic(int32_t d, int* shift /*out*/);
 #ifdef TARGET_64BIT
 int64_t GetSigned64Magic(int64_t d, int* shift /*out*/);
 #endif
-}
+} // namespace MagicDivide
 
 //
 // Profiling helpers
@@ -1084,6 +1172,6 @@ bool CastFromIntOverflows(int32_t fromValue, var_types toType, bool fromUnsigned
 bool CastFromLongOverflows(int64_t fromValue, var_types toType, bool fromUnsigned);
 bool CastFromFloatOverflows(float fromValue, var_types toType);
 bool CastFromDoubleOverflows(double fromValue, var_types toType);
-}
+} // namespace CheckedOps
 
 #endif // _UTILS_H_

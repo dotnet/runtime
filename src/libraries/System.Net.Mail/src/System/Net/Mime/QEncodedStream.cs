@@ -17,8 +17,8 @@ namespace System.Net.Mime
     internal sealed class QEncodedStream : DelegatedStream, IEncodableStream
     {
 
-        private static ReadOnlySpan<byte> HexDecodeMap => new byte[] // rely on C# compiler optimization to eliminate allocation
-        {
+        private static ReadOnlySpan<byte> HexDecodeMap =>
+        [
             // 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
              255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // 0
              255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // 1
@@ -36,7 +36,7 @@ namespace System.Net.Mime
              255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // D
              255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // E
              255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // F
-        };
+        ];
 
         private ReadStateInfo? _readState;
         private readonly WriteStateInfoBase _writeState;
@@ -179,7 +179,7 @@ namespace System.Net.Mime
             }
         }
 
-        public int EncodeBytes(byte[] buffer, int offset, int count) =>_encoder.EncodeBytes(buffer, offset, count, true, true);
+        public int EncodeBytes(byte[] buffer, int offset, int count) => _encoder.EncodeBytes(buffer, offset, count, true, true);
 
         public int EncodeString(string value, Encoding encoding) => _encoder.EncodeString(value, encoding);
 

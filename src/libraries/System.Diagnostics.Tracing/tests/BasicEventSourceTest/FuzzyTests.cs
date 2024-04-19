@@ -21,7 +21,8 @@ namespace BasicEventSourceTests
         /// Tests the EventSource.Write[T] method (can only use the self-describing mechanism).
         ///
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/runtime/issues/26197
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88305")]
         public void Test_Write_Fuzzy()
         {
             using (var logger = new EventSource("EventSourceName"))

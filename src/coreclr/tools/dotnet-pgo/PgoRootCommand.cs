@@ -260,9 +260,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             }
         }
 
-        public static IEnumerable<Action<HelpContext>> GetExtendedHelp(HelpContext context)
+        public static IEnumerable<Func<HelpContext, bool>> GetExtendedHelp(HelpContext context)
         {
-            foreach (Action<HelpContext> sectionDelegate in HelpBuilder.Default.GetLayout())
+            foreach (Func<HelpContext, bool> sectionDelegate in HelpBuilder.Default.GetLayout())
                 yield return sectionDelegate;
 
             if (context.Command.Name == "create-mibc" || context.Command.Name == "create-jittrace")
@@ -280,6 +280,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 ""perfview collect -LogFile:logOfCollection.txt -DataFile:jittrace.etl -Zip:false -merge:false -providers:Microsoft-Windows-DotNETRuntime:0x1E000080018:4""
 - Capture Jit and R2R events via perfview of all processes running using ETW tracing
 ");
+                    return true;
                 };
             }
         }

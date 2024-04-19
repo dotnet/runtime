@@ -12,22 +12,22 @@ The various .NET standards have been made meaningful by the collaboration of mul
 ECMA 334 - C#
 =============
 
-The C# language was standardized as [ECMA 334](http://www.ecma-international.org/publications/standards/Ecma-334.htm) in 2002 and approved as [ISO/IEC 23270](http://www.iso.org/iso/home/store/catalogue_ics/catalogue_detail_ics.htm?csnumber=42926) in 2003.
+The C# language was standardized as [ECMA 334](https://www.ecma-international.org/publications-and-standards/standards/ecma-334) in 2002 and approved as [ISO/IEC 23270](http://www.iso.org/iso/home/store/catalogue_ics/catalogue_detail_ics.htm?csnumber=42926) in 2003.
 
 **ECMA 334 Resources**
 
-- [ECMA 334 Standard Overview](http://www.ecma-international.org/publications/standards/Ecma-334.htm)
-- [ECMA 334 Standard (PDF)](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-334.pdf)
+- [ECMA 334 Standard Overview](https://www.ecma-international.org/publications-and-standards/standards/ecma-334)
+- [ECMA 334 Standard (PDF)](https://www.ecma-international.org/wp-content/uploads/ECMA-334_6th_edition_june_2022.pdf)
 
 ECMA 335 - CLI
 ==============
 
-[Common Language Infrastructure](http://en.wikipedia.org/wiki/Common_Language_Infrastructure) - the formalized basis of .NET -- was standardized as [ECMA 335](http://www.ecma-international.org/publications/standards/Ecma-335.htm) in 2001 and approved as [ISO/IEC 23271](http://www.iso.org/iso/home/store/catalogue_ics/catalogue_detail_ics.htm?csnumber=58046) in 2003. The  standards have been since updated, to reflect changes in .NET, such as generics.
+[Common Language Infrastructure](http://en.wikipedia.org/wiki/Common_Language_Infrastructure) - the formalized basis of .NET -- was standardized as [ECMA 335](https://www.ecma-international.org/publications-and-standards/standards/ecma-335) in 2001 and approved as [ISO/IEC 23271](http://www.iso.org/iso/home/store/catalogue_ics/catalogue_detail_ics.htm?csnumber=58046) in 2003. The  standards have been since updated, to reflect changes in .NET, such as generics.
 
 **ECMA 335 Resources**
 
-- [ECMA 335 Standard Overview](http://www.ecma-international.org/publications/standards/Ecma-335.htm)
-- [ECMA 335 Standard (PDF)](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-335.pdf)
+- [ECMA 335 Standard Overview](https://www.ecma-international.org/publications-and-standards/standards/ecma-335)
+- [ECMA 335 Standard (PDF)](https://www.ecma-international.org/wp-content/uploads/ECMA-335_6th_edition_june_2012.pdf)
 - [Wikipedia entry on CLI](http://en.wikipedia.org/wiki/Common_Language_Infrastructure)
 - [ECMA 335 Addendum](../design/specs/Ecma-335-Augments.md)
 
@@ -42,8 +42,8 @@ ECMA 335 - CLI
 
 **ECMA Technical Report 084: Information Derived from Partition IV XML File**
 
-- [ECMA TR/84 Report (PDF)](http://www.ecma-international.org/publications/files/ECMA-TR/ECMA%20TR-084.pdf)
-- [ECMA TR/84 Tools and Source Code](http://www.ecma-international.org/publications/files/ECMA-TR/TR-084.zip)
+- [ECMA TR/84 Report (PDF)](https://www.ecma-international.org/wp-content/uploads/ECMA_TR-84_6th_edition_june_2012.pdf)
+- [ECMA TR/84 Tools and Source Code](https://www.ecma-international.org/wp-content/uploads/ecma-tr-84-6th_edition_files.zip)
 
 ECMA 372 - C++/CLI
 ==================
@@ -54,8 +54,8 @@ ECMA 372 is supported by the .NET Framework, but not .NET Core.
 
 **ECMA 372 Resources**
 
-- [ECMA 372 Standard Overview](http://www.ecma-international.org/publications/standards/Ecma-372.htm)
-- [ECMA 372 Standard (PDF)](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-372.pdf)
+- [ECMA 372 Standard Overview](https://www.ecma-international.org/publications-and-standards/standards/ecma-372)
+- [ECMA 372 Standard (PDF)](https://www.ecma-international.org/wp-content/uploads/ECMA-372_1st_edition_december_2005.pdf)
 
 Shared Source CLI (SSCLI)
 =========================

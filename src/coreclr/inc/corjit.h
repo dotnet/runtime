@@ -357,6 +357,18 @@ public:
         void* HandleTable[HandleHistogram32::SIZE];
     };
 
+    struct ValueHistogram32
+    {
+        uint32_t Count;
+        intptr_t ValueTable[HandleHistogram32::SIZE];
+    };
+
+    struct ValueHistogram64
+    {
+        uint64_t Count;
+        intptr_t ValueTable[HandleHistogram32::SIZE];
+    };
+
     enum class PgoInstrumentationKind
     {
         // This must be kept in sync with PgoInstrumentationKind in PgoFormat.cs
@@ -394,6 +406,11 @@ public:
         EdgeLongCount = (DescriptorMin * 6) | EightByte, // edge counter using unsigned 8 byte int
         GetLikelyClass = (DescriptorMin * 7) | TypeHandle, // Compressed get likely class data
         GetLikelyMethod = (DescriptorMin * 7) | MethodHandle, // Compressed get likely method data
+
+        // Same as type/method histograms, but for generic integer values
+        ValueHistogramIntCount = (DescriptorMin * 8) | FourByte | AlignPointer,
+        ValueHistogramLongCount = (DescriptorMin * 8) | EightByte,
+        ValueHistogram = (DescriptorMin * 9) | EightByte,
     };
 
     struct PgoInstrumentationSchema

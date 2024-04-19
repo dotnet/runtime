@@ -34,21 +34,21 @@ namespace LibraryImportGenerator.UnitTests
                     [LibraryImportAttribute("DoesNotExist")]
                     public static partial S Method1();
                 }
-                
+
                 [NativeMarshalling(typeof(Marshaller))]
                 struct S
                 {
                 }
-                
+
                 struct Native
                 {
                 }
-                
+
                 [CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
                 static class Marshaller
                 {
                     public static Native ConvertToUnmanaged(S s) => default;
-                
+
                     public static S ConvertToManaged(Native n) => default;
                 }
                 """;
@@ -242,21 +242,21 @@ namespace LibraryImportGenerator.UnitTests
                     [LibraryImportAttribute("DoesNotExist")]
                     public static partial S Method1();
                 }
-                
+
                 [NativeMarshalling(typeof(Marshaller))]
                 struct S
                 {
                 }
-                
+
                 struct Native
                 {
                 }
-                
+
                 [CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
                 static class Marshaller
                 {
                     public static Native ConvertToUnmanaged(S s) => default;
-                
+
                     public static S ConvertToManaged(Native n) => default;
                 }
                 """;
@@ -436,7 +436,9 @@ namespace LibraryImportGenerator.UnitTests
                     .DescendantNodes().OfType<LocalFunctionStatementSyntax>()
                     .ToList();
                 LocalFunctionStatementSyntax innerDllImport = Assert.Single(localFunctions);
+#pragma warning disable RS1039 // This call to 'SemanticModel.GetDeclaredSymbol()' will always return 'null' https://github.com/dotnet/roslyn-analyzers/issues/7061
                 IMethodSymbol targetMethod = (IMethodSymbol)model.GetDeclaredSymbol(innerDllImport)!;
+#pragma warning restore RS1039 // This call to 'SemanticModel.GetDeclaredSymbol()' will always return 'null'
                 return targetMethod;
             }
 

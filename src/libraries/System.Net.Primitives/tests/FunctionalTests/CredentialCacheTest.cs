@@ -448,20 +448,10 @@ namespace System.Net.Primitives.Functional.Tests
             // .NET Framework and .NET Core have different behaviors for Digest when default NetworkCredential is used.
             if (string.Equals(authType, authenticationTypeDigest, StringComparison.OrdinalIgnoreCase) && (nc == CredentialCache.DefaultNetworkCredentials))
             {
-                if (PlatformDetection.IsNetFramework)
-                {
-                    // In .NET Framework, when authType == Digest, if WDigestAvailable == true, it will pass the validation.
-                    // if WDigestAvailable == false, it will throw ArgumentException.
-                    // It is not possible to easily determine if Digest is supported or not on .NET Framework. So, we will skip the test.
-                    return;
-                }
-                else
-                {
-                    // In .NET Core, WDigestAvailable will always be false (we don't support it).
-                    // It will always throw ArgumentException.
-                    AssertExtensions.Throws<ArgumentException>("authType", () => cc.Add(uriPrefix1, authType, nc));
-                    return;
-                }
+                // In .NET Core, WDigestAvailable will always be false (we don't support it).
+                // It will always throw ArgumentException.
+                AssertExtensions.Throws<ArgumentException>("authType", () => cc.Add(uriPrefix1, authType, nc));
+                return;
             }
 
             cc.Add(uriPrefix1, authType, nc);
@@ -492,20 +482,10 @@ namespace System.Net.Primitives.Functional.Tests
             // .NET Framework and .NET Core have different behaviors for Digest when default NetworkCredential is used.
             if (string.Equals(authType, authenticationTypeDigest, StringComparison.OrdinalIgnoreCase) && (nc == CredentialCache.DefaultNetworkCredentials))
             {
-                if (PlatformDetection.IsNetFramework)
-                {
-                    // In .NET Framework, when authType == Digest, if WDigestAvailable == true, it will pass the validation.
-                    // if WDigestAvailable == false, it will throw ArgumentException.
-                    // It is not possible to easily determine if Digest is supported or not on .NET Framework. So, we will skip the test.
-                    return;
-                }
-                else
-                {
-                    // In .NET Core, WDigestAvailable will always be false (we don't support it).
-                    // It will always throw ArgumentException.
-                    AssertExtensions.Throws<ArgumentException>("authenticationType", () => cc.Add(host1, port1, authType, nc));
-                    return;
-                }
+                // In .NET Core, WDigestAvailable will always be false (we don't support it).
+                // It will always throw ArgumentException.
+                AssertExtensions.Throws<ArgumentException>("authenticationType", () => cc.Add(host1, port1, authType, nc));
+                return;
             }
 
             cc.Add(host1, port1, authType, nc);

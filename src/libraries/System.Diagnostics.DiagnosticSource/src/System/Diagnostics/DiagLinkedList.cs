@@ -19,7 +19,7 @@ namespace System.Diagnostics
         private DiagNode<T>? _first;
         private DiagNode<T>? _last;
 
-        public DiagLinkedList() {}
+        public DiagLinkedList() { }
 
         public DiagLinkedList(T firstValue) => _last = _first = new DiagNode<T>(firstValue);
 

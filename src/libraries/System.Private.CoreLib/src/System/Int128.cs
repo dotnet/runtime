@@ -262,17 +262,12 @@ namespace System
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="Int128" />.</exception>
         public static explicit operator checked short(Int128 value)
         {
-            if (~value._upper == 0)
-            {
-                long lower = (long)value._lower;
-                return checked((short)lower);
-            }
-
-            if (value._upper != 0)
+            long lower = (long)value._lower;
+            if ((long)value._upper != lower >> 63)
             {
                 ThrowHelper.ThrowOverflowException();
             }
-            return checked((short)value._lower);
+            return checked((short)lower);
         }
 
         /// <summary>Explicitly converts a 128-bit signed integer to a <see cref="int" /> value.</summary>
@@ -286,17 +281,12 @@ namespace System
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="Int128" />.</exception>
         public static explicit operator checked int(Int128 value)
         {
-            if (~value._upper == 0)
-            {
-                long lower = (long)value._lower;
-                return checked((int)lower);
-            }
-
-            if (value._upper != 0)
+            long lower = (long)value._lower;
+            if ((long)value._upper != lower >> 63)
             {
                 ThrowHelper.ThrowOverflowException();
             }
-            return checked((int)value._lower);
+            return checked((int)lower);
         }
 
         /// <summary>Explicitly converts a 128-bit signed integer to a <see cref="long" /> value.</summary>
@@ -310,17 +300,12 @@ namespace System
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="Int128" />.</exception>
         public static explicit operator checked long(Int128 value)
         {
-            if (~value._upper == 0)
-            {
-                long lower = (long)value._lower;
-                return lower;
-            }
-
-            if (value._upper != 0)
+            long lower = (long)value._lower;
+            if ((long)value._upper != lower >> 63)
             {
                 ThrowHelper.ThrowOverflowException();
             }
-            return checked((long)value._lower);
+            return lower;
         }
 
         /// <summary>Explicitly converts a 128-bit signed integer to a <see cref="IntPtr" /> value.</summary>
@@ -334,17 +319,12 @@ namespace System
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="Int128" />.</exception>
         public static explicit operator checked nint(Int128 value)
         {
-            if (~value._upper == 0)
-            {
-                long lower = (long)value._lower;
-                return checked((nint)lower);
-            }
-
-            if (value._upper != 0)
+            long lower = (long)value._lower;
+            if ((long)value._upper != lower >> 63)
             {
                 ThrowHelper.ThrowOverflowException();
             }
-            return checked((nint)value._lower);
+            return checked((nint)lower);
         }
 
         /// <summary>Explicitly converts a 128-bit signed integer to a <see cref="sbyte" /> value.</summary>
@@ -360,17 +340,12 @@ namespace System
         [CLSCompliant(false)]
         public static explicit operator checked sbyte(Int128 value)
         {
-            if (~value._upper == 0)
-            {
-                long lower = (long)value._lower;
-                return checked((sbyte)lower);
-            }
-
-            if (value._upper != 0)
+            long lower = (long)value._lower;
+            if ((long)value._upper != lower >> 63)
             {
                 ThrowHelper.ThrowOverflowException();
             }
-            return checked((sbyte)value._lower);
+            return checked((sbyte)lower);
         }
 
         /// <summary>Explicitly converts a 128-bit signed integer to a <see cref="float" /> value.</summary>
@@ -742,12 +717,17 @@ namespace System
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
         public static Int128 LeadingZeroCount(Int128 value)
+            => LeadingZeroCountAsInt32(value);
+
+        /// <summary>Computes the number of leading zero bits in this value.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int LeadingZeroCountAsInt32(Int128 value)
         {
             if (value._upper == 0)
             {
-                return 64 + ulong.LeadingZeroCount(value._lower);
+                return 64 + BitOperations.LeadingZeroCount(value._lower);
             }
-            return ulong.LeadingZeroCount(value._upper);
+            return BitOperations.LeadingZeroCount(value._upper);
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
@@ -946,11 +926,11 @@ namespace System
 
             if (IsPositive(value))
             {
-                return (Size * 8) - BitOperations.LeadingZeroCount(value);
+                return (Size * 8) - LeadingZeroCountAsInt32(value);
             }
             else
             {
-                return (Size * 8) + 1 - BitOperations.LeadingZeroCount(~value);
+                return (Size * 8) + 1 - LeadingZeroCountAsInt32(~value);
             }
         }
 
@@ -1899,7 +1879,8 @@ namespace System
             }
             else if (typeof(TOther) == typeof(ulong))
             {
-                ulong actualResult = (value <= 0) ? ulong.MinValue : (ulong)value;
+                ulong actualResult = (value >= ulong.MaxValue) ? ulong.MaxValue :
+                                     (value <= ulong.MinValue) ? ulong.MinValue : (ulong)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }

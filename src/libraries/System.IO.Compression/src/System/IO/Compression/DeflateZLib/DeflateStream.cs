@@ -507,8 +507,13 @@ namespace System.IO.Compression
             EnsureCompressionMode();
             EnsureNotDisposed();
 
-            Debug.Assert(_deflater != null);
+            if (buffer.IsEmpty)
+            {
+                return;
+            }
+
             // Write compressed the bytes we already passed to the deflater:
+            Debug.Assert(_deflater != null);
             WriteDeflaterOutput();
 
             unsafe
@@ -793,8 +798,9 @@ namespace System.IO.Compression
             EnsureNoActiveAsyncOperation();
             EnsureNotDisposed();
 
-            return cancellationToken.IsCancellationRequested ?
-                ValueTask.FromCanceled(cancellationToken) :
+            return
+                cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled(cancellationToken) :
+                buffer.IsEmpty ? default :
                 Core(buffer, cancellationToken);
 
             async ValueTask Core(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
@@ -804,8 +810,8 @@ namespace System.IO.Compression
                 {
                     await WriteDeflaterOutputAsync(cancellationToken).ConfigureAwait(false);
 
-                    Debug.Assert(_deflater != null);
                     // Pass new bytes through deflater
+                    Debug.Assert(_deflater != null);
                     _deflater.SetInput(buffer);
 
                     await WriteDeflaterOutputAsync(cancellationToken).ConfigureAwait(false);

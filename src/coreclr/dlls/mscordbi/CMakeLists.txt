@@ -45,11 +45,11 @@ else(CLR_CMAKE_HOST_WIN32)
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/mscordbi.exports)
     generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
 
-    if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+    if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
         # This option is necessary to ensure that the overloaded new/delete operators defined inside
         # of the utilcode will be used instead of the standard library delete operator.
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
-    endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+    endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
 
     set_exports_linker_option(${EXPORTS_FILE})
 endif(CLR_CMAKE_HOST_WIN32)
@@ -100,6 +100,12 @@ elseif(CLR_CMAKE_HOST_UNIX)
         # share the PAL in the dac module
         mscordaccore
     )
+
+    if(CLR_CMAKE_HOST_HAIKU)
+        list(APPEND COREDBI_LIBRARIES
+            network
+        )
+    endif(CLR_CMAKE_HOST_HAIKU)
 
     # Before llvm 16, lld was setting `--undefined-version` by default. The default was
     # flipped to `--no-undefined-version` in lld 16, so we will explicitly set it to

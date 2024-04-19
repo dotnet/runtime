@@ -3,12 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Xml;
-using System.Xml.XPath;
 using System.Xml.Schema;
+using System.Xml.XPath;
 using System.Xml.Xsl;
-using System.ComponentModel;
 
 namespace System.Xml.Xsl.Runtime
 {

@@ -3,13 +3,15 @@
 using System;
 using System.Threading;
 using System.IO;
+using Xunit;
 
 class UserException : Exception {
 	
 }
 
 public class RecursiveException {
-	public static int Main() {
+	[Fact]
+	public static int TestEntryPoint() {
 		String s = "Done";
 		int retVal = 100;
 		Thread mv_Thread;

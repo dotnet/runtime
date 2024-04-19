@@ -2,23 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.TypeInfos;
-using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.MethodInfos.NativeFormat;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.TypeInfos.NativeFormat;
 
 using Internal.LowLevelLinq;
-using Internal.Reflection.Core;
-using Internal.Reflection.Augments;
-using Internal.Reflection.Core.Execution;
 using Internal.Metadata.NativeFormat;
+using Internal.Reflection.Augments;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
 
 namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
 {
@@ -40,7 +40,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
                 Type lazyAttributeType = _lazyAttributeType;
                 if (lazyAttributeType == null)
                 {
-                    lazyAttributeType = _lazyAttributeType = _customAttribute.GetAttributeTypeHandle(_reader).Resolve(_reader, new TypeContext(null, null));
+                    lazyAttributeType = _lazyAttributeType = _customAttribute.GetAttributeTypeHandle(_reader).Resolve(_reader, new TypeContext(null, null)).ToType();
                 }
                 return lazyAttributeType;
             }
@@ -69,7 +69,8 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
 
                     // There is no chance a custom attribute type will be an open type specification so we can safely pass in the empty context here.
                     TypeContext typeContext = new TypeContext(Array.Empty<RuntimeTypeInfo>(), Array.Empty<RuntimeTypeInfo>());
-                    RuntimeTypeInfo attributeType = memberReference.Parent.Resolve(reader, typeContext);
+                    RuntimeTypeInfo attributeRuntimeTypeInfo = memberReference.Parent.Resolve(reader, typeContext);
+                    Type attributeType = attributeRuntimeTypeInfo.ToType();
                     MethodSignature sig = memberReference.Signature.ParseMethodSignature(reader);
                     HandleCollection parameters = sig.Parameters;
                     int numParameters = parameters.Count;
@@ -81,7 +82,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
                     foreach (Handle _parameterHandle in parameters)
                     {
                         Handle parameterHandle = _parameterHandle;
-                        expectedParameterTypes[index++] = parameterHandle.Resolve(reader, attributeType.TypeContext);
+                        expectedParameterTypes[index++] = parameterHandle.Resolve(reader, attributeRuntimeTypeInfo.TypeContext).ToType();
                     }
                     return ResolveAttributeConstructor(attributeType, expectedParameterTypes);
                 }
@@ -120,7 +121,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
             {
                 Handle typeHandle = ctorTypeHandles[index];
                 Exception? exception = null;
-                RuntimeTypeInfo? argumentType = typeHandle.TryResolve(_reader, AttributeType.CastToRuntimeTypeInfo().TypeContext, ref exception);
+                RuntimeTypeInfo? argumentType = typeHandle.TryResolve(_reader, AttributeType.ToRuntimeTypeInfo().TypeContext, ref exception);
                 if (argumentType == null)
                 {
                     if (throwIfMissingMetadata)
@@ -139,7 +140,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
                 }
                 else
                 {
-                    customAttributeTypedArgument = WrapInCustomAttributeTypedArgument(value, argumentType);
+                    customAttributeTypedArgument = WrapInCustomAttributeTypedArgument(value, argumentType.ToType());
                 }
 
                 customAttributeTypedArguments.Add(customAttributeTypedArgument);
@@ -162,7 +163,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
                 bool isField = (namedArgument.Flags == NamedArgumentMemberKind.Field);
 
                 Exception? exception = null;
-                RuntimeTypeInfo? argumentType = namedArgument.Type.TryResolve(_reader, AttributeType.CastToRuntimeTypeInfo().TypeContext, ref exception);
+                RuntimeTypeInfo? argumentType = namedArgument.Type.TryResolve(_reader, AttributeType.ToRuntimeTypeInfo().TypeContext, ref exception);
                 if (argumentType == null)
                 {
                     if (throwIfMissingMetadata)
@@ -180,7 +181,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
                     else
                         return null;
                 }
-                CustomAttributeTypedArgument typedValue = WrapInCustomAttributeTypedArgument(value, argumentType);
+                CustomAttributeTypedArgument typedValue = WrapInCustomAttributeTypedArgument(value, argumentType.ToType());
 
                 customAttributeNamedArguments.Add(CreateCustomAttributeNamedArgument(this.AttributeType, memberName, isField, typedValue));
             }
@@ -199,7 +200,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
                 memberInfo = attributeType.GetProperty(memberName, BindingFlags.Public | BindingFlags.Instance);
 
             if (memberInfo == null)
-                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(attributeType);
+                throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(attributeType);
 
             return new CustomAttributeNamedArgument(memberInfo, typedValue);
         }

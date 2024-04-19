@@ -117,48 +117,65 @@ bool CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg)
 //
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 {
-    BasicBlock* bbFinallyRet = nullptr;
+    assert(block->KindIs(BBJ_CALLFINALLY));
 
-    // We don't have retless calls, since we use the BBJ_ALWAYS to point at a NOP pad where
-    // we would have otherwise created retless calls.
-    assert(block->isBBCallAlwaysPair());
+    GetEmitter()->emitIns_J(INS_bl, block->GetTarget());
 
-    assert(block->bbNext != NULL);
-    assert(block->bbNext->bbJumpKind == BBJ_ALWAYS);
-    assert(block->bbNext->bbJumpDest != NULL);
-    assert(block->bbNext->bbJumpDest->bbFlags & BBF_FINALLY_TARGET);
+    BasicBlock* nextBlock = block->Next();
 
-    bbFinallyRet = block->bbNext->bbJumpDest;
+    if (block->HasFlag(BBF_RETLESS_CALL))
+    {
+        if ((nextBlock == nullptr) || !BasicBlock::sameEHRegion(block, nextBlock))
+        {
+            instGen(INS_BREAKPOINT);
+        }
 
-    // Load the address where the finally funclet should return into LR.
-    // The funclet prolog/epilog will do "push {lr}" / "pop {pc}" to do the return.
-    genMov32RelocatableDisplacement(bbFinallyRet, REG_LR);
+        return block;
+    }
+    else
+    {
+        assert((nextBlock != nullptr) && nextBlock->isBBCallFinallyPairTail());
 
-    // Jump to the finally BB
-    inst_JMP(EJ_jmp, block->bbJumpDest);
+        // Because of the way the flowgraph is connected, the liveness info for this one instruction
+        // after the call is not (can not be) correct in cases where a variable has a last use in the
+        // handler.  So turn off GC reporting for this single instruction.
+        GetEmitter()->emitDisableGC();
 
-    // The BBJ_ALWAYS is used because the BBJ_CALLFINALLY can't point to the
-    // jump target using bbJumpDest - that is already used to point
-    // to the finally block. So just skip past the BBJ_ALWAYS unless the
-    // block is RETLESS.
-    assert(!(block->bbFlags & BBF_RETLESS_CALL));
-    assert(block->isBBCallAlwaysPair());
-    return block->bbNext;
+        BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
+
+        // Now go to where the finally funclet needs to return to.
+        if (nextBlock->NextIs(finallyContinuation) && !compiler->fgInDifferentRegions(nextBlock, finallyContinuation))
+        {
+            // Fall-through.
+            // TODO-ARM-CQ: Can we get rid of this instruction, and just have the call return directly
+            // to the next instruction? This would depend on stack walking from within the finally
+            // handler working without this instruction being in this special EH region.
+            instGen(INS_nop);
+        }
+        else
+        {
+            GetEmitter()->emitIns_J(INS_b, finallyContinuation);
+        }
+
+        GetEmitter()->emitEnableGC();
+
+        return nextBlock;
+    }
 }
 
 //------------------------------------------------------------------------
 // genEHCatchRet:
 void CodeGen::genEHCatchRet(BasicBlock* block)
 {
-    genMov32RelocatableDisplacement(block->bbJumpDest, REG_INTRET);
+    genMov32RelocatableDisplacement(block->GetTarget(), REG_INTRET);
 }
 
 //------------------------------------------------------------------------
 // instGen_Set_Reg_To_Imm: Move an immediate value into an integer register.
 //
-void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
-                                     regNumber reg,
-                                     ssize_t   imm,
+void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
+                                     regNumber      reg,
+                                     ssize_t        imm,
                                      insFlags flags DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     // reg cannot be a FP register
@@ -630,29 +647,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 //
 void CodeGen::genJumpTable(GenTree* treeNode)
 {
-    noway_assert(compiler->compCurBB->bbJumpKind == BBJ_SWITCH);
-    assert(treeNode->OperGet() == GT_JMPTABLE);
-
-    unsigned     jumpCount = compiler->compCurBB->bbJumpSwt->bbsCount;
-    BasicBlock** jumpTable = compiler->compCurBB->bbJumpSwt->bbsDstTab;
-    unsigned     jmpTabBase;
-
-    jmpTabBase = GetEmitter()->emitBBTableDataGenBeg(jumpCount, false);
-
-    JITDUMP("\n      J_M%03u_DS%02u LABEL   DWORD\n", compiler->compMethodID, jmpTabBase);
-
-    for (unsigned i = 0; i < jumpCount; i++)
-    {
-        BasicBlock* target = *jumpTable++;
-        noway_assert(target->bbFlags & BBF_HAS_LABEL);
-
-        JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
-
-        GetEmitter()->emitDataGenData(i, target);
-    }
-
-    GetEmitter()->emitDataGenEnd();
-
+    unsigned jmpTabBase = genEmitJumpTable(treeNode, false);
     genMov32RelocatableDataLabel(jmpTabBase, treeNode->GetRegNum());
 
     genProduceReg(treeNode);
@@ -1294,12 +1289,19 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 //
 void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
 {
-    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+    assert(compiler->compCurBB->KindIs(BBJ_COND));
 
     GenTree*  op  = jtrue->gtGetOp1();
     regNumber reg = genConsumeReg(op);
     inst_RV_RV(INS_tst, reg, reg, genActualType(op));
-    inst_JMP(EJ_ne, compiler->compCurBB->bbJumpDest);
+    inst_JMP(EJ_ne, compiler->compCurBB->GetTrueTarget());
+
+    // If we cannot fall into the false target, emit a jump to it
+    BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();
+    if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
+    {
+        inst_JMP(EJ_jmp, falseTarget);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -1649,7 +1651,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                                    callTargetReg, // ireg
                                    REG_NA, 0, 0,  // xreg, xmul, disp
                                    false          // isJump
-                                   );
+        );
     }
     else
     {
@@ -1658,7 +1660,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                                    gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur, DebugInfo(), REG_NA, REG_NA, 0,
                                    0,    /* ilOffset, ireg, xreg, xmul, disp */
                                    false /* isJump */
-                                   );
+        );
     }
 
     regSet.verifyRegistersUsed(RBM_CALLEE_TRASH);
@@ -1708,7 +1710,10 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
                       0,           // argSize. Again, we have to lie about it
                       EA_UNKNOWN); // retSize
 
-    if (initReg == argReg)
+    // If initReg is trashed, either because it was an arg to the enter
+    // callback, or because the enter callback itself trashes it, then it needs
+    // to be zero'ed again before using.
+    if (((RBM_PROFILER_ENTER_TRASH | RBM_PROFILER_ENTER_ARG) & genRegMask(initReg)) != RBM_NONE)
     {
         *pInitRegZeroed = false;
     }
@@ -2147,7 +2152,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 {
     assert(compiler->compGeneratingEpilog);
 
-    regMaskTP maskPopRegs      = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskTP maskPopRegs      = regSet.rsGetModifiedCalleeSavedRegsMask();
     regMaskTP maskPopRegsFloat = maskPopRegs & RBM_ALLFLOAT;
     regMaskTP maskPopRegsInt   = maskPopRegs & ~maskPopRegsFloat;
 
@@ -2300,7 +2305,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 #endif
 
     assert(block != NULL);
-    assert(block->bbFlags & BBF_FUNCLET_BEG);
+    assert(block->HasFlag(BBF_FUNCLET_BEG));
 
     ScopedSetVariable<bool> _setGeneratingProlog(&compiler->compGeneratingProlog, true);
 
@@ -2570,34 +2575,6 @@ void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
 
     GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, regTmp, regBase, callerSPOffs);
     GetEmitter()->emitIns_S_R(INS_str, EA_PTRSIZE, regTmp, compiler->lvaPSPSym, 0);
-}
-
-void CodeGen::genInsertNopForUnwinder(BasicBlock* block)
-{
-    // If this block is the target of a finally return, we need to add a preceding NOP, in the same EH region,
-    // so the unwinder doesn't get confused by our "movw lr, xxx; movt lr, xxx; b Lyyy" calling convention that
-    // calls the funclet during non-exceptional control flow.
-    if (block->bbFlags & BBF_FINALLY_TARGET)
-    {
-        assert(block->bbFlags & BBF_HAS_LABEL);
-
-#ifdef DEBUG
-        if (compiler->verbose)
-        {
-            printf("\nEmitting finally target NOP predecessor for " FMT_BB "\n", block->bbNum);
-        }
-#endif
-        // Create a label that we'll use for computing the start of an EH region, if this block is
-        // at the beginning of such a region. If we used the existing bbEmitCookie as is for
-        // determining the EH regions, then this NOP would end up outside of the region, if this
-        // block starts an EH region. If we pointed the existing bbEmitCookie here, then the NOP
-        // would be executed, which we would prefer not to do.
-
-        block->bbUnwindNopEmitCookie = GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                                                                  gcInfo.gcRegByrefSetCur, false DEBUG_ARG(block));
-
-        instGen(INS_nop);
-    }
 }
 
 //-----------------------------------------------------------------------------

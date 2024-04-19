@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 
+using Internal.Runtime;
+
 namespace System
 {
     // This class is marked EagerStaticClassConstruction because it's nice to have this
@@ -16,12 +18,12 @@ namespace System
         [Intrinsic]
         public static readonly string Empty = "";
 
-        internal static string FastAllocateString(int length)
+        internal static unsafe string FastAllocateString(int length)
         {
             // We allocate one extra char as an interop convenience so that our strings are null-
             // terminated, however, we don't pass the extra +1 to the string allocation because the base
             // size of this object includes the _firstChar field.
-            string newStr = RuntimeImports.RhNewString(EETypePtr.EETypePtrOf<string>(), length);
+            string newStr = RuntimeImports.RhNewString(MethodTable.Of<string>(), length);
             Debug.Assert(newStr._stringLength == length);
             return newStr;
         }

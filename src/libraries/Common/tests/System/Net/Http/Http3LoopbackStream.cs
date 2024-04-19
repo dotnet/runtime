@@ -196,7 +196,7 @@ namespace System.Net.Test.Common
             }
         }
 
-        public async Task<byte[]> ReadRequestBodyAsync()
+        public async Task<byte[]> ReadRequestBodyAsync(int minimumBytes = -1)
         {
             var buffer = new MemoryStream();
 
@@ -211,6 +211,10 @@ namespace System.Net.Test.Common
                         break;
                     case null:
                         return buffer.ToArray();
+                }
+                if (minimumBytes >= 0 && buffer.Length >= minimumBytes)
+                {
+                    return buffer.ToArray();
                 }
             }
         }

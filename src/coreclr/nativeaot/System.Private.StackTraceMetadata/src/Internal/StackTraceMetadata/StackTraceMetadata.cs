@@ -12,8 +12,8 @@ using Internal.Runtime.Augments;
 using Internal.Runtime.TypeLoader;
 using Internal.TypeSystem;
 
-using ReflectionExecution = Internal.Reflection.Execution.ReflectionExecution;
 using Debug = System.Diagnostics.Debug;
+using ReflectionExecution = Internal.Reflection.Execution.ReflectionExecution;
 
 namespace Internal.StackTraceMetadata
 {
@@ -27,7 +27,7 @@ namespace Internal.StackTraceMetadata
         /// <summary>
         /// Module address-keyed map of per-module method name resolvers.
         /// </summary>
-        static PerModuleMethodNameResolverHashtable _perModuleMethodNameResolverHashtable;
+        private static PerModuleMethodNameResolverHashtable _perModuleMethodNameResolverHashtable;
 
         /// <summary>
         /// Eager startup initialization of stack trace metadata support creates
@@ -67,7 +67,7 @@ namespace Internal.StackTraceMetadata
             {
                 foreach (CustomAttributeHandle cah in reader.GetTypeDefinition(typeHandle).CustomAttributes)
                 {
-                    if (cah.IsCustomAttributeOfType(reader, "System.Diagnostics", "StackTraceHiddenAttribute"))
+                    if (cah.IsCustomAttributeOfType(reader, ["System", "Diagnostics"], "StackTraceHiddenAttribute"))
                     {
                         isStackTraceHidden = true;
                         break;
@@ -76,7 +76,7 @@ namespace Internal.StackTraceMetadata
 
                 foreach (CustomAttributeHandle cah in reader.GetMethod(methodHandle).CustomAttributes)
                 {
-                    if (cah.IsCustomAttributeOfType(reader, "System.Diagnostics", "StackTraceHiddenAttribute"))
+                    if (cah.IsCustomAttributeOfType(reader, ["System", "Diagnostics"], "StackTraceHiddenAttribute"))
                     {
                         isStackTraceHidden = true;
                         break;

@@ -65,6 +65,11 @@ namespace System.Formats.Cbor
                 => CborHelpers.Int32BitsToSingle((int)(((sign ? 1U : 0U) << FloatSignShift) + ((uint)exp << FloatExponentShift) + sig));
         }
 
+        public static bool HalfIsNaN(ushort value)
+        {
+            return (value & ~((ushort)1 << HalfSignShift)) > HalfPositiveInfinityBits;
+        }
+
         private static (int Exp, uint Sig) NormSubnormalF16Sig(uint sig)
         {
             int shiftDist = LeadingZeroCount(sig) - 16 - 5;
@@ -82,13 +87,13 @@ namespace System.Formats.Cbor
             return 31 ^ Log2SoftwareFallback(value);
         }
 
-        private static ReadOnlySpan<byte> Log2DeBruijn => new byte[32]
-        {
-                    00, 09, 01, 10, 13, 21, 02, 29,
-                    11, 14, 16, 18, 22, 25, 03, 30,
-                    08, 12, 20, 28, 15, 17, 24, 07,
-                    19, 27, 23, 06, 26, 05, 04, 31
-        };
+        private static ReadOnlySpan<byte> Log2DeBruijn => // 32
+        [
+            00, 09, 01, 10, 13, 21, 02, 29,
+            11, 14, 16, 18, 22, 25, 03, 30,
+            08, 12, 20, 28, 15, 17, 24, 07,
+            19, 27, 23, 06, 26, 05, 04, 31
+        ];
 
         private static int Log2SoftwareFallback(uint value)
         {

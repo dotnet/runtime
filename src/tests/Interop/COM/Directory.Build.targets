@@ -8,11 +8,15 @@
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
     <!-- The tests are unhappy with where we lay out the executable -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
+    <!-- We must run these apps from this project as an entrypoint. -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseManagedCOMServer)' == 'true'">
     <CLRTestScriptLocalCoreShim>true</CLRTestScriptLocalCoreShim>
     <RequiresMockHostPolicy>true</RequiresMockHostPolicy>
+    <!-- These tests modify the global runtime state with the mock host policy. -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />

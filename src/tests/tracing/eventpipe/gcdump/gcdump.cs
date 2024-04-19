@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -14,6 +15,7 @@ using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Tracing.Tests.Common;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+using Xunit;
 
 namespace Tracing.Tests.EventSourceError
 {
@@ -31,7 +33,8 @@ namespace Tracing.Tests.EventSourceError
         private static readonly ulong GC_HeapDump_Keyword = 0x100000UL;
         private static ManualResetEvent _gcStopReceived = new ManualResetEvent(false);
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             // This test validates that if an EventSource generates an error
             // during construction it gets emitted over EventPipe
@@ -41,7 +44,8 @@ namespace Tracing.Tests.EventSourceError
                 new EventPipeProvider("Microsoft-Windows-DotNETRuntime", eventLevel: EventLevel.Verbose, keywords: (long)ClrTraceEventParser.Keywords.GCHeapSnapshot)
             };
 
-            return IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024, _DoesRundownContainMethodEvents);
+            bool enableRundown = TestLibrary.Utilities.IsNativeAot? false: true;
+            return IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024, _DoesRundownContainMethodEvents, enableRundownProvider: enableRundown);
         }
 
         private static Dictionary<string, ExpectedEventCount> _expectedEventCounts = new Dictionary<string, ExpectedEventCount>()
@@ -99,17 +103,17 @@ namespace Tracing.Tests.EventSourceError
                 // and high enough to catch issues. There should be between hundreds and thousands
                 // for each, but the number is variable and the point of the test is to verify
                 // that we get any events at all.
+                
                 if (_seenGCStart
                      && _seenGCStop
                      && _bulkTypeCount > 50
                      && _bulkNodeCount > 50
-                     && _bulkEdgeCount > 50
-                     && _bulkRootEdgeCount > 50
-                     && _bulkRootStaticVarCount > 50)
+                     && _bulkEdgeCount > 50)
                 {
-                    return 100;
+                    // Native AOT hasn't yet implemented statics. Hence _bulkRootStaticVarCount is zero and _bulkRootEdgeCount can be low
+                    if ((TestLibrary.Utilities.IsNativeAot && _bulkRootEdgeCount > 20) || (_bulkRootStaticVarCount > 50 && _bulkRootEdgeCount > 50))
+                        return 100;
                 }
-
 
                 Console.WriteLine($"Test failed due to missing GC heap events.");
                 Console.WriteLine($"_seenGCStart =            {_seenGCStart}");

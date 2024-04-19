@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.Caching.Configuration;
 using System.Runtime.Caching.Hosting;
-using System.Diagnostics;
 using System.Security;
 using System.Threading;
 

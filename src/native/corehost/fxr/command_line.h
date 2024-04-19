@@ -57,7 +57,9 @@ namespace command_line
         /*out*/ pal::string_t &app_candidate,
         /*out*/ opt_map_t &opts);
 
-    void print_muxer_info(const pal::string_t &dotnet_root, const pal::string_t &global_json_path);
+    // skip_sdk_info_output indicates whether or not to skip any information that the SDK would have
+    // already printed. Related: https://github.com/dotnet/sdk/issues/33697
+    void print_muxer_info(const pal::string_t &dotnet_root, const pal::string_t &global_json_path, bool skip_sdk_info_output);
     void print_muxer_usage(bool is_sdk_present);
 };
 

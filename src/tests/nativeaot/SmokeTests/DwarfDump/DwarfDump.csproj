@@ -4,6 +4,8 @@
     <CLRTestPriority>0</CLRTestPriority>
     <!-- Currently only tracking DWARF info on Linux -->
     <CLRTestTargetUnsupported Condition="'$(TargetOS)' != 'linux'">true</CLRTestTargetUnsupported>
+    <!-- We don't have SuperFileCheck binaries for llvm-dwarfdump on ARM platform -->
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'arm'">true</CLRTestTargetUnsupported>
     <!-- There are a lot more symbols on sanitized builds, so this test times out -->
     <CLRTestTargetUnsupported Condition="'$(EnableNativeSanitizers)' != ''">true</CLRTestTargetUnsupported>
     <StripSymbols>false</StripSymbols>

@@ -160,6 +160,7 @@ LOCAL_LABEL(Done_CONTEXT_CONTROL):
     ld  t1, 8(sp)
     ld  t3, 16(sp)
 
+    sd  x0, (CONTEXT_X0)(a0)
     sd  tp, (CONTEXT_Tp)(a0)
     sd  gp, (CONTEXT_Gp)(a0)
     sd  a0, (CONTEXT_A0)(a0)

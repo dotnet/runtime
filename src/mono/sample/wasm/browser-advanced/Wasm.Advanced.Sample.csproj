@@ -4,7 +4,6 @@
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
     <PublishTrimmed>true</PublishTrimmed>
     <InvariantTimezone>true</InvariantTimezone>
-    <WasmEnableLegacyJsInterop>false</WasmEnableLegacyJsInterop>
     <WasmEnableWebcil>false</WasmEnableWebcil>
     <WasmEmitSymbolMap>true</WasmEmitSymbolMap>
     <EmccEnableAssertions>true</EmccEnableAssertions>

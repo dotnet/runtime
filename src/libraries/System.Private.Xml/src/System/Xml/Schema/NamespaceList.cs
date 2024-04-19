@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.Text;
 using System.Diagnostics;
+using System.Text;
 
 namespace System.Xml.Schema
 {

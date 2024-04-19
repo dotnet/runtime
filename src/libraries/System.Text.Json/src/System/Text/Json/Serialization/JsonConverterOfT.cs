@@ -238,17 +238,16 @@ namespace System.Text.Json.Serialization
             state.Push();
             Debug.Assert(Type == state.Current.JsonTypeInfo.Type);
 
-#if DEBUG
-            // For performance, only perform validation on internal converters on debug builds.
             if (!isContinuation)
             {
+#if DEBUG
+                // For performance, only perform token type validation of converters on debug builds.
                 Debug.Assert(state.Current.OriginalTokenType == JsonTokenType.None);
                 state.Current.OriginalTokenType = reader.TokenType;
-
+#endif
                 Debug.Assert(state.Current.OriginalDepth == 0);
                 state.Current.OriginalDepth = reader.CurrentDepth;
             }
-#endif
 
             if (parentObj != null && propertyInfo != null && !propertyInfo.IsForTypeInfo)
             {
@@ -498,6 +497,7 @@ namespace System.Text.Json.Serialization
             return success;
         }
 
+        /// <inheritdoc/>
         public sealed override Type Type { get; } = typeof(T);
 
         internal void VerifyRead(JsonTokenType tokenType, int depth, long bytesConsumed, bool isValueConverter, ref Utf8JsonReader reader)

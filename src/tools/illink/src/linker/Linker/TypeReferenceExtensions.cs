@@ -151,6 +151,13 @@ namespace Mono.Linker
 			return null;
 		}
 
+		public static TypeReference? TryInflateFrom (this TypeReference typeToInflate, TypeReference maybeGenericInstanceProvider, ITryResolveMetadata resolver)
+		{
+			if (maybeGenericInstanceProvider is GenericInstanceType genericInstanceProvider)
+				return InflateGenericType (genericInstanceProvider, typeToInflate, resolver);
+			return typeToInflate;
+		}
+
 		public static IEnumerable<(TypeReference InflatedInterface, InterfaceImplementation OriginalImpl)> GetInflatedInterfaces (this TypeReference typeRef, ITryResolveMetadata resolver)
 		{
 			var typeDef = resolver.TryResolve (typeRef);
@@ -362,7 +369,7 @@ namespace Mono.Linker
 		public static bool IsTypeOf<T> (this TypeReference tr)
 		{
 			var type = typeof (T);
-			return tr.Name == type.Name && tr.Namespace == tr.Namespace;
+			return tr.Name == type.Name && tr.Namespace == type.Namespace;
 		}
 
 		public static bool IsTypeOf (this TypeReference tr, WellKnownType type)

@@ -2,14 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Reflection.Metadata;
-using Microsoft.DotNet.Cli.Build;
+
 using Microsoft.NET.HostModel.AppHost;
 
 namespace Microsoft.DotNet.CoreSetup.Test
@@ -21,9 +16,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public string DepsJson { get; private set; }
         public string RuntimeConfigJson { get; private set; }
         public string RuntimeDevConfigJson { get; private set; }
-        public string HostPolicyDll { get; private set; }
         public string HostFxrDll { get; private set; }
-        public string CoreClrDll { get; private set; }
 
         public string AssemblyName { get; }
 
@@ -50,11 +43,20 @@ namespace Microsoft.DotNet.CoreSetup.Test
             };
         }
 
-        public static TestApp CreateFromBuiltAssets(string appName)
+        /// <summary>
+        /// Create a test app from pre-built output of <paramref name="appName"/>.
+        /// </summary>
+        /// <param name="appName">Name of pre-built app</param>
+        /// <param name="assetRelativePath">Path to asset - relative to the directory containing all pre-built assets</param>
+        /// <returns>
+        /// If <paramref name="assetRelativePath"/> is <c>null</c>, <paramref name="appName"/> is used as the relative path.
+        /// </returns>
+        public static TestApp CreateFromBuiltAssets(string appName, string assetRelativePath = null)
         {
+            assetRelativePath = assetRelativePath ?? appName;
             TestApp app = CreateEmpty(appName);
             TestArtifact.CopyRecursive(
-                Path.Combine(RepoDirectoriesProvider.Default.TestAssetsOutput, appName),
+                Path.Combine(TestContext.TestAssetsOutput, assetRelativePath),
                 app.Location);
             return app;
         }
@@ -81,7 +83,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public void CreateSingleFileHost(bool isWindowsGui = false, bool copyResources = true)
             => CreateAppHost(Binaries.SingleFileHost.FilePath, isWindowsGui, copyResources);
 
-        public void CreateAppHost(string hostSourcePath, bool isWindowsGui = false, bool copyResources = true)
+        private void CreateAppHost(string hostSourcePath, bool isWindowsGui = false, bool copyResources = true)
         {
             // Use the live-built apphost and HostModel to create the apphost to run
             HostWriter.CreateAppHost(
@@ -101,17 +103,18 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public void PopulateSelfContained(MockedComponent mock, Action<NetCoreAppBuilder> customizer = null)
         {
-            var builder = NetCoreAppBuilder.ForNETCoreApp(Name, RepoDirectoriesProvider.Default.TargetRID);
+            var builder = NetCoreAppBuilder.ForNETCoreApp(Name, TestContext.BuildRID);
 
-            // Update the .runtimeconfig.json
+            // Update the .runtimeconfig.json - add included framework and remove any existing NETCoreApp framework
             builder.WithRuntimeConfig(c =>
-                c.WithIncludedFramework(Constants.MicrosoftNETCoreApp, RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion));
+                c.WithIncludedFramework(Constants.MicrosoftNETCoreApp, TestContext.MicrosoftNETCoreAppVersion)
+                    .RemoveFramework(Constants.MicrosoftNETCoreApp));
 
             // Add main project assembly
             builder.WithProject(p => p.WithAssemblyGroup(null, g => g.WithMainAssembly()));
 
             // Add runtime libraries and assets
-            builder.WithRuntimePack($"{Constants.MicrosoftNETCoreApp}.Runtime.{RepoDirectoriesProvider.Default.TargetRID}", RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion, l =>
+            builder.WithRuntimePack($"{Constants.MicrosoftNETCoreApp}.Runtime.{TestContext.BuildRID}", TestContext.MicrosoftNETCoreAppVersion, l =>
             {
                 if (mock == MockedComponent.None)
                 {
@@ -184,9 +187,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             DepsJson = Path.Combine(Location, $"{AssemblyName}.deps.json");
             RuntimeConfigJson = Path.Combine(Location, $"{AssemblyName}.runtimeconfig.json");
             RuntimeDevConfigJson = Path.Combine(Location, $"{AssemblyName}.runtimeconfig.dev.json");
-            HostPolicyDll = Path.Combine(Location, Binaries.HostPolicy.FileName);
             HostFxrDll = Path.Combine(Location, Binaries.HostFxr.FileName);
-            CoreClrDll = Path.Combine(Location, Binaries.CoreClr.FileName);
         }
     }
 }

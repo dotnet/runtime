@@ -13,6 +13,8 @@ namespace System.Text.Json
     /// </summary>
     public struct JsonWriterOptions
     {
+        private static readonly string s_alternateNewLine = Environment.NewLine.Length == 2 ? JsonConstants.NewLineLineFeed : JsonConstants.NewLineCarriageReturnLineFeed;
+
         internal const int DefaultMaxDepth = 1000;
 
         private int _maxDepth;
@@ -42,6 +44,48 @@ namespace System.Text.Json
                     _optionsMask &= ~IndentBit;
             }
         }
+
+        /// <summary>
+        /// Defines the indentation character used by <see cref="Utf8JsonWriter"/> when <see cref="Indented"/> is enabled. Defaults to the space character.
+        /// </summary>
+        /// <remarks>Allowed characters are space and horizontal tab.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> contains an invalid character.</exception>
+        public char IndentCharacter
+        {
+            readonly get => (_optionsMask & IndentCharacterBit) != 0 ? JsonConstants.TabIndentCharacter : JsonConstants.DefaultIndentCharacter;
+            set
+            {
+                JsonWriterHelper.ValidateIndentCharacter(value);
+                if (value is not JsonConstants.DefaultIndentCharacter)
+                    _optionsMask |= IndentCharacterBit;
+                else
+                    _optionsMask &= ~IndentCharacterBit;
+            }
+        }
+
+        /// <summary>
+        /// Defines the indentation size used by <see cref="Utf8JsonWriter"/> when <see cref="Indented"/> is enabled. Defaults to two.
+        /// </summary>
+        /// <remarks>Allowed values are integers between 0 and 127, included.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> is out of the allowed range.</exception>
+        public int IndentSize
+        {
+            readonly get => EncodeIndentSize((_optionsMask & IndentSizeMask) >> OptionsBitCount);
+            set
+            {
+                JsonWriterHelper.ValidateIndentSize(value);
+                _optionsMask = (_optionsMask & ~IndentSizeMask) | (EncodeIndentSize(value) << OptionsBitCount);
+            }
+        }
+
+        // Encoding is applied by swapping 0 with the default value to ensure default(JsonWriterOptions) instances are well-defined.
+        // As this operation is symmetrical, it can also be used to decode.
+        private static int EncodeIndentSize(int value) => value switch
+        {
+            0 => JsonConstants.DefaultIndentSize,
+            JsonConstants.DefaultIndentSize => 0,
+            _ => value
+        };
 
         /// <summary>
         /// Gets or sets the maximum depth allowed when writing JSON, with the default (i.e. 0) indicating a max depth of 1000.
@@ -93,9 +137,36 @@ namespace System.Text.Json
             }
         }
 
-        internal bool IndentedOrNotSkipValidation => _optionsMask != SkipValidationBit; // Equivalent to: Indented || !SkipValidation;
+        /// <summary>
+        /// Gets or sets the new line string to use when <see cref="Indented"/> is <see langword="true"/>.
+        /// The default is the value of <see cref="Environment.NewLine"/>.
+        /// </summary>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when the new line string is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown when the new line string is not <c>\n</c> or <c>\r\n</c>.
+        /// </exception>
+        public string NewLine
+        {
+            get => (_optionsMask & NewLineBit) != 0 ? s_alternateNewLine : Environment.NewLine;
+            set
+            {
+                JsonWriterHelper.ValidateNewLine(value);
+                if (value != Environment.NewLine)
+                    _optionsMask |= NewLineBit;
+                else
+                    _optionsMask &= ~NewLineBit;
+            }
+        }
 
+        internal bool IndentedOrNotSkipValidation => (_optionsMask & (IndentBit | SkipValidationBit)) != SkipValidationBit;  // Equivalent to: Indented || !SkipValidation;
+
+        private const int OptionsBitCount = 4;
         private const int IndentBit = 1;
         private const int SkipValidationBit = 2;
+        private const int NewLineBit = 4;
+        private const int IndentCharacterBit = 8;
+        private const int IndentSizeMask = JsonConstants.MaximumIndentSize << OptionsBitCount;
     }
 }
