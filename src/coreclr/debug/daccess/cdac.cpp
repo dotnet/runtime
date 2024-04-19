@@ -48,7 +48,7 @@ CDAC::CDAC(HMODULE module, uint64_t descriptorAddr, ICorDebugDataTarget* target)
 {
     if (m_module == NULL)
     {
-        m_cdac_handle = NULL;
+        m_cdac_handle = 0;
         return;
     }
 
@@ -62,7 +62,7 @@ CDAC::CDAC(HMODULE module, uint64_t descriptorAddr, ICorDebugDataTarget* target)
 
 CDAC::~CDAC()
 {
-    if (m_cdac_handle != NULL)
+    if (m_cdac_handle)
     {
         decltype(&cdac_reader_free) free = reinterpret_cast<decltype(&cdac_reader_free)>(::GetProcAddress(m_module, "cdac_reader_free"));
         _ASSERTE(free != nullptr);
