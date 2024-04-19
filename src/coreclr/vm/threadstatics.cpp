@@ -87,11 +87,11 @@ PTR_MethodTable LookupMethodTableForThreadStaticKnownToBeAllocated(TLSIndex inde
 
     if (index.GetTLSIndexType() == TLSIndexType::NonCollectible)
     {
-        return g_pThreadStaticCollectibleTypeIndices->LookupTlsIndexKnownToBeAllocated(index);
+        return g_pThreadStaticNonCollectibleTypeIndices->LookupTlsIndexKnownToBeAllocated(index);
     }
     else
     {
-        return g_pThreadStaticNonCollectibleTypeIndices->LookupTlsIndexKnownToBeAllocated(index);
+        return g_pThreadStaticCollectibleTypeIndices->LookupTlsIndexKnownToBeAllocated(index);
     }
 }
 
