@@ -90,6 +90,16 @@ namespace System.ComponentModel
             ApplyResources(value, typeof(T), objectName, culture);
         }
 
+        public virtual void ApplyResourcesToKnownType(object value, string objectName, CultureInfo? culture)
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            ArgumentNullException.ThrowIfNull(objectName);
+
+            // todo: validate object is a known type.
+
+            ApplyResources(value, value.GetType(), objectName, culture);
+        }
+
         private void ApplyResources(object value, Type typeFromValue, string objectName, CultureInfo? culture)
         {
             culture ??= CultureInfo.CurrentUICulture;

@@ -247,6 +247,7 @@ namespace System.ComponentModel
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered.")]
         public virtual void ApplyResources(object value, string objectName, System.Globalization.CultureInfo? culture) { }
         public virtual void ApplyResources<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] T>(T value, string objectName, System.Globalization.CultureInfo? culture) { }
+        public virtual void ApplyResourcesToKnownType(object value, string objectName, System.Globalization.CultureInfo? culture) { }
     }
     public partial class Container : System.ComponentModel.IContainer, System.IDisposable
     {
