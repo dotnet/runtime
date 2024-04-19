@@ -56,9 +56,6 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
             Logger.logger.Log($"{_objects128s.Count} instances allocated");
         };
 
-        const int ArrayInstanceCount = 100000;
-        // allocate the same number of objects to compare AllocationTick vs AllocationSampled
-
         private static Func<EventPipeEventSource, Func<int>> _DoesTraceContainEnoughAllocationSampledEvents = (source) =>
         {
             int AllocationSampledEvents = 0;
@@ -71,7 +68,7 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
 
                     AllocationSampledData payload = new AllocationSampledData(eventData, source.PointerSize);
                     // uncomment to see the allocation events payload
-                    //Logger.logger.Log($"{payload.HeapIndex} - {payload.AllocationKind} | ({payload.ObjectSize}) {payload.TypeName}  = 0x{payload.Address}");
+                    // Logger.logger.Log($"{payload.HeapIndex} - {payload.AllocationKind} | ({payload.ObjectSize}) {payload.TypeName}  = 0x{payload.Address}");
                     if (payload.TypeName == "Tracing.Tests.SimpleRuntimeEventValidation.Object128")
                     {
                         Object128Count++;
