@@ -147,18 +147,15 @@ jobs:
       # netcoreapp
       - ${{ if notIn(parameters.jobParameters.framework, 'net48') }}:
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
-          - Windows.7.Amd64.Open
           - Windows.10.Amd64.ServerRS5.Open
         - ${{ if or(ne(parameters.jobParameters.testScope, 'outerloop'), ne(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-            - Windows.7.Amd64.Open
             - Windows.10.Amd64.ServerRS5.Open
             - Windows.Amd64.Server2022.Open
           - ${{ if ne(parameters.jobParameters.isFullMatrix, true) }}:
             - ${{ if eq(parameters.jobParameters.buildConfig, 'Release') }}:
               - Windows.Amd64.Server2022.Open
             - ${{ if eq(parameters.jobParameters.buildConfig, 'Debug') }}:
-              - Windows.7.Amd64.Open
               - Windows.Amd64.Server2022.Open
 
       # .NETFramework
