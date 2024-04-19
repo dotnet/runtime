@@ -15307,6 +15307,8 @@ namespace System.Threading.Tasks
         public bool Wait(System.TimeSpan timeout) { throw null; }
         public bool Wait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public static void WaitAll(System.Collections.Generic.IEnumerable<Task> tasks, System.Threading.CancellationToken cancellationToken = default) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static void WaitAll(params System.Threading.Tasks.Task[] tasks) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static bool WaitAll(System.Threading.Tasks.Task[] tasks, int millisecondsTimeout) { throw null; }

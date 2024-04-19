@@ -567,6 +567,7 @@
 
   <Target Name="BuildManagedTestGroups" DependsOnTargets="RestorePackages;ResolveDisabledProjects;BuildNativeAotFrameworkObjects">
     <Message Importance="High" Text="$(MsgPrefix)Building managed test components" />
+    <Warning Text="Building the whole test suite with the BuildAsStandalone=true environment variable will cause some tests to be executed twice. Use the BuildAllTestsAsStandalone=true environment variable instead." Condition="'$(BuildAsStandalone)' == 'true'" />
     <!-- Execute msbuild test build in stages - workaround for excessive data retention in MSBuild ConfigCache -->
     <!-- See https://github.com/Microsoft/msbuild/issues/2993 -->
 
