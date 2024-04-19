@@ -283,6 +283,7 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "windows")
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/GF>) # enable string pooling
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/GL>) # whole program optimization
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zi>) # enable debugging information
+    add_link_options(/GUARD:cf)
     add_link_options(/LTCG)    # link-time code generation
     add_link_options(/DEBUG)   # enable debugging information
     add_link_options(/DEBUGTYPE:CV,FIXUP)   # enable fixup debug information
