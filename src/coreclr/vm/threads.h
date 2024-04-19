@@ -3361,8 +3361,8 @@ public:
 #endif //DACCESS_COMPILE
 
     PTR_ThreadLocalData m_ThreadLocalDataPtr;
-    int32_t cLoaderHandles;
-    PTR_LOADERHANDLE pLoaderHandles;
+    int32_t cLoaderHandles = 0;
+    PTR_LOADERHANDLE pLoaderHandles = 0;
     SpinLock m_TlsSpinLock;
     PTR_ThreadLocalData GetThreadLocalDataPtr() { LIMITED_METHOD_DAC_CONTRACT; return m_ThreadLocalDataPtr; }
 

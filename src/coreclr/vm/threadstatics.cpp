@@ -667,7 +667,7 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
     {
         uint32_t tlsRawIndex = g_NextNonCollectibleTLSSlot++;
         newTLSIndex = TLSIndex(TLSIndexType::NonCollectible, tlsRawIndex);
-        g_pThreadStaticNonCollectibleTypeIndices->Set(newTLSIndex, pMT, isGCFlag);
+        g_pThreadStaticNonCollectibleTypeIndices->Set(newTLSIndex, pMT, gcStatic);
     }
     else
     {
@@ -678,7 +678,7 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
             g_NextTLSSlot += 1;
         }
 
-        g_pThreadStaticCollectibleTypeIndices->Set(newTLSIndex, pMT, (gcStatic ? isGCFlag : 0));
+        g_pThreadStaticCollectibleTypeIndices->Set(newTLSIndex, pMT, gcStatic);
         pMT->GetLoaderAllocator()->GetTLSIndexList().Append(newTLSIndex);
     }
 
