@@ -76,6 +76,9 @@ extends:
       SourceBuild_linux_x64:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:almalinux-8-source-build
 
+      SourceBuild_alpine_x64:
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.19-WithNode
+
       linux_s390x:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-s390x
         env:
