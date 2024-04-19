@@ -439,7 +439,6 @@ namespace Mono.Linker.Steps
 				this.reason = reason;
 				this.origin = origin;
 				this.markStep = markStep;
-				this.Context = markStep.Context;
 			}
 			public override bool InterestingForDynamicDependencyAnalysis => false;
 
@@ -449,13 +448,11 @@ namespace Mono.Linker.Steps
 
 			public override bool StaticDependenciesAreComputed => true;
 
-			TypeReference reference { get; set;  }
-			DependencyInfo reason { get; set; }
+			TypeReference reference { get; }
+			DependencyInfo reason { get; }
 			MessageOrigin? origin { get; }
 
-			readonly MarkStep markStep;
-
-			LinkContext Context { get; }
+			MarkStep markStep { get; }
 
 			public override IEnumerable<DependencyListEntry>? GetStaticDependencies (MarkStepNodeFactory context)
 			{
@@ -467,159 +464,8 @@ namespace Mono.Linker.Steps
 			protected override string GetName (MarkStepNodeFactory context) => "TypeNode";
 			protected override void OnMarked (MarkStepNodeFactory context)
 			{
-#if DEBUG
-			if (!_typeReasons.Contains (reason.Kind))
-				throw new ArgumentOutOfRangeException ($"Internal error: unsupported type dependency {reason.Kind}");
-#endif
-			if (reference == null)
-				return;
-
-			using MarkScopeStack.LocalScope? localScope = origin.HasValue ? markStep.ScopeStack.PushLocalScope (origin.Value) : null;
-
-			(reference, reason) = markStep.GetOriginalType (reference, reason);
-
-			if (reference is FunctionPointerType)
-				return;
-
-			if (reference is GenericParameter)
-				return;
-
-			TypeDefinition? type = Context.Resolve (reference);
-
-			if (type == null)
-				return;
-
-			// Track a mark reason for each call to MarkType.
-			switch (reason.Kind) {
-			case DependencyKind.AlreadyMarked:
-				Debug.Assert (markStep.Annotations.IsMarked (type));
-				break;
-			default:
-				markStep.Annotations.Mark (type, reason, markStep.ScopeStack.CurrentScope.Origin);
-				break;
+				markStep.MarkTypeImpl (reference, reason, origin);
 			}
-
-			// Treat cctors triggered by a called method specially and mark this case up-front.
-			if (type.HasMethods && markStep.ShouldMarkTypeStaticConstructor (type) && reason.Kind == DependencyKind.DeclaringTypeOfCalledMethod)
-				markStep.MarkStaticConstructor (type, new DependencyInfo (DependencyKind.TriggersCctorForCalledMethod, reason.Source), markStep.ScopeStack.CurrentScope.Origin);
-
-			if (markStep.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (type)) {
-				// Don't warn about references from the removed attribute itself (for example the .ctor on the attribute
-				// will call MarkType on the attribute type itself).
-				// If for some reason we do keep the attribute type (could be because of previous reference which would cause IL2045
-				// or because of a copy assembly with a reference and so on) then we should not spam the warnings due to the type itself.
-				// Also don't warn when the type is marked due to an assembly being rooted.
-				if (!(reason.Source is IMemberDefinition sourceMemberDefinition && sourceMemberDefinition.DeclaringType == type) &&
-					reason.Kind is not DependencyKind.TypeInAssembly)
-					Context.LogWarning (markStep.ScopeStack.CurrentScope.Origin, DiagnosticId.AttributeIsReferencedButTrimmerRemoveAllInstances, type.GetDisplayName ());
-			}
-
-			if (markStep.CheckProcessed (type))
-				return;
-
-			if (type.Scope is ModuleDefinition module)
-				markStep.MarkModule (module, new DependencyInfo (DependencyKind.ScopeOfType, type));
-
-			using var typeScope = markStep.ScopeStack.PushLocalScope (new MessageOrigin (type));
-
-			foreach (Action<TypeDefinition> handleMarkType in markStep.MarkContext.MarkTypeActions)
-				handleMarkType (type);
-
-			markStep.MarkType (type.BaseType, new DependencyInfo (DependencyKind.BaseType, type));
-
-			// The DynamicallyAccessedMembers hierarchy processing must be done after the base type was marked
-			// (to avoid inconsistencies in the cache), but before anything else as work done below
-			// might need the results of the processing here.
-			markStep.DynamicallyAccessedMembersTypeHierarchy.ProcessMarkedTypeForDynamicallyAccessedMembersHierarchy (type);
-
-			if (type.DeclaringType != null)
-				markStep.MarkType (type.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, type));
-			markStep.MarkCustomAttributes (type, new DependencyInfo (DependencyKind.CustomAttribute, type));
-			markStep.MarkSecurityDeclarations (type, new DependencyInfo (DependencyKind.CustomAttribute, type));
-
-			if (Context.TryResolve (type.BaseType) is TypeDefinition baseType &&
-				!markStep.Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (type) &&
-				markStep.Annotations.TryGetLinkerAttribute (baseType, out RequiresUnreferencedCodeAttribute? effectiveRequiresUnreferencedCode)) {
-
-				var currentOrigin = markStep.ScopeStack.CurrentScope.Origin;
-
-				string arg1 = MessageFormat.FormatRequiresAttributeMessageArg (effectiveRequiresUnreferencedCode.Message);
-				string arg2 = MessageFormat.FormatRequiresAttributeUrlArg (effectiveRequiresUnreferencedCode.Url);
-				Context.LogWarning (currentOrigin, DiagnosticId.RequiresUnreferencedCodeOnBaseClass, type.GetDisplayName (), type.BaseType.GetDisplayName (), arg1, arg2);
-			}
-
-
-			if (type.IsMulticastDelegate ()) {
-				markStep.MarkMulticastDelegate (type);
-			}
-
-			if (type.IsClass && type.BaseType == null && type.Name == "Object" && markStep.ShouldMarkSystemObjectFinalize)
-				markStep.MarkMethodIf (type.Methods, m => m.Name == "Finalize", new DependencyInfo (DependencyKind.MethodForSpecialType, type), markStep.ScopeStack.CurrentScope.Origin);
-
-			markStep.MarkSerializable (type);
-
-			// This marks static fields of KeyWords/OpCodes/Tasks subclasses of an EventSource type.
-			// The special handling of EventSource is still needed in .NET6 in library mode
-			if ((!Context.DisableEventSourceSpecialHandling || Context.GetTargetRuntimeVersion () < TargetRuntimeVersion.NET6) && BCL.EventTracingForWindows.IsEventSourceImplementation (type, Context)) {
-				markStep.MarkEventSourceProviders (type);
-			}
-
-			// This marks properties for [EventData] types as well as other attribute dependencies.
-			markStep.MarkTypeSpecialCustomAttributes (type);
-
-			markStep.MarkGenericParameterProvider (type);
-
-			// There are a number of markings we can defer until later when we know it's possible a reference type could be instantiated
-			// For example, if no instance of a type exist, then we don't need to mark the interfaces on that type -- Note this is not true for static interfaces
-			// However, for some other types there is no benefit to deferring
-			if (type.IsInterface) {
-				// There's no benefit to deferring processing of an interface type until we know a type implementing that interface is marked
-				markStep.MarkRequirementsForInstantiatedTypes (type);
-			} else if (type.IsValueType) {
-				// Note : Technically interfaces could be removed from value types in some of the same cases as reference types, however, it's harder to know when
-				// a value type instance could exist.  You'd have to track initobj and maybe locals types.  Going to punt for now.
-				markStep.MarkRequirementsForInstantiatedTypes (type);
-			} else if (markStep.IsFullyPreserved (type)) {
-				// Here for a couple reasons:
-				// * Edge case to cover a scenario where a type has preserve all, implements interfaces, but does not have any instance ctors.
-				//    Normally TypePreserve.All would cause an instance ctor to be marked and that would in turn lead to MarkInterfaceImplementations being called
-				//    Without an instance ctor, MarkInterfaceImplementations is not called and then TypePreserve.All isn't truly respected.
-				// * If an assembly has the action Copy and had ResolveFromAssemblyStep ran for the assembly, then InitializeType will have led us here
-				//    When the entire assembly is preserved, then all interfaces, base, etc will be preserved on the type, so we need to make sure
-				//    all of these types are marked.  For example, if an interface implementation is of a type in another assembly that is linked,
-				//    and there are no other usages of that interface type, then we need to make sure the interface type is still marked because
-				//    this type is going to retain the interface implementation
-				markStep.MarkRequirementsForInstantiatedTypes (type);
-			} else if (markStep.AlwaysMarkTypeAsInstantiated (type)) {
-				markStep.MarkRequirementsForInstantiatedTypes (type);
-			}
-
-			// Save for later once we know which interfaces are marked and then determine which interface implementations and methods to keep
-			if (type.HasInterfaces)
-				markStep._typesWithInterfaces.Add ((type, markStep.ScopeStack.CurrentScope));
-
-			if (type.HasMethods) {
-				// TODO: MarkMethodIfNeededByBaseMethod should include logic for IsMethodNeededByTypeDueToPreservedScope: https://github.com/dotnet/linker/issues/3090
-				foreach (var method in type.Methods) {
-					markStep.MarkMethodIfNeededByBaseMethod (method);
-					if (markStep.IsMethodNeededByTypeDueToPreservedScope (method)) {
-						// For methods that must be preserved, blame the declaring type.
-						markStep.MarkMethod (method, new DependencyInfo (DependencyKind.VirtualNeededDueToPreservedScope, type), markStep.ScopeStack.CurrentScope.Origin);
-					}
-				}
-				if (markStep.ShouldMarkTypeStaticConstructor (type) && reason.Kind != DependencyKind.TriggersCctorForCalledMethod) {
-					using (markStep.ScopeStack.PopToParentScope ())
-						markStep.MarkStaticConstructor (type, new DependencyInfo (DependencyKind.CctorForType, type), markStep.ScopeStack.CurrentScope.Origin);
-				}
-			}
-
-			markStep.DoAdditionalTypeProcessing (type);
-
-			markStep.ApplyPreserveInfo (type);
-			markStep.ApplyPreserveMethods (type);
-
-			}
-
 		}
 
 		protected internal virtual void MarkType (TypeReference reference, DependencyInfo reason, MessageOrigin? origin = null)
@@ -2197,6 +2043,168 @@ namespace Mono.Linker.Steps
 		}
 
 		/// <summary>
+		/// Marks the specified <paramref name="reference"/> as referenced.
+		/// </summary>
+		/// <param name="reference">The type reference to mark.</param>
+		/// <param name="reason">The reason why the marking is occuring</param>
+		/// <returns>The resolved type definition if the reference can be resolved</returns>
+		protected internal virtual TypeDefinition? MarkTypeImpl (TypeReference reference, DependencyInfo reason, MessageOrigin? origin = null)
+		{
+#if DEBUG
+			if (!_typeReasons.Contains (reason.Kind))
+				throw new ArgumentOutOfRangeException ($"Internal error: unsupported type dependency {reason.Kind}");
+#endif
+			if (reference == null)
+				return null;
+
+			using MarkScopeStack.LocalScope? localScope = origin.HasValue ? ScopeStack.PushLocalScope (origin.Value) : null;
+
+			(reference, reason) = GetOriginalType (reference, reason);
+
+			if (reference is FunctionPointerType)
+				return null;
+
+			if (reference is GenericParameter)
+				return null;
+
+			TypeDefinition? type = Context.Resolve (reference);
+
+			if (type == null)
+				return null;
+
+			// Track a mark reason for each call to MarkType.
+			switch (reason.Kind) {
+			case DependencyKind.AlreadyMarked:
+				Debug.Assert (Annotations.IsMarked (type));
+				break;
+			default:
+				Annotations.Mark (type, reason, ScopeStack.CurrentScope.Origin);
+				break;
+			}
+
+			// Treat cctors triggered by a called method specially and mark this case up-front.
+			if (type.HasMethods && ShouldMarkTypeStaticConstructor (type) && reason.Kind == DependencyKind.DeclaringTypeOfCalledMethod)
+				MarkStaticConstructor (type, new DependencyInfo (DependencyKind.TriggersCctorForCalledMethod, reason.Source), ScopeStack.CurrentScope.Origin);
+
+			if (Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (type)) {
+				// Don't warn about references from the removed attribute itself (for example the .ctor on the attribute
+				// will call MarkType on the attribute type itself).
+				// If for some reason we do keep the attribute type (could be because of previous reference which would cause IL2045
+				// or because of a copy assembly with a reference and so on) then we should not spam the warnings due to the type itself.
+				// Also don't warn when the type is marked due to an assembly being rooted.
+				if (!(reason.Source is IMemberDefinition sourceMemberDefinition && sourceMemberDefinition.DeclaringType == type) &&
+					reason.Kind is not DependencyKind.TypeInAssembly)
+					Context.LogWarning (ScopeStack.CurrentScope.Origin, DiagnosticId.AttributeIsReferencedButTrimmerRemoveAllInstances, type.GetDisplayName ());
+			}
+
+			if (CheckProcessed (type))
+				return type;
+
+			if (type.Scope is ModuleDefinition module)
+				MarkModule (module, new DependencyInfo (DependencyKind.ScopeOfType, type));
+
+			using var typeScope = ScopeStack.PushLocalScope (new MessageOrigin (type));
+
+			foreach (Action<TypeDefinition> handleMarkType in MarkContext.MarkTypeActions)
+				handleMarkType (type);
+
+			MarkType (type.BaseType, new DependencyInfo (DependencyKind.BaseType, type));
+
+			// The DynamicallyAccessedMembers hierarchy processing must be done after the base type was marked
+			// (to avoid inconsistencies in the cache), but before anything else as work done below
+			// might need the results of the processing here.
+			DynamicallyAccessedMembersTypeHierarchy.ProcessMarkedTypeForDynamicallyAccessedMembersHierarchy (type);
+
+			if (type.DeclaringType != null)
+				MarkType (type.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, type));
+			MarkCustomAttributes (type, new DependencyInfo (DependencyKind.CustomAttribute, type));
+			MarkSecurityDeclarations (type, new DependencyInfo (DependencyKind.CustomAttribute, type));
+
+			if (Context.TryResolve (type.BaseType) is TypeDefinition baseType &&
+				!Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (type) &&
+				Annotations.TryGetLinkerAttribute (baseType, out RequiresUnreferencedCodeAttribute? effectiveRequiresUnreferencedCode)) {
+
+				var currentOrigin = ScopeStack.CurrentScope.Origin;
+
+				string arg1 = MessageFormat.FormatRequiresAttributeMessageArg (effectiveRequiresUnreferencedCode.Message);
+				string arg2 = MessageFormat.FormatRequiresAttributeUrlArg (effectiveRequiresUnreferencedCode.Url);
+				Context.LogWarning (currentOrigin, DiagnosticId.RequiresUnreferencedCodeOnBaseClass, type.GetDisplayName (), type.BaseType.GetDisplayName (), arg1, arg2);
+			}
+
+
+			if (type.IsMulticastDelegate ()) {
+				MarkMulticastDelegate (type);
+			}
+
+			if (type.IsClass && type.BaseType == null && type.Name == "Object" && ShouldMarkSystemObjectFinalize)
+				MarkMethodIf (type.Methods, m => m.Name == "Finalize", new DependencyInfo (DependencyKind.MethodForSpecialType, type), ScopeStack.CurrentScope.Origin);
+
+			MarkSerializable (type);
+
+			// This marks static fields of KeyWords/OpCodes/Tasks subclasses of an EventSource type.
+			// The special handling of EventSource is still needed in .NET6 in library mode
+			if ((!Context.DisableEventSourceSpecialHandling || Context.GetTargetRuntimeVersion () < TargetRuntimeVersion.NET6) && BCL.EventTracingForWindows.IsEventSourceImplementation (type, Context)) {
+				MarkEventSourceProviders (type);
+			}
+
+			// This marks properties for [EventData] types as well as other attribute dependencies.
+			MarkTypeSpecialCustomAttributes (type);
+
+			MarkGenericParameterProvider (type);
+
+			// There are a number of markings we can defer until later when we know it's possible a reference type could be instantiated
+			// For example, if no instance of a type exist, then we don't need to mark the interfaces on that type -- Note this is not true for static interfaces
+			// However, for some other types there is no benefit to deferring
+			if (type.IsInterface) {
+				// There's no benefit to deferring processing of an interface type until we know a type implementing that interface is marked
+				MarkRequirementsForInstantiatedTypes (type);
+			} else if (type.IsValueType) {
+				// Note : Technically interfaces could be removed from value types in some of the same cases as reference types, however, it's harder to know when
+				// a value type instance could exist.  You'd have to track initobj and maybe locals types.  Going to punt for now.
+				MarkRequirementsForInstantiatedTypes (type);
+			} else if (IsFullyPreserved (type)) {
+				// Here for a couple reasons:
+				// * Edge case to cover a scenario where a type has preserve all, implements interfaces, but does not have any instance ctors.
+				//    Normally TypePreserve.All would cause an instance ctor to be marked and that would in turn lead to MarkInterfaceImplementations being called
+				//    Without an instance ctor, MarkInterfaceImplementations is not called and then TypePreserve.All isn't truly respected.
+				// * If an assembly has the action Copy and had ResolveFromAssemblyStep ran for the assembly, then InitializeType will have led us here
+				//    When the entire assembly is preserved, then all interfaces, base, etc will be preserved on the type, so we need to make sure
+				//    all of these types are marked.  For example, if an interface implementation is of a type in another assembly that is linked,
+				//    and there are no other usages of that interface type, then we need to make sure the interface type is still marked because
+				//    this type is going to retain the interface implementation
+				MarkRequirementsForInstantiatedTypes (type);
+			} else if (AlwaysMarkTypeAsInstantiated (type)) {
+				MarkRequirementsForInstantiatedTypes (type);
+			}
+
+			// Save for later once we know which interfaces are marked and then determine which interface implementations and methods to keep
+			if (type.HasInterfaces)
+				_typesWithInterfaces.Add ((type, ScopeStack.CurrentScope));
+
+			if (type.HasMethods) {
+				// TODO: MarkMethodIfNeededByBaseMethod should include logic for IsMethodNeededByTypeDueToPreservedScope: https://github.com/dotnet/linker/issues/3090
+				foreach (var method in type.Methods) {
+					MarkMethodIfNeededByBaseMethod (method);
+					if (IsMethodNeededByTypeDueToPreservedScope (method)) {
+						// For methods that must be preserved, blame the declaring type.
+						MarkMethod (method, new DependencyInfo (DependencyKind.VirtualNeededDueToPreservedScope, type), ScopeStack.CurrentScope.Origin);
+					}
+				}
+				if (ShouldMarkTypeStaticConstructor (type) && reason.Kind != DependencyKind.TriggersCctorForCalledMethod) {
+					using (ScopeStack.PopToParentScope ())
+						MarkStaticConstructor (type, new DependencyInfo (DependencyKind.CctorForType, type), ScopeStack.CurrentScope.Origin);
+				}
+			}
+
+			DoAdditionalTypeProcessing (type);
+
+			ApplyPreserveInfo (type);
+			ApplyPreserveMethods (type);
+
+			return type;
+		}
+
+		/// <summary>
 		/// Allow subclasses to disable marking of System.Object.Finalize()
 		/// </summary>
 		protected virtual bool ShouldMarkSystemObjectFinalize => true;
@@ -2841,7 +2849,7 @@ namespace Mono.Linker.Steps
 				var argument = arguments[i];
 				var parameter = parameters[i];
 
-				MarkType (argument, new DependencyInfo (DependencyKind.GenericArgumentType, instance));
+				var argumentTypeDef = MarkTypeImpl (argument, new DependencyInfo (DependencyKind.GenericArgumentType, instance));
 
 				if (Annotations.FlowAnnotations.RequiresGenericArgumentDataFlowAnalysis (parameter)) {
 					// The only two implementations of IGenericInstance both derive from MemberReference
@@ -2851,15 +2859,6 @@ namespace Mono.Linker.Steps
 					var scanner = new GenericArgumentDataFlow (Context, this, ScopeStack.CurrentScope.Origin);
 					scanner.ProcessGenericArgumentDataFlow (parameter, argument);
 				}
-
-				(argument, _) = GetOriginalType (argument, new DependencyInfo(DependencyKind.GenericArgumentType, argument));
-				if (argument is FunctionPointerType)
-					continue;
-
-				if (argument is GenericParameter)
-					continue;
-
-				TypeDefinition? argumentTypeDef = Context.Resolve (argument);
 
 				if (argumentTypeDef == null)
 					continue;
