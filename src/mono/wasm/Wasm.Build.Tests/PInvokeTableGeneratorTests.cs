@@ -889,21 +889,6 @@ namespace Wasm.Build.Tests
         [BuildAndRun(host: RunHost.Chrome, aot: false)]
         public void UCOWithSpecialCharacters(BuildArgs buildArgs, RunHost host, string id)
         {
-            string cCode =
-                    """
-                    #include <stdio.h>
-
-                    int ManagedFunc(int number);
-
-                    void UnmanagedFunc()
-                    {
-                        int ret = 0;
-                        printf("UnmanagedFunc calling ManagedFunc\n");
-                        ret = ManagedFunc(123);
-                        printf("ManagedFunc returned %d\n", ret);
-                    }
-                    """;
-
             var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>";
             var extraItems = @"<NativeFileReference Include=""local.c"" />";
 
@@ -917,7 +902,7 @@ namespace Wasm.Build.Tests
                                             InitProject: () =>
                                             {
                                                 File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "UnmanagedCallback.cs"), Path.Combine(_projectDir!, "Program.cs"));
-                                                File.WriteAllText(Path.Combine(_projectDir!, "local.c"), cCode);
+                                                File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "local.c"), Path.Combine(_projectDir!, "local.c"));
                                             },
                                             Publish: true,
                                             DotnetWasmFromRuntimePack: false));

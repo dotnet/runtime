@@ -91,7 +91,9 @@ public static class TestUtils
             $"[{label}]\n");
     }
 
-    private static readonly char[] s_charsToReplace = new[] { '.', '-', '+' };
+    private static readonly char[] s_charsToReplace = new[] { '.', '-', '+', '<', '>' };
+    // Keep synced with FixupSymbolName from src/tasks/Common/Utils.cs
+    // and src/mono/browser/runtime/runtime.c
     public static string FixupSymbolName(string name)
     {
         UTF8Encoding utf8 = new();

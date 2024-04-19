@@ -188,7 +188,8 @@ init_icall_table (void)
 #endif
 }
 
-static void fixupSymbol(char *key, char *fixedName) {
+// Keep synced with FixupSymbolName from src/tasks/Common/Utils.cs
+static void fixupSymbolName(char *key, char *fixedName) {
     int sb_index = 0;
 	int len = strlen (key);
 
@@ -240,7 +241,7 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 
 	assert (strlen (name) < 100);
 	snprintf (key, sizeof(key), "%s_%s_%s", name, class_name, method_name);
-	fixupSymbol(key, fixedName);
+	fixupSymbolName(key, fixedName);
 	addr = wasm_dl_get_native_to_interp (fixedName, extra_arg);
 	MONO_EXIT_GC_UNSAFE;
 	return addr;
