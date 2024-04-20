@@ -62,7 +62,6 @@ namespace Mono.Linker.Steps
 		protected Queue<(MethodDefinition, DependencyInfo, MessageOrigin)> _methods;
 		protected Dictionary<MethodDefinition, MarkScopeStack.Scope> _virtual_methods;
 		protected Queue<AttributeProviderPair> _assemblyLevelAttributes;
-		readonly List<AttributeProviderPair> _ivt_attributes;
 		protected Queue<(AttributeProviderPair, DependencyInfo, MarkScopeStack.Scope)> _lateMarkedAttributes;
 		protected List<(TypeDefinition, MarkScopeStack.Scope)> _typesWithInterfaces;
 		protected HashSet<AssemblyDefinition> _dynamicInterfaceCastableImplementationTypesDiscovered;
@@ -222,7 +221,6 @@ namespace Mono.Linker.Steps
 			_methods = new Queue<(MethodDefinition, DependencyInfo, MessageOrigin)> ();
 			_virtual_methods = new Dictionary<MethodDefinition, MarkScopeStack.Scope> ();
 			_assemblyLevelAttributes = new Queue<AttributeProviderPair> ();
-			_ivt_attributes = new List<AttributeProviderPair> ();
 			_lateMarkedAttributes = new Queue<(AttributeProviderPair, DependencyInfo, MarkScopeStack.Scope)> ();
 			_typesWithInterfaces = new List<(TypeDefinition, MarkScopeStack.Scope)> ();
 			_dynamicInterfaceCastableImplementationTypesDiscovered = new HashSet<AssemblyDefinition> ();
@@ -285,42 +283,6 @@ namespace Mono.Linker.Steps
 		{
 			foreach ((var body, var _) in _unreachableBodies) {
 				Annotations.SetAction (body.Method, MethodAction.ConvertToThrow);
-			}
-		}
-
-		bool ProcessInternalsVisibleAttributes ()
-		{
-			bool marked_any = false;
-			foreach (var attr in _ivt_attributes) {
-
-				var provider = attr.Provider;
-				Debug.Assert (attr.Provider is ModuleDefinition or AssemblyDefinition);
-				var assembly = (provider is ModuleDefinition module) ? module.Assembly : provider as AssemblyDefinition;
-
-				using var assemblyScope = ScopeStack.PushLocalScope (new MessageOrigin (assembly));
-
-				if (!Annotations.IsMarked (attr.Attribute) && IsInternalsVisibleAttributeAssemblyMarked (attr.Attribute)) {
-					MarkCustomAttribute (attr.Attribute, new DependencyInfo (DependencyKind.AssemblyOrModuleAttribute, attr.Provider));
-					marked_any = true;
-				}
-			}
-
-			return marked_any;
-
-			bool IsInternalsVisibleAttributeAssemblyMarked (CustomAttribute ca)
-			{
-				System.Reflection.AssemblyName an;
-				try {
-					an = new System.Reflection.AssemblyName ((string) ca.ConstructorArguments[0].Value);
-				} catch {
-					return false;
-				}
-
-				var assembly = Context.GetLoadedAssembly (an.Name!);
-				if (assembly == null)
-					return false;
-
-				return Annotations.IsMarked (assembly.MainModule);
 			}
 		}
 
@@ -416,8 +378,7 @@ namespace Mono.Linker.Steps
 				ProcessMarkedPending () ||
 				ProcessLazyAttributes () ||
 				ProcessLateMarkedAttributes () ||
-				MarkFullyPreservedAssemblies () ||
-				ProcessInternalsVisibleAttributes ()) ;
+				MarkFullyPreservedAssemblies ()) ;
 
 			ProcessPendingTypeChecks ();
 		}
@@ -1169,6 +1130,9 @@ namespace Mono.Linker.Steps
 				case "System.Runtime.InteropServices.InterfaceTypeAttribute":
 				case "System.Runtime.InteropServices.GuidAttribute":
 					return true;
+				// May be implicitly used by the runtime
+				case "System.Runtime.CompilerServices.InternalsVisibleToAttribute":
+					return true;
 				}
 
 				TypeDefinition? type = Context.Resolve (attr_type);
@@ -1546,10 +1510,7 @@ namespace Mono.Linker.Steps
 				if (IsAttributeRemoved (customAttribute, resolved.DeclaringType) && Annotations.GetAction (CustomAttributeSource.GetAssemblyFromCustomAttributeProvider (assemblyLevelAttribute.Provider)) == AssemblyAction.Link)
 					continue;
 
-				if (customAttribute.AttributeType.IsTypeOf ("System.Runtime.CompilerServices", "InternalsVisibleToAttribute") && !Annotations.IsMarked (customAttribute)) {
-					_ivt_attributes.Add (assemblyLevelAttribute);
-					continue;
-				} else if (!ShouldMarkTopLevelCustomAttribute (assemblyLevelAttribute, resolved)) {
+				if (!ShouldMarkTopLevelCustomAttribute (assemblyLevelAttribute, resolved)) {
 					skippedItems.Add (assemblyLevelAttribute);
 					continue;
 				}
@@ -2477,7 +2438,7 @@ namespace Mono.Linker.Steps
 
 			// It's hard to know if a com or windows runtime interface will be needed from managed code alone,
 			// so as a precaution we will mark these interfaces once the type is instantiated
-			if (resolvedInterfaceType.IsImport || resolvedInterfaceType.IsWindowsRuntime)
+			if (Context.KeepComInterfaces && (resolvedInterfaceType.IsImport || resolvedInterfaceType.IsWindowsRuntime))
 				return true;
 
 			return IsFullyPreserved (type);

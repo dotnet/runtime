@@ -24,6 +24,8 @@ import { jiterpreter_dump_stats } from "./jiterpreter";
 import { forceDisposeProxies } from "./gc-handles";
 import { mono_wasm_dump_threads } from "./pthreads";
 
+import { threads_c_functions as tcwraps } from "./cwraps";
+
 export let runtimeList: RuntimeList;
 
 function initializeExports (globalObjects: GlobalObjects): RuntimeAPI {
@@ -43,6 +45,7 @@ function initializeExports (globalObjects: GlobalObjects): RuntimeAPI {
     };
     if (WasmEnableThreads) {
         rh.dumpThreads = mono_wasm_dump_threads;
+        rh.mono_wasm_print_thread_dump = () => tcwraps.mono_wasm_print_thread_dump();
     }
     Object.assign(runtimeHelpers, rh);
 

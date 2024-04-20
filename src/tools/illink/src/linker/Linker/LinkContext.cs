@@ -108,6 +108,8 @@ namespace Mono.Linker
 
 		public bool LinkSymbols { get; set; }
 
+		public bool KeepComInterfaces { get; set; }
+
 		public bool KeepMembersForDebugger { get; set; } = true;
 
 		public bool IgnoreUnresolved { get; set; } = true;

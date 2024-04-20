@@ -26,6 +26,7 @@
   </ItemGroup>
 
   <PropertyGroup>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
@@ -48,40 +49,30 @@
 
   <!-- Platform specific properties -->
   <PropertyGroup Condition="'$(Platform)' == 'x64'">
-    <PlatformTarget>x64</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
     <DefineConstants>$(DefineConstants);TARGET_AMD64</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'x86'">
-    <PlatformTarget>x86</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_X86</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'armv6'">
-    <PlatformTarget>arm</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_ARMV6</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm'">
-    <PlatformTarget>arm</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_ARM</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm64'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_ARM64</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'riscv64'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_RISCV64</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 's390x'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_S390X</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'wasm'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_WASM</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'ppc64le'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_POWERPC64</DefineConstants>
   </PropertyGroup>
 

@@ -12,9 +12,9 @@ internal static class Entrypoints
     private const string CDAC = "cdac_reader_";
 
     [UnmanagedCallersOnly(EntryPoint = $"{CDAC}init")]
-    private static unsafe int Init(nint descriptor, IntPtr* handle)
+    private static unsafe int Init(ulong descriptor, delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget, void* readContext, IntPtr* handle)
     {
-        Target target = new(descriptor);
+        Target target = new(descriptor, readFromTarget, readContext);
         GCHandle gcHandle = GCHandle.Alloc(target);
         *handle = GCHandle.ToIntPtr(gcHandle);
         return 0;
@@ -42,7 +42,7 @@ internal static class Entrypoints
         if (target == null)
             return -1;
 
-        SOSDacImpl impl = new(target);
+        Legacy.SOSDacImpl impl = new(target);
         nint ptr = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
         *obj = ptr;
         return 0;
