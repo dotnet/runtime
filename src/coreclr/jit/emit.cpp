@@ -2843,6 +2843,13 @@ bool emitter::emitNoGChelper(CorInfoHelpFunc helpFunc)
 
         case CORINFO_HELP_CHECK_OBJ:
 
+        // never present on stack at the time of GC
+        case CORINFO_HELP_TAILCALL:
+
+        // called in prolog
+        case CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER:
+        case CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS:
+
         case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
             return true;
 
