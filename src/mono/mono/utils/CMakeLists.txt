@@ -37,7 +37,6 @@ else()
 endif()
 
 set(utils_common_sources
-    mono-md5.c
     mono-sha1.c
     mono-logger.c
     mono-logger-internals.h
