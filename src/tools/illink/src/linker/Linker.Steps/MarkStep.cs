@@ -630,9 +630,7 @@ namespace Mono.Linker.Steps
 
 		void ProcessQueue ()
 		{
-			while (!QueueIsEmpty ()) {
-				(MethodDefinition _, DependencyInfo _, MessageOrigin _) = _methods.Dequeue ();
-			}
+			_methods.Clear();
 		}
 
 		bool QueueIsEmpty ()
@@ -3063,7 +3061,7 @@ namespace Mono.Linker.Steps
 			// We will only enqueue a method to be processed if it hasn't been processed yet.
 			if (!CheckProcessed (method))
 				EnqueueMethod (method, reason, origin);
-			_analyzer.AddRoot (new PostPoneMethodMarkingNode (method, reason, origin), "Method marked");
+			_analyzer.AddRoot (new PostPoneMethodProcessingNode (method, reason, origin), "Method marked");
 
 			return method;
 

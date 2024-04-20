@@ -39,13 +39,16 @@ namespace Mono.Linker.Steps
 
 	public partial class MarkStep
 	{
-		public class PostPoneMethodMarkingNode : DependencyNodeCore<MarkStepNodeFactory>
+		/// <summary>
+		/// A dummy node to postpone processing of a method in the current call stack. The analyzer will process the MethodDefinitionNode dependency later.
+		/// </summary>
+		public class PostPoneMethodProcessingNode : DependencyNodeCore<MarkStepNodeFactory>
 		{
 			readonly MethodDefinition method;
 			readonly DependencyInfo reason;
 			readonly MessageOrigin origin;
 
-			public PostPoneMethodMarkingNode (MethodDefinition method, DependencyInfo reason, MessageOrigin origin)
+			public PostPoneMethodProcessingNode (MethodDefinition method, DependencyInfo reason, MessageOrigin origin)
 			{
 				this.method = method;
 				this.reason = reason;
@@ -62,7 +65,7 @@ namespace Mono.Linker.Steps
 
 			public override IEnumerable<DependencyListEntry>? GetStaticDependencies (MarkStepNodeFactory context)
 			{
-				yield return new DependencyListEntry(context.MarkStep.GetMethodDefinitionNode (method, reason, origin), "Needed");
+				yield return new DependencyListEntry(context.MarkStep.GetMethodDefinitionNode (method, reason, origin), "Needed by dummy node");
 			}
 
 			public override IEnumerable<CombinedDependencyListEntry>? GetConditionalStaticDependencies (MarkStepNodeFactory context) => null;
