@@ -32,9 +32,9 @@ public:
 
     static FCDECL4(HRESULT, GetCustomAttributeProps, IMDInternalImport* pScope, mdCustomAttribute cv, mdToken* ptkType, ConstArray* ppBlob);
 
-    static FCDECL6(HRESULT, GetDefaultValue, IMDInternalImport* pScope, mdToken tk, INT64* pDefaultValue, BYTE** pStringValue, INT32* pLength, INT32* pCorElementType);
+    static FCDECL6(HRESULT, GetDefaultValue, IMDInternalImport* pScope, mdToken tk, INT64* pDefaultValue, LPCWSTR* pStringValue, INT32* pLength, INT32* pCorElementType);
     static FCDECL3(HRESULT, GetName, IMDInternalImport* pScope, mdToken tk, LPCSTR* pszName);
-    static FCDECL4(HRESULT, GetUserString, IMDInternalImport* pScope, mdToken tk, BYTE** pszName, ULONG* pCount);
+    static FCDECL4(HRESULT, GetUserString, IMDInternalImport* pScope, mdToken tk, LPCWSTR* pszName, ULONG* pCount);
     static FCDECL3(HRESULT, GetNamespace, IMDInternalImport* pScope, mdToken tk, LPCSTR* pszName);
     static FCDECL3(HRESULT, GetParentToken, IMDInternalImport* pScope, mdToken tk, mdToken* ptk);
     static FCDECL4(HRESULT, GetParamDefProps, IMDInternalImport* pScope, mdToken tk, INT32* pSequence, INT32* pAttributes);

@@ -355,43 +355,48 @@ namespace System.Reflection
             Enum(MetadataTokenType.Event, mdTypeDef, out result);
         }
 
+        private static unsafe string? ConvertMetadataStringPermitInvalidContent(char* stringMetadataEncoding, int length)
+        {
+            Debug.Assert(stringMetadataEncoding != null);
+            // Metadata encoding is always UTF-16LE, but user strings can be leveraged to encode invalid surrogates.
+            // This means we rely on the string's constructor rather than the stricter Encoding.Unicode API.
+            return new string(stringMetadataEncoding, 0, length);
+        }
+
         #region FCalls
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe int GetDefaultValue(
             IntPtr scope,
             int mdToken,
             out long value,
-            out byte* stringMetadataEncoding,
+            out char* stringMetadataEncoding,
             out int length,
             out int corElementType);
 
         public unsafe string? GetDefaultValue(int mdToken, out long value, out int length, out CorElementType corElementType)
         {
-            ThrowBadImageExceptionForHR(GetDefaultValue(m_metadataImport2, mdToken, out value, out byte* stringMetadataEncoding, out length, out int corElementTypeRaw));
+            ThrowBadImageExceptionForHR(GetDefaultValue(m_metadataImport2, mdToken, out value, out char* stringMetadataEncoding, out length, out int corElementTypeRaw));
 
             corElementType = (CorElementType)corElementTypeRaw;
 
             if (corElementType is CorElementType.ELEMENT_TYPE_STRING
                 && stringMetadataEncoding != null)
             {
-                // Metadata encoding is always UTF-16LE.
-                return Text.Encoding.Unicode.GetString(stringMetadataEncoding, length);
+                return ConvertMetadataStringPermitInvalidContent(stringMetadataEncoding, length);
             }
 
             return null;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe int GetUserString(IntPtr scope, int mdToken, out byte* stringMetadataEncoding, out int length);
+        private static extern unsafe int GetUserString(IntPtr scope, int mdToken, out char* stringMetadataEncoding, out int length);
 
         public unsafe string? GetUserString(int mdToken)
         {
-            ThrowBadImageExceptionForHR(GetUserString(m_metadataImport2, mdToken, out byte* stringMetadataEncoding, out int length));
+            ThrowBadImageExceptionForHR(GetUserString(m_metadataImport2, mdToken, out char* stringMetadataEncoding, out int length));
 
-            // Metadata encoding is always UTF-16LE, but user strings can be leveraged to encode invalid surrogates.
-            // This means we rely on the string's constructor rather than the stricter Encoding.Unicode API.
             return stringMetadataEncoding != null ?
-                new string((char*)stringMetadataEncoding, 0, length) :
+                ConvertMetadataStringPermitInvalidContent(stringMetadataEncoding, length) :
                 null;
         }
 

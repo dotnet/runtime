@@ -67,7 +67,7 @@ FCIMPL11(FC_BOOL_RET, MetaDataImport::GetMarshalAs,
 }
 FCIMPLEND
 
-FCIMPL6(HRESULT, MetaDataImport::GetDefaultValue, IMDInternalImport* pScope, mdToken tk, INT64* pDefaultValue, BYTE** pStringValue, INT32* pLength, INT32* pCorElementType)
+FCIMPL6(HRESULT, MetaDataImport::GetDefaultValue, IMDInternalImport* pScope, mdToken tk, INT64* pDefaultValue, LPCWSTR* pStringValue, INT32* pLength, INT32* pCorElementType)
 {
     FCALL_CONTRACT;
 
@@ -79,7 +79,7 @@ FCIMPL6(HRESULT, MetaDataImport::GetDefaultValue, IMDInternalImport* pScope, mdT
     if (value.m_bType == ELEMENT_TYPE_STRING)
     {
         *pDefaultValue = 0;
-        *pStringValue = (BYTE*)value.m_wzValue;
+        *pStringValue = value.m_wzValue;
     }
     else
     {
@@ -182,12 +182,12 @@ ErrExit:
 }
 FCIMPLEND
 
-FCIMPL4(HRESULT, MetaDataImport::GetUserString, IMDInternalImport* pScope, mdToken tk, BYTE** pszName, ULONG* pCount)
+FCIMPL4(HRESULT, MetaDataImport::GetUserString, IMDInternalImport* pScope, mdToken tk, LPCWSTR* pszName, ULONG* pCount)
 {
     FCALL_CONTRACT;
 
     BOOL bHasExtendedChars;
-    return pScope->GetUserString(tk, pCount, &bHasExtendedChars, (LPCWSTR *)pszName);
+    return pScope->GetUserString(tk, pCount, &bHasExtendedChars, pszName);
 }
 FCIMPLEND
 
