@@ -326,11 +326,15 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         [Fact]
         public void GetNullValue()
         {
-            var dic = new Dictionary<string, string>
+            #nullable enable
+            #pragma warning disable IDE0004 // Cast is redundant
+
+            var dic = new Dictionary<string, string?>
             {
                 {"Integer", null},
                 {"Boolean", null},
                 {"Nested:Integer", null},
+                {"String", null},
                 {"Object", null }
             };
             var configurationBuilder = new ConfigurationBuilder();
@@ -341,13 +345,16 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.False(config.GetValue<bool>("Boolean"));
             Assert.Equal(0, config.GetValue<int>("Integer"));
             Assert.Equal(0, config.GetValue<int>("Nested:Integer"));
+            Assert.Null(config.GetValue<string>("String"));
             Assert.Null(config.GetValue<ComplexOptions>("Object"));
 
             // Generic overloads with default value.
-            Assert.True(config.GetValue("Boolean", true));
-            Assert.Equal(1, config.GetValue("Integer", 1));
-            Assert.Equal(1, config.GetValue("Nested:Integer", 1));
-            Assert.Equal(new NestedConfig(""), config.GetValue("Object", new NestedConfig("")));
+            Assert.True((bool)config.GetValue("Boolean", true));
+            Assert.Equal(1, (int)config.GetValue("Integer", 1));
+            Assert.Equal(1, (int)config.GetValue("Nested:Integer", 1));
+            // [NotNullIfNotNull] avoids CS8600: Converting possible null value to non-nullable type.
+            Assert.Equal("s", (string)config.GetValue("String", "s"));
+            Assert.Equal(new NestedConfig(""), (NestedConfig)config.GetValue("Object", new NestedConfig("")));
 
             // Type overloads.
             Assert.Null(config.GetValue(typeof(bool), "Boolean"));
@@ -356,16 +363,22 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Null(config.GetValue(typeof(ComplexOptions), "Object"));
 
             // Type overloads with default value.
+            // [NotNullIfNotNull] avoids CS8605: Unboxing a possibly null value.
             Assert.True((bool)config.GetValue(typeof(bool), "Boolean", true));
             Assert.Equal(1, (int)config.GetValue(typeof(int), "Integer", 1));
             Assert.Equal(1, (int)config.GetValue(typeof(int), "Nested:Integer", 1));
-            Assert.Equal(new NestedConfig(""), config.GetValue("Object", new NestedConfig("")));
+            // [NotNullIfNotNull] avoids CS8600: Converting possible null value to non-nullable type.
+            Assert.Equal("s", (string)config.GetValue(typeof(string), "String", "s"));
+            Assert.Equal(new NestedConfig(""), (NestedConfig)config.GetValue("Object", new NestedConfig("")));
 
             // GetSection tests.
             Assert.False(config.GetSection("Boolean").Get<bool>());
             Assert.Equal(0, config.GetSection("Integer").Get<int>());
             Assert.Equal(0, config.GetSection("Nested:Integer").Get<int>());
             Assert.Null(config.GetSection("Object").Get<ComplexOptions>());
+
+            #pragma warning restore IDE0004
+            #nullable restore
         }
 
         [Fact]
