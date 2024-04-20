@@ -72,7 +72,7 @@ namespace Mono.Linker.Steps
 			protected override void OnMarked (MarkStepNodeFactory context)
 			{
 				using MarkScopeStack.LocalScope? localScope = origin.HasValue ? context.MarkStep.ScopeStack.PushLocalScope (origin.Value) : null;
-				context.MarkStep.MarkTypeImpl (type, reason, origin);
+				context.MarkStep.ProcessType (type, reason, origin);
 			}
 		}
 	}

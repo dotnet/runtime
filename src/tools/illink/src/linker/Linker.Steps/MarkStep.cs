@@ -558,6 +558,7 @@ namespace Mono.Linker.Steps
 				ProcessPendingBodies ();
 				DoAdditionalProcessing ();
 			}
+			ProcessVirtualMethods ();
 
 			return true;
 		}
@@ -630,9 +631,7 @@ namespace Mono.Linker.Steps
 		void ProcessQueue ()
 		{
 			while (!QueueIsEmpty ()) {
-				_methods.Clear ();
-				//(MethodDefinition method, DependencyInfo reason, MessageOrigin origin) = _methods.Dequeue ();
-				//ProcessMethod (method, reason, origin);
+				(MethodDefinition _, DependencyInfo _, MessageOrigin _) = _methods.Dequeue ();
 			}
 		}
 
@@ -2063,7 +2062,7 @@ namespace Mono.Linker.Steps
 			MarkStaticConstructor (type, reason, origin);
 		}
 
-		protected internal virtual void MarkTypeImpl (TypeDefinition type, DependencyInfo reason, MessageOrigin? origin = null)
+		protected internal virtual void ProcessType (TypeDefinition type, DependencyInfo reason, MessageOrigin? origin = null)
 		{
 			if (type.Scope is ModuleDefinition module)
 				MarkModule (module, new DependencyInfo (DependencyKind.ScopeOfType, type));
