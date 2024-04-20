@@ -2169,18 +2169,72 @@ dump_args (InterpFrame *inv)
 #define CHECK_MUL_OVERFLOW_NAT_UN(a,b) CHECK_MUL_OVERFLOW64_UN(a,b)
 #endif
 
+static MONO_NEVER_INLINE void
+interp_runtime_invoke_cctor (MonoMethod *method, MonoObject **exc, MonoError *error)
+{
+	ThreadContext *context = get_context ();
+	stackval *sp = (stackval*)context->stack_pointer;
+	InterpMethod *imethod = mono_interp_get_imethod (method);
+	g_assert (!imethod->transformed);
+
+	InterpFrame frame = {0};
+	frame.imethod = imethod;
+	frame.stack = sp;
+	frame.retval = NULL;
+
+	context->stack_pointer = (guchar*)sp;
+	g_assert (context->stack_pointer < context->stack_end);
+
+	// g_print ("interp_runtime_invoke_cctor entering do_transform_method\n");
+
+	MonoException *transform_exc = do_transform_method (imethod, &frame, context);
+	if (transform_exc) {
+		g_print ("interp_runtime_invoke_cctor exiting due to transform failure\n");
+		if (exc)
+			*exc = (MonoObject *)transform_exc;
+		return;
+	}
+
+	// g_print ("interp_runtime_invoke_cctor entering mono_interp_exec_method\n");
+	MONO_ENTER_GC_UNSAFE;
+	mono_interp_exec_method (&frame, context, NULL);
+	MONO_EXIT_GC_UNSAFE;
+	// g_print ("interp_runtime_invoke_cctor exiting mono_interp_exec_method\n");
+
+	context->stack_pointer = (guchar*)sp;
+
+	if (context->exc_gchandle || context->has_resume_state) {
+		g_print ("interp_runtime_invoke_cctor reporting exception\n");
+		if (exc && context->exc_gchandle)
+			*exc = mono_gchandle_get_target_internal (context->exc_gchandle);
+		clear_resume_state (context);
+	}
+
+	return;
+}
+
 // Do not inline in case order of frame addresses matters.
 static MONO_NEVER_INLINE MonoObject*
 interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error)
 {
-	ThreadContext *context = get_context ();
 	MonoMethodSignature *sig = mono_method_signature_internal (method);
-	stackval *sp = (stackval*)context->stack_pointer;
-	MonoMethod *target_method = method;
 
 	error_init (error);
 	if (exc)
 		*exc = NULL;
+
+	if (
+		!sig->hasthis && (sig->param_count == 0) &&
+		(sig->ret->type == MONO_TYPE_VOID) && !strcmp (".cctor", method->name)
+	) {
+		// Fast path for invoking static constructors without compiling a wrapper
+		interp_runtime_invoke_cctor (method, exc, error);
+		return NULL;
+	}
+
+	ThreadContext *context = get_context ();
+	stackval *sp = (stackval*)context->stack_pointer;
+	MonoMethod *target_method = method;
 
 	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
 		target_method = mono_marshal_get_native_wrapper (target_method, FALSE, FALSE);
