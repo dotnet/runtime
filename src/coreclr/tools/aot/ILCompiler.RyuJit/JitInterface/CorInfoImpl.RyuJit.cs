@@ -2404,6 +2404,9 @@ namespace Internal.JitInterface
         private CORINFO_OBJECT_STRUCT_* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
         {
             TypeDesc type = HandleToObject(cls);
+            if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                return null;
+
             return ObjectToHandle(_compilation.NecessaryRuntimeTypeIfPossible(type));
         }
 

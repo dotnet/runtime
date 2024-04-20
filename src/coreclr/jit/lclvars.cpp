@@ -1804,12 +1804,10 @@ void Compiler::lvaClassifyParameterABI()
     }
     else
 #endif
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
     {
         PlatformClassifier classifier(cInfo);
         lvaClassifyParameterABI(classifier);
     }
-#endif
 
 #ifdef DEBUG
     if (lvaParameterPassingInfo == nullptr)

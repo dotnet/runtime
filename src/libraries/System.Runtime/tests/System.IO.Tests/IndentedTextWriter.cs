@@ -104,12 +104,6 @@ namespace System.CodeDom.Tests
                 LastCalledMethod = nameof(Write);
             }
 
-            public override void Write(string format, params ReadOnlySpan<object?> arg)
-            {
-                base.Write(format, arg);
-                LastCalledMethod = nameof(Write);
-            }
-
             public override void Write(string value)
             {
                 base.Write(value);
@@ -213,12 +207,6 @@ namespace System.CodeDom.Tests
             }
 
             public override void WriteLine(string format, params object[] arg)
-            {
-                base.WriteLine(format, arg);
-                LastCalledMethod = nameof(WriteLine);
-            }
-
-            public override void WriteLine(string format, params ReadOnlySpan<object?> arg)
             {
                 base.WriteLine(format, arg);
                 LastCalledMethod = nameof(WriteLine);
@@ -428,8 +416,7 @@ namespace System.CodeDom.Tests
             itw.Write("{0}", 14);
             itw.Write("{0} {1}", 15, 16);
             itw.Write("{0} {1} {2}", 15, 16, 17);
-            itw.Write("{0} {1} {2} {3}", new object[] { 15, 16, 17, 18 });
-            itw.Write("{0} {1} {2} {3}", (ReadOnlySpan<object>)new object[] { 15, 16, 17, 18 });
+            itw.Write("{0} {1} {2} {3}", 15, 16, 17, 18);
 
             itw.WriteLine(true);
             itw.WriteLine('a');
@@ -447,8 +434,7 @@ namespace System.CodeDom.Tests
             itw.WriteLine("{0}", 14);
             itw.WriteLine("{0} {1}", 15, 16);
             itw.WriteLine("{0} {1} {2}", 15, 16, 17);
-            itw.WriteLine("{0} {1} {2} {3}", new object[] { 15, 16, 17, 18 });
-            itw.WriteLine("{0} {1} {2} {3}", (ReadOnlySpan<object>)new object[] { 15, 16, 17, 18 });
+            itw.WriteLine("{0} {1} {2} {3}", 15, 16, 17, 18);
 
             await itw.WriteAsync('a');
             await itw.WriteAsync(new char[] { 'b', 'c' });
@@ -464,7 +450,7 @@ namespace System.CodeDom.Tests
 
             Assert.Equal(
                 "t" + newline +
-                "tTrueabcde45.66.789101112131415 1615 16 1715 16 17 1815 16 17 18True" + newline +
+                "tTrueabcde45.66.789101112131415 1615 16 1715 16 17 18True" + newline +
                 "ta" + newline +
                 "tbc" + newline +
                 "tde" + newline +
@@ -480,7 +466,6 @@ namespace System.CodeDom.Tests
                 "t14" + newline +
                 "t15 16" + newline +
                 "t15 16 17" + newline +
-                "t15 16 17 18" + newline +
                 "t15 16 17 18" + newline +
                 "tabcde1a" + newline +
                 "tbc" + newline +
@@ -514,8 +499,7 @@ namespace System.CodeDom.Tests
                 yield return CreateParameters(x => x.Write("Hello {0} World", "Digital"), "Hello Digital World");
                 yield return CreateParameters(x => x.Write("Hello {0} World{1}", "Digital", "!!"), "Hello Digital World!!");
                 yield return CreateParameters(x => x.Write("Hello {0} {1} World{2}", "Dot", "NET", "!!"), "Hello Dot NET World!!");
-                yield return CreateParameters(x => x.Write("Hello {0} {1} {2} World{3}", new object[] { "Digital", "Dot", "NET", "!!" }), "Hello Digital Dot NET World!!");
-                yield return CreateParameters(x => x.Write("Hello {0} {1} {2} World{3}", (ReadOnlySpan<object>)new object[] { "Digital", "Dot", "NET", "!!" }), "Hello Digital Dot NET World!!");
+                yield return CreateParameters(x => x.Write("Hello {0} {1} {2} World{3}", "Digital", "Dot", "NET", "!!"), "Hello Digital Dot NET World!!");
                 yield return CreateParameters(x => x.Write("Hello World".ToCharArray(), 6, 5), "World");
             }
         }
@@ -546,8 +530,7 @@ namespace System.CodeDom.Tests
                 yield return CreateParameters(x => x.WriteLine("Hello {0} {1} World", "Dot", "NET"), $"Hello Dot NET World{NewLine}");
                 yield return CreateParameters(x => x.WriteLine("Hello {0} {1} World{2}", "Dot", "NET", "!!"), $"Hello Dot NET World!!{NewLine}");
                 yield return CreateParameters(x => x.WriteLine("Hello World".ToCharArray(), 6, 5), $"World{NewLine}");
-                yield return CreateParameters(x => x.WriteLine("Hello {0} {1} {2} World{3}", new object[] { "Digital", "Dot", "NET", "!!" }), $"Hello Digital Dot NET World!!{NewLine}");
-                yield return CreateParameters(x => x.WriteLine("Hello {0} {1} {2} World{3}", (ReadOnlySpan<object>)new object[] { "Digital", "Dot", "NET", "!!" }), $"Hello Digital Dot NET World!!{NewLine}");
+                yield return CreateParameters(x => x.WriteLine("Hello {0} {1} {2} World{3}", "Digital", "Dot", "NET", "!!"), $"Hello Digital Dot NET World!!{NewLine}");
             }
         }
 
