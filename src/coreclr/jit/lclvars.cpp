@@ -1729,14 +1729,19 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
     lvaParameterStackSize = roundUp(classifier.StackSize(), classifier.StackAlignment());
 
 #if FEATURE_FASTTAILCALL
-    unsigned oldStackSize = info.compArgStackSize;
+    // Swift doesn't have correct ABI info computed by the old classification,
+    // so skip this validation there.
+    if (info.compCallConv != CorInfoCallConvExtension::Swift)
+    {
+        unsigned oldStackSize = info.compArgStackSize;
 
 #ifdef WINDOWS_AMD64_ABI
-    // Old info does not take 4 shadow slots on win-x64 into account.
-    oldStackSize += 32;
+        // Old info does not take 4 shadow slots on win-x64 into account.
+        oldStackSize += 32;
 #endif
 
-    assert(lvaParameterStackSize == roundUp(oldStackSize, classifier.StackAlignment()));
+        assert(lvaParameterStackSize == roundUp(oldStackSize, classifier.StackAlignment()));
+    }
 #endif
 }
 
@@ -5916,8 +5921,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
                     JITDUMP("  Set field V%02u to offset %d\n", fieldLclNum, fieldVarDsc->GetStackOffset());
                 }
             }
-
-            continue;
         }
     }
 }
