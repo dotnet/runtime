@@ -277,9 +277,9 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "windows")
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4324>)  # 'struct_name' : structure was padded due to __declspec(align())
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/EHsc>)    # set exception handling behavior
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/FC>)      # use full pathnames in diagnostics
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/GUARD:cf) # Enable control flow guard
+  append("/guard:cf" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)          # Enable control flow guard
   add_link_options(/STACK:0x800000)  # set stack size to 8MB (default is 1MB)
-  add_link_options(/GUARD:cf)
+  add_link_options(/guard:cf)
   if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Oi>) # enable intrinsics
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/GF>) # enable string pooling
