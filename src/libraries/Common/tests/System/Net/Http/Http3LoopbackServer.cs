@@ -143,6 +143,7 @@ namespace System.Net.Test.Common
                 http3Options.Certificate = options.Certificate;
                 http3Options.SslProtocols = options.SslProtocols;
                 http3Options.ListenBacklog = options.ListenBacklog;
+                http3Options.TestOutputHelper = options.TestOutputHelper;
             }
             return http3Options;
         }

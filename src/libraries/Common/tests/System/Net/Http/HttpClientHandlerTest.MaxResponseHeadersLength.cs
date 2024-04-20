@@ -100,7 +100,7 @@ namespace System.Net.Http.Functional.Tests
 #if !WINHTTPHANDLER_TEST
                 catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad) {}
 #endif
-            });
+            }, options: new() { TestOutputHelper = _output });
         }
 
         [Theory]
