@@ -866,10 +866,32 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
             continue;
         }
 
-        // Doesn't tighten the current bound. So skip.
-        if (pRange->uLimit.IsConstant() && limit.vn != arrLenVN)
+        // Skip if it doesn't tighten the current bound
+        if (pRange->uLimit.IsConstant() && (cmpOper == GT_LE || cmpOper == GT_LT))
         {
-            continue;
+            if (limit.vn == arrLenVN)
+            {
+                // The new limit is arrLenVN - take it.
+            }
+            else if (limit.IsConstant() && limit.cns > pRange->uLimit.cns)
+            {
+                // The new constant limit doesn't tighten the current constant bound.
+                // E.g. current:X < 10 and new one is X < 100
+                continue;
+            }
+        }
+        if (pRange->lLimit.IsConstant() && (cmpOper == GT_GE || cmpOper == GT_GT))
+        {
+            if (limit.vn == arrLenVN)
+            {
+                // The new limit is arrLenVN - take it.
+            }
+            else if (limit.IsConstant() && limit.cns < pRange->lLimit.cns)
+            {
+                // The new constant limit doesn't tighten the current constant bound.
+                // E.g. current:X > 10 and new one is X > 5
+                continue;
+            }
         }
 
         // Check if the incoming limit from assertions tightens the existing upper limit.
