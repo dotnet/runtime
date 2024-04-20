@@ -1052,7 +1052,7 @@ private:
             //
             thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock);
             thenBlock->CopyFlags(currBlock, BBF_SPLIT_GAINED);
-            thenBlock->inheritWeight(currBlock);
+            thenBlock->inheritWeight(checkBlock);
             thenBlock->scaleBBWeight(adjustedThenLikelihood);
             FlowEdge* const thenRemainderEdge = compiler->fgAddRefPred(remainderBlock, thenBlock);
             thenBlock->SetTargetEdge(thenRemainderEdge);
