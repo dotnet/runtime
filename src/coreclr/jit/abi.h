@@ -106,11 +106,22 @@ struct ClassifierInfo
 
 class X86Classifier
 {
-    RegisterQueue m_regs;
-    unsigned      m_stackArgSize = 0;
+    const ClassifierInfo& m_info;
+    RegisterQueue         m_regs;
+    unsigned              m_stackArgSize = 0;
 
 public:
     X86Classifier(const ClassifierInfo& info);
+
+    unsigned StackSize()
+    {
+        return m_stackArgSize;
+    }
+
+    unsigned StackAlignment()
+    {
+        return 4;
+    }
 
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,
@@ -122,10 +133,20 @@ class WinX64Classifier
 {
     RegisterQueue m_intRegs;
     RegisterQueue m_floatRegs;
-    unsigned      m_stackArgSize = 0;
+    unsigned      m_stackArgSize = 32;
 
 public:
     WinX64Classifier(const ClassifierInfo& info);
+
+    unsigned StackSize()
+    {
+        return m_stackArgSize;
+    }
+
+    unsigned StackAlignment()
+    {
+        return 16;
+    }
 
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,
@@ -142,6 +163,16 @@ class SysVX64Classifier
 public:
     SysVX64Classifier(const ClassifierInfo& info);
 
+    unsigned StackSize()
+    {
+        return m_stackArgSize;
+    }
+
+    unsigned StackAlignment()
+    {
+        return 16;
+    }
+
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,
                                    ClassLayout* structLayout,
@@ -157,6 +188,16 @@ class Arm64Classifier
 
 public:
     Arm64Classifier(const ClassifierInfo& info);
+
+    unsigned StackSize()
+    {
+        return m_stackArgSize;
+    }
+
+    unsigned StackAlignment()
+    {
+        return 16;
+    }
 
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,
@@ -182,6 +223,16 @@ class Arm32Classifier
 public:
     Arm32Classifier(const ClassifierInfo& info);
 
+    unsigned StackSize()
+    {
+        return m_stackArgSize;
+    }
+
+    unsigned StackAlignment()
+    {
+        return 8;
+    }
+
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,
                                    ClassLayout* structLayout,
@@ -198,6 +249,16 @@ class RiscV64Classifier
 public:
     RiscV64Classifier(const ClassifierInfo& info);
 
+    unsigned StackSize()
+    {
+        return m_stackArgSize;
+    }
+
+    unsigned StackAlignment()
+    {
+        return 16;
+    }
+
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,
                                    ClassLayout* structLayout,
@@ -213,6 +274,16 @@ class LoongArch64Classifier
 
 public:
     LoongArch64Classifier(const ClassifierInfo& info);
+
+    unsigned StackSize()
+    {
+        return m_stackArgSize;
+    }
+
+    unsigned StackAlignment()
+    {
+        return 16;
+    }
 
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,
@@ -245,6 +316,16 @@ public:
     SwiftABIClassifier(const ClassifierInfo& info)
         : m_classifier(info)
     {
+    }
+
+    unsigned StackSize()
+    {
+        return m_classifier.StackSize();
+    }
+
+    unsigned StackAlignment()
+    {
+        return m_classifier.StackAlignment();
     }
 
     ABIPassingInformation Classify(Compiler*    comp,
