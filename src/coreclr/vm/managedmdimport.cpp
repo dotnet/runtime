@@ -80,14 +80,14 @@ FCIMPL6(HRESULT, MetaDataImport::GetDefaultValue, IMDInternalImport* pScope, mdT
     {
         *pDefaultValue = 0;
         *pStringValue = value.m_wzValue;
+        *pLength = (INT32)value.m_cbSize / sizeof(WCHAR); // Length of string in character units
     }
     else
     {
         *pDefaultValue = value.m_ullValue;
         *pStringValue = NULL;
+        *pLength = (INT32)value.m_cbSize;
     }
-
-    *pLength = (INT32)value.m_cbSize;
     *pCorElementType = (UINT32)value.m_bType;
 
 ErrExit:
