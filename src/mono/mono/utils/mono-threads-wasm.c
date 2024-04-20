@@ -47,11 +47,8 @@ wasm_get_stack_size (void)
 
 #else /* HOST_BROWSER -> WASI */
 
-// TODO after https://github.com/llvm/llvm-project/commit/1532be98f99384990544bd5289ba339bca61e15b
-// use __stack_low && __stack_high
-// see mono-threads-wasi.S
-uintptr_t get_wasm_heap_base(void);
-uintptr_t get_wasm_data_end(void);
+uintptr_t get_wasm_stack_high(void);
+uintptr_t get_wasm_stack_low(void);
 
 static int
 wasm_get_stack_size (void)
@@ -60,8 +57,8 @@ wasm_get_stack_size (void)
 	 * | -- increasing address ---> |
 	 * | data (data_end)| stack |(heap_base) heap |
 	 */
-	size_t heap_base = get_wasm_heap_base();
-	size_t data_end = get_wasm_data_end();
+	size_t heap_base = get_wasm_stack_high();
+	size_t data_end = get_wasm_stack_low();
 	size_t max_stack_size = heap_base - data_end;
 
 	g_assert (data_end > 0);
@@ -75,7 +72,7 @@ wasm_get_stack_size (void)
 static int
 wasm_get_stack_base (void)
 {
-	return get_wasm_data_end();
+	return get_wasm_stack_high();
 	// this will need further change for multithreading as the stack will allocated be per thread at different addresses
 }
 
