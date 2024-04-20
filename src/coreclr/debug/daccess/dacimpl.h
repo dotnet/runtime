@@ -794,6 +794,7 @@ class DacStreamManager;
 
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
+#include "cdac.h"
 
 //----------------------------------------------------------------------------
 //
@@ -1208,7 +1209,7 @@ public:
         CLRDATA_ADDRESS *allocLimit);
 
     // ISOSDacInterface13
-    virtual HRESULT STDMETHODCALLTYPE TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, LoaderHeapKind kind, VISITHEAP pCallback);        
+    virtual HRESULT STDMETHODCALLTYPE TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, LoaderHeapKind kind, VISITHEAP pCallback);
     virtual HRESULT STDMETHODCALLTYPE GetDomainLoaderAllocator(CLRDATA_ADDRESS domainAddress, CLRDATA_ADDRESS *pLoaderAllocator);
     virtual HRESULT STDMETHODCALLTYPE GetLoaderAllocatorHeapNames(int count, const char **ppNames, int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocator, int count, CLRDATA_ADDRESS *pLoaderHeaps, LoaderHeapKind *pKinds, int *pNeeded);
@@ -1221,12 +1222,14 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetStaticBaseAddress(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS *nonGCStaticsAddress, CLRDATA_ADDRESS *GCStaticsAddress);
     virtual HRESULT STDMETHODCALLTYPE GetThreadStaticBaseAddress(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS thread, CLRDATA_ADDRESS *nonGCStaticsAddress, CLRDATA_ADDRESS *GCStaticsAddress);
     virtual HRESULT STDMETHODCALLTYPE GetMethodTableInitializationFlags(CLRDATA_ADDRESS methodTable, MethodTableInitializationFlags *initializationStatus);
-    
+
     //
     // ClrDataAccess.
     //
 
     HRESULT Initialize(void);
+
+    HRESULT GetThreadStoreDataImpl(struct DacpThreadStoreData *data);
 
     BOOL IsExceptionFromManagedCode(EXCEPTION_RECORD * pExceptionRecord);
 #ifndef TARGET_UNIX
@@ -1413,6 +1416,10 @@ public:
     DacInstanceManager m_instances;
     ULONG32 m_instanceAge;
     bool m_debugMode;
+
+    CDAC m_cdac;
+    NonVMComHolder<ISOSDacInterface> m_cdacSos;
+    NonVMComHolder<ISOSDacInterface9> m_cdacSos9;
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
@@ -1964,7 +1971,7 @@ public:
 
     virtual ~DacMemoryEnumerator() {}
     virtual HRESULT Init() = 0;
-    
+
     HRESULT STDMETHODCALLTYPE Skip(unsigned int count);
     HRESULT STDMETHODCALLTYPE Reset();
     HRESULT STDMETHODCALLTYPE GetCount(unsigned int *pCount);
