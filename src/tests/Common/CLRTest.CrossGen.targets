@@ -100,10 +100,6 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
 
         echo $2 >> $__ResponseFile
 
-
-        if [ "$(Optimize)" == "True" ]%3B then
-            echo -O>>$__ResponseFile
-        fi
         echo -o:$__OutputFile>>$__ResponseFile
         echo -r:$CORE_ROOT/System.*.dll>>$__ResponseFile
         echo -r:$CORE_ROOT/Microsoft.*.dll>>$__ResponseFile
@@ -259,9 +255,6 @@ if defined RunCrossGen2 (
     set __Command=!__Command! @"!__ResponseFile!"
     set __Command=!__Command! !ExtraCrossGen2Args!
     echo !__InputFile!>>!__ResponseFile!
-    if /i "$(Optimize)" == "True" (
-        echo -O>>!__ResponseFile!
-    )
     echo -o:!__OutputFile!>>!__ResponseFile!
     echo --targetarch:$(TargetArchitecture)>>!__ResponseFile!
     echo --targetos:$(TargetOS)>>!__ResponseFile!
