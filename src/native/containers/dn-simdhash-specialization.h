@@ -120,22 +120,35 @@ find_first_matching_suffix_scalar (
 	//  smaller code that seems to be much faster than a chain of
 	//  'if (...) return' for successful matches, and only slightly slower
 	//  for failed matches
-	ITER(13);
-	ITER(12);
-	ITER(11);
-	ITER(10);
-	ITER(9);
-	ITER(8);
-	ITER(7);
-	ITER(6);
+	// We split the unrolled loop into 2-3 independent chains of selects,
+	//  and early-out if the first or second ones are successful. This
+	//  improves best-case lookup performance slightly without penalizing
+	//  worst-case performance too much.
 	ITER(5);
 	ITER(4);
 	ITER(3);
 	ITER(2);
 	ITER(1);
 	ITER(0);
-#undef ITER
+	if (result != 32)
+		return result;
+
+	result = 32;
+	ITER(11);
+	ITER(10);
+	ITER(9);
+	ITER(8);
+	ITER(7);
+	ITER(6);
+	if (result != 32)
+		return result;
+
+	// Most buckets won't be this full due to load factor, and for some
+	//  specializations these slots will *never* be full
+	ITER(13);
+	ITER(12);
 	return result;
+#undef ITER
 }
 
 static DN_FORCEINLINE(void)
@@ -190,31 +203,33 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T_PTR hash, bucket_t *restrict buc
 	//  no good reason.
 	#define bucket_suffixes (bucket->suffixes)
 #endif
-	uint8_t count = dn_simdhash_extract_lane(bucket_suffixes, DN_SIMDHASH_COUNT_SLOT),
-		overflow_count = dn_simdhash_extract_lane(bucket_suffixes, DN_SIMDHASH_CASCADED_SLOT);
+	// Don't load the cascaded slot early, since we won't need it if we find a match,
+	//  and loading it too early will waste a valuable register or worse, spill to the stack
+	uint8_t count = dn_simdhash_extract_lane(bucket_suffixes, DN_SIMDHASH_COUNT_SLOT);
 	// We could early-out here when count==0, but it doesn't appear to meaningfully improve
-	//  search performance to do so, and might actually worsen it
+	//  search performance to do so, and might actually worsen it. With an ideal load factor,
+	//  most buckets will not be empty.
 #ifdef DN_SIMDHASH_USE_SCALAR_FALLBACK
 	uint32_t index = find_first_matching_suffix_scalar(search_vector, bucket->suffixes.values);
 #else
 	uint32_t index = find_first_matching_suffix_simd(search_vector, bucket_suffixes);
 #endif
-#undef bucket_suffixes
-	for (; index < count; index++) {
-		// FIXME: Could be profitable to manually hoist the data load outside of the loop,
-		//  if not out of SCAN_BUCKET_INTERNAL entirely. Clang appears to do LICM on it.
-		// It's better to index bucket->keys each iteration inside the loop than to precompute
-		//  a pointer outside and bump the pointer, because in many cases the bucket will be
-		//  empty, and in many other cases it will have one match. Putting the index inside the
-		//  loop means that for empty/no-match buckets we don't do the index calculation at all.
-		if (DN_SIMDHASH_KEY_EQUALS(DN_SIMDHASH_GET_DATA(hash), needle, bucket->keys[index]))
-			return index;
+	if (index < count) {
+		// Make scans slightly faster by not recomputing the key address every iteration
+		DN_SIMDHASH_KEY_T *key = bucket->keys + index;
+		do {
+			if (DN_SIMDHASH_KEY_EQUALS(DN_SIMDHASH_GET_DATA(hash), needle, bucket->keys[index]))
+				return index;
+			key++;
+			index++;
+		} while (index < count);
 	}
 
-	if (overflow_count)
+	if (dn_simdhash_extract_lane(bucket_suffixes, DN_SIMDHASH_CASCADED_SLOT))
 		return DN_SIMDHASH_SCAN_BUCKET_OVERFLOWED;
 	else
 		return DN_SIMDHASH_SCAN_BUCKET_NO_OVERFLOW;
+#undef bucket_suffixes
 }
 
 // Helper macros so that we can optimize and change scan logic more easily
