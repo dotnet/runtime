@@ -162,7 +162,10 @@ namespace System.Net.Test.Common
         public async Task SendFrameAsync(long frameType, ReadOnlyMemory<byte> framePayload)
         {
             await SendFrameHeaderAsync(frameType, framePayload.Length).ConfigureAwait(false);
-            await _stream.WriteAsync(framePayload).ConfigureAwait(false);
+            if (!framePayload.IsEmpty)
+            {
+                await _stream.WriteAsync(framePayload).ConfigureAwait(false);
+            }
         }
 
         static int EncodeHttpInteger(long longToEncode, Span<byte> buffer)
