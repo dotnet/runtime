@@ -147,6 +147,18 @@ inline OBJECTHANDLE CreateDependentHandle(IGCHandleStore* store, OBJECTREF prima
     return hnd;
 }
 
+inline OBJECTHANDLE CreateWeakInteriorHandle(IGCHandleStore* store, OBJECTREF primary, void* interiorPointerLocation)
+{
+    OBJECTHANDLE hnd = store->CreateHandleWithExtraInfo(OBJECTREFToObject(primary), HNDTYPE_WEAK_INTERIOR_POINTER, interiorPointerLocation);
+    if (!hnd)
+    {
+        COMPlusThrowOM();
+    }
+
+    DiagHandleCreated(hnd, primary);
+    return hnd;
+}
+
 // Global handle creation convenience functions
 inline OBJECTHANDLE CreateGlobalHandleCommon(OBJECTREF object, HandleType type)
 {
@@ -321,6 +333,11 @@ inline void DestroyGlobalRefcountedHandle(OBJECTHANDLE handle)
     DestroyHandleCommon(handle, HNDTYPE_REFCOUNTED);
 }
 
+inline void DestroyWeakInteriorHandle(OBJECTHANDLE handle)
+{
+    DestroyHandleCommon(handle, HNDTYPE_WEAK_INTERIOR_POINTER);
+}
+
 inline void DestroyTypedHandle(OBJECTHANDLE handle)
 {
     DiagHandleDestroyed(handle);
@@ -338,6 +355,7 @@ typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyRefcountedHandle> 
 typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyLongWeakHandle>            LongWeakHandleHolder;
 typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyGlobalStrongHandle>        GlobalStrongHandleHolder;
 typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyGlobalShortWeakHandle>     GlobalShortWeakHandleHolder;
+typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyWeakInteriorHandle>        WeakInteriorHandleHolder;
 typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, ResetOBJECTHANDLE>                ObjectInHandleHolder;
 
 class RCOBJECTHANDLEHolder : public RefCountedOHWrapper
