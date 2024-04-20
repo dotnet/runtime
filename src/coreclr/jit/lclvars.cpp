@@ -5978,6 +5978,8 @@ bool Compiler::lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(unsigned l
                 case REG_XMM3:
                     *offset = 24;
                     return true;
+                default:
+                    break;
             }
 #elif defined(TARGET_ARM)
             regMaskTP prespills = codeGen->regSet.rsMaskPreSpillRegs(true);
