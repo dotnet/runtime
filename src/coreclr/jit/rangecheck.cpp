@@ -866,34 +866,35 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
             continue;
         }
 
-        // Skip if it doesn't tighten the current bound
-        if (pRange->uLimit.IsConstant() && (cmpOper == GT_LE || cmpOper == GT_LT))
+        // Skip if it doesn't tighten the current bound:
+        if (pRange->uLimit.IsConstant() && ((cmpOper == GT_LE) || (cmpOper == GT_LT)))
         {
-            if (!limit.IsConstant() && limit.vn != arrLenVN)
+            if (!limit.IsConstant() && (limit.vn != arrLenVN))
             {
-                // If limit is not constant and doesn't represent the array's length - bail out.
-                // NOTE: it's fine to replace constant limit with non-constant arrLenVN
+                // If our new limit is not constant and doesn't represent the array's length - bail out.
+                // NOTE: it's fine to replace the current constant limit with a non-constant arrLenVN.
                 continue;
             }
-            if (limit.IsConstant() && limit.cns > pRange->uLimit.cns)
+            if (limit.IsConstant() && (limit.cns > pRange->uLimit.cns))
             {
                 // The new constant limit doesn't tighten the current constant bound.
-                // E.g. current:X < 10 and new one is X < 100
+                // E.g. current is "X < 10" and the new one is "X < 100"
                 continue;
             }
         }
-        if (pRange->lLimit.IsConstant() && (cmpOper == GT_GE || cmpOper == GT_GT))
+        // Same for the lower bound:
+        if (pRange->lLimit.IsConstant() && ((cmpOper == GT_GE) || (cmpOper == GT_GT)))
         {
-            if (!limit.IsConstant() && limit.vn != arrLenVN)
+            if (!limit.IsConstant() && (limit.vn != arrLenVN))
             {
-                // If limit is not constant and doesn't represent the array's length - bail out.
-                // NOTE: it's fine to replace constant limit with non-constant arrLenVN
+                // If our new limit is not constant and doesn't represent the array's length - bail out.
+                // NOTE: it's fine to replace the current constant limit with a non-constant arrLenVN.
                 continue;
             }
-            if (limit.IsConstant() && limit.cns < pRange->lLimit.cns)
+            if (limit.IsConstant() && (limit.cns < pRange->lLimit.cns))
             {
                 // The new constant limit doesn't tighten the current constant bound.
-                // E.g. current:X > 10 and new one is X > 5
+                // E.g. current is "X > 10" and the new one is "X > 5"
                 continue;
             }
         }
