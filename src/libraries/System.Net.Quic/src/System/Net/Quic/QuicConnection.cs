@@ -530,10 +530,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
     private unsafe int HandleEventShutdownInitiatedByTransport(ref SHUTDOWN_INITIATED_BY_TRANSPORT_DATA data)
     {
-        if (data.Status == QUIC_STATUS_CONNECTION_IDLE && NetEventSource.Log.IsEnabled())
-        {
-            Debug.Fail("Connection was idle for too long and was closed by MsQuic");
-        }
         Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetExceptionForMsQuicStatus(data.Status, (long)data.ErrorCode));
         _connectedTcs.TrySetException(exception);
         _acceptQueue.Writer.TryComplete(exception);

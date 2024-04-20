@@ -77,6 +77,7 @@ namespace System.Net.Test.Common
             Http3LoopbackConnection connection = new Http3LoopbackConnection(con, _output);
 
             await connection.EstablishControlStreamAsync(settingsEntries);
+            _output?.WriteLine($"{this} {con} Control stream established");
             return connection;
         }
 
@@ -100,6 +101,7 @@ namespace System.Net.Test.Common
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
             await using Http3LoopbackConnection con = (Http3LoopbackConnection)await EstablishGenericConnectionAsync().ConfigureAwait(false);
+            _output?.WriteLine($"{con} Connection established successfully!");
             return await con.HandleRequestAsync(statusCode, headers, content).ConfigureAwait(false);
         }
     }
