@@ -1895,7 +1895,7 @@ void Compiler::lvaClassifyParameterABI()
         }
     }
 
-#ifdef FEATURE_FASTTAILCALL
+#if FEATURE_FASTTAILCALL
     // Swift doesn't have correct ABI info computed by the old classification,
     // so skip this validation there.
     if (info.compCallConv != CorInfoCallConvExtension::Swift)
