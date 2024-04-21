@@ -959,7 +959,7 @@ namespace System.Text.Json
 
         private void ValidateEnd(byte token)
         {
-            if (_bitStack.CurrentDepth <= 0 || _tokenType == JsonTokenType.PropertyName)
+            if (_bitStack.CurrentDepth <= 0 || _tokenType == JsonTokenType.PropertyName || _tokenType == JsonTokenType.StringSegment)
                 ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, currentDepth: default, maxDepth: _options.MaxDepth, token, _tokenType);
 
             if (token == JsonConstants.CloseBracket)

@@ -20,10 +20,34 @@ namespace System.Text.Json
             ReadOnlySpan<byte> utf8Value = value.EncodedUtf8Bytes;
             Debug.Assert(utf8Value.Length <= JsonConstants.MaxUnescapedTokenSize);
 
-            WriteStringByOptions(utf8Value);
+            WriteStringByOptions(utf8Value, JsonTokenType.String);
 
             SetFlagToAddListSeparatorBeforeNextItem();
             _tokenType = JsonTokenType.String;
+        }
+
+        /// <summary>
+        /// Writes the pre-encoded text value segment as a partial JSON string.
+        /// </summary>
+        /// <param name="value">The JSON-encoded value to write.</param>
+        /// <param name="isFinalSegment">Indicates that this is the final segment of the string.</param>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
+        /// </exception>
+        public void WriteStringValueSegment(JsonEncodedText value, bool isFinalSegment)
+        {
+            ReadOnlySpan<byte> utf8Value = value.EncodedUtf8Bytes;
+            Debug.Assert(utf8Value.Length <= JsonConstants.MaxUnescapedTokenSize);
+
+            JsonTokenType nextTokenType = isFinalSegment ? JsonTokenType.String : JsonTokenType.StringSegment;
+            WriteStringByOptions(utf8Value, nextTokenType);
+
+            if (isFinalSegment)
+            {
+                SetFlagToAddListSeparatorBeforeNextItem();
+            }
+
+            _tokenType = nextTokenType;
         }
 
         /// <summary>
@@ -56,6 +80,38 @@ namespace System.Text.Json
             }
         }
 
+
+        /// <summary>
+        /// Writes the string text value segment as a partial JSON string.
+        /// </summary>
+        /// <param name="value">The value to write.</param>
+        /// <param name="isFinalSegment">Indicates that this is the final segment of the string.</param>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the specified value is too large.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
+        /// </exception>
+        /// <remarks>
+        /// <para>
+        /// The value is escaped before writing.</para>
+        /// <para>
+        /// If <paramref name="value"/> is <see langword="null"/> the JSON null value is written,
+        /// as if <see cref="WriteNullValue"/> was called.
+        /// </para>
+        /// </remarks>
+        public void WriteStringValueSegment(string? value, bool isFinalSegment)
+        {
+            if (value == null)
+            {
+                WriteNullValue();
+            }
+            else
+            {
+                WriteStringValueSegment(value.AsSpan(), isFinalSegment);
+            }
+        }
+
         /// <summary>
         /// Writes the text value (as a JSON string) as an element of a JSON array.
         /// </summary>
@@ -73,13 +129,43 @@ namespace System.Text.Json
         {
             JsonWriterHelper.ValidateValue(value);
 
-            WriteStringEscape(value);
+            WriteStringEscape(value, JsonTokenType.String);
 
             SetFlagToAddListSeparatorBeforeNextItem();
             _tokenType = JsonTokenType.String;
         }
 
-        private void WriteStringEscape(ReadOnlySpan<char> value)
+        /// <summary>
+        /// Writes the text value segment as a partial JSON string.
+        /// </summary>
+        /// <param name="value">The value to write.</param>
+        /// <param name="isFinalSegment">Indicates that this is the final segment of the string.</param>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the specified value is too large.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
+        /// </exception>
+        /// <remarks>
+        /// The value is escaped before writing.
+        /// </remarks>
+        public void WriteStringValueSegment(ReadOnlySpan<char> value, bool isFinalSegment)
+        {
+            JsonWriterHelper.ValidateValue(value);
+
+            JsonTokenType nextTokenType = isFinalSegment ? JsonTokenType.String : JsonTokenType.StringSegment;
+
+            WriteStringEscape(value, nextTokenType);
+
+            if (isFinalSegment)
+            {
+                SetFlagToAddListSeparatorBeforeNextItem();
+            }
+
+            _tokenType = nextTokenType;
+        }
+
+        private void WriteStringEscape(ReadOnlySpan<char> value, JsonTokenType stringTokenType)
         {
             int valueIdx = JsonWriterHelper.NeedsEscaping(value, _options.Encoder);
 
@@ -87,33 +173,33 @@ namespace System.Text.Json
 
             if (valueIdx != -1)
             {
-                WriteStringEscapeValue(value, valueIdx);
+                WriteStringEscapeValue(value, valueIdx, stringTokenType);
             }
             else
             {
-                WriteStringByOptions(value);
+                WriteStringByOptions(value, stringTokenType);
             }
         }
 
-        private void WriteStringByOptions(ReadOnlySpan<char> value)
+        private void WriteStringByOptions(ReadOnlySpan<char> value, JsonTokenType stringTokenType)
         {
-            if (!_options.SkipValidation)
+            if (!_options.SkipValidation && _tokenType != JsonTokenType.StringSegment)
             {
                 ValidateWritingValue();
             }
 
             if (_options.Indented)
             {
-                WriteStringIndented(value);
+                WriteStringIndented(value, stringTokenType);
             }
             else
             {
-                WriteStringMinimized(value);
+                WriteStringMinimized(value, stringTokenType);
             }
         }
 
         // TODO: https://github.com/dotnet/runtime/issues/29293
-        private void WriteStringMinimized(ReadOnlySpan<char> escapedValue)
+        private void WriteStringMinimized(ReadOnlySpan<char> escapedValue, JsonTokenType stringTokenType)
         {
             Debug.Assert(escapedValue.Length < (int.MaxValue / JsonConstants.MaxExpansionFactorWhileTranscoding) - 3);
 
@@ -128,19 +214,26 @@ namespace System.Text.Json
 
             Span<byte> output = _memory.Span;
 
-            if (_currentDepth < 0)
+            if (_tokenType != JsonTokenType.StringSegment)
             {
-                output[BytesPending++] = JsonConstants.ListSeparator;
+                if (_currentDepth < 0)
+                {
+                    output[BytesPending++] = JsonConstants.ListSeparator;
+                }
+
+                output[BytesPending++] = JsonConstants.Quote;
             }
-            output[BytesPending++] = JsonConstants.Quote;
 
             TranscodeAndWrite(escapedValue, output);
 
-            output[BytesPending++] = JsonConstants.Quote;
+            if (stringTokenType != JsonTokenType.StringSegment)
+            {
+                output[BytesPending++] = JsonConstants.Quote;
+            }
         }
 
         // TODO: https://github.com/dotnet/runtime/issues/29293
-        private void WriteStringIndented(ReadOnlySpan<char> escapedValue)
+        private void WriteStringIndented(ReadOnlySpan<char> escapedValue, JsonTokenType stringTokenType)
         {
             int indent = Indentation;
             Debug.Assert(indent <= _indentLength * _options.MaxDepth);
@@ -158,29 +251,38 @@ namespace System.Text.Json
 
             Span<byte> output = _memory.Span;
 
-            if (_currentDepth < 0)
+            if (_tokenType != JsonTokenType.StringSegment)
             {
-                output[BytesPending++] = JsonConstants.ListSeparator;
-            }
-
-            if (_tokenType != JsonTokenType.PropertyName)
-            {
-                if (_tokenType != JsonTokenType.None)
+                if (_currentDepth < 0)
                 {
-                    WriteNewLine(output);
+                    output[BytesPending++] = JsonConstants.ListSeparator;
                 }
-                WriteIndentation(output.Slice(BytesPending), indent);
-                BytesPending += indent;
-            }
 
-            output[BytesPending++] = JsonConstants.Quote;
+                if (_tokenType != JsonTokenType.PropertyName && _tokenType != JsonTokenType.StringSegment)
+                {
+                    if (_tokenType != JsonTokenType.None)
+                    {
+                        WriteNewLine(output);
+                    }
+                    WriteIndentation(output.Slice(BytesPending), indent);
+                    BytesPending += indent;
+                }
+
+                output[BytesPending++] = JsonConstants.Quote;
+            }
 
             TranscodeAndWrite(escapedValue, output);
 
-            output[BytesPending++] = JsonConstants.Quote;
+            if (stringTokenType != JsonTokenType.StringSegment)
+            {
+                output[BytesPending++] = JsonConstants.Quote;
+            }
         }
 
-        private void WriteStringEscapeValue(ReadOnlySpan<char> value, int firstEscapeIndexVal)
+        private void WriteStringEscapeValue(
+            ReadOnlySpan<char> value,
+            int firstEscapeIndexVal,
+            JsonTokenType stringTokenType)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= value.Length);
             Debug.Assert(firstEscapeIndexVal >= 0 && firstEscapeIndexVal < value.Length);
@@ -195,7 +297,7 @@ namespace System.Text.Json
 
             JsonWriterHelper.EscapeString(value, escapedValue, firstEscapeIndexVal, _options.Encoder, out int written);
 
-            WriteStringByOptions(escapedValue.Slice(0, written));
+            WriteStringByOptions(escapedValue.Slice(0, written), stringTokenType);
 
             if (valueArray != null)
             {
@@ -220,13 +322,42 @@ namespace System.Text.Json
         {
             JsonWriterHelper.ValidateValue(utf8Value);
 
-            WriteStringEscape(utf8Value);
+            WriteStringEscape(utf8Value, JsonTokenType.String);
 
             SetFlagToAddListSeparatorBeforeNextItem();
             _tokenType = JsonTokenType.String;
         }
 
-        private void WriteStringEscape(ReadOnlySpan<byte> utf8Value)
+        /// <summary>
+        /// Writes the UTF-8 text value segment as a partial JSON string.
+        /// </summary>
+        /// <param name="utf8Value">The UTF-8 encoded value to be written as a JSON string element of a JSON array.</param>
+        /// <param name="isFinalSegment">Indicates that this is the final segment of the string.</param>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the specified value is too large.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
+        /// </exception>
+        /// <remarks>
+        /// The value is escaped before writing.
+        /// </remarks>
+        public void WriteStringValueSegment(ReadOnlySpan<byte> utf8Value, bool isFinalSegment)
+        {
+            JsonWriterHelper.ValidateValue(utf8Value);
+
+            JsonTokenType nextTokenType = isFinalSegment ? JsonTokenType.String : JsonTokenType.StringSegment;
+            WriteStringEscape(utf8Value, nextTokenType);
+
+            if (isFinalSegment)
+            {
+                SetFlagToAddListSeparatorBeforeNextItem();
+            }
+
+            _tokenType = nextTokenType;
+        }
+
+        private void WriteStringEscape(ReadOnlySpan<byte> utf8Value, JsonTokenType stringTokenType)
         {
             int valueIdx = JsonWriterHelper.NeedsEscaping(utf8Value, _options.Encoder);
 
@@ -234,33 +365,33 @@ namespace System.Text.Json
 
             if (valueIdx != -1)
             {
-                WriteStringEscapeValue(utf8Value, valueIdx);
+                WriteStringEscapeValue(utf8Value, valueIdx, stringTokenType);
             }
             else
             {
-                WriteStringByOptions(utf8Value);
+                WriteStringByOptions(utf8Value, stringTokenType);
             }
         }
 
-        private void WriteStringByOptions(ReadOnlySpan<byte> utf8Value)
+        private void WriteStringByOptions(ReadOnlySpan<byte> utf8Value, JsonTokenType stringTokenType)
         {
-            if (!_options.SkipValidation)
+            if (!_options.SkipValidation && _tokenType != JsonTokenType.StringSegment)
             {
                 ValidateWritingValue();
             }
 
             if (_options.Indented)
             {
-                WriteStringIndented(utf8Value);
+                WriteStringIndented(utf8Value, stringTokenType);
             }
             else
             {
-                WriteStringMinimized(utf8Value);
+                WriteStringMinimized(utf8Value, stringTokenType);
             }
         }
 
         // TODO: https://github.com/dotnet/runtime/issues/29293
-        private void WriteStringMinimized(ReadOnlySpan<byte> escapedValue)
+        private void WriteStringMinimized(ReadOnlySpan<byte> escapedValue, JsonTokenType stringTokenType)
         {
             Debug.Assert(escapedValue.Length < int.MaxValue - 3);
 
@@ -274,20 +405,26 @@ namespace System.Text.Json
 
             Span<byte> output = _memory.Span;
 
-            if (_currentDepth < 0)
+            if (_tokenType != JsonTokenType.StringSegment)
             {
-                output[BytesPending++] = JsonConstants.ListSeparator;
+                if (_currentDepth < 0)
+                {
+                    output[BytesPending++] = JsonConstants.ListSeparator;
+                }
+                output[BytesPending++] = JsonConstants.Quote;
             }
-            output[BytesPending++] = JsonConstants.Quote;
 
             escapedValue.CopyTo(output.Slice(BytesPending));
             BytesPending += escapedValue.Length;
 
-            output[BytesPending++] = JsonConstants.Quote;
+            if (stringTokenType != JsonTokenType.StringSegment)
+            {
+                output[BytesPending++] = JsonConstants.Quote;
+            }
         }
 
         // TODO: https://github.com/dotnet/runtime/issues/29293
-        private void WriteStringIndented(ReadOnlySpan<byte> escapedValue)
+        private void WriteStringIndented(ReadOnlySpan<byte> escapedValue, JsonTokenType stringTokenType)
         {
             int indent = Indentation;
             Debug.Assert(indent <= _indentLength * _options.MaxDepth);
@@ -304,30 +441,36 @@ namespace System.Text.Json
 
             Span<byte> output = _memory.Span;
 
-            if (_currentDepth < 0)
+            if (_tokenType != JsonTokenType.StringSegment)
             {
-                output[BytesPending++] = JsonConstants.ListSeparator;
-            }
-
-            if (_tokenType != JsonTokenType.PropertyName)
-            {
-                if (_tokenType != JsonTokenType.None)
+                if (_currentDepth < 0)
                 {
-                    WriteNewLine(output);
+                    output[BytesPending++] = JsonConstants.ListSeparator;
                 }
-                WriteIndentation(output.Slice(BytesPending), indent);
-                BytesPending += indent;
-            }
 
-            output[BytesPending++] = JsonConstants.Quote;
+                if (_tokenType != JsonTokenType.PropertyName)
+                {
+                    if (_tokenType != JsonTokenType.None)
+                    {
+                        WriteNewLine(output);
+                    }
+                    WriteIndentation(output.Slice(BytesPending), indent);
+                    BytesPending += indent;
+                }
+
+                output[BytesPending++] = JsonConstants.Quote;
+            }
 
             escapedValue.CopyTo(output.Slice(BytesPending));
             BytesPending += escapedValue.Length;
 
-            output[BytesPending++] = JsonConstants.Quote;
+            if (stringTokenType != JsonTokenType.StringSegment)
+            {
+                output[BytesPending++] = JsonConstants.Quote;
+            }
         }
 
-        private void WriteStringEscapeValue(ReadOnlySpan<byte> utf8Value, int firstEscapeIndexVal)
+        private void WriteStringEscapeValue(ReadOnlySpan<byte> utf8Value, int firstEscapeIndexVal, JsonTokenType stringTokenType)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8Value.Length);
             Debug.Assert(firstEscapeIndexVal >= 0 && firstEscapeIndexVal < utf8Value.Length);
@@ -342,7 +485,7 @@ namespace System.Text.Json
 
             JsonWriterHelper.EscapeString(utf8Value, escapedValue, firstEscapeIndexVal, _options.Encoder, out int written);
 
-            WriteStringByOptions(escapedValue.Slice(0, written));
+            WriteStringByOptions(escapedValue.Slice(0, written), stringTokenType);
 
             if (valueArray != null)
             {
@@ -358,7 +501,7 @@ namespace System.Text.Json
         {
             // The value has been validated prior to calling this method.
 
-            WriteStringByOptions(utf8Value);
+            WriteStringByOptions(utf8Value, JsonTokenType.String);
 
             SetFlagToAddListSeparatorBeforeNextItem();
             _tokenType = JsonTokenType.String;

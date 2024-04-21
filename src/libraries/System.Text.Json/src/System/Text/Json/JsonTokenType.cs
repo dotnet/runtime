@@ -77,5 +77,14 @@ namespace System.Text.Json
         ///   Indicates that the token type is the JSON literal <c>null</c>.
         /// </summary>
         Null,
+
+        /// <summary>
+        ///   Indicates that the token type is a segment of a JSON string.
+        /// </summary>
+        /// <remarks>
+        ///   This does not represent a token defined in the JSON specification, but rather provides a means to track
+        ///   that a string is being written in segments. This value will never be seen during deserialization.
+        /// </remarks>
+        StringSegment,
     }
 }
