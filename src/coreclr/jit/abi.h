@@ -118,11 +118,6 @@ public:
         return m_stackArgSize;
     }
 
-    unsigned StackAlignment()
-    {
-        return 4;
-    }
-
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,
                                    ClassLayout* structLayout,
@@ -141,11 +136,6 @@ public:
     unsigned StackSize()
     {
         return m_stackArgSize;
-    }
-
-    unsigned StackAlignment()
-    {
-        return 16;
     }
 
     ABIPassingInformation Classify(Compiler*    comp,
@@ -168,11 +158,6 @@ public:
         return m_stackArgSize;
     }
 
-    unsigned StackAlignment()
-    {
-        return 16;
-    }
-
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,
                                    ClassLayout* structLayout,
@@ -191,12 +176,7 @@ public:
 
     unsigned StackSize()
     {
-        return m_stackArgSize;
-    }
-
-    unsigned StackAlignment()
-    {
-        return 16;
+        return roundUp(m_stackArgSize, TARGET_POINTER_SIZE);
     }
 
     ABIPassingInformation Classify(Compiler*    comp,
@@ -228,11 +208,6 @@ public:
         return m_stackArgSize;
     }
 
-    unsigned StackAlignment()
-    {
-        return 8;
-    }
-
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,
                                    ClassLayout* structLayout,
@@ -254,11 +229,6 @@ public:
         return m_stackArgSize;
     }
 
-    unsigned StackAlignment()
-    {
-        return 16;
-    }
-
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,
                                    ClassLayout* structLayout,
@@ -278,11 +248,6 @@ public:
     unsigned StackSize()
     {
         return m_stackArgSize;
-    }
-
-    unsigned StackAlignment()
-    {
-        return 16;
     }
 
     ABIPassingInformation Classify(Compiler*    comp,

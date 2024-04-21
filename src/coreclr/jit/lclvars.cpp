@@ -1726,23 +1726,7 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
 #endif
     }
 
-    lvaParameterStackSize = roundUp(classifier.StackSize(), classifier.StackAlignment());
-
-#if FEATURE_FASTTAILCALL
-    // Swift doesn't have correct ABI info computed by the old classification,
-    // so skip this validation there.
-    if (info.compCallConv != CorInfoCallConvExtension::Swift)
-    {
-        unsigned oldStackSize = info.compArgStackSize;
-
-#ifdef WINDOWS_AMD64_ABI
-        // Old info does not take 4 shadow slots on win-x64 into account.
-        oldStackSize += 32;
-#endif
-
-        assert(lvaParameterStackSize == roundUp(oldStackSize, classifier.StackAlignment()));
-    }
-#endif
+    lvaParameterStackSize = classifier.StackSize();
 }
 
 //-----------------------------------------------------------------------------
@@ -1910,6 +1894,22 @@ void Compiler::lvaClassifyParameterABI()
             }
         }
     }
+
+#ifdef FEATURE_FASTTAILCALL
+    // Swift doesn't have correct ABI info computed by the old classification,
+    // so skip this validation there.
+    if (info.compCallConv != CorInfoCallConvExtension::Swift)
+    {
+        unsigned oldStackSize = info.compArgStackSize;
+
+#ifdef WINDOWS_AMD64_ABI
+        // Old info does not take 4 shadow slots on win-x64 into account.
+        oldStackSize += 32;
+#endif
+
+        assert(lvaParameterStackSize == roundUp(oldStackSize, TARGET_POINTER_SIZE));
+    }
+#endif
 #endif // DEBUG
 }
 
