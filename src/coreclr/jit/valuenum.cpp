@@ -6545,25 +6545,27 @@ bool ValueNumStore::IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompare
         {
             // We only care about "(uint)i < (uint)len" and its negation "(uint)i >= (uint)len"
             // Same for (ulong)
-            ValueNum vnBound = funcApp.m_args[1];
-            if (IsVNCheckedBound(vnBound) || (IsVNCastToULong(vnBound, &vnBound) && IsVNCheckedBound(vnBound)))
+            ValueNum vnBound  = funcApp.m_args[1];
+            ValueNum vnIdx    = funcApp.m_args[0];
+            ValueNum vnCastOp = NoVN;
+            if (IsVNCheckedBound(vnBound) || (IsVNCastToULong(vnBound, &vnCastOp) && IsVNCheckedBound(vnCastOp)))
             {
-                info->vnIdx   = funcApp.m_args[0];
+                info->vnIdx   = vnIdx;
                 info->cmpOper = funcApp.m_func;
-                info->vnBound = vnBound;
+                info->vnBound = (vnCastOp != NoVN) ? vnCastOp : vnBound;
                 return true;
             }
             // We care about (uint)len < constant and its negation "(uint)len >= constant"
-            else if (IsVNPositiveInt32Constant(funcApp.m_args[1]) && IsVNCheckedBound(funcApp.m_args[0]))
+            else if (IsVNPositiveInt32Constant(vnBound) && IsVNCheckedBound(vnIdx))
             {
                 // Change constant < len into (uint)len >= (constant - 1)
                 // to make consuming this simpler (and likewise for it's negation).
-                INT32 validIndex = ConstantValue<INT32>(funcApp.m_args[1]) - 1;
+                INT32 validIndex = ConstantValue<INT32>(vnBound) - 1;
                 assert(validIndex >= 0);
 
                 info->vnIdx   = VNForIntCon(validIndex);
                 info->cmpOper = (funcApp.m_func == VNF_GE_UN) ? VNF_LT_UN : VNF_GE_UN;
-                info->vnBound = funcApp.m_args[0];
+                info->vnBound = vnIdx;
                 return true;
             }
         }
@@ -6571,26 +6573,28 @@ bool ValueNumStore::IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompare
         {
             // We only care about "(uint)a.len > (uint)i" and its negation "(uint)a.len <= (uint)i"
             // Same for (ulong)
-            ValueNum vnBound = funcApp.m_args[0];
-            if (IsVNCheckedBound(vnBound) || (IsVNCastToULong(vnBound, &vnBound) && IsVNCheckedBound(vnBound)))
+            ValueNum vnBound  = funcApp.m_args[0];
+            ValueNum vnIdx    = funcApp.m_args[1];
+            ValueNum vnCastOp = NoVN;
+            if (IsVNCheckedBound(vnBound) || (IsVNCastToULong(vnBound, &vnCastOp) && IsVNCheckedBound(vnCastOp)))
             {
-                info->vnIdx = funcApp.m_args[1];
+                info->vnIdx = vnIdx;
                 // Let's keep a consistent operand order - it's always i < len, never len > i
                 info->cmpOper = (funcApp.m_func == VNF_GT_UN) ? VNF_LT_UN : VNF_GE_UN;
-                info->vnBound = vnBound;
+                info->vnBound = (vnCastOp != NoVN) ? vnCastOp : vnBound;
                 return true;
             }
             // Look for constant > (uint)len and its negation "constant <= (uint)len"
-            else if (IsVNPositiveInt32Constant(funcApp.m_args[0]) && IsVNCheckedBound(funcApp.m_args[1]))
+            else if (IsVNPositiveInt32Constant(vnBound) && IsVNCheckedBound(vnIdx))
             {
                 // Change constant <= (uint)len to (constant - 1) < (uint)len
                 // to make consuming this simpler (and likewise for it's negation).
-                INT32 validIndex = ConstantValue<INT32>(funcApp.m_args[0]) - 1;
+                INT32 validIndex = ConstantValue<INT32>(vnBound) - 1;
                 assert(validIndex >= 0);
 
                 info->vnIdx   = VNForIntCon(validIndex);
                 info->cmpOper = (funcApp.m_func == VNF_LE_UN) ? VNF_LT_UN : VNF_GE_UN;
-                info->vnBound = funcApp.m_args[1];
+                info->vnBound = vnIdx;
                 return true;
             }
         }
