@@ -38,6 +38,7 @@ namespace Microsoft.Win32.SafeHandles
                     newHandle.Dispose();
                 }
 
+                Debug.Assert(currentHandle.IsInvalid);
                 return currentHandle;
             }
         }
