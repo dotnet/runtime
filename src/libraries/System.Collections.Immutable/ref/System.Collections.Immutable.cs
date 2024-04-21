@@ -70,8 +70,11 @@ namespace System.Collections.Frozen
     }
     public static partial class FrozenSet
     {
+        public static System.Collections.Frozen.FrozenSet<T> Create<T>(params System.ReadOnlySpan<T> source) { throw null; }
+        public static System.Collections.Frozen.FrozenSet<T> Create<T>(System.Collections.Generic.IEqualityComparer<T>? equalityComparer, params System.ReadOnlySpan<T> source) { throw null; }
         public static System.Collections.Frozen.FrozenSet<T> ToFrozenSet<T>(this System.Collections.Generic.IEnumerable<T> source, System.Collections.Generic.IEqualityComparer<T>? comparer = null) { throw null; }
     }
+    [System.Runtime.CompilerServices.CollectionBuilder(typeof(System.Collections.Frozen.FrozenSet), nameof(System.Collections.Frozen.FrozenSet.Create))]
     public abstract partial class FrozenSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable
     {
         internal FrozenSet() { }
