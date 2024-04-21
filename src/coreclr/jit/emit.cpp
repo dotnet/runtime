@@ -2908,8 +2908,73 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
             {
                 // other block kinds should emit something at the end that is not a call.
                 assert(prevBlock->KindIs(BBJ_ALWAYS));
-                // CONSIDER: In many cases we could instead patch up the GC info for previous call instruction.
-                emitIns(INS_nop);
+
+                instrDesc* id            = emitLastIns;
+                regMaskTP  callGcrefRegs = gcrefRegs;
+                regMaskTP  callByrefRegs = byrefRegs;
+
+                // We may see returns that become alive after the call,
+                // We do not need to track those, since they are tracked via idGCref/idSecondGCref.
+                if (id->idGCref() == GCT_GCREF)
+                {
+                    callGcrefRegs &= ~RBM_INTRET;
+                }
+                else if (id->idGCref() == GCT_BYREF)
+                {
+                    callByrefRegs &= ~RBM_INTRET;
+                }
+
+                if (id->idIsLargeCall())
+                {
+                    instrDescCGCA* idCall = (instrDescCGCA*)id;
+#if MULTIREG_HAS_SECOND_GC_RET
+                    if (idCall->idSecondGCref() == GCT_GCREF)
+                    {
+                        callGcrefRegs &= ~RBM_INTRET_1;
+                    }
+                    else if (idCall->idSecondGCref() == GCT_BYREF)
+                    {
+                        callByrefRegs &= ~RBM_INTRET_1;
+                    }
+#endif // MULTIREG_HAS_SECOND_GC_RET
+
+                    // we should not see live calee-trash regs right after a GC-capable call
+                    // only no-GC helpers may preserve those
+                    assert((callGcrefRegs & RBM_CALLEE_TRASH) == 0);
+                    assert((callByrefRegs & RBM_CALLEE_TRASH) == 0);
+
+                    // the new live set must be a subset of the old one
+                    assert((idCall->idcGcrefRegs & callGcrefRegs) == callGcrefRegs);
+                    assert((idCall->idcByrefRegs & callByrefRegs) == callByrefRegs);
+                    assert(VarSetOps::IsSubset(emitComp, GCvars, idCall->idcGCvars));
+
+                    // Update the register liveness.
+                    // Always safe to do, since the call cannot use calee-save registers.
+                    idCall->idcGcrefRegs = callGcrefRegs;
+                    idCall->idcByrefRegs = callByrefRegs;
+
+                    // The variables may need to be live until the call returns, so we will not update them.
+                    // If liveness changes, emit a NOP.
+                    if (!VarSetOps::Equal(emitComp, idCall->idcGCvars, GCvars))
+                    {
+                        emitIns(INS_nop);
+                    }
+                }
+                else
+                {
+                    // we should not see live calee-trash regs right after a GC-capable call
+                    // only no-GC helpers may preserve those
+                    assert((callGcrefRegs & RBM_CALLEE_TRASH) == 0);
+                    assert((callByrefRegs & RBM_CALLEE_TRASH) == 0);
+
+                    // the new live set must be a subset of the old one
+                    assert((emitDecodeCallGCregs(id) & callGcrefRegs) == callGcrefRegs);
+                    assert(callByrefRegs == RBM_NONE);
+                    assert(VarSetOps::IsEmpty(emitComp, GCvars));
+
+                    // Update the liveness set.
+                    emitEncodeCallGCregs(callGcrefRegs, id);
+                }
             }
         }
     }
