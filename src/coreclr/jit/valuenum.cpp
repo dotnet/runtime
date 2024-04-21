@@ -6546,7 +6546,7 @@ bool ValueNumStore::IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompare
             // We only care about "(uint)i < (uint)len" and its negation "(uint)i >= (uint)len"
             // Same for (ulong)
             ValueNum vnBound = funcApp.m_args[1];
-            if (IsVNCheckedBound(vnBound) || IsVNCastToULong(vnBound, &vnBound))
+            if (IsVNCheckedBound(vnBound) || (IsVNCastToULong(vnBound, &vnBound) && IsVNCheckedBound(vnBound)))
             {
                 info->vnIdx   = funcApp.m_args[0];
                 info->cmpOper = funcApp.m_func;
@@ -6572,7 +6572,7 @@ bool ValueNumStore::IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompare
             // We only care about "(uint)a.len > (uint)i" and its negation "(uint)a.len <= (uint)i"
             // Same for (ulong)
             ValueNum vnBound = funcApp.m_args[0];
-            if (IsVNCheckedBound(vnBound) || IsVNCastToULong(vnBound, &vnBound))
+            if (IsVNCheckedBound(vnBound) || (IsVNCastToULong(vnBound, &vnBound) && IsVNCheckedBound(vnBound)))
             {
                 info->vnIdx = funcApp.m_args[1];
                 // Let's keep a consistent operand order - it's always i < len, never len > i
