@@ -650,12 +650,9 @@ namespace System
             }
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr _GetMetadataImport(RuntimeType type);
-
         internal static MetadataImport GetMetadataImport(RuntimeType type)
         {
-            return new MetadataImport(_GetMetadataImport(type), type);
+            return new MetadataImport(type.GetRuntimeModule(), type);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_RegisterCollectibleTypeDependency")]
@@ -1486,12 +1483,9 @@ namespace System
 
         public int MDStreamVersion => GetMDStreamVersion(GetRuntimeModule());
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr _GetMetadataImport(RuntimeModule module);
-
         internal static MetadataImport GetMetadataImport(RuntimeModule module)
         {
-            return new MetadataImport(_GetMetadataImport(module), module);
+            return new MetadataImport(module, module);
         }
         #endregion
     }
