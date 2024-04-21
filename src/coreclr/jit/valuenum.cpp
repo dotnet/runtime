@@ -6544,11 +6544,13 @@ bool ValueNumStore::IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompare
         if ((funcApp.m_func == VNF_LT_UN) || (funcApp.m_func == VNF_GE_UN))
         {
             // We only care about "(uint)i < (uint)len" and its negation "(uint)i >= (uint)len"
-            if (IsVNCheckedBound(funcApp.m_args[1]))
+            // Same for (ulong)
+            ValueNum vnBound = funcApp.m_args[1];
+            if (IsVNCheckedBound(vnBound) || IsVNCastToULong(vnBound, &vnBound))
             {
                 info->vnIdx   = funcApp.m_args[0];
                 info->cmpOper = funcApp.m_func;
-                info->vnBound = funcApp.m_args[1];
+                info->vnBound = vnBound;
                 return true;
             }
             // We care about (uint)len < constant and its negation "(uint)len >= constant"
@@ -6564,26 +6566,18 @@ bool ValueNumStore::IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompare
                 info->vnBound = funcApp.m_args[0];
                 return true;
             }
-
-            // "(ulong)len < (ulong)idx"
-            ValueNum vnCastedBound;
-            if (IsVNCheckedBoundCastedToLong(funcApp.m_args[0], &vnCastedBound))
-            {
-                info->vnIdx   = funcApp.m_args[1];
-                info->cmpOper = funcApp.m_func;
-                info->vnBound = vnCastedBound;
-                return true;
-            }
         }
         else if ((funcApp.m_func == VNF_GT_UN) || (funcApp.m_func == VNF_LE_UN))
         {
             // We only care about "(uint)a.len > (uint)i" and its negation "(uint)a.len <= (uint)i"
-            if (IsVNCheckedBound(funcApp.m_args[0]))
+            // Same for (ulong)
+            ValueNum vnBound = funcApp.m_args[0];
+            if (IsVNCheckedBound(vnBound) || IsVNCastToULong(vnBound, &vnBound))
             {
                 info->vnIdx = funcApp.m_args[1];
                 // Let's keep a consistent operand order - it's always i < len, never len > i
                 info->cmpOper = (funcApp.m_func == VNF_GT_UN) ? VNF_LT_UN : VNF_GE_UN;
-                info->vnBound = funcApp.m_args[0];
+                info->vnBound = vnBound;
                 return true;
             }
             // Look for constant > (uint)len and its negation "constant <= (uint)len"
@@ -6597,16 +6591,6 @@ bool ValueNumStore::IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompare
                 info->vnIdx   = VNForIntCon(validIndex);
                 info->cmpOper = (funcApp.m_func == VNF_LE_UN) ? VNF_LT_UN : VNF_GE_UN;
                 info->vnBound = funcApp.m_args[1];
-                return true;
-            }
-
-            // "(ulong)len < (ulong)idx"
-            ValueNum vnCastedBound;
-            if (IsVNCheckedBoundCastedToLong(funcApp.m_args[0], &vnCastedBound))
-            {
-                info->vnIdx   = funcApp.m_args[1];
-                info->cmpOper = (funcApp.m_func == VNF_GT_UN) ? VNF_LT_UN : VNF_GE_UN;
-                info->vnBound = vnCastedBound;
                 return true;
             }
         }
@@ -6844,31 +6828,26 @@ bool ValueNumStore::IsVNCheckedBound(ValueNum vn)
 }
 
 //----------------------------------------------------------------------------------
-// IsVNCheckedBoundCastedToLong: checks whether the given VN represents (ulong)array.Length
-//    and returns VN of the array.Length
+// IsVNCastToULong: checks whether the given VN represents (ulong)op cast
 //
 // Arguments:
-//    vn          - VN, presumably, representing (ulong)array.Length
-//    castedBound - [Out] underlying array.Length object's VN
+//    vn       - VN, presumably, representing (ulong)op cast
+//    castedOp - [Out] VN of op being cast
 //
 // Return Value:
-//    true if the given VN represents "(ulong)array.Length" expression.
+//    true if the given VN represents (ulong)op cast
 //
-bool ValueNumStore::IsVNCheckedBoundCastedToLong(ValueNum vn, ValueNum* castedBound)
+bool ValueNumStore::IsVNCastToULong(ValueNum vn, ValueNum* castedOp)
 {
-    VNFuncApp op1funcApp;
-    if (GetVNFunc(vn, &op1funcApp) && (op1funcApp.m_func == VNF_Cast) && IsVNCheckedBound(op1funcApp.m_args[0]))
+    VNFuncApp funcApp;
+    if (GetVNFunc(vn, &funcApp) && (funcApp.m_func == VNF_Cast))
     {
-        ValueNum vnBound    = op1funcApp.m_args[0];
-        ValueNum vnCastInfo = op1funcApp.m_args[1];
-
         var_types castToType;
         bool      srcIsUnsigned;
-        GetCastOperFromVN(vnCastInfo, &castToType, &srcIsUnsigned);
-
+        GetCastOperFromVN(funcApp.m_args[1], &castToType, &srcIsUnsigned);
         if (srcIsUnsigned && (castToType == TYP_LONG))
         {
-            *castedBound = vnBound;
+            *castedOp = funcApp.m_args[0];
             return true;
         }
     }
