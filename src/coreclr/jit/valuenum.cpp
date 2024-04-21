@@ -6564,6 +6564,16 @@ bool ValueNumStore::IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompare
                 info->vnBound = funcApp.m_args[0];
                 return true;
             }
+
+            // "(ulong)len < (ulong)idx"
+            ValueNum vnCastedBound;
+            if (IsVNCheckedBoundCastedToLong(funcApp.m_args[0], &vnCastedBound))
+            {
+                info->vnIdx   = funcApp.m_args[1];
+                info->cmpOper = funcApp.m_func;
+                info->vnBound = vnCastedBound;
+                return true;
+            }
         }
         else if ((funcApp.m_func == VNF_GT_UN) || (funcApp.m_func == VNF_LE_UN))
         {
@@ -6587,6 +6597,16 @@ bool ValueNumStore::IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompare
                 info->vnIdx   = VNForIntCon(validIndex);
                 info->cmpOper = (funcApp.m_func == VNF_LE_UN) ? VNF_LT_UN : VNF_GE_UN;
                 info->vnBound = funcApp.m_args[1];
+                return true;
+            }
+
+            // "(ulong)len < (ulong)idx"
+            ValueNum vnCastedBound;
+            if (IsVNCheckedBoundCastedToLong(funcApp.m_args[0], &vnCastedBound))
+            {
+                info->vnIdx   = funcApp.m_args[1];
+                info->cmpOper = (funcApp.m_func == VNF_GT_UN) ? VNF_LT_UN : VNF_GE_UN;
+                info->vnBound = vnCastedBound;
                 return true;
             }
         }
@@ -6820,6 +6840,38 @@ bool ValueNumStore::IsVNCheckedBound(ValueNum vn)
         return true;
     }
 
+    return false;
+}
+
+//----------------------------------------------------------------------------------
+// IsVNCheckedBoundCastedToLong: checks whether the given VN represents (ulong)array.Length
+//    and returns VN of the array.Length
+//
+// Arguments:
+//    vn          - VN, presumably, representing (ulong)array.Length
+//    castedBound - [Out] underlying array.Length object's VN
+//
+// Return Value:
+//    true if the given VN represents "(ulong)array.Length" expression.
+//
+bool ValueNumStore::IsVNCheckedBoundCastedToLong(ValueNum vn, ValueNum* castedBound)
+{
+    VNFuncApp op1funcApp;
+    if (GetVNFunc(vn, &op1funcApp) && (op1funcApp.m_func == VNF_Cast) && IsVNCheckedBound(op1funcApp.m_args[0]))
+    {
+        ValueNum vnBound    = op1funcApp.m_args[0];
+        ValueNum vnCastInfo = op1funcApp.m_args[1];
+
+        var_types castToType;
+        bool      srcIsUnsigned;
+        GetCastOperFromVN(vnCastInfo, &castToType, &srcIsUnsigned);
+
+        if (srcIsUnsigned && (castToType == TYP_LONG))
+        {
+            *castedBound = vnBound;
+            return true;
+        }
+    }
     return false;
 }
 
