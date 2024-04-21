@@ -4,6 +4,7 @@
 using System.Collections;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.Principal;
@@ -136,95 +137,119 @@ namespace System.DirectoryServices.Protocols
             {
                 Debug.Assert(controls[i] != null);
                 byte[] value = controls[i].GetValue();
+                Span<byte> asnSpan = value;
+                bool asnReadSuccessful;
+
                 if (controls[i].Type == "1.2.840.113556.1.4.319")
                 {
-                    // The control is a PageControl.
-                    object[] result = BerConverter.Decode("{iO}", value);
-                    Debug.Assert((result != null) && (result.Length == 2));
+                    // The control is a PageControl, as described in RFC 2696.
+                    byte[] cookie = Array.Empty<byte>();
 
-                    int size = (int)result[0];
-                    // user expects cookie with length 0 as paged search is done.
-                    byte[] cookie = (byte[])result[1] ?? Array.Empty<byte>();
+                    AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
+                    Debug.Assert(sequenceContentLength > 0);
 
-                    PageResultResponseControl pageControl = new PageResultResponseControl(size, cookie, controls[i].IsCritical, controls[i].GetValue());
+                    asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan.Slice(sequenceContentOffset), AsnEncodingRules.BER, out int size, out int bytesConsumed);
+                    Debug.Assert(asnReadSuccessful);
+                    asnSpan = asnSpan.Slice(sequenceContentOffset + bytesConsumed);
+
+                    asnReadSuccessful = AsnDecoder.TryReadEncodedValue(asnSpan, AsnEncodingRules.BER, out _, out int _, out int cookieLength, out _);
+                    if (asnReadSuccessful)
+                    {
+                        cookie = new byte[cookieLength];
+
+                        // user expects cookie with length 0 as paged search is done.
+                        asnReadSuccessful = AsnDecoder.TryReadOctetString(asnSpan, cookie, AsnEncodingRules.BER, out _, out _);
+                        Debug.Assert(asnReadSuccessful);
+                    }
+
+                    PageResultResponseControl pageControl = new PageResultResponseControl(size, cookie, controls[i].IsCritical, value);
                     controls[i] = pageControl;
                 }
                 else if (controls[i].Type == "1.2.840.113556.1.4.1504")
                 {
-                    // The control is an AsqControl.
-                    object[] o = BerConverter.Decode("{e}", value);
-                    Debug.Assert((o != null) && (o.Length == 1));
+                    // The control is an AsqControl, as described in MS-ADTS section 3.1.1.3.4.1.18
+                    AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
+                    Debug.Assert(sequenceContentLength > 0);
 
-                    int result = (int)o[0];
-                    AsqResponseControl asq = new AsqResponseControl(result, controls[i].IsCritical, controls[i].GetValue());
+                    ResultCode result = AsnDecoder.ReadEnumeratedValue<ResultCode>(asnSpan.Slice(sequenceContentOffset), AsnEncodingRules.BER, out _);
+
+                    AsqResponseControl asq = new AsqResponseControl(result, controls[i].IsCritical, value);
                     controls[i] = asq;
                 }
                 else if (controls[i].Type == "1.2.840.113556.1.4.841")
                 {
-                    // The control is a DirSyncControl.
-                    object[] o = BerConverter.Decode("{iiO}", value);
-                    Debug.Assert(o != null && o.Length == 3);
+                    // The control is a DirSyncControl, as described in MS-ADTS section 3.1.1.3.4.1.3
+                    byte[] dirsyncCookie;
 
-                    int moreData = (int)o[0];
-                    int count = (int)o[1];
-                    byte[] dirsyncCookie = (byte[])o[2];
+                    AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
+                    Debug.Assert(sequenceContentLength > 0);
+                    asnSpan = asnSpan.Slice(sequenceContentOffset);
 
-                    DirSyncResponseControl dirsync = new DirSyncResponseControl(dirsyncCookie, (moreData == 0 ? false : true), count, controls[i].IsCritical, controls[i].GetValue());
+                    asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan, AsnEncodingRules.BER, out int moreData, out int bytesConsumed);
+                    Debug.Assert(asnReadSuccessful);
+                    asnSpan = asnSpan.Slice(bytesConsumed);
+
+                    asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan, AsnEncodingRules.BER, out int count, out bytesConsumed);
+                    Debug.Assert(asnReadSuccessful);
+                    asnSpan = asnSpan.Slice(bytesConsumed);
+
+                    dirsyncCookie = AsnDecoder.ReadOctetString(asnSpan, AsnEncodingRules.BER, out _);
+
+                    DirSyncResponseControl dirsync = new DirSyncResponseControl(dirsyncCookie, moreData != 0, count, controls[i].IsCritical, value);
                     controls[i] = dirsync;
                 }
                 else if (controls[i].Type == "1.2.840.113556.1.4.474")
                 {
-                    // The control is a SortControl.
-                    int result;
+                    // The control is a SortControl, as described in RFC 2891.
+                    ResultCode result;
                     string attribute = null;
-                    object[] o = BerConverter.TryDecode("{ea}", value, out bool decodeSucceeded);
 
-                    // decode might fail as AD for example never returns attribute name, we don't want to unnecessarily throw and catch exception
-                    if (decodeSucceeded)
-                    {
-                        Debug.Assert(o != null && o.Length == 2);
-                        result = (int)o[0];
-                        attribute = (string)o[1];
-                    }
-                    else
-                    {
-                        // decoding might fail as attribute is optional
-                        o = BerConverter.Decode("{e}", value);
-                        Debug.Assert(o != null && o.Length == 1);
+                    AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
+                    Debug.Assert(sequenceContentLength > 0);
+                    asnSpan = asnSpan.Slice(sequenceContentOffset);
 
-                        result = (int)o[0];
+                    result = AsnDecoder.ReadEnumeratedValue<ResultCode>(asnSpan, AsnEncodingRules.BER, out int bytesConsumed);
+                    asnSpan = asnSpan.Slice(bytesConsumed);
+
+                    // Attribute name is optional: AD for example never returns attribute name
+                    asnReadSuccessful = AsnDecoder.TryReadEncodedValue(asnSpan, AsnEncodingRules.BER, out Asn1Tag octetStringTag, out _, out _, out _);
+                    if (asnReadSuccessful)
+                    {
+                        attribute = AsnDecoder.ReadCharacterString(asnSpan, AsnEncodingRules.BER, UniversalTagNumber.UTF8String, out _, octetStringTag);
                     }
 
-                    SortResponseControl sort = new SortResponseControl((ResultCode)result, attribute, controls[i].IsCritical, controls[i].GetValue());
+                    SortResponseControl sort = new SortResponseControl(result, attribute, controls[i].IsCritical, value);
                     controls[i] = sort;
                 }
                 else if (controls[i].Type == "2.16.840.1.113730.3.4.10")
                 {
-                    // The control is a VlvResponseControl.
-                    int position;
-                    int count;
-                    int result;
+                    // The control is a VlvResponseControl, as described in MS-ADTS 3.1.1.3.4.1.17
+                    ResultCode result;
                     byte[] context = null;
-                    object[] o = BerConverter.TryDecode("{iieO}", value, out bool decodeSucceeded);
 
-                    if (decodeSucceeded)
+                    AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
+                    Debug.Assert(sequenceContentLength > 0);
+                    asnSpan = asnSpan.Slice(sequenceContentOffset);
+
+                    asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan, AsnEncodingRules.BER, out int position, out int bytesConsumed);
+                    Debug.Assert(asnReadSuccessful);
+                    asnSpan = asnSpan.Slice(bytesConsumed);
+
+                    asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan, AsnEncodingRules.BER, out int count, out bytesConsumed);
+                    Debug.Assert(asnReadSuccessful);
+                    asnSpan = asnSpan.Slice(bytesConsumed);
+
+                    result = AsnDecoder.ReadEnumeratedValue<ResultCode>(asnSpan, AsnEncodingRules.BER, out bytesConsumed);
+                    asnSpan = asnSpan.Slice(bytesConsumed);
+
+                    asnReadSuccessful = AsnDecoder.TryReadEncodedValue(asnSpan, AsnEncodingRules.BER, out _, out _, out int octetStringLength, out _);
+                    if (asnReadSuccessful)
                     {
-                        Debug.Assert(o != null && o.Length == 4);
-                        position = (int)o[0];
-                        count = (int)o[1];
-                        result = (int)o[2];
-                        context = (byte[])o[3];
-                    }
-                    else
-                    {
-                        o = BerConverter.Decode("{iie}", value);
-                        Debug.Assert(o != null && o.Length == 3);
-                        position = (int)o[0];
-                        count = (int)o[1];
-                        result = (int)o[2];
+                        context = new byte[octetStringLength];
+                        _ = AsnDecoder.TryReadOctetString(asnSpan, context, AsnEncodingRules.BER, out _, out _);
                     }
 
-                    VlvResponseControl vlv = new VlvResponseControl(position, count, context, (ResultCode)result, controls[i].IsCritical, controls[i].GetValue());
+                    VlvResponseControl vlv = new VlvResponseControl(position, count, context, result, controls[i].IsCritical, value);
                     controls[i] = vlv;
                 }
             }
@@ -253,9 +278,9 @@ namespace System.DirectoryServices.Protocols
 
     public class AsqResponseControl : DirectoryControl
     {
-        internal AsqResponseControl(int result, bool criticality, byte[] controlValue) : base("1.2.840.113556.1.4.1504", controlValue, criticality, true)
+        internal AsqResponseControl(ResultCode result, bool criticality, byte[] controlValue) : base("1.2.840.113556.1.4.1504", controlValue, criticality, true)
         {
-            Result = (ResultCode)result;
+            Result = result;
         }
 
         public ResultCode Result { get; }
