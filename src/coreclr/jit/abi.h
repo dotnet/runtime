@@ -288,11 +288,6 @@ public:
         return m_classifier.StackSize();
     }
 
-    unsigned StackAlignment()
-    {
-        return m_classifier.StackAlignment();
-    }
-
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,
                                    ClassLayout* structLayout,
