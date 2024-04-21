@@ -140,7 +140,7 @@ void FlowEdge::addLikelihood(weight_t addedLikelihood)
 //     comp  - Compiler instance
 //     block - The block whose successors are to be iterated
 //
-AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block)
+AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block, const bool useProfile)
     : m_block(block)
 {
     m_numSuccs = 0;
@@ -164,6 +164,42 @@ AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block
             m_pSuccessors[numSuccs++] = succ;
             return BasicBlockVisit::Continue;
         });
+
+        assert(numSuccs == m_numSuccs);
+    }
+}
+
+//------------------------------------------------------------------------
+//  RegularSuccessorEnumerator: Construct an instance of the enumerator.
+//
+//  Arguments:
+//     comp  - Compiler instance
+//     block - The block whose successors are to be iterated
+//
+RegularSuccessorEnumerator::RegularSuccessorEnumerator(Compiler* comp, BasicBlock* block, const bool useProfile)
+    : m_block(block)
+{
+    m_numSuccs = 0;
+    block->VisitRegularSuccs(comp, [this](BasicBlock* succ) {
+        if (m_numSuccs < ArrLen(m_successors))
+        {
+            m_successors[m_numSuccs] = succ;
+        }
+
+        m_numSuccs++;
+        return BasicBlockVisit::Continue;
+    }, useProfile);
+
+    if (m_numSuccs > ArrLen(m_successors))
+    {
+        m_pSuccessors = new (comp, CMK_BasicBlock) BasicBlock*[m_numSuccs];
+
+        unsigned numSuccs = 0;
+        block->VisitRegularSuccs(comp, [this, &numSuccs](BasicBlock* succ) {
+            assert(numSuccs < m_numSuccs);
+            m_pSuccessors[numSuccs++] = succ;
+            return BasicBlockVisit::Continue;
+        }, useProfile);
 
         assert(numSuccs == m_numSuccs);
     }

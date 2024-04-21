@@ -3397,9 +3397,153 @@ bool Compiler::fgReorderBlocks(bool useProfile)
         }
     }
 
-    // If we will be reordering blocks, ensure the false target of a BBJ_COND block is its next block
     if (useProfile)
     {
+        if (compHndBBtabCount == 0)
+        {
+            FlowGraphDfsTree* const dfsTree = fgComputeDfs<true, true>();
+            // unsigned* ordinal = new (this, CMK_Generic) unsigned[dfsTree->GetPostOrderCount()];
+            // jitstd::list<FlowEdge*> edges(jitstd::allocator<void>(getAllocator(CMK_FlowEdge)));
+
+            for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
+            {
+                BasicBlock* const block = dfsTree->GetPostOrder(i);
+                BasicBlock* const blockToMove = dfsTree->GetPostOrder(i - 1);
+                // ordinal[block->bbNum] = dfsTree->GetPostOrderCount() * i;
+                fgUnlinkBlock(blockToMove);
+                fgInsertBBafter(block, blockToMove);
+            }
+            
+            assert(fgFirstBB->IsFirst());
+            assert(fgLastBB->IsLast());
+            return true;
+        }
+
+        // const auto TryMoveForward = [this, ordinal](FlowEdge* const edge)
+        // {
+        //     assert(edge != nullptr);
+        //     BasicBlock* fixed = edge->getSourceBlock();
+        //     BasicBlock* moving = edge->getDestinationBlock();
+
+        //     if (fixed->NextIs(moving))
+        //     {
+        //         return true;
+        //     }
+
+        //     if (moving->IsLast())
+        //     {
+        //         return false;
+        //     }
+
+        //     const unsigned fixedOrdinal = ordinal[fixed->bbNum];
+        //     const unsigned movingOrdinal = ordinal[moving->bbNum];
+        //     if (movingOrdinal < fixedOrdinal)
+        //     {
+        //         return false;
+        //     }
+
+        //     unsigned ordinalInUse = fixedOrdinal + 1;
+        //     ordinal[moving->bbNum] = ordinalInUse;
+        //     fgUnlinkBlock(moving);
+        //     fgInsertBBafter(fixed, moving);
+
+        //     BasicBlock* blockToCheck = moving->Next();
+        //     while ((blockToCheck != nullptr) && (ordinalInUse == ordinal[blockToCheck->bbNum]))
+        //     {
+        //         ordinalInUse++;
+        //         ordinal[blockToCheck->bbNum] = ordinalInUse;
+        //         blockToCheck = blockToCheck->Next();
+        //     }
+
+        //     return true;
+        // };
+
+        // for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
+        // {
+        //     for (FlowEdge* const pred : block->PredEdges())
+        //     {
+        //         edges.remove(pred);
+        //     }
+
+        //     if (block->IsFirst() || block->IsLast())
+        //     {
+        //         continue;
+        //     }
+
+        //     unsigned numForwardEdges = 0;
+        //     FlowEdge* forwardEdges[2];
+        //     for (FlowEdge* const succEdge : block->SuccEdges())
+        //     {
+        //         if (ordinal[block->bbNum] < ordinal[succEdge->getDestinationBlock()->bbNum])
+        //         {
+        //             numForwardEdges++;
+        //             forwardEdges[min((unsigned)0, numForwardEdges)] = succEdge;
+        //         }
+        //     }
+
+        //     bool wasMoved = false;
+        //     bool considerPending = false;
+
+        //     switch (numForwardEdges)
+        //     {
+        //     case 1:
+        //         wasMoved = TryMoveForward(forwardEdges[0]);
+        //         break;
+
+        //     case 2:
+        //     {
+        //         considerPending = false;
+        //         const bool firstEdgeLikely = forwardEdges[0]->getLikelihood() > forwardEdges[1]->getLikelihood();
+        //         wasMoved = firstEdgeLikely ? TryMoveForward(forwardEdges[0]) : TryMoveForward(forwardEdges[1]);
+
+        //         if (!wasMoved)
+        //         {
+        //             wasMoved = firstEdgeLikely ? TryMoveForward(forwardEdges[1]) : TryMoveForward(forwardEdges[0]);
+        //         }
+
+        //         if (!block->NextIs(forwardEdges[0]->getDestinationBlock()))
+        //         {
+        //             edges.push_back(forwardEdges[0]);
+        //         }
+
+        //         if (!block->NextIs(forwardEdges[1]->getDestinationBlock()))
+        //         {
+        //             edges.push_back(forwardEdges[1]);
+        //         }
+        //         break;
+        //     }
+
+        //     default:
+        //         // This is an n-ary branch, or we don't have any forward edges. Don't bother.
+        //         continue;
+        //     }
+
+        //     if (wasMoved)
+        //     {
+        //         continue;
+        //     }
+
+        //     if (!considerPending)
+        //     {
+        //         continue;
+        //     }
+
+        //     while (!edges.empty())
+        //     {
+        //         FlowEdge* const edge = edges.back();
+        //         edges.pop_back();
+
+        //         assert(ordinal[edge->getSourceBlock()->bbNum] < ordinal[block->bbNum]);
+        //         assert(ordinal[edge->getDestinationBlock()->bbNum] > ordinal[block->bbNum]);
+
+        //         if (TryMoveForward(edge))
+        //         {
+        //             break;
+        //         }
+        //     }
+        // }
+
+        // We will be reordering blocks, so ensure the false target of a BBJ_COND block is its next block
         for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
         {
             if (block->KindIs(BBJ_COND) && !block->NextIs(block->GetFalseTarget()))

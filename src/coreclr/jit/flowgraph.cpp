@@ -4070,6 +4070,7 @@ bool FlowGraphDfsTree::IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) 
 //   Preorder and postorder numbers are assigned into the BasicBlock structure.
 //   The tree returned contains a postorder of the basic blocks.
 //
+template <const bool skipEH, const bool useProfile>
 FlowGraphDfsTree* Compiler::fgComputeDfs()
 {
     BasicBlock** postOrder = new (this, CMK_DepthFirstSearch) BasicBlock*[fgBBcount];
@@ -4095,9 +4096,17 @@ FlowGraphDfsTree* Compiler::fgComputeDfs()
         }
     };
 
-    unsigned numBlocks = fgRunDfs(visitPreorder, visitPostorder, visitEdge);
+
+    unsigned numBlocks = skipEH ? fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge), RegularSuccessorEnumerator, useProfile>(visitPreorder, visitPostorder, visitEdge)
+                                : fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge), AllSuccessorEnumerator, useProfile>(visitPreorder, visitPostorder, visitEdge);
     return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, numBlocks, hasCycle);
 }
+
+// Add explicit instantiations.
+template FlowGraphDfsTree* Compiler::fgComputeDfs<false, false>();
+template FlowGraphDfsTree* Compiler::fgComputeDfs<false, true>();
+template FlowGraphDfsTree* Compiler::fgComputeDfs<true, false>();
+template FlowGraphDfsTree* Compiler::fgComputeDfs<true, true>();
 
 //------------------------------------------------------------------------
 // fgInvalidateDfsTree: Invalidate computed DFS tree and dependent annotations
