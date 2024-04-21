@@ -2886,15 +2886,17 @@ bool emitter::emitNoGChelper(CORINFO_METHOD_HANDLE methHnd)
 
 void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, BasicBlock* prevBlock)
 {
-    if (prevBlock != NULL && emitLastInsIsCallWithGC())
+    // if starting a new block that can be a target of a branch and the last instruction was GC-capable call.
+    if (prevBlock != NULL && emitComp->compCurBB->HasFlag(BBF_HAS_LABEL) && emitLastInsIsCallWithGC())
     {
+        // no GC-capable calls expected in prolog
+        assert(!emitIGisInEpilog(emitLastInsIG));
+
         // We have just emitted a call that can do GC and conservatively recorded what is alive after the call.
         // Now we see that the next instruction may be reachable by a branch with a different liveness.
         // We want to maintain the invariant that the GC info at IP after a GC-capable call is the same
         // regardless how it is reached.
-        // One way to fix this is to fish out the call instruction and patch its GC info, but we must be
-        // certain that the current IP is indeed reachable after the call.
-        // Another way it to add an instruction (NOP or BRK) after the call.
+        // One way to ensure that is by adding an instruction (NOP or BRK) after the call.
         if (emitThisGCrefRegs != gcrefRegs || emitThisByrefRegs != byrefRegs ||
             !VarSetOps::Equal(emitComp, emitThisGCrefVars, GCvars))
         {
@@ -2906,9 +2908,7 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
             {
                 // other block kinds should emit something at the end that is not a call.
                 assert(prevBlock->KindIs(BBJ_ALWAYS));
-                // CONSIDER: We could patch up the previous call instruction with new GC info instead.
-                //           But that will need to be coordinated with how the GC info vor variables is used.
-                //           We currently apply that info to the instruction before the call. It may need to change.
+                // CONSIDER: In many cases we could instead patch up the GC info for previous call instruction.
                 emitIns(INS_nop);
             }
         }
