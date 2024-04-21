@@ -7999,6 +7999,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     /* Append the value to the tree list */
                     goto SPILL_APPEND;
                 }
+                else
+                {
+                    if (op1->IsBoxedValue())
+                    {
+                        JITDUMP("\n CEE_POP box...\n");
+                        gtTryRemoveBoxUpstreamEffects(op1);
+                    }
+                }
 
                 /* No side effects - just throw the <BEEP> thing away */
             }
