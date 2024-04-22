@@ -12417,11 +12417,7 @@ emit_file_info (MonoAotCompile *acfg)
 		sprintf (symbol, "%smono_aot_module_%s_info", acfg->user_symbol_prefix, acfg->image->assembly->aname.name);
 
 		/* Get rid of characters which cannot occur in symbols */
-		p = symbol;
-		for (p = symbol; *p; ++p) {
-			if (!(isalnum (*p) || *p == '_'))
-				*p = '_';
-		}
+		symbol = sanitize_symbol (acfg, symbol);
 		acfg->static_linking_symbol = g_strdup (symbol);
 	}
 
@@ -15121,10 +15117,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 
 	acfg->assembly_name_sym = g_strdup (get_assembly_prefix (acfg->image));
 	/* Get rid of characters which cannot occur in symbols */
-	for (p = acfg->assembly_name_sym; *p; ++p) {
-		if (!(isalnum (*p) || *p == '_'))
-			*p = '_';
-	}
+    acfg->assembly_name_sym = sanitize_symbol(acfg, acfg->assembly_name_sym);
 
 	acfg->global_prefix = g_strdup_printf ("mono_aot_%s", acfg->assembly_name_sym);
 	acfg->plt_symbol = g_strdup_printf ("%s_plt", acfg->global_prefix);

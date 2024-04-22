@@ -416,7 +416,7 @@ internal static class Utils
     }
 
     // Keep synced with fixupSymbolName from src/mono/browser/runtime/runtime.c
-    public static string FixupSymbolName(string name, bool isAOT = false)
+    public static string FixupSymbolName(string name)
     {
         UTF8Encoding utf8 = new();
         byte[] bytes = utf8.GetBytes(name);
@@ -431,7 +431,7 @@ internal static class Utils
             {
                 sb.Append((char)b);
             }
-            else if (isAOT || s_charsToReplace.Contains((char)b))
+            else if (s_charsToReplace.Contains((char)b))
             {
                 sb.Append('_');
             }

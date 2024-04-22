@@ -1237,7 +1237,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (_symbolNameFixups.TryGetValue(name, out string? fixedName))
             return fixedName;
 
-        fixedName = Utils.FixupSymbolName(name, true);
+        fixedName = Utils.FixupSymbolName(name);
         _symbolNameFixups[name] = fixedName;
         return fixedName;
     }
