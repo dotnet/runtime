@@ -1899,7 +1899,13 @@ void Compiler::lvaClassifyParameterABI()
             for (unsigned i = 0; i < abiInfo.NumSegments; i++)
             {
                 const ABIPassingSegment& segment = abiInfo.Segments[i];
+                assert(segment.Size > 0);
                 assert(segment.Offset + segment.Size <= lvaLclExactSize(lclNum));
+
+                if (i > 0)
+                {
+                    assert(segment.Offset > abiInfo.Segments[i - 1].Offset);
+                }
 
                 for (unsigned j = 0; j < abiInfo.NumSegments; j++)
                 {
