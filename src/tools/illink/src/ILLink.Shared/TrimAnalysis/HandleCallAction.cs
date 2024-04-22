@@ -27,7 +27,53 @@ namespace ILLink.Shared.TrimAnalysis
 		private readonly FlowAnnotations _annotations;
 		private readonly RequireDynamicallyAccessedMembersAction _requireDynamicallyAccessedMembersAction;
 
-		public bool Invoke (MethodProxy calledMethod, MultiValue instanceValue, IReadOnlyList<MultiValue> argumentValues, IntrinsicId intrinsicId, out MultiValue methodReturnValue)
+		public void Invoke (MethodProxy calledMethod, MultiValue instanceValue, IReadOnlyList<MultiValue> argumentValues, IntrinsicId intrinsicId, out MultiValue methodReturnValue)
+		{
+			MultiValue? maybeMethodReturnValue;
+
+			if (!TryHandleIntrinsic (calledMethod, instanceValue, argumentValues, intrinsicId, out maybeMethodReturnValue))
+				HandleSharedIntrinsic (calledMethod, instanceValue, argumentValues, intrinsicId, out maybeMethodReturnValue);
+
+			// If we get here, we handled this as an intrinsic.  As a convenience, if the code above
+			// didn't set the return value (and the method has a return value), we will set it to be an
+			// unknown value with the return type of the method.
+			var annotatedMethodReturnValue = _annotations.GetMethodReturnValue (calledMethod);
+			bool returnsVoid = calledMethod.ReturnsVoid ();
+			methodReturnValue = maybeMethodReturnValue ?? (returnsVoid ?
+				MultiValueLattice.Top :
+				annotatedMethodReturnValue);
+
+			// Validate that the return value has the correct annotations as per the method return value annotations
+			if (annotatedMethodReturnValue.DynamicallyAccessedMemberTypes != 0) {
+				foreach (var uniqueValue in methodReturnValue.AsEnumerable ()) {
+					if (uniqueValue is ValueWithDynamicallyAccessedMembers methodReturnValueWithMemberTypes) {
+						if (!methodReturnValueWithMemberTypes.DynamicallyAccessedMemberTypes.HasFlag (annotatedMethodReturnValue.DynamicallyAccessedMemberTypes))
+							throw new InvalidOperationException ($"Internal trimming error: processing of call from {GetContainingSymbolDisplayName ()} to {calledMethod.GetDisplayName ()} returned value which is not correctly annotated with the expected dynamic member access kinds.");
+					} else if (uniqueValue is SystemTypeValue) {
+						// SystemTypeValue can fulfill any requirement, so it's always valid
+						// The requirements will be applied at the point where it's consumed (passed as a method parameter, set as field value, returned from the method)
+					} else if (uniqueValue == NullValue.Instance) {
+						// NullValue can fulfill any requirements because reflection access to it will typically throw.
+					} else {
+						throw new InvalidOperationException ($"Internal trimming error: processing of call from {GetContainingSymbolDisplayName ()} to {calledMethod.GetDisplayName ()} returned value which is not correctly annotated with the expected dynamic member access kinds.");
+					}
+				}
+			}
+		}
+
+		private partial bool TryHandleIntrinsic (
+			MethodProxy calledMethod,
+			MultiValue instanceValue,
+			IReadOnlyList<MultiValue> argumentValues,
+			IntrinsicId intrinsicId,
+			out MultiValue? methodReturnValue);
+
+		void HandleSharedIntrinsic (
+			MethodProxy calledMethod,
+			MultiValue instanceValue,
+			IReadOnlyList<MultiValue> argumentValues,
+			IntrinsicId intrinsicId,
+			out MultiValue? methodReturnValue)
 		{
 			MultiValue? returnValue = null;
 
@@ -154,8 +200,7 @@ namespace ILLink.Shared.TrimAnalysis
 			// Array.Empty<T> must for now be handled by the specific implementation since it requires instantiated generic method handling
 			case IntrinsicId.Object_GetType:
 				// Object.GetType requires additional handling by the caller to implement type hierarchy marking and related diagnostics
-				methodReturnValue = MultiValueLattice.Top;
-				return false;
+				throw new NotImplementedException ("These intrinsics should be handled by the specific implementation: " + intrinsicId);
 
 			//
 			// GetInterface (String)
@@ -1161,37 +1206,13 @@ namespace ILLink.Shared.TrimAnalysis
 			// Ideally we would run everything through HandleCallAction and it would return "false" for intrinsics it doesn't handle
 			// like it already does for Activator.CreateInstance<T> for example.
 			default:
-				methodReturnValue = MultiValueLattice.Top;
-				return true;
+				throw new NotImplementedException ($"Unhandled intrinsic: {intrinsicId}");
 			}
-
-			// For now, if the intrinsic doesn't set a return value, fall back on the annotations.
-			// Note that this will be DynamicallyAccessedMembers.None for the intrinsics which don't return types.
-			returnValue ??= calledMethod.ReturnsVoid () ? MultiValueLattice.Top : annotatedMethodReturnValue;
 
 			if (MethodIsTypeConstructor (calledMethod))
 				returnValue = UnknownValue.Instance;
 
-			// Validate that the return value has the correct annotations as per the method return value annotations
-			if (annotatedMethodReturnValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None) {
-				foreach (var uniqueValue in returnValue.Value.AsEnumerable ()) {
-					if (uniqueValue is ValueWithDynamicallyAccessedMembers methodReturnValueWithMemberTypes) {
-						if (!methodReturnValueWithMemberTypes.DynamicallyAccessedMemberTypes.HasFlag (annotatedMethodReturnValue.DynamicallyAccessedMemberTypes))
-							throw new InvalidOperationException ($"Internal ILLink error: in {GetContainingSymbolDisplayName ()} processing call to {calledMethod.GetDisplayName ()} returned value which is not correctly annotated with the expected dynamic member access kinds.");
-					} else if (uniqueValue is SystemTypeValue) {
-						// SystemTypeValue can fulfill any requirement, so it's always valid
-						// The requirements will be applied at the point where it's consumed (passed as a method parameter, set as field value, returned from the method)
-					} else if (uniqueValue == NullValue.Instance) {
-						// NullValue can fulfill any requirements because reflection access to it will typically throw.
-					} else {
-						throw new InvalidOperationException ($"Internal ILLink error: in {GetContainingSymbolDisplayName ()} processing call to {calledMethod.GetDisplayName ()} returned value which is not correctly annotated with the expected dynamic member access kinds.");
-					}
-				}
-			}
-
-			methodReturnValue = returnValue.Value;
-
-			return true;
+			methodReturnValue = returnValue;
 
 			void AddReturnValue (MultiValue value)
 			{
