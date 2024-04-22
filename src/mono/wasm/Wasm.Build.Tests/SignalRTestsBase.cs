@@ -26,6 +26,7 @@ public class SignalRTestsBase : AppTestBase
 
         var result = await RunSdkStyleAppForBuild(new(
             Configuration: config,
+            ServerEnvironment: new Dictionary<string, string> { ["ASPNETCORE_ENVIRONMENT"] = "Development" },
             BrowserPath: staticWebAssetBasePath,
             BrowserQueryString: new Dictionary<string, string> { ["transport"] = transport, ["message"] = "ping" } ));
 
