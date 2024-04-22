@@ -235,23 +235,16 @@ namespace System
 
         private static TextWriter CreateOutputWriter(Stream outputStream)
         {
-            if (outputStream == Stream.Null)
-                return TextWriter.Null;
-
-            StreamWriter writer = new StreamWriter(
-                stream: outputStream,
-                encoding: OutputEncoding.RemovePreamble(), // This ensures no prefix is written to the stream.
-                bufferSize: WriteBufferSize,
-                leaveOpen: true
-            ) {
-                AutoFlush = true
-            };
-
-#if TARGET_BROWSER && !FEATURE_WASM_MANAGED_THREADS
-            return writer;
-#else
-            return TextWriter.Synchronized(writer);
-#endif
+            return outputStream == Stream.Null ?
+                TextWriter.Null :
+                TextWriter.Synchronized(new StreamWriter(
+                    stream: outputStream,
+                    encoding: OutputEncoding.RemovePreamble(), // This ensures no prefix is written to the stream.
+                    bufferSize: WriteBufferSize,
+                    leaveOpen: true)
+                    {
+                        AutoFlush = true
+                    });
         }
 
         private static StrongBox<bool>? _isStdInRedirected;
@@ -709,10 +702,7 @@ namespace System
             // are nops.
             if (newOut != TextWriter.Null)
             {
-#if TARGET_BROWSER && !FEATURE_WASM_MANAGED_THREADS
-#else
                 newOut = TextWriter.Synchronized(newOut);
-#endif
             }
 
             lock (s_syncObject)
@@ -729,10 +719,7 @@ namespace System
             // Ensure all access to the writer is synchronized. See comment in SetOut.
             if (newError != TextWriter.Null)
             {
-#if TARGET_BROWSER && !FEATURE_WASM_MANAGED_THREADS
-#else
                 newError = TextWriter.Synchronized(newError);
-#endif
             }
 
             lock (s_syncObject)
