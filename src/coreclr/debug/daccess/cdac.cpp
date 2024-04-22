@@ -47,21 +47,21 @@ CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target)
 }
 
 CDAC::CDAC(HMODULE module, uint64_t descriptorAddr, ICorDebugDataTarget* target)
-    : m_module(module)
+    : m_module{module}
+    , m_cdac_handle{0}
     , m_target{target}
 {
     if (m_module == NULL)
-    {
-        m_cdac_handle = 0;
         return;
-    }
 
     m_target->AddRef();
     decltype(&cdac_reader_init) init = reinterpret_cast<decltype(&cdac_reader_init)>(::GetProcAddress(m_module, "cdac_reader_init"));
     decltype(&cdac_reader_get_sos_interface) getSosInterface = reinterpret_cast<decltype(&cdac_reader_get_sos_interface)>(::GetProcAddress(m_module, "cdac_reader_get_sos_interface"));
     _ASSERTE(init != nullptr && getSosInterface != nullptr);
 
-    init(descriptorAddr, &ReadFromTargetCallback, m_target, &m_cdac_handle);
+    if (init(descriptorAddr, &ReadFromTargetCallback, m_target, &m_cdac_handle) != 0)
+        return;
+
     getSosInterface(m_cdac_handle, &m_sos);
 }
 
