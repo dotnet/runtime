@@ -68,6 +68,9 @@ extends:
       linux_x64_dev_innerloop:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04
 
+      linux_musl_x64_dev_innerloop:
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.19-WithNode
+
       # We use a CentOS Stream 8 image here to test building from source on CentOS Stream 8.
       SourceBuild_centos_x64:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream8
@@ -75,9 +78,6 @@ extends:
       # AlmaLinux 8 is a RHEL 8 rebuild, so we use it to test building from source on RHEL 8.
       SourceBuild_linux_x64:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:almalinux-8-source-build
-
-      SourceBuild_alpine_x64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.19-WithNode
 
       linux_s390x:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-s390x
