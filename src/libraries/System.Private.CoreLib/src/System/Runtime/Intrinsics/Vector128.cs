@@ -1041,7 +1041,7 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
                 Unsafe.SkipInit(out Vector128<T> result);
 
                 result.SetLowerUnsafe(lower);
