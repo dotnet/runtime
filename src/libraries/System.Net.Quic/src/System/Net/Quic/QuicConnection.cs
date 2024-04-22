@@ -680,6 +680,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 task.GetAwaiter().GetResult();
             }
         }
+
+        Debug.Assert(_acceptQueue.Reader.Completion.IsCompleted);
     }
 
     /// <summary>
