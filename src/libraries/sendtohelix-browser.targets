@@ -96,10 +96,6 @@
 
   <ItemGroup Condition="'$(WindowsShell)' != 'true'">
     <HelixPreCommand Condition="'$(Scenario)' != ''" Include="export SCENARIO=$(Scenario)" />
-    <HelixPreCommand Condition="'$(Scenario)' != 'WasmTestOnChrome' and '$(Scenario)' != 'WasmTestOnFirefox'" Include="export XHARNESS_COMMAND=test" />
-    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnChrome'" Include="export XHARNESS_COMMAND=test-browser" />
-    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnFirefox'" Include="export XHARNESS_COMMAND=&quot;test-browser --browser=Firefox&quot;" />
-    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnNodeJS'" Include="export JS_ENGINE=--engine=NodeJS" />
 
     <HelixPreCommand Include="export XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
@@ -113,10 +109,6 @@
 
   <ItemGroup Condition="'$(WindowsShell)' == 'true'">
     <HelixPreCommand Condition="'$(Scenario)' != ''" Include="set SCENARIO=$(Scenario)" />
-    <HelixPreCommand Condition="'$(Scenario)' != 'WasmTestOnChrome' and '$(Scenario)' != 'WasmTestOnFirefox'" Include="set XHARNESS_COMMAND=test" />
-    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnChrome'" Include="set XHARNESS_COMMAND=test-browser" />
-    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnFirefox'" Include="set &quot;XHARNESS_COMMAND=test-browser --browser^=Firefox&quot;" />
-    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnNodeJS'" Include="set &quot;JS_ENGINE=--engine^=NodeJS&quot;" />
 
     <HelixPreCommand Include="set XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="set XHARNESS_LOG_WITH_TIMESTAMPS=true" />
