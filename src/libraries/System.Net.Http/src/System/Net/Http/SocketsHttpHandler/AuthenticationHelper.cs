@@ -307,7 +307,7 @@ namespace System.Net.Http
                                         {
                                             if (NetEventSource.Log.IsEnabled())
                                             {
-                                                NetEventSource.Info(pool.PreAuthCredentials, $"Removing Basic credential from cache, uri={preAuthCredentialUri}, username={preAuthCredential.UserName}");
+                                                NetEventSource.Info(pool.PreAuthCredentials, $"Removing Basic credential from cache, uri={preAuthCredentialUri}, username={preAuthCredential!.UserName}");
                                             }
 
                                             pool.PreAuthCredentials.Remove(preAuthCredentialUri, BasicScheme);
