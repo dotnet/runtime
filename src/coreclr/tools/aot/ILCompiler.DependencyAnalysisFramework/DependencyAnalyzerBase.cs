@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
-#nullable disable
-
 namespace ILCompiler.DependencyAnalysisFramework
 {
     /// <summary>

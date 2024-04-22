@@ -3,8 +3,6 @@
 
 using System.Diagnostics;
 
-#nullable disable
-
 namespace ILCompiler
 {
     internal interface ICompareAsEqualAction

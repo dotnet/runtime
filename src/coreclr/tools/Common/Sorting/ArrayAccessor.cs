@@ -3,8 +3,6 @@
 
 using System;
 
-#nullable disable
-
 namespace ILCompiler.Sorting.Implementation
 {
     internal struct ArrayAccessor<T> : ISortableDataStructureAccessor<T, T[]>

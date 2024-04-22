@@ -4,8 +4,6 @@
 using System;
 using System.Diagnostics.Tracing;
 
-#nullable disable
-
 /// <summary>
 /// Performance events specific to the dependency graph.
 /// </summary>

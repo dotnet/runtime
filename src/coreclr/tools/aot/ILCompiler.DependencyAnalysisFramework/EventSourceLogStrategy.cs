@@ -7,8 +7,6 @@ using System.Threading;
 using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 
-#nullable disable
-
 namespace ILCompiler.DependencyAnalysisFramework
 {
     [EventSource(Name = "Microsoft-ILCompiler-DependencyGraph")]

@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-#nullable disable
-
 namespace ILCompiler.DependencyAnalysisFramework
 {
     public struct FullGraphLogStrategy<DependencyContextType> : IDependencyAnalysisMarkStrategy<DependencyContextType>

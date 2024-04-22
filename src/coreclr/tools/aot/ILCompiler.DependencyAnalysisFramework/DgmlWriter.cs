@@ -7,8 +7,6 @@ using System.Xml;
 using System.IO;
 using System.Diagnostics;
 
-#nullable disable
-
 namespace ILCompiler.DependencyAnalysisFramework
 {
     public class DgmlWriter
