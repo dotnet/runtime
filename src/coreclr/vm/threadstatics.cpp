@@ -437,12 +437,20 @@ void FreeThreadStaticData(ThreadLocalData *pThreadLocalData, Thread* pThread)
     }
     CONTRACTL_END;
 
+    if (pThreadLocalData == NULL)
+        return;
+
     SpinLockHolder spinLock(&pThread->m_TlsSpinLock);
 
     if (pThreadLocalData->pThread == NULL)
     {
         return;
     }
+
+    pThreadLocalData = pThread->m_ThreadLocalDataPtr;
+
+    if (pThreadLocalData == NULL)
+        return;
 
     delete[] (uint8_t*)pThreadLocalData->pTLSArrayData;
 
