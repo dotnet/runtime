@@ -29,7 +29,7 @@ namespace Wasm.Build.Tests
             return newContent;
         }
 
-        private void UpdateBrowserProgramCs(string name)
+        private void UpdateBrowserProgramCs()
         {
             var path = Path.Combine(_projectDir!, "Program.cs");
             string text = File.ReadAllText(path);
@@ -38,7 +38,7 @@ namespace Wasm.Build.Tests
             File.WriteAllText(path, text);
         }
 
-        private void UpdateConsoleProgramCs(string name)
+        private void UpdateConsoleProgramCs()
         {
             string programText = """
             Console.WriteLine("Hello, Console!");
