@@ -2542,12 +2542,12 @@ void LinearScan::buildIntervals()
             // assert(block->isRunRarely());
         }
 
-        // For Swift calls there can be an arbitrary amount of codegen related
+        // For Swift and RISC-V calls there can be an arbitrary amount of codegen related
         // to homing of decomposed struct parameters passed on stack. We cannot
         // do that in the prolog. We handle registers in the prolog and the
         // stack args in the scratch BB that we have ensured exists. The
         // handling clobbers REG_SCRATCH, so kill it here.
-        if ((block == compiler->fgFirstBB) && compiler->lvaHasAnySwiftStackParamToReassemble())
+        if ((block == compiler->fgFirstBB) && compiler->lvaHasAnyStackParamToReassemble())
         {
             assert(compiler->fgFirstBBisScratch());
             addRefsForPhysRegMask(genRegMask(REG_SCRATCH), currentLoc + 1, RefTypeKill, true);

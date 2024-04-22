@@ -386,13 +386,13 @@ void CodeGen::genCodeForBBlist()
         compiler->compCurStmt     = nullptr;
         compiler->compCurLifeTree = nullptr;
 
-#ifdef SWIFT_SUPPORT
-        // Reassemble Swift struct parameters on the local stack frame in the
+#if defined(SWIFT_SUPPORT) || defined(TARGET_RISCV64)
+        // Reassemble split struct parameters on the local stack frame in the
         // scratch BB right after the prolog. There can be arbitrary amounts of
         // codegen related to doing this, so it cannot be done in the prolog.
-        if (compiler->fgBBisScratch(block) && compiler->lvaHasAnySwiftStackParamToReassemble())
+        if (compiler->fgBBisScratch(block) && compiler->lvaHasAnyStackParamToReassemble())
         {
-            genHomeSwiftStructParameters(/* handleStack */ true);
+            genHomeSplitStructParameters(/* handleStack */ true);
         }
 #endif
 
