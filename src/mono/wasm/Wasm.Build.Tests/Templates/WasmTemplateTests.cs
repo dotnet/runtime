@@ -462,7 +462,9 @@ namespace Wasm.Build.Tests
             string id = $"browser_{config}_{GetRandomId()}";
             CreateWasmTemplateProject(id, "wasmbrowser", extraNewArgs, addFrameworkArg: extraNewArgs.Length == 0);
 
-            UpdateBrowserProgramCs();
+            if (targetFramework != "net8.0")
+                UpdateBrowserProgramCs();
+
             UpdateBrowserMainJs(targetFramework, runtimeAssetsRelativePath);
 
             new DotNetCommand(s_buildEnv, _testOutput)
