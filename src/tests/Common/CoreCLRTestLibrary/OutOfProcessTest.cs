@@ -80,6 +80,7 @@ namespace TestLibrary
                     return;
                 }
 
+                Console.WriteLine($"Creating '{outputDir}', asmPath: '{assemblyPath}'");
                 System.IO.Directory.CreateDirectory(outputDir);
 
                 ret = wrapper.RunTest(testExecutable, outputFile, errorFile, Assembly.GetEntryAssembly()!.FullName!, testBinaryBase, outputDir);
