@@ -5991,7 +5991,7 @@ gc_heap::get_segment (size_t size, gc_oh_num oh)
             return 0;
         }
 
-        result = make_heap_segment ((uint8_t*)mem, size, __this, (uoh_p ? max_generation : 0));
+        result = make_heap_segment ((uint8_t*)mem, size, __this, oh + max_generation);
 
         if (result)
         {
@@ -6051,7 +6051,16 @@ void gc_heap::release_segment (heap_segment* sg)
 {
     ptrdiff_t delta = 0;
     FIRE_EVENT(GCFreeSegment_V1, heap_segment_mem(sg));
-    virtual_free (sg, (uint8_t*)heap_segment_reserved (sg)-(uint8_t*)sg, sg);
+    size_t reserved_size = (uint8_t*)heap_segment_reserved (sg)-(uint8_t*)sg;
+    virtual_decommit (
+        sg, 
+        (uint8_t*)heap_segment_committed (sg)-(uint8_t*)sg,
+        (int) heap_segment_oh (sg)
+#ifdef MULTIPLE_HEAPS
+        , heap_segment_heap (sg)->heap_number
+#endif
+        );
+    virtual_free (sg, reserved_size, sg);
 }
 
 BOOL gc_heap::set_ro_segment_in_range (heap_segment* seg)
@@ -22654,6 +22663,7 @@ void gc_heap::gc1()
                 // compute max of gen0_must_clear_bricks over all heaps
                 max_gen0_must_clear_bricks = max(max_gen0_must_clear_bricks, hp->gen0_must_clear_bricks);
             }
+            verify_committed_bytes_per_heap ();
 #ifdef USE_REGIONS
             initGCShadow();
             distribute_free_regions();
@@ -22724,6 +22734,7 @@ void gc_heap::gc1()
     if (!(settings.concurrent))
     {
         rearrange_uoh_segments();
+        verify_committed_bytes_per_heap ();
 #ifdef USE_REGIONS
         initGCShadow();
         distribute_free_regions();
@@ -47529,8 +47540,6 @@ gc_heap::verify_free_lists ()
     }
 }
 
-#ifdef USE_REGIONS
-
 void gc_heap::verify_committed_bytes_per_heap()
 {
     size_t committed_bookkeeping = 0; // unused
@@ -47543,6 +47552,8 @@ void gc_heap::verify_committed_bytes_per_heap()
 #endif //MULTIPLE_HEAPS
     }
 }
+
+#ifdef USE_REGIONS
 
 void gc_heap::verify_committed_bytes()
 {
@@ -52826,10 +52837,13 @@ bool gc_heap::compute_memory_settings(bool is_initialization, uint32_t& nhp, uin
     return true;
 }
 
-#ifdef USE_REGIONS
 size_t gc_heap::compute_committed_bytes_per_heap(int oh, size_t& committed_bookkeeping)
 {
+#ifdef USE_REGIONS
     int start_generation = (oh == 0) ? 0 : oh + max_generation;
+#else
+    int start_generation = oh + max_generation;
+#endif
     int end_generation = oh + max_generation;
 
     size_t total_committed_per_heap = 0;
@@ -52851,6 +52865,8 @@ size_t gc_heap::compute_committed_bytes_per_heap(int oh, size_t& committed_bookk
 
     return total_committed_per_heap;
 }
+
+#ifdef USE_REGIONS
 
 void gc_heap::compute_committed_bytes(size_t& total_committed, size_t& committed_decommit, size_t& committed_free,
                                       size_t& committed_bookkeeping, size_t& new_current_total_committed, size_t& new_current_total_committed_bookkeeping,
@@ -53023,8 +53039,6 @@ int gc_heap::refresh_memory_limit()
     return (int)status;
 }
 
-#ifdef USE_REGIONS
-
 void gc_heap::accumulate_committed_bytes(heap_segment* seg, size_t& committed_bytes, size_t& mark_array_committed_bytes, gc_oh_num oh)
 {
     seg = heap_segment_rw (seg);
@@ -53032,12 +53046,22 @@ void gc_heap::accumulate_committed_bytes(heap_segment* seg, size_t& committed_by
     {
         if ((oh == unknown) || (heap_segment_oh (seg) == oh))
         {
+#ifdef USE_REGIONS
             mark_array_committed_bytes += get_mark_array_size (seg);
-            committed_bytes += (heap_segment_committed (seg) - get_region_start (seg));
+#endif //USE_REGIONS
+            uint8_t* start;
+#ifdef USE_REGIONS
+            start = get_region_start (seg);
+#else
+            start = (uint8_t*)seg;
+#endif
+            committed_bytes += (heap_segment_committed (seg) - start);
         }
         seg = heap_segment_next_rw (seg);
     }
 }
+
+#ifdef USE_REGIONS
 
 size_t gc_heap::get_mark_array_size (heap_segment* seg)
 {

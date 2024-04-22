@@ -1574,8 +1574,8 @@ private:
                           uint8_t* low, uint8_t* high);
 #endif //VERIFY_HEAP
 
-#ifdef USE_REGIONS
     PER_HEAP_METHOD void verify_committed_bytes_per_heap();
+#ifdef USE_REGIONS
     PER_HEAP_ISOLATED_METHOD void verify_committed_bytes();
 #endif //USE_REGIONS
 
@@ -1674,9 +1674,6 @@ private:
     // Compute the size committed for the mark array for this region.
     PER_HEAP_METHOD size_t get_mark_array_size(heap_segment* seg);
 
-    // Accumulate the committed bytes for both the region and the mark array for this list of regions.
-    PER_HEAP_METHOD void accumulate_committed_bytes(heap_segment* seg, size_t& committed_bytes, size_t& mark_array_committed_bytes, gc_oh_num oh = unknown);
-
     PER_HEAP_ISOLATED_METHOD void verify_region_to_generation_map();
 
     PER_HEAP_ISOLATED_METHOD void compute_gc_and_ephemeral_range (int condemned_gen_number, bool end_of_gc_p);
@@ -1684,6 +1681,9 @@ private:
     PER_HEAP_METHOD void pin_by_gc (uint8_t* object);
 #endif //STRESS_REGIONS
 #endif //USE_REGIONS
+
+    // Accumulate the committed bytes for both the region and the mark array for this list of regions.
+    PER_HEAP_METHOD void accumulate_committed_bytes(heap_segment* seg, size_t& committed_bytes, size_t& mark_array_committed_bytes, gc_oh_num oh = unknown);
 
     PER_HEAP_ISOLATED_METHOD gc_heap* make_gc_heap(
 #if defined (MULTIPLE_HEAPS)
@@ -3351,8 +3351,8 @@ private:
     PER_HEAP_ISOLATED_METHOD bool compute_memory_settings(bool is_initialization, uint32_t& nhp, uint32_t nhp_from_config, size_t& seg_size_from_config,
         size_t new_current_total_committed);
 
-#ifdef USE_REGIONS
     PER_HEAP_METHOD size_t compute_committed_bytes_per_heap(int oh, size_t& committed_bookkeeping);
+#ifdef USE_REGIONS
     PER_HEAP_ISOLATED_METHOD void compute_committed_bytes(size_t& total_committed, size_t& committed_decommit, size_t& committed_free, 
                                   size_t& committed_bookkeeping, size_t& new_current_total_committed, size_t& new_current_total_committed_bookkeeping, 
                                   size_t* new_committed_by_oh);
