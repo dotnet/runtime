@@ -5316,8 +5316,6 @@ PhaseStatus Compiler::fgCanonicalizeFirstBB()
 
     assert(!fgFirstBBisScratch());
     fgEnsureFirstBBisScratch();
-    // TODO-Quirk: Remove
-    fgCanonicalizedFirstBB = true;
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
