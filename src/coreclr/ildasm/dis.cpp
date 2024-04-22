@@ -727,8 +727,7 @@ void OpenScope(ISymUnmanagedScope                        *pIScope,
 char* DumpUnicodeString(void* GUICookie,
                         __inout __nullterminated char* szString,
                         _In_reads_(cbString) WCHAR* pszString,
-                        ULONG cbString,
-                        bool SwapString )
+                        ULONG cbString)
 {
     unsigned     i,L;
     char*   szStr=NULL, *szRet = NULL;
@@ -750,8 +749,7 @@ char* DumpUnicodeString(void* GUICookie,
 #endif
 
 #if BIGENDIAN
-    if (SwapString)
-        SwapStringLength(pszString, cbString);
+    SwapStringLength(pszString, cbString);
 #endif
 
     // first, check for embedded zeros:
@@ -782,7 +780,7 @@ DumpAsByteArray:
         strcat_s(szString,SZSTRING_SIZE," (");
 
 #if BIGENDIAN
-    SwapStringLength(pszString, cbString);
+        SwapStringLength(pszString, cbString);
 #endif
         DumpByteArray(szString,(BYTE*)pszString,cbString*sizeof(WCHAR),GUICookie);
         szRet = &szString[strlen(szString)];
@@ -2546,7 +2544,7 @@ void PrettyPrintToken(__inout __nullterminated char* szString, mdToken tk, IMDIn
             }
             if (pszString != NULL)
             {
-                DumpUnicodeString(GUICookie,szString,(WCHAR *)pszString,cbString, true);
+                DumpUnicodeString(GUICookie,szString,(WCHAR *)pszString,cbString);
             }
             else
             {
