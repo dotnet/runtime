@@ -1096,9 +1096,47 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev)
                     return op1;
                 }
 
-                if (binop->OperIs(ScevOper::Mul) && (cns2->Value == 0))
+                if (binop->OperIs(ScevOper::Add))
                 {
-                    return cns2;
+                    // (a + c1) + c2 => a + (c1 + c2)
+                    if (op1->OperIs(ScevOper::Add) && (((ScevBinop*)op1)->Op2->OperIs(ScevOper::Constant)))
+                    {
+                        ScevBinop* newOp2 = NewBinop(ScevOper::Add, ((ScevBinop*)op1)->Op2, cns2);
+                        ScevBinop* newAdd = NewBinop(ScevOper::Add, ((ScevBinop*)op1)->Op1, newOp2);
+                        return Simplify(newAdd);
+                    }
+                }
+
+                if (binop->OperIs(ScevOper::Mul))
+                {
+                    // a * 0 => 0
+                    if (cns2->Value == 0)
+                    {
+                        return cns2;
+                    }
+
+                    // a * 1 => 1
+                    if (cns2->Value == 1)
+                    {
+                        return op1;
+                    }
+
+                    // (a + b) * c2 => a * c2 + b * c2
+                    if (op1->OperIs(ScevOper::Add))
+                    {
+                        ScevBinop* newOp1 = NewBinop(ScevOper::Mul, ((ScevBinop*)op1)->Op1, cns2);
+                        ScevBinop* newOp2 = NewBinop(ScevOper::Mul, ((ScevBinop*)op1)->Op2, cns2);
+                        ScevBinop* newAdd = NewBinop(ScevOper::Add, newOp1, newOp2);
+                        return Simplify(newAdd);
+                    }
+
+                    // (a * c1) * c2 => a * (c1 * c2)
+                    if (op1->OperIs(ScevOper::Mul) && (((ScevBinop*)op1)->Op2->OperIs(ScevOper::Constant)))
+                    {
+                        ScevBinop* newOp2 = NewBinop(ScevOper::Mul, ((ScevBinop*)op1)->Op2, cns2);
+                        ScevBinop* newMul = NewBinop(ScevOper::Mul, ((ScevBinop*)op1)->Op1, newOp2);
+                        return Simplify(newMul);
+                    }
                 }
             }
             else if (op1->OperIs(ScevOper::Constant))
@@ -1107,6 +1145,18 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev)
                 if (binop->OperIs(ScevOper::Lsh) && (cns1->Value == 0))
                 {
                     return cns1;
+                }
+            }
+
+            if (binop->OperIs(ScevOper::Add))
+            {
+                // (a + c1) + (b + c2) => (a + b) + (c1 + c2)
+                if (op1->OperIs(ScevOper::Add) && ((ScevBinop*)op1)->Op2->OperIs(ScevOper::Constant) && op2->OperIs(ScevOper::Add) && ((ScevBinop*)op2)->Op2->OperIs(ScevOper::Constant))
+                {
+                    ScevBinop* newOp1 = NewBinop(ScevOper::Add, ((ScevBinop*)op1)->Op1, ((ScevBinop*)op2)->Op1);
+                    ScevBinop* newOp2 = NewBinop(ScevOper::Add, ((ScevBinop*)op1)->Op2, ((ScevBinop*)op2)->Op2);
+                    ScevBinop* newAdd = NewBinop(ScevOper::Add, newOp1, newOp2);
+                    return Simplify(newAdd);
                 }
             }
 

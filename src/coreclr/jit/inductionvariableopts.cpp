@@ -638,6 +638,9 @@ struct IVUseInfo
 
 void Compiler::optScoreNewPrimaryIV(FlowGraphNaturalLoop* loop, ArrayStack<IVUseInfo>& ivs, const IVUseInfo& iv, weight_t* cycleImprovement, weight_t* sizeImprovement)
 {
+    *cycleImprovement = -1;
+    *sizeImprovement = -1;
+
 
 }
 
@@ -650,7 +653,7 @@ void Compiler::optScoreNewPrimaryIV(FlowGraphNaturalLoop* loop, ArrayStack<IVUse
 //
 void Compiler::optStrengthReduce(FlowGraphNaturalLoop* loop, ArrayStack<IVUseInfo>& ivs)
 {
-    JITDUMP("Evaluating whether to strength reduce derived IVs\n");
+    JITDUMP("Found %d different induction variables. Evaluating whether to strength reduce derived IVs.\n", ivs.Height());
 
     for (int iteration = 1;; iteration++)
     {
@@ -665,33 +668,56 @@ void Compiler::optStrengthReduce(FlowGraphNaturalLoop* loop, ArrayStack<IVUseInf
 
         for (int i = 0; i < ivs.Height(); i++)
         {
-            const IVUseInfo& derivedIV = ivs.BottomRef(i);
-            if (derivedIV.PrimaryLclNum != BAD_VAR_NUM)
+            const IVUseInfo& iv = ivs.BottomRef(i);
+
+#ifdef DEBUG
+            if (verbose)
+            {
+                printf("  [%d]: %s ", i, varTypeName(iv.IV->Type));
+                iv.IV->Dump(this);
+                int numUses = 0;
+                for (IVUseListNode* node = iv.Uses; node != nullptr; node = node->Next)
+                {
+                    numUses++;
+                }
+
+                if (iv.PrimaryLclNum != BAD_VAR_NUM)
+                    printf(" (primary IV V%02u,", iv.PrimaryLclNum);
+                else
+                    printf(" (derived IV,");
+
+                printf(" %d uses)", numUses);
+
+                const char* sep = "\n    Uses: ";
+                for (IVUseListNode* node = iv.Uses; node != nullptr; node = node->Next)
+                {
+                    printf("%s[%06u]", sep, dspTreeID(node->Tree));
+                    sep = " ";
+                }
+                printf("\n");
+            }
+#endif
+
+            if (iv.PrimaryLclNum != BAD_VAR_NUM)
             {
                 continue;
             }
 
             weight_t cycleImprovement;
             weight_t sizeImprovement;
-            optScoreNewPrimaryIV(loop, ivs, derivedIV, &cycleImprovement, &sizeImprovement);
+            optScoreNewPrimaryIV(loop, ivs, iv, &cycleImprovement, &sizeImprovement);
 
             const weight_t ALLOWED_SIZE_REGRESSION_PER_CYCLE_IMPROVEMENT = 2;
             const weight_t ALLOWED_CYCLE_REGRESSION_PER_SIZE_IMPROVEMENT = 0.01;
 
-            JITDUMP("  [%d]: %s ", i, varTypeName(derivedIV.IV->Type));
-            derivedIV.IV->Dump(this);
-            JITDUMP("\n");
             JITDUMP("    Estimated cycle improvement: " FMT_WT " cycles per invocation\n", cycleImprovement);
             JITDUMP("    Estimated size improvement: " FMT_WT " bytes\n", sizeImprovement);
 
-            bool profitableForCycles = (cycleImprovement > 0) && ((cycleImprovement * ALLOWED_SIZE_REGRESSION_PER_CYCLE_IMPROVEMENT) >= -sizeImprovement);
-            bool profitableForSize = (sizeImprovement > 0) && ((sizeImprovement * ALLOWED_CYCLE_REGRESSION_PER_SIZE_IMPROVEMENT) >= -cycleImprovement);
-
-            if (profitableForCycles)
+            if ((cycleImprovement > 0) && ((cycleImprovement * ALLOWED_SIZE_REGRESSION_PER_CYCLE_IMPROVEMENT) >= -sizeImprovement))
             {
                 JITDUMP("    Candidate for new primary IV (cycle improvement)\n");
             }
-            else if (profitableForSize)
+            else if ((sizeImprovement > 0) && ((sizeImprovement * ALLOWED_CYCLE_REGRESSION_PER_SIZE_IMPROVEMENT) >= -cycleImprovement))
             {
                 JITDUMP("    Candidate for new primary IV (size improvement)\n");
             }
@@ -708,7 +734,7 @@ void Compiler::optStrengthReduce(FlowGraphNaturalLoop* loop, ArrayStack<IVUseInf
                 (cycleImprovement > bestCycleImprovement) ||
                 ((fabs(cycleImprovement - bestCycleImprovement) < 0.01) && (sizeImprovement > bestSizeImprovement)))
             {
-                bestIV = &derivedIV;
+                bestIV = &iv;
                 bestCycleImprovement = cycleImprovement;
                 sizeImprovement = bestSizeImprovement;
             }
@@ -719,8 +745,9 @@ void Compiler::optStrengthReduce(FlowGraphNaturalLoop* loop, ArrayStack<IVUseInf
             break;
         }
 
-        JITDUMP("\n  Strength reducing ");
+        JITDUMP("\n  Introducing primary IV for %s ", varTypeName(bestIV->IV->Type));
         bestIV->IV->Dump(this);
+        JITDUMP("\n");
     }
 }
 
@@ -786,6 +813,9 @@ PhaseStatus Compiler::optInductionVariables()
                         continue;
                     }
 
+                    DBEXEC(verbose, scev->Dump(this));
+                    JITDUMP(" => ");
+
                     Scev* simplifiedScev = scevContext.Simplify(scev);
 
                     DBEXEC(verbose, simplifiedScev->Dump(this));
@@ -843,39 +873,79 @@ PhaseStatus Compiler::optInductionVariables()
             return BasicBlockVisit::Continue;
             });
 
-#ifdef DEBUG
-        if (verbose)
+        if (loop->ExitEdges().size() == 1)
         {
-            printf("Found %d different induction variables\n", allIVs.Height());
-
-            for (int i = 0; i < allIVs.Height(); i++)
+            JITDUMP("Loop has one exit edge\n");
+            BasicBlock* exiting = loop->ExitEdge(0)->getSourceBlock();
+            if (exiting->KindIs(BBJ_COND))
             {
-                IVUseInfo& info = allIVs.BottomRef(i);
-                printf("  [%d]: %s ", i, varTypeName(info.IV->Type));
-                info.IV->Dump(this);
-                int numUses = 0;
-                for (IVUseListNode* node = info.Uses; node != nullptr; node = node->Next)
+                Statement* lastStmt = exiting->lastStmt();
+                GenTree* lastExpr = lastStmt->GetRootNode();
+                assert(lastExpr->OperIs(GT_JTRUE));
+                GenTree* cond = lastExpr->gtGetOp1();
+                if (cond->OperIsCompare() && varTypeIsIntegralOrI(cond->gtGetOp1()))
                 {
-                    numUses++;
+                    Scev* op1 = scevContext.Analyze(exiting, cond->gtGetOp1());
+                    Scev* op2 = scevContext.Analyze(exiting, cond->gtGetOp2());
+                    if ((op1 != nullptr) && (op2 != nullptr))
+                    {
+                        Scev* a = nullptr;
+                        Scev* b = nullptr;
+                        genTreeOps exitOp = loop->ContainsBlock(exiting->GetTrueTarget()) ? GenTree::ReverseRelop(cond->gtOper) : cond->gtOper;
+                        if (exitOp == GT_LT)
+                        {
+                            a = op1;
+                            b = scevContext.NewBinop(ScevOper::Add, op2, scevContext.NewConstant(op2->Type, -1));
+                        }
+                        else if (exitOp == GT_LE)
+                        {
+                            a = op1;
+                            b = op2;
+                        }
+                        else if (exitOp == GT_GT)
+                        {
+                            a = op2;
+                            b = scevContext.NewBinop(ScevOper::Add, op1, scevContext.NewConstant(op2->Type, -1));
+                        }
+                        else if (exitOp == GT_GE)
+                        {
+                            a = op2;
+                            b = op1;
+                        }
+
+                        if ((a != nullptr) && (b != nullptr))
+                        {
+                            Scev* sub = scevContext.NewBinop(ScevOper::Add, a, scevContext.NewBinop(ScevOper::Mul, b, scevContext.NewConstant(b->Type, -1)));
+                            Scev* simplifiedSub = scevContext.Simplify(sub);
+                            JITDUMP("Trip count subtraction is: ");
+                            DBEXEC(VERBOSE, sub->Dump(this));
+                            JITDUMP(" => ");
+                            DBEXEC(VERBOSE, simplifiedSub->Dump(this));
+                            JITDUMP("\n");
+
+                            if (simplifiedSub->OperIs(ScevOper::AddRec))
+                            {
+                                ScevAddRec* tripCountAddRec = (ScevAddRec*)simplifiedSub;
+                                int64_t stepCns;
+                                if (tripCountAddRec->Step->GetConstantValue(this, &stepCns) && (stepCns < 0))
+                                {
+                                    JITDUMP("Trip count is %s", stepCns != -1 ? "(" : "");
+                                    DBEXEC(VERBOSE, tripCountAddRec->Start->Dump(this));
+                                    if (stepCns != -1)
+                                    {
+                                        JITDUMP(") / %d\n", (int)-stepCns);
+                                    }
+                                    else
+                                    {
+                                        JITDUMP("\n");
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-
-                if (info.PrimaryLclNum != BAD_VAR_NUM)
-                    printf(" (primary IV V%02u,", info.PrimaryLclNum);
-                else
-                    printf(" (derived IV,");
-
-                printf(" %d uses)", numUses);
-
-                const char* sep = "\n    ";
-                for (IVUseListNode* node = info.Uses; node != nullptr; node = node->Next)
-                {
-                    printf("%s[%06u]", sep, dspTreeID(node->Tree));
-                    sep = " ";
-                }
-                printf("\n");
             }
         }
-#endif
 
         optStrengthReduce(loop, allIVs);
 
