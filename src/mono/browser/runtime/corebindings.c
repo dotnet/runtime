@@ -34,7 +34,7 @@ typedef void (*background_job_cb)(void);
 
 void mono_wasm_bind_assembly_exports (char *assembly_name);
 void mono_wasm_assembly_get_entry_point (char *assembly_name, int auto_insert_breakpoint, MonoMethod **method_out);
-void mono_wasm_get_assembly_export (char *assembly_name, char *namespace, char *classname, char *methodname, MonoMethod **method_out);
+void mono_wasm_get_assembly_export (char *assembly_name, char *namespace, char *classname, char *methodname, int signature_hash, MonoMethod **method_out);
 
 #ifndef DISABLE_THREADS
 void mono_wasm_release_cs_owned_object_post (pthread_t target_tid, int js_handle);
@@ -230,13 +230,14 @@ void mono_wasm_bind_assembly_exports (char *assembly_name)
 	}
 }
 
-void mono_wasm_get_assembly_export (char *assembly_name, char *namespace, char *classname, char *methodname, MonoMethod **method_out)
+void mono_wasm_get_assembly_export (char *assembly_name, char *namespace, char *classname, char *methodname, int signature_hash, MonoMethod **method_out)
 {
 	MonoError error;
 	MonoAssembly* assembly;
 	MonoImage *image;
 	MonoClass *klass;
 	MonoMethod *method=NULL;
+    char real_method_name_buffer[4096];
 	*method_out = NULL;
 
 	assert (assembly_name);
@@ -247,10 +248,15 @@ void mono_wasm_get_assembly_export (char *assembly_name, char *namespace, char *
 
 	klass = mono_class_from_name (image, namespace, classname);
 	assert (klass);
-	method = mono_class_get_method_from_name (klass, methodname, -1);
+
+    snprintf(real_method_name_buffer, 4096, "__Wrapper_%s_%d", methodname, signature_hash);
+
+	method = mono_class_get_method_from_name (klass, real_method_name_buffer, -1);
 	assert (method);
 
 	*method_out = method;
+    // This is freed by _mono_wasm_assembly_load for some reason
+    // free (assembly_name);
 	free (namespace);
 	free (classname);
 	free (methodname);
