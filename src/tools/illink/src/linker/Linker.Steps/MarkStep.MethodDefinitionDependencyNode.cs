@@ -13,7 +13,7 @@ namespace Mono.Linker.Steps
 		/// <summary>
 		/// A dummy node to postpone processing of a method in the current call stack. The analyzer will process the MethodDefinitionNode dependency later.
 		/// </summary>
-		public class PostPoneMethodProcessingNode : DependencyNodeCore<MarkStepNodeFactory>
+		internal class PostPoneMethodProcessingNode : DependencyNodeCore<MarkStepNodeFactory>
 		{
 			readonly MethodDefinition method;
 			readonly DependencyInfo reason;

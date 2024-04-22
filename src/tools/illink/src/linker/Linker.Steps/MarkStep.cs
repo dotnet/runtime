@@ -69,6 +69,7 @@ namespace Mono.Linker.Steps
 		protected HashSet<AssemblyDefinition> _dynamicInterfaceCastableImplementationTypesDiscovered;
 		protected List<TypeDefinition> _dynamicInterfaceCastableImplementationTypes;
 		protected List<(MethodBody, MarkScopeStack.Scope)> _unreachableBodies;
+		private bool _steadyState;
 
 		readonly List<(TypeDefinition Type, MethodBody Body, Instruction Instr)> _pending_isinst_instr;
 
@@ -464,10 +465,10 @@ namespace Mono.Linker.Steps
 
 		bool ProcessPrimaryQueue ()
 		{
-			if (QueueIsEmpty ())
+			if (ReachedSteadyState ())
 				return false;
 
-			while (!QueueIsEmpty ()) {
+			while (!ReachedSteadyState ()) {
 				ProcessQueue ();
 				ProcessInterfaceMethods ();
 				ProcessMarkedTypesWithInterfaces ();
@@ -549,14 +550,19 @@ namespace Mono.Linker.Steps
 			_methods.Clear ();
 		}
 
-		bool QueueIsEmpty ()
+		bool ReachedSteadyState ()
 		{
-			return _methods.Count == 0;
+			var oldState = _steadyState;
+			_steadyState = true;
+			return oldState;
 		}
 
 		void EnqueueMethod (MethodDefinition method, in DependencyInfo reason, in MessageOrigin origin)
 		{
-			_methods.Enqueue ((method, reason, origin));
+			_ = method;
+			_ = reason;
+			_ = origin;
+			_steadyState = false;
 		}
 
 		void ProcessInterfaceMethods ()
@@ -1985,6 +1991,13 @@ namespace Mono.Linker.Steps
 			MarkStaticConstructor (type, reason, origin);
 		}
 
+
+		/// <summary>
+		/// Marks the specified <paramref name="reference"/> as referenced.
+		/// </summary>
+		/// <param name="reference">The type reference to mark.</param>
+		/// <param name="reason">The reason why the marking is occuring</param>
+		/// <returns>The resolved type definition if the reference can be resolved</returns>
 		protected internal virtual TypeDefinition? MarkType (TypeReference reference, DependencyInfo reason, MessageOrigin? origin = null)
 		{
 #if DEBUG

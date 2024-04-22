@@ -10,7 +10,7 @@ namespace Mono.Linker.Steps
 
 	public partial class MarkStep
 	{
-		public class TypeIsRelevantToVariantCastingNode : DependencyNodeCore<MarkStepNodeFactory>
+		internal class TypeIsRelevantToVariantCastingNode : DependencyNodeCore<MarkStepNodeFactory>
 		{
 			TypeDefinition type;
 			public TypeIsRelevantToVariantCastingNode (TypeDefinition type) => this.type = type;

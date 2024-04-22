@@ -10,7 +10,7 @@ namespace Mono.Linker.Steps
 
 	public partial class MarkStep
 	{
-		public class TypeDefinitionDependencyNode : DependencyNodeCore<MarkStepNodeFactory>
+		internal class TypeDefinitionDependencyNode : DependencyNodeCore<MarkStepNodeFactory>
 		{
 			readonly TypeDefinition type;
 			readonly MessageOrigin? origin;
