@@ -6931,18 +6931,6 @@ bool Compiler::lvaParamHasLocalStackSpace(unsigned lclNum)
     }
 #endif
 
-    const ABIPassingInformation& abiInfo =
-        lvaGetParameterABIInfo(varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum);
-    if (abiInfo.IsSplitAcrossRegistersAndStack())
-    {
-        // Outside Swift (handled above) we can handle split parameters by
-        // spilling the registers at the top of the stack frame, below the
-        // stack segments. This results in the correct contiguous local value.
-        // Thus we don't need to allocate full space for these.
-        //
-        return false;
-    }
-
 #if defined(WINDOWS_AMD64_ABI)
     // On Windows AMD64 we can use the caller-reserved stack area that is already setup
     return false;
