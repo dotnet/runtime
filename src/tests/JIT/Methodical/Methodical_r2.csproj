@@ -9,6 +9,8 @@
     <MergedWrapperProjectReference Remove="c*/**/*_r.??proj" />
     <MergedWrapperProjectReference Remove="d*/**/*_r.??proj" />
     <MergedWrapperProjectReference Remove="e*/**/*_r.??proj" />
+    <ProjectReference Include="../common/localloc_common.ilproj" />
+    <ProjectReference Include="../common/eh_common.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FPtrunc\convr4a.cs" />

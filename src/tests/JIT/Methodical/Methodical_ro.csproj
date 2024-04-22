@@ -4,6 +4,8 @@
   </PropertyGroup>
   <ItemGroup>
     <MergedWrapperProjectReference Include="*/**/*_ro.??proj" />
+    <ProjectReference Include="../common/localloc_common.ilproj" />
+    <ProjectReference Include="../common/eh_common.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Arrays\lcs\lcs.cs" />

@@ -8,6 +8,8 @@
     <MergedWrapperProjectReference Include="c*/**/*_r.??proj" />
     <MergedWrapperProjectReference Include="d*/**/*_r.??proj" />
     <MergedWrapperProjectReference Include="e*/**/*_r.??proj" />
+    <ProjectReference Include="../common/localloc_common.ilproj" />
+    <ProjectReference Include="../common/eh_common.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Arrays\lcs\lcs.cs" />
