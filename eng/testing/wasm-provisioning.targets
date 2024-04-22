@@ -45,7 +45,7 @@
     <GeckoDriverBinaryName>geckodriver.exe</GeckoDriverBinaryName>
     <FirefoxStampFile>$([MSBuild]::NormalizePath($(FirefoxDir), '.install-firefox-$(win_FirefoxRevision).stamp'))</FirefoxStampFile>
     <GeckoDriverStampFile>$([MSBuild]::NormalizePath($(GeckoDriverDir), '.install-geckodriver-$(win_GeckoDriverRevision).stamp'))</GeckoDriverStampFile>
-    <FirefoxBinaryPath>$([MSBuild]::NormalizePath($(FirefoxDir), $(FirefoxBinaryName)))</FirefoxBinaryPath>
+    <FirefoxBinaryPath>$([MSBuild]::NormalizePath($(FirefoxDir), $(FirefoxDirName), $(FirefoxBinaryName)))</FirefoxBinaryPath>
     <GeckoDriverBinaryPath>$([MSBuild]::NormalizePath($(GeckoDriverDir), $(GeckoDriverDirName), $(GeckoDriverBinaryName)))</GeckoDriverBinaryPath>
   </PropertyGroup>
 
@@ -209,9 +209,9 @@ export __SCRIPT_DIR=%24( cd -- "%24( dirname -- "%24{BASH_SOURCE[0]}" )" &amp;> 
     <DownloadFile SourceUrl="$(FirefoxUrl)" DestinationFolder="$(FirefoxDir)" SkipUnchangedFiles="true">
       <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
     </DownloadFile>
-    <MakeDir Directories="$(FirefoxDir)"/>
+    <MakeDir Directories="$(FirefoxDir)\$(FirefoxDirName)"/>
     <Exec Command="tar -xf $(_DownloadedFile) -C $(FirefoxDir)" Condition="$([MSBuild]::IsOSPlatform('linux'))" />
-    <Exec Command="&quot;$(_DownloadedFile)&quot; /InstallDirectoryPath=$(FirefoxDir) /TaskbarShortcut=false /DesktopShortcut=false /StartMenuShortcut=false /PrivateBrowsingShortcut=false /MaintenanceService=false /PreventRebootRequired=true" Condition="$([MSBuild]::IsOSPlatform('windows'))" />
+    <Exec Command="&quot;$(_DownloadedFile)&quot; /InstallDirectoryPath=$(FirefoxDir)$(FirefoxDirName) /TaskbarShortcut=false /DesktopShortcut=false /StartMenuShortcut=false /PrivateBrowsingShortcut=false /MaintenanceService=false /PreventRebootRequired=true" Condition="$([MSBuild]::IsOSPlatform('windows'))" />
     <Delete Files="$(_DownloadedFile)" />
 
     <Error Text="Cannot find firefox at $(FirefoxBinaryPath) in the downloaded copy"
