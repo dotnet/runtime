@@ -62,7 +62,7 @@ namespace Mono.Linker.Steps
 		}
 
 		protected Queue<(MethodDefinition, DependencyInfo, MessageOrigin)> _methods;
-		protected Dictionary<MethodDefinition, MarkScopeStack.Scope> _virtual_methods;
+		protected Dictionary<MethodDefinition, MarkScopeStack.Scope> _interface_methods;
 		protected Queue<AttributeProviderPair> _assemblyLevelAttributes;
 		protected Queue<(AttributeProviderPair, DependencyInfo, MarkScopeStack.Scope)> _lateMarkedAttributes;
 		protected List<(TypeDefinition, MarkScopeStack.Scope)> _typesWithInterfaces;
@@ -221,7 +221,7 @@ namespace Mono.Linker.Steps
 		public MarkStep ()
 		{
 			_methods = new Queue<(MethodDefinition, DependencyInfo, MessageOrigin)> ();
-			_virtual_methods = new Dictionary<MethodDefinition, MarkScopeStack.Scope> ();
+			_interface_methods = new Dictionary<MethodDefinition, MarkScopeStack.Scope> ();
 			_assemblyLevelAttributes = new Queue<AttributeProviderPair> ();
 			_lateMarkedAttributes = new Queue<(AttributeProviderPair, DependencyInfo, MarkScopeStack.Scope)> ();
 			_typesWithInterfaces = new List<(TypeDefinition, MarkScopeStack.Scope)> ();
@@ -469,7 +469,7 @@ namespace Mono.Linker.Steps
 
 			while (!QueueIsEmpty ()) {
 				ProcessQueue ();
-				ProcessVirtualMethods ();
+				ProcessInterfaceMethods ();
 				ProcessMarkedTypesWithInterfaces ();
 				ProcessDynamicCastableImplementationInterfaces ();
 				ProcessPendingBodies ();
@@ -559,11 +559,11 @@ namespace Mono.Linker.Steps
 			_methods.Enqueue ((method, reason, origin));
 		}
 
-		void ProcessVirtualMethods ()
+		void ProcessInterfaceMethods ()
 		{
-			foreach ((var method, var scope) in _virtual_methods) {
+			foreach ((var method, var scope) in _interface_methods) {
 				using (ScopeStack.PushLocalScope (scope)) {
-					ProcessVirtualMethod (method);
+					ProcessInterfaceMethod (method);
 				}
 			}
 		}
@@ -597,7 +597,7 @@ namespace Mono.Linker.Steps
 							continue;
 						foreach (var ov in baseMethods) {
 							if (ov.Base.DeclaringType is not null && ov.Base.DeclaringType.IsInterface && IgnoreScope (ov.Base.DeclaringType.Scope)) {
-								_virtual_methods.TryAdd (ov.Base, ScopeStack.CurrentScope);
+								MarkMethodAsVirtual (ov.Base, ScopeStack.CurrentScope);
 							}
 						}
 					}
@@ -680,28 +680,32 @@ namespace Mono.Linker.Steps
 				}
 			}
 		}
-
-		void ProcessVirtualMethod (MethodDefinition method)
+		void MarkMethodAsVirtual (MethodDefinition method, MarkScopeStack.Scope scope)
 		{
 			Annotations.EnqueueVirtualMethod (method);
-
 			if (method.DeclaringType.IsInterface) {
-				var defaultImplementations = Annotations.GetDefaultInterfaceImplementations (method);
-				if (defaultImplementations is not null) {
-					foreach (var dimInfo in defaultImplementations) {
-						ProcessDefaultImplementation (dimInfo);
+				_interface_methods.TryAdd (method, scope);
+			}
+		}
 
-						if (IsInterfaceImplementationMethodNeededByTypeDueToInterface (dimInfo))
-							MarkMethod (dimInfo.Override, new DependencyInfo (DependencyKind.Override, dimInfo.Base), ScopeStack.CurrentScope.Origin);
-					}
+		void ProcessInterfaceMethod (MethodDefinition method)
+		{
+			Debug.Assert (method.DeclaringType.IsInterface);
+			var defaultImplementations = Annotations.GetDefaultInterfaceImplementations (method);
+			if (defaultImplementations is not null) {
+				foreach (var dimInfo in defaultImplementations) {
+					ProcessDefaultImplementation (dimInfo);
+
+					if (IsInterfaceImplementationMethodNeededByTypeDueToInterface (dimInfo))
+						MarkMethod (dimInfo.Override, new DependencyInfo (DependencyKind.Override, dimInfo.Base), ScopeStack.CurrentScope.Origin);
 				}
-				List<OverrideInformation>? overridingMethods = (List<OverrideInformation>?) Annotations.GetOverrides (method);
-				if (overridingMethods is not null) {
-					for (int i = 0; i < overridingMethods.Count; i++) {
-						OverrideInformation ov = overridingMethods[i];
-						if (IsInterfaceImplementationMethodNeededByTypeDueToInterface (ov))
-							MarkMethod (ov.Override, new DependencyInfo (DependencyKind.Override, ov.Base), ScopeStack.CurrentScope.Origin);
-					}
+			}
+			List<OverrideInformation>? overridingMethods = (List<OverrideInformation>?)Annotations.GetOverrides (method);
+			if (overridingMethods is not null) {
+				for (int i = 0; i < overridingMethods.Count; i++) {
+					OverrideInformation ov = overridingMethods[i];
+					if (IsInterfaceImplementationMethodNeededByTypeDueToInterface (ov))
+						MarkMethod (ov.Override, new DependencyInfo (DependencyKind.Override, ov.Base), ScopeStack.CurrentScope.Origin);
 				}
 			}
 		}
@@ -3257,7 +3261,7 @@ namespace Mono.Linker.Steps
 			MarkMethodSpecialCustomAttributes (method);
 
 			if (method.IsVirtual)
-				_virtual_methods.TryAdd (method, ScopeStack.CurrentScope);
+				MarkMethodAsVirtual (method, ScopeStack.CurrentScope);
 
 			MarkNewCodeDependencies (method);
 
@@ -3460,12 +3464,12 @@ namespace Mono.Linker.Steps
 				return;
 
 			foreach (OverrideInformation ov in base_methods) {
-				// We should add all interface base methods to _virtual_methods for virtual override annotation validation
+				// We should add all interface base methods to _interface_methods for virtual override annotation validation
 				// Interfaces from preserved scope will be missed if we don't add them here
 				// This will produce warnings for all interface methods and virtual methods regardless of whether the interface, interface implementation, or interface method is kept or not.
 				if (ov.Base.DeclaringType.IsInterface && !method.DeclaringType.IsInterface) {
 					// These are all virtual, no need to check IsVirtual before adding to list
-					_virtual_methods.TryAdd (ov.Base, ScopeStack.CurrentScope);
+					MarkMethodAsVirtual (ov.Base, ScopeStack.CurrentScope);
 					continue;
 				}
 
