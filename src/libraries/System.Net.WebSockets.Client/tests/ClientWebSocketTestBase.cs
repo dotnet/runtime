@@ -15,18 +15,13 @@ namespace System.Net.WebSockets.Client.Tests
 {
     public class ClientWebSocketTestBase
     {
-        public static readonly object[][] EchoServers = System.Net.Test.Common.Configuration.WebSockets.EchoServers;
-        public static readonly object[][] EchoHeadersServers = System.Net.Test.Common.Configuration.WebSockets.EchoHeadersServers;
+        public static readonly object[][] EchoServers = System.Net.Test.Common.Configuration.WebSockets.GetEchoServers();
+        public static readonly object[][] EchoHeadersServers = System.Net.Test.Common.Configuration.WebSockets.GetEchoHeadersServers();
         public static readonly object[][] EchoServersAndBoolean = EchoServers.SelectMany(o => new object[][]
         {
             new object[] { o[0], false },
             new object[] { o[0], true }
         }).ToArray();
-        public static readonly object[][] SecureEchoServersAndBoolean = new object[][]
-        {
-            new object[] { Test.Common.Configuration.WebSockets.SecureRemoteEchoServer, false },
-            new object[] { Test.Common.Configuration.WebSockets.SecureRemoteEchoServer, true }
-        };
 
         public const int TimeOutMilliseconds = 30000;
         public const int CloseDescriptionMaxLength = 123;
