@@ -525,50 +525,10 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     else
     {
 #ifndef FEATURE_64BIT_ALIGNMENT
-        if ((DATA_ALIGNMENT < sizeof(double)) && (pArrayMT->GetArrayElementType() == ELEMENT_TYPE_R8) &&
-            (totalSize < GCHeapUtilities::GetGCHeap()->GetLOHThreshold() - MIN_OBJECT_SIZE))
+        if ((DATA_ALIGNMENT < sizeof(double)) && (pArrayMT->GetArrayElementType() == ELEMENT_TYPE_R8))
         {
-            // Creation of an array of doubles, not in the large object heap.
-            // We want to align the doubles to 8 byte boundaries, but the GC gives us pointers aligned
-            // to 4 bytes only (on 32 bit platforms). To align, we ask for 12 bytes more to fill with a
-            // dummy object.
-            // If the GC gives us a 8 byte aligned address, we use it for the array and place the dummy
-            // object after the array, otherwise we put the dummy object first, shifting the base of
-            // the array to an 8 byte aligned address. Also, we need to make sure that the syncblock of the
-            // second object is zeroed. GC won't take care of zeroing it out with GC_ALLOC_ZEROING_OPTIONAL.
-            //
-            // Note: on 64 bit platforms, the GC always returns 8 byte aligned addresses, and we don't
-            // execute this code because DATA_ALIGNMENT < sizeof(double) is false.
-
-            _ASSERTE(DATA_ALIGNMENT == sizeof(double) / 2);
-            _ASSERTE((MIN_OBJECT_SIZE % sizeof(double)) == DATA_ALIGNMENT);   // used to change alignment
-            _ASSERTE(pArrayMT->GetComponentSize() == sizeof(double));
-            _ASSERTE(g_pObjectClass->GetBaseSize() == MIN_OBJECT_SIZE);
-            _ASSERTE(totalSize < totalSize + MIN_OBJECT_SIZE);
-            orArray = (ArrayBase*)Alloc(totalSize + MIN_OBJECT_SIZE, flags, isSampled);
-
-            Object* orDummyObject;
-            if (((size_t)orArray % sizeof(double)) != 0)
-            {
-                orDummyObject = orArray;
-                orArray = (ArrayBase*)((size_t)orArray + MIN_OBJECT_SIZE);
-                if (flags & GC_ALLOC_ZEROING_OPTIONAL)
-                {
-                    // clean the syncblock of the aligned array.
-                    *(((void**)orArray)-1) = 0;
-                }
-            }
-            else
-            {
-                orDummyObject = (Object*)((size_t)orArray + totalSize);
-                if (flags & GC_ALLOC_ZEROING_OPTIONAL)
-                {
-                    // clean the syncblock of the dummy object.
-                    *(((void**)orDummyObject)-1) = 0;
-                }
-            }
-            _ASSERTE(((size_t)orArray % sizeof(double)) == 0);
-            orDummyObject->SetMethodTable(g_pObjectClass);
+            flags |= GC_ALLOC_ALIGN8;
+            orArray = (ArrayBase*)Alloc(totalSize, flags, isSampled);
         }
         else
 #endif  // FEATURE_64BIT_ALIGNMENT
