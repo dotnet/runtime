@@ -7,6 +7,10 @@ namespace Microsoft.Quic
 {
     internal partial struct QUIC_SETTINGS : System.IEquatable<QUIC_SETTINGS>
     {
+        // Because QUIC_SETTINGS may contain gaps due to layout/alignment of individual
+        // fields, we implement IEquatable<QUIC_SETTINGS> manually. If a new field is added,
+        // then there is a unit test which should fail.
+
         public readonly bool Equals(QUIC_SETTINGS other)
         {
             return Anonymous1.IsSetFlags == other.Anonymous1.IsSetFlags
