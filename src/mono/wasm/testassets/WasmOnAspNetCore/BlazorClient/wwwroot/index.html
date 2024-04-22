@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>BlazorHosted</title>
-    <base href="/" />
+    <base href="/blazorclient/" />
 </head>
 
 <body>
@@ -16,14 +16,7 @@
         <a href="" class="reload">Reload</a>
         <a class="dismiss">🗙</a>
     </div>
-    <script src="_framework/blazor.webassembly.js" autostart="false"></script>
-    <script>
-        Blazor.start({
-            configureRuntime: function (dotnet) {
-                dotnet.withExitCodeLogging();
-            }
-        });
-    </script>
+    <script src="_framework/blazor.webassembly.js"></script>
 </body>
 
 </html>
