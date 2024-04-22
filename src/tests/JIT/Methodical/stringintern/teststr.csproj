@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType />
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="teststr.cs" />
+  </ItemGroup>
+</Project>

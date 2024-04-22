@@ -10,14 +10,14 @@
     <MergedWrapperProjectReference Remove="*/**/*_do.??proj" />
     <MergedWrapperProjectReference Remove="*/**/*_r.??proj" />
     <MergedWrapperProjectReference Remove="*/**/*_ro.??proj" />
+    <ProjectReference Include="../common/localloc_common.ilproj" />
+    <ProjectReference Include="../common/eh_common.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Arrays\misc\IndexingSideEffects.cs" />
     <Compile Include="Boxing\boxunbox\BoxPatternMatchAndSideEffects.cs" />
     <Compile Include="Boxing\misc\unusedindir.cs" />
     <Compile Include="Boxing\xlang\sinlib.cs" />
-    <Compile Include="cctor\misc\testlib.cs" />
-    <Compile Include="cctor\xassem\testlib.cs" />
     <Compile Include="Coverage\b433189.cs" />
     <Compile Include="delegate\GSDelegate.cs" />
     <Compile Include="delegate\VirtualDelegate.cs" />
@@ -70,18 +70,9 @@
     <Compile Include="refany\lcs.cs" />
     <Compile Include="stringintern\b207621.cs" />
     <Compile Include="stringintern\test1.cs" />
-    <Compile Include="stringintern\test1.cs" />
-    <Compile Include="stringintern\test2.cs" />
     <Compile Include="stringintern\test2.cs" />
     <Compile Include="stringintern\test4.cs" />
-    <Compile Include="stringintern\test4.cs" />
     <Compile Include="stringintern\testgenstr.cs" />
-    <Compile Include="stringintern\testgenstr.cs" />
-    <Compile Include="stringintern\testgenstr.cs" />
-    <Compile Include="stringintern\testgenstr.cs" />
-    <Compile Include="stringintern\teststr.cs" />
-    <Compile Include="stringintern\teststr.cs" />
-    <Compile Include="stringintern\teststr.cs" />
     <Compile Include="stringintern\teststr.cs" />
     <Compile Include="structs\ExplicitLayout.cs" />
     <Compile Include="structs\StructStackParams.cs" />
