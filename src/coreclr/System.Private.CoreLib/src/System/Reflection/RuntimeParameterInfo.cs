@@ -176,7 +176,7 @@ namespace System.Reflection
             int position, ParameterAttributes attributes, MemberInfo member)
         {
             Debug.Assert(member != null);
-            Debug.Assert(MdToken.IsNullToken(tkParamDef) == scope.Equals(default));
+            Debug.Assert(MdToken.IsNullToken(tkParamDef) == scope.Equals((MetadataImport)default));
             Debug.Assert(MdToken.IsNullToken(tkParamDef) || MdToken.IsTokenOfType(tkParamDef, MetadataTokenType.ParamDef));
 
             PositionImpl = position;
