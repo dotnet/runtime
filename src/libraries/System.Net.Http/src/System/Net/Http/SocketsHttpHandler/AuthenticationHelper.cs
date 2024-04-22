@@ -279,15 +279,8 @@ namespace System.Net.Http
                                 break;
                             }
 
-                            // Pre-auth credentials have changed, remove old ones from cache and continue with new ones.
-                            lock (pool.PreAuthCredentials!)
-                            {
-                                if (NetEventSource.Log.IsEnabled())
-                                {
-                                    NetEventSource.Info(pool.PreAuthCredentials, $"Pre-authentication credentials changed, removing Basic credential uri={preAuthCredentialUri}, username={preAuthCredential.UserName}");
-                                }
-                                pool.PreAuthCredentials.Remove(preAuthCredentialUri!, BasicScheme);
-                            }
+                            // Pre-auth credentials have changed, continue with the new ones.
+                            // The old ones will be removed below.
                         }
 
                         response.Dispose();
@@ -309,6 +302,17 @@ namespace System.Net.Http
                                 default:
                                     lock (pool.PreAuthCredentials!)
                                     {
+                                        // remove previously cached (failing) creds
+                                        if (preAuthCredentialUri != null)
+                                        {
+                                            if (NetEventSource.Log.IsEnabled())
+                                            {
+                                                NetEventSource.Info(pool.PreAuthCredentials, $"Removing Basic credential from cache, uri={preAuthCredentialUri}, username={preAuthCredential.UserName}");
+                                            }
+
+                                            pool.PreAuthCredentials.Remove(preAuthCredentialUri, BasicScheme);
+                                        }
+
                                         try
                                         {
                                             if (NetEventSource.Log.IsEnabled())
