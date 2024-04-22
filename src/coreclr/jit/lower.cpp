@@ -8871,8 +8871,6 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
             // for volatile loads since there is no ldar for SIMD regs
             var_types targetType = ind->TypeGet();
             ind->ChangeType(ind->TypeIs(TYP_DOUBLE) ? TYP_LONG : TYP_INT);
-            TryCreateAddrMode(ind->Addr(), IsInvariantInRange(ind->Addr(), ind), ind);
-            ContainCheckIndir(ind);
             GenTree* castOp = comp->gtNewBitCastNode(targetType, ind);
             BlockRange().InsertAfter(ind, castOp);
             use.ReplaceWith(castOp);
