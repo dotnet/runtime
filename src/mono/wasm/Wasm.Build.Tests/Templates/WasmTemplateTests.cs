@@ -20,6 +20,15 @@ namespace Wasm.Build.Tests
         {
         }
 
+        private string StringReplaceWithAssert(string oldContent, string oldValue, string newValue) 
+        {
+            string newContent = oldContent.Replace(oldValue, newValue);
+            if (oldValue != newValue && oldContent == newContent)
+                throw new XunitException($"Replacing '{oldValue}' with '{newValue}' did not change the content '{oldContent}'");
+
+            return newContent;
+        }
+
         private void UpdateProgramCS()
         {
             string programText = """
@@ -30,25 +39,32 @@ namespace Wasm.Build.Tests
             """;
             var path = Path.Combine(_projectDir!, "Program.cs");
             string text = File.ReadAllText(path);
-            text = text.Replace(@"Console.WriteLine(""Hello, Console!"");", programText);
-            text = text.Replace("return 0;", "return 42;");
+            text = StringReplaceWithAssert(text, @"Console.WriteLine(""Hello, Console!"");", programText);
+            text = StringReplaceWithAssert(text, "return 0;", "return 42;");
             File.WriteAllText(path, text);
         }
 
         private void UpdateBrowserMainJs(string targetFramework, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
         {
-            base.UpdateBrowserMainJs((mainJsContent) => {
-                // .withExitOnUnhandledError() is available only only >net7.0
-                mainJsContent = mainJsContent.Replace(".create()",
-                        (targetFramework == "net8.0" || targetFramework == "net9.0")
-                            ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
-                            : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()");
+            base.UpdateBrowserMainJs(
+                (mainJsContent) => 
+                {
+                    // .withExitOnUnhandledError() is available only only >net7.0
+                    mainJsContent = StringReplaceWithAssert(mainJsContent, ".create()",
+                            (targetFramework == "net8.0" || targetFramework == "net9.0")
+                                ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
+                                : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()");
 
-                mainJsContent = mainJsContent.Replace("runMain()", "dotnet.run()");
-                mainJsContent = mainJsContent.Replace("from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");
+                    
 
-                return mainJsContent;
-            }, targetFramework, runtimeAssetsRelativePath);
+                    mainJsContent = StringReplaceWithAssert(mainJsContent, "runMain()", "dotnet.run()");
+                    mainJsContent = StringReplaceWithAssert(mainJsContent, "from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");
+
+                    return mainJsContent;
+                }, 
+                targetFramework, 
+                runtimeAssetsRelativePath
+            );
         }
 
         private void UpdateConsoleMainJs()
@@ -56,8 +72,7 @@ namespace Wasm.Build.Tests
             string mainJsPath = Path.Combine(_projectDir!, "main.mjs");
             string mainJsContent = File.ReadAllText(mainJsPath);
 
-            mainJsContent = mainJsContent
-                .Replace(".create()", ".withConsoleForwarding().create()");
+            mainJsContent = StringReplaceWithAssert(mainJsContent, ".create()", ".withConsoleForwarding().create()");
 
             File.WriteAllText(mainJsPath, mainJsContent);
         }
@@ -73,8 +88,7 @@ namespace Wasm.Build.Tests
                 js.Append($".withEnvironmentVariable(\"{variable.key}\", \"{variable.value}\")");
             }
 
-            mainJsContent = mainJsContent
-                .Replace(".create()", js.ToString() + ".create()");
+            mainJsContent = StringReplaceWithAssert(mainJsContent, ".create()", js.ToString() + ".create()");
 
             File.WriteAllText(mainJsPath, mainJsContent);
         }
@@ -96,10 +110,10 @@ namespace Wasm.Build.Tests
                 atTheEnd:
                     """
                     <Target Name="CheckLinkedFiles" AfterTargets="ILLink">
-                    <ItemGroup>
-                        <_LinkedOutFile Include="$(IntermediateOutputPath)\linked\*.dll" />
-                    </ItemGroup>
-                    <Error Text="No file was linked-out. Trimming probably doesn't work (PublishTrimmed=$(PublishTrimmed))" Condition="@(_LinkedOutFile->Count()) == 0" />
+                        <ItemGroup>
+                            <_LinkedOutFile Include="$(IntermediateOutputPath)\linked\*.dll" />
+                        </ItemGroup>
+                        <Error Text="No file was linked-out. Trimming probably doesn't work (PublishTrimmed=$(PublishTrimmed))" Condition="@(_LinkedOutFile->Count()) == 0" />
                     </Target>
                     """
             );
