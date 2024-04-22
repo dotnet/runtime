@@ -497,13 +497,15 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 {
     // Convert "STOREIND<float>(addr, floatVal)" to "STORIND<int>(addr, BitCast<int>(floatVal))"
     // for volatile stores since there is no stlr for SIMD regs
-    if (node->IsVolatile() && varTypeIsFloating(node))
+#ifdef TARGET_ARM64
+    if (comp->opts.OptimizationEnabled() && node->IsVolatile() && varTypeIsFloating(node))
     {
         node->ChangeType(node->TypeIs(TYP_DOUBLE) ? TYP_LONG : TYP_INT);
         GenTree* castOp = comp->gtNewBitCastNode(node->TypeGet(), node->Data());
         BlockRange().InsertAfter(node->Data(), castOp);
         node->Data() = castOp;
     }
+#endif
 
     ContainCheckStoreIndir(node);
 }

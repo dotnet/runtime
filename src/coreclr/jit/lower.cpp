@@ -8900,18 +8900,15 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
 
         // Convert "IND<float>(addr)" to "BitCast<float>(IND<int>(addr))"
         // for volatile loads since there is no ldar for SIMD regs
-        if (ind->OperIs(GT_IND, GT_NULLCHECK) && ind->IsVolatile() && varTypeIsFloating(ind))
+        LIR::Use use;
+        if (ind->OperIs(GT_IND, GT_NULLCHECK) && ind->IsVolatile() && varTypeIsFloating(ind) &&
+            BlockRange().TryGetUse(ind, &use))
         {
             var_types targetType = ind->TypeGet();
             ind->ChangeType(ind->TypeIs(TYP_DOUBLE) ? TYP_LONG : TYP_INT);
             GenTree* castOp = comp->gtNewBitCastNode(targetType, ind);
             BlockRange().InsertAfter(ind, castOp);
-
-            LIR::Use use;
-            if (BlockRange().TryGetUse(ind, &use))
-            {
-                use.ReplaceWith(castOp);
-            }
+            use.ReplaceWith(castOp);
             return castOp;
         }
     }
