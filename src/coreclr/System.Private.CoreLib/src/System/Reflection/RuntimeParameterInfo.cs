@@ -86,7 +86,7 @@ namespace System.Reflection
             // Fill in empty ParameterInfos for those without tokens
             if (fetchReturnParameter)
             {
-                returnParameter ??= new RuntimeParameterInfo(sig, MetadataImport.EmptyImport, 0, -1, (ParameterAttributes)0, member);
+                returnParameter ??= new RuntimeParameterInfo(sig, default, 0, -1, (ParameterAttributes)0, member);
             }
             else
             {
@@ -97,7 +97,7 @@ namespace System.Reflection
                         if (args[i] != null)
                             continue;
 
-                        args[i] = new RuntimeParameterInfo(sig, MetadataImport.EmptyImport, 0, i, (ParameterAttributes)0, member);
+                        args[i] = new RuntimeParameterInfo(sig, default, 0, i, (ParameterAttributes)0, member);
                     }
                 }
             }
@@ -176,7 +176,7 @@ namespace System.Reflection
             int position, ParameterAttributes attributes, MemberInfo member)
         {
             Debug.Assert(member != null);
-            Debug.Assert(MdToken.IsNullToken(tkParamDef) == scope.Equals(MetadataImport.EmptyImport));
+            Debug.Assert(MdToken.IsNullToken(tkParamDef) == scope.Equals(default));
             Debug.Assert(MdToken.IsNullToken(tkParamDef) || MdToken.IsTokenOfType(tkParamDef, MetadataTokenType.ParamDef));
 
             PositionImpl = position;
@@ -201,7 +201,7 @@ namespace System.Reflection
             PositionImpl = position;
             AttrsImpl = ParameterAttributes.None;
             m_tkParamDef = (int)MetadataTokenType.ParamDef;
-            m_scope = MetadataImport.EmptyImport;
+            m_scope = default;
         }
         #endregion
 

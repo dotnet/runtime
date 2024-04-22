@@ -207,8 +207,6 @@ namespace System.Reflection
         private readonly IntPtr m_metadataImport2;
         private readonly object? m_keepalive;
 
-        internal static MetadataImport EmptyImport => new MetadataImport();
-
         #region Override methods from Object
         public override int GetHashCode()
         {
@@ -304,12 +302,6 @@ namespace System.Reflection
         #endregion
 
         #region Constructor
-        public MetadataImport()
-        {
-            m_metadataImport2 = IntPtr.Zero;
-            m_keepalive = null;
-        }
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe IntPtr GetMetadataImport(RuntimeModule module);
 
