@@ -2322,7 +2322,7 @@ method_sig_from_accessor_sig (MonoMethodBuilder *mb, gboolean hasthis, MonoMetho
 	ret->hasthis = hasthis;
 	for (int i = 1; i < ret->param_count; i++)
 		ret->params [i - 1] = ret->params [i];
-	memset (&ret->params[ret->param_count - 1], 0, sizeof (MonoType)); // just in case
+	memset (&ret->params[ret->param_count - 1], 0, sizeof (MonoType*)); // just in case
 	ret->param_count--;
 	return ret;
 }
@@ -2467,7 +2467,7 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor
 static void
 emit_unsafe_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoGenericContext *ctx, MonoUnsafeAccessorKind kind, const char *member_name)
 {
-	if (accessor_method->is_inflated || accessor_method->is_generic || mono_class_is_ginst (accessor_method->klass) || ctx != NULL) {
+	if (accessor_method->is_generic || ctx != NULL) {
 		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_Generics");
 		return;
 	}
