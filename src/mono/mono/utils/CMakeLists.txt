@@ -37,7 +37,6 @@ else()
 endif()
 
 set(utils_common_sources
-    mono-md5.c
     mono-sha1.c
     mono-logger.c
     mono-logger-internals.h
@@ -187,15 +186,9 @@ set(utils_arch_sources mach-support-unknown.c)
 elseif(HOST_AMD64)
 set(utils_arch_sources
     mach-support-amd64.c)
-elseif(HOST_X86)
-set(utils_arch_sources
-    mach-support-x86.c)
 elseif(HOST_ARM64)
 set(utils_arch_sources
     mach-support-arm64.c)
-elseif(HOST_ARM)
-set(utils_arch_sources
-    mach-support-arm.c)
 else()
 #message(FATAL_ERROR "")
 endif()
