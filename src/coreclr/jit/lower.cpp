@@ -8874,8 +8874,7 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
             GenTree* castOp = comp->gtNewBitCastNode(targetType, ind);
             BlockRange().InsertAfter(ind, castOp);
             use.ReplaceWith(castOp);
-            LowerNode(castOp);
-            return castOp->gtNext;
+            return castOp;
         }
 #endif
 
