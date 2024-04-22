@@ -14311,6 +14311,32 @@ AddJitGlobal (MonoLLVMModule *module, LLVMTypeRef type, const char *name)
 #define FILE_INFO_NUM_AOTID_FIELDS 1
 #define FILE_INFO_NFIELDS (FILE_INFO_NUM_HEADER_FIELDS + MONO_AOT_FILE_INFO_NUM_SYMBOLS + FILE_INFO_NUM_SCALAR_FIELDS + FILE_INFO_NUM_ARRAY_FIELDS + FILE_INFO_NUM_AOTID_FIELDS)
 
+static void fixupSymbolName(char *key, char *fixedName) {
+    int sb_index = 0;
+	int len = strlen (key);
+
+    for (int i = 0; i < len; ++i) {
+        unsigned char b = key[i];
+        if ((b >= '0' && b <= '9') ||
+            (b >= 'a' && b <= 'z') ||
+            (b >= 'A' && b <= 'Z') ||
+            (b == '_')) {
+            fixedName[sb_index++] = b;
+        }
+        else if (b == '.' || b == '-' || b ==  '+' || b == '<' || b == '>') {
+            fixedName[sb_index++] = '_';
+        }
+		else {
+			// Append the hexadecimal representation of b between underscores
+			sprintf(&fixedName[sb_index], "_%X_", b);
+			sb_index += 4; // Move the index after the appended hexadecimal characters
+        }
+    }
+
+    // Null-terminate the fixedName string
+    fixedName[sb_index] = '\0';
+}
+
 static void
 create_aot_info_var (MonoLLVMModule *module)
 {
@@ -14525,11 +14551,9 @@ emit_aot_file_info (MonoLLVMModule *module)
 		s = g_strdup_printf ("mono_aot_module_%s_info", module->assembly->aname.name);
 		/* Get rid of characters which cannot occur in symbols */
 		p = s;
-		for (p = s; *p; ++p) {
-			if (!(isalnum (*p) || *p == '_'))
-				*p = '_';
-		}
-		var = LLVMAddGlobal (module->lmodule, pointer_type (LLVMInt8Type ()), s);
+		char fixedName[256];
+		fixupSymbolName(s, fixedName);
+		var = LLVMAddGlobal (module->lmodule, pointer_type (LLVMInt8Type ()), fixedName);
 		g_free (s);
 		LLVMSetInitializer (var, LLVMConstBitCast (LLVMGetNamedGlobal (module->lmodule, "mono_aot_file_info"), pointer_type (LLVMInt8Type ())));
 		LLVMSetLinkage (var, LLVMExternalLinkage);
