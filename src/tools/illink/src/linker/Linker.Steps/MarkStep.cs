@@ -75,6 +75,9 @@ namespace Mono.Linker.Steps
 		// Stores, for compiler-generated methods only, whether they require the reflection
 		// method body scanner.
 		readonly Dictionary<MethodBody, bool> _compilerGeneratedMethodRequiresScanner;
+		private readonly Dictionary<TypeDefinition, TypeDefinitionDependencyNode> _typeNodes = new ();
+		private readonly Dictionary<MethodDefinition, MethodDefinitionDependencyNode> _methodNodes = new ();
+		private readonly Dictionary<TypeDefinition, TypeIsRelevantToVariantCastingNode> _typeIsRelevantToVariantCastingNodes = new ();
 
 		MarkStepContext? _markContext;
 		MarkStepContext MarkContext {
@@ -397,19 +400,16 @@ namespace Mono.Linker.Steps
 				MarkFullyPreservedAssemblies ();
 		}
 
-		private readonly Dictionary<TypeDefinition, TypeDefinitionDependencyNode> _typeNodes = new ();
 		public TypeDefinitionDependencyNode GetTypeNode (TypeDefinition reference, DependencyInfo reason, MessageOrigin? origin)
 		{
 			return _typeNodes.GetOrAdd (reference, (k) => new TypeDefinitionDependencyNode (k, reason, origin));
 		}
 
-		private readonly Dictionary<MethodDefinition, MethodDefinitionDependencyNode> _methodNodes = new ();
 		public MethodDefinitionDependencyNode GetMethodDefinitionNode (MethodDefinition method, DependencyInfo reason, MessageOrigin origin)
 		{
 			return _methodNodes.GetOrAdd (method, (k) => new MethodDefinitionDependencyNode (k, reason, origin));
 		}
 
-		private readonly Dictionary<TypeDefinition, TypeIsRelevantToVariantCastingNode> _typeIsRelevantToVariantCastingNodes = new ();
 		TypeIsRelevantToVariantCastingNode GetTypeIsRelevantToVariantCastingNode (TypeDefinition type)
 		{
 			return _typeIsRelevantToVariantCastingNodes.GetOrAdd (type, static (t) => new TypeIsRelevantToVariantCastingNode (t));
