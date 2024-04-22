@@ -2954,11 +2954,18 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
                     idCall->idcGcrefRegs = callGcrefRegs;
                     idCall->idcByrefRegs = callByrefRegs;
 
-                    // The variables may need to be live until the call returns, so we will not update them.
-                    // If liveness changes, emit a NOP.
                     if (!VarSetOps::Equal(emitComp, idCall->idcGCvars, GCvars))
                     {
-                        emitIns(INS_nop);
+                        // If EH is possible, the variables may need to live until the call returns.
+                        // Emit a NOP.
+                        if (emitComp->GetInterruptible())
+                        {
+                            emitIns(INS_nop);
+                        }
+                        else
+                        {
+                            VarSetOps::Assign(emitComp, idCall->idcGCvars, GCvars);
+                        }
                     }
                 }
                 else
