@@ -1,5 +1,5 @@
-This folder contains code that compares the time spent to allocate 
-100000 arrays of 35 bytes. I wanted to manually have a rough idea of the order of magnitude without any event, with AllocationTick, with AllocationSampled.
+This folder contains code that compares the time spent to allocate 100000 arrays of 35 bytes.
+I wanted to manually have a rough idea of the order of magnitude without any event, with AllocationTick, with AllocationSampled.
 The warmup stage is needed to pay the commit cost to store the 100000 arrays.
 
  ```

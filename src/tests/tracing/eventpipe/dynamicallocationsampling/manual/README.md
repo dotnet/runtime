@@ -1,5 +1,5 @@
 This folder contains code that samples with AllocationTick and AllocationSampled + upscale the size/count.
-200000 instances of each custom type (once from the smaller to the larger and once from the larger to the smaller). The resulting assembly is then run by corerun via VS with the right properties. It stops to let you copy the process ID to pass to the _DynamicAllocationSampling_ events listener program to obtain the following kind of result:
+A first case allocates 200000 instances of each custom type (once from the smaller to the larger and once from the larger to the smaller). The resulting assembly is then run by corerun via VS with the right properties. It stops to let you copy the process ID to pass to the _DynamicAllocationSampling_ events listener program to obtain the following kind of result:
 
  ```
  Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
@@ -30,4 +30,19 @@ This folder contains code that samples with AllocationTick and AllocationSampled
 - The final **Upscaled**XXX columns are computed from AllocationSampled events payload
 
 In this special case, the same number of 200000 instances were created and should be checked in the **UpscaledCount** column.
-Feel free to allocate the patterns you want in other methods of the Allocate  ___project and use the _DynamicAllocationSampling_ events listener to get a synthetic view of the different allocation events.
+
+In a second case, 2 threads allocate 200000 instances of objects with x1/x2/x3 size ratio to see how the relative size distribution is conserved:
+
+```
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST      47      67        1128        1608        24       4813364         200556  Object24
+ ST      65      48        2080        1536        32       6657040         208032  Object32
+ ST     108      94        5184        4512        48      11061792         230454  Object48
+ ST     132     145        8448        9280        64      13521024         211266  Object64
+ ST     155      87       11160        6264        72      15877580         220521  Object72
+ ST     191     192       18336       18432        96      19567569         203828  Object96
+ ST       2       2    16777264    16777280   8388632      16777264              2  Object0[]
+```
+
+Feel free to allocate the patterns you want in other methods of the **_Allocate_** project and use the _DynamicAllocationSampling_ events listener to get a synthetic view of the different allocation events.
