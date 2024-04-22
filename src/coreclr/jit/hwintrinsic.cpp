@@ -1609,6 +1609,18 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     {
         assert(numArgs > 0);
         GenTree* op1 = retNode->AsHWIntrinsic()->Op(1);
+        if (intrinsic == NI_Sve_ConditionalSelect)
+        {
+            if (op1->IsVectorAllBitsSet())
+            {
+                return retNode->AsHWIntrinsic()->Op(2);
+            }
+            else if (op1->IsVectorZero())
+            {
+                return retNode->AsHWIntrinsic()->Op(3);
+            }
+        }
+
         if (!varTypeIsMask(op1))
         {
             // Op1 input is a vector. HWInstrinsic requires a mask.
