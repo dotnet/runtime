@@ -475,7 +475,6 @@ namespace Mono.Linker.Steps
 				ProcessPendingBodies ();
 				DoAdditionalProcessing ();
 			}
-			ProcessVirtualMethods ();
 
 			return true;
 		}
