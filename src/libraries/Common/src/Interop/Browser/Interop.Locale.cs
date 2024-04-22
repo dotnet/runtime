@@ -10,10 +10,10 @@ internal static partial class Interop
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern unsafe nint GetCultureInfo(in string culture, char* buffer, int bufferMaxLength, out int resultLength);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe int GetFirstDayOfWeek(in string culture, out int exceptionalResult, out object result);
+        internal static extern unsafe nint GetFirstDayOfWeek(in string culture, out int resultPtr);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe int GetFirstWeekOfYear(in string culture, out int exceptionalResult, out object result);
+        internal static extern unsafe nint GetFirstWeekOfYear(in string culture, out int resultPtr);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe int GetLocaleInfo(in string locale, in string culture, char* buffer, int bufferLength, out int exceptionalResult, out object result);
+        internal static extern unsafe nint GetLocaleInfo(in string locale, in string culture, char* buffer, int bufferLength, out int resultLength);
     }
 }
