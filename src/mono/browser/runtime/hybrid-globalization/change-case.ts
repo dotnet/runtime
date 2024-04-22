@@ -2,15 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { mono_wasm_new_external_root } from "../roots";
-import { monoStringToString, utf16ToStringLoop, stringToUTF16 } from "../strings";
-import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
-import { Int32Ptr } from "../types/emscripten";
-import { wrap_error_root, wrap_no_error_root } from "./helpers";
+import { monoStringToString, utf16ToStringLoop, stringToUTF16, stringToUTF16Ptr } from "../strings";
+import { MonoString, MonoStringRef, VoidPtrNull } from "../types/internal";
+import { VoidPtr } from "../types/emscripten";
 import { localHeapViewU16, setU16_local } from "../memory";
 import { isSurrogate } from "./helpers";
 
-export function mono_wasm_change_case_invariant (src: number, srcLength: number, dst: number, dstLength: number, toUpper: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): void {
-    const exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
+export function mono_wasm_change_case_invariant (src: number, srcLength: number, dst: number, dstLength: number, toUpper: number): VoidPtr {
     try {
         const input = utf16ToStringLoop(src, src + 2 * srcLength);
         const result = toUpper ? input.toUpperCase() : input.toLowerCase();
@@ -18,8 +16,7 @@ export function mono_wasm_change_case_invariant (src: number, srcLength: number,
         // originally we do not support this expansion
         if (result.length <= dstLength) {
             stringToUTF16(dst, dst + 2 * dstLength, result);
-            wrap_no_error_root(is_exception, exceptionRoot);
-            return;
+            return VoidPtrNull;
         }
 
         // workaround to maintain the ICU-like behavior
@@ -59,17 +56,14 @@ export function mono_wasm_change_case_invariant (src: number, srcLength: number,
                 }
             }
         }
-        wrap_no_error_root(is_exception, exceptionRoot);
+        return VoidPtrNull;
     } catch (ex: any) {
-        wrap_error_root(is_exception, ex, exceptionRoot);
-    } finally {
-        exceptionRoot.release();
+        return stringToUTF16Ptr((ex));
     }
 }
 
-export function mono_wasm_change_case (culture: MonoStringRef, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): void {
-    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
-        exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
+export function mono_wasm_change_case (culture: MonoStringRef, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number): VoidPtr {
+    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
     try {
         const cultureName = monoStringToString(cultureRoot);
         if (!cultureName)
@@ -79,8 +73,7 @@ export function mono_wasm_change_case (culture: MonoStringRef, src: number, srcL
 
         if (result.length <= input.length) {
             stringToUTF16(dst, dst + 2 * dstLength, result);
-            wrap_no_error_root(is_exception, exceptionRoot);
-            return;
+            return VoidPtrNull;
         }
         // workaround to maintain the ICU-like behavior
         const heapI16 = localHeapViewU16();
@@ -119,12 +112,11 @@ export function mono_wasm_change_case (culture: MonoStringRef, src: number, srcL
                 }
             }
         }
-        wrap_no_error_root(is_exception, exceptionRoot);
+        return VoidPtrNull;
     } catch (ex: any) {
-        wrap_error_root(is_exception, ex, exceptionRoot);
+        return stringToUTF16Ptr((ex));
     } finally {
         cultureRoot.release();
-        exceptionRoot.release();
     }
 }
 
