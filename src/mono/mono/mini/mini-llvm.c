@@ -6118,7 +6118,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				gboolean src_in_reg = FALSE;
 				gboolean is_simd = mini_class_is_simd (ctx->cfg, mono_class_from_mono_type_internal (sig->ret));
 				switch (linfo->ret.storage) {
-				case LLVMArgNormal: src_in_reg = TRUE; break;
+				case LLVMArgNormal: case LLVMArgWasmVtypeAsScalar: src_in_reg = TRUE; break;
 				case LLVMArgVtypeInReg: case LLVMArgVtypeAsScalar: src_in_reg = is_simd; break;
 				}
 				if (src_in_reg && (!lhs || ctx->is_dead [ins->sreg1])) {
