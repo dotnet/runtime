@@ -19,87 +19,123 @@ internal sealed unsafe class Target
 {
     private const int StackAllocByteThreshold = 1024;
 
-    private readonly delegate* unmanaged<ulong, byte*, uint, void*, int> _readFromTarget;
-    private readonly void* _readContext;
-
-    private bool _isLittleEndian;
-    private int _pointerSize;
-
-    private TargetPointer[] _pointerData = [];
-    private IReadOnlyDictionary<string, int> _contracts = new Dictionary<string, int>();
-
-    public Target(ulong contractDescriptor, delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget, void* readContext)
+    private readonly struct Configuration
     {
-        _readFromTarget = readFromTarget;
-        _readContext = readContext;
+        public bool IsLittleEndian { get; init; }
+        public int PointerSize { get; init; }
+    }
 
-        ReadContractDescriptor(contractDescriptor);
+    private readonly Configuration _config;
+    private readonly Reader _reader;
+
+    private readonly IReadOnlyDictionary<string, int> _contracts = new Dictionary<string, int>();
+    private readonly TargetPointer[] _pointerData = [];
+
+    public static bool TryCreate(ulong contractDescriptor, delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget, void* readContext, out Target? target)
+    {
+        Reader reader = new Reader(readFromTarget, readContext);
+        if (TryReadContractDescriptor(contractDescriptor, reader, out Configuration config, out ContractDescriptorParser.ContractDescriptor? descriptor, out TargetPointer[] pointerData))
+        {
+            target = new Target(config, descriptor!, pointerData, reader);
+            return true;
+        }
+
+        target = null;
+        return false;
+    }
+
+    private Target(Configuration config, ContractDescriptorParser.ContractDescriptor descriptor, TargetPointer[] pointerData, Reader reader)
+    {
+        _config = config;
+        _reader = reader;
+
+        // TODO: [cdac] Read globals and types
+        // note: we will probably want to store the globals and types into a more usable form
+        _contracts = descriptor.Contracts ?? [];
+
+        _pointerData = pointerData;
     }
 
     // See docs/design/datacontracts/contract-descriptor.md
-    private void ReadContractDescriptor(ulong address)
+    private static bool TryReadContractDescriptor(
+        ulong address,
+        Reader reader,
+        out Configuration config,
+        out ContractDescriptorParser.ContractDescriptor? descriptor,
+        out TargetPointer[] pointerData)
     {
+        config = default;
+        descriptor = null;
+        pointerData = [];
+
         // Magic - uint64_t
         Span<byte> buffer = stackalloc byte[sizeof(ulong)];
-        if (ReadFromTarget(address, buffer) < 0)
-            throw new InvalidOperationException("Failed to read magic.");
+        if (reader.ReadFromTarget(address, buffer) < 0)
+            return false;
 
         address += sizeof(ulong);
         ReadOnlySpan<byte> magicLE = "DNCCDAC\0"u8;
         ReadOnlySpan<byte> magicBE = "\0CADCCND"u8;
-        _isLittleEndian = buffer.SequenceEqual(magicLE);
-        if (!_isLittleEndian && !buffer.SequenceEqual(magicBE))
-            throw new InvalidOperationException("Invalid magic.");
+        bool isLittleEndian = buffer.SequenceEqual(magicLE);
+        if (!isLittleEndian && !buffer.SequenceEqual(magicBE))
+            return false;
 
         // Flags - uint32_t
-        uint flags = ReadUInt32(address);
+        if (!TryReadUInt32(address, isLittleEndian, reader, out uint flags))
+            return false;
+
         address += sizeof(uint);
 
         // Bit 1 represents the pointer size. 0 = 64-bit, 1 = 32-bit.
-        _pointerSize = (int)(flags & 0x2) == 0 ? sizeof(ulong) : sizeof(uint);
+        int pointerSize = (int)(flags & 0x2) == 0 ? sizeof(ulong) : sizeof(uint);
+
+        config = new Configuration { IsLittleEndian = isLittleEndian, PointerSize = pointerSize };
 
         // Descriptor size - uint32_t
-        uint descriptorSize = ReadUInt32(address);
+        if (!TryReadUInt32(address, config.IsLittleEndian, reader, out uint descriptorSize))
+            return false;
+
         address += sizeof(uint);
 
         // Descriptor - char*
-        TargetPointer descriptor = ReadPointer(address);
-        address += (uint)_pointerSize;
+        if (!TryReadPointer(address, config, reader, out TargetPointer descriptorAddr))
+            return false;
+
+        address += (uint)pointerSize;
 
         // Pointer data count - uint32_t
-        uint pointerDataCount = ReadUInt32(address);
+        if (!TryReadUInt32(address, config.IsLittleEndian, reader, out uint pointerDataCount))
+            return false;
+
         address += sizeof(uint);
 
-        // Padding
+        // Padding - uint32_t
         address += sizeof(uint);
 
         // Pointer data - uintptr_t*
-        TargetPointer pointerData = ReadPointer(address);
+        if (!TryReadPointer(address, config, reader, out TargetPointer pointerDataAddr))
+            return false;
 
         // Read descriptor
         Span<byte> descriptorBuffer = descriptorSize <= StackAllocByteThreshold
             ? stackalloc byte[(int)descriptorSize]
             : new byte[(int)descriptorSize];
-        if (ReadFromTarget(descriptor.Value, descriptorBuffer) < 0)
-            throw new InvalidOperationException("Failed to read descriptor.");
+        if (reader.ReadFromTarget(descriptorAddr.Value, descriptorBuffer) < 0)
+            return false;
 
-        ContractDescriptorParser.ContractDescriptor? targetDescriptor = ContractDescriptorParser.ParseCompact(descriptorBuffer);
-
-        if (targetDescriptor is null)
-        {
-            throw new InvalidOperationException("Failed to parse descriptor.");
-        }
-
-        // TODO: [cdac] Read globals and types
-        // note: we will probably want to store the globals and types into a more usable form
-        _contracts = targetDescriptor.Contracts ?? new Dictionary<string, int>();
+        descriptor = ContractDescriptorParser.ParseCompact(descriptorBuffer);
+        if (descriptor is null)
+            return false;
 
         // Read pointer data
-        _pointerData = new TargetPointer[pointerDataCount];
+        pointerData = new TargetPointer[pointerDataCount];
         for (int i = 0; i < pointerDataCount; i++)
         {
-            _pointerData[i] = ReadPointer(pointerData.Value + (uint)(i * _pointerSize));
+            if (!TryReadPointer(pointerDataAddr.Value + (uint)(i * pointerSize), config, reader, out pointerData[i]))
+                return false;
         }
+
+        return true;
     }
 
     public uint ReadUInt32(ulong address)
@@ -111,14 +147,17 @@ internal sealed unsafe class Target
     }
 
     public bool TryReadUInt32(ulong address, out uint value)
+        => TryReadUInt32(address, _config.IsLittleEndian, _reader, out value);
+
+    private static bool TryReadUInt32(ulong address, bool isLittleEndian, Reader reader, out uint value)
     {
         value = 0;
 
         Span<byte> buffer = stackalloc byte[sizeof(uint)];
-        if (ReadFromTarget(address, buffer) < 0)
+        if (reader.ReadFromTarget(address, buffer) < 0)
             return false;
 
-        value = _isLittleEndian
+        value = isLittleEndian
             ? BinaryPrimitives.ReadUInt32LittleEndian(buffer)
             : BinaryPrimitives.ReadUInt32BigEndian(buffer);
 
@@ -134,24 +173,27 @@ internal sealed unsafe class Target
     }
 
     public bool TryReadPointer(ulong address, out TargetPointer pointer)
+        => TryReadPointer(address, _config, _reader, out pointer);
+
+    private static bool TryReadPointer(ulong address, Configuration config, Reader reader, out TargetPointer pointer)
     {
         pointer = TargetPointer.Null;
 
-        Span<byte> buffer = stackalloc byte[_pointerSize];
-        if (ReadFromTarget(address, buffer) < 0)
+        Span<byte> buffer = stackalloc byte[config.PointerSize];
+        if (reader.ReadFromTarget(address, buffer) < 0)
             return false;
 
-        if (_pointerSize == sizeof(uint))
+        if (config.PointerSize == sizeof(uint))
         {
             pointer = new TargetPointer(
-                _isLittleEndian
+                config.IsLittleEndian
                     ? BinaryPrimitives.ReadUInt32LittleEndian(buffer)
                     : BinaryPrimitives.ReadUInt32BigEndian(buffer));
         }
-        else if (_pointerSize == sizeof(ulong))
+        else if (config.PointerSize == sizeof(ulong))
         {
             pointer = new TargetPointer(
-                _isLittleEndian
+                config.IsLittleEndian
                     ? BinaryPrimitives.ReadUInt64LittleEndian(buffer)
                     : BinaryPrimitives.ReadUInt64BigEndian(buffer));
         }
@@ -159,14 +201,26 @@ internal sealed unsafe class Target
         return true;
     }
 
-    private int ReadFromTarget(ulong address, Span<byte> buffer)
+    private sealed class Reader
     {
-        fixed (byte* bufferPtr = buffer)
-        {
-            return _readFromTarget(address, bufferPtr, (uint)buffer.Length, _readContext);
-        }
-    }
+        private readonly delegate* unmanaged<ulong, byte*, uint, void*, int> _readFromTarget;
+        private readonly void* _context;
 
-    private int ReadFromTarget(ulong address, byte* buffer, uint bytesToRead)
-        => _readFromTarget(address, buffer, bytesToRead, _readContext);
+        public Reader(delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget, void* context)
+        {
+            _readFromTarget = readFromTarget;
+            _context = context;
+        }
+
+        public int ReadFromTarget(ulong address, Span<byte> buffer)
+        {
+            fixed (byte* bufferPtr = buffer)
+            {
+                return _readFromTarget(address, bufferPtr, (uint)buffer.Length, _context);
+            }
+        }
+
+        public int ReadFromTarget(ulong address, byte* buffer, uint bytesToRead)
+            => _readFromTarget(address, buffer, bytesToRead, _context);
+    }
 }
