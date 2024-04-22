@@ -99,26 +99,6 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
 
     assert((floatFields > 0) || (intFields == 0));
 
-    auto passSlot = [this](bool inFloatReg, unsigned offset, unsigned size) -> ABIPassingSegment {
-        assert(size > 0);
-        assert(size <= TARGET_POINTER_SIZE);
-        if (inFloatReg)
-        {
-            return ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), offset, size);
-        }
-        else if (m_intRegs.Count() > 0)
-        {
-            return ABIPassingSegment::InRegister(m_intRegs.Dequeue(), offset, size);
-        }
-        else
-        {
-            assert((m_stackArgSize % TARGET_POINTER_SIZE) == 0);
-            ABIPassingSegment seg = ABIPassingSegment::OnStack(m_stackArgSize, offset, size);
-            m_stackArgSize += TARGET_POINTER_SIZE;
-            return seg;
-        }
-    };
-
     if ((floatFields > 0) && (m_floatRegs.Count() >= floatFields) && (m_intRegs.Count() >= intFields))
     {
         // Hardware floating-point calling convention
@@ -147,23 +127,43 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
             bool isSecondFloat = (flags & (STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_SECOND)) != 0;
             assert(isFirstFloat || isSecondFloat);
 
-            return {2, new (comp, CMK_ABI) ABIPassingSegment[]{passSlot(isFirstFloat, 0, firstSize),
-                                                               passSlot(isSecondFloat, offset, secondSize)}};
+            regNumber firstReg  = (isFirstFloat ? m_floatRegs : m_intRegs).Dequeue();
+            regNumber secondReg = (isSecondFloat ? m_floatRegs : m_intRegs).Dequeue();
+
+            return {2, new (comp, CMK_ABI)
+                           ABIPassingSegment[]{ABIPassingSegment::InRegister(firstReg, 0, firstSize),
+                                               ABIPassingSegment::InRegister(secondReg, offset, secondSize)}};
         }
     }
     else
     {
         // Integer calling convention
+        auto passSlot = [this](unsigned offset, unsigned size) -> ABIPassingSegment {
+            assert(size > 0);
+            assert(size <= TARGET_POINTER_SIZE);
+            if (m_intRegs.Count() > 0)
+            {
+                return ABIPassingSegment::InRegister(m_intRegs.Dequeue(), offset, size);
+            }
+            else
+            {
+                assert((m_stackArgSize % TARGET_POINTER_SIZE) == 0);
+                ABIPassingSegment seg = ABIPassingSegment::OnStack(m_stackArgSize, offset, size);
+                m_stackArgSize += TARGET_POINTER_SIZE;
+                return seg;
+            }
+        };
+
         if (passedSize <= TARGET_POINTER_SIZE)
         {
-            return ABIPassingInformation::FromSegment(comp, passSlot(false, 0, passedSize));
+            return ABIPassingInformation::FromSegment(comp, passSlot(0, passedSize));
         }
         else
         {
             assert(varTypeIsStruct(type));
             return {2, new (comp, CMK_ABI)
-                           ABIPassingSegment[]{passSlot(false, 0, TARGET_POINTER_SIZE),
-                                               passSlot(false, TARGET_POINTER_SIZE, passedSize - TARGET_POINTER_SIZE)}};
+                           ABIPassingSegment[]{passSlot(0, TARGET_POINTER_SIZE),
+                                               passSlot(TARGET_POINTER_SIZE, passedSize - TARGET_POINTER_SIZE)}};
         }
     }
 }
