@@ -15117,7 +15117,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 
 	acfg->assembly_name_sym = g_strdup (get_assembly_prefix (acfg->image));
 	/* Get rid of characters which cannot occur in symbols */
-    acfg->assembly_name_sym = sanitize_symbol(acfg, acfg->assembly_name_sym);
+	acfg->assembly_name_sym = sanitize_symbol(acfg, acfg->assembly_name_sym);
 
 	acfg->global_prefix = g_strdup_printf ("mono_aot_%s", acfg->assembly_name_sym);
 	acfg->plt_symbol = g_strdup_printf ("%s_plt", acfg->global_prefix);
