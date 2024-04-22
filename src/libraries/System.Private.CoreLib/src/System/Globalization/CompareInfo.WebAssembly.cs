@@ -50,16 +50,18 @@ namespace System.Globalization
             string cultureName = m_name;
             AssertComparisonSupported(options, cultureName);
 
-            int cmpResult;
             fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
             fixed (char* pString2 = &MemoryMarshal.GetReference(string2))
             {
-                cmpResult = Interop.JsGlobalization.CompareString(cultureName, pString1, string1.Length, pString2, string2.Length, options, out int exception, out object ex_result);
-                if (exception != 0)
-                    throw new Exception((string)ex_result);
+                nint exceptionPtr = Interop.JsGlobalization.CompareString(cultureName, pString1, string1.Length, pString2, string2.Length, options, out int cmpResult);
+                if (exceptionPtr != IntPtr.Zero)
+                {
+                    string message = Marshal.PtrToStringUni(exceptionPtr)!;
+                    Marshal.FreeHGlobal(exceptionPtr);
+                    throw new Exception(message);
+                }
+                return cmpResult;
             }
-
-            return cmpResult;
         }
 
         private unsafe bool JsStartsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options)
@@ -69,17 +71,18 @@ namespace System.Globalization
             string cultureName = m_name;
             AssertIndexingSupported(options, cultureName);
 
-            bool result;
             fixed (char* pSource = &MemoryMarshal.GetReference(source))
             fixed (char* pPrefix = &MemoryMarshal.GetReference(prefix))
             {
-                result = Interop.JsGlobalization.StartsWith(cultureName, pSource, source.Length, pPrefix, prefix.Length, options, out int exception, out object ex_result);
-                if (exception != 0)
-                    throw new Exception((string)ex_result);
+                nint exceptionPtr = Interop.JsGlobalization.StartsWith(cultureName, pSource, source.Length, pPrefix, prefix.Length, options, out bool result);
+                if (exceptionPtr != IntPtr.Zero)
+                {
+                    string message = Marshal.PtrToStringUni(exceptionPtr)!;
+                    Marshal.FreeHGlobal(exceptionPtr);
+                    throw new Exception(message);
+                }
+                return result;
             }
-
-
-            return result;
         }
 
         private unsafe bool JsEndsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options)
@@ -89,16 +92,18 @@ namespace System.Globalization
             string cultureName = m_name;
             AssertIndexingSupported(options, cultureName);
 
-            bool result;
             fixed (char* pSource = &MemoryMarshal.GetReference(source))
             fixed (char* pPrefix = &MemoryMarshal.GetReference(prefix))
             {
-                result = Interop.JsGlobalization.EndsWith(cultureName, pSource, source.Length, pPrefix, prefix.Length, options, out int exception, out object ex_result);
-                if (exception != 0)
-                    throw new Exception((string)ex_result);
+                nint exceptionPtr = Interop.JsGlobalization.EndsWith(cultureName, pSource, source.Length, pPrefix, prefix.Length, options, out bool result);
+                if (exceptionPtr != IntPtr.Zero)
+                {
+                    string message = Marshal.PtrToStringUni(exceptionPtr)!;
+                    Marshal.FreeHGlobal(exceptionPtr);
+                    throw new Exception(message);
+                }
+                return result;
             }
-
-            return result;
         }
 
         private unsafe int JsIndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning)
@@ -108,25 +113,24 @@ namespace System.Globalization
             string cultureName = m_name;
             AssertIndexingSupported(options, cultureName);
 
-            int idx;
             if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options))
             {
-                idx = (options & CompareOptions.IgnoreCase) != 0 ?
+                return (options & CompareOptions.IgnoreCase) != 0 ?
                     IndexOfOrdinalIgnoreCaseHelper(source, target, options, matchLengthPtr, fromBeginning) :
                     IndexOfOrdinalHelper(source, target, options, matchLengthPtr, fromBeginning);
             }
-            else
+            fixed (char* pSource = &MemoryMarshal.GetReference(source))
+            fixed (char* pTarget = &MemoryMarshal.GetReference(target))
             {
-                fixed (char* pSource = &MemoryMarshal.GetReference(source))
-                fixed (char* pTarget = &MemoryMarshal.GetReference(target))
+                nint exceptionPtr = Interop.JsGlobalization.IndexOf(m_name, pTarget, target.Length, pSource, source.Length, options, fromBeginning, out int idx);
+                if (exceptionPtr != IntPtr.Zero)
                 {
-                    idx = Interop.JsGlobalization.IndexOf(m_name, pTarget, target.Length, pSource, source.Length, options, fromBeginning, out int exception, out object ex_result);
-                    if (exception != 0)
-                        throw new Exception((string)ex_result);
+                    string message = Marshal.PtrToStringUni(exceptionPtr)!;
+                    Marshal.FreeHGlobal(exceptionPtr);
+                    throw new Exception(message);
                 }
+                return idx;
             }
-
-            return idx;
         }
 
         // there are chars that are ignored by ICU hashing algorithm but not ignored by invariant hashing

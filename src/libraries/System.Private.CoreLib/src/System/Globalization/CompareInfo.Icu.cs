@@ -198,9 +198,13 @@ namespace System.Globalization
 #if TARGET_BROWSER
                 if (GlobalizationMode.Hybrid)
                 {
-                    int result = Interop.JsGlobalization.IndexOf(m_name, b, target.Length, a, source.Length, options, fromBeginning, out int exception, out object ex_result);
-                    if (exception != 0)
-                        throw new Exception((string)ex_result);
+                    nint exceptionPtr = Interop.JsGlobalization.IndexOf(m_name, b, target.Length, a, source.Length, options, fromBeginning, out int result);
+                    if (exceptionPtr != IntPtr.Zero)
+                    {
+                        string message = Marshal.PtrToStringUni(exceptionPtr)!;
+                        Marshal.FreeHGlobal(exceptionPtr);
+                        throw new Exception(message);
+                    }
                     return result;
                 }
 #elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
@@ -300,9 +304,13 @@ namespace System.Globalization
 #if TARGET_BROWSER
                 if (GlobalizationMode.Hybrid)
                 {
-                    int result = Interop.JsGlobalization.IndexOf(m_name, b, target.Length, a, source.Length, options, fromBeginning, out int exception, out object ex_result);
-                    if (exception != 0)
-                        throw new Exception((string)ex_result);
+                    nint exceptionPtr = Interop.JsGlobalization.IndexOf(m_name, b, target.Length, a, source.Length, options, fromBeginning, out int result);
+                    if (exceptionPtr != IntPtr.Zero)
+                    {
+                        string message = Marshal.PtrToStringUni(exceptionPtr)!;
+                        Marshal.FreeHGlobal(exceptionPtr);
+                        throw new Exception(message);
+                    }
                     return result;
                 }
 #elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
