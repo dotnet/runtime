@@ -112,3 +112,7 @@ extends:
           - name: Alpine_x64
             targetRid: linux-musl-x64
             container: SourceBuild_alpine_x64
+            jobProperties:
+              variables:
+                - name: skipComponentGovernanceDetection
+                  value: true # Component Governance doesn't support musl.
