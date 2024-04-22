@@ -7760,6 +7760,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // the resulting method would be a generic method of the non-generic SZArrayHelper class.
     //
     assert(canDevirtualize);
+    Metrics.DevirtualizedCall++;
 
     JITDUMP("    %s; can devirtualize\n", note);
 
@@ -7988,6 +7989,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                         // We may end up inlining this call, so the local copy must be marked as "aliased",
                         // making sure the inlinee importer will know when to spill references to its value.
                         lvaGetDesc(localCopyThis->AsLclFld())->lvHasLdAddrOp = true;
+                        Metrics.DevirtualizedCallRemovedBox++;
+                        Metrics.DevirtualizedCallUnboxedEntry++;
 
 #if FEATURE_TAILCALL_OPT
                         if (call->IsImplicitTailCall())
@@ -8051,6 +8054,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                             derivedMethodAttribs  = unboxedMethodAttribs;
 
                             call->gtArgs.InsertInstParam(this, methodTableArg);
+                            Metrics.DevirtualizedCallUnboxedEntry++;
                         }
                     }
                     else
@@ -8066,6 +8070,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                         INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
                         derivedMethod         = unboxedEntryMethod;
                         pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
+                        Metrics.DevirtualizedCallUnboxedEntry++;
                     }
                 }
             }
