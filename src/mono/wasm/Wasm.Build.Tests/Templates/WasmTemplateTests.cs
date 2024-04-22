@@ -29,7 +29,16 @@ namespace Wasm.Build.Tests
             return newContent;
         }
 
-        private void UpdateProgramCS()
+        private void UpdateBrowserProgramCs(string name)
+        {
+            var path = Path.Combine(_projectDir!, "Program.cs");
+            string text = File.ReadAllText(path);
+            text = StringReplaceWithAssert(text, "while(true)", $"int i = 0;{Environment.NewLine}while(i++ < 10)");
+            text = StringReplaceWithAssert(text, "partial class StopwatchSample", $"return 42;{Environment.NewLine}partial class StopwatchSample");
+            File.WriteAllText(path, text);
+        }
+
+        private void UpdateConsoleProgramCs(string name)
         {
             string programText = """
             Console.WriteLine("Hello, Console!");
@@ -50,12 +59,13 @@ namespace Wasm.Build.Tests
                 (mainJsContent) => 
                 {
                     // .withExitOnUnhandledError() is available only only >net7.0
-                    mainJsContent = StringReplaceWithAssert(mainJsContent, ".create()",
-                            (targetFramework == "net8.0" || targetFramework == "net9.0")
-                                ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
-                                : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()");
-
-                    
+                    mainJsContent = StringReplaceWithAssert(
+                        mainJsContent, 
+                        ".create()",
+                        (targetFramework == "net8.0" || targetFramework == "net9.0")
+                            ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
+                            : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()"
+                    );
 
                     mainJsContent = StringReplaceWithAssert(mainJsContent, "runMain()", "dotnet.run()");
                     mainJsContent = StringReplaceWithAssert(mainJsContent, "from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");
@@ -102,6 +112,7 @@ namespace Wasm.Build.Tests
             string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
+            UpdateBrowserProgramCs();
             UpdateBrowserMainJs(DefaultTargetFramework);
 
             var buildArgs = new BuildArgs(projectName, config, false, id, null);
@@ -226,7 +237,7 @@ namespace Wasm.Build.Tests
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole", extraNewArgs, addFrameworkArg: addFrameworkArg);
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
-            UpdateProgramCS();
+            UpdateConsoleProgramCs();
             UpdateConsoleMainJs();
             if (relinking)
                 AddItemsPropertiesToProject(projectFile, "<WasmBuildNative>true</WasmBuildNative>");
@@ -291,6 +302,7 @@ namespace Wasm.Build.Tests
             string id = $"browser_{config}_{GetRandomId()}";
             string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
 
+            UpdateBrowserProgramCs();
             UpdateBrowserMainJs(DefaultTargetFramework);
 
             if (!string.IsNullOrEmpty(extraProperties))
@@ -324,7 +336,7 @@ namespace Wasm.Build.Tests
             string id = $"console_{config}_{GetRandomId()}";
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
 
-            UpdateProgramCS();
+            UpdateConsoleProgramCs();
             UpdateConsoleMainJs();
 
             if (!string.IsNullOrEmpty(extraProperties))
@@ -388,7 +400,7 @@ namespace Wasm.Build.Tests
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
-            UpdateProgramCS();
+            UpdateConsoleProgramCs();
             UpdateConsoleMainJs();
 
             if (aot)
@@ -450,6 +462,7 @@ namespace Wasm.Build.Tests
             string id = $"browser_{config}_{GetRandomId()}";
             CreateWasmTemplateProject(id, "wasmbrowser", extraNewArgs, addFrameworkArg: extraNewArgs.Length == 0);
 
+            UpdateBrowserProgramCs();
             UpdateBrowserMainJs(targetFramework, runtimeAssetsRelativePath);
 
             new DotNetCommand(s_buildEnv, _testOutput)
@@ -532,7 +545,7 @@ namespace Wasm.Build.Tests
             string projectDirectory = Path.GetDirectoryName(projectFile)!;
             bool aot = true;
 
-            UpdateProgramCS();
+            UpdateConsoleProgramCs();
             UpdateConsoleMainJs();
 
             string extraProperties = "<RunAOTCompilation>true</RunAOTCompilation>";
