@@ -5166,7 +5166,6 @@ public:
     bool fgModified;             // True if the flow graph has been modified recently
     bool fgPredsComputed;        // Have we computed the bbPreds list
     bool fgOptimizedFinally;     // Did we optimize any try-finallys?
-    bool fgCanonicalizedFirstBB; // TODO-Quirk: did we end up canonicalizing first BB?
 
     bool fgHasSwitch; // any BBJ_SWITCH jumps?
 
@@ -5687,6 +5686,9 @@ public:
 
     // Adds the exception sets for the current tree node which is performing a division or modulus operation
     void fgValueNumberAddExceptionSetForDivision(GenTree* tree);
+
+    // Compute exceptions for a division operation
+    ValueNumPair fgValueNumberDivisionExceptions(genTreeOps oper, GenTree* dividend, GenTree* divisor);
 
     // Adds the exception set for the current tree node which is performing a overflow checking operation
     void fgValueNumberAddExceptionSetForOverflow(GenTree* tree);

@@ -63,7 +63,6 @@ public static unsafe class UnsafeAccessorsTestsGenerics
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/89439", TestRuntimes.Mono)]
     public static void Verify_Generic_AccessStaticFieldClass()
     {
         Console.WriteLine($"Running {nameof(Verify_Generic_AccessStaticFieldClass)}");
@@ -99,7 +98,6 @@ public static unsafe class UnsafeAccessorsTestsGenerics
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/89439", TestRuntimes.Mono)]
     public static void Verify_Generic_AccessFieldClass()
     {
         Console.WriteLine($"Running {nameof(Verify_Generic_AccessFieldClass)}");
@@ -284,7 +282,6 @@ public static unsafe class UnsafeAccessorsTestsGenerics
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/89439", TestRuntimes.Mono)]
     public static void Verify_Generic_GenericTypeNonGenericInstanceMethod()
     {
         Console.WriteLine($"Running {nameof(Verify_Generic_GenericTypeNonGenericInstanceMethod)}");
@@ -358,7 +355,6 @@ public static unsafe class UnsafeAccessorsTestsGenerics
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/89439", TestRuntimes.Mono)]
     public static void Verify_Generic_GenericTypeNonGenericStaticMethod()
     {
         Console.WriteLine($"Running {nameof(Verify_Generic_GenericTypeNonGenericStaticMethod)}");
