@@ -116,7 +116,7 @@ ABIPassingInformation Arm32Classifier::Classify(Compiler*    comp,
     {
         m_stackArgSize           = roundUp(m_stackArgSize, alignment);
         unsigned stackSize       = size - (numInRegs * 4);
-        info.Segments[numInRegs] = ABIPassingSegment::OnStack(m_stackArgSize, 0, stackSize);
+        info.Segments[numInRegs] = ABIPassingSegment::OnStack(m_stackArgSize, numInRegs * 4, stackSize);
         m_stackArgSize += roundUp(stackSize, 4);
 
         // As soon as any int arg goes on stack we cannot put anything else in
