@@ -133,7 +133,7 @@ bool ReportTLSIndexCarefully(TLSIndex index, int32_t cLoaderHandles, PTR_LOADERH
     bool isGCStatic;
     bool isCollectible;
     PTR_MethodTable pMT = LookupMethodTableAndFlagForThreadStatic(index, &isGCStatic, &isCollectible);
-    _ASSERTE(((pMT == NULL) || isCollectible) && index.GetTLSIndexType() == TLSIndexType::Collectible);
+    _ASSERTE(index.GetTLSIndexType() == TLSIndexType::NonCollectible || (((pMT == NULL) || isCollectible) && index.GetTLSIndexType() == TLSIndexType::Collectible));
     if (index.GetTLSIndexType() == TLSIndexType::Collectible && pLoaderHandles[index.GetIndexOffset()] == NULL)
     {
         // The TLS index is not in use. This either means that the TLS index was never used, or that it was
@@ -167,10 +167,6 @@ void ScanThreadStaticRoots(Thread* pThread, bool forGC, promote_func* fn, ScanCo
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
-
-#ifndef DACCESS_COMPILE
-    SpinLockHolder spinLock(&pThread->m_TlsSpinLock);
-#endif // !DACCESS_COMPILE
 
     if (forGC)
     {
@@ -429,11 +425,22 @@ void FreeLoaderAllocatorHandlesForTLSData(Thread *pThread)
     }
 }
 
+void AssertThreadStaticDataFreed(ThreadLocalData *pThreadLocalData)
+{
+    _ASSERTE(pThreadLocalData->pThread == NULL);
+    _ASSERTE(pThreadLocalData->pTLSArrayData == NULL);
+    _ASSERTE(pThreadLocalData->cTLSData == 0);
+    _ASSERTE(pThreadLocalData->pNonCollectibleTlsReferenceData == NULL);
+    _ASSERTE(pThreadLocalData->cNonCollectibleTlsData == 0);
+    _ASSERTE(pThreadLocalData->pInFlightData == NULL);
+}
+
 void FreeThreadStaticData(ThreadLocalData *pThreadLocalData, Thread* pThread)
 {
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 

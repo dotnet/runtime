@@ -1725,8 +1725,22 @@ struct TlsDestructionMonitor
                     thread->m_pFrame = FRAME_TOP;
                     GCX_COOP_NO_DTOR_END();
                 }
+#ifdef _DEBUG
+                BOOL oldGCOnTransitionsOK = thread->m_GCOnTransitionsOK;
+                thread->m_GCOnTransitionsOK = FALSE;
+#endif
+                GCX_COOP_NO_DTOR();
                 FreeThreadStaticData(&t_ThreadStatics, thread);
+                GCX_COOP_NO_DTOR_END();
+#ifdef _DEBUG
+                thread->m_GCOnTransitionsOK = oldGCOnTransitionsOK;
+#endif
                 thread->DetachThread(TRUE);
+            }
+            else
+            {
+                // Since we don't actually cleanup the TLS data along this path, verify that it is already cleaned up
+                AssertThreadStaticDataFreed(&t_ThreadStatics);
             }
 
             ThreadDetaching();

@@ -352,6 +352,7 @@ void InitializeThreadStaticData();
 void InitializeCurrentThreadsStaticData(Thread* pThread);
 void FreeLoaderAllocatorHandlesForTLSData(Thread* pThread);
 void FreeThreadStaticData(ThreadLocalData *pThreadLocalData, Thread* pThread);
+void AssertThreadStaticDataFreed(ThreadLocalData *pThreadLocalData);
 void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pIndex);
 void FreeTLSIndicesForLoaderAllocator(LoaderAllocator *pLoaderAllocator);
 void* GetThreadLocalStaticBase(TLSIndex index);

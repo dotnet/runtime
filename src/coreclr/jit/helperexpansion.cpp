@@ -999,7 +999,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
     GenTree* threadStaticBlocksRef = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse),
                                                    gtNewIconNode(offsetOfThreadStaticBlocksVal, TYP_I_IMPL));
-    threadStaticBlocksValue = gtNewIndir(TYP_I_IMPL, threadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+    threadStaticBlocksValue = gtNewIndir(TYP_REF, threadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
     // Create tree for "if (maxThreadStaticBlocks < typeIndex)"
     GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetArgByIndex(0)->GetNode();
@@ -1011,12 +1011,12 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     typeThreadStaticBlockIndexValue = gtNewOperNode(GT_MUL, TYP_INT, gtCloneExpr(typeThreadStaticBlockIndexValue),
                                                     gtNewIconNode(TARGET_POINTER_SIZE, TYP_INT));
     GenTree* typeThreadStaticBlockRef =
-        gtNewOperNode(GT_ADD, TYP_I_IMPL, threadStaticBlocksValue, typeThreadStaticBlockIndexValue);
-    GenTree* typeThreadStaticBlockValue = gtNewIndir(TYP_I_IMPL, typeThreadStaticBlockRef, GTF_IND_NONFAULTING);
+        gtNewOperNode(GT_ADD, TYP_BYREF, threadStaticBlocksValue, typeThreadStaticBlockIndexValue);
+    GenTree* typeThreadStaticBlockValue = gtNewIndir(TYP_BYREF, typeThreadStaticBlockRef, GTF_IND_NONFAULTING);
 
     // Cache the threadStaticBlock value
     unsigned threadStaticBlockBaseLclNum         = lvaGrabTemp(true DEBUGARG("ThreadStaticBlockBase access"));
-    lvaTable[threadStaticBlockBaseLclNum].lvType = TYP_I_IMPL;
+    lvaTable[threadStaticBlockBaseLclNum].lvType = TYP_BYREF;
     GenTree* threadStaticBlockBaseDef = gtNewStoreLclVarNode(threadStaticBlockBaseLclNum, typeThreadStaticBlockValue);
     GenTree* threadStaticBlockBaseLclValueUse = gtNewLclVarNode(threadStaticBlockBaseLclNum);
 
