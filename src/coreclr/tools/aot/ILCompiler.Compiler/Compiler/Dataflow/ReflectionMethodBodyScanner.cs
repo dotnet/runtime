@@ -261,7 +261,7 @@ namespace ILCompiler.Dataflow
             ProcessGenericArgumentDataFlow(accessedField);
         }
 
-        public override bool HandleCall(MethodIL callingMethodBody, MethodDesc calledMethod, ILOpcode operation, int offset, ValueNodeList methodParams, out MultiValue methodReturnValue)
+        public override void HandleCall(MethodIL callingMethodBody, MethodDesc calledMethod, ILOpcode operation, int offset, ValueNodeList methodParams, out MultiValue methodReturnValue)
         {
             Debug.Assert(callingMethodBody.OwningMethod == _origin.MemberDefinition);
 
@@ -302,7 +302,6 @@ namespace ILCompiler.Dataflow
                 diagnosticContext,
                 _reflectionMarker,
                 out methodReturnValue);
-            return true;
         }
 
         public static void HandleCall(

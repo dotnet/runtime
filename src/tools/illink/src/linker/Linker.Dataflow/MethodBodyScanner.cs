@@ -986,11 +986,8 @@ namespace Mono.Linker.Dataflow
 			Stack<StackSlot> currentStack,
 			MethodReference methodCalled,
 			MethodBody containingMethodBody,
-			bool isNewObj, int ilOffset,
-			out SingleValue? newObjValue)
+			bool isNewObj, int ilOffset)
 		{
-			newObjValue = null;
-
 			int countToPop = 0;
 			if (!isNewObj && methodCalled.HasThis && !methodCalled.ExplicitThis)
 				countToPop++;
@@ -1003,8 +1000,7 @@ namespace Mono.Linker.Dataflow
 			}
 
 			if (isNewObj) {
-				newObjValue = UnknownValue.Instance;
-				methodParams.Add (newObjValue);
+				methodParams.Add (UnknownValue.Instance);
 			}
 			methodParams.Reverse ();
 			return methodParams;
@@ -1090,33 +1086,17 @@ namespace Mono.Linker.Dataflow
 
 			bool isNewObj = operation.OpCode.Code == Code.Newobj;
 
-			SingleValue? newObjValue;
-			ValueNodeList methodArguments = PopCallArguments (currentStack, calledMethod, callingMethodBody, isNewObj,
-														   operation.Offset, out newObjValue);
+			ValueNodeList methodArguments = PopCallArguments (currentStack, calledMethod, callingMethodBody, isNewObj, operation.Offset);
 			var dereferencedMethodParams = new List<MultiValue> ();
 			foreach (var argument in methodArguments)
 				dereferencedMethodParams.Add (DereferenceValue (argument, locals, ref interproceduralState));
 			MultiValue methodReturnValue;
-			bool handledFunction = HandleCall (
+			HandleCall (
 				callingMethodBody,
 				calledMethod,
 				operation,
 				new ValueNodeList (dereferencedMethodParams),
 				out methodReturnValue);
-
-			// Handle the return value or newobj result
-			if (!handledFunction) {
-				if (isNewObj) {
-					if (newObjValue == null)
-						methodReturnValue = new MultiValue (UnknownValue.Instance);
-					else
-						methodReturnValue = newObjValue;
-				} else {
-					if (!calledMethod.ReturnsVoid ()) {
-						methodReturnValue = UnknownValue.Instance;
-					}
-				}
-			}
 
 			if (isNewObj || !calledMethod.ReturnsVoid ())
 				currentStack.Push (new StackSlot (methodReturnValue));
@@ -1134,7 +1114,7 @@ namespace Mono.Linker.Dataflow
 
 		public TypeDefinition? ResolveToTypeDefinition (TypeReference typeReference) => typeReference.ResolveToTypeDefinition (_context);
 
-		public abstract bool HandleCall (
+		public abstract void HandleCall (
 			MethodBody callingMethodBody,
 			MethodReference calledMethod,
 			Instruction operation,

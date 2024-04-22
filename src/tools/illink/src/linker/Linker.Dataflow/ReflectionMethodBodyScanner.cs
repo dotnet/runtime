@@ -117,19 +117,19 @@ namespace Mono.Linker.Dataflow
 		protected override void HandleStoreMethodReturnValue (MethodDefinition method, MethodReturnValue returnValue, Instruction operation, MultiValue valueToStore)
 			=> HandleStoreValueWithDynamicallyAccessedMembers (returnValue, operation, valueToStore);
 
-		public override bool HandleCall (MethodBody callingMethodBody, MethodReference calledMethod, Instruction operation, ValueNodeList methodParams, out MultiValue methodReturnValue)
+		public override void HandleCall (MethodBody callingMethodBody, MethodReference calledMethod, Instruction operation, ValueNodeList methodParams, out MultiValue methodReturnValue)
 		{
 			var reflectionProcessed = _markStep.ProcessReflectionDependency (callingMethodBody, operation);
 			if (reflectionProcessed) {
-				methodReturnValue = default;
-				return false;
+				methodReturnValue = UnknownValue.Instance;
+				return;
 			}
 
 			Debug.Assert (callingMethodBody.Method == _origin.Provider);
 			var calledMethodDefinition = _context.TryResolve (calledMethod);
 			if (calledMethodDefinition == null) {
-				methodReturnValue = default;
-				return false;
+				methodReturnValue = UnknownValue.Instance;
+				return;
 			}
 
 			_origin = _origin.WithInstructionOffset (operation.Offset);
@@ -163,7 +163,6 @@ namespace Mono.Linker.Dataflow
 				_context,
 				_markStep,
 				out methodReturnValue);
-			return true;
 		}
 
 		public static void HandleCall (

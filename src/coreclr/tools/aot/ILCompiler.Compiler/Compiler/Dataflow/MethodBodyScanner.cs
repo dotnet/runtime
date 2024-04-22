@@ -1156,11 +1156,8 @@ namespace ILCompiler.Dataflow
             Stack<StackSlot> currentStack,
             MethodDesc methodCalled,
             MethodIL containingMethodBody,
-            bool isNewObj, int ilOffset,
-            out SingleValue? newObjValue)
+            bool isNewObj, int ilOffset)
         {
-            newObjValue = null;
-
             int countToPop = 0;
             if (!isNewObj && !methodCalled.Signature.IsStatic)
                 countToPop++;
@@ -1175,8 +1172,7 @@ namespace ILCompiler.Dataflow
 
             if (isNewObj)
             {
-                newObjValue = UnknownValue.Instance;
-                methodParams.Add(newObjValue);
+                methodParams.Add(UnknownValue.Instance);
             }
             methodParams.Reverse();
             return methodParams;
@@ -1275,9 +1271,7 @@ namespace ILCompiler.Dataflow
         {
             bool isNewObj = opcode == ILOpcode.newobj;
 
-            SingleValue? newObjValue;
-            ValueNodeList methodArguments = PopCallArguments(currentStack, calledMethod, callingMethodBody, isNewObj,
-                                                             offset, out newObjValue);
+            ValueNodeList methodArguments = PopCallArguments(currentStack, calledMethod, callingMethodBody, isNewObj, offset);
 
             // Multi-dimensional array access is represented as a call to a special Get method on the array (runtime provided method)
             // We don't track multi-dimensional arrays in any way, so return unknown value.
@@ -1291,32 +1285,13 @@ namespace ILCompiler.Dataflow
             foreach (var argument in methodArguments)
                 dereferencedMethodParams.Add(DereferenceValue(callingMethodBody, offset, argument, locals, ref interproceduralState));
             MultiValue methodReturnValue;
-            bool handledFunction = HandleCall(
+            HandleCall(
                 callingMethodBody,
                 calledMethod,
                 opcode,
                 offset,
                 new ValueNodeList(dereferencedMethodParams),
                 out methodReturnValue);
-
-            // Handle the return value or newobj result
-            if (!handledFunction)
-            {
-                if (isNewObj)
-                {
-                    if (newObjValue == null)
-                        methodReturnValue = UnknownValue.Instance;
-                    else
-                        methodReturnValue = newObjValue;
-                }
-                else
-                {
-                    if (!calledMethod.Signature.ReturnType.IsVoid)
-                    {
-                        methodReturnValue = UnknownValue.Instance;
-                    }
-                }
-            }
 
             if (isNewObj || !calledMethod.Signature.ReturnType.IsVoid)
                 currentStack.Push(new StackSlot(methodReturnValue));
@@ -1335,7 +1310,7 @@ namespace ILCompiler.Dataflow
             }
         }
 
-        public abstract bool HandleCall(
+        public abstract void HandleCall(
             MethodIL callingMethodBody,
             MethodDesc calledMethod,
             ILOpcode operation,
