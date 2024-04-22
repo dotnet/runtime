@@ -81,7 +81,7 @@
       <_additionalPropertiesString>@(_propertiesAsItems->'&lt;%(Identity)&gt;%(Value)&lt;/%(Identity)&gt;', '%0a    ')</_additionalPropertiesString>
     </PropertyGroup>
 
-    <!-- RunNativeAotTestApps trumps TestTrimming, same as PublishAot trumps PublishTrimmed -->
+    <!-- RunNativeAotTestApps trumps TestTrimming, same as PublishAot trumps PublishTrimmed, but it's very likely not what the user intended. -->
     <Error Condition="'$(RunNativeAotTestApps)' == 'true' and '$(TestTrimming)' == 'true'" Text="Not possible to test both IL trimming and AOT at the same time" />
 
     <MakeDir Directories="$(_projectDir)" />
