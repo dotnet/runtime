@@ -14,7 +14,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(GlobalizationMode.Hybrid);
 
-            int exceptionPtr = HasEmptyCultureName ?
+            nint exceptionPtr = HasEmptyCultureName ?
                 Interop.JsGlobalization.ChangeCaseInvariant(src, srcLen, dstBuffer, dstBufferCapacity, toUpper) :
                 Interop.JsGlobalization.ChangeCase(_cultureName, src, srcLen, dstBuffer, dstBufferCapacity, toUpper);
             if (exceptionPtr != IntPtr.Zero)
