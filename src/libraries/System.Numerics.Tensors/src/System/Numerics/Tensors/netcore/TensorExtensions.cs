@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 
 #pragma warning disable CS8601 // Possible null reference assignment.
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
@@ -50,10 +51,22 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region Broadcast
-        public static Tensor<T> BroadcastTo<T>(Tensor<T> input, ReadOnlySpan<nint> shape)
+
+        public static Tensor<T> Broadcast<T>(Tensor<T> input, ReadOnlySpan<nint> shape)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            if (!AreShapesBroadcastToCompatible(input.Lengths, shape))
+            Tensor<T> intermediate = BroadcastTo(input, shape);
+            return Tensor.Create(intermediate.ToArray(), intermediate.Lengths);
+        }
+
+        // Lazy/non-copy broadcasting, internal only for now.
+        internal static Tensor<T> BroadcastTo<T>(Tensor<T> input, ReadOnlySpan<nint> shape)
+        where T : IEquatable<T>, IEqualityOperators<T, T, bool>
+        {
+            if (input.Lengths.SequenceEqual(shape))
+                return new Tensor<T>(input._values, shape.ToArray(), input.IsPinned);
+
+            if (!TensorHelpers.AreShapesBroadcastCompatible(input.Lengths, shape))
                 throw new Exception("Shapes are not broadcast compatible.");
 
             var newSize = SpanHelpers.CalculateTotalLength(shape);
@@ -61,7 +74,7 @@ namespace System.Numerics.Tensors
             if (newSize == input.LinearLength)
                 return Reshape(input, shape);
 
-            var intermediateShape = GetIntermediateShape(input.Lengths, shape.Length);
+            var intermediateShape = TensorHelpers.GetIntermediateShape(input.Lengths, shape.Length);
             nint[] strides = new nint[shape.Length];
 
             nint stride = 1;
@@ -82,60 +95,39 @@ namespace System.Numerics.Tensors
             return output;
         }
 
-        public static bool AreShapesBroadcastToCompatible<T>(Tensor<T> tensor1, Tensor<T> tensor2)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool> => AreShapesBroadcastToCompatible(tensor1.Lengths, tensor2.Lengths);
-
-
-        public static bool AreShapesBroadcastToCompatible(ReadOnlySpan<nint> shape1, ReadOnlySpan<nint> shape2)
+        internal static SpanND<T> BroadcastTo<T>(SpanND<T> input, ReadOnlySpan<nint> shape)
+        where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            var shape1Index = shape1.Length - 1;
-            var shape2Index = shape2.Length - 1;
+            if (input.Lengths.SequenceEqual(shape))
+                return new SpanND<T>(ref input._reference, shape, input.Strides, input.IsPinned);
 
-            bool areCompatible = true;
+            if (!TensorHelpers.AreShapesBroadcastCompatible(input.Lengths, shape))
+                throw new Exception("Shapes are not broadcast compatible.");
 
-            nint s1;
-            nint s2;
+            var newSize = SpanHelpers.CalculateTotalLength(shape);
 
-            while (shape1Index >= 0 || shape2Index >= 0)
+            if (newSize == input.LinearLength)
+                return Reshape(input, shape);
+
+            var intermediateShape = TensorHelpers.GetIntermediateShape(input.Lengths, shape.Length);
+            nint[] strides = new nint[shape.Length];
+
+            nint stride = 1;
+
+            for (int i = strides.Length - 1; i >= 0; i--)
             {
-                // if a dimension is missing in one of the shapes, it is considered to be 1
-                if (shape1Index < 0)
-                    s1 = 1;
-                else
-                    s1 = shape1[shape1Index--];
-
-                if (shape2Index < 0)
-                    s2 = 1;
-                else
-                    s2 = shape2[shape2Index--];
-
-                if (s1 == s2 || (s1 == 1 && s2 != 1) || (s1 == 1 && s2 != 1)) { }
+                if ((intermediateShape[i] == 1 && shape[i] != 1) || (intermediateShape[i] == 1 && shape[i] == 1))
+                    strides[i] = 0;
                 else
                 {
-                    areCompatible = false;
-                    break;
+                    strides[i] = stride;
+                    stride *= intermediateShape[i];
                 }
             }
 
-            return areCompatible;
-        }
+            SpanND<T> output = new SpanND<T>(ref input._reference, shape, strides, input.IsPinned);
 
-        public static nint[] GetIntermediateShape(ReadOnlySpan<nint> shape1, int shape2Length)
-        {
-            var shape1Index = shape1.Length - 1;
-            var newShapeIndex = Math.Max(shape1.Length, shape2Length) - 1;
-            nint[] newShape = new nint[Math.Max(shape1.Length, shape2Length)];
-
-            while (newShapeIndex >= 0)
-            {
-                // if a dimension is missing in one of the shapes, it is considered to be 1
-                if (shape1Index < 0)
-                    newShape[newShapeIndex--] = 1;
-                else
-                    newShape[newShapeIndex--] = shape1[shape1Index--];
-            }
-
-            return newShape;
+            return output;
         }
         #endregion
 
@@ -317,8 +309,7 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region SetSlice
-        // REVIEW: NOT IN DESIGN DOC BUT NEEDED FOR NIKLAS NOTEBOOK.
-        // REVIEW: WHAT DO WE WANT TO CALL THIS? COPYTO? IT DOES FIT IN WITH THE EXISTING COPY TO CONVENTIONS FOR VECTOR.
+        // REVIEW: WHAT DO WE WANT TO CALL THIS? COPYTO? IT DOES FIT IN WITH THE EXISTING COPY TO CONVENTIONS FOR VECTOR (albeit backwards).
         public static Tensor<T> SetSlice<T>(this Tensor<T> tensor, Tensor<T> values, params NativeRange[] ranges)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
@@ -342,7 +333,6 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region FilteredUpdate
-        // REVIEW: NOT IN DESIGN DOC BUT NEEDED FOR NIKLAS NOTEBOOK.
         // REVIEW: PYTORCH/NUMPY DO THIS.
         //  t0[t0 < 2] = -1;
         //  OR SHOULD THIS BE AN OVERLOAD OF FILL THAT TAKES IN A FUNC TO KNOW WHICH ONE TO UPDATE?
@@ -396,31 +386,65 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region SequenceEqual
-        // REVIEW: THIS NEEDS TO SUPPORT BROADCASTING AND ADD APPROPRIATE CHECKING.
         public static Tensor<bool> SequenceEqual<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            Tensor<bool> result = Tensor.Create<bool>(false, left.Lengths);
-
-            for (int i = 0; i < left.LinearLength; i++)
+            Tensor<bool> result;
+            if (TensorHelpers.AreShapesTheSame(left, right))
             {
-                result._values[i] = left._values[i] == right._values[i];
+                result = Tensor.Create<bool>(false, left.Lengths);
+
+                for (int i = 0; i < left.LinearLength; i++)
+                {
+                    result._values[i] = left._values[i] == right._values[i];
+                }
             }
+            else
+            {
+                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
+                result = Tensor.Create<bool>(false, newSize);
+                var broadcastedLeft = BroadcastTo(left, newSize);
+                var broadcastedRight = BroadcastTo(right, newSize);
+                nint[] curIndex = new nint[broadcastedRight.Lengths.Length];
+                for (int i = 0; i < broadcastedLeft.LinearLength; i++)
+                {
+                    result._values[i] = broadcastedLeft[curIndex] == broadcastedRight[curIndex];
+                    SpanHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Lengths);
+                }
+            }
+
             return result;
         }
         #endregion
 
         #region LessThan
-        // REVIEW: ALL OF THESE NEED TO SUPPORT BROADCASTING AND ADD APPROPRIATE CHECKING.
         public static Tensor<bool> LessThan<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IComparisonOperators<T, T, bool>
         {
-            Tensor<bool> result = Tensor.Create<bool>(false, left.Lengths);
-
-            for (int i = 0; i < left.LinearLength; i++)
+            Tensor<bool> result;
+            if (TensorHelpers.AreShapesTheSame(left, right))
             {
-                result._values[i] = left._values[i] < right._values[i];
+                result = Tensor.Create<bool>(false, left.Lengths);
+
+                for (int i = 0; i < left.LinearLength; i++)
+                {
+                    result._values[i] = left._values[i] < right._values[i];
+                }
             }
+            else
+            {
+                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
+                result = Tensor.Create<bool>(false, newSize);
+                var broadcastedLeft = BroadcastTo(left, newSize);
+                var broadcastedRight = BroadcastTo(right, newSize);
+                nint[] curIndex = new nint[broadcastedRight.Lengths.Length];
+                for (int i = 0; i < broadcastedLeft.LinearLength; i++)
+                {
+                    result._values[i] = broadcastedLeft[curIndex] < broadcastedRight[curIndex];
+                    SpanHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Lengths);
+                }
+            }
+
             return result;
         }
 
@@ -439,37 +463,90 @@ namespace System.Numerics.Tensors
         public static bool LessThanAny<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IComparisonOperators<T, T, bool>
         {
-            for (int i = 0; i < left.LinearLength; i++)
+
+            if (TensorHelpers.AreShapesTheSame(left, right))
             {
-                if (left._values[i] < right._values[i])
-                    return true;
+
+                for (int i = 0; i < left.LinearLength; i++)
+                {
+                    if (left._values[i] < right._values[i])
+                        return true;
+                }
             }
+            else
+            {
+                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
+                var broadcastedLeft = BroadcastTo(left, newSize);
+                var broadcastedRight = BroadcastTo(right, newSize);
+                nint[] curIndex = new nint[broadcastedRight.Lengths.Length];
+                for (int i = 0; i < broadcastedLeft.LinearLength; i++)
+                {
+                    if (broadcastedLeft[curIndex] < broadcastedRight[curIndex])
+                        return true;
+                    SpanHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Lengths);
+                }
+            }
+
             return false;
         }
 
         public static bool LessThanAll<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IComparisonOperators<T, T, bool>
         {
-            for (int i = 0; i < left.LinearLength; i++)
+            if (TensorHelpers.AreShapesTheSame(left, right))
             {
-                if (left._values[i] > right._values[i])
-                    return false;
+
+                for (int i = 0; i < left.LinearLength; i++)
+                {
+                    if (left._values[i] > right._values[i])
+                        return false;
+                }
+            }
+            else
+            {
+                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
+                var broadcastedLeft = BroadcastTo(left, newSize);
+                var broadcastedRight = BroadcastTo(right, newSize);
+                nint[] curIndex = new nint[broadcastedRight.Lengths.Length];
+                for (int i = 0; i < broadcastedLeft.LinearLength; i++)
+                {
+                    if (broadcastedLeft[curIndex] > broadcastedRight[curIndex])
+                        return false;
+                    SpanHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Lengths);
+                }
             }
             return true;
         }
         #endregion
 
         #region GreaterThan
-        // REVIEW: ALL OF THESE NEED TO SUPPORT BROADCASTING AND ADD APPROPRIATE CHECKING.
         public static Tensor<bool> GreaterThan<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IComparisonOperators<T, T, bool>
         {
-            Tensor<bool> result = Tensor.Create<bool>(false, left.Lengths);
-
-            for (int i = 0; i < left.LinearLength; i++)
+            Tensor<bool> result;
+            if (TensorHelpers.AreShapesTheSame(left, right))
             {
-                result._values[i] = left._values[i] > right._values[i];
+                result = Tensor.Create<bool>(false, left.Lengths);
+
+                for (int i = 0; i < left.LinearLength; i++)
+                {
+                    result._values[i] = left._values[i] > right._values[i];
+                }
             }
+            else
+            {
+                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
+                result = Tensor.Create<bool>(false, newSize);
+                var broadcastedLeft = BroadcastTo(left, newSize);
+                var broadcastedRight = BroadcastTo(right, newSize);
+                nint[] curIndex = new nint[broadcastedRight.Lengths.Length];
+                for (int i = 0; i < broadcastedLeft.LinearLength; i++)
+                {
+                    result._values[i] = broadcastedLeft[curIndex] > broadcastedRight[curIndex];
+                    SpanHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Lengths);
+                }
+            }
+
             return result;
         }
 
@@ -488,10 +565,27 @@ namespace System.Numerics.Tensors
         public static bool GreaterThanAny<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IComparisonOperators<T, T, bool>
         {
-            for (int i = 0; i < left.LinearLength; i++)
+            if (TensorHelpers.AreShapesTheSame(left, right))
             {
-                if (left._values[i] > right._values[i])
-                    return true;
+
+                for (int i = 0; i < left.LinearLength; i++)
+                {
+                    if (left._values[i] > right._values[i])
+                        return true;
+                }
+            }
+            else
+            {
+                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
+                var broadcastedLeft = BroadcastTo(left, newSize);
+                var broadcastedRight = BroadcastTo(right, newSize);
+                nint[] curIndex = new nint[broadcastedRight.Lengths.Length];
+                for (int i = 0; i < broadcastedLeft.LinearLength; i++)
+                {
+                    if (broadcastedLeft[curIndex] > broadcastedRight[curIndex])
+                        return true;
+                    SpanHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Lengths);
+                }
             }
             return false;
         }
@@ -499,10 +593,27 @@ namespace System.Numerics.Tensors
         public static bool GreaterThanAll<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IComparisonOperators<T, T, bool>
         {
-            for (int i = 0; i < left.LinearLength; i++)
+            if (TensorHelpers.AreShapesTheSame(left, right))
             {
-                if (left._values[i] < right._values[i])
-                    return false;
+
+                for (int i = 0; i < left.LinearLength; i++)
+                {
+                    if (left._values[i] < right._values[i])
+                        return false;
+                }
+            }
+            else
+            {
+                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
+                var broadcastedLeft = BroadcastTo(left, newSize);
+                var broadcastedRight = BroadcastTo(right, newSize);
+                nint[] curIndex = new nint[broadcastedRight.Lengths.Length];
+                for (int i = 0; i < broadcastedLeft.LinearLength; i++)
+                {
+                    if (broadcastedLeft[curIndex] < broadcastedRight[curIndex])
+                        return false;
+                    SpanHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Lengths);
+                }
             }
             return true;
         }
@@ -559,6 +670,34 @@ namespace System.Numerics.Tensors
                 throw new ArgumentException("Provided dimensions are not valid for reshaping");
             var strides = SpanHelpers.CalculateStrides(arrLengths.Length, arrLengths);
             return new Tensor<T>(input._values, arrLengths, strides.ToArray(), input.IsPinned);
+        }
+
+        public static SpanND<T> Reshape<T>(this SpanND<T> input, ReadOnlySpan<nint> lengths)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>
+        {
+            var arrLengths = lengths.ToArray();
+            // Calculate wildcard info.
+            if (lengths.Contains(-1))
+            {
+                if (lengths.Count(-1) > 1)
+                    throw new ArgumentException("Provided dimensions can only include 1 wildcard.");
+                var tempTotal = input.LinearLength;
+                for (int i = 0; i < lengths.Length; i++)
+                {
+                    if (lengths[i] != -1)
+                    {
+                        tempTotal /= lengths[i];
+                    }
+                }
+                arrLengths[lengths.IndexOf(-1)] = tempTotal;
+
+            }
+
+            var tempLinear = SpanHelpers.CalculateTotalLength(ref arrLengths);
+            if (tempLinear != input.LinearLength)
+                throw new ArgumentException("Provided dimensions are not valid for reshaping");
+            var strides = SpanHelpers.CalculateStrides(arrLengths.Length, arrLengths);
+            return new SpanND<T>(ref input._reference, arrLengths, strides, input.IsPinned);
         }
         #endregion
 
@@ -626,13 +765,12 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region Concatenate
-        //REVIEW: SHOULD AXIS BE NULLABLE INT SO NULL CAN BE PROVIDED INSTEAD OF -1? SENTINAL VALUE?
         /// <summary>
-        /// Join a sequence of arrays along an existing axis.
+        /// Join a sequence of tensors along an existing axis.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="tensors">The arrays must have the same shape, except in the dimension corresponding to axis (the first, by default).</param>
-        /// <param name="axis">The axis along which the arrays will be joined. If axis is -1, arrays are flattened before use. Default is 0.</param>
+        /// <param name="tensors">The tensors must have the same shape, except in the dimension corresponding to axis (the first, by default).</param>
+        /// <param name="axis">The axis along which the tensors will be joined. If axis is -1, arrays are flattened before use. Default is 0.</param>
         /// <returns></returns>
         public static Tensor<T> Concatenate<T>(ReadOnlySpan<Tensor<T>> tensors, int axis = 0)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
@@ -735,6 +873,10 @@ namespace System.Numerics.Tensors
             return T.CreateChecked(sum / T.CreateChecked(input.LinearLength));
         }
 
+        public static Tensor<T> StdDev<T>(Tensor<T> input, int axis)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>, IPowerFunctions<T>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
+            => throw new NotImplementedException();
+
         public static TResult StdDev<T, TResult>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
             where TResult : IEquatable<TResult>, IEqualityOperators<TResult, TResult, bool>, IFloatingPoint<TResult>
@@ -743,6 +885,11 @@ namespace System.Numerics.Tensors
             T sum = Tensor.Sum(input);
             return TResult.CreateChecked(TResult.CreateChecked(sum) / TResult.CreateChecked(input.LinearLength));
         }
+
+        public static Tensor<TResult> StdDev<T, TResult>(Tensor<T> input, int axis)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
+            where TResult : IEquatable<TResult>, IEqualityOperators<TResult, TResult, bool>, IFloatingPoint<TResult>
+            => throw new NotImplementedException();
         #endregion
 
         #region Mean
@@ -826,20 +973,12 @@ namespace System.Numerics.Tensors
                 indices = new nint[tensor.Rank];
                 for (int i = 0; i < input._linearLength; i++)
                 {
-                    PermuteIndices(ref indices, ref permutedIndices, ref permutation);
+                    TensorHelpers.PermuteIndices(ref indices, ref permutedIndices, ref permutation);
                     ospan[permutedIndices] = ispan[indices];
                     SpanHelpers.AdjustIndices(tensor.Rank - 1, 1, ref indices, input._lengths);
                 }
 
                 return tensor;
-            }
-        }
-
-        private static void PermuteIndices(ref nint[] indices, ref nint[] permutedIndices, ref int[] permutation)
-        {
-            for (int i = 0; i < indices.Length; i++)
-            {
-                permutedIndices[i] = indices[permutation[i]];
             }
         }
         #endregion
@@ -866,10 +1005,10 @@ namespace System.Numerics.Tensors
             return output;
         }
 
-        public static Tensor<T> Multiply<T>(Tensor<T> input, Tensor<T> other)
+        public static Tensor<T> Multiply<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
-            return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Multiply);
+            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Multiply);
         }
 
         public static Tensor<T> MultiplyInPlace<T>(Tensor<T> input, Tensor<T> other)
@@ -1426,25 +1565,187 @@ namespace System.Numerics.Tensors
             return output;
         }
 
-        private static Tensor<T> TensorPrimitivesHelperT1T2<T>(Tensor<T> input, Tensor<T> inputTwo, PerformCalculationT1T2<T> performCalculation, bool inPlace = false)
+        private static Tensor<T> TensorPrimitivesHelperT1T2<T>(Tensor<T> left, Tensor<T> right, PerformCalculationT1T2<T> performCalculation, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
-            ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref inputTwo._values[0], (int)inputTwo._linearLength);
-            Tensor<T> output = inPlace ? input : Create<T>(input.IsPinned, input.Lengths);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._linearLength);
-            performCalculation(span, rspan, ospan);
+            if (inPlace && left.Lengths != right.Lengths)
+                throw new ArgumentException("In place operations require the same shape for both tensors");
+
+            Tensor<T> output;
+            if (inPlace)
+            {
+
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref left._values[0], (int)left._linearLength);
+                ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref right._values[0], (int)right._linearLength);
+                output = left;
+                Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._linearLength);
+                performCalculation(span, rspan, ospan);
+            }
+            // If not in place but sizes are the same.
+            else if (left.Lengths.SequenceEqual(right.Lengths))
+            {
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref left.AsSpan()._reference, (int)left.LinearLength);
+                ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref right.AsSpan()._reference, (int)right.LinearLength);
+                output = Create<T>(left.IsPinned, left.Lengths);
+                Span<T> ospan = MemoryMarshal.CreateSpan(ref output.AsSpan()._reference, (int)output.LinearLength);
+                performCalculation(span, rspan, ospan);
+                return output;
+            }
+            // Not in place and broadcasting needs to happen.
+            else
+            {
+                // Have a couple different possible cases here.
+                // 1 - Both tensors have row contiguous memory (i.e. a 1x5 being broadcast to a 5x5)
+                // 2 - One tensor has row contiguous memory and the other has column contiguous memory (i.e. a 1x5 and a 5x1)
+
+                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
+
+                var broadcastedLeft = Tensor.BroadcastTo(left, newSize);
+                var broadcastedRight = Tensor.BroadcastTo(right, newSize);
+
+                output = Create<T>(left.IsPinned, newSize);
+                var rowLength = newSize[^1];
+                Span<T> ospan;
+                Span<T> ispan;
+                Span<T> buffer = new T[rowLength];
+                nint[] curIndex = new nint[newSize.Length];
+                int outputOffset = 0;
+                // left not row contiguous
+                if (broadcastedLeft.Strides[^1] == 0)
+                {
+                    while (outputOffset < output.LinearLength)
+                    {
+                        ospan = MemoryMarshal.CreateSpan(ref output._values[outputOffset], (int)rowLength);
+                        buffer.Fill(broadcastedLeft[curIndex]);
+                        ispan = MemoryMarshal.CreateSpan(ref broadcastedRight[curIndex], (int)rowLength);
+                        performCalculation(buffer, ispan, ospan);
+                        outputOffset += (int)rowLength;
+                        SpanHelpers.AdjustIndices(broadcastedLeft.Rank - 2, 1, ref curIndex, broadcastedLeft.Lengths);
+                    }
+                }
+                // right now row contiguous
+                else if (broadcastedRight.Strides[^1] == 0)
+                {
+                    while (outputOffset < output.LinearLength)
+                    {
+                        ospan = MemoryMarshal.CreateSpan(ref output._values[outputOffset], (int)rowLength);
+                        buffer.Fill(broadcastedRight[curIndex]);
+                        ispan = MemoryMarshal.CreateSpan(ref broadcastedLeft[curIndex], (int)rowLength);
+                        performCalculation(ispan, buffer, ospan);
+                        outputOffset += (int)rowLength;
+                        SpanHelpers.AdjustIndices(broadcastedLeft.Rank - 2, 1, ref curIndex, broadcastedLeft.Lengths);
+                    }
+                }
+                // both row contiguous
+                else
+                {
+                    Span<T> rspan;
+                    while (outputOffset < output.LinearLength)
+                    {
+                        ospan = MemoryMarshal.CreateSpan(ref output._values[outputOffset], (int)rowLength);
+                        ispan = MemoryMarshal.CreateSpan(ref broadcastedLeft[curIndex], (int)rowLength);
+                        rspan = MemoryMarshal.CreateSpan(ref broadcastedRight[curIndex], (int)rowLength);
+                        performCalculation(ispan, rspan, ospan);
+                        outputOffset += (int)rowLength;
+                        SpanHelpers.AdjustIndices(broadcastedLeft.Rank - 2, 1, ref curIndex, broadcastedLeft.Lengths);
+                    }
+                }
+            }
             return output;
         }
 
-        private static SpanND<T> TensorPrimitivesHelperT1T2<T>(SpanND<T> input, SpanND<T> inputTwo, PerformCalculationT1T2<T> performCalculation, bool inPlace = false)
+        private static SpanND<T> TensorPrimitivesHelperT1T2<T>(SpanND<T> left, SpanND<T> right, PerformCalculationT1T2<T> performCalculation, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
-            ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref inputTwo._reference, (int)inputTwo.LinearLength);
-            SpanND<T> output = inPlace ? input : Create<T>(input.IsPinned, input.Lengths);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
-            performCalculation(span, rspan, ospan);
+            if (inPlace && left.Lengths != right.Lengths)
+                throw new ArgumentException("In place operations require the same shape for both spans");
+
+            //ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref left._reference, (int)left.LinearLength);
+            //ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref right._reference, (int)right.LinearLength);
+            //SpanND<T> output = inPlace ? left : Create<T>(left.IsPinned, left.Lengths);
+            //Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
+            //performCalculation(span, rspan, ospan);
+            //return output;
+
+            SpanND<T> output;
+            if (inPlace)
+            {
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref left._reference, (int)left.LinearLength);
+                ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref right._reference, (int)right.LinearLength);
+                output = left;
+                Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
+                performCalculation(span, rspan, ospan);
+            }
+            // If not in place but sizes are the same.
+            else if (left.Lengths.SequenceEqual(right.Lengths))
+            {
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref left._reference, (int)left.LinearLength);
+                ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref right._reference, (int)right.LinearLength);
+                output = Create<T>(left.IsPinned, left.Lengths);
+                Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
+                performCalculation(span, rspan, ospan);
+                return output;
+            }
+            // Not in place and broadcasting needs to happen.
+            else
+            {
+                // Have a couple different possible cases here.
+                // 1 - Both tensors have row contiguous memory (i.e. a 1x5 being broadcast to a 5x5)
+                // 2 - One tensor has row contiguous memory and the other has column contiguous memory (i.e. a 1x5 and a 5x1)
+
+                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
+
+                var broadcastedLeft = Tensor.BroadcastTo(left, newSize);
+                var broadcastedRight = Tensor.BroadcastTo(right, newSize);
+
+                output = Create<T>(left.IsPinned, newSize);
+                var rowLength = newSize[^1];
+                Span<T> ospan;
+                Span<T> ispan;
+                Span<T> buffer = new T[rowLength];
+                nint[] curIndex = new nint[newSize.Length];
+                int outputOffset = 0;
+                // left not row contiguous
+                if (broadcastedLeft.Strides[^1] == 0)
+                {
+                    while (outputOffset < output.LinearLength)
+                    {
+                        ospan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref output._reference, outputOffset), (int)rowLength);
+                        buffer.Fill(broadcastedLeft[curIndex]);
+                        ispan = MemoryMarshal.CreateSpan(ref broadcastedRight[curIndex], (int)rowLength);
+                        performCalculation(buffer, ispan, ospan);
+                        outputOffset += (int)rowLength;
+                        SpanHelpers.AdjustIndices(broadcastedLeft.Rank - 2, 1, ref curIndex, broadcastedLeft.Lengths);
+                    }
+                }
+                // right now row contiguous
+                else if (broadcastedRight.Strides[^1] == 0)
+                {
+                    while (outputOffset < output.LinearLength)
+                    {
+                        ospan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref output._reference, outputOffset), (int)rowLength);
+                        buffer.Fill(broadcastedRight[curIndex]);
+                        ispan = MemoryMarshal.CreateSpan(ref broadcastedLeft[curIndex], (int)rowLength);
+                        performCalculation(ispan, buffer, ospan);
+                        outputOffset += (int)rowLength;
+                        SpanHelpers.AdjustIndices(broadcastedLeft.Rank - 2, 1, ref curIndex, broadcastedLeft.Lengths);
+                    }
+                }
+                // both row contiguous
+                else
+                {
+                    Span<T> rspan;
+                    while (outputOffset < output.LinearLength)
+                    {
+                        ospan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref output._reference, outputOffset), (int)rowLength);
+                        ispan = MemoryMarshal.CreateSpan(ref broadcastedLeft[curIndex], (int)rowLength);
+                        rspan = MemoryMarshal.CreateSpan(ref broadcastedRight[curIndex], (int)rowLength);
+                        performCalculation(ispan, rspan, ospan);
+                        outputOffset += (int)rowLength;
+                        SpanHelpers.AdjustIndices(broadcastedLeft.Rank - 2, 1, ref curIndex, broadcastedLeft.Lengths);
+                    }
+                }
+            }
             return output;
         }
         #endregion

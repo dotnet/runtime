@@ -23,15 +23,6 @@ namespace System.Numerics.Tensors
             nint length = span.LinearLength;
             nint otherLength = other.LinearLength;
 
-            //if (RuntimeHelpers.IsBitwiseEquatable<T>())
-            //{
-            //    return length == otherLength &&
-            //    SpanHelpers.SequenceEqual(
-            //        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
-            //        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(other)),
-            //        ((uint)otherLength) * (nuint)sizeof(T));  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
-            //}
-
             return length == otherLength && SpanHelpers.SequenceEqual(ref span.GetPinnableReference(), ref other.GetPinnableReference(), length);
         }
 
