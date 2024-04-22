@@ -7829,7 +7829,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
         // save callee-saved registers before using 'initReg' for the first time. Instead, we can use REG_SCRATCH
         // beforehand. We don't care if REG_SCRATCH will be overwritten, so we'll skip 'RegZeroed check'.
         // TODO-RV64: this should be resolved before calling `genPushCalleeSavedRegisters`.
-        genStackPointerAdjustment(-totalFrameSize, REG_SCRATCH, pInitRegZeroed, /* reportUnwindData */ true);
+        genStackPointerAdjustment(-totalFrameSize, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
     }
     GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_FP, REG_SPBASE, FP_offset);
     compiler->unwindSaveReg(REG_FP, FP_offset);
@@ -7853,7 +7853,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
     if (leftFrameSize != 0)
     {
-        genStackPointerAdjustment(-leftFrameSize, REG_SCRATCH, pInitRegZeroed, /* reportUnwindData */ true);
+        genStackPointerAdjustment(-leftFrameSize, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
     }
 }
 
