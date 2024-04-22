@@ -843,6 +843,7 @@ extends:
           scenarios:
             - WasmTestOnV8
             - WasmTestOnChrome
+            - WasmTestOnFirefox
 
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
@@ -865,6 +866,7 @@ extends:
           shouldRunSmokeOnly: onLibrariesAndIllinkChanges
           scenarios:
             - WasmTestOnChrome
+            - WasmTestOnFirefox
             #- WasmTestOnNodeJS - this is not supported yet, https://github.com/dotnet/runtime/issues/85592
 
       # EAT Library tests - only run on linux

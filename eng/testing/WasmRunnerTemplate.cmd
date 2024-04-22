@@ -30,7 +30,13 @@ if [%XHARNESS_COMMAND%] == [] (
     if /I [%SCENARIO%]==[WasmTestOnChrome] (
         set XHARNESS_COMMAND=test-browser
     ) else (
-        set XHARNESS_COMMAND=test
+        if /I [%SCENARIO%]==[WasmTestOnFirefox] (
+            set XHARNESS_COMMAND=test-browser
+            set "JS_ENGINE=--browser^=Firefox"
+            set "JS_ENGINE_ARGS=--browser-arg^=-private-window"
+        ) else (
+            set XHARNESS_COMMAND=test
+        )
     )
 )
 
@@ -56,11 +62,13 @@ if /I [%XHARNESS_COMMAND%] == [test] (
         )
     )
 ) else (
-    if [%BROWSER_PATH%] == [] if not [%HELIX_CORRELATION_PAYLOAD%] == [] (
-        set "BROWSER_PATH=--browser-path^=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe"
-    )
-    if [%JS_ENGINE_ARGS%] == [] (
-        set "JS_ENGINE_ARGS=--browser-arg^=--js-flags^=--stack-trace-limit^=1000"
+    if /I [%SCENARIO%] == [WasmTestOnChrome] (
+        if [%BROWSER_PATH%] == [] if not [%HELIX_CORRELATION_PAYLOAD%] == [] (
+            set "BROWSER_PATH=--browser-path^=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe"
+        )
+        if [%JS_ENGINE_ARGS%] == [] (
+            set "JS_ENGINE_ARGS=--browser-arg^=--js-flags^=--stack-trace-limit^=1000"
+        )
     )
 )
 
