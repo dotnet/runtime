@@ -17,12 +17,7 @@ namespace System.Globalization
             nint exceptionPtr = HasEmptyCultureName ?
                 Interop.JsGlobalization.ChangeCaseInvariant(src, srcLen, dstBuffer, dstBufferCapacity, toUpper) :
                 Interop.JsGlobalization.ChangeCase(_cultureName, src, srcLen, dstBuffer, dstBufferCapacity, toUpper);
-            if (exceptionPtr != IntPtr.Zero)
-            {
-                string message = Marshal.PtrToStringUni(exceptionPtr)!;
-                Marshal.FreeHGlobal(exceptionPtr);
-                throw new Exception(message);
-            }
+            Helper.MarshalAndThrowIfException(exceptionPtr);
         }
     }
 }

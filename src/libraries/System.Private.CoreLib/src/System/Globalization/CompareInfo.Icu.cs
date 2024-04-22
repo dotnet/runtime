@@ -199,12 +199,7 @@ namespace System.Globalization
                 if (GlobalizationMode.Hybrid)
                 {
                     nint exceptionPtr = Interop.JsGlobalization.IndexOf(m_name, b, target.Length, a, source.Length, options, fromBeginning, out int result);
-                    if (exceptionPtr != IntPtr.Zero)
-                    {
-                        string message = Marshal.PtrToStringUni(exceptionPtr)!;
-                        Marshal.FreeHGlobal(exceptionPtr);
-                        throw new Exception(message);
-                    }
+                    Helper.MarshalAndThrowIfException(exceptionPtr);
                     return result;
                 }
 #elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
@@ -305,12 +300,7 @@ namespace System.Globalization
                 if (GlobalizationMode.Hybrid)
                 {
                     nint exceptionPtr = Interop.JsGlobalization.IndexOf(m_name, b, target.Length, a, source.Length, options, fromBeginning, out int result);
-                    if (exceptionPtr != IntPtr.Zero)
-                    {
-                        string message = Marshal.PtrToStringUni(exceptionPtr)!;
-                        Marshal.FreeHGlobal(exceptionPtr);
-                        throw new Exception(message);
-                    }
+                    Helper.MarshalAndThrowIfException(exceptionPtr);
                     return result;
                 }
 #elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS

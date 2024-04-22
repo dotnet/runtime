@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <assert.h>
 #include <sys/types.h>
+#include <uchar.h>
 
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/class.h>
@@ -58,17 +59,17 @@ extern void mono_wasm_invoke_jsimport_ST (int function_handle, void *args);
 #endif /* DISABLE_THREADS */
 
 // HybridGlobalization
-extern void* mono_wasm_change_case_invariant (const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper);
-extern void* mono_wasm_change_case (MonoString **culture, const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper);
-extern void* mono_wasm_compare_string (MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, int *resultPtr);
-extern void* mono_wasm_starts_with (MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, mono_bool *resultPtr);
-extern void* mono_wasm_ends_with (MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, mono_bool *resultPtr);
-extern void* mono_wasm_index_of (MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, mono_bool fromBeginning, int *resultPtr);
-extern void* mono_wasm_get_calendar_info (MonoString **culture, int32_t calendarId, const uint16_t* result, int32_t resultMaxLength, int *resultLength);
-extern void* mono_wasm_get_locale_info (MonoString **locale, MonoString **culture, const uint16_t* result, int32_t resultMaxLength, int *resultLength);
-extern void* mono_wasm_get_culture_info (MonoString **culture, const uint16_t* result, int32_t resultMaxLength, int *resultLength);
-extern void* mono_wasm_get_first_day_of_week (MonoString **culture, int *resultPtr);
-extern void* mono_wasm_get_first_week_of_year (MonoString **culture, int *resultPtr);
+extern char16_t* mono_wasm_change_case_invariant (const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper);
+extern char16_t* mono_wasm_change_case (MonoString **culture, const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper);
+extern char16_t* mono_wasm_compare_string (MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, int *resultPtr);
+extern char16_t* mono_wasm_starts_with (MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, mono_bool *resultPtr);
+extern char16_t* mono_wasm_ends_with (MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, mono_bool *resultPtr);
+extern char16_t* mono_wasm_index_of (MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, mono_bool fromBeginning, int *resultPtr);
+extern char16_t* mono_wasm_get_calendar_info (MonoString **culture, int32_t calendarId, const uint16_t* result, int32_t resultMaxLength, int *resultLength);
+extern char16_t* mono_wasm_get_locale_info (MonoString **locale, MonoString **culture, const uint16_t* result, int32_t resultMaxLength, int *resultLength);
+extern char16_t* mono_wasm_get_culture_info (MonoString **culture, const uint16_t* result, int32_t resultMaxLength, int *resultLength);
+extern char16_t* mono_wasm_get_first_day_of_week (MonoString **culture, int *resultPtr);
+extern char16_t* mono_wasm_get_first_week_of_year (MonoString **culture, int *resultPtr);
 
 void bindings_initialize_internals (void)
 {

@@ -54,12 +54,7 @@ namespace System.Globalization
             fixed (char* pString2 = &MemoryMarshal.GetReference(string2))
             {
                 nint exceptionPtr = Interop.JsGlobalization.CompareString(cultureName, pString1, string1.Length, pString2, string2.Length, options, out int cmpResult);
-                if (exceptionPtr != IntPtr.Zero)
-                {
-                    string message = Marshal.PtrToStringUni(exceptionPtr)!;
-                    Marshal.FreeHGlobal(exceptionPtr);
-                    throw new Exception(message);
-                }
+                Helper.MarshalAndThrowIfException(exceptionPtr);
                 return cmpResult;
             }
         }
@@ -75,12 +70,7 @@ namespace System.Globalization
             fixed (char* pPrefix = &MemoryMarshal.GetReference(prefix))
             {
                 nint exceptionPtr = Interop.JsGlobalization.StartsWith(cultureName, pSource, source.Length, pPrefix, prefix.Length, options, out bool result);
-                if (exceptionPtr != IntPtr.Zero)
-                {
-                    string message = Marshal.PtrToStringUni(exceptionPtr)!;
-                    Marshal.FreeHGlobal(exceptionPtr);
-                    throw new Exception(message);
-                }
+                Helper.MarshalAndThrowIfException(exceptionPtr);
                 return result;
             }
         }
@@ -96,12 +86,7 @@ namespace System.Globalization
             fixed (char* pPrefix = &MemoryMarshal.GetReference(prefix))
             {
                 nint exceptionPtr = Interop.JsGlobalization.EndsWith(cultureName, pSource, source.Length, pPrefix, prefix.Length, options, out bool result);
-                if (exceptionPtr != IntPtr.Zero)
-                {
-                    string message = Marshal.PtrToStringUni(exceptionPtr)!;
-                    Marshal.FreeHGlobal(exceptionPtr);
-                    throw new Exception(message);
-                }
+                Helper.MarshalAndThrowIfException(exceptionPtr);
                 return result;
             }
         }
@@ -123,12 +108,7 @@ namespace System.Globalization
             fixed (char* pTarget = &MemoryMarshal.GetReference(target))
             {
                 nint exceptionPtr = Interop.JsGlobalization.IndexOf(m_name, pTarget, target.Length, pSource, source.Length, options, fromBeginning, out int idx);
-                if (exceptionPtr != IntPtr.Zero)
-                {
-                    string message = Marshal.PtrToStringUni(exceptionPtr)!;
-                    Marshal.FreeHGlobal(exceptionPtr);
-                    throw new Exception(message);
-                }
+                Helper.MarshalAndThrowIfException(exceptionPtr);
                 return idx;
             }
         }

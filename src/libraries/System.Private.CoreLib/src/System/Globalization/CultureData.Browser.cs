@@ -44,12 +44,7 @@ namespace System.Globalization
         {
             char* buffer = stackalloc char[LOCALE_INFO_BUFFER_LEN];
             nint exceptionPtr = Interop.JsGlobalization.GetLocaleInfo(cultureName, localeName, buffer, LOCALE_INFO_BUFFER_LEN, out int resultLength);
-            if (exceptionPtr != IntPtr.Zero)
-            {
-                string message = Marshal.PtrToStringUni(exceptionPtr)!;
-                Marshal.FreeHGlobal(exceptionPtr);
-                throw new Exception(message);
-            }
+            Helper.MarshalAndThrowIfException(exceptionPtr);
             string result = new string(buffer, 0, resultLength);
             string[] subresults = result.Split("##");
             if (subresults.Length == 0)
@@ -71,12 +66,7 @@ namespace System.Globalization
         {
             char* buffer = stackalloc char[CULTURE_INFO_BUFFER_LEN];
             nint exceptionPtr = Interop.JsGlobalization.GetCultureInfo(localeName, buffer, CULTURE_INFO_BUFFER_LEN, out int resultLength);
-            if (exceptionPtr != IntPtr.Zero)
-            {
-                string message = Marshal.PtrToStringUni(exceptionPtr)!;
-                Marshal.FreeHGlobal(exceptionPtr);
-                throw new Exception(message);
-            }
+            Helper.MarshalAndThrowIfException(exceptionPtr);
             string result = new string(buffer, 0, resultLength);
             string[] subresults = result.Split("##");
             if (subresults.Length < 4)
@@ -93,11 +83,13 @@ namespace System.Globalization
             nint exceptionPtr = Interop.JsGlobalization.GetFirstDayOfWeek(localeName, out int result);
             if (exceptionPtr != IntPtr.Zero)
             {
+                int success = Helper.MarshalAndThrowIfException(
+                    exceptionPtr,
+                    failOnlyDebug: true,
+                    failureMessage: $"[CultureData.GetFirstDayOfWeek()] failed with");
                 // Failed, just use 0
-                string message = Marshal.PtrToStringUni(exceptionPtr)!;
-                Marshal.FreeHGlobal(exceptionPtr);
-                Debug.Fail($"[CultureData.GetFirstDayOfWeek()] failed with {message}");
-                return 0;
+                if (success == -1)
+                    return 0;
             }
             return result;
         }
@@ -107,13 +99,35 @@ namespace System.Globalization
             nint exceptionPtr = Interop.JsGlobalization.GetFirstWeekOfYear(localeName, out int result);
             if (exceptionPtr != IntPtr.Zero)
             {
+                int success = Helper.MarshalAndThrowIfException(
+                    exceptionPtr,
+                    failOnlyDebug: true,
+                    failureMessage: $"[CultureData.GetFirstWeekOfYear()] failed with");
                 // Failed, just use 0
-                string message = Marshal.PtrToStringUni(exceptionPtr)!;
-                Marshal.FreeHGlobal(exceptionPtr);
-                Debug.Fail($"[CultureData.GetFirstWeekOfYear()] failed with {message}");
-                return 0;
+                if (success == -1)
+                    return 0;
             }
             return result;
         }
+    }
+
+    internal static class Helper
+    {
+        internal static int MarshalAndThrowIfException(nint exceptionPtr, bool failOnlyDebug = false, string failureMessage = "")
+        {
+            if (exceptionPtr != IntPtr.Zero)
+            {
+                string message = Marshal.PtrToStringUni(exceptionPtr)!;
+                Marshal.FreeHGlobal(exceptionPtr);
+                if (failOnlyDebug)
+                {
+                    Debug.Fail($"{failureMessage} {message}");
+                    return -1;
+                }
+                throw new Exception(message);
+            }
+            return 0;
+        }
+
     }
 }

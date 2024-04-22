@@ -16,12 +16,7 @@ namespace System.Globalization
         {
             char* buffer = stackalloc char[CALENDAR_INFO_BUFFER_LEN];
             nint exceptionPtr = Interop.JsGlobalization.GetCalendarInfo(localeName, calendarId, buffer, CALENDAR_INFO_BUFFER_LEN, out int resultLength);
-            if (exceptionPtr != IntPtr.Zero) // JSFunctionBinding.cs
-            {
-                string message = Marshal.PtrToStringUni(exceptionPtr)!;
-                Marshal.FreeHGlobal(exceptionPtr);
-                throw new Exception(message);
-            }
+            Helper.MarshalAndThrowIfException(exceptionPtr);
             string result = new string(buffer, 0, resultLength);
             string[] subresults = result.Split("##");
             if (subresults.Length < 14)
