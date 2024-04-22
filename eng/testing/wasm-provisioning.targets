@@ -19,7 +19,7 @@
     <WasmProvisionAfterTarget Condition="'$(WasmProvisionAfterTarget)' == ''">Build</WasmProvisionAfterTarget>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)ChromeVersions.props" />
+  <Import Project="$(MSBuildThisFileDirectory)BrowserVersions.props" />
 
   <PropertyGroup Condition="'$(BrowserHost)' != 'windows'">
     <FirefoxUrl>https://ftp.mozilla.org/pub/firefox/releases/$(linux_FirefoxRevision)/linux-x86_64/en-US/firefox-$(linux_FirefoxRevision).tar.bz2</FirefoxUrl>
@@ -100,7 +100,7 @@
     <Error Condition="!$([MSBuild]::IsOSPlatform('linux')) and !$([MSBuild]::IsOSPlatform('windows'))"
            Text="Chrome provisioning only supported on Linux, and windows." />
     <Error Condition="'$(ChromeVersion)' == ''"
-           Text="No %24(ChromeVersion) set. This can be set in eng/testing/ChromeVersions.props" />
+           Text="No %24(ChromeVersion) set. This can be set in eng/testing/BrowserVersions.props" />
 
     <RemoveDir Directories="$(ChromeDir)" />
 
@@ -128,7 +128,7 @@
     <Error Condition="!$([MSBuild]::IsOSPlatform('linux')) and !$([MSBuild]::IsOSPlatform('windows'))"
            Text="ChromeDriver provisioning only supported on Linux, and windows." />
     <Error Condition="'$(ChromeVersion)' == ''"
-           Text="No %24(ChromeVersion) set. This can be set in eng/testing/ChromeVersions.props" />
+           Text="No %24(ChromeVersion) set. This can be set in eng/testing/BrowserVersions.props" />
 
     <RemoveDir Directories="$(ChromeDriverDir)" />
 

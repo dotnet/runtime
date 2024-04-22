@@ -28,8 +28,12 @@ namespace
 
     int ReadFromTargetCallback(uint64_t addr, uint8_t* dest, uint32_t count, void* context)
     {
-        CDAC* cdac = reinterpret_cast<CDAC*>(context);
-        return cdac->ReadFromTarget(addr, dest, count);
+        ICorDebugDataTarget* target = reinterpret_cast<ICorDebugDataTarget*>(context);
+        HRESULT hr = ReadFromDataTarget(target, addr, dest, count);
+        if (FAILED(hr))
+            return hr;
+
+        return S_OK;
     }
 }
 
@@ -48,21 +52,22 @@ CDAC::CDAC(HMODULE module, uint64_t descriptorAddr, ICorDebugDataTarget* target)
 {
     if (m_module == NULL)
     {
-        m_cdac_handle = NULL;
+        m_cdac_handle = 0;
         return;
     }
 
+    m_target->AddRef();
     decltype(&cdac_reader_init) init = reinterpret_cast<decltype(&cdac_reader_init)>(::GetProcAddress(m_module, "cdac_reader_init"));
     decltype(&cdac_reader_get_sos_interface) getSosInterface = reinterpret_cast<decltype(&cdac_reader_get_sos_interface)>(::GetProcAddress(m_module, "cdac_reader_get_sos_interface"));
     _ASSERTE(init != nullptr && getSosInterface != nullptr);
 
-    init(descriptorAddr, &ReadFromTargetCallback, this, &m_cdac_handle);
+    init(descriptorAddr, &ReadFromTargetCallback, m_target, &m_cdac_handle);
     getSosInterface(m_cdac_handle, &m_sos);
 }
 
 CDAC::~CDAC()
 {
-    if (m_cdac_handle != NULL)
+    if (m_cdac_handle)
     {
         decltype(&cdac_reader_free) free = reinterpret_cast<decltype(&cdac_reader_free)>(::GetProcAddress(m_module, "cdac_reader_free"));
         _ASSERTE(free != nullptr);
@@ -76,13 +81,4 @@ CDAC::~CDAC()
 IUnknown* CDAC::SosInterface()
 {
     return m_sos;
-}
-
-int CDAC::ReadFromTarget(uint64_t addr, uint8_t* dest, uint32_t count)
-{
-    HRESULT hr = ReadFromDataTarget(m_target, addr, dest, count);
-    if (FAILED(hr))
-        return hr;
-
-    return S_OK;
 }

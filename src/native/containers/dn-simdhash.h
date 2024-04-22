@@ -108,12 +108,9 @@ dn_simdhash_select_suffix (uint32_t key_hash)
 	return (key_hash >> 24) | DN_SIMDHASH_SUFFIX_SALT;
 }
 
-static DN_FORCEINLINE(uint32_t)
-dn_simdhash_select_bucket_index (dn_simdhash_buffers_t buffers, uint32_t key_hash)
-{
-	// This relies on bucket count being a power of two.
-	return key_hash & (buffers.buckets_length - 1);
-}
+// This relies on bucket count being a power of two.
+#define dn_simdhash_select_bucket_index(buffers, key_hash) \
+	((key_hash) & ((buffers).buckets_length - 1))
 
 
 // Creates a simdhash with the provided configuration metadata, vtable, size, and allocator.
