@@ -4348,17 +4348,6 @@ mono_class_implement_interface_slow_uncached (MonoClass *target, MonoClass *cand
 			return TRUE;
 	}
 
-	/*
-	MonoVTable *vt = m_class_is_inited (target) ? m_class_get_runtime_vtable (target) : NULL;
-	if (vt) {
-		g_printf (
-			"vtable fast path in implement_interface_slow for '%s.%s'\n",
-			m_class_get_name_space (target), m_class_get_name (target)
-		);
-		return MONO_VTABLE_IMPLEMENTS_INTERFACE (vt, m_class_get_interface_id (candidate));
-	}
-	*/
-
 	do {
 		if (candidate == target)
 			return TRUE;
@@ -4415,7 +4404,7 @@ mono_class_implement_interface_slow_uncached (MonoClass *target, MonoClass *cand
 	return FALSE;
 }
 
-#define LOG_INTERFACE_CACHE_HITS 0
+// #define LOG_INTERFACE_CACHE_HITS 1
 
 #if LOG_INTERFACE_CACHE_HITS
 static gint64 implement_interface_hits = 0, implement_interface_misses = 0;
@@ -4434,29 +4423,51 @@ log_hit_rate (dn_simdhash_ptrpair_ptr_t *cache)
 static gboolean
 mono_class_implement_interface_slow_cached (MonoClass *target, MonoClass *candidate, dn_simdhash_ptrpair_ptr_t *cache)
 {
+	gpointer cached_result = NULL;
+	dn_ptrpair_t key = { target, candidate };
+	gboolean result = 0, cache_hit = 0;
+
 	// Skip the caching logic for exact matches
 	if (candidate == target)
 		return TRUE;
 
-	gpointer cached_result = NULL;
-	gboolean result;
-	dn_ptrpair_t key = { target, candidate };
-	if (dn_simdhash_ptrpair_ptr_try_get_value (cache, key, &cached_result)) {
+	cache_hit = dn_simdhash_ptrpair_ptr_try_get_value (cache, key, &cached_result);
+	if (cache_hit) {
 		// Testing shows a cache hit rate of 60% on S.R.Tests and S.T.J.Tests,
 		//  and 40-50% for small app startup. Near-zero overflow count.
 #if LOG_INTERFACE_CACHE_HITS
 		implement_interface_hits++;
 		log_hit_rate (cache);
 #endif
-		return (cached_result != NULL);
-	}
-	result = mono_class_implement_interface_slow_uncached (target, candidate, cache);
-	dn_simdhash_ptrpair_ptr_try_add (cache, key, result ? GUINT_TO_POINTER(1) : NULL);
-#if LOG_INTERFACE_CACHE_HITS
-	implement_interface_misses++;
-	log_hit_rate (cache);
+		result = (cached_result != NULL);
+#ifndef ENABLE_CHECKED_BUILD
+		return result;
 #endif
-	return result;
+	}
+
+	gboolean uncached_result = mono_class_implement_interface_slow_uncached (target, candidate, cache);
+
+	if (!cache_hit) {
+#if LOG_INTERFACE_CACHE_HITS
+		implement_interface_misses++;
+		log_hit_rate (cache);
+#endif
+		dn_simdhash_ptrpair_ptr_try_add (cache, key, uncached_result ? GUINT_TO_POINTER(1) : NULL);
+	}
+
+#ifdef ENABLE_CHECKED_BUILD
+	if (cache_hit) {
+		if (result != uncached_result)
+			g_print (
+				"Cache mismatch for %s.%s and %s.%s: cached=%d, uncached=%d\n",
+				m_class_get_name_space (target), m_class_get_name (target),
+				m_class_get_name_space (candidate), m_class_get_name (candidate),
+				result, uncached_result
+			);
+		g_assert (result == uncached_result);
+	}
+#endif
+	return uncached_result;
 }
 
 static dn_simdhash_ptrpair_ptr_t *implement_interface_scratch_cache = NULL;
