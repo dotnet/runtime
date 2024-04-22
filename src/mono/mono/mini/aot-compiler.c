@@ -1348,7 +1348,7 @@ arm64_emit_load_got_slot (MonoAotCompile *acfg, int dreg, int got_slot)
 	emit_unset_mode (acfg);
 	/* r16==ip0 */
 	offset = (int)(got_slot * TARGET_SIZEOF_VOID_P);
-#ifdef TARGET_MACH
+// #ifdef TARGET_MACH
 	/* clang's integrated assembler */
 	fprintf (acfg->fp, "adrp x16, %s@PAGE+%d\n", acfg->got_symbol, offset & 0xfffff000);
 #ifdef MONO_ARCH_ILP32
@@ -1357,13 +1357,13 @@ arm64_emit_load_got_slot (MonoAotCompile *acfg, int dreg, int got_slot)
 #else
 	fprintf (acfg->fp, "add x16, x16, %s@PAGEOFF\n", acfg->got_symbol);
 	fprintf (acfg->fp, "ldr x%d, [x16, #%d]\n", dreg, offset & 0xfff);
-#endif
-#else
+// #endif
+// #else
 	/* Linux GAS */
-	fprintf (acfg->fp, "adrp x16, %s+%d\n", acfg->got_symbol, offset & 0xfffff000);
-	fprintf (acfg->fp, "add x16, x16, :lo12:%s\n", acfg->got_symbol);
-	fprintf (acfg->fp, "ldr x%d, [x16, %d]\n", dreg, offset & 0xfff);
-#endif
+	// fprintf (acfg->fp, "adrp x16, %s+%d\n", acfg->got_symbol, offset & 0xfffff000);
+	// fprintf (acfg->fp, "add x16, x16, :lo12:%s\n", acfg->got_symbol);
+	// fprintf (acfg->fp, "ldr x%d, [x16, %d]\n", dreg, offset & 0xfff);
+// #endif
 }
 
 static void
