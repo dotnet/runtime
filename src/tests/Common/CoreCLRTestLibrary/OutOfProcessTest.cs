@@ -25,20 +25,26 @@ namespace TestLibrary
         static OutOfProcessTest()
         {
             reportBase = Directory.GetCurrentDirectory();
+            Console.WriteLine($"reportBase: {reportBase}");
             testBinaryBase = AppContext.BaseDirectory;
+            Console.WriteLine($"testBinaryBase: {testBinaryBase}");
             helixUploadRoot = Environment.GetEnvironmentVariable("HELIX_WORKITEM_UPLOAD_ROOT");
+            Console.WriteLine($"helixUploadRoot: {helixUploadRoot}");
             if (!String.IsNullOrEmpty(helixUploadRoot))
             {
                 reportBase = Path.Combine(Path.GetFullPath(helixUploadRoot), "Reports");
+                Console.WriteLine($"reportBase: {reportBase}");
             }
 
             if (String.IsNullOrEmpty(reportBase))
             {
                 reportBase = Path.Combine(testBinaryBase, "Reports");
+                Console.WriteLine($"reportBase: {reportBase}");
             }
             else
             {
                 reportBase = Path.GetFullPath(reportBase);
+                Console.WriteLine($"reportBase: {reportBase}");
             }
         }
 
