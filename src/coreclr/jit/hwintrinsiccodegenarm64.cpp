@@ -410,68 +410,97 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             assert(op2->OperIsHWIntrinsic());
 
             // Get the registers and intrinsics that needs embedded mask
-            const HWIntrinsic intrinOp2(op2->AsHWIntrinsic());
-            instruction       insOp2     = HWIntrinsicInfo::lookupIns(intrinOp2.id, intrinOp2.baseType);
+            const HWIntrinsic intrinEmbMask(op2->AsHWIntrinsic());
+            instruction       insEmbMask     = HWIntrinsicInfo::lookupIns(intrinEmbMask.id, intrinEmbMask.baseType);
             const bool        instrIsRMW = op2->isRMWHWIntrinsic(compiler);
 
             regNumber maskReg     = op1Reg;
-            regNumber instrOp1Reg = REG_NA;
-            regNumber instrOp2Reg = REG_NA;
+            regNumber embMaskOp1Reg = REG_NA;
+            regNumber embMaskOp2Reg = REG_NA;
             regNumber falseReg    = op3Reg;
 
-            switch (intrinOp2.numOperands)
+            switch (intrinEmbMask.numOperands)
             {
                 case 2:
-                    assert(intrinOp2.op2 != nullptr);
-                    instrOp2Reg = intrinOp2.op2->GetRegNum();
+                    assert(intrinEmbMask.op2 != nullptr);
+                    embMaskOp2Reg = intrinEmbMask.op2->GetRegNum();
                     FALLTHROUGH;
 
                 case 1:
-                    assert(intrinOp2.op1 != nullptr);
-                    instrOp1Reg = intrinOp2.op1->GetRegNum();
+                    assert(intrinEmbMask.op1 != nullptr);
+                    embMaskOp1Reg = intrinEmbMask.op1->GetRegNum();
                     break;
 
                 default:
                     unreached();
             }
 
-            switch (intrinOp2.numOperands)
+            switch (intrinEmbMask.numOperands)
             {
                 case 1:
                     assert(!instrIsRMW);
-                    GetEmitter()->emitIns_R_R_R(insOp2, emitSize, targetReg, maskReg, instrOp1Reg, opt);
+                    GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
                     break;
 
                 case 2:
 
                     assert(instrIsRMW);
-                    if (targetReg != falseReg)
+
+                    if (intrin.op3->IsVectorZero())
                     {
-                        assert(targetReg != instrOp1Reg);
-                        assert(targetReg != instrOp2Reg);
+                        // If `falseReg` is zero, then move the first operand of `intrinEmbMask` in the
+                        // destination using /Z.
+                        GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
+                    }
+                    else if (targetReg != falseReg)
+                    {
+                        // Since `falseReg` is non-zero and it is not the same as targetReg, we want to
+                        // move it to the `targetReg` using `movprfx`. However, do this only if one of
+                        // of the operands of `intrinEmbMask` is same as targetReg.
 
-                        if (!intrin.op3->IsVectorZero() && (instrOp1Reg != falseReg))
+                        regNumber instrOperandReg = REG_NA;
+                        if (targetReg == embMaskOp1Reg)
                         {
-                            // If the `falseValue` of conditional-select is non-zero, then we start with that in the
-                            // destination followed by `movprfx` (see below) of the relevant bits of the first operand
-                            // of `insOp2` based upon the value of predicate `cond`.
+                            instrOperandReg = embMaskOp1Reg;
+                        }
+                        else if (targetReg == embMaskOp2Reg)
+                        {
+                            instrOperandReg = embMaskOp2Reg;
+                        }
+                        else
+                        {
+                            // If none of the operands are same, then we just perform the unpredicated
+                            // version of the instruction and then use `sel` to retrieve the active elements
+                            // from the result.
+                            GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, embMaskOp1Reg, embMaskOp2Reg, opt,
+                                                        INS_SCALABLE_OPTS_UNPREDICATED);
+                            GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,
+                                                          falseReg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
 
-                            // Also, if `instrOp1Reg == falseReg`, we will move the `instrOp1Reg` using `movprfx` and
-                            // so, no need to move it separately here.
-                            GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, falseReg,
-                                                      /* canSkip */ true);
+                            break;
+                        }
+
+                        if (instrOperandReg != REG_NA)
+                        {
+                            if (falseReg == instrOperandReg)
+                            {
+                                // If falseReg is same as one of the operand register, then use the unpredicated
+                                // version of `movprfx`.
+                                GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, falseReg, opt);
+                            }
+                            else
+                            {
+                                // Otherwise, use predicated version of `movprfx`, so we can just "merge" the
+                                // active elements from `falseReg` into the `targetReg`.
+                                GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, falseReg,
+                                                            opt, INS_SCALABLE_OPTS_PREDICATE_MERGE);
+                            }
                         }
                     }
 
-                    // Move the first operand of `insOp2` in the destination. If `falseValue` was zero, then we can just
-                    // use /Z during the move, otherwise merge using /M into the destination.
-                    GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, instrOp1Reg, opt,
-                                                intrin.op3->IsVectorZero() ? INS_SCALABLE_OPTS_NONE
-                                                                           : INS_SCALABLE_OPTS_PREDICATE_MERGE);
-
-                    // Finally, perform the actual operation so that `targetReg` is the first operand and `instrOp2Reg`
+                    // Finally, perform the actual "predicated" operation so that `targetReg` is the first operand and `embMaskOp2Reg`
                     // having the second operand.
-                    GetEmitter()->emitIns_R_R_R(insOp2, emitSize, targetReg, maskReg, instrOp2Reg, opt);
+                    GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg, opt);
                     break;
 
                 default:
