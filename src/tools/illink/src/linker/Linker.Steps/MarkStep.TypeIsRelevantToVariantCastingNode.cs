@@ -54,7 +54,6 @@ namespace Mono.Linker.Steps
 
 			public override IEnumerable<DependencyListEntry>? GetStaticDependencies (MarkStepNodeFactory context)
 			{
-				// Add other types that are marked in MarkType
 				yield break;
 			}
 

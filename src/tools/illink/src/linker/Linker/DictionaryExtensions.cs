@@ -18,16 +18,6 @@ namespace Mono.Linker
 			valueList.Add (value);
 		}
 
-		public static void AddToSet<TKey, TElement> (this Dictionary<TKey, HashSet<TElement>> me, TKey key, TElement value)
-			where TKey : notnull
-		{
-			if (!me.TryGetValue (key, out HashSet<TElement>? valueList)) {
-				valueList = new ();
-				me[key] = valueList;
-			}
-			valueList.Add (value);
-		}
-
 		public static U GetOrAdd<T, U> (this Dictionary<T, U> dict, T key, Func<T, U> createValue) where T : notnull
 		{
 			if (dict.TryGetValue (key, out var value)) {

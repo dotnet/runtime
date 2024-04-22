@@ -23,7 +23,7 @@ namespace Mono.Linker
 				string name = methodDefinition.IsSetter ? string.Concat (methodDefinition.Name.AsSpan (4), ".set") : string.Concat (methodDefinition.Name.AsSpan (4), ".get");
 				sb.Append (name);
 				// Insert declaring type name and namespace
-				sb.Insert (0, '.').Insert (0, methodDefinition.DeclaringType.GetDisplayName ());
+				sb.Insert (0, '.').Insert (0, method.DeclaringType.GetDisplayName ());
 				return sb.ToString ();
 			}
 
@@ -37,7 +37,7 @@ namespace Mono.Linker
 				};
 				sb.Append (name);
 				// Insert declaring type name and namespace
-				sb.Insert (0, '.').Insert (0, methodDefinition.DeclaringType.GetDisplayName ());
+				sb.Insert (0, '.').Insert (0, method.DeclaringType.GetDisplayName ());
 				return sb.ToString ();
 			}
 

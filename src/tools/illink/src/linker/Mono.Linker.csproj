@@ -21,6 +21,8 @@
     <RollForward>Major</RollForward>
     <UseAppHost>false</UseAppHost>
     <NoWarn>$(NoWarn);NU5131</NoWarn>
+    <!-- DependencyAnalysisFramework reference does not have a strong name -->
+    <NoWarn>$(NoWarn);CS8002</NoWarn>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddReferenceAssemblyToPackage</TargetsForTfmSpecificContentInPackage>
     <DefineConstants>$(DefineConstants);ILLINK</DefineConstants>
   </PropertyGroup>
@@ -82,69 +84,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(DependencyAnalysisFrameworkRoot)\ComputedStaticDependencyNode.cs">
-      <Link>DependencyAnalysisFramework\ComputedStaticDependencyNode.cs</Link>
-    </Compile>
-    <Compile Include="$(DependencyAnalysisFrameworkRoot)\DependencyAnalyzer.cs">
-      <Link>DependencyAnalysisFramework\DependencyAnalyzer.cs</Link>
-    </Compile>
-    <Compile Include="$(DependencyAnalysisFrameworkRoot)\DependencyAnalyzerBase.cs">
-      <Link>DependencyAnalysisFramework\DependencyAnalyzerBase.cs</Link>
-    </Compile>
-    <Compile Include="$(DependencyAnalysisFrameworkRoot)\DependencyNode.cs">
-      <Link>DependencyAnalysisFramework\DependencyNode.cs</Link>
-    </Compile>
-    <Compile Include="$(DependencyAnalysisFrameworkRoot)\DependencyNodeCore.cs">
-      <Link>DependencyAnalysisFramework\DependencyNodeCore.cs</Link>
-    </Compile>
-    <Compile Include="$(DependencyAnalysisFrameworkRoot)\DgmlWriter.cs">
-      <Link>DependencyAnalysisFramework\DgmlWriter.cs</Link>
-    </Compile>
-    <Compile Include="$(DependencyAnalysisFrameworkRoot)\EventSourceLogStrategy.cs">
-      <Link>DependencyAnalysisFramework\EventSourceLogStrategy.cs</Link>
-    </Compile>
-    <Compile Include="$(DependencyAnalysisFrameworkRoot)\FirstMarkLogStrategy.cs">
-      <Link>DependencyAnalysisFramework\FirstMarkLogStrategy.cs</Link>
-    </Compile>
-    <Compile Include="$(DependencyAnalysisFrameworkRoot)\FullGraphLogStrategy.cs">
-      <Link>DependencyAnalysisFramework\FullGraphLogStrategy.cs</Link>
-    </Compile>
-    <Compile Include="$(DependencyAnalysisFrameworkRoot)\IDependencyAnalyzerLogEdgeVisitor.cs">
-      <Link>DependencyAnalysisFramework\IDependencyAnalyzerLogEdgeVisitor.cs</Link>
-    </Compile>
-    <Compile Include="$(DependencyAnalysisFrameworkRoot)\IDependencyAnalyzerLogNodeVisitor.cs">
-      <Link>DependencyAnalysisFramework\IDependencyAnalyzerLogNodeVisitor.cs</Link>
-    </Compile>
-    <Compile Include="$(DependencyAnalysisFrameworkRoot)\IDependencyAnalysisMarkStrategy.cs">
-      <Link>DependencyAnalysisFramework\IDependencyAnalysisMarkStrategy.cs</Link>
-    </Compile>
-    <Compile Include="$(DependencyAnalysisFrameworkRoot)\IDependencyNode.cs">
-      <Link>DependencyAnalysisFramework\IDependencyNode.cs</Link>
-    </Compile>
-    <Compile Include="$(DependencyAnalysisFrameworkRoot)\NoLogStrategy.cs">
-      <Link>DependencyAnalysisFramework\NoLogStrategy.cs</Link>
-    </Compile>
-    <Compile Include="$(DependencyAnalysisFrameworkRoot)\PerfEventSource.cs">
-      <Link>DependencyAnalysisFramework\PerfEventSource.cs</Link>
-    </Compile>
-    <Compile Include="$(ToolsCommonRoot)\Sorting\ArrayAccessor.cs">
-      <Link>DependencyAnalysisFramework\Sorting\ArrayAccessor.cs</Link>
-    </Compile>
-    <Compile Include="$(ToolsCommonRoot)\Sorting\ICompareAsEqualAction.cs">
-      <Link>DependencyAnalysisFramework\Sorting\ICompareAsEqualAction.cs</Link>
-    </Compile>
-    <Compile Include="$(ToolsCommonRoot)\Sorting\ISortableDataStructureAccessor.cs">
-      <Link>DependencyAnalysisFramework\Sorting\ISortableDataStructureAccessor.cs</Link>
-    </Compile>
-    <Compile Include="$(ToolsCommonRoot)\Sorting\ListAccessor.cs">
-      <Link>DependencyAnalysisFramework\Sorting\ListAccessor.cs</Link>
-    </Compile>
-    <Compile Include="$(ToolsCommonRoot)\Sorting\MergeSort.cs">
-      <Link>DependencyAnalysisFramework\Sorting\MergeSort.cs</Link>
-    </Compile>
-    <Compile Include="$(ToolsCommonRoot)\Sorting\MergeSortCore.cs">
-      <Link>DependencyAnalysisFramework\Sorting\MergeSortCore.cs</Link>
-    </Compile>
+    <ProjectReference Include="$(DependencyAnalysisFrameworkRoot)\ILCompiler.DependencyAnalysisFramework.csproj" />
   </ItemGroup>
 
   <ItemGroup>

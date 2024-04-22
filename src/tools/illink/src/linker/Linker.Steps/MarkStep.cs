@@ -406,96 +406,13 @@ namespace Mono.Linker.Steps
 		private readonly Dictionary<MethodDefinition, MethodDefinitionDependencyNode> _methodNodes = new ();
 		public MethodDefinitionDependencyNode GetMethodDefinitionNode (MethodDefinition method, DependencyInfo reason, MessageOrigin origin)
 		{
-			return _methodNodes.GetOrAdd(method, (k) => new MethodDefinitionDependencyNode (k, reason, origin));
+			return _methodNodes.GetOrAdd (method, (k) => new MethodDefinitionDependencyNode (k, reason, origin));
 		}
 
 		private readonly Dictionary<TypeDefinition, TypeIsRelevantToVariantCastingNode> _typeIsRelevantToVariantCastingNodes = new ();
 		TypeIsRelevantToVariantCastingNode GetTypeIsRelevantToVariantCastingNode (TypeDefinition type)
 		{
 			return _typeIsRelevantToVariantCastingNodes.GetOrAdd (type, static (t) => new TypeIsRelevantToVariantCastingNode (t));
-		}
-
-		protected internal virtual TypeDefinition? MarkType (TypeReference reference, DependencyInfo reason, MessageOrigin? origin = null)
-		{
-#if DEBUG
-			if (!_typeReasons.Contains (reason.Kind))
-				throw new ArgumentOutOfRangeException ($"Internal error: unsupported type dependency {reason.Kind}");
-#endif
-			if (reference == null)
-				return null;
-
-			using MarkScopeStack.LocalScope? localScope = origin.HasValue ? ScopeStack.PushLocalScope (origin.Value) : null;
-
-			(reference, reason) = GetOriginalType (reference, reason);
-
-			if (reference is FunctionPointerType)
-				return null;
-
-			if (reference is GenericParameter)
-				return null;
-
-			TypeDefinition? type = Context.Resolve (reference);
-
-			if (type == null)
-				return null;
-
-			// Track a mark reason for each call to MarkType.
-			switch (reason.Kind) {
-			case DependencyKind.AlreadyMarked:
-				Debug.Assert (Annotations.IsMarked (type));
-				break;
-			default:
-				Annotations.Mark (type, reason, ScopeStack.CurrentScope.Origin);
-				break;
-			}
-
-			// Treat cctors triggered by a called method specially and mark this case up-front.
-			if (type.HasMethods && ShouldMarkTypeStaticConstructor (type) && reason.Kind == DependencyKind.DeclaringTypeOfCalledMethod)
-				MarkStaticConstructor (type, new DependencyInfo (DependencyKind.TriggersCctorForCalledMethod, reason.Source), ScopeStack.CurrentScope.Origin);
-
-			if (Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (type)) {
-				// Don't warn about references from the removed attribute itself (for example the .ctor on the attribute
-				// will call MarkType on the attribute type itself).
-				// If for some reason we do keep the attribute type (could be because of previous reference which would cause IL2045
-				// or because of a copy assembly with a reference and so on) then we should not spam the warnings due to the type itself.
-				// Also don't warn when the type is marked due to an assembly being rooted.
-				if (!(reason.Source is IMemberDefinition sourceMemberDefinition && sourceMemberDefinition.DeclaringType == type) &&
-					reason.Kind is not DependencyKind.TypeInAssembly)
-					Context.LogWarning (ScopeStack.CurrentScope.Origin, DiagnosticId.AttributeIsReferencedButTrimmerRemoveAllInstances, type.GetDisplayName ());
-			}
-
-			if (CheckProcessed (type))
-				return type;
-
-			_analyzer.AddRoot (GetTypeNode (type, reason, origin), "MarkedType");
-			return type;
-
-			(TypeReference, DependencyInfo) GetOriginalType (TypeReference type, DependencyInfo reason)
-			{
-				while (type is TypeSpecification specification) {
-					if (type is GenericInstanceType git) {
-						MarkGenericArguments (git);
-						Debug.Assert (!(specification.ElementType is TypeSpecification));
-					}
-
-					if (type is IModifierType mod)
-						MarkModifierType (mod);
-
-					if (type is FunctionPointerType fnptr) {
-						MarkParameters (fnptr);
-						MarkType (fnptr.ReturnType, new DependencyInfo (DependencyKind.ReturnType, fnptr));
-						break; // FunctionPointerType is the original type
-					}
-
-					// Blame the type reference (which isn't marked) on the original reason.
-					Tracer.AddDirectDependency (specification, reason, marked: false);
-					// Blame the outgoing element type on the specification.
-					(type, reason) = (specification.ElementType, new DependencyInfo (DependencyKind.ElementType, specification));
-				}
-
-				return (type, reason);
-			}
-
 		}
 
 		static bool IsFullyPreservedAction (AssemblyAction action) => action == AssemblyAction.Copy || action == AssemblyAction.Save;
@@ -630,12 +547,17 @@ namespace Mono.Linker.Steps
 
 		void ProcessQueue ()
 		{
-			_methods.Clear();
+			_methods.Clear ();
 		}
 
 		bool QueueIsEmpty ()
 		{
 			return _methods.Count == 0;
+		}
+
+		void EnqueueMethod (MethodDefinition method, in DependencyInfo reason, in MessageOrigin origin)
+		{
+			_methods.Enqueue ((method, reason, origin));
 		}
 
 		void ProcessVirtualMethods ()
@@ -2060,6 +1982,62 @@ namespace Mono.Linker.Steps
 			MarkStaticConstructor (type, reason, origin);
 		}
 
+		protected internal virtual TypeDefinition? MarkType (TypeReference reference, DependencyInfo reason, MessageOrigin? origin = null)
+		{
+#if DEBUG
+			if (!_typeReasons.Contains (reason.Kind))
+				throw new ArgumentOutOfRangeException ($"Internal error: unsupported type dependency {reason.Kind}");
+#endif
+			if (reference == null)
+				return null;
+
+			using MarkScopeStack.LocalScope? localScope = origin.HasValue ? ScopeStack.PushLocalScope (origin.Value) : null;
+
+			(reference, reason) = GetOriginalType (reference, reason);
+
+			if (reference is FunctionPointerType)
+				return null;
+
+			if (reference is GenericParameter)
+				return null;
+
+			TypeDefinition? type = Context.Resolve (reference);
+
+			if (type == null)
+				return null;
+
+			// Track a mark reason for each call to MarkType.
+			switch (reason.Kind) {
+			case DependencyKind.AlreadyMarked:
+				Debug.Assert (Annotations.IsMarked (type));
+				break;
+			default:
+				Annotations.Mark (type, reason, ScopeStack.CurrentScope.Origin);
+				break;
+			}
+
+			// Treat cctors triggered by a called method specially and mark this case up-front.
+			if (type.HasMethods && ShouldMarkTypeStaticConstructor (type) && reason.Kind == DependencyKind.DeclaringTypeOfCalledMethod)
+				MarkStaticConstructor (type, new DependencyInfo (DependencyKind.TriggersCctorForCalledMethod, reason.Source), ScopeStack.CurrentScope.Origin);
+
+			if (Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (type)) {
+				// Don't warn about references from the removed attribute itself (for example the .ctor on the attribute
+				// will call MarkType on the attribute type itself).
+				// If for some reason we do keep the attribute type (could be because of previous reference which would cause IL2045
+				// or because of a copy assembly with a reference and so on) then we should not spam the warnings due to the type itself.
+				// Also don't warn when the type is marked due to an assembly being rooted.
+				if (!(reason.Source is IMemberDefinition sourceMemberDefinition && sourceMemberDefinition.DeclaringType == type) &&
+					reason.Kind is not DependencyKind.TypeInAssembly)
+					Context.LogWarning (ScopeStack.CurrentScope.Origin, DiagnosticId.AttributeIsReferencedButTrimmerRemoveAllInstances, type.GetDisplayName ());
+			}
+
+			if (CheckProcessed (type))
+				return type;
+
+			_analyzer.AddRoot (GetTypeNode (type, reason, origin), "MarkedType");
+			return type;
+		}
+
 		protected internal virtual void ProcessType (TypeDefinition type, DependencyInfo reason, MessageOrigin? origin = null)
 		{
 			if (type.Scope is ModuleDefinition module)
@@ -2753,6 +2731,31 @@ namespace Mono.Linker.Steps
 			MarkMethodsIf (type.Methods, m => m.Name == ".ctor" || m.Name == "Invoke", new DependencyInfo (DependencyKind.MethodForSpecialType, type), ScopeStack.CurrentScope.Origin);
 		}
 
+		protected (TypeReference, DependencyInfo) GetOriginalType (TypeReference type, DependencyInfo reason)
+		{
+			while (type is TypeSpecification specification) {
+				if (type is GenericInstanceType git) {
+					MarkGenericArguments (git);
+					Debug.Assert (!(specification.ElementType is TypeSpecification));
+				}
+
+				if (type is IModifierType mod)
+					MarkModifierType (mod);
+
+				if (type is FunctionPointerType fnptr) {
+					MarkParameters (fnptr);
+					MarkType (fnptr.ReturnType, new DependencyInfo (DependencyKind.ReturnType, fnptr));
+					break; // FunctionPointerType is the original type
+				}
+
+				// Blame the type reference (which isn't marked) on the original reason.
+				Tracer.AddDirectDependency (specification, reason, marked: false);
+				// Blame the outgoing element type on the specification.
+				(type, reason) = (specification.ElementType, new DependencyInfo (DependencyKind.ElementType, specification));
+			}
+
+			return (type, reason);
+		}
 
 		void MarkParameters (FunctionPointerType fnptr)
 		{
@@ -2786,9 +2789,7 @@ namespace Mono.Linker.Steps
 				var argument = arguments[i];
 				var parameter = parameters[i];
 
-				//var argumentTypeDef = MarkTypeImpl (argument, new DependencyInfo (DependencyKind.GenericArgumentType, instance));
-
-				MarkType (argument, new DependencyInfo (DependencyKind.GenericArgumentType, instance), ScopeStack.CurrentScope.Origin);
+				var argumentTypeDef = MarkType (argument, new DependencyInfo (DependencyKind.GenericArgumentType, instance), ScopeStack.CurrentScope.Origin);
 
 				if (Annotations.FlowAnnotations.RequiresGenericArgumentDataFlowAnalysis (parameter)) {
 					// The only two implementations of IGenericInstance both derive from MemberReference
@@ -2799,14 +2800,9 @@ namespace Mono.Linker.Steps
 					scanner.ProcessGenericArgumentDataFlow (parameter, argument);
 				}
 
-				//var originalType = GetOriginalType (argument, new DependencyInfo (DependencyKind.GenericArgumentType, instance)).Item1;
-				//if (originalType is null)
-				//continue;
-				var argumentTypeDef = Context.TryResolve (argument);
 				if (argumentTypeDef == null)
 					continue;
 
-				//Annotations.MarkRelevantToVariantCasting (argumentTypeDef);
 				_analyzer.AddRoot (GetTypeIsRelevantToVariantCastingNode (argumentTypeDef), "Generic Argument");
 
 				if (parameter.HasDefaultConstructorConstraint)
@@ -3064,11 +3060,6 @@ namespace Mono.Linker.Steps
 			_analyzer.AddRoot (new PostPoneMethodProcessingNode (method, reason, origin), "Method marked");
 
 			return method;
-
-			void EnqueueMethod (MethodDefinition method, in DependencyInfo reason, in MessageOrigin origin)
-			{
-				_methods.Enqueue ((method, reason, origin));
-			}
 		}
 
 		bool ShouldWarnForReflectionAccessToCompilerGeneratedCode (MethodDefinition method, bool isCoveredByAnnotations)
