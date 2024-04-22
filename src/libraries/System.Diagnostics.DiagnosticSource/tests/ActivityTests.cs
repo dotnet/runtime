@@ -1598,6 +1598,31 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        public void AddLinkTest()
+        {
+            ActivityContext c1 = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None);
+            ActivityContext c2 = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None);
+
+            ActivityLink l1 = new ActivityLink(c1);
+            ActivityLink l2 = new ActivityLink(c2, new ActivityTagsCollection()
+            {
+                new KeyValuePair<string, object?>("foo", 99)
+            });
+
+            Activity activity = new Activity("LinkTest");
+            Assert.True(ReferenceEquals(activity, activity.AddLink(l1)));
+            Assert.True(ReferenceEquals(activity, activity.AddLink(l2)));
+
+            ActivityLink[] links = activity.Links.ToArray();
+            Assert.Equal(2, links.Length);
+            Assert.Equal(c1, links[0].Context);
+            Assert.Equal(c2, links[1].Context);
+            KeyValuePair<string, object> tag = links[1].Tags.Single();
+            Assert.Equal("foo", tag.Key);
+            Assert.Equal(99, tag.Value);
+        }
+
+        [Fact]
         public void TestIsAllDataRequested()
         {
             // Activity constructor always set IsAllDataRequested to true for compatibility.
