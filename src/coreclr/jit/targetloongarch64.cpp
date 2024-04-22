@@ -104,7 +104,7 @@ ABIPassingInformation LoongArch64Classifier::Classify(Compiler*    comp,
                 }
                 else if ((floatFlags & STRUCT_FLOAT_FIELD_FIRST) != 0)
                 {
-                    slots                 = 1;
+                    slots                 = 2;
                     canPassArgInRegisters = (m_floatRegs.Count() > 0) && (m_intRegs.Count() > 0);
 
                     argRegTypeInStruct1 = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
@@ -112,7 +112,7 @@ ABIPassingInformation LoongArch64Classifier::Classify(Compiler*    comp,
                 }
                 else if ((floatFlags & STRUCT_FLOAT_FIELD_SECOND) != 0)
                 {
-                    slots                 = 1;
+                    slots                 = 2;
                     canPassArgInRegisters = (m_floatRegs.Count() > 0) && (m_intRegs.Count() > 0);
 
                     argRegTypeInStruct1 = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
@@ -135,6 +135,7 @@ ABIPassingInformation LoongArch64Classifier::Classify(Compiler*    comp,
             }
             else
             {
+                passedSize            = roundUp(passedSize, TARGET_POINTER_SIZE);
                 slots                 = (passedSize + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
                 canPassArgInRegisters = m_intRegs.Count() >= slots;
             }
