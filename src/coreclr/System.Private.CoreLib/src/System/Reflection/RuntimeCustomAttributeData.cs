@@ -2257,38 +2257,7 @@ namespace System.Reflection
             if (nativeType.Length == 0)
                 return null;
 
-            MetadataImport.GetMarshalAs(nativeType,
-                out UnmanagedType unmanagedType, out VarEnum safeArraySubType, out string? safeArrayUserDefinedTypeName, out UnmanagedType arraySubType, out int sizeParamIndex,
-                out int sizeConst, out string? marshalTypeName, out string? marshalCookie, out int iidParamIndex);
-
-            RuntimeType? safeArrayUserDefinedType = string.IsNullOrEmpty(safeArrayUserDefinedTypeName) ? null :
-                TypeNameParser.GetTypeReferencedByCustomAttribute(safeArrayUserDefinedTypeName, scope);
-            RuntimeType? marshalTypeRef = null;
-
-            try
-            {
-                marshalTypeRef = marshalTypeName is null ? null : TypeNameParser.GetTypeReferencedByCustomAttribute(marshalTypeName, scope);
-            }
-            catch (TypeLoadException)
-            {
-                // The user may have supplied a bad type name string causing this TypeLoadException
-                // Regardless, we return the bad type name
-                Debug.Assert(marshalTypeName is not null);
-            }
-
-            MarshalAsAttribute attribute = new MarshalAsAttribute(unmanagedType);
-
-            attribute.SafeArraySubType = safeArraySubType;
-            attribute.SafeArrayUserDefinedSubType = safeArrayUserDefinedType;
-            attribute.IidParameterIndex = iidParamIndex;
-            attribute.ArraySubType = arraySubType;
-            attribute.SizeParamIndex = (short)sizeParamIndex;
-            attribute.SizeConst = sizeConst;
-            attribute.MarshalType = marshalTypeName;
-            attribute.MarshalTypeRef = marshalTypeRef;
-            attribute.MarshalCookie = marshalCookie;
-
-            return attribute;
+            return MetadataImport.GetMarshalAs(nativeType, scope);
         }
 
         private static FieldOffsetAttribute? GetFieldOffsetCustomAttribute(RuntimeFieldInfo field)
