@@ -166,7 +166,7 @@ namespace System.Numerics.Tensors
 
             _lengths = lengths;
             _strides = strides;
-            if (strides == default)
+            if (strides == ReadOnlySpan<nint>.Empty)
                 _strides = SpanHelpers.CalculateStrides(Rank, lengths);
         }
 
