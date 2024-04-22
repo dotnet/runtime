@@ -650,11 +650,6 @@ namespace System
             }
         }
 
-        internal static MetadataImport GetMetadataImport(RuntimeType type)
-        {
-            return new MetadataImport(type.GetRuntimeModule(), type);
-        }
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_RegisterCollectibleTypeDependency")]
         private static partial void RegisterCollectibleTypeDependency(QCallTypeHandle type, QCallAssembly assembly);
 
@@ -1244,8 +1239,6 @@ namespace System
         }
         #endregion
 
-        #region Internal FCalls
-
         internal RuntimeModule GetRuntimeModule()
         {
             return m_ptr;
@@ -1275,6 +1268,7 @@ namespace System
 
         public static bool operator !=(ModuleHandle left, ModuleHandle right) => !left.Equals(right);
 
+        #region Internal FCalls
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IRuntimeMethodInfo GetDynamicMethod(Reflection.Emit.DynamicMethod method, RuntimeModule module, string name, byte[] sig, Resolver resolver);
 
@@ -1333,7 +1327,7 @@ namespace System
                 }
                 catch (Exception)
                 {
-                    if (!GetMetadataImport(module).IsValidToken(typeToken))
+                    if (!module.MetadataImport.IsValidToken(typeToken))
                         throw new ArgumentOutOfRangeException(nameof(typeToken),
                             SR.Format(SR.Argument_InvalidToken, typeToken, new ModuleHandle(module)));
                     throw;
@@ -1386,7 +1380,7 @@ namespace System
             }
             catch (Exception)
             {
-                if (!GetMetadataImport(module).IsValidToken(methodToken))
+                if (!module.MetadataImport.IsValidToken(methodToken))
                     throw new ArgumentOutOfRangeException(nameof(methodToken),
                         SR.Format(SR.Argument_InvalidToken, methodToken, new ModuleHandle(module)));
                 throw;
@@ -1439,7 +1433,7 @@ namespace System
                 }
                 catch (Exception)
                 {
-                    if (!GetMetadataImport(module).IsValidToken(fieldToken))
+                    if (!module.MetadataImport.IsValidToken(fieldToken))
                         throw new ArgumentOutOfRangeException(nameof(fieldToken),
                             SR.Format(SR.Argument_InvalidToken, fieldToken, new ModuleHandle(module)));
                     throw;
@@ -1482,11 +1476,6 @@ namespace System
         internal static extern int GetMDStreamVersion(RuntimeModule module);
 
         public int MDStreamVersion => GetMDStreamVersion(GetRuntimeModule());
-
-        internal static MetadataImport GetMetadataImport(RuntimeModule module)
-        {
-            return new MetadataImport(module, module);
-        }
         #endregion
     }
 

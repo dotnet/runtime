@@ -205,7 +205,6 @@ namespace System.Reflection
 #pragma warning restore CA1067
     {
         private readonly IntPtr m_metadataImport2;
-        private readonly object? m_keepalive;
 
         #region Override methods from Object
         public override int GetHashCode()
@@ -302,14 +301,10 @@ namespace System.Reflection
         #endregion
 
         #region Constructor
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe IntPtr GetMetadataImport(RuntimeModule module);
-
-        internal MetadataImport(RuntimeModule module, object keepalive)
+        internal MetadataImport(RuntimeModule module)
         {
             ArgumentNullException.ThrowIfNull(module);
-            m_metadataImport2 = GetMetadataImport(module);
-            m_keepalive = keepalive;
+            m_metadataImport2 = module.GetMDImport();
         }
         #endregion
 

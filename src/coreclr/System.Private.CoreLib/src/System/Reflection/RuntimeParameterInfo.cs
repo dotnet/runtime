@@ -29,6 +29,11 @@ namespace System.Reflection
         private static ParameterInfo[] GetParameters(
             IRuntimeMethodInfo methodHandle, MemberInfo member, Signature sig, out ParameterInfo? returnParameter, bool fetchReturnParameter)
         {
+            // The lifetime rules for MetadataImport expect these two objects to be the same instance.
+            // See the lifetime of MetadataImport, acquired through IRuntimeMethodInfo, but extended
+            // through the MemberInfo instance.
+            Debug.Assert(ReferenceEquals(methodHandle, member));
+
             returnParameter = null;
             int sigArgCount = sig.Arguments.Length;
             ParameterInfo[] args =
@@ -43,7 +48,7 @@ namespace System.Reflection
             // are generated on the fly by the runtime.
             if (!MdToken.IsNullToken(tkMethodDef))
             {
-                MetadataImport scope = RuntimeTypeHandle.GetMetadataImport(RuntimeMethodHandle.GetDeclaringType(methodHandle));
+                MetadataImport scope = RuntimeMethodHandle.GetDeclaringType(methodHandle).GetRuntimeModule().MetadataImport;
 
                 scope.EnumParams(tkMethodDef, out MetadataEnumResult tkParamDefs);
 
@@ -73,7 +78,7 @@ namespace System.Reflection
                     }
                     else if (!fetchReturnParameter && position >= 0)
                     {
-                        // position beyong sigArgCount?
+                        // position beyond sigArgCount?
                         if (position >= sigArgCount)
                             throw new BadImageFormatException(SR.BadImageFormat_ParameterSignatureMismatch);
 
@@ -165,7 +170,7 @@ namespace System.Reflection
             PositionImpl = accessor.Position;
             AttrsImpl = accessor.Attributes;
 
-            // Strictly speeking, property's don't contain parameter tokens
+            // Strictly speaking, properties don't contain parameter tokens
             // However we need this to make ca's work... oh well...
             m_tkParamDef = MdToken.IsNullToken(accessor.MetadataToken) ? (int)MetadataTokenType.ParamDef : accessor.MetadataToken;
             m_scope = accessor.m_scope;
@@ -239,6 +244,7 @@ namespace System.Reflection
                     if (!MdToken.IsNullToken(m_tkParamDef))
                     {
                         string name = m_scope.GetName(m_tkParamDef).ToString();
+                        GC.KeepAlive(this);
                         NameImpl = name;
                     }
 
@@ -339,6 +345,7 @@ namespace System.Reflection
             #region Look for a default value in metadata
             // This will return DBNull.Value if no constant value is defined on m_tkParamDef in the metadata.
             defaultValue = MdConstant.GetValue(m_scope, m_tkParamDef, ParameterType.TypeHandle, raw);
+            GC.KeepAlive(this);
 
             // If default value is not specified in metadata, look for it in custom attributes
             if (defaultValue == DBNull.Value)

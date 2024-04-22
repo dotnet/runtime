@@ -1171,15 +1171,19 @@ class ReflectModuleBaseObject : public Object
     OBJECTREF          m_runtimeType;
     OBJECTREF          m_runtimeAssembly;
     Module*            m_pData;         // Pointer to the Module
+    IMDInternalImport* m_metadataImport2;
 
   protected:
     ReflectModuleBaseObject() {LIMITED_METHOD_CONTRACT;}
    ~ReflectModuleBaseObject() {LIMITED_METHOD_CONTRACT;}
 
   public:
-    void SetModule(Module* p) {
+    void SetModuleDetails(Module* p, IMDInternalImport* import) {
         LIMITED_METHOD_CONTRACT;
+        _ASSERTE(p != NULL);
+        _ASSERTE(import != NULL);
         m_pData = p;
+        m_metadataImport2 = import;
     }
     Module* GetModule() {
         LIMITED_METHOD_CONTRACT;
