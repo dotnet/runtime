@@ -652,7 +652,6 @@
     <ProjectExclusions Condition="'$(RunNativeAotTestApps)' == 'true'" Include="$(MSBuildThisFileDirectory)\System.Linq.Queryable\tests\TrimmingTests\System.Linq.Queryable.TrimmingTests.proj" />
     <ProjectExclusions Condition="'$(RunNativeAotTestApps)' == 'true'" Include="$(MSBuildThisFileDirectory)\System.Private.Xml.Linq\tests\TrimmingTests\System.Xml.Linq.TrimmingTests.proj" />
     <ProjectExclusions Condition="'$(RunNativeAotTestApps)' == 'true'" Include="$(MSBuildThisFileDirectory)\System.Net.Http\tests\TrimmingTests\System.Net.Http.TrimmingTests.proj" />
-    <ProjectExclusions Condition="'$(RunNativeAotTestApps)' == 'true'" Include="$(MSBuildThisFileDirectory)\System.Reflection.DispatchProxy\tests\TrimmingTests\System.Reflection.DispatchProxy.TrimmingTests.proj" />
     <ProjectExclusions Condition="'$(RunNativeAotTestApps)' == 'true'" Include="$(MSBuildThisFileDirectory)\System.Linq.Expressions\tests\TrimmingTests\System.Linq.Expressions.TrimmingTests.proj" />
     <ProjectExclusions Condition="'$(RunNativeAotTestApps)' == 'true'" Include="$(MSBuildThisFileDirectory)\System.Private.Xml\tests\TrimmingTests\System.Private.Xml.TrimmingTests.proj" />
     <ProjectExclusions Condition="'$(RunNativeAotTestApps)' == 'true'" Include="$(MSBuildThisFileDirectory)\System.Runtime\tests\System.Runtime.Tests\TrimmingTests\System.Runtime.TrimmingTests.proj" />
