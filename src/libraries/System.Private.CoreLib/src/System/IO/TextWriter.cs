@@ -759,7 +759,11 @@ namespace System.IO
         {
             ArgumentNullException.ThrowIfNull(writer);
 
+#if !TARGET_BROWSER || FEATURE_WASM_MANAGED_THREADS
             return writer is SyncTextWriter ? writer : new SyncTextWriter(writer);
+#else
+            return writer;
+#endif
         }
 
         internal sealed class SyncTextWriter : TextWriter, IDisposable
