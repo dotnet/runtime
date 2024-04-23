@@ -43,7 +43,8 @@ namespace System.Buffers
             _hashEntries = new char[modulus];
 
             // Some hash entries will remain unused.
-            // We can't leave them uninitialized as that would lead to false positives for values divisible by modulus.
+            // We can't leave them uninitialized as we would otherwise erroneously match (char)0.
+            // The exact value doesn't matter, as long as it's in the set of our values.
             _hashEntries.AsSpan().Fill(values[0]);
 
             foreach (char c in values)
