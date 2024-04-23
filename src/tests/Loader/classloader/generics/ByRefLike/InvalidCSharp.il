@@ -150,6 +150,41 @@
     }
 
     .method public hidebysig
+        instance bool BoxBranchToOther<byreflike U>(!T) cil managed
+    {
+        ldarg.1
+        // Begin sequence
+            box !!U
+            brfalse.s NEXT_1
+        // End sequence
+        NEXT_1:
+
+        ldarg.1
+        // Begin sequence
+            box !!U
+            brfalse NEXT_2
+        // End sequence
+        NEXT_2:
+
+        ldarg.1
+        // Begin sequence
+            box !!U
+            brtrue.s NEXT_3
+        // End sequence
+        NEXT_3:
+
+        ldarg.1
+        // Begin sequence
+            box !!U
+            brtrue NEXT_4
+        // End sequence
+        NEXT_4:
+
+        ldc.i4.1
+        ret
+    }
+
+    .method public hidebysig
         instance bool BoxBranch_WithSideEffects(!T&) cil managed
     {
         ldarg.1
@@ -381,6 +416,14 @@
 }
 
 .class public sequential ansi sealed beforefieldinit ByRefLikeType
+    extends [System.Runtime]System.ValueType
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
+        01 00 00 00
+    )
+}
+
+.class public sequential ansi sealed beforefieldinit ByRefLikeType2
     extends [System.Runtime]System.ValueType
 {
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
@@ -649,6 +692,18 @@
         ldloc 0
         ldfld !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
         call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxBranch(!0)
+        pop
+
+        ldloca.s 0
+        ldloc 0
+        ldfld !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
+        call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxBranchToOther<valuetype ByRefLikeType2>(!0)
+        pop
+
+        ldloca.s 0
+        ldloc 0
+        ldfld !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
+        call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxBranchToOther<valuetype RegularValueType>(!0)
         pop
 
         ldloca.s 0
