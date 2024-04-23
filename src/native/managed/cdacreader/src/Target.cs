@@ -29,7 +29,7 @@ internal sealed unsafe class Target
     private readonly Reader _reader;
 
     private readonly IReadOnlyDictionary<string, int> _contracts = new Dictionary<string, int>();
-    private readonly TargetPointer[] _pointerData = [];
+    private readonly IReadOnlyDictionary<string, (ulong Value, string? Type)> _globals = new Dictionary<string, (ulong, string?)>();
 
     public static bool TryCreate(ulong contractDescriptor, delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget, void* readContext, out Target? target)
     {
@@ -49,11 +49,30 @@ internal sealed unsafe class Target
         _config = config;
         _reader = reader;
 
-        // TODO: [cdac] Read globals and types
+        // TODO: [cdac] Read types
         // note: we will probably want to store the globals and types into a more usable form
         _contracts = descriptor.Contracts ?? [];
 
-        _pointerData = pointerData;
+        // Read globals and map indirect values to pointer data
+        if (descriptor.Globals is not null)
+        {
+            Dictionary<string, (ulong Value, string? Type)> globals = [];
+            foreach ((string name, ContractDescriptorParser.GlobalDescriptor global) in descriptor.Globals)
+            {
+                ulong value = global.Value;
+                if (global.Indirect)
+                {
+                    if (value >= (ulong)pointerData.Length)
+                        throw new InvalidOperationException($"Invalid pointer data index {value}.");
+
+                    value = pointerData[value].Value;
+                }
+
+                globals[name] = (value, global.Type);
+            }
+
+            _globals = globals;
+        }
     }
 
     // See docs/design/datacontracts/contract-descriptor.md
