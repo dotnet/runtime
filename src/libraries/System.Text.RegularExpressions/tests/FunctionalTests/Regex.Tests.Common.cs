@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
@@ -121,6 +122,22 @@ namespace System.Text.RegularExpressions.Tests
                 options is null ? new Regex(pattern, OptionsFromEngine(engine)) :
                 matchTimeout is null ? new Regex(pattern, options.Value | OptionsFromEngine(engine)) :
                 new Regex(pattern, options.Value | OptionsFromEngine(engine), matchTimeout.Value);
+        }
+
+        public static Regex[] GetRegexes(RegexEngine engine, params (string pattern, CultureInfo? culture, RegexOptions? options, TimeSpan? matchTimeout)[] regexes)
+        {
+            if (engine == RegexEngine.SourceGenerated)
+            {
+                // Source generated regex creation can complete asynchronously, which is why GetRegexesAsync is async.
+                // xunit theory member data in xunit v2 may only be synchronous, and Roslyn's APIs are only asynchronous.
+                // As such, they need to block to get the results. But if they block on xunit's limited synchronization
+                // scheduler, they could deadlock, so escape the context by queueing the work to a thread pool thread.
+                return Task.Run(() => GetRegexesAsync(engine, regexes)).GetAwaiter().GetResult();
+            }
+
+            Task<Regex[]> t = GetRegexesAsync(engine, regexes);
+            Debug.Assert(t.IsCompleted);
+            return t.GetAwaiter().GetResult();
         }
 
         public static async Task<Regex[]> GetRegexesAsync(RegexEngine engine, params (string pattern, CultureInfo? culture, RegexOptions? options, TimeSpan? matchTimeout)[] regexes)
