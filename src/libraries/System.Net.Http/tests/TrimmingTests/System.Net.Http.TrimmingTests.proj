@@ -5,6 +5,8 @@
     <TestConsoleAppSourceFiles Include="DecompressionHandlerTrimmedTest.cs" />
     <TestConsoleAppSourceFiles Include="HttpClientTest.cs">
       <SkipOnTestRuntimes>browser-wasm</SkipOnTestRuntimes>
+      <!-- https://github.com/dotnet/runtime/issues/73290 -->
+      <NativeAotIncompatible>true</NativeAotIncompatible>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
 
