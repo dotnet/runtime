@@ -59,6 +59,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
                 // Validates executing the test inside conditional, with op3 as falseValue
                 test.ConditionalSelect_FalseOp();
+
+                // Validates executing the test inside conditional, with op3 as zero
+                test.ConditionalSelect_ZeroOp();                
             }
             else
             {
@@ -309,8 +312,19 @@ namespace JIT.HardwareIntrinsics.Arm
             
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_all");
             ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _fld2, _falseFld);            
-        }        
+        }
 
+        public void ConditionalSelect_ZeroOp()
+        {
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_mask");
+            ConditionalSelectScenario(_mask, _fld1, _fld2, {Op1VectorType}<{Op1BaseType}>.Zero);
+            
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_zero");
+            ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, _fld2, {Op1VectorType}<{Op1BaseType}>.Zero);
+            
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_all");
+            ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _fld2, {Op1VectorType}<{Op1BaseType}>.Zero);            
+        }
 
         [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}> mask, {Op1VectorType}<{Op1BaseType}> op1, {Op1VectorType}<{Op1BaseType}> op2, {Op1VectorType}<{Op1BaseType}> falseOp)
