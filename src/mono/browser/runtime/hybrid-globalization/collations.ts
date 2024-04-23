@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_wasm_new_external_root } from "../roots";
-import { monoStringToString, stringToUTF16Ptr, utf16ToString } from "../strings";
-import { MonoString, MonoStringRef, VoidPtrNull } from "../types/internal";
+import { stringToUTF16Ptr, utf16ToString } from "../strings";
+import { VoidPtrNull } from "../types/internal";
 import { Int32Ptr, VoidPtr } from "../types/emscripten";
 import { GraphemeSegmenter } from "./grapheme-segmenter";
 import { setI32 } from "../memory";
@@ -12,10 +11,9 @@ const COMPARISON_ERROR = -2;
 const INDEXING_ERROR = -1;
 let graphemeSegmenterCached: GraphemeSegmenter | null;
 
-export function mono_wasm_compare_string (culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr): VoidPtr {
-    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
+export function mono_wasm_compare_string (culture: number, cultureLength: number, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr): VoidPtr {
     try {
-        const cultureName = monoStringToString(cultureRoot);
+        const cultureName = utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
         const string1 = utf16ToString(<any>str1, <any>(str1 + 2 * str1Length));
         const string2 = utf16ToString(<any>str2, <any>(str2 + 2 * str2Length));
         const casePicker = (options & 0x1f);
@@ -26,15 +24,12 @@ export function mono_wasm_compare_string (culture: MonoStringRef, str1: number, 
     } catch (ex: any) {
         setI32(resultPtr, COMPARISON_ERROR);
         return stringToUTF16Ptr((ex));
-    } finally {
-        cultureRoot.release();
     }
 }
 
-export function mono_wasm_starts_with (culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr): VoidPtr {
-    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
+export function mono_wasm_starts_with (culture: number, cultureLength: number, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr): VoidPtr {
     try {
-        const cultureName = monoStringToString(cultureRoot);
+        const cultureName = utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
         const prefix = decodeToCleanString(str2, str2Length);
         // no need to look for an empty string
         if (prefix.length == 0) {
@@ -58,15 +53,12 @@ export function mono_wasm_starts_with (culture: MonoStringRef, str1: number, str
     } catch (ex: any) {
         setI32(resultPtr, INDEXING_ERROR);
         return stringToUTF16Ptr((ex));
-    } finally {
-        cultureRoot.release();
     }
 }
 
-export function mono_wasm_ends_with (culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr): VoidPtr {
-    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
+export function mono_wasm_ends_with (culture: number, cultureLength: number, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr): VoidPtr {
     try {
-        const cultureName = monoStringToString(cultureRoot);
+        const cultureName = utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
         const suffix = decodeToCleanString(str2, str2Length);
         if (suffix.length == 0) {
             setI32(resultPtr, 1); // true
@@ -90,13 +82,10 @@ export function mono_wasm_ends_with (culture: MonoStringRef, str1: number, str1L
     } catch (ex: any) {
         setI32(resultPtr, INDEXING_ERROR);
         return stringToUTF16Ptr((ex));
-    } finally {
-        cultureRoot.release();
     }
 }
 
-export function mono_wasm_index_of (culture: MonoStringRef, needlePtr: number, needleLength: number, srcPtr: number, srcLength: number, options: number, fromBeginning: number, resultPtr: Int32Ptr): VoidPtr {
-    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
+export function mono_wasm_index_of (culture: number, cultureLength: number, needlePtr: number, needleLength: number, srcPtr: number, srcLength: number, options: number, fromBeginning: number, resultPtr: Int32Ptr): VoidPtr {
     try {
         const needle = utf16ToString(<any>needlePtr, <any>(needlePtr + 2 * needleLength));
         // no need to look for an empty string
@@ -111,7 +100,7 @@ export function mono_wasm_index_of (culture: MonoStringRef, needlePtr: number, n
             setI32(resultPtr, fromBeginning ? 0 : srcLength);
             return VoidPtrNull;
         }
-        const cultureName = monoStringToString(cultureRoot);
+        const cultureName = utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
         const locale = cultureName ? cultureName : undefined;
         const casePicker = (options & 0x1f);
         let result = -1;
@@ -157,8 +146,6 @@ export function mono_wasm_index_of (culture: MonoStringRef, needlePtr: number, n
     } catch (ex: any) {
         setI32(resultPtr, INDEXING_ERROR);
         return stringToUTF16Ptr((ex));
-    } finally {
-        cultureRoot.release();
     }
 
     function checkMatchFound (str1: string, str2: string, locale: string | undefined, casePicker: number): boolean {

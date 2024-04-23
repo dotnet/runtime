@@ -10,6 +10,6 @@ internal static partial class Interop
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern unsafe nint ChangeCaseInvariant(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe nint ChangeCase(in string culture, char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper);
+        internal static extern unsafe nint ChangeCase(char* culture, int cultureLen, char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper);
     }
 }

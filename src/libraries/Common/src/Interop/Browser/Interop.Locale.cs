@@ -8,12 +8,12 @@ internal static partial class Interop
     internal static unsafe partial class JsGlobalization
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe nint GetCultureInfo(in string culture, char* buffer, int bufferMaxLength, out int resultLength);
+        internal static extern unsafe nint GetCultureInfo(char* culture, int cultureLength, char* buffer, int bufferMaxLength, out int resultLength);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe nint GetFirstDayOfWeek(in string culture, out int resultPtr);
+        internal static extern unsafe nint GetFirstDayOfWeek(char* culture, int cultureLength, out int resultPtr);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe nint GetFirstWeekOfYear(in string culture, out int resultPtr);
+        internal static extern unsafe nint GetFirstWeekOfYear(char* culture, int cultureLength, out int resultPtr);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe nint GetLocaleInfo(in string locale, in string culture, char* buffer, int bufferLength, out int resultLength);
+        internal static extern unsafe nint GetLocaleInfo(char* locale, int localeLength, char* culture, int cultureLength, char* buffer, int bufferLength, out int resultLength);
     }
 }

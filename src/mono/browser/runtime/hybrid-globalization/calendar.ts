@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /* eslint-disable no-inner-declarations */
-import { mono_wasm_new_external_root } from "../roots";
-import { monoStringToString, stringToUTF16, stringToUTF16Ptr } from "../strings";
-import { MonoString, MonoStringRef, VoidPtrNull } from "../types/internal";
+import { stringToUTF16, stringToUTF16Ptr, utf16ToString } from "../strings";
+import { VoidPtrNull } from "../types/internal";
 import { Int32Ptr, VoidPtr } from "../types/emscripten";
 import { INNER_SEPARATOR, OUTER_SEPARATOR, normalizeSpaces } from "./helpers";
 import { setI32 } from "../memory";
@@ -14,10 +13,9 @@ const YEAR_CODE = "yyyy";
 const DAY_CODE = "d";
 
 // this function joins all calendar info with OUTER_SEPARATOR into one string and returns it back to managed code
-export function mono_wasm_get_calendar_info (culture: MonoStringRef, calendarId: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
-    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
+export function mono_wasm_get_calendar_info (culture: number, cultureLength: number, calendarId: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
     try {
-        const cultureName = monoStringToString(cultureRoot);
+        const cultureName = utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
         const locale = cultureName ? cultureName : undefined;
         const calendarInfo = {
             EnglishName: "",
@@ -63,8 +61,6 @@ export function mono_wasm_get_calendar_info (culture: MonoStringRef, calendarId:
         return VoidPtrNull;
     } catch (ex: any) {
         return stringToUTF16Ptr((ex));
-    } finally {
-        cultureRoot.release();
     }
 }
 

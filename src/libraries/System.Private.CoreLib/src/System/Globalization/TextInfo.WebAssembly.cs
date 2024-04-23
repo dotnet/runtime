@@ -14,10 +14,14 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(GlobalizationMode.Hybrid);
 
-            nint exceptionPtr = HasEmptyCultureName ?
-                Interop.JsGlobalization.ChangeCaseInvariant(src, srcLen, dstBuffer, dstBufferCapacity, toUpper) :
-                Interop.JsGlobalization.ChangeCase(_cultureName, src, srcLen, dstBuffer, dstBufferCapacity, toUpper);
-            Helper.MarshalAndThrowIfException(exceptionPtr);
+            ReadOnlySpan<char> cultureName = _cultureName.AsSpan();
+            fixed (char* pCultureName = &MemoryMarshal.GetReference(cultureName))
+            {
+                nint exceptionPtr = HasEmptyCultureName ?
+                    Interop.JsGlobalization.ChangeCaseInvariant(src, srcLen, dstBuffer, dstBufferCapacity, toUpper) :
+                    Interop.JsGlobalization.ChangeCase(pCultureName, cultureName.Length, src, srcLen, dstBuffer, dstBufferCapacity, toUpper);
+                Helper.MarshalAndThrowIfException(exceptionPtr);
+            }
         }
     }
 }

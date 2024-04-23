@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_wasm_new_external_root } from "../roots";
-import { monoStringToString, utf16ToStringLoop, stringToUTF16, stringToUTF16Ptr } from "../strings";
-import { MonoString, MonoStringRef, VoidPtrNull } from "../types/internal";
+import { utf16ToStringLoop, stringToUTF16, stringToUTF16Ptr, utf16ToString } from "../strings";
+import { VoidPtrNull } from "../types/internal";
 import { VoidPtr } from "../types/emscripten";
 import { localHeapViewU16, setU16_local } from "../memory";
 import { isSurrogate } from "./helpers";
@@ -62,10 +61,9 @@ export function mono_wasm_change_case_invariant (src: number, srcLength: number,
     }
 }
 
-export function mono_wasm_change_case (culture: MonoStringRef, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number): VoidPtr {
-    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
+export function mono_wasm_change_case (culture: number, cultureLength: number, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number): VoidPtr {
     try {
-        const cultureName = monoStringToString(cultureRoot);
+        const cultureName = utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
         if (!cultureName)
             throw new Error("Cannot change case, the culture name is null.");
         const input = utf16ToStringLoop(src, src + 2 * srcLength);
@@ -115,8 +113,6 @@ export function mono_wasm_change_case (culture: MonoStringRef, src: number, srcL
         return VoidPtrNull;
     } catch (ex: any) {
         return stringToUTF16Ptr((ex));
-    } finally {
-        cultureRoot.release();
     }
 }
 

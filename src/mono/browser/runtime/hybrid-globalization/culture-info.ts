@@ -2,16 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { setI32 } from "../memory";
-import { mono_wasm_new_external_root } from "../roots";
-import { monoStringToString, stringToUTF16, stringToUTF16Ptr } from "../strings";
+import { stringToUTF16, stringToUTF16Ptr, utf16ToString } from "../strings";
 import { Int32Ptr, VoidPtr } from "../types/emscripten";
-import { MonoString, MonoStringRef, VoidPtrNull } from "../types/internal";
+import { VoidPtrNull } from "../types/internal";
 import { OUTER_SEPARATOR, normalizeLocale, normalizeSpaces } from "./helpers";
 
-export function mono_wasm_get_culture_info (culture: MonoStringRef, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
-    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
+export function mono_wasm_get_culture_info (culture: number, cultureLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
     try {
-        const cultureName = monoStringToString(cultureRoot);
+        const cultureName = utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
         const cultureInfo = {
             AmDesignator: "",
             PmDesignator: "",
@@ -34,8 +32,6 @@ export function mono_wasm_get_culture_info (culture: MonoStringRef, dst: number,
     } catch (ex: any) {
         setI32(dstLength, -1);
         return stringToUTF16Ptr((ex));
-    } finally {
-        cultureRoot.release();
     }
 }
 

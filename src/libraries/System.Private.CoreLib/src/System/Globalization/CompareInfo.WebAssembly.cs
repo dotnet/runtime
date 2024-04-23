@@ -47,13 +47,14 @@ namespace System.Globalization
         private unsafe int JsCompareString(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options)
         {
             AssertHybridOnWasm(options);
-            string cultureName = m_name;
-            AssertComparisonSupported(options, cultureName);
+            AssertComparisonSupported(options, m_name);
 
+            ReadOnlySpan<char> cultureNameSpan = m_name.AsSpan();
             fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
             fixed (char* pString2 = &MemoryMarshal.GetReference(string2))
+            fixed (char* pCultureName = &MemoryMarshal.GetReference(cultureNameSpan))
             {
-                nint exceptionPtr = Interop.JsGlobalization.CompareString(cultureName, pString1, string1.Length, pString2, string2.Length, options, out int cmpResult);
+                nint exceptionPtr = Interop.JsGlobalization.CompareString(pCultureName, cultureNameSpan.Length, pString1, string1.Length, pString2, string2.Length, options, out int cmpResult);
                 Helper.MarshalAndThrowIfException(exceptionPtr);
                 return cmpResult;
             }
@@ -63,13 +64,14 @@ namespace System.Globalization
         {
             AssertHybridOnWasm(options);
             Debug.Assert(!prefix.IsEmpty);
-            string cultureName = m_name;
-            AssertIndexingSupported(options, cultureName);
+            AssertIndexingSupported(options, m_name);
 
+            ReadOnlySpan<char> cultureNameSpan = m_name.AsSpan();
             fixed (char* pSource = &MemoryMarshal.GetReference(source))
             fixed (char* pPrefix = &MemoryMarshal.GetReference(prefix))
+            fixed (char* pCultureName = &MemoryMarshal.GetReference(cultureNameSpan))
             {
-                nint exceptionPtr = Interop.JsGlobalization.StartsWith(cultureName, pSource, source.Length, pPrefix, prefix.Length, options, out bool result);
+                nint exceptionPtr = Interop.JsGlobalization.StartsWith(pCultureName, cultureNameSpan.Length, pSource, source.Length, pPrefix, prefix.Length, options, out bool result);
                 Helper.MarshalAndThrowIfException(exceptionPtr);
                 return result;
             }
@@ -79,13 +81,14 @@ namespace System.Globalization
         {
             AssertHybridOnWasm(options);
             Debug.Assert(!prefix.IsEmpty);
-            string cultureName = m_name;
-            AssertIndexingSupported(options, cultureName);
+            AssertIndexingSupported(options, m_name);
 
+            ReadOnlySpan<char> cultureNameSpan = m_name.AsSpan();
             fixed (char* pSource = &MemoryMarshal.GetReference(source))
             fixed (char* pPrefix = &MemoryMarshal.GetReference(prefix))
+            fixed (char* pCultureName = &MemoryMarshal.GetReference(cultureNameSpan))
             {
-                nint exceptionPtr = Interop.JsGlobalization.EndsWith(cultureName, pSource, source.Length, pPrefix, prefix.Length, options, out bool result);
+                nint exceptionPtr = Interop.JsGlobalization.EndsWith(pCultureName, cultureNameSpan.Length, pSource, source.Length, pPrefix, prefix.Length, options, out bool result);
                 Helper.MarshalAndThrowIfException(exceptionPtr);
                 return result;
             }
@@ -95,8 +98,7 @@ namespace System.Globalization
         {
             AssertHybridOnWasm(options);
             Debug.Assert(!target.IsEmpty);
-            string cultureName = m_name;
-            AssertIndexingSupported(options, cultureName);
+            AssertIndexingSupported(options, m_name);
 
             if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options))
             {
@@ -104,10 +106,12 @@ namespace System.Globalization
                     IndexOfOrdinalIgnoreCaseHelper(source, target, options, matchLengthPtr, fromBeginning) :
                     IndexOfOrdinalHelper(source, target, options, matchLengthPtr, fromBeginning);
             }
+            ReadOnlySpan<char> cultureNameSpan = m_name.AsSpan();
             fixed (char* pSource = &MemoryMarshal.GetReference(source))
             fixed (char* pTarget = &MemoryMarshal.GetReference(target))
+            fixed (char* pCultureName = &MemoryMarshal.GetReference(cultureNameSpan))
             {
-                nint exceptionPtr = Interop.JsGlobalization.IndexOf(m_name, pTarget, target.Length, pSource, source.Length, options, fromBeginning, out int idx);
+                nint exceptionPtr = Interop.JsGlobalization.IndexOf(pCultureName, cultureNameSpan.Length, pTarget, target.Length, pSource, source.Length, options, fromBeginning, out int idx);
                 Helper.MarshalAndThrowIfException(exceptionPtr);
                 return idx;
             }

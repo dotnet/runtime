@@ -198,9 +198,13 @@ namespace System.Globalization
 #if TARGET_BROWSER
                 if (GlobalizationMode.Hybrid)
                 {
-                    nint exceptionPtr = Interop.JsGlobalization.IndexOf(m_name, b, target.Length, a, source.Length, options, fromBeginning, out int result);
-                    Helper.MarshalAndThrowIfException(exceptionPtr);
-                    return result;
+                    ReadOnlySpan<char> cultureNameSpan = m_name.AsSpan();
+                    fixed (char* pCultureName = &MemoryMarshal.GetReference(cultureNameSpan))
+                    {
+                        nint exceptionPtr = Interop.JsGlobalization.IndexOf(pCultureName, cultureNameSpan.Length, b, target.Length, a, source.Length, options, fromBeginning, out int result);
+                        Helper.MarshalAndThrowIfException(exceptionPtr);
+                        return result;
+                    }
                 }
 #elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
@@ -299,9 +303,13 @@ namespace System.Globalization
 #if TARGET_BROWSER
                 if (GlobalizationMode.Hybrid)
                 {
-                    nint exceptionPtr = Interop.JsGlobalization.IndexOf(m_name, b, target.Length, a, source.Length, options, fromBeginning, out int result);
-                    Helper.MarshalAndThrowIfException(exceptionPtr);
-                    return result;
+                    ReadOnlySpan<char> cultureNameSpan = m_name.AsSpan();
+                    fixed (char* pCultureName = &MemoryMarshal.GetReference(cultureNameSpan))
+                    {
+                        nint exceptionPtr = Interop.JsGlobalization.IndexOf(pCultureName, cultureNameSpan.Length, b, target.Length, a, source.Length, options, fromBeginning, out int result);
+                        Helper.MarshalAndThrowIfException(exceptionPtr);
+                        return result;
+                    }
                 }
 #elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
