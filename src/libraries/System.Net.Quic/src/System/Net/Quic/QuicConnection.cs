@@ -252,6 +252,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
             throw;
         }
 
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} New client connection.");
+        }
+
         _tlsSecret = MsQuicTlsSecret.Create(_handle);
     }
 
@@ -276,6 +281,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
         {
             context.Free();
             throw;
+        }
+
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} New server connection.");
         }
 
         _remoteEndPoint = MsQuicHelpers.QuicAddrToIPEndPoint(info->RemoteAddress);
@@ -407,6 +417,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} Opening {type} stream.");
+        }
+
         QuicStream? stream = null;
         try
         {
@@ -482,6 +497,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
         if (_shutdownTcs.TryGetValueTask(out ValueTask valueTask, this, cancellationToken))
         {
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(this, $"{this} Closing connection, Error code = {errorCode}");
+            }
+
             unsafe
             {
                 MsQuicApi.Api.ConnectionShutdown(
@@ -646,6 +666,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
         if (Interlocked.Exchange(ref _disposed, 1) != 0)
         {
             return;
+        }
+
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} Disposing.");
         }
 
         // Check if the connection has been shut down and if not, shut it down.
