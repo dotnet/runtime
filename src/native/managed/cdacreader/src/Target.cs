@@ -157,6 +157,29 @@ internal sealed unsafe class Target
         return true;
     }
 
+    public byte ReadUInt8(ulong address)
+    {
+        if (!TryReadUInt8(address, out byte value))
+            throw new InvalidOperationException($"Failed to read uint8 at 0x{address:x8}.");
+
+        return value;
+    }
+
+    public bool TryReadUInt8(ulong address, out byte value)
+        => TryReadUInt8(address, _reader, out value);
+
+    private static bool TryReadUInt8(ulong address, Reader reader, out byte value)
+    {
+        value = 0;
+        fixed (byte* ptr = &value)
+        {
+            if (reader.ReadFromTarget(address, ptr, 1) < 0)
+                return false;
+        }
+
+        return true;
+    }
+
     public uint ReadUInt32(ulong address)
     {
         if (!TryReadUInt32(address, out uint value))
@@ -217,6 +240,28 @@ internal sealed unsafe class Target
                     : BinaryPrimitives.ReadUInt64BigEndian(buffer));
         }
 
+        return true;
+    }
+
+    public byte ReadGlobalUInt8(string name)
+    {
+        if (!TryReadGlobalUInt8(name, out byte value))
+            throw new InvalidOperationException($"Failed to read global uint8 '{name}'.");
+
+        return value;
+    }
+
+    public bool TryReadGlobalUInt8(string name, out byte value)
+    {
+        value = 0;
+
+        if (!_globals.TryGetValue(name, out (ulong Value, string? Type) global))
+            return false;
+
+        if (global.Type is not null && global.Type != "uint8")
+            return false;
+
+        value = (byte)global.Value;
         return true;
     }
 
