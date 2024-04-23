@@ -1831,8 +1831,7 @@ void CodeGen::genGenerateMachineCode()
 
         if (compiler->fgHaveProfileWeights())
         {
-            printf("; with %s: edge weights are %s, and fgCalledCount is " FMT_WT "\n",
-                   compiler->compGetPgoSourceName(), compiler->fgHaveValidEdgeWeights ? "valid" : "invalid",
+            printf("; with %s: fgCalledCount is " FMT_WT "\n", compiler->compGetPgoSourceName(),
                    compiler->fgCalledCount);
         }
 
@@ -2803,7 +2802,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+#if !defined(TARGET_RISCV64)
 struct RegNode;
 
 struct RegNodeEdge
@@ -4745,20 +4744,13 @@ void CodeGen::genFinalizeFrame()
 #endif // defined(TARGET_XARCH)
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    if (isFramePointerUsed())
-    {
-        // For a FP based frame we have to push/pop the FP register
-        //
-        maskCalleeRegsPushed |= RBM_FPBASE;
+    // This assert check that we are not using REG_FP
+    assert(!regSet.rsRegsModified(RBM_FPBASE));
 
-        // This assert check that we are not using REG_FP
-        // as both the frame pointer and as a codegen register
-        //
-        assert(!regSet.rsRegsModified(RBM_FPBASE));
-    }
+    assert(isFramePointerUsed());
+    // we always push FP/RA.  See genPushCalleeSavedRegisters
+    maskCalleeRegsPushed |= (RBM_FPBASE | RBM_RA);
 
-    // we always push RA.  See genPushCalleeSavedRegisters
-    maskCalleeRegsPushed |= RBM_RA;
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
     compiler->compCalleeRegsPushed = genCountBits(maskCalleeRegsPushed);
@@ -6869,8 +6861,8 @@ GenTreeIntCon CodeGen::intForm(var_types type, ssize_t value)
 //
 void CodeGen::genLongReturn(GenTree* treeNode)
 {
-    assert(treeNode->OperGet() == GT_RETURN || treeNode->OperGet() == GT_RETFILT);
-    assert(treeNode->TypeGet() == TYP_LONG);
+    assert(treeNode->OperIs(GT_RETURN, GT_RETFILT));
+    assert(treeNode->TypeIs(TYP_LONG));
     GenTree*  op1        = treeNode->gtGetOp1();
     var_types targetType = treeNode->TypeGet();
 
@@ -6894,16 +6886,16 @@ void CodeGen::genLongReturn(GenTree* treeNode)
 //            In case of LONG return on 32-bit, delegates to the genLongReturn method.
 //
 // Arguments:
-//    treeNode - The GT_RETURN or GT_RETFILT tree node.
+//    treeNode - The GT_RETURN/GT_RETFILT/GT_SWIFT_ERROR_RET tree node.
 //
 // Return Value:
 //    None
 //
 void CodeGen::genReturn(GenTree* treeNode)
 {
-    assert(treeNode->OperIs(GT_RETURN, GT_RETFILT));
+    assert(treeNode->OperIs(GT_RETURN, GT_RETFILT, GT_SWIFT_ERROR_RET));
 
-    GenTree*  op1        = treeNode->gtGetOp1();
+    GenTree*  op1        = treeNode->AsOp()->GetReturnValue();
     var_types targetType = treeNode->TypeGet();
 
     // A void GT_RETFILT is the end of a finally. For non-void filter returns we need to load the result in the return
@@ -7005,7 +6997,7 @@ void CodeGen::genReturn(GenTree* treeNode)
     //
     // There should be a single GT_RETURN while generating profiler ELT callbacks.
     //
-    if (treeNode->OperIs(GT_RETURN) && compiler->compIsProfilerHookNeeded())
+    if (treeNode->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET) && compiler->compIsProfilerHookNeeded())
     {
         // !! NOTE !!
         // Since we are invalidating the assumption that we would slip into the epilog
@@ -7075,18 +7067,28 @@ void CodeGen::genReturn(GenTree* treeNode)
 
     genStackPointerCheck(doStackPointerCheck, compiler->lvaReturnSpCheck);
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
+}
 
 #ifdef SWIFT_SUPPORT
-    // If this method has a SwiftError* out parameter, load the SwiftError pseudolocal value into the error register.
-    // TODO-CQ: Introduce GenTree node that models returning a normal and Swift error value.
-    if (compiler->lvaSwiftErrorArg != BAD_VAR_NUM)
-    {
-        assert(compiler->info.compCallConv == CorInfoCallConvExtension::Swift);
-        assert(compiler->lvaSwiftErrorLocal != BAD_VAR_NUM);
-        GetEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_SWIFT_ERROR, compiler->lvaSwiftErrorLocal, 0);
-    }
-#endif // SWIFT_SUPPORT
+//------------------------------------------------------------------------
+// genSwiftErrorReturn: Generates code for returning the normal return value,
+//                      and loading the SwiftError pseudolocal value in the error register.
+//
+// Arguments:
+//    treeNode - The GT_SWIFT_ERROR_RET tree node.
+//
+// Return Value:
+//    None
+//
+void CodeGen::genSwiftErrorReturn(GenTree* treeNode)
+{
+    assert(treeNode->OperIs(GT_SWIFT_ERROR_RET));
+    GenTree*        swiftErrorNode = treeNode->gtGetOp1();
+    const regNumber errorSrcReg    = genConsumeReg(swiftErrorNode);
+    inst_Mov(swiftErrorNode->TypeGet(), REG_SWIFT_ERROR, errorSrcReg, true, EA_PTRSIZE);
+    genReturn(treeNode);
 }
+#endif // SWIFT_SUPPORT
 
 //------------------------------------------------------------------------
 // isStructReturn: Returns whether the 'treeNode' is returning a struct.
@@ -7095,15 +7097,15 @@ void CodeGen::genReturn(GenTree* treeNode)
 //    treeNode - The tree node to evaluate whether is a struct return.
 //
 // Return Value:
-//    Returns true if the 'treeNode" is a GT_RETURN node of type struct.
+//    Returns true if the 'treeNode' is a GT_RETURN/GT_SWIFT_ERROR_RET node of type struct.
 //    Otherwise returns false.
 //
 bool CodeGen::isStructReturn(GenTree* treeNode)
 {
-    // This method could be called for 'treeNode' of GT_RET_FILT or GT_RETURN.
+    // This method could be called for 'treeNode' of GT_RET_FILT/GT_RETURN/GT_SWIFT_ERROR_RET.
     // For the GT_RET_FILT, the return is always a bool or a void, for the end of a finally block.
-    noway_assert(treeNode->OperGet() == GT_RETURN || treeNode->OperGet() == GT_RETFILT);
-    if (treeNode->OperGet() != GT_RETURN)
+    noway_assert(treeNode->OperIs(GT_RETURN, GT_RETFILT, GT_SWIFT_ERROR_RET));
+    if (!treeNode->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
     {
         return false;
     }
@@ -7130,12 +7132,12 @@ bool CodeGen::isStructReturn(GenTree* treeNode)
 //
 void CodeGen::genStructReturn(GenTree* treeNode)
 {
-    assert(treeNode->OperGet() == GT_RETURN);
+    assert(treeNode->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET));
 
-    genConsumeRegs(treeNode->gtGetOp1());
-
-    GenTree* op1       = treeNode->gtGetOp1();
+    GenTree* op1       = treeNode->AsOp()->GetReturnValue();
     GenTree* actualOp1 = op1->gtSkipReloadOrCopy();
+
+    genConsumeRegs(op1);
 
     ReturnTypeDesc retTypeDesc = compiler->compRetTypeDesc;
     const unsigned regCount    = retTypeDesc.GetReturnRegCount();

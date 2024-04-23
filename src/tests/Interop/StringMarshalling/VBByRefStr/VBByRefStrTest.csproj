@@ -6,5 +6,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="*.cs" />
+    <CMakeProjectReference Include="./CMakeLists.txt" />
   </ItemGroup>
 </Project>

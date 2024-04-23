@@ -884,7 +884,21 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     }
 
     //-------------------------------------------------------------------------
-    // The main group of arguments
+    // The main group of arguments, and the this pointer.
+
+    // 'this' is pushed on the IL stack before all call args, but if this is a
+    // constrained call 'this' is a byref that may need to be dereferenced.
+    // That dereference should happen _after_ all args, so we need to spill
+    // them if they can interfere.
+    bool hasThis;
+    hasThis = ((mflags & CORINFO_FLG_STATIC) == 0) && ((sig->callConv & CORINFO_CALLCONV_EXPLICITTHIS) == 0) &&
+              ((opcode != CEE_NEWOBJ) || (newobjThis != nullptr));
+
+    if (hasThis && (constraintCallThisTransform == CORINFO_DEREF_THIS))
+    {
+        impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG(
+                                       "constrained call requires dereference for 'this' right before call"));
+    }
 
     impPopCallArgs(sig, call->AsCall());
     if (extraArg.Node != nullptr)
@@ -904,8 +918,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     //-------------------------------------------------------------------------
     // The "this" pointer
 
-    if (((mflags & CORINFO_FLG_STATIC) == 0) && ((sig->callConv & CORINFO_CALLCONV_EXPLICITTHIS) == 0) &&
-        !((opcode == CEE_NEWOBJ) && (newobjThis == nullptr)))
+    if (hasThis)
     {
         GenTree* obj;
 
@@ -1437,8 +1450,8 @@ DONE_CALL:
                 if (call->IsCall())
                 {
                     GenTreeCall* callNode = call->AsCall();
-                    if ((callNode->gtCallType == CT_HELPER) && (gtIsTypeHandleToRuntimeTypeHelper(callNode) ||
-                                                                gtIsTypeHandleToRuntimeTypeHandleHelper(callNode)))
+                    if (callNode->IsHelperCall() && (gtIsTypeHandleToRuntimeTypeHelper(callNode) ||
+                                                     gtIsTypeHandleToRuntimeTypeHandleHelper(callNode)))
                     {
                         spillStack = false;
                     }
@@ -2362,8 +2375,8 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     //
 
     // Check to see if the ldtoken helper call is what we see here.
-    if (fieldTokenNode->gtOper != GT_CALL || (fieldTokenNode->AsCall()->gtCallType != CT_HELPER) ||
-        (fieldTokenNode->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD)))
+    if (!fieldTokenNode->OperIs(GT_CALL) ||
+        !fieldTokenNode->AsCall()->IsHelperCall(eeFindHelper(CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD)))
     {
         return nullptr;
     }
@@ -2416,7 +2429,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     //
 
     GenTree* newArrayCall = arrayLocalStore->AsLclVar()->Data();
-    if ((newArrayCall->gtOper != GT_CALL) || (newArrayCall->AsCall()->gtCallType != CT_HELPER))
+    if (!newArrayCall->OperIs(GT_CALL) || !newArrayCall->AsCall()->IsHelperCall())
     {
         return nullptr;
     }
@@ -2705,8 +2718,8 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
     //
 
     // Check to see if the ldtoken helper call is what we see here.
-    if (fieldTokenNode->gtOper != GT_CALL || (fieldTokenNode->AsCall()->gtCallType != CT_HELPER) ||
-        (fieldTokenNode->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD)))
+    if (!fieldTokenNode->OperIs(GT_CALL) ||
+        !fieldTokenNode->AsCall()->IsHelperCall(eeFindHelper(CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD)))
     {
         return nullptr;
     }
@@ -3616,7 +3629,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             {
                 GenTree*        op1 = impStackTop(0).val;
                 CorInfoHelpFunc typeHandleHelper;
-                if (op1->gtOper == GT_CALL && (op1->AsCall()->gtCallType == CT_HELPER) &&
+                if (op1->gtOper == GT_CALL && op1->AsCall()->IsHelperCall() &&
                     gtIsTypeHandleToRuntimeTypeHandleHelper(op1->AsCall(), &typeHandleHelper))
                 {
                     op1 = impPopStack().val;
@@ -4717,6 +4730,14 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             ClassLayout*         toLayout  = nullptr;
             var_types            toType    = TypeHandleToVarType(toTypeHnd, &toLayout);
 
+            if (fromType == TYP_REF || info.compCompHnd->isNullableType(fromTypeHnd) != TypeCompareState::MustNot ||
+                toType == TYP_REF || info.compCompHnd->isNullableType(toTypeHnd) != TypeCompareState::MustNot)
+            {
+                // Fallback to the software implementation to throw when the types fail a "default(T) is not null"
+                // check.
+                return nullptr;
+            }
+
             unsigned fromSize = fromLayout != nullptr ? fromLayout->GetSize() : genTypeSize(fromType);
             unsigned toSize   = toLayout != nullptr ? toLayout->GetSize() : genTypeSize(toType);
 
@@ -4728,8 +4749,6 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
                 // Fallback to the software implementation to throw when sizes don't match
                 return nullptr;
             }
-
-            assert((fromType != TYP_REF) && (toType != TYP_REF));
 
             GenTree* op1 = impPopStack().val;
 
@@ -7101,7 +7120,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
     /* Ignore helper calls */
 
-    if (call->gtCallType == CT_HELPER)
+    if (call->IsHelperCall())
     {
         assert(!call->IsGuardedDevirtualizationCandidate());
         inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_CALL_TO_HELPER);
@@ -7741,6 +7760,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // the resulting method would be a generic method of the non-generic SZArrayHelper class.
     //
     assert(canDevirtualize);
+    Metrics.DevirtualizedCall++;
 
     JITDUMP("    %s; can devirtualize\n", note);
 
@@ -7969,6 +7989,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                         // We may end up inlining this call, so the local copy must be marked as "aliased",
                         // making sure the inlinee importer will know when to spill references to its value.
                         lvaGetDesc(localCopyThis->AsLclFld())->lvHasLdAddrOp = true;
+                        Metrics.DevirtualizedCallRemovedBox++;
+                        Metrics.DevirtualizedCallUnboxedEntry++;
 
 #if FEATURE_TAILCALL_OPT
                         if (call->IsImplicitTailCall())
@@ -8032,6 +8054,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                             derivedMethodAttribs  = unboxedMethodAttribs;
 
                             call->gtArgs.InsertInstParam(this, methodTableArg);
+                            Metrics.DevirtualizedCallUnboxedEntry++;
                         }
                     }
                     else
@@ -8047,6 +8070,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                         INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
                         derivedMethod         = unboxedEntryMethod;
                         pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
+                        Metrics.DevirtualizedCallUnboxedEntry++;
                     }
                 }
             }
