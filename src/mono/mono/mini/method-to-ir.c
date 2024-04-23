@@ -7864,7 +7864,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				UNVERIFIED;
 
 			if (!cfg->gshared)
-				g_assert (!mono_method_check_context_used (cmethod));
+				g_assertf (!mono_method_check_context_used (cmethod), "cmethod is %s", mono_method_get_full_name (cmethod));
 
 			CHECK_STACK (n);
 
