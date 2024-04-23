@@ -251,7 +251,8 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     do
                     {
-                        state.FlushThreshold = (int)(4096 * JsonSerializer.FlushThreshold);
+                        // Arbitrary threshold, default Pipe buffers are 4k so this allows 4 buffers to be created and filled (mostly) before flushing.
+                        state.FlushThreshold = (int)(16384 * JsonSerializer.FlushThreshold);
 
                         try
                         {
