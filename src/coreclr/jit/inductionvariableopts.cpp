@@ -886,16 +886,6 @@ void Compiler::optStrengthReduce(FlowGraphNaturalLoop*   loop,
         JITDUMP("      Inserting step statement in latch " FMT_BB "\n", latch->bbNum);
         DISPSTMT(stepStmt);
 
-        //// Remove all uses of IVs in child trees.
-        // for (int i = 0; i < ivs.Height(); i++)
-        //{
-        //     const IVUseInfo& otherIV = ivs.BottomRef(i);
-        //     for (IVUseListNode* node = otherIV.Uses; node != nullptr; node = node->Next)
-        //     {
-
-        //    }
-        //}
-
         for (IVUseListNode* node = bestIV->Uses; node != nullptr; node = node->Next)
         {
             for (IVUseListNode** childNodeSlot = &node->Next; (*childNodeSlot) != nullptr;)
@@ -930,27 +920,31 @@ void Compiler::optStrengthReduce(FlowGraphNaturalLoop*   loop,
         // Replace uses.
         for (IVUseListNode* node = bestIV->Uses; node != nullptr; node = node->Next)
         {
-            for (IVUseListNode* prevNode = bestIV->Uses; prevNode != node; prevNode = prevNode->Next)
-            {
-            }
-
             GenTree* newUse = gtNewLclVarNode(newPrimaryIV, bestIV->IV->Type);
 
             JITDUMP("\n      Replacing use [%06u] with [%06u]. Before:\n", dspTreeID(node->Tree), dspTreeID(newUse));
             DISPSTMT(node->Stmt);
 
-            FindLinkData link = gtFindLink(node->Stmt, node->Tree);
-            assert(link.result != nullptr);
+            GenTree** use = nullptr;
+            if (node->Stmt->GetRootNode() == node->Tree)
+            {
+                use = node->Stmt->GetRootNodePointer();
+            }
+            else
+            {
+                node->Tree->gtGetParent(&use);
+                assert(use != nullptr);
+            }
 
             GenTree* sideEffects = nullptr;
             gtExtractSideEffList(node->Tree, &sideEffects);
             if (sideEffects != nullptr)
             {
-                *link.result = gtNewOperNode(GT_COMMA, newUse->TypeGet(), sideEffects, newUse);
+                *use = gtNewOperNode(GT_COMMA, newUse->TypeGet(), sideEffects, newUse);
             }
             else
             {
-                *link.result = newUse;
+                *use = newUse;
             }
             JITDUMP("\n      After:\n\n");
             DISPSTMT(node->Stmt);
