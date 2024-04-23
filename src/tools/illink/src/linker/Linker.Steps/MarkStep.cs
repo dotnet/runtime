@@ -75,9 +75,8 @@ namespace Mono.Linker.Steps
 		// Stores, for compiler-generated methods only, whether they require the reflection
 		// method body scanner.
 		readonly Dictionary<MethodBody, bool> _compilerGeneratedMethodRequiresScanner;
-		private readonly Dictionary<TypeDefinition, TypeDefinitionDependencyNode> _typeNodes = new ();
-		private readonly Dictionary<MethodDefinition, MethodDefinitionDependencyNode> _methodNodes = new ();
-		private readonly Dictionary<TypeDefinition, TypeIsRelevantToVariantCastingNode> _typeIsRelevantToVariantCastingNodes = new ();
+		private readonly MarkStepNodeFactory _nodeFactory;
+		private readonly DependencyAnalyzer<NoLogStrategy<MarkStepNodeFactory>, MarkStepNodeFactory> _analyzer;
 
 		MarkStepContext? _markContext;
 		MarkStepContext MarkContext {
@@ -234,7 +233,8 @@ namespace Mono.Linker.Steps
 			_pending_isinst_instr = new List<(TypeDefinition, MethodBody, Instruction)> ();
 			_entireTypesMarked = new HashSet<TypeDefinition> ();
 			_compilerGeneratedMethodRequiresScanner = new Dictionary<MethodBody, bool> ();
-			_analyzer = new DependencyAnalyzer<NoLogStrategy<MarkStepNodeFactory>, MarkStepNodeFactory> (new MarkStepNodeFactory (this), null);
+			_nodeFactory = new MarkStepNodeFactory (this);
+			_analyzer = new DependencyAnalyzer<NoLogStrategy<MarkStepNodeFactory>, MarkStepNodeFactory> (_nodeFactory, null);
 		}
 
 		public AnnotationStore Annotations => Context.Annotations;
@@ -378,7 +378,6 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		DependencyAnalyzer<NoLogStrategy<MarkStepNodeFactory>, MarkStepNodeFactory> _analyzer;
 		void Process ()
 		{
 			_analyzer.ComputeDependencyRoutine += (List<DependencyNodeCore<MarkStepNodeFactory>> nodes) => {
@@ -398,21 +397,6 @@ namespace Mono.Linker.Steps
 				ProcessLazyAttributes () ||
 				ProcessLateMarkedAttributes () ||
 				MarkFullyPreservedAssemblies ();
-		}
-
-		internal TypeDefinitionDependencyNode GetTypeNode (TypeDefinition reference, DependencyInfo reason, MessageOrigin? origin)
-		{
-			return _typeNodes.GetOrAdd (reference, (k) => new TypeDefinitionDependencyNode (k, reason, origin));
-		}
-
-		internal MethodDefinitionDependencyNode GetMethodDefinitionNode (MethodDefinition method, DependencyInfo reason, MessageOrigin origin)
-		{
-			return _methodNodes.GetOrAdd (method, (k) => new MethodDefinitionDependencyNode (k, reason, origin));
-		}
-
-		TypeIsRelevantToVariantCastingNode GetTypeIsRelevantToVariantCastingNode (TypeDefinition type)
-		{
-			return _typeIsRelevantToVariantCastingNodes.GetOrAdd (type, static (t) => new TypeIsRelevantToVariantCastingNode (t));
 		}
 
 		static bool IsFullyPreservedAction (AssemblyAction action) => action == AssemblyAction.Copy || action == AssemblyAction.Save;
@@ -2044,7 +2028,7 @@ namespace Mono.Linker.Steps
 			if (CheckProcessed (type))
 				return type;
 
-			_analyzer.AddRoot (GetTypeNode (type, reason, origin), "MarkedType");
+			_analyzer.AddRoot (_nodeFactory.GetTypeNode (type, reason, origin), Enum.GetName(reason.Kind));
 			return type;
 		}
 
@@ -2813,7 +2797,7 @@ namespace Mono.Linker.Steps
 				if (argumentTypeDef == null)
 					continue;
 
-				_analyzer.AddRoot (GetTypeIsRelevantToVariantCastingNode (argumentTypeDef), "Generic Argument");
+				_analyzer.AddRoot (_nodeFactory.GetTypeIsRelevantToVariantCastingNode (argumentTypeDef), "Generic Argument");
 
 				if (parameter.HasDefaultConstructorConstraint)
 					MarkDefaultConstructor (argumentTypeDef, new DependencyInfo (DependencyKind.DefaultCtorForNewConstrainedGenericArgument, instance));
@@ -3067,7 +3051,7 @@ namespace Mono.Linker.Steps
 			// We will only enqueue a method to be processed if it hasn't been processed yet.
 			if (!CheckProcessed (method))
 				EnqueueMethod (method, reason, origin);
-			_analyzer.AddRoot (new PostPoneMethodProcessingNode (method, reason, origin), "Method marked");
+			_analyzer.AddRoot (_nodeFactory.GetMethodDefinitionNode (method, reason, origin), Enum.GetName(reason.Kind));
 
 			return method;
 		}
