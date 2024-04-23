@@ -234,7 +234,7 @@ internal sealed class Xcode
         else
         {
             // arch is passed later when invoking xcodebuild
-            cmakeArgs.Append(" -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0");
+            cmakeArgs.Append(" -DCMAKE_OSX_DEPLOYMENT_TARGET=12.2");
         }
 
         Utils.RunProcess(Logger, "cmake", cmakeArgs.ToString(), workingDir: cmakeDirectoryPath);
