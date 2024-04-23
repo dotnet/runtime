@@ -113,10 +113,11 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
 struct LocalOccurrence
 {
     BasicBlock* Block;
-    Statement* Stmt;
+    Statement*  Stmt;
 
     LocalOccurrence(BasicBlock* block, Statement* stmt)
-        : Block(block), Stmt(stmt)
+        : Block(block)
+        , Stmt(stmt)
     {
     }
 };
@@ -145,10 +146,10 @@ struct LocalOccurrence
 //     2. We need to store the wide IV back into the narrow one in each of
 //     the exits where the narrow IV is live-in.
 //
-bool Compiler::optIsIVWideningProfitable(unsigned                lclNum,
-                                         BasicBlock*             initBlock,
-                                         bool                    initedToConstant,
-                                         FlowGraphNaturalLoop*   loop,
+bool Compiler::optIsIVWideningProfitable(unsigned                     lclNum,
+                                         BasicBlock*                  initBlock,
+                                         bool                         initedToConstant,
+                                         FlowGraphNaturalLoop*        loop,
                                          ArrayStack<LocalOccurrence>& loopOccurrences)
 {
     for (FlowGraphNaturalLoop* otherLoop : m_loops->InReversePostOrder())
@@ -182,8 +183,8 @@ bool Compiler::optIsIVWideningProfitable(unsigned                lclNum,
     for (int i = 0; i < loopOccurrences.Height(); i++)
     {
         LocalOccurrence& occurrence = loopOccurrences.BottomRef(i);
-        BasicBlock* block = occurrence.Block;
-        Statement* stmt = occurrence.Stmt;
+        BasicBlock*      block      = occurrence.Block;
+        Statement*       stmt       = occurrence.Stmt;
 
         int numExtensions = 0;
         for (GenTree* node : stmt->TreeList())
@@ -454,12 +455,12 @@ void Compiler::optBestEffortReplaceNarrowIVUses(
     });
 }
 
-template<typename TFunctor>
+template <typename TFunctor>
 void Compiler::optFindLocalOccurrences(BasicBlock* block, unsigned lclNum, TFunctor func)
 {
     for (Statement* stmt : block->NonPhiStatements())
     {
-        int  numExtensions = 0;
+        int numExtensions = 0;
         for (GenTree* node : stmt->TreeList())
         {
             if (node->OperIsLocal() && (node->AsLclVarCommon()->GetLclNum() == lclNum))
@@ -472,7 +473,10 @@ void Compiler::optFindLocalOccurrences(BasicBlock* block, unsigned lclNum, TFunc
     }
 }
 
-bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop, unsigned lclNum, ScevAddRec* addRec, ArrayStack<LocalOccurrence>& loopOccurrences)
+bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop*        loop,
+                                 unsigned                     lclNum,
+                                 ScevAddRec*                  addRec,
+                                 ArrayStack<LocalOccurrence>& loopOccurrences)
 {
     LclVarDsc* lclDsc = lvaGetDesc(lclNum);
     if (lclDsc->TypeGet() != TYP_INT)
@@ -498,10 +502,10 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop, unsigned lclNum, Sc
     // Start value should always be an SSA use from outside the loop
     // since we only widen primary IVs.
     assert(addRec->Start->OperIs(ScevOper::Local));
-    ScevLocal* startLocal = (ScevLocal*)addRec->Start;
-    int64_t       startConstant = 0;
+    ScevLocal*    startLocal     = (ScevLocal*)addRec->Start;
+    int64_t       startConstant  = 0;
     bool          initToConstant = startLocal->GetConstantValue(this, &startConstant);
-    LclSsaVarDsc* startSsaDsc = lclDsc->GetPerSsaData(startLocal->SsaNum);
+    LclSsaVarDsc* startSsaDsc    = lclDsc->GetPerSsaData(startLocal->SsaNum);
 
     BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
     BasicBlock* initBlock = preheader;
@@ -541,24 +545,22 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop, unsigned lclNum, Sc
 
         if (insertInitAfter->IsPhiDefnStmt())
         {
-            while ((insertInitAfter->GetNextStmt() != nullptr) &&
-                insertInitAfter->GetNextStmt()->IsPhiDefnStmt())
+            while ((insertInitAfter->GetNextStmt() != nullptr) && insertInitAfter->GetNextStmt()->IsPhiDefnStmt())
             {
                 insertInitAfter = insertInitAfter->GetNextStmt();
             }
         }
     }
 
-    Statement* initStmt = nullptr;
+    Statement* initStmt  = nullptr;
     unsigned   newLclNum = lvaGrabTemp(false DEBUGARG(printfAlloc("Widened IV V%02u", lclNum)));
     INDEBUG(lclDsc = nullptr);
     assert(startLocal->LclNum == lclNum);
 
     if (initBlock != preheader)
     {
-        JITDUMP("Adding initialization of new widened local to same block as reaching def outside loop, " FMT_BB
-            "\n",
-            initBlock->bbNum);
+        JITDUMP("Adding initialization of new widened local to same block as reaching def outside loop, " FMT_BB "\n",
+                initBlock->bbNum);
     }
     else
     {
@@ -576,7 +578,7 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop, unsigned lclNum, Sc
     }
 
     GenTree* widenStore = gtNewTempStore(newLclNum, initVal);
-    initStmt = fgNewStmtFromTree(widenStore);
+    initStmt            = fgNewStmtFromTree(widenStore);
     if (insertInitAfter != nullptr)
     {
         fgInsertStmtAfter(initBlock, insertInitAfter, initStmt);
@@ -594,16 +596,14 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop, unsigned lclNum, Sc
     if (initStmt != nullptr)
     {
         JITDUMP("    Replacing on the way to the loop\n");
-        optBestEffortReplaceNarrowIVUses(lclNum, startLocal->SsaNum, newLclNum, initBlock,
-            initStmt->GetNextStmt());
+        optBestEffortReplaceNarrowIVUses(lclNum, startLocal->SsaNum, newLclNum, initBlock, initStmt->GetNextStmt());
     }
 
     JITDUMP("    Replacing in the loop; %d statements with appearences\n", loopOccurrences.Height());
     for (int i = 0; i < loopOccurrences.Height(); i++)
     {
         Statement* stmt = loopOccurrences.BottomRef(i).Stmt;
-        JITDUMP("Replacing V%02u -> V%02u in [%06u]\n", lclNum, newLclNum,
-            dspTreeID(stmt->GetRootNode()));
+        JITDUMP("Replacing V%02u -> V%02u in [%06u]\n", lclNum, newLclNum, dspTreeID(stmt->GetRootNode()));
         DISPSTMT(stmt);
         JITDUMP("\n");
         optReplaceWidenedIV(lclNum, SsaConfig::RESERVED_SSA_NUM, newLclNum, stmt);
@@ -617,30 +617,36 @@ struct IVUseInfo;
 
 struct IVUseListNode
 {
-    BasicBlock* Block;
-    Statement* Stmt;
-    GenTree* Tree;
+    BasicBlock*    Block;
+    Statement*     Stmt;
+    GenTree*       Tree;
     IVUseListNode* Next;
-    IVUseInfo* Parent;
+    IVUseInfo*     Parent;
 };
 
 struct IVUseInfo
 {
-    ScevAddRec* IV;
+    ScevAddRec*    IV;
     IVUseListNode* Uses = nullptr;
     // LclNum of the IV if this IV is a primary IV.
-    unsigned PrimaryLclNum = BAD_VAR_NUM;
-    bool TriedStrengthReduction = false;
+    unsigned PrimaryLclNum          = BAD_VAR_NUM;
+    bool     TriedStrengthReduction = false;
 
-    IVUseInfo(ScevAddRec* iv) : IV(iv)
+    IVUseInfo(ScevAddRec* iv)
+        : IV(iv)
     {
     }
 };
 
-void Compiler::optScoreNewPrimaryIV(FlowGraphNaturalLoop* loop, ArrayStack<IVUseInfo>& ivs, const IVUseInfo& iv, BasicBlock* stepUpdateBlock, weight_t* cycleImprovement, weight_t* sizeImprovement)
+void Compiler::optScoreNewPrimaryIV(FlowGraphNaturalLoop*  loop,
+                                    ArrayStack<IVUseInfo>& ivs,
+                                    const IVUseInfo&       iv,
+                                    BasicBlock*            stepUpdateBlock,
+                                    weight_t*              cycleImprovement,
+                                    weight_t*              sizeImprovement)
 {
     *cycleImprovement = 0;
-    *sizeImprovement = 0;
+    *sizeImprovement  = 0;
 
     for (IVUseListNode* use = iv.Uses; use != nullptr; use = use->Next)
     {
@@ -651,8 +657,8 @@ void Compiler::optScoreNewPrimaryIV(FlowGraphNaturalLoop* loop, ArrayStack<IVUse
     }
 
     // Now cost adding a new initialization of this IV in the preheader.
-    BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
-    weight_t preheaderWeight = preheader->getBBWeight(this);
+    BasicBlock* preheader       = loop->EntryEdge(0)->getSourceBlock();
+    weight_t    preheaderWeight = preheader->getBBWeight(this);
     if (iv.IV->Start->OperIs(ScevOper::Constant, ScevOper::Local))
     {
         // Constant/local costs 1 cycle and 1 byte to materialize.
@@ -664,7 +670,7 @@ void Compiler::optScoreNewPrimaryIV(FlowGraphNaturalLoop* loop, ArrayStack<IVUse
     {
         // TODO: Proper costing
         *cycleImprovement -= 1000 * preheaderWeight;
-        *sizeImprovement  -= 1000;
+        *sizeImprovement -= 1000;
     }
 
     // Now cost each update of the new primary IV.
@@ -692,9 +698,12 @@ void Compiler::optScoreNewPrimaryIV(FlowGraphNaturalLoop* loop, ArrayStack<IVUse
 //   loop - The loop with the IVs
 //   ivs  - Information about IVs used inside the loop
 //
-void Compiler::optStrengthReduce(FlowGraphNaturalLoop* loop, ScalarEvolutionContext& scevContext, ArrayStack<IVUseInfo>& ivs)
+void Compiler::optStrengthReduce(FlowGraphNaturalLoop*   loop,
+                                 ScalarEvolutionContext& scevContext,
+                                 ArrayStack<IVUseInfo>&  ivs)
 {
-    JITDUMP("Found %d different induction variables. Evaluating whether to strength reduce derived IVs.\n", ivs.Height());
+    JITDUMP("Found %d different induction variables. Evaluating whether to strength reduce derived IVs.\n",
+            ivs.Height());
 
     if (loop->BackEdges().size() != 1)
     {
@@ -709,7 +718,8 @@ void Compiler::optStrengthReduce(FlowGraphNaturalLoop* loop, ScalarEvolutionCont
     // post-dominates all blocks within the loop, so placing the update in that
     // block will always be correct. Otherwise bail.
     // TODO-CQ: With dominators we can also do better here.
-    if (!latch->KindIs(BBJ_COND) || (!latch->TrueTargetIs(loop->GetHeader()) && !latch->FalseTargetIs(loop->GetHeader())))
+    if (!latch->KindIs(BBJ_COND) ||
+        (!latch->TrueTargetIs(loop->GetHeader()) && !latch->FalseTargetIs(loop->GetHeader())))
     {
         JITDUMP("  ..no, latch does not post-dominate loop\n");
         return;
@@ -722,9 +732,9 @@ void Compiler::optStrengthReduce(FlowGraphNaturalLoop* loop, ScalarEvolutionCont
             JITDUMP("\n  Iteration %d\n", iteration + 1);
         }
 
-        IVUseInfo* bestIV = nullptr;
-        weight_t bestCycleImprovement = 0;
-        weight_t bestSizeImprovement = 0;
+        IVUseInfo* bestIV               = nullptr;
+        weight_t   bestCycleImprovement = 0;
+        weight_t   bestSizeImprovement  = 0;
 
         for (int i = 0; i < ivs.Height(); i++)
         {
@@ -779,11 +789,13 @@ void Compiler::optStrengthReduce(FlowGraphNaturalLoop* loop, ScalarEvolutionCont
             JITDUMP("    Estimated cycle improvement: " FMT_WT " cycles per invocation\n", cycleImprovement);
             JITDUMP("    Estimated size improvement: " FMT_WT " bytes\n", sizeImprovement);
 
-            if ((cycleImprovement > 0) && ((cycleImprovement * ALLOWED_SIZE_REGRESSION_PER_CYCLE_IMPROVEMENT) >= -sizeImprovement))
+            if ((cycleImprovement > 0) &&
+                ((cycleImprovement * ALLOWED_SIZE_REGRESSION_PER_CYCLE_IMPROVEMENT) >= -sizeImprovement))
             {
                 JITDUMP("    Candidate for new primary IV (cycle improvement)\n");
             }
-            else if ((sizeImprovement > 0) && ((sizeImprovement * ALLOWED_CYCLE_REGRESSION_PER_SIZE_IMPROVEMENT) >= -cycleImprovement))
+            else if ((sizeImprovement > 0) &&
+                     ((sizeImprovement * ALLOWED_CYCLE_REGRESSION_PER_SIZE_IMPROVEMENT) >= -cycleImprovement))
             {
                 JITDUMP("    Candidate for new primary IV (size improvement)\n");
             }
@@ -796,13 +808,12 @@ void Compiler::optStrengthReduce(FlowGraphNaturalLoop* loop, ScalarEvolutionCont
                 continue;
             }
 
-            if ((bestIV == nullptr) ||
-                (cycleImprovement > bestCycleImprovement) ||
+            if ((bestIV == nullptr) || (cycleImprovement > bestCycleImprovement) ||
                 ((fabs(cycleImprovement - bestCycleImprovement) < 0.01) && (sizeImprovement > bestSizeImprovement)))
             {
-                bestIV = &iv;
+                bestIV               = &iv;
                 bestCycleImprovement = cycleImprovement;
-                sizeImprovement = bestSizeImprovement;
+                sizeImprovement      = bestSizeImprovement;
             }
         }
 
@@ -814,7 +825,6 @@ void Compiler::optStrengthReduce(FlowGraphNaturalLoop* loop, ScalarEvolutionCont
         JITDUMP("\n  Introducing primary IV for %s ", varTypeName(bestIV->IV->Type));
         DBEXEC(VERBOSE, bestIV->IV->Dump(this));
         JITDUMP("\n");
-
 
         // TODO-CQ: For other cases it's non-trivial to know if we can
         // materialize the value as IR in the step block.
@@ -848,7 +858,7 @@ void Compiler::optStrengthReduce(FlowGraphNaturalLoop* loop, ScalarEvolutionCont
         }
 
         BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
-        GenTree* initValue = scevContext.Materialize(bestIV->IV->Start);
+        GenTree*    initValue = scevContext.Materialize(bestIV->IV->Start);
         if (initValue == nullptr)
         {
             JITDUMP("      Skipping: init value could not be materialized\n");
@@ -859,28 +869,29 @@ void Compiler::optStrengthReduce(FlowGraphNaturalLoop* loop, ScalarEvolutionCont
         GenTree* stepValue = scevContext.Materialize(bestIV->IV->Step);
         assert(stepValue != nullptr);
 
-        unsigned newPrimaryIV = lvaGrabTemp(false DEBUGARG("Strength reduced derived IV"));
-        GenTree* initStore = gtNewTempStore(newPrimaryIV, initValue);
-        Statement* initStmt = fgNewStmtFromTree(initStore);
+        unsigned   newPrimaryIV = lvaGrabTemp(false DEBUGARG("Strength reduced derived IV"));
+        GenTree*   initStore    = gtNewTempStore(newPrimaryIV, initValue);
+        Statement* initStmt     = fgNewStmtFromTree(initStore);
         fgInsertStmtNearEnd(preheader, initStmt);
 
         JITDUMP("      Inserting init statement in preheader " FMT_BB "\n", preheader->bbNum);
         DISPSTMT(initStmt);
 
-        GenTree* nextValue = gtNewOperNode(GT_ADD, stepValue->TypeGet(), gtNewLclVarNode(newPrimaryIV, bestIV->IV->Type), stepValue);
-        GenTree* stepStore = gtNewTempStore(newPrimaryIV, nextValue);
-        Statement* stepStmt = fgNewStmtFromTree(stepStore);
+        GenTree* nextValue =
+            gtNewOperNode(GT_ADD, stepValue->TypeGet(), gtNewLclVarNode(newPrimaryIV, bestIV->IV->Type), stepValue);
+        GenTree*   stepStore = gtNewTempStore(newPrimaryIV, nextValue);
+        Statement* stepStmt  = fgNewStmtFromTree(stepStore);
         fgInsertStmtNearEnd(latch, stepStmt);
 
         JITDUMP("      Inserting step statement in latch " FMT_BB "\n", latch->bbNum);
         DISPSTMT(stepStmt);
 
         //// Remove all uses of IVs in child trees.
-        //for (int i = 0; i < ivs.Height(); i++)
+        // for (int i = 0; i < ivs.Height(); i++)
         //{
-        //    const IVUseInfo& otherIV = ivs.BottomRef(i);
-        //    for (IVUseListNode* node = otherIV.Uses; node != nullptr; node = node->Next)
-        //    {
+        //     const IVUseInfo& otherIV = ivs.BottomRef(i);
+        //     for (IVUseListNode* node = otherIV.Uses; node != nullptr; node = node->Next)
+        //     {
 
         //    }
         //}
@@ -896,7 +907,7 @@ void Compiler::optStrengthReduce(FlowGraphNaturalLoop* loop, ScalarEvolutionCont
                     continue;
                 }
 
-                bool unlinked = false;
+                bool     unlinked = false;
                 GenTree* ancestor = childNode->Tree;
                 while (ancestor != childNode->Stmt->GetRootNode())
                 {
@@ -904,7 +915,7 @@ void Compiler::optStrengthReduce(FlowGraphNaturalLoop* loop, ScalarEvolutionCont
                     if (ancestor == node->Tree)
                     {
                         *childNodeSlot = childNode->Next;
-                        unlinked = true;
+                        unlinked       = true;
                         break;
                     }
                 }
@@ -921,7 +932,6 @@ void Compiler::optStrengthReduce(FlowGraphNaturalLoop* loop, ScalarEvolutionCont
         {
             for (IVUseListNode* prevNode = bestIV->Uses; prevNode != node; prevNode = prevNode->Next)
             {
-
             }
 
             GenTree* newUse = gtNewLclVarNode(newPrimaryIV, bestIV->IV->Type);
@@ -988,7 +998,7 @@ PhaseStatus Compiler::optInductionVariables()
     ScalarEvolutionContext scevContext(this);
     JITDUMP("Optimizing induction variables:\n");
     ArrayStack<LocalOccurrence> ivOccurrences(getAllocator(CMK_LoopIVOpts));
-    ArrayStack<IVUseInfo> allIVs(getAllocator(CMK_LoopIVOpts));
+    ArrayStack<IVUseInfo>       allIVs(getAllocator(CMK_LoopIVOpts));
 
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
@@ -997,7 +1007,7 @@ PhaseStatus Compiler::optInductionVariables()
         scevContext.ResetForLoop(loop);
 
         allIVs.Reset();
-        int numWidened = 0;
+        int numWidened         = 0;
         int numStrengthReduced = 0;
 
         loop->VisitLoopBlocks([this, loop, &scevContext, &allIVs](BasicBlock* block) {
@@ -1062,19 +1072,19 @@ PhaseStatus Compiler::optInductionVariables()
                     }
 
                     IVUseListNode* newNode = new (this, CMK_LoopIVOpts) IVUseListNode;
-                    newNode->Block = block;
-                    newNode->Stmt = stmt;
-                    newNode->Tree = tree;
-                    newNode->Next = foundIV->Uses;
-                    newNode->Parent = nullptr;
-                    foundIV->Uses = newNode;
+                    newNode->Block         = block;
+                    newNode->Stmt          = stmt;
+                    newNode->Tree          = tree;
+                    newNode->Next          = foundIV->Uses;
+                    newNode->Parent        = nullptr;
+                    foundIV->Uses          = newNode;
                 }
 
                 JITDUMP("\n");
             }
 
             return BasicBlockVisit::Continue;
-            });
+        });
 
         if (loop->ExitEdges().size() == 1)
         {
@@ -1083,7 +1093,7 @@ PhaseStatus Compiler::optInductionVariables()
             if (exiting->KindIs(BBJ_COND))
             {
                 Statement* lastStmt = exiting->lastStmt();
-                GenTree* lastExpr = lastStmt->GetRootNode();
+                GenTree*   lastExpr = lastStmt->GetRootNode();
                 assert(lastExpr->OperIs(GT_JTRUE));
                 GenTree* cond = lastExpr->gtGetOp1();
                 if (cond->OperIsCompare() && varTypeIsIntegralOrI(cond->gtGetOp1()))
@@ -1092,9 +1102,11 @@ PhaseStatus Compiler::optInductionVariables()
                     Scev* op2 = scevContext.Analyze(exiting, cond->gtGetOp2());
                     if ((op1 != nullptr) && (op2 != nullptr) && !varTypeIsGC(op1->Type) && !varTypeIsGC(op2->Type))
                     {
-                        Scev* a = nullptr;
-                        Scev* b = nullptr;
-                        genTreeOps exitOp = loop->ContainsBlock(exiting->GetTrueTarget()) ? GenTree::ReverseRelop(cond->gtOper) : cond->gtOper;
+                        Scev*      a      = nullptr;
+                        Scev*      b      = nullptr;
+                        genTreeOps exitOp = loop->ContainsBlock(exiting->GetTrueTarget())
+                                                ? GenTree::ReverseRelop(cond->gtOper)
+                                                : cond->gtOper;
                         if (exitOp == GT_LT)
                         {
                             a = op1;
@@ -1118,7 +1130,10 @@ PhaseStatus Compiler::optInductionVariables()
 
                         if ((a != nullptr) && (b != nullptr))
                         {
-                            Scev* sub = scevContext.NewBinop(ScevOper::Add, a, scevContext.NewBinop(ScevOper::Mul, b, scevContext.NewConstant(b->Type, -1)));
+                            Scev* sub =
+                                scevContext.NewBinop(ScevOper::Add, a,
+                                                     scevContext.NewBinop(ScevOper::Mul, b,
+                                                                          scevContext.NewConstant(b->Type, -1)));
                             Scev* simplifiedSub = scevContext.Simplify(sub);
                             JITDUMP("Trip count subtraction is: ");
                             DBEXEC(VERBOSE, sub->Dump(this));
@@ -1129,7 +1144,7 @@ PhaseStatus Compiler::optInductionVariables()
                             if (simplifiedSub->OperIs(ScevOper::AddRec))
                             {
                                 ScevAddRec* tripCountAddRec = (ScevAddRec*)simplifiedSub;
-                                int64_t stepCns;
+                                int64_t     stepCns;
                                 if (tripCountAddRec->Step->GetConstantValue(this, &stepCns) && (stepCns < 0))
                                 {
                                     JITDUMP("Trip count is %s", stepCns != -1 ? "(" : "");
@@ -1153,18 +1168,19 @@ PhaseStatus Compiler::optInductionVariables()
         optStrengthReduce(loop, scevContext, allIVs);
         changed = true;
 
-        //for (int i = 0; i < allIVs.Height(); i++)
+        // for (int i = 0; i < allIVs.Height(); i++)
         //{
-        //    const IVUseInfo& info = allIVs.Bottom(i);
-        //    if (info.PrimaryLclNum != BAD_VAR_NUM)
-        //    {
-        //        for (IVUseListNode* node = info.Uses; node != nullptr; node = node->Next)
-        //        {
-        //            JITDUMP("Checking [%06u]\n", node->Tree->gtTreeID);
-        //            assert(node->Tree->OperIsScalarLocal() && (node->Tree->AsLclVarCommon()->GetLclNum() == info.PrimaryLclNum));
-        //        }
-        //    }
-        //}
+        //     const IVUseInfo& info = allIVs.Bottom(i);
+        //     if (info.PrimaryLclNum != BAD_VAR_NUM)
+        //     {
+        //         for (IVUseListNode* node = info.Uses; node != nullptr; node = node->Next)
+        //         {
+        //             JITDUMP("Checking [%06u]\n", node->Tree->gtTreeID);
+        //             assert(node->Tree->OperIsScalarLocal() && (node->Tree->AsLclVarCommon()->GetLclNum() ==
+        //             info.PrimaryLclNum));
+        //         }
+        //     }
+        // }
 
         for (Statement* stmt : loop->GetHeader()->Statements())
         {
@@ -1196,7 +1212,7 @@ PhaseStatus Compiler::optInductionVariables()
 
             ScevAddRec* addRec = (ScevAddRec*)scev;
 
-            GenTreeLclVarCommon* lcl    = stmt->GetRootNode()->AsLclVarCommon();
+            GenTreeLclVarCommon* lcl = stmt->GetRootNode()->AsLclVarCommon();
             JITDUMP("  V%02u is a primary induction variable in " FMT_LP "\n", lcl->GetLclNum(), loop->GetIndex());
 
             Scev* simplifiedAddRec = scevContext.Simplify(addRec);
@@ -1205,10 +1221,10 @@ PhaseStatus Compiler::optInductionVariables()
             loop->VisitLoopBlocks([=, &ivOccurrences](BasicBlock* block) {
                 optFindLocalOccurrences(block, lcl->GetLclNum(), [=, &ivOccurrences](Statement* stmt) {
                     ivOccurrences.Emplace(block, stmt);
-                    });
+                });
 
                 return BasicBlockVisit::Continue;
-                });
+            });
 
             if (optWidenPrimaryIV(loop, lcl->GetLclNum(), addRec, ivOccurrences))
             {

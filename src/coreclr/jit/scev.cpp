@@ -223,7 +223,7 @@ bool Scev::Equals(Scev* left, Scev* right)
             return static_cast<ScevConstant*>(left)->Value == static_cast<ScevConstant*>(right)->Value;
         case ScevOper::Local:
         {
-            ScevLocal* leftLocal = static_cast<ScevLocal*>(left);
+            ScevLocal* leftLocal  = static_cast<ScevLocal*>(left);
             ScevLocal* rightLocal = static_cast<ScevLocal*>(right);
             return (leftLocal->LclNum == rightLocal->LclNum) && (leftLocal->SsaNum == rightLocal->SsaNum);
         }
@@ -234,15 +234,16 @@ bool Scev::Equals(Scev* left, Scev* right)
         case ScevOper::Mul:
         case ScevOper::Lsh:
         {
-            ScevBinop* leftBinop = static_cast<ScevBinop*>(left);
+            ScevBinop* leftBinop  = static_cast<ScevBinop*>(left);
             ScevBinop* rightBinop = static_cast<ScevBinop*>(right);
             return Scev::Equals(leftBinop->Op1, rightBinop->Op1) && Scev::Equals(leftBinop->Op2, rightBinop->Op2);
         }
         case ScevOper::AddRec:
         {
-            ScevAddRec* leftAddRec = static_cast<ScevAddRec*>(left);
+            ScevAddRec* leftAddRec  = static_cast<ScevAddRec*>(left);
             ScevAddRec* rightAddRec = static_cast<ScevAddRec*>(right);
-            return Scev::Equals(leftAddRec->Start, rightAddRec->Start) && Scev::Equals(leftAddRec->Step, rightAddRec->Step);
+            return Scev::Equals(leftAddRec->Start, rightAddRec->Start) &&
+                   Scev::Equals(leftAddRec->Step, rightAddRec->Step);
         }
         default:
             unreached();
@@ -474,7 +475,8 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int d
 
             if ((ssaDsc->GetBlock() == nullptr) || !m_loop->ContainsBlock(ssaDsc->GetBlock()))
             {
-                return NewLocal(tree->AsLclVarCommon()->GetLclNum(), tree->AsLclVarCommon()->GetSsaNum(), genActualType(tree));
+                return NewLocal(tree->AsLclVarCommon()->GetLclNum(), tree->AsLclVarCommon()->GetSsaNum(),
+                                genActualType(tree));
             }
 
             if (ssaDsc->GetDefNode() == nullptr)
@@ -999,7 +1001,7 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev)
         case ScevOper::Local:
         {
             ScevLocal* local = (ScevLocal*)scev;
-            int64_t cns;
+            int64_t    cns;
             if (local->GetConstantValue(m_comp, &cns))
             {
                 return NewConstant(local->Type, cns);
@@ -1034,9 +1036,9 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev)
                 // TODO-Bug: This requires some proof that it is ok. If the
                 // original TYP_INT AddRec can overflow then this new TYP_LONG
                 // AddRec won't.
-                ScevAddRec* addRec = (ScevAddRec*)op1;
-                Scev* newStart = Simplify(NewExtension(unop->Oper, TYP_LONG, addRec->Start));
-                Scev* newStep = Simplify(NewExtension(unop->Oper, TYP_LONG, addRec->Step));
+                ScevAddRec* addRec   = (ScevAddRec*)op1;
+                Scev*       newStart = Simplify(NewExtension(unop->Oper, TYP_LONG, addRec->Start));
+                Scev*       newStep  = Simplify(NewExtension(unop->Oper, TYP_LONG, addRec->Step));
                 return NewAddRec(newStart, newStep);
             }
 
@@ -1157,7 +1159,8 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev)
             if (binop->OperIs(ScevOper::Add))
             {
                 // (a + c1) + (b + c2) => (a + b) + (c1 + c2)
-                if (op1->OperIs(ScevOper::Add) && ((ScevBinop*)op1)->Op2->OperIs(ScevOper::Constant) && op2->OperIs(ScevOper::Add) && ((ScevBinop*)op2)->Op2->OperIs(ScevOper::Constant))
+                if (op1->OperIs(ScevOper::Add) && ((ScevBinop*)op1)->Op2->OperIs(ScevOper::Constant) &&
+                    op2->OperIs(ScevOper::Add) && ((ScevBinop*)op2)->Op2->OperIs(ScevOper::Constant))
                 {
                     ScevBinop* newOp1 = NewBinop(ScevOper::Add, ((ScevBinop*)op1)->Op1, ((ScevBinop*)op2)->Op1);
                     ScevBinop* newOp2 = NewBinop(ScevOper::Add, ((ScevBinop*)op1)->Op2, ((ScevBinop*)op2)->Op2);
@@ -1184,60 +1187,60 @@ GenTree* ScalarEvolutionContext::Materialize(Scev* scev)
 {
     switch (scev->Oper)
     {
-    case ScevOper::Constant:
-        return m_comp->gtNewIconNode((ssize_t)((ScevConstant*)scev)->Value, scev->Type);
-    case ScevOper::Local:
-        return m_comp->gtNewLclvNode(((ScevLocal*)scev)->LclNum, scev->Type);
-    case ScevOper::ZeroExtend:
-    case ScevOper::SignExtend:
-    {
-        ScevUnop* ext = (ScevUnop*)scev;
-        GenTree* op = Materialize(ext->Op1);
-        if (op == nullptr)
+        case ScevOper::Constant:
+            return m_comp->gtNewIconNode((ssize_t)((ScevConstant*)scev)->Value, scev->Type);
+        case ScevOper::Local:
+            return m_comp->gtNewLclvNode(((ScevLocal*)scev)->LclNum, scev->Type);
+        case ScevOper::ZeroExtend:
+        case ScevOper::SignExtend:
         {
-            return nullptr;
-        }
+            ScevUnop* ext = (ScevUnop*)scev;
+            GenTree*  op  = Materialize(ext->Op1);
+            if (op == nullptr)
+            {
+                return nullptr;
+            }
 
-        return m_comp->gtNewCastNode(ext->Type, op, scev->OperIs(ScevOper::ZeroExtend), TYP_LONG);
-    }
-    case ScevOper::Add:
-    case ScevOper::Mul:
-    case ScevOper::Lsh:
-    {
-        ScevBinop* binop = (ScevBinop*)scev;
-        GenTree* op1 = Materialize(binop->Op1);
-        if (op1 == nullptr)
-        {
-            return nullptr;
+            return m_comp->gtNewCastNode(ext->Type, op, scev->OperIs(ScevOper::ZeroExtend), TYP_LONG);
         }
-
-        GenTree* op2 = Materialize(binop->Op2);
-        if (op2 == nullptr)
-        {
-            return nullptr;
-        }
-
-        genTreeOps oper;
-        switch (scev->Oper)
-        {
         case ScevOper::Add:
-            oper = GT_ADD;
-            break;
         case ScevOper::Mul:
-            oper = GT_MUL;
-            break;
         case ScevOper::Lsh:
-            oper = GT_LSH;
-            break;
+        {
+            ScevBinop* binop = (ScevBinop*)scev;
+            GenTree*   op1   = Materialize(binop->Op1);
+            if (op1 == nullptr)
+            {
+                return nullptr;
+            }
+
+            GenTree* op2 = Materialize(binop->Op2);
+            if (op2 == nullptr)
+            {
+                return nullptr;
+            }
+
+            genTreeOps oper;
+            switch (scev->Oper)
+            {
+                case ScevOper::Add:
+                    oper = GT_ADD;
+                    break;
+                case ScevOper::Mul:
+                    oper = GT_MUL;
+                    break;
+                case ScevOper::Lsh:
+                    oper = GT_LSH;
+                    break;
+                default:
+                    unreached();
+            }
+
+            return m_comp->gtNewOperNode(oper, binop->Type, op1, op2);
+        }
+        case ScevOper::AddRec:
+            return nullptr;
         default:
             unreached();
-        }
-
-        return m_comp->gtNewOperNode(oper, binop->Type, op1, op2);
-    }
-    case ScevOper::AddRec:
-        return nullptr;
-    default:
-        unreached();
     }
 }

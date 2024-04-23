@@ -7460,22 +7460,32 @@ public:
 #endif
 
     PhaseStatus optInductionVariables();
-    template<typename TFunctor>
+    template <typename TFunctor>
     void optFindLocalOccurrences(BasicBlock* block, unsigned lclNum, TFunctor func);
-    bool optWidenPrimaryIV(FlowGraphNaturalLoop* loop, unsigned lclNum, ScevAddRec* addRec, ArrayStack<struct LocalOccurrence>& loopOccurrences);
+    bool optWidenPrimaryIV(FlowGraphNaturalLoop*               loop,
+                           unsigned                            lclNum,
+                           ScevAddRec*                         addRec,
+                           ArrayStack<struct LocalOccurrence>& loopOccurrences);
     bool optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop);
-    bool optIsIVWideningProfitable(unsigned                lclNum,
-                                   BasicBlock*             initBlock,
-                                   bool                    initedToConstant,
-                                   FlowGraphNaturalLoop*   loop,
+    bool optIsIVWideningProfitable(unsigned                     lclNum,
+                                   BasicBlock*                  initBlock,
+                                   bool                         initedToConstant,
+                                   FlowGraphNaturalLoop*        loop,
                                    ArrayStack<LocalOccurrence>& loopOccurrences);
     void optBestEffortReplaceNarrowIVUses(
         unsigned lclNum, unsigned ssaNum, unsigned newLclNum, BasicBlock* block, Statement* firstStmt);
     void optReplaceWidenedIV(unsigned lclNum, unsigned ssaNum, unsigned newLclNum, Statement* stmt);
     void optSinkWidenedIV(unsigned lclNum, unsigned newLclNum, FlowGraphNaturalLoop* loop);
 
-    void optStrengthReduce(FlowGraphNaturalLoop* loop, ScalarEvolutionContext& scevContext, ArrayStack<struct IVUseInfo>& ivs);
-    void optScoreNewPrimaryIV(FlowGraphNaturalLoop* loop, ArrayStack<struct IVUseInfo>& ivs, const IVUseInfo& iv, BasicBlock* stepUpdateBlock, weight_t* cycleImprovement, weight_t* sizeImprovement);
+    void optStrengthReduce(FlowGraphNaturalLoop*         loop,
+                           ScalarEvolutionContext&       scevContext,
+                           ArrayStack<struct IVUseInfo>& ivs);
+    void optScoreNewPrimaryIV(FlowGraphNaturalLoop*         loop,
+                              ArrayStack<struct IVUseInfo>& ivs,
+                              const IVUseInfo&              iv,
+                              BasicBlock*                   stepUpdateBlock,
+                              weight_t*                     cycleImprovement,
+                              weight_t*                     sizeImprovement);
 
     // Redundant branch opts
     //
