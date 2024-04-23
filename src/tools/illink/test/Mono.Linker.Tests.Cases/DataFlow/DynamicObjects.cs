@@ -56,7 +56,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			// Roslyn codegen no longer produces a call to Binder.InvokeConstructor.
 			// [ExpectedSharedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.InvokeConstructor")]
-			// [ExpectedWarning ("IL3050", ProducedBy = Tool.NativeAot)] // https://github.com/dotnet/runtime/issues/94427
+			// [ExpectedWarning ("IL3050", Tool.NativeAot, "")] // https://github.com/dotnet/runtime/issues/94427
 			// static void ObjectCreationDynamicArgument ()
 			// {
 			// 	dynamic dynamicObject = "Some string";
