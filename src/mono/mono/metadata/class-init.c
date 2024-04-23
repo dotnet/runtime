@@ -937,6 +937,7 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 	klass->this_arg.byref__ = TRUE;
 	klass->is_inlinearray = gklass->is_inlinearray;
 	klass->inlinearray_value = gklass->inlinearray_value;
+	klass->is_exception_class = gklass->is_exception_class;
 	klass->enumtype = gklass->enumtype;
 	klass->valuetype = gklass->valuetype;
 

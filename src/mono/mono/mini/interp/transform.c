@@ -2907,7 +2907,7 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method, MonoMethodS
 	if (g_list_find (td->dont_inline, method))
 		return FALSE;
 
-	if (m_class_is_exception_class (method->klass))
+	if (m_class_is_exception_class (method->klass) && !strcmp (method->name, ".ctor"))
 		return FALSE;
 
 	return TRUE;
