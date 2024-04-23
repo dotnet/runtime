@@ -839,7 +839,8 @@ void Compiler::optStrengthReduce(FlowGraphNaturalLoop*   loop,
         // condition. If the latch condition has any uses, then we cannot
         // replace those. We should be able to generatelize this to save the
         // "pre-increment" value if necesary (same logic is needed for more
-        // general handling).
+        // general handling). Or we could simplify leave it alone. This just
+        // bails out in these cases.
         bool hasAnyLatchUses = false;
         for (IVUseListNode* node = bestIV->Uses; node != nullptr; node = node->Next)
         {
@@ -885,37 +886,6 @@ void Compiler::optStrengthReduce(FlowGraphNaturalLoop*   loop,
 
         JITDUMP("      Inserting step statement in latch " FMT_BB "\n", latch->bbNum);
         DISPSTMT(stepStmt);
-
-        for (IVUseListNode* node = bestIV->Uses; node != nullptr; node = node->Next)
-        {
-            for (IVUseListNode** childNodeSlot = &node->Next; (*childNodeSlot) != nullptr;)
-            {
-                IVUseListNode* childNode = *childNodeSlot;
-                if (childNode->Stmt != node->Stmt)
-                {
-                    childNodeSlot = &(*childNodeSlot)->Next;
-                    continue;
-                }
-
-                bool     unlinked = false;
-                GenTree* ancestor = childNode->Tree;
-                while (ancestor != childNode->Stmt->GetRootNode())
-                {
-                    ancestor = ancestor->gtGetParent(nullptr);
-                    if (ancestor == node->Tree)
-                    {
-                        *childNodeSlot = childNode->Next;
-                        unlinked       = true;
-                        break;
-                    }
-                }
-
-                if (!unlinked)
-                {
-                    childNodeSlot = &(*childNodeSlot)->Next;
-                }
-            }
-        }
 
         // Replace uses.
         for (IVUseListNode* node = bestIV->Uses; node != nullptr; node = node->Next)
@@ -1009,7 +979,10 @@ PhaseStatus Compiler::optInductionVariables()
             {
                 DISPSTMT(stmt);
 
-                for (GenTree* tree : stmt->TreeList())
+                // Iterate it backwards to add uses in a post-order so that
+                // changing the first uses before the latter ones does not
+                // affect them.
+                for (GenTree* tree = stmt->GetRootNode(); tree != nullptr; tree = tree->gtPrev)
                 {
                     JITDUMP("  [%06u] => ", dspTreeID(tree));
 
