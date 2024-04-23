@@ -15,7 +15,7 @@ public struct TargetPointer
     public TargetPointer(ulong value) => Value = value;
 }
 
-internal sealed unsafe class Target
+public sealed unsafe class Target
 {
     private const int StackAllocByteThreshold = 1024;
 
@@ -254,14 +254,41 @@ internal sealed unsafe class Target
     public bool TryReadGlobalUInt8(string name, out byte value)
     {
         value = 0;
+        if (!TryReadGlobalValue(name, out ulong globalValue, "uint8"))
+            return false;
 
+        value = (byte)globalValue;
+        return true;
+    }
+
+    public TargetPointer ReadGlobalPointer(string name)
+    {
+        if (!TryReadGlobalPointer(name, out TargetPointer pointer))
+            throw new InvalidOperationException($"Failed to read global pointer '{name}'.");
+
+        return pointer;
+    }
+
+    public bool TryReadGlobalPointer(string name, out TargetPointer pointer)
+    {
+        pointer = TargetPointer.Null;
+        if (!TryReadGlobalValue(name, out ulong globalValue, "pointer", "nint", "nuint"))
+            return false;
+
+        pointer = new TargetPointer(globalValue);
+        return true;
+    }
+
+    private bool TryReadGlobalValue(string name, out ulong value, params string[] expectedTypes)
+    {
+        value = 0;
         if (!_globals.TryGetValue(name, out (ulong Value, string? Type) global))
             return false;
 
-        if (global.Type is not null && global.Type != "uint8")
+        if (global.Type is not null && Array.IndexOf(expectedTypes, global.Type) == -1)
             return false;
 
-        value = (byte)global.Value;
+        value = global.Value;
         return true;
     }
 
