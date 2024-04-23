@@ -58,7 +58,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 test.ConditionalSelect_Op2();
 
                 // Validates executing the test inside conditional, with op3 as falseValue
-                test.ConditionalSelect_Op3();
+                test.ConditionalSelect_FalseOp();
             }
             else
             {
@@ -295,9 +295,9 @@ namespace JIT.HardwareIntrinsics.Arm
             ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _fld2, _fld2);
         }
 
-        public void ConditionalSelect_Op3()
+        public void ConditionalSelect_FalseOp()
         {
-            TestLibrary.TestFramework.BeginScenario(nameof(ConditionalSelect_Op3));
+            TestLibrary.TestFramework.BeginScenario(nameof(ConditionalSelect_FalseOp));
             ConditionalSelectScenario(_mask, _fld1, _fld2, _falseFld);
             
             ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, _fld2, _falseFld);
