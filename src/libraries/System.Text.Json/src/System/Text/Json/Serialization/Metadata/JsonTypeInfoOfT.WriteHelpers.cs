@@ -245,14 +245,13 @@ namespace System.Text.Json.Serialization.Metadata
 
                 state.CancellationToken = cancellationToken;
 
-                //using var bufferWriter = new PooledByteBufferWriter(Options.DefaultBufferSize);
                 using var writer = new Utf8JsonWriter(utf8Json, Options.GetWriterOptions());
 
                 try
                 {
                     do
                     {
-                        state.FlushThreshold = 4096;//(int)(bufferWriter.Capacity * JsonSerializer.FlushThreshold);
+                        state.FlushThreshold = (int)(4096 * JsonSerializer.FlushThreshold);
 
                         try
                         {

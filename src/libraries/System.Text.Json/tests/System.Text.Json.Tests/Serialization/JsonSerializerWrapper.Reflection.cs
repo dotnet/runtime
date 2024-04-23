@@ -926,7 +926,7 @@ namespace System.Text.Json.Serialization.Tests
             public override async Task<string> SerializeWrapper<T>(T value, JsonSerializerOptions options = null)
             {
                 Pipe pipe = new Pipe();
-                await JsonSerializer.SerializeAsync<T>(pipe.Writer, value, options);
+                await JsonSerializer.SerializeAsync(pipe.Writer, value, options);
                 ReadResult result = await pipe.Reader.ReadAsync();
                 return Encoding.UTF8.GetString(result.Buffer.ToArray());
             }

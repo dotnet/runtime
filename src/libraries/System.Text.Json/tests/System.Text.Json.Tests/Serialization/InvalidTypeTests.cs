@@ -37,6 +37,11 @@ namespace System.Text.Json.Serialization.Tests
         public InvalidTypeTests_Writer() : base(JsonSerializerWrapper.ReaderWriterSerializer) { }
     }
 
+    public class InvalidTypeTests_Pipe : InvalidTypeTests
+    {
+        public InvalidTypeTests_Pipe() : base(JsonSerializerWrapper.PipeSerializer) { }
+    }
+
     public abstract class InvalidTypeTests
     {
         private JsonSerializerWrapper Serializer { get; }
