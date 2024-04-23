@@ -135,7 +135,6 @@ ABIPassingInformation LoongArch64Classifier::Classify(Compiler*    comp,
             }
             else
             {
-                passedSize            = roundUp(passedSize, TARGET_POINTER_SIZE);
                 slots                 = (passedSize + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
                 canPassArgInRegisters = m_intRegs.Count() >= slots;
             }
