@@ -331,7 +331,7 @@ namespace System.DirectoryServices.Protocols
              * containing the fully qualified domain name of a DC in the domain to which the object
              * is to be moved. The string is not BER-encoded."
              */
-            if (!string.IsNullOrEmpty(TargetDomainController))
+            if (TargetDomainController != null)
             {
                 int byteCount = s_utf8Encoding.GetByteCount(TargetDomainController);
 
