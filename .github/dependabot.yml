@@ -11,4 +11,4 @@ updates:
       interval: daily
     open-pull-requests-limit: 5
     labels:
-      - area-infrastructure
+      - area-codeflow
