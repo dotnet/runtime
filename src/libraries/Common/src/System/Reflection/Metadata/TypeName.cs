@@ -6,6 +6,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using System.Text;
 
 #if !SYSTEM_PRIVATE_CORELIB
@@ -36,7 +37,7 @@ namespace System.Reflection.Metadata
         private readonly TypeName? _elementOrGenericType;
         private readonly TypeName? _declaringType;
 #if SYSTEM_PRIVATE_CORELIB
-        private readonly IReadOnlyList<TypeName> _genericArguments;
+        private readonly List<TypeName>? _genericArguments;
 #else
         private readonly ImmutableArray<TypeName> _genericArguments;
 #endif
@@ -62,7 +63,7 @@ namespace System.Reflection.Metadata
             _nestedNameLength = nestedNameLength;
 
 #if SYSTEM_PRIVATE_CORELIB
-            _genericArguments = genericTypeArguments is not null ? genericTypeArguments : Array.Empty<TypeName>();
+            _genericArguments = genericTypeArguments;
 #else
             _genericArguments = genericTypeArguments is null
                 ? ImmutableArray<TypeName>.Empty
@@ -119,13 +120,18 @@ namespace System.Reflection.Metadata
                 {
                     if (IsConstructedGenericType)
                     {
-                        _fullName = TypeNameParserHelpers.GetGenericTypeFullName(GetGenericTypeDefinition().FullName.AsSpan(), _genericArguments);
+                        _fullName = TypeNameParserHelpers.GetGenericTypeFullName(GetGenericTypeDefinition().FullName.AsSpan(),
+#if SYSTEM_PRIVATE_CORELIB
+                            CollectionsMarshal.AsSpan(_genericArguments));
+#else
+                            _genericArguments.AsSpan());
+#endif
                     }
                     else if (IsArray || IsPointer || IsByRef)
                     {
                         ValueStringBuilder builder = new(stackalloc char[128]);
                         builder.Append(GetElementType().FullName);
-                        _fullName = TypeNameParserHelpers.GetRankOrModifierStringRepresentation(_rankOrModifier, builder);
+                        _fullName = TypeNameParserHelpers.GetRankOrModifierStringRepresentation(_rankOrModifier, ref builder);
                     }
                     else
                     {
@@ -157,7 +163,7 @@ namespace System.Reflection.Metadata
         /// </remarks>
         public bool IsConstructedGenericType =>
 #if SYSTEM_PRIVATE_CORELIB
-            _genericArguments.Count > 0;
+            _genericArguments is not null;
 #else
             _genericArguments.Length > 0;
 #endif
@@ -223,7 +229,7 @@ namespace System.Reflection.Metadata
                     {
                         ValueStringBuilder builder = new(stackalloc char[64]);
                         builder.Append(GetElementType().Name);
-                        _name = TypeNameParserHelpers.GetRankOrModifierStringRepresentation(_rankOrModifier, builder);
+                        _name = TypeNameParserHelpers.GetRankOrModifierStringRepresentation(_rankOrModifier, ref builder);
                     }
                     else if (_nestedNameLength > 0 && _fullName is not null)
                     {
@@ -284,7 +290,7 @@ namespace System.Reflection.Metadata
                 result += GetElementType().GetNodeCount();
             }
 
-            foreach (TypeName genericArgument in _genericArguments)
+            foreach (TypeName genericArgument in GetGenericArguments())
             {
                 result += genericArgument.GetNodeCount();
             }
@@ -367,10 +373,9 @@ namespace System.Reflection.Metadata
         /// </remarks>
         public
 #if SYSTEM_PRIVATE_CORELIB
-        IReadOnlyList<TypeName>
+        IReadOnlyList<TypeName> GetGenericArguments() => _genericArguments is null ? Array.Empty<TypeName>() : _genericArguments;
 #else
-        ImmutableArray<TypeName>
+        ImmutableArray<TypeName> GetGenericArguments() => _genericArguments;
 #endif
-        GetGenericArguments() => _genericArguments;
     }
 }

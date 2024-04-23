@@ -315,19 +315,11 @@ namespace System.Reflection
             }
 
             byte[] pkt = new byte[attributeValue.Length / 2];
-            int srcIndex = 0;
-            for (int i = 0; i < pkt.Length; i++)
+            if (!HexConverter.TryDecodeFromUtf16(attributeValue.AsSpan(), pkt, out int _))
             {
-                char hi = attributeValue[srcIndex++];
-                char lo = attributeValue[srcIndex++];
-
-                if (!TryParseHexNybble(hi, out byte parsedHi) || !TryParseHexNybble(lo, out byte parsedLo))
-                {
-                    return false;
-                }
-
-                pkt[i] = (byte)((parsedHi << 4) | parsedLo);
+                return false;
             }
+
             result = pkt;
             return true;
         }
@@ -345,18 +337,6 @@ namespace System.Reflection
                 _ => ProcessorArchitecture.None
             };
             return result != ProcessorArchitecture.None;
-        }
-
-        private static bool TryParseHexNybble(char c, out byte parsed)
-        {
-            int value = HexConverter.FromChar(c);
-            if (value == 0xFF)
-            {
-                parsed = 0;
-                return false;
-            }
-            parsed = (byte)value;
-            return true;
         }
 
         private static bool IsWhiteSpace(char ch)
@@ -426,7 +406,7 @@ namespace System.Reflection
             using ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[64]);
 
             char quoteChar = '\0';
-            if (c == '\'' || c == '\"')
+            if (c is '\'' or '\"')
             {
                 quoteChar = c;
                 if (!TryGetNextChar(out c))
@@ -453,19 +433,19 @@ namespace System.Reflection
                 if (quoteChar != 0 && c == quoteChar)
                     break;  // Terminate: Found closing quote of quoted string.
 
-                if (quoteChar == 0 && (c == ',' || c == '='))
+                if (quoteChar == 0 && (c is ',' or '='))
                 {
                     _index--;
                     break;  // Terminate: Found start of a new ',' or '=' token.
                 }
 
-                if (quoteChar == 0 && (c == '\'' || c == '\"'))
+                if (quoteChar == 0 && (c is '\'' or '\"'))
                 {
                     token = default;
                     return false;
                 }
 
-                if (c == '\\')
+                if (c is '\\')
                 {
                     if (!TryGetNextChar(out c))
                     {
@@ -493,7 +473,7 @@ namespace System.Reflection
                             break;
                         default:
                             token = default;
-                            return false; //unreachable
+                            return false;
                     }
                 }
                 else

@@ -166,11 +166,10 @@ namespace System.Reflection.Metadata
             {
 #if SYSTEM_PRIVATE_CORELIB
                 // backward compat: throw FileLoadException for non-empty invalid strings
-                if (!_throwOnError && _inputString.TrimStart().StartsWith(","))
+                if (_throwOnError || !_inputString.TrimStart().StartsWith(","))
                 {
-                    return null;
+                    throw new IO.FileLoadException(SR.InvalidAssemblyName, _inputString.ToString());
                 }
-                throw new IO.FileLoadException(SR.InvalidAssemblyName, _inputString.ToString());
 #else
                 return null;
 #endif

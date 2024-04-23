@@ -9,6 +9,7 @@ using System.Text;
 
 #if !SYSTEM_PRIVATE_CORELIB
 using System.Collections.Immutable;
+using System.Linq;
 #endif
 
 namespace System.Reflection.Metadata
@@ -115,7 +116,7 @@ namespace System.Reflection.Metadata
 #elif NET8_0_OR_GREATER
                     !PublicKeyOrToken.IsDefault ? Runtime.InteropServices.ImmutableCollectionsMarshal.AsArray(PublicKeyOrToken) : null;
 #else
-                    ToArray(PublicKeyOrToken);
+                    !PublicKeyOrToken.IsDefault ? PublicKeyOrToken.ToArray() : null;
 #endif
                     _fullName = AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName, publicKeyToken, Flags, ExtractAssemblyContentType(_flags));
                 }
@@ -154,15 +155,17 @@ namespace System.Reflection.Metadata
 #else
             if (!PublicKeyOrToken.IsDefault)
             {
+#pragma warning disable RS0030 // TypeSystem does not allow System.Linq, but we need to use System.Linq.ImmutableArrayExtensions.ToArray
                 // A copy of the array needs to be created, as AssemblyName allows for the mutation of provided array.
                 if ((Flags & AssemblyNameFlags.PublicKey) != 0)
                 {
-                    assemblyName.SetPublicKey(ToArray(PublicKeyOrToken));
+                    assemblyName.SetPublicKey(PublicKeyOrToken.ToArray());
                 }
                 else
                 {
-                    assemblyName.SetPublicKeyToken(ToArray(PublicKeyOrToken));
+                    assemblyName.SetPublicKeyToken(PublicKeyOrToken.ToArray());
                 }
+#pragma warning restore RS0030
             }
 #endif
 
@@ -194,7 +197,7 @@ namespace System.Reflection.Metadata
 #if SYSTEM_REFLECTION_METADATA || SYSTEM_PRIVATE_CORELIB // required by some tools that include this file but don't include the attribute
             [NotNullWhen(true)]
 #endif
-        out AssemblyNameInfo? result)
+            out AssemblyNameInfo? result)
         {
             AssemblyNameParser.AssemblyNameParts parts = default;
             if (AssemblyNameParser.TryParse(assemblyName, ref parts))
@@ -215,24 +218,5 @@ namespace System.Reflection.Metadata
 
         internal static ProcessorArchitecture ExtractProcessorArchitecture(AssemblyNameFlags flags)
             => (ProcessorArchitecture)((((int)flags) >> 4) & 0x7);
-
-#if !SYSTEM_PRIVATE_CORELIB
-        private static byte[]? ToArray(ImmutableArray<byte> input)
-        {
-            // not using System.Linq.ImmutableArrayExtensions.ToArray as TypeSystem does not allow System.Linq
-            if (input.IsDefault)
-            {
-                return null;
-            }
-            else if (input.IsEmpty)
-            {
-                return Array.Empty<byte>();
-            }
-
-            byte[] result = new byte[input.Length];
-            input.CopyTo(result, 0);
-            return result;
-        }
-#endif
     }
 }

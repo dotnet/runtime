@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using Xunit;
@@ -67,7 +68,7 @@ namespace System.Reflection.Metadata.Tests
         public void AppendRankOrModifierStringRepresentationAppendsExpectedString(int input, string expected)
         {
             ValueStringBuilder builder = new ValueStringBuilder(initialCapacity: 10);
-            Assert.Equal(expected, TypeNameParserHelpers.GetRankOrModifierStringRepresentation(input, builder));
+            Assert.Equal(expected, TypeNameParserHelpers.GetRankOrModifierStringRepresentation(input, ref builder));
         }
 
         [Theory]
@@ -80,7 +81,7 @@ namespace System.Reflection.Metadata.Tests
         public void GetGenericTypeFullNameReturnsSameStringAsTypeAPI(Type genericType)
         {
             TypeName openGenericTypeName = TypeName.Parse(genericType.GetGenericTypeDefinition().FullName.AsSpan());
-            TypeName[] genericArgNames = genericType.GetGenericArguments().Select(arg => TypeName.Parse(arg.AssemblyQualifiedName.AsSpan())).ToArray();
+            ReadOnlySpan<TypeName> genericArgNames = genericType.GetGenericArguments().Select(arg => TypeName.Parse(arg.AssemblyQualifiedName.AsSpan())).ToArray();
 
             Assert.Equal(genericType.FullName, TypeNameParserHelpers.GetGenericTypeFullName(openGenericTypeName.FullName.AsSpan(), genericArgNames));
         }

@@ -17,11 +17,13 @@ namespace System.Reflection.Metadata
         internal const sbyte ByRef = -3;
         private const char EscapeCharacter = '\\';
 #if NET8_0_OR_GREATER
-        private static readonly SearchValues<char> _endOfFullTypeNameDelimitersSearchValues = SearchValues.Create("[]&*,+\\");
+        private static readonly SearchValues<char> s_endOfFullTypeNameDelimitersSearchValues = SearchValues.Create("[]&*,+\\");
 #endif
 
-        internal static string GetGenericTypeFullName(ReadOnlySpan<char> fullTypeName, IReadOnlyList<TypeName> genericArgs)
+        internal static string GetGenericTypeFullName(ReadOnlySpan<char> fullTypeName, ReadOnlySpan<TypeName> genericArgs)
         {
+            Debug.Assert(genericArgs.Length > 0);
+
             ValueStringBuilder result = new(stackalloc char[128]);
             result.Append(fullTypeName);
 
@@ -56,7 +58,7 @@ namespace System.Reflection.Metadata
             // 'n' is adversary-controlled. To avoid DoS issues here, we'll loop manually.
 
 #if NET8_0_OR_GREATER
-            int offset = input.IndexOfAny(_endOfFullTypeNameDelimitersSearchValues);
+            int offset = input.IndexOfAny(s_endOfFullTypeNameDelimitersSearchValues);
             if (offset < 0)
             {
                 return input.Length; // no type name end chars were found, the whole input is the type name
@@ -159,7 +161,7 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal static string GetRankOrModifierStringRepresentation(int rankOrModifier, ValueStringBuilder builder)
+        internal static string GetRankOrModifierStringRepresentation(int rankOrModifier, ref ValueStringBuilder builder)
         {
             if (rankOrModifier == ByRef)
             {
