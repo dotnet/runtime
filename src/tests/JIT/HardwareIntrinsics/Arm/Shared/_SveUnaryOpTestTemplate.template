@@ -253,11 +253,13 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public void ConditionalSelect_Op1()
         {
-            TestLibrary.TestFramework.BeginScenario(nameof(ConditionalSelect_Op1));
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_Op1_mask");
             ConditionalSelectScenario(_mask, _fld1, _fld1);
             
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_Op1_zero");
             ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, _fld1);
             
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_Op1_all");
             ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _fld1);
         }
 
@@ -266,8 +268,10 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(ConditionalSelect_FalseOp));
             ConditionalSelectScenario(_mask, _fld1, _falseFld);
             
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_zero");
             ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, _falseFld);
             
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_all");
             ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _falseFld);            
         }
 
