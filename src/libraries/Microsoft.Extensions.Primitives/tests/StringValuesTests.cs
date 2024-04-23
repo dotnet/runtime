@@ -275,6 +275,43 @@ namespace Microsoft.Extensions.Primitives
             Assert.Equal<string[]>(aStringArray, stringValues);
         }
 
+#if NETCOREAPP
+        [Fact]
+        public void ImplicitReadOnlySpanStringConverter_Works()
+        {
+            // from null string
+            StringValues stringValues = (string)null;
+            ReadOnlySpan<string> span = (ReadOnlySpan<string>)stringValues;
+            Assert.True(span.IsEmpty);
+            Assert.Equal((string[])stringValues, span);
+
+            // from null string[]
+            stringValues = (string[])null;
+            span = (ReadOnlySpan<string>)stringValues;
+            Assert.True(span.IsEmpty);
+            Assert.Equal((string[])stringValues, span);
+
+            // from string
+            string aString = "abc";
+            stringValues = (string)aString;
+            span = (ReadOnlySpan<string>)stringValues;
+            Assert.Equal(1, span.Length);
+            Assert.Equal(aString, span[0]);
+            Assert.Equal((string[])stringValues, span);
+
+            // from string[]
+            string bString = "bcd";
+            string[] aStringArray = new[] { aString, bString };
+            stringValues = (string[])aStringArray;
+            span = (ReadOnlySpan<string>)stringValues;
+            Assert.Equal(2, span.Length);
+            Assert.Equal(aString, span[0]);
+            Assert.Equal(bString, span[1]);
+            Assert.Equal(aStringArray, span);
+            Assert.Equal((string[])stringValues, span);
+        }
+#endif
+
         [Theory]
         [MemberData(nameof(DefaultOrNullStringValues))]
         [MemberData(nameof(EmptyStringValues))]

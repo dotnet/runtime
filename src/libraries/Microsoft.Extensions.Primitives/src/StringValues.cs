@@ -85,6 +85,26 @@ namespace Microsoft.Extensions.Primitives
             return value.GetArrayValue();
         }
 
+#if NET9_0_OR_GREATER
+        /// <summary>
+        /// Defines an implicit conversion of a given <see cref="StringValues"/> to a string span.
+        /// </summary>
+        /// <param name="value">A <see cref="StringValues"/> to implicitly convert.</param>
+#pragma warning disable CS3006 // Overloaded method 'StringValues.implicit operator ReadOnlySpan<string?>(in StringValues)' differing only in ref or out, or in array rank, is not CLS-compliant.
+        public static implicit operator ReadOnlySpan<string?>(in StringValues value)
+#pragma warning restore CS3006
+        {
+            if (value._values is string)
+            {
+                return new ReadOnlySpan<string?>(in Unsafe.As<object, string?>(ref Unsafe.AsRef(in value._values)));
+            }
+            else
+            {
+                return new ReadOnlySpan<string?>((string?[]?)value._values);
+            }
+        }
+#endif
+
         /// <summary>
         /// Gets the number of <see cref="string"/> elements contained in this <see cref="StringValues" />.
         /// </summary>

@@ -167,6 +167,11 @@ namespace Microsoft.Extensions.Primitives
         public static bool operator ==(string?[]? left, Microsoft.Extensions.Primitives.StringValues right) { throw null; }
         public static implicit operator string?(Microsoft.Extensions.Primitives.StringValues values) { throw null; }
         public static implicit operator string?[]?(Microsoft.Extensions.Primitives.StringValues value) { throw null; }
+#if NET9_0_OR_GREATER
+#pragma warning disable CS3006 // Overloaded method 'StringValues.implicit operator ReadOnlySpan<string?>(in StringValues)' differing only in ref or out, or in array rank, is not CLS-compliant.
+        public static implicit operator System.ReadOnlySpan<string?> (in Microsoft.Extensions.Primitives.StringValues value) { throw null; }
+#pragma warning restore CS3006
+#endif
         public static implicit operator Microsoft.Extensions.Primitives.StringValues(string? value) { throw null; }
         public static implicit operator Microsoft.Extensions.Primitives.StringValues(string?[]? values) { throw null; }
         public static bool operator !=(Microsoft.Extensions.Primitives.StringValues left, Microsoft.Extensions.Primitives.StringValues right) { throw null; }
