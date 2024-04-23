@@ -38,10 +38,10 @@ public class InterpPgoTests : AppTestBase
         CopyTestAsset("WasmBasicTestApp", "InterpPgoTest", "App");
         BuildProject(config);
         
+        _testOutput.WriteLine("/// First run");
         var result = await RunTest(config, iterationCount);
         string output;
         {
-            _testOutput.WriteLine("/// First run");
             output = string.Join(Environment.NewLine, result.ConsoleOutput);
 
             Assert.Contains("Hello, World! Greetings from", output);
@@ -53,9 +53,9 @@ public class InterpPgoTests : AppTestBase
             Assert.Contains("added System.Runtime.CompilerServices.Unsafe:Add<byte> (byte&,int) to table", output);
         }
 
+        _testOutput.WriteLine("/// Second run");
         result = await RunTest(config, iterationCount);
         {
-            _testOutput.WriteLine("/// Second run");
             output = string.Join(Environment.NewLine, result.ConsoleOutput);
 
             Assert.Contains("Hello, World! Greetings from", output);
@@ -73,5 +73,5 @@ public class InterpPgoTests : AppTestBase
         _testOutput.WriteLine("/// Done");
     }
 
-    private Task<RunResult> RunTest(string config, int iterationCount) => RunSdkStyleAppForBuild(new(Configuration: config, TestScenario: "InterpPgoTest", BrowserQueryString: new() { ["iterations"] = iterationCount.ToString() }));
+    private Task<RunResult> RunTest(string config, int iterationCount) => RunSdkStyleAppForBuild(new(Configuration: config, TestScenario: "InterpPgoTest", BrowserQueryString: new() { ["iterationCount"] = iterationCount.ToString() }));
 }
