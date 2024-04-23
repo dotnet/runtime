@@ -47,6 +47,37 @@ echo HARNESS_RUNNER=$HARNESS_RUNNER
 echo XHARNESS_COMMAND=$XHARNESS_COMMAND
 echo XHARNESS_ARGS=$XHARNESS_ARGS
 
+function _buildAOTFunc()
+{
+	local projectFile=$1
+	local binLog=$2
+	shift 2
+
+	time dotnet msbuild $projectFile /bl:$binLog $*
+	local buildExitCode=$?
+
+	echo "\n** Performance summary for the build **\n"
+	dotnet msbuild $binLog -clp:PerformanceSummary -v:q -nologo
+	if [[ "$(uname -s)" == "Linux" && $buildExitCode -ne 0 ]]; then
+		echo "\nLast few messages from dmesg:\n"
+		local lastLines=`dmesg | tail -n 20`
+		echo $lastLines
+
+		if [[ "$lastLines" =~ "oom-kill" ]]; then
+			return 9200 # OOM
+		fi
+	fi
+
+	echo
+	echo
+
+    if [[ $buildExitCode -ne 0 ]]; then
+        return 9100 # aot build failure
+    fi
+
+	return 0
+}
+
 pushd $EXECUTION_DIR
 
 # ========================= BEGIN Test Execution ============================= 

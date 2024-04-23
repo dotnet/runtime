@@ -723,6 +723,10 @@ public:
     void dmpIsExactType(DWORDLONG key, DWORD value);
     bool repIsExactType(CORINFO_CLASS_HANDLE cls);
 
+    void recIsNullableType(CORINFO_CLASS_HANDLE cls, TypeCompareState result);
+    void dmpIsNullableType(DWORDLONG key, DWORD value);
+    TypeCompareState repIsNullableType(CORINFO_CLASS_HANDLE cls);
+
     void recIsEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE underlyingType, TypeCompareState result);
     void dmpIsEnum(DWORDLONG key, DLD value);
     TypeCompareState repIsEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType);
@@ -1165,6 +1169,7 @@ enum mcPackets
     Packet_NotifyMethodInfoUsage = 214,
     Packet_IsExactType = 215,
     Packet_GetSwiftLowering = 216,
+    Packet_IsNullableType = 217,
 };
 
 void SetDebugDumpVariables();
