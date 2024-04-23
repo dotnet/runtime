@@ -43,9 +43,7 @@ namespace System.Collections.Generic
 
         public Dictionary(IEqualityComparer<TKey>? comparer) : this(0, comparer) { }
 
-        public Dictionary(int capacity, IEqualityComparer<TKey>? comparer) : this(0, comparer, false) { }
-
-        internal Dictionary(int capacity, IEqualityComparer<TKey>? comparer, bool useProvidedComparer)
+        public Dictionary(int capacity, IEqualityComparer<TKey>? comparer)
         {
             if (capacity < 0)
             {
@@ -68,16 +66,13 @@ namespace System.Collections.Generic
             {
                 _comparer = comparer ?? EqualityComparer<TKey>.Default;
 
-                if (!useProvidedComparer)
+                // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
+                // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
+                // hash buckets become unbalanced.
+                if (typeof(TKey) == typeof(string) &&
+                    NonRandomizedStringEqualityComparer.GetStringComparer(_comparer!) is IEqualityComparer<string> stringComparer)
                 {
-                    // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
-                    // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
-                    // hash buckets become unbalanced.
-                    if (typeof(TKey) == typeof(string) &&
-                        NonRandomizedStringEqualityComparer.GetStringComparer(_comparer!) is IEqualityComparer<string> stringComparer)
-                    {
-                        _comparer = (IEqualityComparer<TKey>)stringComparer;
-                    }
+                    _comparer = (IEqualityComparer<TKey>)stringComparer;
                 }
             }
             else if (comparer is not null && // first check for null to avoid forcing default comparer instantiation unnecessarily
