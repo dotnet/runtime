@@ -1729,9 +1729,12 @@ struct TlsDestructionMonitor
                 BOOL oldGCOnTransitionsOK = thread->m_GCOnTransitionsOK;
                 thread->m_GCOnTransitionsOK = FALSE;
 #endif
-                GCX_COOP_NO_DTOR();
-                FreeThreadStaticData(&t_ThreadStatics, thread);
-                GCX_COOP_NO_DTOR_END();
+                if (!IsAtProcessExit() && !g_fEEShutDown)
+                {
+                    GCX_COOP_NO_DTOR();
+                    FreeThreadStaticData(&t_ThreadStatics, thread);
+                    GCX_COOP_NO_DTOR_END();
+                }
 #ifdef _DEBUG
                 thread->m_GCOnTransitionsOK = oldGCOnTransitionsOK;
 #endif

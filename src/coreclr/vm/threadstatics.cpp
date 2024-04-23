@@ -427,12 +427,15 @@ void FreeLoaderAllocatorHandlesForTLSData(Thread *pThread)
 
 void AssertThreadStaticDataFreed(ThreadLocalData *pThreadLocalData)
 {
-    _ASSERTE(pThreadLocalData->pThread == NULL);
-    _ASSERTE(pThreadLocalData->pTLSArrayData == NULL);
-    _ASSERTE(pThreadLocalData->cTLSData == 0);
-    _ASSERTE(pThreadLocalData->pNonCollectibleTlsReferenceData == NULL);
-    _ASSERTE(pThreadLocalData->cNonCollectibleTlsData == 0);
-    _ASSERTE(pThreadLocalData->pInFlightData == NULL);
+    if (!IsAtProcessExit() && !g_fEEShutDown)
+    {
+        _ASSERTE(pThreadLocalData->pThread == NULL);
+        _ASSERTE(pThreadLocalData->pTLSArrayData == NULL);
+        _ASSERTE(pThreadLocalData->cTLSData == 0);
+        _ASSERTE(pThreadLocalData->pNonCollectibleTlsReferenceData == NULL);
+        _ASSERTE(pThreadLocalData->cNonCollectibleTlsData == 0);
+        _ASSERTE(pThreadLocalData->pInFlightData == NULL);
+    }
 }
 
 void FreeThreadStaticData(ThreadLocalData *pThreadLocalData, Thread* pThread)
@@ -447,33 +450,36 @@ void FreeThreadStaticData(ThreadLocalData *pThreadLocalData, Thread* pThread)
     if (pThreadLocalData == NULL)
         return;
 
-    SpinLockHolder spinLock(&pThread->m_TlsSpinLock);
-
-    if (pThreadLocalData->pThread == NULL)
+    if (!IsAtProcessExit() && !g_fEEShutDown)
     {
-        return;
+        SpinLockHolder spinLock(&pThread->m_TlsSpinLock);
+
+        if (pThreadLocalData->pThread == NULL)
+        {
+            return;
+        }
+
+        pThreadLocalData = pThread->m_ThreadLocalDataPtr;
+
+        if (pThreadLocalData == NULL)
+            return;
+
+        delete[] (uint8_t*)pThreadLocalData->pTLSArrayData;
+
+        pThreadLocalData->pTLSArrayData = 0;
+        pThreadLocalData->cTLSData = 0;
+        pThreadLocalData->pNonCollectibleTlsReferenceData = 0;
+        pThreadLocalData->cNonCollectibleTlsData = 0;
+
+        while (pThreadLocalData->pInFlightData != NULL)
+        {
+            InFlightTLSData* pInFlightData = pThreadLocalData->pInFlightData;
+            pThreadLocalData->pInFlightData = pInFlightData->pNext;
+            delete pInFlightData;
+        }
+        pThreadLocalData->pThread->m_ThreadLocalDataPtr = NULL;
+        VolatileStoreWithoutBarrier(&pThreadLocalData->pThread, (Thread*)NULL);
     }
-
-    pThreadLocalData = pThread->m_ThreadLocalDataPtr;
-
-    if (pThreadLocalData == NULL)
-        return;
-
-    delete[] (uint8_t*)pThreadLocalData->pTLSArrayData;
-
-    pThreadLocalData->pTLSArrayData = 0;
-    pThreadLocalData->cTLSData = 0;
-    pThreadLocalData->pNonCollectibleTlsReferenceData = 0;
-    pThreadLocalData->cNonCollectibleTlsData = 0;
-
-    while (pThreadLocalData->pInFlightData != NULL)
-    {
-        InFlightTLSData* pInFlightData = pThreadLocalData->pInFlightData;
-        pThreadLocalData->pInFlightData = pInFlightData->pNext;
-        delete pInFlightData;
-    }
-    pThreadLocalData->pThread->m_ThreadLocalDataPtr = NULL;
-    VolatileStoreWithoutBarrier(&pThreadLocalData->pThread, (Thread*)NULL);
 }
 
 void SetTLSBaseValue(TADDR *ppTLSBaseAddress, TADDR pTLSBaseAddress, bool useGCBarrier)

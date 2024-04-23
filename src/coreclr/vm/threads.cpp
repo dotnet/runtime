@@ -7721,7 +7721,10 @@ void Thread::DeleteThreadStaticData()
     CONTRACTL_END;
 
     FreeLoaderAllocatorHandlesForTLSData(this);
-    FreeThreadStaticData(m_ThreadLocalDataPtr, this);
+    if (!IsAtProcessExit() && !g_fEEShutDown)
+    {
+        FreeThreadStaticData(m_ThreadLocalDataPtr, this);
+    }
 }
 
 OBJECTREF Thread::GetCulture(BOOL bUICulture)
