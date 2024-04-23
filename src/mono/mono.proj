@@ -77,6 +77,8 @@
     <!-- by default, do dynamic components -->
     <!-- TODO: Change to dynamic as default once package/deploy is fixed for all targets -->
     <MonoComponentsStatic Condition="'$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
+    <NeedEmscriptenPackages Condition="'$(TargetsBrowser)' == 'true' or '$(MonoGenerateOffsetsOSGroups)' == 'browser'">true</NeedEmscriptenPackages>
+    <NeedEmscriptenPackages Condition="'$(NeedEmscriptenPackages)' == ''">false</NeedEmscriptenPackages>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">
@@ -87,27 +89,64 @@
                       GeneratePathProperty="true" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' or '$(MonoGenerateOffsetsOSGroups)' == 'browser'">
-    <NodePkgVersion Condition="'$(HostOS)' == 'linux' and '$(BuildArchitecture)' == 'x64'">$(runtimelinuxx64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
-    <NodePkgVersion Condition="'$(HostOS)' == 'linux' and '$(BuildArchitecture)' == 'arm64'">$(runtimelinuxarm64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
-    <NodePkgVersion Condition="'$(HostOS)' == 'windows' and '$(BuildArchitecture)' == 'x64'">$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
-    <NodePkgVersion Condition="'$(HostOS)' == 'windows' and '$(BuildArchitecture)' == 'arm64'">$(runtimewinarm64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
-    <NodePkgVersion Condition="'$(HostOS)' == 'osx' and '$(BuildArchitecture)' == 'x64'">$(runtimeosxx64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
-    <NodePkgVersion Condition="'$(HostOS)' == 'osx' and '$(BuildArchitecture)' == 'arm64'">$(runtimeosxarm64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
-    <EmsdkCacheVersion Condition="'$(HostOS)' == 'linux' and '$(BuildArchitecture)' == 'x64'">$(MicrosoftNETRuntimeEmscripten3134Cachelinuxx64Version)</EmsdkCacheVersion>
-    <EmsdkCacheVersion Condition="'$(HostOS)' == 'linux' and '$(BuildArchitecture)' == 'arm64'">$(MicrosoftNETRuntimeEmscripten3134Cachelinuxarm64Version)</EmsdkCacheVersion>
-    <EmsdkCacheVersion Condition="'$(HostOS)' == 'windows' and '$(BuildArchitecture)' == 'x64'">$(MicrosoftNETRuntimeEmscripten3134Cachewinx64Version)</EmsdkCacheVersion>
-    <EmsdkCacheVersion Condition="'$(HostOS)' == 'windows' and '$(BuildArchitecture)' == 'arm64'">$(MicrosoftNETRuntimeEmscripten3134Cachewinarm64Version)</EmsdkCacheVersion>
-    <EmsdkCacheVersion Condition="'$(HostOS)' == 'osx' and '$(BuildArchitecture)' == 'x64'">$(MicrosoftNETRuntimeEmscripten3134Cacheosxx64Version)</EmsdkCacheVersion>
-    <EmsdkCacheVersion Condition="'$(HostOS)' == 'osx' and '$(BuildArchitecture)' == 'arm64'">$(MicrosoftNETRuntimeEmscripten3134Cacheosxarm64Version)</EmsdkCacheVersion>
-    <EmsdkSdkVersion Condition="'$(HostOS)' == 'linux' and '$(BuildArchitecture)' == 'x64'">$(MicrosoftNETRuntimeEmscripten3134Sdklinuxx64Version)</EmsdkSdkVersion>
-    <EmsdkSdkVersion Condition="'$(HostOS)' == 'linux' and '$(BuildArchitecture)' == 'arm64'">$(MicrosoftNETRuntimeEmscripten3134Sdklinuxarm64Version)</EmsdkSdkVersion>
-    <EmsdkSdkVersion Condition="'$(HostOS)' == 'windows' and '$(BuildArchitecture)' == 'x64'">$(MicrosoftNETRuntimeEmscripten3134Sdkwinx64Version)</EmsdkSdkVersion>
-    <EmsdkSdkVersion Condition="'$(HostOS)' == 'windows' and '$(BuildArchitecture)' == 'arm64'">$(MicrosoftNETRuntimeEmscripten3134Sdkwinarm64Version)</EmsdkSdkVersion>
-    <EmsdkSdkVersion Condition="'$(HostOS)' == 'osx' and '$(BuildArchitecture)' == 'x64'">$(MicrosoftNETRuntimeEmscripten3134Sdkosxx64Version)</EmsdkSdkVersion>
-    <EmsdkSdkVersion Condition="'$(HostOS)' == 'osx' and '$(BuildArchitecture)' == 'arm64'">$(MicrosoftNETRuntimeEmscripten3134Sdkosxarm64Version)</EmsdkSdkVersion>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(MonoGenerateOffsetsOSGroups)' == 'browser'">
+  <Choose>
+    <When Condition="'$(HostOS)' == 'linux'">
+      <Choose>
+        <When Condition="'$(BuildArchitecture)' == 'x64'">
+          <PropertyGroup Condition="'$(NeedEmscriptenPackages)' == 'true'">
+            <NodePkgVersion>$(runtimelinuxx64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
+            <EmsdkCacheVersion>$(MicrosoftNETRuntimeEmscripten3134Cachelinuxx64Version)</EmsdkCacheVersion>
+            <EmsdkSdkVersion>$(MicrosoftNETRuntimeEmscripten3134Sdklinuxx64Version)</EmsdkSdkVersion>
+          </PropertyGroup>
+        </When>
+        <When Condition="'$(BuildArchitecture)' == 'arm64'">
+          <PropertyGroup Condition="'$(NeedEmscriptenPackages)' == 'true'">
+            <NodePkgVersion>$(runtimelinuxarm64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
+            <EmsdkCacheVersion>$(MicrosoftNETRuntimeEmscripten3134Cachelinuxarm64Version)</EmsdkCacheVersion>
+            <EmsdkSdkVersion>$(MicrosoftNETRuntimeEmscripten3134Sdklinuxarm64Version)</EmsdkSdkVersion>
+          </PropertyGroup>
+        </When>
+      </Choose>
+    </When>
+    <When Condition="'$(HostOS)' == 'windows'">
+      <Choose>
+        <When Condition="'$(BuildArchitecture)' == 'x64'">
+          <PropertyGroup Condition="'$(NeedEmscriptenPackages)' == 'true'">
+            <NodePkgVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
+            <EmsdkCacheVersion>$(MicrosoftNETRuntimeEmscripten3134Cachewinx64Version)</EmsdkCacheVersion>
+            <EmsdkSdkVersion>$(MicrosoftNETRuntimeEmscripten3134Sdkwinx64Version)</EmsdkSdkVersion>
+          </PropertyGroup>
+        </When>
+        <When Condition="'$(BuildArchitecture)' == 'arm64'">
+          <PropertyGroup Condition="'$(NeedEmscriptenPackages)' == 'true'">
+            <NodePkgVersion>$(runtimewinarm64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
+            <EmsdkCacheVersion>$(MicrosoftNETRuntimeEmscripten3134Cachewinarm64Version)</EmsdkCacheVersion>
+            <EmsdkSdkVersion>$(MicrosoftNETRuntimeEmscripten3134Sdkwinarm64Version)</EmsdkSdkVersion>
+          </PropertyGroup>
+        </When>
+      </Choose>
+    </When>
+    <When Condition="'$(HostOS)' == 'osx'">
+      <Choose>
+        <When Condition="'$(BuildArchitecture)' == 'x64'">
+          <PropertyGroup Condition="'$(NeedEmscriptenPackages)' == 'true'">
+            <NodePkgVersion>$(runtimeosxx64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
+            <EmsdkCacheVersion>$(MicrosoftNETRuntimeEmscripten3134Cacheosxx64Version)</EmsdkCacheVersion>
+            <EmsdkSdkVersion>$(MicrosoftNETRuntimeEmscripten3134Sdkosxx64Version)</EmsdkSdkVersion>
+          </PropertyGroup>
+        </When>
+        <When Condition="'$(BuildArchitecture)' == 'arm64'">
+          <PropertyGroup Condition="'$(NeedEmscriptenPackages)' == 'true'">
+            <NodePkgVersion>$(runtimeosxarm64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
+            <EmsdkCacheVersion>$(MicrosoftNETRuntimeEmscripten3134Cacheosxarm64Version)</EmsdkCacheVersion>
+            <EmsdkSdkVersion>$(MicrosoftNETRuntimeEmscripten3134Sdkosxarm64Version)</EmsdkSdkVersion>
+          </PropertyGroup>
+        </When>
+      </Choose>
+    </When>
+  </Choose>
+
+  <ItemGroup Condition="'$(NeedEmscriptenPackages)' == 'true'">
     <PackageReference Include="Microsoft.NET.Runtime.Emscripten.3.1.34.Cache.$(_portableHostOS)-$(BuildArchitecture)"
                       PrivateAssets="all"
                       Version="$(EmsdkCacheVersion)"
