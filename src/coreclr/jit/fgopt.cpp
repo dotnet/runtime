@@ -3399,25 +3399,110 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 
     if (useProfile)
     {
-        if (compHndBBtabCount == 0)
+        FlowGraphDfsTree* const dfsTree = fgComputeDfs<true, true>();
+
+        for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
         {
-            FlowGraphDfsTree* const dfsTree = fgComputeDfs<true, true>();
-            // unsigned* ordinal = new (this, CMK_Generic) unsigned[dfsTree->GetPostOrderCount()];
-            // jitstd::list<FlowEdge*> edges(jitstd::allocator<void>(getAllocator(CMK_FlowEdge)));
+            BasicBlock* const block = dfsTree->GetPostOrder(i);
+            BasicBlock* const blockToMove = dfsTree->GetPostOrder(i - 1);
+            fgUnlinkBlock(blockToMove);
+            fgInsertBBafter(block, blockToMove);
+        }
+
+        if (verbose)
+        {
+            fgDispBasicBlocks();
+        }
+
+        if (compHndBBtabCount != 0)
+        {
+            BasicBlock** const tryRegionExits = new (this, CMK_Generic) BasicBlock*[compHndBBtabCount]{};
+            for (BasicBlock* block = fgFirstBB; block != fgFirstFuncletBB;)
+            {
+                BasicBlock* const next = block->Next();
+
+                if (block->hasTryIndex())
+                {
+                    const unsigned tryIndex = block->getTryIndex();
+
+                    if (!bbIsTryBeg(block))
+                    {
+                        fgUnlinkBlock(block);
+                        fgInsertBBafter(tryRegionExits[tryIndex], block);
+                    }
+
+                    tryRegionExits[tryIndex] = block;
+                }
+
+                block = next;
+            }
+
+            if (verbose)
+            {
+                fgDispBasicBlocks();
+            }
 
             for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
             {
                 BasicBlock* const block = dfsTree->GetPostOrder(i);
                 BasicBlock* const blockToMove = dfsTree->GetPostOrder(i - 1);
-                // ordinal[block->bbNum] = dfsTree->GetPostOrderCount() * i;
-                fgUnlinkBlock(blockToMove);
-                fgInsertBBafter(block, blockToMove);
+
+                if (bbIsTryBeg(blockToMove))
+                {
+                    const unsigned tryIndex = blockToMove->getTryIndex();
+                    
+                    if (block->hasTryIndex() && (block->getTryIndex() < tryIndex))
+                    {
+                        continue;
+                    }
+
+                    fgUnlinkRange(blockToMove, tryRegionExits[tryIndex]);
+                    fgMoveBlocksAfter(blockToMove, tryRegionExits[tryIndex], block);
+                }
             }
-            
-            assert(fgFirstBB->IsFirst());
-            assert(fgLastBB->IsLast());
-            return true;
+
+            for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+            {
+                BasicBlock* const tryExit = tryRegionExits[XTnum];
+
+                if (tryExit == nullptr)
+                {
+                    continue;
+                }
+
+                EHblkDsc* const ehDsc = ehGetDsc(XTnum);
+                const unsigned enclosingTryIndex = ehDsc->ebdEnclosingTryIndex;
+                ehDsc->ebdTryLast = tryExit;
+
+                if (enclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
+                {
+                    BasicBlock* const enclosingTryExit = tryRegionExits[enclosingTryIndex];
+                    BasicBlock* const tryEntryPrev = ehDsc->ebdTryBeg->Prev();
+                    const unsigned predTryIndex = ((tryEntryPrev != nullptr) && tryEntryPrev->hasTryIndex()) ? tryEntryPrev->getTryIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
+
+                    if ((enclosingTryExit == nullptr) || enclosingTryExit->NextIs(ehDsc->ebdTryBeg))
+                    {
+                        tryRegionExits[enclosingTryIndex] = tryExit;
+                    }
+                    else if (predTryIndex != enclosingTryIndex)
+                    {
+                        assert(enclosingTryExit != nullptr);
+                        fgUnlinkRange(ehDsc->ebdTryBeg, ehDsc->ebdTryLast);
+                        fgMoveBlocksAfter(ehDsc->ebdTryBeg, ehDsc->ebdTryLast, enclosingTryExit);
+                        tryRegionExits[enclosingTryIndex] = tryExit;
+                    }
+                }
+            }
+
+            if (verbose)
+            {
+                fgDispBasicBlocks();
+            }
         }
+
+        assert(fgFirstBB->IsFirst());
+        assert(fgLastBB->IsLast());
+        return true;
 
         // const auto TryMoveForward = [this, ordinal](FlowEdge* const edge)
         // {

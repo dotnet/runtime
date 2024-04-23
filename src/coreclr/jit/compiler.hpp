@@ -721,14 +721,13 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func, const 
             return BasicBlockVisit::Continue;
 
         case BBJ_CALLFINALLY:
-            if (useProfile && isBBCallFinallyPair())
+            if (useProfile)
             {
-                return func(Next());
+                return isBBCallFinallyPair() ? func(Next()) : BasicBlockVisit::Continue;
             }
-            else
-            {
-                return func(GetTarget());
-            }
+            
+            return func(GetTarget());
+            
         case BBJ_CALLFINALLYRET:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
