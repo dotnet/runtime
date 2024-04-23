@@ -3,7 +3,8 @@
 
 using Microsoft.AspNetCore.SignalR;
 
-namespace BlazorHosted.Server.Hubs;
+namespace Server;
+
 public class ChatHub : Hub
 {
     public async Task SendMessage(string message, int sendingThreadId)
