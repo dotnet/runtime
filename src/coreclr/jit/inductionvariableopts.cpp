@@ -650,7 +650,6 @@ void Compiler::optScoreNewPrimaryIV(FlowGraphNaturalLoop*  loop,
 
     for (IVUseListNode* use = iv.Uses; use != nullptr; use = use->Next)
     {
-        gtPrepareCost(use->Tree);
         // We remove the cost of the tree and add a use of a local (-1).
         *cycleImprovement += (use->Tree->GetCostEx() - 1) * use->Block->getBBWeight(this);
         *sizeImprovement += use->Tree->GetCostSz() - 1;
@@ -661,10 +660,9 @@ void Compiler::optScoreNewPrimaryIV(FlowGraphNaturalLoop*  loop,
     weight_t    preheaderWeight = preheader->getBBWeight(this);
     if (iv.IV->Start->OperIs(ScevOper::Constant, ScevOper::Local))
     {
-        // Constant/local costs 1 cycle and 1 byte to materialize.
-        // TODO: Reuse costs from gtPrepareCost somehow...
+        // Cost as 1 cycle, 3 bytes for storing
         *cycleImprovement -= 1 * preheaderWeight;
-        *sizeImprovement -= 1;
+        *sizeImprovement -= 3;
     }
     else
     {
@@ -673,14 +671,13 @@ void Compiler::optScoreNewPrimaryIV(FlowGraphNaturalLoop*  loop,
         *sizeImprovement -= 1000;
     }
 
-    // Now cost each update of the new primary IV.
+    // Now cost the update
     weight_t stepBlockWeight = stepUpdateBlock->getBBWeight(this);
-    if (iv.IV->Step->OperIs(ScevOper::Constant, ScevOper::Local))
+    if (iv.IV->Step->OperIs(ScevOper::Constant))
     {
-        // TODO: If the step value is a local then how do we guarantee it is
-        // available at our insertion point?
-        *cycleImprovement -= 1 * stepBlockWeight;
-        *sizeImprovement -= 1;
+        // Cost as 3 cycles, 3 bytes for updating
+        *cycleImprovement -= 3 * stepBlockWeight;
+        *sizeImprovement -= 3;
     }
     else
     {
