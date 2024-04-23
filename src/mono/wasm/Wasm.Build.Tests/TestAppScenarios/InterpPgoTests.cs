@@ -24,49 +24,27 @@ public class InterpPgoTests : AppTestBase
 
     [Theory]
     // Interpreter PGO is not meaningful to enable in debug builds - tiering is inactive there so all methods
-    //  would get added to the PGO table instead of just hot ones.
+    // would get added to the PGO table instead of just hot ones.
     [InlineData("Release")]
     public async Task FirstRunGeneratesTableAndSecondRunLoadsIt(string config)
     {
         // We need to invoke Greeting enough times to cause BCL code to tier so we can exercise interpreter PGO
         // Invoking it too many times makes the test meaningfully slower.
-        // const int iterationCount = 70;
+        const int iterationCount = 70;
 
         string id = $"browser_{config}_{GetRandomId()}";
         
         _testOutput.WriteLine("/// Creating project");
-        // string assetName = "InterpPgoTestApp";
-        // InitBlazorWasmProjectDir(id);
-        // Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, assetName), Path.Combine(_projectDir!));
-        CopyTestAsset("InterpPgoTestApp", "InterpPgoTest");
-
-        _testOutput.WriteLine("/// Building");
-
-        new DotNetCommand(s_buildEnv, _testOutput)
-                .WithWorkingDirectory(_projectDir!)
-                .Execute($"build -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")}")
-                .EnsureSuccessful();
-
-        _testOutput.WriteLine("/// Starting server");
-
-        // Create a single browser instance and single context to host all our pages.
-        // If we don't do this, each page will have its own unique cache and the table won't be loaded.
-        using var runCommand = new RunCommand(s_buildEnv, _testOutput)
-                                    .WithWorkingDirectory(_projectDir!);
-        await using var runner = new BrowserRunner(_testOutput);
-        var url = await runner.StartServerAndGetUrlAsync(runCommand, $"run --no-silent -c {config} --no-build --project \"{_projectDir!}\" --forward-console");
-        IBrowser browser = await runner.SpawnBrowserAsync(url);
-        IBrowserContext context = await browser.NewContextAsync();
-
+        CopyTestAsset("WasmBasicTestApp", "InterpPgoTest", "App");
+        BuildProject(config);
+        
+        var result = await RunTest(config, iterationCount);
         string output;
         {
             _testOutput.WriteLine("/// First run");
-            var page = await runner.RunAsync(context, url);
-            await runner.WaitForExitMessageAsync(TimeSpan.FromSeconds(30));
-            lock (runner.OutputLines)
-                output = string.Join(Environment.NewLine, runner.OutputLines);
+            output = string.Join(Environment.NewLine, result.ConsoleOutput);
 
-            Assert.Contains("Hello, Browser!", output);
+            Assert.Contains("Hello, World! Greetings from", output);
             // Verify that no PGO table was located in cache
             Assert.Contains("Failed to load interp_pgo table", output);
             // Verify that the table was saved after the app ran
@@ -75,18 +53,12 @@ public class InterpPgoTests : AppTestBase
             Assert.Contains("added System.Runtime.CompilerServices.Unsafe:Add<byte> (byte&,int) to table", output);
         }
 
+        result = await RunTest(config, iterationCount);
         {
             _testOutput.WriteLine("/// Second run");
-            // Clear the shared output lines buffer so it's empty for the next run.
-            lock (runner.OutputLines)
-                runner.OutputLines.Clear();
-            // resetExitedState is necessary for WaitForExitMessageAsync to work correctly
-            var page = await runner.RunAsync(context, url, resetExitedState: true);
-            await runner.WaitForExitMessageAsync(TimeSpan.FromSeconds(30));
-            lock (runner.OutputLines)
-                output = string.Join(Environment.NewLine, runner.OutputLines);
+            output = string.Join(Environment.NewLine, result.ConsoleOutput);
 
-            Assert.Contains("Hello, Browser!", output);
+            Assert.Contains("Hello, World! Greetings from", output);
             // Verify that table data was loaded from cache
             // if this breaks, it could be caused by change in config which affects the config hash and the cache storage hash key
             Assert.Contains(" bytes of interp_pgo data (table size == ", output);
@@ -99,8 +71,7 @@ public class InterpPgoTests : AppTestBase
         }
 
         _testOutput.WriteLine("/// Done");
-
-        (context as IDisposable)?.Dispose();
-        (browser as IDisposable)?.Dispose();
     }
+
+    private Task<RunResult> RunTest(string config, int iterationCount) => RunSdkStyleAppForBuild(new(Configuration: config, TestScenario: "InterpPgoTest", BrowserQueryString: new() { ["iterations"] = iterationCount.ToString() }));
 }
