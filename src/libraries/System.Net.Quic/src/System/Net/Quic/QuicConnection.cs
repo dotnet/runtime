@@ -541,12 +541,12 @@ public sealed partial class QuicConnection : IAsyncDisposable
     {
         Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetExceptionForMsQuicStatus(data.Status, (long)data.ErrorCode));
         _connectedTcs.TrySetException(exception);
-        CompleteAndDrainAcceptQueue(exception);
+        CompleteAcceptQueue(exception, false);
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventShutdownInitiatedByPeer(ref SHUTDOWN_INITIATED_BY_PEER_DATA data)
     {
-        CompleteAndDrainAcceptQueue(ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetConnectionAbortedException((long)data.ErrorCode)));
+        CompleteAcceptQueue(ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetConnectionAbortedException((long)data.ErrorCode)), false);
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventShutdownComplete()
@@ -555,7 +555,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         _tlsSecret?.WriteSecret();
 
         Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(_disposed == 1 ? new ObjectDisposedException(GetType().FullName) : ThrowHelper.GetOperationAbortedException());
-        CompleteAndDrainAcceptQueue(exception);
+        CompleteAcceptQueue(exception, true);
         _connectedTcs.TrySetException(exception);
         _shutdownTokenSource.Cancel();
         _shutdownTcs.TrySetResult(final: true);
@@ -666,22 +666,26 @@ public sealed partial class QuicConnection : IAsyncDisposable
         }
     }
 
-    private void CompleteAndDrainAcceptQueue(Exception? ex)
+    private void CompleteAcceptQueue(Exception? ex, bool drain)
     {
-        if (_acceptQueue.Writer.TryComplete(ex))
+        _acceptQueue.Writer.TryComplete(ex);
+
+        if (drain)
         {
-            // also drain the queue. Because stream shutdown events are indicated before connection shutdown,
-            // the QuicStream instances have already been signaled and closed internally. We only need to dispose them,
-            // which in this situation should complete synchronously.
+            // This should be only called after connection SHUTDOWN_COMPLETE has been indicated.
+            // At that point, all streams have been already shut down internally and we need
+            // only to close the handle via dispose, so DisposeAsync below should complete
+            // synchronously (which is necessary for this method to be callable from MsQuic
+            // event callback).
             while (_acceptQueue.Reader.TryRead(out QuicStream? stream))
             {
                 ValueTask task = stream.DisposeAsync();
                 Debug.Assert(task.IsCompletedSuccessfully);
                 task.GetAwaiter().GetResult();
             }
-        }
 
-        Debug.Assert(_acceptQueue.Reader.Completion.IsCompleted);
+            Debug.Assert(_acceptQueue.Reader.Completion.IsCompleted);
+        }
     }
 
     /// <summary>
@@ -737,6 +741,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
         }
 
         // Flush the queue and dispose all remaining streams.
-        CompleteAndDrainAcceptQueue(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(GetType().FullName)));
+        CompleteAcceptQueue(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(GetType().FullName)), true);
     }
 }
