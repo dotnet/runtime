@@ -371,7 +371,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Bug
-			// [ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicFields), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+			// [ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicFields), Tool.Trimmer | Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicMethods), Tool.Trimmer | Tool.NativeAot, "")]
 			// Below are because we do not handle Multi dimensional arrays
 			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll), Tool.Trimmer | Tool.NativeAot, "")]
@@ -429,7 +429,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Bug
-			// [ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicFields), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+			// [ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicFields), Tool.Trimmer | Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicMethods), Tool.Trimmer | Tool.NativeAot, "")]
 			// Below are because we do not handle Multi dimensional arrays
 			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicFields), Tool.Trimmer | Tool.NativeAot, "")]
@@ -451,7 +451,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Bug
-			// [ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicFields), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+			// [ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicFields), Tool.Trimmer | Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicMethods), Tool.Trimmer | Tool.NativeAot, "")]
 			// Below are because we do not handle Multi dimensional arrays
 			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicFields), Tool.Trimmer | Tool.NativeAot, "")]
