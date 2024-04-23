@@ -8,6 +8,7 @@
     <RuntimeIdentifier>wasi-wasm</RuntimeIdentifier>
     -->
     <TestArchiveTestsRoot>$(TestArchiveRoot)wasmtimeonly/</TestArchiveTestsRoot>
+    <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
   </PropertyGroup>
 
   <Import Project="..\Directory.Build.props"/>

@@ -604,11 +604,6 @@ DEFINE_METHOD(PROPERTY,             GET_GETTER,             GetGetMethod,       
 
 DEFINE_CLASS(PROPERTY_INFO,         Reflection,             PropertyInfo)
 
-
-
-DEFINE_CLASS(METADATA_IMPORT,       Reflection,             MetadataImport)
-DEFINE_METHOD(METADATA_IMPORT,      THROW_ERROR,            ThrowError,                 SM_Int_RetVoid)
-
 DEFINE_CLASS(RESOLVER,              System,                 Resolver)
 DEFINE_METHOD(RESOLVER,             GET_JIT_CONTEXT,        GetJitContext,              IM_RefInt_RetRuntimeType)
 DEFINE_METHOD(RESOLVER,             GET_CODE_INFO,          GetCodeInfo,                IM_RefInt_RefInt_RefInt_RetArrByte)

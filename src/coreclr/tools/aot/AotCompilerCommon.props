@@ -4,6 +4,7 @@
     <TieredCompilation>false</TieredCompilation>
     <EventSourceSupport>true</EventSourceSupport>
     <OptimizationPreference>Speed</OptimizationPreference>
+    <ControlFlowGuard>Guard</ControlFlowGuard>
   </PropertyGroup>
 
   <ItemGroup>
