@@ -14312,7 +14312,6 @@ AddJitGlobal (MonoLLVMModule *module, LLVMTypeRef type, const char *name)
 #define FILE_INFO_NUM_AOTID_FIELDS 1
 #define FILE_INFO_NFIELDS (FILE_INFO_NUM_HEADER_FIELDS + MONO_AOT_FILE_INFO_NUM_SYMBOLS + FILE_INFO_NUM_SCALAR_FIELDS + FILE_INFO_NUM_ARRAY_FIELDS + FILE_INFO_NUM_AOTID_FIELDS)
 
-
 static void
 create_aot_info_var (MonoLLVMModule *module)
 {
