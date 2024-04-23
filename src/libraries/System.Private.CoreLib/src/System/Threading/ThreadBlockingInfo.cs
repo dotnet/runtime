@@ -15,6 +15,18 @@ namespace System.Threading
     //   renaming them
     // - There is a native version of this struct in CoreCLR, used by Monitor to fold in its blocking info here. The struct is
     //   blittable with sequential layout to support that.
+    //
+    // Debuggers may use this info by evaluating expressions to enumerate the blocking infos for a thread. For example:
+    // - Evaluate "System.Threading.ThreadBlockingInfo.t_first" to obtain the first pointer to a blocking info for the current
+    //   thread
+    // - While there is a non-null pointer to a blocking info:
+    //   - Evaluate "(*(System.Threading.ThreadBlockingInfo*)ptr).fieldOrProperty", where "ptr" is the blocking info pointer
+    //     value, to get the field and relevant property getter values below
+    //   - Use the _objectKind field value to determine what kind of blocking is occurring
+    //   - Get the LockOwnerOSThreadId and LockOwnerManagedThreadId property getter values. If the blocking is waiting for a
+    //     lock and the lock is currently owned by a thread, one of these properties will return a nonzero value that can be
+    //     used to identify the lock owner thread.
+    //   - Use the _next field value to obtain the next pointer to a blocking info for the thread
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct ThreadBlockingInfo
     {
