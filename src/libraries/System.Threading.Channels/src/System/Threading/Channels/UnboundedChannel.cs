@@ -116,10 +116,10 @@ namespace System.Threading.Channels
             {
                 UnboundedChannel<T, TQueue> parent = _parent;
                 return parent._items.IsThreadSafe ?
-                    IsThreadSafe(parent, out item) :
-                    NotIsThreadSafe(parent, out item);
+                    LockFree(parent, out item) :
+                    Locked(parent, out item);
 
-                static bool IsThreadSafe(UnboundedChannel<T, TQueue> parent, [MaybeNullWhen(false)] out T item)
+                static bool LockFree(UnboundedChannel<T, TQueue> parent, [MaybeNullWhen(false)] out T item)
                 {
                     if (parent._items.TryDequeue(out item))
                     {
@@ -131,7 +131,7 @@ namespace System.Threading.Channels
                     return false;
                 }
 
-                static bool NotIsThreadSafe(UnboundedChannel<T, TQueue> parent, [MaybeNullWhen(false)] out T item)
+                static bool Locked(UnboundedChannel<T, TQueue> parent, [MaybeNullWhen(false)] out T item)
                 {
                     lock (parent.SyncObj)
                     {
@@ -152,10 +152,10 @@ namespace System.Threading.Channels
                 UnboundedChannel<T, TQueue> parent = _parent;
                 return parent._items.IsThreadSafe ?
                     parent._items.TryPeek(out item) :
-                    NotIsThreadSafe(parent, out item);
+                    Locked(parent, out item);
 
                 // Separated out to keep the try/finally from preventing TryPeek from being inlined
-                static bool NotIsThreadSafe(UnboundedChannel<T, TQueue> parent, [MaybeNullWhen(false)] out T item)
+                static bool Locked(UnboundedChannel<T, TQueue> parent, [MaybeNullWhen(false)] out T item)
                 {
                     lock (parent.SyncObj)
                     {

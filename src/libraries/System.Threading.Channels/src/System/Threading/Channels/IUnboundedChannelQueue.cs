@@ -6,7 +6,8 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading.Channels
 {
-    internal interface IUnboundedChannelQueue<T>
+    /// <summary>Representation of the queue data structure used by <see cref="UnboundedChannel{T, TQueue}"/>.</summary>
+    internal interface IUnboundedChannelQueue<T> : IDebugEnumerable<T>
     {
         /// <summary>Gets whether the other members are safe to use concurrently with each other and themselves.</summary>
         bool IsThreadSafe { get; }
@@ -30,8 +31,5 @@ namespace System.Threading.Channels
 
         /// <summary>Gets whether the queue is empty.</summary>
         bool IsEmpty { get; }
-
-        /// <summary>Gets an enumerator of items in the queue, for debug/diagnostic purposes only.</summary>
-        IEnumerator<T> GetEnumerator();
     }
 }

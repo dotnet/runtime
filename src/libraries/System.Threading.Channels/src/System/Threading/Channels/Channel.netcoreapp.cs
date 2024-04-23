@@ -17,7 +17,7 @@ namespace System.Threading.Channels
         /// The next item read from the channel will be the element available in the channel with the lowest priority value.
         /// </remarks>
         public static Channel<T> CreateUnboundedPrioritized<T>() =>
-            new UnboundedChannel<T, PriorityQueueUnboundedChannelQueue<T>>(new(new()), runContinuationsAsynchronously: true);
+            new UnboundedChannel<T, UnboundedChannelPriorityQueue<T>>(new(new()), runContinuationsAsynchronously: true);
 
         /// <summary>Creates an unbounded prioritized channel subject to the provided options.</summary>
         /// <typeparam name="T">Specifies the type of data in the channel.</typeparam>
@@ -32,11 +32,11 @@ namespace System.Threading.Channels
         {
             ArgumentNullException.ThrowIfNull(options);
 
-            return new UnboundedChannel<T, PriorityQueueUnboundedChannelQueue<T>>(new(new(options.Comparer)), !options.AllowSynchronousContinuations);
+            return new UnboundedChannel<T, UnboundedChannelPriorityQueue<T>>(new(new(options.Comparer)), !options.AllowSynchronousContinuations);
         }
 
         /// <summary>Provides an <see cref="IUnboundedChannelQueue{T}"/> for a <see cref="PriorityQueue{TElement, TPriority}"/>.</summary>
-        private readonly struct PriorityQueueUnboundedChannelQueue<T>(PriorityQueue<bool, T> queue) : IUnboundedChannelQueue<T>
+        private readonly struct UnboundedChannelPriorityQueue<T>(PriorityQueue<bool, T> queue) : IUnboundedChannelQueue<T>
         {
             private readonly PriorityQueue<bool, T> _queue = queue;
 

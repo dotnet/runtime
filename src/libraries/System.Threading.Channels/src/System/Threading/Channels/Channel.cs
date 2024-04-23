@@ -13,7 +13,7 @@ namespace System.Threading.Channels
         /// <summary>Creates an unbounded channel usable by any number of readers and writers concurrently.</summary>
         /// <returns>The created channel.</returns>
         public static Channel<T> CreateUnbounded<T>() =>
-            new UnboundedChannel<T, ConcurrentQueueUnboundedChannelQueue<T>>(new(new()), runContinuationsAsynchronously: true);
+            new UnboundedChannel<T, UnboundedChannelConcurrentQueue<T>>(new(new()), runContinuationsAsynchronously: true);
 
         /// <summary>Creates an unbounded channel subject to the provided options.</summary>
         /// <typeparam name="T">Specifies the type of data in the channel.</typeparam>
@@ -31,7 +31,7 @@ namespace System.Threading.Channels
                 return new SingleConsumerUnboundedChannel<T>(!options.AllowSynchronousContinuations);
             }
 
-            return new UnboundedChannel<T, ConcurrentQueueUnboundedChannelQueue<T>>(new(new()), !options.AllowSynchronousContinuations);
+            return new UnboundedChannel<T, UnboundedChannelConcurrentQueue<T>>(new(new()), !options.AllowSynchronousContinuations);
         }
 
         /// <summary>Creates a channel with the specified maximum capacity.</summary>
@@ -77,7 +77,7 @@ namespace System.Threading.Channels
         }
 
         /// <summary>Provides an <see cref="IUnboundedChannelQueue{T}"/> for a <see cref="ConcurrentQueue{T}"/>.</summary>
-        private readonly struct ConcurrentQueueUnboundedChannelQueue<T>(ConcurrentQueue<T> queue) : IUnboundedChannelQueue<T>
+        private readonly struct UnboundedChannelConcurrentQueue<T>(ConcurrentQueue<T> queue) : IUnboundedChannelQueue<T>
         {
             private readonly ConcurrentQueue<T> _queue = queue;
 
