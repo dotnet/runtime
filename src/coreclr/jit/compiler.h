@@ -7474,8 +7474,8 @@ public:
     void optReplaceWidenedIV(unsigned lclNum, unsigned ssaNum, unsigned newLclNum, Statement* stmt);
     void optSinkWidenedIV(unsigned lclNum, unsigned newLclNum, FlowGraphNaturalLoop* loop);
 
-    void optStrengthReduce(FlowGraphNaturalLoop* loop, ArrayStack<struct IVUseInfo>& ivs);
-    void optScoreNewPrimaryIV(FlowGraphNaturalLoop* loop, ArrayStack<struct IVUseInfo>& ivs, const IVUseInfo& iv, weight_t* cycleImprovement, weight_t* sizeImprovement);
+    void optStrengthReduce(FlowGraphNaturalLoop* loop, ScalarEvolutionContext& scevContext, ArrayStack<struct IVUseInfo>& ivs);
+    void optScoreNewPrimaryIV(FlowGraphNaturalLoop* loop, ArrayStack<struct IVUseInfo>& ivs, const IVUseInfo& iv, BasicBlock* stepUpdateBlock, weight_t* cycleImprovement, weight_t* sizeImprovement);
 
     // Redundant branch opts
     //

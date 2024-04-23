@@ -233,4 +233,6 @@ public:
 
     Scev* Analyze(BasicBlock* block, GenTree* tree);
     Scev* Simplify(Scev* scev);
+
+    GenTree* Materialize(Scev* scev);
 };

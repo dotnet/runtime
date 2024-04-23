@@ -1173,3 +1173,65 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev)
             unreached();
     }
 }
+
+GenTree* ScalarEvolutionContext::Materialize(Scev* scev)
+{
+    switch (scev->Oper)
+    {
+    case ScevOper::Constant:
+        return m_comp->gtNewIconNode((ssize_t)((ScevConstant*)scev)->Value, scev->Type);
+    case ScevOper::Local:
+        return m_comp->gtNewLclvNode(((ScevLocal*)scev)->LclNum, scev->Type);
+    case ScevOper::ZeroExtend:
+    case ScevOper::SignExtend:
+    {
+        ScevUnop* ext = (ScevUnop*)scev;
+        GenTree* op = Materialize(ext->Op1);
+        if (op == nullptr)
+        {
+            return nullptr;
+        }
+
+        return m_comp->gtNewCastNode(ext->Type, op, scev->OperIs(ScevOper::ZeroExtend), TYP_LONG);
+    }
+    case ScevOper::Add:
+    case ScevOper::Mul:
+    case ScevOper::Lsh:
+    {
+        ScevBinop* binop = (ScevBinop*)scev;
+        GenTree* op1 = Materialize(binop->Op1);
+        if (op1 == nullptr)
+        {
+            return nullptr;
+        }
+
+        GenTree* op2 = Materialize(binop->Op2);
+        if (op2 == nullptr)
+        {
+            return nullptr;
+        }
+
+        genTreeOps oper;
+        switch (scev->Oper)
+        {
+        case ScevOper::Add:
+            oper = GT_ADD;
+            break;
+        case ScevOper::Mul:
+            oper = GT_MUL;
+            break;
+        case ScevOper::Lsh:
+            oper = GT_LSH;
+            break;
+        default:
+            unreached();
+        }
+
+        return m_comp->gtNewOperNode(oper, binop->Type, op1, op2);
+    }
+    case ScevOper::AddRec:
+        return nullptr;
+    default:
+        unreached();
+    }
+}

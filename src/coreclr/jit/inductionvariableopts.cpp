@@ -630,18 +630,59 @@ struct IVUseInfo
     IVUseListNode* Uses = nullptr;
     // LclNum of the IV if this IV is a primary IV.
     unsigned PrimaryLclNum = BAD_VAR_NUM;
+    bool TriedStrengthReduction = false;
 
     IVUseInfo(ScevAddRec* iv) : IV(iv)
     {
     }
 };
 
-void Compiler::optScoreNewPrimaryIV(FlowGraphNaturalLoop* loop, ArrayStack<IVUseInfo>& ivs, const IVUseInfo& iv, weight_t* cycleImprovement, weight_t* sizeImprovement)
+void Compiler::optScoreNewPrimaryIV(FlowGraphNaturalLoop* loop, ArrayStack<IVUseInfo>& ivs, const IVUseInfo& iv, BasicBlock* stepUpdateBlock, weight_t* cycleImprovement, weight_t* sizeImprovement)
 {
-    *cycleImprovement = -1;
-    *sizeImprovement = -1;
+    *cycleImprovement = 0;
+    *sizeImprovement = 0;
 
+    for (IVUseListNode* use = iv.Uses; use != nullptr; use = use->Next)
+    {
+        gtPrepareCost(use->Tree);
+        // We remove the cost of the tree and add a use of a local (-1).
+        *cycleImprovement += (use->Tree->GetCostEx() - 1) * use->Block->getBBWeight(this);
+        *sizeImprovement += use->Tree->GetCostSz() - 1;
+    }
 
+    // Now cost adding a new initialization of this IV in the preheader.
+    BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
+    weight_t preheaderWeight = preheader->getBBWeight(this);
+    if (iv.IV->Start->OperIs(ScevOper::Constant, ScevOper::Local))
+    {
+        // Constant/local costs 1 cycle and 1 byte to materialize.
+        // TODO: Reuse costs from gtPrepareCost somehow...
+        *cycleImprovement -= 1 * preheaderWeight;
+        *sizeImprovement -= 1;
+    }
+    else
+    {
+        // TODO: Proper costing
+        *cycleImprovement -= 1000 * preheaderWeight;
+        *sizeImprovement  -= 1000;
+    }
+
+    // Now cost each update of the new primary IV.
+    weight_t stepBlockWeight = stepUpdateBlock->getBBWeight(this);
+    if (iv.IV->Step->OperIs(ScevOper::Constant, ScevOper::Local))
+    {
+        // TODO: If the step value is a local then how do we guarantee it is
+        // available at our insertion point?
+        *cycleImprovement -= 1 * stepBlockWeight;
+        *sizeImprovement -= 1;
+    }
+    else
+    {
+        *cycleImprovement -= 1000 * stepBlockWeight;
+        *sizeImprovement -= 1000;
+    }
+
+    *cycleImprovement /= fgFirstBB->getBBWeight(this);
 }
 
 //------------------------------------------------------------------------
@@ -651,9 +692,28 @@ void Compiler::optScoreNewPrimaryIV(FlowGraphNaturalLoop* loop, ArrayStack<IVUse
 //   loop - The loop with the IVs
 //   ivs  - Information about IVs used inside the loop
 //
-void Compiler::optStrengthReduce(FlowGraphNaturalLoop* loop, ArrayStack<IVUseInfo>& ivs)
+void Compiler::optStrengthReduce(FlowGraphNaturalLoop* loop, ScalarEvolutionContext& scevContext, ArrayStack<IVUseInfo>& ivs)
 {
     JITDUMP("Found %d different induction variables. Evaluating whether to strength reduce derived IVs.\n", ivs.Height());
+
+    if (loop->BackEdges().size() != 1)
+    {
+        // TODO-CQ: With dominators we can still find a suitable block to place
+        // the update (i.e. any block that dominates all latches).
+        JITDUMP("  ..no, has %zu backedges\n", loop->BackEdges().size());
+        return;
+    }
+
+    BasicBlock* latch = loop->BackEdge(0)->getSourceBlock();
+    // If the only latch is also an exiting block then we know that it
+    // post-dominates all blocks within the loop, so placing the update in that
+    // block will always be correct. Otherwise bail.
+    // TODO-CQ: With dominators we can also do better here.
+    if (!latch->KindIs(BBJ_COND) || (!latch->TrueTargetIs(loop->GetHeader()) && !latch->FalseTargetIs(loop->GetHeader())))
+    {
+        JITDUMP("  ..no, latch does not post-dominate loop\n");
+        return;
+    }
 
     for (int iteration = 1;; iteration++)
     {
@@ -662,13 +722,13 @@ void Compiler::optStrengthReduce(FlowGraphNaturalLoop* loop, ArrayStack<IVUseInf
             JITDUMP("\n  Iteration %d\n", iteration + 1);
         }
 
-        const IVUseInfo* bestIV = nullptr;
+        IVUseInfo* bestIV = nullptr;
         weight_t bestCycleImprovement = 0;
         weight_t bestSizeImprovement = 0;
 
         for (int i = 0; i < ivs.Height(); i++)
         {
-            const IVUseInfo& iv = ivs.BottomRef(i);
+            IVUseInfo& iv = ivs.BottomRef(i);
 
 #ifdef DEBUG
             if (verbose)
@@ -703,9 +763,15 @@ void Compiler::optStrengthReduce(FlowGraphNaturalLoop* loop, ArrayStack<IVUseInf
                 continue;
             }
 
+            if (iv.TriedStrengthReduction)
+            {
+                JITDUMP("    Skipped; already tried\n");
+                continue;
+            }
+
             weight_t cycleImprovement;
             weight_t sizeImprovement;
-            optScoreNewPrimaryIV(loop, ivs, iv, &cycleImprovement, &sizeImprovement);
+            optScoreNewPrimaryIV(loop, ivs, iv, latch, &cycleImprovement, &sizeImprovement);
 
             const weight_t ALLOWED_SIZE_REGRESSION_PER_CYCLE_IMPROVEMENT = 2;
             const weight_t ALLOWED_CYCLE_REGRESSION_PER_SIZE_IMPROVEMENT = 0.01;
@@ -746,8 +812,115 @@ void Compiler::optStrengthReduce(FlowGraphNaturalLoop* loop, ArrayStack<IVUseInf
         }
 
         JITDUMP("\n  Introducing primary IV for %s ", varTypeName(bestIV->IV->Type));
-        bestIV->IV->Dump(this);
+        DBEXEC(VERBOSE, bestIV->IV->Dump(this));
         JITDUMP("\n");
+
+
+        // TODO-CQ: For other cases it's non-trivial to know if we can
+        // materialize the value as IR in the step block.
+        if (!bestIV->IV->Step->OperIs(ScevOper::Constant))
+        {
+            JITDUMP("      Skipping; step value is not a constant\n");
+            bestIV->TriedStrengthReduction = true;
+            continue;
+        }
+
+        BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
+        GenTree* initValue = scevContext.Materialize(bestIV->IV->Start);
+        if (initValue == nullptr)
+        {
+            JITDUMP("      Skipping; init value could not be materialized\n");
+            bestIV->TriedStrengthReduction = true;
+            continue;
+        }
+
+        GenTree* stepValue = scevContext.Materialize(bestIV->IV->Step);
+        assert(stepValue != nullptr);
+
+        unsigned newPrimaryIV = lvaGrabTemp(false DEBUGARG("Strength reduced derived IV"));
+        GenTree* initStore = gtNewTempStore(newPrimaryIV, initValue);
+        Statement* initStmt = fgNewStmtFromTree(initStore);
+        fgInsertStmtNearEnd(preheader, initStmt);
+
+        JITDUMP("      Inserting init statement in preheader " FMT_BB "\n", preheader->bbNum);
+        DISPSTMT(initStmt);
+
+        GenTree* nextValue = gtNewOperNode(GT_ADD, stepValue->TypeGet(), gtNewLclVarNode(newPrimaryIV, bestIV->IV->Type), stepValue);
+        GenTree* stepStore = gtNewTempStore(newPrimaryIV, nextValue);
+        Statement* stepStmt = fgNewStmtFromTree(stepStore);
+        fgInsertStmtNearEnd(latch, stepStmt);
+
+        JITDUMP("      Inserting step statement in latch " FMT_BB "\n", latch->bbNum);
+        DISPSTMT(stepStmt);
+
+        //// Remove all uses of IVs in child trees.
+        //for (int i = 0; i < ivs.Height(); i++)
+        //{
+        //    const IVUseInfo& otherIV = ivs.BottomRef(i);
+        //    for (IVUseListNode* node = otherIV.Uses; node != nullptr; node = node->Next)
+        //    {
+
+        //    }
+        //}
+
+        for (IVUseListNode* node = bestIV->Uses; node != nullptr; node = node->Next)
+        {
+            for (IVUseListNode** childNodeSlot = &node->Next; (*childNodeSlot) != nullptr; childNodeSlot = &(*childNodeSlot)->Next)
+            {
+                IVUseListNode* childNode = *childNodeSlot;
+                if (childNode->Stmt != node->Stmt)
+                {
+                    continue;
+                }
+
+                GenTree* ancestor = childNode->Tree;
+                while (ancestor != childNode->Stmt->GetRootNode())
+                {
+                    ancestor = ancestor->gtGetParent(nullptr);
+                    if (ancestor == node->Tree)
+                    {
+                        *childNodeSlot = childNode->Next;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Replace uses.
+        for (IVUseListNode* node = bestIV->Uses; node != nullptr; node = node->Next)
+        {
+            for (IVUseListNode* prevNode = bestIV->Uses; prevNode != node; prevNode = prevNode->Next)
+            {
+
+            }
+
+            GenTree* newUse = gtNewLclVarNode(newPrimaryIV, bestIV->IV->Type);
+
+            JITDUMP("\n      Replacing use [%06u] with [%06u]. Before:\n", dspTreeID(node->Tree), dspTreeID(newUse));
+            DISPSTMT(node->Stmt);
+
+            FindLinkData link = gtFindLink(node->Stmt, node->Tree);
+            assert(link.result != nullptr);
+
+            GenTree* sideEffects = nullptr;
+            gtExtractSideEffList(node->Tree, &sideEffects);
+            if (sideEffects != nullptr)
+            {
+                *link.result = gtNewOperNode(GT_COMMA, newUse->TypeGet(), sideEffects, newUse);
+            }
+            else
+            {
+                *link.result = newUse;
+            }
+            JITDUMP("\n      After:\n\n");
+            DISPSTMT(node->Stmt);
+
+            gtSetStmtInfo(node->Stmt);
+            fgSetStmtSeq(node->Stmt);
+            gtUpdateStmtSideEffects(node->Stmt);
+        }
+
+        break;
     }
 }
 
@@ -947,7 +1120,8 @@ PhaseStatus Compiler::optInductionVariables()
             }
         }
 
-        optStrengthReduce(loop, allIVs);
+        optStrengthReduce(loop, scevContext, allIVs);
+        changed = true;
 
         //for (int i = 0; i < allIVs.Height(); i++)
         //{
