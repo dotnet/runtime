@@ -265,8 +265,8 @@
   <!-- FIXME: merge with some other target -->
   <Target Name="_WasiBeforeWriteRspForCompilingBitcodeRsp" BeforeTargets="_WasmWriteRspForCompilingBitcode">
     <ItemGroup>
-      <_BitcodeLDFlags Include="@(_WasiClangLDFlags)" />
-      <_BitcodeLDFlags Include="$(WasiClangExtraBitcodeLDFlags)" />
+      <_BitcodeCompileFlags Include="@(_WasiClangCommonFlags)" />
+      <_BitcodeCompileFlags Include="$(WasiClangExtraBitcodeCompileFlags)" />
     </ItemGroup>
   </Target>
 
