@@ -100,11 +100,7 @@ namespace System.DirectoryServices.Protocols
 
             if (value != null)
             {
-                _directoryControlValue = new byte[value.Length];
-                for (int i = 0; i < value.Length; i++)
-                {
-                    _directoryControlValue[i] = value[i];
-                }
+                _directoryControlValue = value.AsSpan().ToArray();
             }
             IsCritical = isCritical;
             ServerSide = serverSide;
@@ -117,12 +113,7 @@ namespace System.DirectoryServices.Protocols
                 return Array.Empty<byte>();
             }
 
-            byte[] tempValue = new byte[_directoryControlValue.Length];
-            for (int i = 0; i < _directoryControlValue.Length; i++)
-            {
-                tempValue[i] = _directoryControlValue[i];
-            }
-            return tempValue;
+            return _directoryControlValue.AsSpan().ToArray();
         }
 
         public string Type { get; }
@@ -136,7 +127,7 @@ namespace System.DirectoryServices.Protocols
             for (int i = 0; i < controls.Length; i++)
             {
                 Debug.Assert(controls[i] != null);
-                byte[] value = controls[i].GetValue();
+                byte[] value = controls[i]._directoryControlValue ?? Array.Empty<byte>();
                 Span<byte> asnSpan = value;
                 bool asnReadSuccessful;
 
@@ -258,7 +249,7 @@ namespace System.DirectoryServices.Protocols
 
     public class AsqRequestControl : DirectoryControl
     {
-        private static UTF8Encoding s_utf8Encoding = new(false, true);
+        private static readonly UTF8Encoding s_utf8Encoding = new(false, true);
 
         public AsqRequestControl() : base("1.2.840.113556.1.4.1504", null, true, true)
         {
@@ -577,13 +568,7 @@ namespace System.DirectoryServices.Protocols
                     return Array.Empty<byte>();
                 }
 
-                byte[] tempCookie = new byte[_dirsyncCookie.Length];
-                for (int i = 0; i < tempCookie.Length; i++)
-                {
-                    tempCookie[i] = _dirsyncCookie[i];
-                }
-
-                return tempCookie;
+                return _dirsyncCookie.AsSpan().ToArray();
             }
             set => _dirsyncCookie = value;
         }
@@ -648,13 +633,7 @@ namespace System.DirectoryServices.Protocols
                     return Array.Empty<byte>();
                 }
 
-                byte[] tempCookie = new byte[_dirsyncCookie.Length];
-                for (int i = 0; i < tempCookie.Length; i++)
-                {
-                    tempCookie[i] = _dirsyncCookie[i];
-                }
-
-                return tempCookie;
+                return _dirsyncCookie.AsSpan().ToArray();
             }
         }
 
@@ -703,13 +682,7 @@ namespace System.DirectoryServices.Protocols
                     return Array.Empty<byte>();
                 }
 
-                byte[] tempCookie = new byte[_pageCookie.Length];
-                for (int i = 0; i < _pageCookie.Length; i++)
-                {
-                    tempCookie[i] = _pageCookie[i];
-                }
-
-                return tempCookie;
+                return _pageCookie.AsSpan().ToArray();
             }
             set => _pageCookie = value;
         }
@@ -753,12 +726,7 @@ namespace System.DirectoryServices.Protocols
                     return Array.Empty<byte>();
                 }
 
-                byte[] tempCookie = new byte[_pageCookie.Length];
-                for (int i = 0; i < _pageCookie.Length; i++)
-                {
-                    tempCookie[i] = _pageCookie[i];
-                }
-                return tempCookie;
+                return _pageCookie.AsSpan().ToArray();
             }
         }
 
@@ -767,9 +735,9 @@ namespace System.DirectoryServices.Protocols
 
     public class SortRequestControl : DirectoryControl
     {
-        private static UTF8Encoding s_utf8Encoding = new(false, true);
-        private static Asn1Tag s_orderingRuleTag = new(TagClass.ContextSpecific, 0, false);
-        private static Asn1Tag s_reverseOrderTag = new(TagClass.ContextSpecific, 1, false);
+        private static readonly UTF8Encoding s_utf8Encoding = new(false, true);
+        private static readonly Asn1Tag s_orderingRuleTag = new(TagClass.ContextSpecific, 0, false);
+        private static readonly Asn1Tag s_reverseOrderTag = new(TagClass.ContextSpecific, 1, false);
 
         private SortKey[] _keys = Array.Empty<SortKey>();
         public SortRequestControl(params SortKey[] sortKeys) : base("1.2.840.113556.1.4.473", null, true, true)
@@ -910,8 +878,8 @@ namespace System.DirectoryServices.Protocols
 
     public class VlvRequestControl : DirectoryControl
     {
-        private static Asn1Tag s_byOffsetChoiceTag = new(TagClass.ContextSpecific, 0, true);
-        private static Asn1Tag s_greaterThanOrEqualChoiceTag = new(TagClass.ContextSpecific, 1, false);
+        private static readonly Asn1Tag s_byOffsetChoiceTag = new(TagClass.ContextSpecific, 0, true);
+        private static readonly Asn1Tag s_greaterThanOrEqualChoiceTag = new(TagClass.ContextSpecific, 1, false);
 
         private int _before;
         private int _after;
@@ -1012,12 +980,7 @@ namespace System.DirectoryServices.Protocols
                     return Array.Empty<byte>();
                 }
 
-                byte[] tempContext = new byte[_target.Length];
-                for (int i = 0; i < tempContext.Length; i++)
-                {
-                    tempContext[i] = _target[i];
-                }
-                return tempContext;
+                return _target.AsSpan().ToArray();
             }
             set => _target = value;
         }
@@ -1031,12 +994,7 @@ namespace System.DirectoryServices.Protocols
                     return Array.Empty<byte>();
                 }
 
-                byte[] tempContext = new byte[_context.Length];
-                for (int i = 0; i < tempContext.Length; i++)
-                {
-                    tempContext[i] = _context[i];
-                }
-                return tempContext;
+                return _context.AsSpan().ToArray();
             }
             set => _context = value;
         }
@@ -1114,12 +1072,7 @@ namespace System.DirectoryServices.Protocols
                     return Array.Empty<byte>();
                 }
 
-                byte[] tempContext = new byte[_context.Length];
-                for (int i = 0; i < tempContext.Length; i++)
-                {
-                    tempContext[i] = _context[i];
-                }
-                return tempContext;
+                return _context.AsSpan().ToArray();
             }
         }
 
