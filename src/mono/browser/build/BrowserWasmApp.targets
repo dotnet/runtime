@@ -406,8 +406,8 @@
 
   <Target Name="_BrowserWasmBeforeWriteCompileBitcodeRsp" BeforeTargets="_WasmWriteRspForCompilingBitcode">
     <ItemGroup>
-      <_BitcodeLDFlags Include="@(_EmccLDFlags)" />
-      <_BitcodeLDFlags Include="$(EmccExtraBitcodeLDFlags)" />
+      <_BitcodeCompileFlags Include="@(_EmccCommonFlags)" />
+      <_BitcodeCompileFlags Include="$(EmccExtraBitcodeCompilationFlags)" />
     </ItemGroup>
   </Target>
 
