@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.Design.Serialization;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
@@ -20,12 +21,16 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.EnumConverter'/> class for the given
         /// type.
         /// </summary>
-        public EnumConverter([DynamicallyAccessedMembers(TypeDescriptor.ReflectTypesDynamicallyAccessedMembers)] Type type)
+        public EnumConverter(Type type)
         {
+            if (!type.IsEnum && !type.Equals(typeof(Enum)))
+            {
+                throw new ArgumentException(SR.EnumInvalidValue);
+            }
+
             EnumType = type;
         }
 
-        [DynamicallyAccessedMembers(TypeDescriptor.ReflectTypesDynamicallyAccessedMembers)]
         protected Type EnumType { get; }
 
         protected StandardValuesCollection? Values { get; set; }
@@ -156,7 +161,10 @@ namespace System.ComponentModel
                 }
                 else
                 {
-                    FieldInfo? info = EnumType.GetField(enumName);
+                    [UnconditionalSuppressMessage("Trimming", "IL2075:", Justification = "Trimmer does not trim Enums")]
+                    FieldInfo? GetEnumField(string name) => EnumType.GetField(name);
+
+                    FieldInfo? info = GetEnumField(enumName);
                     if (info != null)
                     {
                         return new InstanceDescriptor(info, null);
@@ -227,9 +235,27 @@ namespace System.ComponentModel
                 // We need to get the enum values in this rather round-about way so we can filter
                 // out fields marked Browsable(false). Note that if multiple fields have the same value,
                 // the behavior is undefined, since what we return are just enum values, not names.
-                Type reflectType = TypeDescriptor.GetReflectionType(EnumType) ?? EnumType;
+                // Given that EnumType is constrained to be an enum, we suppress calls for reflection with Enum.
 
-                FieldInfo[]? fields = reflectType.GetFields(BindingFlags.Public | BindingFlags.Static);
+                [UnconditionalSuppressMessage("Trimming", "IL2067:", Justification = "Trimmer does not trim Enums")]
+                [return: DynamicallyAccessedMembers(TypeDescriptor.ReflectTypesDynamicallyAccessedMembers)]
+                static Type GetTypeDescriptorReflectionType(Type enumType) => TypeDescriptor.GetReflectionType(enumType);
+
+                Type _reflectType = GetTypeDescriptorReflectionType(EnumType);
+                FieldInfo[]? fields;
+
+                if (_reflectType == null)
+                {
+                    [UnconditionalSuppressMessage("Trimming", "IL2070:", Justification = "Trimmer does not trim Enums")]
+                    static FieldInfo[]? GetPublicStaticEnumFields(Type type) => type.GetFields(BindingFlags.Public | BindingFlags.Static);
+
+                    fields = GetPublicStaticEnumFields(EnumType);
+                }
+                else
+                {
+                    fields = _reflectType.GetFields(BindingFlags.Public | BindingFlags.Static);
+                }
+
                 ArrayList? objValues = null;
 
                 if (fields != null && fields.Length > 0)

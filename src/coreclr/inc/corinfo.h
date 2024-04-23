@@ -1008,36 +1008,6 @@ enum CorInfoInitClassResult
                                             // requirement around class initialization such as shared generics.
 };
 
-// Reason codes for making indirect calls
-#define INDIRECT_CALL_REASONS() \
-    INDIRECT_CALL_REASON_FUNC(CORINFO_INDIRECT_CALL_UNKNOWN) \
-    INDIRECT_CALL_REASON_FUNC(CORINFO_INDIRECT_CALL_EXOTIC) \
-    INDIRECT_CALL_REASON_FUNC(CORINFO_INDIRECT_CALL_PINVOKE) \
-    INDIRECT_CALL_REASON_FUNC(CORINFO_INDIRECT_CALL_GENERIC) \
-    INDIRECT_CALL_REASON_FUNC(CORINFO_INDIRECT_CALL_NO_CODE) \
-    INDIRECT_CALL_REASON_FUNC(CORINFO_INDIRECT_CALL_FIXUPS) \
-    INDIRECT_CALL_REASON_FUNC(CORINFO_INDIRECT_CALL_STUB) \
-    INDIRECT_CALL_REASON_FUNC(CORINFO_INDIRECT_CALL_REMOTING) \
-    INDIRECT_CALL_REASON_FUNC(CORINFO_INDIRECT_CALL_CER) \
-    INDIRECT_CALL_REASON_FUNC(CORINFO_INDIRECT_CALL_RESTORE_METHOD) \
-    INDIRECT_CALL_REASON_FUNC(CORINFO_INDIRECT_CALL_RESTORE_FIRST_CALL) \
-    INDIRECT_CALL_REASON_FUNC(CORINFO_INDIRECT_CALL_RESTORE_VALUE_TYPE) \
-    INDIRECT_CALL_REASON_FUNC(CORINFO_INDIRECT_CALL_RESTORE) \
-    INDIRECT_CALL_REASON_FUNC(CORINFO_INDIRECT_CALL_CANT_PATCH) \
-    INDIRECT_CALL_REASON_FUNC(CORINFO_INDIRECT_CALL_PROFILING) \
-    INDIRECT_CALL_REASON_FUNC(CORINFO_INDIRECT_CALL_OTHER_LOADER_MODULE) \
-
-enum CorInfoIndirectCallReason
-{
-    #undef INDIRECT_CALL_REASON_FUNC
-    #define INDIRECT_CALL_REASON_FUNC(x) x,
-    INDIRECT_CALL_REASONS()
-
-    #undef INDIRECT_CALL_REASON_FUNC
-
-    CORINFO_INDIRECT_CALL_COUNT
-};
-
 inline bool dontInline(CorInfoInline val) {
     return(val < 0);
 }
@@ -2736,6 +2706,11 @@ public:
 
     // Returns true if a class handle can only describe values of exactly one type.
     virtual bool isExactType(
+            CORINFO_CLASS_HANDLE        cls
+            ) = 0;
+
+    // Returns whether a class handle represents a Nullable type, if that can be statically determined.
+    virtual TypeCompareState isNullableType(
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 

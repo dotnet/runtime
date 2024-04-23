@@ -92,8 +92,7 @@ steps:
       $targetRidArgs \
       $runtimeOsArgs \
       $baseOsArgs \
-      /p:PortableBuild=${{ parameters.platform.portableBuild }} \
-      /p:OutputRid=${{ parameters.platform.outputRid }} \
+      /p:SourceBuildNonPortable=${{ parameters.platform.nonPortable }} \
       /p:ArcadeBuildFromSource=true \
       /p:DotNetBuildSourceOnly=true \
       /p:DotNetBuildRepo=true \

@@ -28,7 +28,8 @@ const regMaskTP intArgMasks[] = {RBM_ECX, RBM_EDX};
 // Parameters:
 //   info - Info about the method being classified.
 //
-X86Classifier::X86Classifier(const ClassifierInfo& info) : m_regs(nullptr, 0)
+X86Classifier::X86Classifier(const ClassifierInfo& info)
+    : m_regs(nullptr, 0)
 {
     switch (info.CallConv)
     {
@@ -112,8 +113,8 @@ ABIPassingInformation X86Classifier::Classify(Compiler*    comp,
     else
     {
         assert((m_stackArgSize % TARGET_POINTER_SIZE) == 0);
-        segment = ABIPassingSegment::OnStack(m_stackArgSize, 0, size);
         m_stackArgSize += roundUp(size, TARGET_POINTER_SIZE);
+        segment = ABIPassingSegment::OnStack(m_stackArgSize, 0, size);
     }
 
     return ABIPassingInformation::FromSegment(comp, segment);

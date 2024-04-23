@@ -1210,6 +1210,33 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_PrepareMethod (MonoMeth
 	// FIXME: Implement
 }
 
+void
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InternalBox (MonoQCallTypeHandle type_handle, char* data, MonoObjectHandleOnStack obj, MonoError *error)
+{
+	MonoType *type = type_handle.type;
+	MonoClass *klass = mono_class_from_mono_type_internal (type);
+
+	g_assert (m_class_is_valuetype (klass));
+
+	mono_class_init_checked (klass, error);
+	goto_if_nok (error, error_ret);
+
+	MonoObject* raw_obj = mono_value_box_checked (klass, data, error);
+	goto_if_nok (error, error_ret);
+
+	HANDLE_ON_STACK_SET(obj, raw_obj);
+	return;
+error_ret:
+	HANDLE_ON_STACK_SET (obj, NULL);
+}
+
+gint32
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SizeOf (MonoQCallTypeHandle type, MonoError* error)
+{
+	int align;
+	return mono_type_size (type.type, &align);
+}
+
 MonoObjectHandle
 ves_icall_System_Object_MemberwiseClone (MonoObjectHandle this_obj, MonoError *error)
 {
@@ -3694,28 +3721,6 @@ write_enum_value (void *mem, int type, guint64 value)
 }
 
 void
-ves_icall_System_Enum_InternalBoxEnum (MonoQCallTypeHandle enum_handle, MonoObjectHandleOnStack res, guint64 value, MonoError *error)
-{
-	MonoClass *enumc;
-	MonoObjectHandle resultHandle;
-	MonoType *etype;
-
-	enumc = mono_class_from_mono_type_internal (enum_handle.type);
-
-	mono_class_init_checked (enumc, error);
-	return_if_nok (error);
-
-	etype = mono_class_enum_basetype_internal (enumc);
-
-	resultHandle = mono_object_new_handle (enumc, error);
-	return_if_nok (error);
-
-	write_enum_value (mono_handle_unbox_unsafe (resultHandle), etype->type, value);
-
-	HANDLE_ON_STACK_SET (res, MONO_HANDLE_RAW (resultHandle));
-}
-
-void
 ves_icall_System_Enum_InternalGetUnderlyingType (MonoQCallTypeHandle type_handle, MonoObjectHandleOnStack res, MonoError *error)
 {
 	MonoType *etype;
@@ -6159,16 +6164,16 @@ void
 ves_icall_System_Environment_FailFast (MonoStringHandle message, MonoExceptionHandle exception, MonoStringHandle errorSource, MonoError *error)
 {
 	if (MONO_HANDLE_IS_NULL (errorSource)) {
-		g_warning ("Process terminated.");
+		g_warning_dont_trim ("Process terminated.");
 	} else {
 		char *errorSourceMsg = mono_string_handle_to_utf8 (errorSource, error);
-		g_warning ("Process terminated. %s", errorSourceMsg);
+		g_warning_dont_trim ("Process terminated. %s", errorSourceMsg);
 		g_free (errorSourceMsg);
 	}
 
 	if (!MONO_HANDLE_IS_NULL (message)) {
 		char *msg = mono_string_handle_to_utf8 (message, error);
-		g_warning (msg);
+		g_warning_dont_trim (msg);
 		g_free (msg);
 	}
 
@@ -6252,29 +6257,6 @@ ves_icall_System_RuntimeType_CreateInstanceInternal (MonoQCallTypeHandle type_ha
 		return NULL_HANDLE;
 
 	return mono_object_new_handle (klass, error);
-}
-
-/* Only used for value types */
-void
-ves_icall_System_RuntimeType_AllocateValueType (MonoQCallTypeHandle type_handle, MonoObjectHandle value_h, MonoObjectHandleOnStack res, MonoError *error)
-{
-	MonoType *type = type_handle.type;
-	MonoClass *klass = mono_class_from_mono_type_internal (type);
-
-	mono_class_init_checked (klass, error);
-	goto_if_nok (error, error_ret);
-
-	MonoObject *obj_res = mono_object_new_checked (klass, error);
-	goto_if_nok (error, error_ret);
-
-	MonoObject *value = MONO_HANDLE_RAW (value_h);
-	if (value)
-		mono_value_copy_internal (mono_object_unbox_internal (obj_res), mono_object_unbox_internal (value), klass);
-
-	HANDLE_ON_STACK_SET (res, obj_res);
-	return;
-error_ret:
-	HANDLE_ON_STACK_SET (res, NULL);
 }
 
 MonoReflectionMethodHandle

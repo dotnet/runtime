@@ -7,7 +7,7 @@ import cwraps from "./cwraps";
 import { mono_wasm_load_icu_data } from "./icu";
 import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { mono_log_info, mono_log_debug, parseSymbolMapFile } from "./logging";
-import { mono_wasm_load_bytes_into_heap } from "./memory";
+import { mono_wasm_load_bytes_into_heap_persistent } from "./memory";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { AssetEntry } from "./types";
 import { VoidPtr } from "./types/emscripten";
@@ -37,20 +37,20 @@ export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8A
         // falls through
         case "heap":
         case "icu":
-            offset = mono_wasm_load_bytes_into_heap(bytes);
+            offset = mono_wasm_load_bytes_into_heap_persistent(bytes);
             break;
 
         case "vfs": {
             // FIXME
             const lastSlash = virtualName.lastIndexOf("/");
             let parentDirectory = (lastSlash > 0)
-                ? virtualName.substr(0, lastSlash)
+                ? virtualName.substring(0, lastSlash)
                 : null;
             let fileName = (lastSlash > 0)
-                ? virtualName.substr(lastSlash + 1)
+                ? virtualName.substring(lastSlash + 1)
                 : virtualName;
             if (fileName.startsWith("/"))
-                fileName = fileName.substr(1);
+                fileName = fileName.substring(1);
             if (parentDirectory) {
                 mono_log_debug(`Creating directory '${parentDirectory}'`);
 
