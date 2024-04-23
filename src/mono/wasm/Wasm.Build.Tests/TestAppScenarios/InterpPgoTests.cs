@@ -13,9 +13,9 @@ using Microsoft.Playwright;
 
 #nullable enable
 
-namespace Wasm.Build.Templates.Tests;
+namespace Wasm.Build.Tests.TestAppScenarios;
 
-public class InterpPgoTests : WasmTemplateTestBase
+public class InterpPgoTests : AppTestBase
 {
     public InterpPgoTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -30,36 +30,15 @@ public class InterpPgoTests : WasmTemplateTestBase
     {
         // We need to invoke Greeting enough times to cause BCL code to tier so we can exercise interpreter PGO
         // Invoking it too many times makes the test meaningfully slower.
-        const int iterationCount = 70;
+        // const int iterationCount = 70;
 
         string id = $"browser_{config}_{GetRandomId()}";
+        
         _testOutput.WriteLine("/// Creating project");
-        string projectFile = CreateWasmTemplateProject(id, "wasmbrowser", extraProperties: "<WasmDebugLevel>0</WasmDebugLevel>");
-
-        _testOutput.WriteLine("/// Updating JS");
-        UpdateBrowserMainJs((js) => {
-            // We need to capture INTERNAL so we can explicitly save the PGO table
-            js = js.Replace(
-                "const { setModuleImports, getAssemblyExports, getConfig, runMain } = await dotnet",
-                "const { setModuleImports, getAssemblyExports, getConfig, runMain, INTERNAL } = await dotnet"
-            );
-            // Enable interpreter PGO + interpreter PGO logging + console output capturing
-            js = js.Replace(
-                ".create()",
-                ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().withRuntimeOptions(['--interp-pgo-logging']).withInterpreterPgo(true).create()"
-            );
-            js = js.Replace("runMain()", "dotnet.run()");
-            // Call Greeting in a loop to exercise enough code to cause something to tier,
-            //  then call INTERNAL.interp_pgo_save_data() to save the interp PGO table
-            js = js.Replace(
-                "const text = exports.MyClass.Greeting();",
-                "console.log(`WASM debug level ${getConfig().debugLevel}`);\n" + 
-                "let text = '';\n" +
-                $"for (let i = 0; i < {iterationCount}; i++) {{ text = exports.MyClass.Greeting(); }};\n" +
-                "await INTERNAL.interp_pgo_save_data();"
-            );
-            return js;
-        }, DefaultTargetFramework);
+        // string assetName = "InterpPgoTestApp";
+        // InitBlazorWasmProjectDir(id);
+        // Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, assetName), Path.Combine(_projectDir!));
+        CopyTestAsset("InterpPgoTestApp", "InterpPgoTest");
 
         _testOutput.WriteLine("/// Building");
 
@@ -75,7 +54,7 @@ public class InterpPgoTests : WasmTemplateTestBase
         using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                     .WithWorkingDirectory(_projectDir!);
         await using var runner = new BrowserRunner(_testOutput);
-        var url = await runner.StartServerAndGetUrlAsync(runCommand, $"run --no-silent -c {config} --no-build --project \"{projectFile}\" --forward-console");
+        var url = await runner.StartServerAndGetUrlAsync(runCommand, $"run --no-silent -c {config} --no-build --project \"{_projectDir!}\" --forward-console");
         IBrowser browser = await runner.SpawnBrowserAsync(url);
         IBrowserContext context = await browser.NewContextAsync();
 
