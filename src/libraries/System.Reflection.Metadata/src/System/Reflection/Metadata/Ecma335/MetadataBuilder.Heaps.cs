@@ -579,7 +579,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         private sealed class SuffixSort : IComparer<KeyValuePair<string, StringHandle>>
         {
-            internal static SuffixSort Instance = new SuffixSort();
+            internal static readonly SuffixSort Instance = new SuffixSort();
 
             public int Compare(KeyValuePair<string, StringHandle> xPair, KeyValuePair<string, StringHandle> yPair)
             {

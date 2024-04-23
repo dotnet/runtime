@@ -1738,6 +1738,9 @@ public:
 #endif // defined(TARGET_ARM64)
 
                 return true;
+
+            case GT_SWIFT_ERROR_RET:
+                return (gtType == TYP_VOID);
             default:
                 return false;
         }
@@ -3036,6 +3039,34 @@ struct GenTreeOp : public GenTreeUnOp
     // checks if we will use the division by constant optimization this node
     // then sets the flag GTF_DIV_BY_CNS_OPT and GTF_DONT_CSE on the constant
     void CheckDivideByConstOptimized(Compiler* comp);
+
+    GenTree* GetReturnValue() const
+    {
+        assert(OperIs(GT_RETURN, GT_RETFILT, GT_SWIFT_ERROR_RET));
+#ifdef SWIFT_SUPPORT
+        if (OperIs(GT_SWIFT_ERROR_RET))
+        {
+            return gtOp2;
+        }
+#endif // SWIFT_SUPPORT
+
+        return gtOp1;
+    }
+
+    void SetReturnValue(GenTree* const retVal)
+    {
+        assert(OperIs(GT_RETURN, GT_RETFILT, GT_SWIFT_ERROR_RET));
+#ifdef SWIFT_SUPPORT
+        if (OperIs(GT_SWIFT_ERROR_RET))
+        {
+            gtOp2 = retVal;
+        }
+        else
+#endif // SWIFT_SUPPORT
+        {
+            gtOp1 = retVal;
+        }
+    }
 
 #if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
     bool IsValidLongMul();
@@ -9987,7 +10018,7 @@ inline bool GenTree::IsCnsVec() const
 
 inline bool GenTree::IsHelperCall()
 {
-    return OperGet() == GT_CALL && AsCall()->gtCallType == CT_HELPER;
+    return OperGet() == GT_CALL && AsCall()->IsHelperCall();
 }
 
 inline var_types GenTree::CastFromType()

@@ -298,7 +298,7 @@ namespace System.Diagnostics.Metrics
                 Parent = parent;
             }
 
-            public MetricsEventSource Parent { get; private set; }
+            public MetricsEventSource Parent { get; }
 
             public bool IsSharedSession(string commandSessionId)
             {
@@ -754,8 +754,8 @@ namespace System.Diagnostics.Metrics
         private sealed class MetricSpec
         {
             private const char MeterInstrumentSeparator = '\\';
-            public string MeterName { get; private set; }
-            public string? InstrumentName { get; private set; }
+            public string MeterName { get; }
+            public string? InstrumentName { get; }
 
             public MetricSpec(string meterName, string? instrumentName)
             {

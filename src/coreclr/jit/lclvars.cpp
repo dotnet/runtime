@@ -1439,7 +1439,6 @@ bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd,
         compArgSize += TARGET_POINTER_SIZE;
 
         lvaSwiftSelfArg = varDscInfo->varNum;
-        lvaSetVarDoNotEnregister(lvaSwiftSelfArg DEBUGARG(DoNotEnregisterReason::NonStandardParameter));
         return true;
     }
 
@@ -1467,7 +1466,6 @@ bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd,
         // Instead, all usages of the SwiftError* parameter will be redirected to this pseudolocal.
         lvaSwiftErrorLocal = lvaGrabTempWithImplicitUse(false DEBUGARG("SwiftError pseudolocal"));
         lvaSetStruct(lvaSwiftErrorLocal, typeHnd, false);
-        lvaSetVarAddrExposed(lvaSwiftErrorLocal DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
         return true;
     }
 
@@ -1721,7 +1719,7 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
 #ifdef DEBUG
         if (verbose)
         {
-            printf("Parameter #%u ABI info: ", i);
+            printf("Parameter V%02u ABI info: ", i);
             lvaParameterPassingInfo[i].Dump();
         }
 #endif
@@ -1759,7 +1757,7 @@ void Compiler::lvaClassifyParameterABI()
         for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
         {
             LclVarDsc*                   dsc     = lvaGetDesc(lclNum);
-            const ABIPassingInformation& abiInfo = lvaParameterPassingInfo[lclNum];
+            const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
 
             if (dsc->TypeGet() == TYP_STRUCT)
             {
@@ -1806,12 +1804,10 @@ void Compiler::lvaClassifyParameterABI()
     }
     else
 #endif
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
     {
         PlatformClassifier classifier(cInfo);
         lvaClassifyParameterABI(classifier);
     }
-#endif
 
 #ifdef DEBUG
     if (lvaParameterPassingInfo == nullptr)
@@ -1822,7 +1818,7 @@ void Compiler::lvaClassifyParameterABI()
     for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
     {
         LclVarDsc*                   dsc     = lvaGetDesc(lclNum);
-        const ABIPassingInformation& abiInfo = lvaParameterPassingInfo[lclNum];
+        const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
 
         assert(abiInfo.NumSegments > 0);
 
@@ -1910,7 +1906,7 @@ bool Compiler::lvaHasAnySwiftStackParamToReassemble()
 
     for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
     {
-        const ABIPassingInformation& abiInfo = lvaParameterPassingInfo[lclNum];
+        const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
         if (abiInfo.HasAnyStackSegment() && !abiInfo.HasExactlyOneStackSegment())
         {
             return true;
@@ -3172,14 +3168,47 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             JITDUMP("Promoted struct used by a SIMD/HWI node\n");
             break;
 
-        case DoNotEnregisterReason::NonStandardParameter:
-            JITDUMP("Non-standard parameter\n");
-            break;
-
         default:
             unreached();
             break;
     }
+#endif
+}
+
+//------------------------------------------------------------------------
+// lvaIsArgAccessedViaVarArgsCookie: Check if a parameter has to be accessed
+// indirectly via the varargs cookie.
+//
+// Arguments:
+//    lclNum - The local in question
+//
+// Return Value:
+//    True if it does.
+//
+// Remarks:
+//    Parameters passed on the stack in x86 varargs methods require special
+//    treatment for accesses and GC as their offsets are not known at compile
+//    time.
+//
+bool Compiler::lvaIsArgAccessedViaVarArgsCookie(unsigned lclNum)
+{
+#ifdef TARGET_X86
+    if (!info.compIsVarArgs)
+    {
+        return false;
+    }
+
+    LclVarDsc* varDsc = lvaGetDesc(lclNum);
+    if (!varDsc->lvIsParam || (lclNum == lvaVarargsHandleArg))
+    {
+        return false;
+    }
+
+    const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
+    assert(abiInfo.HasExactlyOneStackSegment() || abiInfo.HasExactlyOneRegisterSegment());
+    return abiInfo.HasExactlyOneStackSegment();
+#else
+    return false;
 #endif
 }
 
@@ -4834,7 +4863,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             // and not tracked.
             for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
             {
-                const bool isSpecialVarargsParam = varDsc->lvIsParam && raIsVarargsStackArg(lclNum);
+                const bool isSpecialVarargsParam = varDsc->lvIsParam && lvaIsArgAccessedViaVarArgsCookie(lclNum);
 
                 if (isSpecialVarargsParam)
                 {
@@ -4866,7 +4895,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
 
             // Special case for some varargs params ... these must
             // remain unreferenced.
-            const bool isSpecialVarargsParam = varDsc->lvIsParam && raIsVarargsStackArg(lclNum);
+            const bool isSpecialVarargsParam = varDsc->lvIsParam && lvaIsArgAccessedViaVarArgsCookie(lclNum);
 
             if (!isSpecialVarargsParam)
             {
@@ -5014,7 +5043,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             // to track them for GC info (which is not possible since we
             // don't know their offset in the stack).  See the assert at the
             // end of raMarkStkVars and bug #28949 for more info.
-            if (!raIsVarargsStackArg(lclNum))
+            if (!lvaIsArgAccessedViaVarArgsCookie(lclNum))
             {
                 varDsc->lvImplicitlyReferenced = 1;
             }
@@ -5875,7 +5904,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
         for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
         {
             LclVarDsc*                   dsc     = lvaGetDesc(lclNum);
-            const ABIPassingInformation& abiInfo = lvaParameterPassingInfo[lclNum];
+            const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
 
             if (abiInfo.HasExactlyOneStackSegment())
             {
@@ -7347,7 +7376,7 @@ bool Compiler::lvaParamHasLocalStackSpace(unsigned lclNum)
 
 #ifdef SWIFT_SUPPORT
     if ((info.compCallConv == CorInfoCallConvExtension::Swift) && !lvaIsImplicitByRefLocal(lclNum) &&
-        !lvaParameterPassingInfo[lclNum].HasExactlyOneStackSegment())
+        !lvaGetParameterABIInfo(lclNum).HasExactlyOneStackSegment())
     {
         return true;
     }

@@ -583,11 +583,15 @@ PhaseStatus Compiler::fgImport()
 
     // Now that we've made it through the importer, we know the IL was valid.
     // If we synthesized profile data and though it should be consistent,
-    // verify that it was consistent.
+    // but it wasn't, assert now.
     //
     if (fgPgoSynthesized && fgPgoConsistent)
     {
-        assert(fgPgoConsistentCheck);
+        assert(!fgPgoDeferredInconsistency);
+
+        // Reset this as it is a one-shot thing.
+        //
+        INDEBUG(fgPgoDeferredInconsistency = false);
     }
 
     return PhaseStatus::MODIFIED_EVERYTHING;
@@ -605,8 +609,9 @@ bool Compiler::fgIsThrow(GenTree* tree)
         return false;
     }
     GenTreeCall* call = tree->AsCall();
-    if ((call->gtCallType == CT_HELPER) && s_helperCallProperties.AlwaysThrow(eeGetHelperNum(call->gtCallMethHnd)))
+    if (call->IsHelperCall() && s_helperCallProperties.AlwaysThrow(eeGetHelperNum(call->gtCallMethHnd)))
     {
+        assert(call->IsNoReturn());
         noway_assert(call->gtFlags & GTF_EXCEPT);
         return true;
     }
@@ -1586,7 +1591,7 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
     }
 #endif
 
-    if (block->KindIs(BBJ_RETURN) && block->lastStmt()->GetRootNode()->gtOper == GT_RETURN)
+    if (block->KindIs(BBJ_RETURN) && block->lastStmt()->GetRootNode()->OperIs(GT_RETURN))
     {
         GenTreeUnOp* retNode = block->lastStmt()->GetRootNode()->AsUnOp();
         GenTree*     retExpr = retNode->gtOp1;
@@ -2558,6 +2563,93 @@ PhaseStatus Compiler::fgAddInternal()
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
+
+#ifdef SWIFT_SUPPORT
+//------------------------------------------------------------------------
+// fgAddSwiftErrorReturns: If this method uses Swift error handling,
+// transform all GT_RETURN nodes into GT_SWIFT_ERROR_RET nodes
+// to handle returning the error value alongside the normal return value.
+// Also transform any GT_LCL_VAR uses of lvaSwiftErrorArg (the SwiftError* parameter)
+// into GT_LCL_ADDR uses of lvaSwiftErrorLocal (the SwiftError pseudolocal).
+//
+// Returns:
+//   Suitable phase status.
+//
+PhaseStatus Compiler::fgAddSwiftErrorReturns()
+{
+    if (lvaSwiftErrorArg == BAD_VAR_NUM)
+    {
+        // No Swift error handling in this method
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    assert(lvaSwiftErrorLocal != BAD_VAR_NUM);
+    assert(info.compCallConv == CorInfoCallConvExtension::Swift);
+
+    struct ReplaceSwiftErrorVisitor final : public GenTreeVisitor<ReplaceSwiftErrorVisitor>
+    {
+        enum
+        {
+            DoPreOrder    = true,
+            DoLclVarsOnly = true,
+        };
+
+        ReplaceSwiftErrorVisitor(Compiler* comp)
+            : GenTreeVisitor(comp)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            if ((*use)->AsLclVarCommon()->GetLclNum() == m_compiler->lvaSwiftErrorArg)
+            {
+                if (!(*use)->OperIs(GT_LCL_VAR))
+                {
+                    BADCODE("Found invalid use of SwiftError* parameter");
+                }
+
+                *use = m_compiler->gtNewLclVarAddrNode(m_compiler->lvaSwiftErrorLocal, genActualType(*use));
+            }
+
+            return fgWalkResult::WALK_CONTINUE;
+        }
+    };
+
+    ReplaceSwiftErrorVisitor visitor(this);
+
+    for (BasicBlock* block : Blocks())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+        }
+
+        if (block->KindIs(BBJ_RETURN))
+        {
+            GenTree* const ret = block->lastNode();
+            assert(ret->OperIs(GT_RETURN));
+            ret->SetOperRaw(GT_SWIFT_ERROR_RET);
+            ret->AsOp()->gtOp2 = ret->AsOp()->gtOp1;
+
+            // If this is the merged return block, use the merged return error local as the error operand.
+            // Else, load the error value from the SwiftError pseudolocal (this will probably get promoted, anyway).
+            if (block == genReturnBB)
+            {
+                assert(genReturnErrorLocal == BAD_VAR_NUM);
+                genReturnErrorLocal = lvaGrabTemp(true DEBUGARG("Single return block SwiftError value"));
+                lvaGetDesc(genReturnErrorLocal)->lvType = TYP_I_IMPL;
+                ret->AsOp()->gtOp1                      = gtNewLclvNode(genReturnErrorLocal, TYP_I_IMPL);
+            }
+            else
+            {
+                ret->AsOp()->gtOp1 = gtNewLclFldNode(lvaSwiftErrorLocal, TYP_I_IMPL, 0);
+            }
+        }
+    }
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
+}
+#endif // SWIFT_SUPPORT
 
 /*****************************************************************************/
 /*****************************************************************************/
@@ -4371,6 +4463,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
             {
                 if (otherLoop->ContainsBlock(header))
                 {
+                    JITDUMP("Noting that " FMT_LP " contains an improper loop header\n", loop->GetIndex());
                     otherLoop->m_containsImproperHeader = true;
                 }
             }

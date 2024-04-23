@@ -880,7 +880,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="items">The values to add.</param>
         /// <returns>A new list with the elements added.</returns>
-        public ImmutableArray<T> AddRange(ReadOnlySpan<T> items)
+        public ImmutableArray<T> AddRange(/*params*/ ReadOnlySpan<T> items)
         {
             ImmutableArray<T> self = this;
             return self.InsertRange(self.Length, items);
@@ -949,7 +949,7 @@ namespace System.Collections.Immutable
         /// <param name="index">The index at which to insert the value.</param>
         /// <param name="items">The elements to insert.</param>
         /// <returns>The new immutable collection.</returns>
-        public ImmutableArray<T> InsertRange(int index, ReadOnlySpan<T> items)
+        public ImmutableArray<T> InsertRange(int index, /*params*/ ReadOnlySpan<T> items)
         {
             ImmutableArray<T> self = this;
             self.ThrowNullRefIfNotInitialized();
