@@ -862,7 +862,7 @@ struct HWIntrinsicInfo
     static bool HasImmediateOperand(NamedIntrinsic id)
     {
         const HWIntrinsicFlag flags = lookupFlags(id);
-        return ((flags & HW_Flag_HasImmediateOperand) != 0)|| HasEnumOperand(id);
+        return ((flags & HW_Flag_HasImmediateOperand) != 0) || HasEnumOperand(id);
     }
 
     static bool IsScalable(NamedIntrinsic id)
