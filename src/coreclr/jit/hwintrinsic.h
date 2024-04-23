@@ -191,7 +191,8 @@ enum HWIntrinsicFlag : unsigned int
     // The intrinsic uses a mask in arg1 to select elements present in the result, and must use a low register.
     HW_Flag_LowMaskedOperation = 0x40000,
 
-    // The intrinsic can optionally use a mask in arg1 to select elements present in the result, which is not present in the API call
+    // The intrinsic can optionally use a mask in arg1 to select elements present in the result, which is not present in
+    // the API call
     HW_Flag_OptionalEmbeddedMaskedOperation = 0x80000,
 
     // The intrinsic uses a mask in arg1 to select elements present in the result, which is not present in the API call

@@ -19922,7 +19922,7 @@ bool GenTree::isEmbeddedMaskingCompatibleHWIntrinsic() const
         return (AsHWIntrinsic()->GetHWIntrinsicId() == NI_AVX512F_Add);
 #elif defined(TARGET_ARM64)
         return HWIntrinsicInfo::IsEmbeddedMaskedOperation(AsHWIntrinsic()->GetHWIntrinsicId()) ||
-            HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(AsHWIntrinsic()->GetHWIntrinsicId());
+               HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(AsHWIntrinsic()->GetHWIntrinsicId());
 #endif
     }
     return false;

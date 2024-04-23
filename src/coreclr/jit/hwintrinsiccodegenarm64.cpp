@@ -411,13 +411,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             // Get the registers and intrinsics that needs embedded mask
             const HWIntrinsic intrinEmbMask(op2->AsHWIntrinsic());
-            instruction       insEmbMask     = HWIntrinsicInfo::lookupIns(intrinEmbMask.id, intrinEmbMask.baseType);
+            instruction       insEmbMask = HWIntrinsicInfo::lookupIns(intrinEmbMask.id, intrinEmbMask.baseType);
             const bool        instrIsRMW = op2->isRMWHWIntrinsic(compiler);
 
-            regNumber maskReg     = op1Reg;
+            regNumber maskReg       = op1Reg;
             regNumber embMaskOp1Reg = REG_NA;
             regNumber embMaskOp2Reg = REG_NA;
-            regNumber falseReg    = op3Reg;
+            regNumber falseReg      = op3Reg;
 
             switch (intrinEmbMask.numOperands)
             {
@@ -472,8 +472,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             // If none of the operands are same, then we just perform the unpredicated
                             // version of the instruction and then use `sel` to retrieve the active elements
                             // from the result.
-                            GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, embMaskOp1Reg, embMaskOp2Reg, opt,
-                                                        INS_SCALABLE_OPTS_UNPREDICATED);
+                            GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, embMaskOp1Reg, embMaskOp2Reg,
+                                                        opt, INS_SCALABLE_OPTS_UNPREDICATED);
                             GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,
                                                           falseReg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
 
@@ -498,8 +498,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
                     }
 
-                    // Finally, perform the actual "predicated" operation so that `targetReg` is the first operand and `embMaskOp2Reg`
-                    // having the second operand.
+                    // Finally, perform the actual "predicated" operation so that `targetReg` is the first operand and
+                    // `embMaskOp2Reg` having the second operand.
                     GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg, opt);
                     break;
 
