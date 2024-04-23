@@ -2268,7 +2268,7 @@ namespace System.Reflection
         {
             if (field.DeclaringType is not null)
             {
-                RuntimeModule module= field.GetRuntimeModule();
+                RuntimeModule module = field.GetRuntimeModule();
                 if (module.MetadataImport.GetFieldOffset(field.DeclaringType.MetadataToken, field.MetadataToken, out int fieldOffset))
                 {
                     return new FieldOffsetAttribute(fieldOffset);
