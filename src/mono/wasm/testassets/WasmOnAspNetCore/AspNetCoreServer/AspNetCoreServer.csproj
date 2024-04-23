@@ -4,6 +4,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- configure await warnings -->
     <NoWarn>CA2007</NoWarn>
   </PropertyGroup>
@@ -13,7 +14,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\BlazorHosted.Client\BlazorHosted.Client.csproj" />
+    <ProjectReference Include="..\WasmBrowserClient\WasmBrowserClient.csproj" />
+    <ProjectReference Include="..\BlazorClient\BlazorClient.csproj" />
+    <ProjectReference Include="..\Shared\Shared.csproj" />
   </ItemGroup>
 
 </Project>
