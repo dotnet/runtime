@@ -13,7 +13,7 @@ namespace Mono.Linker.Steps
 		/// <summary>
 		/// A dummy node to postpone processing of a method in the current call stack. The analyzer will process the MethodDefinitionNode dependency later.
 		/// </summary>
-		internal class PostPoneMethodProcessingNode : DependencyNodeCore<MarkStepNodeFactory>
+		internal sealed class PostPoneMethodProcessingNode : DependencyNodeCore<MarkStepNodeFactory>
 		{
 			readonly MethodDefinition method;
 			readonly DependencyInfo reason;
@@ -44,7 +44,7 @@ namespace Mono.Linker.Steps
 			protected override string GetName (MarkStepNodeFactory context) => "PostPoneMethodMarkingProxy";
 		}
 
-		public class MethodDefinitionDependencyNode : DependencyNodeCore<MarkStepNodeFactory>
+		internal sealed class MethodDefinitionDependencyNode : DependencyNodeCore<MarkStepNodeFactory>
 		{
 			readonly MethodDefinition method;
 			readonly MessageOrigin origin;

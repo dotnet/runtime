@@ -69,7 +69,6 @@ namespace Mono.Linker.Steps
 		protected HashSet<AssemblyDefinition> _dynamicInterfaceCastableImplementationTypesDiscovered;
 		protected List<TypeDefinition> _dynamicInterfaceCastableImplementationTypes;
 		protected List<(MethodBody, MarkScopeStack.Scope)> _unreachableBodies;
-		private bool _steadyState;
 
 		readonly List<(TypeDefinition Type, MethodBody Body, Instruction Instr)> _pending_isinst_instr;
 
@@ -401,12 +400,12 @@ namespace Mono.Linker.Steps
 				MarkFullyPreservedAssemblies ();
 		}
 
-		public TypeDefinitionDependencyNode GetTypeNode (TypeDefinition reference, DependencyInfo reason, MessageOrigin? origin)
+		internal TypeDefinitionDependencyNode GetTypeNode (TypeDefinition reference, DependencyInfo reason, MessageOrigin? origin)
 		{
 			return _typeNodes.GetOrAdd (reference, (k) => new TypeDefinitionDependencyNode (k, reason, origin));
 		}
 
-		public MethodDefinitionDependencyNode GetMethodDefinitionNode (MethodDefinition method, DependencyInfo reason, MessageOrigin origin)
+		internal MethodDefinitionDependencyNode GetMethodDefinitionNode (MethodDefinition method, DependencyInfo reason, MessageOrigin origin)
 		{
 			return _methodNodes.GetOrAdd (method, (k) => new MethodDefinitionDependencyNode (k, reason, origin));
 		}
@@ -552,17 +551,12 @@ namespace Mono.Linker.Steps
 
 		bool ReachedSteadyState ()
 		{
-			var oldState = _steadyState;
-			_steadyState = true;
-			return oldState;
+			return _methods.Count == 0;
 		}
 
 		void EnqueueMethod (MethodDefinition method, in DependencyInfo reason, in MessageOrigin origin)
 		{
-			_ = method;
-			_ = reason;
-			_ = origin;
-			_steadyState = false;
+			_methods.Enqueue ((method, reason, origin));
 		}
 
 		void ProcessInterfaceMethods ()

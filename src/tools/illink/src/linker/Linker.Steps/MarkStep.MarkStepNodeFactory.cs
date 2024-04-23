@@ -6,7 +6,7 @@ namespace Mono.Linker.Steps
 
 	public partial class MarkStep
 	{
-		internal class MarkStepNodeFactory (MarkStep markStep)
+		internal sealed class MarkStepNodeFactory (MarkStep markStep)
 		{
 			public MarkStep MarkStep { get; } = markStep;
 		}
