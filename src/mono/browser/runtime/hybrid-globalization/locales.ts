@@ -71,7 +71,7 @@ export function mono_wasm_get_locale_info (culture: number, cultureLength: numbe
         return VoidPtrNull;
     } catch (ex: any) {
         setI32(dstLength, -1);
-        return stringToUTF16Ptr((ex));
+        return stringToUTF16Ptr(ex.toString());
     }
 }
 
@@ -84,7 +84,7 @@ export function mono_wasm_get_first_day_of_week (culture: number, cultureLength:
         return VoidPtrNull;
     } catch (ex: any) {
         setI32(resultPtr, -1);
-        return stringToUTF16Ptr((ex));
+        return stringToUTF16Ptr(ex.toString());
     }
 }
 
@@ -97,7 +97,7 @@ export function mono_wasm_get_first_week_of_year (culture: number, cultureLength
         return VoidPtrNull;
     } catch (ex: any) {
         setI32(resultPtr, -1);
-        return stringToUTF16Ptr((ex));
+        return stringToUTF16Ptr(ex.toString());
     }
 }
 

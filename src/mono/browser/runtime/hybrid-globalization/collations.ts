@@ -23,7 +23,7 @@ export function mono_wasm_compare_string (culture: number, cultureLength: number
         return VoidPtrNull;
     } catch (ex: any) {
         setI32(resultPtr, COMPARISON_ERROR);
-        return stringToUTF16Ptr((ex));
+        return stringToUTF16Ptr(ex.toString());
     }
 }
 
@@ -52,7 +52,7 @@ export function mono_wasm_starts_with (culture: number, cultureLength: number, s
         return VoidPtrNull;
     } catch (ex: any) {
         setI32(resultPtr, INDEXING_ERROR);
-        return stringToUTF16Ptr((ex));
+        return stringToUTF16Ptr(ex.toString());
     }
 }
 
@@ -81,7 +81,7 @@ export function mono_wasm_ends_with (culture: number, cultureLength: number, str
         return VoidPtrNull;
     } catch (ex: any) {
         setI32(resultPtr, INDEXING_ERROR);
-        return stringToUTF16Ptr((ex));
+        return stringToUTF16Ptr(ex.toString());
     }
 }
 
@@ -145,7 +145,7 @@ export function mono_wasm_index_of (culture: number, cultureLength: number, need
         return VoidPtrNull;
     } catch (ex: any) {
         setI32(resultPtr, INDEXING_ERROR);
-        return stringToUTF16Ptr((ex));
+        return stringToUTF16Ptr(ex.toString());
     }
 
     function checkMatchFound (str1: string, str2: string, locale: string | undefined, casePicker: number): boolean {

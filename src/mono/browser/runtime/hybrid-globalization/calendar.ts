@@ -60,7 +60,7 @@ export function mono_wasm_get_calendar_info (culture: number, cultureLength: num
         setI32(dstLength, result.length);
         return VoidPtrNull;
     } catch (ex: any) {
-        return stringToUTF16Ptr((ex));
+        return stringToUTF16Ptr(ex.toString());
     }
 }
 

@@ -57,7 +57,7 @@ export function mono_wasm_change_case_invariant (src: number, srcLength: number,
         }
         return VoidPtrNull;
     } catch (ex: any) {
-        return stringToUTF16Ptr((ex));
+        return stringToUTF16Ptr(ex.toString());
     }
 }
 
@@ -112,7 +112,7 @@ export function mono_wasm_change_case (culture: number, cultureLength: number, s
         }
         return VoidPtrNull;
     } catch (ex: any) {
-        return stringToUTF16Ptr((ex));
+        return stringToUTF16Ptr(ex.toString());
     }
 }
 

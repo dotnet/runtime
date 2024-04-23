@@ -31,7 +31,7 @@ export function mono_wasm_get_culture_info (culture: number, cultureLength: numb
         return VoidPtrNull;
     } catch (ex: any) {
         setI32(dstLength, -1);
-        return stringToUTF16Ptr((ex));
+        return stringToUTF16Ptr(ex.toString());
     }
 }
 
