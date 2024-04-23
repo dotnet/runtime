@@ -159,8 +159,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		private static bool IsProducedByNativeAOT (CustomAttribute attr)
 		{
-            if (attr.ConstructorArguments.Count > 2 && attr.ConstructorArguments[^2].Type.Name == "Tool")
-                return ((Tool)attr.ConstructorArguments[^2].Value).HasFlag(Tool.NativeAot);
+			if (attr.ConstructorArguments.Count > 2 && attr.ConstructorArguments[^2].Type.Name == "Tool")
+				return ((Tool)attr.ConstructorArguments[^2].Value).HasFlag(Tool.NativeAot);
 			var producedBy = attr.GetPropertyValue ("ProducedBy");
 			return producedBy is null ? true : ((Tool) producedBy).HasFlag (Tool.NativeAot);
 		}
@@ -235,14 +235,19 @@ namespace Mono.Linker.Tests.TestCasesRunner
 								Assert.Fail ($"The warning code specified in {attr.AttributeType.Name} must start with the 'IL' prefix. Specified value: '{expectedWarningCode}'.");
 							}
 							IEnumerable<string> expectedMessageContains = attr.Constructor.Parameters switch
-                            {
-                                [_, { ParameterType.IsArray: true }, ..]
-                                    => ((CustomAttributeArgument[])attr.ConstructorArguments[1].Value)
-                                        .Select(caa => (string)caa.Value),
-                                [_, { ParameterType.Name: "String" }, { ParameterType.Name: "String" }, { ParameterType.Name: "Tool" }, _]
-                                    => [(string)attr.GetConstructorArgumentValue(1), (string)attr.GetConstructorArgumentValue(2)],
-                                [_, { ParameterType.Name: "String" }, { ParameterType.Name: "Tool" }, _]
+							{
+								// ExpectedWarningAttribute(string warningCode, params string[] expectedMessages)
+								// ExpectedWarningAttribute(string warningCode, string[] expectedMessages, Tool producedBy, string issueLink)
+								[_, { ParameterType.IsArray: true }, ..]
+									=> ((CustomAttributeArgument[])attr.ConstructorArguments[1].Value)
+										.Select(caa => (string)caa.Value),
+								// ExpectedWarningAttribute(string warningCode, string expectedMessage1, string expectedMessage2, Tool producedBy, string issueLink)
+								[_, { ParameterType.Name: "String" }, { ParameterType.Name: "String" }, { ParameterType.Name: "Tool" }, _]
+									=> [(string)attr.GetConstructorArgumentValue(1), (string)attr.GetConstructorArgumentValue(2)],
+								// ExpectedWarningAttribute(string warningCode, string expectedMessage, Tool producedBy, string issueLink)
+								[_, { ParameterType.Name: "String" }, { ParameterType.Name: "Tool" }, _]
 									=> [(string)attr.GetConstructorArgumentValue(1)],
+								// ExpectedWarningAttribute(string warningCode, Tool producedBy, string issueLink)
 								[_, { ParameterType.Name: "Tool" }, _]
 									=> [],
 								_ => throw new UnreachableException(),

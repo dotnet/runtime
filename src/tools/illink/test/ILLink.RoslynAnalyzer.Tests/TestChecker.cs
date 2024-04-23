@@ -280,22 +280,28 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 			if (!expectedWarningCode.StartsWith ("IL"))
 				throw new InvalidOperationException ($"Expected warning code should start with \"IL\" prefix.");
+
 			List<string> expectedMessages = ((IMethodSymbol) (_semanticModel.GetSymbolInfo (attribute).Symbol!)).Parameters switch {
-			[var warningCodeExpr, { IsParams: true }]
-				=> args
-					.Where (arg => arg.Key.StartsWith ('#') && arg.Key != "#0")
-					.Select (arg => LinkerTestBase.GetStringFromExpression (arg.Value, _semanticModel))
-					.ToList (),
-					[var warningCodeExpr, { Type.TypeKind: TypeKind.Array }, _, _]
-							=> ((CollectionExpressionSyntax) args["#1"]).Elements
-								.Select (arg => LinkerTestBase.GetStringFromExpression (((ExpressionElementSyntax) arg).Expression, _semanticModel))
-								.ToList (),
-								[var warningCodeExpr, { Type.SpecialType: SpecialType.System_String }, _, _]
-							=> [LinkerTestBase.GetStringFromExpression (args["#1"], _semanticModel)],
-							[var warningCodeExpr, { Type.SpecialType: SpecialType.System_String }, { Type.SpecialType: SpecialType.System_String }, _, _]
-						=> [LinkerTestBase.GetStringFromExpression (args["#1"], _semanticModel), LinkerTestBase.GetStringFromExpression (args["#2"], _semanticModel)],
-						[var warningCodeExpr, _, _]
-						=> [],
+				// ExpectedWarningAttribute(string warningCode, params string[] expectedMessages)
+				[_, { IsParams: true }]
+					=> args
+						.Where (arg => arg.Key.StartsWith ('#') && arg.Key != "#0")
+						.Select (arg => LinkerTestBase.GetStringFromExpression (arg.Value, _semanticModel))
+						.ToList (),
+				// ExpectedWarningAttribute(string warningCode, string[] expectedMessages, Tool producedBy, string issueLink)
+				[_, { Type.TypeKind: TypeKind.Array }, _, _]
+					=> ((CollectionExpressionSyntax) args["#1"]).Elements
+						.Select (arg => LinkerTestBase.GetStringFromExpression (((ExpressionElementSyntax) arg).Expression, _semanticModel))
+						.ToList (),
+				// ExpectedWarningAttribute(string warningCode, string expectedMessage, Tool producedBy, string issueLink)
+				[_, { Type.SpecialType: SpecialType.System_String }, _, _]
+					=> [LinkerTestBase.GetStringFromExpression (args["#1"], _semanticModel)],
+				// ExpectedWarningAttribute(string warningCode, string expectedMessage1, string expectedMessage2, Tool producedBy, string issueLink)
+				[_, { Type.SpecialType: SpecialType.System_String }, { Type.SpecialType: SpecialType.System_String }, _, _]
+					=> [LinkerTestBase.GetStringFromExpression (args["#1"], _semanticModel), LinkerTestBase.GetStringFromExpression (args["#2"], _semanticModel)],
+				// ExpectedWarningAttribute(string warningCode, Tool producedBy, string issueLink)
+				[_, _, _]
+					=> [],
 				_ => throw new UnreachableException (),
 			};
 
