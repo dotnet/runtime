@@ -226,7 +226,7 @@ public:
     void ResetForLoop(FlowGraphNaturalLoop* loop);
 
     ScevConstant* NewConstant(var_types type, int64_t value);
-    ScevLocal*    NewLocal(unsigned lclNum, unsigned ssaNum);
+    ScevLocal*    NewLocal(unsigned lclNum, unsigned ssaNum, var_types type);
     ScevUnop*     NewExtension(ScevOper oper, var_types targetType, Scev* op);
     ScevBinop*    NewBinop(ScevOper oper, Scev* op1, Scev* op2);
     ScevAddRec*   NewAddRec(Scev* start, Scev* step);

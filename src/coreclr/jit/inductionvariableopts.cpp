@@ -820,7 +820,29 @@ void Compiler::optStrengthReduce(FlowGraphNaturalLoop* loop, ScalarEvolutionCont
         // materialize the value as IR in the step block.
         if (!bestIV->IV->Step->OperIs(ScevOper::Constant))
         {
-            JITDUMP("      Skipping; step value is not a constant\n");
+            JITDUMP("      Skipping: step value is not a constant\n");
+            bestIV->TriedStrengthReduction = true;
+            continue;
+        }
+
+        // TODO-CQ: We currently store the step update right before the latch
+        // condition. If the latch condition has any uses, then we cannot
+        // replace those. We should be able to generatelize this to save the
+        // "pre-increment" value if necesary (same logic is needed for more
+        // general handling).
+        bool hasAnyLatchUses = false;
+        for (IVUseListNode* node = bestIV->Uses; node != nullptr; node = node->Next)
+        {
+            if (node->Stmt == latch->lastStmt())
+            {
+                hasAnyLatchUses = true;
+                break;
+            }
+        }
+
+        if (hasAnyLatchUses)
+        {
+            JITDUMP("      Skipping: latch has use of IV\n");
             bestIV->TriedStrengthReduction = true;
             continue;
         }
@@ -829,7 +851,7 @@ void Compiler::optStrengthReduce(FlowGraphNaturalLoop* loop, ScalarEvolutionCont
         GenTree* initValue = scevContext.Materialize(bestIV->IV->Start);
         if (initValue == nullptr)
         {
-            JITDUMP("      Skipping; init value could not be materialized\n");
+            JITDUMP("      Skipping: init value could not be materialized\n");
             bestIV->TriedStrengthReduction = true;
             continue;
         }
@@ -865,14 +887,16 @@ void Compiler::optStrengthReduce(FlowGraphNaturalLoop* loop, ScalarEvolutionCont
 
         for (IVUseListNode* node = bestIV->Uses; node != nullptr; node = node->Next)
         {
-            for (IVUseListNode** childNodeSlot = &node->Next; (*childNodeSlot) != nullptr; childNodeSlot = &(*childNodeSlot)->Next)
+            for (IVUseListNode** childNodeSlot = &node->Next; (*childNodeSlot) != nullptr;)
             {
                 IVUseListNode* childNode = *childNodeSlot;
                 if (childNode->Stmt != node->Stmt)
                 {
+                    childNodeSlot = &(*childNodeSlot)->Next;
                     continue;
                 }
 
+                bool unlinked = false;
                 GenTree* ancestor = childNode->Tree;
                 while (ancestor != childNode->Stmt->GetRootNode())
                 {
@@ -880,8 +904,14 @@ void Compiler::optStrengthReduce(FlowGraphNaturalLoop* loop, ScalarEvolutionCont
                     if (ancestor == node->Tree)
                     {
                         *childNodeSlot = childNode->Next;
+                        unlinked = true;
                         break;
                     }
+                }
+
+                if (!unlinked)
+                {
+                    childNodeSlot = &(*childNodeSlot)->Next;
                 }
             }
         }
@@ -1060,7 +1090,7 @@ PhaseStatus Compiler::optInductionVariables()
                 {
                     Scev* op1 = scevContext.Analyze(exiting, cond->gtGetOp1());
                     Scev* op2 = scevContext.Analyze(exiting, cond->gtGetOp2());
-                    if ((op1 != nullptr) && (op2 != nullptr))
+                    if ((op1 != nullptr) && (op2 != nullptr) && !varTypeIsGC(op1->Type) && !varTypeIsGC(op2->Type))
                     {
                         Scev* a = nullptr;
                         Scev* b = nullptr;

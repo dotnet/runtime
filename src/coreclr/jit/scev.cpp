@@ -298,13 +298,13 @@ ScevConstant* ScalarEvolutionContext::NewConstant(var_types type, int64_t value)
 // Parameters:
 //   lclNum - The local
 //   ssaNum - The SSA number of the def outside the loop that is being used.
+//   type   - Type of local
 //
 // Returns:
 //   The new node.
 //
-ScevLocal* ScalarEvolutionContext::NewLocal(unsigned lclNum, unsigned ssaNum)
+ScevLocal* ScalarEvolutionContext::NewLocal(unsigned lclNum, unsigned ssaNum, var_types type)
 {
-    var_types  type           = genActualType(m_comp->lvaGetDesc(lclNum));
     ScevLocal* invariantLocal = new (m_comp, CMK_LoopIVOpts) ScevLocal(type, lclNum, ssaNum);
     return invariantLocal;
 }
@@ -406,7 +406,7 @@ Scev* ScalarEvolutionContext::CreateSimpleInvariantScev(GenTree* tree)
 
         if ((ssaDsc->GetBlock() == nullptr) || !m_loop->ContainsBlock(ssaDsc->GetBlock()))
         {
-            return NewLocal(tree->AsLclVarCommon()->GetLclNum(), tree->AsLclVarCommon()->GetSsaNum());
+            return NewLocal(tree->AsLclVarCommon()->GetLclNum(), tree->AsLclVarCommon()->GetSsaNum(), tree->TypeGet());
         }
     }
 
@@ -466,9 +466,15 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int d
             LclVarDsc*    dsc    = m_comp->lvaGetDesc(tree->AsLclVarCommon());
             LclSsaVarDsc* ssaDsc = dsc->GetPerSsaData(tree->AsLclVarCommon()->GetSsaNum());
 
+            if ((tree->TypeGet() != dsc->TypeGet()) || varTypeIsSmall(tree))
+            {
+                // TODO: Truncations (for TYP_INT uses of TYP_LONG locals) and NOL handling?
+                return nullptr;
+            }
+
             if ((ssaDsc->GetBlock() == nullptr) || !m_loop->ContainsBlock(ssaDsc->GetBlock()))
             {
-                return NewLocal(tree->AsLclVarCommon()->GetLclNum(), tree->AsLclVarCommon()->GetSsaNum());
+                return NewLocal(tree->AsLclVarCommon()->GetLclNum(), tree->AsLclVarCommon()->GetSsaNum(), genActualType(tree));
             }
 
             if (ssaDsc->GetDefNode() == nullptr)
@@ -525,7 +531,7 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int d
                 return nullptr;
             }
 
-            ScevLocal* enterScev = NewLocal(enterSsa->GetLclNum(), enterSsa->GetSsaNum());
+            ScevLocal* enterScev = NewLocal(enterSsa->GetLclNum(), enterSsa->GetSsaNum(), enterSsa->TypeGet());
 
             LclVarDsc*    dsc    = m_comp->lvaGetDesc(store);
             LclSsaVarDsc* ssaDsc = dsc->GetPerSsaData(backedgeSsa->GetSsaNum());
@@ -1075,14 +1081,14 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev)
                 ScevConstant* cns1 = (ScevConstant*)op1;
                 ScevConstant* cns2 = (ScevConstant*)op2;
                 int64_t       newValue;
-                if (binop->TypeIs(TYP_INT))
+                if (genTypeSize(binop->Type) == 4)
                 {
                     newValue = FoldBinop<int32_t>(binop->Oper, static_cast<int32_t>(cns1->Value),
                                                   static_cast<int32_t>(cns2->Value));
                 }
                 else
                 {
-                    assert(binop->TypeIs(TYP_LONG));
+                    assert(genTypeSize(binop->Type) == 8);
                     newValue = FoldBinop<int64_t>(binop->Oper, cns1->Value, cns2->Value);
                 }
 
