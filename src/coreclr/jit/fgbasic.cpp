@@ -235,6 +235,13 @@ bool Compiler::fgEnsureFirstBBisScratch()
                 //
                 JITDUMP("\fgEnsureFirstBBisScratch: Profile data could not be locally repaired. Data %s inconsisent.\n",
                         fgPgoConsistent ? "is now" : "was already");
+
+                if (fgPgoConsistent)
+                {
+                    Metrics.ProfileInconsistentScratchBB++;
+                    fgPgoConsistent = false;
+                }
+
                 block->inheritWeight(fgFirstBB);
             }
             else
