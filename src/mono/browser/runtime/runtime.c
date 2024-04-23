@@ -65,6 +65,7 @@
 int mono_wasm_enable_gc = 1;
 
 /* Missing from public headers */
+char *mono_fixup_symbol_name (char *key);
 void mono_icall_table_init (void);
 void mono_wasm_enable_debugging (int);
 void mono_ee_interp_init (const char *opts);
@@ -188,33 +189,6 @@ init_icall_table (void)
 #endif
 }
 
-// Keep synced with FixupSymbolName from src/tasks/Common/Utils.cs
-static void fixupSymbolName(char *key, char *fixedName) {
-    int sb_index = 0;
-	int len = strlen (key);
-
-    for (int i = 0; i < len; ++i) {
-        unsigned char b = key[i];
-        if ((b >= '0' && b <= '9') ||
-            (b >= 'a' && b <= 'z') ||
-            (b >= 'A' && b <= 'Z') ||
-            (b == '_')) {
-            fixedName[sb_index++] = b;
-        }
-        else if (b == '.' || b == '-' || b ==  '+' || b == '<' || b == '>') {
-            fixedName[sb_index++] = '_';
-        }
-		else {
-			// Append the hexadecimal representation of b between underscores
-			sprintf(&fixedName[sb_index], "_%X_", b);
-			sb_index += 4; // Move the index after the appended hexadecimal characters
-        }
-    }
-
-    // Null-terminate the fixedName string
-    fixedName[sb_index] = '\0';
-}
-
 /*
  * get_native_to_interp:
  *
@@ -236,12 +210,11 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 	const char *class_name = mono_class_get_name (klass);
 	const char *method_name = mono_method_get_name (method);
 	char key [128];
-	char fixedName[256];
 	int len;
 
 	assert (strlen (name) < 100);
 	snprintf (key, sizeof(key), "%s_%s_%s", name, class_name, method_name);
-	fixupSymbolName(key, fixedName);
+	char* fixedName = mono_fixup_symbol_name(key);
 	addr = wasm_dl_get_native_to_interp (fixedName, extra_arg);
 	MONO_EXIT_GC_UNSAFE;
 	return addr;

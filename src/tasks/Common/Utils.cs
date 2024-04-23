@@ -415,7 +415,7 @@ internal static class Utils
         }
     }
 
-    // Keep synced with fixupSymbolName from src/mono/browser/runtime/runtime.c
+    // Keep synced with mono_fixup_symbol_name from src/mono/mono/metadata/native-library.c
     public static string FixupSymbolName(string name)
     {
         UTF8Encoding utf8 = new();

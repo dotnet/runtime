@@ -253,5 +253,3 @@
 #ifdef HAVE_CLOCK_NANOSLEEP
 #define g_clock_nanosleep monoeg_clock_nanosleep
 #endif
-
-#define g_string_fixup_symbol_name monoeg_g_string_fixup_symbol_name

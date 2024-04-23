@@ -51,6 +51,7 @@
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/mono-basic-block.h>
 #include <mono/metadata/mono-endian.h>
+#include <mono/metadata/native-library.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/custom-attrs-internals.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -12415,10 +12416,7 @@ emit_file_info (MonoAotCompile *acfg)
 		 */
 		sprintf (symbol, "%smono_aot_module_%s_info", acfg->user_symbol_prefix, acfg->image->assembly->aname.name);
 
-		/* Get rid of characters which cannot occur in symbols */
-		char fixedName[256];
-		g_string_fixup_symbol_name(symbol, fixedName);
-		acfg->static_linking_symbol = g_strdup (fixedName);
+		acfg->static_linking_symbol = g_strdup (mono_fixup_symbol_name(symbol));
 	}
 
 	if (acfg->llvm)
@@ -15115,11 +15113,8 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 		acfg->flags = (MonoAotFileFlags)(acfg->flags | MONO_AOT_FILE_FLAG_LLVM_ONLY);
 
 	acfg->assembly_name_sym = g_strdup (get_assembly_prefix (acfg->image));
-	/* Get rid of characters which cannot occur in symbols */
-	char fixedName[256];
-	g_string_fixup_symbol_name (acfg->assembly_name_sym, fixedName);
 
-	acfg->global_prefix = g_strdup_printf ("mono_aot_%s", fixedName);
+	acfg->global_prefix = g_strdup_printf ("mono_aot_%s", g_strdup(mono_fixup_symbol_name (acfg->assembly_name_sym)));
 	acfg->plt_symbol = g_strdup_printf ("%s_plt", acfg->global_prefix);
 	acfg->got_symbol = g_strdup_printf ("%s_got", acfg->global_prefix);
  	if (acfg->llvm) {
