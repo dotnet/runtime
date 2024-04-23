@@ -21,6 +21,10 @@ include_directories(../../json)
 include_directories(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native)
 include_directories(${CLR_SRC_NATIVE_DIR}/libs/Common)
 
+if ((NOT DEFINED CLR_CMAKE_USE_SYSTEM_RAPIDJSON) OR (NOT CLR_CMAKE_USE_SYSTEM_RAPIDJSON))
+    include_directories(${CLR_SRC_NATIVE_DIR}/external/)
+endif()
+
 set(SOURCES
     ../bundle_marker.cpp
     ./hostfxr_resolver.cpp

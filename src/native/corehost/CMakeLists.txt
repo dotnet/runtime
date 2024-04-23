@@ -19,6 +19,10 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-use-cxa-atexit>)
 endif()
 
+if ((NOT DEFINED CLR_CMAKE_USE_SYSTEM_RAPIDJSON) OR (NOT CLR_CMAKE_USE_SYSTEM_RAPIDJSON))
+    include_directories(${CLR_SRC_NATIVE_DIR}/external/)
+endif()
+
 add_subdirectory(hostcommon)
 add_subdirectory(fxr)
 add_subdirectory(hostpolicy)
