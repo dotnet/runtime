@@ -6,15 +6,17 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BrowserHost)' != 'windows'">
-    <ExecXHarnessCmd>$HARNESS_RUNNER</ExecXHarnessCmd>
-    <XHarnessOutput>$XHARNESS_OUT</XHarnessOutput>
-    <XHarnessCommand>$XHARNESS_COMMAND</XHarnessCommand>
+    <ExecXHarnessVar>$HARNESS_RUNNER</ExecXHarnessVar>
+    <XHarnessOutputVar>$XHARNESS_OUT</XHarnessOutputVar>
+    <XHarnessCommandVar>$XHARNESS_COMMAND</XHarnessCommandVar>
+    <WasmXHarnessArgsVar>$XHARNESS_ARGS</WasmXHarnessArgsVar>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BrowserHost)' == 'windows'">
-    <ExecXHarnessCmd>%HARNESS_RUNNER%</ExecXHarnessCmd>
-    <XHarnessOutput>%XHARNESS_OUT%</XHarnessOutput>
-    <XHarnessCommand>%XHARNESS_COMMAND%</XHarnessCommand>
+    <ExecXHarnessVar>%HARNESS_RUNNER%</ExecXHarnessVar>
+    <XHarnessOutputVar>%XHARNESS_OUT%</XHarnessOutputVar>
+    <XHarnessCommandVar>%XHARNESS_COMMAND%</XHarnessCommandVar>
+    <WasmXHarnessArgsVar>%XHARNESS_ARGS%</WasmXHarnessArgsVar>
   </PropertyGroup>
 
   <Import Project="..\Directory.Build.props"/>
