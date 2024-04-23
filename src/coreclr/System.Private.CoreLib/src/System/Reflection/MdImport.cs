@@ -301,10 +301,16 @@ namespace System.Reflection
         #endregion
 
         #region Constructor
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern unsafe IntPtr GetMetadataImport(RuntimeModule module);
+
         internal MetadataImport(RuntimeModule module)
         {
             ArgumentNullException.ThrowIfNull(module);
-            m_metadataImport2 = module.GetMDImport();
+
+            // The MetadataImport instance needs to be acquired in this manner
+            // since the instance can be replaced during HotReload and EnC scenarios.
+            m_metadataImport2 = GetMetadataImport(module);
         }
         #endregion
 

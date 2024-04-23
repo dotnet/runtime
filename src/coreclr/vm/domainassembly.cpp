@@ -351,7 +351,7 @@ OBJECTREF DomainAssembly::GetExposedModuleObject()
         GCPROTECT_BEGIN(refClass);
 
         refClass = (REFLECTMODULEBASEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__MODULE));
-        refClass->SetModuleDetails(GetModule(), GetModule()->GetMDImport());
+        refClass->SetModule(GetModule());
 
         // Attach the reference to the assembly to keep the LoaderAllocator for this collectible type
         // alive as long as a reference to the module is kept alive.
