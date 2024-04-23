@@ -258,6 +258,8 @@ namespace System.DirectoryServices.Protocols
 
     public class AsqRequestControl : DirectoryControl
     {
+        private static UTF8Encoding s_utf8Encoding = new(false, true);
+
         public AsqRequestControl() : base("1.2.840.113556.1.4.1504", null, true, true)
         {
         }
@@ -271,7 +273,28 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            _directoryControlValue = BerConverter.Encode("{s}", new object[] { AttributeName });
+            AsnWriter writer = new(AsnEncodingRules.BER);
+
+            /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.18.
+             * ASQRequestValue ::= SEQUENCE {
+             *                      sourceAttribute     OCTET STRING }
+             */
+            using (AsnWriter.Scope outerSequence = writer.PushSequence())
+            {
+                if (!string.IsNullOrEmpty(AttributeName))
+                {
+                    int octetStringLength = s_utf8Encoding.GetByteCount(AttributeName);
+                    Span<byte> tmpValue = octetStringLength < 256 ? stackalloc byte[octetStringLength] : new byte[octetStringLength];
+
+                    s_utf8Encoding.GetBytes(AttributeName, tmpValue);
+                    writer.WriteOctetString(tmpValue);
+                }
+                else
+                {
+                    writer.WriteOctetString([]);
+                }
+            }
+            _directoryControlValue = writer.Encode();
             return base.GetValue();
         }
     }
@@ -288,6 +311,8 @@ namespace System.DirectoryServices.Protocols
 
     public class CrossDomainMoveControl : DirectoryControl
     {
+        private static readonly UTF8Encoding s_utf8Encoding = new UTF8Encoding(false);
+
         public CrossDomainMoveControl() : base("1.2.840.113556.1.4.521", null, true, true)
         {
         }
@@ -301,18 +326,20 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            if (TargetDomainController != null)
+            /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.2.
+             * "When sending this control to the DC, the controlValue field is set to a UTF-8 string
+             * containing the fully qualified domain name of a DC in the domain to which the object
+             * is to be moved. The string is not BER-encoded."
+             */
+            if (!string.IsNullOrEmpty(TargetDomainController))
             {
-                UTF8Encoding encoder = new UTF8Encoding();
-                byte[] bytes = encoder.GetBytes(TargetDomainController);
+                int byteCount = s_utf8Encoding.GetByteCount(TargetDomainController);
 
                 // Allocate large enough space for the '\0' character.
-                _directoryControlValue = new byte[bytes.Length + 2];
-                for (int i = 0; i < bytes.Length; i++)
-                {
-                    _directoryControlValue[i] = bytes[i];
-                }
+                _directoryControlValue = new byte[byteCount + 2];
+                s_utf8Encoding.GetBytes(TargetDomainController, _directoryControlValue);
             }
+
             return base.GetValue();
         }
     }
@@ -350,7 +377,18 @@ namespace System.DirectoryServices.Protocols
         }
         public override byte[] GetValue()
         {
-            _directoryControlValue = BerConverter.Encode("{i}", new object[] { (int)Flag });
+            AsnWriter writer = new(AsnEncodingRules.BER);
+
+            /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.5.
+             * ExtendedDNRequestValue ::= SEQUENCE {
+             *                              Flag     INTEGER }
+             */
+            using (AsnWriter.Scope outerSequence = writer.PushSequence())
+            {
+                writer.WriteInteger((int)Flag);
+            }
+            _directoryControlValue = writer.Encode();
+
             return base.GetValue();
         }
     }
@@ -385,7 +423,18 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            _directoryControlValue = BerConverter.Encode("{i}", new object[] { (int)SecurityMasks });
+            AsnWriter writer = new(AsnEncodingRules.BER);
+
+            /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.11.
+             * SDFlagsRequestValue ::= SEQUENCE {
+             *                          Flags     INTEGER }
+             */
+            using (AsnWriter.Scope outerSequence = writer.PushSequence())
+            {
+                writer.WriteInteger((int)SecurityMasks);
+            }
+            _directoryControlValue = writer.Encode();
+
             return base.GetValue();
         }
     }
@@ -414,7 +463,18 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            _directoryControlValue = BerConverter.Encode("{i}", new object[] { (int)SearchOption });
+            AsnWriter writer = new(AsnEncodingRules.BER);
+
+            /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.12.
+             * SearchOptionsRequestValue ::= SEQUENCE {
+             *                                  Flags     INTEGER }
+             */
+            using (AsnWriter.Scope outerSequence = writer.PushSequence())
+            {
+                writer.WriteInteger((int)SearchOption);
+            }
+            _directoryControlValue = writer.Encode();
+
             return base.GetValue();
         }
     }
@@ -457,14 +517,32 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            byte[] tmpValue = null;
-            if (ServerName != null)
-            {
-                UnicodeEncoding unicode = new UnicodeEncoding();
-                tmpValue = unicode.GetBytes(ServerName);
-            }
+            AsnWriter writer = new(AsnEncodingRules.BER);
 
-            _directoryControlValue = BerConverter.Encode("{io}", new object[] { Flag, tmpValue });
+            /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.16.
+             * VerifyNameRequestValue ::= SEQUENCE {
+             *                              Flags       INTEGER,
+             *                              ServerName  OCTET STRING }
+             */
+            using (AsnWriter.Scope outerSequence = writer.PushSequence())
+            {
+                writer.WriteInteger(Flag);
+
+                if (!string.IsNullOrEmpty(ServerName))
+                {
+                    int serverNameLength = Encoding.Unicode.GetByteCount(ServerName);
+                    Span<byte> tmpValue = serverNameLength < 256 ? stackalloc byte[serverNameLength] : new byte[serverNameLength];
+
+                    Encoding.Unicode.GetBytes(ServerName, tmpValue);
+                    writer.WriteOctetString(tmpValue);
+                }
+                else
+                {
+                    writer.WriteOctetString([]);
+                }
+            }
+            _directoryControlValue = writer.Encode();
+
             return base.GetValue();
         }
     }
@@ -530,8 +608,22 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            object[] o = new object[] { (int)Option, AttributeCount, _dirsyncCookie };
-            _directoryControlValue = BerConverter.Encode("{iio}", o);
+            AsnWriter writer = new(AsnEncodingRules.BER);
+
+            /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.3.
+             * DirSyncRequestValue ::= SEQUENCE {
+             *                          Flags       INTEGER,
+             *                          MaxBytes    INTEGER,
+             *                          Cookie  OCTET STRING }
+             */
+            using (AsnWriter.Scope outerSequence = writer.PushSequence())
+            {
+                writer.WriteInteger((int)Option);
+                writer.WriteInteger(AttributeCount);
+                writer.WriteOctetString(_dirsyncCookie);
+            }
+            _directoryControlValue = writer.Encode();
+
             return base.GetValue();
         }
     }
@@ -624,8 +716,20 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            object[] o = new object[] { PageSize, _pageCookie };
-            _directoryControlValue = BerConverter.Encode("{io}", o);
+            AsnWriter writer = new(AsnEncodingRules.BER);
+
+            /* This is as laid out in RFC2696.
+             * realSearchControlValue ::= SEQUENCE {
+             *                              size    INTEGER,
+             *                              cookie  OCTET STRING }
+             */
+            using (AsnWriter.Scope outerSequence = writer.PushSequence())
+            {
+                writer.WriteInteger(PageSize);
+                writer.WriteOctetString(_pageCookie);
+            }
+            _directoryControlValue = writer.Encode();
+
             return base.GetValue();
         }
     }
@@ -663,6 +767,10 @@ namespace System.DirectoryServices.Protocols
 
     public class SortRequestControl : DirectoryControl
     {
+        private static UTF8Encoding s_utf8Encoding = new(false, true);
+        private static Asn1Tag s_orderingRuleTag = new(TagClass.ContextSpecific, 0, false);
+        private static Asn1Tag s_reverseOrderTag = new(TagClass.ContextSpecific, 1, false);
+
         private SortKey[] _keys = Array.Empty<SortKey>();
         public SortRequestControl(params SortKey[] sortKeys) : base("1.2.840.113556.1.4.473", null, true, true)
         {
@@ -732,93 +840,56 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        public override unsafe byte[] GetValue()
+        public override byte[] GetValue()
         {
-            SortKeyInterop[] nativeSortKeys = new SortKeyInterop[_keys.Length];
-            for (int i = 0; i < _keys.Length; ++i)
+            AsnWriter writer = new(AsnEncodingRules.BER);
+
+            /* This is as laid out in RFC2891.
+             * SortKeyList ::= SEQUENCE OF SEQUENCE {
+             *                  attributeType   AttributeDescription,
+             *                  orderingRule    [0] MatchingRuleId OPTIONAL,
+             *                  reverseOrder    [1] BOOLEAN DEFAULT FALSE }
+             * */
+            using (AsnWriter.Scope outerSequence = writer.PushSequence())
             {
-                nativeSortKeys[i] = new SortKeyInterop(_keys[i]);
-            }
+                Span<byte> scratchSpace = stackalloc byte[256];
 
-            IntPtr control = IntPtr.Zero;
-            int structSize = Marshal.SizeOf<SortKeyInterop>();
-            int keyCount = nativeSortKeys.Length;
-            IntPtr memHandle = Utility.AllocHGlobalIntPtrArray(keyCount + 1);
-
-            try
-            {
-                void** pMemHandle = (void**)memHandle;
-                IntPtr sortPtr = IntPtr.Zero;
-                int i = 0;
-                for (i = 0; i < keyCount; i++)
+                for (int i = 0; i < _keys.Length; i++)
                 {
-                    sortPtr = Marshal.AllocHGlobal(structSize);
-                    Marshal.StructureToPtr(nativeSortKeys[i], sortPtr, false);
-                    pMemHandle[i] = (void*)sortPtr;
-                }
-                pMemHandle[i] = null;
+                    SortKey key = _keys[i];
 
-                bool critical = IsCritical;
-                int error = LdapPal.CreateDirectorySortControl(UtilityHandle.GetHandle(), memHandle, critical ? (byte)1 : (byte)0, ref control);
-
-                if (error != 0)
-                {
-                    if (LdapErrorMappings.IsLdapError(error))
+                    using (AsnWriter.Scope keySequence = writer.PushSequence())
                     {
-                        string errorMessage = LdapErrorMappings.MapResultCode(error);
-                        throw new LdapException(error, errorMessage);
-                    }
-                    else
-                    {
-                        throw new LdapException(error);
-                    }
-                }
-
-                LdapControl managedControl = new LdapControl();
-                Marshal.PtrToStructure(control, managedControl);
-                BerVal value = managedControl.ldctl_value;
-                // reinitialize the value
-                _directoryControlValue = null;
-                if (value != null)
-                {
-                    _directoryControlValue = new byte[value.bv_len];
-                    Marshal.Copy(value.bv_val, _directoryControlValue, 0, value.bv_len);
-                }
-            }
-            finally
-            {
-                if (control != IntPtr.Zero)
-                {
-                    LdapPal.FreeDirectoryControl(control);
-                }
-
-                if (memHandle != IntPtr.Zero)
-                {
-                    //release the memory from the heap
-                    for (int i = 0; i < keyCount; i++)
-                    {
-                        IntPtr tempPtr = Marshal.ReadIntPtr(memHandle, IntPtr.Size * i);
-                        if (tempPtr != IntPtr.Zero)
+                        if (!string.IsNullOrEmpty(key.AttributeName))
                         {
-                            // free the marshalled name
-                            IntPtr ptr = Marshal.ReadIntPtr(tempPtr);
-                            if (ptr != IntPtr.Zero)
-                            {
-                                Marshal.FreeHGlobal(ptr);
-                            }
-                            // free the marshalled rule
-                            ptr = Marshal.ReadIntPtr(tempPtr, IntPtr.Size);
-                            if (ptr != IntPtr.Zero)
-                            {
-                                Marshal.FreeHGlobal(ptr);
-                            }
+                            int octetStringLength = s_utf8Encoding.GetByteCount(key.AttributeName);
+                            Span<byte> tmpValue = octetStringLength < scratchSpace.Length ? scratchSpace.Slice(0, octetStringLength) : new byte[octetStringLength];
 
-                            Marshal.FreeHGlobal(tempPtr);
+                            s_utf8Encoding.GetBytes(key.AttributeName, tmpValue);
+                            writer.WriteOctetString(tmpValue);
+                        }
+                        else
+                        {
+                            writer.WriteOctetString([]);
+                        }
+
+                        if (!string.IsNullOrEmpty(key.MatchingRule))
+                        {
+                            int octetStringLength = s_utf8Encoding.GetByteCount(key.MatchingRule);
+                            Span<byte> tmpValue = octetStringLength < scratchSpace.Length ? scratchSpace.Slice(0, octetStringLength) : new byte[octetStringLength];
+
+                            s_utf8Encoding.GetBytes(key.MatchingRule, tmpValue);
+                            writer.WriteOctetString(tmpValue, s_orderingRuleTag);
+                        }
+
+                        if (key.ReverseOrder)
+                        {
+                            writer.WriteBoolean(key.ReverseOrder, s_reverseOrderTag);
                         }
                     }
-                    Marshal.FreeHGlobal(memHandle);
                 }
             }
+            _directoryControlValue = writer.Encode();
 
             return base.GetValue();
         }
@@ -839,6 +910,9 @@ namespace System.DirectoryServices.Protocols
 
     public class VlvRequestControl : DirectoryControl
     {
+        private static Asn1Tag s_byOffsetChoiceTag = new(TagClass.ContextSpecific, 0, true);
+        private static Asn1Tag s_greaterThanOrEqualChoiceTag = new(TagClass.ContextSpecific, 1, false);
+
         private int _before;
         private int _after;
         private int _offset;
@@ -969,47 +1043,48 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            var seq = new StringBuilder(10);
-            var objList = new ArrayList();
+            AsnWriter writer = new(AsnEncodingRules.BER);
 
-            // first encode the before and the after count.
-            seq.Append("{ii");
-            objList.Add(BeforeCount);
-            objList.Add(AfterCount);
-
-            // encode Target if it is not null
-            if (Target.Length != 0)
+            /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.17.
+             * VLVRequestValue ::= SEQUENCE {
+             *                      beforeCount     INTEGER,
+             *                      afterCount      INTEGER,
+             *                      CHOICE {
+             *                          byoffset    [0] SEQUENCE {
+             *                              offset          INTEGER,
+             *                              contentCount    INTEGER },
+             *                          greaterThanOrEqual  [1] AssertionValue },
+             *                      contextID       OCTET STRING OPTIONAL }
+             */
+            using (AsnWriter.Scope outerSequence = writer.PushSequence())
             {
-                seq.Append('t');
-                objList.Add(0x80 | 0x1);
-                seq.Append('o');
-                objList.Add(Target);
-            }
-            else
-            {
-                seq.Append("t{");
-                objList.Add(0xa0);
-                seq.Append("ii");
-                objList.Add(Offset);
-                objList.Add(EstimateCount);
-                seq.Append('}');
-            }
+                // first encode the before and the after count.
+                writer.WriteInteger(BeforeCount);
+                writer.WriteInteger(AfterCount);
 
-            // encode the contextID if present
-            if (ContextId.Length != 0)
-            {
-                seq.Append('o');
-                objList.Add(ContextId);
-            }
+                // encode Target if it is not null
+                if (_target != null && _target.Length > 0)
+                {
+                    writer.WriteOctetString(_target, s_greaterThanOrEqualChoiceTag);
+                }
+                else
+                {
+                    using (AsnWriter.Scope innerSequence = writer.PushSequence(s_byOffsetChoiceTag))
+                    {
+                        writer.WriteInteger(Offset);
+                        writer.WriteInteger(EstimateCount);
+                    }
+                }
 
-            seq.Append('}');
-            object[] values = new object[objList.Count];
-            for (int i = 0; i < objList.Count; i++)
-            {
-                values[i] = objList[i];
-            }
+                // encode the contextID if present
+                if (_context != null && _context.Length > 0)
+                {
+                    writer.WriteOctetString(_context);
+                }
 
-            _directoryControlValue = BerConverter.Encode(seq.ToString(), values);
+            }
+            _directoryControlValue = writer.Encode();
+
             return base.GetValue();
         }
     }
@@ -1065,7 +1140,18 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            _directoryControlValue = BerConverter.Encode("{o}", new object[] { _sid });
+            AsnWriter writer = new(AsnEncodingRules.BER);
+
+            /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.19.
+             * QuotaRequestValue ::= SEQUENCE {
+             *                          querySID OCTET STRING }
+             */
+            using (AsnWriter.Scope outerSequence = writer.PushSequence())
+            {
+                writer.WriteOctetString(_sid);
+            }
+            _directoryControlValue = writer.Encode();
+
             return base.GetValue();
         }
     }
