@@ -463,6 +463,7 @@ namespace System.Net.Sockets.Tests
                 bool pending = client.ConnectAsync(connectSaea);
                 if (!pending) tcs.SetResult(connectSaea.SocketError);
                 Socket serverSocket = await listen.AcceptAsync();
+                await tcs.Task;
 
                 Assert.Equal(size, connectSaea.BytesTransferred);
                 // Close the client so we can get easily check the data on server side
