@@ -7028,31 +7028,6 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 	g_ptr_array_free (patches, TRUE);
 	g_free (locs);
 }
-static void fixupSymbolName(char *key, char *fixedName) {
-    int sb_index = 0;
-	int len = strlen (key);
-
-    for (int i = 0; i < len; ++i) {
-        unsigned char b = key[i];
-        if ((b >= '0' && b <= '9') ||
-            (b >= 'a' && b <= 'z') ||
-            (b >= 'A' && b <= 'Z') ||
-            (b == '_')) {
-            fixedName[sb_index++] = b;
-        }
-        else if (b == '.' || b == '-' || b ==  '+' || b == '<' || b == '>') {
-            fixedName[sb_index++] = '_';
-        }
-		else {
-			// Append the hexadecimal representation of b between underscores
-			sprintf(&fixedName[sb_index], "_%X_", b);
-			sb_index += 4; // Move the index after the appended hexadecimal characters
-        }
-    }
-
-    // Null-terminate the fixedName string
-    fixedName[sb_index] = '\0';
-}
 
 /*
  * sanitize_symbol:
@@ -12442,7 +12417,7 @@ emit_file_info (MonoAotCompile *acfg)
 
 		/* Get rid of characters which cannot occur in symbols */
 		char fixedName[256];
-		fixupSymbolName(symbol, fixedName);
+		g_string_fixup_symbol_name(symbol, fixedName);
 		acfg->static_linking_symbol = g_strdup (fixedName);
 	}
 
@@ -14881,7 +14856,6 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 {
 	MonoImage *image = ass->image;
 	MonoAotCompile *acfg;
-	char* p;
 	int res;
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
@@ -15143,7 +15117,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	acfg->assembly_name_sym = g_strdup (get_assembly_prefix (acfg->image));
 	/* Get rid of characters which cannot occur in symbols */
 	char fixedName[256];
-	fixupSymbolName(acfg->assembly_name_sym, fixedName);
+	g_string_fixup_symbol_name (acfg->assembly_name_sym, fixedName);
 
 	acfg->global_prefix = g_strdup_printf ("mono_aot_%s", fixedName);
 	acfg->plt_symbol = g_strdup_printf ("%s_plt", acfg->global_prefix);

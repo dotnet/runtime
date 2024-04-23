@@ -206,3 +206,31 @@ g_string_set_size (GString *string, gsize len)
 	string->str[len] = 0;
 	return string;
 }
+
+// Keep synced with FixupSymbolName from src/tasks/Common/Utils.cs
+// and src/mono/browser/runtime/runtime.c
+void g_string_fixup_symbol_name (char *key, char *fixedName) {
+    int sb_index = 0;
+	int len = (int)strlen (key);
+
+    for (int i = 0; i < len; ++i) {
+        unsigned char b = key[i];
+        if ((b >= '0' && b <= '9') ||
+            (b >= 'a' && b <= 'z') ||
+            (b >= 'A' && b <= 'Z') ||
+            (b == '_')) {
+            fixedName[sb_index++] = b;
+        }
+        else if (b == '.' || b == '-' || b ==  '+' || b == '<' || b == '>') {
+            fixedName[sb_index++] = '_';
+        }
+		else {
+			// Append the hexadecimal representation of b between underscores
+			sprintf(&fixedName[sb_index], "_%X_", b);
+			sb_index += 4; // Move the index after the appended hexadecimal characters
+        }
+    }
+
+    // Null-terminate the fixedName string
+    fixedName[sb_index] = '\0';
+}
