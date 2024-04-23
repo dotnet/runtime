@@ -67,7 +67,10 @@ namespace Wasm.Build.Tests
                             : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()"
                     );
 
-                    mainJsContent = StringReplaceWithAssert(mainJsContent, "runMain()", "dotnet.run()");
+                    // dotnet.run() is already used in <= net8.0
+                    if (targetFramework != "net8.0")
+                        mainJsContent = StringReplaceWithAssert(mainJsContent, "runMain()", "dotnet.run()");
+
                     mainJsContent = StringReplaceWithAssert(mainJsContent, "from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");
 
                     return mainJsContent;
