@@ -862,7 +862,7 @@ extends:
             #- browser_wasm_win
           nameSuffix: _Threading
           extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          extraHelixArguments: /p:WasmEnableThreads=true ${{ parameters.extraHelixArguments }}
+          extraHelixArguments: /p:WasmEnableThreads=true
           alwaysRun: ${{ variables.isRollingBuild }}
           shouldRunSmokeOnly: onLibrariesAndIllinkChanges
           scenarios:
