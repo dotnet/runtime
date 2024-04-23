@@ -800,6 +800,7 @@ namespace System.Net.Http
                 while (!Http3Frame.TryReadIntegerPair(_recvBuffer.ActiveSpan, out frameType, out payloadLength, out bytesRead))
                 {
                     _recvBuffer.EnsureAvailableSpace(VariableLengthIntegerHelper.MaximumEncodedLength * 2);
+                    if (NetEventSource.Log.IsEnabled()) Trace($"Entering read in ReadFrameEnvelopeAsync");
                     bytesRead = await _stream.ReadAsync(_recvBuffer.AvailableMemory, cancellationToken).ConfigureAwait(false);
 
                     if (bytesRead != 0)
@@ -869,6 +870,7 @@ namespace System.Net.Http
                 {
                     _recvBuffer.EnsureAvailableSpace(1);
 
+                    if (NetEventSource.Log.IsEnabled()) Trace($"Entering read in ReadHeadersAsync");
                     int bytesRead = await _stream.ReadAsync(_recvBuffer.AvailableMemory, cancellationToken).ConfigureAwait(false);
                     if (bytesRead != 0)
                     {
@@ -1068,6 +1070,7 @@ namespace System.Net.Http
                 if (_recvBuffer.ActiveLength == 0)
                 {
                     _recvBuffer.EnsureAvailableSpace(1);
+                    if (NetEventSource.Log.IsEnabled()) Trace($"Entering read in SkipUnknownPayloadAsync");
                     int bytesRead = await _stream.ReadAsync(_recvBuffer.AvailableMemory, cancellationToken).ConfigureAwait(false);
 
                     if (bytesRead != 0)
@@ -1205,6 +1208,7 @@ namespace System.Net.Http
                         // Receive buffer is empty -- bypass it and read directly into user's buffer.
 
                         int copyLen = (int)Math.Min(buffer.Length, _responseDataPayloadRemaining);
+                        if (NetEventSource.Log.IsEnabled()) Trace($"Entering read in ReadResponseContentAsync");
                         int bytesRead = await _stream.ReadAsync(buffer.Slice(0, copyLen), cancellationToken).ConfigureAwait(false);
 
                         if (bytesRead == 0 && buffer.Length != 0)
