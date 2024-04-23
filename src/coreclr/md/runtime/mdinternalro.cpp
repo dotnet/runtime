@@ -3147,7 +3147,6 @@ mdModule MDInternalRO::GetModuleFromScope(void)
 
 //*****************************************************************************
 // Fill a variant given a MDDefaultValue
-// This routine will create a bstr if the ELEMENT_TYPE of default value is STRING
 //*****************************************************************************
 __checkReturn
 HRESULT _FillMDDefaultValue(
@@ -3236,19 +3235,7 @@ HRESULT _FillMDDefaultValue(
         if (cbValue == 0)
             pValue = NULL;
 
-#if BIGENDIAN
-        {
-            // We need to allocate and swap the string if we're on a big endian
-            // This allocation will be freed by the MDDefaultValue destructor.
-            pMDDefaultValue->m_wzValue = new WCHAR[(cbValue + 1) / sizeof (WCHAR)];
-            IfNullGo(pMDDefaultValue->m_wzValue);
-            memcpy(const_cast<WCHAR *>(pMDDefaultValue->m_wzValue), pValue, cbValue);
-            _ASSERTE(cbValue % sizeof(WCHAR) == 0);
-            SwapStringLength(const_cast<WCHAR *>(pMDDefaultValue->m_wzValue), cbValue / sizeof(WCHAR));
-        }
-#else
         pMDDefaultValue->m_wzValue = (LPWSTR) pValue;
-#endif
         break;
     case ELEMENT_TYPE_CLASS:
         //

@@ -899,7 +899,7 @@ void DumpMscorlib(void* GUICookie)
             // Retrieve the type def properties as well, so that we can check a few more things about
             // the System.Object type
             //
-            if (SUCCEEDED(g_pPubImport->GetTypeDefProps(tkObjectTypeDef, NULL, NULL, 0, &dwClassAttrs, &tkExtends)))
+            if (SUCCEEDED(g_pPubImport->GetTypeDefProps(tkObjectTypeDef, NULL, 0, NULL, &dwClassAttrs, &tkExtends)))
             {
                 bool bExtends = g_pPubImport->IsValidToken(tkExtends);
                 bool isClass = ((dwClassAttrs & tdClassSemanticsMask) == tdClass);
@@ -1914,7 +1914,7 @@ BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
                 for(n=0; n < numElements; n++)
                 {
                     if(n) appendStr(out," ");
-                    _gcvt_s(str,64,*((float*)dataPtr), 8);
+                    sprintf_s(str, 64, "%.*g", 8, (double)(*((float*)dataPtr)));
                     float df = (float)atof(str);
                     // Must compare as underlying bytes, not floating point otherwise optimizer will
                     // try to enregister and compare 80-bit precision number with 32-bit precision number!!!!
@@ -1933,7 +1933,7 @@ BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
                 {
                     if(n) appendStr(out," ");
                     char *pch;
-                    _gcvt_s(str,64,*((double*)dataPtr), 17);
+                    sprintf_s(str, 64, "%.*g", 17, *((double*)dataPtr));
                     double df = strtod(str, &pch);
                     // Must compare as underlying bytes, not floating point otherwise optimizer will
                     // try to enregister and compare 80-bit precision number with 64-bit precision number!!!!
@@ -2605,7 +2605,7 @@ void DumpDefaultValue(mdToken tok, __inout __nullterminated char* szString, void
         case ELEMENT_TYPE_R4:
             {
                 char szf[32];
-                _gcvt_s(szf,32,MDDV.m_fltValue, 8);
+                sprintf_s(szf, 32, "%.*g", 8, (double)MDDV.m_fltValue);
                 float df = (float)atof(szf);
                 // Must compare as underlying bytes, not floating point otherwise optimizer will
                 // try to enregister and compare 80-bit precision number with 32-bit precision number!!!!
@@ -2619,7 +2619,7 @@ void DumpDefaultValue(mdToken tok, __inout __nullterminated char* szString, void
         case ELEMENT_TYPE_R8:
             {
                 char szf[32], *pch;
-                _gcvt_s(szf,32,MDDV.m_dblValue, 17);
+                sprintf_s(szf, 32, "%.*g", 17, MDDV.m_dblValue);
                 double df = strtod(szf, &pch); //atof(szf);
                 szf[31]=0;
                 // Must compare as underlying bytes, not floating point otherwise optimizer will
@@ -3538,7 +3538,7 @@ BOOL DumpMethod(mdToken FuncToken, const char *pszClassName, DWORD dwEntryPointT
         pComSig = NULL;
     }
 
-    if (cComSig == NULL)
+    if (cComSig == 0)
     {
         sprintf_s(szString, SZSTRING_SIZE, "%sERROR: method '%s' has no signature", g_szAsmCodeIndent, pszMemberName);
         printError(GUICookie, ERRORMSG(szString));
@@ -4010,7 +4010,7 @@ BOOL DumpField(mdToken FuncToken, const char *pszClassName,void *GUICookie, BOOL
     {
         pComSig = NULL;
     }
-    if (cComSig == NULL)
+    if (cComSig == 0)
     {
         char sz[2048];
         sprintf_s(sz,2048,"%sERROR: field '%s' has no signature",g_szAsmCodeIndent,pszMemberName);

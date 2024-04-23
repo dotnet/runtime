@@ -295,6 +295,74 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
         return false;
     }
 
+    if (childNode->OperIs(GT_ROL, GT_ROR))
+    {
+        // Find "a op (b rotate cns)"
+
+        if (childNode->gtGetOp1()->isContained())
+        {
+            // Cannot contain if the childs op1 is already contained
+            return false;
+        }
+
+        GenTree* rotateAmountNode = childNode->gtGetOp2();
+
+        if (!rotateAmountNode->IsCnsIntOrI())
+        {
+            // Cannot contain if the childs op2 is not a constant
+            return false;
+        }
+
+        const ssize_t wrapAmount = (static_cast<ssize_t>(genTypeSize(parentNode)) * BITS_PER_BYTE);
+        assert((wrapAmount == 32) || (wrapAmount == 64));
+
+        // Rotation is circular, so normalize to [0, wrapAmount - 1]
+        ssize_t rotateAmount = rotateAmountNode->AsIntCon()->IconValue() % wrapAmount;
+        assert((rotateAmount >= 0) && (rotateAmount <= (wrapAmount - 1)));
+
+        if (childNode->OperIs(GT_ROL))
+        {
+            // The actual instructions only encode rotate right but
+            // since rotating left by 1 is equivalen to rotating
+            // right by (rotateAmount - 1), we can fix things here.
+
+            childNode->SetOper(GT_ROR);
+            rotateAmount = wrapAmount - rotateAmount;
+        }
+
+        rotateAmountNode->AsIntCon()->SetIconValue(rotateAmount);
+        assert(childNode->OperIs(GT_ROR));
+
+        if (parentNode->OperIs(GT_AND))
+        {
+            // These operations can still report flags
+
+            if (IsInvariantInRange(childNode, parentNode))
+            {
+                assert(rotateAmountNode->isContained());
+                return true;
+            }
+        }
+
+        if ((parentNode->gtFlags & GTF_SET_FLAGS) != 0)
+        {
+            // Cannot contain if the parent operation needs to set flags
+            return false;
+        }
+
+        if (parentNode->OperIs(GT_OR, GT_XOR))
+        {
+            if (IsInvariantInRange(childNode, parentNode))
+            {
+                assert(rotateAmountNode->isContained());
+                return true;
+            }
+        }
+
+        // TODO: Handle BIC/BICS, EON, MVN, ORN, TST
+        return false;
+    }
+
     if (childNode->OperIs(GT_NEG))
     {
         // If we have a contained LSH, RSH or RSZ, we can still contain NEG if the parent is a EQ or NE.
@@ -726,7 +794,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     {
         return;
     }
-#else // !TARGET_ARM
+#else  // !TARGET_ARM
     if ((ClrSafeInt<int>(offset) + ClrSafeInt<int>(size)).IsOverflow())
     {
         return;
@@ -778,7 +846,7 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 //    tree - GT_CAST node to be lowered
 //
 // Return Value:
-//    None.
+//    nextNode to be lowered if tree is modified else returns nullptr
 //
 // Notes:
 //    Casts from float/double to a smaller int type are transformed as follows:
@@ -791,7 +859,7 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 //    don't expect to see them here.
 //    i) GT_CAST(float/double, int type with overflow detection)
 //
-void Lowering::LowerCast(GenTree* tree)
+GenTree* Lowering::LowerCast(GenTree* tree)
 {
     assert(tree->OperGet() == GT_CAST);
 
@@ -814,6 +882,8 @@ void Lowering::LowerCast(GenTree* tree)
 
     // Now determine if we have operands that should be contained.
     ContainCheckCast(tree->AsCast());
+
+    return nullptr;
 }
 
 //------------------------------------------------------------------------
