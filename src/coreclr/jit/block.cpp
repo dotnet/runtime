@@ -182,7 +182,9 @@ RegularSuccessorEnumerator::RegularSuccessorEnumerator(Compiler* comp, BasicBloc
     : m_block(block)
 {
     m_numSuccs = 0;
-    block->VisitRegularSuccs(comp, [this](BasicBlock* succ) {
+    block->VisitRegularSuccs(
+        comp,
+        [this](BasicBlock* succ) {
         if (m_numSuccs < ArrLen(m_successors))
         {
             m_successors[m_numSuccs] = succ;
@@ -190,18 +192,22 @@ RegularSuccessorEnumerator::RegularSuccessorEnumerator(Compiler* comp, BasicBloc
 
         m_numSuccs++;
         return BasicBlockVisit::Continue;
-    }, useProfile);
+    },
+        useProfile);
 
     if (m_numSuccs > ArrLen(m_successors))
     {
         m_pSuccessors = new (comp, CMK_BasicBlock) BasicBlock*[m_numSuccs];
 
         unsigned numSuccs = 0;
-        block->VisitRegularSuccs(comp, [this, &numSuccs](BasicBlock* succ) {
+        block->VisitRegularSuccs(
+            comp,
+            [this, &numSuccs](BasicBlock* succ) {
             assert(numSuccs < m_numSuccs);
             m_pSuccessors[numSuccs++] = succ;
             return BasicBlockVisit::Continue;
-        }, useProfile);
+        },
+            useProfile);
 
         assert(numSuccs == m_numSuccs);
     }

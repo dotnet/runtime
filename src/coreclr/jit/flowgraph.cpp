@@ -4100,9 +4100,11 @@ FlowGraphDfsTree* Compiler::fgComputeDfs()
         }
     };
 
-
-    unsigned numBlocks = skipEH ? fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge), RegularSuccessorEnumerator, useProfile>(visitPreorder, visitPostorder, visitEdge)
-                                : fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge), AllSuccessorEnumerator, useProfile>(visitPreorder, visitPostorder, visitEdge);
+    unsigned numBlocks =
+        skipEH ? fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge),
+                          RegularSuccessorEnumerator, useProfile>(visitPreorder, visitPostorder, visitEdge)
+               : fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge),
+                          AllSuccessorEnumerator, useProfile>(visitPreorder, visitPostorder, visitEdge);
     return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, numBlocks, hasCycle);
 }
 

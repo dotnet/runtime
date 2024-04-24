@@ -4550,7 +4550,7 @@ void Compiler::fgDoReversePostOrderLayout()
 
     for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
     {
-        BasicBlock* const block = dfsTree->GetPostOrder(i);
+        BasicBlock* const block       = dfsTree->GetPostOrder(i);
         BasicBlock* const blockToMove = dfsTree->GetPostOrder(i - 1);
         fgUnlinkBlock(blockToMove);
         fgInsertBBafter(block, blockToMove);
@@ -4571,7 +4571,7 @@ void Compiler::fgDoReversePostOrderLayout()
     // First, re-establish contiguousness of try regions
     // (tryRegionEnds tracks the last block visited in each try region)
     //
-    BasicBlock** const tryRegionEnds = new (this, CMK_Generic) BasicBlock*[compHndBBtabCount]{};
+    BasicBlock** const tryRegionEnds = new (this, CMK_Generic) BasicBlock* [compHndBBtabCount] {};
     for (BasicBlock* block = fgFirstBB; block != fgFirstFuncletBB;)
     {
         BasicBlock* const next = block->Next();
@@ -4596,13 +4596,13 @@ void Compiler::fgDoReversePostOrderLayout()
     //
     for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
     {
-        BasicBlock* const block = dfsTree->GetPostOrder(i);
+        BasicBlock* const block       = dfsTree->GetPostOrder(i);
         BasicBlock* const blockToMove = dfsTree->GetPostOrder(i - 1);
 
         if (bbIsTryBeg(blockToMove))
         {
             const unsigned tryIndex = blockToMove->getTryIndex();
-            
+
             // The candidate predecessor block is in a try region
             //
             if (block->hasTryIndex())
@@ -4612,7 +4612,8 @@ void Compiler::fgDoReversePostOrderLayout()
                 // We can reach blockToMove's try region from block's try region, but they aren't nested regions,
                 // and we aren't jumping from the end of block's try region, so don't move blockToMove
                 //
-                if ((predTryIndex != ehGetDsc(tryIndex)->ebdEnclosingTryIndex) && (block != tryRegionEnds[predTryIndex]))
+                if ((predTryIndex != ehGetDsc(tryIndex)->ebdEnclosingTryIndex) &&
+                    (block != tryRegionEnds[predTryIndex]))
                 {
                     continue;
                 }
@@ -4640,9 +4641,9 @@ void Compiler::fgDoReversePostOrderLayout()
         }
 
         // Update the end pointer of this try region to the new last block
-        EHblkDsc* const ehDsc = ehGetDsc(XTnum);
-        const unsigned enclosingTryIndex = ehDsc->ebdEnclosingTryIndex;
-        ehDsc->ebdTryLast = tryExit;
+        EHblkDsc* const ehDsc             = ehGetDsc(XTnum);
+        const unsigned  enclosingTryIndex = ehDsc->ebdEnclosingTryIndex;
+        ehDsc->ebdTryLast                 = tryExit;
 
         // If this try region is nested in another one, we might need to update its enclosing region's end block
         //
@@ -4660,14 +4661,15 @@ void Compiler::fgDoReversePostOrderLayout()
                 tryRegionEnds[enclosingTryIndex] = tryExit;
                 continue;
             }
-            
+
             // This try region has a unique enclosing region,
             // so this region cannot possibly be at the beginning of the method
             //
             assert(!ehDsc->ebdTryBeg->IsFirst());
             BasicBlock* const tryEntryPrev = ehDsc->ebdTryBeg->Prev();
-            const unsigned predTryIndex = tryEntryPrev->hasTryIndex() ? tryEntryPrev->getTryIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
-            
+            const unsigned    predTryIndex =
+                tryEntryPrev->hasTryIndex() ? tryEntryPrev->getTryIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
+
             if (predTryIndex != enclosingTryIndex)
             {
                 // We can visit the end of the enclosing try region before visiting this try region,

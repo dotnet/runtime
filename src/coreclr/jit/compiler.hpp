@@ -727,9 +727,9 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func, const 
                 // Don't visit EH successor if using profile data for block reordering.
                 return isBBCallFinallyPair() ? func(Next()) : BasicBlockVisit::Continue;
             }
-            
+
             return func(GetTarget());
-            
+
         case BBJ_CALLFINALLYRET:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
@@ -4774,7 +4774,11 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
 // Returns:
 //   Number of blocks visited.
 //
-template <typename VisitPreorder, typename VisitPostorder, typename VisitEdge, typename SuccessorEnumerator /* = AllSuccessorEnumerator */, const bool useProfile /* = false */>
+template <typename VisitPreorder,
+          typename VisitPostorder,
+          typename VisitEdge,
+          typename SuccessorEnumerator /* = AllSuccessorEnumerator */,
+          const bool useProfile /* = false */>
 unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPostorder, VisitEdge visitEdge)
 {
     BitVecTraits traits(fgBBNumMax + 1, this);
