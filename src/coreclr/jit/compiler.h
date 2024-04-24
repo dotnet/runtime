@@ -3188,13 +3188,17 @@ public:
                                  CorInfoType simdBaseJitType,
                                  unsigned    simdSize);
 
-#if defined(TARGET_XARCH)
-    GenTree* gtNewSimdCvtNode(var_types              type,
-                              GenTree*               op1,
-                              CorInfoType            simdTargetBaseJitType,
-                              CorInfoType            simdSourceBaseJitType,
-                              unsigned               simdSize);
-#endif //TARGET_XARCH
+    GenTree* gtNewSimdCvtNode(var_types   type,
+                              GenTree*    op1,
+                              CorInfoType simdTargetBaseJitType,
+                              CorInfoType simdSourceBaseJitType,
+                              unsigned    simdSize);
+
+    GenTree* gtNewSimdCvtNativeNode(var_types   type,
+                                    GenTree*    op1,
+                                    CorInfoType simdTargetBaseJitType,
+                                    CorInfoType simdSourceBaseJitType,
+                                    unsigned    simdSize);
 
     GenTree* gtNewSimdCreateBroadcastNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
@@ -5166,7 +5170,6 @@ public:
     bool fgModified;             // True if the flow graph has been modified recently
     bool fgPredsComputed;        // Have we computed the bbPreds list
     bool fgOptimizedFinally;     // Did we optimize any try-finallys?
-    bool fgCanonicalizedFirstBB; // TODO-Quirk: did we end up canonicalizing first BB?
 
     bool fgHasSwitch; // any BBJ_SWITCH jumps?
 
@@ -5929,7 +5932,7 @@ public:
     void fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, BasicBlock* newSucc);
 
     void fgRemoveEhfSuccessor(BasicBlock* block, const unsigned succIndex);
-    
+
     void fgRemoveEhfSuccessor(FlowEdge* succEdge);
 
     void fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, BasicBlock* newTarget);
