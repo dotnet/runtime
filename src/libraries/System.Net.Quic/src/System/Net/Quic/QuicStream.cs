@@ -225,6 +225,7 @@ public sealed partial class QuicStream
         }
         _id = (long)GetMsQuicParameter<ulong>(_handle, QUIC_PARAM_STREAM_ID);
         _type = flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? QuicStreamType.Unidirectional : QuicStreamType.Bidirectional;
+
         _startedTcs.TrySetResult();
     }
 
@@ -323,6 +324,11 @@ public sealed partial class QuicStream
                     1),
                 "StreamReceivedSetEnabled failed");
             }
+        }
+
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} Stream read '{totalCopied}' bytes.");
         }
 
         return totalCopied;
@@ -688,6 +694,11 @@ public sealed partial class QuicStream
         if (Interlocked.Exchange(ref _disposed, 1) != 0)
         {
             return;
+        }
+
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} Disposing.");
         }
 
         // If the stream wasn't started successfully, gracelessly abort it.

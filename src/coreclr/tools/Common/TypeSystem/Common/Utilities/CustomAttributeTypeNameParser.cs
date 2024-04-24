@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Reflection.Metadata;
 
 using Internal.TypeSystem;
 
@@ -37,12 +36,17 @@ namespace System.Reflection
         public static TypeDesc ResolveType(ModuleDesc module, string name, bool throwIfNotFound,
             Func<ModuleDesc, string, MetadataType> canonResolver)
         {
-            return new TypeNameParser(name.AsSpan())
+            if (!TypeName.TryParse(name.AsSpan(), out TypeName parsed))
+            {
+                ThrowHelper.ThrowTypeLoadException(name, module);
+            }
+
+            return new TypeNameParser()
             {
                 _module = module,
                 _throwIfNotFound = throwIfNotFound,
                 _canonResolver = canonResolver
-            }.Parse()?.Value;
+            }.Resolve(parsed)?.Value;
         }
 
         private sealed class Type
@@ -64,12 +68,10 @@ namespace System.Reflection
             }
         }
 
-        private static bool CheckTopLevelAssemblyQualifiedName() => true;
-
-        private Type GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, string assemblyNameIfAny)
+        private Type GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, TypeName parsedName)
         {
-            ModuleDesc module = (assemblyNameIfAny == null) ? _module :
-                _module.Context.ResolveAssembly(new AssemblyName(assemblyNameIfAny), throwIfNotFound: _throwIfNotFound);
+            ModuleDesc module = (parsedName.AssemblyName == null) ? _module :
+                _module.Context.ResolveAssembly(parsedName.AssemblyName.ToAssemblyName(), throwIfNotFound: _throwIfNotFound);
 
             if (_canonResolver != null && nestedTypeNames.IsEmpty)
             {
@@ -86,7 +88,7 @@ namespace System.Reflection
             }
 
             // If it didn't resolve and wasn't assembly-qualified, we also try core library
-            if (assemblyNameIfAny == null)
+            if (parsedName.AssemblyName == null)
             {
                 Type type = GetTypeCore(module.Context.SystemModule, typeName, nestedTypeNames);
                 if (type != null)
@@ -94,7 +96,7 @@ namespace System.Reflection
             }
 
             if (_throwIfNotFound)
-                ThrowHelper.ThrowTypeLoadException(EscapeTypeName(typeName, nestedTypeNames), module);
+                ThrowHelper.ThrowTypeLoadException(parsedName.FullName, module);
             return null;
         }
 
@@ -114,11 +116,6 @@ namespace System.Reflection
             }
 
             return new Type(type);
-        }
-
-        private void ParseError()
-        {
-            ThrowHelper.ThrowTypeLoadException(_input.ToString(), _module);
         }
     }
 }
