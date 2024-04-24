@@ -188,7 +188,8 @@ namespace Mono.Linker.Dataflow
 
 			var handleCallAction = new HandleCallAction (context, operation, markStep, reflectionMarker, diagnosticContext, callingMethodDefinition, calledMethod);
 			var intrinsicId = Intrinsics.GetIntrinsicIdForMethod (calledMethodDefinition);
-			handleCallAction.Invoke (calledMethodDefinition, instanceValue, argumentValues, intrinsicId, out methodReturnValue);
+			if (!handleCallAction.Invoke (calledMethodDefinition, instanceValue, argumentValues, intrinsicId, out methodReturnValue))
+				throw new NotImplementedException ($"Unhandled intrinsic: {intrinsicId}");
 		}
 
 		static bool IsComInterop (IMarshalInfoProvider marshalInfoProvider, TypeReference parameterType, LinkContext context)

@@ -27,16 +27,16 @@ namespace ILLink.Shared.TrimAnalysis
 		private readonly FlowAnnotations _annotations;
 		private readonly RequireDynamicallyAccessedMembersAction _requireDynamicallyAccessedMembersAction;
 
-		public void Invoke (MethodProxy calledMethod, MultiValue instanceValue, IReadOnlyList<MultiValue> argumentValues, IntrinsicId intrinsicId, out MultiValue methodReturnValue)
+		public bool Invoke (MethodProxy calledMethod, MultiValue instanceValue, IReadOnlyList<MultiValue> argumentValues, IntrinsicId intrinsicId, out MultiValue methodReturnValue)
 		{
 			MultiValue? maybeMethodReturnValue;
 
-			if (!TryHandleIntrinsic (calledMethod, instanceValue, argumentValues, intrinsicId, out maybeMethodReturnValue))
-				HandleSharedIntrinsic (calledMethod, instanceValue, argumentValues, intrinsicId, out maybeMethodReturnValue);
+			var handledIntrinsic =
+				TryHandleIntrinsic (calledMethod, instanceValue, argumentValues, intrinsicId, out maybeMethodReturnValue) ||
+				TryHandleSharedIntrinsic (calledMethod, instanceValue, argumentValues, intrinsicId, out maybeMethodReturnValue);
 
-			// If we get here, we handled this as an intrinsic.  As a convenience, if the code above
-			// didn't set the return value (and the method has a return value), we will set it to be an
-			// unknown value with the return type of the method.
+			// As a convenience, if the code above didn't set the return value (and the method has a return value),
+			// we will set it to be an unknown value with the return type of the method.
 			var annotatedMethodReturnValue = _annotations.GetMethodReturnValue (calledMethod);
 			bool returnsVoid = calledMethod.ReturnsVoid ();
 			methodReturnValue = maybeMethodReturnValue ?? (returnsVoid ?
@@ -59,6 +59,8 @@ namespace ILLink.Shared.TrimAnalysis
 					}
 				}
 			}
+
+			return handledIntrinsic;
 		}
 
 		private partial bool TryHandleIntrinsic (
@@ -68,14 +70,14 @@ namespace ILLink.Shared.TrimAnalysis
 			IntrinsicId intrinsicId,
 			out MultiValue? methodReturnValue);
 
-		void HandleSharedIntrinsic (
+		bool TryHandleSharedIntrinsic (
 			MethodProxy calledMethod,
 			MultiValue instanceValue,
 			IReadOnlyList<MultiValue> argumentValues,
 			IntrinsicId intrinsicId,
 			out MultiValue? methodReturnValue)
 		{
-			MultiValue? returnValue = null;
+			MultiValue? returnValue = methodReturnValue = null;
 
 			bool requiresDataFlowAnalysis = _annotations.MethodRequiresDataFlowAnalysis (calledMethod);
 			var annotatedMethodReturnValue = _annotations.GetMethodReturnValue (calledMethod);
@@ -1198,21 +1200,15 @@ namespace ILLink.Shared.TrimAnalysis
 				}
 				break;
 
-			// Disable warnings for all unimplemented intrinsics. Some intrinsic methods have annotations, but analyzing them
-			// would produce unnecessary warnings even for cases that are intrinsically handled. So we disable handling these calls
-			// until a proper intrinsic handling is made
-			// NOTE: Currently this is done "for the analyzer" and it relies on illink/NativeAOT to not call HandleCallAction
-			// for intrinsics which illink/NativeAOT need special handling for or those which are not implemented here and only there.
-			// Ideally we would run everything through HandleCallAction and it would return "false" for intrinsics it doesn't handle
-			// like it already does for Activator.CreateInstance<T> for example.
 			default:
-				throw new NotImplementedException ($"Unhandled intrinsic: {intrinsicId}");
+				return false;
 			}
 
 			if (MethodIsTypeConstructor (calledMethod))
 				returnValue = UnknownValue.Instance;
 
 			methodReturnValue = returnValue;
+			return true;
 
 			void AddReturnValue (MultiValue value)
 			{

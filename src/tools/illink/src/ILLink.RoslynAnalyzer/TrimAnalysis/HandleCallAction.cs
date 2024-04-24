@@ -112,7 +112,9 @@ namespace ILLink.Shared.TrimAnalysis
 				break;
 			}
 
-			// Some intrinsics are unimplemented by the analyzer. Analyzer should avoid crashing for these even though they are unimplemented.
+			// Some intrinsics are unimplemented by the analyzer.
+			// These will fall back to the usual return-value handling.
+			case IntrinsicId.Array_CreateInstance:
 			case IntrinsicId.Assembly_GetFile:
 			case IntrinsicId.Assembly_GetFiles:
 			case IntrinsicId.AssemblyName_get_EscapedCodeBase:
@@ -120,6 +122,12 @@ namespace ILLink.Shared.TrimAnalysis
 			case IntrinsicId.AssemblyName_get_CodeBase:
 			case IntrinsicId.Delegate_get_Method:
 			case IntrinsicId.Enum_GetValues:
+			case IntrinsicId.Marshal_DestroyStructure:
+			case IntrinsicId.Marshal_GetDelegateForFunctionPointer:
+			case IntrinsicId.Marshal_OffsetOf:
+			case IntrinsicId.Marshal_PtrToStructure:
+			case IntrinsicId.Marshal_SizeOf:
+			case IntrinsicId.RuntimeReflectionExtensions_GetMethodInfo:
 				break;
 
 			default:

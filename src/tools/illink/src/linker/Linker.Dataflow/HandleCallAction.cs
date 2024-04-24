@@ -65,9 +65,8 @@ namespace ILLink.Shared.TrimAnalysis
 					if (_context.Annotations.DoesMethodRequireUnreferencedCode (calledMethod.Method, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCode))
 						MarkStep.ReportRequiresUnreferencedCode (calledMethod.GetDisplayName (), requiresUnreferencedCode, _diagnosticContext);
 
-					HandleSharedIntrinsic (calledMethod, instanceValue, argumentValues, intrinsicId, out maybeMethodReturnValue);
+					return TryHandleSharedIntrinsic (calledMethod, instanceValue, argumentValues, intrinsicId, out methodReturnValue);
 				}
-				break;
 
 			case IntrinsicId.TypeDelegator_Ctor: {
 					// This is an identity function for analysis purposes

@@ -324,7 +324,8 @@ namespace ILCompiler.Dataflow
 
             var handleCallAction = new HandleCallAction(reflectionMarker.Annotations, operation, reflectionMarker, diagnosticContext, callingMethodDefinition, calledMethod.GetDisplayName());
             var intrinsicId = Intrinsics.GetIntrinsicIdForMethod(calledMethod);
-            handleCallAction.Invoke (calledMethod, instanceValue, argumentValues, intrinsicId, out methodReturnValue);
+            if (!handleCallAction.Invoke (calledMethod, instanceValue, argumentValues, intrinsicId, out methodReturnValue))
+                throw new NotImplementedException($"Unhandled intrinsic {intrinsicId}");
         }
 
         private static bool IsAotUnsafeDelegate(TypeDesc parameterType)

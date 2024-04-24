@@ -324,7 +324,13 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			var handleCallAction = new HandleCallAction (diagnosticContext, owningSymbol, operation, multiValueLattice);
 			MethodProxy method = new (calledMethod);
 			var intrinsicId = Intrinsics.GetIntrinsicIdForMethod (method);
-			handleCallAction.Invoke (method, instance, arguments, intrinsicId, out methodReturnValue);
+			if (!handleCallAction.Invoke (method, instance, arguments, intrinsicId, out methodReturnValue))
+				UnhandledIntrinsicHelper (intrinsicId);
+
+			// Avoid crashing the analyzer in release builds
+			[Conditional ("DEBUG")]
+			static void UnhandledIntrinsicHelper (IntrinsicId intrinsicId)
+				=> throw new NotImplementedException ($"Unhandled intrinsic: {intrinsicId}");
 		}
 
 		public override void HandleReturnValue (MultiValue returnValue, IOperation operation, in FeatureContext featureContext)
