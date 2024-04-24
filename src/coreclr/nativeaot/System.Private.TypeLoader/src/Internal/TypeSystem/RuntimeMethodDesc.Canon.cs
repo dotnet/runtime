@@ -23,7 +23,7 @@ namespace Internal.TypeSystem.NoMetadata
             if (canonicalizedTypeOfTargetMethod == OwningType)
                 return this;
 
-            return Context.ResolveRuntimeMethod(this.UnboxingStub, canonicalizedTypeOfTargetMethod, this.NameAndSignature, IntPtr.Zero, false);
+            return Context.ResolveRuntimeMethod(this.UnboxingStub, canonicalizedTypeOfTargetMethod, this.NameAndSignature);
         }
     }
 }

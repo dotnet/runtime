@@ -21,7 +21,7 @@ public:
     CDAC(CDAC&& other)
         : m_module{ other.m_module }
         , m_cdac_handle{ other.m_cdac_handle }
-        , m_target{ other.m_target }
+        , m_target{ other.m_target.Extract() }
         , m_sos{ other.m_sos.Extract() }
     {
         other.m_module = NULL;
@@ -34,7 +34,7 @@ public:
     {
         m_module = other.m_module;
         m_cdac_handle = other.m_cdac_handle;
-        m_target = other.m_target;
+        m_target = other.m_target.Extract();
         m_sos = other.m_sos.Extract();
 
         other.m_module = NULL;
@@ -54,7 +54,6 @@ public:
 
     // This does not AddRef the returned interface
     IUnknown* SosInterface();
-    int ReadFromTarget(uint64_t addr, uint8_t* dest, uint32_t count);
 
 private:
     CDAC(HMODULE module, uint64_t descriptorAddr, ICorDebugDataTarget* target);
@@ -62,7 +61,7 @@ private:
 private:
     HMODULE m_module;
     intptr_t m_cdac_handle;
-    ICorDebugDataTarget* m_target;
+    NonVMComHolder<ICorDebugDataTarget> m_target;
     NonVMComHolder<IUnknown> m_sos;
 };
 
