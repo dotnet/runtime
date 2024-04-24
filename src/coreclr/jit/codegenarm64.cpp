@@ -543,6 +543,8 @@ void CodeGen::genPrologSaveRegPair(regNumber reg1,
 // Arguments:
 //    reg1                     - Register to save.
 //    spOffset                 - The offset from SP to store reg1 (must be positive or zero).
+//    spDelta                  - If non-zero, the amount to add to SP before the register saves (must be negative or
+//                               zero).
 //    tmpReg                   - An available temporary register. Needed for the case of large frames.
 //    pTmpRegIsZero            - If we use tmpReg, and pTmpRegIsZero is non-null, we set *pTmpRegIsZero to 'false'.
 //                               Otherwise, we don't touch it.
@@ -550,14 +552,38 @@ void CodeGen::genPrologSaveRegPair(regNumber reg1,
 // Return Value:
 //    None.
 
-void CodeGen::genPrologSaveReg(regNumber reg1, int spOffset, regNumber tmpReg, bool* pTmpRegIsZero)
+void CodeGen::genPrologSaveReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero)
 {
     assert(spOffset >= 0);
+    assert(spDelta <= 0);
+    assert((spDelta % 16) == 0); // SP changes must be 16-byte aligned
 
-    // str REG, [SP, #offset]
-    // 64-bit STR offset range: 0 to 32760, multiple of 8.
-    GetEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, reg1, REG_SPBASE, spOffset);
-    compiler->unwindSaveReg(reg1, spOffset);
+    bool needToSaveRegs = true;
+    if (spDelta != 0)
+    {
+        if ((spOffset == 0) && (spDelta >= -256))
+        {
+            // We can use pre-index addressing.
+            // str REG, [SP, #spDelta]!
+            GetEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, reg1, REG_SPBASE, spDelta, INS_OPTS_PRE_INDEX);
+            compiler->unwindSaveRegPreindexed(reg1, spDelta);
+
+            needToSaveRegs = false;
+        }
+        else // (spOffset != 0) || (spDelta < -256)
+        {
+            // generate sub SP,SP,imm
+            genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero, /* reportUnwindData */ true);
+        }
+    }
+
+    if (needToSaveRegs)
+    {
+        // str REG, [SP, #offset]
+        // 64-bit STR offset range: 0 to 32760, multiple of 8.
+        GetEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, reg1, REG_SPBASE, spOffset);
+        compiler->unwindSaveReg(reg1, spOffset);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -643,6 +669,8 @@ void CodeGen::genEpilogRestoreRegPair(regNumber reg1,
 // Arguments:
 //    reg1                     - Register to restore.
 //    spOffset                 - The offset from SP to restore reg1 (must be positive or zero).
+//    spDelta                  - If non-zero, the amount to add to SP after the register restores (must be positive or
+//                               zero).
 //    tmpReg                   - An available temporary register. Needed for the case of large frames.
 //    pTmpRegIsZero            - If we use tmpReg, and pTmpRegIsZero is non-null, we set *pTmpRegIsZero to 'false'.
 //                               Otherwise, we don't touch it.
@@ -650,13 +678,37 @@ void CodeGen::genEpilogRestoreRegPair(regNumber reg1,
 // Return Value:
 //    None.
 
-void CodeGen::genEpilogRestoreReg(regNumber reg1, int spOffset, regNumber tmpReg, bool* pTmpRegIsZero)
+void CodeGen::genEpilogRestoreReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero)
 {
     assert(spOffset >= 0);
+    assert(spDelta >= 0);
+    assert((spDelta % 16) == 0); // SP changes must be 16-byte aligned
 
-    // ldr reg1, [SP, #offset]
-    GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, reg1, REG_SPBASE, spOffset);
-    compiler->unwindSaveReg(reg1, spOffset);
+    if (spDelta != 0)
+    {
+        if ((spOffset == 0) && (spDelta <= 255))
+        {
+            // We can use post-index addressing.
+            // ldr REG, [SP], #spDelta
+            GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, reg1, REG_SPBASE, spDelta, INS_OPTS_POST_INDEX);
+            compiler->unwindSaveRegPreindexed(reg1, -spDelta);
+        }
+        else // (spOffset != 0) || (spDelta > 255)
+        {
+            // ldr reg1, [SP, #offset]
+            GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, reg1, REG_SPBASE, spOffset);
+            compiler->unwindSaveReg(reg1, spOffset);
+
+            // generate add SP,SP,imm
+            genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero, /* reportUnwindData */ true);
+        }
+    }
+    else
+    {
+        // ldr reg1, [SP, #offset]
+        GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, reg1, REG_SPBASE, spOffset);
+        compiler->unwindSaveReg(reg1, spOffset);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -803,15 +855,13 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spOffset)
         if (regPair.reg2 != REG_NA)
         {
             // We can use a STP instruction.
-            genPrologSaveRegPair(regPair.reg1, regPair.reg2, spOffset, 0, regPair.useSaveNextPair, REG_IP0,
-                                 nullptr);
-
+            genPrologSaveRegPair(regPair.reg1, regPair.reg2, spOffset, 0, regPair.useSaveNextPair, REG_IP0, nullptr);
             spOffset += 2 * slotSize;
         }
         else
         {
             // No register pair; we use a STR instruction.
-            genPrologSaveReg(regPair.reg1, spOffset, REG_IP0, nullptr);
+            genPrologSaveReg(regPair.reg1, spOffset, 0, REG_IP0, nullptr);
             spOffset += slotSize;
         }
     }
@@ -903,7 +953,7 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spOffse
         else
         {
             spOffset -= slotSize;
-            genEpilogRestoreReg(regPair.reg1, spOffset, REG_IP1, nullptr);
+            genEpilogRestoreReg(regPair.reg1, spOffset, 0, REG_IP1, nullptr);
         }
     }
 }

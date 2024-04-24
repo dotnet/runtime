@@ -299,8 +299,8 @@ protected:
                                  regNumber tmpReg,
                                  bool*     pTmpRegIsZero);
 
-    void genPrologSaveReg(regNumber reg1, int spOffset, regNumber tmpReg, bool* pTmpRegIsZero);
-    void genEpilogRestoreReg(regNumber reg1, int spOffset, regNumber tmpReg, bool* pTmpRegIsZero);
+    void genPrologSaveReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero);
+    void genEpilogRestoreReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero);
 
     // A simple struct to keep register pairs for prolog and epilog.
     struct RegPair
