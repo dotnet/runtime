@@ -535,8 +535,7 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, wr
             fnbody.append("ActivityId,RelatedActivityId);\n")
 
             if os.name == 'posix':
-                #TODO: use UserEventsDataTypeMapping?
-                fnbody.append("%s status &= UserEventsWriteEvent" % (getEventPipeDataTypeMapping(runtimeFlavor)["ULONG"]) + eventName + "(" + ''.join(line))
+                fnbody.append("status &= UserEventsWriteEvent" + eventName + "(" + ''.join(line))
                 if len(line) > 0:
                     fnbody.append(",")
                 fnbody.append("ActivityId,RelatedActivityId);\n")
