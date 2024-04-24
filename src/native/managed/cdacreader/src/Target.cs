@@ -186,7 +186,7 @@ public sealed unsafe class Target
     public ulong ReadUInt64(ulong address)
     {
         if (!TryReadUInt64(address, out ulong value))
-            throw new InvalidOperationException($"Failed to read uint32 at 0x{address:x8}.");
+            throw new InvalidOperationException($"Failed to read uint64 at 0x{address:x8}.");
 
         return value;
     }

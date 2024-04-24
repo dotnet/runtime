@@ -10,11 +10,7 @@ public: // static
     static CDAC Create(uint64_t descriptorAddr, ICorDebugDataTarget *pDataTarget);
 
 public:
-    CDAC()
-        : m_module{NULL}
-        , m_cdac_handle{0}
-        , m_target{NULL}
-    { }
+    CDAC() = default;
 
     CDAC(const CDAC&) = delete;
     CDAC& operator=(const CDAC&) = delete;
