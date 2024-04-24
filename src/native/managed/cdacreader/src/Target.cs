@@ -4,6 +4,7 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Numerics;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
@@ -166,19 +167,7 @@ public sealed unsafe class Target
     }
 
     public bool TryReadUInt8(ulong address, out byte value)
-        => TryReadUInt8(address, _reader, out value);
-
-    private static bool TryReadUInt8(ulong address, Reader reader, out byte value)
-    {
-        value = 0;
-        fixed (byte* ptr = &value)
-        {
-            if (reader.ReadFromTarget(address, ptr, 1) < 0)
-                return false;
-        }
-
-        return true;
-    }
+        => TryRead(address, isUnsigned: true, out value);
 
     public uint ReadUInt32(ulong address)
     {
@@ -189,21 +178,38 @@ public sealed unsafe class Target
     }
 
     public bool TryReadUInt32(ulong address, out uint value)
-        => TryReadUInt32(address, _config.IsLittleEndian, _reader, out value);
+        => TryRead(address, isUnsigned: true, out value);
 
     private static bool TryReadUInt32(ulong address, bool isLittleEndian, Reader reader, out uint value)
-    {
-        value = 0;
+        => TryRead(address, isLittleEndian, isUnsigned: true, reader, out value);
 
-        Span<byte> buffer = stackalloc byte[sizeof(uint)];
+    public ulong ReadUInt64(ulong address)
+    {
+        if (!TryReadUInt64(address, out ulong value))
+            throw new InvalidOperationException($"Failed to read uint32 at 0x{address:x8}.");
+
+        return value;
+    }
+
+    public bool TryReadUInt64(ulong address, out ulong value)
+        => TryRead(address, isUnsigned: true, out value);
+
+    private static bool TryReadUInt64(ulong address, bool isLittleEndian, Reader reader, out ulong value)
+        => TryRead(address, isLittleEndian, isUnsigned: true, reader, out value);
+
+    private bool TryRead<T>(ulong address, bool isUnsigned, out T value) where T : unmanaged, IBinaryInteger<T>
+        => TryRead(address, _config.IsLittleEndian, isUnsigned, _reader, out value);
+
+    private static bool TryRead<T>(ulong address, bool isLittleEndian, bool isUnsigned, Reader reader, out T value) where T : unmanaged, IBinaryInteger<T>
+    {
+        value = default;
+        Span<byte> buffer = stackalloc byte[sizeof(T)];
         if (reader.ReadFromTarget(address, buffer) < 0)
             return false;
 
-        value = isLittleEndian
-            ? BinaryPrimitives.ReadUInt32LittleEndian(buffer)
-            : BinaryPrimitives.ReadUInt32BigEndian(buffer);
-
-        return true;
+        return isLittleEndian
+            ? T.TryReadLittleEndian(buffer, isUnsigned, out value)
+            : T.TryReadBigEndian(buffer, isUnsigned, out value);
     }
 
     public TargetPointer ReadPointer(ulong address)
@@ -225,22 +231,20 @@ public sealed unsafe class Target
         if (reader.ReadFromTarget(address, buffer) < 0)
             return false;
 
-        if (config.PointerSize == sizeof(uint))
+        if (config.PointerSize == sizeof(uint)
+            && TryReadUInt32(address, config.IsLittleEndian, reader, out uint value32))
         {
-            pointer = new TargetPointer(
-                config.IsLittleEndian
-                    ? BinaryPrimitives.ReadUInt32LittleEndian(buffer)
-                    : BinaryPrimitives.ReadUInt32BigEndian(buffer));
+            pointer = new TargetPointer(value32);
+            return true;
         }
-        else if (config.PointerSize == sizeof(ulong))
+        else if (config.PointerSize == sizeof(ulong)
+            && TryReadUInt64(address, config.IsLittleEndian, reader, out ulong value64))
         {
-            pointer = new TargetPointer(
-                config.IsLittleEndian
-                    ? BinaryPrimitives.ReadUInt64LittleEndian(buffer)
-                    : BinaryPrimitives.ReadUInt64BigEndian(buffer));
+            pointer = new TargetPointer(value64);
+            return true;
         }
 
-        return true;
+        return false;
     }
 
     public byte ReadGlobalUInt8(string name)
