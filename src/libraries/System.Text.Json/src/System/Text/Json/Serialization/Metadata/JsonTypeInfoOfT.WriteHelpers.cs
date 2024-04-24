@@ -315,7 +315,6 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-
         // Root serialization method for non-async streaming serialization
         internal void Serialize(
             Stream utf8Json,

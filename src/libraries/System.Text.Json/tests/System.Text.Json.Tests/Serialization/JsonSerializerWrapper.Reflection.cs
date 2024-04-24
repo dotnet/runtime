@@ -920,7 +920,10 @@ namespace System.Text.Json.Serialization.Tests
                 Pipe pipe = new Pipe();
                 await JsonSerializer.SerializeAsync(pipe.Writer, value, inputType, options);
                 ReadResult result = await pipe.Reader.ReadAsync();
-                return Encoding.UTF8.GetString(result.Buffer.ToArray());
+
+                string stringResult = Encoding.UTF8.GetString(result.Buffer.ToArray());
+                pipe.Reader.AdvanceTo(result.Buffer.End);
+                return stringResult;
             }
 
             public override async Task<string> SerializeWrapper<T>(T value, JsonSerializerOptions options = null)
@@ -928,7 +931,10 @@ namespace System.Text.Json.Serialization.Tests
                 Pipe pipe = new Pipe();
                 await JsonSerializer.SerializeAsync(pipe.Writer, value, options);
                 ReadResult result = await pipe.Reader.ReadAsync();
-                return Encoding.UTF8.GetString(result.Buffer.ToArray());
+
+                string stringResult = Encoding.UTF8.GetString(result.Buffer.ToArray());
+                pipe.Reader.AdvanceTo(result.Buffer.End);
+                return stringResult;
             }
 
             public override async Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerContext context)
@@ -936,7 +942,10 @@ namespace System.Text.Json.Serialization.Tests
                 Pipe pipe = new Pipe();
                 await JsonSerializer.SerializeAsync(pipe.Writer, value, inputType, context);
                 ReadResult result = await pipe.Reader.ReadAsync();
-                return Encoding.UTF8.GetString(result.Buffer.ToArray());
+
+                string stringResult = Encoding.UTF8.GetString(result.Buffer.ToArray());
+                pipe.Reader.AdvanceTo(result.Buffer.End);
+                return stringResult;
             }
 
             public override async Task<string> SerializeWrapper<T>(T value, JsonTypeInfo<T> jsonTypeInfo)
@@ -944,7 +953,10 @@ namespace System.Text.Json.Serialization.Tests
                 Pipe pipe = new Pipe();
                 await JsonSerializer.SerializeAsync(pipe.Writer, value, jsonTypeInfo);
                 ReadResult result = await pipe.Reader.ReadAsync();
-                return Encoding.UTF8.GetString(result.Buffer.ToArray());
+
+                string stringResult = Encoding.UTF8.GetString(result.Buffer.ToArray());
+                pipe.Reader.AdvanceTo(result.Buffer.End);
+                return stringResult;
             }
 
             public override async Task<string> SerializeWrapper(object value, JsonTypeInfo jsonTypeInfo)
@@ -952,7 +964,10 @@ namespace System.Text.Json.Serialization.Tests
                 Pipe pipe = new Pipe();
                 await JsonSerializer.SerializeAsync(pipe.Writer, value, jsonTypeInfo);
                 ReadResult result = await pipe.Reader.ReadAsync();
-                return Encoding.UTF8.GetString(result.Buffer.ToArray());
+
+                string stringResult = Encoding.UTF8.GetString(result.Buffer.ToArray());
+                pipe.Reader.AdvanceTo(result.Buffer.End);
+                return stringResult;
             }
         }
     }
