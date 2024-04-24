@@ -439,7 +439,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 case 1:
                     assert(!instrIsRMW);
-                    if (targetReg != falseReg)
+                    if ((targetReg != falseReg) && (falseReg != REG_NA))
                     {
                         GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, falseReg);
                     }
