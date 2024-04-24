@@ -886,6 +886,7 @@ namespace Wasm.Build.Tests
             EnsureWasmAbiRulesAreFollowed(buildArgs, host, id);
 
         [Theory]
+        [BuildAndRun(host: RunHost.Chrome, aot: true)]
         [BuildAndRun(host: RunHost.Chrome, aot: false)]
         public void UCOWithSpecialCharacters(BuildArgs buildArgs, RunHost host, string id)
         {
