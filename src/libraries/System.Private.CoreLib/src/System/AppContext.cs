@@ -152,7 +152,7 @@ namespace System
             }
         }
 
-        internal static unsafe void Setup(char** pNames, uint** pNameLengths, char** pValues, uint** pValueLengths, int count)
+        internal static unsafe void Setup(char** pNames, uint* pNameLengths, char** pValues, uint* pValueLengths, int count)
         {
             Debug.Assert(s_dataStore == null, "s_dataStore is not expected to be inited before Setup is called");
             s_dataStore = new Dictionary<string, object?>(count);

@@ -891,7 +891,7 @@ mono_runtime_install_appctx_properties (void)
 		combined_values + n_appctx_props, combined_value_lengths + n_appctx_props
 	);
 
-	/* internal static unsafe void Setup_Mono(char** pNames, uint** pNameLengths, char** pValues, uint** pValueLengths, int count) */
+	/* internal static unsafe void Setup(char** pNames, uint* pNameLengths, char** pValues, uint* pValueLengths, int count) */
 	args [0] = combined_keys;
 	args [1] = combined_key_lengths;
 	args [2] = combined_values;
