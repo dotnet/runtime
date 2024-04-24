@@ -240,6 +240,7 @@ namespace System
         /// <param name="a">The first number to multiply.</param>
         /// <param name="b">The second number to multiply.</param>
         /// <returns>The full product of the specified numbers.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static UInt128 BigMul(ulong a, ulong b)
         {
             ulong high = BigMul(a, b, out ulong low);
