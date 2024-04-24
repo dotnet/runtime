@@ -261,7 +261,7 @@ HRESULT ExecutableAllocator::StaticInitialize(FatalErrorHandler fatalErrorHandle
 #endif
 
     g_fatalErrorHandler = fatalErrorHandler;
-    g_isWXorXEnabled = Configuration::GetKnobBooleanValue(W("System.Runtime.EnableWriteXorExecute"), CLRConfig::EXTERNAL_EnableWriteXorExecute, TRUE);
+    g_isWXorXEnabled = Configuration::GetKnobBooleanValue(W("System.Runtime.EnableWriteXorExecute"), CLRConfig::EXTERNAL_EnableWriteXorExecute);
     g_instance = new (nothrow) ExecutableAllocator();
     if (g_instance == NULL)
     {
