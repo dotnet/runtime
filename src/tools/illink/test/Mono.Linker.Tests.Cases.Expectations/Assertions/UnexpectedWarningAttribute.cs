@@ -14,8 +14,6 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	/// </summary>
 	public class UnexpectedWarningAttribute : ExpectedWarningAttribute
 	{
-		public UnexpectedWarningAttribute (string warningCode, params string[] messageContains)
-			: base (warningCode, messageContains) { }
 		public UnexpectedWarningAttribute (string warningCode, string[] messageContains, Tool producedBy, string issueLinkOrReason)
 			: base (warningCode, messageContains, producedBy, issueLinkOrReason) { }
 		public UnexpectedWarningAttribute (string warningCode, string messageContains, Tool producedBy, string issueLinkOrReason)

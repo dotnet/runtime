@@ -174,13 +174,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[ExpectedWarning ("IL2069", "RefFieldWithMethods.T", "paramWithFields")]
 		[ExpectedWarning ("IL2077", "paramWithMethodsAndFields", "RefFieldWithMethods.T")]
 		// ILLink doesn't recognize ldind.ref
-		// https://github.com/dotnet/runtime/issues/85465
 		// IL2064's are bugs - shouldn't be unknown values
-		[ExpectedWarning ("IL2064", Tool.Trimmer | Tool.NativeAot, "")]
-		[ExpectedWarning ("IL2064", Tool.Trimmer | Tool.NativeAot, "")]
-		[ExpectedWarning ("IL2064", Tool.Trimmer | Tool.NativeAot, "")]
-		[ExpectedWarning ("IL2064", Tool.Trimmer | Tool.NativeAot, "")]
-		[ExpectedWarning ("IL2064", Tool.Trimmer | Tool.NativeAot, "")]
+		[UnexpectedWarning ("IL2064", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85465")]
+		[UnexpectedWarning ("IL2064", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85465")]
+		[UnexpectedWarning ("IL2064", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85465")]
+		[UnexpectedWarning ("IL2064", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85465")]
+		[UnexpectedWarning ("IL2064", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85465")]
 		[ExpectedWarning ("IL2069", "RefFieldWithMethods.T", "param", Tool.Analyzer, "")]
 		[ExpectedWarning ("IL2069", "RefFieldWithMethods.T", "paramWithFields", Tool.Analyzer, "")]
 		static void AssignRefParameters<
@@ -236,12 +235,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[ExpectedWarning ("IL2079", "RefFieldWithMethods.T", "RefFieldUnannotated.T", Tool.Analyzer, "")]
 		[ExpectedWarning ("IL2079", "RefFieldWithMethods.T", "RefFieldWithFields.T", Tool.Analyzer, "")]
 		// IL2064's are bugs - shouldn't be unknown values
-		// https://github.com/dotnet/runtime/issues/85465
-		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "")] // target.T = unannotated.T;
-		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "")] // target.T = withMethods.T;
-		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "")] // target.T = withFields.T;
-		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "")] // target.T = withMethodsAndFields.T;
-		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "")] // target.T = withMethodsAndFields.T;
+		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85465")] // target.T = unannotated.T;
+		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85465")] // target.T = withMethods.T;
+		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85465")] // target.T = withFields.T;
+		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85465")] // target.T = withMethodsAndFields.T;
+		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85465")] // target.T = withMethodsAndFields.T;
 		static void AssignRefFields (
 			RefFieldWithMethods target,
 			RefFieldUnannotated unannotated,
@@ -268,11 +266,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[ExpectedWarning ("IL2074", "RefFieldWithMethods.T", "GetRefUnannotated", Tool.Analyzer, "")]
 		[ExpectedWarning ("IL2074", "RefFieldWithMethods.T", "GetRefWithFields", Tool.Analyzer, "")]
 		// IL2064's are bugs - shouldn't be unknown values
-		// https://github.com/dotnet/runtime/issues/85465
-		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "")] // target.T = t;
-		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "")] // target.T = t;
-		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "")] // target.T = t;
-		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "")] // target.T = t;
+		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85465")] // target.T = t;
+		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85465")] // target.T = t;
+		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85465")] // target.T = t;
+		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85465")] // target.T = t;
 		static void AssignRefReturns<
 			T,
 			[DAM (DAMT.PublicMethods)] TM,
@@ -358,16 +355,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[ExpectedWarning ("IL2074", "RefFieldWithMethods.T", "RefPropWithFields.T")]
 		// ref Type t = ref x.T; target.T = t;
 		// IL2064's are bugs - shouldn't be unknown values
-		// https://github.com/dotnet/runtime/issues/85465
-		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "")] // target.T = unannotated.T;
-		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "")] // target.T = withMethods.T;
-		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "")] // target.T = withFields.T;
-		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "")] // target.T = withMethodsAndFieldswithMtho.T;
-		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "")] // target.T = withMethods.T;
-		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "")] // target.T = t;
-		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "")] // target.T = t;
-		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "")] // target.T = t;
-		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "")] // target.T = t;
+		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85465")] // target.T = unannotated.T;
+		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85465")] // target.T = withMethods.T;
+		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85465")] // target.T = withFields.T;
+		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85465")] // target.T = withMethodsAndFieldswithMtho.T;
+		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85465")] // target.T = withMethods.T;
+		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85465")] // target.T = t;
+		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85465")] // target.T = t;
+		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85465")] // target.T = t;
+		[ExpectedWarning ("IL2064", "RefFieldWithMethods.T", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85465")] // target.T = t;
 		static void AssignRefProperties (RefFieldWithMethods target,
 			RefPropUnannotated unannotated = null,
 			RefPropWithMethods withMethods = null,

@@ -120,10 +120,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[ExpectedWarning ("IL2072", nameof (TryGetAnnotatedValue))]
-		// https://github.com/dotnet/linker/issues/2632
 		// This second warning should not be generated, the value of typeWithMethods should have PublicMethods
 		// after the call with out parameter.
-		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods), Tool.Analyzer, "")]
+		[UnexpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods), Tool.Analyzer, "https://github.com/dotnet/linker/issues/2632")]
 		static void TestReadFromRefParameter_MismatchOnInput ()
 		{
 			Type typeWithMethods = GetTypeWithFields ();
@@ -133,10 +132,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[ExpectedWarning ("IL2072", nameof (TryGetAnnotatedValueFromValue))]
 		[ExpectedWarning ("IL2072", nameof (TryGetAnnotatedValueFromValue))]
-		// https://github.com/dotnet/linker/issues/2632
 		// This third warning should not be generated, the value of typeWithMethods should have PublicMethods
 		// after the call with ref parameter.
-		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods), Tool.Analyzer, "")]
+		[UnexpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods), Tool.Analyzer, "https://github.com/dotnet/linker/issues/2632")]
 		static void TestReadFromRefParameter_MismatchOnInput_PassedTwice ()
 		{
 			Type typeWithMethods = GetTypeWithFields ();
