@@ -80,6 +80,7 @@ switch (testCase) {
         break;
     case "InterpPgoTest":
         dotnet
+            .withConsoleForwarding()
             .withRuntimeOptions(['--interp-pgo-logging'])
             .withInterpreterPgo(true);
         break;
