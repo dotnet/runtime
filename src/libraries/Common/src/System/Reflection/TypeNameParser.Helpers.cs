@@ -26,28 +26,34 @@ namespace System.Reflection
                 return name;
             }
 
-            // this code path is executed very rarely (IL Emit or pure IL with chars not allowed in C# or F#)
-            var sb = new ValueStringBuilder(stackalloc char[64]);
-            sb.Append(name.AsSpan(0, indexOfEscapeCharacter));
+            return Unescape(name, indexOfEscapeCharacter);
 
-            for (int i = indexOfEscapeCharacter; i < name.Length;)
+            static string Unescape(string name, int indexOfEscapeCharacter)
             {
-                char c = name[i++];
+                // this code path is executed very rarely (IL Emit or pure IL with chars not allowed in C# or F#)
+                var sb = new ValueStringBuilder(stackalloc char[64]);
+                sb.EnsureCapacity(name.Length);
+                sb.Append(name.AsSpan(0, indexOfEscapeCharacter));
 
-                if (c != EscapeCharacter)
+                for (int i = indexOfEscapeCharacter; i < name.Length;)
                 {
-                    sb.Append(c);
+                    char c = name[i++];
+
+                    if (c != EscapeCharacter)
+                    {
+                        sb.Append(c);
+                    }
+                    else if (i < name.Length && name[i] == EscapeCharacter) // escaped escape character ;)
+                    {
+                        sb.Append(c);
+                        // Consume the escaped escape character, it's important for edge cases
+                        // like escaped escape character followed by another escaped char (example: "\\\\\\+")
+                        i++;
+                    }
                 }
-                else if (i < name.Length && name[i] == EscapeCharacter) // escaped escape character ;)
-                {
-                    sb.Append(c);
-                    // Consume the escaped escape character, it's important for edge cases
-                    // like escaped escape character followed by another escaped char (example: "\\\\\\+")
-                    i++;
-                }
+
+                return sb.ToString();
             }
-
-            return sb.ToString();
         }
 #endif
 
