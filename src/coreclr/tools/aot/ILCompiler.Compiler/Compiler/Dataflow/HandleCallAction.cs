@@ -112,9 +112,8 @@ namespace ILLink.Shared.TrimAnalysis
                         }
 
                         // This intrinsic is relevant to both trimming and AOT - call into trimming logic as well.
-                        HandleSharedIntrinsic(calledMethod, instanceValue, argumentValues, intrinsicId, out maybeMethodReturnValue);
+                        return TryHandleSharedIntrinsic(calledMethod, instanceValue, argumentValues, intrinsicId, out methodReturnValue);
                     }
-                    break;
 
                 case IntrinsicId.MethodInfo_MakeGenericMethod:
                     {
@@ -172,9 +171,8 @@ namespace ILLink.Shared.TrimAnalysis
                         }
 
                         // This intrinsic is relevant to both trimming and AOT - call into trimming logic as well.
-                        HandleSharedIntrinsic(calledMethod, instanceValue, argumentValues, intrinsicId, out maybeMethodReturnValue);
+                        return TryHandleSharedIntrinsic(calledMethod, instanceValue, argumentValues, intrinsicId, out methodReturnValue);
                     }
-                    break;
 
                 case IntrinsicId.None:
                     {
@@ -193,9 +191,8 @@ namespace ILLink.Shared.TrimAnalysis
 
                         ReflectionMethodBodyScanner.CheckAndReportAllRequires(_diagnosticContext, calledMethod.Method);
 
-                        HandleSharedIntrinsic(calledMethod, instanceValue, argumentValues, intrinsicId, out maybeMethodReturnValue);
+                        return TryHandleSharedIntrinsic(calledMethod, instanceValue, argumentValues, intrinsicId, out methodReturnValue);
                     }
-                    break;
 
                 case IntrinsicId.TypeDelegator_Ctor:
                     {
