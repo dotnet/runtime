@@ -22,6 +22,10 @@
     <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-sles.12.proj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(BuildNETStandard21TargetingPack)' == 'true' and '$(BuildRpmPackage)' == 'true'">
+    <InstallerProjectReference Include="installers/netstandard2.1.proj" />
+  </ItemGroup>
+
   <Target Name="BuildInstallerProjects" BeforeTargets="Build">
     <MSBuild Projects="@(InstallerProjectReference)"
              Targets="GenerateInstallers"
