@@ -2894,21 +2894,26 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
 
         // We have just emitted a call that can do GC and conservatively recorded what is alive after the call.
         // Now we see that the next instruction may be reachable by a branch with a different liveness.
-        // We want to maintain the invariant that the GC info at IP after a GC-capable call is the same
-        // regardless how it is reached.
-        // One way to ensure that is by adding an instruction (NOP or BRK) after the call.
+        // In partially interruptible code we want to maintain the invariant that the GC info at IP after
+        // a GC-capable call is the same regardless how it is reached.
+        // In fully interruptible code this invariant is required only after throwing calls.
         if (emitThisGCrefRegs != gcrefRegs || emitThisByrefRegs != byrefRegs ||
             !VarSetOps::Equal(emitComp, emitThisGCrefVars, GCvars))
         {
             if (prevBlock->KindIs(BBJ_THROW))
             {
+                // an unreachable breakpoint after a throwing call
+                // we need this regardless of fully or partially interruptible
                 emitIns(INS_BREAKPOINT);
             }
-            else
+            else if (!emitComp->GetInterruptible())
             {
                 // other block kinds should emit something at the end that is not a call.
                 assert(prevBlock->KindIs(BBJ_ALWAYS));
 
+                // this is a safepoint in a partially interruptible code.
+                // we need to make the gc info contiguous.
+                // we will either patch the info on the call or add a NOP.
                 instrDesc* id            = emitLastIns;
                 regMaskTP  callGcrefRegs = gcrefRegs;
                 regMaskTP  callByrefRegs = byrefRegs;
@@ -2954,18 +2959,11 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
                     idCall->idcGcrefRegs = callGcrefRegs;
                     idCall->idcByrefRegs = callByrefRegs;
 
+                    // The variables may need to be live until the call returns, so we will not update them.
+                    // If liveness changes, emit a NOP.
                     if (!VarSetOps::Equal(emitComp, idCall->idcGCvars, GCvars))
                     {
-                        // If EH is possible, the variables may need to live until the call returns.
-                        // Emit a NOP.
-                        if (emitComp->GetInterruptible())
-                        {
-                            emitIns(INS_nop);
-                        }
-                        else
-                        {
-                            VarSetOps::Assign(emitComp, idCall->idcGCvars, GCvars);
-                        }
+                        emitIns(INS_nop);
                     }
                 }
                 else
