@@ -691,6 +691,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser bypasses SyncTextWriter for faster startup")]
         public async Task FlushAsync_Precanceled()
         {
             Assert.Equal(TaskStatus.RanToCompletion, TextWriter.Null.FlushAsync(new CancellationToken(true)).Status);

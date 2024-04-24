@@ -8,6 +8,7 @@ namespace System.IO.Tests
     public partial class WriteTests
     {
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser bypasses SyncTextWriter for faster startup")]
         public void Synchronized_NewObject()
         {
             using (Stream str = CreateStream())

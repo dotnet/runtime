@@ -30,6 +30,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser bypasses SyncTextWriter for faster startup")]
         public void Synchronized_NewObject()
         {
             using (Stream str = GetLargeStream())
