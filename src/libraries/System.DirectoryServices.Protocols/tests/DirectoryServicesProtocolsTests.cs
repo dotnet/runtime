@@ -669,7 +669,7 @@ namespace System.DirectoryServices.Protocols.Tests
                     Assert.Equal(1, searchResponse.Controls.Length);
                     Assert.True(searchResponse.Controls[0] is SortResponseControl);
                     Assert.True(searchResponse.Entries.Count > 0);
-                    Assert.Equal("ou=ProtocolsSubGroup10.9," + dn + "," + LdapConfiguration.Configuration.SearchDn, searchResponse.Entries[0].DistinguishedName);
+                    Assert.Equal("ou=ProtocolsSubGroup10.9," + dn + "," + LdapConfiguration.Configuration.SearchDn, searchResponse.Entries[0].DistinguishedName, true);
                 }
                 finally
                 {
