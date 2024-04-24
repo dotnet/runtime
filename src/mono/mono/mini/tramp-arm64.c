@@ -53,17 +53,28 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, host_mgreg_t *regs, guin
 	/* adrp */
 	ins = ((guint32*)code) [0];
 	printf ("ins: %08x\n", ins);
-	g_assert (((ins >> 24) & 0x1f) == 0x10);
-	disp = (((ins >> 5) & 0x7ffff) << 2) | ((ins >> 29) & 0x3);
-	/* FIXME: disp is signed */
-	g_assert ((disp >> 20) == 0);
+	if (((ins >> 24) & 0x1f) == 0x10) {
+		// adrp x16, address
+		// add x16, x16, offset
+		disp = (((ins >> 5) & 0x7ffff) << 2) | ((ins >> 29) & 0x3);
+		/* FIXME: disp is signed */
+		g_assert ((disp >> 20) == 0);
 
-	slot_addr = ((guint64)code + (disp << 12)) & ~0xfff;
+		slot_addr = ((guint64)code + (disp << 12)) & ~0xfff;
 
-	/* add x16, x16, :lo12:got */
-	ins = ((guint32*)code) [1];
-	g_assert (((ins >> 22) & 0x3) == 0);
-	slot_addr += (ins >> 10) & 0xfff;
+		/* add x16, x16, :lo12:got */
+		ins = ((guint32*)code) [1];
+		g_assert (((ins >> 22) & 0x3) == 0);
+		slot_addr += (ins >> 10) & 0xfff;
+        	printf ("slot_addr (adrp): %llx\n", slot_addr);
+	} else if (((ins >> 24) & 0x1f) == 0x15) {
+		// nop
+		// adr x16, address
+		slot_addr = (guint64)code;
+        	printf ("slot_addr (adr): %llx\n", slot_addr);
+	} else {
+		g_assert_not_reached ();
+	}
 
 	/* ldr x16, [x16, <offset>] */
 	ins = ((guint32*)code) [2];
