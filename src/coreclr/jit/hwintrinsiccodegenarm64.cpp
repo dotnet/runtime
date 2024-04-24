@@ -1301,40 +1301,38 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
 
             case NI_Sve_CreateWhileLessThanMask8Bit:
-            case NI_Sve_CreateWhileLessThanOrEqualMask8Bit:
-                // Emit size is the size of the scalar operands.
-                emitSize = emitActualTypeSize(intrin.op1->TypeGet());
-                // opt is based on the size of the returned vector
-                opt = INS_OPTS_SCALABLE_B;
-                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
-                break;
-
             case NI_Sve_CreateWhileLessThanMask16Bit:
-            case NI_Sve_CreateWhileLessThanOrEqualMask16Bit:
-                // Emit size is the size of the scalar operands.
-                emitSize = emitActualTypeSize(intrin.op1->TypeGet());
-                // opt is based on the size of the returned vector
-                opt = INS_OPTS_SCALABLE_H;
-                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
-                break;
-
             case NI_Sve_CreateWhileLessThanMask32Bit:
-            case NI_Sve_CreateWhileLessThanOrEqualMask32Bit:
-                // Emit size is the size of the scalar operands.
-                emitSize = emitActualTypeSize(intrin.op1->TypeGet());
-                // opt is based on the size of the returned vector
-                opt = INS_OPTS_SCALABLE_S;
-                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
-                break;
-
             case NI_Sve_CreateWhileLessThanMask64Bit:
-            case NI_Sve_CreateWhileLessThanOrEqualMask64Bit:
-                // Emit size is the size of the scalar operands.
-                emitSize = emitActualTypeSize(intrin.op1->TypeGet());
-                // opt is based on the size of the returned vector
-                opt = INS_OPTS_SCALABLE_D;
+            {
+                // Emit size and instruction is based on the scalar operands.
+                var_types auxType = node->GetAuxiliaryType();
+                emitSize          = emitActualTypeSize(auxType);
+                if (varTypeIsUnsigned(auxType))
+                {
+                    ins = INS_sve_whilelo;
+                }
+
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 break;
+            }
+
+            case NI_Sve_CreateWhileLessThanOrEqualMask8Bit:
+            case NI_Sve_CreateWhileLessThanOrEqualMask16Bit:
+            case NI_Sve_CreateWhileLessThanOrEqualMask32Bit:
+            case NI_Sve_CreateWhileLessThanOrEqualMask64Bit:
+            {
+                // Emit size and instruction is based on the scalar operands.
+                var_types auxType = node->GetAuxiliaryType();
+                emitSize          = emitActualTypeSize(auxType);
+                if (varTypeIsUnsigned(auxType))
+                {
+                    ins = INS_sve_whilels;
+                }
+
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+            }
 
             default:
                 unreached();

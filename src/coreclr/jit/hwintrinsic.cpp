@@ -697,20 +697,7 @@ unsigned HWIntrinsicInfo::lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORI
     }
 
     CorInfoType simdBaseJitType = comp->getBaseJitTypeAndSizeOfSIMDType(typeHnd, &simdSize);
-
-#if defined(TARGET_ARM64)
-    if (simdBaseJitType == CORINFO_TYPE_UNDEF)
-    {
-        assert(simdSize == 0); // the argument is not a vector
-    }
-    else
-    {
-        assert(simdSize > 0);
-    }
-#else
     assert((simdSize > 0) && (simdBaseJitType != CORINFO_TYPE_UNDEF));
-#endif
-
     return simdSize;
 }
 
@@ -1075,50 +1062,49 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     int                    numArgs         = sig->numArgs;
     var_types              retType         = genActualType(JITtype2varType(sig->retType));
     CorInfoType            simdBaseJitType = CORINFO_TYPE_UNDEF;
-    CorInfoType            simdRetJitType  = CORINFO_TYPE_UNDEF;
     GenTree*               retNode         = nullptr;
-    unsigned int           simdRetSize     = 0;
 
     if (retType == TYP_STRUCT)
     {
-        simdRetJitType = getBaseJitTypeAndSizeOfSIMDType(sig->retTypeSigClass, &simdRetSize);
+        unsigned int sizeBytes;
+        simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(sig->retTypeSigClass, &sizeBytes);
 
         if (HWIntrinsicInfo::IsMultiReg(intrinsic))
         {
-            assert(simdRetSize == 0);
+            assert(sizeBytes == 0);
         }
 
 #ifdef TARGET_ARM64
         else if ((intrinsic == NI_AdvSimd_LoadAndInsertScalar) || (intrinsic == NI_AdvSimd_Arm64_LoadAndInsertScalar))
         {
-            CorInfoType pSimdRetJitType = CORINFO_TYPE_UNDEF;
-            var_types   retFieldType    = impNormStructType(sig->retTypeSigClass, &pSimdRetJitType);
+            CorInfoType pSimdBaseJitType = CORINFO_TYPE_UNDEF;
+            var_types   retFieldType     = impNormStructType(sig->retTypeSigClass, &pSimdBaseJitType);
 
             if (retFieldType == TYP_STRUCT)
             {
                 CORINFO_CLASS_HANDLE structType;
-                unsigned int         simdRetSize = 0;
+                unsigned int         sizeBytes = 0;
 
                 // LoadAndInsertScalar that returns 2,3 or 4 vectors
-                assert(pSimdRetJitType == CORINFO_TYPE_UNDEF);
+                assert(pSimdBaseJitType == CORINFO_TYPE_UNDEF);
                 unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(sig->retTypeSigClass);
                 assert(fieldCount > 1);
                 CORINFO_FIELD_HANDLE fieldHandle = info.compCompHnd->getFieldInClass(sig->retTypeClass, 0);
                 CorInfoType          fieldType   = info.compCompHnd->getFieldType(fieldHandle, &structType);
-                simdRetJitType                   = getBaseJitTypeAndSizeOfSIMDType(structType, &simdRetSize);
+                simdBaseJitType                  = getBaseJitTypeAndSizeOfSIMDType(structType, &sizeBytes);
                 switch (fieldCount)
                 {
                     case 2:
-                        intrinsic = simdRetSize == 8 ? NI_AdvSimd_LoadAndInsertScalarVector64x2
-                                                     : NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2;
+                        intrinsic = sizeBytes == 8 ? NI_AdvSimd_LoadAndInsertScalarVector64x2
+                                                   : NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2;
                         break;
                     case 3:
-                        intrinsic = simdRetSize == 8 ? NI_AdvSimd_LoadAndInsertScalarVector64x3
-                                                     : NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3;
+                        intrinsic = sizeBytes == 8 ? NI_AdvSimd_LoadAndInsertScalarVector64x3
+                                                   : NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3;
                         break;
                     case 4:
-                        intrinsic = simdRetSize == 8 ? NI_AdvSimd_LoadAndInsertScalarVector64x4
-                                                     : NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4;
+                        intrinsic = sizeBytes == 8 ? NI_AdvSimd_LoadAndInsertScalarVector64x4
+                                                   : NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4;
                         break;
                     default:
                         assert("unsupported");
@@ -1127,26 +1113,26 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             else
             {
                 assert((retFieldType == TYP_SIMD8) || (retFieldType == TYP_SIMD16));
-                assert(isSupportedBaseType(intrinsic, simdRetJitType));
-                retType = getSIMDTypeForSize(simdRetSize);
+                assert(isSupportedBaseType(intrinsic, simdBaseJitType));
+                retType = getSIMDTypeForSize(sizeBytes);
             }
         }
 #endif
         else
         {
             // We want to return early here for cases where retType was TYP_STRUCT as per method signature and
-            // rather than deferring the decision after getting the simdRetJitType of arg.
-            if (!isSupportedBaseType(intrinsic, simdRetJitType))
+            // rather than deferring the decision after getting the simdBaseJitType of arg.
+            if (!isSupportedBaseType(intrinsic, simdBaseJitType))
             {
                 return nullptr;
             }
 
-            assert(simdRetSize != 0);
-            retType = getSIMDTypeForSize(simdRetSize);
+            assert(sizeBytes != 0);
+            retType = getSIMDTypeForSize(sizeBytes);
         }
     }
 
-    simdBaseJitType = getBaseJitTypeFromArgIfNeeded(intrinsic, clsHnd, sig, simdRetJitType);
+    simdBaseJitType = getBaseJitTypeFromArgIfNeeded(intrinsic, clsHnd, sig, simdBaseJitType);
 
     if (simdBaseJitType == CORINFO_TYPE_UNDEF)
     {
@@ -1395,7 +1381,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             }
 
 #if defined(TARGET_ARM64)
-            if ((simdSize != 8) && (simdSize != 16) && (simdSize != 0))
+            if ((simdSize != 8) && (simdSize != 16))
 #elif defined(TARGET_XARCH)
             if ((simdSize != 16) && (simdSize != 32) && (simdSize != 64))
 #endif // TARGET_*
@@ -1529,6 +1515,17 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         }
                         break;
 
+                    case NI_Sve_CreateWhileLessThanMask8Bit:
+                    case NI_Sve_CreateWhileLessThanOrEqualMask8Bit:
+                    case NI_Sve_CreateWhileLessThanMask16Bit:
+                    case NI_Sve_CreateWhileLessThanOrEqualMask16Bit:
+                    case NI_Sve_CreateWhileLessThanMask32Bit:
+                    case NI_Sve_CreateWhileLessThanOrEqualMask32Bit:
+                    case NI_Sve_CreateWhileLessThanMask64Bit:
+                    case NI_Sve_CreateWhileLessThanOrEqualMask64Bit:
+                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(sigReader.op1JitType);
+                        break;
+
                     default:
                         break;
                 }
@@ -1621,7 +1618,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         // HWInstrinsic returns a mask, but all returns must be vectors, so convert mask to vector.
         assert(HWIntrinsicInfo::ReturnsPerElementMask(intrinsic));
         assert(nodeRetType == TYP_MASK);
-        retNode = gtNewSimdConvertMaskToVectorNode(retType, retNode->AsHWIntrinsic(), simdRetJitType, simdRetSize);
+        retNode = gtNewSimdConvertMaskToVectorNode(retNode->AsHWIntrinsic(), retType);
     }
 #endif // defined(TARGET_ARM64)
 
