@@ -3740,10 +3740,8 @@ emit_move_return_value (MonoCompile *cfg, guint8 * code, MonoInst *ins)
 			code = emit_ldrx (code, ARMREG_IP0, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
 			code = emit_strx (code, ARMREG_R21, ARMREG_IP0, 0);
 		} else if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
-			/* Load the address of SwiftError into R21 */
+			/* Load the value of SwiftError into R21 */
 			code = emit_ldrx (code, ARMREG_R21, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
-			/* Load the Value field of SwiftError into R21 */
-			code = emit_ldrx (code, ARMREG_R21, ARMREG_R21, 0);
 		}
 	}
 
@@ -5956,10 +5954,9 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 					} else {
 						code = emit_strx (code, ainfo->reg, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
 					}
-				}
-				if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
-					code = emit_ldrx (code, ARMREG_IP0, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
-					code = emit_strx (code, ARMREG_R21, ARMREG_IP0, 0);
+				} else if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+					arm_addx_imm (code, ARMREG_IP0, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
+					code = emit_strx (code, ARMREG_IP0, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset));
 				}
 				break;
 			default:
