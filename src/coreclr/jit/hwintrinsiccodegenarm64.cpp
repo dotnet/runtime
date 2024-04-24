@@ -401,6 +401,100 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     unreached();
             }
         }
+        else if (intrin.numOperands >= 2 && intrin.op2->IsEmbMaskOp())
+        {
+            // Handle case where op2 is operation that needs embedded mask
+            GenTree* op2 = intrin.op2;
+            assert(intrin.id == NI_Sve_ConditionalSelect);
+            assert(op2->isContained());
+            assert(op2->OperIsHWIntrinsic());
+
+            // Get the registers and intrinsics that needs embedded mask
+            const HWIntrinsic intrinEmbMask(op2->AsHWIntrinsic());
+            instruction       insEmbMask = HWIntrinsicInfo::lookupIns(intrinEmbMask.id, intrinEmbMask.baseType);
+            const bool        instrIsRMW = op2->isRMWHWIntrinsic(compiler);
+
+            regNumber maskReg       = op1Reg;
+            regNumber embMaskOp1Reg = REG_NA;
+            regNumber embMaskOp2Reg = REG_NA;
+            regNumber falseReg      = op3Reg;
+
+            switch (intrinEmbMask.numOperands)
+            {
+                case 2:
+                    assert(intrinEmbMask.op2 != nullptr);
+                    embMaskOp2Reg = intrinEmbMask.op2->GetRegNum();
+                    FALLTHROUGH;
+
+                case 1:
+                    assert(intrinEmbMask.op1 != nullptr);
+                    embMaskOp1Reg = intrinEmbMask.op1->GetRegNum();
+                    break;
+
+                default:
+                    unreached();
+            }
+
+            switch (intrinEmbMask.numOperands)
+            {
+                case 1:
+                    assert(!instrIsRMW);
+                    if (targetReg != falseReg)
+                    {
+                        GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, falseReg);
+                    }
+                    GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
+                    break;
+
+                case 2:
+
+                    assert(instrIsRMW);
+
+                    if (intrin.op3->IsVectorZero())
+                    {
+                        // If `falseReg` is zero, then move the first operand of `intrinEmbMask` in the
+                        // destination using /Z.
+                        GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
+
+                        // Finally, perform the actual "predicated" operation so that `targetReg` is the first operand
+                        // and `embMaskOp2Reg` is the second operand.
+                        GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg, opt);
+                    }
+                    else if (targetReg != falseReg)
+                    {
+                        // If `targetReg` and `falseReg` are not same, then we need to move it to `targetReg` first
+                        // so the `insEmbMask` operation can be merged on top of it.
+
+                        if (falseReg != embMaskOp1Reg)
+                        {
+                            // None of targetReg, embMaskOp1Reg and falseReg are same. In such case, use the
+                            // "unpredicated" version of the instruction and then use "sel" to select the active lanes.
+
+                            GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, embMaskOp1Reg, embMaskOp2Reg,
+                                                        opt, INS_SCALABLE_OPTS_UNPREDICATED);
+                            GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,
+                                                          falseReg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
+                            break;
+                        }
+                        else if (targetReg != embMaskOp1Reg)
+                        {
+                            // embMaskOp1Reg is same as `falseReg`, but not same as `targetReg`. Move the
+                            // `embMaskOp1Reg` i.e. `falseReg` in `targetReg`, using "unpredicated movprfx", so the
+                            // subsequent `insEmbMask` operation can be merged on top of it.
+                            GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, falseReg, opt);
+                        }
+
+                        // Finally, perform the actual "predicated" operation so that `targetReg` is the first operand
+                        // and `embMaskOp2Reg` is the second operand.
+                        GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg, opt);
+                    }
+
+                    break;
+
+                default:
+                    unreached();
+            }
+        }
         else
         {
             assert(!hasImmediateOperand);
@@ -418,6 +512,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         intrin.op2->IsVectorZero())
                     {
                         GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                    }
+                    else if (HWIntrinsicInfo::IsScalable(intrin.id))
+                    {
+                        assert(!node->IsEmbMaskOp());
+                        // This generates an unpredicated version
+                        // Predicated should be taken care above `intrin.op2->IsEmbMaskOp()`
+                        GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt,
+                                                    INS_SCALABLE_OPTS_UNPREDICATED);
                     }
                     else if (isRMW)
                     {
@@ -437,17 +539,24 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     break;
 
                 case 3:
-                    assert(isRMW);
-                    if (targetReg != op1Reg)
+                    if (isRMW)
                     {
-                        assert(targetReg != op2Reg);
-                        assert(targetReg != op3Reg);
+                        if (targetReg != op1Reg)
+                        {
+                            assert(targetReg != op2Reg);
+                            assert(targetReg != op3Reg);
 
-                        GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
+                            GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg,
+                                                      /* canSkip */ true);
+                        }
+                        GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, opt);
                     }
-                    GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, opt);
+                    else
+                    {
+                        GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg, opt,
+                                                      INS_SCALABLE_OPTS_UNPREDICATED);
+                    }
                     break;
-
                 default:
                     unreached();
             }
