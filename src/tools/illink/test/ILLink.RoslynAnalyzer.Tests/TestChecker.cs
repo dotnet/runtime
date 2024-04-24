@@ -246,7 +246,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 				default:
 					return false;
-					//break;
 				}
 
 				return true;
