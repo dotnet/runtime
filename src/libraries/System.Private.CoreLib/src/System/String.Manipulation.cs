@@ -70,7 +70,7 @@ namespace System
         /// </summary>
         /// <param name="args">A span of objects that contains the elements to concatenate.</param>
         /// <returns>The concatenated string representations of the values of the elements in <paramref name="args"/>.</returns>
-        public static string Concat(/*params*/ ReadOnlySpan<object?> args)
+        public static string Concat(params ReadOnlySpan<object?> args)
         {
             if (args.Length <= 1)
             {
@@ -372,7 +372,7 @@ namespace System
         /// </summary>
         /// <param name="values">A span of <see cref="string"/> instances.</param>
         /// <returns>The concatenated elements of <paramref name="values"/>.</returns>
-        public static string Concat(/*params*/ ReadOnlySpan<string?> values)
+        public static string Concat(params ReadOnlySpan<string?> values)
         {
             if (values.Length <= 1)
             {
@@ -472,7 +472,7 @@ namespace System
         /// <param name="format">A <see href="https://learn.microsoft.com/dotnet/standard/base-types/composite-formatting">composite format string</see>.</param>
         /// <param name="args">An object span that contains zero or more objects to format.</param>
         /// <returns>A copy of <paramref name="format"/> in which the format items have been replaced by the string representation of the corresponding objects in <paramref name="args"/>.</returns>
-        public static string Format([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> args)
+        public static string Format([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> args)
         {
             return FormatHelper(null, format, args);
         }
@@ -514,7 +514,7 @@ namespace System
         /// <param name="format">A <see href="https://learn.microsoft.com/dotnet/standard/base-types/composite-formatting">composite format string</see>.</param>
         /// <param name="args">An object span that contains zero or more objects to format.</param>
         /// <returns>A copy of <paramref name="format"/> in which the format items have been replaced by the string representation of the corresponding objects in <paramref name="args"/>.</returns>
-        public static string Format(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> args)
+        public static string Format(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> args)
         {
             return FormatHelper(provider, format, args);
         }
@@ -617,7 +617,7 @@ namespace System
         /// <returns>The formatted string.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="format"/> is null.</exception>
         /// <exception cref="FormatException">The index of a format item is greater than or equal to the number of supplied arguments.</exception>
-        public static string Format(IFormatProvider? provider, CompositeFormat format, /*params*/ ReadOnlySpan<object?> args)
+        public static string Format(IFormatProvider? provider, CompositeFormat format, params ReadOnlySpan<object?> args)
         {
             ArgumentNullException.ThrowIfNull(format);
             format.ValidateNumberOfArgs(args.Length);
@@ -721,7 +721,7 @@ namespace System
         /// -or-
         /// <see cref="Empty"/> if <paramref name="value"/> has zero elements.
         /// </returns>
-        public static string Join(char separator, /*params*/ ReadOnlySpan<string?> value)
+        public static string Join(char separator, params ReadOnlySpan<string?> value)
         {
             return JoinCore(new ReadOnlySpan<char>(in separator), value);
         }
@@ -746,7 +746,7 @@ namespace System
         /// -or-
         /// <see cref="Empty"/> if <paramref name="value"/> has zero elements.
         /// </returns>
-        public static string Join(string? separator, /*params*/ ReadOnlySpan<string?> value)
+        public static string Join(string? separator, params ReadOnlySpan<string?> value)
         {
             return JoinCore(separator.AsSpan(), value);
         }
@@ -835,7 +835,7 @@ namespace System
         /// -or-
         /// <see cref="Empty"/> if <paramref name="values"/> has zero elements.
         /// </returns>
-        public static string Join(char separator, /*params*/ ReadOnlySpan<object?> values) =>
+        public static string Join(char separator, params ReadOnlySpan<object?> values) =>
             JoinCore(new ReadOnlySpan<char>(in separator), values);
 
         public static string Join(string? separator, params object?[] values)
@@ -858,7 +858,7 @@ namespace System
         /// -or-
         /// <see cref="Empty"/> if <paramref name="values"/> has zero elements.
         /// </returns>
-        public static string Join(string? separator, /*params*/ ReadOnlySpan<object?> values) =>
+        public static string Join(string? separator, params ReadOnlySpan<object?> values) =>
             JoinCore(separator.AsSpan(), values);
 
         private static string JoinCore(ReadOnlySpan<char> separator, ReadOnlySpan<object?> values)
@@ -1660,7 +1660,7 @@ namespace System
         /// </summary>
         /// <param name="separator">A span of delimiting characters, or an empty span that contains no delimiters.</param>
         /// <returns>An array whose elements contain the substrings from this instance that are delimited by one or more characters in <paramref name="separator"/>.</returns>
-        public string[] Split(/*params*/ ReadOnlySpan<char> separator)
+        public string[] Split(params ReadOnlySpan<char> separator)
         {
             return SplitInternal(separator, int.MaxValue, StringSplitOptions.None);
         }
@@ -2367,7 +2367,7 @@ namespace System
         /// If <paramref name="trimChars"/> is empty, white-space characters are removed instead.
         /// If no characters can be trimmed from the current instance, the method returns the current instance unchanged.
         /// </returns>
-        public unsafe string Trim(/*params*/ ReadOnlySpan<char> trimChars)
+        public unsafe string Trim(params ReadOnlySpan<char> trimChars)
         {
             if (trimChars.IsEmpty)
             {
@@ -2408,7 +2408,7 @@ namespace System
         /// If <paramref name="trimChars"/> is empty, white-space characters are removed instead.
         /// If no characters can be trimmed from the current instance, the method returns the current instance unchanged.
         /// </returns>
-        public unsafe string TrimStart(/*params*/ ReadOnlySpan<char> trimChars)
+        public unsafe string TrimStart(params ReadOnlySpan<char> trimChars)
         {
             if (trimChars.IsEmpty)
             {
@@ -2449,7 +2449,7 @@ namespace System
         /// If <paramref name="trimChars"/> is empty, white-space characters are removed instead.
         /// If no characters can be trimmed from the current instance, the method returns the current instance unchanged.
         /// </returns>
-        public unsafe string TrimEnd(/*params*/ ReadOnlySpan<char> trimChars)
+        public unsafe string TrimEnd(params ReadOnlySpan<char> trimChars)
         {
             if (trimChars.IsEmpty)
             {

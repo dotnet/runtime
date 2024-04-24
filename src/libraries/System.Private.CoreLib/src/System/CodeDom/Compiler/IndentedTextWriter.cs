@@ -179,7 +179,7 @@ namespace System.CodeDom.Compiler
         /// </summary>
         /// <param name="format">The formatting string to use.</param>
         /// <param name="arg">The argument span to output.</param>
-        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> arg)
+        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
         {
             OutputTabs();
             _writer.Write(format, arg);
@@ -368,7 +368,7 @@ namespace System.CodeDom.Compiler
         /// </summary>
         /// <param name="format">The formatting string to use.</param>
         /// <param name="arg">The argument span to output.</param>
-        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> arg)
+        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
         {
             OutputTabs();
             _writer.WriteLine(format, arg);

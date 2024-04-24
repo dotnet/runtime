@@ -35,7 +35,7 @@ namespace System
         /// Returns <see langword="null" /> if <paramref name="delegates"/> is <see langword="null" />,
         /// if <paramref name="delegates"/> contains zero elements, or if every entry in <paramref name="delegates"/> is <see langword="null" />.
         /// </returns>
-        public static Delegate? Combine(/*params*/ ReadOnlySpan<Delegate?> delegates)
+        public static Delegate? Combine(params ReadOnlySpan<Delegate?> delegates)
         {
             Delegate? d = null;
 

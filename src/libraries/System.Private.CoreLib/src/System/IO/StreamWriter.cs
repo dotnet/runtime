@@ -573,7 +573,7 @@ namespace System.IO
         /// </summary>
         /// <param name="format">A composite format string.</param>
         /// <param name="arg">An object span that contains zero or more objects to format and write.</param>
-        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> arg)
+        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
         {
             if (GetType() == typeof(StreamWriter))
             {
@@ -641,7 +641,7 @@ namespace System.IO
         /// </summary>
         /// <param name="format">A composite format string.</param>
         /// <param name="arg">An object span that contains zero or more objects to format and write.</param>
-        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> arg)
+        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
         {
             if (GetType() == typeof(StreamWriter))
             {
