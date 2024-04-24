@@ -158,7 +158,9 @@ public class ReadAndWrite
                 Console.SetOut(sw);
                 TextWriter writer = Console.Out;
                 Assert.NotNull(writer);
-                Assert.NotEqual(writer, sw); // the writer we provide gets wrapped
+                // Browser bypasses SyncTextWriter for faster startup
+                if (!OperatingSystem.IsBrowser())
+                    Assert.NotEqual(writer, sw); // the writer we provide gets wrapped
 
                 // We just want to ensure none of these throw exceptions, we don't actually validate
                 // what was written.
