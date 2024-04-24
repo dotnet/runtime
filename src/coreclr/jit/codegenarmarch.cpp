@@ -5309,7 +5309,13 @@ void CodeGen::genPushCalleeSavedRegisters()
     const int calleeSaveSpOffset = offset;
 
     JITDUMP("    offset=%d, calleeSaveSpDelta=%d\n", offset, calleeSaveSpDelta);
-    genSaveCalleeSavedRegistersHelp(maskSaveRegsInt | maskSaveRegsFloat, offset, -calleeSaveSpDelta);
+    if (calleeSaveSpDelta != 0)
+    {
+        // Currently this is the case for varargs only
+        // whose size is MAX_REG_ARG * REGSIZE_BYTES = 64 bytes.
+        genStackPointerAdjustment(-calleeSaveSpDelta, REG_NA, nullptr, /* reportUnwindData */ true);
+    }
+    genSaveCalleeSavedRegistersHelp(maskSaveRegsInt | maskSaveRegsFloat, offset);
 
     offset += genCountBits(maskSaveRegsInt | maskSaveRegsFloat) * REGSIZE_BYTES;
 

@@ -203,7 +203,14 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
     }
 
     JITDUMP("    calleeSaveSpOffset=%d, calleeSaveSpDelta=%d\n", calleeSaveSpOffset, calleeSaveSpDelta);
-    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, calleeSaveSpOffset, calleeSaveSpDelta);
+    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, calleeSaveSpOffset);
+
+    if (calleeSaveSpDelta != 0)
+    {
+        // Currently this is the case for varargs only
+        // whose size is MAX_REG_ARG * REGSIZE_BYTES = 64 bytes.
+        genStackPointerAdjustment(calleeSaveSpDelta, REG_NA, nullptr, /* reportUnwindData */ true);
+    }
 
     switch (frameType)
     {
@@ -536,8 +543,6 @@ void CodeGen::genPrologSaveRegPair(regNumber reg1,
 // Arguments:
 //    reg1                     - Register to save.
 //    spOffset                 - The offset from SP to store reg1 (must be positive or zero).
-//    spDelta                  - If non-zero, the amount to add to SP before the register saves (must be negative or
-//                               zero).
 //    tmpReg                   - An available temporary register. Needed for the case of large frames.
 //    pTmpRegIsZero            - If we use tmpReg, and pTmpRegIsZero is non-null, we set *pTmpRegIsZero to 'false'.
 //                               Otherwise, we don't touch it.
@@ -545,38 +550,14 @@ void CodeGen::genPrologSaveRegPair(regNumber reg1,
 // Return Value:
 //    None.
 
-void CodeGen::genPrologSaveReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero)
+void CodeGen::genPrologSaveReg(regNumber reg1, int spOffset, regNumber tmpReg, bool* pTmpRegIsZero)
 {
     assert(spOffset >= 0);
-    assert(spDelta <= 0);
-    assert((spDelta % 16) == 0); // SP changes must be 16-byte aligned
 
-    bool needToSaveRegs = true;
-    if (spDelta != 0)
-    {
-        if ((spOffset == 0) && (spDelta >= -256))
-        {
-            // We can use pre-index addressing.
-            // str REG, [SP, #spDelta]!
-            GetEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, reg1, REG_SPBASE, spDelta, INS_OPTS_PRE_INDEX);
-            compiler->unwindSaveRegPreindexed(reg1, spDelta);
-
-            needToSaveRegs = false;
-        }
-        else // (spOffset != 0) || (spDelta < -256)
-        {
-            // generate sub SP,SP,imm
-            genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero, /* reportUnwindData */ true);
-        }
-    }
-
-    if (needToSaveRegs)
-    {
-        // str REG, [SP, #offset]
-        // 64-bit STR offset range: 0 to 32760, multiple of 8.
-        GetEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, reg1, REG_SPBASE, spOffset);
-        compiler->unwindSaveReg(reg1, spOffset);
-    }
+    // str REG, [SP, #offset]
+    // 64-bit STR offset range: 0 to 32760, multiple of 8.
+    GetEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, reg1, REG_SPBASE, spOffset);
+    compiler->unwindSaveReg(reg1, spOffset);
 }
 
 //------------------------------------------------------------------------
@@ -662,8 +643,6 @@ void CodeGen::genEpilogRestoreRegPair(regNumber reg1,
 // Arguments:
 //    reg1                     - Register to restore.
 //    spOffset                 - The offset from SP to restore reg1 (must be positive or zero).
-//    spDelta                  - If non-zero, the amount to add to SP after the register restores (must be positive or
-//                               zero).
 //    tmpReg                   - An available temporary register. Needed for the case of large frames.
 //    pTmpRegIsZero            - If we use tmpReg, and pTmpRegIsZero is non-null, we set *pTmpRegIsZero to 'false'.
 //                               Otherwise, we don't touch it.
@@ -671,37 +650,13 @@ void CodeGen::genEpilogRestoreRegPair(regNumber reg1,
 // Return Value:
 //    None.
 
-void CodeGen::genEpilogRestoreReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero)
+void CodeGen::genEpilogRestoreReg(regNumber reg1, int spOffset, regNumber tmpReg, bool* pTmpRegIsZero)
 {
     assert(spOffset >= 0);
-    assert(spDelta >= 0);
-    assert((spDelta % 16) == 0); // SP changes must be 16-byte aligned
 
-    if (spDelta != 0)
-    {
-        if ((spOffset == 0) && (spDelta <= 255))
-        {
-            // We can use post-index addressing.
-            // ldr REG, [SP], #spDelta
-            GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, reg1, REG_SPBASE, spDelta, INS_OPTS_POST_INDEX);
-            compiler->unwindSaveRegPreindexed(reg1, -spDelta);
-        }
-        else // (spOffset != 0) || (spDelta > 255)
-        {
-            // ldr reg1, [SP, #offset]
-            GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, reg1, REG_SPBASE, spOffset);
-            compiler->unwindSaveReg(reg1, spOffset);
-
-            // generate add SP,SP,imm
-            genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero, /* reportUnwindData */ true);
-        }
-    }
-    else
-    {
-        // ldr reg1, [SP, #offset]
-        GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, reg1, REG_SPBASE, spOffset);
-        compiler->unwindSaveReg(reg1, spOffset);
-    }
+    // ldr reg1, [SP, #offset]
+    GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, reg1, REG_SPBASE, spOffset);
+    compiler->unwindSaveReg(reg1, spOffset);
 }
 
 //------------------------------------------------------------------------
@@ -833,10 +788,9 @@ int CodeGen::genGetSlotSizeForRegsInMask(regMaskTP regsMask)
 //
 // Arguments:
 //   regsMask             - a mask of registers for prolog generation;
-//   spDelta              - if non-zero, the amount to add to SP before the first register save (or together with it);
 //   spOffset             - the offset from SP that is the beginning of the callee-saved register area;
 //
-void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset)
+void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spOffset)
 {
     const int slotSize = genGetSlotSizeForRegsInMask(regsMask);
 
@@ -849,19 +803,17 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, i
         if (regPair.reg2 != REG_NA)
         {
             // We can use a STP instruction.
-            genPrologSaveRegPair(regPair.reg1, regPair.reg2, spOffset, spDelta, regPair.useSaveNextPair, REG_IP0,
-                                 nullptr);
+            genPrologSaveRegPair(regPair.reg1, regPair.reg2, spOffset, 0, regPair.useSaveNextPair, REG_IP0,
+                                 nullptr); //qiaoqiao.
 
             spOffset += 2 * slotSize;
         }
         else
         {
             // No register pair; we use a STR instruction.
-            genPrologSaveReg(regPair.reg1, spOffset, spDelta, REG_IP0, nullptr);
+            genPrologSaveReg(regPair.reg1, spOffset, REG_IP0, nullptr);
             spOffset += slotSize;
         }
-
-        spDelta = 0; // We've now changed SP already, if necessary; don't do it again.
     }
 }
 
@@ -902,24 +854,13 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, i
 //    The save set can contain LR in which case LR is saved along with the other callee-saved registers.
 //    But currently Jit doesn't use frames without frame pointer on arm64.
 //
-void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta)
+void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset)
 {
-    assert(spDelta <= 0);
-    assert(-spDelta <= STACK_PROBE_BOUNDARY_THRESHOLD_BYTES);
-
     unsigned regsToSaveCount = genCountBits(regsToSaveMask);
     if (regsToSaveCount == 0)
-    {
-        if (spDelta != 0)
-        {
-            // Currently this is the case for varargs only
-            // whose size is MAX_REG_ARG * REGSIZE_BYTES = 64 bytes.
-            genStackPointerAdjustment(spDelta, REG_NA, nullptr, /* reportUnwindData */ true);
-        }
+    { // should move this out. qiaoqiao.
         return;
     }
-
-    assert((spDelta % 16) == 0);
 
     // We also can save FP and LR, even though they are not in RBM_CALLEE_SAVED.
     assert(regsToSaveCount <= genCountBits(RBM_CALLEE_SAVED | RBM_FP | RBM_LR));
@@ -931,15 +872,13 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
 
     if (maskSaveRegsFloat != RBM_NONE)
     {
-        genSaveCalleeSavedRegisterGroup(maskSaveRegsFloat, spDelta, lowestCalleeSavedOffset);
-        spDelta = 0;
+        genSaveCalleeSavedRegisterGroup(maskSaveRegsFloat, lowestCalleeSavedOffset); //qiaoqiao.
         lowestCalleeSavedOffset += genCountBits(maskSaveRegsFloat) * FPSAVE_REGSIZE_BYTES;
     }
 
     if (maskSaveRegsInt != RBM_NONE)
     {
-        genSaveCalleeSavedRegisterGroup(maskSaveRegsInt, spDelta, lowestCalleeSavedOffset);
-        // No need to update spDelta, lowestCalleeSavedOffset since they're not used after this.
+        genSaveCalleeSavedRegisterGroup(maskSaveRegsInt, lowestCalleeSavedOffset);
     }
 }
 
@@ -948,40 +887,29 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
 //
 // Arguments:
 //   regsMask             - a mask of registers for epilog generation;
-//   spDelta              - if non-zero, the amount to add to SP after the last register restore (or together with it);
 //   spOffset             - the offset from SP that is the beginning of the callee-saved register area;
 //
-void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset)
-{
+void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spOffset)
+{ //qiaoqiao.
     const int slotSize = genGetSlotSizeForRegsInMask(regsMask);
 
     ArrayStack<RegPair> regStack(compiler->getAllocator(CMK_Codegen));
     genBuildRegPairsStack(regsMask, &regStack);
 
-    int stackDelta = 0;
     for (int i = 0; i < regStack.Height(); ++i)
     {
-        bool lastRestoreInTheGroup = (i == regStack.Height() - 1);
-        bool updateStackDelta      = lastRestoreInTheGroup && (spDelta != 0);
-        if (updateStackDelta)
-        {
-            // Update stack delta only if it is the last restore (the first save).
-            assert(stackDelta == 0);
-            stackDelta = spDelta;
-        }
-
         RegPair regPair = regStack.Top(i);
         if (regPair.reg2 != REG_NA)
         {
             spOffset -= 2 * slotSize;
 
-            genEpilogRestoreRegPair(regPair.reg1, regPair.reg2, spOffset, stackDelta, regPair.useSaveNextPair, REG_IP1,
+            genEpilogRestoreRegPair(regPair.reg1, regPair.reg2, spOffset, 0, regPair.useSaveNextPair, REG_IP1,
                                     nullptr);
         }
         else
         {
             spOffset -= slotSize;
-            genEpilogRestoreReg(regPair.reg1, spOffset, stackDelta, REG_IP1, nullptr);
+            genEpilogRestoreReg(regPair.reg1, spOffset, REG_IP1, nullptr);
         }
     }
 }
@@ -993,8 +921,6 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta
 // Arguments:
 //    regsToRestoreMask       - The mask of callee-saved registers to restore. If empty, this function does nothing.
 //    lowestCalleeSavedOffset - The offset from SP that is the beginning of the callee-saved register area.
-//    spDelta                 - If non-zero, the amount to add to SP after the register restores (must be positive or
-//                              zero).
 //
 // Here's an example restore sequence:
 //      ldp     x27, x28, [sp,#96]
@@ -1003,36 +929,19 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta
 //      ldp     x21, x22, [sp,#48]
 //      ldp     x19, x20, [sp,#32]
 //
-// For the case of non-zero spDelta, we assume the base of the callee-save registers to restore is at SP, and
-// the last restore adjusts SP by the specified amount. For example:
-//      ldp     x27, x28, [sp,#64]
-//      ldp     x25, x26, [sp,#48]
-//      ldp     x23, x24, [sp,#32]
-//      ldp     x21, x22, [sp,#16]
-//      ldp     x19, x20, [sp], #80
-//
 // Note you call the unwind functions specifying the prolog operation that is being un-done. So, for example, when
 // generating a post-indexed load, you call the unwind function for specifying the corresponding preindexed store.
 //
 // Return Value:
 //    None.
 
-void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta)
+void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset)
 {
-    assert(spDelta >= 0);
     unsigned regsToRestoreCount = genCountBits(regsToRestoreMask);
     if (regsToRestoreCount == 0)
     {
-        if (spDelta != 0)
-        {
-            // Currently this is the case for varargs only
-            // whose size is MAX_REG_ARG * REGSIZE_BYTES = 64 bytes.
-            genStackPointerAdjustment(spDelta, REG_NA, nullptr, /* reportUnwindData */ true);
-        }
         return;
     }
-
-    assert((spDelta % 16) == 0);
 
     // We also can restore FP and LR, even though they are not in RBM_CALLEE_SAVED.
     assert(regsToRestoreCount <= genCountBits(RBM_CALLEE_SAVED | RBM_FP | RBM_LR));
@@ -1050,16 +959,13 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
 
     if (maskRestoreRegsInt != RBM_NONE)
     {
-        int spIntDelta = (maskRestoreRegsFloat != RBM_NONE) ? 0 : spDelta; // should we delay the SP adjustment?
-        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsInt, spIntDelta, spOffset);
+        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsInt, spOffset);
         spOffset -= genCountBits(maskRestoreRegsInt) * REGSIZE_BYTES;
     }
 
     if (maskRestoreRegsFloat != RBM_NONE)
     {
-        // If there is any spDelta, it must be used here.
-        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsFloat, spDelta, spOffset);
-        // No need to update spOffset since it's not used after this.
+        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsFloat, spOffset);
     }
 }
 
@@ -1486,7 +1392,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     int lowestCalleeSavedOffset = genFuncletInfo.fiSP_to_CalleeSave_delta +
                                   genFuncletInfo.fiSpDelta2; // We haven't done the second adjustment of SP yet (if any)
-    genSaveCalleeSavedRegistersHelp(maskSaveRegsInt | maskSaveRegsFloat, lowestCalleeSavedOffset, 0);
+    genSaveCalleeSavedRegistersHelp(maskSaveRegsInt | maskSaveRegsFloat, lowestCalleeSavedOffset);
 
     if ((genFuncletInfo.fiFrameType == 3) || (genFuncletInfo.fiFrameType == 5))
     {
@@ -1602,7 +1508,7 @@ void CodeGen::genFuncletEpilog()
         regsToRestoreMask &= ~(RBM_LR | RBM_FP); // We restore FP/LR at the end
     }
     int lowestCalleeSavedOffset = genFuncletInfo.fiSP_to_CalleeSave_delta + genFuncletInfo.fiSpDelta2;
-    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, lowestCalleeSavedOffset, 0);
+    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, lowestCalleeSavedOffset);
 
     if (genFuncletInfo.fiFrameType == 1)
     {

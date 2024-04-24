@@ -282,16 +282,7 @@ protected:
 #endif // UNIX_AMD64_ABI && FEATURE_SIMD
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    bool genInstrWithConstant(instruction ins,
-                              emitAttr    attr,
-                              regNumber   reg1,
-                              regNumber   reg2,
-                              ssize_t     imm,
-                              regNumber   tmpReg,
-                              bool        inUnwindRegion = false);
-
-    void genStackPointerAdjustment(ssize_t spAdjustment, regNumber tmpReg, bool* pTmpRegIsZero, bool reportUnwindData);
-
+#if defined(TARGET_ARM64)
     void genPrologSaveRegPair(regNumber reg1,
                               regNumber reg2,
                               int       spOffset,
@@ -299,8 +290,6 @@ protected:
                               bool      useSaveNextPair,
                               regNumber tmpReg,
                               bool*     pTmpRegIsZero);
-
-    void genPrologSaveReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero);
 
     void genEpilogRestoreRegPair(regNumber reg1,
                                  regNumber reg2,
@@ -310,7 +299,8 @@ protected:
                                  regNumber tmpReg,
                                  bool*     pTmpRegIsZero);
 
-    void genEpilogRestoreReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero);
+    void genPrologSaveReg(regNumber reg1, int spOffset, regNumber tmpReg, bool* pTmpRegIsZero);
+    void genEpilogRestoreReg(regNumber reg1, int spOffset, regNumber tmpReg, bool* pTmpRegIsZero);
 
     // A simple struct to keep register pairs for prolog and epilog.
     struct RegPair
@@ -340,15 +330,26 @@ protected:
 
     static int genGetSlotSizeForRegsInMask(regMaskTP regsMask);
 
-    void genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset);
-    void genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset);
+    void genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spOffset);
+    void genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spOffset);
+#endif // TARGET_ARM64
 
-    void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta);
-    void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta);
+    bool genInstrWithConstant(instruction ins,
+                              emitAttr    attr,
+                              regNumber   reg1,
+                              regNumber   reg2,
+                              ssize_t     imm,
+                              regNumber   tmpReg,
+                              bool        inUnwindRegion = false);
+
+    void genStackPointerAdjustment(ssize_t spAdjustment, regNumber tmpReg, bool* pTmpRegIsZero, bool reportUnwindData);
+
+    void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset);
+    void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset);
 
     void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed);
 
-#else
+#else // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
     void genPushCalleeSavedRegisters();
 #endif
 
