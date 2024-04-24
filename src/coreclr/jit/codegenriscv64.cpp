@@ -194,16 +194,12 @@ void CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg, bool*
 // Arguments:
 //    regsToSaveMask          - The mask of callee-saved registers to save. If empty, this function does nothing.
 //    lowestCalleeSavedOffset - The offset from SP that is the beginning of the callee-saved register area. Note that
-//                              if non-zero spDelta, then this is the offset of the first save *after* that
-//                              SP adjustment.
-//    spDelta                 - If non-zero, the amount to add to SP before the register saves (must be negative or
-//                              zero).
 //
 // Notes:
 //    The save set can not contain FP/RA in which case FP/RA is saved along with the other callee-saved registers.
 //
 void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset)
-{ // qiaoqiao.
+{
     if (regsToSaveMask == 0)
     {
         return;
@@ -213,12 +209,13 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
     assert(lowestCalleeSavedOffset >= 0);
 
     emitter*  emit         = GetEmitter();
-    int       regNum       = REG_S0;
-    regMaskTP maskSaveRegs = (regsToSaveMask & RBM_INT_CALLEE_SAVED) >> REG_S0;
-    do {
+    int       regNum       = FIRST_INT_CALLEE_SAVED;
+    regMaskTP maskSaveRegs = (regsToSaveMask & RBM_INT_CALLEE_SAVED) >> FIRST_INT_CALLEE_SAVED;
+    do
+    {
         if (maskSaveRegs & 1)
         {
-            emit->emitIns_R_R_I(INS_st_d, EA_8BYTE, (regNumber)regNum, REG_SP, lowestCalleeSavedOffset);
+            emit->emitIns_R_R_I(INS_sd, EA_8BYTE, (regNumber)regNum, REG_SP, lowestCalleeSavedOffset);
             compiler->unwindSaveReg((regNumber)regNum, lowestCalleeSavedOffset);
             lowestCalleeSavedOffset += REGSIZE_BYTES;
         }
@@ -226,12 +223,13 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
         regNum += 1;
     } while (maskSaveRegs != 0);
 
-    maskSaveRegs = (regsToSaveMask & RBM_FLT_CALLEE_SAVED) >> REG_F24;
-    regNum       = REG_F24;
-    do {
+    maskSaveRegs = (regsToSaveMask & RBM_FLT_CALLEE_SAVED) >> FIRST_FLT_CALLEE_SAVED;
+    regNum       = FIRST_FLT_CALLEE_SAVED;
+    do
+    {
         if (maskSaveRegs & 1)
         {
-            emit->emitIns_R_R_I(INS_fst_d, EA_8BYTE, (regNumber)regNum, REG_SP, lowestCalleeSavedOffset);
+            emit->emitIns_R_R_I(INS_fsd, EA_8BYTE, (regNumber)regNum, REG_SP, lowestCalleeSavedOffset);
             compiler->unwindSaveReg((regNumber)regNum, lowestCalleeSavedOffset);
             lowestCalleeSavedOffset += REGSIZE_BYTES;
         }
@@ -265,7 +263,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
 //    None.
 
 void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset)
-{ //qiaoqiao.
+{
     // The FP and RA are not in RBM_CALLEE_SAVED.
     assert(!(regsToRestoreMask & (~RBM_CALLEE_SAVED)));
     if (regsToRestoreMask == 0)
@@ -277,26 +275,28 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
     assert(highestCalleeSavedOffset >= 16);
 
     emitter* emit         = GetEmitter();
-    long     maskSaveRegs = (long)(regsToRestoreMask & RBM_FLT_CALLEE_SAVED) << (63 - REG_F31);
-    int regNum = REG_F31;
-    do {
+    long     maskSaveRegs = (long)(regsToRestoreMask & RBM_FLT_CALLEE_SAVED) << (63 - LAST_FLT_CALLEE_SAVED);
+    int      regNum       = LAST_FLT_CALLEE_SAVED;
+    do
+    {
         if (maskSaveRegs < 0)
         {
             highestCalleeSavedOffset -= REGSIZE_BYTES;
-            emit->emitIns_R_R_I(INS_fld_d, EA_8BYTE, (regNumber)regNum, REG_SP, highestCalleeSavedOffset);
+            emit->emitIns_R_R_I(INS_fld, EA_8BYTE, (regNumber)regNum, REG_SP, highestCalleeSavedOffset);
             compiler->unwindSaveReg((regNumber)regNum, highestCalleeSavedOffset);
         }
         maskSaveRegs <<= 1;
         regNum -= 1;
     } while (maskSaveRegs != 0);
 
-    maskSaveRegs = (long)((regsToRestoreMask & RBM_INT_CALLEE_SAVED) << (63 - REG_S8));
-    regNum       = REG_S8;
-    do {
+    maskSaveRegs = (long)((regsToRestoreMask & RBM_INT_CALLEE_SAVED) << (63 - LAST_INT_CALLEE_SAVED));
+    regNum       = LAST_INT_CALLEE_SAVED;
+    do
+    {
         if (maskSaveRegs < 0)
         {
             highestCalleeSavedOffset -= REGSIZE_BYTES;
-            emit->emitIns_R_R_I(INS_ld_d, EA_8BYTE, (regNumber)regNum, REG_SP, highestCalleeSavedOffset);
+            emit->emitIns_R_R_I(INS_ld, EA_8BYTE, (regNumber)regNum, REG_SP, highestCalleeSavedOffset);
             compiler->unwindSaveReg((regNumber)regNum, highestCalleeSavedOffset);
         }
         maskSaveRegs <<= 1;

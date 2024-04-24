@@ -218,9 +218,10 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
     assert(lowestCalleeSavedOffset >= 0);
 
     emitter*  emit         = GetEmitter();
-    int       regNum       = REG_S0;
-    regMaskTP maskSaveRegs = (regsToSaveMask & RBM_INT_CALLEE_SAVED) >> REG_S0;
-    do {
+    int       regNum       = FIRST_INT_CALLEE_SAVED;
+    regMaskTP maskSaveRegs = (regsToSaveMask & RBM_INT_CALLEE_SAVED) >> FIRST_INT_CALLEE_SAVED;
+    do
+    {
         if (maskSaveRegs & 1)
         {
             emit->emitIns_R_R_I(INS_st_d, EA_8BYTE, (regNumber)regNum, REG_SP, lowestCalleeSavedOffset);
@@ -233,7 +234,8 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
 
     maskSaveRegs = (regsToSaveMask & RBM_FLT_CALLEE_SAVED) >> REG_F24;
     regNum       = REG_F24;
-    do {
+    do
+    {
         if (maskSaveRegs & 1)
         {
             emit->emitIns_R_R_I(INS_fst_d, EA_8BYTE, (regNumber)regNum, REG_SP, lowestCalleeSavedOffset);
@@ -280,9 +282,10 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
     assert(highestCalleeSavedOffset >= 16);
 
     emitter* emit         = GetEmitter();
-    long     maskSaveRegs = (long)(regsToRestoreMask & RBM_FLT_CALLEE_SAVED) << (63 - REG_F31);
-    int regNum = REG_F31;
-    do {
+    long     maskSaveRegs = (long)(regsToRestoreMask & RBM_FLT_CALLEE_SAVED) << (63 - LAST_FLT_CALLEE_SAVED);
+    int      regNum       = LAST_FLT_CALLEE_SAVED;
+    do
+    {
         if (maskSaveRegs < 0)
         {
             highestCalleeSavedOffset -= REGSIZE_BYTES;
@@ -293,9 +296,10 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
         regNum -= 1;
     } while (maskSaveRegs != 0);
 
-    maskSaveRegs = (long)((regsToRestoreMask & RBM_INT_CALLEE_SAVED) << (63 - REG_S8));
-    regNum       = REG_S8;
-    do {
+    maskSaveRegs = (long)((regsToRestoreMask & RBM_INT_CALLEE_SAVED) << (63 - LAST_INT_CALLEE_SAVED));
+    regNum       = LAST_INT_CALLEE_SAVED;
+    do
+    {
         if (maskSaveRegs < 0)
         {
             highestCalleeSavedOffset -= REGSIZE_BYTES;

@@ -804,7 +804,7 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spOffset)
         {
             // We can use a STP instruction.
             genPrologSaveRegPair(regPair.reg1, regPair.reg2, spOffset, 0, regPair.useSaveNextPair, REG_IP0,
-                                 nullptr); //qiaoqiao.
+                                 nullptr);
 
             spOffset += 2 * slotSize;
         }
@@ -844,11 +844,7 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spOffset)
 //
 // Arguments:
 //    regsToSaveMask          - The mask of callee-saved registers to save. If empty, this function does nothing.
-//    lowestCalleeSavedOffset - The offset from SP that is the beginning of the callee-saved register area. Note that
-//                              if non-zero spDelta, then this is the offset of the first save *after* that
-//                              SP adjustment.
-//    spDelta                 - If non-zero, the amount to add to SP before the register saves (must be negative or
-//                              zero).
+//    lowestCalleeSavedOffset - The offset from SP that is the beginning of the callee-saved register area.
 //
 // Notes:
 //    The save set can contain LR in which case LR is saved along with the other callee-saved registers.
@@ -858,7 +854,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
 {
     unsigned regsToSaveCount = genCountBits(regsToSaveMask);
     if (regsToSaveCount == 0)
-    { // should move this out. qiaoqiao.
+    {
         return;
     }
 
@@ -872,7 +868,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
 
     if (maskSaveRegsFloat != RBM_NONE)
     {
-        genSaveCalleeSavedRegisterGroup(maskSaveRegsFloat, lowestCalleeSavedOffset); //qiaoqiao.
+        genSaveCalleeSavedRegisterGroup(maskSaveRegsFloat, lowestCalleeSavedOffset);
         lowestCalleeSavedOffset += genCountBits(maskSaveRegsFloat) * FPSAVE_REGSIZE_BYTES;
     }
 
@@ -890,7 +886,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
 //   spOffset             - the offset from SP that is the beginning of the callee-saved register area;
 //
 void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spOffset)
-{ //qiaoqiao.
+{
     const int slotSize = genGetSlotSizeForRegsInMask(regsMask);
 
     ArrayStack<RegPair> regStack(compiler->getAllocator(CMK_Codegen));
@@ -902,9 +898,7 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spOffse
         if (regPair.reg2 != REG_NA)
         {
             spOffset -= 2 * slotSize;
-
-            genEpilogRestoreRegPair(regPair.reg1, regPair.reg2, spOffset, 0, regPair.useSaveNextPair, REG_IP1,
-                                    nullptr);
+            genEpilogRestoreRegPair(regPair.reg1, regPair.reg2, spOffset, 0, regPair.useSaveNextPair, REG_IP1, nullptr);
         }
         else
         {
