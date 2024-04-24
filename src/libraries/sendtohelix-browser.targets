@@ -259,7 +259,9 @@
       <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnV8'"                 Include="$(TestArchiveRoot)runonly/**/*.Console.V8.*.Sample.zip" />
       <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnNodeJS'"             Include="$(TestArchiveRoot)runonly/**/*.Console.Node.*.Sample.zip" />
       <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnChrome'"             Include="$(TestArchiveRoot)runonly/**/*.Browser.*.Sample.zip" />
+      <!-- xharness -> selenium -> firefox doesn't support forwarding console without dotnet.withConsoleForwarding()
       <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnFirefox'"            Include="$(TestArchiveRoot)runonly/**/*.Browser.*.Sample.zip" />
+      -->
 
       <HelixWorkItem Include="@(_WasmSampleZipFile -> '$(WorkItemPrefix)%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>
