@@ -203,14 +203,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
     }
 
     JITDUMP("    calleeSaveSpOffset=%d, calleeSaveSpDelta=%d\n", calleeSaveSpOffset, calleeSaveSpDelta);
-    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, calleeSaveSpOffset);
-
-    if (calleeSaveSpDelta != 0)
-    {
-        // Currently this is the case for varargs only
-        // whose size is MAX_REG_ARG * REGSIZE_BYTES = 64 bytes.
-        genStackPointerAdjustment(calleeSaveSpDelta, REG_NA, nullptr, /* reportUnwindData */ true);
-    }
+    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, calleeSaveSpOffset, calleeSaveSpDelta);
 
     switch (frameType)
     {
@@ -712,159 +705,46 @@ void CodeGen::genEpilogRestoreReg(regNumber reg1, int spOffset, int spDelta, reg
 }
 
 //------------------------------------------------------------------------
-// genBuildRegPairsStack: Build a stack of register pairs for prolog/epilog save/restore for the given mask.
-// The first register pair will contain the lowest register. Register pairs will combine neighbor
-// registers in pairs. If it can't be done (for example if we have a hole or this is the last reg in a mask with
-// odd number of regs) then the second element of that RegPair will be REG_NA.
-//
-// Arguments:
-//   regsMask - a mask of registers for prolog/epilog generation;
-//   regStack - a regStack instance to build the stack in, used to save temp copyings.
-//
-// Return value:
-//   no return value; the regStack argument is modified.
-//
-// static
-void CodeGen::genBuildRegPairsStack(regMaskTP regsMask, ArrayStack<RegPair>* regStack)
-{
-    assert(regStack != nullptr);
-    assert(regStack->Height() == 0);
-
-    unsigned regsCount = genCountBits(regsMask);
-
-    while (regsMask != RBM_NONE)
-    {
-        regNumber reg1 = genFirstRegNumFromMaskAndToggle(regsMask);
-        regsCount -= 1;
-
-        bool isPairSave = false;
-        if (regsCount > 0)
-        {
-            regNumber reg2 = genFirstRegNumFromMask(regsMask);
-            if (reg2 == REG_NEXT(reg1))
-            {
-                // The JIT doesn't allow saving pair (R28,FP), even though the
-                // save_regp register pair unwind code specification allows it.
-                // The JIT always saves (FP,LR) as a pair, and uses the save_fplr
-                // unwind code. This only comes up in stress mode scenarios
-                // where callee-saved registers are not allocated completely
-                // from lowest-to-highest, without gaps.
-                if (reg1 != REG_R28)
-                {
-                    // Both registers must have the same type to be saved as pair.
-                    if (genIsValidFloatReg(reg1) == genIsValidFloatReg(reg2))
-                    {
-                        isPairSave = true;
-
-                        regsMask ^= genRegMask(reg2);
-                        regsCount -= 1;
-
-                        regStack->Push(RegPair(reg1, reg2));
-                    }
-                }
-            }
-        }
-        if (!isPairSave)
-        {
-            regStack->Push(RegPair(reg1));
-        }
-    }
-    assert(regsCount == 0 && regsMask == RBM_NONE);
-
-    genSetUseSaveNextPairs(regStack);
-}
-
-//------------------------------------------------------------------------
-// genSetUseSaveNextPairs: Set useSaveNextPair for each RegPair on the stack which unwind info can be encoded as
-// save_next code.
-//
-// Arguments:
-//   regStack - a regStack instance to set useSaveNextPair.
-//
-// Notes:
-// We can use save_next for RegPair(N, N+1) only when we have sequence like (N-2, N-1), (N, N+1).
-// In this case in the prolog save_next for (N, N+1) refers to save_pair(N-2, N-1);
-// in the epilog the unwinder will search for the first save_pair (N-2, N-1)
-// and then go back to the first save_next (N, N+1) to restore it first.
-//
-// static
-void CodeGen::genSetUseSaveNextPairs(ArrayStack<RegPair>* regStack)
-{
-    for (int i = 1; i < regStack->Height(); ++i)
-    {
-        RegPair& curr = regStack->BottomRef(i);
-        RegPair  prev = regStack->Bottom(i - 1);
-
-        if (prev.reg2 == REG_NA || curr.reg2 == REG_NA)
-        {
-            continue;
-        }
-
-        if (REG_NEXT(prev.reg2) != curr.reg1)
-        {
-            continue;
-        }
-
-        if (genIsValidFloatReg(prev.reg2) != genIsValidFloatReg(curr.reg1))
-        {
-            // It is possible to support changing of the last int pair with the first float pair,
-            // but it is very rare case and it would require superfluous changes in the unwinder.
-            continue;
-        }
-        curr.useSaveNextPair = true;
-    }
-}
-
-//------------------------------------------------------------------------
-// genGetSlotSizeForRegsInMask: Get the stack slot size appropriate for the register type from the mask.
-//
-// Arguments:
-//   regsMask - a mask of registers for prolog/epilog generation.
-//
-// Return value:
-//   stack slot size in bytes.
-//
-// Note: Because int and float register type sizes match we can call this function with a mask that includes both.
-//
-// static
-int CodeGen::genGetSlotSizeForRegsInMask(regMaskTP regsMask)
-{
-    assert((regsMask & (RBM_CALLEE_SAVED | RBM_FP | RBM_LR)) == regsMask); // Do not expect anything else.
-
-    static_assert_no_msg(REGSIZE_BYTES == FPSAVE_REGSIZE_BYTES);
-    return REGSIZE_BYTES;
-}
-
-//------------------------------------------------------------------------
 // genSaveCalleeSavedRegisterGroup: Saves the group of registers described by the mask.
 //
 // Arguments:
-//   regsMask             - a mask of registers for prolog generation;
-//   spOffset             - the offset from SP that is the beginning of the callee-saved register area;
+//   regsMask      - a mask of registers for prolog generation;
+//   firstReg      - the first register of the regsMask from the lowest bit.
+//   spDelta       - if non-zero, the amount to add to SP before the first register save (or together with it);
+//   spOffset      - the offset from SP that is the beginning of the callee-saved register area;
 //
-void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spOffset)
+void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, regNumber firstReg, int spDelta, int spOffset)
 {
-    const int slotSize = genGetSlotSizeForRegsInMask(regsMask);
-
-    ArrayStack<RegPair> regStack(compiler->getAllocator(CMK_Codegen));
-    genBuildRegPairsStack(regsMask, &regStack);
-
-    for (int i = 0; i < regStack.Height(); ++i)
+    assert(spDelta <= 0);
+    assert(spOffset >= 0);
+    assert((genIsValidIntReg(firstReg) && ((regsMask & ~RBM_INT_CALLEE_SAVED) == 0)) ||
+           (genIsValidFloatReg(firstReg) && ((regsMask & ~RBM_FLT_CALLEE_SAVED) == 0)));
+    int       regNum       = firstReg;
+    regMaskTP maskSaveRegs = regsMask >> regNum;
+    do
     {
-        RegPair regPair = regStack.Bottom(i);
-        if (regPair.reg2 != REG_NA)
+        if ((maskSaveRegs & 3) == 3)
         {
             // We can use a STP instruction.
-            genPrologSaveRegPair(regPair.reg1, regPair.reg2, spOffset, 0, regPair.useSaveNextPair, REG_IP0, nullptr);
-            spOffset += 2 * slotSize;
+            int  regNum2         = regNum + 1;
+            bool useSaveNextPair = (spDelta == 0) && (((regsMask >> (regNum2 - 2)) & 0xf) == 0xf);
+            genPrologSaveRegPair((regNumber)regNum, (regNumber)regNum2, spOffset, spDelta, useSaveNextPair, REG_IP0,
+                                 nullptr);
+            spOffset += 2 * REGSIZE_BYTES;
+            maskSaveRegs >>= 1;
+            regNum++;
+            spDelta = 0;
         }
-        else
+        else if (maskSaveRegs & 1)
         {
             // No register pair; we use a STR instruction.
-            genPrologSaveReg(regPair.reg1, spOffset, 0, REG_IP0, nullptr);
-            spOffset += slotSize;
+            genPrologSaveReg((regNumber)regNum, spOffset, spDelta, REG_IP0, nullptr);
+            spOffset += REGSIZE_BYTES;
+            spDelta = 0;
         }
-    }
+        maskSaveRegs >>= 1;
+        regNum++;
+    } while (maskSaveRegs != 0);
 }
 
 //------------------------------------------------------------------------
@@ -894,37 +774,61 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spOffset)
 //
 // Arguments:
 //    regsToSaveMask          - The mask of callee-saved registers to save. If empty, this function does nothing.
-//    lowestCalleeSavedOffset - The offset from SP that is the beginning of the callee-saved register area.
+//    lowestCalleeSavedOffset - The offset from SP that is the beginning of the callee-saved register area. Note that
+//                              if non-zero spDelta, then this is the offset of the first save *after* that
+//                              SP adjustment.
+//    spDelta                 - If non-zero, the amount to add to SP before the register saves (must be negative or
+//                              zero).
 //
 // Notes:
 //    The save set can contain LR in which case LR is saved along with the other callee-saved registers.
 //    But currently Jit doesn't use frames without frame pointer on arm64.
 //
-void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset)
+void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask,
+                                              int       lowestCalleeSavedOffset,
+                                              int       spDelta /* =0 */)
 {
-    unsigned regsToSaveCount = genCountBits(regsToSaveMask);
-    if (regsToSaveCount == 0)
+    assert(spDelta <= 0);
+    assert(-spDelta <= STACK_PROBE_BOUNDARY_THRESHOLD_BYTES);
+
+    if (regsToSaveMask == 0)
     {
+        if (spDelta != 0)
+        {
+            // Currently this is the case for varargs only
+            // whose size is MAX_REG_ARG * REGSIZE_BYTES = 64 bytes.
+            genStackPointerAdjustment(spDelta, REG_NA, nullptr, /* reportUnwindData */ true);
+        }
         return;
     }
+    assert(!(regsToSaveMask & ~(RBM_CALLEE_SAVED | RBM_FP | RBM_LR)));
+    assert(lowestCalleeSavedOffset >= 0);
 
-    // We also can save FP and LR, even though they are not in RBM_CALLEE_SAVED.
-    assert(regsToSaveCount <= genCountBits(RBM_CALLEE_SAVED | RBM_FP | RBM_LR));
-
-    // Save integer registers at higher addresses than floating-point registers.
-
-    regMaskTP maskSaveRegsFloat = regsToSaveMask & RBM_ALLFLOAT;
-    regMaskTP maskSaveRegsInt   = regsToSaveMask & ~maskSaveRegsFloat;
-
-    if (maskSaveRegsFloat != RBM_NONE)
+    regMaskTP maskSaveRegs = regsToSaveMask & RBM_FLT_CALLEE_SAVED;
+    if (maskSaveRegs != 0)
     {
-        genSaveCalleeSavedRegisterGroup(maskSaveRegsFloat, lowestCalleeSavedOffset);
-        lowestCalleeSavedOffset += genCountBits(maskSaveRegsFloat) * FPSAVE_REGSIZE_BYTES;
+        genSaveCalleeSavedRegisterGroup(maskSaveRegs, FIRST_FLT_CALLEE_SAVED, spDelta, lowestCalleeSavedOffset);
+        lowestCalleeSavedOffset += genCountBits((uint64_t)maskSaveRegs) * REGSIZE_BYTES;
+        spDelta = 0;
     }
 
-    if (maskSaveRegsInt != RBM_NONE)
+    maskSaveRegs = regsToSaveMask & RBM_INT_CALLEE_SAVED;
+    if (maskSaveRegs != 0)
     {
-        genSaveCalleeSavedRegisterGroup(maskSaveRegsInt, lowestCalleeSavedOffset);
+        genSaveCalleeSavedRegisterGroup(maskSaveRegs, FIRST_INT_CALLEE_SAVED, spDelta, lowestCalleeSavedOffset);
+        lowestCalleeSavedOffset += genCountBits((uint64_t)maskSaveRegs) * REGSIZE_BYTES;
+        spDelta = 0;
+    }
+
+    unsigned maskRegs = (unsigned)((regsToSaveMask >> REG_FP) & 0x3); // only check FP/LR.
+    assert((maskRegs == 0) || (maskRegs == 3) || (maskRegs == 2));
+    if (maskRegs == 3)
+    {
+        genPrologSaveRegPair(REG_FP, REG_LR, lowestCalleeSavedOffset, spDelta, false, REG_IP0, nullptr);
+    }
+    else if (maskRegs == 2)
+    {
+        genPrologSaveReg(REG_LR, lowestCalleeSavedOffset, spDelta, REG_IP0, nullptr);
     }
 }
 
@@ -932,30 +836,66 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
 // genRestoreCalleeSavedRegisterGroup: Restores the group of registers described by the mask.
 //
 // Arguments:
-//   regsMask             - a mask of registers for epilog generation;
-//   spOffset             - the offset from SP that is the beginning of the callee-saved register area;
+//   regsMask      - a mask of registers for epilog generation;
+//   lastReg       - the last register of the regsMask from the highest bit.
+//   spDelta       - if non-zero, the amount to add to SP after the last register restore (or together with it);
+//   spOffset      - the offset from SP that is the highest of the callee-saved register area, lastReg's offset;
 //
-void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spOffset)
+void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, regNumber lastReg, int spDelta, int spOffset)
 {
-    const int slotSize = genGetSlotSizeForRegsInMask(regsMask);
+    assert(spDelta >= 0);
+    assert(spOffset >= 0);
+    assert((genIsValidIntReg(lastReg) && ((regsMask & ~RBM_INT_CALLEE_SAVED) == 0)) ||
+           (genIsValidFloatReg(lastReg) && ((regsMask & ~RBM_FLT_CALLEE_SAVED) == 0)));
 
-    ArrayStack<RegPair> regStack(compiler->getAllocator(CMK_Codegen));
-    genBuildRegPairsStack(regsMask, &regStack);
-
-    for (int i = 0; i < regStack.Height(); ++i)
+    int regNum = lastReg;
+    assert((sizeof(regsMask) * 8 - 1) == 63);
+    int64_t maskSaveRegs = (int64_t)(regsMask << (63 - regNum));
+    do
     {
-        RegPair regPair = regStack.Top(i);
-        if (regPair.reg2 != REG_NA)
+        if (maskSaveRegs < 0)
         {
-            spOffset -= 2 * slotSize;
-            genEpilogRestoreRegPair(regPair.reg1, regPair.reg2, spOffset, 0, regPair.useSaveNextPair, REG_IP1, nullptr);
+            int spDelta2 = 0;
+            // For example:  when pushed the `RBM_R20|RBM_R21|RBM_R22` within Prolog,
+            //    stp r20,r21, [sp, off]
+            //    str r22, [sp, off+16]
+            // We had to restore the `RBM_R20|RBM_R21|RBM_R22` within the Epilog,
+            //    ldr r22, [sp, off+16]
+            //    ldp r20,r21, [sp, off]
+            // should not
+            //    ldp r21,r22, [sp, off+8]
+            //    ldr r20, [sp, off]
+            // We can distinguish them whether it's consecutive even numbers.
+            unsigned oneCount = genLeadingZeroCount(~(uint64_t)maskSaveRegs);
+            if ((oneCount & 1) != 0)
+            {
+                // No register pair; we use a STR instruction.
+                spOffset -= REGSIZE_BYTES;
+                if (0 == (maskSaveRegs << 1))
+                {
+                    spDelta2 = spDelta;
+                }
+                genEpilogRestoreReg((regNumber)regNum, spOffset, spDelta2, REG_IP0, nullptr);
+            }
+            else
+            {
+                // We can use a STP instruction.
+                int regNum2 = regNum - 1;
+                maskSaveRegs <<= 1;
+                if (0 == (maskSaveRegs << 1))
+                {
+                    spDelta2 = spDelta;
+                }
+                bool useSaveNextPair = (spDelta2 == 0) && (((regsMask >> (regNum2 - 2)) & 0xf) == 0xf);
+                spOffset -= 2 * REGSIZE_BYTES;
+                genEpilogRestoreRegPair((regNumber)regNum2, (regNumber)regNum, spOffset, spDelta2, useSaveNextPair,
+                                        REG_IP0, nullptr);
+                regNum--;
+            }
         }
-        else
-        {
-            spOffset -= slotSize;
-            genEpilogRestoreReg(regPair.reg1, spOffset, 0, REG_IP1, nullptr);
-        }
-    }
+        maskSaveRegs <<= 1;
+        regNum--;
+    } while (maskSaveRegs != 0);
 }
 
 //------------------------------------------------------------------------
@@ -965,6 +905,8 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spOffse
 // Arguments:
 //    regsToRestoreMask       - The mask of callee-saved registers to restore. If empty, this function does nothing.
 //    lowestCalleeSavedOffset - The offset from SP that is the beginning of the callee-saved register area.
+//    spDelta                 - If non-zero, the amount to add to SP after the register restores (must be positive or
+//                              zero).
 //
 // Here's an example restore sequence:
 //      ldp     x27, x28, [sp,#96]
@@ -973,44 +915,72 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spOffse
 //      ldp     x21, x22, [sp,#48]
 //      ldp     x19, x20, [sp,#32]
 //
+// For the case of non-zero spDelta, we assume the base of the callee-save registers to restore is at SP, and
+// the last restore adjusts SP by the specified amount. For example:
+//      ldp     x27, x28, [sp,#64]
+//      ldp     x25, x26, [sp,#48]
+//      ldp     x23, x24, [sp,#32]
+//      ldp     x21, x22, [sp,#16]
+//      ldp     x19, x20, [sp], #80
+//
 // Note you call the unwind functions specifying the prolog operation that is being un-done. So, for example, when
 // generating a post-indexed load, you call the unwind function for specifying the corresponding preindexed store.
 //
 // Return Value:
 //    None.
-
-void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset)
+//
+void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask,
+                                                 int       lowestCalleeSavedOffset,
+                                                 int       spDelta /* =0 */)
 {
-    unsigned regsToRestoreCount = genCountBits(regsToRestoreMask);
-    if (regsToRestoreCount == 0)
+    assert(!(regsToRestoreMask & ~(RBM_CALLEE_SAVED | RBM_FP | RBM_LR)));
+    assert(spDelta >= 0);
+    assert((spDelta % 16) == 0);
+    if (regsToRestoreMask == 0)
     {
+        if (spDelta != 0)
+        {
+            // Currently this is the case for varargs only
+            // whose size is MAX_REG_ARG * REGSIZE_BYTES = 64 bytes.
+            genStackPointerAdjustment(spDelta, REG_NA, nullptr, /* reportUnwindData */ true);
+        }
         return;
     }
 
-    // We also can restore FP and LR, even though they are not in RBM_CALLEE_SAVED.
-    assert(regsToRestoreCount <= genCountBits(RBM_CALLEE_SAVED | RBM_FP | RBM_LR));
-
     // Point past the end, to start. We predecrement to find the offset to load from.
     static_assert_no_msg(REGSIZE_BYTES == FPSAVE_REGSIZE_BYTES);
-    int spOffset = lowestCalleeSavedOffset + regsToRestoreCount * REGSIZE_BYTES;
+    assert(lowestCalleeSavedOffset >= 0);
+    int spDelta2 = (regsToRestoreMask & RBM_CALLEE_SAVED) != 0 ? 0 : spDelta;
+    int spOffset = (genCountBits(regsToRestoreMask) * REGSIZE_BYTES) + lowestCalleeSavedOffset;
 
-    // Save integer registers at higher addresses than floating-point registers.
-
-    regMaskTP maskRestoreRegsFloat = regsToRestoreMask & RBM_ALLFLOAT;
-    regMaskTP maskRestoreRegsInt   = regsToRestoreMask & ~maskRestoreRegsFloat;
-
-    // Restore in the opposite order of saving.
-
-    if (maskRestoreRegsInt != RBM_NONE)
+    uint64_t maskSaveRegs = (regsToRestoreMask & (RBM_FP | RBM_LR)) >> REG_FP;
+    // not include FP/LR or save both FP/LR or only LR.
+    assert((maskSaveRegs == 0) || (maskSaveRegs == 3) || (maskSaveRegs == 2));
+    if (maskSaveRegs == 3)
     {
-        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsInt, spOffset);
-        spOffset -= genCountBits(maskRestoreRegsInt) * REGSIZE_BYTES;
+        spOffset -= 2 * REGSIZE_BYTES;
+        genEpilogRestoreRegPair(REG_FP, REG_LR, spOffset, spDelta2, false, REG_IP0, nullptr);
+    }
+    else if (maskSaveRegs == 2)
+    {
+        spOffset -= REGSIZE_BYTES;
+        genEpilogRestoreReg(REG_LR, spOffset, spDelta2, REG_IP0, nullptr);
     }
 
-    if (maskRestoreRegsFloat != RBM_NONE)
+    maskSaveRegs = (uint64_t)(regsToRestoreMask & RBM_INT_CALLEE_SAVED);
+    if (maskSaveRegs != 0)
     {
-        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsFloat, spOffset);
+        spDelta2 = (regsToRestoreMask & RBM_FLT_CALLEE_SAVED) != 0 ? 0 : spDelta;
+        genRestoreCalleeSavedRegisterGroup((regMaskTP)maskSaveRegs, LAST_INT_CALLEE_SAVED, spDelta2, spOffset);
+        spOffset -= (int)genCountBits(maskSaveRegs) * REGSIZE_BYTES;
     }
+
+    maskSaveRegs = (uint64_t)(regsToRestoreMask & RBM_FLT_CALLEE_SAVED);
+    if (maskSaveRegs != 0)
+    {
+        genRestoreCalleeSavedRegisterGroup((regMaskTP)maskSaveRegs, LAST_FLT_CALLEE_SAVED, spDelta, spOffset);
+    }
+    assert((spOffset - (int)genCountBits(maskSaveRegs) * REGSIZE_BYTES) == lowestCalleeSavedOffset);
 }
 
 // clang-format off

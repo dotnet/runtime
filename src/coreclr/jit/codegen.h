@@ -302,36 +302,8 @@ protected:
     void genPrologSaveReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero);
     void genEpilogRestoreReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero);
 
-    // A simple struct to keep register pairs for prolog and epilog.
-    struct RegPair
-    {
-        regNumber reg1;
-        regNumber reg2;
-        bool      useSaveNextPair;
-
-        RegPair(regNumber reg1)
-            : reg1(reg1)
-            , reg2(REG_NA)
-            , useSaveNextPair(false)
-        {
-        }
-
-        RegPair(regNumber reg1, regNumber reg2)
-            : reg1(reg1)
-            , reg2(reg2)
-            , useSaveNextPair(false)
-        {
-            assert(reg2 == REG_NEXT(reg1));
-        }
-    };
-
-    static void genBuildRegPairsStack(regMaskTP regsMask, ArrayStack<RegPair>* regStack);
-    static void genSetUseSaveNextPairs(ArrayStack<RegPair>* regStack);
-
-    static int genGetSlotSizeForRegsInMask(regMaskTP regsMask);
-
-    void genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spOffset);
-    void genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spOffset);
+    void genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, regNumber firstReg, int spDelta, int spOffset);
+    void genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, regNumber lastReg, int spDelta, int spOffset);
 #endif // TARGET_ARM64
 
     bool genInstrWithConstant(instruction ins,
@@ -344,8 +316,8 @@ protected:
 
     void genStackPointerAdjustment(ssize_t spAdjustment, regNumber tmpReg, bool* pTmpRegIsZero, bool reportUnwindData);
 
-    void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset);
-    void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset);
+    void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta = 0);
+    void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta = 0);
 
     void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed);
 

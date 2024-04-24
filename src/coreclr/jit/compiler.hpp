@@ -157,6 +157,17 @@ inline unsigned genCountBits(uint32_t bits)
     return BitOperations::PopCount(bits);
 }
 
+// genLeadingZeroCount: Count the number of leading zero bits in a mask.
+inline unsigned genLeadingZeroCount(uint32_t bits)
+{
+    return BitOperations::LeadingZeroCount(bits);
+}
+
+inline unsigned genLeadingZeroCount(uint64_t bits)
+{
+    return BitOperations::LeadingZeroCount(bits);
+}
+
 /*****************************************************************************
  *
  *  Given 3 masks value, end, start, returns the bits of value between start

@@ -198,8 +198,11 @@ void CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg, bool*
 // Notes:
 //    The save set can not contain FP/RA in which case FP/RA is saved along with the other callee-saved registers.
 //
-void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset)
+void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask,
+                                              int       lowestCalleeSavedOffset,
+                                              int       spDelta /* =0 */)
 {
+    assert(spDelta == 0);
     if (regsToSaveMask == 0)
     {
         return;
@@ -262,8 +265,11 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
 // Return Value:
 //    None.
 
-void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset)
+void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask,
+                                                 int       lowestCalleeSavedOffset,
+                                                 int       spDelta /* =0 */)
 {
+    assert(spDelta == 0);
     // The FP and RA are not in RBM_CALLEE_SAVED.
     assert(!(regsToRestoreMask & (~RBM_CALLEE_SAVED)));
     if (regsToRestoreMask == 0)
@@ -275,7 +281,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
     assert(highestCalleeSavedOffset >= 16);
 
     emitter* emit         = GetEmitter();
-    long     maskSaveRegs = (long)(regsToRestoreMask & RBM_FLT_CALLEE_SAVED) << (63 - LAST_FLT_CALLEE_SAVED);
+    int64_t  maskSaveRegs = (int64_t)(regsToRestoreMask & RBM_FLT_CALLEE_SAVED) << (63 - LAST_FLT_CALLEE_SAVED);
     int      regNum       = LAST_FLT_CALLEE_SAVED;
     do
     {
@@ -289,7 +295,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
         regNum -= 1;
     } while (maskSaveRegs != 0);
 
-    maskSaveRegs = (long)((regsToRestoreMask & RBM_INT_CALLEE_SAVED) << (63 - LAST_INT_CALLEE_SAVED));
+    maskSaveRegs = (int64_t)((regsToRestoreMask & RBM_INT_CALLEE_SAVED) << (63 - LAST_INT_CALLEE_SAVED));
     regNum       = LAST_INT_CALLEE_SAVED;
     do
     {
