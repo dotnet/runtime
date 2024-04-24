@@ -1613,10 +1613,14 @@ namespace System.Diagnostics.Tests
             Assert.True(ReferenceEquals(activity, activity.AddLink(l1)));
             Assert.True(ReferenceEquals(activity, activity.AddLink(l2)));
 
+            // Add a duplicate of l1. The implementation doesn't check for duplicates.
+            Assert.True(ReferenceEquals(activity, activity.AddLink(l1)));
+
             ActivityLink[] links = activity.Links.ToArray();
-            Assert.Equal(2, links.Length);
+            Assert.Equal(3, links.Length);
             Assert.Equal(c1, links[0].Context);
             Assert.Equal(c2, links[1].Context);
+            Assert.Equal(c1, links[2].Context);
             KeyValuePair<string, object> tag = links[1].Tags.Single();
             Assert.Equal("foo", tag.Key);
             Assert.Equal(99, tag.Value);
@@ -2188,12 +2192,14 @@ namespace System.Diagnostics.Tests
 
             var context1 = new ActivityContext(ActivityTraceId.CreateRandom(), default, ActivityTraceFlags.None);
             var context2 = new ActivityContext(ActivityTraceId.CreateRandom(), default, ActivityTraceFlags.None);
+            var context3 = new ActivityContext(ActivityTraceId.CreateRandom(), default, ActivityTraceFlags.None);
 
             a = source.CreateActivity(
                 name: "Root",
                 kind: ActivityKind.Internal,
                 parentContext: default,
                 links: new[] { new ActivityLink(context1), new ActivityLink(context2) });
+            a.AddLink(new ActivityLink(context3));
 
             Assert.NotNull(a);
 
@@ -2206,6 +2212,9 @@ namespace System.Diagnostics.Tests
             values.Add(enumerator.Current);
             Assert.True(enumerator.MoveNext());
             Assert.Equal(context2.TraceId, enumerator.Current.Context.TraceId);
+            values.Add(enumerator.Current);
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(context3.TraceId, enumerator.Current.Context.TraceId);
             values.Add(enumerator.Current);
             Assert.False(enumerator.MoveNext());
 
