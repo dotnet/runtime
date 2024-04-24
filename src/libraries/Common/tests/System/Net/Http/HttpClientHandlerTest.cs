@@ -6,6 +6,9 @@ using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
 using System.Net.Sockets;
+#if !NETFRAMEWORK
+using System.Net.Quic;
+#endif
 using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography;
@@ -1396,6 +1399,12 @@ namespace System.Net.Http.Functional.Tests
                         await connection.SendResponseAsync(HttpStatusCode.OK, headers: new HttpHeaderData[] { new HttpHeaderData("Transfer-Encoding", "chunked") }, isFinal: false);
                         await connection.SendResponseBodyAsync("1\r\nh\r\n", false);
                     }
+#if !NETFRAMEWORK
+                    catch (QuicException ex) when (ex.ApplicationErrorCode == 0x10c /*H3_REQUEST_CANCELLED*/)
+                    {
+                        // The request was cancelled before we sent the body, ignore
+                    }
+#endif
                     catch (IOException ex)
                     {
                         // when testing in the browser, we are using the WebSocket for the loopback
