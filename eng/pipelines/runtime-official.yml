@@ -641,15 +641,9 @@ extends:
             - Build_tvossimulator_arm64_release_Mono
             - Build_tvossimulator_x64_release_Mono
             - Build_windows_x64_release_CrossAOT_Mono
-<<<<<<< HEAD
-            - installer__coreclr__windows_x64_Release_
-            - installer__coreclr__windows_x86_Release_
-            - installer__coreclr__windows_arm64_Release_
-=======
             - Build_windows_x64_release_CoreCLR
             - Build_windows_x86_release_CoreCLR
             - Build_windows_arm64_release_CoreCLR
->>>>>>> dc203909b6e (Merge CoreCLR-based official builds legs into one leg per platform (#92901))
 
     - ${{ if eq(variables.isOfficialBuild, true) }}:
       - template: /eng/pipelines/official/stages/publish.yml
