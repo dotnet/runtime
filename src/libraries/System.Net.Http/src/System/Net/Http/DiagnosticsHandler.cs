@@ -58,14 +58,14 @@ namespace System.Net.Http
             Activity? activity = null;
             if (s_activitySource.HasListeners())
             {
-                activity = s_activitySource.CreateActivity(DiagnosticsHandlerLoggingStrings.ActivityName, ActivityKind.Client);
+                activity = s_activitySource.CreateActivity(DiagnosticsHandlerLoggingStrings.RequestActivityName, ActivityKind.Client);
             }
 
             if (activity is null)
             {
-                if (Activity.Current is not null || s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName, requestMessage))
+                if (Activity.Current is not null || s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.RequestActivityName, requestMessage))
                 {
-                    activity = new Activity(DiagnosticsHandlerLoggingStrings.ActivityName);
+                    activity = new Activity(DiagnosticsHandlerLoggingStrings.RequestActivityName);
                 }
             }
 
@@ -117,9 +117,9 @@ namespace System.Net.Http
                 activity.Start();
 
                 // Only send start event to users who subscribed for it.
-                if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityStartName))
+                if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.RequestActivityStartName))
                 {
-                    Write(diagnosticListener, DiagnosticsHandlerLoggingStrings.ActivityStartName, new ActivityStartData(request));
+                    Write(diagnosticListener, DiagnosticsHandlerLoggingStrings.RequestActivityStartName, new ActivityStartData(request));
                 }
             }
 
@@ -177,9 +177,9 @@ namespace System.Net.Http
                     activity.SetEndTime(DateTime.UtcNow);
 
                     // Only send stop event to users who subscribed for it.
-                    if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityStopName))
+                    if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.RequestActivityStopName))
                     {
-                        Write(diagnosticListener, DiagnosticsHandlerLoggingStrings.ActivityStopName, new ActivityStopData(response, request, taskStatus));
+                        Write(diagnosticListener, DiagnosticsHandlerLoggingStrings.RequestActivityStopName, new ActivityStopData(response, request, taskStatus));
                     }
 
                     activity.Stop();

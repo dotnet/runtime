@@ -13,8 +13,8 @@ namespace System.Net.Http
         public const string RequestWriteNameDeprecated     = Namespace + ".Request";
         public const string ResponseWriteNameDeprecated    = Namespace + ".Response";
         public const string ExceptionEventName             = Namespace + ".Exception";
-        public const string ActivityName                   = Namespace + ".HttpRequestOut";
-        public const string ActivityStartName              = ActivityName + ".Start";
-        public const string ActivityStopName               = ActivityName + ".Stop";
+        public const string RequestActivityName            = Namespace + ".HttpRequestOut";
+        public const string RequestActivityStartName       = RequestActivityName + ".Start";
+        public const string RequestActivityStopName        = RequestActivityName + ".Stop";
     }
 }
