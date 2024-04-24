@@ -696,14 +696,15 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
 // VisitRegularSuccs: Visit regular successors of this block.
 //
 // Arguments:
-//   comp  - Compiler instance
-//   func  - Callback
+//   comp       - Compiler instance
+//   func       - Callback
+//   useProfile - If true, determines the order of successors visited using profile data
 //
 // Returns:
 //   Whether or not the visiting was aborted.
 //
 template <typename TFunc>
-BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func, const bool useProfile)
+BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func, const bool useProfile /* = false */)
 {
     switch (bbKind)
     {
@@ -723,6 +724,7 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func, const 
         case BBJ_CALLFINALLY:
             if (useProfile)
             {
+                // Don't visit EH successor if using profile data for block reordering.
                 return isBBCallFinallyPair() ? func(Next()) : BasicBlockVisit::Continue;
             }
             
@@ -4757,9 +4759,11 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
 // fgRunDfs: Run DFS over the flow graph.
 //
 // Type parameters:
-//   VisitPreorder  - Functor type that takes a BasicBlock* and its preorder number
-//   VisitPostorder - Functor type that takes a BasicBlock* and its postorder number
-//   VisitEdge      - Functor type that takes two BasicBlock*.
+//   VisitPreorder       - Functor type that takes a BasicBlock* and its preorder number
+//   VisitPostorder      - Functor type that takes a BasicBlock* and its postorder number
+//   VisitEdge           - Functor type that takes two BasicBlock*.
+//   SuccessorEnumerator - Enumerator type for controlling which successors are visited
+//   useProfile          - If true, determines order of successors visited using profile data
 //
 // Parameters:
 //   visitPreorder  - Functor to visit block in its preorder
@@ -4770,7 +4774,7 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
 // Returns:
 //   Number of blocks visited.
 //
-template <typename VisitPreorder, typename VisitPostorder, typename VisitEdge, typename SuccessorEnumerator, const bool useProfile>
+template <typename VisitPreorder, typename VisitPostorder, typename VisitEdge, typename SuccessorEnumerator /* = AllSuccessorEnumerator */, const bool useProfile /* = false */>
 unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPostorder, VisitEdge visitEdge)
 {
     BitVecTraits traits(fgBBNumMax + 1, this);

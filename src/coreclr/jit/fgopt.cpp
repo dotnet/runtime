@@ -3399,234 +3399,11 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 
     if (useProfile)
     {
-        FlowGraphDfsTree* const dfsTree = fgComputeDfs<true, true>();
-
-        for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
+        if (JitConfig.JitDoReversePostOrderLayout())
         {
-            BasicBlock* const block = dfsTree->GetPostOrder(i);
-            BasicBlock* const blockToMove = dfsTree->GetPostOrder(i - 1);
-            fgUnlinkBlock(blockToMove);
-            fgInsertBBafter(block, blockToMove);
+            fgDoReversePostOrderLayout();
+            return true;
         }
-
-        if (verbose)
-        {
-            fgDispBasicBlocks();
-        }
-
-        if (compHndBBtabCount != 0)
-        {
-            BasicBlock** const tryRegionExits = new (this, CMK_Generic) BasicBlock*[compHndBBtabCount]{};
-            for (BasicBlock* block = fgFirstBB; block != fgFirstFuncletBB;)
-            {
-                BasicBlock* const next = block->Next();
-
-                if (block->hasTryIndex())
-                {
-                    const unsigned tryIndex = block->getTryIndex();
-
-                    if (!bbIsTryBeg(block))
-                    {
-                        fgUnlinkBlock(block);
-                        fgInsertBBafter(tryRegionExits[tryIndex], block);
-                    }
-
-                    tryRegionExits[tryIndex] = block;
-                }
-
-                block = next;
-            }
-
-            if (verbose)
-            {
-                fgDispBasicBlocks();
-            }
-
-            for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
-            {
-                BasicBlock* const block = dfsTree->GetPostOrder(i);
-                BasicBlock* const blockToMove = dfsTree->GetPostOrder(i - 1);
-
-                if (bbIsTryBeg(blockToMove))
-                {
-                    const unsigned tryIndex = blockToMove->getTryIndex();
-                    
-                    if (block->hasTryIndex() && (block->getTryIndex() < tryIndex))
-                    {
-                        continue;
-                    }
-
-                    fgUnlinkRange(blockToMove, tryRegionExits[tryIndex]);
-                    fgMoveBlocksAfter(blockToMove, tryRegionExits[tryIndex], block);
-                }
-            }
-
-            for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
-            {
-                BasicBlock* const tryExit = tryRegionExits[XTnum];
-
-                if (tryExit == nullptr)
-                {
-                    continue;
-                }
-
-                EHblkDsc* const ehDsc = ehGetDsc(XTnum);
-                const unsigned enclosingTryIndex = ehDsc->ebdEnclosingTryIndex;
-                ehDsc->ebdTryLast = tryExit;
-
-                if (enclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
-                {
-                    BasicBlock* const enclosingTryExit = tryRegionExits[enclosingTryIndex];
-                    BasicBlock* const tryEntryPrev = ehDsc->ebdTryBeg->Prev();
-                    const unsigned predTryIndex = ((tryEntryPrev != nullptr) && tryEntryPrev->hasTryIndex()) ? tryEntryPrev->getTryIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
-
-                    if ((enclosingTryExit == nullptr) || enclosingTryExit->NextIs(ehDsc->ebdTryBeg))
-                    {
-                        tryRegionExits[enclosingTryIndex] = tryExit;
-                    }
-                    else if (predTryIndex != enclosingTryIndex)
-                    {
-                        assert(enclosingTryExit != nullptr);
-                        fgUnlinkRange(ehDsc->ebdTryBeg, ehDsc->ebdTryLast);
-                        fgMoveBlocksAfter(ehDsc->ebdTryBeg, ehDsc->ebdTryLast, enclosingTryExit);
-                        tryRegionExits[enclosingTryIndex] = tryExit;
-                    }
-                }
-            }
-
-            if (verbose)
-            {
-                fgDispBasicBlocks();
-            }
-        }
-
-        assert(fgFirstBB->IsFirst());
-        assert(fgLastBB->IsLast());
-        return true;
-
-        // const auto TryMoveForward = [this, ordinal](FlowEdge* const edge)
-        // {
-        //     assert(edge != nullptr);
-        //     BasicBlock* fixed = edge->getSourceBlock();
-        //     BasicBlock* moving = edge->getDestinationBlock();
-
-        //     if (fixed->NextIs(moving))
-        //     {
-        //         return true;
-        //     }
-
-        //     if (moving->IsLast())
-        //     {
-        //         return false;
-        //     }
-
-        //     const unsigned fixedOrdinal = ordinal[fixed->bbNum];
-        //     const unsigned movingOrdinal = ordinal[moving->bbNum];
-        //     if (movingOrdinal < fixedOrdinal)
-        //     {
-        //         return false;
-        //     }
-
-        //     unsigned ordinalInUse = fixedOrdinal + 1;
-        //     ordinal[moving->bbNum] = ordinalInUse;
-        //     fgUnlinkBlock(moving);
-        //     fgInsertBBafter(fixed, moving);
-
-        //     BasicBlock* blockToCheck = moving->Next();
-        //     while ((blockToCheck != nullptr) && (ordinalInUse == ordinal[blockToCheck->bbNum]))
-        //     {
-        //         ordinalInUse++;
-        //         ordinal[blockToCheck->bbNum] = ordinalInUse;
-        //         blockToCheck = blockToCheck->Next();
-        //     }
-
-        //     return true;
-        // };
-
-        // for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
-        // {
-        //     for (FlowEdge* const pred : block->PredEdges())
-        //     {
-        //         edges.remove(pred);
-        //     }
-
-        //     if (block->IsFirst() || block->IsLast())
-        //     {
-        //         continue;
-        //     }
-
-        //     unsigned numForwardEdges = 0;
-        //     FlowEdge* forwardEdges[2];
-        //     for (FlowEdge* const succEdge : block->SuccEdges())
-        //     {
-        //         if (ordinal[block->bbNum] < ordinal[succEdge->getDestinationBlock()->bbNum])
-        //         {
-        //             numForwardEdges++;
-        //             forwardEdges[min((unsigned)0, numForwardEdges)] = succEdge;
-        //         }
-        //     }
-
-        //     bool wasMoved = false;
-        //     bool considerPending = false;
-
-        //     switch (numForwardEdges)
-        //     {
-        //     case 1:
-        //         wasMoved = TryMoveForward(forwardEdges[0]);
-        //         break;
-
-        //     case 2:
-        //     {
-        //         considerPending = false;
-        //         const bool firstEdgeLikely = forwardEdges[0]->getLikelihood() > forwardEdges[1]->getLikelihood();
-        //         wasMoved = firstEdgeLikely ? TryMoveForward(forwardEdges[0]) : TryMoveForward(forwardEdges[1]);
-
-        //         if (!wasMoved)
-        //         {
-        //             wasMoved = firstEdgeLikely ? TryMoveForward(forwardEdges[1]) : TryMoveForward(forwardEdges[0]);
-        //         }
-
-        //         if (!block->NextIs(forwardEdges[0]->getDestinationBlock()))
-        //         {
-        //             edges.push_back(forwardEdges[0]);
-        //         }
-
-        //         if (!block->NextIs(forwardEdges[1]->getDestinationBlock()))
-        //         {
-        //             edges.push_back(forwardEdges[1]);
-        //         }
-        //         break;
-        //     }
-
-        //     default:
-        //         // This is an n-ary branch, or we don't have any forward edges. Don't bother.
-        //         continue;
-        //     }
-
-        //     if (wasMoved)
-        //     {
-        //         continue;
-        //     }
-
-        //     if (!considerPending)
-        //     {
-        //         continue;
-        //     }
-
-        //     while (!edges.empty())
-        //     {
-        //         FlowEdge* const edge = edges.back();
-        //         edges.pop_back();
-
-        //         assert(ordinal[edge->getSourceBlock()->bbNum] < ordinal[block->bbNum]);
-        //         assert(ordinal[edge->getDestinationBlock()->bbNum] > ordinal[block->bbNum]);
-
-        //         if (TryMoveForward(edge))
-        //         {
-        //             break;
-        //         }
-        //     }
-        // }
 
         // We will be reordering blocks, so ensure the false target of a BBJ_COND block is its next block
         for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
@@ -4746,6 +4523,172 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
+
+//-----------------------------------------------------------------------------
+// fgDoReversePostOrderLayout: Reorder blocks using a greedy RPO of the method's
+//   main body (i.e. non-EH) successors.
+//
+// Notes:
+//   This will not reorder blocks within handler regions.
+//
+void Compiler::fgDoReversePostOrderLayout()
+{
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In fgDoReversePostOrderLayout()\n");
+
+        printf("\nInitial BasicBlocks");
+        fgDispBasicBlocks(verboseTrees);
+        printf("\n");
+    }
+#endif // DEBUG
+
+    // Compute DFS of main function body's blocks, using profile data to determine the order successors are visited in
+    //
+    FlowGraphDfsTree* const dfsTree = fgComputeDfs</* skipEH */ true, /* useProfile */ true>();
+
+    for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
+    {
+        BasicBlock* const block = dfsTree->GetPostOrder(i);
+        BasicBlock* const blockToMove = dfsTree->GetPostOrder(i - 1);
+        fgUnlinkBlock(blockToMove);
+        fgInsertBBafter(block, blockToMove);
+    }
+
+    if (compHndBBtabCount == 0)
+    {
+        // No try regions to fix
+        //
+        return;
+    }
+
+    // The RPO-based layout above can make try regions non-contiguous.
+    // We will fix this by placing each try region's blocks adjacent to one another,
+    // and then re-inserting each try region based on the RPO.
+    //
+
+    // First, re-establish contiguousness of try regions
+    // (tryRegionEnds tracks the last block visited in each try region)
+    //
+    BasicBlock** const tryRegionEnds = new (this, CMK_Generic) BasicBlock*[compHndBBtabCount]{};
+    for (BasicBlock* block = fgFirstBB; block != fgFirstFuncletBB;)
+    {
+        BasicBlock* const next = block->Next();
+
+        if (block->hasTryIndex())
+        {
+            const unsigned tryIndex = block->getTryIndex();
+
+            if (tryRegionEnds[tryIndex] != nullptr)
+            {
+                fgUnlinkBlock(block);
+                fgInsertBBafter(tryRegionEnds[tryIndex], block);
+            }
+
+            tryRegionEnds[tryIndex] = block;
+        }
+
+        block = next;
+    }
+
+    // Move each contiguous try region based on the RPO
+    //
+    for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
+    {
+        BasicBlock* const block = dfsTree->GetPostOrder(i);
+        BasicBlock* const blockToMove = dfsTree->GetPostOrder(i - 1);
+
+        if (bbIsTryBeg(blockToMove))
+        {
+            const unsigned tryIndex = blockToMove->getTryIndex();
+            
+            // The candidate predecessor block is in a try region
+            //
+            if (block->hasTryIndex())
+            {
+                const unsigned predTryIndex = block->getTryIndex();
+
+                // We can reach blockToMove's try region from block's try region, but they aren't nested regions,
+                // and we aren't jumping from the end of block's try region, so don't move blockToMove
+                //
+                if ((predTryIndex != ehGetDsc(tryIndex)->ebdEnclosingTryIndex) && (block != tryRegionEnds[predTryIndex]))
+                {
+                    continue;
+                }
+            }
+
+            fgUnlinkRange(blockToMove, tryRegionEnds[tryIndex]);
+            fgMoveBlocksAfter(blockToMove, tryRegionEnds[tryIndex], block);
+        }
+    }
+
+    // Update the EH descriptors
+    //
+    for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+    {
+        BasicBlock* const tryExit = tryRegionEnds[XTnum];
+
+        // We can have multiple EH descriptors map to the same try region,
+        // but we will only update the try region's last block pointer at the index given by BasicBlock::getTryIndex,
+        // so the duplicate EH descriptors' last block pointers can be null.
+        // Tolerate this.
+        //
+        if (tryExit == nullptr)
+        {
+            continue;
+        }
+
+        // Update the end pointer of this try region to the new last block
+        EHblkDsc* const ehDsc = ehGetDsc(XTnum);
+        const unsigned enclosingTryIndex = ehDsc->ebdEnclosingTryIndex;
+        ehDsc->ebdTryLast = tryExit;
+
+        // If this try region is nested in another one, we might need to update its enclosing region's end block
+        //
+        if (enclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
+        {
+            BasicBlock* const enclosingTryExit = tryRegionEnds[enclosingTryIndex];
+
+            // If multiple EH descriptors map to the same try region,
+            // then the enclosing region's last block might be null, so set it here.
+            // Similarly, if the enclosing region ends right before the nested region begins,
+            // extend the enclosing region's last block to the end of the nested region.
+            //
+            if ((enclosingTryExit == nullptr) || enclosingTryExit->NextIs(ehDsc->ebdTryBeg))
+            {
+                tryRegionEnds[enclosingTryIndex] = tryExit;
+                continue;
+            }
+            
+            // This try region has a unique enclosing region,
+            // so this region cannot possibly be at the beginning of the method
+            //
+            assert(!ehDsc->ebdTryBeg->IsFirst());
+            BasicBlock* const tryEntryPrev = ehDsc->ebdTryBeg->Prev();
+            const unsigned predTryIndex = tryEntryPrev->hasTryIndex() ? tryEntryPrev->getTryIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
+            
+            if (predTryIndex != enclosingTryIndex)
+            {
+                // We can visit the end of the enclosing try region before visiting this try region,
+                // thus placing this region outside of its enclosing region.
+                // Fix this by moving this region to the end of the enclosing region.
+                //
+                assert(enclosingTryExit != nullptr);
+                fgUnlinkRange(ehDsc->ebdTryBeg, ehDsc->ebdTryLast);
+                fgMoveBlocksAfter(ehDsc->ebdTryBeg, ehDsc->ebdTryLast, enclosingTryExit);
+                tryRegionEnds[enclosingTryIndex] = tryExit;
+            }
+        }
+    }
+
+#ifdef DEBUG
+    if (expensiveDebugCheckLevel >= 2)
+    {
+        fgDebugCheckBBlist();
+    }
+#endif // DEBUG
+}
 
 //-------------------------------------------------------------
 // fgUpdateFlowGraphPhase: run flow graph optimization as a

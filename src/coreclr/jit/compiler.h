@@ -6047,6 +6047,7 @@ public:
     bool fgComputeCalledCount(weight_t returnWeight);
 
     bool fgReorderBlocks(bool useProfile);
+    void fgDoReversePostOrderLayout();
 
     bool fgFuncletsAreCold();
 

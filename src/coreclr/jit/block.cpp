@@ -137,10 +137,11 @@ void FlowEdge::addLikelihood(weight_t addedLikelihood)
 //  AllSuccessorEnumerator: Construct an instance of the enumerator.
 //
 //  Arguments:
-//     comp  - Compiler instance
-//     block - The block whose successors are to be iterated
+//     comp       - Compiler instance
+//     block      - The block whose successors are to be iterated
+//     useProfile - Unused; this is needed to match RegularSuccessorEnumerator's parameter list
 //
-AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block, const bool useProfile)
+AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block, const bool useProfile /* = false */)
     : m_block(block)
 {
     m_numSuccs = 0;
@@ -173,8 +174,9 @@ AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block
 //  RegularSuccessorEnumerator: Construct an instance of the enumerator.
 //
 //  Arguments:
-//     comp  - Compiler instance
-//     block - The block whose successors are to be iterated
+//     comp       - Compiler instance
+//     block      - The block whose successors are to be iterated
+//     useProfile - If true, determines the order of successors visited using profile data
 //
 RegularSuccessorEnumerator::RegularSuccessorEnumerator(Compiler* comp, BasicBlock* block, const bool useProfile)
     : m_block(block)
