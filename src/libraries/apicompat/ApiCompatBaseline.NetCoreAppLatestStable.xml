@@ -469,6 +469,7 @@
     <Left>net8.0/System.dll</Left>
     <Right>net9.0/System.dll</Right>
   </Suppression>
+  <!-- Uncomment when picking up the latest APICompat with https://github.com/dotnet/sdk/pull/40230
   <Suppression>
     <DiagnosticId>CP0021</DiagnosticId>
     <Target>M:System.Enum.TryFormat``1(``0,System.Span{System.Char},System.Int32@,System.ReadOnlySpan{System.Char})``0:System.Enum</Target>
@@ -546,5 +547,5 @@
     <Target>T:System.Text.Json.Serialization.JsonNumberEnumConverter`1``0:System.Enum</Target>
     <Left>net8.0/System.Text.Json.dll</Left>
     <Right>net9.0/System.Text.Json.dll</Right>
-  </Suppression>
+  </Suppression> -->
 </Suppressions>

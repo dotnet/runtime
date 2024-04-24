@@ -877,6 +877,7 @@
     <Left>netstandard2.1/netstandard.dll</Left>
     <Right>net9.0/netstandard.dll</Right>
   </Suppression>
+  <!-- Uncomment when picking up the latest APICompat with https://github.com/dotnet/sdk/pull/40230
   <Suppression>
     <DiagnosticId>CP0021</DiagnosticId>
     <Target>M:System.Linq.Enumerable.ToDictionary``2(System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IEqualityComparer{``1})``1:notnull</Target>
@@ -1002,5 +1003,5 @@
     <Target>T:System.Tuple`8``7:notnull</Target>
     <Left>netstandard2.1/netstandard.dll</Left>
     <Right>net9.0/netstandard.dll</Right>
-  </Suppression>
+  </Suppression> -->
 </Suppressions>
