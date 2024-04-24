@@ -202,6 +202,7 @@
       <CMakeBuildRuntimeConfigureCmd>cmake $(MSBuildThisFileDirectory)runtime</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(OS)' == 'Windows_NT'">cmake -G Ninja $(MSBuildThisFileDirectory)runtime</CMakeBuildRuntimeConfigureCmd>
 
+      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCMAKE_TOOLCHAIN_FILE=&quot;$([MSBuild]::NormalizePath('$(WASI_SDK_PATH)', 'share/wasi-sysroot/cmake/wasi-sdk.cmake').TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DWASI_SDK_PREFIX=$(WASI_SDK_PATH)</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCMAKE_SYSROOT=$(WASI_SDK_PATH)share/wasi-sysroot</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCMAKE_CXX_FLAGS="--sysroot=$(WASI_SDK_PATH)share/wasi-sysroot"</CMakeBuildRuntimeConfigureCmd>
