@@ -665,6 +665,96 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe ulong Count8BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => Count8BitElements(pattern);
 
 
+        ///  CreateFalseMaskByte : Set all predicate elements to false
+
+        /// <summary>
+        /// svbool_t svpfalse[_b]()
+        ///   PFALSE Presult.B
+        /// </summary>
+        public static unsafe Vector<byte> CreateFalseMaskByte() => CreateFalseMaskByte();
+
+
+        ///  CreateFalseMaskDouble : Set all predicate elements to false
+
+        /// <summary>
+        /// svbool_t svpfalse[_b]()
+        ///   PFALSE Presult.B
+        /// </summary>
+        public static unsafe Vector<double> CreateFalseMaskDouble() => CreateFalseMaskDouble();
+
+
+        ///  CreateFalseMaskInt16 : Set all predicate elements to false
+
+        /// <summary>
+        /// svbool_t svpfalse[_b]()
+        ///   PFALSE Presult.B
+        /// </summary>
+        public static unsafe Vector<short> CreateFalseMaskInt16() => CreateFalseMaskInt16();
+
+
+        ///  CreateFalseMaskInt32 : Set all predicate elements to false
+
+        /// <summary>
+        /// svbool_t svpfalse[_b]()
+        ///   PFALSE Presult.B
+        /// </summary>
+        public static unsafe Vector<int> CreateFalseMaskInt32() => CreateFalseMaskInt32();
+
+
+        ///  CreateFalseMaskInt64 : Set all predicate elements to false
+
+        /// <summary>
+        /// svbool_t svpfalse[_b]()
+        ///   PFALSE Presult.B
+        /// </summary>
+        public static unsafe Vector<long> CreateFalseMaskInt64() => CreateFalseMaskInt64();
+
+
+        ///  CreateFalseMaskSByte : Set all predicate elements to false
+
+        /// <summary>
+        /// svbool_t svpfalse[_b]()
+        ///   PFALSE Presult.B
+        /// </summary>
+        public static unsafe Vector<sbyte> CreateFalseMaskSByte() => CreateFalseMaskSByte();
+
+
+        ///  CreateFalseMaskSingle : Set all predicate elements to false
+
+        /// <summary>
+        /// svbool_t svpfalse[_b]()
+        ///   PFALSE Presult.B
+        /// </summary>
+        public static unsafe Vector<float> CreateFalseMaskSingle() => CreateFalseMaskSingle();
+
+
+        ///  CreateFalseMaskUInt16 : Set all predicate elements to false
+
+        /// <summary>
+        /// svbool_t svpfalse[_b]()
+        ///   PFALSE Presult.B
+        /// </summary>
+        public static unsafe Vector<ushort> CreateFalseMaskUInt16() => CreateFalseMaskUInt16();
+
+
+        ///  CreateFalseMaskUInt32 : Set all predicate elements to false
+
+        /// <summary>
+        /// svbool_t svpfalse[_b]()
+        ///   PFALSE Presult.B
+        /// </summary>
+        public static unsafe Vector<uint> CreateFalseMaskUInt32() => CreateFalseMaskUInt32();
+
+
+        ///  CreateFalseMaskUInt64 : Set all predicate elements to false
+
+        /// <summary>
+        /// svbool_t svpfalse[_b]()
+        ///   PFALSE Presult.B
+        /// </summary>
+        public static unsafe Vector<ulong> CreateFalseMaskUInt64() => CreateFalseMaskUInt64();
+
+
         ///  CreateTrueMaskByte : Set predicate elements to true
 
         /// <summary>

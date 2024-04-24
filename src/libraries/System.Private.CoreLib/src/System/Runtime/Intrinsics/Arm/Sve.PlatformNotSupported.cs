@@ -608,6 +608,96 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe ulong Count8BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
 
 
+        ///  CreateFalseMaskByte : Set all predicate elements to false
+
+        /// <summary>
+        /// svbool_t svpfalse[_b]()
+        ///   PFALSE Presult.B
+        /// </summary>
+        public static unsafe Vector<byte> CreateFalseMaskByte() { throw new PlatformNotSupportedException(); }
+
+
+        ///  CreateFalseMaskDouble : Set all predicate elements to false
+
+        /// <summary>
+        /// svbool_t svpfalse[_b]()
+        ///   PFALSE Presult.B
+        /// </summary>
+        public static unsafe Vector<double> CreateFalseMaskDouble() { throw new PlatformNotSupportedException(); }
+
+
+        ///  CreateFalseMaskInt16 : Set all predicate elements to false
+
+        /// <summary>
+        /// svbool_t svpfalse[_b]()
+        ///   PFALSE Presult.B
+        /// </summary>
+        public static unsafe Vector<short> CreateFalseMaskInt16() { throw new PlatformNotSupportedException(); }
+
+
+        ///  CreateFalseMaskInt32 : Set all predicate elements to false
+
+        /// <summary>
+        /// svbool_t svpfalse[_b]()
+        ///   PFALSE Presult.B
+        /// </summary>
+        public static unsafe Vector<int> CreateFalseMaskInt32() { throw new PlatformNotSupportedException(); }
+
+
+        ///  CreateFalseMaskInt64 : Set all predicate elements to false
+
+        /// <summary>
+        /// svbool_t svpfalse[_b]()
+        ///   PFALSE Presult.B
+        /// </summary>
+        public static unsafe Vector<long> CreateFalseMaskInt64() { throw new PlatformNotSupportedException(); }
+
+
+        ///  CreateFalseMaskSByte : Set all predicate elements to false
+
+        /// <summary>
+        /// svbool_t svpfalse[_b]()
+        ///   PFALSE Presult.B
+        /// </summary>
+        public static unsafe Vector<sbyte> CreateFalseMaskSByte() { throw new PlatformNotSupportedException(); }
+
+
+        ///  CreateFalseMaskSingle : Set all predicate elements to false
+
+        /// <summary>
+        /// svbool_t svpfalse[_b]()
+        ///   PFALSE Presult.B
+        /// </summary>
+        public static unsafe Vector<float> CreateFalseMaskSingle() { throw new PlatformNotSupportedException(); }
+
+
+        ///  CreateFalseMaskUInt16 : Set all predicate elements to false
+
+        /// <summary>
+        /// svbool_t svpfalse[_b]()
+        ///   PFALSE Presult.B
+        /// </summary>
+        public static unsafe Vector<ushort> CreateFalseMaskUInt16() { throw new PlatformNotSupportedException(); }
+
+
+        ///  CreateFalseMaskUInt32 : Set all predicate elements to false
+
+        /// <summary>
+        /// svbool_t svpfalse[_b]()
+        ///   PFALSE Presult.B
+        /// </summary>
+        public static unsafe Vector<uint> CreateFalseMaskUInt32() { throw new PlatformNotSupportedException(); }
+
+
+        ///  CreateFalseMaskUInt64 : Set all predicate elements to false
+
+        /// <summary>
+        /// svbool_t svpfalse[_b]()
+        ///   PFALSE Presult.B
+        /// </summary>
+        public static unsafe Vector<ulong> CreateFalseMaskUInt64() { throw new PlatformNotSupportedException(); }
+
+
         ///  CreateTrueMaskByte : Set predicate elements to true
 
         /// <summary>

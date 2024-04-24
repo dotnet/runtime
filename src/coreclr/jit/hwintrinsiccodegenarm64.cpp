@@ -571,6 +571,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             switch (intrin.numOperands)
             {
+                case 0:
+                    GetEmitter()->emitIns_R(ins, emitSize, targetReg, opt);
+                    break;
                 case 1:
                     GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
                     break;
