@@ -13,6 +13,8 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
+using Microsoft.DotNet.XUnitExtensions;
+
 namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
@@ -287,12 +289,17 @@ namespace System.Net.Http.Functional.Tests
            });
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData("Thu, 01 Dec 1994 16:00:00 GMT", true)]
         [InlineData("-1", false)]
         [InlineData("0", false)]
         public async Task SendAsync_Expires_Success(string value, bool isValid)
         {
+            if (UseVersion == HttpVersion30)
+            {
+                throw new SkipTestException("https://github.com/dotnet/runtime/issues/91757");
+            }
+
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpClient client = CreateHttpClient())

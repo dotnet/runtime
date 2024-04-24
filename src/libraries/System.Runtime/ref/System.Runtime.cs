@@ -4,6 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Numerics;
+
 namespace Microsoft.Win32.SafeHandles
 {
     public abstract partial class CriticalHandleMinusOneIsInvalid : System.Runtime.InteropServices.CriticalHandle
@@ -1985,6 +1987,8 @@ namespace System
         public static int Compare(decimal d1, decimal d2) { throw null; }
         public int CompareTo(decimal value) { throw null; }
         public int CompareTo(object? value) { throw null; }
+        public static TInteger ConvertToInteger<TInteger>(decimal value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
+        public static TInteger ConvertToIntegerNative<TInteger>(decimal value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
         public static decimal CopySign(decimal value, decimal sign) { throw null; }
         public static decimal CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static decimal CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
@@ -2259,6 +2263,8 @@ namespace System
         public static double Clamp(double value, double min, double max) { throw null; }
         public int CompareTo(double value) { throw null; }
         public int CompareTo(object? value) { throw null; }
+        public static TInteger ConvertToInteger<TInteger>(double value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
+        public static TInteger ConvertToIntegerNative<TInteger>(double value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
         public static double CopySign(double value, double sign) { throw null; }
         public static double Cos(double x) { throw null; }
         public static double Cosh(double x) { throw null; }
@@ -2881,6 +2887,8 @@ namespace System
         public static System.Half Clamp(System.Half value, System.Half min, System.Half max) { throw null; }
         public int CompareTo(System.Half other) { throw null; }
         public int CompareTo(object? obj) { throw null; }
+        public static TInteger ConvertToInteger<TInteger>(System.Half value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
+        public static TInteger ConvertToIntegerNative<TInteger>(System.Half value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
         public static System.Half CopySign(System.Half value, System.Half sign) { throw null; }
         public static System.Half Cos(System.Half x) { throw null; }
         public static System.Half Cosh(System.Half x) { throw null; }
@@ -4998,6 +5006,8 @@ namespace System
         public static float Clamp(float value, float min, float max) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public int CompareTo(float value) { throw null; }
+        public static TInteger ConvertToInteger<TInteger>(float value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
+        public static TInteger ConvertToIntegerNative<TInteger>(float value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
         public static float CopySign(float value, float sign) { throw null; }
         public static float Cos(float x) { throw null; }
         public static float Cosh(float x) { throw null; }
@@ -7793,29 +7803,35 @@ namespace System.Collections.Generic
         T Current { get; }
         System.Threading.Tasks.ValueTask<bool> MoveNextAsync();
     }
-    public partial interface ICollection<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable
+    public partial interface ICollection<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.Collections.Generic.IReadOnlyCollection<T>
     {
-        int Count { get; }
+        new int Count { get; }
         bool IsReadOnly { get; }
         void Add(T item);
         void Clear();
         bool Contains(T item);
         void CopyTo(T[] array, int arrayIndex);
         bool Remove(T item);
+        int System.Collections.Generic.IReadOnlyCollection<T>.Count => Count;
     }
     public partial interface IComparer<in T>
     {
         int Compare(T? x, T? y);
     }
-    public partial interface IDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IEnumerable
+    public partial interface IDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IEnumerable, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>
     {
-        TValue this[TKey key] { get; set; }
-        System.Collections.Generic.ICollection<TKey> Keys { get; }
-        System.Collections.Generic.ICollection<TValue> Values { get; }
+        new TValue this[TKey key] { get; set; }
+        new System.Collections.Generic.ICollection<TKey> Keys { get; }
+        new System.Collections.Generic.ICollection<TValue> Values { get; }
         void Add(TKey key, TValue value);
-        bool ContainsKey(TKey key);
+        new bool ContainsKey(TKey key);
         bool Remove(TKey key);
-        bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value);
+        new bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value);
+        TValue System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.this[TKey key] => this[key];
+        System.Collections.Generic.IEnumerable<TKey> System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.Keys => Keys;
+        System.Collections.Generic.IEnumerable<TValue> System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.Values => Values;
+        bool System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.ContainsKey(TKey key) => ContainsKey(key);
+        bool System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) => TryGetValue(key, out value);
     }
     public partial interface IEnumerable<out T> : System.Collections.IEnumerable
     {
@@ -7830,12 +7846,13 @@ namespace System.Collections.Generic
         bool Equals(T? x, T? y);
         int GetHashCode([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T obj);
     }
-    public partial interface IList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable
+    public partial interface IList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.Collections.Generic.IReadOnlyList<T>, System.Collections.Generic.IReadOnlyCollection<T>
     {
-        T this[int index] { get; set; }
+        new T this[int index] { get; set; }
         int IndexOf(T item);
         void Insert(int index, T item);
         void RemoveAt(int index);
+        T System.Collections.Generic.IReadOnlyList<T>.this[int index] => this[index];
     }
     public partial interface IReadOnlyCollection<out T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable
     {
@@ -7863,19 +7880,27 @@ namespace System.Collections.Generic
         bool Overlaps(System.Collections.Generic.IEnumerable<T> other);
         bool SetEquals(System.Collections.Generic.IEnumerable<T> other);
     }
-    public partial interface ISet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable
+    public partial interface ISet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.Collections.Generic.IReadOnlySet<T>, System.Collections.Generic.IReadOnlyCollection<T>
     {
         new bool Add(T item);
         void ExceptWith(System.Collections.Generic.IEnumerable<T> other);
         void IntersectWith(System.Collections.Generic.IEnumerable<T> other);
-        bool IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other);
-        bool IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other);
-        bool IsSubsetOf(System.Collections.Generic.IEnumerable<T> other);
-        bool IsSupersetOf(System.Collections.Generic.IEnumerable<T> other);
-        bool Overlaps(System.Collections.Generic.IEnumerable<T> other);
-        bool SetEquals(System.Collections.Generic.IEnumerable<T> other);
+        new bool IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other);
+        new bool IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other);
+        new bool IsSubsetOf(System.Collections.Generic.IEnumerable<T> other);
+        new bool IsSupersetOf(System.Collections.Generic.IEnumerable<T> other);
+        new bool Overlaps(System.Collections.Generic.IEnumerable<T> other);
+        new bool SetEquals(System.Collections.Generic.IEnumerable<T> other);
         void SymmetricExceptWith(System.Collections.Generic.IEnumerable<T> other);
         void UnionWith(System.Collections.Generic.IEnumerable<T> other);
+        new bool Contains(T item) => ((ICollection<T>)this).Contains(item);
+        bool System.Collections.Generic.IReadOnlySet<T>.Contains(T item) => ((ICollection<T>)this).Contains(item);
+        bool System.Collections.Generic.IReadOnlySet<T>.IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other) => IsProperSubsetOf(other);
+        bool System.Collections.Generic.IReadOnlySet<T>.IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other) => IsProperSupersetOf(other);
+        bool System.Collections.Generic.IReadOnlySet<T>.IsSubsetOf(System.Collections.Generic.IEnumerable<T> other) => IsSubsetOf(other);
+        bool System.Collections.Generic.IReadOnlySet<T>.IsSupersetOf(System.Collections.Generic.IEnumerable<T> other) => IsSupersetOf(other);
+        bool System.Collections.Generic.IReadOnlySet<T>.Overlaps(System.Collections.Generic.IEnumerable<T> other) => Overlaps(other);
+        bool System.Collections.Generic.IReadOnlySet<T>.SetEquals(System.Collections.Generic.IEnumerable<T> other) => SetEquals(other);
     }
     public partial class KeyNotFoundException : System.SystemException
     {
@@ -10809,6 +10834,8 @@ namespace System.Numerics
     public partial interface IFloatingPoint<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISignedNumber<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IFloatingPoint<TSelf>?
     {
         static virtual TSelf Ceiling(TSelf x) { throw null; }
+        static virtual TInteger ConvertToInteger<TInteger>(TSelf value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
+        static virtual TInteger ConvertToIntegerNative<TInteger>(TSelf value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
         static virtual TSelf Floor(TSelf x) { throw null; }
         int GetExponentByteCount();
         int GetExponentShortestBitLength();

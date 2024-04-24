@@ -359,7 +359,7 @@ namespace System.Text.RegularExpressions
                         }
 
                     // Alternation: find a string that's a shared prefix of all branches
-                    case RegexNodeKind.Alternate:
+                    case RegexNodeKind.Alternate when !rtl: // for RTL we'd need to be matching the suffixes of the alternation cases
                         {
                             int childCount = node.ChildCount();
 
