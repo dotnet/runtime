@@ -95,15 +95,21 @@ key_from_id (const char *id, char *buffer, guint buffer_len)
 	if (extension)
 		extension_offset = extension - id;
 	if (!buffer) {
-		buffer_len = (guint)(id_length + 1);
+		// Add space for .dll and null terminator
+		buffer_len = (guint)(id_length + 6);
 		buffer = g_malloc (buffer_len);
 	}
 	buffer[0] = 0;
 
-	if (extension_offset && bundled_resources_is_known_assembly_extension (extension))
-		g_strlcpy(buffer, id, MIN(buffer_len, extension_offset + 1));
-	else
-		g_strlcpy(buffer, id, MIN(buffer_len, id_length + 1));
+	if (extension_offset && bundled_resources_is_known_assembly_extension (extension)) {
+		// Subtract from buffer_len to make sure we have space for .dll
+		g_strlcpy (buffer, id, MIN(buffer_len - 4, extension_offset + 2));
+		strcat (buffer, "dll");
+	} else {
+		g_strlcpy (buffer, id, MIN(buffer_len, id_length + 1));
+	}
+
+	g_print ("key_from_id('%s') == '%s'\n", id, buffer);
 
 	return buffer;
 }
