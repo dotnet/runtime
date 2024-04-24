@@ -4,10 +4,10 @@
 //
 // codeman.cpp - a managment class for handling multiple code managers
 //
-#if defined(TARGET_LINUX) && (defined(DEBUG) || defined(_DEBUG))
+#if defined(TARGET_LINUX)
 #include <sys/prctl.h>
 #include <sys/syscall.h>
-#endif // defined(TARGET_LINUX) && (defined(DEBUG) || defined(_DEBUG))
+#endif // defined(TARGET_LINUX)
 #include "common.h"
 #include "jitinterface.h"
 #include "corjit.h"
@@ -44,6 +44,13 @@
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
 #endif
+
+#if defined(TARGET_LINUX) && !defined(PR_SVE_GET_VL)
+#define PR_SVE_SET_VL           50	/* set task vector length */
+#define PR_SVE_GET_VL           51	/* get task vector length */
+#define PR_SVE_VL_LEN_MASK      0xffff
+#define PR_SVE_VL_INHERIT       (1 << 17) /* inherit across exec */
+#endif // defined(TARGET_LINUX) && !defined(PR_SVE_GET_VL)
 
 // Default number of jump stubs in a jump stub block
 #define DEFAULT_JUMPSTUBS_PER_BLOCK  32
@@ -1260,6 +1267,9 @@ void EEJitManager::SetCpuInfo()
 
     int cpuFeatures = minipal_getcpufeatures();
 
+    // Get the maximum bitwidth of Vector<T>, rounding down to the nearest multiple of 128-bits
+    uint32_t maxVectorTBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_MaxVectorTBitWidth) / 128) * 128;
+
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 
 #if defined(TARGET_X86) && !defined(TARGET_WINDOWS)
@@ -1273,9 +1283,6 @@ void EEJitManager::SetCpuInfo()
 #endif
 
     CPUCompileFlags.Set(InstructionSet_VectorT128);
-
-    // Get the maximum bitwidth of Vector<T>, rounding down to the nearest multiple of 128-bits
-    uint32_t maxVectorTBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_MaxVectorTBitWidth) / 128) * 128;
 
     if (((cpuFeatures & XArchIntrinsicConstants_VectorT256) != 0) && ((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 256)))
     {
@@ -1528,8 +1535,9 @@ void EEJitManager::SetCpuInfo()
 
     if (((cpuFeatures & ARM64IntrinsicConstants_Sve) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Sve))
     {
-#if defined(TARGET_LINUX) && (defined(DEBUG) || defined(_DEBUG))
-        int maxVectorLength = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_MaxVectorLength);
+#if defined(TARGET_LINUX)
+        // prctl() expects vector length in bytes.
+        int maxVectorLength = (maxVectorTBitWidth >> 3);
 
         // Limit the SVE vector length to 'maxVectorLength' if the underlying hardware offers longer vectors.
         if ((prctl(PR_SVE_GET_VL, 0,0,0,0) & PR_SVE_VL_LEN_MASK) > maxVectorLength)
@@ -1539,7 +1547,10 @@ void EEJitManager::SetCpuInfo()
                 LogErrorToHost("LoadAndInitializeJIT: prctl() FAILED - unable to set maxVectorLength to %d", maxVectorLength);
             }
         }
-#endif // defined(TARGET_LINUX) && (defined(DEBUG) || defined(_DEBUG))
+#elif defined(TARGET_WINDOWS)
+        // TODO-SVE: Add prctl() equivalent for windows.
+#endif
+
         CPUCompileFlags.Set(InstructionSet_Sve);
     }
 
