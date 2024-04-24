@@ -180,11 +180,6 @@ public sealed partial class QuicStream
 
         _defaultErrorCode = defaultErrorCode;
 
-        if (NetEventSource.Log.IsEnabled())
-        {
-            NetEventSource.Info(this, $"{this} New outgoing {type} stream.");
-        }
-
         _canRead = type == QuicStreamType.Bidirectional;
         _canWrite = true;
         if (!_canRead)
@@ -230,11 +225,6 @@ public sealed partial class QuicStream
         }
         _id = (long)GetMsQuicParameter<ulong>(_handle, QUIC_PARAM_STREAM_ID);
         _type = flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? QuicStreamType.Unidirectional : QuicStreamType.Bidirectional;
-
-        if (NetEventSource.Log.IsEnabled())
-        {
-            NetEventSource.Info(this, $"{this} New incoming {_type} stream, StreamId = {_id}.");
-        }
 
         _startedTcs.TrySetResult();
     }
