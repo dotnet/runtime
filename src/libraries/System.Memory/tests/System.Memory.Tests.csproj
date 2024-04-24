@@ -13,6 +13,8 @@
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.Char.cs" />
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.String.cs" />
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.T.cs" />
+    <Compile Include="Base64Url\Base64UrlEncoderTests.cs" />
+    <Compile Include="Base64Url\Base64UrlValidationUnitTests.cs" />
     <Compile Include="MemoryMarshal\AsRef.cs" />
     <Compile Include="MemoryMarshal\AsReadOnlyRef.cs" />
     <Compile Include="MemoryMarshal\CreateSpan.cs" />

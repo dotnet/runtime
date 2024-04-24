@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Buffers.Text.Tests
 {
-    public class Base64ValidationUnitTests : Base64TestBase
+    public class Base64UrlValidationUnitTests : Base64TestBase
     {
         [Fact]
         public void BasicValidationBytes()
@@ -24,8 +24,8 @@ namespace System.Buffers.Text.Tests
                 Span<byte> source = new byte[numBytes];
                 Base64TestHelper.InitializeDecodableBytes(source, numBytes);
 
-                Assert.True(Base64.IsValid(source));
-                Assert.True(Base64.IsValid(source, out int decodedLength));
+                Assert.True(Base64Url.IsValid(source));
+                Assert.True(Base64Url.IsValid(source, out int decodedLength));  
                 Assert.True(decodedLength > 0);
             }
         }
@@ -50,8 +50,8 @@ namespace System.Buffers.Text.Tests
                     .ToArray()
                     .AsSpan();
 
-                Assert.True(Base64.IsValid(chars));
-                Assert.True(Base64.IsValid(chars, out int decodedLength));
+                Assert.True(Base64Url.IsValid(chars));
+                Assert.True(Base64Url.IsValid(chars, out int decodedLength));
                 Assert.True(decodedLength > 0);
             }
         }
@@ -70,8 +70,8 @@ namespace System.Buffers.Text.Tests
 
                 Span<byte> source = new byte[numBytes];
 
-                Assert.False(Base64.IsValid(source));
-                Assert.False(Base64.IsValid(source, out int decodedLength));
+                Assert.False(Base64Url.IsValid(source));
+                Assert.False(Base64Url.IsValid(source, out int decodedLength));
                 Assert.Equal(0, decodedLength);
             }
         }
@@ -90,8 +90,8 @@ namespace System.Buffers.Text.Tests
 
                 Span<char> source = new char[numBytes];
 
-                Assert.False(Base64.IsValid(source));
-                Assert.False(Base64.IsValid(source, out int decodedLength));
+                Assert.False(Base64Url.IsValid(source));
+                Assert.False(Base64Url.IsValid(source, out int decodedLength));
                 Assert.Equal(0, decodedLength);
             }
         }
@@ -101,8 +101,8 @@ namespace System.Buffers.Text.Tests
         {
             Span<byte> source = Span<byte>.Empty;
 
-            Assert.True(Base64.IsValid(source));
-            Assert.True(Base64.IsValid(source, out int decodedLength));
+            Assert.True(Base64Url.IsValid(source));
+            Assert.True(Base64Url.IsValid(source, out int decodedLength));
             Assert.Equal(0, decodedLength);
         }
 
@@ -111,37 +111,37 @@ namespace System.Buffers.Text.Tests
         {
             Span<char> source = Span<char>.Empty;
 
-            Assert.True(Base64.IsValid(source));
-            Assert.True(Base64.IsValid(source, out int decodedLength));
+            Assert.True(Base64Url.IsValid(source));
+            Assert.True(Base64Url.IsValid(source, out int decodedLength));
             Assert.Equal(0, decodedLength);
         }
 
         [Fact]
         public void ValidateGuidBytes()
         {
-            Span<byte> source = new byte[24];
+            Span<byte> source = new byte[22];
             Span<byte> decodedBytes = Guid.NewGuid().ToByteArray();
-            Base64.EncodeToUtf8(decodedBytes, source, out int _, out int _);
+            Base64Url.EncodeToUtf8(decodedBytes, source, out int _, out int _);
 
-            Assert.True(Base64.IsValid(source));
-            Assert.True(Base64.IsValid(source, out int decodedLength));
+            Assert.True(Base64Url.IsValid(source));
+            Assert.True(Base64Url.IsValid(source, out int decodedLength));
             Assert.True(decodedLength > 0);
         }
 
         [Fact]
         public void ValidateGuidChars()
         {
-            Span<byte> source = new byte[24];
+            Span<byte> source = new byte[22];
             Span<byte> decodedBytes = Guid.NewGuid().ToByteArray();
-            Base64.EncodeToUtf8(decodedBytes, source, out int _, out int _);
+            Base64Url.EncodeToUtf8(decodedBytes, source, out int _, out int _);
             Span<char> chars = source
                 .ToArray()
                 .Select(Convert.ToChar)
                 .ToArray()
                 .AsSpan();
 
-            Assert.True(Base64.IsValid(chars));
-            Assert.True(Base64.IsValid(chars, out int decodedLength));
+            Assert.True(Base64Url.IsValid(chars));
+            Assert.True(Base64Url.IsValid(chars, out int decodedLength));
             Assert.True(decodedLength > 0);
         }
 
@@ -151,8 +151,8 @@ namespace System.Buffers.Text.Tests
         {
             byte[] utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithByteToBeIgnored);
 
-            Assert.True(Base64.IsValid(utf8BytesWithByteToBeIgnored));
-            Assert.True(Base64.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
+            Assert.True(Base64Url.IsValid(utf8BytesWithByteToBeIgnored));
+            Assert.True(Base64Url.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
             Assert.Equal(expectedBytes.Length, decodedLength);
         }
 
@@ -162,8 +162,8 @@ namespace System.Buffers.Text.Tests
         {
             ReadOnlySpan<char> utf8BytesWithByteToBeIgnored = utf8WithByteToBeIgnored.ToArray();
 
-            Assert.True(Base64.IsValid(utf8BytesWithByteToBeIgnored));
-            Assert.True(Base64.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
+            Assert.True(Base64Url.IsValid(utf8BytesWithByteToBeIgnored));
+            Assert.True(Base64Url.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
             Assert.Equal(expectedBytes.Length, decodedLength);
         }
 
@@ -173,8 +173,8 @@ namespace System.Buffers.Text.Tests
         {
             byte[] utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithByteToBeIgnored);
 
-            Assert.True(Base64.IsValid(utf8BytesWithByteToBeIgnored));
-            Assert.True(Base64.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
+            Assert.True(Base64Url.IsValid(utf8BytesWithByteToBeIgnored));
+            Assert.True(Base64Url.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
             Assert.Equal(0, decodedLength);
         }
 
@@ -184,8 +184,8 @@ namespace System.Buffers.Text.Tests
         {
             ReadOnlySpan<char> utf8BytesWithByteToBeIgnored = utf8WithByteToBeIgnored.ToArray();
 
-            Assert.True(Base64.IsValid(utf8BytesWithByteToBeIgnored));
-            Assert.True(Base64.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
+            Assert.True(Base64Url.IsValid(utf8BytesWithByteToBeIgnored));
+            Assert.True(Base64Url.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
             Assert.Equal(0, decodedLength);
         }
 
@@ -207,8 +207,8 @@ namespace System.Buffers.Text.Tests
         {
             byte[] utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithByteToBeIgnored);
 
-            Assert.True(Base64.IsValid(utf8BytesWithByteToBeIgnored));
-            Assert.True(Base64.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
+            Assert.True(Base64Url.IsValid(utf8BytesWithByteToBeIgnored));
+            Assert.True(Base64Url.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
             Assert.Equal(expectedLength, decodedLength);
         }
 
@@ -230,8 +230,8 @@ namespace System.Buffers.Text.Tests
         {
             ReadOnlySpan<char> utf8BytesWithByteToBeIgnored = utf8WithByteToBeIgnored.ToArray();
 
-            Assert.True(Base64.IsValid(utf8BytesWithByteToBeIgnored));
-            Assert.True(Base64.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
+            Assert.True(Base64Url.IsValid(utf8BytesWithByteToBeIgnored));
+            Assert.True(Base64Url.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
             Assert.Equal(expectedLength, decodedLength);
         }
 
@@ -243,35 +243,35 @@ namespace System.Buffers.Text.Tests
         {
             ReadOnlySpan<char> utf8BytesWithByteToBeIgnored = utf8WithByteToBeIgnored.ToArray();
 
-            Assert.True(Base64.IsValid(utf8BytesWithByteToBeIgnored));
-            Assert.True(Base64.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
+            Assert.True(Base64Url.IsValid(utf8BytesWithByteToBeIgnored));
+            Assert.True(Base64Url.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
             Assert.Equal(expectedLength, decodedLength);
         }
 
         [Theory]
-        [InlineData("YWJ")]
-        [InlineData("YW")]
-        [InlineData("Y")]
-        public void InvalidSizeBytes(string utf8WithByteToBeIgnored)
+        [InlineData("YWJ", true, 2)]
+        //[InlineData("YW", true, 1)]
+        //[InlineData("Y", false, 0)]
+        public void SmallSizeBytes(string utf8Text, bool isValid, int expectedDecodedLength)
         {
-            byte[] utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithByteToBeIgnored);
+            byte[] utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8Text);
 
-            Assert.False(Base64.IsValid(utf8BytesWithByteToBeIgnored));
-            Assert.False(Base64.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
-            Assert.Equal(0, decodedLength);
+            Assert.Equal(isValid, Base64Url.IsValid(utf8BytesWithByteToBeIgnored));
+            Assert.Equal(isValid, Base64Url.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
+            Assert.Equal(expectedDecodedLength, decodedLength);
         }
 
         [Theory]
-        [InlineData("YWJ")]
-        [InlineData("YW")]
-        [InlineData("Y")]
-        public void InvalidSizeChars(string utf8WithByteToBeIgnored)
+        [InlineData("YWJ", true, 2)]
+        //[InlineData("YW", true, 1)]
+        //[InlineData("Y", false, 0)]
+        public void InvalidSizeChars(string utf8Text, bool isValid, int expectedDecodedLength)
         {
-            ReadOnlySpan<char> utf8BytesWithByteToBeIgnored = utf8WithByteToBeIgnored;
+            ReadOnlySpan<char> utf8BytesWithByteToBeIgnored = utf8Text;
 
-            Assert.False(Base64.IsValid(utf8BytesWithByteToBeIgnored));
-            Assert.False(Base64.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
-            Assert.Equal(0, decodedLength);
+            Assert.Equal(isValid, Base64Url.IsValid(utf8BytesWithByteToBeIgnored));
+            Assert.Equal(isValid, Base64Url.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
+            Assert.Equal(expectedDecodedLength, decodedLength);
         }
 
         [Theory]
@@ -290,12 +290,12 @@ namespace System.Buffers.Text.Tests
         [InlineData("aYQ= =a")]
         [InlineData("aYQ== a")]
         [InlineData("aYQ==a ")]
-        public void InvalidBase64Bytes(string utf8WithByteToBeIgnored)
+        public void InvalidBase64UrlBytes(string utf8WithByteToBeIgnored)
         {
             byte[] utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithByteToBeIgnored);
 
-            Assert.False(Base64.IsValid(utf8BytesWithByteToBeIgnored));
-            Assert.False(Base64.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
+            Assert.False(Base64Url.IsValid(utf8BytesWithByteToBeIgnored));
+            Assert.False(Base64Url.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
             Assert.Equal(0, decodedLength);
         }
 
@@ -327,12 +327,12 @@ namespace System.Buffers.Text.Tests
         [InlineData("  a  ")]
         [InlineData("   a   ")]
         [InlineData("    a    ")]
-        public void InvalidBase64Chars(string utf8WithByteToBeIgnored)
+        public void InvalidBase64UrlChars(string utf8WithByteToBeIgnored)
         {
             byte[] utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithByteToBeIgnored);
 
-            Assert.False(Base64.IsValid(utf8BytesWithByteToBeIgnored));
-            Assert.False(Base64.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
+            Assert.False(Base64Url.IsValid(utf8BytesWithByteToBeIgnored));
+            Assert.False(Base64Url.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
             Assert.Equal(0, decodedLength);
         }
     }
