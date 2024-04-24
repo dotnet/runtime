@@ -833,7 +833,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     GenTree* argNode = use.GetNode();
                     assert(argReg == argNode->GetRegNum());
-                    argReg = REG_NEXT(argReg);
+                    argReg = getNextSIMDRegWithWraparound(argReg);
                 }
                 assert((ins == INS_st2 && regCount == 2) || (ins == INS_st3 && regCount == 3) ||
                        (ins == INS_st4 && regCount == 4));
@@ -883,7 +883,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     GenTree* argNode = use.GetNode();
                     assert(argReg == argNode->GetRegNum());
-                    argReg = REG_NEXT(argReg);
+                    argReg = getNextSIMDRegWithWraparound(argReg);
                 }
                 assert((ins == INS_st1_2regs && regCount == 2) || (ins == INS_st2 && regCount == 2) ||
                        (ins == INS_st1_3regs && regCount == 3) || (ins == INS_st3 && regCount == 3) ||
@@ -1186,7 +1186,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         GenTree* argNode = use.GetNode();
                         assert(argReg == argNode->GetRegNum());
-                        argReg = REG_NEXT(argReg);
+                        argReg = getNextSIMDRegWithWraparound(argReg);
 #endif
                     }
                 }
@@ -1241,7 +1241,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         assert(argReg == argNode->GetRegNum());
                         // and they should not interfere with targetReg
                         assert(targetReg != argReg);
-                        argReg = REG_NEXT(argReg);
+                        argReg = getNextSIMDRegWithWraparound(argReg);
 #endif
                     }
                 }
