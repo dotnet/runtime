@@ -457,86 +457,37 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
 
                         // Finally, perform the actual "predicated" operation so that `targetReg` is the first operand
-                        // and
-                        // `embMaskOp2Reg` having the second operand.
+                        // and `embMaskOp2Reg` is the second operand.
                         GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg, opt);
                     }
                     else if (targetReg != falseReg)
                     {
+                        // If `targetReg` and `falseReg` are not same, then we need to move it to `targetReg` first
+                        // so the `insEmbMask` operation can be merged on top of it.
+
                         if (falseReg != embMaskOp1Reg)
                         {
-                            // 3 and 6
+                            // None of targetReg, embMaskOp1Reg and falseReg are same. In such case, use the "unpredicated"
+                            // version of the instruction and then use "sel" to select the active lanes.
+
                             GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, embMaskOp1Reg, embMaskOp2Reg,
                                                         opt, INS_SCALABLE_OPTS_UNPREDICATED);
                             GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,
                                                           falseReg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
                             break;
                         }
-                        else 
-                        {
-                            if (targetReg != embMaskOp1Reg)
-                            {
-                                // 5
-                                // If falseReg is same as one of the operand register, then use the unpredicated
-                                // version of `movprfx`.
-                                GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, falseReg, opt);
-                            }
-
-                            // 5 and 6
-
-                            // Finally, perform the actual "predicated" operation so that `targetReg` is the first
-                            // operand and
-                            // `embMaskOp2Reg` having the second operand.
-                            GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg, opt);
+                        else if (targetReg != embMaskOp1Reg) 
+                        {                            
+                            // embMaskOp1Reg is same as `falseReg`, but not same as `targetReg`. Move the `embMaskOp1Reg` i.e. `falseReg` in `targetReg`,
+                            // using "unpredicated movprfx", so the subsequent `insEmbMask` operation can be merged on top of it.
+                            GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, falseReg, opt);
                         }
 
-                        //// Since `falseReg` is non-zero and it is not the same as targetReg, we want to
-                        //// move it to the `targetReg` using `movprfx`. However, do this only if one of
-                        //// of the operands of `intrinEmbMask` is same as targetReg.
-
-                        //regNumber instrOperandReg = REG_NA;
-                        //if (targetReg == embMaskOp1Reg)
-                        //{
-                        //    instrOperandReg = embMaskOp1Reg;
-                        //}
-                        //else if (targetReg == embMaskOp2Reg)
-                        //{
-                        //    instrOperandReg = embMaskOp2Reg;
-                        //}
-                        //else
-                        //{
-                        //    // If none of the operands are same, then we just perform the unpredicated
-                        //    // version of the instruction and then use `sel` to retrieve the active elements
-                        //    // from the result.
-                        //    GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, embMaskOp1Reg, embMaskOp2Reg,
-                        //                                opt, INS_SCALABLE_OPTS_UNPREDICATED);
-                        //    GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,
-                        //                                  falseReg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
-
-                        //    break;
-                        //}
-
-                        //if (instrOperandReg != REG_NA)
-                        //{
-                        //    if (falseReg == instrOperandReg)
-                        //    {
-                        //        // If falseReg is same as one of the operand register, then use the unpredicated
-                        //        // version of `movprfx`.
-                        //        GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, falseReg, opt);
-                        //    }
-                        //    else
-                        //    {
-                        //        // Otherwise, use predicated version of `movprfx`, so we can just "merge" the
-                        //        // active elements from `falseReg` into the `targetReg`.
-                        //        GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, falseReg,
-                        //                                    opt, INS_SCALABLE_OPTS_PREDICATE_MERGE);
-                        //    }
-                        //}
+                        // Finally, perform the actual "predicated" operation so that `targetReg` is the first operand
+                        // and `embMaskOp2Reg` is the second operand.
+                        GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg, opt);
                     }
 
-                    // Finally, perform the actual "predicated" operation so that `targetReg` is the first operand and
-                    // `embMaskOp2Reg` having the second operand.
-                    GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg, opt);
                     break;
 
                 default:
