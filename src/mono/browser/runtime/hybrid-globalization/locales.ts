@@ -1,27 +1,23 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { wrap_error_root, wrap_no_error_root } from "./helpers";
-import { mono_wasm_new_external_root } from "../roots";
-import { monoStringToString, stringToUTF16 } from "../strings";
-import { Int32Ptr } from "../types/emscripten";
-import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
+import { setI32 } from "../memory";
+import { stringToUTF16, stringToUTF16Ptr, utf16ToString } from "../strings";
+import { Int32Ptr, VoidPtr } from "../types/emscripten";
+import { VoidPtrNull } from "../types/internal";
 import { OUTER_SEPARATOR, normalizeLocale } from "./helpers";
 
-export function mono_wasm_get_locale_info (culture: MonoStringRef, locale: MonoStringRef, dst: number, dstLength: number, isException: Int32Ptr, exAddress: MonoObjectRef): number {
-    const localeRoot = mono_wasm_new_external_root<MonoString>(locale),
-        cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
-        exceptionRoot = mono_wasm_new_external_root<MonoObject>(exAddress);
+export function mono_wasm_get_locale_info (culture: number, cultureLength: number, locale: number, localeLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
     try {
-        const localeNameOriginal = monoStringToString(localeRoot);
+        const localeNameOriginal = utf16ToString(<any>locale, <any>(locale + 2 * localeLength));
         const localeName = normalizeLocale(localeNameOriginal);
         if (!localeName && localeNameOriginal) {
             // handle non-standard or malformed locales by forwarding the locale code
             stringToUTF16(dst, dst + 2 * localeNameOriginal.length, localeNameOriginal);
-            wrap_no_error_root(isException, exceptionRoot);
-            return localeNameOriginal.length;
+            setI32(dstLength, localeNameOriginal.length);
+            return VoidPtrNull;
         }
-        const cultureNameOriginal = monoStringToString(cultureRoot);
+        const cultureNameOriginal = utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
         const cultureName = normalizeLocale(cultureNameOriginal);
 
         if (!localeName || !cultureName)
@@ -49,8 +45,8 @@ export function mono_wasm_get_locale_info (culture: MonoStringRef, locale: MonoS
                     if (error instanceof RangeError && error.message === "invalid_argument" && localeNameOriginal) {
                         // handle non-standard or malformed locales by forwarding the locale code, e.g. "xx-u-xx"
                         stringToUTF16(dst, dst + 2 * localeNameOriginal.length, localeNameOriginal);
-                        wrap_no_error_root(isException, exceptionRoot);
-                        return localeNameOriginal.length;
+                        setI32(dstLength, localeNameOriginal.length);
+                        return VoidPtrNull;
                     }
                     throw error;
                 }
@@ -67,54 +63,41 @@ export function mono_wasm_get_locale_info (culture: MonoStringRef, locale: MonoS
         if (!result)
             throw new Error(`Locale info for locale=${localeName} is null or empty.`);
 
-        if (result.length > dstLength)
-            throw new Error(`Locale info for locale=${localeName} exceeds length of ${dstLength}.`);
+        if (result.length > dstMaxLength)
+            throw new Error(`Locale info for locale=${localeName} exceeds length of ${dstMaxLength}.`);
 
         stringToUTF16(dst, dst + 2 * result.length, result);
-        wrap_no_error_root(isException, exceptionRoot);
-        return result.length;
+        setI32(dstLength, result.length);
+        return VoidPtrNull;
     } catch (ex: any) {
-        wrap_error_root(isException, ex, exceptionRoot);
-        return -1;
-    } finally {
-        cultureRoot.release();
-        exceptionRoot.release();
+        setI32(dstLength, -1);
+        return stringToUTF16Ptr(ex.toString());
     }
 }
 
-export function mono_wasm_get_first_day_of_week (culture: MonoStringRef, isException: Int32Ptr, exAddress: MonoObjectRef): number {
-
-    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
-        exceptionRoot = mono_wasm_new_external_root<MonoObject>(exAddress);
+export function mono_wasm_get_first_day_of_week (culture: number, cultureLength: number, resultPtr: Int32Ptr): VoidPtr {
     try {
-        const cultureName = monoStringToString(cultureRoot);
+        const cultureName = utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
         const canonicalLocale = normalizeLocale(cultureName);
-        wrap_no_error_root(isException, exceptionRoot);
-        return getFirstDayOfWeek(canonicalLocale);
+        const result = getFirstDayOfWeek(canonicalLocale);
+        setI32(resultPtr, result);
+        return VoidPtrNull;
     } catch (ex: any) {
-        wrap_error_root(isException, ex, exceptionRoot);
-        return -1;
-    } finally {
-        cultureRoot.release();
-        exceptionRoot.release();
+        setI32(resultPtr, -1);
+        return stringToUTF16Ptr(ex.toString());
     }
 }
 
-export function mono_wasm_get_first_week_of_year (culture: MonoStringRef, isException: Int32Ptr, exAddress: MonoObjectRef): number {
-
-    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
-        exceptionRoot = mono_wasm_new_external_root<MonoObject>(exAddress);
+export function mono_wasm_get_first_week_of_year (culture: number, cultureLength: number, resultPtr: Int32Ptr): VoidPtr {
     try {
-        const cultureName = monoStringToString(cultureRoot);
+        const cultureName = utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
         const canonicalLocale = normalizeLocale(cultureName);
-        wrap_no_error_root(isException, exceptionRoot);
-        return getFirstWeekOfYear(canonicalLocale);
+        const result = getFirstWeekOfYear(canonicalLocale);
+        setI32(resultPtr, result);
+        return VoidPtrNull;
     } catch (ex: any) {
-        wrap_error_root(isException, ex, exceptionRoot);
-        return -1;
-    } finally {
-        cultureRoot.release();
-        exceptionRoot.release();
+        setI32(resultPtr, -1);
+        return stringToUTF16Ptr(ex.toString());
     }
 }
 
