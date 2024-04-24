@@ -439,6 +439,7 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, wr
 
                 if runtimeFlavor.coreclr or write_xplatheader or runtimeFlavor.nativeaot:
                     if os.name == 'posix':
+                        clrallEvents.append(" || UserEventsEnabled" + eventName + "()")
                         # native AOT does not support non-windows eventing other than via event pipe
                         if not runtimeFlavor.nativeaot:
                             clrallEvents.append(" || (XplatEventLogger" +
@@ -532,6 +533,13 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, wr
                 fnbody.append(",")
 
             fnbody.append("ActivityId,RelatedActivityId);\n")
+
+            if os.name == 'posix':
+                #TODO: use UserEventsDataTypeMapping?
+                fnbody.append("%s status &= UserEventsWriteEvent" % (getEventPipeDataTypeMapping(runtimeFlavor)["ULONG"]) + eventName + "(" + ''.join(line))
+                if len(line) > 0:
+                    fnbody.append(",")
+                fnbody.append("ActivityId,RelatedActivityId);\n")
 
             if runtimeFlavor.coreclr or write_xplatheader:
                 fnbody.append(lindent)
