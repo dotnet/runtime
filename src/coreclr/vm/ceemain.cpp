@@ -661,6 +661,9 @@ void EEStartupHelper()
 #ifdef FEATURE_PERFTRACING
         // Initialize the event pipe.
         EventPipeAdapter::Initialize();
+#ifdef TARGET_UNIX
+        InitUserEvents();
+#endif // TARGET_UNIX
 #endif // FEATURE_PERFTRACING
 
 #ifdef TARGET_UNIX
