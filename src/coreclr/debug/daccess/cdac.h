@@ -9,12 +9,13 @@ class CDAC final
 public: // static
     static CDAC Create(uint64_t descriptorAddr, ICorDebugDataTarget *pDataTarget);
 
-    static CDAC Invalid()
-    {
-        return CDAC{nullptr, 0, nullptr};
-    }
-
 public:
+    CDAC()
+        : m_module{NULL}
+        , m_cdac_handle{0}
+        , m_target{NULL}
+    { }
+
     CDAC(const CDAC&) = delete;
     CDAC& operator=(const CDAC&) = delete;
 
@@ -56,7 +57,7 @@ public:
     IUnknown* SosInterface();
 
 private:
-    CDAC(HMODULE module, uint64_t descriptorAddr, ICorDebugDataTarget* target);
+    CDAC(HMODULE module, intptr_t handle, ICorDebugDataTarget* target);
 
 private:
     HMODULE m_module;
