@@ -56,21 +56,21 @@ namespace System.ComponentModel
         /// the type this custom type descriptor is providing information for.
         /// You must always return a valid collection from this method.
         /// </summary>
-        public virtual AttributeCollection GetAttributesFromKnownType()
+        public virtual AttributeCollection GetAttributesFromRegisteredType()
         {
             if (_parent != null)
             {
-                return _parent.GetAttributesFromKnownType();
+                return _parent.GetAttributesFromRegisteredType();
             }
 
-            if (SupportsKnownTypes)
+            if (SupportsRegisteredTypes)
             {
                 return AttributeCollection.Empty;
             }
 
             if (TypeDescriptor.IsTrimmable)
             {
-                TypeDescriptor.ThrowHelper.ThrowNotSupportedException_KnownTypeMemberCalledOnLegacyProvider(nameof(GetAttributesFromKnownType));
+                TypeDescriptor.ThrowHelper.ThrowNotSupportedException_RegisteredTypeMemberCalledOnLegacyProvider(nameof(GetAttributesFromRegisteredType));
             }
 
             return GetAttributes();
@@ -109,21 +109,21 @@ namespace System.ComponentModel
         /// The GetConverter method returns a type converter for the type this type
         /// descriptor is representing.
         /// </summary>
-        public virtual TypeConverter? GetConverterFromKnownType()
+        public virtual TypeConverter? GetConverterFromRegisteredType()
         {
             if (_parent != null)
             {
-                return _parent.GetConverterFromKnownType();
+                return _parent.GetConverterFromRegisteredType();
             }
 
-            if (SupportsKnownTypes)
+            if (SupportsRegisteredTypes)
             {
-                return new TypeConverter(); // todo: add supportsknowntypes property?
+                return new TypeConverter(); // todo: add SupportsRegisteredTypes property?
             }
 
             if (TypeDescriptor.IsTrimmable)
             {
-                TypeDescriptor.ThrowHelper.ThrowNotSupportedException_KnownTypeMemberCalledOnLegacyProvider(nameof(GetConverterFromKnownType));
+                TypeDescriptor.ThrowHelper.ThrowNotSupportedException_RegisteredTypeMemberCalledOnLegacyProvider(nameof(GetConverterFromRegisteredType));
             }
 
             return FallBackToLegacyProvider();
@@ -196,21 +196,21 @@ namespace System.ComponentModel
         /// returned. If no parent is provided,this will return an empty
         /// event collection.
         /// </summary>
-        public virtual EventDescriptorCollection GetEventsFromKnownType()
+        public virtual EventDescriptorCollection GetEventsFromRegisteredType()
         {
             if (_parent != null)
             {
-                return _parent.GetEventsFromKnownType();
+                return _parent.GetEventsFromRegisteredType();
             }
 
-            if (SupportsKnownTypes)
+            if (SupportsRegisteredTypes)
             {
                 return EventDescriptorCollection.Empty;
             }
 
             if (TypeDescriptor.IsTrimmable)
             {
-                TypeDescriptor.ThrowHelper.ThrowNotSupportedException_KnownTypeMemberCalledOnLegacyProvider(nameof(GetEventsFromKnownType));
+                TypeDescriptor.ThrowHelper.ThrowNotSupportedException_RegisteredTypeMemberCalledOnLegacyProvider(nameof(GetEventsFromRegisteredType));
             }
 
             return GetEvents();
@@ -241,21 +241,21 @@ namespace System.ComponentModel
         /// If no parent is provided,this will return an empty
         /// property collection.
         /// </summary>
-        public virtual PropertyDescriptorCollection GetPropertiesFromKnownType()
+        public virtual PropertyDescriptorCollection GetPropertiesFromRegisteredType()
         {
             if (_parent != null)
             {
-                return _parent.GetPropertiesFromKnownType();
+                return _parent.GetPropertiesFromRegisteredType();
             }
 
-            if (SupportsKnownTypes)
+            if (SupportsRegisteredTypes)
             {
                 return PropertyDescriptorCollection.Empty;
             }
 
             if (TypeDescriptor.IsTrimmable)
             {
-                TypeDescriptor.ThrowHelper.ThrowNotSupportedException_KnownTypeMemberCalledOnLegacyProvider(nameof(GetPropertiesFromKnownType));
+                TypeDescriptor.ThrowHelper.ThrowNotSupportedException_RegisteredTypeMemberCalledOnLegacyProvider(nameof(GetPropertiesFromRegisteredType));
             }
 
             return FallBackToLegacyProvider();
@@ -295,13 +295,13 @@ namespace System.ComponentModel
         /// <summary>
         /// todo
         /// </summary>
-        public virtual bool SupportsKnownTypes
+        public virtual bool SupportsRegisteredTypes
         {
             get
             {
                 if (_parent != null)
                 {
-                    return _parent.SupportsKnownTypes;
+                    return _parent.SupportsRegisteredTypes;
                 }
 
                 return false;

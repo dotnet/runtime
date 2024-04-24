@@ -89,7 +89,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the type converter for this property.
         /// </summary>
-        public virtual TypeConverter ConverterFromKnownType
+        public virtual TypeConverter ConverterFromRegisteredType
         {
             get
             {
@@ -102,11 +102,11 @@ namespace System.ComponentModel
                     TypeConverterAttribute attr = (TypeConverterAttribute)attrs[typeof(TypeConverterAttribute)]!;
                     if (attr.ConverterTypeName != null && attr.ConverterTypeName.Length > 0)
                     {
-                        TypeDescriptor.ValidateKnownType(PropertyType);
+                        TypeDescriptor.ValidateRegisteredType(PropertyType);
                         _converter = CreateConverterFromTypeName(attr);
                     }
 
-                    _converter ??= TypeDescriptor.GetConverterFromKnownType(PropertyType);
+                    _converter ??= TypeDescriptor.GetConverterFromRegisteredType(PropertyType);
                 }
                 return _converter;
 

@@ -287,8 +287,8 @@ namespace System.ComponentModel
             return obj ?? Activator.CreateInstance(objectType, args);
         }
 
-        public override bool SupportsKnownTypes => true;
-        public override bool IsKnownType(Type type) => _typeData != null ? _typeData.ContainsKey(type) : false;
+        public override bool SupportsRegisteredTypes => true;
+        public override bool IsRegisteredType(Type type) => _typeData != null ? _typeData.ContainsKey(type) : false;
 
         /// <summary>
         /// Helper method to create editors and type converters. This checks to see if the
@@ -315,9 +315,9 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves custom attributes.
         /// </summary>
-        internal AttributeCollection GetAttributesFromKnownType(Type type)
+        internal AttributeCollection GetAttributesFromRegisteredType(Type type)
         {
-            ReflectedTypeData td = GetTypeDataFromKnownType(type);
+            ReflectedTypeData td = GetTypeDataFromRegisteredType(type);
             return td.GetAttributes();
         }
 
@@ -349,14 +349,14 @@ namespace System.ComponentModel
         /// Retrieves the class name for our type.
         /// </summary>
         internal string? GetClassName([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type) =>
-            GetClassNameFromKnownType(type);
+            GetClassNameFromRegisteredType(type);
 
         /// <summary>
         /// Retrieves the class name for our type.
         /// </summary>
-        internal string? GetClassNameFromKnownType(Type type)
+        internal string? GetClassNameFromRegisteredType(Type type)
         {
-            ReflectedTypeData td = GetTypeDataFromKnownType(type);
+            ReflectedTypeData td = GetTypeDataFromRegisteredType(type);
             return td.GetClassName();
         }
 
@@ -376,13 +376,13 @@ namespace System.ComponentModel
         internal TypeConverter GetConverter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object? instance)
         {
             ReflectedTypeData td = GetTypeData(type, createIfNeeded: true)!;
-            return td.GetConverter(instance, verifyIsKnownType: false);
+            return td.GetConverter(instance, verifyIsRegisteredType: false);
         }
 
-        internal TypeConverter GetConverterFromKnownType(Type type, object? instance)
+        internal TypeConverter GetConverterFromRegisteredType(Type type, object? instance)
         {
-            ReflectedTypeData td = GetTypeDataFromKnownType(type);
-            return td.GetConverter(instance, verifyIsKnownType: true);
+            ReflectedTypeData td = GetTypeDataFromRegisteredType(type);
+            return td.GetConverter(instance, verifyIsRegisteredType: true);
         }
 
         /// <summary>
@@ -472,9 +472,9 @@ namespace System.ComponentModel
             return td.GetEvents();
         }
 
-        internal EventDescriptorCollection GetEventsFromKnownType(Type type)
+        internal EventDescriptorCollection GetEventsFromRegisteredType(Type type)
         {
-            ReflectedTypeData td = GetTypeDataFromKnownType(type);
+            ReflectedTypeData td = GetTypeDataFromRegisteredType(type);
             return td.GetEvents();
         }
 
@@ -554,7 +554,7 @@ namespace System.ComponentModel
         /// </summary>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Instance is verified to be a known type.")]
-        internal PropertyDescriptorCollection GetExtendedPropertiesFromKnownType(object instance) => GetExtendedProperties(instance);
+        internal PropertyDescriptorCollection GetExtendedPropertiesFromRegisteredType(object instance) => GetExtendedProperties(instance);
 
         /// <summary>
         /// Retrieves the properties for this type.
@@ -892,9 +892,9 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the properties for this type.
         /// </summary>
-        internal PropertyDescriptorCollection GetPropertiesFromKnownType(Type type)
+        internal PropertyDescriptorCollection GetPropertiesFromRegisteredType(Type type)
         {
-            ReflectedTypeData td = GetTypeDataFromKnownType(type);
+            ReflectedTypeData td = GetTypeDataFromRegisteredType(type);
             return td.GetProperties();
         }
 
@@ -944,12 +944,12 @@ namespace System.ComponentModel
 
                 if (TypeDescriptor.IsTrimmable && !IsIntrinsicType(type))
                 {
-                    TypeDescriptor.ThrowHelper.ThrowInvalidOperationException_AddKnownReflectedTypeRequired(type);
+                    TypeDescriptor.ThrowHelper.ThrowInvalidOperationException_RegisterTypeRequired(type);
                 }
 
                 if (createIfNeeded)
                 {
-                    td = new ReflectedTypeData(type, isKnownType: false);
+                    td = new ReflectedTypeData(type, isRegisteredType: false);
                     _typeData ??= new Dictionary<Type, ReflectedTypeData>();
                     _typeData[type] = td;
                 }
@@ -958,23 +958,23 @@ namespace System.ComponentModel
             return td;
         }
 
-        private ReflectedTypeData GetTypeDataFromKnownType(Type type)
+        private ReflectedTypeData GetTypeDataFromRegisteredType(Type type)
         {
             if (_typeData == null || !_typeData.TryGetValue(type, out ReflectedTypeData? td))
             {
                 if (IsIntrinsicType(type))
                 {
-                    return GetOrAddKnownReflectedType(type);
+                    return GetOrRegisterType(type);
                 }
 
-                TypeDescriptor.ThrowHelper.ThrowInvalidOperationException_AddKnownReflectedTypeRequired(type);
+                TypeDescriptor.ThrowHelper.ThrowInvalidOperationException_RegisterTypeRequired(type);
                 td = null;
             }
 
             return td;
         }
 
-        public override void AddKnownReflectedType<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>()
+        public override void RegisterType<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>()
         {
             Type componentType = typeof(T);
             ReflectedTypeData? td = null;
@@ -993,14 +993,14 @@ namespace System.ComponentModel
 
                 if (td == null)
                 {
-                    td = new ReflectedTypeData(componentType, isKnownType: true);
+                    td = new ReflectedTypeData(componentType, isRegisteredType: true);
                     _typeData ??= new Dictionary<Type, ReflectedTypeData>();
                     _typeData[componentType] = td;
                 }
             }
         }
 
-        private ReflectedTypeData GetOrAddKnownReflectedType(Type type)
+        private ReflectedTypeData GetOrRegisterType(Type type)
         {
             ReflectedTypeData? td = null;
 
@@ -1018,7 +1018,7 @@ namespace System.ComponentModel
 
                 if (td == null)
                 {
-                    td = new ReflectedTypeData(type, isKnownType: true);
+                    td = new ReflectedTypeData(type, isRegisteredType: true);
                     _typeData ??= new Dictionary<Type, ReflectedTypeData>();
                     _typeData[type] = td;
                 }
@@ -1196,7 +1196,7 @@ namespace System.ComponentModel
 
                         if (eventInfo.AddMethod != null && eventInfo.RemoveMethod != null)
                         {
-                            events[eventCount++] = ReflectEventDescriptor.CreateWithKnownType(type, eventInfo);
+                            events[eventCount++] = ReflectEventDescriptor.CreateWithRegisteredType(type, eventInfo);
                         }
                     }
 
@@ -1334,7 +1334,7 @@ namespace System.ComponentModel
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type) =>
                 ReflectGetPropertiesImpl(type);
 
-        private static PropertyDescriptor[] ReflectGetPropertiesFromKnownType(Type type)
+        private static PropertyDescriptor[] ReflectGetPropertiesFromRegisteredType(Type type)
         {
             //todo: throw?
             return ReflectGetPropertiesImpl(type);

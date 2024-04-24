@@ -41,7 +41,7 @@ namespace System.ComponentModel
             _parent = parent;
         }
 
-        public virtual void AddKnownReflectedType<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>()
+        public virtual void RegisterType<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>()
         {
             // We allow this to be a no-op since the caller may not know if the provider supports known types.
         }
@@ -123,11 +123,11 @@ namespace System.ComponentModel
         /// model only supports extended properties this API can be used for extended
         /// attributes and events as well, if the type description provider supports it.
         /// </summary>
-        public virtual ICustomTypeDescriptor GetExtendedTypeDescriptorFromKnownType(object instance)
+        public virtual ICustomTypeDescriptor GetExtendedTypeDescriptorFromRegisteredType(object instance)
         {
             if (_parent != null)
             {
-                return _parent.GetExtendedTypeDescriptorFromKnownType(instance);
+                return _parent.GetExtendedTypeDescriptorFromRegisteredType(instance);
             }
 
             return _emptyDescriptor ??= new EmptyCustomTypeDescriptor();
@@ -264,11 +264,11 @@ namespace System.ComponentModel
             return GetTypeDescriptor(instance.GetType(), instance);
         }
 
-        public ICustomTypeDescriptor? GetTypeDescriptorFromKnownType(object instance)
+        public ICustomTypeDescriptor? GetTypeDescriptorFromRegisteredType(object instance)
         {
             ArgumentNullException.ThrowIfNull(instance);
 
-            return GetTypeDescriptorFromKnownType(instance.GetType(), instance);
+            return GetTypeDescriptorFromRegisteredType(instance.GetType(), instance);
         }
 
         /// <summary>
@@ -295,14 +295,14 @@ namespace System.ComponentModel
             return _emptyDescriptor ??= new EmptyCustomTypeDescriptor();
         }
 
-        internal virtual ICustomTypeDescriptor? GetTypeDescriptorFromKnownType(Type objectType, object? instance)
+        internal virtual ICustomTypeDescriptor? GetTypeDescriptorFromRegisteredType(Type objectType, object? instance)
         {
             if (_parent != null)
             {
-                return _parent.GetTypeDescriptorFromKnownType(objectType, instance);
+                return _parent.GetTypeDescriptorFromRegisteredType(objectType, instance);
             }
 
-            if (SupportsKnownTypes)
+            if (SupportsRegisteredTypes)
             {
                 return _emptyDescriptor ??= new EmptyCustomTypeDescriptor();
             }
@@ -314,13 +314,13 @@ namespace System.ComponentModel
             ICustomTypeDescriptor? FallBackToLegacyProvider() => GetTypeDescriptor(objectType, instance);
         }
 
-        public virtual bool SupportsKnownTypes
+        public virtual bool SupportsRegisteredTypes
         {
             get
             {
                 if (_parent != null)
                 {
-                    return _parent.SupportsKnownTypes;
+                    return _parent.SupportsRegisteredTypes;
                 }
 
                 return false;
@@ -331,13 +331,13 @@ namespace System.ComponentModel
         /// This method returns true if the type is "supported" by the type descriptor
         /// and its chain of type description providers.
         /// </summary>
-        public virtual bool IsKnownType(Type type)
+        public virtual bool IsRegisteredType(Type type)
         {
             ArgumentNullException.ThrowIfNull(type);
 
             if (_parent != null)
             {
-                return _parent.IsKnownType(type);
+                return _parent.IsRegisteredType(type);
             }
 
             return false;

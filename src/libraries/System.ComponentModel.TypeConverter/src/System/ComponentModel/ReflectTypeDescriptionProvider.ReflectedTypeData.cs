@@ -25,12 +25,12 @@ namespace System.ComponentModel
             private object[]? _editors;
             private Type[]? _editorTypes;
             private int _editorCount;
-            private bool _isRegisteredAsKnownType;
+            private bool _isRegisteredAsRegisteredType;
 
-            internal ReflectedTypeData(Type type, bool isKnownType)
+            internal ReflectedTypeData(Type type, bool isRegisteredType)
             {
                 _type = type;
-                _isRegisteredAsKnownType = isKnownType;
+                _isRegisteredAsRegisteredType = isRegisteredType;
             }
 
             /// <summary>
@@ -39,7 +39,7 @@ namespace System.ComponentModel
             /// </summary>
             internal bool IsPopulated => (_attributes != null) | (_events != null) | (_properties != null);
 
-            internal bool IsRegisteredAsKnownType => _isRegisteredAsKnownType;
+            internal bool IsRegisteredAsRegisteredType => _isRegisteredAsRegisteredType;
 
             /// <summary>
             /// Retrieves custom attributes.
@@ -181,7 +181,7 @@ namespace System.ComponentModel
                 Justification = "_type is annotated as preserve All members, so any Types returned from CreateInstance.")]
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
                 Justification = "_type is annotated as preserve All members, so any Types returned from GetAttributes.")]
-            internal TypeConverter GetConverter(object? instance, bool verifyIsKnownType)
+            internal TypeConverter GetConverter(object? instance, bool verifyIsRegisteredType)
             {
                 TypeConverterAttribute? typeAttr = null;
 
@@ -224,13 +224,13 @@ namespace System.ComponentModel
                         // we find one in the stock hashtable.
                         _converter = GetIntrinsicTypeConverter(_type);
 
-                        if (verifyIsKnownType)
+                        if (verifyIsRegisteredType)
                         {
                             if (_converter.GetType() == typeof(TypeConverter))
                             {
-                                if (!_isRegisteredAsKnownType)
+                                if (!_isRegisteredAsRegisteredType)
                                 {
-                                    throw new InvalidOperationException("todo: trimmable applications require registering Types with TypeDescriptor.AddKnownReflectedType().");
+                                    throw new InvalidOperationException("todo: trimmable applications require registering Types with TypeDescriptor.RegisterType().");
                                 }
                             }
                         }
@@ -472,11 +472,11 @@ namespace System.ComponentModel
             //internal PropertyDescriptorCollection GetProperties()
             //    => GetPropertiesImpl();
 
-            //internal PropertyDescriptorCollection GetPropertiesFromKnownType()
+            //internal PropertyDescriptorCollection GetPropertiesFromRegisteredType()
             //{
-            //    if (!IsRegisteredAsKnownType)
+            //    if (!IsRegisteredAsRegisteredType)
             //    {
-            //        throw new InvalidOperationException("todo: trimmable applications require registering Types with TypeDescriptor.AddKnownReflectedType().");
+            //        throw new InvalidOperationException("todo: trimmable applications require registering Types with TypeDescriptor.RegisterType().");
             //    }
 
             //    return GetPropertiesImpl();
@@ -496,7 +496,7 @@ namespace System.ComponentModel
 
                     do
                     {
-                        propertyArray = ReflectGetPropertiesFromKnownType(baseType);
+                        propertyArray = ReflectGetPropertiesFromRegisteredType(baseType);
                         foreach (PropertyDescriptor p in propertyArray)
                         {
                             propertyList.TryAdd(p.Name, p);

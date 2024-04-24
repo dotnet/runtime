@@ -34,8 +34,8 @@ class Program
 
     private static bool RunTest(Type targetType, int expectedPropertyCount)
     {
-        TypeDescriptor.AddKnownReflectedType<ClassWithUnusedProperties>();
-        TypeDescriptor.AddKnownReflectedType<ClassWithUsedProperties>();
+        TypeDescriptor.RegisterType<ClassWithUnusedProperties>();
+        TypeDescriptor.RegisterType<ClassWithUsedProperties>();
         PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(targetType);
         return (properties.Count == expectedPropertyCount);
     }

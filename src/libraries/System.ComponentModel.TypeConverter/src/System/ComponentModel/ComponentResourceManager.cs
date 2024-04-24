@@ -90,7 +90,7 @@ namespace System.ComponentModel
             ApplyResources(value, typeof(T), objectName, culture);
         }
 
-        public virtual void ApplyResourcesToKnownType(object value, string objectName, CultureInfo? culture)
+        public virtual void ApplyResourcesToRegisteredType(object value, string objectName, CultureInfo? culture)
         {
             ArgumentNullException.ThrowIfNull(value);
             ArgumentNullException.ThrowIfNull(objectName);

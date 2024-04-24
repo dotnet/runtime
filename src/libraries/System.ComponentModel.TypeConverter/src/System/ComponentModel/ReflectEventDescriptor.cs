@@ -104,7 +104,7 @@ namespace System.ComponentModel
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
             Justification = "componentClass is annotated as preserve All members, so it can call ReflectEventDescriptor ctor.")]
-        internal static ReflectEventDescriptor CreateWithKnownType(Type componentClass, EventInfo eventInfo) => new ReflectEventDescriptor(componentClass, eventInfo);
+        internal static ReflectEventDescriptor CreateWithRegisteredType(Type componentClass, EventInfo eventInfo) => new ReflectEventDescriptor(componentClass, eventInfo);
 
         /// <summary>
         /// This constructor takes an existing ReflectEventDescriptor and modifies it by merging in the

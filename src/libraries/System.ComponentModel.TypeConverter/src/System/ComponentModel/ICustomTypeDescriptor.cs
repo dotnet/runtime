@@ -88,27 +88,27 @@ namespace System.ComponentModel
         /// <remarks>
         /// todo: if trimmable, th
         /// </remarks>
-        AttributeCollection GetAttributesFromKnownType() => throw TypeDescriptor.ThrowHelper.GetNotSupportedException_CustomTypeProviderMustImplememtMember(nameof(GetAttributesFromKnownType));
+        AttributeCollection GetAttributesFromRegisteredType() => throw TypeDescriptor.ThrowHelper.GetNotSupportedException_CustomTypeProviderMustImplememtMember(nameof(GetAttributesFromRegisteredType));
 
         /// <summary>
         /// Gets a type converter for this object that may be registered as a known type.
         /// </summary>
-        TypeConverter? GetConverterFromKnownType() => throw TypeDescriptor.ThrowHelper.GetNotSupportedException_CustomTypeProviderMustImplememtMember(nameof(GetConverterFromKnownType));
+        TypeConverter? GetConverterFromRegisteredType() => throw TypeDescriptor.ThrowHelper.GetNotSupportedException_CustomTypeProviderMustImplememtMember(nameof(GetConverterFromRegisteredType));
 
         /// <summary>
         /// Gets the events for this instance of a component that may be registered as a known type.
         /// </summary>
-        EventDescriptorCollection GetEventsFromKnownType() => throw TypeDescriptor.ThrowHelper.GetNotSupportedException_CustomTypeProviderMustImplememtMember(nameof(GetEventsFromKnownType));
+        EventDescriptorCollection GetEventsFromRegisteredType() => throw TypeDescriptor.ThrowHelper.GetNotSupportedException_CustomTypeProviderMustImplememtMember(nameof(GetEventsFromRegisteredType));
 
         /// <summary>
         /// Gets the properties for this instance of a component that may be registered as a known type..
         /// </summary>
-        PropertyDescriptorCollection GetPropertiesFromKnownType() => throw TypeDescriptor.ThrowHelper.GetNotSupportedException_CustomTypeProviderMustImplememtMember(nameof(GetPropertiesFromKnownType));
+        PropertyDescriptorCollection GetPropertiesFromRegisteredType() => throw TypeDescriptor.ThrowHelper.GetNotSupportedException_CustomTypeProviderMustImplememtMember(nameof(GetPropertiesFromRegisteredType));
 
         /// <summary>
         /// Whether this type provider supports known types.
         /// </summary>
-        bool SupportsKnownTypes => false;
+        bool SupportsRegisteredTypes => false;
 
         #endregion
     }
