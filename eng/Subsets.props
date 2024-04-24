@@ -173,6 +173,8 @@
     <SubsetName Include="Tools.ILLink" Description="The projects that produce illink and analyzer tools for trimming." />
     <SubsetName Include="Tools.ILLinkTests" OnDemand="true" Description="Unit tests for the tools.illink subset." />
 
+    <SubsetName Include="Tools.CdacReaderTests" OnDemand="true" Description="Units tests for the cDAC reader." />
+
     <!-- Host -->
     <SubsetName Include="Host" Description="The .NET hosts, packages, hosting libraries, and tests. Equivalent to: $(DefaultHostSubsets)" />
     <SubsetName Include="Host.Native" Description="The .NET hosts." />
@@ -358,6 +360,8 @@
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_inbuild.csproj" Category="clr" />
 
     <ProjectToBuild Condition="'$(TargetOS)' == 'windows' or ('$(TargetOS)' == 'linux' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')) or '$(TargetOS)' == 'osx'" Include="$(CoreClrProjectRoot)tools\SuperFileCheck\SuperFileCheck.csproj" Category="clr" />
+
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\cdac-build-tool\cdac-build-tool.csproj" Category="clr" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.toolstests+'))">
@@ -367,6 +371,10 @@
       Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Trimming.Tests\ILCompiler.Trimming.Tests.csproj"
       Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+tools.cdacreadertests+'))">
+    <ProjectToBuild Include="$(SharedNativeRoot)managed\cdacreader\tests\Microsoft.Diagnostics.DataContractReader.Tests.csproj" Test="true" Category="tools"/>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+tools.illink+'))">

@@ -49,14 +49,20 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<System.Double> ConvertToDouble(System.Runtime.Intrinsics.Vector128<System.UInt64> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Int32> ConvertToInt32(System.Runtime.Intrinsics.Vector128<System.Single> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<System.Int32> ConvertToInt32Native(System.Runtime.Intrinsics.Vector128<System.Single> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Int64> ConvertToInt64(System.Runtime.Intrinsics.Vector128<System.Double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<System.Int64> ConvertToInt64Native(System.Runtime.Intrinsics.Vector128<System.Double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Single> ConvertToSingle(System.Runtime.Intrinsics.Vector128<System.Int32> vector) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<System.Single> ConvertToSingle(System.Runtime.Intrinsics.Vector128<System.UInt32> vector) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<System.UInt32> ConvertToUInt32(System.Runtime.Intrinsics.Vector128<System.Single> vector) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector128<System.UInt32> ConvertToUInt32Native(System.Runtime.Intrinsics.Vector128<System.Single> vector) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<System.UInt64> ConvertToUInt64(System.Runtime.Intrinsics.Vector128<System.Double> vector) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector128<System.UInt64> ConvertToUInt64Native(System.Runtime.Intrinsics.Vector128<System.Double> vector) { throw null; }
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector128<T> vector, System.Span<T> destination) { }
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector128<T> vector, T[] destination) { }
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector128<T> vector, T[] destination, int startIndex) { }
@@ -384,14 +390,20 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<System.Double> ConvertToDouble(System.Runtime.Intrinsics.Vector256<System.UInt64> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Int32> ConvertToInt32(System.Runtime.Intrinsics.Vector256<System.Single> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<System.Int32> ConvertToInt32Native(System.Runtime.Intrinsics.Vector256<System.Single> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Int64> ConvertToInt64(System.Runtime.Intrinsics.Vector256<System.Double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<System.Int64> ConvertToInt64Native(System.Runtime.Intrinsics.Vector256<System.Double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Single> ConvertToSingle(System.Runtime.Intrinsics.Vector256<System.Int32> vector) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<System.Single> ConvertToSingle(System.Runtime.Intrinsics.Vector256<System.UInt32> vector) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<System.UInt32> ConvertToUInt32(System.Runtime.Intrinsics.Vector256<System.Single> vector) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector256<System.UInt32> ConvertToUInt32Native(System.Runtime.Intrinsics.Vector256<System.Single> vector) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<System.UInt64> ConvertToUInt64(System.Runtime.Intrinsics.Vector256<System.Double> vector) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector256<System.UInt64> ConvertToUInt64Native(System.Runtime.Intrinsics.Vector256<System.Double> vector) { throw null; }
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector256<T> vector, System.Span<T> destination) { }
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector256<T> vector, T[] destination) { }
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector256<T> vector, T[] destination, int startIndex) { }
@@ -719,14 +731,20 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector512<System.Double> ConvertToDouble(System.Runtime.Intrinsics.Vector512<System.UInt64> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<System.Int32> ConvertToInt32(System.Runtime.Intrinsics.Vector512<System.Single> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int32> ConvertToInt32Native(System.Runtime.Intrinsics.Vector512<System.Single> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<System.Int64> ConvertToInt64(System.Runtime.Intrinsics.Vector512<System.Double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int64> ConvertToInt64Native(System.Runtime.Intrinsics.Vector512<System.Double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<System.Single> ConvertToSingle(System.Runtime.Intrinsics.Vector512<System.Int32> vector) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector512<System.Single> ConvertToSingle(System.Runtime.Intrinsics.Vector512<System.UInt32> vector) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector512<System.UInt32> ConvertToUInt32(System.Runtime.Intrinsics.Vector512<System.Single> vector) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt32> ConvertToUInt32Native(System.Runtime.Intrinsics.Vector512<System.Single> vector) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector512<System.UInt64> ConvertToUInt64(System.Runtime.Intrinsics.Vector512<System.Double> vector) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt64> ConvertToUInt64Native(System.Runtime.Intrinsics.Vector512<System.Double> vector) { throw null; }
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector512<T> vector, System.Span<T> destination) { }
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector512<T> vector, T[] destination) { }
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector512<T> vector, T[] destination, int startIndex) { }
@@ -1050,14 +1068,20 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<System.Double> ConvertToDouble(System.Runtime.Intrinsics.Vector64<System.UInt64> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Int32> ConvertToInt32(System.Runtime.Intrinsics.Vector64<System.Single> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<System.Int32> ConvertToInt32Native(System.Runtime.Intrinsics.Vector64<System.Single> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Int64> ConvertToInt64(System.Runtime.Intrinsics.Vector64<System.Double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<System.Int64> ConvertToInt64Native(System.Runtime.Intrinsics.Vector64<System.Double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Single> ConvertToSingle(System.Runtime.Intrinsics.Vector64<System.Int32> vector) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<System.Single> ConvertToSingle(System.Runtime.Intrinsics.Vector64<System.UInt32> vector) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<System.UInt32> ConvertToUInt32(System.Runtime.Intrinsics.Vector64<System.Single> vector) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector64<System.UInt32> ConvertToUInt32Native(System.Runtime.Intrinsics.Vector64<System.Single> vector) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<System.UInt64> ConvertToUInt64(System.Runtime.Intrinsics.Vector64<System.Double> vector) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector64<System.UInt64> ConvertToUInt64Native(System.Runtime.Intrinsics.Vector64<System.Double> vector) { throw null; }
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector64<T> vector, System.Span<T> destination) { }
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector64<T> vector, T[] destination) { }
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector64<T> vector, T[] destination, int startIndex) { }
@@ -2837,15 +2861,21 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Runtime.Intrinsics.Vector64<byte> ShiftRightLogicalRoundedNarrowingLower(System.Runtime.Intrinsics.Vector128<ushort> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Min = 1, Max = (byte)(64))] byte count) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<ushort> ShiftRightLogicalRoundedNarrowingLower(System.Runtime.Intrinsics.Vector128<uint> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Min = 1, Max = (byte)(32))] byte count) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<uint> ShiftRightLogicalRoundedNarrowingLower(System.Runtime.Intrinsics.Vector128<ulong> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Min = 1, Max = (byte)(16))] byte count) { throw null; }
+        [System.Obsolete("The underlying hardware instruction does not perform a signed saturate narrowing operation, and it always returns an unsigned result. Use the unsigned overload instead.", DiagnosticId = "SYSLIB0055", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Runtime.Intrinsics.Vector64<sbyte> ShiftRightLogicalRoundedNarrowingSaturateLower(System.Runtime.Intrinsics.Vector128<short> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Min = 1, Max = (byte)(64))] byte count) { throw null; }
+        [System.Obsolete("The underlying hardware instruction does not perform a signed saturate narrowing operation, and it always returns an unsigned result. Use the unsigned overload instead.", DiagnosticId = "SYSLIB0055", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Runtime.Intrinsics.Vector64<short> ShiftRightLogicalRoundedNarrowingSaturateLower(System.Runtime.Intrinsics.Vector128<int> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Min = 1, Max = (byte)(32))] byte count) { throw null; }
+        [System.Obsolete("The underlying hardware instruction does not perform a signed saturate narrowing operation, and it always returns an unsigned result. Use the unsigned overload instead.", DiagnosticId = "SYSLIB0055", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Runtime.Intrinsics.Vector64<int> ShiftRightLogicalRoundedNarrowingSaturateLower(System.Runtime.Intrinsics.Vector128<long> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Min = 1, Max = (byte)(16))] byte count) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<byte> ShiftRightLogicalRoundedNarrowingSaturateLower(System.Runtime.Intrinsics.Vector128<ushort> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Min = 1, Max = (byte)(64))] byte count) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<ushort> ShiftRightLogicalRoundedNarrowingSaturateLower(System.Runtime.Intrinsics.Vector128<uint> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Min = 1, Max = (byte)(32))] byte count) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<uint> ShiftRightLogicalRoundedNarrowingSaturateLower(System.Runtime.Intrinsics.Vector128<ulong> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Min = 1, Max = (byte)(16))] byte count) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> ShiftRightLogicalRoundedNarrowingSaturateUpper(System.Runtime.Intrinsics.Vector64<byte> lower, System.Runtime.Intrinsics.Vector128<ushort> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Min = 1, Max = (byte)(64))] byte count) { throw null; }
+        [System.Obsolete("The underlying hardware instruction does not perform a signed saturate narrowing operation, and it always returns an unsigned result. Use the unsigned overload instead.", DiagnosticId = "SYSLIB0055", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Runtime.Intrinsics.Vector128<short> ShiftRightLogicalRoundedNarrowingSaturateUpper(System.Runtime.Intrinsics.Vector64<short> lower, System.Runtime.Intrinsics.Vector128<int> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Min = 1, Max = (byte)(32))] byte count) { throw null; }
+        [System.Obsolete("The underlying hardware instruction does not perform a signed saturate narrowing operation, and it always returns an unsigned result. Use the unsigned overload instead.", DiagnosticId = "SYSLIB0055", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Runtime.Intrinsics.Vector128<int> ShiftRightLogicalRoundedNarrowingSaturateUpper(System.Runtime.Intrinsics.Vector64<int> lower, System.Runtime.Intrinsics.Vector128<long> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Min = 1, Max = (byte)(16))] byte count) { throw null; }
+        [System.Obsolete("The underlying hardware instruction does not perform a signed saturate narrowing operation, and it always returns an unsigned result. Use the unsigned overload instead.", DiagnosticId = "SYSLIB0055", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Runtime.Intrinsics.Vector128<sbyte> ShiftRightLogicalRoundedNarrowingSaturateUpper(System.Runtime.Intrinsics.Vector64<sbyte> lower, System.Runtime.Intrinsics.Vector128<short> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Min = 1, Max = (byte)(64))] byte count) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ushort> ShiftRightLogicalRoundedNarrowingSaturateUpper(System.Runtime.Intrinsics.Vector64<ushort> lower, System.Runtime.Intrinsics.Vector128<uint> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Min = 1, Max = (byte)(32))] byte count) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<uint> ShiftRightLogicalRoundedNarrowingSaturateUpper(System.Runtime.Intrinsics.Vector64<uint> lower, System.Runtime.Intrinsics.Vector128<ulong> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Min = 1, Max = (byte)(16))] byte count) { throw null; }
@@ -3690,8 +3720,11 @@ namespace System.Runtime.Intrinsics.Arm
             public static System.Runtime.Intrinsics.Vector64<byte> ShiftRightLogicalNarrowingSaturateScalar(System.Runtime.Intrinsics.Vector64<ushort> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Min = 1, Max = (byte)(32))] byte count) { throw null; }
             public static System.Runtime.Intrinsics.Vector64<ushort> ShiftRightLogicalNarrowingSaturateScalar(System.Runtime.Intrinsics.Vector64<uint> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Min = 1, Max = (byte)(16))] byte count) { throw null; }
             public static System.Runtime.Intrinsics.Vector64<uint> ShiftRightLogicalNarrowingSaturateScalar(System.Runtime.Intrinsics.Vector64<ulong> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Min = 1, Max = (byte)(8))] byte count) { throw null; }
+            [System.Obsolete("The underlying hardware instruction does not perform a signed saturate narrowing operation, and it always returns an unsigned result. Use the unsigned overload instead.", DiagnosticId = "SYSLIB0055", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
             public static System.Runtime.Intrinsics.Vector64<sbyte> ShiftRightLogicalRoundedNarrowingSaturateScalar(System.Runtime.Intrinsics.Vector64<short> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Min = 1, Max = (byte)(32))] byte count) { throw null; }
+            [System.Obsolete("The underlying hardware instruction does not perform a signed saturate narrowing operation, and it always returns an unsigned result. Use the unsigned overload instead.", DiagnosticId = "SYSLIB0055", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
             public static System.Runtime.Intrinsics.Vector64<short> ShiftRightLogicalRoundedNarrowingSaturateScalar(System.Runtime.Intrinsics.Vector64<int> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Min = 1, Max = (byte)(16))] byte count) { throw null; }
+            [System.Obsolete("The underlying hardware instruction does not perform a signed saturate narrowing operation, and it always returns an unsigned result. Use the unsigned overload instead.", DiagnosticId = "SYSLIB0055", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
             public static System.Runtime.Intrinsics.Vector64<int> ShiftRightLogicalRoundedNarrowingSaturateScalar(System.Runtime.Intrinsics.Vector64<long> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Min = 1, Max = (byte)(8))] byte count) { throw null; }
             public static System.Runtime.Intrinsics.Vector64<byte> ShiftRightLogicalRoundedNarrowingSaturateScalar(System.Runtime.Intrinsics.Vector64<ushort> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Min = 1, Max = (byte)(32))] byte count) { throw null; }
             public static System.Runtime.Intrinsics.Vector64<ushort> ShiftRightLogicalRoundedNarrowingSaturateScalar(System.Runtime.Intrinsics.Vector64<uint> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Min = 1, Max = (byte)(16))] byte count) { throw null; }
