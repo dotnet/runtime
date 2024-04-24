@@ -19,7 +19,7 @@ public unsafe class TargetTests
 
     private static readonly (string Name, ulong Value, string? Type)[] TestGlobals =
     [
-        ("value", 0xff, null),
+        ("value", (ulong)sbyte.MaxValue, null),
         ("int8Value", 0x12, "int8"),
         ("uint8Value", 0x12, "uint8"),
         ("int16Value", 0x1234, "int16"),
@@ -111,7 +111,12 @@ public unsafe class TargetTests
             bool success = Target.TryCreate(ContractDescriptorAddr, &ReadFromTarget, &context, out Target? target);
             Assert.True(success);
 
-            ValidateGlobals(target, TestGlobals);
+            // Indirect values are pointer-sized, so max 32-bits for a 32-bit target
+            var expected = is64Bit
+                ? TestGlobals
+                : TestGlobals.Select(g => (g.Name, g.Value & 0xffffffff, g.Type)).ToArray();
+
+            ValidateGlobals(target, expected);
         }
     }
 
@@ -148,8 +153,50 @@ public unsafe class TargetTests
             // Validate that each global can/cannot be read successfully based on its type
             // and that it matches the expected value if successfully read
             {
-                bool success = target.TryReadGlobalUInt8(name, out byte actual);
+                bool success = target.TryReadGlobal(name, out sbyte actual);
+                Assert.Equal(type is null || type == "int8", success);
+                if (success)
+                    Assert.Equal((sbyte)value, actual);
+            }
+            {
+                bool success = target.TryReadGlobal(name, out byte actual);
                 Assert.Equal(type is null || type == "uint8", success);
+                if (success)
+                    Assert.Equal(value, actual);
+            }
+            {
+                bool success = target.TryReadGlobal(name, out short actual);
+                Assert.Equal(type is null || type == "int16", success);
+                if (success)
+                    Assert.Equal((short)value, actual);
+            }
+            {
+                bool success = target.TryReadGlobal(name, out ushort actual);
+                Assert.Equal(type is null || type == "uint16", success);
+                if (success)
+                    Assert.Equal(value, actual);
+            }
+            {
+                bool success = target.TryReadGlobal(name, out int actual);
+                Assert.Equal(type is null || type == "int32", success);
+                if (success)
+                    Assert.Equal((int)value, actual);
+            }
+            {
+                bool success = target.TryReadGlobal(name, out uint actual);
+                Assert.Equal(type is null || type == "uint32", success);
+                if (success)
+                    Assert.Equal(value, actual);
+            }
+            {
+                bool success = target.TryReadGlobal(name, out long actual);
+                Assert.Equal(type is null || type == "int64", success);
+                if (success)
+                    Assert.Equal((long)value, actual);
+            }
+            {
+                bool success = target.TryReadGlobal(name, out ulong actual);
+                Assert.Equal(type is null || type == "uint64", success);
                 if (success)
                     Assert.Equal(value, actual);
             }

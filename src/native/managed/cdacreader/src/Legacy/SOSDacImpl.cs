@@ -35,7 +35,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
 
     public int GetBreakingChangeVersion()
     {
-        return _target.ReadGlobalUInt8(Constants.Globals.SOSBreakingChangeVersion);
+        return _target.ReadGlobal<byte>(Constants.Globals.SOSBreakingChangeVersion);
     }
 
     public unsafe int GetCCWData(ulong ccw, void* data) => HResults.E_NOTIMPL;
