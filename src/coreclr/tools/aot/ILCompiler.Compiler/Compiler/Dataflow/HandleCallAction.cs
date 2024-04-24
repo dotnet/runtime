@@ -218,8 +218,8 @@ namespace ILLink.Shared.TrimAnalysis
                         // We could try to analyze if the type is known, but for now making sure this works for canonical arrays is enough.
                         TypeDesc canonArrayType = _reflectionMarker.Factory.TypeSystemContext.CanonType.MakeArrayType();
                         _reflectionMarker.MarkType(_diagnosticContext.Origin, canonArrayType, "Array.CreateInstance was called");
-                        goto case IntrinsicId.None;
                     }
+                    break;
 
                 //
                 // System.Enum
