@@ -94,9 +94,18 @@ namespace System.Reflection.Metadata
         /// For example, given "Namespace.Declaring+Nested", unwraps the outermost type and returns "Namespace.Declaring".
         /// </remarks>
         /// <exception cref="InvalidOperationException">The current type is not a nested type.</exception>
-        public TypeName DeclaringType => _declaringType is not null
-            ? _declaringType
-            : throw TypeNameParserHelpers.InvalidOperation_NotNestedType();
+        public TypeName DeclaringType
+        {
+            get
+            {
+                if (_declaringType is null)
+                {
+                    TypeNameParserHelpers.ThrowInvalidOperation_NotNestedType();
+                }
+
+                return _declaringType;
+            }
+        }
 
         /// <summary>
         /// The full name of this type, including namespace, but without the assembly name; e.g., "System.Int32".
@@ -306,9 +315,14 @@ namespace System.Reflection.Metadata
         /// </remarks>
         /// <exception cref="InvalidOperationException">The current type is not an array, pointer or reference.</exception>
         public TypeName GetElementType()
-            => IsArray || IsPointer || IsByRef
-                ? _elementOrGenericType!
-                : throw TypeNameParserHelpers.InvalidOperation_NoElement();
+        {
+            if (!(IsArray || IsPointer || IsByRef))
+            {
+                TypeNameParserHelpers.ThrowInvalidOperation_NoElement();
+            }
+
+            return _elementOrGenericType!;
+        }
 
         /// <summary>
         /// Returns a TypeName object that represents a generic type name definition from which the current generic type name can be constructed.
@@ -318,9 +332,14 @@ namespace System.Reflection.Metadata
         /// </remarks>
         /// <exception cref="InvalidOperationException">The current type is not a generic type.</exception>
         public TypeName GetGenericTypeDefinition()
-            => IsConstructedGenericType
-                ? _elementOrGenericType!
-                : throw TypeNameParserHelpers.InvalidOperation_NotGenericType();
+        {
+            if (!IsConstructedGenericType)
+            {
+                TypeNameParserHelpers.ThrowInvalidOperation_NotGenericType();
+            }
+
+            return _elementOrGenericType!;
+        }
 
         /// <summary>
         /// Parses a span of characters into a type name.
@@ -340,11 +359,7 @@ namespace System.Reflection.Metadata
         /// <param name="options">An object that describes optional <seealso cref="TypeNameParseOptions"/> parameters to use.</param>
         /// <param name="result">Contains the result when parsing succeeds.</param>
         /// <returns>true if type name was converted successfully, otherwise, false.</returns>
-        public static bool TryParse(ReadOnlySpan<char> typeName,
-#if SYSTEM_REFLECTION_METADATA || SYSTEM_PRIVATE_CORELIB // required by some tools that include this file but don't include the attribute
-            [NotNullWhen(true)]
-#endif
-        out TypeName? result, TypeNameParseOptions? options = default)
+        public static bool TryParse(ReadOnlySpan<char> typeName, [NotNullWhen(true)] out TypeName? result, TypeNameParseOptions? options = default)
         {
             result = TypeNameParser.Parse(typeName, throwOnError: false, options);
             return result is not null;
@@ -356,12 +371,14 @@ namespace System.Reflection.Metadata
         /// <returns>An integer that contains the number of dimensions in the current type.</returns>
         /// <exception cref="InvalidOperationException">The current type is not an array.</exception>
         public int GetArrayRank()
-            => _rankOrModifier switch
+        {
+            if (!(_rankOrModifier == TypeNameParserHelpers.SZArray || _rankOrModifier > 0))
             {
-                TypeNameParserHelpers.SZArray => 1,
-                _ when _rankOrModifier > 0 => _rankOrModifier,
-                _ => throw TypeNameParserHelpers.InvalidOperation_HasToBeArrayClass()
-            };
+                TypeNameParserHelpers.ThrowInvalidOperation_HasToBeArrayClass();
+            }
+
+            return _rankOrModifier == TypeNameParserHelpers.SZArray ? 1 : _rankOrModifier;
+        }
 
         /// <summary>
         /// If this <see cref="TypeName"/> represents a constructed generic type, returns an array

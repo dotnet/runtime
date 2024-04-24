@@ -4319,13 +4319,4 @@
   <data name="NotSupported_EmitDebugInfo" xml:space="preserve">
     <value>Emitting debug info is not supported for this member.</value>
   </data>
-  <data name="InvalidOperation_MaxNodesExceeded" xml:space="preserve">
-    <value>Maximum node count of {0} exceeded.</value>
-  </data>
-  <data name="InvalidOperation_NotNestedType" xml:space="preserve">
-    <value>This operation is only valid on nested types.</value>
-  </data>
-  <data name="InvalidOperation_NoElement" xml:space="preserve">
-    <value>This operation is only valid on arrays, pointers and references.</value>
-  </data>
 </root>

@@ -3,7 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
+using System.Reflection.Metadata;
 using System.Text;
 
 #nullable enable
@@ -74,11 +74,13 @@ namespace System.Reflection
             return (typeNamespace, name);
         }
 
-        private Type? Resolve(Metadata.TypeName typeName)
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "Used to implement resolving types from strings.")]
+        private Type? Resolve(TypeName typeName)
         {
             if (typeName.IsNested)
             {
-                Metadata.TypeName? current = typeName;
+                TypeName? current = typeName;
                 int nestingDepth = 0;
                 while (current is not null && current.IsNested)
                 {
@@ -104,40 +106,54 @@ namespace System.Reflection
 #else // the tools require unescaped names
                 string nonNestedParentName = UnescapeTypeName(current!.FullName);
 #endif
-
-                Type? type = GetType(nonNestedParentName, nestedTypeNames, typeName.AssemblyName, typeName.FullName);
-                return Make(type, typeName);
+                Type? type = GetType(nonNestedParentName, nestedTypeNames, typeName);
+                return type is null || !typeName.IsConstructedGenericType ? type : MakeGenericType(type, typeName);
             }
             else if (typeName.IsConstructedGenericType)
             {
-                return Make(Resolve(typeName.GetGenericTypeDefinition()), typeName);
+                Type? type = Resolve(typeName.GetGenericTypeDefinition());
+                return type is null ? null : MakeGenericType(type, typeName);
             }
             else if (typeName.IsArray || typeName.IsPointer || typeName.IsByRef)
             {
-                Metadata.TypeName elementType = typeName.GetElementType();
-
-                if (elementType.IsByRef || (typeName.IsVariableBoundArrayType && typeName.GetArrayRank() > 32))
+                Type? type = Resolve(typeName.GetElementType());
+                if (type is null)
                 {
-#if SYSTEM_PRIVATE_CORELIB
-                    throw new TypeLoadException(); // CLR throws TypeLoadException for invalid decorators
-#else
                     return null;
-#endif
                 }
 
-                return Make(Resolve(elementType), typeName);
+                if (typeName.IsByRef)
+                {
+                    return type.MakeByRefType();
+                }
+                else if (typeName.IsPointer)
+                {
+                    return type.MakePointerType();
+                }
+                else if (typeName.IsSZArray)
+                {
+                    return type.MakeArrayType();
+                }
+                else
+                {
+                    Debug.Assert(typeName.IsVariableBoundArrayType);
+
+                    return type.MakeArrayType(rank: typeName.GetArrayRank());
+                }
             }
             else
             {
+                Debug.Assert(typeName.IsSimple);
+
                 Type? type = GetType(
 #if SYSTEM_PRIVATE_CORELIB
                     typeName.FullName,
 #else // the tools require unescaped names
                     UnescapeTypeName(typeName.FullName),
 #endif
-                    nestedTypeNames: ReadOnlySpan<string>.Empty, typeName.AssemblyName, typeName.FullName);
+                    nestedTypeNames: ReadOnlySpan<string>.Empty, typeName);
 
-                return Make(type, typeName);
+                return type;
             }
         }
 
@@ -145,51 +161,26 @@ namespace System.Reflection
             Justification = "Used to implement resolving types from strings.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050:RequiresDynamicCode",
             Justification = "Used to implement resolving types from strings.")]
-        private Type? Make(Type? type, Metadata.TypeName typeName)
+        private Type? MakeGenericType(Type type, TypeName typeName)
         {
-            if (type is null || typeName.IsSimple)
-            {
-                return type;
-            }
-            else if (typeName.IsConstructedGenericType)
-            {
-                var genericArgs = typeName.GetGenericArguments();
+            var genericArgs = typeName.GetGenericArguments();
 #if SYSTEM_PRIVATE_CORELIB
-                int size = genericArgs.Count;
+            int size = genericArgs.Count;
 #else
-                int size = genericArgs.Length;
+            int size = genericArgs.Length;
 #endif
-                Type[] genericTypes = new Type[size];
-                for (int i = 0; i < size; i++)
+            Type[] genericTypes = new Type[size];
+            for (int i = 0; i < size; i++)
+            {
+                Type? genericArg = Resolve(genericArgs[i]);
+                if (genericArg is null)
                 {
-                    Type? genericArg = Resolve(genericArgs[i]);
-                    if (genericArg is null)
-                    {
-                        return null;
-                    }
-                    genericTypes[i] = genericArg;
+                    return null;
                 }
+                genericTypes[i] = genericArg;
+            }
 
-                return type.MakeGenericType(genericTypes);
-            }
-            else if (typeName.IsByRef)
-            {
-                return type.MakeByRefType();
-            }
-            else if (typeName.IsPointer)
-            {
-                return type.MakePointerType();
-            }
-            else if (typeName.IsSZArray)
-            {
-                return type.MakeArrayType();
-            }
-            else
-            {
-                Debug.Assert(typeName.IsVariableBoundArrayType);
-
-                return type.MakeArrayType(rank: typeName.GetArrayRank());
-            }
+            return type.MakeGenericType(genericTypes);
         }
     }
 }

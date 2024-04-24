@@ -185,13 +185,13 @@ namespace System.Reflection
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "TypeNameParser.GetType is marked as RequiresUnreferencedCode.")]
         private Type? GetType(string escapedTypeName, // For nested types, it's Name. For other types it's FullName
-            ReadOnlySpan<string> nestedTypeNames, Metadata.AssemblyNameInfo? assemblyNameIfAny, string fullEscapedName)
+            ReadOnlySpan<string> nestedTypeNames, Metadata.TypeName parsedName)
         {
             Assembly? assembly;
 
-            if (assemblyNameIfAny is not null)
+            if (parsedName.AssemblyName is not null)
             {
-                assembly = ResolveAssembly(assemblyNameIfAny.ToAssemblyName());
+                assembly = ResolveAssembly(parsedName.AssemblyName.ToAssemblyName());
                 if (assembly is null)
                     return null;
             }
@@ -230,7 +230,7 @@ namespace System.Reflection
                         }
                         return null;
                     }
-                    return GetTypeFromDefaultAssemblies(UnescapeTypeName(escapedTypeName), nestedTypeNames, fullEscapedName);
+                    return GetTypeFromDefaultAssemblies(UnescapeTypeName(escapedTypeName), nestedTypeNames, parsedName);
                 }
 
                 if (assembly is RuntimeAssembly runtimeAssembly)
@@ -277,7 +277,7 @@ namespace System.Reflection
             return type;
         }
 
-        private Type? GetTypeFromDefaultAssemblies(string typeName, ReadOnlySpan<string> nestedTypeNames, string fullEscapedName)
+        private Type? GetTypeFromDefaultAssemblies(string typeName, ReadOnlySpan<string> nestedTypeNames, Metadata.TypeName parsedName)
         {
             RuntimeAssembly? requestingAssembly = (RuntimeAssembly?)_requestingAssembly;
             if (requestingAssembly is not null)
@@ -295,7 +295,7 @@ namespace System.Reflection
                     return type;
             }
 
-            RuntimeAssembly? resolvedAssembly = AssemblyLoadContext.OnTypeResolve(requestingAssembly, fullEscapedName);
+            RuntimeAssembly? resolvedAssembly = AssemblyLoadContext.OnTypeResolve(requestingAssembly, parsedName.FullName);
             if (resolvedAssembly is not null)
             {
                 Type? type = resolvedAssembly.GetTypeCore(typeName, nestedTypeNames, throwOnError: false, ignoreCase: _ignoreCase);
@@ -304,7 +304,7 @@ namespace System.Reflection
             }
 
             if (_throwOnError)
-                throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveTypeFromAssembly, fullEscapedName, (requestingAssembly ?? coreLib).FullName));
+                throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveTypeFromAssembly, parsedName.FullName, (requestingAssembly ?? coreLib).FullName));
 
             return null;
         }

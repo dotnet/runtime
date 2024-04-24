@@ -163,7 +163,7 @@ namespace System.Reflection
                     {
                         return false;
                     }
-                    if (!TryParsePKT(attributeValue, isToken: true, ref pkt))
+                    if (!TryParsePKT(attributeValue, isToken: true, out pkt))
                     {
                         return false;
                     }
@@ -174,7 +174,7 @@ namespace System.Reflection
                     {
                         return false;
                     }
-                    if (!TryParsePKT(attributeValue, isToken: false, ref pkt))
+                    if (!TryParsePKT(attributeValue, isToken: false, out pkt))
                     {
                         return false;
                     }
@@ -301,7 +301,7 @@ namespace System.Reflection
             return true;
         }
 
-        private static bool TryParsePKT(string attributeValue, bool isToken, ref byte[]? result)
+        private static bool TryParsePKT(string attributeValue, bool isToken, out byte[]? result)
         {
             if (attributeValue.Equals("null", StringComparison.OrdinalIgnoreCase) || attributeValue == string.Empty)
             {
@@ -311,12 +311,14 @@ namespace System.Reflection
 
             if (attributeValue.Length % 2 != 0 || (isToken && attributeValue.Length != 8 * 2))
             {
+                result = null;
                 return false;
             }
 
             byte[] pkt = new byte[attributeValue.Length / 2];
             if (!HexConverter.TryDecodeFromUtf16(attributeValue.AsSpan(), pkt, out int _))
             {
+                result = null;
                 return false;
             }
 

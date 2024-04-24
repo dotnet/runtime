@@ -68,10 +68,10 @@ namespace System.Reflection
             }
         }
 
-        private Type GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, AssemblyNameInfo assemblyNameIfAny, string fullEscapedName)
+        private Type GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, TypeName parsedName)
         {
-            ModuleDesc module = (assemblyNameIfAny == null) ? _module :
-                _module.Context.ResolveAssembly(assemblyNameIfAny.ToAssemblyName(), throwIfNotFound: _throwIfNotFound);
+            ModuleDesc module = (parsedName.AssemblyName == null) ? _module :
+                _module.Context.ResolveAssembly(parsedName.AssemblyName.ToAssemblyName(), throwIfNotFound: _throwIfNotFound);
 
             if (_canonResolver != null && nestedTypeNames.IsEmpty)
             {
@@ -88,7 +88,7 @@ namespace System.Reflection
             }
 
             // If it didn't resolve and wasn't assembly-qualified, we also try core library
-            if (assemblyNameIfAny == null)
+            if (parsedName.AssemblyName == null)
             {
                 Type type = GetTypeCore(module.Context.SystemModule, typeName, nestedTypeNames);
                 if (type != null)
@@ -96,7 +96,7 @@ namespace System.Reflection
             }
 
             if (_throwIfNotFound)
-                ThrowHelper.ThrowTypeLoadException(fullEscapedName, module);
+                ThrowHelper.ThrowTypeLoadException(parsedName.FullName, module);
             return null;
         }
 

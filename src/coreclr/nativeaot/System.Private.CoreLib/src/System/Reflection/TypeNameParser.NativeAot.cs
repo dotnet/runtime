@@ -117,13 +117,13 @@ namespace System.Reflection
             Justification = "GetType APIs are marked as RequiresUnreferencedCode.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "GetType APIs are marked as RequiresUnreferencedCode.")]
-        private Type? GetType(string escapedTypeName, ReadOnlySpan<string> nestedTypeNames, Metadata.AssemblyNameInfo? assemblyNameIfAny, string _)
+        private Type? GetType(string escapedTypeName, ReadOnlySpan<string> nestedTypeNames, Metadata.TypeName parsedName)
         {
             Assembly? assembly;
 
-            if (assemblyNameIfAny is not null)
+            if (parsedName.AssemblyName is not null)
             {
-                assembly = ResolveAssembly(assemblyNameIfAny);
+                assembly = ResolveAssembly(parsedName.AssemblyName);
                 if (assembly is null)
                     return null;
             }

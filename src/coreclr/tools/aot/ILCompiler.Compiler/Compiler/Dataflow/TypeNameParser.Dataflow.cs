@@ -55,13 +55,13 @@ namespace System.Reflection
             }
         }
 
-        private Type GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, AssemblyNameInfo assemblyNameIfAny, string _)
+        private Type GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, TypeName parsedName)
         {
             ModuleDesc module;
 
-            if (assemblyNameIfAny != null)
+            if (parsedName.AssemblyName != null)
             {
-                module = _context.ResolveAssembly(assemblyNameIfAny.ToAssemblyName(), throwIfNotFound: false);
+                module = _context.ResolveAssembly(parsedName.AssemblyName.ToAssemblyName(), throwIfNotFound: false);
             }
             else
             {
@@ -79,7 +79,7 @@ namespace System.Reflection
             }
 
             // If it didn't resolve and wasn't assembly-qualified, we also try core library
-            if (assemblyNameIfAny == null)
+            if (parsedName.AssemblyName == null)
             {
                 Type type = GetTypeCore(_context.SystemModule, typeName, nestedTypeNames);
                 if (type != null)

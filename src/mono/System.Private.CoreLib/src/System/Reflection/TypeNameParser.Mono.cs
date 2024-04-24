@@ -95,9 +95,9 @@ namespace System.Reflection
             Justification = "TypeNameParser.GetType is marked as RequiresUnreferencedCode.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "TypeNameParser.GetType is marked as RequiresUnreferencedCode.")]
-        private Type? GetType(string escapedTypeName, ReadOnlySpan<string> nestedTypeNames, Metadata.AssemblyNameInfo? assemblyNameIfAny, string _)
+        private Type? GetType(string escapedTypeName, ReadOnlySpan<string> nestedTypeNames, Metadata.TypeName parsedName)
         {
-            Assembly? assembly = (assemblyNameIfAny is not null) ? ResolveAssembly(assemblyNameIfAny.ToAssemblyName()) : null;
+            Assembly? assembly = (parsedName.AssemblyName is not null) ? ResolveAssembly(parsedName.AssemblyName.ToAssemblyName()) : null;
 
             // Both the external type resolver and the default type resolvers expect escaped type names
             Type? type;

@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 #nullable enable
@@ -249,7 +250,6 @@ namespace System.Reflection.Metadata
 #endif
                 if (isNestedType)
                 {
-                    // do not validate the type name now, it will be validated as a whole nested type name later
                     (nestedNameLengths ??= new()).Add(length);
                     totalLength += 1; // skip the '+' sign in next search
                 }
@@ -330,44 +330,50 @@ namespace System.Reflection.Metadata
             return false;
         }
 
-        internal static InvalidOperationException InvalidOperation_MaxNodesExceeded(int limit) =>
-#if SYSTEM_REFLECTION_METADATA || SYSTEM_PRIVATE_CORELIB
+        [DoesNotReturn]
+        internal static void ThrowInvalidOperation_MaxNodesExceeded(int limit) => throw
+#if SYSTEM_REFLECTION_METADATA
             new InvalidOperationException(SR.Format(SR.InvalidOperation_MaxNodesExceeded, limit));
-#else // tools that reference this file as a link
+#else // corelib and tools that reference this file as a link
             new InvalidOperationException();
 #endif
 
-        internal static ArgumentException ArgumentException_InvalidTypeName(int errorIndex) =>
+        [DoesNotReturn]
+        internal static void ThrowArgumentException_InvalidTypeName(int errorIndex) => throw
 #if SYSTEM_PRIVATE_CORELIB
             new ArgumentException(SR.Arg_ArgumentException, $"typeName@{errorIndex}");
 #elif SYSTEM_REFLECTION_METADATA
-            new ArgumentException(SR.Argument_InvalidTypeName);
+            new ArgumentException(SR.Argument_InvalidTypeName, $"typeName@{errorIndex}");
 #else // tools that reference this file as a link
             new ArgumentException();
 #endif
 
-        internal static InvalidOperationException InvalidOperation_NotGenericType() =>
+        [DoesNotReturn]
+        internal static void ThrowInvalidOperation_NotGenericType() => throw
 #if SYSTEM_REFLECTION_METADATA || SYSTEM_PRIVATE_CORELIB
             new InvalidOperationException(SR.InvalidOperation_NotGenericType);
 #else // tools that reference this file as a link
             new InvalidOperationException();
 #endif
 
-        internal static InvalidOperationException InvalidOperation_NotNestedType() =>
-#if SYSTEM_REFLECTION_METADATA || SYSTEM_PRIVATE_CORELIB
+        [DoesNotReturn]
+        internal static void ThrowInvalidOperation_NotNestedType() => throw
+#if SYSTEM_REFLECTION_METADATA
             new InvalidOperationException(SR.InvalidOperation_NotNestedType);
-#else // tools that reference this file as a link
+#else // corelib and tools that reference this file as a link
             new InvalidOperationException();
 #endif
 
-        internal static InvalidOperationException InvalidOperation_NoElement() =>
-#if SYSTEM_REFLECTION_METADATA || SYSTEM_PRIVATE_CORELIB
+        [DoesNotReturn]
+        internal static void ThrowInvalidOperation_NoElement() => throw
+#if SYSTEM_REFLECTION_METADATA
             new InvalidOperationException(SR.InvalidOperation_NoElement);
-#else // tools that reference this file as a link
+#else // corelib and tools that reference this file as a link
             new InvalidOperationException();
 #endif
 
-        internal static InvalidOperationException InvalidOperation_HasToBeArrayClass() =>
+        [DoesNotReturn]
+        internal static void ThrowInvalidOperation_HasToBeArrayClass() => throw
 #if SYSTEM_REFLECTION_METADATA || SYSTEM_PRIVATE_CORELIB
             new InvalidOperationException(SR.Argument_HasToBeArrayClass);
 #else // tools that reference this file as a link

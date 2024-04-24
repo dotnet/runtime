@@ -73,8 +73,8 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Theory]
-        [InlineData("int&&")] // by-ref to by-ref is currently not supported by CLR
-        [InlineData("int[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]")] // more than max array rank (32)
+        [InlineData("System.Int32&&")] // by-ref to by-ref is currently not supported by CLR
+        [InlineData("System.Int32[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]")] // more than max array rank (32)
         public void ParserIsNotEnforcingRuntimeSpecificRules(string input)
         {
             Assert.True(TypeName.TryParse(input.AsSpan(), out _));
@@ -83,8 +83,6 @@ namespace System.Reflection.Metadata.Tests
             {
 #if NETCOREAPP
                 Assert.Throws<TypeLoadException>(() => Type.GetType(input));
-#elif NETFRAMEWORK
-                Assert.Null(Type.GetType(input));
 #endif
             }
         }

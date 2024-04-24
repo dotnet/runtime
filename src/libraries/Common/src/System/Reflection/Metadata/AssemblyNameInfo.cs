@@ -88,7 +88,7 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Gets the attributes of the assembly.
         /// </summary>
-        public AssemblyNameFlags Flags => ExtractAssemblyNameFlags(_flags);
+        public AssemblyNameFlags Flags => _flags;
 
         /// <summary>
         /// Gets the public key or the public key token of the assembly.
@@ -118,7 +118,8 @@ namespace System.Reflection.Metadata
 #else
                     !PublicKeyOrToken.IsDefault ? PublicKeyOrToken.ToArray() : null;
 #endif
-                    _fullName = AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName, publicKeyToken, Flags, ExtractAssemblyContentType(_flags));
+                    _fullName = AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName, publicKeyToken,
+                        ExtractAssemblyNameFlags(_flags), ExtractAssemblyContentType(_flags));
                 }
 
                 return _fullName;
@@ -193,11 +194,7 @@ namespace System.Reflection.Metadata
         /// <param name="assemblyName">A span containing the characters representing the assembly name to parse.</param>
         /// <param name="result">Contains the result when parsing succeeds.</param>
         /// <returns>true if assembly name was converted successfully, otherwise, false.</returns>
-        public static bool TryParse(ReadOnlySpan<char> assemblyName,
-#if SYSTEM_REFLECTION_METADATA || SYSTEM_PRIVATE_CORELIB // required by some tools that include this file but don't include the attribute
-            [NotNullWhen(true)]
-#endif
-            out AssemblyNameInfo? result)
+        public static bool TryParse(ReadOnlySpan<char> assemblyName, [NotNullWhen(true)] out AssemblyNameInfo? result)
         {
             AssemblyNameParser.AssemblyNameParts parts = default;
             if (AssemblyNameParser.TryParse(assemblyName, ref parts))

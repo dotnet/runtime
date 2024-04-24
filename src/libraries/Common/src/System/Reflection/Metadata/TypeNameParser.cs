@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 
 #if !SYSTEM_PRIVATE_CORELIB
 using System.Collections.Immutable;
@@ -35,30 +34,35 @@ namespace System.Reflection.Metadata
             ReadOnlySpan<char> trimmedName = typeName.TrimStart(); // whitespaces at beginning are always OK
             if (trimmedName.IsEmpty)
             {
-                // whitespace input needs to report the error index as 0
-                return throwOnError ? throw ArgumentException_InvalidTypeName(errorIndex: 0) : null;
+                if (throwOnError)
+                {
+                    ThrowArgumentException_InvalidTypeName(errorIndex: 0); // whitespace input needs to report the error index as 0
+                }
+
+                return null;
             }
 
             int recursiveDepth = 0;
             TypeNameParser parser = new(trimmedName, throwOnError, options);
             TypeName? parsedName = parser.ParseNextTypeName(allowFullyQualifiedName: true, ref recursiveDepth);
 
-            if (parsedName is not null && parser._inputString.IsEmpty) // unconsumed input == error
+            if (parsedName is null || !parser._inputString.IsEmpty) // unconsumed input == error
             {
-                return parsedName;
-            }
-            else if (!throwOnError)
-            {
+                if (throwOnError)
+                {
+                    if (recursiveDepth >= parser._parseOptions.MaxNodes)
+                    {
+                        ThrowInvalidOperation_MaxNodesExceeded(parser._parseOptions.MaxNodes);
+                    }
+
+                    int errorIndex = typeName.Length - parser._inputString.Length;
+                    ThrowArgumentException_InvalidTypeName(errorIndex);
+                }
+
                 return null;
             }
 
-            if (recursiveDepth >= parser._parseOptions.MaxNodes)
-            {
-                throw InvalidOperation_MaxNodesExceeded(parser._parseOptions.MaxNodes);
-            }
-
-            int errorIndex = typeName.Length - parser._inputString.Length;
-            throw ArgumentException_InvalidTypeName(errorIndex);
+            return parsedName;
         }
 
         // this method should return null instead of throwing, so the caller can get errorIndex and include it in error msg
