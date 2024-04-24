@@ -4,11 +4,9 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
-using System.Text;
 using System.Threading;
 
 namespace System.Reflection
@@ -57,7 +55,13 @@ namespace System.Reflection
                 return null;
             }
 
-            return new TypeNameParser(typeName)
+            Metadata.TypeName? parsed = Metadata.TypeNameParser.Parse(typeName, throwOnError: throwOnError);
+            if (parsed is null)
+            {
+                return null;
+            }
+
+            return new TypeNameParser()
             {
                 _assemblyResolver = assemblyResolver,
                 _typeResolver = typeResolver,
@@ -65,7 +69,7 @@ namespace System.Reflection
                 _ignoreCase = ignoreCase,
                 _extensibleParser = extensibleParser,
                 _requestingAssembly = requestingAssembly
-            }.Parse();
+            }.Resolve(parsed);
         }
 
         [RequiresUnreferencedCode("The type might be removed")]
@@ -75,13 +79,24 @@ namespace System.Reflection
             bool ignoreCase,
             Assembly topLevelAssembly)
         {
-            return new TypeNameParser(typeName)
+            Metadata.TypeName? parsed = Metadata.TypeNameParser.Parse(typeName, throwOnError);
+
+            if (parsed is null)
+            {
+                return null;
+            }
+            else if (topLevelAssembly is not null && parsed.AssemblyName is not null)
+            {
+                return throwOnError ? throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly) : null;
+            }
+
+            return new TypeNameParser()
             {
                 _throwOnError = throwOnError,
                 _ignoreCase = ignoreCase,
                 _topLevelAssembly = topLevelAssembly,
                 _requestingAssembly = topLevelAssembly
-            }.Parse();
+            }.Resolve(parsed);
         }
 
         // Resolve type name referenced by a custom attribute metadata.
@@ -95,12 +110,13 @@ namespace System.Reflection
 
             RuntimeAssembly requestingAssembly = scope.GetRuntimeAssembly();
 
-            RuntimeType? type = (RuntimeType?)new TypeNameParser(typeName)
+            Metadata.TypeName parsed = Metadata.TypeName.Parse(typeName);
+            RuntimeType? type = (RuntimeType?)new TypeNameParser()
             {
                 _throwOnError = true,
                 _suppressContextualReflectionContext = true,
                 _requestingAssembly = requestingAssembly
-            }.Parse();
+            }.Resolve(parsed);
 
             Debug.Assert(type != null);
 
@@ -124,13 +140,19 @@ namespace System.Reflection
                 return null;
             }
 
-            RuntimeType? type = (RuntimeType?)new TypeNameParser(typeName)
+            Metadata.TypeName? parsed = Metadata.TypeNameParser.Parse(typeName, throwOnError);
+            if (parsed is null)
+            {
+                return null;
+            }
+
+            RuntimeType? type = (RuntimeType?)new TypeNameParser()
             {
                 _requestingAssembly = requestingAssembly,
                 _throwOnError = throwOnError,
                 _suppressContextualReflectionContext = true,
                 _requireAssemblyQualifiedName = requireAssemblyQualifiedName,
-            }.Parse();
+            }.Resolve(parsed);
 
             if (type != null)
                 RuntimeTypeHandle.RegisterCollectibleTypeDependency(type, requestingAssembly);
@@ -138,23 +160,12 @@ namespace System.Reflection
             return type;
         }
 
-        private bool CheckTopLevelAssemblyQualifiedName()
-        {
-            if (_topLevelAssembly is not null)
-            {
-                if (_throwOnError)
-                    throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly);
-                return false;
-            }
-            return true;
-        }
-
-        private Assembly? ResolveAssembly(string assemblyName)
+        private Assembly? ResolveAssembly(AssemblyName assemblyName)
         {
             Assembly? assembly;
             if (_assemblyResolver is not null)
             {
-                assembly = _assemblyResolver(new AssemblyName(assemblyName));
+                assembly = _assemblyResolver(assemblyName);
                 if (assembly is null && _throwOnError)
                 {
                     throw new FileNotFoundException(SR.Format(SR.FileNotFound_ResolveAssembly, assemblyName));
@@ -162,7 +173,7 @@ namespace System.Reflection
             }
             else
             {
-                assembly = RuntimeAssembly.InternalLoad(new AssemblyName(assemblyName), ref Unsafe.NullRef<StackCrawlMark>(),
+                assembly = RuntimeAssembly.InternalLoad(assemblyName, ref Unsafe.NullRef<StackCrawlMark>(),
                     _suppressContextualReflectionContext ? null : AssemblyLoadContext.CurrentContextualReflectionContext,
                     requestingAssembly: (RuntimeAssembly?)_requestingAssembly, throwOnFileNotFound: _throwOnError);
             }
@@ -173,13 +184,14 @@ namespace System.Reflection
             Justification = "TypeNameParser.GetType is marked as RequiresUnreferencedCode.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "TypeNameParser.GetType is marked as RequiresUnreferencedCode.")]
-        private Type? GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, string? assemblyNameIfAny)
+        private Type? GetType(string escapedTypeName, // For nested types, it's Name. For other types it's FullName
+            ReadOnlySpan<string> nestedTypeNames, Metadata.TypeName parsedName)
         {
             Assembly? assembly;
 
-            if (assemblyNameIfAny is not null)
+            if (parsedName.AssemblyName is not null)
             {
-                assembly = ResolveAssembly(assemblyNameIfAny);
+                assembly = ResolveAssembly(parsedName.AssemblyName.ToAssemblyName());
                 if (assembly is null)
                     return null;
             }
@@ -193,8 +205,6 @@ namespace System.Reflection
             // Resolve the top level type.
             if (_typeResolver is not null)
             {
-                string escapedTypeName = EscapeTypeName(typeName);
-
                 type = _typeResolver(assembly, escapedTypeName, _ignoreCase);
 
                 if (type is null)
@@ -216,28 +226,29 @@ namespace System.Reflection
                     {
                         if (_throwOnError)
                         {
-                            throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveType, EscapeTypeName(typeName)));
+                            throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveType, escapedTypeName));
                         }
                         return null;
                     }
-                    return GetTypeFromDefaultAssemblies(typeName, nestedTypeNames);
+                    return GetTypeFromDefaultAssemblies(UnescapeTypeName(escapedTypeName), nestedTypeNames, parsedName);
                 }
 
                 if (assembly is RuntimeAssembly runtimeAssembly)
                 {
+                    string unescapedTypeName = UnescapeTypeName(escapedTypeName);
                     // Compat: Non-extensible parser allows ambiguous matches with ignore case lookup
                     if (!_extensibleParser || !_ignoreCase)
                     {
-                        return runtimeAssembly.GetTypeCore(typeName, nestedTypeNames, throwOnError: _throwOnError, ignoreCase: _ignoreCase);
+                        return runtimeAssembly.GetTypeCore(unescapedTypeName, nestedTypeNames, throwOnError: _throwOnError, ignoreCase: _ignoreCase);
                     }
-                    type = runtimeAssembly.GetTypeCore(typeName, default, throwOnError: _throwOnError, ignoreCase: _ignoreCase);
+                    type = runtimeAssembly.GetTypeCore(unescapedTypeName, default, throwOnError: _throwOnError, ignoreCase: _ignoreCase);
                 }
                 else
                 {
                     // This is a third-party Assembly object. Emulate GetTypeCore() by calling the public GetType()
                     // method. This is wasteful because it'll probably reparse a type string that we've already parsed
                     // but it can't be helped.
-                    type = assembly.GetType(EscapeTypeName(typeName), throwOnError: _throwOnError, ignoreCase: _ignoreCase);
+                    type = assembly.GetType(escapedTypeName, throwOnError: _throwOnError, ignoreCase: _ignoreCase);
                 }
 
                 if (type is null)
@@ -257,7 +268,7 @@ namespace System.Reflection
                     if (_throwOnError)
                     {
                         throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveNestedType,
-                            nestedTypeNames[i], (i > 0) ? nestedTypeNames[i - 1] : typeName));
+                            nestedTypeNames[i], (i > 0) ? nestedTypeNames[i - 1] : escapedTypeName));
                     }
                     return null;
                 }
@@ -266,12 +277,12 @@ namespace System.Reflection
             return type;
         }
 
-        private Type? GetTypeFromDefaultAssemblies(string typeName, ReadOnlySpan<string> nestedTypeNames)
+        private Type? GetTypeFromDefaultAssemblies(string typeName, ReadOnlySpan<string> nestedTypeNames, Metadata.TypeName parsedName)
         {
             RuntimeAssembly? requestingAssembly = (RuntimeAssembly?)_requestingAssembly;
             if (requestingAssembly is not null)
             {
-                Type? type = ((RuntimeAssembly)requestingAssembly).GetTypeCore(typeName, nestedTypeNames, throwOnError: false, ignoreCase: _ignoreCase);
+                Type? type = requestingAssembly.GetTypeCore(typeName, nestedTypeNames, throwOnError: false, ignoreCase: _ignoreCase);
                 if (type is not null)
                     return type;
             }
@@ -279,12 +290,12 @@ namespace System.Reflection
             RuntimeAssembly coreLib = (RuntimeAssembly)typeof(object).Assembly;
             if (requestingAssembly != coreLib)
             {
-                Type? type = ((RuntimeAssembly)coreLib).GetTypeCore(typeName, nestedTypeNames, throwOnError: false, ignoreCase: _ignoreCase);
+                Type? type = coreLib.GetTypeCore(typeName, nestedTypeNames, throwOnError: false, ignoreCase: _ignoreCase);
                 if (type is not null)
                     return type;
             }
 
-            RuntimeAssembly? resolvedAssembly = AssemblyLoadContext.OnTypeResolve(requestingAssembly, EscapeTypeName(typeName, nestedTypeNames));
+            RuntimeAssembly? resolvedAssembly = AssemblyLoadContext.OnTypeResolve(requestingAssembly, parsedName.FullName);
             if (resolvedAssembly is not null)
             {
                 Type? type = resolvedAssembly.GetTypeCore(typeName, nestedTypeNames, throwOnError: false, ignoreCase: _ignoreCase);
@@ -293,7 +304,7 @@ namespace System.Reflection
             }
 
             if (_throwOnError)
-                throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveTypeFromAssembly, EscapeTypeName(typeName), (requestingAssembly ?? coreLib).FullName));
+                throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveTypeFromAssembly, parsedName.FullName, (requestingAssembly ?? coreLib).FullName));
 
             return null;
         }

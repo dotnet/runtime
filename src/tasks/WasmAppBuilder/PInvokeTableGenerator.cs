@@ -304,7 +304,7 @@ internal sealed class PInvokeTableGenerator
         // it needs to match the key generated in get_native_to_interp
         var method = export.Method;
         string module_symbol = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!;
-        return $"\"{module_symbol}_{method.DeclaringType.Name}_{method.Name}\"".Replace('.', '_');
+        return $"\"{_fixupSymbolName($"{module_symbol}_{method.DeclaringType.Name}_{method.Name}")}\"";
     }
 
 #pragma warning disable SYSLIB1045 // framework doesn't support GeneratedRegexAttribute

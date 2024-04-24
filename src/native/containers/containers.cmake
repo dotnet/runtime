@@ -13,6 +13,8 @@ list(APPEND SHARED_CONTAINER_SOURCES
     # dn-simdhash-string-ptr.c
     # dn-simdhash-u32-ptr.c
     # dn-simdhash-ptr-ptr.c
+    # dn-simdhash-ght-compatible.c
+    # dn-simdhash-ptrpair-ptr.c
 )
 
 list(APPEND SHARED_CONTAINER_HEADERS

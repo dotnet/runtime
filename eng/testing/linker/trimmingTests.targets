@@ -38,7 +38,13 @@
     </ItemGroup>
 
     <ItemGroup Condition="!$(SkipOnTestRuntimes.Contains('$(PackageRID)'))">
-      <TestConsoleApps Include="@(TestConsoleAppSourceFiles->'%(ProjectFile)')" Condition="!$([System.String]::Copy('%(TestConsoleAppSourceFiles.SkipOnTestRuntimes)').Contains('$(PackageRID)'))">
+      <_SkippedAppSourceFiles Include="@(TestConsoleAppSourceFiles)" Condition="$([System.String]::Copy('%(TestConsoleAppSourceFiles.SkipOnTestRuntimes)').Contains('$(PackageRID)'))" />
+
+      <_SkippedAppSourceFiles Include="@(TestConsoleAppSourceFiles)" Condition="'$(RunNativeAotTestApps)' == 'true' and '%(TestConsoleAppSourceFiles.NativeAotIncompatible)' == 'true'" />
+
+      <_AppSourceFiles Include="@(TestConsoleAppSourceFiles)" Exclude="@(_SkippedAppSourceFiles)" />
+
+      <TestConsoleApps Include="@(_AppSourceFiles->'%(ProjectFile)')">
         <ProjectCompileItems>%(FullPath)</ProjectCompileItems>
       </TestConsoleApps>
       <TestConsoleApps AdditionalProperties="MSBuildEnableWorkloadResolver=$(MSBuildEnableWorkloadResolver)" Condition="'$(MSBuildEnableWorkloadResolver)' != ''" />
