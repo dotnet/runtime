@@ -398,7 +398,7 @@ namespace ComInterfaceGenerator.Tests
 
             IHide2 obj2 = (IHide2)obj;
 
-            // IHide2.SameMethod should be index 7
+            // IHide2.SameMethod should be index 5
             Assert.Equal(5, obj2.SameMethod());
             Assert.Equal(4, obj2.DifferentMethod());
             Assert.Equal(6, obj2.DifferentMethod2());
