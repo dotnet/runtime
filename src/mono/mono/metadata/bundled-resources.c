@@ -109,8 +109,6 @@ key_from_id (const char *id, char *buffer, guint buffer_len)
 		g_strlcpy (buffer, id, MIN(buffer_len, id_length + 1));
 	}
 
-	g_print ("key_from_id('%s') == '%s'\n", id, buffer);
-
 	return buffer;
 }
 
