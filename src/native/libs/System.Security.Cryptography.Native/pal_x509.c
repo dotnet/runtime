@@ -67,6 +67,8 @@ c_static_assert(PAL_X509_V_ERR_HOSTNAME_MISMATCH == X509_V_ERR_HOSTNAME_MISMATCH
 c_static_assert(PAL_X509_V_ERR_EMAIL_MISMATCH == X509_V_ERR_EMAIL_MISMATCH);
 c_static_assert(PAL_X509_V_ERR_IP_ADDRESS_MISMATCH == X509_V_ERR_IP_ADDRESS_MISMATCH);
 
+c_static_assert(sizeof(time_t) == sizeof(int64_t));
+
 EVP_PKEY* CryptoNative_GetX509EvpPublicKey(X509* x509)
 {
     assert(x509 != NULL);
@@ -1354,14 +1356,7 @@ int32_t CryptoNative_X509DecodeOcspToExpiration(const uint8_t* buf, int32_t len,
             time_t expiration_t = 0;
             X509VerifyStatusCode code = CheckOcspGetExpiry(req, resp, subject, issuers[0], ctx, &canCache, &expiration_t);
 
-            if (sizeof(time_t) == sizeof(int64_t))
-            {
-                *expiration = (int64_t)expiration_t;
-            }
-            else if (sizeof(time_t) == sizeof(int32_t))
-            {
-                *expiration = (int32_t)expiration_t;
-            }
+            *expiration = (int64_t)expiration_t;
 
             if (code == PAL_X509_V_OK || code == PAL_X509_V_ERR_CERT_REVOKED)
             {
