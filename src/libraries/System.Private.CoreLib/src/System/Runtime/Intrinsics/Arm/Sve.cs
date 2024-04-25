@@ -957,7 +957,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   MOVPRFX Zresult.D, Pg/Z, Zop1.D; FSUB Zresult.D, Pg/M, Zresult.D, Zop2.D
         ///   MOVPRFX Zresult.D, Pg/Z, Zop2.D; FSUBR Zresult.D, Pg/M, Zresult.D, Zop1.D
         /// </summary>
-        public static unsafe Vector<double> Subtract(Vector<double> left, Vector<double> right) => Subtract(left, right);        
+        public static unsafe Vector<double> Subtract(Vector<double> left, Vector<double> right) => Subtract(left, right);
 
     }
 }
