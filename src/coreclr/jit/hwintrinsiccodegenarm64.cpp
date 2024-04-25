@@ -404,10 +404,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         else if (intrin.numOperands >= 2 && intrin.op2->IsEmbMaskOp())
         {
             // Handle case where op2 is operation that needs embedded mask
-            GenTree* op1 = intrin.op1;
             GenTree* op2 = intrin.op2;
             assert(intrin.id == NI_Sve_ConditionalSelect);
-            assert(op1->OperIsHWIntrinsic());
             assert(op2->OperIsHWIntrinsic());
             assert(op2->isContained());
 
@@ -442,19 +440,18 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 case 1:
                     assert(!instrIsRMW);
 
-                    if ((targetReg != falseReg))
+                    if (targetReg != falseReg)
                     {
                         // If targetReg is not the same as `falseReg` then need to move
                         // the `falseReg` to `targetReg`.
 
-                        if (op1->IsTrueAllMask())
+                        if (intrin.op1->IsMaskAllBitsSet() && intrin.op3->IsVectorZero())
                         {
                             // We already skip importing ConditionalSelect if op1 == trueAll, however
                             // if we still see it here, it is because we wrapped the predicated instruction
                             // inside ConditionalSelect.
                             // As such, no need to move the `falseReg` to `targetReg`
                             // because the predicated instruction will eventually set it.
-                            assert(intrin.op3->IsVectorZero());
                             assert(falseReg == REG_NA);
                         }
                         else if (falseReg == REG_NA)
@@ -469,6 +466,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             // target != falseValue, but we do not want to overwrite target with `embMaskOp1Reg`.
                             // We will first do the predicate operation and then do conditionalSelect inactive
                             // elements from falseValue
+
+                            // We cannot use use `movprfx` here to move falseReg to targetReg because that will
+                            // overwrite the value of embMaskOp1Reg which is present in targetReg.
                             GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
 
                             GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,

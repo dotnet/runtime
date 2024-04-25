@@ -1770,7 +1770,7 @@ public:
     inline bool IsVectorZero() const;
     inline bool IsVectorCreate() const;
     inline bool IsVectorAllBitsSet() const;
-    inline bool IsTrueAllMask() const;
+    inline bool IsMaskAllBitsSet() const;
     inline bool IsVectorConst();
 
     inline uint64_t GetIntegralVectorConstElement(size_t index, var_types simdBaseType);
@@ -9239,7 +9239,7 @@ inline bool GenTree::IsVectorAllBitsSet() const
     return false;
 }
 
-inline bool GenTree::IsTrueAllMask() const
+inline bool GenTree::IsMaskAllBitsSet() const
 {
 #ifdef TARGET_ARM64
     if (OperIsHWIntrinsic())

@@ -1611,7 +1611,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         GenTree* op1 = retNode->AsHWIntrinsic()->Op(1);
         if (intrinsic == NI_Sve_ConditionalSelect)
         {
-            if (op1->IsVectorAllBitsSet() || op1->IsTrueAllMask())
+            if (op1->IsVectorAllBitsSet() || op1->IsMaskAllBitsSet())
             {
                 return retNode->AsHWIntrinsic()->Op(2);
             }
