@@ -229,57 +229,6 @@ namespace System.Net.Http
             }
         }
 
-        [SupportedOSPlatform("windows")]
-        [SupportedOSPlatform("linux")]
-        [SupportedOSPlatform("macos")]
-        private async ValueTask<Http3Connection> CreateHttp3ConnectionAsync(HttpRequestMessage request, HttpAuthority authority, CancellationToken cancellationToken)
-        {
-            Debug.Assert(IsHttp3Supported());
-
-            if (NetEventSource.Log.IsEnabled())
-            {
-                Trace("Attempting new HTTP3 connection.");
-            }
-
-            QuicConnection quicConnection;
-            try
-            {
-                if (IsAltSvcBlocked(authority, out Exception? reasonException))
-                {
-                    ThrowGetVersionException(request, 3, reasonException);
-                }
-                quicConnection = await ConnectHelper.ConnectQuicAsync(request, new DnsEndPoint(authority.IdnHost, authority.Port), _poolManager.Settings._pooledConnectionIdleTimeout, _sslOptionsHttp3!, cancellationToken).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                if (NetEventSource.Log.IsEnabled()) Trace($"QUIC connection failed: {ex}");
-
-                // Block list authority only if the connection attempt was not cancelled.
-                if (ex is not OperationCanceledException oce || !cancellationToken.IsCancellationRequested || oce.CancellationToken != cancellationToken)
-                {
-                    // Disables HTTP/3 until server announces it can handle it via Alt-Svc.
-                    BlocklistAuthority(authority, ex);
-                }
-                throw;
-            }
-
-            if (quicConnection.NegotiatedApplicationProtocol != SslApplicationProtocol.Http3)
-            {
-                BlocklistAuthority(authority);
-                throw new HttpRequestException(HttpRequestError.ConnectionError, "QUIC connected but no HTTP/3 indicated via ALPN.", null, RequestRetryType.RetryOnConnectionFailure);
-            }
-
-            // if the authority was sent as an option through alt-svc then include alt-used header
-            Http3Connection http3Connection = new Http3Connection(this, authority, quicConnection, includeAltUsedHeader: _http3Authority == authority);
-
-            if (NetEventSource.Log.IsEnabled())
-            {
-                Trace("New HTTP3 connection established.");
-            }
-
-            return http3Connection;
-        }
-
         [SupportedOSPlatformGuard("linux")]
         [SupportedOSPlatformGuard("macOS")]
         [SupportedOSPlatformGuard("Windows")]

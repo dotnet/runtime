@@ -426,7 +426,17 @@ namespace System.Net.Http
             }
         }
 
-        public override long GetIdleTicks(long nowTicks) => throw new NotImplementedException("We aren't scavenging HTTP3 connections yet");
+        public override long GetIdleTicks(long nowTicks)
+        {
+            // The pool is holding the lock as part of its scavenging logic.
+            // We must not lock on Http2Connection.SyncObj here as that could lead to lock ordering problems.
+            Debug.Assert(_pool.HasSyncObjLock);
+
+            // There is a race condition here where the connection pool may see this connection as idle right before
+            // we start processing a new request and start its disposal. This is okay as we will either
+            // return false from TryReserveStream, or process pending requests before tearing down the transport.
+            return _activeRequests.Count == 0 && _reservedStreams == 0 ? base.GetIdleTicks(nowTicks) : 0;
+        }
 
         public override void Trace(string message, [CallerMemberName] string? memberName = null) =>
             Trace(0, message, memberName);

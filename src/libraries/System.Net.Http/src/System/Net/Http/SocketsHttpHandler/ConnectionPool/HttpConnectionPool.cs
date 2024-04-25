@@ -960,6 +960,14 @@ namespace System.Net.Http
                     // Note: Http11 connections will decrement the _associatedHttp11ConnectionCount when disposed.
                     // Http2 connections will not, hence the difference in handing _associatedHttp2ConnectionCount.
                 }
+                if (_availableHttp3Connections is not null)
+                {
+                    int removed = ScavengeHttp3ConnectionList(_availableHttp3Connections, ref toDispose, nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout);
+                    _associatedHttp3ConnectionCount -= removed;
+
+                    // Note: Http11 connections will decrement the _associatedHttp11ConnectionCount when disposed.
+                    // Http3 connections will not, hence the difference in handing _associatedHttp3ConnectionCount.
+                }
             }
 
             // Dispose the stale connections outside the pool lock, to avoid holding the lock too long.
