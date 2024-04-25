@@ -159,9 +159,6 @@ enum MethodDescFlags
     mdfIsIntrinsic                      = 0x8000  // Jit may expand method as an intrinsic
 };
 
-#define METHOD_MAX_RVA                          0x7FFFFFFF
-
-
 // The size of this structure needs to be a multiple of MethodDesc::ALIGNMENT
 //
 // @GENERICS:
