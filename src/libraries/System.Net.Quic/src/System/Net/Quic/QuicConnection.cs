@@ -252,6 +252,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
             throw;
         }
 
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} New outbound connection.");
+        }
+
         _tlsSecret = MsQuicTlsSecret.Create(_handle);
     }
 
@@ -411,6 +416,12 @@ public sealed partial class QuicConnection : IAsyncDisposable
         try
         {
             stream = new QuicStream(_handle, type, _defaultStreamErrorCode);
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(this, $"{this} New outbound {type} stream {stream}.");
+            }
+
             await stream.StartAsync(cancellationToken).ConfigureAwait(false);
         }
         catch
@@ -482,6 +493,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
         if (_shutdownTcs.TryGetValueTask(out ValueTask valueTask, this, cancellationToken))
         {
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(this, $"{this} Closing connection, Error code = {errorCode}");
+            }
+
             unsafe
             {
                 MsQuicApi.Api.ConnectionShutdown(
@@ -551,6 +567,13 @@ public sealed partial class QuicConnection : IAsyncDisposable
     private unsafe int HandleEventPeerStreamStarted(ref PEER_STREAM_STARTED_DATA data)
     {
         QuicStream stream = new QuicStream(_handle, data.Stream, data.Flags, _defaultStreamErrorCode);
+
+        if (NetEventSource.Log.IsEnabled())
+        {
+            QuicStreamType type = data.Flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? QuicStreamType.Unidirectional : QuicStreamType.Bidirectional;
+            NetEventSource.Info(this, $"{this} New inbound {type} stream {stream}, Id = {stream.Id}.");
+        }
+
         if (!_acceptQueue.Writer.TryWrite(stream))
         {
             if (NetEventSource.Log.IsEnabled())
@@ -646,6 +669,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
         if (Interlocked.Exchange(ref _disposed, 1) != 0)
         {
             return;
+        }
+
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} Disposing.");
         }
 
         // Check if the connection has been shut down and if not, shut it down.
