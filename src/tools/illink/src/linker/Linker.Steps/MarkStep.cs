@@ -75,8 +75,8 @@ namespace Mono.Linker.Steps
 		// Stores, for compiler-generated methods only, whether they require the reflection
 		// method body scanner.
 		readonly Dictionary<MethodBody, bool> _compilerGeneratedMethodRequiresScanner;
-		private readonly MarkStepNodeFactory _nodeFactory;
-		private readonly DependencyAnalyzer<NoLogStrategy<MarkStepNodeFactory>, MarkStepNodeFactory> _analyzer;
+		private readonly NodeFactory _nodeFactory;
+		private readonly DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory> _analyzer;
 
 		MarkStepContext? _markContext;
 		MarkStepContext MarkContext {
@@ -233,8 +233,8 @@ namespace Mono.Linker.Steps
 			_pending_isinst_instr = new List<(TypeDefinition, MethodBody, Instruction)> ();
 			_entireTypesMarked = new HashSet<TypeDefinition> ();
 			_compilerGeneratedMethodRequiresScanner = new Dictionary<MethodBody, bool> ();
-			_nodeFactory = new MarkStepNodeFactory (this);
-			_analyzer = new DependencyAnalyzer<NoLogStrategy<MarkStepNodeFactory>, MarkStepNodeFactory> (_nodeFactory, null);
+			_nodeFactory = new NodeFactory (this);
+			_analyzer = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory> (_nodeFactory, null);
 		}
 
 		public AnnotationStore Annotations => Context.Annotations;
@@ -380,13 +380,13 @@ namespace Mono.Linker.Steps
 
 		void Process ()
 		{
-			_analyzer.ComputeDependencyRoutine += (List<DependencyNodeCore<MarkStepNodeFactory>> nodes) => {
-				foreach (DependencyNodeCore<MarkStepNodeFactory> node in nodes) {
-					if (node is ProcessCallbackDependencyNode processNode)
+			_analyzer.ComputeDependencyRoutine += (List<DependencyNodeCore<NodeFactory>> nodes) => {
+				foreach (DependencyNodeCore<NodeFactory> node in nodes) {
+					if (node is ProcessCallbackNode processNode)
 						processNode.Process ();
 				}
 			};
-			_analyzer.AddRoot (new ProcessCallbackDependencyNode (ProcessAllPendingItems), "start");
+			_analyzer.AddRoot (new ProcessCallbackNode (ProcessAllPendingItems), "start");
 			_analyzer.ComputeMarkedNodes ();
 
 			ProcessPendingTypeChecks ();
@@ -2028,15 +2028,21 @@ namespace Mono.Linker.Steps
 			if (CheckProcessed (type))
 				return type;
 
-			_analyzer.AddRoot (_nodeFactory.GetTypeNode (type, reason, origin), Enum.GetName(reason.Kind));
-			return type;
-		}
+			if (type.HasMethods) {
+				if (ShouldMarkTypeStaticConstructor (type) && reason.Kind != DependencyKind.TriggersCctorForCalledMethod) {
+					MarkStaticConstructor (type, new DependencyInfo (DependencyKind.CctorForType, type), ScopeStack.CurrentScope.Origin);
+				}
+			}
 
-		protected internal virtual void ProcessType (TypeDefinition type, DependencyInfo reason, MessageOrigin? origin = null)
-		{
 			if (type.Scope is ModuleDefinition module)
 				MarkModule (module, new DependencyInfo (DependencyKind.ScopeOfType, type));
 
+			_analyzer.AddRoot (_nodeFactory.GetTypeNode (type), Enum.GetName(reason.Kind));
+			return type;
+		}
+
+		protected internal virtual void ProcessType (TypeDefinition type)
+		{
 			using var typeScope = ScopeStack.PushLocalScope (new MessageOrigin (type));
 
 			foreach (Action<TypeDefinition> handleMarkType in MarkContext.MarkTypeActions)
@@ -2123,10 +2129,6 @@ namespace Mono.Linker.Steps
 						// For methods that must be preserved, blame the declaring type.
 						MarkMethod (method, new DependencyInfo (DependencyKind.VirtualNeededDueToPreservedScope, type), ScopeStack.CurrentScope.Origin);
 					}
-				}
-				if (ShouldMarkTypeStaticConstructor (type) && reason.Kind != DependencyKind.TriggersCctorForCalledMethod) {
-					using (ScopeStack.PopToParentScope ())
-						MarkStaticConstructor (type, new DependencyInfo (DependencyKind.CctorForType, type), ScopeStack.CurrentScope.Origin);
 				}
 			}
 
@@ -3051,7 +3053,7 @@ namespace Mono.Linker.Steps
 			// We will only enqueue a method to be processed if it hasn't been processed yet.
 			if (!CheckProcessed (method))
 				EnqueueMethod (method, reason, origin);
-			_analyzer.AddRoot (_nodeFactory.GetMethodDefinitionNode (method, reason, origin), Enum.GetName(reason.Kind));
+			_analyzer.AddRoot (_nodeFactory.GetMethodDefinitionNode (method, reason), Enum.GetName(reason.Kind));
 
 			return method;
 		}
@@ -3182,14 +3184,13 @@ namespace Mono.Linker.Steps
 			return (method, reason);
 		}
 
-		protected virtual void ProcessMethod (MethodDefinition method, in DependencyInfo reason, in MessageOrigin origin)
+		protected virtual void ProcessMethod (MethodDefinition method, in DependencyInfo reason)
 		{
 #if DEBUG
 			if (!_methodReasons.Contains (reason.Kind))
 				throw new InternalErrorException ($"Unsupported method dependency {reason.Kind}");
 #endif
 			ScopeStack.AssertIsEmpty ();
-			using var parentScope = ScopeStack.PushLocalScope (new MarkScopeStack.Scope (origin));
 			using var methodScope = ScopeStack.PushLocalScope (new MessageOrigin (method));
 
 			bool markedForCall =

@@ -10,21 +10,21 @@ namespace Mono.Linker.Steps
 {
 	public partial class MarkStep
 	{
-		internal sealed class MarkStepNodeFactory (MarkStep markStep)
+		internal sealed class NodeFactory (MarkStep markStep)
 		{
 			public MarkStep MarkStep { get; } = markStep;
-			readonly NodeCache<TypeDefinition, TypeDefinitionDependencyNode> _typeNodes = new (static _ => throw new InvalidOperationException ("Creation of node requires more than the key."));
-			readonly NodeCache<MethodDefinition, MethodDefinitionDependencyNode> _methodNodes = new (static _ => throw new InvalidOperationException ("Creation of node requires more than the key."));
+			readonly NodeCache<TypeDefinition, TypeDefinitionNode> _typeNodes = new (static _ => throw new InvalidOperationException ("Creation of node requires more than the key."));
+			readonly NodeCache<MethodDefinition, MethodDefinitionNode> _methodNodes = new (static _ => throw new InvalidOperationException ("Creation of node requires more than the key."));
 			readonly NodeCache<TypeDefinition, TypeIsRelevantToVariantCastingNode> _typeIsRelevantToVariantCastingNodes = new (static (t) => new TypeIsRelevantToVariantCastingNode (t));
 
-			internal TypeDefinitionDependencyNode GetTypeNode (TypeDefinition reference, DependencyInfo reason, MessageOrigin? origin)
+			internal TypeDefinitionNode GetTypeNode (TypeDefinition reference)
 			{
-				return _typeNodes.GetOrAdd (reference, (k) => new TypeDefinitionDependencyNode (k, reason, origin));
+				return _typeNodes.GetOrAdd (reference, (k) => new TypeDefinitionNode (k));
 			}
 
-			internal MethodDefinitionDependencyNode GetMethodDefinitionNode (MethodDefinition method, DependencyInfo reason, MessageOrigin origin)
+			internal MethodDefinitionNode GetMethodDefinitionNode (MethodDefinition method, DependencyInfo reason)
 			{
-				return _methodNodes.GetOrAdd (method, (k) => new MethodDefinitionDependencyNode (k, reason, origin));
+				return _methodNodes.GetOrAdd (method, (k) => new MethodDefinitionNode (k, reason));
 			}
 
 			internal TypeIsRelevantToVariantCastingNode GetTypeIsRelevantToVariantCastingNode (TypeDefinition type)

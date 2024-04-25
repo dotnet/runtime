@@ -76,13 +76,8 @@
     <Compile Include="..\..\external\corert\**\*.cs" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <DependencyAnalysisFrameworkRoot>$(CoreClrProjectRoot)\tools\aot\ILCompiler.DependencyAnalysisFramework</DependencyAnalysisFrameworkRoot>
-    <ToolsCommonRoot>$(CoreClrProjectRoot)\tools\Common</ToolsCommonRoot>
-  </PropertyGroup>
-
   <ItemGroup>
-    <ProjectReference Include="$(DependencyAnalysisFrameworkRoot)\ILCompiler.DependencyAnalysisFramework.csproj" />
+    <ProjectReference Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
   </ItemGroup>
 
   <ItemGroup>

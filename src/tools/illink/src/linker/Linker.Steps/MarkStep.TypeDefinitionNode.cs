@@ -10,10 +10,14 @@ namespace Mono.Linker.Steps
 
 	public partial class MarkStep
 	{
-		internal sealed class TypeIsRelevantToVariantCastingNode : DependencyNodeCore<NodeFactory>
+		internal sealed class TypeDefinitionNode : DependencyNodeCore<NodeFactory>
 		{
-			TypeDefinition type;
-			public TypeIsRelevantToVariantCastingNode (TypeDefinition type) => this.type = type;
+			readonly TypeDefinition type;
+
+			public TypeDefinitionNode (TypeDefinition type)
+			{
+				this.type = type;
+			}
 
 			public override bool InterestingForDynamicDependencyAnalysis => false;
 
@@ -25,16 +29,13 @@ namespace Mono.Linker.Steps
 
 			public override IEnumerable<DependencyListEntry>? GetStaticDependencies (NodeFactory context)
 			{
-				yield break;
+				context.MarkStep.ProcessType (type);
+				return null;
 			}
 
 			public override IEnumerable<CombinedDependencyListEntry>? GetConditionalStaticDependencies (NodeFactory context) => null;
 			public override IEnumerable<CombinedDependencyListEntry>? SearchDynamicDependencies (List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
-			protected override string GetName (NodeFactory context) => $"{type.GetDisplayName()} is relevant to variant casting";
-			protected override void OnMarked (NodeFactory context)
-			{
-				context.MarkStep.Annotations.MarkRelevantToVariantCasting (type);
-			}
+			protected override string GetName (NodeFactory context) => type.GetDisplayName();
 		}
 	}
 }
