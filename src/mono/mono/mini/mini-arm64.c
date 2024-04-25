@@ -5956,6 +5956,7 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 					}
 				} else if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
 					arm_addx_imm (code, ARMREG_IP0, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
+					/* Relies on arguments being passed on the stack */
 					code = emit_strx (code, ARMREG_IP0, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset));
 				}
 				break;
