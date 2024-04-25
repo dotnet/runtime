@@ -5317,7 +5317,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         _ASSERTE(success);
 #else // TARGET_WINDOWS && TARGET_AMD64
         CONTEXT frameContext;
-        pFrameContext->ContextFlags = CONTEXT_FULL;
+        frameContext.ContextFlags = CONTEXT_FULL;
         pFrameContext = &frameContext;
 
 #endif // TARGET_WINDOWS && TARGET_AMD64
