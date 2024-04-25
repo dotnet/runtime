@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics;
 using System.Net.Security;
 using System.Threading.Tasks;
@@ -16,13 +17,6 @@ namespace System.Net.Quic.Tests
 {
     public class MsQuicInteropTests
     {
-        private readonly ITestOutputHelper _output;
-
-        public MsQuicInteropTests(ITestOutputHelper output)
-        {
-            _output = output;
-        }
-
         private static MemberInfo[] GetMembers<T>()
         {
             var members = typeof(T).FindMembers(MemberTypes.Field | MemberTypes.Property, BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public, (mi, _) =>
@@ -55,11 +49,13 @@ namespace System.Net.Quic.Tests
             }
         }
 
-
         [Fact]
         public void QuicSettings_Equals_RespectsAllMembers()
         {
             QUIC_SETTINGS settings = new QUIC_SETTINGS();
+
+            // make sure the extension definition is included in compilation
+            Assert.Contains(typeof(IEquatable<QUIC_SETTINGS>), typeof(QUIC_SETTINGS).GetInterfaces());
 
             var settingsSpan = MemoryMarshal.AsBytes(new Span<QUIC_SETTINGS>(ref settings));
 
