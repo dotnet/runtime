@@ -60,9 +60,13 @@ namespace System
                 return 1;
             }
 
+            // Need to use compare because subtraction will wrap
+            // to positive for very large neg numbers, etc.
             if (value is long i)
             {
-                return CompareTo(i);
+                if (m_value < i) return -1;
+                if (m_value > i) return 1;
+                return 0;
             }
 
             throw new ArgumentException(SR.Arg_MustBeInt64);

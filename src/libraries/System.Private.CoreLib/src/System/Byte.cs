@@ -58,12 +58,12 @@ namespace System
             {
                 return 1;
             }
-            if (value is not byte other)
+            if (!(value is byte))
             {
                 throw new ArgumentException(SR.Arg_MustBeByte);
             }
 
-            return CompareTo(other);
+            return m_value - (((byte)value).m_value);
         }
 
         public int CompareTo(byte value)

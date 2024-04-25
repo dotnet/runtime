@@ -60,9 +60,9 @@ namespace System
                 return 1;
             }
 
-            if (value is short other)
+            if (value is short)
             {
-                return CompareTo(other);
+                return m_value - ((short)value).m_value;
             }
 
             throw new ArgumentException(SR.Arg_MustBeInt16);

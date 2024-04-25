@@ -420,10 +420,11 @@ namespace System
         {
             if (value == null)
                 return 1;
-            if (value is not decimal other)
+            if (!(value is decimal))
                 throw new ArgumentException(SR.Arg_MustBeDecimal);
 
-            return CompareTo(other);
+            decimal other = (decimal)value;
+            return DecCalc.VarDecCmp(in this, in other);
         }
 
         public int CompareTo(decimal value)
