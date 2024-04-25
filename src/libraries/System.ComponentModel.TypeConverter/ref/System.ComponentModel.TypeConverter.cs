@@ -1425,6 +1425,7 @@ namespace System.ComponentModel
     public sealed partial class TypeDescriptor
     {
         internal TypeDescriptor() { }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         [System.ObsoleteAttribute("TypeDescriptor.ComNativeDescriptorHandler has been deprecated. Use a type description provider to supply type information for COM types instead.")]
         public static System.ComponentModel.IComNativeDescriptorHandler? ComNativeDescriptorHandler {
             [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("COM type descriptors are not trim-compatible.")]
