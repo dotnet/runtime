@@ -471,27 +471,9 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0021</DiagnosticId>
-    <Target>M:System.Enum.TryFormat``1(``0,System.Span{System.Char},System.Int32@,System.ReadOnlySpan{System.Char})``0:System.Enum</Target>
-    <Left>net8.0/mscorlib.dll</Left>
-    <Right>net9.0/mscorlib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0021</DiagnosticId>
-    <Target>M:System.Enum.TryFormat``1(``0,System.Span{System.Char},System.Int32@,System.ReadOnlySpan{System.Char})``0:System.Enum</Target>
-    <Left>net8.0/netstandard.dll</Left>
-    <Right>net9.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0021</DiagnosticId>
     <Target>T:System.Diagnostics.Metrics.MeasurementCallback`1``0:struct</Target>
     <Left>net8.0/System.Diagnostics.DiagnosticSource.dll</Left>
     <Right>net9.0/System.Diagnostics.DiagnosticSource.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0021</DiagnosticId>
-    <Target>M:System.Enum.TryFormat``1(``0,System.Span{System.Char},System.Int32@,System.ReadOnlySpan{System.Char})``0:System.Enum</Target>
-    <Left>net8.0/System.Runtime.dll</Left>
-    <Right>net9.0/System.Runtime.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0021</DiagnosticId>
@@ -513,7 +495,7 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0021</DiagnosticId>
-    <Target>T:System.Runtime.InteropServices.Marshalling.ExceptionAsHResultMarshaller`1``0:System.Numerics.INumber&lt;T&gt;</Target>
+    <Target>T:System.Runtime.InteropServices.Marshalling.ExceptionAsHResultMarshaller`1``0:T:System.Numerics.INumber{`0}</Target>
     <Left>net8.0/System.Runtime.InteropServices.dll</Left>
     <Right>net9.0/System.Runtime.InteropServices.dll</Right>
   </Suppression>
@@ -531,7 +513,7 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0021</DiagnosticId>
-    <Target>T:System.Runtime.InteropServices.Marshalling.ExceptionAsNaNMarshaller`1``0:System.Numerics.IFloatingPointIeee754&lt;T&gt;</Target>
+    <Target>T:System.Runtime.InteropServices.Marshalling.ExceptionAsNaNMarshaller`1``0:T:System.Numerics.IFloatingPointIeee754{`0}</Target>
     <Left>net8.0/System.Runtime.InteropServices.dll</Left>
     <Right>net9.0/System.Runtime.InteropServices.dll</Right>
   </Suppression>
@@ -543,7 +525,7 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0021</DiagnosticId>
-    <Target>T:System.Text.Json.Serialization.JsonNumberEnumConverter`1``0:System.Enum</Target>
+    <Target>T:System.Text.Json.Serialization.JsonNumberEnumConverter`1``0:T:System.Enum</Target>
     <Left>net8.0/System.Text.Json.dll</Left>
     <Right>net9.0/System.Text.Json.dll</Right>
   </Suppression>
