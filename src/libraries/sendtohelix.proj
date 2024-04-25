@@ -127,6 +127,8 @@
     <PropertyGroup>
       <_BuildInParallel>false</_BuildInParallel>
       <_BuildInParallel Condition=" '@(_ProjectsToBuild->Count())' &gt; '1' ">true</_BuildInParallel>
+      <!-- We stage multiple correlation payloads in parallel which is race condition -->
+      <_BuildInParallel Condition="'$(TargetArchitecture)' == 'wasm'">false</_BuildInParallel>
     </PropertyGroup>
 
     <!-- Invoke MSBuild once for each Scenario (because of the "batching" defined in "_ProjectsToBuild").
