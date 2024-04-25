@@ -5317,15 +5317,8 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         _ASSERTE(success);
 #else // TARGET_WINDOWS && TARGET_AMD64
 
-#ifdef _DEBUG
-        // Temporary change to avoid the frame context being overwritten after
-        // a crash after transition
-        pFrameContext = (CONTEXT*)_alloca(sizeof(CONTEXT) + 0x40000);
-#else
         CONTEXT frameContext;
         pFrameContext = &frameContext;
-#endif
-
         pFrameContext->ContextFlags = CONTEXT_FULL;
 
 #endif // TARGET_WINDOWS && TARGET_AMD64
@@ -5397,6 +5390,12 @@ void JIT_Patchpoint(int* counter, int ilOffset)
 
         // Install new entry point as IP
         SetIP(pFrameContext, osrMethodCode);
+
+#ifdef _DEBUG
+        // Keep this context around to aid in debugging OSR transitions problems
+        static CONTEXT s_lastOSRTransitionContext;
+        s_lastOSRTransitionContext = *pFrameContext;
+#endif
 
         // Restore last error (since call below does not return)
         // END_PRESERVE_LAST_ERROR;
