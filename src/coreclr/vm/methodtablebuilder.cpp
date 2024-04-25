@@ -6868,7 +6868,7 @@ VOID MethodTableBuilder::ValidateInterfaceMethodConstraints()
 
             // Grab the method token
             MethodTable * pMTItf = pItf->GetMethodTable();
-            CONSISTENCY_CHECK(CheckPointer(pMTItf->GetMethodDescForSlot(it.GetSlotNumber())));
+            CONSISTENCY_CHECK(CheckPointer(pMTItf->GetMethodDescForSlot_NoThrow(it.GetSlotNumber())));
             mdMethodDef mdTok = pItf->GetMethodTable()->GetMethodDescForSlot(it.GetSlotNumber())->GetMemberDef();
 
             // Default to the current module. The code immediately below determines if this
@@ -7040,10 +7040,10 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
     } CONTRACTL_END;
 
     void * pMem = GetMemTracker()->Track(
-        GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(TADDR) + sizeof(MethodDescChunk) + sizeOfMethodDescs)));
+        GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(MethodDescChunk) + sizeOfMethodDescs)));
 
     // Skip pointer to temporary entrypoints
-    MethodDescChunk * pChunk = (MethodDescChunk *)((BYTE*)pMem + sizeof(TADDR));
+    MethodDescChunk * pChunk = (MethodDescChunk *)((BYTE*)pMem);
 
     COUNT_T methodDescCount = 0;
 
@@ -9266,7 +9266,7 @@ void MethodTableBuilder::CopyExactParentSlots(MethodTable *pMT)
             // fix up wrongly-inherited method descriptors
             MethodDesc* pMD = hMTData->GetImplMethodDesc(i);
             CONSISTENCY_CHECK(CheckPointer(pMD));
-            CONSISTENCY_CHECK(pMD == pMT->GetMethodDescForSlot(i));
+            CONSISTENCY_CHECK(pMD == pMT->GetMethodDescForSlot_NoThrow(i));
 
             if (pMD->GetMethodTable() == pMT)
                 continue;
@@ -10901,9 +10901,10 @@ MethodTableBuilder::SetupMethodTable2(
                 //
                 _ASSERTE(iCurSlot >= bmtVT->cVirtualSlots || ChangesImplementationOfVirtualSlot(iCurSlot));
 
-                if (pMD->GetSlot() == iCurSlot)
-                    continue; // For cases where the slot is the same as the method desc slot, we don't need to fill it in yet
+                if ((pMD->GetSlot() == iCurSlot) && GetParentMethodTable() != NULL && iCurSlot >= GetParentMethodTable()->GetNumVirtuals())
+                    continue; // For cases where the method is defining the method desc slot, we don't need to fill it in yet
 
+                pMD->EnsureTemporaryEntryPointCore(GetLoaderAllocator(), GetMemTracker());
                 PCODE addr = pMD->GetTemporaryEntryPoint();
                 _ASSERTE(addr != NULL);
 
@@ -10969,7 +10970,7 @@ MethodTableBuilder::SetupMethodTable2(
                 MethodDesc* pMD = hMTData->GetImplMethodDesc(i);
 
                 CONSISTENCY_CHECK(CheckPointer(pMD));
-                CONSISTENCY_CHECK(pMD == pMT->GetMethodDescForSlot(i));
+                CONSISTENCY_CHECK(pMD == pMT->GetMethodDescForSlot_NoThrow(i));
 
                 // This indicates that the method body in this slot was copied here through a methodImpl.
                 // Thus, copy the value of the slot from which the body originally came, in case it was
@@ -10979,7 +10980,7 @@ MethodTableBuilder::SetupMethodTable2(
                 {
                     MethodDesc *pOriginalMD = hMTData->GetImplMethodDesc(originalIndex);
                     CONSISTENCY_CHECK(CheckPointer(pOriginalMD));
-                    CONSISTENCY_CHECK(pOriginalMD == pMT->GetMethodDescForSlot(originalIndex));
+                    CONSISTENCY_CHECK(pOriginalMD == pMT->GetMethodDescForSlot_NoThrow(originalIndex));
                     if (pMD != pOriginalMD)
                     {
                         // Copy the slot value in the method's original slot.

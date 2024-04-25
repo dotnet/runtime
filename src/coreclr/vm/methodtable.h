@@ -896,8 +896,6 @@ public:
     // THE CLASS CONSTRUCTOR
     //
 
-    MethodDesc * GetClassConstructor();
-
     BOOL HasClassConstructor();
     void SetHasClassConstructor();
     WORD GetClassConstructorSlot();
@@ -1418,10 +1416,12 @@ public:
     //
 
     MethodDesc* GetMethodDescForSlot(DWORD slot);
+    MethodDesc* GetMethodDescForSlot_NoThrow(DWORD slot);
 
     static MethodDesc*  GetMethodDescForSlotAddress(PCODE addr, BOOL fSpeculative = FALSE);
 
     PCODE GetRestoredSlot(DWORD slot);
+    PCODE GetRestoredSlotIfExists(DWORD slot);
 
     // Returns MethodTable that GetRestoredSlot get its values from
     MethodTable * GetRestoredSlotMT(DWORD slot);

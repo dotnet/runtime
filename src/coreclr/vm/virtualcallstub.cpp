@@ -987,6 +987,7 @@ PCODE VirtualCallStubManager::GetCallStub(TypeHandle ownerType, DWORD slot)
     GCX_COOP(); // This is necessary for BucketTable synchronization
 
     MethodTable * pMT = ownerType.GetMethodTable();
+    pMT->GetRestoredSlot(slot);
 
     DispatchToken token;
     if (pMT->IsInterface())
@@ -2133,7 +2134,7 @@ VirtualCallStubManager::GetRepresentativeMethodDescFromToken(
         token = DispatchToken::CreateDispatchToken(token.GetSlotNumber());
     }
     CONSISTENCY_CHECK(token.IsThisToken());
-    RETURN (pMT->GetMethodDescForSlot(token.GetSlotNumber()));
+    RETURN (pMT->GetMethodDescForSlot_NoThrow(token.GetSlotNumber()));
 }
 
 //----------------------------------------------------------------------------
@@ -2165,7 +2166,7 @@ MethodDesc *VirtualCallStubManager::GetInterfaceMethodDescFromToken(DispatchToke
     MethodTable * pMT = GetTypeFromToken(token);
     PREFIX_ASSUME(pMT != NULL);
     CONSISTENCY_CHECK(CheckPointer(pMT));
-    return pMT->GetMethodDescForSlot(token.GetSlotNumber());
+    return pMT->GetMethodDescForSlot_NoThrow(token.GetSlotNumber());
 
 #else // DACCESS_COMPILE
 

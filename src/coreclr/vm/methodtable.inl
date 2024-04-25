@@ -396,13 +396,56 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot(DWORD slot)
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
 
     PCODE pCode = GetRestoredSlot(slot);
+
+    // This is an optimization that we can take advantage of if we're trying to get the MethodDesc
+    // for an interface virtual, since their slots usually point to stub.
+    if (IsInterface() && slot < GetNumVirtuals())
+    {
+        return MethodDesc::GetMethodDescFromStubAddr(pCode);
+    }
+
+    return MethodTable::GetMethodDescForSlotAddress(pCode);
+}
+
+//==========================================================================================
+inline MethodDesc* MethodTable::GetMethodDescForSlot_NoThrow(DWORD slot)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    PCODE pCode = GetRestoredSlotIfExists(slot);
+
+    if (pCode == NULL)
+    {
+        // This code path should only be hit for methods which have not been overriden
+        MethodTable *pMTToSearchForMethodDesc = this->GetCanonicalMethodTable();
+        while (pMTToSearchForMethodDesc != NULL)
+        {
+            IntroducedMethodIterator it(pMTToSearchForMethodDesc);
+            for (; it.IsValid(); it.Next())
+            {
+                if (it.GetMethodDesc()->GetSlot() == slot)
+                {
+                    return it.GetMethodDesc();
+                }
+            }
+
+            pMTToSearchForMethodDesc = pMTToSearchForMethodDesc->GetParentMethodTable()->GetCanonicalMethodTable();
+        }
+        _ASSERTE(!"We should never reach here, as there should always be a MethodDesc for a slot");
+    }
 
     // This is an optimization that we can take advantage of if we're trying to get the MethodDesc
     // for an interface virtual, since their slots usually point to stub.

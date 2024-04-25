@@ -1381,6 +1381,7 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 
 void StubLinkerCPU::ThumbEmitTailCallManagedMethod(MethodDesc *pMD)
 {
+    pMD->EnsureTemporaryEntryPoint(pMD->GetLoaderAllocator());
     // Use direct call if possible.
     if (pMD->HasStableEntryPoint())
     {

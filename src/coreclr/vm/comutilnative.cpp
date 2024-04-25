@@ -1552,7 +1552,7 @@ extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide()
 static BOOL HasOverriddenMethod(MethodTable* mt, MethodTable* classMT, WORD methodSlot)
 {
     CONTRACTL{
-        NOTHROW;
+        THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
     } CONTRACTL_END;
@@ -1809,7 +1809,7 @@ static WORD g_slotBeginWrite, g_slotEndWrite;
 static bool HasOverriddenStreamMethod(MethodTable * pMT, WORD slot)
 {
     CONTRACTL{
-        NOTHROW;
+        THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
     } CONTRACTL_END;

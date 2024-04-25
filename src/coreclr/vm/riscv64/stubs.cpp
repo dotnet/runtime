@@ -1521,6 +1521,7 @@ void StubLinkerCPU::EmitCallLabel(CodeLabel *target, BOOL fTailCall, BOOL fIndir
 
 void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
 {
+    pMD->EnsureTemporaryEntryPoint(pMD->GetLoaderAllocator());
     // Use direct call if possible.
     if (pMD->HasStableEntryPoint())
     {

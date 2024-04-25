@@ -481,7 +481,7 @@ PCODE MethodDesc::GetMethodEntryPoint()
 {
     CONTRACTL
     {
-#ifndef HAS_COMPACT_ENTRYPOINTS
+#ifdef HAS_COMPACT_ENTRYPOINTS
         NOTHROW;
 #else
         THROWS;
@@ -514,7 +514,7 @@ PCODE MethodDesc::GetMethodEntryPoint()
     }
 
     _ASSERTE(GetMethodTable()->IsCanonicalMethodTable());
-    return GetMethodTable()->GetSlot(GetSlot());
+    return GetMethodTable()->GetRestoredSlot(GetSlot());
 }
 
 PTR_PCODE MethodDesc::GetAddrOfSlot()
@@ -1748,10 +1748,10 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
         DWORD count = min(methodDescCount, maxMethodDescsPerChunk);
 
         void * pMem = pamTracker->Track(
-                pHeap->AllocMem(S_SIZE_T(sizeof(TADDR) + sizeof(MethodDescChunk) + oneSize * count)));
+                pHeap->AllocMem(S_SIZE_T(sizeof(MethodDescChunk) + oneSize * count)));
 
         // Skip pointer to temporary entrypoints
-        MethodDescChunk * pChunk = (MethodDescChunk *)((BYTE*)pMem + sizeof(TADDR));
+        MethodDescChunk * pChunk = (MethodDescChunk *)((BYTE*)pMem);
 
         pChunk->SetSizeAndCount(oneSize * count, count);
         pChunk->SetMethodTable(pInitialMT);

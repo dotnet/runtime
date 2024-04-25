@@ -612,7 +612,7 @@ MethodDesc* StubDispatchFrame::GetFunction()
     {
         if (m_pRepresentativeMT != NULL)
         {
-            pMD = m_pRepresentativeMT->GetMethodDescForSlot(m_representativeSlot);
+            pMD = m_pRepresentativeMT->GetMethodDescForSlot_NoThrow(m_representativeSlot);
 #ifndef DACCESS_COMPILE
             m_pMD = pMD;
 #endif
