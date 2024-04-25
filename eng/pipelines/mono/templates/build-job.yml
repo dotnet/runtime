@@ -171,6 +171,10 @@ jobs:
       - script: build$(scriptExt) -subset mono+clr.hosts -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) -pack $(OutputRidArg)
         displayName: Build nupkg
 
+    - ${{ if and(eq(parameters.isOfficialBuild, true), eq(parameters.osGroup, 'windows')) }}:
+      - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName postbuild_log
+        displayName: Collect vslogs on exit
+        condition: always()
     # Publish Logs
     - task: PublishPipelineArtifact@1
       displayName: Publish Logs
