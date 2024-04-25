@@ -5390,7 +5390,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         SetIP(pFrameContext, osrMethodCode);
 
 #ifdef _DEBUG
-        // Keep this context around to aid in debugging OSR transitions problems
+        // Keep this context around to aid in debugging OSR transition problems
         static CONTEXT s_lastOSRTransitionContext;
         s_lastOSRTransitionContext = *pFrameContext;
 #endif
