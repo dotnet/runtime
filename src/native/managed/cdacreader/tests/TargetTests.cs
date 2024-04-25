@@ -146,7 +146,12 @@ public unsafe class TargetTests
         }
     }
 
-    private static void ValidateGlobals(Target target, (string Name, ulong Value, string? Type)[] globals)
+    private static void ValidateGlobals(
+        Target target,
+        (string Name, ulong Value, string? Type)[] globals,
+        [CallerMemberName] string caller = "",
+        [CallerFilePath] string filePath = "",
+        [CallerLineNumber] int lineNumber = 0)
     {
         foreach (var (name, value, type) in globals)
         {
@@ -154,58 +159,63 @@ public unsafe class TargetTests
             // and that it matches the expected value if successfully read
             {
                 bool success = target.TryReadGlobal(name, out sbyte actual);
-                Assert.Equal(type is null || type == "int8", success);
+                AssertEqualsWithCallerInfo(type is null || type == "int8", success);
                 if (success)
-                    Assert.Equal((sbyte)value, actual);
+                    AssertEqualsWithCallerInfo((sbyte)value, actual);
             }
             {
                 bool success = target.TryReadGlobal(name, out byte actual);
-                Assert.Equal(type is null || type == "uint8", success);
+                AssertEqualsWithCallerInfo(type is null || type == "uint8", success);
                 if (success)
-                    Assert.Equal(value, actual);
+                    AssertEqualsWithCallerInfo(value, actual);
             }
             {
                 bool success = target.TryReadGlobal(name, out short actual);
-                Assert.Equal(type is null || type == "int16", success);
+                AssertEqualsWithCallerInfo(type is null || type == "int16", success);
                 if (success)
-                    Assert.Equal((short)value, actual);
+                    AssertEqualsWithCallerInfo((short)value, actual);
             }
             {
                 bool success = target.TryReadGlobal(name, out ushort actual);
-                Assert.Equal(type is null || type == "uint16", success);
+                AssertEqualsWithCallerInfo(type is null || type == "uint16", success);
                 if (success)
-                    Assert.Equal(value, actual);
+                    AssertEqualsWithCallerInfo(value, actual);
             }
             {
                 bool success = target.TryReadGlobal(name, out int actual);
-                Assert.Equal(type is null || type == "int32", success);
+                AssertEqualsWithCallerInfo(type is null || type == "int32", success);
                 if (success)
-                    Assert.Equal((int)value, actual);
+                    AssertEqualsWithCallerInfo((int)value, actual);
             }
             {
                 bool success = target.TryReadGlobal(name, out uint actual);
-                Assert.Equal(type is null || type == "uint32", success);
+                AssertEqualsWithCallerInfo(type is null || type == "uint32", success);
                 if (success)
-                    Assert.Equal(value, actual);
+                    AssertEqualsWithCallerInfo(value, actual);
             }
             {
                 bool success = target.TryReadGlobal(name, out long actual);
-                Assert.Equal(type is null || type == "int64", success);
+                AssertEqualsWithCallerInfo(type is null || type == "int64", success);
                 if (success)
-                    Assert.Equal((long)value, actual);
+                    AssertEqualsWithCallerInfo((long)value, actual);
             }
             {
                 bool success = target.TryReadGlobal(name, out ulong actual);
-                Assert.Equal(type is null || type == "uint64", success);
+                AssertEqualsWithCallerInfo(type is null || type == "uint64", success);
                 if (success)
-                    Assert.Equal(value, actual);
+                    AssertEqualsWithCallerInfo(value, actual);
             }
             {
                 bool success = target.TryReadGlobalPointer(name, out TargetPointer actual);
-                Assert.Equal(type is null || type == "pointer" || type == "nint" || type == "nuint", success);
+                AssertEqualsWithCallerInfo(type is null || type == "pointer" || type == "nint" || type == "nuint", success);
                 if (success)
-                    Assert.Equal(value, actual.Value);
+                    AssertEqualsWithCallerInfo(value, actual.Value);
             }
+        }
+
+        void AssertEqualsWithCallerInfo<T>(T expected, T actual) where T : unmanaged
+        {
+            Assert.True(expected.Equals(actual), $"Expected: {expected}. Actual: {actual}. [test case: {caller} in {filePath}:{lineNumber}]");
         }
     }
 
