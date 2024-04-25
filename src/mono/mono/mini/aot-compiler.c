@@ -51,6 +51,7 @@
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/mono-basic-block.h>
 #include <mono/metadata/mono-endian.h>
+#include <mono/metadata/native-library.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/custom-attrs-internals.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -12407,7 +12408,6 @@ emit_file_info (MonoAotCompile *acfg)
 
 	if (acfg->aot_opts.static_link) {
 		char symbol [MAX_SYMBOL_SIZE];
-		char *p;
 
 		/*
 		 * Emit a global symbol which can be passed by an embedding app to
@@ -12415,14 +12415,17 @@ emit_file_info (MonoAotCompile *acfg)
 		 * structure.
 		 */
 		sprintf (symbol, "%smono_aot_module_%s_info", acfg->user_symbol_prefix, acfg->image->assembly->aname.name);
-
+#ifdef TARGET_WASM
+		acfg->static_linking_symbol = g_strdup (mono_fixup_symbol_name(symbol));
+#else
 		/* Get rid of characters which cannot occur in symbols */
-		p = symbol;
+		char *p = symbol;
 		for (p = symbol; *p; ++p) {
 			if (!(isalnum (*p) || *p == '_'))
 				*p = '_';
 		}
 		acfg->static_linking_symbol = g_strdup (symbol);
+#endif	
 	}
 
 	if (acfg->llvm)
@@ -14860,7 +14863,6 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 {
 	MonoImage *image = ass->image;
 	MonoAotCompile *acfg;
-	char *p;
 	int res;
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
@@ -15120,13 +15122,17 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 		acfg->flags = (MonoAotFileFlags)(acfg->flags | MONO_AOT_FILE_FLAG_LLVM_ONLY);
 
 	acfg->assembly_name_sym = g_strdup (get_assembly_prefix (acfg->image));
-	/* Get rid of characters which cannot occur in symbols */
+#ifdef TARGET_WASM
+	acfg->global_prefix = g_strdup_printf ("mono_aot_%s", g_strdup(mono_fixup_symbol_name (acfg->assembly_name_sym)));
+#else
+	char *p;
+    /* Get rid of characters which cannot occur in symbols */
 	for (p = acfg->assembly_name_sym; *p; ++p) {
 		if (!(isalnum (*p) || *p == '_'))
 			*p = '_';
 	}
-
 	acfg->global_prefix = g_strdup_printf ("mono_aot_%s", acfg->assembly_name_sym);
+#endif
 	acfg->plt_symbol = g_strdup_printf ("%s_plt", acfg->global_prefix);
 	acfg->got_symbol = g_strdup_printf ("%s_got", acfg->global_prefix);
  	if (acfg->llvm) {
