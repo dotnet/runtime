@@ -2980,6 +2980,14 @@ void MethodDesc::SetTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator, Alloc
 #ifndef HAS_COMPACT_ENTRYPOINTS
 void MethodDesc::EnsureTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator)
 {
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
     if (GetTemporaryEntryPoint_NoAlloc() == NULL)
     {
         AllocMemTracker amt;
@@ -2989,6 +2997,14 @@ void MethodDesc::EnsureTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator)
 
 void MethodDesc::EnsureTemporaryEntryPointCore(LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker)
 {
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
     if (GetTemporaryEntryPoint_NoAlloc() == NULL)
     {
         PTR_PCODE pSlot = GetAddrOfSlot();
