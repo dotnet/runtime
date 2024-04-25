@@ -56,9 +56,9 @@ namespace System
             {
                 return 1;
             }
-            if (value is ushort)
+            if (value is ushort other)
             {
-                return (int)m_value - (int)(((ushort)value).m_value);
+                return CompareTo(other);
             }
             throw new ArgumentException(SR.Arg_MustBeUInt16);
         }

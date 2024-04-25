@@ -140,12 +140,12 @@ namespace System
             {
                 return 1;
             }
-            if (!(value is char))
+            if (value is not char other)
             {
                 throw new ArgumentException(SR.Arg_MustBeChar);
             }
 
-            return m_value - ((char)value).m_value;
+            return CompareTo(other);
         }
 
         public int CompareTo(char value)

@@ -62,11 +62,11 @@ namespace System
             {
                 return 1;
             }
-            if (!(obj is sbyte))
+            if (obj is not sbyte other)
             {
                 throw new ArgumentException(SR.Arg_MustBeSByte);
             }
-            return m_value - ((sbyte)obj).m_value;
+            return CompareTo(other);
         }
 
         public int CompareTo(sbyte value)
