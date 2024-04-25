@@ -429,7 +429,7 @@ namespace System.Net.Http
         public override long GetIdleTicks(long nowTicks)
         {
             // The pool is holding the lock as part of its scavenging logic.
-            // We must not lock on Http2Connection.SyncObj here as that could lead to lock ordering problems.
+            // We must not lock on Http3Connection.SyncObj here as that could lead to lock ordering problems.
             Debug.Assert(_pool.HasSyncObjLock);
 
             // There is a race condition here where the connection pool may see this connection as idle right before
