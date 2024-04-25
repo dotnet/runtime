@@ -4020,6 +4020,8 @@ emitAttr emitter::emitGetBaseMemOpSize(instrDesc* id) const
         case INS_subss:
         case INS_ucomiss:
         case INS_vbroadcastss:
+        case INS_vcvttss2usi32:
+        case INS_vcvttss2usi64:
         case INS_vfmadd132ss:
         case INS_vfmadd213ss:
         case INS_vfmadd231ss:
@@ -4067,6 +4069,8 @@ emitAttr emitter::emitGetBaseMemOpSize(instrDesc* id) const
         case INS_subsd:
         case INS_ucomisd:
         case INS_vbroadcastsd:
+        case INS_vcvttsd2usi32:
+        case INS_vcvttsd2usi64:
         case INS_vfmadd132sd:
         case INS_vfmadd213sd:
         case INS_vfmadd231sd:

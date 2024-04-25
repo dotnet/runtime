@@ -78,9 +78,15 @@ switch (testCase) {
             },
         });
         break;
+    case "InterpPgoTest":
+        dotnet
+            .withConsoleForwarding()
+            .withRuntimeOptions(['--interp-pgo-logging'])
+            .withInterpreterPgo(true);
+        break;
 }
 
-const { getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
+const { setModuleImports, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
 const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
 const assemblyExtension = config.resources.assembly['System.Private.CoreLib.wasm'] !== undefined ? ".wasm" : ".dll";
@@ -114,6 +120,21 @@ try {
             break;
         case "DebugLevelTest":
             testOutput("WasmDebugLevel: " + config.debugLevel);
+            exit(0);
+            break;
+        case "InterpPgoTest":
+            setModuleImports('main.js', {
+                window: {
+                    location: {
+                        href: () => globalThis.window.location.href
+                    }
+                }
+            });
+            const iterationCount = params.get("iterationCount") ?? 70;
+            for (let i = 0; i < iterationCount; i++) { 
+                exports.InterpPgoTest.Greeting(); 
+            };
+            await INTERNAL.interp_pgo_save_data();
             exit(0);
             break;
         default:
