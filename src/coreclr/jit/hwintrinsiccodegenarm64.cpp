@@ -404,10 +404,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         else if (intrin.numOperands >= 2 && intrin.op2->IsEmbMaskOp())
         {
             // Handle case where op2 is operation that needs embedded mask
+            GenTree* op1 = intrin.op1;
             GenTree* op2 = intrin.op2;
             assert(intrin.id == NI_Sve_ConditionalSelect);
-            assert(op2->isContained());
+            assert(op1->OperIsHWIntrinsic());
             assert(op2->OperIsHWIntrinsic());
+            assert(op2->isContained());
 
             // Get the registers and intrinsics that needs embedded mask
             const HWIntrinsic intrinEmbMask(op2->AsHWIntrinsic());
@@ -439,10 +441,36 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 case 1:
                     assert(!instrIsRMW);
-                    if ((targetReg != falseReg) && (falseReg != REG_NA))
+
+                    if ((targetReg != falseReg))
                     {
-                        GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, falseReg);
+                        // If targetReg is not the same as `falseReg` then need to move
+                        // the `falseReg` to `targetReg`.
+
+                        if (op1->IsTrueAllMask())
+                        {
+                            // We already skip importing ConditionalSelect if op1 == trueAll, however
+                            // if we still see it here, it is because we wrapped the predicated instruction
+                            // inside ConditionalSelect.
+                            // As such, no need to move the `falseReg` to `targetReg`
+                            // because the predicated instruction will eventually set it.
+                            assert(intrin.op3->IsVectorZero());
+                            assert(falseReg == REG_NA);
+                        }
+                        else if (falseReg == REG_NA)
+                        {
+                            // If falseValue is zero, just zero out those lanes of targetReg using `movprfx`
+                            // and /Z                            
+                            assert(intrin.op3->isContained() && intrin.op3->IsVectorZero());
+                            GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, targetReg,
+                                                        opt);
+                        }
+                        else
+                        {
+                            GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, falseReg);
+                        }
                     }
+
                     GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
                     break;
 
