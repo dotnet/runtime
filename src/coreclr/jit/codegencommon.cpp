@@ -4122,14 +4122,14 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 #if defined(SWIFT_SUPPORT) || defined(TARGET_RISCV64)
 
 //-----------------------------------------------------------------------------
-// genHomeSplitStructParameters:
-//  Reassemble split struct parameters if necessary.
+// genHomeReassembledParameters:
+//  Reassemble parameters if necessary.
 //
 // Parameters:
 //   handleStack - If true, reassemble the segments that were passed on the stack.
 //                 If false, reassemble the segments that were passed in registers.
 //
-void CodeGen::genHomeSplitStructParameters(bool handleStack)
+void CodeGen::genHomeReassembledParameters(bool handleStack)
 {
     for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
     {
@@ -4146,7 +4146,7 @@ void CodeGen::genHomeSplitStructParameters(bool handleStack)
             continue;
         }
 
-        JITDUMP("Homing split parameter V%02u: ", lclNum);
+        JITDUMP("Homing reassembled parameter V%02u: ", lclNum);
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
         DBEXEC(VERBOSE, abiInfo.Dump());
 
@@ -4176,7 +4176,7 @@ void CodeGen::genHomeSplitStructParameters(bool handleStack)
             else
             {
                 var_types loadType = TYP_UNDEF;
-                switch (RISCV64_ONLY(RoundUpToPower2)(seg.Size))
+                switch (seg.Size)
                 {
                     case 1:
                         loadType = TYP_UBYTE;
@@ -4184,9 +4184,13 @@ void CodeGen::genHomeSplitStructParameters(bool handleStack)
                     case 2:
                         loadType = TYP_USHORT;
                         break;
+                    case 3:
                     case 4:
                         loadType = TYP_INT;
                         break;
+                    case 5:
+                    case 6:
+                    case 7:
                     case 8:
                         loadType = TYP_LONG;
                         break;
@@ -5522,7 +5526,7 @@ void CodeGen::genFnProlog()
             intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_ERROR;
         }
 
-        genHomeSplitStructParameters(/* handleStack */ false);
+        genHomeReassembledParameters(/* handleStack */ false);
     }
 #endif
 

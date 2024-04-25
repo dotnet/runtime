@@ -1897,27 +1897,30 @@ void Compiler::lvaClassifyParameterABI()
 //
 bool Compiler::lvaHasAnyStackParamToReassemble()
 {
-#if defined(SWIFT_SUPPORT) || defined(TARGET_RISCV64)
-#ifdef SWIFT_SUPPORT
+#if defined(SWIFT_SUPPORT)
     if (info.compCallConv != CorInfoCallConvExtension::Swift)
     {
         return false;
     }
-#endif
 
     for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
     {
         const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
-#ifdef SWIFT_SUPPORT
         if (abiInfo.HasAnyStackSegment() && !abiInfo.HasExactlyOneStackSegment())
-#else // TARGET_RISCV64
-        if (abiInfo.IsSplitAcrossRegistersAndStack())
-#endif
         {
             return true;
         }
     }
-#endif // defined(SWIFT_SUPPORT) || defined(TARGET_RISCV64)
+#elif defined(TARGET_RISCV64)
+    for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+    {
+        const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
+        if (abiInfo.IsSplitAcrossRegistersAndStack())
+        {
+            return true;
+        }
+    }
+#endif
     return false;
 }
 

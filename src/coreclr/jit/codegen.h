@@ -274,7 +274,7 @@ protected:
     void genEnregisterOSRArgsAndLocals();
 #endif
 
-    void genHomeSplitStructParameters(bool handleStack);
+    void genHomeReassembledParameters(bool handleStack);
 
     void genCheckUseBlockInit();
 #if defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)
