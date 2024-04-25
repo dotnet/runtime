@@ -1689,16 +1689,42 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
         {
             BasicBlock* intermediary = m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true);
             intermediary->SetFlags(BBF_IMPORTED);
-            intermediary->inheritWeight(block);
             FlowEdge* const newEdge = m_comp->fgAddRefPred(block, intermediary);
             intermediary->SetTargetEdge(newEdge);
             NewRelocatedProbe(intermediary, probe->source, probe->target, &leader);
             SetModifiedFlow();
 
+            // Redirect flow and figure out profile impact.
+            //
+            // We don't expect to see mixtures of profiled and unprofiled preds,
+            // but if we do, fall back to our old default behavior.
+            //
+            weight_t weight              = 0;
+            bool     allPredsHaveProfile = true;
+
             while (criticalPreds.Height() > 0)
             {
                 BasicBlock* const pred = criticalPreds.Pop();
                 m_comp->fgReplaceJumpTarget(pred, block, intermediary);
+
+                if (pred->hasProfileWeight())
+                {
+                    FlowEdge* const predIntermediaryEdge = m_comp->fgGetPredForBlock(intermediary, pred);
+                    weight += predIntermediaryEdge->getLikelyWeight();
+                }
+                else
+                {
+                    allPredsHaveProfile = false;
+                }
+            }
+
+            if (allPredsHaveProfile)
+            {
+                intermediary->setBBProfileWeight(weight);
+            }
+            else
+            {
+                intermediary->inheritWeight(block);
             }
         }
     }
@@ -4773,6 +4799,19 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
             verifyIncoming = false;
         }
 
+        // Original entries in OSR methods that also are
+        // loop headers.
+        //
+        // These will frequently have a profile imbalance as
+        // synthesis will have injected profile weight for
+        // method entry, but when we transform flow for OSR,
+        // only the loop back edges remain.
+        //
+        if (block == fgEntryBB)
+        {
+            verifyIncoming = false;
+        }
+
         // Handler entries
         //
         if (block->hasEHBoundaryIn())
@@ -4924,6 +4963,15 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
         }
 
         foundPreds = true;
+    }
+
+    // We almost certainly won't get the likelihoods on a BBJ_EHFINALLYRET right,
+    // so special-case BBJ_CALLFINALLYRET incoming flow.
+    //
+    if (block->isBBCallFinallyPairTail())
+    {
+        incomingLikelyWeight = block->Prev()->bbWeight;
+        foundEHPreds         = false;
     }
 
     // We almost certainly won't get the likelihoods on a BBJ_EHFINALLYRET right,

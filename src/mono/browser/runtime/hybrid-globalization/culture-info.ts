@@ -1,18 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { wrap_error_root, wrap_no_error_root } from "./helpers";
-import { mono_wasm_new_external_root } from "../roots";
-import { monoStringToString, stringToUTF16 } from "../strings";
-import { Int32Ptr } from "../types/emscripten";
-import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
+import { setI32 } from "../memory";
+import { stringToUTF16, stringToUTF16Ptr, utf16ToString } from "../strings";
+import { Int32Ptr, VoidPtr } from "../types/emscripten";
+import { VoidPtrNull } from "../types/internal";
 import { OUTER_SEPARATOR, normalizeLocale, normalizeSpaces } from "./helpers";
 
-export function mono_wasm_get_culture_info (culture: MonoStringRef, dst: number, dstLength: number, isException: Int32Ptr, exAddress: MonoObjectRef): number {
-    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
-        exceptionRoot = mono_wasm_new_external_root<MonoObject>(exAddress);
+export function mono_wasm_get_culture_info (culture: number, cultureLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
     try {
-        const cultureName = monoStringToString(cultureRoot);
+        const cultureName = utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
         const cultureInfo = {
             AmDesignator: "",
             PmDesignator: "",
@@ -26,18 +23,15 @@ export function mono_wasm_get_culture_info (culture: MonoStringRef, dst: number,
         cultureInfo.LongTimePattern = getLongTimePattern(canonicalLocale, designators);
         cultureInfo.ShortTimePattern = getShortTimePattern(cultureInfo.LongTimePattern);
         const result = Object.values(cultureInfo).join(OUTER_SEPARATOR);
-        if (result.length > dstLength) {
-            throw new Error(`Culture info exceeds length of ${dstLength}.`);
+        if (result.length > dstMaxLength) {
+            throw new Error(`Culture info exceeds length of ${dstMaxLength}.`);
         }
         stringToUTF16(dst, dst + 2 * result.length, result);
-        wrap_no_error_root(isException, exceptionRoot);
-        return result.length;
+        setI32(dstLength, result.length);
+        return VoidPtrNull;
     } catch (ex: any) {
-        wrap_error_root(isException, ex, exceptionRoot);
-        return -1;
-    } finally {
-        cultureRoot.release();
-        exceptionRoot.release();
+        setI32(dstLength, -1);
+        return stringToUTF16Ptr(ex.toString());
     }
 }
 
