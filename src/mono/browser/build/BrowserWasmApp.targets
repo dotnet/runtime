@@ -261,7 +261,7 @@
       <!-- FIXME: which one should take precedence? -->
       <WasmCompileOptimizationFlag>$(EmccCompileOptimizationFlag)</WasmCompileOptimizationFlag>
       <WasmBitcodeCompileOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == '' and '$(Configuration)' == 'Release'">-O2</WasmBitcodeCompileOptimizationFlag>
-      <WasmBitcodeCompileOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == '' ">WasmCompileOptimizationFlag</WasmBitcodeCompileOptimizationFlag>
+      <WasmBitcodeCompileOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == '' ">$(WasmCompileOptimizationFlag)</WasmBitcodeCompileOptimizationFlag>
       <EmccLinkOptimizationFlag    Condition="'$(EmccLinkOptimizationFlag)' == '' and '$(Configuration)' == 'Release'">-O2</EmccLinkOptimizationFlag>
       <EmccLinkOptimizationFlag    Condition="'$(EmccLinkOptimizationFlag)' == ''"   >$(WasmCompileOptimizationFlag)</EmccLinkOptimizationFlag>
       <WasmLinkOptimizationFlag>$(EmccLinkOptimizationFlag)</WasmLinkOptimizationFlag>
