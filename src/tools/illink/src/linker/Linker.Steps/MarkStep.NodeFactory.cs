@@ -13,13 +13,13 @@ namespace Mono.Linker.Steps
 		internal sealed class NodeFactory (MarkStep markStep)
 		{
 			public MarkStep MarkStep { get; } = markStep;
-			readonly NodeCache<TypeDefinition, TypeDefinitionNode> _typeNodes = new (static _ => throw new InvalidOperationException ("Creation of node requires more than the key."));
+			readonly NodeCache<TypeDefinition, TypeDefinitionNode> _typeNodes = new (static t => new TypeDefinitionNode(t));
 			readonly NodeCache<MethodDefinition, MethodDefinitionNode> _methodNodes = new (static _ => throw new InvalidOperationException ("Creation of node requires more than the key."));
 			readonly NodeCache<TypeDefinition, TypeIsRelevantToVariantCastingNode> _typeIsRelevantToVariantCastingNodes = new (static (t) => new TypeIsRelevantToVariantCastingNode (t));
 
-			internal TypeDefinitionNode GetTypeNode (TypeDefinition reference)
+			internal TypeDefinitionNode GetTypeNode (TypeDefinition definition)
 			{
-				return _typeNodes.GetOrAdd (reference, (k) => new TypeDefinitionNode (k));
+				return _typeNodes.GetOrAdd (definition);
 			}
 
 			internal MethodDefinitionNode GetMethodDefinitionNode (MethodDefinition method, DependencyInfo reason)
