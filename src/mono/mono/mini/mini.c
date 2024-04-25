@@ -3196,7 +3196,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	cfg->jit_mm = jit_mm_for_method (cfg->method);
 	cfg->mem_manager = m_method_get_mem_manager (cfg->method);
 
-	if (cfg->method->wrapper_type == MONO_WRAPPER_ALLOC || cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+	char *method_name = mono_method_get_full_name (cfg->method);
+
+  	if (cfg->method->wrapper_type == MONO_WRAPPER_ALLOC || cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
 		/* We can't have seq points inside gc critical regions or native-to-managed wrapper */
 		cfg->gen_seq_points = FALSE;
 		cfg->gen_sdb_seq_points = FALSE;
@@ -3308,13 +3310,25 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		return cfg;
 	}
 
+	{
+		g_print ("START converting %s%s%s%smethod %s\n", COMPILE_LLVM (cfg) ? "llvm " : "", cfg->gsharedvt ? "gsharedvt " : "", (cfg->gshared && !cfg->gsharedvt) ? "gshared " : "", cfg->interp_entry_only ? "interp only " : "", method_name);
+		if (strstr(method_name, "W& Program:AccessBox") != NULL) {
+		    printf ("blaps\n");
+		}
+	}
+
 	header = cfg->header = mono_method_get_header_checked (cfg->method, cfg->error);
 	if (!header) {
 		mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 		if (MONO_METHOD_COMPILE_END_ENABLED ())
 			MONO_PROBE_METHOD_COMPILE_END (method, FALSE);
+		g_print ("NO HEADER, returning, %s\n", method_name);
+		if (strstr(method_name, "AccessBox<W_REF>") != 0) {
+		    printf ("oops\n");
+		}
 		return cfg;
 	}
+
 
 	if (cfg->llvm_only && cfg->interp && !cfg->interp_entry_only && header->num_clauses) {
 		gboolean can_deopt = TRUE;

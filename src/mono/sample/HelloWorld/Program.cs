@@ -2,18 +2,31 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 
-namespace HelloWorld
+public class MyBox<T>
 {
-    internal class Program
+    private T _value;
+    public T Value { get => _value; private set { _value = value; }}
+    public MyBox(T inp) { Value = inp; }
+}
+
+public class Program
+{
+    public static void Main()
     {
-        private static void Main(string[] args)
-        {
-            bool isMono = typeof(object).Assembly.GetType("Mono.RuntimeStructs") != null;
-            Console.WriteLine($"Hello World {(isMono ? "from Mono!" : "from CoreCLR!")}");
-            Console.WriteLine(typeof(object).Assembly.FullName);
-            Console.WriteLine(System.Reflection.Assembly.GetEntryAssembly ());
-            Console.WriteLine(System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription);
-        }
+        var box = new MyBox<string>("xyz");
+        RunIt<string>(box, "abc");
+        Console.WriteLine (box.Value);
     }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void RunIt<H> (MyBox<H> dest, H input)
+    {
+        ref H boxWriter = ref AccessBox(dest);
+        boxWriter = input;
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_value")]
+    private static extern ref W AccessBox<W>(MyBox<W> x);
 }

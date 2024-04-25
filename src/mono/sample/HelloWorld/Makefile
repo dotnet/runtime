@@ -5,14 +5,17 @@ DOTNET_Q_ARGS=--nologo -v:q -consoleloggerparameters:NoSummary
 MONO_CONFIG?=Debug
 MONO_ARCH?=$(shell . $(TOP)eng/common/native/init-os-and-arch.sh && echo $${arch})
 TARGET_OS?=$(shell . $(TOP)eng/common/native/init-os-and-arch.sh && echo $${os})
-AOT?=false
+AOT?=true
 USE_LLVM?=false
 StripILCode?=false
 TrimmingEligibleMethodsOutputDirectory?= #<path-to-a-writable-directory>
 
 #MIBC_PROFILE_PATH=<path-to-mibc-for-sample>
 
-MONO_ENV_OPTIONS ?=
+MONO_ENV_OPTIONS ?= 
+ifeq ($(AOT),true)
+MONO_ENV_OPTIONS += --full-aot
+endif
 
 publish:
 	$(DOTNET) publish \

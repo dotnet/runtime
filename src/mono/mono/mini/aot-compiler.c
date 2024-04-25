@@ -4316,6 +4316,14 @@ add_method_with_index (MonoAotCompile *acfg, MonoMethod *method, int index, gboo
 {
 	g_assert (method);
 	if (!g_hash_table_lookup (acfg->method_indexes, method)) {
+		{
+			char * method_name = mono_method_get_full_name (method);
+			g_print ("inserting %s into acfg\n", method_name);
+			if (strstr(method_name, "W_REF& Program:AccessBox<W_REF") == method_name) {
+				printf ("haraa\n");
+			}
+			g_free (method_name);
+		}
 		g_ptr_array_add (acfg->methods, method);
 		g_hash_table_insert (acfg->method_indexes, method, GUINT_TO_POINTER (index + 1));
 		acfg->nmethods = acfg->methods->len + 1;
@@ -5312,6 +5320,7 @@ add_full_aot_wrappers (MonoAotCompile *acfg)
 		}
 	}
 
+#if 0
 	/* unsafe accessor wrappers */
 	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_METHOD]);
 	for (int i = 0; i < rows; ++i) {
@@ -5325,10 +5334,11 @@ add_full_aot_wrappers (MonoAotCompile *acfg)
 
 		char *member_name = NULL;
 		int accessor_kind = -1;
-		if (mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
+		if (!mono_aot_mode_is_full (&acfg->aot_opts) && mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
 			add_extra_method (acfg, mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name));
 		}
 	}
+#endif
 
 }
 
@@ -6022,6 +6032,33 @@ add_generic_instances (MonoAotCompile *acfg)
 			aot_printerrf (acfg, "Run with MONO_LOG_LEVEL=debug for more information.\n");
 			mono_error_cleanup (error);
 			continue;
+		}
+
+		if (mono_aot_mode_is_full (&acfg->aot_opts) && !mono_method_metadata_has_header (method)) {
+			{
+				char * method_name = mono_method_get_full_name (method);
+				g_print ("ADDING %s generic instances\n", method_name);
+				g_free (method_name);
+			}
+
+
+			// if the method has no body, see if it's an [UnsafeAccessor] method and replace it by the wrapper.
+			char *member_name = NULL;
+			int accessor_kind = -1;
+			if (mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
+				MonoMethod *wrapper = mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name);
+				method = wrapper;
+				{
+					char * method_name = mono_method_get_full_name (method);
+					g_print ("REPLACED by %s in generic instances\n", method_name);
+					g_free (method_name);
+				}
+
+			} else if (!is_ok (error)) {
+				aot_printerrf (acfg, "Could not get unsafe accessor wrapper due to %s ", mono_error_get_message (error));
+				mono_error_cleanup (error);
+				continue;
+			}
 		}
 
 		if (m_class_get_image (method->klass) != acfg->image)
@@ -9355,6 +9392,36 @@ add_referenced_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, int depth)
 					if (mono_aot_mode_is_full (&acfg->aot_opts) && !method_has_type_vars (m))
 						add_extra_method_with_depth (acfg, mono_marshal_get_native_wrapper (m, TRUE, TRUE), depth + 1);
 				} else {
+					if (mono_aot_mode_is_full (&acfg->aot_opts) && !mono_method_metadata_has_header (m)) {
+						ERROR_DECL(error);
+						MonoMethod *method = m;
+						{
+							char * method_name = mono_method_get_full_name (method);
+							g_print ("ADDING %s from referenced patch\n", method_name);
+							g_free (method_name);
+						}
+
+
+						// if the method has no body, see if it's an [UnsafeAccessor] method and replace it by the wrapper.
+						char *member_name = NULL;
+						int accessor_kind = -1;
+						if (mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
+							MonoMethod *wrapper = mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name);
+							method = wrapper;
+							{
+								char * method_name = mono_method_get_full_name (method);
+								g_print ("REPLACED by %s in referenced patch\n", method_name);
+								g_free (method_name);
+							}
+
+						} else if (!is_ok (error)) {
+							aot_printerrf (acfg, "Could not get unsafe accessor wrapper due to %s ", mono_error_get_message (error));
+							mono_error_cleanup (error);
+							return;
+						}
+						m = method;
+					}
+					
 					add_extra_method_with_depth (acfg, m, depth + 1);
 					add_types_from_method_header (acfg, m);
 				}
@@ -9460,7 +9527,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 		(method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
 		(method->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
-		//printf ("Skip (impossible): %s\n", mono_method_full_name (method, TRUE));
+		printf ("Skip (impossible): %s\n", mono_method_full_name (method, TRUE));
 		return;
 	}
 
@@ -13003,6 +13070,32 @@ collect_methods (MonoAotCompile *acfg)
 			method = wrapper;
 		}
 
+		if (mono_aot_mode_is_full (&acfg->aot_opts) && !mono_method_metadata_has_header (method)) {
+			// if the method has no body, see if it's an [UnsafeAccessor] method and replace it by the wrapper.
+			{
+				char * method_name = mono_method_get_full_name (method);
+				g_print ("ADDING %s toplevel collect\n", method_name);
+				g_free (method_name);
+			}
+
+			char *member_name = NULL;
+			int accessor_kind = -1;
+			if (mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
+				MonoMethod *wrapper = mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name);
+				method = wrapper;
+				{
+					char * method_name = mono_method_get_full_name (method);
+					g_print ("REPLACING %s toplevel collect\n", method_name);
+					g_free (method_name);
+				}
+
+			} else if (!is_ok (error)) {
+				aot_printerrf (acfg, "Could not get unsafe accessor wrapper due to %s ", mono_error_get_message (error));
+				mono_error_cleanup (error);
+				return FALSE;
+			}
+		}
+
 		/* FIXME: Some mscorlib methods don't have debug info */
 		/*
 		if (acfg->aot_opts.soft_debug && !method->wrapper_type) {
@@ -13046,6 +13139,20 @@ collect_methods (MonoAotCompile *acfg)
 
 		method = mono_get_method_checked (acfg->image, token, NULL, NULL, error);
 		report_loader_error (acfg, error, TRUE, "Failed to load method token 0x%x due to %s\n", i, mono_error_get_message (error));
+
+		if (mono_aot_mode_is_full (&acfg->aot_opts) && !mono_method_metadata_has_header (method)) {
+			// if the method has no body, see if it's an [UnsafeAccessor] method and replace it by the wrapper.
+			char *member_name = NULL;
+			int accessor_kind = -1;
+			if (mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
+				MonoMethod *wrapper = mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name);
+				method = wrapper;
+			} else if (!is_ok (error)) {
+				aot_printerrf (acfg, "Could not get unsafe accessor wrapper due to %s ", mono_error_get_message (error));
+				mono_error_cleanup (error);
+				return FALSE;
+			}
+		}
 
 		if ((method->is_generic || mono_class_is_gtd (method->klass)) && should_emit_gsharedvt_method (acfg, method)) {
 			MonoMethod *gshared;
