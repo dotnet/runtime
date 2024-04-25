@@ -106,8 +106,6 @@
   <Target Name="PrepareHelixCorrelationPayload_Wasi">
     <Error Condition="'$(Scenario)' == '' or '$(Scenario)' == 'normal'" Text="Only supported scenario is WasmTestOnWasmtime and BuildWasmApps at the moment." />
     <Error Text="Cannot find %24(WasmtimeDir)=$(WasmtimeDir)" Condition="'$(WasmtimeDir)' == '' or !Exists($(WasmtimeDir))" />
-    <Exec Command="ls -lsa $(WasmtimeDir)" Condition="'$(HostOS)' == 'linux'" />
-    <Exec Command="ls -lsa $(WasmtimeDirForHelixPayload)" Condition="'$(HostOS)' == 'linux'" />
     <ItemGroup>
       <HelixCorrelationPayload Include="$(WasmtimeDirForHelixPayload)" Destination="wasmtime" Condition="'$(NeedsWasmtime)' == 'true'" />
 
