@@ -50,7 +50,7 @@ class RCWCleanupList;
 #endif // FEATURE_COMINTEROP
 
 typedef TADDR LOADERHANDLE;
-typedef TADDR RUNTIMETYPEHANDLE;
+typedef Object* RUNTIMETYPEHANDLE;
 
 #ifdef DACCESS_COMPILE
 void OBJECTHANDLE_EnumMemoryRegions(OBJECTHANDLE handle);

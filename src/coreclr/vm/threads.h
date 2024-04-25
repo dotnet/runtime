@@ -121,6 +121,7 @@
 #include "gchandleutilities.h"
 #include "gcinfotypes.h"
 #include <clrhost.h>
+#include "cdacoffsets.h"
 
 class     Thread;
 class     ThreadStore;
@@ -4076,8 +4077,17 @@ private:
 
 private:
     bool m_hasPendingActivation;
+
+    template<typename T> friend struct ::cdac_offsets;
 };
 
+template<>
+struct cdac_offsets<Thread>
+{
+    static constexpr size_t ExposedObject = offsetof(Thread, m_ExposedObject);
+    static constexpr size_t Link = offsetof(Thread, m_Link);
+};
+    
 // End of class Thread
 
 typedef Thread::ForbidSuspendThreadHolder ForbidSuspendThreadHolder;

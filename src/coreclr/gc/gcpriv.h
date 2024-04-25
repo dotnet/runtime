@@ -140,10 +140,10 @@ inline void FATAL_GC_ERROR()
 //
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
-// For now disable regions for StandAlone GC, NativeAOT and MacOS builds
+// For now disable regions for standalone GC and macOS builds
 #if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__)
 #define USE_REGIONS
-#endif //HOST_64BIT && BUILD_AS_STANDALONE
+#endif //HOST_64BIT && BUILD_AS_STANDALONE && !__APPLE__
 
 //#define SPINLOCK_HISTORY
 //#define RECORD_LOH_STATE
