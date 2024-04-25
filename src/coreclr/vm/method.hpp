@@ -211,20 +211,6 @@ public:
     static const size_t ALIGNMENT = (1 << ALIGNMENT_SHIFT);
     static const size_t ALIGNMENT_MASK = (ALIGNMENT - 1);
 
-#ifdef _DEBUG
-
-    // These are set only for MethodDescs but every time we want to use the debugger
-    // to examine these fields, the code has the thing stored in a MethodDesc*.
-    // So...
-    LPCUTF8         m_pszDebugMethodName;
-    LPCUTF8         m_pszDebugClassName;
-    LPCUTF8         m_pszDebugMethodSignature;
-    PTR_MethodTable m_pDebugMethodTable;
-
-    PTR_GCCoverageInfo m_GcCover;
-
-#endif // _DEBUG
-
     inline BOOL HasStableEntryPoint()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -390,13 +376,13 @@ public:
 
     inline void SetHasMethodImplSlot()
     {
-        m_wFlags |= mdcMethodImpl;
+        m_wClassification |= mdcMethodImpl;
     }
 
     inline BOOL HasMethodImplSlot()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (mdcMethodImpl & m_wFlags);
+        return (mdcMethodImpl & m_wClassification);
     }
 
     FORCEINLINE BOOL IsMethodImpl()
@@ -415,21 +401,21 @@ public:
         // accesses metadata that is not compatible with contracts of this method. The metadata access can fail, the metadata
         // are not available during shutdown, the metadata access can take locks. It is not worth it to code around all these
         // just for the assert.
-        // _ASSERTE((((m_wFlags & mdcStatic) != 0) == (IsMdStatic(flags) != 0)));
+        // _ASSERTE((((m_wClassification & mdcStatic) != 0) == (IsMdStatic(flags) != 0)));
 
-        return (m_wFlags & mdcStatic) != 0;
+        return (m_wClassification & mdcStatic) != 0;
     }
 
     inline void SetStatic()
     {
         LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdcStatic;
+        m_wClassification |= mdcStatic;
     }
 
     inline void ClearStatic()
     {
         LIMITED_METHOD_CONTRACT;
-        m_wFlags &= ~mdcStatic;
+        m_wClassification &= ~mdcStatic;
     }
 
     inline BOOL IsIL()
@@ -662,7 +648,7 @@ public:
     inline BOOL IsNotInline()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_wFlags & mdcNotInline);
+        return (m_wClassification & mdcNotInline);
     }
 
     inline void SetNotInline(BOOL set)
@@ -897,13 +883,13 @@ public:
     inline void SetSynchronized()
     {
         LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdcSynchronized;
+        m_wClassification |= mdcSynchronized;
     }
 
     inline DWORD IsSynchronized()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags & mdcSynchronized) != 0;
+        return (m_wClassification & mdcSynchronized) != 0;
     }
 
     //==================================================================
@@ -942,14 +928,14 @@ public:
     void SetHasNonVtableSlot()
     {
         LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdcHasNonVtableSlot;
+        m_wClassification |= mdcHasNonVtableSlot;
     }
 
     // duplicate methods
     inline BOOL  IsDuplicate()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_wFlags & mdcDuplicate) == mdcDuplicate;
+        return (m_wClassification & mdcDuplicate) == mdcDuplicate;
     }
 
     void SetDuplicate()
@@ -957,7 +943,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         // method table is not setup yet
         //_ASSERTE(!GetClass()->IsInterface());
-        m_wFlags |= mdcDuplicate;
+        m_wClassification |= mdcDuplicate;
     }
 
     //==================================================================
@@ -1616,6 +1602,20 @@ private:
     //================================================================
     // The actual data stored in a MethodDesc follows.
 
+#ifdef _DEBUG
+public:
+    // These are set only for MethodDescs but every time we want to use the debugger
+    // to examine these fields, the code has the thing stored in a MethodDesc*.
+    // So...
+    LPCUTF8         m_pszDebugMethodName;
+    LPCUTF8         m_pszDebugClassName;
+    LPCUTF8         m_pszDebugMethodSignature;
+    PTR_MethodTable m_pDebugMethodTable;
+
+    PTR_GCCoverageInfo m_GcCover;
+
+#endif // _DEBUG
+
 protected:
     enum {
         // There are flags available for use here (currently 4 flags bits are available); however, new bits are hard to come by, so any new flags bits should
@@ -1634,9 +1634,8 @@ protected:
     BYTE        m_chunkIndex;
     BYTE        m_methodIndex; // Used to hold the index into the chunk of this MethodDesc. Currently all 8 bits are used, but we could likely work with only 7 bits
 
-    // The slot number of this MethodDesc in the vtable array.
-    WORD m_wSlotNumber;
-    WORD m_wFlags;
+    WORD m_wSlotNumber; // The slot number of this MethodDesc in the vtable array.
+    WORD m_wClassification; // See MethodDescClassification
 
 public:
 #ifdef DACCESS_COMPILE
@@ -1659,39 +1658,39 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return (m_wFlags & mdcClassification);
+        return (m_wClassification & mdcClassification);
     }
 
     inline void SetClassification(DWORD classification)
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE((m_wFlags & mdcClassification) == 0);
-        m_wFlags |= classification;
+        _ASSERTE((m_wClassification & mdcClassification) == 0);
+        m_wClassification |= classification;
     }
 
     inline BOOL HasNativeCodeSlot()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags & mdcHasNativeCodeSlot) != 0;
+        return (m_wClassification & mdcHasNativeCodeSlot) != 0;
     }
 
     inline void SetHasNativeCodeSlot()
     {
         LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdcHasNativeCodeSlot;
+        m_wClassification |= mdcHasNativeCodeSlot;
     }
 
 #ifdef FEATURE_METADATA_UPDATER
     inline BOOL IsEnCAddedMethod()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags & mdcEnCAddedMethod) != 0;
+        return (m_wClassification & mdcEnCAddedMethod) != 0;
     }
 
     inline void SetIsEnCAddedMethod()
     {
         LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdcEnCAddedMethod;
+        m_wClassification |= mdcEnCAddedMethod;
     }
 #else
     inline BOOL IsEnCAddedMethod()
@@ -1704,26 +1703,26 @@ public:
     inline BOOL IsIntrinsic()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags & mdcIsIntrinsic) != 0;
+        return (m_wClassification & mdcIsIntrinsic) != 0;
     }
 
     inline void SetIsIntrinsic()
     {
         LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdcIsIntrinsic;
+        m_wClassification |= mdcIsIntrinsic;
     }
 
     BOOL RequiresCovariantReturnTypeChecking()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return (m_wFlags & mdcRequiresCovariantReturnTypeChecking) != 0;
+        return (m_wClassification & mdcRequiresCovariantReturnTypeChecking) != 0;
     }
 
     void SetRequiresCovariantReturnTypeChecking()
     {
         LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdcRequiresCovariantReturnTypeChecking;
+        m_wClassification |= mdcRequiresCovariantReturnTypeChecking;
     }
 
     static const BYTE s_ClassificationSizeTable[];
@@ -1748,7 +1747,7 @@ public:
     inline BOOL HaveValueTypeParametersBeenWalked()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags & mdcValueTypeParametersWalked) != 0;
+        return (m_wClassification & mdcValueTypeParametersWalked) != 0;
     }
 
     inline void SetValueTypeParametersWalked()
@@ -1760,7 +1759,7 @@ public:
     inline BOOL HaveValueTypeParametersBeenLoaded()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags & mdcValueTypeParametersLoaded) != 0;
+        return (m_wClassification & mdcValueTypeParametersLoaded) != 0;
     }
 
     inline void SetValueTypeParametersLoaded()
@@ -1773,7 +1772,7 @@ public:
     inline BOOL DoesNotHaveEquivalentValuetypeParameters()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags & mdcDoesNotHaveEquivalentValuetypeParameters) != 0;
+        return (m_wClassification & mdcDoesNotHaveEquivalentValuetypeParameters) != 0;
     }
 
     inline void SetDoesNotHaveEquivalentValuetypeParameters()
@@ -3493,7 +3492,7 @@ inline BOOL MethodDesc::HasNonVtableSlot()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return (m_wFlags & mdcHasNonVtableSlot) != 0;
+    return (m_wClassification & mdcHasNonVtableSlot) != 0;
 }
 
 inline Instantiation MethodDesc::GetMethodInstantiation() const
