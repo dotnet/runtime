@@ -226,7 +226,7 @@
     <PropertyGroup>
       <EmsdkExt Condition="'$(HostOS)' != 'windows'"></EmsdkExt>
       <EmsdkExt Condition="'$(HostOS)' == 'windows'">.ps1</EmsdkExt>
-      <EMSDK_PATH>$(ProvisionEmscriptenDir.Replace('\','/'))</EMSDK_PATH>
+      <EMSDK_PATH>$(ProvisionEmscriptenDir)</EMSDK_PATH>
       <BrowserLocalPath>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'browser'))</BrowserLocalPath>
       <EmsdkLocalPath>emsdk</EmsdkLocalPath>
       <EmscriptenVersion>%(_VersionLines.Identity)</EmscriptenVersion>
