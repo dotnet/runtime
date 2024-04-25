@@ -4197,6 +4197,38 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> CreateTrueMaskUInt16([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static System.Numerics.Vector<uint> CreateTrueMaskUInt32([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static System.Numerics.Vector<ulong> CreateTrueMaskUInt64([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateWhileLessThanMask16Bit(int left, int right) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateWhileLessThanMask16Bit(long left, long right) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateWhileLessThanMask16Bit(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateWhileLessThanMask16Bit(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<uint> CreateWhileLessThanMask32Bit(int left, int right) { throw null; }
+        public static System.Numerics.Vector<uint> CreateWhileLessThanMask32Bit(long left, long right) { throw null; }
+        public static System.Numerics.Vector<uint> CreateWhileLessThanMask32Bit(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<uint> CreateWhileLessThanMask32Bit(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateWhileLessThanMask64Bit(int left, int right) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateWhileLessThanMask64Bit(long left, long right) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateWhileLessThanMask64Bit(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateWhileLessThanMask64Bit(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateWhileLessThanMask8Bit(int left, int right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateWhileLessThanMask8Bit(long left, long right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateWhileLessThanMask8Bit(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateWhileLessThanMask8Bit(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateWhileLessThanOrEqualMask16Bit(int left, int right) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateWhileLessThanOrEqualMask16Bit(long left, long right) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateWhileLessThanOrEqualMask16Bit(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateWhileLessThanOrEqualMask16Bit(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<uint> CreateWhileLessThanOrEqualMask32Bit(int left, int right) { throw null; }
+        public static System.Numerics.Vector<uint> CreateWhileLessThanOrEqualMask32Bit(long left, long right) { throw null; }
+        public static System.Numerics.Vector<uint> CreateWhileLessThanOrEqualMask32Bit(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<uint> CreateWhileLessThanOrEqualMask32Bit(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateWhileLessThanOrEqualMask64Bit(int left, int right) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateWhileLessThanOrEqualMask64Bit(long left, long right) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateWhileLessThanOrEqualMask64Bit(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateWhileLessThanOrEqualMask64Bit(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateWhileLessThanOrEqualMask8Bit(int left, int right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateWhileLessThanOrEqualMask8Bit(long left, long right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateWhileLessThanOrEqualMask8Bit(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateWhileLessThanOrEqualMask8Bit(ulong left, ulong right) { throw null; }
         public static System.Numerics.Vector<sbyte> ConditionalSelect(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
         public static System.Numerics.Vector<short> ConditionalSelect(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<int> ConditionalSelect(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
@@ -4217,6 +4249,31 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe System.Numerics.Vector<ulong> LoadVector(System.Numerics.Vector<ulong> mask, ulong* address) { throw null; }
         public static unsafe System.Numerics.Vector<float> LoadVector(System.Numerics.Vector<float> mask, float* address) { throw null; }
         public static unsafe System.Numerics.Vector<double> LoadVector(System.Numerics.Vector<double> mask, double* address) { throw null; }
+        public static unsafe System.Numerics.Vector<short> LoadVectorByteZeroExtendToInt16(System.Numerics.Vector<short> mask, byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<int> LoadVectorByteZeroExtendToInt32(System.Numerics.Vector<int> mask, byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorByteZeroExtendToInt64(System.Numerics.Vector<long> mask, byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ushort> LoadVectorByteZeroExtendToUInt16(System.Numerics.Vector<ushort> mask, byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorByteZeroExtendToUInt32(System.Numerics.Vector<uint> mask, byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorByteZeroExtendToUInt64(System.Numerics.Vector<ulong> mask, byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<int> LoadVectorInt16SignExtendToInt32(System.Numerics.Vector<int> mask, short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorInt16SignExtendToInt64(System.Numerics.Vector<long> mask, short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorInt16SignExtendToUInt32(System.Numerics.Vector<uint> mask, short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorInt16SignExtendToUInt64(System.Numerics.Vector<ulong> mask, short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorInt32SignExtendToInt64(System.Numerics.Vector<long> mask, int* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorInt32SignExtendToUInt64(System.Numerics.Vector<ulong> mask, int* address) { throw null; }
+        public static unsafe System.Numerics.Vector<short> LoadVectorSByteSignExtendToInt16(System.Numerics.Vector<short> mask, sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<int> LoadVectorSByteSignExtendToInt32(System.Numerics.Vector<int> mask, sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorSByteSignExtendToInt64(System.Numerics.Vector<long> mask, sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ushort> LoadVectorSByteSignExtendToUInt16(System.Numerics.Vector<ushort> mask, sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorSByteSignExtendToUInt32(System.Numerics.Vector<uint> mask, sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorSByteSignExtendToUInt64(System.Numerics.Vector<ulong> mask, sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<int> LoadVectorUInt16ZeroExtendToInt32(System.Numerics.Vector<int> mask, ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorUInt16ZeroExtendToInt64(System.Numerics.Vector<long> mask, ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorUInt16ZeroExtendToUInt32(System.Numerics.Vector<uint> mask, ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorUInt16ZeroExtendToUInt64(System.Numerics.Vector<ulong> mask, ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorUInt32ZeroExtendToInt64(System.Numerics.Vector<long> mask, uint* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorUInt32ZeroExtendToUInt64(System.Numerics.Vector<ulong> mask, uint* address) { throw null; }
+
     }
 
     public enum SveMaskPattern : byte

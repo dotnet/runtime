@@ -239,6 +239,223 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> CreateTrueMaskUInt64([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
 
+
+        ///  CreateWhileLessThanMask16Bit : While incrementing scalar is less than
+
+        /// <summary>
+        /// svbool_t svwhilelt_b16[_s32](int32_t op1, int32_t op2)
+        ///   WHILELT Presult.H, Wop1, Wop2
+        /// </summary>
+        public static unsafe Vector<ushort> CreateWhileLessThanMask16Bit(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilelt_b16[_s64](int64_t op1, int64_t op2)
+        ///   WHILELT Presult.H, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<ushort> CreateWhileLessThanMask16Bit(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilelt_b16[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILELO Presult.H, Wop1, Wop2
+        /// </summary>
+        public static unsafe Vector<ushort> CreateWhileLessThanMask16Bit(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilelt_b16[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILELO Presult.H, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<ushort> CreateWhileLessThanMask16Bit(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        ///  CreateWhileLessThanMask32Bit : While incrementing scalar is less than
+
+        /// <summary>
+        /// svbool_t svwhilelt_b32[_s32](int32_t op1, int32_t op2)
+        ///   WHILELT Presult.S, Wop1, Wop2
+        /// </summary>
+        public static unsafe Vector<uint> CreateWhileLessThanMask32Bit(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilelt_b32[_s64](int64_t op1, int64_t op2)
+        ///   WHILELT Presult.S, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<uint> CreateWhileLessThanMask32Bit(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilelt_b32[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILELO Presult.S, Wop1, Wop2
+        /// </summary>
+        public static unsafe Vector<uint> CreateWhileLessThanMask32Bit(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilelt_b32[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILELO Presult.S, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<uint> CreateWhileLessThanMask32Bit(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        ///  CreateWhileLessThanMask64Bit : While incrementing scalar is less than
+
+        /// <summary>
+        /// svbool_t svwhilelt_b64[_s32](int32_t op1, int32_t op2)
+        ///   WHILELT Presult.D, Wop1, Wop2
+        /// </summary>
+        public static unsafe Vector<ulong> CreateWhileLessThanMask64Bit(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilelt_b64[_s64](int64_t op1, int64_t op2)
+        ///   WHILELT Presult.D, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<ulong> CreateWhileLessThanMask64Bit(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilelt_b64[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILELO Presult.D, Wop1, Wop2
+        /// </summary>
+        public static unsafe Vector<ulong> CreateWhileLessThanMask64Bit(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilelt_b64[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILELO Presult.D, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<ulong> CreateWhileLessThanMask64Bit(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        ///  CreateWhileLessThanMask8Bit : While incrementing scalar is less than
+
+        /// <summary>
+        /// svbool_t svwhilelt_b8[_s32](int32_t op1, int32_t op2)
+        ///   WHILELT Presult.B, Wop1, Wop2
+        /// </summary>
+        public static unsafe Vector<byte> CreateWhileLessThanMask8Bit(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilelt_b8[_s64](int64_t op1, int64_t op2)
+        ///   WHILELT Presult.B, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<byte> CreateWhileLessThanMask8Bit(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilelt_b8[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILELO Presult.B, Wop1, Wop2
+        /// </summary>
+        public static unsafe Vector<byte> CreateWhileLessThanMask8Bit(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilelt_b8[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILELO Presult.B, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<byte> CreateWhileLessThanMask8Bit(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        ///  CreateWhileLessThanOrEqualMask16Bit : While incrementing scalar is less than or equal to
+
+        /// <summary>
+        /// svbool_t svwhilele_b16[_s32](int32_t op1, int32_t op2)
+        ///   WHILELE Presult.H, Wop1, Wop2
+        /// </summary>
+        public static unsafe Vector<ushort> CreateWhileLessThanOrEqualMask16Bit(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilele_b16[_s64](int64_t op1, int64_t op2)
+        ///   WHILELE Presult.H, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<ushort> CreateWhileLessThanOrEqualMask16Bit(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilele_b16[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILELS Presult.H, Wop1, Wop2
+        /// </summary>
+        public static unsafe Vector<ushort> CreateWhileLessThanOrEqualMask16Bit(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilele_b16[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILELS Presult.H, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<ushort> CreateWhileLessThanOrEqualMask16Bit(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        ///  CreateWhileLessThanOrEqualMask32Bit : While incrementing scalar is less than or equal to
+
+        /// <summary>
+        /// svbool_t svwhilele_b32[_s32](int32_t op1, int32_t op2)
+        ///   WHILELE Presult.S, Wop1, Wop2
+        /// </summary>
+        public static unsafe Vector<uint> CreateWhileLessThanOrEqualMask32Bit(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilele_b32[_s64](int64_t op1, int64_t op2)
+        ///   WHILELE Presult.S, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<uint> CreateWhileLessThanOrEqualMask32Bit(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilele_b32[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILELS Presult.S, Wop1, Wop2
+        /// </summary>
+        public static unsafe Vector<uint> CreateWhileLessThanOrEqualMask32Bit(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilele_b32[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILELS Presult.S, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<uint> CreateWhileLessThanOrEqualMask32Bit(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        ///  CreateWhileLessThanOrEqualMask64Bit : While incrementing scalar is less than or equal to
+
+        /// <summary>
+        /// svbool_t svwhilele_b64[_s32](int32_t op1, int32_t op2)
+        ///   WHILELE Presult.D, Wop1, Wop2
+        /// </summary>
+        public static unsafe Vector<ulong> CreateWhileLessThanOrEqualMask64Bit(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilele_b64[_s64](int64_t op1, int64_t op2)
+        ///   WHILELE Presult.D, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<ulong> CreateWhileLessThanOrEqualMask64Bit(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilele_b64[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILELS Presult.D, Wop1, Wop2
+        /// </summary>
+        public static unsafe Vector<ulong> CreateWhileLessThanOrEqualMask64Bit(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilele_b64[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILELS Presult.D, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<ulong> CreateWhileLessThanOrEqualMask64Bit(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        ///  CreateWhileLessThanOrEqualMask8Bit : While incrementing scalar is less than or equal to
+
+        /// <summary>
+        /// svbool_t svwhilele_b8[_s32](int32_t op1, int32_t op2)
+        ///   WHILELE Presult.B, Wop1, Wop2
+        /// </summary>
+        public static unsafe Vector<byte> CreateWhileLessThanOrEqualMask8Bit(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilele_b8[_s64](int64_t op1, int64_t op2)
+        ///   WHILELE Presult.B, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<byte> CreateWhileLessThanOrEqualMask8Bit(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilele_b8[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILELS Presult.B, Wop1, Wop2
+        /// </summary>
+        public static unsafe Vector<byte> CreateWhileLessThanOrEqualMask8Bit(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilele_b8[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILELS Presult.B, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<byte> CreateWhileLessThanOrEqualMask8Bit(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
         ///  ConditionalSelect : Conditionally select elements
 
         /// <summary>
@@ -298,6 +515,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// svfloat64_t svsel[_f64](svbool_t pg, svfloat64_t op1, svfloat64_t op2)
         /// </summary>
         public static unsafe Vector<double> ConditionalSelect(Vector<double> mask, Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
+
 
         ///  LoadVector : Unextended load
 
@@ -370,6 +588,222 @@ namespace System.Runtime.Intrinsics.Arm
         ///   LD1D Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe Vector<double> LoadVector(Vector<double> mask, double* address) { throw new PlatformNotSupportedException(); }
+
+
+        ///  LoadVectorByteZeroExtendToInt16 : Load 8-bit data and zero-extend
+
+        /// <summary>
+        /// svint16_t svld1ub_s16(svbool_t pg, const uint8_t *base)
+        ///   LD1B Zresult.H, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<short> LoadVectorByteZeroExtendToInt16(Vector<short> mask, byte* address) { throw new PlatformNotSupportedException(); }
+
+
+        ///  LoadVectorByteZeroExtendToInt32 : Load 8-bit data and zero-extend
+
+        /// <summary>
+        /// svint32_t svld1ub_s32(svbool_t pg, const uint8_t *base)
+        ///   LD1B Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<int> LoadVectorByteZeroExtendToInt32(Vector<int> mask, byte* address) { throw new PlatformNotSupportedException(); }
+
+
+        ///  LoadVectorByteZeroExtendToInt64 : Load 8-bit data and zero-extend
+
+        /// <summary>
+        /// svint64_t svld1ub_s64(svbool_t pg, const uint8_t *base)
+        ///   LD1B Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorByteZeroExtendToInt64(Vector<long> mask, byte* address) { throw new PlatformNotSupportedException(); }
+
+
+        ///  LoadVectorByteZeroExtendToUInt16 : Load 8-bit data and zero-extend
+
+        /// <summary>
+        /// svuint16_t svld1ub_u16(svbool_t pg, const uint8_t *base)
+        ///   LD1B Zresult.H, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ushort> LoadVectorByteZeroExtendToUInt16(Vector<ushort> mask, byte* address) { throw new PlatformNotSupportedException(); }
+
+
+        ///  LoadVectorByteZeroExtendToUInt32 : Load 8-bit data and zero-extend
+
+        /// <summary>
+        /// svuint32_t svld1ub_u32(svbool_t pg, const uint8_t *base)
+        ///   LD1B Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<uint> LoadVectorByteZeroExtendToUInt32(Vector<uint> mask, byte* address) { throw new PlatformNotSupportedException(); }
+
+
+        ///  LoadVectorByteZeroExtendToUInt64 : Load 8-bit data and zero-extend
+
+        /// <summary>
+        /// svuint64_t svld1ub_u64(svbool_t pg, const uint8_t *base)
+        ///   LD1B Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorByteZeroExtendToUInt64(Vector<ulong> mask, byte* address) { throw new PlatformNotSupportedException(); }
+
+
+        ///  LoadVectorInt16SignExtendToInt32 : Load 16-bit data and sign-extend
+
+        /// <summary>
+        /// svint32_t svld1sh_s32(svbool_t pg, const int16_t *base)
+        ///   LD1SH Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<int> LoadVectorInt16SignExtendToInt32(Vector<int> mask, short* address) { throw new PlatformNotSupportedException(); }
+
+
+        ///  LoadVectorInt16SignExtendToInt64 : Load 16-bit data and sign-extend
+
+        /// <summary>
+        /// svint64_t svld1sh_s64(svbool_t pg, const int16_t *base)
+        ///   LD1SH Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorInt16SignExtendToInt64(Vector<long> mask, short* address) { throw new PlatformNotSupportedException(); }
+
+
+        ///  LoadVectorInt16SignExtendToUInt32 : Load 16-bit data and sign-extend
+
+        /// <summary>
+        /// svuint32_t svld1sh_u32(svbool_t pg, const int16_t *base)
+        ///   LD1SH Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<uint> LoadVectorInt16SignExtendToUInt32(Vector<uint> mask, short* address) { throw new PlatformNotSupportedException(); }
+
+
+        ///  LoadVectorInt16SignExtendToUInt64 : Load 16-bit data and sign-extend
+
+        /// <summary>
+        /// svuint64_t svld1sh_u64(svbool_t pg, const int16_t *base)
+        ///   LD1SH Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorInt16SignExtendToUInt64(Vector<ulong> mask, short* address) { throw new PlatformNotSupportedException(); }
+
+
+        ///  LoadVectorInt32SignExtendToInt64 : Load 32-bit data and sign-extend
+
+        /// <summary>
+        /// svint64_t svld1sw_s64(svbool_t pg, const int32_t *base)
+        ///   LD1SW Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorInt32SignExtendToInt64(Vector<long> mask, int* address) { throw new PlatformNotSupportedException(); }
+
+
+        ///  LoadVectorInt32SignExtendToUInt64 : Load 32-bit data and sign-extend
+
+        /// <summary>
+        /// svuint64_t svld1sw_u64(svbool_t pg, const int32_t *base)
+        ///   LD1SW Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorInt32SignExtendToUInt64(Vector<ulong> mask, int* address) { throw new PlatformNotSupportedException(); }
+
+
+        ///  LoadVectorSByteSignExtendToInt16 : Load 8-bit data and sign-extend
+
+        /// <summary>
+        /// svint16_t svld1sb_s16(svbool_t pg, const int8_t *base)
+        ///   LD1SB Zresult.H, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<short> LoadVectorSByteSignExtendToInt16(Vector<short> mask, sbyte* address) { throw new PlatformNotSupportedException(); }
+
+
+        ///  LoadVectorSByteSignExtendToInt32 : Load 8-bit data and sign-extend
+
+        /// <summary>
+        /// svint32_t svld1sb_s32(svbool_t pg, const int8_t *base)
+        ///   LD1SB Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<int> LoadVectorSByteSignExtendToInt32(Vector<int> mask, sbyte* address) { throw new PlatformNotSupportedException(); }
+
+
+        ///  LoadVectorSByteSignExtendToInt64 : Load 8-bit data and sign-extend
+
+        /// <summary>
+        /// svint64_t svld1sb_s64(svbool_t pg, const int8_t *base)
+        ///   LD1SB Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorSByteSignExtendToInt64(Vector<long> mask, sbyte* address) { throw new PlatformNotSupportedException(); }
+
+
+        ///  LoadVectorSByteSignExtendToUInt16 : Load 8-bit data and sign-extend
+
+        /// <summary>
+        /// svuint16_t svld1sb_u16(svbool_t pg, const int8_t *base)
+        ///   LD1SB Zresult.H, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ushort> LoadVectorSByteSignExtendToUInt16(Vector<ushort> mask, sbyte* address) { throw new PlatformNotSupportedException(); }
+
+
+        ///  LoadVectorSByteSignExtendToUInt32 : Load 8-bit data and sign-extend
+
+        /// <summary>
+        /// svuint32_t svld1sb_u32(svbool_t pg, const int8_t *base)
+        ///   LD1SB Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<uint> LoadVectorSByteSignExtendToUInt32(Vector<uint> mask, sbyte* address) { throw new PlatformNotSupportedException(); }
+
+
+        ///  LoadVectorSByteSignExtendToUInt64 : Load 8-bit data and sign-extend
+
+        /// <summary>
+        /// svuint64_t svld1sb_u64(svbool_t pg, const int8_t *base)
+        ///   LD1SB Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorSByteSignExtendToUInt64(Vector<ulong> mask, sbyte* address) { throw new PlatformNotSupportedException(); }
+
+
+        ///  LoadVectorUInt16ZeroExtendToInt32 : Load 16-bit data and zero-extend
+
+        /// <summary>
+        /// svint32_t svld1uh_s32(svbool_t pg, const uint16_t *base)
+        ///   LD1H Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<int> LoadVectorUInt16ZeroExtendToInt32(Vector<int> mask, ushort* address) { throw new PlatformNotSupportedException(); }
+
+
+        ///  LoadVectorUInt16ZeroExtendToInt64 : Load 16-bit data and zero-extend
+
+        /// <summary>
+        /// svint64_t svld1uh_s64(svbool_t pg, const uint16_t *base)
+        ///   LD1H Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorUInt16ZeroExtendToInt64(Vector<long> mask, ushort* address) { throw new PlatformNotSupportedException(); }
+
+
+        ///  LoadVectorUInt16ZeroExtendToUInt32 : Load 16-bit data and zero-extend
+
+        /// <summary>
+        /// svuint32_t svld1uh_u32(svbool_t pg, const uint16_t *base)
+        ///   LD1H Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<uint> LoadVectorUInt16ZeroExtendToUInt32(Vector<uint> mask, ushort* address) { throw new PlatformNotSupportedException(); }
+
+
+        ///  LoadVectorUInt16ZeroExtendToUInt64 : Load 16-bit data and zero-extend
+
+        /// <summary>
+        /// svuint64_t svld1uh_u64(svbool_t pg, const uint16_t *base)
+        ///   LD1H Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorUInt16ZeroExtendToUInt64(Vector<ulong> mask, ushort* address) { throw new PlatformNotSupportedException(); }
+
+
+        ///  LoadVectorUInt32ZeroExtendToInt64 : Load 32-bit data and zero-extend
+
+        /// <summary>
+        /// svint64_t svld1uw_s64(svbool_t pg, const uint32_t *base)
+        ///   LD1W Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorUInt32ZeroExtendToInt64(Vector<long> mask, uint* address) { throw new PlatformNotSupportedException(); }
+
+
+        ///  LoadVectorUInt32ZeroExtendToUInt64 : Load 32-bit data and zero-extend
+
+        /// <summary>
+        /// svuint64_t svld1uw_u64(svbool_t pg, const uint32_t *base)
+        ///   LD1W Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorUInt32ZeroExtendToUInt64(Vector<ulong> mask, uint* address) { throw new PlatformNotSupportedException(); }
 
 
     }
