@@ -5555,6 +5555,13 @@ void CodeGen::genFnProlog()
         genEnregisterIncomingStackArgs();
     }
 
+#ifdef TARGET_RISCV64
+    if (compiler->fgFirstBBisScratch() && compiler->lvaHasAnyStackParamToReassemble())
+    {
+        genHomeStackParams(/* handleStack */ true);
+    }
+#endif
+
     /* Initialize any must-init registers variables now */
 
     if (initRegs)

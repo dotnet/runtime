@@ -386,7 +386,7 @@ void CodeGen::genCodeForBBlist()
         compiler->compCurStmt     = nullptr;
         compiler->compCurLifeTree = nullptr;
 
-#if defined(SWIFT_SUPPORT) || defined(TARGET_RISCV64)
+#ifdef SWIFT_SUPPORT
         // Reassemble split struct parameters on the local stack frame in the
         // scratch BB right after the prolog. There can be arbitrary amounts of
         // codegen related to doing this, so it cannot be done in the prolog.
