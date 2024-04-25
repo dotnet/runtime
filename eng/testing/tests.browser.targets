@@ -244,6 +244,15 @@
   </Target>
 
   <Target Name="_WasmAddToRunScript" BeforeTargets="GenerateRunScript">
+    <Scenario Condition="'$(Scenario)' == ''">WasmTestOnV8</Scenario>
+    <Error Condition="'$(Scenario)' != 'WasmTestOnV8' and 
+                      '$(Scenario)' != 'WasmTestOnChrome' and 
+                      '$(Scenario)' != 'WasmTestOnFirefox' and 
+                      '$(Scenario)' != 'WasmTestOnNodeJS' and 
+                      '$(Scenario)' != 'WasmDebuggerTests' and 
+                      '$(Scenario)' != 'BuildWasmApps'" 
+                      Text="Only supported scenarios are WasmTestOnV8, WasmTestOnNodeJS, WasmTestOnChrome, WasmTestOnFirefox, WasmDebuggerTests and BuildWasmApps at the moment. It was $(Scenario)." />
+
     <!-- Combine optional alias on all NodeNpmModule and trim separator where alias is empty -->
     <ItemGroup>
       <_NodeNpmModuleString Include="%(NodeNpmModule.Identity):%(NodeNpmModule.Alias)" />
