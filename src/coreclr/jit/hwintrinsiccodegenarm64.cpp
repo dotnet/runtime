@@ -465,8 +465,21 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, targetReg,
                                                         opt);
                         }
+                        else if (targetReg == embMaskOp1Reg)
+                        {
+                            // target != falseValue, but we do not want to overwrite target with `embMaskOp1Reg`.
+                            // We will first do the predicate operation and then do conditionalSelect inactive
+                            // elements from falseValue
+                            GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
+
+                            GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,
+                                                          falseReg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
+                            break;
+                        }
                         else
                         {
+                            // At this point, target != embMaskOp1Reg != falseReg, so just go ahead
+                            // and move the falseReg unpredicated into targetReg.
                             GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, falseReg);
                         }
                     }
