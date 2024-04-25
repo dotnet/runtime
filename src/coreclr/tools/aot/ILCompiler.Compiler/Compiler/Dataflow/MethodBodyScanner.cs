@@ -1284,14 +1284,12 @@ namespace ILCompiler.Dataflow
             var dereferencedMethodParams = new List<MultiValue>();
             foreach (var argument in methodArguments)
                 dereferencedMethodParams.Add(DereferenceValue(callingMethodBody, offset, argument, locals, ref interproceduralState));
-            MultiValue methodReturnValue;
-            HandleCall(
+            MultiValue methodReturnValue = HandleCall(
                 callingMethodBody,
                 calledMethod,
                 opcode,
                 offset,
-                new ValueNodeList(dereferencedMethodParams),
-                out methodReturnValue);
+                new ValueNodeList(dereferencedMethodParams));
 
             if (isNewObj || !calledMethod.Signature.ReturnType.IsVoid)
                 currentStack.Push(new StackSlot(methodReturnValue));
@@ -1310,13 +1308,12 @@ namespace ILCompiler.Dataflow
             }
         }
 
-        public abstract void HandleCall(
+        public abstract MultiValue HandleCall(
             MethodIL callingMethodBody,
             MethodDesc calledMethod,
             ILOpcode operation,
             int offset,
-            ValueNodeList methodParams,
-            out MultiValue methodReturnValue);
+            ValueNodeList methodParams);
 
         // Limit tracking array values to 32 values for performance reasons. There are many arrays much longer than 32 elements in .NET, but the interesting ones for trimming are nearly always less than 32 elements.
         private const int MaxTrackedArrayValues = 32;

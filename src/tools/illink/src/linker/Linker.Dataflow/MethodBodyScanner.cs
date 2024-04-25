@@ -1090,13 +1090,11 @@ namespace Mono.Linker.Dataflow
 			var dereferencedMethodParams = new List<MultiValue> ();
 			foreach (var argument in methodArguments)
 				dereferencedMethodParams.Add (DereferenceValue (argument, locals, ref interproceduralState));
-			MultiValue methodReturnValue;
-			HandleCall (
+			MultiValue methodReturnValue = HandleCall (
 				callingMethodBody,
 				calledMethod,
 				operation,
-				new ValueNodeList (dereferencedMethodParams),
-				out methodReturnValue);
+				new ValueNodeList (dereferencedMethodParams));
 
 			if (isNewObj || !calledMethod.ReturnsVoid ())
 				currentStack.Push (new StackSlot (methodReturnValue));
@@ -1114,12 +1112,11 @@ namespace Mono.Linker.Dataflow
 
 		public TypeDefinition? ResolveToTypeDefinition (TypeReference typeReference) => typeReference.ResolveToTypeDefinition (_context);
 
-		public abstract void HandleCall (
+		public abstract MultiValue HandleCall (
 			MethodBody callingMethodBody,
 			MethodReference calledMethod,
 			Instruction operation,
-			ValueNodeList methodParams,
-			out MultiValue methodReturnValue);
+			ValueNodeList methodParams);
 
 		// Limit tracking array values to 32 values for performance reasons. There are many arrays much longer than 32 elements in .NET, but the interesting ones for trimming are nearly always less than 32 elements.
 		private const int MaxTrackedArrayValues = 32;

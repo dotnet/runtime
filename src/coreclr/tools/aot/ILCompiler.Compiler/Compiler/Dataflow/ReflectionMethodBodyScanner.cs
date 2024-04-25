@@ -261,7 +261,7 @@ namespace ILCompiler.Dataflow
             ProcessGenericArgumentDataFlow(accessedField);
         }
 
-        public override void HandleCall(MethodIL callingMethodBody, MethodDesc calledMethod, ILOpcode operation, int offset, ValueNodeList methodParams, out MultiValue methodReturnValue)
+        public override MultiValue HandleCall(MethodIL callingMethodBody, MethodDesc calledMethod, ILOpcode operation, int offset, ValueNodeList methodParams)
         {
             Debug.Assert(callingMethodBody.OwningMethod == _origin.MemberDefinition);
 
@@ -293,26 +293,24 @@ namespace ILCompiler.Dataflow
             ProcessGenericArgumentDataFlow(calledMethod);
 
             var diagnosticContext = new DiagnosticContext(_origin, diagnosticsEnabled: false, _logger);
-            HandleCall(
+            return HandleCall(
                 callingMethodBody,
                 calledMethod,
                 operation,
                 instanceValue,
                 arguments,
                 diagnosticContext,
-                _reflectionMarker,
-                out methodReturnValue);
+                _reflectionMarker);
         }
 
-        public static void HandleCall(
+        public static MultiValue HandleCall(
             MethodIL callingMethodBody,
             MethodDesc calledMethod,
             ILOpcode operation,
             MultiValue instanceValue,
             ImmutableArray<MultiValue> argumentValues,
             DiagnosticContext diagnosticContext,
-            ReflectionMarker reflectionMarker,
-            out MultiValue methodReturnValue)
+            ReflectionMarker reflectionMarker)
         {
             var callingMethodDefinition = callingMethodBody.OwningMethod;
             Debug.Assert(callingMethodDefinition == diagnosticContext.Origin.MemberDefinition);
@@ -324,8 +322,9 @@ namespace ILCompiler.Dataflow
 
             var handleCallAction = new HandleCallAction(reflectionMarker.Annotations, operation, reflectionMarker, diagnosticContext, callingMethodDefinition, calledMethod.GetDisplayName());
             var intrinsicId = Intrinsics.GetIntrinsicIdForMethod(calledMethod);
-            if (!handleCallAction.Invoke (calledMethod, instanceValue, argumentValues, intrinsicId, out methodReturnValue))
+            if (!handleCallAction.Invoke(calledMethod, instanceValue, argumentValues, intrinsicId, out MultiValue methodReturnValue))
                 throw new NotImplementedException($"Unhandled intrinsic {intrinsicId}");
+            return methodReturnValue;
         }
 
         private static bool IsAotUnsafeDelegate(TypeDesc parameterType)
