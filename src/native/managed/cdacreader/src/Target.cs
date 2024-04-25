@@ -237,6 +237,7 @@ public sealed unsafe class Target
         if (!_globals.TryGetValue(name, out (ulong Value, string? Type) global))
             return false;
 
+        // TODO: [cdac] Move type validation out of the read such that it does not have to happen for every read
         if (global.Type is not null)
         {
             string? expectedType = Type.GetTypeCode(typeof(T)) switch
@@ -251,7 +252,7 @@ public sealed unsafe class Target
                 TypeCode.UInt64 => "uint64",
                 _ => null,
             };
-            if (expectedType is not null && global.Type != expectedType)
+            if (expectedType is null || global.Type != expectedType)
             {
                 return false;
             }
