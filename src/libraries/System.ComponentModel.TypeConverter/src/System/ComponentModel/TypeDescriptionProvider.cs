@@ -41,7 +41,7 @@ namespace System.ComponentModel
             _parent = parent;
         }
 
-        public virtual void RegisterType<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>()
+        public virtual void RegisterType<[DynamicallyAccessedMembers(TypeDescriptor.RegisteredTypesDynamicallyAccessedMembers)] T>()
         {
             // We allow this to be a no-op since the caller may not know if the provider supports known types.
         }

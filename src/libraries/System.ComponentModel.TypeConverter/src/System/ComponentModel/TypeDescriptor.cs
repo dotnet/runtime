@@ -24,15 +24,14 @@ namespace System.ComponentModel
             DynamicallyAccessedMemberTypes.PublicParameterlessConstructor |
             DynamicallyAccessedMemberTypes.PublicFields;
 
-        // todo: switch this instead of .All?
-        //internal const DynamicallyAccessedMemberTypes RegisteredTypesDynamicallyAccessedMembers =
-        //    DynamicallyAccessedMemberTypes.PublicConstructors | // For ReflectTypeDescriptionProvider.CreateInstance()
-        //    DynamicallyAccessedMemberTypes.PublicParameterlessConstructor |
-        //    DynamicallyAccessedMemberTypes.PublicFields | // For enum field access
-        //    DynamicallyAccessedMemberTypes.Interfaces | // For ReflectedTypeData.GetAttributes()
-        //    DynamicallyAccessedMemberTypes.PublicProperties | // For GetProperties()
-        //    DynamicallyAccessedMemberTypes.PublicMethods | // For calling enum.ToObject()
-        //    DynamicallyAccessedMemberTypes.PublicEvents; // For GetEvents()
+        internal const DynamicallyAccessedMemberTypes RegisteredTypesDynamicallyAccessedMembers =
+           DynamicallyAccessedMemberTypes.PublicConstructors | // For ReflectTypeDescriptionProvider.CreateInstance()
+           DynamicallyAccessedMemberTypes.PublicParameterlessConstructor |
+           DynamicallyAccessedMemberTypes.PublicFields | // For enum field access
+           DynamicallyAccessedMemberTypes.Interfaces | // For ReflectedTypeData.GetAttributes()
+           DynamicallyAccessedMemberTypes.PublicProperties | // For GetProperties()
+           DynamicallyAccessedMemberTypes.PublicMethods | // For calling enum.ToObject()
+           DynamicallyAccessedMemberTypes.PublicEvents; // For GetEvents()
 
         internal const string DesignTimeAttributeTrimmed = "Design-time attributes are not preserved when trimming. Types referenced by attributes like EditorAttribute and DesignerAttribute may not be available after trimming.";
 
@@ -111,7 +110,7 @@ namespace System.ComponentModel
         {
         }
 
-        public static void RegisterType<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>()
+        public static void RegisterType<[DynamicallyAccessedMembers(RegisteredTypesDynamicallyAccessedMembers)] T>()
         {
             TypeDescriptionNode node = NodeFor(typeof(T), createDelegator: false);
             node.Provider.RegisterType<T>();

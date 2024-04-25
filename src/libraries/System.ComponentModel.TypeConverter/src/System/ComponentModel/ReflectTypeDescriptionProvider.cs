@@ -966,7 +966,7 @@ namespace System.ComponentModel
             return td;
         }
 
-        public override void RegisterType<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>()
+        public override void RegisterType<[DynamicallyAccessedMembers(TypeDescriptor.RegisteredTypesDynamicallyAccessedMembers)] T>()
         {
             Type componentType = typeof(T);
             ReflectedTypeData? td = null;

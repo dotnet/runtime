@@ -1397,7 +1397,7 @@ namespace System.ComponentModel
     {
         protected TypeDescriptionProvider() { }
         protected TypeDescriptionProvider(System.ComponentModel.TypeDescriptionProvider parent) { }
-        public virtual void RegisterType<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] T>() { }
+        public virtual void RegisterType<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents)] T>() { }
         public virtual bool SupportsRegisteredTypes { get { throw null; } }
         public virtual object? CreateInstance(System.IServiceProvider? provider, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type objectType, System.Type[]? argTypes, object?[]? args) { throw null; }
         public virtual System.Collections.IDictionary? GetCache(object instance) { throw null; }
@@ -1448,7 +1448,7 @@ namespace System.ComponentModel
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Types specified in table may be trimmed, or have their static constructors trimmed.")]
         public static void AddEditorTable(System.Type editorBaseType, System.Collections.Hashtable table) { }
-        public static void RegisterType<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]T> () { }
+        public static void RegisterType<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents)]T> () { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static void AddProvider(System.ComponentModel.TypeDescriptionProvider provider, object instance) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
