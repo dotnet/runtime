@@ -17,12 +17,6 @@ import { mono_wasm_diagnostic_server_on_runtime_server_init, mono_wasm_event_pip
 import { mono_wasm_diagnostic_server_stream_signal_work_available } from "./diagnostics/server_pthread/stream-queue";
 import { mono_log_warn, mono_wasm_console_clear, mono_wasm_trace_logger } from "./logging";
 import { mono_wasm_profiler_leave, mono_wasm_profiler_enter } from "./profiler";
-import { mono_wasm_change_case, mono_wasm_change_case_invariant } from "./hybrid-globalization/change-case";
-import { mono_wasm_compare_string, mono_wasm_ends_with, mono_wasm_starts_with, mono_wasm_index_of } from "./hybrid-globalization/collations";
-import { mono_wasm_get_calendar_info } from "./hybrid-globalization/calendar";
-
-import { mono_wasm_get_culture_info } from "./hybrid-globalization/culture-info";
-import { mono_wasm_get_locale_info, mono_wasm_get_first_day_of_week, mono_wasm_get_first_week_of_year } from "./hybrid-globalization/locales";
 import { mono_wasm_browser_entropy } from "./crypto";
 import { mono_wasm_cancel_promise } from "./cancelable-promise";
 
@@ -33,6 +27,8 @@ import {
 } from "./pthreads";
 import { mono_wasm_dump_threads } from "./pthreads/ui-thread";
 import { mono_wasm_schedule_synchronization_context } from "./pthreads/shared";
+import { Int32Ptr, VoidPtr } from "./types/emscripten";
+import { runtimeHelpers } from "./globals";
 
 // the JS methods would be visible to EMCC linker and become imports of the WASM module
 
@@ -102,6 +98,50 @@ export const mono_wasm_imports = [
     mono_wasm_resolve_or_reject_promise,
     mono_wasm_cancel_promise,
 ];
+
+function mono_wasm_change_case_invariant (src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) : VoidPtr {
+    return runtimeHelpers.mono_wasm_change_case_invariant(src, srcLength, dst, dstLength, toUpper);
+}
+
+function mono_wasm_change_case (culture: number, cultureLength: number, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) : VoidPtr {
+    return runtimeHelpers.mono_wasm_change_case(culture, cultureLength, src, srcLength, dst, dstLength, toUpper);
+}
+
+function mono_wasm_compare_string (culture: number, cultureLength: number, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr) : VoidPtr {
+    return runtimeHelpers.mono_wasm_compare_string(culture, cultureLength, str1, str1Length, str2, str2Length, options, resultPtr);
+}
+
+function mono_wasm_starts_with (culture: number, cultureLength: number, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr): VoidPtr {
+    return runtimeHelpers.mono_wasm_starts_with(culture, cultureLength, str1, str1Length, str2, str2Length, options, resultPtr);
+}
+
+function mono_wasm_ends_with (culture: number, cultureLength: number, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr): VoidPtr {
+    return runtimeHelpers.mono_wasm_ends_with(culture, cultureLength, str1, str1Length, str2, str2Length, options, resultPtr);
+}
+
+function mono_wasm_index_of (culture: number, cultureLength: number, needlePtr: number, needleLength: number, srcPtr: number, srcLength: number, options: number, fromBeginning: number, resultPtr: Int32Ptr): VoidPtr {
+    return runtimeHelpers.mono_wasm_index_of(culture, cultureLength, needlePtr, needleLength, srcPtr, srcLength, options, fromBeginning, resultPtr);
+}
+
+function mono_wasm_get_calendar_info (culture: number, cultureLength: number, calendarId: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
+    return runtimeHelpers.mono_wasm_get_calendar_info(culture, cultureLength, calendarId, dst, dstMaxLength, dstLength);
+}
+
+function mono_wasm_get_culture_info (culture: number, cultureLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
+    return runtimeHelpers.mono_wasm_get_culture_info(culture, cultureLength, dst, dstMaxLength, dstLength);
+}
+
+function mono_wasm_get_locale_info (culture: number, cultureLength: number, locale: number, localeLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
+    return runtimeHelpers.mono_wasm_get_locale_info(culture, cultureLength, locale, localeLength, dst, dstMaxLength, dstLength);
+}
+
+function mono_wasm_get_first_day_of_week (culture: number, cultureLength: number, resultPtr: Int32Ptr): VoidPtr {
+    return runtimeHelpers.mono_wasm_get_first_day_of_week(culture, cultureLength, resultPtr);
+}
+
+function mono_wasm_get_first_week_of_year (culture: number, cultureLength: number, resultPtr: Int32Ptr): VoidPtr {
+    return runtimeHelpers.mono_wasm_get_first_week_of_year(culture, cultureLength, resultPtr);
+}
 
 export const mono_wasm_hybrid_globalization_imports = WasmEnableThreads ? [] : [ // ToDo: change it to rely on HybridGlobalization
     mono_wasm_change_case_invariant,

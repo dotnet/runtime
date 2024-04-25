@@ -246,6 +246,18 @@ export type RuntimeHelpers = {
     localHeapViewU16: () => Uint16Array,
     setU16_local: (heap: Uint16Array, ptr: number, value: number) => void,
     setI32: (offset: MemOffset, value: number) => void,
+
+    mono_wasm_change_case_invariant: (src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) => VoidPtr;
+    mono_wasm_change_case: (culture: number, cultureLength: number, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) => VoidPtr;
+    mono_wasm_compare_string: (culture: number, cultureLength: number, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr) => VoidPtr;
+    mono_wasm_starts_with: (culture: number, cultureLength: number, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr) => VoidPtr;
+    mono_wasm_ends_with: (culture: number, cultureLength: number, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr) => VoidPtr;
+    mono_wasm_index_of: (culture: number, cultureLength: number, needlePtr: number, needleLength: number, srcPtr: number, srcLength: number, options: number, fromBeginning: number, resultPtr: Int32Ptr) => VoidPtr;
+    mono_wasm_get_calendar_info: (culture: number, cultureLength: number, calendarId: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr) => VoidPtr;
+    mono_wasm_get_culture_info: (culture: number, cultureLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr) => VoidPtr;
+    mono_wasm_get_locale_info: (culture: number, cultureLength: number, locale: number, localeLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr) => VoidPtr;
+    mono_wasm_get_first_day_of_week: (culture: number, cultureLength: number, resultPtr: Int32Ptr) => VoidPtr;
+    mono_wasm_get_first_week_of_year: (culture: number, cultureLength: number, resultPtr: Int32Ptr) => VoidPtr;
 }
 
 export type AOTProfilerOptions = {
