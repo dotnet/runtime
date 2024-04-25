@@ -37,7 +37,15 @@ namespace System.Threading
 
         private uint _state; // see State for layout
         private uint _recursionCount;
+
+        // This field serves a few purposes currently:
+        // - When positive, it indicates the number of spin-wait iterations that most threads would do upon contention
+        // - When zero, it indicates that spin-waiting is to be attempted by a thread to test if it is successful
+        // - When negative, it serves as a rough counter for contentions that would increment it towards zero
+        //
+        // See references to this field and "AdaptiveSpin" in TryEnterSlow for more information.
         private short _spinCount;
+
         private ushort _waiterStartTimeMs;
         private AutoResetEvent? _waitEvent;
 
@@ -662,6 +670,9 @@ namespace System.Threading
                     allowNegative: false);
         }
 
+        // When the returned value is zero or negative, indicates the lowest value that the _spinCount field will have when
+        // adaptive spin chooses to pause spin-waiting, see the comment on the _spinCount field for more information. When the
+        // returned value is positive, adaptive spin is disabled.
         private static short DetermineMinSpinCountForAdaptiveSpin()
         {
             // The config var can be set to -1 to disable adaptive spin
