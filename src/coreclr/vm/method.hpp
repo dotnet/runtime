@@ -2182,7 +2182,7 @@ public:
     TADDR GetTemporaryEntryPoints()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_pCompactEntryPoints;
+        return m_pTemporaryEntryPoints;
     }
 
     PCODE GetTemporaryEntryPoint(int index);
@@ -2339,7 +2339,7 @@ private:
     PTR_MethodDescChunk  m_next;
 
 #ifdef HAS_COMPACT_ENTRYPOINTS
-    TADDR m_pCompactEntryPoints;
+    TADDR m_pTemporaryEntryPoints;
 #endif
 
     BYTE                 m_size;        // The size of this chunk minus 1 (in multiples of MethodDesc::ALIGNMENT)

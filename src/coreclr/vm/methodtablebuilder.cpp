@@ -10904,7 +10904,9 @@ MethodTableBuilder::SetupMethodTable2(
                 if ((pMD->GetSlot() == iCurSlot) && (GetParentMethodTable() == NULL || iCurSlot >= GetParentMethodTable()->GetNumVirtuals()))
                     continue; // For cases where the method is defining the method desc slot, we don't need to fill it in yet
 
+#ifndef HAS_COMPACT_ENTRYPOINTS
                 pMD->EnsureTemporaryEntryPointCore(GetLoaderAllocator(), GetMemTracker());
+#endif // HAS_COMPACT_ENTRYPOINTS
                 PCODE addr = pMD->GetTemporaryEntryPoint();
                 _ASSERTE(addr != NULL);
 
