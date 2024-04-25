@@ -426,5 +426,222 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<double> LoadVector(Vector<double> mask, double* address) => LoadVector(mask, address);
 
+
+        ///  LoadVectorByteZeroExtendToInt16 : Load 8-bit data and zero-extend
+
+        /// <summary>
+        /// svint16_t svld1ub_s16(svbool_t pg, const uint8_t *base)
+        ///   LD1B Zresult.H, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<short> LoadVectorByteZeroExtendToInt16(Vector<short> mask, byte* address) => LoadVectorByteZeroExtendToInt16(mask, address);
+
+
+        ///  LoadVectorByteZeroExtendToInt32 : Load 8-bit data and zero-extend
+
+        /// <summary>
+        /// svint32_t svld1ub_s32(svbool_t pg, const uint8_t *base)
+        ///   LD1B Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<int> LoadVectorByteZeroExtendToInt32(Vector<int> mask, byte* address) => LoadVectorByteZeroExtendToInt32(mask, address);
+
+
+        ///  LoadVectorByteZeroExtendToInt64 : Load 8-bit data and zero-extend
+
+        /// <summary>
+        /// svint64_t svld1ub_s64(svbool_t pg, const uint8_t *base)
+        ///   LD1B Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorByteZeroExtendToInt64(Vector<long> mask, byte* address) => LoadVectorByteZeroExtendToInt64(mask, address);
+
+
+        ///  LoadVectorByteZeroExtendToUInt16 : Load 8-bit data and zero-extend
+
+        /// <summary>
+        /// svuint16_t svld1ub_u16(svbool_t pg, const uint8_t *base)
+        ///   LD1B Zresult.H, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ushort> LoadVectorByteZeroExtendToUInt16(Vector<ushort> mask, byte* address) => LoadVectorByteZeroExtendToUInt16(mask, address);
+
+
+        ///  LoadVectorByteZeroExtendToUInt32 : Load 8-bit data and zero-extend
+
+        /// <summary>
+        /// svuint32_t svld1ub_u32(svbool_t pg, const uint8_t *base)
+        ///   LD1B Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<uint> LoadVectorByteZeroExtendToUInt32(Vector<uint> mask, byte* address) => LoadVectorByteZeroExtendToUInt32(mask, address);
+
+
+        ///  LoadVectorByteZeroExtendToUInt64 : Load 8-bit data and zero-extend
+
+        /// <summary>
+        /// svuint64_t svld1ub_u64(svbool_t pg, const uint8_t *base)
+        ///   LD1B Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorByteZeroExtendToUInt64(Vector<ulong> mask, byte* address) => LoadVectorByteZeroExtendToUInt64(mask, address);
+
+
+        ///  LoadVectorInt16SignExtendToInt32 : Load 16-bit data and sign-extend
+
+        /// <summary>
+        /// svint32_t svld1sh_s32(svbool_t pg, const int16_t *base)
+        ///   LD1SH Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<int> LoadVectorInt16SignExtendToInt32(Vector<int> mask, short* address) => LoadVectorInt16SignExtendToInt32(mask, address);
+
+
+        ///  LoadVectorInt16SignExtendToInt64 : Load 16-bit data and sign-extend
+
+        /// <summary>
+        /// svint64_t svld1sh_s64(svbool_t pg, const int16_t *base)
+        ///   LD1SH Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorInt16SignExtendToInt64(Vector<long> mask, short* address) => LoadVectorInt16SignExtendToInt64(mask, address);
+
+
+        ///  LoadVectorInt16SignExtendToUInt32 : Load 16-bit data and sign-extend
+
+        /// <summary>
+        /// svuint32_t svld1sh_u32(svbool_t pg, const int16_t *base)
+        ///   LD1SH Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<uint> LoadVectorInt16SignExtendToUInt32(Vector<uint> mask, short* address) => LoadVectorInt16SignExtendToUInt32(mask, address);
+
+
+        ///  LoadVectorInt16SignExtendToUInt64 : Load 16-bit data and sign-extend
+
+        /// <summary>
+        /// svuint64_t svld1sh_u64(svbool_t pg, const int16_t *base)
+        ///   LD1SH Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorInt16SignExtendToUInt64(Vector<ulong> mask, short* address) => LoadVectorInt16SignExtendToUInt64(mask, address);
+
+
+        ///  LoadVectorInt32SignExtendToInt64 : Load 32-bit data and sign-extend
+
+        /// <summary>
+        /// svint64_t svld1sw_s64(svbool_t pg, const int32_t *base)
+        ///   LD1SW Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorInt32SignExtendToInt64(Vector<long> mask, int* address) => LoadVectorInt32SignExtendToInt64(mask, address);
+
+
+        ///  LoadVectorInt32SignExtendToUInt64 : Load 32-bit data and sign-extend
+
+        /// <summary>
+        /// svuint64_t svld1sw_u64(svbool_t pg, const int32_t *base)
+        ///   LD1SW Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorInt32SignExtendToUInt64(Vector<ulong> mask, int* address) => LoadVectorInt32SignExtendToUInt64(mask, address);
+
+
+        ///  LoadVectorSByteSignExtendToInt16 : Load 8-bit data and sign-extend
+
+        /// <summary>
+        /// svint16_t svld1sb_s16(svbool_t pg, const int8_t *base)
+        ///   LD1SB Zresult.H, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<short> LoadVectorSByteSignExtendToInt16(Vector<short> mask, sbyte* address) => LoadVectorSByteSignExtendToInt16(mask, address);
+
+
+        ///  LoadVectorSByteSignExtendToInt32 : Load 8-bit data and sign-extend
+
+        /// <summary>
+        /// svint32_t svld1sb_s32(svbool_t pg, const int8_t *base)
+        ///   LD1SB Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<int> LoadVectorSByteSignExtendToInt32(Vector<int> mask, sbyte* address) => LoadVectorSByteSignExtendToInt32(mask, address);
+
+
+        ///  LoadVectorSByteSignExtendToInt64 : Load 8-bit data and sign-extend
+
+        /// <summary>
+        /// svint64_t svld1sb_s64(svbool_t pg, const int8_t *base)
+        ///   LD1SB Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorSByteSignExtendToInt64(Vector<long> mask, sbyte* address) => LoadVectorSByteSignExtendToInt64(mask, address);
+
+
+        ///  LoadVectorSByteSignExtendToUInt16 : Load 8-bit data and sign-extend
+
+        /// <summary>
+        /// svuint16_t svld1sb_u16(svbool_t pg, const int8_t *base)
+        ///   LD1SB Zresult.H, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ushort> LoadVectorSByteSignExtendToUInt16(Vector<ushort> mask, sbyte* address) => LoadVectorSByteSignExtendToUInt16(mask, address);
+
+
+        ///  LoadVectorSByteSignExtendToUInt32 : Load 8-bit data and sign-extend
+
+        /// <summary>
+        /// svuint32_t svld1sb_u32(svbool_t pg, const int8_t *base)
+        ///   LD1SB Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<uint> LoadVectorSByteSignExtendToUInt32(Vector<uint> mask, sbyte* address) => LoadVectorSByteSignExtendToUInt32(mask, address);
+
+
+        ///  LoadVectorSByteSignExtendToUInt64 : Load 8-bit data and sign-extend
+
+        /// <summary>
+        /// svuint64_t svld1sb_u64(svbool_t pg, const int8_t *base)
+        ///   LD1SB Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorSByteSignExtendToUInt64(Vector<ulong> mask, sbyte* address) => LoadVectorSByteSignExtendToUInt64(mask, address);
+
+
+        ///  LoadVectorUInt16ZeroExtendToInt32 : Load 16-bit data and zero-extend
+
+        /// <summary>
+        /// svint32_t svld1uh_s32(svbool_t pg, const uint16_t *base)
+        ///   LD1H Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<int> LoadVectorUInt16ZeroExtendToInt32(Vector<int> mask, ushort* address) => LoadVectorUInt16ZeroExtendToInt32(mask, address);
+
+
+        ///  LoadVectorUInt16ZeroExtendToInt64 : Load 16-bit data and zero-extend
+
+        /// <summary>
+        /// svint64_t svld1uh_s64(svbool_t pg, const uint16_t *base)
+        ///   LD1H Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorUInt16ZeroExtendToInt64(Vector<long> mask, ushort* address) => LoadVectorUInt16ZeroExtendToInt64(mask, address);
+
+
+        ///  LoadVectorUInt16ZeroExtendToUInt32 : Load 16-bit data and zero-extend
+
+        /// <summary>
+        /// svuint32_t svld1uh_u32(svbool_t pg, const uint16_t *base)
+        ///   LD1H Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<uint> LoadVectorUInt16ZeroExtendToUInt32(Vector<uint> mask, ushort* address) => LoadVectorUInt16ZeroExtendToUInt32(mask, address);
+
+
+        ///  LoadVectorUInt16ZeroExtendToUInt64 : Load 16-bit data and zero-extend
+
+        /// <summary>
+        /// svuint64_t svld1uh_u64(svbool_t pg, const uint16_t *base)
+        ///   LD1H Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorUInt16ZeroExtendToUInt64(Vector<ulong> mask, ushort* address) => LoadVectorUInt16ZeroExtendToUInt64(mask, address);
+
+
+        ///  LoadVectorUInt32ZeroExtendToInt64 : Load 32-bit data and zero-extend
+
+        /// <summary>
+        /// svint64_t svld1uw_s64(svbool_t pg, const uint32_t *base)
+        ///   LD1W Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorUInt32ZeroExtendToInt64(Vector<long> mask, uint* address) => LoadVectorUInt32ZeroExtendToInt64(mask, address);
+
+
+        ///  LoadVectorUInt32ZeroExtendToUInt64 : Load 32-bit data and zero-extend
+
+        /// <summary>
+        /// svuint64_t svld1uw_u64(svbool_t pg, const uint32_t *base)
+        ///   LD1W Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorUInt32ZeroExtendToUInt64(Vector<ulong> mask, uint* address) => LoadVectorUInt32ZeroExtendToUInt64(mask, address);
+
+
     }
 }
