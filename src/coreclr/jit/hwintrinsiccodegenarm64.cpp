@@ -467,11 +467,31 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         if (falseReg != embMaskOp1Reg)
                         {
-                            // None of targetReg, embMaskOp1Reg and falseReg are same. In such case, use the
-                            // "unpredicated" version of the instruction and then use "sel" to select the active lanes.
+                            // At the point, targetReg != embMaskOp1Reg != falseReg
+                            if (HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(intrinEmbMask.id))
+                            {
+                                // If the embedded instruction supports optional mask operation, use the "unpredicated"
+                                // version of the instruction, followed by "sel" to select the active lanes.
+                                GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, embMaskOp1Reg,
+                                                            embMaskOp2Reg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
+                            }
+                            else
+                            {
+                                // If the instruction just has "predicated" version, then move the "embMaskOp1Reg"
+                                // into targetReg. Next, do the predicated operation on the targetReg and last,
+                                // use "sel" to select the active lanes based on mask, and set inactive lanes
+                                // to falseReg.
 
-                            GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, embMaskOp1Reg, embMaskOp2Reg,
-                                                        opt, INS_SCALABLE_OPTS_UNPREDICATED);
+                                assert(targetReg != embMaskOp2Reg);
+                                assert(HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinEmbMask.id));
+
+                                GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, embMaskOp1Reg);
+
+                                GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
+                                                            opt);
+                            }
+
+
                             GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,
                                                           falseReg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
                             break;
