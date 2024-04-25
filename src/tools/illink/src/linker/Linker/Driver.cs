@@ -362,6 +362,12 @@ namespace Mono.Linker
 						context.SetCustomData (values[0], values[1]);
 						continue;
 
+					case "--keep-com-interfaces":
+						if (!GetBoolParam (token, l => context.KeepComInterfaces = l))
+							return -1;
+
+						continue;
+
 					case "--keep-compilers-resources":
 						if (!GetBoolParam (token, l => keepCompilersResources = l))
 							return -1;
@@ -1284,6 +1290,7 @@ namespace Mono.Linker
 			return new LinkContext (pipeline, logger ?? new ConsoleLogger (), "output") {
 				TrimAction = AssemblyAction.Link,
 				DefaultAction = AssemblyAction.Link,
+				KeepComInterfaces = true,
 			};
 		}
 
@@ -1369,6 +1376,7 @@ namespace Mono.Linker
 			Console.WriteLine ("                               sealer: Any method or type which does not have override is marked as sealed");
 			Console.WriteLine ("  --explicit-reflection      Adds to members never used through reflection DisablePrivateReflection attribute. Defaults to false");
 			Console.WriteLine ("  --feature FEATURE VALUE    Apply any optimizations defined when this feature setting is a constant known at link time");
+			Console.WriteLine ("  --keep-com-interfaces      Keep COM interfaces implemented by kept types. Defaults to true");
 			Console.WriteLine ("  --keep-compilers-resources Keep assembly resources used for F# compilation resources. Defaults to false");
 			Console.WriteLine ("  --keep-dep-attributes      Keep attributes used for manual dependency tracking. Defaults to false");
 			Console.WriteLine ("  --keep-metadata NAME       Keep metadata which would otherwise be removed if not used");

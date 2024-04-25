@@ -528,6 +528,19 @@ namespace ILCompiler.Dataflow
                     break;
 
                 //
+                // System.Array
+                //
+                // CreateInstance (Type, Int32)
+                //
+                case IntrinsicId.Array_CreateInstance:
+                    {
+                        // We could try to analyze if the type is known, but for now making sure this works for canonical arrays is enough.
+                        TypeDesc canonArrayType = reflectionMarker.Factory.TypeSystemContext.CanonType.MakeArrayType();
+                        reflectionMarker.MarkType(diagnosticContext.Origin, canonArrayType, "Array.CreateInstance was called");
+                        goto case IntrinsicId.None;
+                    }
+
+                //
                 // System.Enum
                 //
                 // static GetValues (Type)
@@ -642,6 +655,12 @@ namespace ILCompiler.Dataflow
                         // because we handle the callsites to that one here as well.
                         if (Intrinsics.GetIntrinsicIdForMethod(callingMethodDefinition) == IntrinsicId.RuntimeReflectionExtensions_GetMethodInfo)
                             break;
+
+                        if (param.IsEmpty())
+                        {
+                            // The static value is unknown and the below `foreach` won't execute
+                            reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ReflectedDelegate(null), "Delegate.Method access on unknown delegate type");
+                        }
 
                         foreach (var valueNode in param.AsEnumerable())
                         {

@@ -19,6 +19,8 @@
 #include <mono/utils/mono-error.h>
 #include "mono/utils/mono-conc-hashtable.h"
 #include "mono/utils/refcount.h"
+// for dn_simdhash_string_ptr_t and dn_simdhash_u32_ptr_t
+#include "../native/containers/dn-simdhash-specializations.h"
 
 struct _MonoType {
 	union {
@@ -438,7 +440,7 @@ struct _MonoImage {
 	/*
 	 * Indexes namespaces to hash tables that map class name to typedef token.
 	 */
-	GHashTable *name_cache;  /*protected by the image lock*/
+	dn_simdhash_string_ptr_t *name_cache;  /*protected by the image lock*/
 
 	/*
 	 * Indexed by MonoClass
@@ -1133,6 +1135,56 @@ void
 mono_metadata_get_class_guid (MonoClass* klass, uint8_t* guid, MonoError *error);
 
 #define MONO_CLASS_IS_INTERFACE_INTERNAL(c) ((mono_class_get_flags (c) & TYPE_ATTRIBUTE_INTERFACE) || mono_type_is_generic_parameter (m_class_get_byval_arg (c)))
+
+/*
+ * We use this to pass context information to the row locator
+ */
+typedef struct {
+	// caller inputs
+	// note: we can't optimize around locator_t.idx yet because a few call sites mutate it
+	guint32 idx;			/* The index that we are trying to locate */
+	// no call sites mutate this so we can optimize around it
+	guint32 col_idx;		/* The index in the row where idx may be stored */
+	// no call sites mutate this so we can optimize around it
+	MonoTableInfo *t;		/* pointer to the table */
+
+	// optimization data
+	gint32 metadata_has_updates; // -1: uninitialized. 0/1: value
+	const char * t_base;
+	guint t_row_size;
+	guint32 t_rows;
+	guint32 column_size;
+	const char * first_column_data;
+
+	// result
+	guint32 result;
+} mono_locator_t;
+
+MONO_ALWAYS_INLINE static mono_locator_t
+mono_locator_init (MonoTableInfo *t, guint32 idx, guint32 col_idx)
+{
+	mono_locator_t result = { 0, };
+
+	result.idx = idx;
+	result.col_idx = col_idx;
+	result.t = t;
+
+	g_assert (t);
+	// FIXME: Callers shouldn't rely on this
+	if (!t->base)
+		return result;
+
+	// optimization data for decode_locator_row
+	result.metadata_has_updates = -1;
+	result.t_base = t->base;
+	result.t_row_size = t->row_size;
+	result.t_rows = table_info_get_rows (t);
+	g_assert (col_idx < mono_metadata_table_count (t->size_bitfield));
+	result.column_size = mono_metadata_table_size (t->size_bitfield, col_idx);
+	result.first_column_data = result.t_base + t->column_offsets [col_idx];
+
+	return result;
+}
 
 static inline gboolean
 m_image_is_raw_data_allocated (MonoImage *image)

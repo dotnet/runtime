@@ -21,7 +21,7 @@ namespace System.Text.RegularExpressions.Tests
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
                 (string Pattern, string Input, RegexOptions Options, int Beginning, int Length, bool ExpectedSuccess, string ExpectedValue)[] cases = Match_MemberData_Cases(engine).ToArray();
-                Regex[] regexes = RegexHelpers.GetRegexesAsync(engine, cases.Select(c => (c.Pattern, (CultureInfo?)null, (RegexOptions?)c.Options, (TimeSpan?)null)).ToArray()).Result;
+                Regex[] regexes = RegexHelpers.GetRegexes(engine, cases.Select(c => (c.Pattern, (CultureInfo?)null, (RegexOptions?)c.Options, (TimeSpan?)null)).ToArray());
                 for (int i = 0; i < regexes.Length; i++)
                 {
                     yield return new object[] { engine, cases[i].Pattern, cases[i].Input, cases[i].Options, regexes[i], cases[i].Beginning, cases[i].Length, cases[i].ExpectedSuccess, cases[i].ExpectedValue };
@@ -698,6 +698,11 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(...)(?(1)\w*|\s*)[a1 ]", "zabcaaaaaaa", RegexOptions.RightToLeft, 0, 11, true, "aaaa");
                 yield return (@"(...)(?(1)\w*|\s*)[a1 ]", "----       ", RegexOptions.RightToLeft, 0, 11, true, "---       ");
                 yield return (@"(aaa)(?(1)aaa|b?)*", "aaaaaa", RegexOptions.None, 0, 6, true, "aaaaaa");
+
+                yield return (@"AAB|AAC", "AABAACD", RegexOptions.RightToLeft, 0, 6, true, "AAC");
+                yield return (@"AAB|AA\d", "AABAACD", RegexOptions.RightToLeft, 0, 6, true, "AAB");
+                yield return (@"(AB){3,}", "1234ABABABAB5678", RegexOptions.RightToLeft, 0, 16, true, "ABABABAB");
+                yield return (@"(AB){1,3}", "1234ABABABAB5678", RegexOptions.RightToLeft, 0, 16, true, "ABABAB");
             }
 
             // Character Class Subtraction

@@ -246,7 +246,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        private async void CanValidateOptionsEagerly_AddOptionsWithValidateOnStart_IValidateOptions()
+        private async Task CanValidateOptionsEagerly_AddOptionsWithValidateOnStart_IValidateOptions()
         {
             var hostBuilder = CreateHostBuilder(services =>
                 services.AddOptionsWithValidateOnStart<ComplexOptions, ComplexOptionsValidator>()

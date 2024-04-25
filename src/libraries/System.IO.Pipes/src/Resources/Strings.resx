@@ -120,6 +120,9 @@
   <data name="ArgumentOutOfRange_NeedValidPipeAccessRights" xml:space="preserve">
     <value>Invalid PipeAccessRights value.</value>
   </data>
+  <data name="PlatformNotSupported_PipeAccessRights" xml:space="preserve">
+    <value>Specifying PipeAccessRights is not supported on this platform.</value>
+  </data>
   <data name="Argument_NonContainerInvalidAnyFlag" xml:space="preserve">
     <value>This flag may not be set on a pipe.</value>
   </data>

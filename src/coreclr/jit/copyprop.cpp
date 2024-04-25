@@ -230,18 +230,16 @@ bool Compiler::optCopyProp(
             continue;
         }
 
-        if (tree->OperIs(GT_LCL_VAR))
+        var_types newLclType = newLclVarDsc->TypeGet();
+        if (!newLclVarDsc->lvNormalizeOnLoad())
         {
-            var_types newLclType = newLclVarDsc->TypeGet();
-            if (!newLclVarDsc->lvNormalizeOnLoad())
-            {
-                newLclType = genActualType(newLclType);
-            }
+            newLclType = genActualType(newLclType);
+        }
 
-            if (newLclType != tree->TypeGet())
-            {
-                continue;
-            }
+        var_types oldLclType = tree->OperIs(GT_LCL_VAR) ? tree->TypeGet() : varDsc->TypeGet();
+        if (newLclType != oldLclType)
+        {
+            continue;
         }
 
 #ifdef DEBUG
@@ -291,8 +289,8 @@ void Compiler::optCopyPropPushDef(GenTree* defNode, GenTreeLclVarCommon* lclNode
 {
     unsigned lclNum = lclNode->GetLclNum();
 
-    // Shadowed parameters are special: they will (at most) have one use, that is one on the RHS of an
-    // assignment to their shadow, and we must not substitute them anywhere. So we'll not push any defs.
+    // Shadowed parameters are special: they will (at most) have one use, as values in a store
+    // to their shadow, and we must not substitute them anywhere. So we'll not push any defs.
     if ((gsShadowVarInfo != nullptr) && lvaGetDesc(lclNum)->lvIsParam &&
         (gsShadowVarInfo[lclNum].shadowCopy != BAD_VAR_NUM))
     {
@@ -462,7 +460,9 @@ PhaseStatus Compiler::optVnCopyProp()
 
     public:
         CopyPropDomTreeVisitor(Compiler* compiler)
-            : DomTreeVisitor(compiler), m_curSsaName(compiler->getAllocator(CMK_CopyProp)), m_madeChanges(false)
+            : DomTreeVisitor(compiler)
+            , m_curSsaName(compiler->getAllocator(CMK_CopyProp))
+            , m_madeChanges(false)
         {
         }
 

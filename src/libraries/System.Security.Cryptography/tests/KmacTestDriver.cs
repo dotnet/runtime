@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
@@ -1065,6 +1066,23 @@ namespace System.Security.Cryptography.Tests
         public void IsSupported_AgreesWithPlatform()
         {
             Assert.Equal(TKmacTrait.IsSupported, PlatformSupportsKmac());
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void IsSupported_InitializesCrypto()
+        {
+            if (!IsSupported)
+            {
+                throw new SkipTestException("Algorithm is not supported on current platform.");
+            }
+
+            // This ensures that KMAC is the first cryptographic algorithm touched in the process, which kicks off
+            // the initialization of the crypto layer on some platforms. Running in a remote executor ensures no other
+            // test has pre-initialized anything.
+            RemoteExecutor.Invoke(static () =>
+            {
+                return TKmacTrait.IsSupported ? RemoteExecutor.SuccessExitCode : 0;
+            }).Dispose();
         }
 
         private static async Task AssertOneShotsThrowAnyAsync<TException>(

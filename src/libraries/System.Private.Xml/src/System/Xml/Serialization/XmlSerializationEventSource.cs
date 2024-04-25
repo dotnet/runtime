@@ -9,7 +9,7 @@ namespace System.Xml.Serialization
         Name = "System.Xml.Serialzation.XmlSerialization")]
     internal sealed class XmlSerializationEventSource : EventSource
     {
-        internal static XmlSerializationEventSource Log = new XmlSerializationEventSource();
+        internal static readonly XmlSerializationEventSource Log = new XmlSerializationEventSource();
 
         [Event(EventIds.XmlSerializerExpired, Level = EventLevel.Informational)]
         internal void XmlSerializerExpired(string serializerName, string type)

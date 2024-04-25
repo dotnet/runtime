@@ -130,7 +130,7 @@ namespace System.Threading
             public void Dispose()
             {
                 Lock? lockObj = _lockObj;
-                if (lockObj != null)
+                if (lockObj is not null)
                 {
                     _lockObj = null;
                     lockObj.Exit(_currentThreadId);
@@ -476,6 +476,8 @@ namespace System.Threading
                     NativeRuntimeEventSource.Log.ContentionStart(this);
                     waitStartTimeTicks = Stopwatch.GetTimestamp();
                 }
+
+                using ThreadBlockingInfo.Scope threadBlockingScope = new(this, timeoutMs);
 
                 bool acquiredLock = false;
                 int waitStartTimeMs = timeoutMs < 0 ? 0 : Environment.TickCount;

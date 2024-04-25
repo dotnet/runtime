@@ -37,8 +37,8 @@ DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoader
     m_pLoaderAllocator(pLoaderAllocator),
     m_level(FILE_LOAD_CREATE),
     m_loading(TRUE),
-    m_hExposedModuleObject(NULL),
-    m_hExposedAssemblyObject(NULL),
+    m_hExposedModuleObject{},
+    m_hExposedAssemblyObject{},
     m_pError(NULL),
     m_bDisableActivationCheck(FALSE),
     m_fHostAssemblyPublished(FALSE),
@@ -332,26 +332,26 @@ OBJECTREF DomainAssembly::GetExposedModuleObject()
 
     LoaderAllocator * pLoaderAllocator = GetLoaderAllocator();
 
-    if (m_hExposedModuleObject == NULL)
+    if (m_hExposedModuleObject == (LOADERHANDLE)NULL)
     {
         // Atomically create a handle
         LOADERHANDLE handle = pLoaderAllocator->AllocateHandle(NULL);
 
-        InterlockedCompareExchangeT(&m_hExposedModuleObject, handle, static_cast<LOADERHANDLE>(NULL));
+        InterlockedCompareExchangeT(&m_hExposedModuleObject, handle, static_cast<LOADERHANDLE>(0));
     }
 
     if (pLoaderAllocator->GetHandleValue(m_hExposedModuleObject) == NULL)
     {
         REFLECTMODULEBASEREF refClass = NULL;
 
-        // Will be TRUE only if LoaderAllocator managed object was already collected and therefore we should
+        // Will be true only if LoaderAllocator managed object was already collected and therefore we should
         // return NULL
-        BOOL fIsLoaderAllocatorCollected = FALSE;
+        bool fIsLoaderAllocatorCollected = false;
 
         GCPROTECT_BEGIN(refClass);
 
         refClass = (REFLECTMODULEBASEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__MODULE));
-        refClass->SetModule(m_pModule);
+        refClass->SetModule(GetModule());
 
         // Attach the reference to the assembly to keep the LoaderAllocator for this collectible type
         // alive as long as a reference to the module is kept alive.
@@ -360,7 +360,7 @@ OBJECTREF DomainAssembly::GetExposedModuleObject()
             OBJECTREF refAssembly = GetModule()->GetAssembly()->GetExposedObject();
             if ((refAssembly == NULL) && GetModule()->GetAssembly()->IsCollectible())
             {
-                fIsLoaderAllocatorCollected = TRUE;
+                fIsLoaderAllocatorCollected = true;
             }
             refClass->SetAssembly(refAssembly);
         }
@@ -648,13 +648,13 @@ OBJECTREF DomainAssembly::GetExposedAssemblyObject()
         return NULL;
     }
 
-    if (m_hExposedAssemblyObject == NULL)
+    if (m_hExposedAssemblyObject == (LOADERHANDLE)NULL)
     {
         // Atomically create a handle
 
         LOADERHANDLE handle = pLoaderAllocator->AllocateHandle(NULL);
 
-        InterlockedCompareExchangeT(&m_hExposedAssemblyObject, handle, static_cast<LOADERHANDLE>(NULL));
+        InterlockedCompareExchangeT(&m_hExposedAssemblyObject, handle, static_cast<LOADERHANDLE>(0));
     }
 
     if (pLoaderAllocator->GetHandleValue(m_hExposedAssemblyObject) == NULL)
