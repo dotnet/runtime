@@ -790,10 +790,6 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sha256,            W("EnableArm64Sh
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Rcpc,              W("EnableArm64Rcpc"),           1, "Allows Arm64 Rcpc+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Rcpc2,             W("EnableArm64Rcpc2"),          1, "Allows Arm64 Rcpc2+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sve,               W("EnableArm64Sve"),            1, "Allows Arm64 SVE hardware intrinsics to be disabled")
-#if defined(TARGET_LINUX) && (defined(DEBUG) || defined(_DEBUG))
-// TODO-SVE: Once coreclr supports vector lengths >16bytes, the default should be -1.
-RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_MaxVectorLength,           W("MaxVectorLength"),          16, "Specifies maximum size of the vector length in bytes while using SVE on Arm64", CLRConfig::LookupOptions::ParseIntegerAsBase10)
-#endif //defined(TARGET_LINUX) && (defined(DEBUG) || defined(_DEBUG))
 #endif
 
 ///
