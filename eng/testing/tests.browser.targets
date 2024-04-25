@@ -244,7 +244,16 @@
   </Target>
 
   <Target Name="_WasmAddToRunScript" BeforeTargets="GenerateRunScript">
-    <Scenario Condition="'$(Scenario)' == ''">WasmTestOnV8</Scenario>
+    <!-- Combine optional alias on all NodeNpmModule and trim separator where alias is empty -->
+    <ItemGroup>
+      <_NodeNpmModuleString Include="%(NodeNpmModule.Identity):%(NodeNpmModule.Alias)" />
+      <_NodeNpmModuleStringTrimmed Include="@(_NodeNpmModuleString->Trim(':'))" />
+    </ItemGroup>
+    <PropertyGroup>
+      <Scenario Condition="'$(Scenario)' == ''">WasmTestOnV8</Scenario>
+      <NodeNpmModuleString>@(_NodeNpmModuleStringTrimmed, ',')</NodeNpmModuleString>
+    </PropertyGroup>
+
     <Error Condition="'$(Scenario)' != 'WasmTestOnV8' and 
                       '$(Scenario)' != 'WasmTestOnChrome' and 
                       '$(Scenario)' != 'WasmTestOnFirefox' and 
@@ -252,15 +261,6 @@
                       '$(Scenario)' != 'WasmDebuggerTests' and 
                       '$(Scenario)' != 'BuildWasmApps'" 
                       Text="Only supported scenarios are WasmTestOnV8, WasmTestOnNodeJS, WasmTestOnChrome, WasmTestOnFirefox, WasmDebuggerTests and BuildWasmApps at the moment. It was $(Scenario)." />
-
-    <!-- Combine optional alias on all NodeNpmModule and trim separator where alias is empty -->
-    <ItemGroup>
-      <_NodeNpmModuleString Include="%(NodeNpmModule.Identity):%(NodeNpmModule.Alias)" />
-      <_NodeNpmModuleStringTrimmed Include="@(_NodeNpmModuleString->Trim(':'))" />
-    </ItemGroup>
-    <PropertyGroup>
-      <NodeNpmModuleString>@(_NodeNpmModuleStringTrimmed, ',')</NodeNpmModuleString>
-    </PropertyGroup>
 
     <!-- Restore NPM packages -->
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">

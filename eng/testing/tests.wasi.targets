@@ -147,7 +147,9 @@
   </Target>
 
   <Target Name="_WasiAddToRunScript" BeforeTargets="GenerateRunScript">
-    <Scenario Condition="'$(Scenario)' == ''">WasmTestOnWasmtime</Scenario>
+    <PropertyGroup>
+      <Scenario Condition="'$(Scenario)' == ''">WasmTestOnWasmtime</Scenario>
+    </PropertyGroup>
     <Error Condition="'$(Scenario)' != 'WasmTestOnWasmtime' and 
                       '$(Scenario)' != 'BuildWasmApps'"
                       Text="Only supported scenarios are WasmTestOnWasmtime and BuildWasmApps at the moment. It was $(Scenario)." />
