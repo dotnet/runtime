@@ -199,6 +199,7 @@ jobs:
       scenarios:
         - WasmTestOnV8
         - WasmTestOnChrome
+        - WasmTestOnFirefox
         - WasmTestOnNodeJS
 
   # Hybrid Globalization AOT tests
@@ -321,4 +322,4 @@ jobs:
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       scenarios:
-        - WasmTestOnV8
+        - WasmTestOnWasmtime
