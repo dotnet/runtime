@@ -392,7 +392,7 @@ void CodeGen::genCodeForBBlist()
         // codegen related to doing this, so it cannot be done in the prolog.
         if (compiler->fgBBisScratch(block) && compiler->lvaHasAnyStackParamToReassemble())
         {
-            genHomeReassembledParameters(/* handleStack */ true);
+            genHomeStackParams(/* handleStack */ true);
         }
 #endif
 

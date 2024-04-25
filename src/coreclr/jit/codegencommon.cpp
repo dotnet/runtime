@@ -4122,14 +4122,14 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 #if defined(SWIFT_SUPPORT) || defined(TARGET_RISCV64)
 
 //-----------------------------------------------------------------------------
-// genHomeReassembledParameters:
+// genHomeStackParams:
 //  Reassemble parameters if necessary.
 //
 // Parameters:
 //   handleStack - If true, reassemble the segments that were passed on the stack.
 //                 If false, reassemble the segments that were passed in registers.
 //
-void CodeGen::genHomeReassembledParameters(bool handleStack)
+void CodeGen::genHomeStackParams(bool handleStack)
 {
     for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
     {
@@ -5519,7 +5519,7 @@ void CodeGen::genFnProlog()
             intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_ERROR;
         }
 
-        genHomeReassembledParameters(/* handleStack */ false);
+        genHomeStackParams(/* handleStack */ false);
     }
 #endif
 
