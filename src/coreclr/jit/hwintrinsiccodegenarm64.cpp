@@ -460,10 +460,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         else if (falseReg == REG_NA)
                         {
                             // If falseValue is zero, just zero out those lanes of targetReg using `movprfx`
-                            // and /Z                            
+                            // and /Z
                             assert(intrin.op3->isContained() && intrin.op3->IsVectorZero());
-                            GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, targetReg,
-                                                        opt);
+                            GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, targetReg, opt);
                         }
                         else if (targetReg == embMaskOp1Reg)
                         {

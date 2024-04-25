@@ -9246,12 +9246,13 @@ inline bool GenTree::IsTrueAllMask() const
     {
         NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
         if (id == NI_Sve_ConvertMaskToVector)
-        {            
+        {
             GenTree* op1 = AsHWIntrinsic()->Op(1);
             assert(op1->OperIsHWIntrinsic());
             id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
         }
-        return ((id == NI_Sve_CreateTrueMaskAll) || ((id >= NI_Sve_CreateTrueMaskByte) && (id <= NI_Sve_CreateTrueMaskUInt64)));
+        return ((id == NI_Sve_CreateTrueMaskAll) ||
+                ((id >= NI_Sve_CreateTrueMaskByte) && (id <= NI_Sve_CreateTrueMaskUInt64)));
     }
 
 #endif
