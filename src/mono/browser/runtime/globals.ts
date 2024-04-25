@@ -7,10 +7,12 @@
 /// <reference path="./types/node.d.ts" />
 
 import gitHash from "consts:gitHash";
+import wasmEnableThreads from "consts:wasmEnableThreads";
 
 import { RuntimeAPI } from "./types/index";
 import type { GlobalObjects, EmscriptenInternals, RuntimeHelpers, LoaderHelpers, DotnetModuleInternal, PromiseAndController, EmscriptenBuildOptions, GCHandle } from "./types/internal";
 import { mono_log_error } from "./logging";
+import { initHybrid } from "./hybrid-globalization/module-exports";
 
 // these are our public API (except internal)
 export let Module: DotnetModuleInternal;
@@ -84,6 +86,9 @@ export function setRuntimeGlobals (globalObjects: GlobalObjects) {
     Object.assign(globalObjects.api, {
         INTERNAL: globalObjects.internal,
     });
+    if (!wasmEnableThreads) {
+        initHybrid(runtimeHelpers);
+    }
 }
 
 export function createPromiseController<T> (afterResolve?: () => void, afterReject?: () => void): PromiseAndController<T> {
