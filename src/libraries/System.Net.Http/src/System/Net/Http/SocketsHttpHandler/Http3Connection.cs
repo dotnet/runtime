@@ -258,6 +258,7 @@ namespace System.Net.Http
                 catch (QuicException e) when (e.QuicError != QuicError.OperationAborted) { }
                 finally
                 {
+                    ReleaseStream();
                     if (queueStartingTimestamp != 0)
                     {
                         TimeSpan duration = Stopwatch.GetElapsedTime(queueStartingTimestamp);
