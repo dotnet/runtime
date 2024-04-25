@@ -447,8 +447,8 @@ export function copyBytes (srcPtr: VoidPtr, dstPtr: VoidPtr, bytes: number): voi
 // on non-MT build, this will be a no-op trimmed by rollup
 export function receiveWorkerHeapViews () {
     if (!WasmEnableThreads) return;
-    const memory = runtimeHelpers.getMemory();
-    if (memory.buffer !== Module.HEAPU8.buffer) {
+    const wasmMemory = runtimeHelpers.getMemory();
+    if (wasmMemory.buffer !== Module.HEAPU8.buffer) {
         runtimeHelpers.updateMemoryViews();
     }
 }

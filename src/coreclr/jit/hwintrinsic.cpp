@@ -1398,6 +1398,36 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
         switch (numArgs)
         {
+            case 4:
+                op4 = getArgForHWIntrinsic(sigReader.GetOp4Type(), sigReader.op4ClsHnd);
+                op4 = addRangeCheckIfNeeded(intrinsic, op4, mustExpand, immLowerBound, immUpperBound);
+                op3 = getArgForHWIntrinsic(sigReader.GetOp3Type(), sigReader.op3ClsHnd);
+                op2 = getArgForHWIntrinsic(sigReader.GetOp2Type(), sigReader.op2ClsHnd);
+                op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
+                break;
+
+            case 3:
+                op3 = getArgForHWIntrinsic(sigReader.GetOp3Type(), sigReader.op3ClsHnd);
+                op2 = getArgForHWIntrinsic(sigReader.GetOp2Type(), sigReader.op2ClsHnd);
+                op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
+                break;
+
+            case 2:
+                op2 = getArgForHWIntrinsic(sigReader.GetOp2Type(), sigReader.op2ClsHnd);
+                op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand, immLowerBound, immUpperBound);
+                op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
+                break;
+
+            case 1:
+                op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
+                break;
+
+            default:
+                break;
+        }
+
+        switch (numArgs)
+        {
             case 0:
             {
                 assert(!isScalar);
@@ -1407,8 +1437,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
             case 1:
             {
-                op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
-
                 if ((category == HW_Category_MemoryLoad) && op1->OperIs(GT_CAST))
                 {
                     // Although the API specifies a pointer, if what we have is a BYREF, that's what
@@ -1467,10 +1495,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
             case 2:
             {
-                op2 = getArgForHWIntrinsic(sigReader.GetOp2Type(), sigReader.op2ClsHnd);
-                op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand, immLowerBound, immUpperBound);
-                op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
-
                 retNode = isScalar
                               ? gtNewScalarHWIntrinsicNode(nodeRetType, op1, op2, intrinsic)
                               : gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, intrinsic, simdBaseJitType, simdSize);
@@ -1524,10 +1548,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
             case 3:
             {
-                op3 = getArgForHWIntrinsic(sigReader.GetOp3Type(), sigReader.op3ClsHnd);
-                op2 = getArgForHWIntrinsic(sigReader.GetOp2Type(), sigReader.op2ClsHnd);
-                op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
-
 #ifdef TARGET_ARM64
                 if (intrinsic == NI_AdvSimd_LoadAndInsertScalar)
                 {
@@ -1569,12 +1589,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
             case 4:
             {
-                op4 = getArgForHWIntrinsic(sigReader.GetOp4Type(), sigReader.op4ClsHnd);
-                op4 = addRangeCheckIfNeeded(intrinsic, op4, mustExpand, immLowerBound, immUpperBound);
-                op3 = getArgForHWIntrinsic(sigReader.GetOp3Type(), sigReader.op3ClsHnd);
-                op2 = getArgForHWIntrinsic(sigReader.GetOp2Type(), sigReader.op2ClsHnd);
-                op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
-
                 assert(!isScalar);
                 retNode =
                     gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, op4, intrinsic, simdBaseJitType, simdSize);
@@ -1591,10 +1605,22 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     }
 
 #if defined(TARGET_ARM64)
-    if (HWIntrinsicInfo::IsMaskedOperation(intrinsic))
+    if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrinsic))
     {
         assert(numArgs > 0);
         GenTree* op1 = retNode->AsHWIntrinsic()->Op(1);
+        if (intrinsic == NI_Sve_ConditionalSelect)
+        {
+            if (op1->IsVectorAllBitsSet())
+            {
+                return retNode->AsHWIntrinsic()->Op(2);
+            }
+            else if (op1->IsVectorZero())
+            {
+                return retNode->AsHWIntrinsic()->Op(3);
+            }
+        }
+
         if (!varTypeIsMask(op1))
         {
             // Op1 input is a vector. HWInstrinsic requires a mask.
