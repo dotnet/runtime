@@ -391,6 +391,7 @@ set(VM_HEADERS_WKS
     callhelpers.h
     callsiteinspect.h
     callconvbuilder.hpp
+    cdacoffsets.h
     ceemain.h
     clrconfignative.h
     clrex.h

@@ -44,6 +44,12 @@ namespace System.Security.Cryptography
             Interop.Crypto.CheckValidOpenSslHandle(_ctx);
         }
 
+        private LiteXof(SafeEvpMdCtxHandle ctx, IntPtr algorithm)
+        {
+            _ctx = ctx;
+            _algorithm = algorithm;
+        }
+
         public void Append(ReadOnlySpan<byte> data)
         {
             if (data.IsEmpty)
@@ -68,6 +74,18 @@ namespace System.Security.Cryptography
         public void Current(Span<byte> destination)
         {
             Check(Interop.Crypto.EvpDigestCurrentXOF(_ctx, destination));
+        }
+
+        public LiteXof Clone()
+        {
+            SafeEvpMdCtxHandle clone = Interop.Crypto.EvpMdCtxCopyEx(_ctx);
+            Interop.Crypto.CheckValidOpenSslHandle(clone);
+            return new LiteXof(clone, _algorithm);
+        }
+
+        public void Read(Span<byte> destination)
+        {
+            Check(Interop.Crypto.EvpDigestSqueeze(_ctx, destination));
         }
 
         public void Dispose()

@@ -24,9 +24,9 @@ struct DotNetRuntimeContractDescriptor
     uint32_t flags;
     uint32_t descriptor_size;
     const char *descriptor;
-    uint32_t aux_data_count;
+    uint32_t pointer_data_count;
     uint32_t pad0;
-    uintptr_t *aux_data;
+    uintptr_t *pointer_data;
 };
 ```
 
