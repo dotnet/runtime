@@ -327,6 +327,7 @@
       <_WasmNativeFileForLinking Include="$(WasiSysRoot)\lib\wasm32-wasi\libc++.a" />
       <_WasmNativeFileForLinking Include="$(WasiSysRoot)\lib\wasm32-wasi\libc++abi.a" />
 
+      <NativeFileReference Include="%(NativeLibary.Identity)" Condition="'%(NativeLibary.Identity)' != ''"/>
       <_WasmNativeFileForLinking Include="@(NativeFileReference)" />
     </ItemGroup>
 
