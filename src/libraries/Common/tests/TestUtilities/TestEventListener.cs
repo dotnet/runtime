@@ -55,34 +55,44 @@ public sealed class TestEventListener : EventListener
 
     public TestEventListener(Action<string> writeFunc, params string[] sourceNames)
     {
+        List<EventSource> eventSources = _eventSources;
+
         lock (this)
         {
             _writeFunc = writeFunc;
             _sourceNames = new HashSet<string>(sourceNames);
-            foreach (EventSource eventSource in _eventSources)
-            {
-                OnEventSourceCreated(eventSource);
-            }
             _eventSources = null;
+        }
+
+        // eventSources were populated in the base ctor and are now owned by this thread, enable them now.
+        foreach (EventSource eventSource in eventSources)
+        {
+            if (_sourceNames.Contains(eventSource.Name))
+            {
+                EnableEvents(eventSource, EventLevel.LogAlways);
+            }
         }
     }
 
     protected override void OnEventSourceCreated(EventSource eventSource)
     {
-        lock (this)
+        // We're likely called from base ctor, if so, just save the event source for later initialization.
+        if (_sourceNames is null)
         {
-            // We're called from base ctor, just save the event source for later initialization.
-            if (_sourceNames is null)
+            lock (this)
             {
-                _eventSources.Add(eventSource);
-                return;
+                if (_sourceNames is null)
+                {
+                    _eventSources.Add(eventSource);
+                    return;
+                }
             }
+        }
 
-            // Second pass called from our ctor, allow logging for specified source names.
-            if (_sourceNames.Contains(eventSource.Name))
-            {
-                EnableEvents(eventSource, EventLevel.LogAlways);
-            }
+        // Second pass called after our ctor, allow logging for specified source names.
+        if (_sourceNames.Contains(eventSource.Name))
+        {
+            EnableEvents(eventSource, EventLevel.LogAlways);
         }
     }
 
@@ -102,7 +112,7 @@ public sealed class TestEventListener : EventListener
         }
         try
         {
-            _writeFunc(sb.ToString());
+            _writeFunc?.Invoke(sb.ToString());
         }
         catch { }
     }

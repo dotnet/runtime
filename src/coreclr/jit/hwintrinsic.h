@@ -186,10 +186,17 @@ enum HWIntrinsicFlag : unsigned int
     HW_Flag_ReturnsPerElementMask = 0x10000,
 
     // The intrinsic uses a mask in arg1 to select elements present in the result
-    HW_Flag_MaskedOperation = 0x20000,
+    HW_Flag_ExplicitMaskedOperation = 0x20000,
 
     // The intrinsic uses a mask in arg1 to select elements present in the result, and must use a low register.
     HW_Flag_LowMaskedOperation = 0x40000,
+
+    // The intrinsic can optionally use a mask in arg1 to select elements present in the result, which is not present in
+    // the API call
+    HW_Flag_OptionalEmbeddedMaskedOperation = 0x80000,
+
+    // The intrinsic uses a mask in arg1 to select elements present in the result, which is not present in the API call
+    HW_Flag_EmbeddedMaskedOperation = 0x100000,
 
 #else
 #error Unsupported platform
@@ -872,13 +879,31 @@ struct HWIntrinsicInfo
     static bool IsMaskedOperation(NamedIntrinsic id)
     {
         const HWIntrinsicFlag flags = lookupFlags(id);
-        return ((flags & HW_Flag_MaskedOperation) != 0) || IsLowMaskedOperation(id);
+        return IsLowMaskedOperation(id) || IsOptionalEmbeddedMaskedOperation(id) || IsExplicitMaskedOperation(id);
     }
 
     static bool IsLowMaskedOperation(NamedIntrinsic id)
     {
         const HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_LowMaskedOperation) != 0;
+    }
+
+    static bool IsOptionalEmbeddedMaskedOperation(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_OptionalEmbeddedMaskedOperation) != 0;
+    }
+
+    static bool IsEmbeddedMaskedOperation(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_EmbeddedMaskedOperation) != 0;
+    }
+
+    static bool IsExplicitMaskedOperation(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_ExplicitMaskedOperation) != 0;
     }
 
 #endif // TARGET_ARM64

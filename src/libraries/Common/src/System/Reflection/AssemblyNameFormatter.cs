@@ -6,6 +6,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 
+#nullable enable
+
 namespace System.Reflection
 {
     internal static class AssemblyNameFormatter
@@ -91,7 +93,8 @@ namespace System.Reflection
 
             // App-compat: You can use double or single quotes to quote a name, and Fusion (or rather the IdentityAuthority) picks one
             // by some algorithm. Rather than guess at it, we use double quotes consistently.
-            if (s != s.Trim() || s.Contains('\"') || s.Contains('\''))
+            ReadOnlySpan<char> span = s.AsSpan();
+            if (s.Length != span.Trim().Length || span.IndexOfAny('\"', '\'') >= 0)
                 needsQuoting = true;
 
             if (needsQuoting)
@@ -125,5 +128,12 @@ namespace System.Reflection
             if (needsQuoting)
                 vsb.Append(quoteChar);
         }
+
+#if !NETCOREAPP
+        private static void AppendSpanFormattable(this ref ValueStringBuilder vsb, ushort value)
+        {
+            vsb.Append(value.ToString());
+        }
+#endif
     }
 }

@@ -477,6 +477,8 @@ namespace System.Threading
                     waitStartTimeTicks = Stopwatch.GetTimestamp();
                 }
 
+                using ThreadBlockingInfo.Scope threadBlockingScope = new(this, timeoutMs);
+
                 bool acquiredLock = false;
                 int waitStartTimeMs = timeoutMs < 0 ? 0 : Environment.TickCount;
                 int remainingTimeoutMs = timeoutMs;
