@@ -3188,13 +3188,17 @@ public:
                                  CorInfoType simdBaseJitType,
                                  unsigned    simdSize);
 
-#if defined(TARGET_XARCH)
-    GenTree* gtNewSimdCvtNode(var_types              type,
-                              GenTree*               op1,
-                              CorInfoType            simdTargetBaseJitType,
-                              CorInfoType            simdSourceBaseJitType,
-                              unsigned               simdSize);
-#endif //TARGET_XARCH
+    GenTree* gtNewSimdCvtNode(var_types   type,
+                              GenTree*    op1,
+                              CorInfoType simdTargetBaseJitType,
+                              CorInfoType simdSourceBaseJitType,
+                              unsigned    simdSize);
+
+    GenTree* gtNewSimdCvtNativeNode(var_types   type,
+                                    GenTree*    op1,
+                                    CorInfoType simdTargetBaseJitType,
+                                    CorInfoType simdSourceBaseJitType,
+                                    unsigned    simdSize);
 
     GenTree* gtNewSimdCreateBroadcastNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
@@ -3473,6 +3477,7 @@ public:
 #if defined(TARGET_ARM64)
     GenTree* gtNewSimdConvertVectorToMaskNode(var_types type, GenTree* node, CorInfoType simdBaseJitType, unsigned simdSize);
     GenTree* gtNewSimdConvertMaskToVectorNode(GenTreeHWIntrinsic* node, var_types type);
+    GenTree* gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigned simdSize);
 #endif
 
     //------------------------------------------------------------------------
@@ -5166,7 +5171,6 @@ public:
     bool fgModified;             // True if the flow graph has been modified recently
     bool fgPredsComputed;        // Have we computed the bbPreds list
     bool fgOptimizedFinally;     // Did we optimize any try-finallys?
-    bool fgCanonicalizedFirstBB; // TODO-Quirk: did we end up canonicalizing first BB?
 
     bool fgHasSwitch; // any BBJ_SWITCH jumps?
 
@@ -5688,6 +5692,9 @@ public:
     // Adds the exception sets for the current tree node which is performing a division or modulus operation
     void fgValueNumberAddExceptionSetForDivision(GenTree* tree);
 
+    // Compute exceptions for a division operation
+    ValueNumPair fgValueNumberDivisionExceptions(genTreeOps oper, GenTree* dividend, GenTree* divisor);
+
     // Adds the exception set for the current tree node which is performing a overflow checking operation
     void fgValueNumberAddExceptionSetForOverflow(GenTree* tree);
 
@@ -5926,7 +5933,7 @@ public:
     void fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, BasicBlock* newSucc);
 
     void fgRemoveEhfSuccessor(BasicBlock* block, const unsigned succIndex);
-    
+
     void fgRemoveEhfSuccessor(FlowEdge* succEdge);
 
     void fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, BasicBlock* newTarget);

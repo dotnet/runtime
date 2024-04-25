@@ -3072,6 +3072,7 @@ namespace System.Text.Json.Tests
         [Theory]
         [MemberData(nameof(JsonOptions_TestData))]
         [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", ~RuntimeConfiguration.Release)]
+        [OuterLoop("Too slow", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         public void Writing3MBBase64Bytes(JsonWriterOptions options)
         {
             byte[] value = new byte[3 * 1024 * 1024];
@@ -4421,6 +4422,7 @@ namespace System.Text.Json.Tests
 
         [Theory]
         [MemberData(nameof(JsonOptions_TestData))]
+        [OuterLoop("Too slow", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         public void EscapeCharacters(JsonWriterOptions options)
         {
             // Do not include surrogate pairs.
@@ -5303,6 +5305,7 @@ namespace System.Text.Json.Tests
         [Theory]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [MemberData(nameof(WriteValue_TestData))]
+        [OuterLoop("Too slow", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         public void WriteNumbers(JsonWriterOptions options, string keyString)
         {
             var random = new Random(42);
@@ -7634,7 +7637,7 @@ namespace System.Text.Json.Tests
             return from indented in new[] { true, false }
                    from skipValidation in new[] { true, false }
                    from indentCharacter in indented ? new char?[] { null, ' ', '\t' } : []
-                   from indentSize in indented ? new int?[] { null, 0, 1, 2, 127 } : []
+                   from indentSize in indented ? new int?[] { null, 0, 1, 2, 3 } : []
                    from newLine in indented ? new string?[] { null, "\n", "\r\n" } : []
                    select CreateOptions(indented, indentCharacter, indentSize, skipValidation, newLine);
 

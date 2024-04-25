@@ -731,17 +731,8 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                 //
                 auto addConditionalFlow = [this, entryStateVar, &entryJumpTarget, &addedBlocks](BasicBlock* fromBlock,
                                                                                                 BasicBlock* toBlock) {
-                    // We may have previously though this try entry was unreachable, but now we're going to
-                    // step through it on the way to the OSR entry. So ensure it has plausible profile weight.
-                    //
-                    if (fgHaveProfileWeights() && !fromBlock->hasProfileWeight())
-                    {
-                        JITDUMP("Updating block weight for now-reachable try entry " FMT_BB " via " FMT_BB "\n",
-                                fromBlock->bbNum, fgFirstBB->bbNum);
-                        fromBlock->inheritWeight(fgFirstBB);
-                    }
-
                     BasicBlock* const newBlock = fgSplitBlockAtBeginning(fromBlock);
+                    newBlock->inheritWeight(fromBlock);
                     fromBlock->SetFlags(BBF_INTERNAL);
                     newBlock->RemoveFlags(BBF_DONT_REMOVE);
                     addedBlocks++;
@@ -754,16 +745,40 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                     fgNewStmtAtBeg(fromBlock, jumpIfEntryStateZero);
 
                     FlowEdge* const osrTryEntryEdge = fgAddRefPred(toBlock, fromBlock);
-                    newBlock->inheritWeight(fromBlock);
                     fromBlock->SetCond(osrTryEntryEdge, normalTryEntryEdge);
 
-                    // Not sure what the correct edge likelihoods are just yet;
-                    // for now we'll say the OSR path is the likely one.
-                    //
-                    // Todo: can we leverage profile data here to get a better answer?
-                    //
-                    osrTryEntryEdge->setLikelihood(0.9);
-                    normalTryEntryEdge->setLikelihood(0.1);
+                    if (fgHaveProfileWeights())
+                    {
+                        // We are adding a path from (ultimately) the method entry to "fromBlock"
+                        // Update the profile weight.
+                        //
+                        weight_t const entryWeight = fgFirstBB->bbWeight;
+
+                        JITDUMP("Updating block weight for now-reachable try entry " FMT_BB " via " FMT_BB "\n",
+                                fromBlock->bbNum, fgFirstBB->bbNum);
+                        fromBlock->setBBProfileWeight(fromBlock->bbWeight + entryWeight);
+
+                        // We updated the weight of fromBlock above.
+                        //
+                        // Set the likelihoods such that the additional weight flows to toBlock
+                        // (and so the "normal path" profile out of fromBlock to newBlock is unaltered)
+                        //
+                        // In some stress cases we may have a zero-weight OSR entry.
+                        // Tolerate this by capping the fromToLikelihood.
+                        //
+                        weight_t const fromWeight       = fromBlock->bbWeight;
+                        weight_t const fromToLikelihood = min(1.0, entryWeight / fromWeight);
+
+                        osrTryEntryEdge->setLikelihood(fromToLikelihood);
+                        normalTryEntryEdge->setLikelihood(1.0 - fromToLikelihood);
+                    }
+                    else
+                    {
+                        // Just set likelihoods arbitrarily
+                        //
+                        osrTryEntryEdge->setLikelihood(0.9);
+                        normalTryEntryEdge->setLikelihood(0.1);
+                    }
 
                     entryJumpTarget = fromBlock;
                 };
@@ -3587,54 +3602,43 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                 {
                     noway_assert(bPrev->KindIs(BBJ_COND));
                     //
-                    // We will reverse branch if the taken-jump to bDest ratio (i.e. 'takenRatio')
-                    // is more than 51%
+                    // We will reverse branch if the true edge's likelihood is more than 51%.
                     //
-                    // We will setup profHotWeight to be maximum bbWeight that a block
-                    // could have for us not to want to reverse the conditional branch
+                    // We will set up profHotWeight to be maximum bbWeight that a block
+                    // could have for us not to want to reverse the conditional branch.
                     //
                     // We will consider all blocks that have less weight than profHotWeight to be
-                    // uncommonly run blocks as compared with the hot path of bPrev taken-jump to bDest
+                    // uncommonly run blocks compared to the weight of bPrev's true edge.
                     //
-                    // We will check that the weight of the bPrev to bDest edge
-                    //  is more than twice the weight of the bPrev to block edge.
+                    // We will check if bPrev's true edge weight
+                    // is more than twice bPrev's false edge weight.
                     //
-                    //                  bPrev -->   [BB04, weight 31]
+                    //                  bPrev -->   [BB04, weight 100]
                     //                                     |         \.
-                    //          edgeToBlock -------------> O          \.
-                    //          [min=8,max=10]             V           \.
-                    //                  block -->   [BB05, weight 10]   \.
+                    //          falseEdge ---------------> O          \.
+                    //          [likelihood=0.33]          V           \.
+                    //                  block -->   [BB05, weight 33]   \.
                     //                                                   \.
-                    //          edgeToDest ----------------------------> O
-                    //          [min=21,max=23]                          |
+                    //          trueEdge ------------------------------> O
+                    //          [likelihood=0.67]                        |
                     //                                                   V
-                    //                  bDest --------------->   [BB08, weight 21]
+                    //                  bDest --------------->   [BB08, weight 67]
                     //
                     assert(bPrev->FalseTargetIs(block));
-                    FlowEdge* edgeToDest  = bPrev->GetTrueEdge();
-                    FlowEdge* edgeToBlock = bPrev->GetFalseEdge();
-                    noway_assert(edgeToDest != nullptr);
-                    noway_assert(edgeToBlock != nullptr);
-                    //
-                    // Calculate the taken ratio
-                    //   A takenRatio of 0.10 means taken 10% of the time, not taken 90% of the time
-                    //   A takenRatio of 0.50 means taken 50% of the time, not taken 50% of the time
-                    //   A takenRatio of 0.90 means taken 90% of the time, not taken 10% of the time
-                    //
-                    double takenCount    = edgeToDest->getLikelyWeight();
-                    double notTakenCount = edgeToBlock->getLikelyWeight();
-                    double totalCount    = takenCount + notTakenCount;
+                    FlowEdge* trueEdge  = bPrev->GetTrueEdge();
+                    FlowEdge* falseEdge = bPrev->GetFalseEdge();
+                    noway_assert(trueEdge != nullptr);
+                    noway_assert(falseEdge != nullptr);
 
-                    // If the takenRatio (takenCount / totalCount) is greater or equal to 51% then we will reverse
-                    // the branch
-                    if (takenCount < (0.51 * totalCount))
+                    // If we take the true branch more than half the time, we will reverse the branch.
+                    if (trueEdge->getLikelihood() < 0.51)
                     {
                         reorderBlock = false;
                     }
                     else
                     {
                         // set profHotWeight
-                        profHotWeight = edgeToBlock->getLikelyWeight() - 1;
+                        profHotWeight = falseEdge->getLikelyWeight() - 1;
                     }
                 }
             }
