@@ -238,6 +238,14 @@ export type RuntimeHelpers = {
     forceDisposeProxies: (disposeMethods: boolean, verbose: boolean) => void,
     dumpThreads: () => void,
     mono_wasm_print_thread_dump: () => void,
+
+    //used by hybrid globalization module
+    stringToUTF16: (dstPtr: number, endPtr: number, text: string) => void,
+    stringToUTF16Ptr: (str: string) => VoidPtr,
+    utf16ToString: (startPtr: number, endPtr: number) => string,
+    localHeapViewU16: () => Uint16Array,
+    setU16_local: (heap: Uint16Array, ptr: number, value: number) => void,
+    setI32: (offset: MemOffset, value: number) => void,
 }
 
 export type AOTProfilerOptions = {

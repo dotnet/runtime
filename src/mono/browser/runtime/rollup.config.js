@@ -214,6 +214,20 @@ const typesConfig = {
     plugins: [dts()],
     onwarn: onwarn
 };
+const hybridGlobalizationConfig = {
+    input: "./hybrid-globalization/module-exports.ts",
+    output: [
+        {
+            format: "es",
+            file: nativeBinDir + "/dotnet.hybrid.js",
+            banner,
+            sourcemap: true,
+            sourcemapPathTransform,
+        }
+    ],
+    plugins: [...outputCodePlugins],
+    onwarn: onwarn
+};
 
 let diagnosticMockTypesConfig = undefined;
 
@@ -270,7 +284,8 @@ const allConfigs = [
     wasmImportsConfig,
     typesConfig,
 ].concat(workerConfigs)
-    .concat(diagnosticMockTypesConfig ? [diagnosticMockTypesConfig] : []);
+    .concat(diagnosticMockTypesConfig ? [diagnosticMockTypesConfig] : [])
+    .concat(wasmEnableThreads ? [] : [hybridGlobalizationConfig]); // ToDo: change it to use hybridGlobalization switch, not MT
 export default defineConfig(allConfigs);
 
 function evalCodePlugin () {

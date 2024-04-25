@@ -25,6 +25,8 @@ import { forceDisposeProxies } from "./gc-handles";
 import { mono_wasm_dump_threads } from "./pthreads";
 
 import { threads_c_functions as tcwraps } from "./cwraps";
+import { stringToUTF16, stringToUTF16Ptr, utf16ToString } from "./strings";
+import { localHeapViewU16, setI32, setU16_local } from "./memory";
 
 export let runtimeList: RuntimeList;
 
@@ -47,6 +49,14 @@ function initializeExports (globalObjects: GlobalObjects): RuntimeAPI {
         rh.dumpThreads = mono_wasm_dump_threads;
         rh.mono_wasm_print_thread_dump = () => tcwraps.mono_wasm_print_thread_dump();
     }
+    // if HG is on:
+    rh.stringToUTF16 = stringToUTF16;
+    rh.stringToUTF16Ptr = stringToUTF16Ptr;
+    rh.utf16ToString = utf16ToString;
+    rh.localHeapViewU16 = localHeapViewU16;
+    rh.setU16_local = setU16_local;
+    rh.setI32 = setI32;
+
     Object.assign(runtimeHelpers, rh);
 
     const API = export_api();

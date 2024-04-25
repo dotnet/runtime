@@ -1,23 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { setI32 } from "../memory";
-import { stringToUTF16, stringToUTF16Ptr, utf16ToString } from "../strings";
-import { Int32Ptr, VoidPtr } from "../types/emscripten";
 import { VoidPtrNull } from "../types/internal";
+import { runtimeHelpers } from "../globals";
+import { Int32Ptr, VoidPtr } from "../types/emscripten";
 import { OUTER_SEPARATOR, normalizeLocale } from "./helpers";
 
 export function mono_wasm_get_locale_info (culture: number, cultureLength: number, locale: number, localeLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
     try {
-        const localeNameOriginal = utf16ToString(<any>locale, <any>(locale + 2 * localeLength));
+        const localeNameOriginal = runtimeHelpers.utf16ToString(<any>locale, <any>(locale + 2 * localeLength));
         const localeName = normalizeLocale(localeNameOriginal);
         if (!localeName && localeNameOriginal) {
             // handle non-standard or malformed locales by forwarding the locale code
-            stringToUTF16(dst, dst + 2 * localeNameOriginal.length, localeNameOriginal);
-            setI32(dstLength, localeNameOriginal.length);
+            runtimeHelpers.stringToUTF16(dst, dst + 2 * localeNameOriginal.length, localeNameOriginal);
+            runtimeHelpers.setI32(dstLength, localeNameOriginal.length);
             return VoidPtrNull;
         }
-        const cultureNameOriginal = utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
+        const cultureNameOriginal = runtimeHelpers.utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
         const cultureName = normalizeLocale(cultureNameOriginal);
 
         if (!localeName || !cultureName)
@@ -44,8 +43,8 @@ export function mono_wasm_get_locale_info (culture: number, cultureLength: numbe
                 } catch (error) {
                     if (error instanceof RangeError && error.message === "invalid_argument" && localeNameOriginal) {
                         // handle non-standard or malformed locales by forwarding the locale code, e.g. "xx-u-xx"
-                        stringToUTF16(dst, dst + 2 * localeNameOriginal.length, localeNameOriginal);
-                        setI32(dstLength, localeNameOriginal.length);
+                        runtimeHelpers.stringToUTF16(dst, dst + 2 * localeNameOriginal.length, localeNameOriginal);
+                        runtimeHelpers.setI32(dstLength, localeNameOriginal.length);
                         return VoidPtrNull;
                     }
                     throw error;
@@ -66,38 +65,38 @@ export function mono_wasm_get_locale_info (culture: number, cultureLength: numbe
         if (result.length > dstMaxLength)
             throw new Error(`Locale info for locale=${localeName} exceeds length of ${dstMaxLength}.`);
 
-        stringToUTF16(dst, dst + 2 * result.length, result);
-        setI32(dstLength, result.length);
+        runtimeHelpers.stringToUTF16(dst, dst + 2 * result.length, result);
+        runtimeHelpers.setI32(dstLength, result.length);
         return VoidPtrNull;
     } catch (ex: any) {
-        setI32(dstLength, -1);
-        return stringToUTF16Ptr(ex.toString());
+        runtimeHelpers.setI32(dstLength, -1);
+        return runtimeHelpers.stringToUTF16Ptr(ex.toString());
     }
 }
 
 export function mono_wasm_get_first_day_of_week (culture: number, cultureLength: number, resultPtr: Int32Ptr): VoidPtr {
     try {
-        const cultureName = utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
+        const cultureName = runtimeHelpers.utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
         const canonicalLocale = normalizeLocale(cultureName);
         const result = getFirstDayOfWeek(canonicalLocale);
-        setI32(resultPtr, result);
+        runtimeHelpers.setI32(resultPtr, result);
         return VoidPtrNull;
     } catch (ex: any) {
-        setI32(resultPtr, -1);
-        return stringToUTF16Ptr(ex.toString());
+        runtimeHelpers.setI32(resultPtr, -1);
+        return runtimeHelpers.stringToUTF16Ptr(ex.toString());
     }
 }
 
 export function mono_wasm_get_first_week_of_year (culture: number, cultureLength: number, resultPtr: Int32Ptr): VoidPtr {
     try {
-        const cultureName = utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
+        const cultureName = runtimeHelpers.utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
         const canonicalLocale = normalizeLocale(cultureName);
         const result = getFirstWeekOfYear(canonicalLocale);
-        setI32(resultPtr, result);
+        runtimeHelpers.setI32(resultPtr, result);
         return VoidPtrNull;
     } catch (ex: any) {
-        setI32(resultPtr, -1);
-        return stringToUTF16Ptr(ex.toString());
+        runtimeHelpers.setI32(resultPtr, -1);
+        return runtimeHelpers.stringToUTF16Ptr(ex.toString());
     }
 }
 

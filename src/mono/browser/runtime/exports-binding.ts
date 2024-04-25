@@ -101,6 +101,9 @@ export const mono_wasm_imports = [
     mono_wasm_invoke_jsimport_ST,
     mono_wasm_resolve_or_reject_promise,
     mono_wasm_cancel_promise,
+];
+
+export const mono_wasm_hybrid_globalization_imports = WasmEnableThreads ? [] : [ // ToDo: change it to rely on HybridGlobalization
     mono_wasm_change_case_invariant,
     mono_wasm_change_case,
     mono_wasm_compare_string,
@@ -118,6 +121,8 @@ const wasmImports: Function[] = [
     ...mono_wasm_imports,
     // threading exports, if threading is enabled
     ...mono_wasm_threads_imports,
+    // hybrid globalization exports, if HG is enabled (curently if MT is disabled)
+    ...mono_wasm_hybrid_globalization_imports,
 ];
 
 export function replace_linker_placeholders (imports: WebAssembly.Imports) {
