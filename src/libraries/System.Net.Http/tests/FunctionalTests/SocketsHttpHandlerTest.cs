@@ -4039,6 +4039,10 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandlerTest_Cookies_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91757")]
+        public override Task GetAsync_DefaultCoookieContainer_NoCookieSent() { return null!; }
     }
 
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
