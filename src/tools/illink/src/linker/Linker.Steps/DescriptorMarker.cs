@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -23,14 +24,18 @@ namespace Mono.Linker.Steps
 		static readonly string[] _accessorsAll = new string[] { "all" };
 		static readonly char[] _accessorsSep = new char[] { ';' };
 
+		protected readonly HashSet<object> _preservedMembers;
+
 		public DescriptorMarker (LinkContext context, Stream documentStream, string xmlDocumentLocation)
 			: base (context, documentStream, xmlDocumentLocation)
 		{
+			_preservedMembers = new ();
 		}
 
 		public DescriptorMarker (LinkContext context, Stream documentStream, EmbeddedResource resource, AssemblyDefinition resourceAssembly, string xmlDocumentLocation = "<unspecified>")
 			: base (context, documentStream, resource, resourceAssembly, xmlDocumentLocation)
 		{
+			_preservedMembers = new ();
 		}
 
 		public void Mark ()
@@ -147,7 +152,7 @@ namespace Mono.Linker.Steps
 
 		protected override void ProcessField (TypeDefinition type, FieldDefinition field, XPathNavigator nav)
 		{
-			if (_context.Annotations.IsMarked (field))
+			if (!_preservedMembers.Add (field))
 				LogWarning (nav, DiagnosticId.XmlDuplicatePreserveMember, field.FullName);
 
 			_context.Annotations.Mark (field, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition (nav));
@@ -155,7 +160,7 @@ namespace Mono.Linker.Steps
 
 		protected override void ProcessMethod (TypeDefinition type, MethodDefinition method, XPathNavigator nav, object? customData)
 		{
-			if (_context.Annotations.IsMarked (method))
+			if (!_preservedMembers.Add (method))
 				LogWarning (nav, DiagnosticId.XmlDuplicatePreserveMember, method.GetDisplayName ());
 
 			_context.Annotations.MarkIndirectlyCalledMethod (method);
@@ -212,7 +217,7 @@ namespace Mono.Linker.Steps
 
 		protected override void ProcessEvent (TypeDefinition type, EventDefinition @event, XPathNavigator nav, object? customData)
 		{
-			if (_context.Annotations.IsMarked (@event))
+			if (!_preservedMembers.Add (@event))
 				LogWarning (nav, DiagnosticId.XmlDuplicatePreserveMember, @event.FullName);
 
 			ProcessMethod (type, @event.AddMethod, nav, customData);
@@ -224,7 +229,7 @@ namespace Mono.Linker.Steps
 		{
 			string[] accessors = fromSignature ? GetAccessors (nav) : _accessorsAll;
 
-			if (_context.Annotations.IsMarked (property))
+			if (!_preservedMembers.Add (property))
 				LogWarning (nav, DiagnosticId.XmlDuplicatePreserveMember, property.FullName);
 
 			if (Array.IndexOf (accessors, "all") >= 0) {
