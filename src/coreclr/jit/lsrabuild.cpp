@@ -3489,6 +3489,16 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
 
         if (numArgs != 1)
         {
+#ifdef TARGET_ARM64
+            if (HWIntrinsicInfo::IsScalable(hwintrinsic->GetHWIntrinsicId()))
+            {
+                for (size_t argNum = 1; argNum <= numArgs; argNum++)
+                {
+                    BuildOperandUses(hwintrinsic->Op(argNum), candidates);
+                }
+                return (int)numArgs;
+            }
+#endif
             assert(numArgs == 2);
             assert(hwintrinsic->Op(2)->isContained());
             assert(hwintrinsic->Op(2)->IsCnsIntOrI());
@@ -3511,11 +3521,11 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
         // ANDs may be contained in a chain.
         return BuildBinaryUses(node->AsOp(), candidates);
     }
-    if (node->OperIs(GT_NEG, GT_CAST, GT_LSH, GT_RSH, GT_RSZ))
+    if (node->OperIs(GT_NEG, GT_CAST, GT_LSH, GT_RSH, GT_RSZ, GT_ROR))
     {
         // NEG can be contained for mneg on arm64
         // CAST and LSH for ADD with sign/zero extension
-        // LSH, RSH, and RSZ for various "shifted register" instructions on arm64
+        // LSH, RSH, RSZ, and ROR for various "shifted register" instructions on arm64
         return BuildOperandUses(node->gtGetOp1(), candidates);
     }
 #endif

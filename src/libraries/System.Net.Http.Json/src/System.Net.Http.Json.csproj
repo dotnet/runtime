@@ -53,6 +53,7 @@ System.Net.Http.Json.JsonContent</PackageDescription>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Reference Include="System.Memory" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Runtime" />
@@ -65,6 +66,7 @@ System.Net.Http.Json.JsonContent</PackageDescription>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Reference Include="System.Memory" />
     <Reference Include="System.Net.Http" />
   </ItemGroup>
 
