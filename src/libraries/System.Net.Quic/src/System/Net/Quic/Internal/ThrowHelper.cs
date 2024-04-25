@@ -64,6 +64,9 @@ internal static class ThrowHelper
         return false;
     }
 
+    // see TryGetStreamExceptionForMsQuicStatus for explanation
+    internal static bool IsConnectionAbortedWhenStartingStreamException(Exception ex) => ex is QuicException qe && qe.QuicError == QuicError.ConnectionAborted && qe.ApplicationErrorCode is null;
+
     internal static Exception GetExceptionForMsQuicStatus(int status, long? errorCode = default, string? message = null)
     {
         Exception ex = GetExceptionInternal(status, errorCode, message);
