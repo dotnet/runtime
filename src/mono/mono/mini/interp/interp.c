@@ -4098,6 +4098,8 @@ main_loop:
 					// Not created from interpreted code
 					g_assert (del->method);
 					del_imethod = mono_interp_get_imethod (del->method);
+					if (del->target && m_method_is_virtual (del->method))
+						del_imethod = get_virtual_method (del_imethod, del->target->vtable);
 					del->interp_method = del_imethod;
 					del->interp_invoke_impl = del_imethod;
 				} else {

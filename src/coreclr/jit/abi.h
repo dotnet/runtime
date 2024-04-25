@@ -48,7 +48,9 @@ struct ABIPassingInformation
     // multiple register segments and a struct segment.
     // - On Windows x64, all parameters always fit into one stack slot or
     // register, and thus always have NumSegments == 1
-    // - On RISC-V, structs can be split out over 2 segments, each can be an integer/float register or a stack slot
+    // - On loongarch64/riscv64, structs can be passed in two registers or
+    // can be split out over register and stack, giving
+    // multiple register segments and a struct segment.
     unsigned           NumSegments = 0;
     ABIPassingSegment* Segments    = nullptr;
 
@@ -202,6 +204,22 @@ public:
                                    WellKnownArg wellKnownParam);
 };
 
+class LoongArch64Classifier
+{
+    const ClassifierInfo& m_info;
+    RegisterQueue         m_intRegs;
+    RegisterQueue         m_floatRegs;
+    unsigned              m_stackArgSize = 0;
+
+public:
+    LoongArch64Classifier(const ClassifierInfo& info);
+
+    ABIPassingInformation Classify(Compiler*    comp,
+                                   var_types    type,
+                                   ClassLayout* structLayout,
+                                   WellKnownArg wellKnownParam);
+};
+
 #if defined(TARGET_X86)
 typedef X86Classifier PlatformClassifier;
 #elif defined(WINDOWS_AMD64_ABI)
@@ -214,6 +232,8 @@ typedef Arm64Classifier PlatformClassifier;
 typedef Arm32Classifier PlatformClassifier;
 #elif defined(TARGET_RISCV64)
 typedef RiscV64Classifier PlatformClassifier;
+#elif defined(TARGET_LOONGARCH64)
+typedef LoongArch64Classifier PlatformClassifier;
 #endif
 
 #ifdef SWIFT_SUPPORT

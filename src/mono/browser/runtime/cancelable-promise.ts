@@ -166,9 +166,7 @@ export class PromiseHolder extends ManagedObject {
         try {
             mono_assert(!this.isPosted, "Promise is already posted to managed.");
             this.isPosted = true;
-            if (WasmEnableThreads) {
-                forceThreadMemoryViewRefresh();
-            }
+            forceThreadMemoryViewRefresh();
 
             // we can unregister the GC handle just on JS side
             teardown_managed_proxy(this, this.gc_handle, /*skipManaged: */ true);
