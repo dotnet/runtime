@@ -446,7 +446,8 @@ Signature MethodDesc::GetSignature()
     return Signature(pSig, cSig);
 }
 
-PCODE MethodDesc::GetMethodEntryPoint()
+#ifndef HAS_COMPACT_ENTRYPOINTS
+PCODE MethodDesc::GetMethodEntryPoint_NoAlloc()
 {
     CONTRACTL
     {
@@ -468,6 +469,47 @@ PCODE MethodDesc::GetMethodEntryPoint()
 
         TADDR pSlot = dac_cast<TADDR>(this) + size;
 
+        return *PTR_PCODE(pSlot);
+    }
+
+    _ASSERTE(GetMethodTable()->IsCanonicalMethodTable());
+    return GetMethodTable()->GetSlot(GetSlot());
+}
+#endif
+
+PCODE MethodDesc::GetMethodEntryPoint()
+{
+    CONTRACTL
+    {
+#ifndef HAS_COMPACT_ENTRYPOINTS
+        NOTHROW;
+#else
+        THROWS;
+#endif
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    // Similarly to SetMethodEntryPoint(), it is up to the caller to ensure that calls to this function are appropriately
+    // synchronized
+
+    // Keep implementations of MethodDesc::GetMethodEntryPoint and MethodDesc::GetAddrOfSlot in sync!
+
+    if (HasNonVtableSlot())
+    {
+        SIZE_T size = GetBaseSize();
+
+        TADDR pSlot = dac_cast<TADDR>(this) + size;
+
+#if !defined(HAS_COMPACT_ENTRYPOINTS) && !defined(DACCESS_COMPILE)
+        if (*PTR_PCODE(pSlot) == NULL)
+        {
+            EnsureTemporaryEntryPoint(GetLoaderAllocator());
+            _ASSERTE(*PTR_PCODE(pSlot) != NULL);
+        }
+#endif
         return *PTR_PCODE(pSlot);
     }
 
@@ -2167,7 +2209,8 @@ BOOL MethodDesc::IsPointingToPrestub()
     {
         if (IsVersionableWithVtableSlotBackpatch())
         {
-            return GetMethodEntryPoint() == GetTemporaryEntryPoint();
+            PCODE methodEntrypoint = GetMethodEntryPoint_NoAlloc();
+            return methodEntrypoint == GetTemporaryEntryPoint_NoAlloc() && methodEntrypoint != NULL;
         }
         return TRUE;
     }
@@ -2829,6 +2872,7 @@ TADDR MethodDescChunk::AllocateCompactEntryPoints(LoaderAllocator *pLoaderAlloca
 #endif // HAS_COMPACT_ENTRYPOINTS
 
 //*******************************************************************************
+#ifdef HAS_COMPACT_ENTRYPOINTS
 PCODE MethodDescChunk::GetTemporaryEntryPoint(int index)
 {
     LIMITED_METHOD_CONTRACT;
@@ -2854,7 +2898,9 @@ PCODE MethodDescChunk::GetTemporaryEntryPoint(int index)
 
     return Precode::GetPrecodeForTemporaryEntryPoint(GetTemporaryEntryPoints(), index)->GetEntryPoint();
 }
+#endif // HAS_COMPACT_ENTRYPOINTS
 
+#ifdef HAS_COMPACT_ENTRYPOINTS
 PCODE MethodDesc::GetTemporaryEntryPoint()
 {
     CONTRACTL
@@ -2875,6 +2921,35 @@ PCODE MethodDesc::GetTemporaryEntryPoint()
 
     return pEntryPoint;
 }
+#else
+PCODE MethodDesc::GetTemporaryEntryPoint()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    TADDR pEntryPoint = GetTemporaryEntryPoint_NoAlloc();
+    if (pEntryPoint != NULL)
+        return pEntryPoint;
+
+#ifndef DACCESS_COMPILE
+    EnsureTemporaryEntryPoint(GetLoaderAllocator());
+    pEntryPoint = GetTemporaryEntryPoint_NoAlloc();
+    _ASSERTE(pEntryPoint != NULL);
+
+#ifdef _DEBUG
+    MethodDesc * pMD = MethodDesc::GetMethodDescFromStubAddr(pEntryPoint);
+    _ASSERTE(PTR_HOST_TO_TADDR(this) == PTR_HOST_TO_TADDR(pMD));
+#endif
+
+#endif
+    return pEntryPoint;
+}
+#endif // HAS_COMPACT_ENTRYPOINTS
 
 #ifndef DACCESS_COMPILE
 //*******************************************************************************
@@ -2882,10 +2957,16 @@ void MethodDesc::SetTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator, Alloc
 {
     WRAPPER_NO_CONTRACT;
 
+#ifdef HAS_COMPACT_ENTRYPOINTS
     GetMethodDescChunk()->EnsureTemporaryEntryPointsCreated(pLoaderAllocator, pamTracker);
+#else
+    EnsureTemporaryEntryPointCore(pLoaderAllocator, pamTracker);
+#endif
 
     PTR_PCODE pSlot = GetAddrOfSlot();
+#ifdef HAS_COMPACT_ENTRYPOINTS
     _ASSERTE(*pSlot == NULL);
+#endif
     *pSlot = GetTemporaryEntryPoint();
 
     if (RequiresStableEntryPoint())
@@ -2896,7 +2977,41 @@ void MethodDesc::SetTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator, Alloc
     }
 }
 
+#ifndef HAS_COMPACT_ENTRYPOINTS
+void MethodDesc::EnsureTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator)
+{
+    if (GetTemporaryEntryPoint_NoAlloc() == NULL)
+    {
+        AllocMemTracker amt;
+        EnsureTemporaryEntryPointCore(pLoaderAllocator, &amt);
+    }
+}
+
+void MethodDesc::EnsureTemporaryEntryPointCore(LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker)
+{
+    if (GetTemporaryEntryPoint_NoAlloc() == NULL)
+    {
+        PTR_PCODE pSlot = GetAddrOfSlot();
+
+        AllocMemTracker amt;
+        Precode* pPrecode = Precode::Allocate(GetPrecodeType(), this, GetLoaderAllocator(), &amt);
+
+        if (InterlockedCompareExchangeT(&m_pTemporaryEntryPoint, pPrecode->GetEntryPoint(), (PCODE)NULL) == NULL)
+            amt.SuppressRelease();
+
+        PCODE tempEntryPoint = GetTemporaryEntryPoint_NoAlloc();
+        _ASSERTE(tempEntryPoint != NULL);
+
+        if (*pSlot == NULL)
+        {
+            InterlockedCompareExchangeT(pSlot, tempEntryPoint, (PCODE)NULL);
+        }
+    }
+}
+#endif
+
 //*******************************************************************************
+#ifdef HAS_COMPACT_ENTRYPOINTS
 void MethodDescChunk::CreateTemporaryEntryPoints(LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker)
 {
     WRAPPER_NO_CONTRACT;
@@ -2913,10 +3028,12 @@ void MethodDescChunk::CreateTemporaryEntryPoints(LoaderAllocator *pLoaderAllocat
     }
 #endif // HAS_COMPACT_ENTRYPOINTS
 
-    *(((TADDR *)this)-1) = temporaryEntryPoints;
+    m_pTemporaryEntryPoints = temporaryEntryPoints;
 
     _ASSERTE(GetTemporaryEntryPoints() != NULL);
 }
+#endif // HAS_COMPACT_ENTRYPOINTS
+
 
 //*******************************************************************************
 Precode* MethodDesc::GetOrCreatePrecode()
@@ -2930,12 +3047,12 @@ Precode* MethodDesc::GetOrCreatePrecode()
     }
 
     PTR_PCODE pSlot = GetAddrOfSlot();
-    PCODE tempEntry = GetTemporaryEntryPoint();
+    PCODE tempEntry = GetTemporaryEntryPoint_NoAlloc();
 
     PrecodeType requiredType = GetPrecodeType();
     PrecodeType availableType = PRECODE_INVALID;
 
-    if (!GetMethodDescChunk()->HasCompactEntryPoints())
+    if (!GetMethodDescChunk()->HasCompactEntryPoints() && tempEntry != NULL)
     {
         availableType = Precode::GetPrecodeFromEntryPoint(tempEntry)->GetType();
     }
@@ -3810,7 +3927,7 @@ MethodDescChunk::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         pMT->EnumMemoryRegions(flags);
     }
-
+#ifdef HAS_COMPACT_ENTRYPOINTS
     SIZE_T size;
 
 #ifdef HAS_COMPACT_ENTRYPOINTS
@@ -3825,6 +3942,7 @@ MethodDescChunk::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     }
 
     DacEnumMemoryRegion(GetTemporaryEntryPoints(), size);
+#endif // HAS_COMPACT_ENTRYPOINTS
 
     MethodDesc * pMD = GetFirstMethodDesc();
     MethodDesc * pOldMD = NULL;

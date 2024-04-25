@@ -435,7 +435,7 @@ ClrDataAccess::GetMethodTableSlot(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA
             MethodDesc * pMD = it.GetMethodDesc();
             if (pMD->GetSlot() == slot)
             {
-                *value = pMD->GetMethodEntryPoint();
+                *value = pMD->GetMethodEntryPoint_NoAlloc();
                 hr = S_OK;
             }
         }

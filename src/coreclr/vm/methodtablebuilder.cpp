@@ -10830,6 +10830,7 @@ MethodTableBuilder::SetupMethodTable2(
     // Keep bmtInterface data around since we no longer write the flags (IsDeclaredOnType and
     // IsImplementedByParent) into the interface map (these flags are only required during type loading).
 
+#ifdef HAS_COMPACT_ENTRYPOINTS
     {
         for (MethodDescChunk *pChunk = GetHalfBakedClass()->GetChunks(); pChunk != NULL; pChunk = pChunk->GetNextChunk())
         {
@@ -10838,6 +10839,22 @@ MethodTableBuilder::SetupMethodTable2(
             pChunk->EnsureTemporaryEntryPointsCreated(GetLoaderAllocator(), GetMemTracker());
         }
     }
+#else
+#if MAYBE_WE_DONT_NEED_THIS
+    for (bmtVtable::Iterator slotIt = bmtVT->IterateSlots(); !slotIt.AtEnd(); ++slotIt)
+    {
+        SLOT_INDEX iCurSlot = static_cast<SLOT_INDEX>(slotIt.CurrentIndex());
+
+        // We need to ensure that all vtable slots have temporary entrypoints created for them.
+        MethodDesc * pMD = NULL;
+        if (iCurSlot < bmtVT->cVtableSlots)
+        {
+            pMD = slotIt->Impl().GetMethodDesc();
+            pMD->EnsureTemporaryEntryPointCore(GetLoaderAllocator(), GetMemTracker());
+        }
+    }
+#endif
+#endif
 
     {   // copy onto the real vtable (methods only)
         //@GENERICS: Because we sometimes load an inexact parent (see ClassLoader::GetParent) the inherited slots might
@@ -10883,6 +10900,9 @@ MethodTableBuilder::SetupMethodTable2(
                 // Owned slots
                 //
                 _ASSERTE(iCurSlot >= bmtVT->cVirtualSlots || ChangesImplementationOfVirtualSlot(iCurSlot));
+
+                if (pMD->GetSlot() == iCurSlot)
+                    continue; // For cases where the slot is the same as the method desc slot, we don't need to fill it in yet
 
                 PCODE addr = pMD->GetTemporaryEntryPoint();
                 _ASSERTE(addr != NULL);

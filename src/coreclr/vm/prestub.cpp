@@ -3224,6 +3224,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                 if (pMD->IsVtableMethod())
                 {
                     slot = pMD->GetSlot();
+                    pMD->EnsureTemporaryEntryPoint(pMD->GetLoaderAllocator());
                     pMT = th.IsNull() ? pMD->GetMethodTable() : th.GetMethodTable();
 
                     fVirtual = true;

@@ -238,7 +238,7 @@ public:
         _ASSERTE(HasStableEntryPoint());
         _ASSERTE(!IsVersionableWithVtableSlotBackpatch());
 
-        return GetMethodEntryPoint();
+        return GetMethodEntryPoint_NoAlloc();
     }
 
     void SetMethodEntryPoint(PCODE addr);
@@ -246,11 +246,27 @@ public:
 
     PCODE GetTemporaryEntryPoint();
 
+    PCODE GetTemporaryEntryPoint_NoAlloc()
+    {
+        LIMITED_METHOD_CONTRACT;
+#ifdef HAS_COMPACT_ENTRYPOINTS
+        return GetTemporaryEntryPoint();
+#else
+        return VolatileLoadWithoutBarrier(&m_pTemporaryEntryPoint);
+#endif
+    }    
+
     void SetTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
 
     PCODE GetInitialEntryPointForCopiedSlot()
     {
-        WRAPPER_NO_CONTRACT;
+        CONTRACTL
+        {
+            THROWS;
+            GC_NOTRIGGER;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
 
         if (IsVersionableWithVtableSlotBackpatch())
         {
@@ -1431,6 +1447,21 @@ public:
     //
     PCODE GetMethodEntryPoint();
 
+    PCODE GetMethodEntryPoint_NoAlloc()
+#ifdef HAS_COMPACT_ENTRYPOINTS
+    {
+        WRAPPER_NO_CONTRACT;
+        return GetMethodEntryPoint();
+    }
+#else
+    ;
+#endif
+
+#ifndef HAS_COMPACT_ENTRYPOINTS
+    void EnsureTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator);
+    void EnsureTemporaryEntryPointCore(LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
+#endif
+
     //*******************************************************************************
     // Returns the address of the native code.
     PCODE GetNativeCode();
@@ -1637,6 +1668,9 @@ protected:
     // The slot number of this MethodDesc in the vtable array.
     WORD m_wSlotNumber;
     WORD m_wFlags;
+#ifndef HAS_COMPACT_ENTRYPOINTS
+    PCODE m_pTemporaryEntryPoint;
+#endif
 
 public:
 #ifdef DACCESS_COMPILE
@@ -2144,10 +2178,11 @@ public:
                                         MethodTable *initialMT,
                                         class AllocMemTracker *pamTracker);
 
+#ifdef HAS_COMPACT_ENTRYPOINTS
     TADDR GetTemporaryEntryPoints()
     {
         LIMITED_METHOD_CONTRACT;
-        return *(dac_cast<DPTR(TADDR)>(this) - 1);
+        return m_pCompactEntryPoints;
     }
 
     PCODE GetTemporaryEntryPoint(int index);
@@ -2167,6 +2202,7 @@ public:
     }
 
     void CreateTemporaryEntryPoints(LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
+#endif
 
 #ifdef HAS_COMPACT_ENTRYPOINTS
     //
@@ -2301,6 +2337,10 @@ private:
     PTR_MethodTable m_methodTable;
 
     PTR_MethodDescChunk  m_next;
+
+#ifdef HAS_COMPACT_ENTRYPOINTS
+    TADDR m_pCompactEntryPoints;
+#endif
 
     BYTE                 m_size;        // The size of this chunk minus 1 (in multiples of MethodDesc::ALIGNMENT)
     BYTE                 m_count;       // The number of MethodDescs in this chunk minus 1
