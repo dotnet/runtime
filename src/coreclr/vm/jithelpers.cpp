@@ -5144,7 +5144,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     const int counterBump = g_pConfig->OSR_CounterBump();
     *counter = counterBump;
 
-#if _DEBUG
+#ifdef _DEBUG
     const int ppId = ppInfo->m_patchpointId;
 #endif
 
@@ -5316,9 +5316,18 @@ void JIT_Patchpoint(int* counter, int ilOffset)
             InitializeContext(pBuffer, contextFlags, &pFrameContext, &contextSize);
         _ASSERTE(success);
 #else // TARGET_WINDOWS && TARGET_AMD64
+
+#ifdef _DEBUG
+        // Temporary change to avoid the frame context being overwritten after
+        // a crash after transition
+        pFrameContext = (CONTEXT*)_alloca(sizeof(CONTEXT) + 0x40000);
+#else
         CONTEXT frameContext;
-        frameContext.ContextFlags = CONTEXT_FULL;
         pFrameContext = &frameContext;
+#endif
+
+        pFrameContext->ContextFlags = CONTEXT_FULL;
+
 #endif // TARGET_WINDOWS && TARGET_AMD64
 
         // Find context for the original method
