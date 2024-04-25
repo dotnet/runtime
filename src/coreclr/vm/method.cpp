@@ -119,11 +119,11 @@ SIZE_T MethodDesc::SizeOf()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    SIZE_T size = s_ClassificationSizeTable[m_wClassification &
-        (mdcClassification
-        | mdcHasNonVtableSlot
-        | mdcMethodImpl
-        | mdcHasNativeCodeSlot)];
+    SIZE_T size = s_ClassificationSizeTable[m_wFlags &
+        (mdfClassification
+        | mdfHasNonVtableSlot
+        | mdfMethodImpl
+        | mdfHasNativeCodeSlot)];
 
     return size;
 }
@@ -799,14 +799,14 @@ WORD MethodDesc::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
     }
     CONTRACTL_END;
 
-    WORD    wOldState = m_wClassification;
+    WORD    wOldState = m_wFlags;
     DWORD   dwMask = wMask;
 
     // We need to make this operation atomic (multiple threads can play with the flags field at the same time). But the flags field
     // is a word and we only have interlock operations over dwords. So we round down the flags field address to the nearest aligned
     // dword (along with the intended bitfield mask). Note that we make the assumption that the flags word is aligned itself, so we
     // only have two possibilities: the field already lies on a dword boundary or it's precisely one word out.
-    LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_wClassification - (offsetof(MethodDesc, m_wClassification) & 0x3));
+    LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_wFlags - (offsetof(MethodDesc, m_wFlags) & 0x3));
 
 #ifdef _PREFAST_
 #pragma warning(push)
@@ -814,11 +814,11 @@ WORD MethodDesc::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
 #endif // _PREFAST_
 
 #if BIGENDIAN
-    if ((offsetof(MethodDesc, m_wClassification) & 0x3) == 0) {
+    if ((offsetof(MethodDesc, m_wFlags) & 0x3) == 0) {
 #else // !BIGENDIAN
-    if ((offsetof(MethodDesc, m_wClassification) & 0x3) != 0) {
+    if ((offsetof(MethodDesc, m_wFlags) & 0x3) != 0) {
 #endif // !BIGENDIAN
-        static_assert_no_msg(sizeof(m_wClassification) == 2);
+        static_assert_no_msg(sizeof(m_wFlags) == 2);
         dwMask <<= 16;
     }
 #ifdef _PREFAST_
@@ -946,7 +946,7 @@ PTR_PCODE MethodDesc::GetAddrOfNativeCodeSlot()
 
     _ASSERTE(HasNativeCodeSlot());
 
-    SIZE_T size = s_ClassificationSizeTable[m_wClassification & (mdcClassification | mdcHasNonVtableSlot |  mdcMethodImpl)];
+    SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdfClassification | mdfHasNonVtableSlot |  mdfMethodImpl)];
 
     return (PTR_PCODE)(dac_cast<TADDR>(this) + size);
 }
@@ -2252,7 +2252,7 @@ MethodImpl *MethodDesc::GetMethodImpl()
     }
     CONTRACTL_END
 
-    SIZE_T size = s_ClassificationSizeTable[m_wClassification & (mdcClassification | mdcHasNonVtableSlot)];
+    SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdfClassification | mdfHasNonVtableSlot)];
 
     return PTR_MethodImpl(dac_cast<TADDR>(this) + size);
 }
