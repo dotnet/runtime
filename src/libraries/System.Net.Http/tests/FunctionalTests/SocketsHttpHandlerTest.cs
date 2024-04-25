@@ -3994,6 +3994,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("foo", "\tbar\t")]
         [InlineData("foo", "\t bar \t")]
         [InlineData("foo  ", " \t bar  \r\n ")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task ResponseHeaders_ExtraWhitespace_Trimmed(string name, string value)
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>

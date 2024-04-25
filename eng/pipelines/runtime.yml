@@ -831,18 +831,19 @@ extends:
     #             eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
     #             eq(variables['isRollingBuild'], true))
 
-    #   #
-    #   # WebAssembly legs
-    #   #
-    #   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-    #     parameters:
-    #       platforms:
-    #         - browser_wasm
-    #       alwaysRun: ${{ variables.isRollingBuild }}
-    #       extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-    #       scenarios:
-    #         - WasmTestOnV8
-    #         - WasmTestOnChrome
+      #
+      # WebAssembly legs
+      #
+      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+        parameters:
+          platforms:
+            - browser_wasm
+          alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          scenarios:
+            - WasmTestOnV8
+            - WasmTestOnChrome
+            - WasmTestOnFirefox
 
     #   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     #     parameters:
@@ -853,19 +854,21 @@ extends:
     #       scenarios:
     #         - WasmTestOnChrome
 
-    #   # Library tests with full threading
-    #   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-    #     parameters:
-    #       platforms:
-    #         - browser_wasm
-    #         #- browser_wasm_win
-    #       nameSuffix: _Threading
-    #       extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-    #       alwaysRun: ${{ variables.isRollingBuild }}
-    #       shouldRunSmokeOnly: onLibrariesAndIllinkChanges
-    #       scenarios:
-    #         - WasmTestOnChrome
-    #         #- WasmTestOnNodeJS - this is not supported yet, https://github.com/dotnet/runtime/issues/85592
+      # Library tests with full threading
+      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+        parameters:
+          platforms:
+            - browser_wasm
+            #- browser_wasm_win
+          nameSuffix: _Threading
+          extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          extraHelixArguments: /p:WasmEnableThreads=true
+          alwaysRun: ${{ variables.isRollingBuild }}
+          shouldRunSmokeOnly: onLibrariesAndIllinkChanges
+          scenarios:
+            - WasmTestOnChrome
+            - WasmTestOnFirefox
+            #- WasmTestOnNodeJS - this is not supported yet, https://github.com/dotnet/runtime/issues/85592
 
     #   # EAT Library tests - only run on linux
     #   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml

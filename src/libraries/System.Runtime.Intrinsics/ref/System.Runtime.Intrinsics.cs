@@ -4217,6 +4217,31 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe System.Numerics.Vector<ulong> LoadVector(System.Numerics.Vector<ulong> mask, ulong* address) { throw null; }
         public static unsafe System.Numerics.Vector<float> LoadVector(System.Numerics.Vector<float> mask, float* address) { throw null; }
         public static unsafe System.Numerics.Vector<double> LoadVector(System.Numerics.Vector<double> mask, double* address) { throw null; }
+        public static unsafe System.Numerics.Vector<short> LoadVectorByteZeroExtendToInt16(System.Numerics.Vector<short> mask, byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<int> LoadVectorByteZeroExtendToInt32(System.Numerics.Vector<int> mask, byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorByteZeroExtendToInt64(System.Numerics.Vector<long> mask, byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ushort> LoadVectorByteZeroExtendToUInt16(System.Numerics.Vector<ushort> mask, byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorByteZeroExtendToUInt32(System.Numerics.Vector<uint> mask, byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorByteZeroExtendToUInt64(System.Numerics.Vector<ulong> mask, byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<int> LoadVectorInt16SignExtendToInt32(System.Numerics.Vector<int> mask, short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorInt16SignExtendToInt64(System.Numerics.Vector<long> mask, short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorInt16SignExtendToUInt32(System.Numerics.Vector<uint> mask, short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorInt16SignExtendToUInt64(System.Numerics.Vector<ulong> mask, short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorInt32SignExtendToInt64(System.Numerics.Vector<long> mask, int* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorInt32SignExtendToUInt64(System.Numerics.Vector<ulong> mask, int* address) { throw null; }
+        public static unsafe System.Numerics.Vector<short> LoadVectorSByteSignExtendToInt16(System.Numerics.Vector<short> mask, sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<int> LoadVectorSByteSignExtendToInt32(System.Numerics.Vector<int> mask, sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorSByteSignExtendToInt64(System.Numerics.Vector<long> mask, sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ushort> LoadVectorSByteSignExtendToUInt16(System.Numerics.Vector<ushort> mask, sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorSByteSignExtendToUInt32(System.Numerics.Vector<uint> mask, sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorSByteSignExtendToUInt64(System.Numerics.Vector<ulong> mask, sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<int> LoadVectorUInt16ZeroExtendToInt32(System.Numerics.Vector<int> mask, ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorUInt16ZeroExtendToInt64(System.Numerics.Vector<long> mask, ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorUInt16ZeroExtendToUInt32(System.Numerics.Vector<uint> mask, ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorUInt16ZeroExtendToUInt64(System.Numerics.Vector<ulong> mask, ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorUInt32ZeroExtendToInt64(System.Numerics.Vector<long> mask, uint* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorUInt32ZeroExtendToUInt64(System.Numerics.Vector<ulong> mask, uint* address) { throw null; }
+
     }
 
     public enum SveMaskPattern : byte
