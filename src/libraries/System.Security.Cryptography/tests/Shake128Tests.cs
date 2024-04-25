@@ -21,6 +21,10 @@ namespace System.Security.Cryptography.Tests
             public static void GetHashAndReset(Shake128 shake, Span<byte> destination) => shake.GetHashAndReset(destination);
             public static byte[] GetCurrentHash(Shake128 shake, int outputLength) => shake.GetCurrentHash(outputLength);
             public static void GetCurrentHash(Shake128 shake, Span<byte> destination) => shake.GetCurrentHash(destination);
+            public static void Read(Shake128 shake, Span<byte> destination) => shake.Read(destination);
+            public static byte[] Read(Shake128 shake, int outputLength) => shake.Read(outputLength);
+            public static void Reset(Shake128 shake) => shake.Reset();
+            public static Shake128 Clone(Shake128 shake) => shake.Clone();
 
             public static byte[] HashData(byte[] source, int outputLength) => Shake128.HashData(source, outputLength);
             public static byte[] HashData(ReadOnlySpan<byte> source, int outputLength) => Shake128.HashData(source, outputLength);

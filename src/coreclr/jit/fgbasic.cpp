@@ -23,12 +23,8 @@ void Compiler::fgInit()
     /* We haven't yet computed the bbPreds lists */
     fgPredsComputed = false;
 
-    /* We haven't yet computed the edge weight */
-    fgEdgeWeightsComputed    = false;
-    fgHaveValidEdgeWeights   = false;
-    fgSlopUsedInEdgeWeights  = false;
-    fgRangeUsedInEdgeWeights = true;
-    fgCalledCount            = BB_ZERO_WEIGHT;
+    /* We haven't yet computed block weights */
+    fgCalledCount = BB_ZERO_WEIGHT;
 
     /* Initialize the basic block list */
 
@@ -171,7 +167,6 @@ void Compiler::fgInit()
     fgHistogramInstrumentor      = nullptr;
     fgValueInstrumentor          = nullptr;
     fgPredListSortVector         = nullptr;
-    fgCanonicalizedFirstBB       = false;
 }
 
 //------------------------------------------------------------------------
@@ -219,10 +214,40 @@ bool Compiler::fgEnsureFirstBBisScratch()
 
         block = BasicBlock::New(this);
 
-        // If we have profile data the new block will inherit fgFirstBlock's weight
+        // If we have profile data determine the weight of the scratch BB
+        //
         if (fgFirstBB->hasProfileWeight())
         {
-            block->inheritWeight(fgFirstBB);
+            // If current entry has preds, sum up those weights
+            //
+            weight_t nonEntryWeight = 0;
+            for (FlowEdge* const edge : fgFirstBB->PredEdges())
+            {
+                nonEntryWeight += edge->getLikelyWeight();
+            }
+
+            // entry weight is weight not from any pred
+            //
+            weight_t const entryWeight = fgFirstBB->bbWeight - nonEntryWeight;
+            if (entryWeight <= 0)
+            {
+                // If the result is clearly nonsensical, just inherit
+                //
+                JITDUMP("\fgEnsureFirstBBisScratch: Profile data could not be locally repaired. Data %s inconsisent.\n",
+                        fgPgoConsistent ? "is now" : "was already");
+
+                if (fgPgoConsistent)
+                {
+                    Metrics.ProfileInconsistentScratchBB++;
+                    fgPgoConsistent = false;
+                }
+
+                block->inheritWeight(fgFirstBB);
+            }
+            else
+            {
+                block->setBBProfileWeight(entryWeight);
+            }
         }
 
         // The new scratch bb will fall through to the old first bb
@@ -5067,17 +5092,28 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
     fgReplaceJumpTarget(curr, succ, newBlock);
 
     // And 'succ' has 'newBlock' as a new predecessor.
-    FlowEdge* const newEdge = fgAddRefPred(succ, newBlock);
-    newBlock->SetTargetEdge(newEdge);
+    FlowEdge* const newSuccEdge = fgAddRefPred(succ, newBlock);
+    newBlock->SetTargetEdge(newSuccEdge);
 
-    // This isn't accurate, but it is complex to compute a reasonable number so just assume that we take the
-    // branch 50% of the time.
+    // Set weight for newBlock
     //
-    // TODO: leverage edge likelihood.
-    //
-    if (!curr->KindIs(BBJ_ALWAYS))
+    if (curr->KindIs(BBJ_ALWAYS))
     {
-        newBlock->inheritWeightPercentage(curr, 50);
+        newBlock->inheritWeight(curr);
+    }
+    else
+    {
+        if (curr->hasProfileWeight())
+        {
+            FlowEdge* const currNewEdge = fgGetPredForBlock(newBlock, curr);
+            newBlock->setBBProfileWeight(currNewEdge->getLikelyWeight());
+        }
+        else
+        {
+            // Todo: use likelihood even w/o profile?
+            //
+            newBlock->inheritWeightPercentage(curr, 50);
+        }
     }
 
     // The bbLiveIn and bbLiveOut are both equal to the bbLiveIn of 'succ'
@@ -5446,6 +5482,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
         // Add a new block after bSrc which jumps to 'bDst'
         jmpBlk                  = fgNewBBafter(BBJ_ALWAYS, bSrc, true);
         FlowEdge* const oldEdge = bSrc->GetFalseEdge();
+
         // Access the likelihood of oldEdge before
         // it gets reset by SetTargetEdge below.
         //
@@ -5457,29 +5494,9 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 
         // When adding a new jmpBlk we will set the bbWeight and bbFlags
         //
-        if (fgHaveValidEdgeWeights && fgHaveProfileWeights())
+        if (fgHaveProfileWeights())
         {
-            jmpBlk->bbWeight = (newEdge->edgeWeightMin() + newEdge->edgeWeightMax()) / 2;
-            if (bSrc->bbWeight == BB_ZERO_WEIGHT)
-            {
-                jmpBlk->bbWeight = BB_ZERO_WEIGHT;
-            }
-
-            if (jmpBlk->bbWeight == BB_ZERO_WEIGHT)
-            {
-                jmpBlk->SetFlags(BBF_RUN_RARELY);
-            }
-
-            weight_t weightDiff = (newEdge->edgeWeightMax() - newEdge->edgeWeightMin());
-            weight_t slop       = BasicBlock::GetSlopFraction(bSrc, bDst);
-            //
-            // If the [min/max] values for our edge weight is within the slop factor
-            //  then we will set the BBF_PROF_WEIGHT flag for the block
-            //
-            if (weightDiff <= slop)
-            {
-                jmpBlk->SetFlags(BBF_PROF_WEIGHT);
-            }
+            jmpBlk->setBBProfileWeight(newEdge->getLikelyWeight());
         }
         else
         {
