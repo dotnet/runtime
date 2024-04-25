@@ -5319,7 +5319,6 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         CONTEXT frameContext;
         frameContext.ContextFlags = CONTEXT_FULL;
         pFrameContext = &frameContext;
-
 #endif // TARGET_WINDOWS && TARGET_AMD64
 
         // Find context for the original method
