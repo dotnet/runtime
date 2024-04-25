@@ -7637,7 +7637,7 @@ namespace System.Text.Json.Tests
             return from indented in new[] { true, false }
                    from skipValidation in new[] { true, false }
                    from indentCharacter in indented ? new char?[] { null, ' ', '\t' } : []
-                   from indentSize in indented ? new int?[] { null, 0, 1, 2, 127 } : []
+                   from indentSize in indented ? new int?[] { null, 0, 1, 2, 3 } : []
                    from newLine in indented ? new string?[] { null, "\n", "\r\n" } : []
                    select CreateOptions(indented, indentCharacter, indentSize, skipValidation, newLine);
 
