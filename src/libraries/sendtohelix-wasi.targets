@@ -48,8 +48,8 @@
 
     <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == ''">$(RepoRoot)src\mono\wasi\wasi-sdk\</WASI_SDK_PATH>
     <WasiBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasi', 'build'))</WasiBuildTargetsDir>
-    <WasiSdkDirForHelixPayload>$([MSBuild]::NormalizeDirectory('$(HelixDependenciesStagingPath)', '$(WorkItemPrefix)', 'wasi-sdk'))</WasiSdkDirForHelixPayload>
-    <WasmtimeDirForHelixPayload>$([MSBuild]::NormalizeDirectory('$(HelixDependenciesStagingPath)', '$(WorkItemPrefix)', 'wasmtime'))</WasmtimeDirForHelixPayload>
+    <WasiSdkDirForHelixPayload>$(HelixDependenciesStagingPath)$(WorkItemPrefix)wasi-sdk</WasiSdkDirForHelixPayload>
+    <WasmtimeDirForHelixPayload>$(HelixDependenciesStagingPath)$(WorkItemPrefix)wasmtime</WasmtimeDirForHelixPayload>
 
     <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
     <NeedsWasiSdk Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsWasiSdk>
