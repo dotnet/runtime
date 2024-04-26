@@ -3156,8 +3156,6 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
     }
 #endif
 
-    // RISC-V specific logic for homing the stack part of a split struct
-
     regMaskTP paramRegs = intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn;
     if (compiler->opts.OptimizationDisabled())
     {
