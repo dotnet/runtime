@@ -344,14 +344,14 @@ OBJECTREF DomainAssembly::GetExposedModuleObject()
     {
         REFLECTMODULEBASEREF refClass = NULL;
 
-        // Will be TRUE only if LoaderAllocator managed object was already collected and therefore we should
+        // Will be true only if LoaderAllocator managed object was already collected and therefore we should
         // return NULL
-        BOOL fIsLoaderAllocatorCollected = FALSE;
+        bool fIsLoaderAllocatorCollected = false;
 
         GCPROTECT_BEGIN(refClass);
 
         refClass = (REFLECTMODULEBASEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__MODULE));
-        refClass->SetModule(m_pModule);
+        refClass->SetModule(GetModule());
 
         // Attach the reference to the assembly to keep the LoaderAllocator for this collectible type
         // alive as long as a reference to the module is kept alive.
@@ -360,7 +360,7 @@ OBJECTREF DomainAssembly::GetExposedModuleObject()
             OBJECTREF refAssembly = GetModule()->GetAssembly()->GetExposedObject();
             if ((refAssembly == NULL) && GetModule()->GetAssembly()->IsCollectible())
             {
-                fIsLoaderAllocatorCollected = TRUE;
+                fIsLoaderAllocatorCollected = true;
             }
             refClass->SetAssembly(refAssembly);
         }

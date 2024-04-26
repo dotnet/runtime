@@ -227,6 +227,8 @@ enum NamedIntrinsic : unsigned short
 
     NI_PRIMITIVE_START,
 
+    NI_PRIMITIVE_ConvertToInteger,
+    NI_PRIMITIVE_ConvertToIntegerNative,
     NI_PRIMITIVE_Crc32C,
     NI_PRIMITIVE_LeadingZeroCount,
     NI_PRIMITIVE_Log2,

@@ -338,7 +338,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			[Kept]
 			// https://github.com/dotnet/linker/issues/2638
-			[ExpectedWarning ("IL2026", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", Tool.Trimmer, "")]
 			public static void Test ()
 			{
 				BindingFlags left = BindingFlags.Instance | BindingFlags.Static;

@@ -47,7 +47,7 @@ namespace System.Net.Http.Functional.Tests
         {
             foreach (string method in methods)
             {
-                foreach (Uri serverUri in Configuration.Http.EchoServerList)
+                foreach (Uri serverUri in Configuration.Http.GetEchoServerList())
                 {
                     yield return new object[] { method, serverUri };
                 }
@@ -164,6 +164,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task GetAsync_ServerNeedsAuthAndNoCredential_StatusCodeUnauthorized(Configuration.Http.RemoteServer remoteServer)
         {
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
@@ -275,7 +276,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<(Configuration.Http.RemoteServer remoteServer, Uri uri)> RemoteServersAndHeaderEchoUris()
         {
-            foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.RemoteServers)
+            foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.GetRemoteServers())
             {
                 yield return (remoteServer, remoteServer.EchoUri);
                 yield return (remoteServer, remoteServer.RedirectUriForDestinationUri(
@@ -464,7 +465,7 @@ namespace System.Net.Http.Functional.Tests
         {
             get
             {
-                foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.RemoteServers) // target server
+                foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.GetRemoteServers()) // target server
                     foreach (bool syncCopy in BoolValues) // force the content copy to happen via Read/Write or ReadAsync/WriteAsync
                     {
                         byte[] data = new byte[1234];
@@ -868,7 +869,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> SendAsync_SendSameRequestMultipleTimesDirectlyOnHandler_Success_MemberData()
         {
-            foreach (var server in Configuration.Http.RemoteServers)
+            foreach (var server in Configuration.Http.GetRemoteServers())
             {
                 yield return new object[] { server, "12345678910", 0 };
                 yield return new object[] { server, "12345678910", 5 };
@@ -909,7 +910,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> RemoteServersAndRedirectStatusCodes()
         {
-            foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.RemoteServers)
+            foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.GetRemoteServers())
             {
                 yield return new object[] { remoteServer, 300 };
                 yield return new object[] { remoteServer, 301 };
@@ -1228,7 +1229,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> RemoteServersAndCompressionUris()
         {
-            foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.RemoteServers)
+            foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.GetRemoteServers())
             {
                 yield return new object[] { remoteServer, remoteServer.GZipUri };
 
@@ -1329,6 +1330,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory]
         [MemberData(nameof(Http2Servers))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task SendAsync_RequestVersion20_ResponseVersion20IfHttp2Supported(Uri server)
         {
             // Sync API supported only up to HTTP/1.1
