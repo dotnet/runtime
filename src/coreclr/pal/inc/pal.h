@@ -3373,7 +3373,7 @@ EXTERN_C PALIMPORT inline RETURN_TYPE PALAPI METHOD_DECL        \
    surprises, explicitely mark them as noinline. */             \
 EXTERN_C PALIMPORT inline RETURN_TYPE PALAPI                    \
 __attribute__((target("+lse")))  __attribute__((noinline))      \
-PALAPI Lse_##METHOD_DECL                                        \
+Lse_##METHOD_DECL                                               \
 {                                                               \
     return INTRINSIC_NAME;                                      \
 }                                                               \
