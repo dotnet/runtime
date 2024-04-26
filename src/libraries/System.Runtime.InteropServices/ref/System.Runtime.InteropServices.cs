@@ -362,17 +362,17 @@ namespace System.Runtime.InteropServices.Marshalling
         System.Runtime.InteropServices.Marshalling.VirtualMethodTableInfo System.Runtime.InteropServices.Marshalling.IUnmanagedVirtualMethodTableProvider.GetVirtualMethodTableInfoForKey(System.Type type) { throw null; }
     }
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Exception), System.Runtime.InteropServices.Marshalling.MarshalMode.UnmanagedToManagedOut, typeof(System.Runtime.InteropServices.Marshalling.ExceptionAsDefaultMarshaller<>))]
-    public static partial class ExceptionAsDefaultMarshaller<T> where T : struct
+    public static partial class ExceptionAsDefaultMarshaller<T> where T : unmanaged
     {
         public static T ConvertToUnmanaged(System.Exception e) { throw null; }
     }
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Exception), System.Runtime.InteropServices.Marshalling.MarshalMode.UnmanagedToManagedOut, typeof(System.Runtime.InteropServices.Marshalling.ExceptionAsHResultMarshaller<>))]
-    public static partial class ExceptionAsHResultMarshaller<T> where T : struct
+    public static partial class ExceptionAsHResultMarshaller<T> where T : unmanaged, System.Numerics.INumber<T>
     {
         public static T ConvertToUnmanaged(System.Exception e) { throw null; }
     }
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Exception), System.Runtime.InteropServices.Marshalling.MarshalMode.UnmanagedToManagedOut, typeof(System.Runtime.InteropServices.Marshalling.ExceptionAsNaNMarshaller<>))]
-    public static partial class ExceptionAsNaNMarshaller<T> where T : struct
+    public static partial class ExceptionAsNaNMarshaller<T> where T : unmanaged, System.Numerics.IFloatingPointIeee754<T>
     {
         public static T ConvertToUnmanaged(System.Exception e) { throw null; }
     }
