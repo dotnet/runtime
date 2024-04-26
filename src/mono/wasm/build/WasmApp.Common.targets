@@ -44,6 +44,8 @@
 
       - $(EmccLinkOptimizationFlag)         - Optimization flag to use for the link step
       - $(EmccCompileOptimizationFlag)      - Optimization flag to use for compiling native files
+      - $(WasmBitcodeCompileOptimizationFlag)
+                                            - Optimization flag to use for compiling bitcode files
 
       - $(EmccFlags)                        - Emcc flags used for both compiling native files, and linking
       - $(EmccExtraLDFlags)                 - Extra emcc flags for linking
