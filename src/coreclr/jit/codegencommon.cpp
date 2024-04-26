@@ -4125,7 +4125,10 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 /*-----------------------------------------------------------------------------
  * Move the incoming segment to the local stack frame
  */
-void CodeGen::genHomeStackSegment(unsigned lclNum, const ABIPassingSegment& seg, regNumber initReg, bool* initRegStillZeroed)
+void CodeGen::genHomeStackSegment(unsigned                 lclNum,
+                                  const ABIPassingSegment& seg,
+                                  regNumber                initReg,
+                                  bool*                    initRegStillZeroed)
 {
     var_types loadType = TYP_UNDEF;
     switch (seg.Size)
@@ -4197,7 +4200,7 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack)
 
         for (unsigned i = 0; i < abiInfo.NumSegments; i++)
         {
-            const ABIPassingSegment& seg = abiInfo.Segments[i];           
+            const ABIPassingSegment& seg = abiInfo.Segments[i];
             if (seg.IsPassedOnStack() != handleStack)
             {
                 continue;
@@ -4256,7 +4259,7 @@ void CodeGen::genHomeStackPartOfSplitParameter(regNumber initReg, bool* initRegS
 
         genHomeStackSegment(lclNum, seg, initReg, initRegStillZeroed);
 
-        for (lclNum+=1; lclNum < compiler->info.compArgsCount; lclNum++)
+        for (lclNum += 1; lclNum < compiler->info.compArgsCount; lclNum++)
         {
             assert(!compiler->lvaGetDesc(lclNum)->lvIsSplit); // There should be only one split parameter
         }
