@@ -38,6 +38,12 @@ namespace Mono.Linker.Steps
 			_preservedMembers = new ();
 		}
 
+		protected void LogDuplicatePreserve(string memberName, XPathNavigator duplicatePosition)
+		{
+			var origin = GetMessageOriginForPosition (duplicatePosition);
+			_context.LogMessage (MessageContainer.CreateInfoMessage (origin, $"Duplicate preserve of '{memberName}'"));
+		}
+
 		public void Mark ()
 		{
 			bool stripDescriptors = _context.IsOptimizationEnabled (CodeOptimizations.RemoveDescriptors, _resource?.Assembly);
@@ -153,7 +159,7 @@ namespace Mono.Linker.Steps
 		protected override void ProcessField (TypeDefinition type, FieldDefinition field, XPathNavigator nav)
 		{
 			if (!_preservedMembers.Add (field))
-				LogWarning (nav, DiagnosticId.XmlDuplicatePreserveMember, field.FullName);
+				LogDuplicatePreserve (field.FullName, nav);
 
 			_context.Annotations.Mark (field, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition (nav));
 		}
@@ -161,7 +167,7 @@ namespace Mono.Linker.Steps
 		protected override void ProcessMethod (TypeDefinition type, MethodDefinition method, XPathNavigator nav, object? customData)
 		{
 			if (!_preservedMembers.Add (method))
-				LogWarning (nav, DiagnosticId.XmlDuplicatePreserveMember, method.GetDisplayName ());
+				LogDuplicatePreserve (method.GetDisplayName (), nav);
 
 			_context.Annotations.MarkIndirectlyCalledMethod (method);
 			_context.Annotations.SetAction (method, MethodAction.Parse);
@@ -218,7 +224,7 @@ namespace Mono.Linker.Steps
 		protected override void ProcessEvent (TypeDefinition type, EventDefinition @event, XPathNavigator nav, object? customData)
 		{
 			if (!_preservedMembers.Add (@event))
-				LogWarning (nav, DiagnosticId.XmlDuplicatePreserveMember, @event.FullName);
+				LogDuplicatePreserve(@event.FullName, nav);
 
 			ProcessMethod (type, @event.AddMethod, nav, customData);
 			ProcessMethod (type, @event.RemoveMethod, nav, customData);
@@ -230,7 +236,7 @@ namespace Mono.Linker.Steps
 			string[] accessors = fromSignature ? GetAccessors (nav) : _accessorsAll;
 
 			if (!_preservedMembers.Add (property))
-				LogWarning (nav, DiagnosticId.XmlDuplicatePreserveMember, property.FullName);
+				LogDuplicatePreserve(property.FullName, nav);
 
 			if (Array.IndexOf (accessors, "all") >= 0) {
 				ProcessMethodIfNotNull (type, property.GetMethod, nav, customData);
