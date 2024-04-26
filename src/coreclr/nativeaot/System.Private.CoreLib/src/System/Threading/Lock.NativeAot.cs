@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 
 namespace System.Threading
@@ -194,8 +195,12 @@ namespace System.Threading
             {
                 if (oldStage == StaticsInitializationStage.NotStarted)
                 {
-                    // If the stage is PartiallyComplete, these will have already been initialized
-                    s_isSingleProcessor = Environment.IsSingleProcessor;
+                    // If the stage is PartiallyComplete, these will have already been initialized.
+                    //
+                    // Not using Environment.ProcessorCount here as it involves class construction, and if that property is
+                    // already being constructed earlier in the stack on the same thread, it would return the default value
+                    // here. Initialize s_isSingleProcessor first, as it may be used by other initialization afterwards.
+                    s_isSingleProcessor = RuntimeImports.RhGetProcessCpuCount() == 1;
                     s_maxSpinCount = DetermineMaxSpinCount();
                     s_minSpinCount = DetermineMinSpinCount();
                 }
