@@ -4185,9 +4185,13 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack)
                     case 2:
                         loadType = TYP_USHORT;
                         break;
+                    case 3:
                     case 4:
                         loadType = TYP_INT;
                         break;
+                    case 5:
+                    case 6:
+                    case 7:
                     case 8:
                         loadType = TYP_LONG;
                         break;
