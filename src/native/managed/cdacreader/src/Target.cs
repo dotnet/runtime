@@ -4,6 +4,8 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
@@ -15,7 +17,7 @@ public struct TargetPointer
     public TargetPointer(ulong value) => Value = value;
 }
 
-internal sealed unsafe class Target
+public sealed unsafe class Target
 {
     private const int StackAllocByteThreshold = 1024;
 
@@ -29,7 +31,7 @@ internal sealed unsafe class Target
     private readonly Reader _reader;
 
     private readonly IReadOnlyDictionary<string, int> _contracts = new Dictionary<string, int>();
-    private readonly TargetPointer[] _pointerData = [];
+    private readonly IReadOnlyDictionary<string, (ulong Value, string? Type)> _globals = new Dictionary<string, (ulong, string?)>();
 
     public static bool TryCreate(ulong contractDescriptor, delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget, void* readContext, out Target? target)
     {
@@ -49,11 +51,30 @@ internal sealed unsafe class Target
         _config = config;
         _reader = reader;
 
-        // TODO: [cdac] Read globals and types
+        // TODO: [cdac] Read types
         // note: we will probably want to store the globals and types into a more usable form
         _contracts = descriptor.Contracts ?? [];
 
-        _pointerData = pointerData;
+        // Read globals and map indirect values to pointer data
+        if (descriptor.Globals is not null)
+        {
+            Dictionary<string, (ulong Value, string? Type)> globals = [];
+            foreach ((string name, ContractDescriptorParser.GlobalDescriptor global) in descriptor.Globals)
+            {
+                ulong value = global.Value;
+                if (global.Indirect)
+                {
+                    if (value >= (ulong)pointerData.Length)
+                        throw new InvalidOperationException($"Invalid pointer data index {value}.");
+
+                    value = pointerData[value].Value;
+                }
+
+                globals[name] = (value, global.Type);
+            }
+
+            _globals = globals;
+        }
     }
 
     // See docs/design/datacontracts/contract-descriptor.md
@@ -81,7 +102,7 @@ internal sealed unsafe class Target
             return false;
 
         // Flags - uint32_t
-        if (!TryReadUInt32(address, isLittleEndian, reader, out uint flags))
+        if (!TryRead(address, isLittleEndian, reader, out uint flags))
             return false;
 
         address += sizeof(uint);
@@ -92,7 +113,7 @@ internal sealed unsafe class Target
         config = new Configuration { IsLittleEndian = isLittleEndian, PointerSize = pointerSize };
 
         // Descriptor size - uint32_t
-        if (!TryReadUInt32(address, config.IsLittleEndian, reader, out uint descriptorSize))
+        if (!TryRead(address, config.IsLittleEndian, reader, out uint descriptorSize))
             return false;
 
         address += sizeof(uint);
@@ -104,7 +125,7 @@ internal sealed unsafe class Target
         address += (uint)pointerSize;
 
         // Pointer data count - uint32_t
-        if (!TryReadUInt32(address, config.IsLittleEndian, reader, out uint pointerDataCount))
+        if (!TryRead(address, config.IsLittleEndian, reader, out uint pointerDataCount))
             return false;
 
         address += sizeof(uint);
@@ -138,30 +159,33 @@ internal sealed unsafe class Target
         return true;
     }
 
-    public uint ReadUInt32(ulong address)
+    public T Read<T>(ulong address, out T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
-        if (!TryReadUInt32(address, out uint value))
-            throw new InvalidOperationException($"Failed to read uint32 at 0x{address:x8}.");
+        if (!TryRead(address, out value))
+            throw new InvalidOperationException($"Failed to read {typeof(T)} at 0x{address:x8}.");
 
         return value;
     }
 
-    public bool TryReadUInt32(ulong address, out uint value)
-        => TryReadUInt32(address, _config.IsLittleEndian, _reader, out value);
+    public bool TryRead<T>(ulong address, out T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+        => TryRead(address, _config.IsLittleEndian, _reader, out value);
 
-    private static bool TryReadUInt32(ulong address, bool isLittleEndian, Reader reader, out uint value)
+    private static bool TryRead<T>(ulong address, bool isLittleEndian, Reader reader, out T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
-        value = 0;
-
-        Span<byte> buffer = stackalloc byte[sizeof(uint)];
+        value = default;
+        Span<byte> buffer = stackalloc byte[sizeof(T)];
         if (reader.ReadFromTarget(address, buffer) < 0)
             return false;
 
-        value = isLittleEndian
-            ? BinaryPrimitives.ReadUInt32LittleEndian(buffer)
-            : BinaryPrimitives.ReadUInt32BigEndian(buffer);
+        return isLittleEndian
+            ? T.TryReadLittleEndian(buffer, !IsSigned<T>(), out value)
+            : T.TryReadBigEndian(buffer, !IsSigned<T>(), out value);
+    }
 
-        return true;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool IsSigned<T>() where T : struct, INumberBase<T>, IMinMaxValue<T>
+    {
+        return T.IsNegative(T.MinValue);
     }
 
     public TargetPointer ReadPointer(ulong address)
@@ -183,21 +207,79 @@ internal sealed unsafe class Target
         if (reader.ReadFromTarget(address, buffer) < 0)
             return false;
 
-        if (config.PointerSize == sizeof(uint))
+        if (config.PointerSize == sizeof(uint)
+            && TryRead(address, config.IsLittleEndian, reader, out uint value32))
         {
-            pointer = new TargetPointer(
-                config.IsLittleEndian
-                    ? BinaryPrimitives.ReadUInt32LittleEndian(buffer)
-                    : BinaryPrimitives.ReadUInt32BigEndian(buffer));
+            pointer = new TargetPointer(value32);
+            return true;
         }
-        else if (config.PointerSize == sizeof(ulong))
+        else if (config.PointerSize == sizeof(ulong)
+            && TryRead(address, config.IsLittleEndian, reader, out ulong value64))
         {
-            pointer = new TargetPointer(
-                config.IsLittleEndian
-                    ? BinaryPrimitives.ReadUInt64LittleEndian(buffer)
-                    : BinaryPrimitives.ReadUInt64BigEndian(buffer));
+            pointer = new TargetPointer(value64);
+            return true;
         }
 
+        return false;
+    }
+
+    public T ReadGlobal<T>(string name) where T : struct, INumber<T>
+    {
+        if (!TryReadGlobal(name, out T value))
+            throw new InvalidOperationException($"Failed to read global {typeof(T)} '{name}'.");
+
+        return value;
+    }
+
+    public bool TryReadGlobal<T>(string name, out T value) where T : struct, INumber<T>, INumberBase<T>
+    {
+        value = default;
+        if (!_globals.TryGetValue(name, out (ulong Value, string? Type) global))
+            return false;
+
+        // TODO: [cdac] Move type validation out of the read such that it does not have to happen for every read
+        if (global.Type is not null)
+        {
+            string? expectedType = Type.GetTypeCode(typeof(T)) switch
+            {
+                TypeCode.SByte => "int8",
+                TypeCode.Byte => "uint8",
+                TypeCode.Int16 => "int16",
+                TypeCode.UInt16 => "uint16",
+                TypeCode.Int32 => "int32",
+                TypeCode.UInt32 => "uint32",
+                TypeCode.Int64 => "int64",
+                TypeCode.UInt64 => "uint64",
+                _ => null,
+            };
+            if (expectedType is null || global.Type != expectedType)
+            {
+                return false;
+            }
+        }
+
+        value = T.CreateChecked(global.Value);
+        return true;
+    }
+
+    public TargetPointer ReadGlobalPointer(string name)
+    {
+        if (!TryReadGlobalPointer(name, out TargetPointer pointer))
+            throw new InvalidOperationException($"Failed to read global pointer '{name}'.");
+
+        return pointer;
+    }
+
+    public bool TryReadGlobalPointer(string name, out TargetPointer pointer)
+    {
+        pointer = TargetPointer.Null;
+        if (!_globals.TryGetValue(name, out (ulong Value, string? Type) global))
+            return false;
+
+        if (global.Type is not null && Array.IndexOf(["pointer", "nint", "nuint"], global.Type) == -1)
+            return false;
+
+        pointer = new TargetPointer(global.Value);
         return true;
     }
 
