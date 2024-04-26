@@ -95,9 +95,13 @@ export function mono_exit (exit_code: number, reason?: any): void {
 
     // force stack property to be generated before we shut down managed code, or create current stack if it doesn't exist
     const stack = "" + (reason.stack || (new Error().stack));
-    Object.defineProperty(reason, "stack", {
-        get: () => stack
-    });
+    try {
+        Object.defineProperty(reason, "stack", {
+            get: () => stack
+        });
+    } catch (e) {
+        // ignore
+    }
 
     // don't report this error twice
     const alreadySilent = !!reason.silent;
@@ -122,7 +126,7 @@ export function mono_exit (exit_code: number, reason?: any): void {
                 }
             }
         } catch (err) {
-            mono_log_warn("mono_exit failed", err);
+            mono_log_warn("mono_exit A failed", err);
             // don't propagate any failures
         }
 
@@ -132,7 +136,7 @@ export function mono_exit (exit_code: number, reason?: any): void {
                 appendElementOnExit(exit_code);
             }
         } catch (err) {
-            mono_log_warn("mono_exit failed", err);
+            mono_log_warn("mono_exit B failed", err);
             // don't propagate any failures
         }
 
@@ -177,7 +181,7 @@ function set_exit_code_and_quit_now (exit_code: number, reason?: any): void {
             runtimeHelpers.nativeExit(exit_code);
         } catch (error: any) {
             if (runtimeHelpers.ExitStatus && !(error instanceof runtimeHelpers.ExitStatus)) {
-                mono_log_warn("mono_wasm_exit failed: " + error.toString());
+                mono_log_warn("set_exit_code_and_quit_now failed: " + error.toString());
             }
         }
     }

@@ -2163,6 +2163,7 @@ namespace System
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("b")]
         public static System.Delegate? Combine(System.Delegate? a, System.Delegate? b) { throw null; }
         public static System.Delegate? Combine(params System.Delegate?[]? delegates) { throw null; }
+        public static System.Delegate? Combine(params System.ReadOnlySpan<System.Delegate?> delegates) { throw null; }
         protected virtual System.Delegate CombineImpl(System.Delegate? d) { throw null; }
         public static System.Delegate CreateDelegate(System.Type type, object? firstArgument, System.Reflection.MethodInfo method) { throw null; }
         public static System.Delegate? CreateDelegate(System.Type type, object? firstArgument, System.Reflection.MethodInfo method, bool throwOnBindFailure) { throw null; }
@@ -5242,6 +5243,7 @@ namespace System
         public static string Concat(object? arg0, object? arg1) { throw null; }
         public static string Concat(object? arg0, object? arg1, object? arg2) { throw null; }
         public static string Concat(params object?[] args) { throw null; }
+        public static string Concat(params System.ReadOnlySpan<object?> args) { throw null; }
         public static string Concat(System.ReadOnlySpan<char> str0, System.ReadOnlySpan<char> str1) { throw null; }
         public static string Concat(System.ReadOnlySpan<char> str0, System.ReadOnlySpan<char> str1, System.ReadOnlySpan<char> str2) { throw null; }
         public static string Concat(System.ReadOnlySpan<char> str0, System.ReadOnlySpan<char> str1, System.ReadOnlySpan<char> str2, System.ReadOnlySpan<char> str3) { throw null; }
@@ -5249,6 +5251,7 @@ namespace System
         public static string Concat(string? str0, string? str1, string? str2) { throw null; }
         public static string Concat(string? str0, string? str1, string? str2, string? str3) { throw null; }
         public static string Concat(params string?[] values) { throw null; }
+        public static string Concat(params System.ReadOnlySpan<string?> values) { throw null; }
         public static string Concat<T>(System.Collections.Generic.IEnumerable<T> values) { throw null; }
         public bool Contains(char value) { throw null; }
         public bool Contains(char value, System.StringComparison comparisonType) { throw null; }
@@ -5276,12 +5279,14 @@ namespace System
         public static string Format(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { throw null; }
         public static string Format(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { throw null; }
         public static string Format(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] args) { throw null; }
+        public static string Format(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> args) { throw null; }
         public static string Format(System.IFormatProvider? provider, System.Text.CompositeFormat format, params object?[] args) { throw null; }
-        public static string Format(System.IFormatProvider? provider, System.Text.CompositeFormat format, System.ReadOnlySpan<object?> args) { throw null; }
+        public static string Format(System.IFormatProvider? provider, System.Text.CompositeFormat format, params System.ReadOnlySpan<object?> args) { throw null; }
         public static string Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0) { throw null; }
         public static string Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { throw null; }
         public static string Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { throw null; }
         public static string Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] args) { throw null; }
+        public static string Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> args) { throw null; }
         public static string Format<TArg0>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0) { throw null; }
         public static string Format<TArg0, TArg1>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0, TArg1 arg1) { throw null; }
         public static string Format<TArg0, TArg1, TArg2>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0, TArg1 arg1, TArg2 arg2) { throw null; }
@@ -5314,11 +5319,15 @@ namespace System
         public static bool IsNullOrEmpty([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(false)] string? value) { throw null; }
         public static bool IsNullOrWhiteSpace([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(false)] string? value) { throw null; }
         public static string Join(char separator, params object?[] values) { throw null; }
+        public static string Join(char separator, params System.ReadOnlySpan<object?> values) { throw null; }
         public static string Join(char separator, params string?[] value) { throw null; }
+        public static string Join(char separator, params System.ReadOnlySpan<string?> value) { throw null; }
         public static string Join(char separator, string?[] value, int startIndex, int count) { throw null; }
         public static string Join(string? separator, System.Collections.Generic.IEnumerable<string?> values) { throw null; }
         public static string Join(string? separator, params object?[] values) { throw null; }
+        public static string Join(string? separator, params System.ReadOnlySpan<object?> values) { throw null; }
         public static string Join(string? separator, params string?[] value) { throw null; }
+        public static string Join(string? separator, params System.ReadOnlySpan<string?> value) { throw null; }
         public static string Join(string? separator, string?[] value, int startIndex, int count) { throw null; }
         public static string Join<T>(char separator, System.Collections.Generic.IEnumerable<T> values) { throw null; }
         public static string Join<T>(string? separator, System.Collections.Generic.IEnumerable<T> values) { throw null; }
@@ -5354,6 +5363,7 @@ namespace System
         public string[] Split(char separator, int count, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public string[] Split(char separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public string[] Split(params char[]? separator) { throw null; }
+        public string[] Split(params System.ReadOnlySpan<char> separator) { throw null; }
         public string[] Split(char[]? separator, int count) { throw null; }
         public string[] Split(char[]? separator, int count, System.StringSplitOptions options) { throw null; }
         public string[] Split(char[]? separator, System.StringSplitOptions options) { throw null; }
@@ -5401,12 +5411,15 @@ namespace System
         public string Trim() { throw null; }
         public string Trim(char trimChar) { throw null; }
         public string Trim(params char[]? trimChars) { throw null; }
+        public string Trim(params System.ReadOnlySpan<char> trimChars) { throw null; }
         public string TrimEnd() { throw null; }
         public string TrimEnd(char trimChar) { throw null; }
         public string TrimEnd(params char[]? trimChars) { throw null; }
+        public string TrimEnd(params System.ReadOnlySpan<char> trimChars) { throw null; }
         public string TrimStart() { throw null; }
         public string TrimStart(char trimChar) { throw null; }
         public string TrimStart(params char[]? trimChars) { throw null; }
+        public string TrimStart(params System.ReadOnlySpan<char> trimChars) { throw null; }
         public bool TryCopyTo(System.Span<char> destination) { throw null; }
     }
     public abstract partial class StringComparer : System.Collections.Generic.IComparer<string?>, System.Collections.Generic.IEqualityComparer<string?>, System.Collections.IComparer, System.Collections.IEqualityComparer
@@ -7527,6 +7540,7 @@ namespace System.CodeDom.Compiler
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0) { }
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arg) { }
+        public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> arg) { }
         public override System.Threading.Tasks.Task WriteAsync(char value) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(char[] buffer, int index, int count) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(System.ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
@@ -7546,6 +7560,7 @@ namespace System.CodeDom.Compiler
         public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0) { }
         public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
         public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arg) { }
+        public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> arg) { }
         [System.CLSCompliantAttribute(false)]
         public override void WriteLine(uint value) { }
         public override System.Threading.Tasks.Task WriteLineAsync() { throw null; }
@@ -8047,7 +8062,6 @@ namespace System.ComponentModel
         public DefaultValueAttribute(sbyte value) { }
         public DefaultValueAttribute(float value) { }
         public DefaultValueAttribute(string? value) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         public DefaultValueAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type type, string? value) { }
         [System.CLSCompliantAttribute(false)]
         public DefaultValueAttribute(ushort value) { }
@@ -10113,6 +10127,7 @@ namespace System.IO
         public static string Combine(string path1, string path2, string path3) { throw null; }
         public static string Combine(string path1, string path2, string path3, string path4) { throw null; }
         public static string Combine(params string[] paths) { throw null; }
+        public static string Combine(params System.ReadOnlySpan<string> paths) { throw null; }
         public static bool EndsInDirectorySeparator(System.ReadOnlySpan<char> path) { throw null; }
         public static bool EndsInDirectorySeparator([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? path) { throw null; }
         public static bool Exists([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? path) { throw null; }
@@ -10150,6 +10165,7 @@ namespace System.IO
         public static string Join(string? path1, string? path2, string? path3) { throw null; }
         public static string Join(string? path1, string? path2, string? path3, string? path4) { throw null; }
         public static string Join(params string?[] paths) { throw null; }
+        public static string Join(params System.ReadOnlySpan<string?> paths) { throw null; }
         public static System.ReadOnlySpan<char> TrimEndingDirectorySeparator(System.ReadOnlySpan<char> path) { throw null; }
         public static string TrimEndingDirectorySeparator(string path) { throw null; }
         public static bool TryJoin(System.ReadOnlySpan<char> path1, System.ReadOnlySpan<char> path2, System.ReadOnlySpan<char> path3, System.Span<char> destination, out int charsWritten) { throw null; }
@@ -10316,6 +10332,7 @@ namespace System.IO
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { }
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arg) { }
+        public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> arg) { }
         public override System.Threading.Tasks.Task WriteAsync(char value) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(char[] buffer, int index, int count) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(System.ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
@@ -10326,6 +10343,7 @@ namespace System.IO
         public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
         public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { }
         public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arg) { }
+        public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> arg) { }
         public override System.Threading.Tasks.Task WriteLineAsync() { throw null; }
         public override System.Threading.Tasks.Task WriteLineAsync(char value) { throw null; }
         public override System.Threading.Tasks.Task WriteLineAsync(char[] buffer, int index, int count) { throw null; }
@@ -10443,6 +10461,7 @@ namespace System.IO
         public virtual void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
         public virtual void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { }
         public virtual void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arg) { }
+        public virtual void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> arg) { }
         public virtual void Write(System.Text.StringBuilder? value) { }
         [System.CLSCompliantAttribute(false)]
         public virtual void Write(uint value) { }
@@ -10471,6 +10490,7 @@ namespace System.IO
         public virtual void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
         public virtual void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { }
         public virtual void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arg) { }
+        public virtual void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> arg) { }
         public virtual void WriteLine(System.Text.StringBuilder? value) { }
         [System.CLSCompliantAttribute(false)]
         public virtual void WriteLine(uint value) { }
@@ -13300,7 +13320,7 @@ namespace System.Runtime.CompilerServices
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("o")]
         public static T? As<T>(object? o) where T : class? { throw null; }
         public static ref TTo As<TFrom, TTo>(ref TFrom source) { throw null; }
-        public static TTo BitCast<TFrom, TTo>(TFrom source) where TFrom : struct where TTo : struct { throw null; }
+        public static TTo BitCast<TFrom, TTo>(TFrom source) { throw null; }
         public static System.IntPtr ByteOffset<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T origin, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T target) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static void CopyBlock(ref byte destination, ref readonly byte source, uint byteCount) { }
@@ -14916,19 +14936,25 @@ namespace System.Text
         public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { throw null; }
         public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { throw null; }
         public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] args) { throw null; }
+        public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> args) { throw null; }
         public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, System.Text.CompositeFormat format, params object?[] args) { throw null; }
-        public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, System.Text.CompositeFormat format, System.ReadOnlySpan<object?> args) { throw null; }
+        public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, System.Text.CompositeFormat format, params System.ReadOnlySpan<object?> args) { throw null; }
         public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0) { throw null; }
         public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { throw null; }
         public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { throw null; }
         public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] args) { throw null; }
+        public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> args) { throw null; }
         public System.Text.StringBuilder AppendFormat<TArg0>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0) { throw null; }
         public System.Text.StringBuilder AppendFormat<TArg0, TArg1>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0, TArg1 arg1) { throw null; }
         public System.Text.StringBuilder AppendFormat<TArg0, TArg1, TArg2>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0, TArg1 arg1, TArg2 arg2) { throw null; }
         public System.Text.StringBuilder AppendJoin(char separator, params object?[] values) { throw null; }
         public System.Text.StringBuilder AppendJoin(char separator, params string?[] values) { throw null; }
+        public System.Text.StringBuilder AppendJoin(char separator, params System.ReadOnlySpan<object?> values) { throw null; }
+        public System.Text.StringBuilder AppendJoin(char separator, params System.ReadOnlySpan<string?> values) { throw null; }
         public System.Text.StringBuilder AppendJoin(string? separator, params object?[] values) { throw null; }
         public System.Text.StringBuilder AppendJoin(string? separator, params string?[] values) { throw null; }
+        public System.Text.StringBuilder AppendJoin(string? separator, params System.ReadOnlySpan<object?> values) { throw null; }
+        public System.Text.StringBuilder AppendJoin(string? separator, params System.ReadOnlySpan<string?> values) { throw null; }
         public System.Text.StringBuilder AppendJoin<T>(char separator, System.Collections.Generic.IEnumerable<T> values) { throw null; }
         public System.Text.StringBuilder AppendJoin<T>(string? separator, System.Collections.Generic.IEnumerable<T> values) { throw null; }
         public System.Text.StringBuilder AppendLine() { throw null; }
@@ -15104,6 +15130,7 @@ namespace System.Threading
         public System.Threading.Tasks.Task CancelAsync() { throw null; }
         public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(System.Threading.CancellationToken token) { throw null; }
         public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(System.Threading.CancellationToken token1, System.Threading.CancellationToken token2) { throw null; }
+        public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(params System.ReadOnlySpan<System.Threading.CancellationToken> tokens) { throw null; }
         public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(params System.Threading.CancellationToken[] tokens) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
@@ -15308,6 +15335,8 @@ namespace System.Threading.Tasks
         public bool Wait(System.TimeSpan timeout) { throw null; }
         public bool Wait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public static void WaitAll(params System.ReadOnlySpan<System.Threading.Tasks.Task> tasks) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static void WaitAll(params System.Threading.Tasks.Task[] tasks) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static bool WaitAll(System.Threading.Tasks.Task[] tasks, int millisecondsTimeout) { throw null; }
@@ -15328,14 +15357,18 @@ namespace System.Threading.Tasks
         public System.Threading.Tasks.Task WaitAsync(System.TimeSpan timeout, System.TimeProvider timeProvider) { throw null; }
         public System.Threading.Tasks.Task WaitAsync(System.TimeSpan timeout, System.TimeProvider timeProvider, System.Threading.CancellationToken cancellationToken) { throw null; }
         public static System.Threading.Tasks.Task WhenAll(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task> tasks) { throw null; }
+        public static System.Threading.Tasks.Task WhenAll(params System.ReadOnlySpan<System.Threading.Tasks.Task> tasks) { throw null; }
         public static System.Threading.Tasks.Task WhenAll(params System.Threading.Tasks.Task[] tasks) { throw null; }
         public static System.Threading.Tasks.Task<TResult[]> WhenAll<TResult>(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
+        public static System.Threading.Tasks.Task<TResult[]> WhenAll<TResult>(params System.ReadOnlySpan<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
         public static System.Threading.Tasks.Task<TResult[]> WhenAll<TResult>(params System.Threading.Tasks.Task<TResult>[] tasks) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task> WhenAny(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task> tasks) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task> WhenAny(System.Threading.Tasks.Task task1, System.Threading.Tasks.Task task2) { throw null; }
+        public static System.Threading.Tasks.Task<System.Threading.Tasks.Task> WhenAny(params System.ReadOnlySpan<System.Threading.Tasks.Task> tasks) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task> WhenAny(params System.Threading.Tasks.Task[] tasks) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(System.Threading.Tasks.Task<TResult> task1, System.Threading.Tasks.Task<TResult> task2) { throw null; }
+        public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(params System.ReadOnlySpan<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(params System.Threading.Tasks.Task<TResult>[] tasks) { throw null; }
         public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task> WhenEach(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task> tasks) { throw null; }
         public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task> WhenEach(params System.Threading.Tasks.Task[] tasks) { throw null; }
