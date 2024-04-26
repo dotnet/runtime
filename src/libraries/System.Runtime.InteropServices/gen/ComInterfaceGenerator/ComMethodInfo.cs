@@ -124,11 +124,8 @@ namespace Microsoft.Interop
             {
                 attributeInfos.Add(AttributeInfo.From(attr));
             }
-            var shadowsBaseMethod = false;
-            if (comMethodDeclaringSyntax.Modifiers.Any(SyntaxKind.NewKeyword))
-            {
-                shadowsBaseMethod = true;
-            }
+
+            bool shadowsBaseMethod = comMethodDeclaringSyntax.Modifiers.Any(SyntaxKind.NewKeyword));
             var comMethodInfo = new ComMethodInfo(comMethodDeclaringSyntax, method.Name, attributeInfos.MoveToImmutable().ToSequenceEqual(), shadowsBaseMethod);
             return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From((comMethodInfo, method));
         }
