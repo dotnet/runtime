@@ -843,7 +843,7 @@ template<typename T>
 class SimpleListNode
 {
 public:
-    SimpleListNode<T>(const T& _t)
+    SimpleListNode(const T& _t)
     {
         data = _t;
         next = 0;
@@ -859,7 +859,7 @@ class SimpleList
 public:
     typedef SimpleListNode<T> NodeType;
 
-    SimpleList<T>()
+    SimpleList()
     {
         head = NULL;
     }
