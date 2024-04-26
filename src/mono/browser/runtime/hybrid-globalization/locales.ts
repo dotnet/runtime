@@ -37,12 +37,12 @@ export function mono_wasm_get_locale_info (culture: number, cultureLength: numbe
             const language = localeParts.join("-");
             languageName = new Intl.DisplayNames([cultureName], { type: "language" }).of(language);
         } catch (error) {
-            if (error instanceof RangeError && error.message === "invalid_argument") {
+            if (error instanceof RangeError) {
                 // if it failed from this reason then cultureName is in a form "language-script", without region
                 try {
                     languageName = new Intl.DisplayNames([cultureName], { type: "language" }).of(localeName);
                 } catch (error) {
-                    if (error instanceof RangeError && error.message === "invalid_argument" && localeNameOriginal) {
+                    if (error instanceof RangeError && localeNameOriginal) {
                         // handle non-standard or malformed locales by forwarding the locale code, e.g. "xx-u-xx"
                         stringToUTF16(dst, dst + 2 * localeNameOriginal.length, localeNameOriginal);
                         setI32(dstLength, localeNameOriginal.length);
@@ -113,8 +113,8 @@ function getFirstDayOfWeek (locale: string) {
     if (saturdayLocales.includes(locale)) {
         return 6;
     }
-    const sundayLanguages = ["zh", "th", "pt", "mr", "ml", "ko", "kn", "ja", "id", "hi", "he", "gu", "fil", "bn", "am", "ar"];
-    const sundayLocales = ["ta-SG", "ta-IN", "sw-KE", "ms-SG", "fr-CA", "es-MX", "en-US", "en-ZW", "en-ZA", "en-WS", "en-VI", "en-UM", "en-TT", "en-SG", "en-PR", "en-PK", "en-PH", "en-MT", "en-MO", "en-MH", "en-KE", "en-JM", "en-IN", "en-IL", "en-HK", "en-GU", "en-DM", "en-CA", "en-BZ", "en-BW", "en-BS", "en-AU", "en-AS", "en-AG"];
+    const sundayLanguages = ["th", "pt", "mr", "ml", "ko", "kn", "ja", "id", "hi", "he", "gu", "fil", "bn", "am", "ar", "te"];
+    const sundayLocales = ["ta-SG", "ta-IN", "sw-KE", "ms-SG", "fr-CA", "es-MX", "en-US", "en-ZW", "en-ZA", "en-WS", "en-VI", "en-UM", "en-TT", "en-SG", "en-PR", "en-PK", "en-PH", "en-MT", "en-MO", "en-MH", "en-KE", "en-JM", "en-IN", "en-IL", "en-HK", "en-GU", "en-DM", "en-CA", "en-BZ", "en-BW", "en-BS", "en-AS", "en-AG", "zh-Hans-HK", "zh-SG", "zh-HK", "zh-TW"]; // "en-AU" is Monday in chrome, so firefox should be in line
     const localeLang = locale.split("-")[0];
     if (sundayLanguages.includes(localeLang) || sundayLocales.includes(locale)) {
         return 0;
@@ -134,8 +134,8 @@ function getFirstWeekOfYear (locale: string) {
     }
     // Firefox does not support it rn but we can make a temporary workaround for it,
     // that should be removed when it starts being supported:
-    const firstFourDayWeekLocales = ["pt-PT", "fr-CH", "fr-FR", "fr-BE", "es-ES", "en-SE", "en-NL", "en-JE", "en-IM", "en-IE", "en-GI", "en-GG", "en-GB", "en-FJ", "en-FI", "en-DK", "en-DE", "en-CH", "en-BE", "en-AT", "el-GR"];
-    const firstFourDayWeekLanguages = ["sv", "sk", "ru", "pl", "nl", "no", "lt", "it", "hu", "fi", "et", "de", "da", "cs", "ca", "bg"];
+    const firstFourDayWeekLocales = ["pt-PT", "fr-CH", "fr-FR", "fr-BE", "es-ES", "en-SE", "en-NL", "en-JE", "en-IM", "en-IE", "en-GI", "en-GG", "en-GB", "en-FJ", "en-FI", "en-DK", "en-DE", "en-CH", "en-BE", "en-AT", "el-GR", "nl-BE", "nl-NL"];
+    const firstFourDayWeekLanguages = ["sv", "sk", "ru", "pl", "no", "nb", "lt", "it", "hu", "fi", "et", "de", "da", "cs", "ca", "bg"];
     const localeLang = locale.split("-")[0];
     if (firstFourDayWeekLocales.includes(locale) || firstFourDayWeekLanguages.includes(localeLang)) {
         return 2;

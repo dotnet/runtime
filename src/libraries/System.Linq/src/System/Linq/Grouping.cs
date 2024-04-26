@@ -351,7 +351,7 @@ namespace System.Linq
 
     [DebuggerDisplay("Key = {Key}")]
     [DebuggerTypeProxy(typeof(SystemLinq_GroupingDebugView<,>))]
-    internal sealed class Grouping<TKey, TElement> : IGrouping<TKey, TElement>, IList<TElement>
+    internal sealed class Grouping<TKey, TElement> : IGrouping<TKey, TElement>, IList<TElement>, IReadOnlyList<TElement>
     {
         internal readonly TKey _key;
         internal readonly int _hashCode;
@@ -398,6 +398,8 @@ namespace System.Linq
 
         int ICollection<TElement>.Count => _count;
 
+        int IReadOnlyCollection<TElement>.Count => _count;
+
         bool ICollection<TElement>.IsReadOnly => true;
 
         void ICollection<TElement>.Add(TElement item) => ThrowHelper.ThrowNotSupportedException();
@@ -430,6 +432,19 @@ namespace System.Linq
             }
 
             set => ThrowHelper.ThrowNotSupportedException();
+        }
+
+        TElement IReadOnlyList<TElement>.this[int index]
+        {
+            get
+            {
+                if ((uint)index >= (uint)_count)
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+                }
+
+                return _elements[index];
+            }
         }
     }
 }
