@@ -15,7 +15,6 @@ with SuperPmi(core_root, mch) as pmi:
     for i in range(len(seq)):
         replay = seq[:i + 1]
         replay.append(0)
-        print(pmi.jit_method(105189, JitRLCSE="", JitRLCSEAlpha=0.02, JitRandomCSE=60000, JitReplayCSE=replay,
-                            JitReplayCSEReward=[0,0]))
+        print(pmi.jit_method(105189, JitMetrics=1, JitRLHook=1))
 
     print(f"Time taken: {time.time() - start_time:.2f}s")

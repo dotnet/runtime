@@ -1,10 +1,41 @@
 """Functions for interacting with SuperPmi."""
 
+from enum import Enum
 import os
 import subprocess
 import re
-from typing import Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional
 from pydantic import BaseModel
+
+
+class JitType(Enum):
+    OTHER : int = 0
+    INT : int = 1
+    LONG : int = 2
+    FLOAT : int = 3
+    DOUBLE : int = 4
+    STRUCT : int = 5
+    SIMD : int = 6
+
+class CseCandidate(BaseModel):
+    index : int
+    viable : bool
+    liveAcrossCall : bool
+    const : bool
+    sharedConst : bool
+    makeCse : bool
+    hasCall : bool
+    containable : bool
+    type : JitType
+    costEx : int
+    costSz : int
+    useCount : int
+    defCount : int
+    useWtCnt : int
+    defWtCnt : int
+    numDistinctLocals : int
+    numLocalOccurrences : int
+    enregCount : int
 
 class MethodContext(BaseModel):
     """A superpmi method context."""
@@ -20,32 +51,10 @@ class MethodContext(BaseModel):
     num_cse_candidate : int
     heuristic : str
     heuristic_sequence : List[int]
+    cse_candidates : List[CseCandidate]
 
     def __str__(self):
-        return f"{self.index}: {self.name} PerfScore:{self.perf_score} cse:{self.num_cse} cand:{self.num_cse_candidate} hash:{self.hash} code:{self.total_bytes} prolog:{self.prolog_size} instr:{self.instruction_count} alloc:{self.bytes_allocated} heur:{self.heuristic} seq:{self.heuristic_sequence}"
-
-def parse_method_context(line:str) -> MethodContext:
-    """Parses a line from superpmi list output into a dictionary."""
-    properties = {}
-    properties['index'] = int(re.search(r'spmi index (\d+)', line).group(1))
-    properties['name'] = re.search(r'for method ([^ ]+):', line).group(1)
-    properties['hash'] = re.search(r'MethodHash=([0-9a-f]+)', line).group(1)
-    properties['total_bytes'] = int(re.search(r'Total bytes of code (\d+)', line).group(1))
-    properties['prolog_size'] = int(re.search(r'prolog size (\d+)', line).group(1))
-    properties['instruction_count'] = int(re.search(r'instruction count (\d+)', line).group(1))
-    properties['perf_score'] = float(re.search(r'PerfScore ([0-9.]+)', line).group(1))
-    properties['bytes_allocated'] = int(re.search(r'allocated bytes for code (\d+)', line).group(1))
-    properties['num_cse'] = int(re.search(r'num cse (\d+)', line).group(1))
-    properties['num_cse_candidate'] = int(re.search(r'num cand (\d+)', line).group(1))
-    properties['heuristic'] = re.search(r'num cand \d+ (.+) seq', line).group(1)
-
-    seq = re.search(r'seq ([0-9,]+) spmi', line)
-    if seq is not None:
-        properties['heuristic_sequence'] = [int(x) for x in seq.group(1).split(',')]
-    else:
-        properties['heuristic_sequence'] = []
-
-    return MethodContext(**properties)
+        return f"{self.index}: {self.name}"
 
 class SuperPmi:
     """Controls one instance of superpmi."""
@@ -77,6 +86,7 @@ class SuperPmi:
             raise FileNotFoundError(f"jit {self.jit_path} does not exist.")
 
         self._process = None
+        self._feature_names = None
 
     def __del__(self):
         self.__close()
@@ -97,14 +107,13 @@ class SuperPmi:
             method_or_id = method_or_id.index
 
         if "JitMetrics" not in options:
-            torun = f"{method_or_id}!JitMetrics=1"
-        else:
-            torun = str(method_or_id)
+            options["JitMetrics"] = 1
 
-        for key, value in options.items():
-            if isinstance(value, list):
-                value = ",".join([str(x) for x in value])
-            torun += f"!{key}={value}"
+        if self._feature_names is None and "JitRLHook" in options:
+            options['JitRLHookEmitFeatureNames'] = 1
+
+        torun = f"{method_or_id}!"
+        torun += "!".join([f"{key}={value}" for key, value in options.items()])
 
         print(f"input: {torun}")
 
@@ -117,7 +126,7 @@ class SuperPmi:
         while not output.startswith('[streaming] Done.'):
             output = self._process.stdout.readline().decode('utf-8').strip()
             if output.startswith(';'):
-                result = parse_method_context(output)
+                result = self._parse_method_context(output)
 
         return result
 
@@ -128,7 +137,50 @@ class SuperPmi:
             for line in process.stdout:
                 line = line.decode('utf-8').strip()
                 if line.startswith(';'):
-                    yield parse_method_context(line)
+                    yield self._parse_method_context(line)
+
+    def _parse_method_context(self, line:str) -> MethodContext:
+        if self._feature_names is None:
+            # find featureNames in line
+            feature_names_header = 'featureNames '
+            i = line.find(feature_names_header)
+            if i > 0:
+                self._feature_names = line[i + len(feature_names_header):].split(',')
+                self._feature_names.insert(0, 'id')
+
+        properties = {}
+        properties['index'] = int(re.search(r'spmi index (\d+)', line).group(1))
+        properties['name'] = re.search(r'for method ([^ ]+):', line).group(1)
+        properties['hash'] = re.search(r'MethodHash=([0-9a-f]+)', line).group(1)
+        properties['total_bytes'] = int(re.search(r'Total bytes of code (\d+)', line).group(1))
+        properties['prolog_size'] = int(re.search(r'prolog size (\d+)', line).group(1))
+        properties['instruction_count'] = int(re.search(r'instruction count (\d+)', line).group(1))
+        properties['perf_score'] = float(re.search(r'PerfScore ([0-9.]+)', line).group(1))
+        properties['bytes_allocated'] = int(re.search(r'allocated bytes for code (\d+)', line).group(1))
+        properties['num_cse'] = int(re.search(r'num cse (\d+)', line).group(1))
+        properties['num_cse_candidate'] = int(re.search(r'num cand (\d+)', line).group(1))
+        properties['heuristic'] = re.search(r'num cand \d+ (.+) ', line).group(1)
+
+        seq = re.search(r'seq ([0-9,]+) spmi', line)
+        if seq is not None:
+            properties['heuristic_sequence'] = [int(x) for x in seq.group(1).split(',')]
+        else:
+            properties['heuristic_sequence'] = []
+
+        cse_candidates = None
+        if self._feature_names is not None:
+            # features CSE #032,3,10,3,3,150,150,1,1,0,0,0,0,0,0,37
+            candidates = re.findall(r'features CSE #([0-9,]+)', line)
+            if candidates is not None:
+                cse_candidates = [{self._feature_names[i]: int(x) for i, x in enumerate(candidate.split(','))}
+                                  for candidate in candidates]
+
+                for i, candidate in enumerate(cse_candidates):
+                    candidate['index'] = i
+
+        properties['cse_candidates'] = cse_candidates if cse_candidates is not None else []
+
+        return MethodContext(**properties)
 
     def __create_process(self):
         """Returns the superpmi process."""
