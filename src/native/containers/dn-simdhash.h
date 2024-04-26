@@ -144,6 +144,11 @@ dn_simdhash_capacity (dn_simdhash_t *hash);
 uint32_t
 dn_simdhash_count (dn_simdhash_t *hash);
 
+// Returns the estimated number of items that have overflowed out of a bucket.
+// WARNING: This is expensive to calculate.
+uint32_t
+dn_simdhash_overflow_count (dn_simdhash_t *hash);
+
 // Automatically resizes the table if it is too small to hold the requested number
 //  of items. Will not shrink the table if it is already bigger.
 void

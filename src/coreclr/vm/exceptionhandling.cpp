@@ -867,7 +867,7 @@ UINT_PTR ExceptionTracker::FinishSecondPass(
 
 void CleanUpForSecondPass(Thread* pThread, bool fIsSO, LPVOID MemoryStackFpForFrameChain, LPVOID MemoryStackFp);
 
-static void PopExplicitFrames(Thread *pThread, void *targetSp)
+static void PopExplicitFrames(Thread *pThread, void *targetSp, void *targetCallerSp)
 {
     Frame* pFrame = pThread->GetFrame();
     while (pFrame < targetSp)
@@ -875,6 +875,39 @@ static void PopExplicitFrames(Thread *pThread, void *targetSp)
         pFrame->ExceptionUnwind();
         pFrame->Pop(pThread);
         pFrame = pThread->GetFrame();
+    }
+
+    // Check if the pFrame is an active InlinedCallFrame inside of the target frame. It needs to be popped or inactivated depending
+    // on the target architecture / ready to run
+    if ((pFrame < targetCallerSp) && InlinedCallFrame::FrameHasActiveCall(pFrame))
+    {
+        InlinedCallFrame* pInlinedCallFrame = (InlinedCallFrame*)pFrame;
+        // When unwinding an exception in ReadyToRun, the JIT_PInvokeEnd helper which unlinks the ICF from
+        // the thread will be skipped. This is because unlike jitted code, each pinvoke is wrapped by calls
+        // to the JIT_PInvokeBegin and JIT_PInvokeEnd helpers, which push and pop the ICF on the thread. The
+        // ICF is not linked at the method prolog and unlined at the epilog when running R2R code. Since the
+        // JIT_PInvokeEnd helper will be skipped, we need to unlink the ICF here. If the executing method
+        // has another pinvoke, it will re-link the ICF again when the JIT_PInvokeBegin helper is called.
+        TADDR returnAddress = pInlinedCallFrame->m_pCallerReturnAddress;
+#ifdef USE_PER_FRAME_PINVOKE_INIT
+        // If we're setting up the frame for each P/Invoke for the given platform,
+        // then we do this for all P/Invokes except ones in IL stubs.
+        // IL stubs link the frame in for the whole stub, so if an exception is thrown during marshalling,
+        // the ICF will be on the frame chain and inactive.
+        if (!ExecutionManager::GetCodeMethodDesc(returnAddress)->IsILStub())
+#else
+        // If we aren't setting up the frame for each P/Invoke (instead setting up once per method),
+        // then ReadyToRun code is the only code using the per-P/Invoke logic.
+        if (ExecutionManager::IsReadyToRunCode(returnAddress))
+#endif
+        {
+            pFrame->ExceptionUnwind();
+            pFrame->Pop(pThread);
+        }
+        else
+        {
+            pInlinedCallFrame->Reset();
+        }
     }
 
     GCFrame* pGCFrame = pThread->GetGCFrame();
@@ -907,8 +940,8 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
         if ((pExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING))
         {
             GCX_COOP();
-            PopExplicitFrames(pThread, (void*)GetSP(pContextRecord));
-            ExInfo::PopExInfos(pThread, (void*)GetSP(pContextRecord));
+            PopExplicitFrames(pThread, (void*)pDispatcherContext->EstablisherFrame, (void*)GetSP(pDispatcherContext->ContextRecord));
+            ExInfo::PopExInfos(pThread, (void*)pDispatcherContext->EstablisherFrame);
         }
         return ExceptionContinueSearch;
     }
@@ -7661,6 +7694,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
     HandlerFn* pfnHandler = (HandlerFn*)pHandlerIP;
     exInfo->m_ScannedStackRange.ExtendUpperBound(exInfo->m_frameIter.m_crawl.GetRegisterSet()->SP);
     DWORD_PTR dwResumePC = 0;
+    UINT_PTR callerTargetSp = 0;
 
     if (pHandlerIP != NULL)
     {
@@ -7694,10 +7728,11 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
         // Profiler, debugger and ETW events
         exInfo->MakeCallbacksRelatedToHandler(false, pThread, pMD, &exInfo->m_ClauseForCatch, (DWORD_PTR)pHandlerIP, spForDebugger);
         SetIP(pvRegDisplay->pCurrentContext, dwResumePC);
+        callerTargetSp = CallerStackFrame::FromRegDisplay(pvRegDisplay).SP;
     }
 
     UINT_PTR targetSp = GetSP(pvRegDisplay->pCurrentContext);
-    PopExplicitFrames(pThread, (void*)targetSp);
+    PopExplicitFrames(pThread, (void*)targetSp, (void*)callerTargetSp);
 
     ExInfo* pExInfo = (PTR_ExInfo)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
@@ -7856,7 +7891,8 @@ extern "C" void QCALLTYPE ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
 
     pExInfo->m_ScannedStackRange.ExtendUpperBound(targetSp);
 
-    PopExplicitFrames(pThread, (void*)targetSp);
+    EECodeManager::EnsureCallerContextIsValid(pvRegDisplay);
+    PopExplicitFrames(pThread, (void*)targetSp, (void*)CallerStackFrame::FromRegDisplay(pvRegDisplay).SP);
 
     // This must be done before we pop the ExInfos.
     BOOL fIntercepted = pThread->GetExceptionState()->GetFlags()->DebuggerInterceptInfo();
