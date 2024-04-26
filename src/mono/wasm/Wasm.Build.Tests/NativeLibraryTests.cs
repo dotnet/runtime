@@ -144,7 +144,7 @@ public class Test
         {
             string projectName = $"AppUsingNativeLibrary-a";
             buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = ExpandBuildArgs(buildArgs, extraItems: "<NativeLibrary Include=\"native-lib.o\" />");
+            buildArgs = ExpandBuildArgs(buildArgs, extraItems: "<NativeLibrary Include=\"native-lib.o\" />\n<NativeLibrary Include=\"DoesNotExist.o\" />");
 
             if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? _))
             {

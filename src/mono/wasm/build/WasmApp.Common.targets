@@ -249,7 +249,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <NativeFileReference Include="@(NativeLibrary->'%(Identity)')" Condition="'@(NativeLibrary->Count())' != '0'" />
+    <_ExistingNativeLibrary Include="@(NativeLibrary->Exists())" />
+    <NativeFileReference Include="@(_ExistingNativeLibrary->'%(Identity)')" />
     <UpToDateCheckInput Include="@(NativeFileReference)" />
   </ItemGroup>
   
