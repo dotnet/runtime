@@ -40,6 +40,14 @@ Install the following packages for the toolchain:
 * zlib1g-dev
 * ninja-build (optional, enables building native code with ninja instead of make)
 
+You can install all the above dependencies by running
+
+```bash
+sudo xargs apt-get install -Y < eng/debian-reqs.txt
+```
+
+### Community-supported environments
+
 **NOTE**: If you have an Ubuntu version older than 22.04 LTS, or Debian version older than 12, don't install `cmake` using `apt` directly. Follow the note written down below.
 
 ```bash
