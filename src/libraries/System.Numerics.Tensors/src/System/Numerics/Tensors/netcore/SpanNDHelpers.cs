@@ -13,7 +13,7 @@ using Microsoft.VisualBasic;
 
 namespace System.Numerics.Tensors
 {
-    internal static partial class SpanHelpers
+    internal static partial class SpanNDHelpers
     {
         // Replacing Unsafe.IsOpportunisticallyAligned
         // Determines if the address is aligned at least to `alignment` bytes.
@@ -427,27 +427,71 @@ namespace System.Numerics.Tensors
             return index;
         }
 
-        public static void AdjustIndices(int curIndex, nint addend, ref nint[] curIndices, ReadOnlySpan<nint> lengths)
+        /// <summary>
+        /// Takes the span holding the current index and increments it by the addend. If the length of the current spot is greater than the
+        /// length of that dimension then it rolls that over to the next dimension.
+        /// </summary>
+        /// <param name="curIndex">The current index from the indices we are on.</param>
+        /// <param name="addend">How much we are adding to the <paramref name="curIndex"/></param>
+        /// <param name="curIndices">The current indices</param>
+        /// <param name="shape">The shape of the SpanND we are iterating over.</param>
+        public static void AdjustIndices(int curIndex, nint addend, ref Span<nint> curIndices, ReadOnlySpan<nint> shape)
         {
             if (addend <= 0 || curIndex < 0)
                 return;
             curIndices[curIndex] += addend;
-            AdjustIndices(curIndex - 1, curIndices[curIndex] / lengths[curIndex], ref curIndices, lengths);
-            curIndices[curIndex] = curIndices[curIndex] % lengths[curIndex];
+
+            (nint Quotient, nint Remainder) result = Math.DivRem(curIndices[curIndex], shape[curIndex]);
+
+            AdjustIndices(curIndex - 1, result.Quotient, ref curIndices, shape);
+            curIndices[curIndex] = result.Remainder;
         }
 
-        public static void AdjustIndicesDown(int curIndex, nint addend, ref nint[] curIndices, ReadOnlySpan<nint> lengths)
+        /// <summary>
+        /// Takes the span holding the current index and increments it by the addend. If the length of the current spot is greater than the
+        /// length of that dimension then it rolls that over to the next dimension.
+        /// </summary>
+        /// <param name="curIndex">The current index from the indices we are on.</param>
+        /// <param name="addend">How much we are adding to the <paramref name="curIndex"/></param>
+        /// <param name="curIndices">The current indices</param>
+        /// <param name="shape">The shape of the SpanND we are iterating over.</param>
+        public static void AdjustIndices(int curIndex, nint addend, ref nint[] curIndices, ReadOnlySpan<nint> shape)
+        {
+            if (addend <= 0 || curIndex < 0)
+                return;
+            curIndices[curIndex] += addend;
+
+            (nint Quotient, nint Remainder) result = Math.DivRem(curIndices[curIndex], shape[curIndex]);
+
+            AdjustIndices(curIndex - 1, result.Quotient, ref curIndices, shape);
+            curIndices[curIndex] = result.Remainder;
+        }
+
+        /// <summary>
+        /// Takes the span holding the current index and decrements it by the addend. If the length of the current spot is greater than the
+        /// length of that dimension then it rolls that over to the next dimension.
+        /// </summary>
+        /// <param name="curIndex">The current index from the indices we are on.</param>
+        /// <param name="addend">How much we are subtracting from the <paramref name="curIndex"/></param>
+        /// <param name="curIndices">The current indices</param>
+        /// <param name="shape">The shape of the SpanND we are iterating over.</param>
+        public static void AdjustIndicesDown(int curIndex, nint addend, ref Span<nint> curIndices, ReadOnlySpan<nint> shape)
         {
             if (addend <= 0 || curIndex < 0)
                 return;
             curIndices[curIndex] -= addend;
             if (curIndices[curIndex] < 0)
             {
-                curIndices[curIndex] = lengths[curIndex] - 1;
-                AdjustIndices(curIndex - 1, 1, ref curIndices, lengths);
+                curIndices[curIndex] = shape[curIndex] - 1;
+                AdjustIndices(curIndex - 1, 1, ref curIndices, shape);
             }
         }
 
+        /// <summary>
+        /// Counts the number of true elements in a boolean filter tensor so we know how much space we will need.
+        /// </summary>
+        /// <param name="filter"></param>
+        /// <returns>How many boolean values are true.</returns>
         public static nint CountTrueElements(Tensor<bool> filter)
         {
             var filterSpan = MemoryMarshal.CreateSpan(ref filter._values[0], (int)filter._linearLength);

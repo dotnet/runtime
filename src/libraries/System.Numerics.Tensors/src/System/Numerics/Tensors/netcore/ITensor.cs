@@ -20,7 +20,6 @@ namespace System.Numerics.Tensors
         // It looks like C#/.NET currently hits limitations here as it believes TSelf and T could be the same type
         // Ideally we could annotate it such that they cannot be the same type and no conflicts would exist
 
-        // REVIEW: SHOULD THIS BE NULLABLE OR SUPPRESS ISSUE?
         static TSelf? Empty { get; }
 
         bool IsEmpty { get; }
@@ -28,16 +27,15 @@ namespace System.Numerics.Tensors
         int Rank { get; }
         ReadOnlySpan<nint> Strides { get; }
 
-        ref T this[params nint[] indices] { get; }
-        ref T this[ReadOnlySpan<nint> indices] { get; }
+        ref T this[params ReadOnlySpan<nint> indices] { get; }
 
         static abstract implicit operator SpanND<T>(TSelf value);
         static abstract implicit operator ReadOnlySpanND<T>(TSelf value);
 
-        SpanND<T> AsSpan(params NativeRange[] ranges);
-        ReadOnlySpanND<T> AsReadOnlySpan(params NativeRange[] ranges);
+        SpanND<T> AsSpanND(params ReadOnlySpan<NativeRange> ranges);
+        ReadOnlySpanND<T> AsReadOnlySpanND(params ReadOnlySpan<NativeRange> ranges);
         ref T GetPinnableReference();
-        TSelf Slice(params NativeRange[] ranges);
+        TSelf Slice(params ReadOnlySpan<NativeRange> ranges);
 
         void Clear();
         void CopyTo(SpanND<T> destination);

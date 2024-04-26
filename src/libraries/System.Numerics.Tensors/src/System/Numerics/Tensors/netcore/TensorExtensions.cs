@@ -7,6 +7,8 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using Microsoft.VisualBasic;
+using System.Text;
 
 #pragma warning disable CS8601 // Possible null reference assignment.
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
@@ -16,19 +18,43 @@ namespace System.Numerics.Tensors
 {
     public static partial class Tensor
     {
+        #region ToString
+        // REVIEW: WHAT SHOULD WE NAME THIS? WHERE DO WE WANT IT TO LIVE?
+        public static string ToString<T>(this SpanND<T> span, int maxRows, int maxColumns) => ((ReadOnlySpanND<T>)span).ToString(maxRows, maxColumns);
+
+        public static string ToString<T>(this ReadOnlySpanND<T> span, int maxRows, int maxColumns)
+        {
+            var sb = new StringBuilder();
+            Span<nint> curIndices = stackalloc nint[span.Rank];
+            nint copiedValues = 0;
+            while (copiedValues < span._linearLength)
+            {
+                var sp = new SpanND<T>(ref Unsafe.Add(ref span._reference, SpanNDHelpers.GetIndex(curIndices, span.Strides, span.Shape)), [span.Shape[span.Rank - 1]], [1], span.IsPinned);
+                sb.Append('{');
+                sb.Append(string.Join(",", sp.ToArray()));
+                sb.AppendLine("}");
+
+                SpanNDHelpers.AdjustIndices(span.Rank - 2, 1, ref curIndices, span._lengths);
+                copiedValues += span.Shape[span.Rank - 1];
+            }
+
+            return sb.ToString();
+        }
+        #endregion
+
         #region Resize
         public static Tensor<T> Resize<T>(Tensor<T> input, ReadOnlySpan<nint> shape)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            var newSize = SpanHelpers.CalculateTotalLength(shape);
+            var newSize = SpanNDHelpers.CalculateTotalLength(shape);
             T[] values = input.IsPinned ? GC.AllocateArray<T>((int)newSize, input.IsPinned) : (new T[newSize]);
             Tensor<T> output = new Tensor<T>(values, shape.ToArray(), input.IsPinned);
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input.AsSpan()._reference, (int)input.LinearLength);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output.AsSpan()._reference, (int)output.LinearLength);
-            if (newSize > input.LinearLength)
-                SpanHelpers.Memmove(ospan, span, input.LinearLength);
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input.AsSpanND()._reference, (int)input.Length);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output.AsSpanND()._reference, (int)output.Length);
+            if (newSize > input.Length)
+                SpanNDHelpers.Memmove(ospan, span, input.Length);
             else
-                SpanHelpers.Memmove(ospan, span, newSize);
+                SpanNDHelpers.Memmove(ospan, span, newSize);
 
             return output;
         }
@@ -36,15 +62,15 @@ namespace System.Numerics.Tensors
         public static SpanND<T> Resize<T>(SpanND<T> input, ReadOnlySpan<nint> shape)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            var newSize = SpanHelpers.CalculateTotalLength(shape);
+            var newSize = SpanNDHelpers.CalculateTotalLength(shape);
             T[] values = input.IsPinned ? GC.AllocateArray<T>((int)newSize, input.IsPinned) : (new T[newSize]);
             SpanND<T> output = new SpanND<T>(values, shape, input.IsPinned);
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
-            if (newSize > input.LinearLength)
-                SpanHelpers.Memmove(ospan, span, input.LinearLength);
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.Length);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.Length);
+            if (newSize > input.Length)
+                SpanNDHelpers.Memmove(ospan, span, input.Length);
             else
-                SpanHelpers.Memmove(ospan, span, newSize);
+                SpanNDHelpers.Memmove(ospan, span, newSize);
 
             return output;
         }
@@ -56,25 +82,25 @@ namespace System.Numerics.Tensors
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             Tensor<T> intermediate = BroadcastTo(input, shape);
-            return Tensor.Create(intermediate.ToArray(), intermediate.Lengths);
+            return Tensor.Create(intermediate.ToArray(), intermediate.Shape);
         }
 
         // Lazy/non-copy broadcasting, internal only for now.
         internal static Tensor<T> BroadcastTo<T>(Tensor<T> input, ReadOnlySpan<nint> shape)
         where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            if (input.Lengths.SequenceEqual(shape))
+            if (input.Shape.SequenceEqual(shape))
                 return new Tensor<T>(input._values, shape.ToArray(), input.IsPinned);
 
-            if (!TensorHelpers.AreShapesBroadcastCompatible(input.Lengths, shape))
+            if (!TensorHelpers.AreShapesBroadcastCompatible(input.Shape, shape))
                 throw new Exception("Shapes are not broadcast compatible.");
 
-            var newSize = SpanHelpers.CalculateTotalLength(shape);
+            var newSize = SpanNDHelpers.CalculateTotalLength(shape);
 
-            if (newSize == input.LinearLength)
+            if (newSize == input.Length)
                 return Reshape(input, shape);
 
-            var intermediateShape = TensorHelpers.GetIntermediateShape(input.Lengths, shape.Length);
+            var intermediateShape = TensorHelpers.GetIntermediateShape(input.Shape, shape.Length);
             nint[] strides = new nint[shape.Length];
 
             nint stride = 1;
@@ -98,18 +124,18 @@ namespace System.Numerics.Tensors
         internal static SpanND<T> BroadcastTo<T>(SpanND<T> input, ReadOnlySpan<nint> shape)
         where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            if (input.Lengths.SequenceEqual(shape))
+            if (input.Shape.SequenceEqual(shape))
                 return new SpanND<T>(ref input._reference, shape, input.Strides, input.IsPinned);
 
-            if (!TensorHelpers.AreShapesBroadcastCompatible(input.Lengths, shape))
+            if (!TensorHelpers.AreShapesBroadcastCompatible(input.Shape, shape))
                 throw new Exception("Shapes are not broadcast compatible.");
 
-            var newSize = SpanHelpers.CalculateTotalLength(shape);
+            var newSize = SpanNDHelpers.CalculateTotalLength(shape);
 
-            if (newSize == input.LinearLength)
+            if (newSize == input.Length)
                 return Reshape(input, shape);
 
-            var intermediateShape = TensorHelpers.GetIntermediateShape(input.Lengths, shape.Length);
+            var intermediateShape = TensorHelpers.GetIntermediateShape(input.Shape, shape.Length);
             nint[] strides = new nint[shape.Length];
 
             nint stride = 1;
@@ -136,13 +162,13 @@ namespace System.Numerics.Tensors
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             T[] values = input.IsPinned ? GC.AllocateArray<T>((int)input._linearLength, input.IsPinned) : (new T[input._linearLength]);
-            Tensor<T> output = new Tensor<T>(values, input.Lengths.ToArray(), input.Strides.ToArray(), input.IsPinned);
+            Tensor<T> output = new Tensor<T>(values, input.Shape.ToArray(), input.Strides.ToArray(), input.IsPinned);
             if (axis == -1)
             {
                 int index = 0;
-                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input.LinearLength);
-                Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output.LinearLength);
-                for (int i = (int)input.LinearLength - 1; i >= 0; i--)
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input.Length);
+                Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output.Length);
+                for (int i = (int)input.Length - 1; i >= 0; i--)
                 {
                     ospan[index++] = span[i];
                 }
@@ -150,24 +176,24 @@ namespace System.Numerics.Tensors
             else
             {
                 nint copyLength = 1;
-                for (nint i = axis; i < input.Lengths.Length; i++)
+                for (nint i = axis; i < input.Shape.Length; i++)
                 {
-                    copyLength *= input.Lengths[(int)i];
+                    copyLength *= input.Shape[(int)i];
                 }
-                copyLength /= input.Lengths[(int)axis];
+                copyLength /= input.Shape[(int)axis];
 
-                var oIndices = new nint[input.Rank];
-                var iIndices = new nint[input.Rank];
+                Span<nint> oIndices = stackalloc nint[input.Rank];
+                Span<nint> iIndices = stackalloc nint[input.Rank];
 
-                iIndices[axis] = input.Lengths[(int)axis] - 1;
+                iIndices[(int)axis] = input.Shape[(int)axis] - 1;
                 nint copiedValues = 0;
-                var islice = input.AsSpan().Slice(input.Lengths);
-                var oslice = output.AsSpan().Slice(output._lengths);
+                var islice = input.AsSpanND().Slice(input.Shape);
+                var oslice = output.AsSpanND().Slice(output._lengths);
                 while (copiedValues < input._linearLength)
                 {
-                    SpanHelpers.Memmove(ref Unsafe.Add(ref oslice._reference, SpanHelpers.GetIndex(oIndices, input.Strides, input.Lengths)), ref Unsafe.Add(ref islice._reference, SpanHelpers.GetIndex(iIndices, islice.Strides, islice.Lengths)), copyLength);
-                    SpanHelpers.AdjustIndices((int)axis, 1, ref oIndices, input._lengths);
-                    SpanHelpers.AdjustIndicesDown((int)axis, 1, ref iIndices, input._lengths);
+                    SpanNDHelpers.Memmove(ref Unsafe.Add(ref oslice._reference, SpanNDHelpers.GetIndex(oIndices, input.Strides, input.Shape)), ref Unsafe.Add(ref islice._reference, SpanNDHelpers.GetIndex(iIndices, islice.Strides, islice.Shape)), copyLength);
+                    SpanNDHelpers.AdjustIndices((int)axis, 1, ref oIndices, input._lengths);
+                    SpanNDHelpers.AdjustIndicesDown((int)axis, 1, ref iIndices, input._lengths);
                     copiedValues += copyLength;
                 }
             }
@@ -180,10 +206,10 @@ namespace System.Numerics.Tensors
         {
             if (axis == -1)
             {
-                nint index = input.LinearLength - 1;
-                Span<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
+                nint index = input.Length - 1;
+                Span<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.Length);
                 T temp;
-                for (int i = 0; i <= input.LinearLength / 2; i++)
+                for (int i = 0; i <= input.Length / 2; i++)
                 {
                     temp = span[(int)index];
                     span[(int)index] = span[i];
@@ -192,29 +218,29 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                T[] values = new T[input.LinearLength];
+                T[] values = new T[input.Length];
 
                 nint copyLength = 1;
-                for (nint i = axis; i < input.Lengths.Length; i++)
+                for (nint i = axis; i < input.Shape.Length; i++)
                 {
-                    copyLength *= input.Lengths[(int)i];
+                    copyLength *= input.Shape[(int)i];
                 }
-                copyLength /= input.Lengths[(int)axis];
+                copyLength /= input.Shape[(int)axis];
 
-                var oIndices = new nint[input.Rank];
-                var iIndices = new nint[input.Rank];
+                Span<nint> oIndices = stackalloc nint[input.Rank];
+                Span<nint> iIndices = stackalloc nint[input.Rank];
 
-                iIndices[axis] = input.Lengths[(int)axis] - 1;
+                iIndices[(int)axis] = input.Shape[(int)axis] - 1;
                 nint copiedValues = 0;
-                var islice = input.Slice(input.Lengths);
-                while (copiedValues < input.LinearLength)
+                var islice = input.Slice(input.Shape);
+                while (copiedValues < input.Length)
                 {
-                    SpanHelpers.Memmove(ref Unsafe.Add(ref values, SpanHelpers.GetIndex(oIndices, input.Strides, input.Lengths)), ref Unsafe.Add(ref islice._reference, SpanHelpers.GetIndex(iIndices, islice.Strides, islice.Lengths)), copyLength);
-                    SpanHelpers.AdjustIndices((int)axis, 1, ref oIndices, input.Lengths);
-                    SpanHelpers.AdjustIndicesDown((int)axis, 1, ref iIndices, input.Lengths);
+                    SpanNDHelpers.Memmove(ref Unsafe.Add(ref values, SpanNDHelpers.GetIndex(oIndices, input.Strides, input.Shape)), ref Unsafe.Add(ref islice._reference, SpanNDHelpers.GetIndex(iIndices, islice.Strides, islice.Shape)), copyLength);
+                    SpanNDHelpers.AdjustIndices((int)axis, 1, ref oIndices, input.Shape);
+                    SpanNDHelpers.AdjustIndicesDown((int)axis, 1, ref iIndices, input.Shape);
                     copiedValues += copyLength;
                 }
-                SpanHelpers.Memmove(ref input._reference, ref values[0], input.LinearLength);
+                SpanNDHelpers.Memmove(ref input._reference, ref values[0], input.Length);
             }
 
             return input;
@@ -226,107 +252,68 @@ namespace System.Numerics.Tensors
         public static Tensor<T>[] Split<T>(Tensor<T> input, nint numSplits, nint axis)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            if (input.Lengths[(int)axis] % numSplits != 0)
+            if (input.Shape[(int)axis] % numSplits != 0)
                 throw new Exception("The number of splits must perfectly divide the dimension.");
 
             Tensor<T>[] outputs = new Tensor<T>[numSplits];
 
-            nint totalToCopy = input.LinearLength / numSplits;
+            nint totalToCopy = input.Length / numSplits;
             nint copyLength = 1;
-            for (nint i = axis; i < input.Lengths.Length; i++)
+            for (nint i = axis; i < input.Shape.Length; i++)
             {
-                copyLength *= input.Lengths[(int)i];
+                copyLength *= input.Shape[(int)i];
             }
             copyLength /= numSplits;
-            nint[] newShape = input.Lengths.ToArray();
+            nint[] newShape = input.Shape.ToArray();
             newShape[(int)axis] = newShape[(int)axis] / numSplits;
+
+            Span<nint> oIndices = stackalloc nint[input.Rank];
+            Span<nint> iIndices = stackalloc nint[input.Rank];
 
             for (int i = 0; i < outputs.Length; i++)
             {
                 T[] values = input.IsPinned ? GC.AllocateArray<T>((int)totalToCopy, input.IsPinned) : (new T[(int)totalToCopy]);
                 outputs[i] = new Tensor<T>(values, newShape, input.IsPinned);
+                oIndices.Clear();
+                iIndices.Clear();
 
-                var oIndices = new nint[input.Rank];
-                var iIndices = new nint[input.Rank];
-                iIndices[axis] = i;
-                var islice = input.AsSpan().Slice(input.Lengths);
-                var oslice = outputs[i].AsSpan().Slice(outputs[i]._lengths);
+                iIndices[(int)axis] = i;
+                var islice = input.AsSpanND().Slice(input.Shape);
+                var oslice = outputs[i].AsSpanND().Slice(outputs[i]._lengths);
 
                 nint copiedValues = 0;
                 while (copiedValues < totalToCopy)
                 {
-                    SpanHelpers.Memmove(ref Unsafe.Add(ref oslice._reference, SpanHelpers.GetIndex(oIndices, outputs[0].Strides, outputs[0].Lengths)), ref Unsafe.Add(ref islice._reference, SpanHelpers.GetIndex(iIndices, islice.Strides, islice.Lengths)), copyLength);
-                    SpanHelpers.AdjustIndices((int)axis, 1, ref oIndices, outputs[i]._lengths);
-                    SpanHelpers.AdjustIndices((int)axis - 1, 1, ref iIndices, input._lengths);
+                    SpanNDHelpers.Memmove(ref Unsafe.Add(ref oslice._reference, SpanNDHelpers.GetIndex(oIndices, outputs[0].Strides, outputs[0].Shape)), ref Unsafe.Add(ref islice._reference, SpanNDHelpers.GetIndex(iIndices, islice.Strides, islice.Shape)), copyLength);
+                    SpanNDHelpers.AdjustIndices((int)axis, 1, ref oIndices, outputs[i]._lengths);
+                    SpanNDHelpers.AdjustIndices((int)axis - 1, 1, ref iIndices, input._lengths);
                     copiedValues += copyLength;
                 }
             }
 
             return outputs;
         }
-
-        //public static SpanND<T>[] Split<T>(SpanND<T> input, nint numSplits, nint axis)
-        //    where T : IEquatable<T>, IEqualityOperators<T, T, bool>
-        //{
-        //    if (input.Lengths[(int)axis] % numSplits != 0)
-        //        throw new Exception("The number of splits must perfectly divide the dimension.");
-
-        //    SpanND<T>[] outputs = new SpanND<T>[numSplits];
-
-        //    nint totalToCopy = input.LinearLength / numSplits;
-        //    nint copyLength = 1;
-        //    for (nint i = axis; i < input.Lengths.Length; i++)
-        //    {
-        //        copyLength *= input.Lengths[(int)i];
-        //    }
-        //    copyLength /= numSplits;
-        //    nint[] newShape = input.Lengths.ToArray();
-        //    newShape[(int)axis] = newShape[(int)axis] / numSplits;
-
-        //    for (int i = 0; i < outputs.Length; i++)
-        //    {
-        //        T[] values = input.IsPinned ? GC.AllocateArray<T>((int)totalToCopy, input.IsPinned) : (new T[(int)totalToCopy]);
-        //        outputs[i] = new SpanND<T>(values, newShape, input.IsPinned);
-
-        //        var oIndices = new nint[input.Rank];
-        //        var iIndices = new nint[input.Rank];
-        //        iIndices[axis] = i;
-        //        var islice = input.Slice(input.Lengths);
-        //        var oslice = outputs[i].Slice(outputs[i].Lengths);
-
-        //        nint copiedValues = 0;
-        //        while (copiedValues < totalToCopy)
-        //        {
-        //            SpanHelpers.Memmove(ref Unsafe.Add(ref oslice._reference, SpanHelpers.GetIndex(oIndices, outputs[0].Strides, outputs[0].Lengths)), ref Unsafe.Add(ref islice._reference, SpanHelpers.GetIndex(iIndices, islice.Strides, islice.Lengths)), copyLength);
-        //            SpanHelpers.AdjustIndices((int)axis, 1, ref oIndices, outputs[i].Lengths);
-        //            SpanHelpers.AdjustIndices((int)axis - 1, 1, ref iIndices, input.Lengths);
-        //            copiedValues += copyLength;
-        //        }
-        //    }
-
-        //    return outputs;
-        //}
         #endregion
 
         #region SetSlice
         // REVIEW: WHAT DO WE WANT TO CALL THIS? COPYTO? IT DOES FIT IN WITH THE EXISTING COPY TO CONVENTIONS FOR VECTOR (albeit backwards).
-        public static Tensor<T> SetSlice<T>(this Tensor<T> tensor, Tensor<T> values, params NativeRange[] ranges)
+        public static Tensor<T> SetSlice<T>(this Tensor<T> tensor, Tensor<T> values, params ReadOnlySpan<NativeRange> ranges)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             SpanND<T> srcSpan;
-            if (ranges == Array.Empty<NativeRange>())
+            if (ranges == ReadOnlySpan<NativeRange>.Empty)
             {
-                if (!tensor.Lengths.SequenceEqual(values.Lengths))
+                if (!tensor.Shape.SequenceEqual(values.Shape))
                     throw new ArgumentException("When no ranges are specified the values tensor must be equal in size as the input tensor.", nameof(values));
-                srcSpan = tensor.AsSpan().Slice(tensor.Lengths);
+                srcSpan = tensor.AsSpanND().Slice(tensor.Shape);
             }
             else
-                srcSpan = tensor.AsSpan().Slice(ranges);
+                srcSpan = tensor.AsSpanND().Slice(ranges);
 
-            if (!srcSpan.Lengths.SequenceEqual(values.Lengths))
+            if (!srcSpan.Shape.SequenceEqual(values.Shape))
                 throw new ArgumentException("Provided values must have the same shape as the input tensor.", nameof(values));
 
-            values.AsSpan().CopyTo(srcSpan);
+            values.AsSpanND().CopyTo(srcSpan);
 
             return tensor;
         }
@@ -339,7 +326,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> FilteredUpdate<T>(Tensor<T> left, Tensor<bool> filter, T value)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            if (filter.Lengths.Length != left.Lengths.Length)
+            if (filter.Shape.Length != left.Shape.Length)
                 throw new ArgumentOutOfRangeException(nameof(filter), "Number of dimensions to slice does not equal the number of dimensions in the span");
 
             var srcSpan = MemoryMarshal.CreateSpan(ref left._values[0], (int)left._linearLength);
@@ -359,25 +346,25 @@ namespace System.Numerics.Tensors
         public static Tensor<T> FilteredUpdate<T>(Tensor<T> left, Tensor<bool> filter, Tensor<T> values)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            if (filter.Lengths.Length != left.Lengths.Length)
+            if (filter.Shape.Length != left.Shape.Length)
                 throw new ArgumentOutOfRangeException(nameof(filter), "Number of dimensions to slice does not equal the number of dimensions in the span");
             if (values.Rank != 1)
                 throw new ArgumentOutOfRangeException(nameof(values), "Must be a 1d tensor");
 
-            var numTrueElements = SpanHelpers.CountTrueElements(filter);
+            nint numTrueElements = SpanNDHelpers.CountTrueElements(filter);
             if (numTrueElements != values._linearLength)
                 throw new ArgumentOutOfRangeException(nameof(values), "Number of elements provided does not match the number of filters.");
 
-            var srcSpan = MemoryMarshal.CreateSpan(ref left._values[0], (int)left._linearLength);
-            var filterSpan = MemoryMarshal.CreateSpan(ref filter._values[0], (int)left._linearLength);
-            var valuesSpan = MemoryMarshal.CreateSpan(ref values._values[0], (int)values._linearLength);
+            Span<T> dstSpan = MemoryMarshal.CreateSpan(ref left._values[0], (int)left._linearLength);
+            Span<bool> filterSpan = MemoryMarshal.CreateSpan(ref filter._values[0], (int)left._linearLength);
+            Span<T> valuesSpan = MemoryMarshal.CreateSpan(ref values._values[0], (int)values._linearLength);
 
-            var index = 0;
+            int index = 0;
             for (int i = 0; i < filterSpan.Length; i++)
             {
                 if (filterSpan[i])
                 {
-                    srcSpan[i] = valuesSpan[index++];
+                    dstSpan[i] = valuesSpan[index++];
                 }
             }
 
@@ -392,24 +379,24 @@ namespace System.Numerics.Tensors
             Tensor<bool> result;
             if (TensorHelpers.AreShapesTheSame(left, right))
             {
-                result = Tensor.Create<bool>(false, left.Lengths);
+                result = Tensor.Create<bool>(false, left.Shape);
 
-                for (int i = 0; i < left.LinearLength; i++)
+                for (int i = 0; i < left.Length; i++)
                 {
                     result._values[i] = left._values[i] == right._values[i];
                 }
             }
             else
             {
-                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
+                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Shape, right.Shape);
                 result = Tensor.Create<bool>(false, newSize);
                 var broadcastedLeft = BroadcastTo(left, newSize);
                 var broadcastedRight = BroadcastTo(right, newSize);
-                nint[] curIndex = new nint[broadcastedRight.Lengths.Length];
-                for (int i = 0; i < broadcastedLeft.LinearLength; i++)
+                Span<nint> curIndex = stackalloc nint[broadcastedRight.Shape.Length];
+                for (int i = 0; i < broadcastedLeft.Length; i++)
                 {
                     result._values[i] = broadcastedLeft[curIndex] == broadcastedRight[curIndex];
-                    SpanHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Lengths);
+                    SpanNDHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Shape);
                 }
             }
 
@@ -424,24 +411,24 @@ namespace System.Numerics.Tensors
             Tensor<bool> result;
             if (TensorHelpers.AreShapesTheSame(left, right))
             {
-                result = Tensor.Create<bool>(false, left.Lengths);
+                result = Tensor.Create<bool>(false, left.Shape);
 
-                for (int i = 0; i < left.LinearLength; i++)
+                for (int i = 0; i < left.Length; i++)
                 {
                     result._values[i] = left._values[i] < right._values[i];
                 }
             }
             else
             {
-                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
+                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Shape, right.Shape);
                 result = Tensor.Create<bool>(false, newSize);
                 var broadcastedLeft = BroadcastTo(left, newSize);
                 var broadcastedRight = BroadcastTo(right, newSize);
-                nint[] curIndex = new nint[broadcastedRight.Lengths.Length];
-                for (int i = 0; i < broadcastedLeft.LinearLength; i++)
+                Span<nint> curIndex = stackalloc nint[broadcastedRight.Shape.Length];
+                for (int i = 0; i < broadcastedLeft.Length; i++)
                 {
                     result._values[i] = broadcastedLeft[curIndex] < broadcastedRight[curIndex];
-                    SpanHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Lengths);
+                    SpanNDHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Shape);
                 }
             }
 
@@ -451,9 +438,9 @@ namespace System.Numerics.Tensors
         public static Tensor<bool> LessThan<T>(Tensor<T> left, T right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IComparisonOperators<T, T, bool>
         {
-            Tensor<bool> result = Tensor.Create<bool>(false, left.Lengths);
+            Tensor<bool> result = Tensor.Create<bool>(false, left.Shape);
 
-            for (int i = 0; i < left.LinearLength; i++)
+            for (int i = 0; i < left.Length; i++)
             {
                 result._values[i] = left._values[i] < right;
             }
@@ -463,11 +450,9 @@ namespace System.Numerics.Tensors
         public static bool LessThanAny<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IComparisonOperators<T, T, bool>
         {
-
             if (TensorHelpers.AreShapesTheSame(left, right))
             {
-
-                for (int i = 0; i < left.LinearLength; i++)
+                for (int i = 0; i < left.Length; i++)
                 {
                     if (left._values[i] < right._values[i])
                         return true;
@@ -475,15 +460,15 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
+                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Shape, right.Shape);
                 var broadcastedLeft = BroadcastTo(left, newSize);
                 var broadcastedRight = BroadcastTo(right, newSize);
-                nint[] curIndex = new nint[broadcastedRight.Lengths.Length];
-                for (int i = 0; i < broadcastedLeft.LinearLength; i++)
+                Span<nint> curIndex = stackalloc nint[broadcastedRight.Shape.Length];
+                for (int i = 0; i < broadcastedLeft.Length; i++)
                 {
                     if (broadcastedLeft[curIndex] < broadcastedRight[curIndex])
                         return true;
-                    SpanHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Lengths);
+                    SpanNDHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Shape);
                 }
             }
 
@@ -495,8 +480,7 @@ namespace System.Numerics.Tensors
         {
             if (TensorHelpers.AreShapesTheSame(left, right))
             {
-
-                for (int i = 0; i < left.LinearLength; i++)
+                for (int i = 0; i < left.Length; i++)
                 {
                     if (left._values[i] > right._values[i])
                         return false;
@@ -504,15 +488,15 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
+                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Shape, right.Shape);
                 var broadcastedLeft = BroadcastTo(left, newSize);
                 var broadcastedRight = BroadcastTo(right, newSize);
-                nint[] curIndex = new nint[broadcastedRight.Lengths.Length];
-                for (int i = 0; i < broadcastedLeft.LinearLength; i++)
+                Span<nint> curIndex = stackalloc nint[broadcastedRight.Shape.Length];
+                for (int i = 0; i < broadcastedLeft.Length; i++)
                 {
                     if (broadcastedLeft[curIndex] > broadcastedRight[curIndex])
                         return false;
-                    SpanHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Lengths);
+                    SpanNDHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Shape);
                 }
             }
             return true;
@@ -526,24 +510,24 @@ namespace System.Numerics.Tensors
             Tensor<bool> result;
             if (TensorHelpers.AreShapesTheSame(left, right))
             {
-                result = Tensor.Create<bool>(false, left.Lengths);
+                result = Tensor.Create<bool>(false, left.Shape);
 
-                for (int i = 0; i < left.LinearLength; i++)
+                for (int i = 0; i < left.Length; i++)
                 {
                     result._values[i] = left._values[i] > right._values[i];
                 }
             }
             else
             {
-                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
+                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Shape, right.Shape);
                 result = Tensor.Create<bool>(false, newSize);
                 var broadcastedLeft = BroadcastTo(left, newSize);
                 var broadcastedRight = BroadcastTo(right, newSize);
-                nint[] curIndex = new nint[broadcastedRight.Lengths.Length];
-                for (int i = 0; i < broadcastedLeft.LinearLength; i++)
+                Span<nint> curIndex = stackalloc nint[broadcastedRight.Shape.Length];
+                for (int i = 0; i < broadcastedLeft.Length; i++)
                 {
                     result._values[i] = broadcastedLeft[curIndex] > broadcastedRight[curIndex];
-                    SpanHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Lengths);
+                    SpanNDHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Shape);
                 }
             }
 
@@ -553,9 +537,9 @@ namespace System.Numerics.Tensors
         public static Tensor<bool> GreaterThan<T>(Tensor<T> left, T right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IComparisonOperators<T, T, bool>
         {
-            Tensor<bool> result = Tensor.Create<bool>(false, left.Lengths);
+            Tensor<bool> result = Tensor.Create<bool>(false, left.Shape);
 
-            for (int i = 0; i < left.LinearLength; i++)
+            for (int i = 0; i < left.Length; i++)
             {
                 result._values[i] = left._values[i] > right;
             }
@@ -568,7 +552,7 @@ namespace System.Numerics.Tensors
             if (TensorHelpers.AreShapesTheSame(left, right))
             {
 
-                for (int i = 0; i < left.LinearLength; i++)
+                for (int i = 0; i < left.Length; i++)
                 {
                     if (left._values[i] > right._values[i])
                         return true;
@@ -576,15 +560,15 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
+                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Shape, right.Shape);
                 var broadcastedLeft = BroadcastTo(left, newSize);
                 var broadcastedRight = BroadcastTo(right, newSize);
-                nint[] curIndex = new nint[broadcastedRight.Lengths.Length];
-                for (int i = 0; i < broadcastedLeft.LinearLength; i++)
+                Span<nint> curIndex = stackalloc nint[broadcastedRight.Shape.Length];
+                for (int i = 0; i < broadcastedLeft.Length; i++)
                 {
                     if (broadcastedLeft[curIndex] > broadcastedRight[curIndex])
                         return true;
-                    SpanHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Lengths);
+                    SpanNDHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Shape);
                 }
             }
             return false;
@@ -596,7 +580,7 @@ namespace System.Numerics.Tensors
             if (TensorHelpers.AreShapesTheSame(left, right))
             {
 
-                for (int i = 0; i < left.LinearLength; i++)
+                for (int i = 0; i < left.Length; i++)
                 {
                     if (left._values[i] < right._values[i])
                         return false;
@@ -604,15 +588,15 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
+                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Shape, right.Shape);
                 var broadcastedLeft = BroadcastTo(left, newSize);
                 var broadcastedRight = BroadcastTo(right, newSize);
-                nint[] curIndex = new nint[broadcastedRight.Lengths.Length];
-                for (int i = 0; i < broadcastedLeft.LinearLength; i++)
+                Span<nint> curIndex = stackalloc nint[broadcastedRight.Shape.Length];
+                for (int i = 0; i < broadcastedLeft.Length; i++)
                 {
                     if (broadcastedLeft[curIndex] < broadcastedRight[curIndex])
                         return false;
-                    SpanHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Lengths);
+                    SpanNDHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Shape);
                 }
             }
             return true;
@@ -641,10 +625,7 @@ namespace System.Numerics.Tensors
 
         #region Reshape
         // REVIEW: SENTINAL VALUE? CONSTANT VALUE FOR -1 WILDCARD?
-        public static Tensor<T> Reshape<T>(this Tensor<T> input, params nint[] lengths)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool> => Reshape(input, lengths.AsSpan());
-
-        public static Tensor<T> Reshape<T>(this Tensor<T> input, ReadOnlySpan<nint> lengths)
+        public static Tensor<T> Reshape<T>(this Tensor<T> input, params ReadOnlySpan<nint> lengths)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             var arrLengths = lengths.ToArray();
@@ -665,14 +646,14 @@ namespace System.Numerics.Tensors
 
             }
 
-            var tempLinear = SpanHelpers.CalculateTotalLength(ref arrLengths);
-            if (tempLinear != input.LinearLength)
+            var tempLinear = SpanNDHelpers.CalculateTotalLength(ref arrLengths);
+            if (tempLinear != input.Length)
                 throw new ArgumentException("Provided dimensions are not valid for reshaping");
-            var strides = SpanHelpers.CalculateStrides(arrLengths.Length, arrLengths);
+            var strides = SpanNDHelpers.CalculateStrides(arrLengths.Length, arrLengths);
             return new Tensor<T>(input._values, arrLengths, strides.ToArray(), input.IsPinned);
         }
 
-        public static SpanND<T> Reshape<T>(this SpanND<T> input, ReadOnlySpan<nint> lengths)
+        public static SpanND<T> Reshape<T>(this SpanND<T> input, params ReadOnlySpan<nint> lengths)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             var arrLengths = lengths.ToArray();
@@ -681,7 +662,7 @@ namespace System.Numerics.Tensors
             {
                 if (lengths.Count(-1) > 1)
                     throw new ArgumentException("Provided dimensions can only include 1 wildcard.");
-                var tempTotal = input.LinearLength;
+                var tempTotal = input.Length;
                 for (int i = 0; i < lengths.Length; i++)
                 {
                     if (lengths[i] != -1)
@@ -693,10 +674,10 @@ namespace System.Numerics.Tensors
 
             }
 
-            var tempLinear = SpanHelpers.CalculateTotalLength(ref arrLengths);
-            if (tempLinear != input.LinearLength)
+            var tempLinear = SpanNDHelpers.CalculateTotalLength(ref arrLengths);
+            if (tempLinear != input.Length)
                 throw new ArgumentException("Provided dimensions are not valid for reshaping");
-            var strides = SpanHelpers.CalculateStrides(arrLengths.Length, arrLengths);
+            var strides = SpanNDHelpers.CalculateStrides(arrLengths.Length, arrLengths);
             return new SpanND<T>(ref input._reference, arrLengths, strides, input.IsPinned);
         }
         #endregion
@@ -715,31 +696,31 @@ namespace System.Numerics.Tensors
             List<nint> tempLengths = new List<nint>();
             if (axis == -1)
             {
-                for (int i = 0; i < input.Lengths.Length; i++)
+                for (int i = 0; i < input.Shape.Length; i++)
                 {
-                    if (input.Lengths[i] != 1)
+                    if (input.Shape[i] != 1)
                     {
-                        tempLengths.Add(input.Lengths[i]);
+                        tempLengths.Add(input.Shape[i]);
                     }
                 }
                 lengths = tempLengths.ToArray();
-                strides = SpanHelpers.CalculateStrides(lengths.Length, lengths);
+                strides = SpanNDHelpers.CalculateStrides(lengths.Length, lengths);
             }
             else
             {
-                if (input.Lengths[axis] != 1)
+                if (input.Shape[axis] != 1)
                 {
                     throw new ArgumentException("Cannot select an axis to squeeze which has size not equal to one");
                 }
-                for (int i = 0; i < input.Lengths.Length; i++)
+                for (int i = 0; i < input.Shape.Length; i++)
                 {
                     if (i != axis)
                     {
-                        tempLengths.Add(input.Lengths[i]);
+                        tempLengths.Add(input.Shape[i]);
                     }
                 }
                 lengths = tempLengths.ToArray();
-                strides = SpanHelpers.CalculateStrides(lengths.Length, lengths);
+                strides = SpanNDHelpers.CalculateStrides(lengths.Length, lengths);
             }
 
             return new Tensor<T>(input._values, lengths, strides, input.IsPinned);
@@ -751,7 +732,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Unsqueeze<T>(Tensor<T> input, int axis)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            if (axis > input.Lengths.Length)
+            if (axis > input.Shape.Length)
                 throw new ArgumentException("Cannot select an axis less greater than the current Rank");
             if (axis < 0)
                 axis = input.Rank - axis;
@@ -759,7 +740,7 @@ namespace System.Numerics.Tensors
             List<nint> tempLengths = input._lengths.ToList();
             tempLengths.Insert(axis, 1);
             var lengths = tempLengths.ToArray();
-            var strides = SpanHelpers.CalculateStrides(lengths.Length, lengths);
+            var strides = SpanNDHelpers.CalculateStrides(lengths.Length, lengths);
             return new Tensor<T>(input._values, lengths, strides, input.IsPinned);
         }
         #endregion
@@ -784,13 +765,13 @@ namespace System.Numerics.Tensors
             // Calculate total space needed.
             nint totalLength = 0;
             for (int i = 0; i < tensors.Length; i++)
-                totalLength += SpanHelpers.CalculateTotalLength(tensors[i].Lengths);
+                totalLength += SpanNDHelpers.CalculateTotalLength(tensors[i].Shape);
 
             nint sumOfAxis = 0;
             // If axis != -1, make sure all dimensions except the one to concatenate on match.
             if (axis != -1)
             {
-                sumOfAxis = tensors[0].Lengths[axis];
+                sumOfAxis = tensors[0].Shape[axis];
                 for (int i = 1; i < tensors.Length; i++)
                 {
                     if (tensors[0].Rank != tensors[i].Rank)
@@ -799,18 +780,18 @@ namespace System.Numerics.Tensors
                     {
                         if (j != axis)
                         {
-                            if (tensors[0].Lengths[j] != tensors[i].Lengths[j])
+                            if (tensors[0].Shape[j] != tensors[i].Shape[j])
                                 throw new ArgumentException("The arrays must have the same shape, except in the dimension corresponding to axis.");
                         }
                     }
-                    sumOfAxis += tensors[i].Lengths[axis];
+                    sumOfAxis += tensors[i].Shape[axis];
                 }
             }
 
             T[] values = tensors[0].IsPinned ? GC.AllocateArray<T>((int)totalLength, tensors[0].IsPinned) : (new T[totalLength]);
             var dstSpan = MemoryMarshal.CreateSpan(ref values[0], (int)totalLength);
             nint valuesCopied = 0;
-            nint[] indices = new nint[tensors[0].Rank];
+            Span<nint> indices = stackalloc nint[tensors[0].Rank];
             nint srcIndex;
             nint copyLength;
 
@@ -818,13 +799,13 @@ namespace System.Numerics.Tensors
             {
                 for (int i = 0; i < tensors.Length; i++)
                 {
-                    srcIndex = SpanHelpers.GetIndex(indices, tensors[i].Strides, tensors[i].Lengths);
-                    copyLength = CalculateCopyLength(tensors[i].Lengths, axis);
+                    srcIndex = SpanNDHelpers.GetIndex(indices, tensors[i].Strides, tensors[i].Shape);
+                    copyLength = CalculateCopyLength(tensors[i].Shape, axis);
                     var srcSpan = MemoryMarshal.CreateSpan(ref tensors[i]._values[srcIndex], (int)copyLength);
-                    SpanHelpers.Memmove(dstSpan, srcSpan, copyLength, valuesCopied);
+                    SpanNDHelpers.Memmove(dstSpan, srcSpan, copyLength, valuesCopied);
                     valuesCopied += copyLength;
                 }
-                SpanHelpers.AdjustIndices(axis - 1, 1, ref indices, tensors[0].Lengths);
+                SpanNDHelpers.AdjustIndices(axis - 1, 1, ref indices, tensors[0].Shape);
             }
 
             Tensor<T> tensor;
@@ -835,7 +816,7 @@ namespace System.Numerics.Tensors
             else
             {
                 nint[] lengths = new nint[tensors[0].Rank];
-                tensors[0].Lengths.CopyTo(lengths);
+                tensors[0].Shape.CopyTo(lengths);
                 lengths[axis] = sumOfAxis;
                 tensor = new Tensor<T>(values, lengths, tensors[0].IsPinned);
             }
@@ -870,12 +851,8 @@ namespace System.Numerics.Tensors
             TensorPrimitives.Abs(output, output);
             TensorPrimitives.Pow((ReadOnlySpan<T>)output, T.CreateChecked(2), output);
             T sum = TensorPrimitives.Sum((ReadOnlySpan<T>)output);
-            return T.CreateChecked(sum / T.CreateChecked(input.LinearLength));
+            return T.CreateChecked(sum / T.CreateChecked(input.Length));
         }
-
-        public static Tensor<T> StdDev<T>(Tensor<T> input, int axis)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>, IPowerFunctions<T>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
-            => throw new NotImplementedException();
 
         public static TResult StdDev<T, TResult>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
@@ -883,13 +860,9 @@ namespace System.Numerics.Tensors
 
         {
             T sum = Tensor.Sum(input);
-            return TResult.CreateChecked(TResult.CreateChecked(sum) / TResult.CreateChecked(input.LinearLength));
+            return TResult.CreateChecked(TResult.CreateChecked(sum) / TResult.CreateChecked(input.Length));
         }
 
-        public static Tensor<TResult> StdDev<T, TResult>(Tensor<T> input, int axis)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
-            where TResult : IEquatable<TResult>, IEqualityOperators<TResult, TResult, bool>, IFloatingPoint<TResult>
-            => throw new NotImplementedException();
         #endregion
 
         #region Mean
@@ -899,11 +872,8 @@ namespace System.Numerics.Tensors
 
         {
             T sum = Tensor.Sum(input);
-            return T.CreateChecked(sum / T.CreateChecked(input.LinearLength));
+            return T.CreateChecked(sum / T.CreateChecked(input.Length));
         }
-
-        public static Tensor<T> Mean<T>(Tensor<T> input, int axis)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T> => throw new NotImplementedException();
 
         public static TResult Mean<T, TResult>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
@@ -911,19 +881,16 @@ namespace System.Numerics.Tensors
 
         {
             T sum = Tensor.Sum(input);
-            return TResult.CreateChecked(TResult.CreateChecked(sum) / TResult.CreateChecked(input.LinearLength));
+            return TResult.CreateChecked(TResult.CreateChecked(sum) / TResult.CreateChecked(input.Length));
         }
 
-        public static Tensor<TResult> Mean<T, TResult>(Tensor<T> input, int axis)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
-            where TResult : IEquatable<TResult>, IEqualityOperators<TResult, TResult, bool>, IFloatingPoint<TResult> => throw new NotImplementedException();
         #endregion
 
         #region Permute/Transpose
         public static Tensor<T> Transpose<T>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            if (input.Lengths.Length < 2)
+            if (input.Shape.Length < 2)
                 throw new ArgumentException("Must provide a tensor with at least 2 dimensions to transpose it.");
             var axis = Enumerable.Range(0, input.Rank).ToArray();
             var temp = axis[input.Rank - 1];
@@ -932,10 +899,7 @@ namespace System.Numerics.Tensors
             return Permute(input, axis.AsSpan());
         }
 
-        public static Tensor<T> Permute<T>(Tensor<T> input, params int[] axis)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool> => Permute(input, axis.AsSpan());
-
-        public static Tensor<T> Permute<T>(Tensor<T> input, ReadOnlySpan<int> axis)
+        public static Tensor<T> Permute<T>(Tensor<T> input, params ReadOnlySpan<int> axis)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             if (input.Rank == 1)
@@ -949,8 +913,7 @@ namespace System.Numerics.Tensors
                 Tensor<T> tensor;
                 SpanND<T> ospan;
                 SpanND<T> ispan;
-                nint[] indices;
-                int[] permutation;
+                ReadOnlySpan<int> permutation;
 
                 if (axis.IsEmpty)
                 {
@@ -959,23 +922,23 @@ namespace System.Numerics.Tensors
                 }
                 else
                 {
-                    if (axis.Length != input.Lengths.Length)
+                    if (axis.Length != input.Shape.Length)
                         throw new ArgumentException("Must provide an axis order for each axis");
                     for (int i = 0; i < lengths.Length; i++)
-                        lengths[i] = input.Lengths[axis[i]];
+                        lengths[i] = input.Shape[axis[i]];
                     permutation = axis.ToArray();
                 }
                 tensor = new Tensor<T>(values, lengths, Array.Empty<nint>(), input._isPinned);
-                nint[] permutedIndices = new nint[tensor.Rank];
+                Span<nint> permutedIndices = stackalloc nint[tensor.Rank];
 
-                ospan = tensor.AsSpan();
-                ispan = input.AsSpan();
-                indices = new nint[tensor.Rank];
+                ospan = tensor.AsSpanND();
+                ispan = input.AsSpanND();
+                Span<nint> indices = stackalloc nint[tensor.Rank];
                 for (int i = 0; i < input._linearLength; i++)
                 {
-                    TensorHelpers.PermuteIndices(ref indices, ref permutedIndices, ref permutation);
+                    TensorHelpers.PermuteIndices(indices, permutedIndices, permutation);
                     ospan[permutedIndices] = ispan[indices];
-                    SpanHelpers.AdjustIndices(tensor.Rank - 1, 1, ref indices, input._lengths);
+                    SpanNDHelpers.AdjustIndices(tensor.Rank - 1, 1, ref indices, input._lengths);
                 }
 
                 return tensor;
@@ -989,7 +952,7 @@ namespace System.Numerics.Tensors
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
-            Tensor<T> output = Create<T>(input.IsPinned, input.Lengths);
+            Tensor<T> output = Create<T>(input.IsPinned, input.Shape);
             Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._linearLength);
             TensorPrimitives.Multiply(span, val, ospan);
             return output;
@@ -1020,10 +983,10 @@ namespace System.Numerics.Tensors
         public static SpanND<T> Multiply<T>(SpanND<T> input, T val)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
-            T[] values = input.IsPinned ? GC.AllocateArray<T>((int)input.LinearLength, input.IsPinned) : (new T[input.LinearLength]);
-            SpanND<T> output = new SpanND<T>(values, input.Lengths, input.IsPinned);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.Length);
+            T[] values = input.IsPinned ? GC.AllocateArray<T>((int)input.Length, input.IsPinned) : (new T[input.Length]);
+            SpanND<T> output = new SpanND<T>(values, input.Shape, input.IsPinned);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.Length);
             TensorPrimitives.Multiply(span, val, ospan);
             return output;
         }
@@ -1031,9 +994,9 @@ namespace System.Numerics.Tensors
         public static SpanND<T> MultiplyInPlace<T>(SpanND<T> input, T val)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.Length);
             SpanND<T> output = input;
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.Length);
             TensorPrimitives.Multiply(span, val, ospan);
             return output;
         }
@@ -1056,7 +1019,7 @@ namespace System.Numerics.Tensors
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
         {
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
-            Tensor<T> output = Create<T>(input.IsPinned, input.Lengths);
+            Tensor<T> output = Create<T>(input.IsPinned, input.Shape);
             Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._linearLength);
             TensorPrimitives.Divide(span, val, ospan);
             return output;
@@ -1076,7 +1039,7 @@ namespace System.Numerics.Tensors
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
         {
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
-            Tensor<T> output = Create<T>(input.IsPinned, input.Lengths);
+            Tensor<T> output = Create<T>(input.IsPinned, input.Shape);
             Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._linearLength);
             TensorPrimitives.Divide(val, span, ospan);
             return output;
@@ -1107,10 +1070,10 @@ namespace System.Numerics.Tensors
         public static SpanND<T> Divide<T>(SpanND<T> input, T val)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
-            T[] values = input.IsPinned ? GC.AllocateArray<T>((int)input.LinearLength, input.IsPinned) : (new T[input.LinearLength]);
-            SpanND<T> output = new SpanND<T>(values, input.Lengths, input.IsPinned);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.Length);
+            T[] values = input.IsPinned ? GC.AllocateArray<T>((int)input.Length, input.IsPinned) : (new T[input.Length]);
+            SpanND<T> output = new SpanND<T>(values, input.Shape, input.IsPinned);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.Length);
             TensorPrimitives.Divide(span, val, ospan);
             return output;
         }
@@ -1118,9 +1081,9 @@ namespace System.Numerics.Tensors
         public static SpanND<T> DivideInPlace<T>(SpanND<T> input, T val)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.Length);
             SpanND<T> output = input;
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.Length);
             TensorPrimitives.Divide(span, val, ospan);
             return output;
         }
@@ -1128,10 +1091,10 @@ namespace System.Numerics.Tensors
         public static SpanND<T> Divide<T>(T val, SpanND<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
-            T[] values = input.IsPinned ? GC.AllocateArray<T>((int)input.LinearLength, input.IsPinned) : (new T[input.LinearLength]);
-            SpanND<T> output = new SpanND<T>(values, input.Lengths, input.IsPinned);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.Length);
+            T[] values = input.IsPinned ? GC.AllocateArray<T>((int)input.Length, input.IsPinned) : (new T[input.Length]);
+            SpanND<T> output = new SpanND<T>(values, input.Shape, input.IsPinned);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.Length);
             TensorPrimitives.Divide(val, span, ospan);
             return output;
         }
@@ -1139,9 +1102,9 @@ namespace System.Numerics.Tensors
         public static SpanND<T> DivideInPlace<T>(T val, SpanND<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.Length);
             SpanND<T> output = input;
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.Length);
             TensorPrimitives.Divide(val, span, ospan);
             return output;
         }
@@ -1165,7 +1128,7 @@ namespace System.Numerics.Tensors
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
         {
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
-            Tensor<T> output = Create<T>(input.IsPinned, input.Lengths);
+            Tensor<T> output = Create<T>(input.IsPinned, input.Shape);
             Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._linearLength);
             TensorPrimitives.Subtract(span, val, ospan);
             return output;
@@ -1185,7 +1148,7 @@ namespace System.Numerics.Tensors
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
         {
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
-            Tensor<T> output = Create<T>(input.IsPinned, input.Lengths);
+            Tensor<T> output = Create<T>(input.IsPinned, input.Shape);
             Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._linearLength);
             TensorPrimitives.Subtract(val, span, ospan);
             return output;
@@ -1216,10 +1179,10 @@ namespace System.Numerics.Tensors
         public static SpanND<T> Subtract<T>(SpanND<T> input, T val)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
-            T[] values = input.IsPinned ? GC.AllocateArray<T>((int)input.LinearLength, input.IsPinned) : (new T[input.LinearLength]);
-            SpanND<T> output = new SpanND<T>(values, input.Lengths, input.IsPinned);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.Length);
+            T[] values = input.IsPinned ? GC.AllocateArray<T>((int)input.Length, input.IsPinned) : (new T[input.Length]);
+            SpanND<T> output = new SpanND<T>(values, input.Shape, input.IsPinned);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.Length);
             TensorPrimitives.Subtract(span, val, ospan);
             return output;
         }
@@ -1227,9 +1190,9 @@ namespace System.Numerics.Tensors
         public static SpanND<T> SubtractInPlace<T>(SpanND<T> input, T val)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.Length);
             SpanND<T> output = input;
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.Length);
             TensorPrimitives.Subtract(span, val, ospan);
             return output;
         }
@@ -1237,10 +1200,10 @@ namespace System.Numerics.Tensors
         public static SpanND<T> Subtract<T>(T val, SpanND<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
-            T[] values = input.IsPinned ? GC.AllocateArray<T>((int)input.LinearLength, input.IsPinned) : (new T[input.LinearLength]);
-            SpanND<T> output = new SpanND<T>(values, input.Lengths, input.IsPinned);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.Length);
+            T[] values = input.IsPinned ? GC.AllocateArray<T>((int)input.Length, input.IsPinned) : (new T[input.Length]);
+            SpanND<T> output = new SpanND<T>(values, input.Shape, input.IsPinned);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.Length);
             TensorPrimitives.Subtract(val, span, ospan);
             return output;
         }
@@ -1248,9 +1211,9 @@ namespace System.Numerics.Tensors
         public static SpanND<T> SubtractInPlace<T>(T val, SpanND<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.Length);
             SpanND<T> output = input;
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.Length);
             TensorPrimitives.Subtract(val, span, ospan);
             return output;
         }
@@ -1270,8 +1233,6 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region Sum
-        public static Tensor<T> Sum<T>(Tensor<T> input, int axis)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T> => throw new NotImplementedException();
 
         public static T Sum<T>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
@@ -1280,13 +1241,10 @@ namespace System.Numerics.Tensors
             return TensorPrimitives.Sum(span);
         }
 
-        public static SpanND<T> Sum<T>(SpanND<T> input, int axis)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T> => throw new NotImplementedException();
-
         public static T Sum<T>(SpanND<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.Length);
             return TensorPrimitives.Sum(span);
         }
 
@@ -1309,7 +1267,7 @@ namespace System.Numerics.Tensors
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
-            Tensor<T> output = Create<T>(input.IsPinned, input.Lengths);
+            Tensor<T> output = Create<T>(input.IsPinned, input.Shape);
             Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._linearLength);
             TensorPrimitives.Add(span, val, ospan);
             return output;
@@ -1340,10 +1298,10 @@ namespace System.Numerics.Tensors
         public static SpanND<T> Add<T>(SpanND<T> input, T val)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
-            T[] values = input.IsPinned ? GC.AllocateArray<T>((int)input.LinearLength, input.IsPinned) : (new T[input.LinearLength]);
-            SpanND<T> output = new SpanND<T>(values, input.Lengths, input.IsPinned);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.Length);
+            T[] values = input.IsPinned ? GC.AllocateArray<T>((int)input.Length, input.IsPinned) : (new T[input.Length]);
+            SpanND<T> output = new SpanND<T>(values, input.Shape, input.IsPinned);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.Length);
             TensorPrimitives.Add(span, val, ospan);
             return output;
         }
@@ -1351,9 +1309,9 @@ namespace System.Numerics.Tensors
         public static SpanND<T> AddInPlace<T>(SpanND<T> input, T val)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.Length);
             SpanND<T> output = input;
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.Length);
             TensorPrimitives.Add(span, val, ospan);
             return output;
         }
@@ -1371,7 +1329,7 @@ namespace System.Numerics.Tensors
         public static T Norm<T>(SpanND<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.Length);
             return TensorPrimitives.Norm(span);
         }
 
@@ -1549,7 +1507,7 @@ namespace System.Numerics.Tensors
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
-            Tensor<T> output = inPlace ? input : Create<T>(input.IsPinned, input.Lengths);
+            Tensor<T> output = inPlace ? input : Create<T>(input.IsPinned, input.Shape);
             Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._linearLength);
             performCalculation(span, ospan);
             return output;
@@ -1558,9 +1516,9 @@ namespace System.Numerics.Tensors
         private static SpanND<T> TensorPrimitivesHelperT1<T>(SpanND<T> input, PerformCalculationT1<T> performCalculation, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
-            SpanND<T> output = inPlace ? input : Create<T>(input.IsPinned, input.Lengths);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.Length);
+            SpanND<T> output = inPlace ? input : Create<T>(input.IsPinned, input.Shape);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.Length);
             performCalculation(span, ospan);
             return output;
         }
@@ -1568,7 +1526,7 @@ namespace System.Numerics.Tensors
         private static Tensor<T> TensorPrimitivesHelperT1T2<T>(Tensor<T> left, Tensor<T> right, PerformCalculationT1T2<T> performCalculation, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            if (inPlace && left.Lengths != right.Lengths)
+            if (inPlace && left.Shape != right.Shape)
                 throw new ArgumentException("In place operations require the same shape for both tensors");
 
             Tensor<T> output;
@@ -1582,12 +1540,12 @@ namespace System.Numerics.Tensors
                 performCalculation(span, rspan, ospan);
             }
             // If not in place but sizes are the same.
-            else if (left.Lengths.SequenceEqual(right.Lengths))
+            else if (left.Shape.SequenceEqual(right.Shape))
             {
-                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref left.AsSpan()._reference, (int)left.LinearLength);
-                ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref right.AsSpan()._reference, (int)right.LinearLength);
-                output = Create<T>(left.IsPinned, left.Lengths);
-                Span<T> ospan = MemoryMarshal.CreateSpan(ref output.AsSpan()._reference, (int)output.LinearLength);
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref left.AsSpanND()._reference, (int)left.Length);
+                ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref right.AsSpanND()._reference, (int)right.Length);
+                output = Create<T>(left.IsPinned, left.Shape);
+                Span<T> ospan = MemoryMarshal.CreateSpan(ref output.AsSpanND()._reference, (int)output.Length);
                 performCalculation(span, rspan, ospan);
                 return output;
             }
@@ -1598,7 +1556,7 @@ namespace System.Numerics.Tensors
                 // 1 - Both tensors have row contiguous memory (i.e. a 1x5 being broadcast to a 5x5)
                 // 2 - One tensor has row contiguous memory and the other has column contiguous memory (i.e. a 1x5 and a 5x1)
 
-                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
+                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Shape, right.Shape);
 
                 var broadcastedLeft = Tensor.BroadcastTo(left, newSize);
                 var broadcastedRight = Tensor.BroadcastTo(right, newSize);
@@ -1608,46 +1566,46 @@ namespace System.Numerics.Tensors
                 Span<T> ospan;
                 Span<T> ispan;
                 Span<T> buffer = new T[rowLength];
-                nint[] curIndex = new nint[newSize.Length];
+                Span<nint> curIndex = stackalloc nint[newSize.Length];
                 int outputOffset = 0;
                 // left not row contiguous
                 if (broadcastedLeft.Strides[^1] == 0)
                 {
-                    while (outputOffset < output.LinearLength)
+                    while (outputOffset < output.Length)
                     {
                         ospan = MemoryMarshal.CreateSpan(ref output._values[outputOffset], (int)rowLength);
                         buffer.Fill(broadcastedLeft[curIndex]);
                         ispan = MemoryMarshal.CreateSpan(ref broadcastedRight[curIndex], (int)rowLength);
                         performCalculation(buffer, ispan, ospan);
                         outputOffset += (int)rowLength;
-                        SpanHelpers.AdjustIndices(broadcastedLeft.Rank - 2, 1, ref curIndex, broadcastedLeft.Lengths);
+                        SpanNDHelpers.AdjustIndices(broadcastedLeft.Rank - 2, 1, ref curIndex, broadcastedLeft.Shape);
                     }
                 }
                 // right now row contiguous
                 else if (broadcastedRight.Strides[^1] == 0)
                 {
-                    while (outputOffset < output.LinearLength)
+                    while (outputOffset < output.Length)
                     {
                         ospan = MemoryMarshal.CreateSpan(ref output._values[outputOffset], (int)rowLength);
                         buffer.Fill(broadcastedRight[curIndex]);
                         ispan = MemoryMarshal.CreateSpan(ref broadcastedLeft[curIndex], (int)rowLength);
                         performCalculation(ispan, buffer, ospan);
                         outputOffset += (int)rowLength;
-                        SpanHelpers.AdjustIndices(broadcastedLeft.Rank - 2, 1, ref curIndex, broadcastedLeft.Lengths);
+                        SpanNDHelpers.AdjustIndices(broadcastedLeft.Rank - 2, 1, ref curIndex, broadcastedLeft.Shape);
                     }
                 }
                 // both row contiguous
                 else
                 {
                     Span<T> rspan;
-                    while (outputOffset < output.LinearLength)
+                    while (outputOffset < output.Length)
                     {
                         ospan = MemoryMarshal.CreateSpan(ref output._values[outputOffset], (int)rowLength);
                         ispan = MemoryMarshal.CreateSpan(ref broadcastedLeft[curIndex], (int)rowLength);
                         rspan = MemoryMarshal.CreateSpan(ref broadcastedRight[curIndex], (int)rowLength);
                         performCalculation(ispan, rspan, ospan);
                         outputOffset += (int)rowLength;
-                        SpanHelpers.AdjustIndices(broadcastedLeft.Rank - 2, 1, ref curIndex, broadcastedLeft.Lengths);
+                        SpanNDHelpers.AdjustIndices(broadcastedLeft.Rank - 2, 1, ref curIndex, broadcastedLeft.Shape);
                     }
                 }
             }
@@ -1657,7 +1615,7 @@ namespace System.Numerics.Tensors
         private static SpanND<T> TensorPrimitivesHelperT1T2<T>(SpanND<T> left, SpanND<T> right, PerformCalculationT1T2<T> performCalculation, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            if (inPlace && left.Lengths != right.Lengths)
+            if (inPlace && left.Shape != right.Shape)
                 throw new ArgumentException("In place operations require the same shape for both spans");
 
             //ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref left._reference, (int)left.LinearLength);
@@ -1670,19 +1628,19 @@ namespace System.Numerics.Tensors
             SpanND<T> output;
             if (inPlace)
             {
-                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref left._reference, (int)left.LinearLength);
-                ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref right._reference, (int)right.LinearLength);
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref left._reference, (int)left.Length);
+                ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref right._reference, (int)right.Length);
                 output = left;
-                Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
+                Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.Length);
                 performCalculation(span, rspan, ospan);
             }
             // If not in place but sizes are the same.
-            else if (left.Lengths.SequenceEqual(right.Lengths))
+            else if (left.Shape.SequenceEqual(right.Shape))
             {
-                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref left._reference, (int)left.LinearLength);
-                ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref right._reference, (int)right.LinearLength);
-                output = Create<T>(left.IsPinned, left.Lengths);
-                Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref left._reference, (int)left.Length);
+                ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref right._reference, (int)right.Length);
+                output = Create<T>(left.IsPinned, left.Shape);
+                Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.Length);
                 performCalculation(span, rspan, ospan);
                 return output;
             }
@@ -1693,7 +1651,7 @@ namespace System.Numerics.Tensors
                 // 1 - Both tensors have row contiguous memory (i.e. a 1x5 being broadcast to a 5x5)
                 // 2 - One tensor has row contiguous memory and the other has column contiguous memory (i.e. a 1x5 and a 5x1)
 
-                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
+                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Shape, right.Shape);
 
                 var broadcastedLeft = Tensor.BroadcastTo(left, newSize);
                 var broadcastedRight = Tensor.BroadcastTo(right, newSize);
@@ -1703,46 +1661,46 @@ namespace System.Numerics.Tensors
                 Span<T> ospan;
                 Span<T> ispan;
                 Span<T> buffer = new T[rowLength];
-                nint[] curIndex = new nint[newSize.Length];
+                Span<nint> curIndex = stackalloc nint[newSize.Length];
                 int outputOffset = 0;
                 // left not row contiguous
                 if (broadcastedLeft.Strides[^1] == 0)
                 {
-                    while (outputOffset < output.LinearLength)
+                    while (outputOffset < output.Length)
                     {
                         ospan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref output._reference, outputOffset), (int)rowLength);
                         buffer.Fill(broadcastedLeft[curIndex]);
                         ispan = MemoryMarshal.CreateSpan(ref broadcastedRight[curIndex], (int)rowLength);
                         performCalculation(buffer, ispan, ospan);
                         outputOffset += (int)rowLength;
-                        SpanHelpers.AdjustIndices(broadcastedLeft.Rank - 2, 1, ref curIndex, broadcastedLeft.Lengths);
+                        SpanNDHelpers.AdjustIndices(broadcastedLeft.Rank - 2, 1, ref curIndex, broadcastedLeft.Shape);
                     }
                 }
                 // right now row contiguous
                 else if (broadcastedRight.Strides[^1] == 0)
                 {
-                    while (outputOffset < output.LinearLength)
+                    while (outputOffset < output.Length)
                     {
                         ospan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref output._reference, outputOffset), (int)rowLength);
                         buffer.Fill(broadcastedRight[curIndex]);
                         ispan = MemoryMarshal.CreateSpan(ref broadcastedLeft[curIndex], (int)rowLength);
                         performCalculation(ispan, buffer, ospan);
                         outputOffset += (int)rowLength;
-                        SpanHelpers.AdjustIndices(broadcastedLeft.Rank - 2, 1, ref curIndex, broadcastedLeft.Lengths);
+                        SpanNDHelpers.AdjustIndices(broadcastedLeft.Rank - 2, 1, ref curIndex, broadcastedLeft.Shape);
                     }
                 }
                 // both row contiguous
                 else
                 {
                     Span<T> rspan;
-                    while (outputOffset < output.LinearLength)
+                    while (outputOffset < output.Length)
                     {
                         ospan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref output._reference, outputOffset), (int)rowLength);
                         ispan = MemoryMarshal.CreateSpan(ref broadcastedLeft[curIndex], (int)rowLength);
                         rspan = MemoryMarshal.CreateSpan(ref broadcastedRight[curIndex], (int)rowLength);
                         performCalculation(ispan, rspan, ospan);
                         outputOffset += (int)rowLength;
-                        SpanHelpers.AdjustIndices(broadcastedLeft.Rank - 2, 1, ref curIndex, broadcastedLeft.Lengths);
+                        SpanNDHelpers.AdjustIndices(broadcastedLeft.Rank - 2, 1, ref curIndex, broadcastedLeft.Shape);
                     }
                 }
             }

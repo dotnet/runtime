@@ -20,8 +20,8 @@ namespace System.Numerics.Tensors.Tests
             SpanND<int> spanInt = a.AsSpanND(4);
             Assert.Equal(1, spanInt.Rank);
 
-            Assert.Equal(1, spanInt.Lengths.Length);
-            Assert.Equal(4, spanInt.Lengths[0]);
+            Assert.Equal(1, spanInt.Shape.Length);
+            Assert.Equal(4, spanInt.Shape[0]);
             Assert.Equal(1, spanInt.Strides.Length);
             Assert.Equal(1, spanInt.Strides[0]);
             Assert.Equal(91, spanInt[0]);
@@ -47,9 +47,9 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(a, spanInt.ToArray());
             Assert.Equal(2, spanInt.Rank);
             //Assert.Equal(4, spanInt.Length);
-            Assert.Equal(2, spanInt.Lengths.Length);
-            Assert.Equal(2, spanInt.Lengths[0]);
-            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(2, spanInt.Shape.Length);
+            Assert.Equal(2, spanInt.Shape[0]);
+            Assert.Equal(2, spanInt.Shape[1]);
             Assert.Equal(2, spanInt.Strides.Length);
             Assert.Equal(2, spanInt.Strides[0]);
             Assert.Equal(1, spanInt.Strides[1]);
@@ -287,7 +287,7 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Equal(leftEnum.Current, rightEnum.Current);
             }
 
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Assert.Throws<ArgumentException>(() =>
             {
                 var l = leftData.AsSpanND(3, 3, 3);
                 var r = new SpanND<int>();

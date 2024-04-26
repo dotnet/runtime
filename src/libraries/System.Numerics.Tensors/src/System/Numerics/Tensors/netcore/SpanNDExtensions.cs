@@ -16,24 +16,24 @@ namespace System.Numerics.Tensors
         /// <summary>
         /// Determines whether two sequences are equal by comparing the elements using IEquatable{T}.Equals(T).
         /// </summary>
-        //[Intrinsic] // Unrolled and vectorized for half-constant input
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool SequenceEqual<T>(this SpanND<T> span, SpanND<T> other) where T : IEquatable<T>?
         {
-            nint length = span.LinearLength;
-            nint otherLength = other.LinearLength;
+            nint length = span.Length;
+            nint otherLength = other.Length;
 
-            return length == otherLength && SpanHelpers.SequenceEqual(ref span.GetPinnableReference(), ref other.GetPinnableReference(), length);
+            return length == otherLength && SpanNDHelpers.SequenceEqual(ref span.GetPinnableReference(), ref other.GetPinnableReference(), length);
         }
 
-        public static SpanND<T> AsSpanND<T>(this T[]? array, ReadOnlySpan<nint> lengths)
-        {
-            return new SpanND<T>(array, lengths);
-        }
-
-        public static SpanND<T> AsSpanND<T>(this T[]? array, params nint[] lengths)
-        {
-            return new SpanND<T>(array, lengths);
-        }
+        // Doing a copy here for shape because otherwise I get a CS8347 about potentially exposing it beyond its lifetime. In this case that would never happen
+        // because we were always doing a copy of the shape in the constructor anyways, but I couldn't figure out another way around it.
+        /// <summary>
+        /// Extension method to more easily create a SpanND from an array.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements in the array</typeparam>
+        /// <param name="array">The <see cref="System.Array"/> with the data</param>
+        /// <param name="shape">The shape for the <see cref="SpanND{T}"/></param>
+        /// <returns></returns>
+        public static SpanND<T> AsSpanND<T>(this T[]? array, params ReadOnlySpan<nint> shape) => new(array, shape.ToArray());
     }
 }

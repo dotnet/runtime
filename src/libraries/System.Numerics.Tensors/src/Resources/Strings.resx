@@ -153,4 +153,10 @@
   <data name="ThrowArgument_LengthsMustEqualArrayLength" xml:space="preserve">
     <value>The total length specified by the lengths must equal the length of the array.</value>
   </data>
+  <data name="ThrowArgument_FilterTensorMustEqualTensorLength" xml:space="preserve">
+    <value>The total length of the filter tensor must equal the length of the tensor to be filtered.</value>
+  </data>
+  <data name="ThrowArgument_ValueNonNegative" xml:space="preserve">
+    <value>The provided value must be non-negative.</value>
+  </data>
 </root>

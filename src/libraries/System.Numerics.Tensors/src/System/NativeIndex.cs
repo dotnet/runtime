@@ -7,31 +7,29 @@ using System.Runtime.CompilerServices;
 
 namespace System
 {
-    /// <summary>Represent a type can be used to NativeIndex a collection either from the start or the end.</summary>
+    /// <summary>Represent a type can be used to index a collection either from the start or the end.</summary>
     /// <remarks>
-    /// NativeIndex is used by the C# compiler to support the new NativeIndex syntax
     /// <code>
     /// int[] someArray = new int[5] { 1, 2, 3, 4, 5 } ;
     /// int lastElement = someArray[^1]; // lastElement = 5
     /// </code>
     /// </remarks>
-
     public readonly struct NativeIndex : IEquatable<NativeIndex>
     {
         private readonly nint _value;
 
-        /// <summary>Construct an NativeIndex using a value and indicating if the NativeIndex is from the start or from the end.</summary>
+        /// <summary>Construct a NativeIndex using a value and indicating if the NativeIndex is from the start or from the end.</summary>
         /// <param name="value">The NativeIndex value. it has to be zero or positive number.</param>
         /// <param name="fromEnd">Indicating if the NativeIndex is from the start or from the end.</param>
         /// <remarks>
-        /// If the NativeIndex constructed from the end, NativeIndex value 1 means pointing at the last element and NativeIndex value 0 means pointing at beyond last element.
+        /// If the NativeIndex constructed from the end, index value 1 means pointing at the last element and NativeIndex value 0 means pointing at beyond last element.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeIndex(nint value, bool fromEnd = false)
         {
             if (value < 0)
             {
-                ThrowValueArgumentOutOfRange_NeedNonNegNumException();
+                ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
             }
 
             if (fromEnd)
@@ -46,33 +44,33 @@ namespace System
             _value = value;
         }
 
-        /// <summary>Create an NativeIndex pointing at first element.</summary>
+        /// <summary>Create a NativeIndex pointing at first element.</summary>
         public static NativeIndex Start => new NativeIndex(0);
 
-        /// <summary>Create an NativeIndex pointing at beyond last element.</summary>
+        /// <summary>Create a NativeIndex pointing at beyond last element.</summary>
         public static NativeIndex End => new NativeIndex(~0);
 
-        /// <summary>Create an NativeIndex from the start at the position indicated by the value.</summary>
+        /// <summary>Create a NativeIndex from the start at the position indicated by the value.</summary>
         /// <param name="value">The NativeIndex value from the start.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static NativeIndex FromStart(nint value)
         {
             if (value < 0)
             {
-                ThrowValueArgumentOutOfRange_NeedNonNegNumException();
+                ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
             }
 
             return new NativeIndex(value);
         }
 
-        /// <summary>Create an NativeIndex from the end at the position indicated by the value.</summary>
+        /// <summary>Create a NativeIndex from the end at the position indicated by the value.</summary>
         /// <param name="value">The NativeIndex value from the end.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static NativeIndex FromEnd(nint value)
         {
             if (value < 0)
             {
-                ThrowValueArgumentOutOfRange_NeedNonNegNumException();
+                ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
             }
 
             return new NativeIndex(~value);
@@ -143,14 +141,9 @@ namespace System
             return Value.ToString();
         }
 
-        private static void ThrowValueArgumentOutOfRange_NeedNonNegNumException()
-        {
-            throw new ArgumentOutOfRangeException("value", "value must be non-negative");
-        }
-
         private string ToStringFromEnd()
         {
-            Span<char> span = stackalloc char[11]; // 1 for ^ and 10 for longest possible uint value
+            Span<char> span = stackalloc char[21]; // 1 for ^ and 20 for longest possible nuint value
             bool formatted = ((uint)Value).TryFormat(span.Slice(1), out int charsWritten);
             Debug.Assert(formatted);
             span[0] = '^';

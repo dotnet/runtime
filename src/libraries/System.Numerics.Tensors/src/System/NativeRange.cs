@@ -7,9 +7,8 @@ using System.Runtime.CompilerServices;
 
 namespace System
 {
-    /// <summary>Represent a NativeRange has start and end NativeIndexes.</summary>
+    /// <summary>Represent a range that has start and end indices.</summary>
     /// <remarks>
-    /// NativeRange is used by the C# compiler to support the NativeRange syntax.
     /// <code>
     /// int[] someArray = new int[5] { 1, 2, 3, 4, 5 };
     /// int[] subArray1 = someArray[0..2]; // { 1, 2 }
@@ -53,7 +52,7 @@ namespace System
         /// <summary>Converts the value of the current NativeRange object to its equivalent string representation.</summary>
         public override string ToString()
         {
-            Span<char> span = stackalloc char[2 + 2 * 11]; // 2 for "..", then for each NativeIndex 1 for '^' and 10 for longest possible uint
+            Span<char> span = stackalloc char[2 + 2 * 21]; // 2 for "..", then for each NativeIndex 1 for '^' and 20 for longest possible nuint
             int pos = 0;
 
             if (Start.IsFromEnd)

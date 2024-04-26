@@ -22,7 +22,7 @@ namespace System.Numerics.Tensors
     {
 
         internal static bool AreShapesBroadcastCompatible<T>(Tensor<T> tensor1, Tensor<T> tensor2)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool> => AreShapesBroadcastCompatible(tensor1.Lengths, tensor2.Lengths);
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool> => AreShapesBroadcastCompatible(tensor1.Shape, tensor2.Shape);
 
         internal static bool AreShapesBroadcastCompatible(ReadOnlySpan<nint> shape1, ReadOnlySpan<nint> shape2)
         {
@@ -95,13 +95,13 @@ namespace System.Numerics.Tensors
         }
 
         internal static bool IsUnderlyingStorageSameSize<T>(Tensor<T> tensor1, Tensor<T> tensor2)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool> => tensor1.Lengths.Length == tensor2.Lengths.Length;
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool> => tensor1.Shape.Length == tensor2.Shape.Length;
 
         internal static bool AreShapesTheSame<T>(Tensor<T> tensor1, Tensor<T> tensor2)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool> => tensor1._lengths.SequenceEqual(tensor2._lengths);
 
 
-        internal static void PermuteIndices(ref nint[] indices, ref nint[] permutedIndices, ref int[] permutation)
+        internal static void PermuteIndices(Span<nint> indices, Span<nint> permutedIndices, ReadOnlySpan<int> permutation)
         {
             for (int i = 0; i < indices.Length; i++)
             {

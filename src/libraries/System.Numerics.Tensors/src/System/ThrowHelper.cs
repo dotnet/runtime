@@ -72,5 +72,17 @@ namespace System
         {
             return new ArgumentException(message);
         }
+
+        [DoesNotReturn]
+        public static void ThrowValueArgumentOutOfRange_NeedNonNegNumException()
+        {
+            throw new ArgumentOutOfRangeException("value", SR.ThrowArgument_ValueNonNegative);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_FilterTensorMustEqualTensorLength()
+        {
+            throw new ArgumentException(SR.ThrowArgument_FilterTensorMustEqualTensorLength);
+        }
     }
 }

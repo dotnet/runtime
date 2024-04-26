@@ -13,7 +13,7 @@ using System.Runtime.Intrinsics;
 
 namespace System.Numerics.Tensors
 {
-    internal static partial class SpanHelpers // .T
+    internal static partial class SpanNDHelpers // .T
     {
         public static unsafe void Memmove<T>(Span<T> destination, ReadOnlySpan<T> source, nint length, nint dstOffset = 0)
         {
@@ -42,7 +42,6 @@ namespace System.Numerics.Tensors
             }
         }
 
-        //[Intrinsic] // Unrolled for small sizes
         public static unsafe void Fill<T>(ref T refData, nuint numElements, T value)
         {
             // Early checks to see if it's even possible to vectorize - JIT will turn these checks into consts.

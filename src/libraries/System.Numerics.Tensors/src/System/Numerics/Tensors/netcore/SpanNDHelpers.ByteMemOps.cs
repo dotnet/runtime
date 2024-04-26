@@ -13,7 +13,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Numerics.Tensors
 {
-    internal static partial class SpanHelpers // .ByteMemOps
+    internal static partial class SpanNDHelpers // .ByteMemOps
     {
         private const nuint ZeroMemoryNativeThreshold = 1024;
 
@@ -33,7 +33,6 @@ namespace System.Numerics.Tensors
 #if NATIVEAOT
         [System.Runtime.RuntimeExport("RhSpanHelpers_MemZero")]
 #endif
-        //[Intrinsic] // Unrolled for small sizes
         public static unsafe void ClearWithoutReferences(ref byte dest, nuint len)
         {
             if (len == 0)
