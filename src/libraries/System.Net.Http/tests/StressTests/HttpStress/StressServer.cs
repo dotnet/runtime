@@ -297,8 +297,16 @@ namespace HttpStress
                 // Echos back the requested content in a full duplex manner, but one byte at a time.
                 var buffer = new byte[1];
                 ulong hashAcc = CRC.InitialCrc;
+                int offset = 0;
                 while ((await context.Request.Body.ReadAsync(buffer)) != 0)
                 {
+                    if (buffer[0] != (byte)offset)
+                    {
+                        System.Diagnostics.Debug.Fail($"Diverging at offset {offset}, expected 0x{(byte)offset:x2}, got 0x{buffer[0]:x2}");
+                    }
+
+                    offset++;
+
                     hashAcc = CRC.update_crc(hashAcc, buffer, buffer.Length);
                     await context.Response.Body.WriteAsync(buffer);
                 }

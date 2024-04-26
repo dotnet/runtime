@@ -346,6 +346,58 @@ public sealed partial class QuicStream
         => WriteAsync(buffer, completeWrites: false, cancellationToken);
 
 
+    private void Validate(bool bailOnMagicMismatch, ref ArrayBuffer buffer, ref bool headersDone, ref int offset)
+    {
+        if (!headersDone)
+        {
+            if (!TryReadIntegerPair(buffer.ActiveSpan, out long type, out long length, out int bytesRead))
+            {
+                return;
+            }
+
+            Debug.Assert(type == 1, "Expected HEADERS");
+
+            if (buffer.ActiveLength < bytesRead + length)
+            {
+                return; // not enough data
+            }
+
+            ReadOnlySpan<byte> duplexSlowMagic = "/duplexSlow"u8;
+
+            if (!buffer.ActiveSpan.Slice(bytesRead + (int)length - duplexSlowMagic.Length, duplexSlowMagic.Length).SequenceEqual(duplexSlowMagic) && bailOnMagicMismatch)
+            {
+                // different request, bail
+
+                _bailValidation = true;
+                buffer.Dispose();
+                return;
+            }
+
+            buffer.Discard(bytesRead + (int)length);
+            headersDone = true;
+            // System.Console.WriteLine($"{(bailOnMagicMismatch ? "Send" : "Recv")} headers done");
+        }
+
+        while (TryReadIntegerPair(buffer.ActiveSpan, out long type, out long length, out int bytesRead) && buffer.ActiveLength >= bytesRead + length)
+        {
+            if (type == 0)
+            {
+                for (int i = 0; i < length; i++)
+                {
+                    if (buffer.ActiveSpan[bytesRead + i] != (byte)offset)
+                    {
+                        Debug.Fail($"Diverging at offset {offset}, expected 0x{(byte)offset:x2}, got 0x{buffer.ActiveSpan[bytesRead + i]:x2}");
+                    }
+                    offset++;
+                }
+            }
+
+            buffer.Discard(bytesRead + (int)length);
+            // System.Console.WriteLine($"{(bailOnMagicMismatch ? "Send" : "Recv")} processed frame {type} with length {length}");
+        }
+    }
+
+
     /// <inheritdoc cref="WriteAsync(ReadOnlyMemory{byte}, CancellationToken)"/>
     /// <param name="buffer">The region of memory to write data from.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
@@ -394,6 +446,15 @@ public sealed partial class QuicStream
             }
             await valueTask.ConfigureAwait(false);
             return;
+        }
+
+        if (_type == QuicStreamType.Bidirectional && !_bailValidation)
+        {
+            _sendArrayBuffer.EnsureAvailableSpace(buffer.Length);
+            buffer.Span.CopyTo(_sendArrayBuffer.AvailableSpan);
+            _sendArrayBuffer.Commit(buffer.Length);
+
+            Validate(!_isServer, ref _sendArrayBuffer, ref _wroteHeaders, ref _writeOffset);
         }
 
         // We own the lock, abort might happen, but exception will get stored instead.
@@ -545,59 +606,15 @@ public sealed partial class QuicStream
         return QUIC_STATUS_SUCCESS;
     }
 
+
     private bool _isServer;
     private int _offset;
     private bool _receivedHeaders;
     private bool _bailValidation;
-    private ArrayBuffer _arrayBuffer = new ArrayBuffer(0, usePool: true);
-
-    private void ValidateServer()
-    {
-        if (!_receivedHeaders)
-        {
-            if (!TryReadIntegerPair(_arrayBuffer.ActiveSpan, out long type, out long length, out int bytesRead))
-            {
-                return;
-            }
-
-            Debug.Assert(type == 1, "Expected HEADERS");
-
-            if (_arrayBuffer.ActiveLength < bytesRead + length)
-            {
-                return; // not enough data
-            }
-
-            ReadOnlySpan<byte> magic = "/duplexSlow"u8;
-
-            if (!_arrayBuffer.ActiveSpan.Slice(bytesRead + (int)length - magic.Length, magic.Length).SequenceEqual(magic))
-            {
-                _bailValidation = true;
-                _arrayBuffer.Dispose();
-                return;
-            }
-
-            _arrayBuffer.Discard(bytesRead + (int)length);
-            _receivedHeaders = true;
-            // System.Console.WriteLine("Received headers");
-        }
-
-        while (TryReadIntegerPair(_arrayBuffer.ActiveSpan, out long type, out long length, out int bytesRead) && _arrayBuffer.ActiveLength >= bytesRead + length)
-        {
-            Debug.Assert(type == 0, "Expected DATA");
-
-            for (int i = 0; i < length; i++)
-            {
-                if (_arrayBuffer.ActiveSpan[bytesRead + i] != (byte)_offset)
-                {
-                    Debug.Fail($"Diverging at offset {_offset}, expected 0x{(byte)_offset:x2}, got 0x{_arrayBuffer.ActiveSpan[bytesRead + i]:x2}");
-                }
-                _offset++;
-            }
-
-            _arrayBuffer.Discard(bytesRead + (int)length);
-            // System.Console.WriteLine($"Received frame {type} with length {length}");
-        }
-    }
+    private ArrayBuffer _recvArrayBuffer = new ArrayBuffer(0, usePool: true);
+    private int _writeOffset;
+    private bool _wroteHeaders;
+    private ArrayBuffer _sendArrayBuffer = new ArrayBuffer(0, usePool: true);
 
     private static bool TryReadIntegerPair(ReadOnlySpan<byte> buffer, out long a, out long b, out int bytesRead)
     {
@@ -618,16 +635,16 @@ public sealed partial class QuicStream
 
     private unsafe int HandleEventReceive(ref RECEIVE_DATA data)
     {
-        if (_isServer && _type == QuicStreamType.Bidirectional && !_bailValidation)
+        if (_type == QuicStreamType.Bidirectional && !_bailValidation)
         {
             foreach (var buffer in new ReadOnlySpan<QUIC_BUFFER>(data.Buffers, (int)data.BufferCount))
             {
-                _arrayBuffer.EnsureAvailableSpace((int)buffer.Length);
-                buffer.Span.CopyTo(_arrayBuffer.AvailableSpan);
-                _arrayBuffer.Commit((int)buffer.Length);
+                _recvArrayBuffer.EnsureAvailableSpace((int)buffer.Length);
+                buffer.Span.CopyTo(_recvArrayBuffer.AvailableSpan);
+                _recvArrayBuffer.Commit((int)buffer.Length);
             }
 
-            ValidateServer();
+            Validate(_isServer, ref _recvArrayBuffer, ref _receivedHeaders, ref _offset);
         }
 
         ulong totalCopied = (ulong)_receiveBuffers.CopyFrom(
@@ -818,7 +835,8 @@ public sealed partial class QuicStream
         }
         Debug.Assert(_startedTcs.IsCompleted);
         _handle.Dispose();
-        _arrayBuffer.Dispose();
+        _recvArrayBuffer.Dispose();
+        _sendArrayBuffer.Dispose();
 
         unsafe void StreamShutdown(QUIC_STREAM_SHUTDOWN_FLAGS flags, long errorCode)
         {
