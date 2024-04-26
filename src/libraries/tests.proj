@@ -652,7 +652,6 @@
     <ProjectExclusions Condition="'$(RunNativeAotTestApps)' == 'true'" Include="$(MSBuildThisFileDirectory)\System.Private.Xml.Linq\tests\TrimmingTests\System.Xml.Linq.TrimmingTests.proj" />
     <ProjectExclusions Condition="'$(RunNativeAotTestApps)' == 'true'" Include="$(MSBuildThisFileDirectory)\System.Linq.Expressions\tests\TrimmingTests\System.Linq.Expressions.TrimmingTests.proj" />
     <ProjectExclusions Condition="'$(RunNativeAotTestApps)' == 'true'" Include="$(MSBuildThisFileDirectory)\System.Private.Xml\tests\TrimmingTests\System.Private.Xml.TrimmingTests.proj" />
-    <ProjectExclusions Condition="'$(RunNativeAotTestApps)' == 'true'" Include="$(MSBuildThisFileDirectory)\System.Runtime\tests\System.Runtime.Tests\TrimmingTests\System.Runtime.TrimmingTests.proj" />
 
     <TrimmingTestProjects Include="$(MSBuildThisFileDirectory)*\tests\**\*.TrimmingTests.proj"
                       Exclude="@(ProjectExclusions)"
