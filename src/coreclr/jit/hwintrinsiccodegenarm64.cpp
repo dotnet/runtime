@@ -454,11 +454,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             // because the predicated instruction will eventually set it.
                             assert(falseReg == REG_NA);
                         }
-                        else if (falseReg == REG_NA)
+                        else if (intrin.op3->isContained())
                         {
                             // If falseValue is zero, just zero out those lanes of targetReg using `movprfx`
                             // and /Z
-                            assert(intrin.op3->isContained() && intrin.op3->IsVectorZero());
+                            assert(falseReg == REG_NA);
+                            assert(intrin.op3->IsVectorZero());
                             GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, targetReg, opt);
                         }
                         else if (targetReg == embMaskOp1Reg)

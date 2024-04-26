@@ -9242,6 +9242,16 @@ inline bool GenTree::IsVectorAllBitsSet() const
 inline bool GenTree::IsMaskAllBitsSet() const
 {
 #ifdef TARGET_ARM64
+    static_assert_no_msg((NI_Sve_CreateTrueMaskByte + 1) == NI_Sve_CreateTrueMaskDouble);
+    static_assert_no_msg((NI_Sve_CreateTrueMaskDouble + 1) == NI_Sve_CreateTrueMaskInt16);
+    static_assert_no_msg((NI_Sve_CreateTrueMaskInt16 + 1) == NI_Sve_CreateTrueMaskInt32);
+    static_assert_no_msg((NI_Sve_CreateTrueMaskInt32 + 1) == NI_Sve_CreateTrueMaskInt64);
+    static_assert_no_msg((NI_Sve_CreateTrueMaskInt64 + 1) == NI_Sve_CreateTrueMaskSByte);
+    static_assert_no_msg((NI_Sve_CreateTrueMaskSByte + 1) == NI_Sve_CreateTrueMaskSingle);
+    static_assert_no_msg((NI_Sve_CreateTrueMaskSingle + 1) == NI_Sve_CreateTrueMaskUInt16);
+    static_assert_no_msg((NI_Sve_CreateTrueMaskUInt16 + 1) == NI_Sve_CreateTrueMaskUInt32);
+    static_assert_no_msg((NI_Sve_CreateTrueMaskUInt32 + 1) == NI_Sve_CreateTrueMaskUInt64);
+
     if (OperIsHWIntrinsic())
     {
         NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
