@@ -122,10 +122,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 				UnsupportedType unsupportedTypeInstance) { }
 
-			// Analyzer warns that 'this' doesn't satisfy annotations on GetMethod,
-			// even though those annotations are invalid.
-			// https://github.com/dotnet/runtime/issues/101211
-			[ExpectedWarning ("IL2075", nameof (UnsupportedType), nameof (UnsupportedType.GetMethod), ProducedBy = Tool.Analyzer)] // BUG
+			[ExpectedWarning ("IL2075", nameof (UnsupportedType), nameof (UnsupportedType.GetMethod), ProducedBy = Tool.Analyzer)] // https://github.com/dotnet/runtime/issues/101211
 			static void TestMethodThisParameter () {
 				var t = GetUnsupportedTypeInstance ();
 				t.GetMethod ("foo");

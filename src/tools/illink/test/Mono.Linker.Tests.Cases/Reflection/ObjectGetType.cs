@@ -32,6 +32,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			DeepInterfaceHierarchy.Test ();
 
 			ConstructorAsSource.Test ();
+			SealedConstructorAsSource.Test ();
 
 			InterfaceSeenFirst.Test ();
 			AnnotationsRequestedOnImplementation.Test ();
@@ -683,6 +684,35 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			[Kept]
 			[ExpectedWarning ("IL2075", "GetMethod")]
+			public static void Test ()
+			{
+				new Derived ().GetType ().GetMethod ("Method");
+			}
+		}
+
+		[Kept]
+		class SealedConstructorAsSource
+		{
+			[Kept]
+			[KeptMember (".ctor()")]
+			public class Base
+			{
+
+			}
+
+			[Kept]
+			[KeptMember (".ctor()")]
+			[KeptBaseType (typeof (Base))]
+			public sealed class Derived : Base
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode (nameof (Method))]
+				public void Method () { }
+			}
+
+			[Kept]
+			[ExpectedWarning ("IL2026", nameof (Derived.Method))]
 			public static void Test ()
 			{
 				new Derived ().GetType ().GetMethod ("Method");

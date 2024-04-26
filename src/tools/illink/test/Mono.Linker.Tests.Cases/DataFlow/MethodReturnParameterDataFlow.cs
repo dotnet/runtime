@@ -221,6 +221,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				RequirePublicFields (t);
 			}
 
+			[ExpectedWarning ("IL2072", ProducedBy = Tool.Analyzer)] // https://github.com/dotnet/runtime/issues/101211
 			static void TestCtorReturnValue () {
 				var t = new UnsupportedType ();
 				RequirePublicFields (t);
