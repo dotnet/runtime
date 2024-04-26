@@ -491,7 +491,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                                             opt);
                             }
 
-
                             GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,
                                                           falseReg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
                             break;
