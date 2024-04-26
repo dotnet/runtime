@@ -35,7 +35,7 @@ namespace Profiler.Tests
             }
 
             Console.WriteLine("Waiting for profilers to all detach");
-            if (!_profilerDone.WaitOne(TimeSpan.FromMinutes(10)))
+            if (!_profilerDone.WaitOne(TimeSpan.FromMinutes(5)))
             {
                 throw new Exception("Test timed out waiting for the profilers to set the callback, test will fail.");
             }
@@ -45,11 +45,6 @@ namespace Profiler.Tests
 
         public static int Main(string[] args)
         {
-            // failing on MacOs 12 https://github.com/dotnet/runtime/issues/64765
-            if (OperatingSystem.IsMacOS())
-            {
-                return 100;
-            }
             if (args.Length > 0 && args[0].Equals("RunTest", StringComparison.OrdinalIgnoreCase))
             {
                 return RunTest(args);
