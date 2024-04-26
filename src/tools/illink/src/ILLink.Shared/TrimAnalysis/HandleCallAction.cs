@@ -29,7 +29,55 @@ namespace ILLink.Shared.TrimAnalysis
 
 		public bool Invoke (MethodProxy calledMethod, MultiValue instanceValue, IReadOnlyList<MultiValue> argumentValues, IntrinsicId intrinsicId, out MultiValue methodReturnValue)
 		{
-			MultiValue? returnValue = null;
+			MultiValue? maybeMethodReturnValue;
+
+			var handledIntrinsic =
+				TryHandleIntrinsic (calledMethod, instanceValue, argumentValues, intrinsicId, out maybeMethodReturnValue) ||
+				TryHandleSharedIntrinsic (calledMethod, instanceValue, argumentValues, intrinsicId, out maybeMethodReturnValue);
+
+			// As a convenience, if the code above didn't set the return value (and the method has a return value),
+			// we will set it to be an unknown value with the return type of the method.
+			var annotatedMethodReturnValue = _annotations.GetMethodReturnValue (calledMethod);
+			bool returnsVoid = calledMethod.ReturnsVoid ();
+			methodReturnValue = maybeMethodReturnValue ?? (returnsVoid ?
+				MultiValueLattice.Top :
+				annotatedMethodReturnValue);
+
+			// Validate that the return value has the correct annotations as per the method return value annotations
+			if (annotatedMethodReturnValue.DynamicallyAccessedMemberTypes != 0) {
+				foreach (var uniqueValue in methodReturnValue.AsEnumerable ()) {
+					if (uniqueValue is ValueWithDynamicallyAccessedMembers methodReturnValueWithMemberTypes) {
+						if (!methodReturnValueWithMemberTypes.DynamicallyAccessedMemberTypes.HasFlag (annotatedMethodReturnValue.DynamicallyAccessedMemberTypes))
+							throw new InvalidOperationException ($"Internal trimming error: processing of call from {GetContainingSymbolDisplayName ()} to {calledMethod.GetDisplayName ()} returned value which is not correctly annotated with the expected dynamic member access kinds.");
+					} else if (uniqueValue is SystemTypeValue) {
+						// SystemTypeValue can fulfill any requirement, so it's always valid
+						// The requirements will be applied at the point where it's consumed (passed as a method parameter, set as field value, returned from the method)
+					} else if (uniqueValue == NullValue.Instance) {
+						// NullValue can fulfill any requirements because reflection access to it will typically throw.
+					} else {
+						throw new InvalidOperationException ($"Internal trimming error: processing of call from {GetContainingSymbolDisplayName ()} to {calledMethod.GetDisplayName ()} returned value which is not correctly annotated with the expected dynamic member access kinds.");
+					}
+				}
+			}
+
+			return handledIntrinsic;
+		}
+
+		private partial bool TryHandleIntrinsic (
+			MethodProxy calledMethod,
+			MultiValue instanceValue,
+			IReadOnlyList<MultiValue> argumentValues,
+			IntrinsicId intrinsicId,
+			out MultiValue? methodReturnValue);
+
+		bool TryHandleSharedIntrinsic (
+			MethodProxy calledMethod,
+			MultiValue instanceValue,
+			IReadOnlyList<MultiValue> argumentValues,
+			IntrinsicId intrinsicId,
+			out MultiValue? methodReturnValue)
+		{
+			MultiValue? returnValue = methodReturnValue = null;
 
 			bool requiresDataFlowAnalysis = _annotations.MethodRequiresDataFlowAnalysis (calledMethod);
 			var annotatedMethodReturnValue = _annotations.GetMethodReturnValue (calledMethod);
@@ -154,8 +202,7 @@ namespace ILLink.Shared.TrimAnalysis
 			// Array.Empty<T> must for now be handled by the specific implementation since it requires instantiated generic method handling
 			case IntrinsicId.Object_GetType:
 				// Object.GetType requires additional handling by the caller to implement type hierarchy marking and related diagnostics
-				methodReturnValue = MultiValueLattice.Top;
-				return false;
+				throw new NotImplementedException ("These intrinsics should be handled by the specific implementation: " + intrinsicId);
 
 			//
 			// GetInterface (String)
@@ -1153,44 +1200,14 @@ namespace ILLink.Shared.TrimAnalysis
 				}
 				break;
 
-			// Disable warnings for all unimplemented intrinsics. Some intrinsic methods have annotations, but analyzing them
-			// would produce unnecessary warnings even for cases that are intrinsically handled. So we disable handling these calls
-			// until a proper intrinsic handling is made
-			// NOTE: Currently this is done "for the analyzer" and it relies on illink/NativeAOT to not call HandleCallAction
-			// for intrinsics which illink/NativeAOT need special handling for or those which are not implemented here and only there.
-			// Ideally we would run everything through HandleCallAction and it would return "false" for intrinsics it doesn't handle
-			// like it already does for Activator.CreateInstance<T> for example.
 			default:
-				methodReturnValue = MultiValueLattice.Top;
-				return true;
+				return false;
 			}
-
-			// For now, if the intrinsic doesn't set a return value, fall back on the annotations.
-			// Note that this will be DynamicallyAccessedMembers.None for the intrinsics which don't return types.
-			returnValue ??= calledMethod.ReturnsVoid () ? MultiValueLattice.Top : annotatedMethodReturnValue;
 
 			if (MethodIsTypeConstructor (calledMethod))
 				returnValue = UnknownValue.Instance;
 
-			// Validate that the return value has the correct annotations as per the method return value annotations
-			if (annotatedMethodReturnValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None) {
-				foreach (var uniqueValue in returnValue.Value.AsEnumerable ()) {
-					if (uniqueValue is ValueWithDynamicallyAccessedMembers methodReturnValueWithMemberTypes) {
-						if (!methodReturnValueWithMemberTypes.DynamicallyAccessedMemberTypes.HasFlag (annotatedMethodReturnValue.DynamicallyAccessedMemberTypes))
-							throw new InvalidOperationException ($"Internal ILLink error: in {GetContainingSymbolDisplayName ()} processing call to {calledMethod.GetDisplayName ()} returned value which is not correctly annotated with the expected dynamic member access kinds.");
-					} else if (uniqueValue is SystemTypeValue) {
-						// SystemTypeValue can fulfill any requirement, so it's always valid
-						// The requirements will be applied at the point where it's consumed (passed as a method parameter, set as field value, returned from the method)
-					} else if (uniqueValue == NullValue.Instance) {
-						// NullValue can fulfill any requirements because reflection access to it will typically throw.
-					} else {
-						throw new InvalidOperationException ($"Internal ILLink error: in {GetContainingSymbolDisplayName ()} processing call to {calledMethod.GetDisplayName ()} returned value which is not correctly annotated with the expected dynamic member access kinds.");
-					}
-				}
-			}
-
-			methodReturnValue = returnValue.Value;
-
+			methodReturnValue = returnValue;
 			return true;
 
 			void AddReturnValue (MultiValue value)

@@ -4190,8 +4190,9 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             return;
         case DF_F_RG12I:
         {
-            tmp = ((code >> 10) & 0xfff);
-            printf("%s, %s, 0x%x\n", RegNames[regd + 32], RegNames[regj], tmp);
+            tmp = code << 10;
+            tmp >>= 20;
+            printf("%s, %s, %d\n", RegNames[regd + 32], RegNames[regj], tmp);
             return;
         }
         case DF_F_FG:
