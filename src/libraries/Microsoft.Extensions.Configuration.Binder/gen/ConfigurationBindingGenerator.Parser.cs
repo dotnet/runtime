@@ -661,7 +661,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         {
                             string propertyName = property.Name;
 
-                            if (properties?.ContainsKey(propertyName) is true)
+                            if (property.IsOverride || properties?.ContainsKey(propertyName) is true)
                             {
                                 continue;
                             }
