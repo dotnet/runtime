@@ -10,7 +10,7 @@ RUN apt-get update -y && \
 RUN git clone --recursive https://github.com/microsoft/msquic --depth 1
 RUN cd msquic/ && \
     mkdir build && \
-    cmake -B build -DCMAKE_BUILD_TYPE=Debug -DQUIC_ENABLE_LOGGING=false -DQUIC_USE_SYSTEM_LIBCRYPTO=true -DQUIC_BUILD_TOOLS=off -DQUIC_BUILD_TEST=off -DQUIC_BUILD_PERF=off -DQUIC_TLS=openssl3 -DQUIC_ENABLE_SANITIZERS=on && \
+    cmake -B build -DCMAKE_BUILD_TYPE=Debug -DQUIC_ENABLE_LOGGING=false -DQUIC_USE_SYSTEM_LIBCRYPTO=true -DQUIC_BUILD_TOOLS=off -DQUIC_BUILD_TEST=off -DQUIC_BUILD_PERF=off -DQUIC_TLS=openssl3 && \
     cd build && \
     cmake --build . --config Debug
 RUN cd msquic/build/bin/Debug && \
@@ -41,11 +41,10 @@ ENV DOTNET_DbgMiniDumpName="/dumps-share/coredump.%p"
 EXPOSE 5001
 
 # configure adress sanitizer
-ENV ASAN_OPTIONS='detect_leaks=0'
-ENV LD_PRELOAD=/usr/lib/gcc/x86_64-linux-gnu/12/libasan.so
+# ENV ASAN_OPTIONS='detect_leaks=0'
+# ENV LD_PRELOAD=/usr/lib/gcc/x86_64-linux-gnu/12/libasan.so
 
 ENV VERSION=$VERSION
 ENV CONFIGURATION=$CONFIGURATION
 ENV HTTPSTRESS_ARGS=''
-CMD /live-runtime-artifacts/testhost/net$VERSION-linux-$CONFIGURATION-x64/dotnet exec --roll-forward Major \
-    ./bin/$CONFIGURATION/net$VERSION/HttpStress.dll $HTTPSTRESS_ARGS
+CMD ./run.sh
