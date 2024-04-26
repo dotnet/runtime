@@ -58,7 +58,6 @@ enum HWIntrinsicCategory : uint8_t
     HW_Category_ShiftLeftByImmediate,
     HW_Category_ShiftRightByImmediate,
     HW_Category_SIMDByIndexedElement,
-    HW_Category_EnumPattern,
 
     // Helper intrinsics
     // - do not directly correspond to a instruction, such as Vector64.AllBitsSet
@@ -232,6 +231,11 @@ enum HWIntrinsicFlag : unsigned int
 
     // The intrinsic is an embedded masking incompatible intrinsic
     HW_Flag_EmbMaskingIncompatible = 0x20000000,
+#elif defined(TARGET_ARM64)
+
+    // The intrinsic has an enum operand. Using this implies HW_Flag_HasImmediateOperand.
+    HW_Flag_HasEnumOperand = 0x1000000,
+
 #endif // TARGET_XARCH
 
     HW_Flag_CanBenefitFromConstantProp = 0x80000000,
@@ -867,7 +871,7 @@ struct HWIntrinsicInfo
     static bool HasImmediateOperand(NamedIntrinsic id)
     {
         const HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_HasImmediateOperand) != 0;
+        return ((flags & HW_Flag_HasImmediateOperand) != 0) || HasEnumOperand(id);
     }
 
     static bool IsScalable(NamedIntrinsic id)
@@ -904,6 +908,12 @@ struct HWIntrinsicInfo
     {
         const HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_ExplicitMaskedOperation) != 0;
+    }
+
+    static bool HasEnumOperand(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_HasEnumOperand) != 0;
     }
 
 #endif // TARGET_ARM64
