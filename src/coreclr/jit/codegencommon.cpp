@@ -4119,26 +4119,24 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
     }
 }
 
-#if defined(SWIFT_SUPPORT) || defined(TARGET_RISCV64)
+#ifdef SWIFT_SUPPORT
 
 //-----------------------------------------------------------------------------
-// genHomeStackParams:
-//  Reassemble parameters if necessary.
+// genHomeSwiftStructParameters:
+//  Reassemble Swift struct parameters if necessary.
 //
 // Parameters:
 //   handleStack - If true, reassemble the segments that were passed on the stack.
 //                 If false, reassemble the segments that were passed in registers.
 //
-void CodeGen::genHomeStackParams(bool handleStack)
+void CodeGen::genHomeSwiftStructParameters(bool handleStack)
 {
     for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
     {
-#ifdef SWIFT_SUPPORT
         if (lclNum == compiler->lvaSwiftSelfArg)
         {
             continue;
         }
-#endif
 
         LclVarDsc* dsc = compiler->lvaGetDesc(lclNum);
         if ((dsc->TypeGet() != TYP_STRUCT) || compiler->lvaIsImplicitByRefLocal(lclNum) || !dsc->lvOnFrame)
@@ -4146,7 +4144,7 @@ void CodeGen::genHomeStackParams(bool handleStack)
             continue;
         }
 
-        JITDUMP("Homing reassembled parameter V%02u: ", lclNum);
+        JITDUMP("Homing Swift parameter V%02u: ", lclNum);
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
         DBEXEC(VERBOSE, abiInfo.Dump());
 
@@ -4184,13 +4182,9 @@ void CodeGen::genHomeStackParams(bool handleStack)
                     case 2:
                         loadType = TYP_USHORT;
                         break;
-                    case 3:
                     case 4:
                         loadType = TYP_INT;
                         break;
-                    case 5:
-                    case 6:
-                    case 7:
                     case 8:
                         loadType = TYP_LONG;
                         break;
@@ -4227,7 +4221,7 @@ void CodeGen::genHomeStackParams(bool handleStack)
         }
     }
 }
-#endif // defined(SWIFT_SUPPORT) || defined(TARGET_RISCV64)
+#endif
 
 /*-----------------------------------------------------------------------------
  *
@@ -5519,7 +5513,7 @@ void CodeGen::genFnProlog()
             intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_ERROR;
         }
 
-        genHomeStackParams(/* handleStack */ false);
+        genHomeSwiftStructParameters(/* handleStack */ false);
     }
 #endif
 
@@ -5554,13 +5548,6 @@ void CodeGen::genFnProlog()
         // Home the incoming arguments.
         genEnregisterIncomingStackArgs();
     }
-
-#ifdef TARGET_RISCV64
-    if (compiler->fgFirstBBisScratch() && compiler->lvaHasAnyStackParamToReassemble())
-    {
-        genHomeStackParams(/* handleStack */ true);
-    }
-#endif
 
     /* Initialize any must-init registers variables now */
 

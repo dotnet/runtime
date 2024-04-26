@@ -1889,15 +1889,16 @@ void Compiler::lvaClassifyParameterABI()
 }
 
 //--------------------------------------------------------------------------------------------
-// lvaHasAnyStackParamToReassemble:
-//   Check if this compilation has any parameters split that need to be reassembled on the local stack frame.
+// lvaHaveSwiftStructStackParamsToReassemble:
+//   Check if this compilation has any Swift parameters that are passed on the
+//   stack and that need to be reassembled on the local stack frame.
 //
 // Return value:
 //   True if so.
 //
-bool Compiler::lvaHasAnyStackParamToReassemble()
+bool Compiler::lvaHasAnySwiftStackParamToReassemble()
 {
-#if defined(SWIFT_SUPPORT)
+#ifdef SWIFT_SUPPORT
     if (info.compCallConv != CorInfoCallConvExtension::Swift)
     {
         return false;
@@ -1911,16 +1912,8 @@ bool Compiler::lvaHasAnyStackParamToReassemble()
             return true;
         }
     }
-#elif defined(TARGET_RISCV64)
-    for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
-    {
-        const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
-        if (abiInfo.IsSplitAcrossRegistersAndStack())
-        {
-            return true;
-        }
-    }
 #endif
+
     return false;
 }
 
