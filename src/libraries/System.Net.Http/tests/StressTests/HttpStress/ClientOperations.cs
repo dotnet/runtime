@@ -22,6 +22,7 @@ namespace HttpStress
         private const string alphaNumeric = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
         private readonly Random _random;
+        public Random Random => _random;
         private readonly HttpClient _client;
         private readonly CancellationToken _globalToken;
         private readonly Configuration _config;
@@ -105,6 +106,18 @@ namespace HttpStress
 
                 return m;
             }
+        }
+
+        public byte[] GetByteArray(int minLength, int maxLength)
+        {
+            int length = _random.Next(minLength, maxLength);
+            byte[] byteContent = new byte[length];
+            for (int i = 0; i < length; i++)
+            {
+                byteContent[i] = (byte)i;
+            }
+
+            return byteContent;
         }
 
         /// Gets a random ASCII string within specified length range
@@ -361,20 +374,19 @@ namespace HttpStress
                 ("POST Duplex Slow",
                 async ctx =>
                 {
-                    string content = ctx.GetRandomString(0, ctx.MaxContentLength);
-                    byte[] byteContent = Encoding.ASCII.GetBytes(content);
+                    byte[] byteContent = ctx.GetByteArray(0, ctx.MaxContentLength);
                     ulong checksum = CRC.CalculateCRC(byteContent);
 
                     using var req = new HttpRequestMessage(HttpMethod.Post, "/duplexSlow") { Content = new ByteAtATimeNoLengthContent(byteContent) };
                     using HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
 
                     ValidateStatusCode(m);
-                    string response = await m.Content.ReadAsStringAsync();
+                    byte[] response = await m.Content.ReadAsByteArrayAsync();
 
                     // trailing headers not supported for all servers, so do not require checksums
                     bool isValidChecksum = ValidateServerChecksum(m.TrailingHeaders, checksum, required: false);
 
-                    ValidateContent(content, response, details: $"server checksum {(isValidChecksum ? "matches" : "does not match")} client value.");
+                    ValidateByteContent(response, byteContent.Length, details: $"server checksum {(isValidChecksum ? "matches" : "does not match")} client value.");
 
                     if (!isValidChecksum)
                     {
@@ -494,6 +506,23 @@ namespace HttpStress
                 throw new Exception($"Expected response content \"{expectedContent}\", got \"{actualContent}\".\n Diverging at index {divergentIndex}. {details}");
             }
         }
+
+        private static void ValidateByteContent(byte[] content, int length, string? details = null)
+        {
+            for (int i = 0; i < length; i++)
+            {
+                if (content[i] != (byte)i)
+                {
+                    throw new Exception($"Expected response content diverging at index {i}, expected 0x{(byte)i:X2} got 0x{content[i]:X2}. {details}");
+                }
+            }
+
+            if (content.Length != length)
+            {
+                throw new Exception($"Expected response content length {length}, got {content.Length}. {details}");
+            }
+        }
+
 
         private static void ValidateServerContent(string content, int expectedLength)
         {

@@ -33,6 +33,10 @@
     <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs" Link="Common\System\Net\MultiArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs" Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="Common\System\Net\StreamBuffer.cs" />
+
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\Helpers\VariableLengthIntegerHelper.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http3\Helpers\VariableLengthIntegerHelper.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs" Link="Common\System\Net\IPAddressParserStatics.cs" />
     <Compile Include="$(CommonPath)System\Net\IPEndPointExtensions.cs" Link="Common\System\Net\IPEndPointExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\TlsAlertMessage.cs" Link="Common\System\Net\Security\TlsAlertMessage.cs" />
