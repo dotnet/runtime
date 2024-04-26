@@ -12,6 +12,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/debug-internals.h>
 #include <mono/metadata/mempool-internals.h>
+#include <mono/metadata/native-library.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/abi-details.h>
@@ -6118,8 +6119,14 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				gboolean src_in_reg = FALSE;
 				gboolean is_simd = mini_class_is_simd (ctx->cfg, mono_class_from_mono_type_internal (sig->ret));
 				switch (linfo->ret.storage) {
-				case LLVMArgNormal: src_in_reg = TRUE; break;
-				case LLVMArgVtypeInReg: case LLVMArgVtypeAsScalar: src_in_reg = is_simd; break;
+				case LLVMArgNormal:
+					src_in_reg = TRUE;
+					break;
+				case LLVMArgVtypeInReg:
+				case LLVMArgVtypeAsScalar:
+				case LLVMArgWasmVtypeAsScalar:
+					src_in_reg = is_simd;
+					break;
 				}
 				if (src_in_reg && (!lhs || ctx->is_dead [ins->sreg1])) {
 					/*
@@ -14519,17 +14526,21 @@ emit_aot_file_info (MonoLLVMModule *module)
 	LLVMSetInitializer (info_var, LLVMConstNamedStruct (module->info_var_type, fields, nfields));
 
 	if (module->static_link) {
-		char *s, *p;
+		char *s;
 		LLVMValueRef var;
 
 		s = g_strdup_printf ("mono_aot_module_%s_info", module->assembly->aname.name);
+#ifdef TARGET_WASM
+		var = LLVMAddGlobal (module->lmodule, pointer_type (LLVMInt8Type ()), g_strdup (mono_fixup_symbol_name(s)));
+#else
 		/* Get rid of characters which cannot occur in symbols */
-		p = s;
+		char *p = s;
 		for (p = s; *p; ++p) {
 			if (!(isalnum (*p) || *p == '_'))
-				*p = '_';
+			*p = '_';
 		}
 		var = LLVMAddGlobal (module->lmodule, pointer_type (LLVMInt8Type ()), s);
+#endif
 		g_free (s);
 		LLVMSetInitializer (var, LLVMConstBitCast (LLVMGetNamedGlobal (module->lmodule, "mono_aot_file_info"), pointer_type (LLVMInt8Type ())));
 		LLVMSetLinkage (var, LLVMExternalLinkage);

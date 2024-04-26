@@ -2851,21 +2851,22 @@ BOOL SyncBlock::Wait(INT32 timeOut)
 
     _ASSERTE ((SyncBlock*)((DWORD_PTR)walk->m_Next->m_WaitSB & ~1)== this);
 
-    PendingSync   syncState(walk);
-
-    OBJECTREF     obj = m_Monitor.GetOwningObject();
-    syncState.m_Object = OBJECTREFToObject(obj);
-
-    m_Monitor.IncrementTransientPrecious();
-
     // While we are in this frame the thread is considered blocked on the
-    // event of the monitor lock according to the debugger
+    // event of the monitor lock according to the debugger. DebugBlockingItemHolder
+    // can trigger a GC, so set it up before accessing the owning object.
     DebugBlockingItem blockingMonitorInfo;
     blockingMonitorInfo.dwTimeout = timeOut;
     blockingMonitorInfo.pMonitor = &m_Monitor;
     blockingMonitorInfo.pAppDomain = SystemDomain::GetCurrentDomain();
     blockingMonitorInfo.type = DebugBlock_MonitorEvent;
     DebugBlockingItemHolder holder(pCurThread, &blockingMonitorInfo);
+
+    PendingSync   syncState(walk);
+
+    OBJECTREF     obj = m_Monitor.GetOwningObject();
+    syncState.m_Object = OBJECTREFToObject(obj);
+
+    m_Monitor.IncrementTransientPrecious();
 
     GCPROTECT_BEGIN(obj);
     {

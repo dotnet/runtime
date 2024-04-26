@@ -362,17 +362,17 @@ namespace System.Runtime.InteropServices.Marshalling
         System.Runtime.InteropServices.Marshalling.VirtualMethodTableInfo System.Runtime.InteropServices.Marshalling.IUnmanagedVirtualMethodTableProvider.GetVirtualMethodTableInfoForKey(System.Type type) { throw null; }
     }
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Exception), System.Runtime.InteropServices.Marshalling.MarshalMode.UnmanagedToManagedOut, typeof(System.Runtime.InteropServices.Marshalling.ExceptionAsDefaultMarshaller<>))]
-    public static partial class ExceptionAsDefaultMarshaller<T> where T : struct
+    public static partial class ExceptionAsDefaultMarshaller<T> where T : unmanaged
     {
         public static T ConvertToUnmanaged(System.Exception e) { throw null; }
     }
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Exception), System.Runtime.InteropServices.Marshalling.MarshalMode.UnmanagedToManagedOut, typeof(System.Runtime.InteropServices.Marshalling.ExceptionAsHResultMarshaller<>))]
-    public static partial class ExceptionAsHResultMarshaller<T> where T : struct
+    public static partial class ExceptionAsHResultMarshaller<T> where T : unmanaged, System.Numerics.INumber<T>
     {
         public static T ConvertToUnmanaged(System.Exception e) { throw null; }
     }
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Exception), System.Runtime.InteropServices.Marshalling.MarshalMode.UnmanagedToManagedOut, typeof(System.Runtime.InteropServices.Marshalling.ExceptionAsNaNMarshaller<>))]
-    public static partial class ExceptionAsNaNMarshaller<T> where T : struct
+    public static partial class ExceptionAsNaNMarshaller<T> where T : unmanaged, System.Numerics.IFloatingPointIeee754<T>
     {
         public static T ConvertToUnmanaged(System.Exception e) { throw null; }
     }
@@ -1341,6 +1341,8 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat Clamp(System.Runtime.InteropServices.NFloat value, System.Runtime.InteropServices.NFloat min, System.Runtime.InteropServices.NFloat max) { throw null; }
         public int CompareTo(object? obj) { throw null; }
         public int CompareTo(System.Runtime.InteropServices.NFloat other) { throw null; }
+        public static TInteger ConvertToInteger<TInteger>(System.Runtime.InteropServices.NFloat value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
+        public static TInteger ConvertToIntegerNative<TInteger>(System.Runtime.InteropServices.NFloat value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
         public static System.Runtime.InteropServices.NFloat CopySign(System.Runtime.InteropServices.NFloat value, System.Runtime.InteropServices.NFloat sign) { throw null; }
         public static System.Runtime.InteropServices.NFloat Cos(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Cosh(System.Runtime.InteropServices.NFloat x) { throw null; }

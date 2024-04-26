@@ -698,6 +698,11 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(...)(?(1)\w*|\s*)[a1 ]", "zabcaaaaaaa", RegexOptions.RightToLeft, 0, 11, true, "aaaa");
                 yield return (@"(...)(?(1)\w*|\s*)[a1 ]", "----       ", RegexOptions.RightToLeft, 0, 11, true, "---       ");
                 yield return (@"(aaa)(?(1)aaa|b?)*", "aaaaaa", RegexOptions.None, 0, 6, true, "aaaaaa");
+
+                yield return (@"AAB|AAC", "AABAACD", RegexOptions.RightToLeft, 0, 6, true, "AAC");
+                yield return (@"AAB|AA\d", "AABAACD", RegexOptions.RightToLeft, 0, 6, true, "AAB");
+                yield return (@"(AB){3,}", "1234ABABABAB5678", RegexOptions.RightToLeft, 0, 16, true, "ABABABAB");
+                yield return (@"(AB){1,3}", "1234ABABABAB5678", RegexOptions.RightToLeft, 0, 16, true, "ABABAB");
             }
 
             // Character Class Subtraction

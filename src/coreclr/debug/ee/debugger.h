@@ -536,6 +536,61 @@ struct DebuggerPendingFuncEval
 typedef DPTR(struct DebuggerPendingFuncEval) PTR_DebuggerPendingFuncEval;
 
 /* ------------------------------------------------------------------------ *
+ * SHash to hold weak object handles of exceptions with ForceCatchHandlerFound equal to true
+ * ------------------------------------------------------------------------ */
+#ifndef DACCESS_COMPILE
+class EMPTY_BASES_DECL ForceCatchHandlerFoundSHashTraits : public DefaultSHashTraits<OBJECTHANDLE>
+{
+    public:
+        typedef OBJECTHANDLE element_t;
+        typedef OBJECTHANDLE key_t;
+        static const bool s_supports_autoremove = true;
+        static const bool s_NoThrow = false;
+        static const bool s_RemovePerEntryCleanupAction = true;
+
+        static BOOL Equals(const OBJECTHANDLE &e, const OBJECTHANDLE &f)
+        {
+            return ObjectFromHandle(e) == ObjectFromHandle(f);
+        }
+        static OBJECTHANDLE GetKey(const OBJECTHANDLE &e)
+        {
+            return e;
+        }
+        static INT32 Hash(const OBJECTHANDLE &e)
+        {
+            return ObjectFromHandle(e)->GetHashCodeEx();
+        }
+        static bool ShouldDelete(const OBJECTHANDLE &e)
+        {
+            return ObjectHandleIsNull(e);
+        }
+        static OBJECTHANDLE Null()
+        {
+            OBJECTHANDLE e = (OBJECTHANDLE)(TADDR)0;
+            return e;
+        }
+        static bool IsNull(const OBJECTHANDLE &e)
+        {
+            return e == (OBJECTHANDLE)(TADDR)0;
+        }
+        static OBJECTHANDLE Deleted()
+        {
+            OBJECTHANDLE e = (OBJECTHANDLE)(TADDR)-1;
+            return e;
+        }
+        static bool IsDeleted(const OBJECTHANDLE &e)
+        {
+            return e == (OBJECTHANDLE)(TADDR)-1;
+        }
+        static void OnRemovePerEntryCleanupAction(const OBJECTHANDLE &e)
+        {
+            DestroyLongWeakHandle(e);
+        }
+};
+typedef SHash<ForceCatchHandlerFoundSHashTraits> ForceCatchHandlerFoundTable;
+#endif
+
+/* ------------------------------------------------------------------------ *
  * DebuggerRCThread class -- the Runtime Controller thread.
  * ------------------------------------------------------------------------ */
 
@@ -1917,6 +1972,8 @@ public:
                                          Module *classModule,
                                          BOOL fIsLoadEvent);
 
+    BOOL ShouldSendCatchHandlerFound(Thread* pThread);
+
     void SendCatchHandlerFound(Thread *pThread,
                                FramePointer fp,
                                SIZE_T nOffset,
@@ -2218,6 +2275,7 @@ public:
     HRESULT DeoptimizeMethod(Module* pModule, mdMethodDef methodDef);
 #endif //DACCESS_COMPILE
     HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult);
+    HRESULT UpdateForceCatchHandlerFoundTable(BOOL enableEvents, OBJECTREF exObj, AppDomain *pAppDomain);
 
     //
     // The debugger mutex is used to protect any "global" Left Side
@@ -2806,6 +2864,11 @@ private:
     BOOL                  m_unrecoverableError;
     BOOL                  m_ignoreThreadDetach;
     PTR_DebuggerMethodInfoTable   m_pMethodInfos;
+    #ifdef DACCESS_COMPILE
+    VOID * m_pForceCatchHandlerFoundEventsTable;
+    #else
+    ForceCatchHandlerFoundTable *m_pForceCatchHandlerFoundEventsTable;
+    #endif
 
 
     // This is the main debugger lock. It is a large lock and used to synchronize complex operations
