@@ -65,9 +65,7 @@ const enum JSBindingHeaderOffsets {
 }
 
 export function alloc_stack_frame (size: number): JSMarshalerArguments {
-    if (WasmEnableThreads) {
-        forceThreadMemoryViewRefresh();
-    }
+    forceThreadMemoryViewRefresh();
     const bytes = JavaScriptMarshalerArgSize * size;
     const args = Module.stackAlloc(bytes) as any;
     _zero_region(args, bytes);

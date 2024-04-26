@@ -1831,8 +1831,7 @@ void CodeGen::genGenerateMachineCode()
 
         if (compiler->fgHaveProfileWeights())
         {
-            printf("; with %s: edge weights are %s, and fgCalledCount is " FMT_WT "\n",
-                   compiler->compGetPgoSourceName(), compiler->fgHaveValidEdgeWeights ? "valid" : "invalid",
+            printf("; with %s: fgCalledCount is " FMT_WT "\n", compiler->compGetPgoSourceName(),
                    compiler->fgCalledCount);
         }
 
@@ -2803,7 +2802,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+#if !defined(TARGET_RISCV64)
 struct RegNode;
 
 struct RegNodeEdge
@@ -4186,9 +4185,13 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack)
                     case 2:
                         loadType = TYP_USHORT;
                         break;
+                    case 3:
                     case 4:
                         loadType = TYP_INT;
                         break;
+                    case 5:
+                    case 6:
+                    case 7:
                     case 8:
                         loadType = TYP_LONG;
                         break;
@@ -4745,20 +4748,13 @@ void CodeGen::genFinalizeFrame()
 #endif // defined(TARGET_XARCH)
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    if (isFramePointerUsed())
-    {
-        // For a FP based frame we have to push/pop the FP register
-        //
-        maskCalleeRegsPushed |= RBM_FPBASE;
+    // This assert check that we are not using REG_FP
+    assert(!regSet.rsRegsModified(RBM_FPBASE));
 
-        // This assert check that we are not using REG_FP
-        // as both the frame pointer and as a codegen register
-        //
-        assert(!regSet.rsRegsModified(RBM_FPBASE));
-    }
+    assert(isFramePointerUsed());
+    // we always push FP/RA.  See genPushCalleeSavedRegisters
+    maskCalleeRegsPushed |= (RBM_FPBASE | RBM_RA);
 
-    // we always push RA.  See genPushCalleeSavedRegisters
-    maskCalleeRegsPushed |= RBM_RA;
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
     compiler->compCalleeRegsPushed = genCountBits(maskCalleeRegsPushed);

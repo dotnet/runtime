@@ -158,9 +158,13 @@ CONFIG_INTEGER(JitPrintInlinedMethodsVerbose, W("JitPrintInlinedMethodsVerboseLe
 CONFIG_METHODSET(JitPrintInlinedMethods, W("JitPrintInlinedMethods"))
 
 CONFIG_METHODSET(JitPrintDevirtualizedMethods, W("JitPrintDevirtualizedMethods"))
-
 // -1: just do internal checks (CHECK_HASLIKELIHOOD | CHECK_LIKELIHOODSUM | RAISE_ASSERT)
-// Else bitflag of ProfileChecks enum.
+// Else bitflag:
+//  - 0x1: check edges have likelihoods
+//  - 0x2: check edge likelihoods sum to 1.0
+//  - 0x4: fully check likelihoods
+//  - 0x8: assert on check failure
+//  - 0x10: check block profile weights
 CONFIG_INTEGER(JitProfileChecks, W("JitProfileChecks"), -1)
 
 CONFIG_INTEGER(JitRequired, W("JITRequired"), -1)
