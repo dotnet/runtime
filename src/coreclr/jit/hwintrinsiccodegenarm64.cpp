@@ -1443,6 +1443,15 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve_UnzipEven:
+            case NI_Sve_UnzipOdd:
+            case NI_Sve_ZipHigh:
+            case NI_Sve_ZipLow:
+                // Use non-predicated version explicitly
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt,
+                                            INS_SCALABLE_OPTS_UNPREDICATED);
+                break;
+
             default:
                 unreached();
         }
