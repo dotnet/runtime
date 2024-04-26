@@ -24,6 +24,10 @@ class MapViewHolder
 #include "../../../inc/stresslog.h"
 #include "StressMsgReader.h"
 
+#ifdef HOST_WINDOWS
+#include <malloc.h>
+#endif
+
 
 void GcHistClear();
 void GcHistAddLog(LPCSTR msg, StressMsgReader stressMsg);
@@ -377,7 +381,7 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
         do
         {
             StressLogChunk * inProcChunkPtr = new StressLogChunk;
-            hr = memCallBack->ReadVirtual (outProcChunkPtr, inProcChunkPtr, sizeof (*inProcChunkPtr), NULL);
+            hr = memCallBack->ReadVirtual (outProcChunkPtr, inProcChunkPtr, sizeof (*inProcChunkPtr), 0);
             if (hr != S_OK || !inProcChunkPtr->IsValid ())
             {
                 if (hr != S_OK)

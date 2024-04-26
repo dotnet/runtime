@@ -72,6 +72,8 @@ static char* NormalizeNumericPattern(const UChar* srcPattern, int isNegative)
             case UCHAR_CLOSEPAREN:
                 minusAdded = true;
                 break;
+            default:
+                break;
         }
     }
 
@@ -144,6 +146,9 @@ static char* NormalizeNumericPattern(const UChar* srcPattern, int isNegative)
 
             case UCHAR_PERCENT:
                 destPattern[index++] = '%';
+                break;
+
+            default:
                 break;
         }
     }
