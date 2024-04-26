@@ -31,7 +31,6 @@ namespace System.Runtime.Intrinsics.Arm
             public static new bool IsSupported { [Intrinsic] get { return false; } }
         }
 
-
         ///  Abs : Absolute value
 
         /// <summary>
@@ -148,6 +147,103 @@ namespace System.Runtime.Intrinsics.Arm
         /// svfloat64_t svadd[_f64]_z(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
         /// </summary>
         public static unsafe Vector<double> Add(Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
+
+
+        ///  ConditionalSelect : Conditionally select elements
+
+        /// <summary>
+        /// svint8_t svsel[_s8](svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svbool_t svsel[_b](svbool_t pg, svbool_t op1, svbool_t op2)
+        /// </summary>
+        public static unsafe Vector<sbyte> ConditionalSelect(Vector<sbyte> mask, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svsel[_s16](svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svbool_t svsel[_b](svbool_t pg, svbool_t op1, svbool_t op2)
+        /// </summary>
+        public static unsafe Vector<short> ConditionalSelect(Vector<short> mask, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svsel[_s32](svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svbool_t svsel[_b](svbool_t pg, svbool_t op1, svbool_t op2)
+        /// </summary>
+        public static unsafe Vector<int> ConditionalSelect(Vector<int> mask, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svsel[_s64](svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svbool_t svsel[_b](svbool_t pg, svbool_t op1, svbool_t op2)
+        /// </summary>
+        public static unsafe Vector<long> ConditionalSelect(Vector<long> mask, Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint8_t svsel[_u8](svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svbool_t svsel[_b](svbool_t pg, svbool_t op1, svbool_t op2)
+        /// </summary>
+        public static unsafe Vector<byte> ConditionalSelect(Vector<byte> mask, Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svsel[_u16](svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svbool_t svsel[_b](svbool_t pg, svbool_t op1, svbool_t op2)
+        /// </summary>
+        public static unsafe Vector<ushort> ConditionalSelect(Vector<ushort> mask, Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svsel[_u32](svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svbool_t svsel[_b](svbool_t pg, svbool_t op1, svbool_t op2)
+        /// </summary>
+        public static unsafe Vector<uint> ConditionalSelect(Vector<uint> mask, Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svsel[_u64](svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svbool_t svsel[_b](svbool_t pg, svbool_t op1, svbool_t op2)
+        /// </summary>
+        public static unsafe Vector<ulong> ConditionalSelect(Vector<ulong> mask, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svsel[_f32](svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        /// </summary>
+        public static unsafe Vector<float> ConditionalSelect(Vector<float> mask, Vector<float> left, Vector<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat64_t svsel[_f64](svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        /// </summary>
+        public static unsafe Vector<double> ConditionalSelect(Vector<double> mask, Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
+
+
+        ///  Count16BitElements : Count the number of 16-bit elements in a vector
+
+        /// <summary>
+        /// uint64_t svcnth_pat(enum svpattern pattern)
+        ///   CNTH Xresult, pattern
+        /// </summary>
+        public static unsafe ulong Count16BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+
+        ///  Count32BitElements : Count the number of 32-bit elements in a vector
+
+        /// <summary>
+        /// uint64_t svcntw_pat(enum svpattern pattern)
+        ///   CNTW Xresult, pattern
+        /// </summary>
+        public static unsafe ulong Count32BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+
+        ///  Count64BitElements : Count the number of 64-bit elements in a vector
+
+        /// <summary>
+        /// uint64_t svcntd_pat(enum svpattern pattern)
+        ///   CNTD Xresult, pattern
+        /// </summary>
+        public static unsafe ulong Count64BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+
+        ///  Count8BitElements : Count the number of 8-bit elements in a vector
+
+        /// <summary>
+        /// uint64_t svcntb_pat(enum svpattern pattern)
+        ///   CNTB Xresult, pattern
+        /// </summary>
+        public static unsafe ulong Count8BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
 
 
         ///  CreateTrueMaskByte : Set predicate elements to true
@@ -454,67 +550,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   WHILELS Presult.B, Xop1, Xop2
         /// </summary>
         public static unsafe Vector<byte> CreateWhileLessThanOrEqualMask8Bit(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
-
-
-        ///  ConditionalSelect : Conditionally select elements
-
-        /// <summary>
-        /// svint8_t svsel[_s8](svbool_t pg, svint8_t op1, svint8_t op2)
-        /// svbool_t svsel[_b](svbool_t pg, svbool_t op1, svbool_t op2)
-        /// </summary>
-        public static unsafe Vector<sbyte> ConditionalSelect(Vector<sbyte> mask, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// svint16_t svsel[_s16](svbool_t pg, svint16_t op1, svint16_t op2)
-        /// svbool_t svsel[_b](svbool_t pg, svbool_t op1, svbool_t op2)
-        /// </summary>
-        public static unsafe Vector<short> ConditionalSelect(Vector<short> mask, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// svint32_t svsel[_s32](svbool_t pg, svint32_t op1, svint32_t op2)
-        /// svbool_t svsel[_b](svbool_t pg, svbool_t op1, svbool_t op2)
-        /// </summary>
-        public static unsafe Vector<int> ConditionalSelect(Vector<int> mask, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// svint64_t svsel[_s64](svbool_t pg, svint64_t op1, svint64_t op2)
-        /// svbool_t svsel[_b](svbool_t pg, svbool_t op1, svbool_t op2)
-        /// </summary>
-        public static unsafe Vector<long> ConditionalSelect(Vector<long> mask, Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// svuint8_t svsel[_u8](svbool_t pg, svuint8_t op1, svuint8_t op2)
-        /// svbool_t svsel[_b](svbool_t pg, svbool_t op1, svbool_t op2)
-        /// </summary>
-        public static unsafe Vector<byte> ConditionalSelect(Vector<byte> mask, Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// svuint16_t svsel[_u16](svbool_t pg, svuint16_t op1, svuint16_t op2)
-        /// svbool_t svsel[_b](svbool_t pg, svbool_t op1, svbool_t op2)
-        /// </summary>
-        public static unsafe Vector<ushort> ConditionalSelect(Vector<ushort> mask, Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// svuint32_t svsel[_u32](svbool_t pg, svuint32_t op1, svuint32_t op2)
-        /// svbool_t svsel[_b](svbool_t pg, svbool_t op1, svbool_t op2)
-        /// </summary>
-        public static unsafe Vector<uint> ConditionalSelect(Vector<uint> mask, Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// svuint64_t svsel[_u64](svbool_t pg, svuint64_t op1, svuint64_t op2)
-        /// svbool_t svsel[_b](svbool_t pg, svbool_t op1, svbool_t op2)
-        /// </summary>
-        public static unsafe Vector<ulong> ConditionalSelect(Vector<ulong> mask, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// svfloat32_t svsel[_f32](svbool_t pg, svfloat32_t op1, svfloat32_t op2)
-        /// </summary>
-        public static unsafe Vector<float> ConditionalSelect(Vector<float> mask, Vector<float> left, Vector<float> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// svfloat64_t svsel[_f64](svbool_t pg, svfloat64_t op1, svfloat64_t op2)
-        /// </summary>
-        public static unsafe Vector<double> ConditionalSelect(Vector<double> mask, Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
 
 
         ///  LoadVector : Unextended load

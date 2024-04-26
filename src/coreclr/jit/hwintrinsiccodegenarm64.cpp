@@ -380,7 +380,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 emitShift(intrin.op2, op1Reg);
             }
         }
-        else if (intrin.category == HW_Category_EnumPattern)
+        else if (HWIntrinsicInfo::HasEnumOperand(intrin.id))
         {
             assert(hasImmediateOperand);
 
@@ -1403,6 +1403,22 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 // Instead, use a compare: CMPNE <Pd>.<T>, <Pg>/Z, <Zn>.<T>, #0
                 GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op1Reg, op2Reg, 0, opt);
                 break;
+
+            case NI_Sve_Count16BitElements:
+            case NI_Sve_Count32BitElements:
+            case NI_Sve_Count64BitElements:
+            case NI_Sve_Count8BitElements:
+            {
+                // Instruction has an additional immediate to multiply the result by. Use 1.
+                assert(hasImmediateOperand);
+                HWIntrinsicImmOpHelper helper(this, intrin.op1, node);
+                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                {
+                    const insSvePattern pattern = (insSvePattern)helper.ImmValue();
+                    GetEmitter()->emitIns_R_PATTERN_I(ins, emitSize, targetReg, pattern, 1, opt);
+                }
+                break;
+            }
 
             case NI_Sve_CreateTrueMaskAll:
                 // Must use the pattern variant, as the non-pattern varient is SVE2.1.
