@@ -1405,40 +1405,36 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void GetTime(out int hour, out int minute, out int second)
         {
-            // TODO: https://github.com/dotnet/runtime/issues/5213
             ulong seconds = UTicks / TicksPerSecond;
-            ulong minutes = seconds / 60;
-            second = (int)(seconds - (minutes * 60));
-            ulong hours = minutes / 60;
-            minute = (int)(minutes - (hours * 60));
+            (ulong minutes, ulong uSecond) = Math.DivRem(seconds, 60);
+            second = (int)uSecond;
+            (ulong hours, ulong uMinute) = Math.DivRem(minutes, 60);
+            minute = (int)uMinute;
             hour = (int)((uint)hours % 24);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void GetTime(out int hour, out int minute, out int second, out int millisecond)
         {
-            // TODO: https://github.com/dotnet/runtime/issues/5213
             ulong milliseconds = UTicks / TicksPerMillisecond;
-            ulong seconds = milliseconds / 1000;
-            millisecond = (int)(milliseconds - (seconds * 1000));
-            ulong minutes = seconds / 60;
-            second = (int)(seconds - (minutes * 60));
-            ulong hours = minutes / 60;
-            minute = (int)(minutes - (hours * 60));
+            (ulong seconds, ulong uMillisecond) = Math.DivRem(milliseconds, 1000);
+            millisecond = (int)uMillisecond;
+            (ulong minutes, ulong uSecond) = Math.DivRem(seconds, 60);
+            second = (int)uSecond;
+            (ulong hours, ulong uMinute) = Math.DivRem(minutes, 60);
+            minute = (int)uMinute;
             hour = (int)((uint)hours % 24);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void GetTimePrecise(out int hour, out int minute, out int second, out int tick)
         {
-            // TODO: https://github.com/dotnet/runtime/issues/5213
-            ulong ticks = UTicks;
-            ulong seconds = ticks / TicksPerSecond;
-            tick = (int)(ticks - (seconds * TicksPerSecond));
-            ulong minutes = seconds / 60;
-            second = (int)(seconds - (minutes * 60));
-            ulong hours = minutes / 60;
-            minute = (int)(minutes - (hours * 60));
+            (ulong seconds, ulong uTick) = Math.DivRem(UTicks, TicksPerSecond);
+            tick = (int)uTick;
+            (ulong minutes, ulong uSecond) = Math.DivRem(seconds, 60);
+            second = (int)uSecond;
+            (ulong hours, ulong uMinute) = Math.DivRem(minutes, 60);
+            minute = (int)uMinute;
             hour = (int)((uint)hours % 24);
         }
 
