@@ -4122,9 +4122,15 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 }
 
 #if defined(SWIFT_SUPPORT) || defined(TARGET_RISCV64)
-/*-----------------------------------------------------------------------------
- * Move the incoming segment to the local stack frame
- */
+//-----------------------------------------------------------------------------
+// genHomeSwiftStructParameters: Move the incoming segment to the local stack frame.
+//
+// Arguments:
+//    lclNum - Number of local variable to home
+//    seg - Stack segment of the local variable to home
+//    initReg - Scratch register to use if needed
+//    initRegStillZeroed - Set to false if the scratch register was needed
+//
 void CodeGen::genHomeStackSegment(unsigned                 lclNum,
                                   const ABIPassingSegment& seg,
                                   regNumber                initReg,
@@ -4173,11 +4179,11 @@ void CodeGen::genHomeStackSegment(unsigned                 lclNum,
 
 //-----------------------------------------------------------------------------
 // genHomeSwiftStructParameters:
-//  Reassemble Swift struct parameters if necessary.
+//    Reassemble Swift struct parameters if necessary.
 //
-// Parameters:
-//   handleStack - If true, reassemble the segments that were passed on the stack.
-//                 If false, reassemble the segments that were passed in registers.
+// Arguments:
+//    handleStack - If true, reassemble the segments that were passed on the stack.
+//                  If false, reassemble the segments that were passed in registers.
 //
 void CodeGen::genHomeSwiftStructParameters(bool handleStack)
 {
@@ -4231,12 +4237,17 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack)
 }
 #endif
 
-/*-----------------------------------------------------------------------------
- *
- * Home the tail (stack) portion of a split parameter next to where the head (register) portion is homed.
- *
- * No-op on platforms where argument registers are already homed to form a contiguous space with incoming stack.
- */
+//-----------------------------------------------------------------------------
+// genHomeStackPartOfSplitParameter: Home the tail (stack) portion of a split parameter next to where the head
+// (register) portion is homed.
+//
+// Arguments:
+//    initReg - scratch register to use if needed
+//    initRegStillZeroed - set to false if scratch register was needed
+//
+// Notes:
+//    No-op on platforms where argument registers are already homed to form a contiguous space with incoming stack.
+//
 void CodeGen::genHomeStackPartOfSplitParameter(regNumber initReg, bool* initRegStillZeroed)
 {
 #ifdef TARGET_RISCV64
@@ -4244,13 +4255,12 @@ void CodeGen::genHomeStackPartOfSplitParameter(regNumber initReg, bool* initRegS
     for (; lclNum < compiler->info.compArgsCount; lclNum++)
     {
         LclVarDsc* var = compiler->lvaGetDesc(lclNum);
-        if (!var->lvIsSplit)
+        if (!var->lvIsSplit || !var->lvOnFrame)
             continue;
 
         JITDUMP("Homing stack part of split parameter V%02u\n", lclNum);
 
         assert(varTypeIsStruct(var));
-        assert(var->lvOnFrame);
         assert(!compiler->lvaIsImplicitByRefLocal(lclNum));
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
         assert(abiInfo.NumSegments == 2);
@@ -5585,10 +5595,11 @@ void CodeGen::genFnProlog()
     {
         compiler->lvaUpdateArgsWithInitialReg();
 
+        genHomeStackPartOfSplitParameter(initReg, &initRegZeroed);
+
         if ((intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn) != RBM_NONE)
         {
             genHomeRegisterParams(initReg, &initRegZeroed);
-            genHomeStackPartOfSplitParameter(initReg, &initRegZeroed);
         }
 
         // Home the incoming arguments.
