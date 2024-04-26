@@ -16,7 +16,7 @@ jobs:
         - ${{ if and(ne(parameters.artifacts.publish.artifacts, 'false'), ne(parameters.artifacts.publish.artifacts, '')) }}:
           - template: /eng/common/core-templates/steps/publish-build-artifacts.yml
             parameters:
-              is1ESPipeline: ${{ parameters.is1ESPipeline }}
+              is1ESPipeline: false
               args:
                 displayName: Publish pipeline artifacts
                 pathToPublish: '$(Build.ArtifactStagingDirectory)/artifacts'
@@ -27,7 +27,7 @@ jobs:
         - ${{ if and(ne(parameters.artifacts.publish.logs, 'false'), ne(parameters.artifacts.publish.logs, '')) }}:
           - template: /eng/common/core-templates/steps/publish-pipeline-artifacts.yml
             parameters:
-              is1ESPipeline: ${{ parameters.is1ESPipeline }}
+              is1ESPipeline: false
               args:
                 targetPath: '$(Build.ArtifactStagingDirectory)/artifacts/log'
                 artifactName: ${{ coalesce(parameters.artifacts.publish.logs.name, 'Logs_Build_$(Agent.Os)_$(_BuildConfig)') }}
@@ -38,7 +38,7 @@ jobs:
       - ${{ if ne(parameters.enablePublishBuildArtifacts, 'false') }}:
         - template: /eng/common/core-templates/steps/publish-build-artifacts.yml
           parameters:
-            is1ESPipeline: ${{ parameters.is1ESPipeline }}
+            is1ESPipeline: false
             args:
               displayName: Publish Logs
               pathToPublish: '$(Build.ArtifactStagingDirectory)/artifacts/log/$(_BuildConfig)'
@@ -50,7 +50,7 @@ jobs:
       - ${{ if eq(parameters.enableBuildRetry, 'true') }}:
         - template: /eng/common/core-templates/steps/publish-pipeline-artifacts.yml
           parameters:
-            is1ESPipeline: ${{ parameters.is1ESPipeline }}
+            is1ESPipeline: false
             args:
               targetPath: '$(Build.SourcesDirectory)\eng\common\BuildConfiguration'
               artifactName: 'BuildConfiguration'
