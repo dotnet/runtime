@@ -445,22 +445,25 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         // If targetReg is not the same as `falseReg` then need to move
                         // the `falseReg` to `targetReg`.
 
-                        if (intrin.op1->IsMaskAllBitsSet() && intrin.op3->IsVectorZero())
+                        if (intrin.op3->isContained())
                         {
-                            // We already skip importing ConditionalSelect if op1 == trueAll, however
-                            // if we still see it here, it is because we wrapped the predicated instruction
-                            // inside ConditionalSelect.
-                            // As such, no need to move the `falseReg` to `targetReg`
-                            // because the predicated instruction will eventually set it.
-                            assert(falseReg == REG_NA);
-                        }
-                        else if (intrin.op3->isContained())
-                        {
-                            // If falseValue is zero, just zero out those lanes of targetReg using `movprfx`
-                            // and /Z
-                            assert(falseReg == REG_NA);
                             assert(intrin.op3->IsVectorZero());
-                            GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, targetReg, opt);
+                            if (intrin.op1->isContained())
+                            {
+                                // We already skip importing ConditionalSelect if op1 == trueAll, however
+                                // if we still see it here, it is because we wrapped the predicated instruction
+                                // inside ConditionalSelect.
+                                // As such, no need to move the `falseReg` to `targetReg`
+                                // because the predicated instruction will eventually set it.
+                                assert(intrin.op1->IsMaskAllBitsSet());
+                            }
+                            else
+                            {
+                                // If falseValue is zero, just zero out those lanes of targetReg using `movprfx`
+                                // and /Z
+                                GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, targetReg,
+                                                            opt);
+                            }
                         }
                         else if (targetReg == embMaskOp1Reg)
                         {
