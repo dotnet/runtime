@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import BuildConfiguration from "consts:configuration";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import type { MonoConfig, DotnetHostBuilder, DotnetModuleConfig, RuntimeAPI, LoadBootResourceCallback } from "../types";
-import type { EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal, } from "../types/internal";
+import type { EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal, HybridGlobalizationModuleExportsInternal, } from "../types/internal";
 
 import { ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, emscriptenModule, exportedRuntimeAPI, globalObjectsRoot, monoConfig, mono_assert } from "./globals";
 import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./config";
@@ -429,14 +430,30 @@ function importModules () {
         jsModuleNativePromise = import(/*! webpackIgnore: true */jsModuleNativeAsset.resolvedUrl!);
     }
 
-    return [jsModuleRuntimePromise, jsModuleNativePromise];
+    let jsModuleHybridGlobalizationPromise: Promise<NativeModuleExportsInternal> | undefined = undefined;
+    // todo: move it for after runtime startup
+    if (WasmEnableThreads) {
+        const jsModuleHybridGlobalization = resolve_single_asset_path("js-module-globalization");
+        if (typeof jsModuleHybridGlobalization.moduleExports === "object") {
+            jsModuleHybridGlobalizationPromise = jsModuleHybridGlobalization.moduleExports;
+        } else {
+            mono_log_debug(`Attempting to import '${jsModuleHybridGlobalization.resolvedUrl}' for ${jsModuleHybridGlobalization.name}`);
+            jsModuleHybridGlobalizationPromise = import(/*! webpackIgnore: true */jsModuleHybridGlobalization.resolvedUrl!);
+        }
+    }
+
+    return [jsModuleRuntimePromise, jsModuleNativePromise, jsModuleHybridGlobalizationPromise];
 }
 
-async function initializeModules (es6Modules: [RuntimeModuleExportsInternal, NativeModuleExportsInternal]) {
+async function initializeModules (es6Modules: [RuntimeModuleExportsInternal, NativeModuleExportsInternal, HybridGlobalizationModuleExportsInternal]) {
     const { initializeExports, initializeReplacements, configureRuntimeStartup, configureEmscriptenStartup, configureWorkerStartup, setRuntimeGlobals, passEmscriptenInternals } = es6Modules[0];
     const { default: emscriptenFactory } = es6Modules[1];
     setRuntimeGlobals(globalObjectsRoot);
     initializeExports(globalObjectsRoot);
+    if (WasmEnableThreads) {
+        const { initHybrid } = es6Modules[2];
+        initHybrid(runtimeHelpers);
+    }
     await configureRuntimeStartup(emscriptenModule);
     loaderHelpers.runtimeModuleLoaded.promise_control.resolve();
 

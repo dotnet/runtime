@@ -503,6 +503,10 @@ export type NativeModuleExportsInternal = {
     default: (unificator: Function) => EmscriptenModuleInternal
 }
 
+export type HybridGlobalizationModuleExportsInternal = {
+    initHybrid: (rh: RuntimeHelpers) => void;
+}
+
 export type WeakRefInternal<T extends object> = WeakRef<T> & {
     dispose?: () => void
 }

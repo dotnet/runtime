@@ -318,6 +318,10 @@ export type SingleAssetBehaviors =
      */
     | "js-module-native"
     /**
+     * The javascript module for hybrid globalization.
+     */
+    | "js-module-globalization"
+    /**
      * Typically blazor.boot.json
      */
     | "manifest"

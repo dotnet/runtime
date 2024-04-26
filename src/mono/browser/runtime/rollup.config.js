@@ -219,7 +219,7 @@ const hybridGlobalizationConfig = {
     output: [
         {
             format: "es",
-            file: nativeBinDir + "/dotnet.hybrid.js",
+            file: nativeBinDir + "/dotnet.hybrid.js", // todo: change name to dotnet.globalization.js
             banner,
             sourcemap: true,
             sourcemapPathTransform,
