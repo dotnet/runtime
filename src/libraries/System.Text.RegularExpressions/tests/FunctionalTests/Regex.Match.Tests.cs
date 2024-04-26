@@ -1172,6 +1172,7 @@ namespace System.Text.RegularExpressions.Tests
 
         public static IEnumerable<object[]> Match_DeepNesting_MemberData()
         {
+            foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.IgnoreCase })
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
                 if (RegexHelpers.IsNonBacktracking(engine))
@@ -1180,15 +1181,15 @@ namespace System.Text.RegularExpressions.Tests
                     continue;
                 }
 
-                yield return new object[] { engine, 1 };
-                yield return new object[] { engine, 10 };
-                yield return new object[] { engine, 100 };
+                yield return new object[] { engine, options, 1 };
+                yield return new object[] { engine, options, 10 };
+                yield return new object[] { engine, options, 100 };
             }
         }
 
         [Theory]
         [MemberData(nameof(Match_DeepNesting_MemberData))]
-        public async Task Match_DeepNesting(RegexEngine engine, int count)
+        public async Task Match_DeepNesting(RegexEngine engine, RegexOptions options, int count)
         {
             const string Start = @"((?>abc|(?:def[ghi]", End = @")))";
             const string Match = "defg";
@@ -1196,7 +1197,7 @@ namespace System.Text.RegularExpressions.Tests
             string pattern = string.Concat(Enumerable.Repeat(Start, count)) + string.Concat(Enumerable.Repeat(End, count));
             string input = string.Concat(Enumerable.Repeat(Match, count));
 
-            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
             Match m = r.Match(input);
 
             Assert.True(m.Success);
