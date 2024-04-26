@@ -286,6 +286,8 @@ protected:
 
     void genHomeSwiftStructParameters(bool handleStack);
 
+    void genHomeStackPartOfSplitParameter(unsigned lclNum);
+
     void genCheckUseBlockInit();
 #if defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)
     void genClearStackVec3ArgUpperBits();

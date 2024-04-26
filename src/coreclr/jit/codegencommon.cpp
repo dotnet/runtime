@@ -3068,6 +3068,7 @@ void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, RegGraph* graph)
 
     unsigned baseOffset = varDsc->lvIsStructField ? varDsc->lvFldOffset : 0;
     unsigned size       = varDsc->lvExactSize();
+    bool     isSpilled  = false;
 
     unsigned                     paramLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
     LclVarDsc*                   paramVarDsc = compiler->lvaGetDesc(paramLclNum);
@@ -3101,6 +3102,7 @@ void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, RegGraph* graph)
 
             GetEmitter()->emitIns_S_R(ins_Store(storeType), emitActualTypeSize(storeType), seg.GetRegister(), lclNum,
                                       seg.Offset - baseOffset);
+            isSpilled = true;
         }
 
         if (!varDsc->lvIsInReg())
@@ -3137,6 +3139,11 @@ void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, RegGraph* graph)
             graph->AddEdge(sourceReg, destReg, edgeType, seg.Offset - baseOffset);
         }
     }
+
+    if (isSpilled)
+    {
+        genHomeStackPartOfSplitParameter(lclNum);
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -3155,6 +3162,8 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
         printf("*************** In genHomeRegisterParams()\n");
     }
 #endif
+
+    // RISC-V specific logic for homing the stack part of a split struct
 
     regMaskTP paramRegs = intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn;
     if (compiler->opts.OptimizationDisabled())
@@ -3180,6 +3189,8 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
                                               lclNum, seg.Offset);
                 }
             }
+
+            genHomeStackPartOfSplitParameter(lclNum);
         }
 
         return;
@@ -4222,6 +4233,32 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack)
     }
 }
 #endif
+
+/*-----------------------------------------------------------------------------
+ *
+ * Home the tail (stack) portion of a split parameter next to where the head (register) portion is homed.
+ *
+ * No-op on platforms where argument registers are already homed to form a contiguous space with incoming stack.
+ */
+void CodeGen::genHomeStackPartOfSplitParameter(unsigned lclNum)
+{
+#ifdef TARGET_RISCV64
+    const LclVarDsc* var = compiler->lvaGetDesc(lclNum);
+    if (!var->lvIsSplit)
+        return;
+
+    assert(varTypeIsStruct(var));
+    const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
+    assert(abiInfo.NumSegments == 2);
+    assert(abiInfo.Segments[0].GetRegister() == REG_ARG_LAST);
+    const ABIPassingSegment& seg = abiInfo.Segments[1];
+
+    int loadOffset =
+        -(isFramePointerUsed() ? genCallerSPtoFPdelta() : genCallerSPtoInitialSPdelta()) + (int)seg.GetStackOffset();
+    genInstrWithConstant(ins_Load(TYP_LONG), EA_8BYTE, REG_SCRATCH, genFramePointerReg(), loadOffset, REG_SCRATCH);
+    GetEmitter()->emitIns_S_R(ins_Store(TYP_LONG), EA_8BYTE, REG_SCRATCH, lclNum, seg.Offset);
+#endif
+}
 
 /*-----------------------------------------------------------------------------
  *
