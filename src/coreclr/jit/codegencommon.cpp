@@ -3068,7 +3068,6 @@ void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, RegGraph* graph)
 
     unsigned baseOffset = varDsc->lvIsStructField ? varDsc->lvFldOffset : 0;
     unsigned size       = varDsc->lvExactSize();
-    bool     isSpilled  = false;
 
     unsigned                     paramLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
     LclVarDsc*                   paramVarDsc = compiler->lvaGetDesc(paramLclNum);
@@ -3102,7 +3101,6 @@ void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, RegGraph* graph)
 
             GetEmitter()->emitIns_S_R(ins_Store(storeType), emitActualTypeSize(storeType), seg.GetRegister(), lclNum,
                                       seg.Offset - baseOffset);
-            isSpilled = true;
         }
 
         if (!varDsc->lvIsInReg())
@@ -3138,11 +3136,6 @@ void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, RegGraph* graph)
 #endif
             graph->AddEdge(sourceReg, destReg, edgeType, seg.Offset - baseOffset);
         }
-    }
-
-    if (isSpilled)
-    {
-        genHomeStackPartOfSplitParameter(lclNum);
     }
 }
 
@@ -3189,8 +3182,6 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
                                               lclNum, seg.Offset);
                 }
             }
-
-            genHomeStackPartOfSplitParameter(lclNum);
         }
 
         return;
@@ -4130,6 +4121,51 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
     }
 }
 
+#if defined(SWIFT_SUPPORT) || defined(TARGET_RISCV64)
+/*-----------------------------------------------------------------------------
+ * Move the incoming segment to the local stack frame
+ */
+void CodeGen::genHomeStackSegment(unsigned lclNum, const ABIPassingSegment& seg, regNumber initReg, bool* initRegStillZeroed)
+{
+    var_types loadType = TYP_UNDEF;
+    switch (seg.Size)
+    {
+        case 1:
+            loadType = TYP_UBYTE;
+            break;
+        case 2:
+            loadType = TYP_USHORT;
+            break;
+        case 3:
+        case 4:
+            loadType = TYP_INT;
+            break;
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+            loadType = TYP_LONG;
+            break;
+        default:
+            assert(!"Unexpected segment size for struct parameter not passed implicitly by ref");
+            return;
+    }
+    emitAttr size = emitTypeSize(loadType);
+
+    int loadOffset =
+        -(isFramePointerUsed() ? genCallerSPtoFPdelta() : genCallerSPtoInitialSPdelta()) + (int)seg.GetStackOffset();
+#ifdef TARGET_XARCH
+    GetEmitter()->emitIns_R_AR(ins_Load(loadType), size, initReg, genFramePointerReg(), offset);
+#else
+    genInstrWithConstant(ins_Load(loadType), size, initReg, genFramePointerReg(), loadOffset, initReg);
+#endif
+    GetEmitter()->emitIns_S_R(ins_Store(loadType), size, initReg, lclNum, seg.Offset);
+
+    if (initRegStillZeroed)
+        *initRegStillZeroed = false;
+}
+#endif // defined(SWIFT_SUPPORT) || defined(TARGET_RISCV64)
+
 #ifdef SWIFT_SUPPORT
 
 //-----------------------------------------------------------------------------
@@ -4161,7 +4197,7 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack)
 
         for (unsigned i = 0; i < abiInfo.NumSegments; i++)
         {
-            const ABIPassingSegment& seg = abiInfo.Segments[i];
+            const ABIPassingSegment& seg = abiInfo.Segments[i];           
             if (seg.IsPassedOnStack() != handleStack)
             {
                 continue;
@@ -4184,50 +4220,8 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack)
             }
             else
             {
-                var_types loadType = TYP_UNDEF;
-                switch (seg.Size)
-                {
-                    case 1:
-                        loadType = TYP_UBYTE;
-                        break;
-                    case 2:
-                        loadType = TYP_USHORT;
-                        break;
-                    case 4:
-                        loadType = TYP_INT;
-                        break;
-                    case 8:
-                        loadType = TYP_LONG;
-                        break;
-                    default:
-                        assert(!"Unexpected segment size for struct parameter not passed implicitly by ref");
-                        continue;
-                }
-
-                int offset;
-                if (isFramePointerUsed())
-                {
-                    offset = -genCallerSPtoFPdelta();
-                }
-                else
-                {
-                    offset = -genCallerSPtoInitialSPdelta();
-                }
-
-                offset += (int)seg.GetStackOffset();
-
-                // Move the incoming segment to the local stack frame. We can
-                // use REG_SCRATCH as a temporary register here as we ensured
-                // that during LSRA build.
-#ifdef TARGET_XARCH
-                GetEmitter()->emitIns_R_AR(ins_Load(loadType), emitTypeSize(loadType), REG_SCRATCH,
-                                           genFramePointerReg(), offset);
-#else
-                genInstrWithConstant(ins_Load(loadType), emitTypeSize(loadType), REG_SCRATCH, genFramePointerReg(),
-                                     offset, REG_SCRATCH);
-#endif
-
-                GetEmitter()->emitIns_S_R(ins_Store(loadType), emitTypeSize(loadType), REG_SCRATCH, lclNum, seg.Offset);
+                // We can use REG_SCRATCH as a temporary register here as we ensured that during LSRA build.
+                genHomeStackSegment(lclNum, seg, REG_SCRATCH, nullptr);
             }
         }
     }
@@ -4240,23 +4234,34 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack)
  *
  * No-op on platforms where argument registers are already homed to form a contiguous space with incoming stack.
  */
-void CodeGen::genHomeStackPartOfSplitParameter(unsigned lclNum)
+void CodeGen::genHomeStackPartOfSplitParameter(regNumber initReg, bool* initRegStillZeroed)
 {
 #ifdef TARGET_RISCV64
-    const LclVarDsc* var = compiler->lvaGetDesc(lclNum);
-    if (!var->lvIsSplit)
-        return;
+    unsigned lclNum = 0;
+    for (; lclNum < compiler->info.compArgsCount; lclNum++)
+    {
+        LclVarDsc* var = compiler->lvaGetDesc(lclNum);
+        if (!var->lvIsSplit)
+            continue;
 
-    assert(varTypeIsStruct(var));
-    const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
-    assert(abiInfo.NumSegments == 2);
-    assert(abiInfo.Segments[0].GetRegister() == REG_ARG_LAST);
-    const ABIPassingSegment& seg = abiInfo.Segments[1];
+        JITDUMP("Homing stack part of split parameter V%02u\n", lclNum);
 
-    int loadOffset =
-        -(isFramePointerUsed() ? genCallerSPtoFPdelta() : genCallerSPtoInitialSPdelta()) + (int)seg.GetStackOffset();
-    genInstrWithConstant(ins_Load(TYP_LONG), EA_8BYTE, REG_SCRATCH, genFramePointerReg(), loadOffset, REG_SCRATCH);
-    GetEmitter()->emitIns_S_R(ins_Store(TYP_LONG), EA_8BYTE, REG_SCRATCH, lclNum, seg.Offset);
+        assert(varTypeIsStruct(var));
+        assert(var->lvOnFrame);
+        assert(!compiler->lvaIsImplicitByRefLocal(lclNum));
+        const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
+        assert(abiInfo.NumSegments == 2);
+        assert(abiInfo.Segments[0].GetRegister() == REG_ARG_LAST);
+        const ABIPassingSegment& seg = abiInfo.Segments[1];
+
+        genHomeStackSegment(lclNum, seg, initReg, initRegStillZeroed);
+
+        for (lclNum+=1; lclNum < compiler->info.compArgsCount; lclNum++)
+        {
+            assert(!compiler->lvaGetDesc(lclNum)->lvIsSplit); // There should be only one split parameter
+        }
+        break;
+    }
 #endif
 }
 
@@ -5580,6 +5585,7 @@ void CodeGen::genFnProlog()
         if ((intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn) != RBM_NONE)
         {
             genHomeRegisterParams(initReg, &initRegZeroed);
+            genHomeStackPartOfSplitParameter(initReg, &initRegZeroed);
         }
 
         // Home the incoming arguments.
