@@ -2404,6 +2404,7 @@ inflate_method (MonoClass *klass, MonoMethod *method, MonoMethod *accessor_metho
 		context.method_inst = mono_method_get_context (accessor_method)->method_inst;
 	if ((context.class_inst != NULL) || (context.method_inst != NULL))
 		result = mono_class_inflate_generic_method_checked (method, &context, error);
+	mono_error_assert_ok (error);
 	
 	return result;
 }
