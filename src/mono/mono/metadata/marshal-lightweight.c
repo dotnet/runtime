@@ -2375,7 +2375,7 @@ static MonoMethodSignature *
 update_signature (MonoMethod *accessor_method)
 {
 	MonoClass *accessor_method_class_instance = accessor_method->klass;
-	MonoClass *accessor_method_class = mono_class_is_ginst (accessor_method_class_instance) ? mono_class_get_generic_class (accessor_method_class_instance)->container_class : accessor_method_class_instance;
+	MonoClass *accessor_method_class = mono_class_get_generic_type_definition (accessor_method_class_instance);
 
 	const char *accessor_method_name = accessor_method->name;
 
@@ -2391,12 +2391,6 @@ update_signature (MonoMethod *accessor_method)
 		return mono_metadata_signature_dup_full (get_method_image (m), mono_method_signature_internal (m));
 	}
 	g_assert_not_reached ();
-}
-
-static MonoClass *
-get_container_class (MonoClass *klass)
-{
-	return mono_class_is_ginst (klass) ? mono_class_get_generic_class (klass)->container_class : klass;
 }
 
 static MonoMethod *
@@ -2441,7 +2435,7 @@ emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_m
 
 	MonoMethodSignature *member_sig = ctor_sig_from_accessor_sig (mb, sig, ctx);
 	
-	MonoClass *in_class = get_container_class (target_class);
+	MonoClass *in_class = mono_class_get_generic_type_definition (target_class);
 
 	MonoMethod *target_method = mono_unsafe_accessor_find_ctor (in_class, member_sig, target_class, find_method_error);
 	if (!is_ok (find_method_error) || target_method == NULL) {
@@ -2493,7 +2487,7 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor
 
 	MonoMethodSignature *member_sig = method_sig_from_accessor_sig (mb, hasthis, sig, ctx);
 
-	MonoClass *in_class = get_container_class (target_class);
+	MonoClass *in_class = mono_class_get_generic_type_definition (target_class);
 
 	MonoMethod *target_method = NULL;
 	if (!ctor_as_method)
