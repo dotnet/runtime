@@ -3402,6 +3402,14 @@ bool Compiler::fgReorderBlocks(bool useProfile)
         if (JitConfig.JitDoReversePostOrderLayout())
         {
             fgDoReversePostOrderLayout();
+
+#ifdef DEBUG
+            if (expensiveDebugCheckLevel >= 2)
+            {
+                fgDebugCheckBBlist();
+            }
+#endif // DEBUG
+
             return true;
         }
 
@@ -4529,7 +4537,9 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 //   main body (i.e. non-EH) successors.
 //
 // Notes:
-//   This will not reorder blocks within handler regions.
+//   This won't reorder blocks in the funclet section, if there are any.
+//   In the main method body, this will reorder blocks in the same EH region
+//   to avoid making any regions non-contiguous.
 //
 void Compiler::fgDoReversePostOrderLayout()
 {
@@ -4548,148 +4558,93 @@ void Compiler::fgDoReversePostOrderLayout()
     //
     FlowGraphDfsTree* const dfsTree = fgComputeDfs</* skipEH */ true, /* useProfile */ true>();
 
-    for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
-    {
-        BasicBlock* const block       = dfsTree->GetPostOrder(i);
-        BasicBlock* const blockToMove = dfsTree->GetPostOrder(i - 1);
-        fgUnlinkBlock(blockToMove);
-        fgInsertBBafter(block, blockToMove);
-    }
-
+    // Fast path: We don't have any EH regions, so just reorder the blocks
+    //
     if (compHndBBtabCount == 0)
     {
-        // No try regions to fix
-        //
+        for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
+        {
+            BasicBlock* const block       = dfsTree->GetPostOrder(i);
+            BasicBlock* const blockToMove = dfsTree->GetPostOrder(i - 1);
+            fgUnlinkBlock(blockToMove);
+            fgInsertBBafter(block, blockToMove);
+        }
+
         return;
     }
 
-    // The RPO-based layout above can make try regions non-contiguous.
-    // We will fix this by placing each try region's blocks adjacent to one another,
-    // and then re-inserting each try region based on the RPO.
-    //
-
-    // First, re-establish contiguousness of try regions
-    // (tryRegionEnds tracks the last block visited in each try region)
-    //
-    BasicBlock** const tryRegionEnds = new (this, CMK_Generic) BasicBlock* [compHndBBtabCount] {};
-    for (BasicBlock* block = fgFirstBB; block != fgFirstFuncletBB;)
-    {
-        BasicBlock* const next = block->Next();
-
-        if (block->hasTryIndex())
-        {
-            const unsigned tryIndex = block->getTryIndex();
-
-            if (tryRegionEnds[tryIndex] != nullptr)
-            {
-                fgUnlinkBlock(block);
-                fgInsertBBafter(tryRegionEnds[tryIndex], block);
-            }
-
-            tryRegionEnds[tryIndex] = block;
-        }
-
-        block = next;
-    }
-
-    // Move each contiguous try region based on the RPO
+    // We have EH regions, so make sure the RPO doesn't make any regions non-contiguous
+    // by only reordering blocks within the same region
     //
     for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
     {
         BasicBlock* const block       = dfsTree->GetPostOrder(i);
         BasicBlock* const blockToMove = dfsTree->GetPostOrder(i - 1);
 
-        if (bbIsTryBeg(blockToMove))
+        if (BasicBlock::sameEHRegion(block, blockToMove))
         {
-            const unsigned tryIndex = blockToMove->getTryIndex();
-
-            // The candidate predecessor block is in a try region
-            //
-            if (block->hasTryIndex())
-            {
-                const unsigned predTryIndex = block->getTryIndex();
-
-                // We can reach blockToMove's try region from block's try region, but they aren't nested regions,
-                // and we aren't jumping from the end of block's try region, so don't move blockToMove
-                //
-                if ((predTryIndex != ehGetDsc(tryIndex)->ebdEnclosingTryIndex) &&
-                    (block != tryRegionEnds[predTryIndex]))
-                {
-                    continue;
-                }
-            }
-
-            fgUnlinkRange(blockToMove, tryRegionEnds[tryIndex]);
-            fgMoveBlocksAfter(blockToMove, tryRegionEnds[tryIndex], block);
+            fgUnlinkBlock(blockToMove);
+            fgInsertBBafter(block, blockToMove);
         }
     }
 
-    // Update the EH descriptors
+    // The RPO won't change the entry blocks of any try regions, but reordering can change the last block in a region
+    // (for example, by pushing throw blocks unreachable via normal flow to the end of the region).
+    // First, determine the new try region ends.
     //
-    for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+    BasicBlock** const tryRegionEnds = new (this, CMK_Generic) BasicBlock* [compHndBBtabCount] {};
+
+    // If we aren't using EH funclets, fgFirstFuncletBB is nullptr, and we'll traverse the entire blocklist.
+    // Else if we do have funclets, don't extend the end of a try region to include its funclet blocks.
+    //
+    for (BasicBlock* block = fgFirstBB; block != fgFirstFuncletBB; block = block->Next())
     {
-        BasicBlock* const tryExit = tryRegionEnds[XTnum];
+        if (block->hasTryIndex())
+        {
+            tryRegionEnds[block->getTryIndex()] = block;
+        }
+    }
+
+    // Now, update the EH descriptors
+    //
+    unsigned XTnum;
+    EHblkDsc* HBtab;
+    for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
+    {
+        BasicBlock* const tryEnd = tryRegionEnds[XTnum];
 
         // We can have multiple EH descriptors map to the same try region,
         // but we will only update the try region's last block pointer at the index given by BasicBlock::getTryIndex,
         // so the duplicate EH descriptors' last block pointers can be null.
         // Tolerate this.
         //
-        if (tryExit == nullptr)
+        if (tryEnd == nullptr)
         {
             continue;
         }
 
         // Update the end pointer of this try region to the new last block
-        EHblkDsc* const ehDsc             = ehGetDsc(XTnum);
-        const unsigned  enclosingTryIndex = ehDsc->ebdEnclosingTryIndex;
-        ehDsc->ebdTryLast                 = tryExit;
+        //
+        HBtab->ebdTryLast                = tryEnd;
+        const unsigned enclosingTryIndex = HBtab->ebdEnclosingTryIndex;
 
         // If this try region is nested in another one, we might need to update its enclosing region's end block
         //
         if (enclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
         {
-            BasicBlock* const enclosingTryExit = tryRegionEnds[enclosingTryIndex];
+            BasicBlock* const enclosingTryEnd = tryRegionEnds[enclosingTryIndex];
 
             // If multiple EH descriptors map to the same try region,
-            // then the enclosing region's last block might be null, so set it here.
+            // then the enclosing region's last block might be null in the table, so set it here.
             // Similarly, if the enclosing region ends right before the nested region begins,
             // extend the enclosing region's last block to the end of the nested region.
             //
-            if ((enclosingTryExit == nullptr) || enclosingTryExit->NextIs(ehDsc->ebdTryBeg))
+            if ((enclosingTryEnd == nullptr) || enclosingTryEnd->NextIs(HBtab->ebdTryBeg))
             {
-                tryRegionEnds[enclosingTryIndex] = tryExit;
-                continue;
-            }
-
-            // This try region has a unique enclosing region,
-            // so this region cannot possibly be at the beginning of the method
-            //
-            assert(!ehDsc->ebdTryBeg->IsFirst());
-            BasicBlock* const tryEntryPrev = ehDsc->ebdTryBeg->Prev();
-            const unsigned    predTryIndex =
-                tryEntryPrev->hasTryIndex() ? tryEntryPrev->getTryIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
-
-            if (predTryIndex != enclosingTryIndex)
-            {
-                // We can visit the end of the enclosing try region before visiting this try region,
-                // thus placing this region outside of its enclosing region.
-                // Fix this by moving this region to the end of the enclosing region.
-                //
-                assert(enclosingTryExit != nullptr);
-                fgUnlinkRange(ehDsc->ebdTryBeg, ehDsc->ebdTryLast);
-                fgMoveBlocksAfter(ehDsc->ebdTryBeg, ehDsc->ebdTryLast, enclosingTryExit);
-                tryRegionEnds[enclosingTryIndex] = tryExit;
+                tryRegionEnds[enclosingTryIndex] = tryEnd;
             }
         }
     }
-
-#ifdef DEBUG
-    if (expensiveDebugCheckLevel >= 2)
-    {
-        fgDebugCheckBBlist();
-    }
-#endif // DEBUG
 }
 
 //-------------------------------------------------------------
