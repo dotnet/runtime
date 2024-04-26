@@ -153,8 +153,44 @@
   <data name="ThrowArgument_LengthsMustEqualArrayLength" xml:space="preserve">
     <value>The total length specified by the lengths must equal the length of the array.</value>
   </data>
+  <data name="ThrowArgument_1DTensorRequired" xml:space="preserve">
+    <value>Must be a 1d tensor</value>
+  </data>
+  <data name="ThrowArgument_AxisLargerThanRank" xml:space="preserve">
+    <value>Cannot select an axis greater than the current Rank</value>
+  </data>
+  <data name="ThrowArgument_DimensionsNotSame" xml:space="preserve">
+    <value>Number of dimensions to slice does not equal the number of dimensions in the span</value>
+  </data>
   <data name="ThrowArgument_FilterTensorMustEqualTensorLength" xml:space="preserve">
     <value>The total length of the filter tensor must equal the length of the tensor to be filtered.</value>
+  </data>
+  <data name="ThrowArgument_IncorrectNumberOfFilterItems" xml:space="preserve">
+    <value>Number of elements provided does not match the number of filters.</value>
+  </data>
+  <data name="ThrowArgument_InvalidReshapeDimensions" xml:space="preserve">
+    <value>Provided dimensions are not valid for reshaping</value>
+  </data>
+  <data name="ThrowArgument_InvalidSqueezeAxis" xml:space="preserve">
+    <value>Cannot select an axis to squeeze which has size not equal to one</value>
+  </data>
+  <data name="ThrowArgument_OnlyOneWildcard" xml:space="preserve">
+    <value>Provided dimensions can only include 1 wildcard.</value>
+  </data>
+  <data name="ThrowArgument_SetSliceInvalidShapes" xml:space="preserve">
+    <value>Provided values must have the same shape as the input tensor.</value>
+  </data>
+  <data name="ThrowArgument_SetSliceNoRange" xml:space="preserve">
+    <value>When no ranges are specified the values tensor must be equal in size as the input tensor.</value>
+  </data>
+  <data name="ThrowArgument_ShapesNotBroadcastCompatible" xml:space="preserve">
+    <value>Shapes are not broadcast compatible.</value>
+  </data>
+  <data name="ThrowArgument_SplitNotSplitEvenly" xml:space="preserve">
+    <value>The number of splits must perfectly divide the dimension.</value>
+  </data>
+  <data name="ThrowArgument_StackTooFewTensors" xml:space="preserve">
+    <value>Must provide at least 2 tensors to Stack.</value>
   </data>
   <data name="ThrowArgument_ValueNonNegative" xml:space="preserve">
     <value>The provided value must be non-negative.</value>

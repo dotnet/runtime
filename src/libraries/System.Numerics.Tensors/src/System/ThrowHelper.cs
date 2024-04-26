@@ -84,5 +84,113 @@ namespace System
         {
             throw new ArgumentException(SR.ThrowArgument_FilterTensorMustEqualTensorLength);
         }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_SetSliceNoRange(string? paramNames)
+        {
+            throw new ArgumentException(SR.ThrowArgument_SetSliceNoRange, paramNames);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_SetSliceInvalidShapes(string? paramNames)
+        {
+            throw new ArgumentException(SR.ThrowArgument_SetSliceInvalidShapes, paramNames);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_ShapesNotBroadcastCompatible()
+        {
+            throw new ArgumentException(SR.ThrowArgument_ShapesNotBroadcastCompatible);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_SplitNotSplitEvenly()
+        {
+            throw new ArgumentException(SR.ThrowArgument_SplitNotSplitEvenly);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_DimensionsNotSame(string? paramNames)
+        {
+            throw new ArgumentException(SR.ThrowArgument_DimensionsNotSame, paramNames);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_1DTensorRequired(string? paramNames)
+        {
+            throw new ArgumentException(SR.ThrowArgument_1DTensorRequired, paramNames);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_IncorrectNumberOfFilterItems(string? paramNames)
+        {
+            throw new ArgumentException(SR.ThrowArgument_IncorrectNumberOfFilterItems, paramNames);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_StackTooFewTensors()
+        {
+            throw new ArgumentException(SR.ThrowArgument_StackTooFewTensors);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_OnlyOneWildcard()
+        {
+            throw new ArgumentException(SR.ThrowArgument_OnlyOneWildcard);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_InvalidReshapeDimensions()
+        {
+            throw new ArgumentException(SR.ThrowArgument_InvalidReshapeDimensions);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_AxisLargerThanRank()
+        {
+            throw new ArgumentException(SR.ThrowArgument_AxisLargerThanRank);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_InvalidSqueezeAxis()
+        {
+            throw new ArgumentException(SR.ThrowArgument_InvalidSqueezeAxis);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_ConcatenateTooFewTensors()
+        {
+            throw new ArgumentException(SR.ThrowArgument_ConcatenateTooFewTensors);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_InvalidAxis()
+        {
+            throw new ArgumentException(SR.ThrowArgument_InvalidAxis);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_InvalidConcatenateShape()
+        {
+            throw new ArgumentException(SR.ThrowArgument_InvalidConcatenateShape);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_TransposeTooFewDimensions()
+        {
+            throw new ArgumentException(SR.ThrowArgument_TransposeTooFewDimensions);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_PermuteAxisOrder()
+        {
+            throw new ArgumentException(SR.ThrowArgument_PermuteAxisOrder);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_InPlaceInvalidShape()
+        {
+            throw new ArgumentException(SR.ThrowArgument_InPlaceInvalidShape);
+        }
     }
 }

@@ -93,7 +93,7 @@ namespace System.Numerics.Tensors
                 return new Tensor<T>(input._values, shape.ToArray(), input.IsPinned);
 
             if (!TensorHelpers.AreShapesBroadcastCompatible(input.Shape, shape))
-                throw new Exception("Shapes are not broadcast compatible.");
+                ThrowHelper.ThrowArgument_ShapesNotBroadcastCompatible();
 
             var newSize = SpanNDHelpers.CalculateTotalLength(shape);
 
@@ -128,7 +128,7 @@ namespace System.Numerics.Tensors
                 return new SpanND<T>(ref input._reference, shape, input.Strides, input.IsPinned);
 
             if (!TensorHelpers.AreShapesBroadcastCompatible(input.Shape, shape))
-                throw new Exception("Shapes are not broadcast compatible.");
+                ThrowHelper.ThrowArgument_ShapesNotBroadcastCompatible();
 
             var newSize = SpanNDHelpers.CalculateTotalLength(shape);
 
@@ -253,7 +253,7 @@ namespace System.Numerics.Tensors
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             if (input.Shape[(int)axis] % numSplits != 0)
-                throw new Exception("The number of splits must perfectly divide the dimension.");
+                ThrowHelper.ThrowArgument_SplitNotSplitEvenly();
 
             Tensor<T>[] outputs = new Tensor<T>[numSplits];
 
@@ -304,14 +304,14 @@ namespace System.Numerics.Tensors
             if (ranges == ReadOnlySpan<NativeRange>.Empty)
             {
                 if (!tensor.Shape.SequenceEqual(values.Shape))
-                    throw new ArgumentException("When no ranges are specified the values tensor must be equal in size as the input tensor.", nameof(values));
+                    ThrowHelper.ThrowArgument_SetSliceNoRange(nameof(values));
                 srcSpan = tensor.AsSpanND().Slice(tensor.Shape);
             }
             else
                 srcSpan = tensor.AsSpanND().Slice(ranges);
 
             if (!srcSpan.Shape.SequenceEqual(values.Shape))
-                throw new ArgumentException("Provided values must have the same shape as the input tensor.", nameof(values));
+                ThrowHelper.ThrowArgument_SetSliceInvalidShapes(nameof(values));
 
             values.AsSpanND().CopyTo(srcSpan);
 
@@ -327,7 +327,7 @@ namespace System.Numerics.Tensors
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             if (filter.Shape.Length != left.Shape.Length)
-                throw new ArgumentOutOfRangeException(nameof(filter), "Number of dimensions to slice does not equal the number of dimensions in the span");
+                ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(filter));
 
             var srcSpan = MemoryMarshal.CreateSpan(ref left._values[0], (int)left._linearLength);
             var filterSpan = MemoryMarshal.CreateSpan(ref filter._values[0], (int)left._linearLength);
@@ -347,13 +347,13 @@ namespace System.Numerics.Tensors
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             if (filter.Shape.Length != left.Shape.Length)
-                throw new ArgumentOutOfRangeException(nameof(filter), "Number of dimensions to slice does not equal the number of dimensions in the span");
+                ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(filter));
             if (values.Rank != 1)
-                throw new ArgumentOutOfRangeException(nameof(values), "Must be a 1d tensor");
+                ThrowHelper.ThrowArgument_1DTensorRequired(nameof(values));
 
             nint numTrueElements = SpanNDHelpers.CountTrueElements(filter);
             if (numTrueElements != values._linearLength)
-                throw new ArgumentOutOfRangeException(nameof(values), "Number of elements provided does not match the number of filters.");
+                ThrowHelper.ThrowArgument_IncorrectNumberOfFilterItems(nameof(values));
 
             Span<T> dstSpan = MemoryMarshal.CreateSpan(ref left._values[0], (int)left._linearLength);
             Span<bool> filterSpan = MemoryMarshal.CreateSpan(ref filter._values[0], (int)left._linearLength);
@@ -610,7 +610,7 @@ namespace System.Numerics.Tensors
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             if (input.Length < 2)
-                throw new ArgumentException("Must provide at least 2 tensors to Stack.");
+                ThrowHelper.ThrowArgument_StackTooFewTensors();
             if (axis < 0)
                 axis = input.Rank - axis;
 
@@ -633,7 +633,7 @@ namespace System.Numerics.Tensors
             if (lengths.Contains(-1))
             {
                 if (lengths.Count(-1) > 1)
-                    throw new ArgumentException("Provided dimensions can only include 1 wildcard.");
+                    ThrowHelper.ThrowArgument_OnlyOneWildcard();
                 var tempTotal = input._linearLength;
                 for (int i = 0; i < lengths.Length; i++)
                 {
@@ -648,7 +648,7 @@ namespace System.Numerics.Tensors
 
             var tempLinear = SpanNDHelpers.CalculateTotalLength(ref arrLengths);
             if (tempLinear != input.Length)
-                throw new ArgumentException("Provided dimensions are not valid for reshaping");
+                ThrowHelper.ThrowArgument_InvalidReshapeDimensions();
             var strides = SpanNDHelpers.CalculateStrides(arrLengths.Length, arrLengths);
             return new Tensor<T>(input._values, arrLengths, strides.ToArray(), input.IsPinned);
         }
@@ -661,7 +661,7 @@ namespace System.Numerics.Tensors
             if (lengths.Contains(-1))
             {
                 if (lengths.Count(-1) > 1)
-                    throw new ArgumentException("Provided dimensions can only include 1 wildcard.");
+                    ThrowHelper.ThrowArgument_OnlyOneWildcard();
                 var tempTotal = input.Length;
                 for (int i = 0; i < lengths.Length; i++)
                 {
@@ -676,7 +676,7 @@ namespace System.Numerics.Tensors
 
             var tempLinear = SpanNDHelpers.CalculateTotalLength(ref arrLengths);
             if (tempLinear != input.Length)
-                throw new ArgumentException("Provided dimensions are not valid for reshaping");
+                ThrowHelper.ThrowArgument_InvalidReshapeDimensions();
             var strides = SpanNDHelpers.CalculateStrides(arrLengths.Length, arrLengths);
             return new SpanND<T>(ref input._reference, arrLengths, strides, input.IsPinned);
         }
@@ -688,7 +688,7 @@ namespace System.Numerics.Tensors
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             if (axis >= input.Rank)
-                throw new ArgumentException("Cannot select an axis greater than the current Rank");
+                ThrowHelper.ThrowArgument_AxisLargerThanRank();
 
             nint[] lengths;
             nint[] strides;
@@ -710,7 +710,7 @@ namespace System.Numerics.Tensors
             {
                 if (input.Shape[axis] != 1)
                 {
-                    throw new ArgumentException("Cannot select an axis to squeeze which has size not equal to one");
+                    ThrowHelper.ThrowArgument_InvalidSqueezeAxis();
                 }
                 for (int i = 0; i < input.Shape.Length; i++)
                 {
@@ -733,7 +733,7 @@ namespace System.Numerics.Tensors
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             if (axis > input.Shape.Length)
-                throw new ArgumentException("Cannot select an axis less greater than the current Rank");
+                ThrowHelper.ThrowArgument_AxisLargerThanRank();
             if (axis < 0)
                 axis = input.Rank - axis;
 
@@ -757,10 +757,10 @@ namespace System.Numerics.Tensors
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             if (tensors.Length < 2)
-                throw new ArgumentException("Must provide at least 2 tensors to concatenate");
+                ThrowHelper.ThrowArgument_ConcatenateTooFewTensors();
 
             if (axis < -1 || axis > tensors[0].Rank)
-                throw new ArgumentException("Invalid axis provided");
+                ThrowHelper.ThrowArgument_InvalidAxis();
 
             // Calculate total space needed.
             nint totalLength = 0;
@@ -775,13 +775,13 @@ namespace System.Numerics.Tensors
                 for (int i = 1; i < tensors.Length; i++)
                 {
                     if (tensors[0].Rank != tensors[i].Rank)
-                        throw new ArgumentException("The arrays must have the same shape, except in the dimension corresponding to axis.");
+                        ThrowHelper.ThrowArgument_InvalidConcatenateShape();
                     for (int j = 0; j < tensors[0].Rank; j++)
                     {
                         if (j != axis)
                         {
                             if (tensors[0].Shape[j] != tensors[i].Shape[j])
-                                throw new ArgumentException("The arrays must have the same shape, except in the dimension corresponding to axis.");
+                                ThrowHelper.ThrowArgument_InvalidConcatenateShape();
                         }
                     }
                     sumOfAxis += tensors[i].Shape[axis];
@@ -891,7 +891,7 @@ namespace System.Numerics.Tensors
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             if (input.Shape.Length < 2)
-                throw new ArgumentException("Must provide a tensor with at least 2 dimensions to transpose it.");
+                ThrowHelper.ThrowArgument_TransposeTooFewDimensions();
             var axis = Enumerable.Range(0, input.Rank).ToArray();
             var temp = axis[input.Rank - 1];
             axis[input.Rank - 1] = axis[input.Rank - 2];
@@ -923,7 +923,7 @@ namespace System.Numerics.Tensors
                 else
                 {
                     if (axis.Length != input.Shape.Length)
-                        throw new ArgumentException("Must provide an axis order for each axis");
+                        ThrowHelper.ThrowArgument_PermuteAxisOrder();
                     for (int i = 0; i < lengths.Length; i++)
                         lengths[i] = input.Shape[axis[i]];
                     permutation = axis.ToArray();
@@ -1527,7 +1527,7 @@ namespace System.Numerics.Tensors
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             if (inPlace && left.Shape != right.Shape)
-                throw new ArgumentException("In place operations require the same shape for both tensors");
+                ThrowHelper.ThrowArgument_InPlaceInvalidShape();
 
             Tensor<T> output;
             if (inPlace)
@@ -1616,7 +1616,7 @@ namespace System.Numerics.Tensors
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             if (inPlace && left.Shape != right.Shape)
-                throw new ArgumentException("In place operations require the same shape for both spans");
+                ThrowHelper.ThrowArgument_InPlaceInvalidShape();
 
             //ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref left._reference, (int)left.LinearLength);
             //ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref right._reference, (int)right.LinearLength);
