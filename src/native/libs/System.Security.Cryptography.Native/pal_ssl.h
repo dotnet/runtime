@@ -130,7 +130,8 @@ typedef void (*SslCtxSetKeylogCallback)(const SSL* ssl, const char *line);
 /*
 Ensures that libssl is correctly initialized and ready to use.
 */
-PALEXPORT void CryptoNative_EnsureLibSslInitialized(void);
+
+PALEXPORT void CryptoNative_EnsureLibSslInitialized(CRYPTO_malloc_fn  mallocFunction, CRYPTO_realloc_fn reallocFunction, CRYPTO_free_fn freefunction);
 
 /*
 Shims the SSLv23_method method.

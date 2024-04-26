@@ -31,8 +31,6 @@ c_static_assert(TLSEXT_STATUSTYPE_ocsp == 1);
     "ECDHE-RSA-AES256-SHA384:" \
     "ECDHE-RSA-AES128-SHA256:" \
 
-int32_t CryptoNative_EnsureOpenSslInitialized(void);
-
 #ifdef NEED_OPENSSL_1_0
 static void EnsureLibSsl10Initialized(void)
 {
@@ -173,9 +171,11 @@ static void DetectCiphersuiteConfiguration(void)
 #endif
 }
 
-void CryptoNative_EnsureLibSslInitialized(void)
+
+void CryptoNative_EnsureLibSslInitialized(CRYPTO_malloc_fn  mallocFunction, CRYPTO_realloc_fn reallocFunction, CRYPTO_free_fn freefunction)
+
 {
-    CryptoNative_EnsureOpenSslInitialized();
+    CryptoNative_EnsureOpenSslInitialized(mallocFunction, reallocFunction, freefunction);
 
     // If portable, call the 1.0 initializer when needed.
     // If 1.0, call it statically.

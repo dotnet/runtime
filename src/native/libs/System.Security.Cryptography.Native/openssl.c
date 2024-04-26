@@ -1467,7 +1467,7 @@ int32_t CryptoNative_OpenSslAvailable(void)
 static int32_t g_initStatus = 1;
 int g_x509_ocsp_index = -1;
 
-static int32_t EnsureOpenSslInitializedCore(void)
+static int32_t EnsureOpenSslInitializedCore(CRYPTO_malloc_fn  mallocFunction, CRYPTO_realloc_fn reallocFunction, CRYPTO_free_fn freefunction)
 {
     int ret = 0;
 
@@ -1476,7 +1476,16 @@ static int32_t EnsureOpenSslInitializedCore(void)
     // Otherwise call the 1.1 one.
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     InitializeOpenSSLShim();
+#endif
 
+    if (mallocFunction != NULL && reallocFunction != NULL && freefunction != NULL)
+    {
+        // This needs to be done before any allocation is done e.g. EnsureOpenSsl* is called.
+        // And it also needs to be after the pointers are loaded for AGNOSTIC_SSL
+        CRYPTO_set_mem_functions(mallocFunction, reallocFunction, freefunction);
+    }
+
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     if (API_EXISTS(SSL_state))
     {
         ret = EnsureOpenSsl10Initialized();
@@ -1501,15 +1510,22 @@ static int32_t EnsureOpenSslInitializedCore(void)
     return ret;
 }
 
+static CRYPTO_malloc_fn  _mallocFunction;
+static CRYPTO_realloc_fn _reallocFunction;
+static CRYPTO_free_fn _freefunction;
+
 static void EnsureOpenSslInitializedOnce(void)
 {
-    g_initStatus = EnsureOpenSslInitializedCore();
+    g_initStatus = EnsureOpenSslInitializedCore(_mallocFunction, _reallocFunction, _freefunction);
 }
 
 static pthread_once_t g_initializeShim = PTHREAD_ONCE_INIT;
 
-int32_t CryptoNative_EnsureOpenSslInitialized(void)
+int32_t CryptoNative_EnsureOpenSslInitialized(CRYPTO_malloc_fn  mallocFunction, CRYPTO_realloc_fn reallocFunction, CRYPTO_free_fn freefunction)
 {
+    _mallocFunction = mallocFunction;
+    _reallocFunction = reallocFunction;
+    _freefunction = freefunction;
     pthread_once(&g_initializeShim, EnsureOpenSslInitializedOnce);
     return g_initStatus;
 }

@@ -31,7 +31,7 @@ internal static partial class Interop
     {
         static CryptoInitializer()
         {
-            if (EnsureOpenSslInitialized() != 0)
+            if (EnsureOpenSslInitialized(null, null, null) != 0)
             {
                 // Ideally this would be a CryptographicException, but we use
                 // OpenSSL in libraries lower than System.Security.Cryptography.

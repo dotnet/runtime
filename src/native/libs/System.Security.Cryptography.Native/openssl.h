@@ -69,7 +69,7 @@ PALEXPORT int32_t CryptoNative_GetRandomBytes(uint8_t* buf, int32_t num);
 
 PALEXPORT int32_t CryptoNative_LookupFriendlyNameByOid(const char* oidValue, const char** friendlyName);
 
-PALEXPORT int32_t CryptoNative_EnsureOpenSslInitialized(void);
+PALEXPORT int32_t CryptoNative_EnsureOpenSslInitialized(CRYPTO_malloc_fn  mallocFunction, CRYPTO_realloc_fn reallocFunction, CRYPTO_free_fn freefunction);
 
 PALEXPORT int64_t CryptoNative_OpenSslVersionNumber(void);
 

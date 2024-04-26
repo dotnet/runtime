@@ -469,6 +469,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
+    <Reference Include="System.Collections.Generic" />
     <Reference Include="System.Diagnostics.StackTrace" />
     <Reference Include="System.Security.Cryptography" />
     <Reference Include="System.Runtime.Numerics" />
