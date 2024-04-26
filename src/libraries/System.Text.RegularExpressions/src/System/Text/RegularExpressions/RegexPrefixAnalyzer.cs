@@ -162,23 +162,26 @@ namespace System.Text.RegularExpressions
                                 int reps = node.Kind is RegexNodeKind.Set ? 1 : Math.Min(node.M, MaxPrefixLength);
                                 if (!ignoreCase)
                                 {
-                                    int existingCount = results.Count;
-
-                                    // Duplicate all of the existing strings for all of the new suffixes, other than the first.
-                                    foreach (char suffix in setChars.Slice(1, charCount - 1))
+                                    for (int rep = 0; rep < reps; rep++)
                                     {
+                                        int existingCount = results.Count;
+
+                                        // Duplicate all of the existing strings for all of the new suffixes, other than the first.
+                                        foreach (char suffix in setChars.Slice(1, charCount - 1))
+                                        {
+                                            for (int existing = 0; existing < existingCount; existing++)
+                                            {
+                                                StringBuilder newSb = new StringBuilder().Append(results[existing]);
+                                                newSb.Append(suffix);
+                                                results.Add(newSb);
+                                            }
+                                        }
+
+                                        // Then append the first suffix to all of the existing strings.
                                         for (int existing = 0; existing < existingCount; existing++)
                                         {
-                                            StringBuilder newSb = new StringBuilder().Append(results[existing]);
-                                            newSb.Append(suffix, reps);
-                                            results.Add(newSb);
+                                            results[existing].Append(setChars[0]);
                                         }
-                                    }
-
-                                    // Then append the first suffix to all of the existing strings.
-                                    for (int existing = 0; existing < existingCount; existing++)
-                                    {
-                                        results[existing].Append(setChars[0], reps);
                                     }
                                 }
                                 else
