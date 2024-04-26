@@ -1409,6 +1409,49 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_PATTERN(ins, emitSize, targetReg, opt, SVE_PATTERN_ALL);
                 break;
 
+            case NI_Sve_CreateWhileLessThanMask8Bit:
+            case NI_Sve_CreateWhileLessThanMask16Bit:
+            case NI_Sve_CreateWhileLessThanMask32Bit:
+            case NI_Sve_CreateWhileLessThanMask64Bit:
+            {
+                // Emit size and instruction is based on the scalar operands.
+                var_types auxType = node->GetAuxiliaryType();
+                emitSize          = emitActualTypeSize(auxType);
+                if (varTypeIsUnsigned(auxType))
+                {
+                    ins = INS_sve_whilelo;
+                }
+
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+            }
+
+            case NI_Sve_CreateWhileLessThanOrEqualMask8Bit:
+            case NI_Sve_CreateWhileLessThanOrEqualMask16Bit:
+            case NI_Sve_CreateWhileLessThanOrEqualMask32Bit:
+            case NI_Sve_CreateWhileLessThanOrEqualMask64Bit:
+            {
+                // Emit size and instruction is based on the scalar operands.
+                var_types auxType = node->GetAuxiliaryType();
+                emitSize          = emitActualTypeSize(auxType);
+                if (varTypeIsUnsigned(auxType))
+                {
+                    ins = INS_sve_whilels;
+                }
+
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+            }
+
+            case NI_Sve_UnzipEven:
+            case NI_Sve_UnzipOdd:
+            case NI_Sve_ZipHigh:
+            case NI_Sve_ZipLow:
+                // Use non-predicated version explicitly
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt,
+                                            INS_SCALABLE_OPTS_UNPREDICATED);
+                break;
+
             default:
                 unreached();
         }

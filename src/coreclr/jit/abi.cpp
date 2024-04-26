@@ -417,6 +417,9 @@ ABIPassingInformation SwiftABIClassifier::Classify(Compiler*    comp,
             {
                 ABIPassingSegment newSegment = elemInfo.Segments[j];
                 newSegment.Offset += lowering->offsets[i];
+                // Adjust the tail size if necessary; the lowered sequence can
+                // pass the tail as a larger type than the tail size.
+                newSegment.Size = min(newSegment.Size, structLayout->GetSize() - newSegment.Offset);
                 segments.Push(newSegment);
             }
         }
