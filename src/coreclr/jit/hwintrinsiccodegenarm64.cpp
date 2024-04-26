@@ -380,7 +380,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 emitShift(intrin.op2, op1Reg);
             }
         }
-        else if (intrin.category == HW_Category_EnumPattern)
+        else if (HWIntrinsicInfo::HasEnumOperand(intrin.id))
         {
             assert(hasImmediateOperand);
 
@@ -1404,6 +1404,22 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op1Reg, op2Reg, 0, opt);
                 break;
 
+            case NI_Sve_Count16BitElements:
+            case NI_Sve_Count32BitElements:
+            case NI_Sve_Count64BitElements:
+            case NI_Sve_Count8BitElements:
+            {
+                // Instruction has an additional immediate to multiply the result by. Use 1.
+                assert(hasImmediateOperand);
+                HWIntrinsicImmOpHelper helper(this, intrin.op1, node);
+                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                {
+                    const insSvePattern pattern = (insSvePattern)helper.ImmValue();
+                    GetEmitter()->emitIns_R_PATTERN_I(ins, emitSize, targetReg, pattern, 1, opt);
+                }
+                break;
+            }
+
             case NI_Sve_CreateTrueMaskAll:
                 // Must use the pattern variant, as the non-pattern varient is SVE2.1.
                 GetEmitter()->emitIns_R_PATTERN(ins, emitSize, targetReg, opt, SVE_PATTERN_ALL);
@@ -1442,6 +1458,15 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 break;
             }
+
+            case NI_Sve_UnzipEven:
+            case NI_Sve_UnzipOdd:
+            case NI_Sve_ZipHigh:
+            case NI_Sve_ZipLow:
+                // Use non-predicated version explicitly
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt,
+                                            INS_SCALABLE_OPTS_UNPREDICATED);
+                break;
 
             default:
                 unreached();
