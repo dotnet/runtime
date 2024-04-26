@@ -230,7 +230,7 @@ private:
     void ApplyDecisions();
     void DumpFeatureNames();
     void DumpFeatures();
-    void GetFeatures(CSEdsc* cse, double* features);
+    void GetFeatures(CSEdsc* cse, int* features);
 
     enum
     {
@@ -257,6 +257,10 @@ public:
     {
         return "RL Hook CSE Heuristic";
     }
+
+#ifdef DEBUG
+    virtual void DumpMetrics();
+#endif
 };
 
 // Reinforcement Learning CSE heuristic

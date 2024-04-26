@@ -2985,14 +2985,10 @@ bool CSE_HeuristicRLHook::ConsiderTree(GenTree* tree, bool isReturn)
 
 void CSE_HeuristicRLHook::ConsiderCandidates()
 {
-    ApplyDecisions();
-
-    if (JitConfig.JitRLHookEmitFeatureNames() > 0)
+    if (JitConfig.JitRLHookCSEDecisions() != nullptr)
     {
-        DumpFeatureNames();
+        ApplyDecisions();
     }
-
-    DumpFeatures();
 }
 
 void CSE_HeuristicRLHook::ApplyDecisions()
@@ -3003,40 +2999,50 @@ void CSE_HeuristicRLHook::ApplyDecisions()
     unsigned cnt = m_pCompiler->optCSECandidateCount;
     for (unsigned i = 0; i < JitRLHookCSEDecisions.GetLength(); i++)
     {
-        // optCSEtab is 0-based; candidate numbers are 1-based
-        //
-        const int index = JitRLHookCSEDecisions.GetData()[i] - 1;
+        const int index = JitRLHookCSEDecisions.GetData()[i];
 
-        if ((index < 0) || (index >= (int)cnt))
+        bool found = false;
+        for (unsigned j = 0; j < cnt; j++)
         {
-            JITDUMP("Invalid candidate number %d\n", index + 1);
-            continue;
+            CSEdsc* const dsc = m_pCompiler->optCSEtab[j];
+            if (dsc->csdIndex == index)
+            {
+                // We only produce viable candidates, we should not be asked to apply a non-viable one.
+                assert(dsc->IsViable());
+
+                found = true;
+
+                const int     attempt = m_pCompiler->optCSEattempt++;
+                CSE_Candidate candidate(this, dsc);
+
+                JITDUMP("\nRLHook attempting " FMT_CSE "\n", candidate.CseIndex());
+                JITDUMP("CSE Expression : \n");
+                JITDUMPEXEC(m_pCompiler->gtDispTree(candidate.Expr()));
+                JITDUMP("\n");
+
+                PerformCSE(&candidate);
+                madeChanges = true;
+
+                break;
+            }
         }
-
-        const int     attempt = m_pCompiler->optCSEattempt++;
-        CSEdsc* const dsc     = m_pCompiler->optCSEtab[index];
-        CSE_Candidate candidate(this, dsc);
-
-        JITDUMP("\nRLHook attempting " FMT_CSE "\n", candidate.CseIndex());
-        JITDUMP("CSE Expression : \n");
-        JITDUMPEXEC(m_pCompiler->gtDispTree(candidate.Expr()));
-        JITDUMP("\n");
-
-        if (!dsc->IsViable())
-        {
-            JITDUMP("Abandoned " FMT_CSE " -- not viable\n", candidate.CseIndex());
-            continue;
-        }
-
-        PerformCSE(&candidate);
-        madeChanges = true;
     }
+}
+
+void CSE_HeuristicRLHook::DumpMetrics()
+{
+    if (JitConfig.JitRLHookEmitFeatureNames() > 0)
+    {
+        DumpFeatureNames();
+    }
+
+    DumpFeatures();
 }
 
 void CSE_HeuristicRLHook::DumpFeatureNames()
 {
-    printf(" featureNames");
-    for (int i = 0; s_featureNameAndType[i] != nullptr; i++)
+    printf(" featureNames ");
+    for (int i = 0; i < maxFeatures; i++)
     {
         printf("%s%s", (i == 0) ? "" : ",", s_featureNameAndType[i]);
     }
@@ -3047,40 +3053,23 @@ void CSE_HeuristicRLHook::DumpFeatures()
     for (unsigned i = 0; i < m_pCompiler->optCSECandidateCount; i++)
     {
         CSEdsc* const dsc = m_pCompiler->optCSEtab[i];
-        double features[maxFeatures];
+        if (!dsc->IsViable())
+        {
+            continue;
+        }
+
+        int features[maxFeatures];
         GetFeatures(dsc, features);
 
         printf(" features " FMT_CSE, dsc->csdIndex);
         for (int i = 0; i < maxFeatures; i++)
         {
-            printf("%s%f", (i == 0) ? "" : ",", features[i]);
+            printf("%s%d", (i == 0) ? "" : ",", features[i]);
         }
     }
 }
 
-const char* const CSE_HeuristicRLHook::s_featureNameAndType[] =
-{
-    "viable",
-    "type",
-    "costEx",
-    "costSz",
-    "useCount",
-    "defCount",
-    "useWtCnt",
-    "defWtCnt",
-    "liveAcrossCall",
-    "const",
-    "sharedConst",
-    "makeCse",
-    "numDistinctLocals",
-    "numLocalOccurrences",
-    "hasCall",
-    "containable",
-    "enregCount",
-    nullptr
-};
-
-void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, double* features)
+void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
 {
     assert(cse != nullptr);
     assert(features != nullptr);
@@ -3162,13 +3151,7 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, double* features)
 #endif
 #endif
 
-    for (int j = 0; j < maxFeatures; j++)
-    {
-        features[j] = 0;
-    }
-
     int i = 0;
-    features[i++] = cse->IsViable() ? 1 : 0;
     features[i++] = type;
     features[i++] = cse->csdTree->GetCostEx();
     features[i++] = cse->csdTree->GetCostSz();
@@ -3187,8 +3170,32 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, double* features)
     features[i++] = enregCount;
 
     assert(i <= maxFeatures);
+
+    for (; i < maxFeatures; i++)
+    {
+        features[i] = 0;
+    }
 }
 
+const char* const CSE_HeuristicRLHook::s_featureNameAndType[] =
+{
+    "type",
+    "costEx",
+    "costSz",
+    "useCount",
+    "defCount",
+    "useWtCnt",
+    "defWtCnt",
+    "liveAcrossCall",
+    "const",
+    "sharedConst",
+    "makeCse",
+    "numDistinctLocals",
+    "numLocalOccurrences",
+    "hasCall",
+    "containable",
+    "enregCount",
+};
 
 //------------------------------------------------------------------------
 // CSE_HeuristicRL: construct RL CSE heuristic
