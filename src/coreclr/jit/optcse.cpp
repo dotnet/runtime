@@ -2999,33 +2999,30 @@ void CSE_HeuristicRLHook::ApplyDecisions()
     unsigned cnt = m_pCompiler->optCSECandidateCount;
     for (unsigned i = 0; i < JitRLHookCSEDecisions.GetLength(); i++)
     {
-        const int index = JitRLHookCSEDecisions.GetData()[i];
-
-        bool found = false;
-        for (unsigned j = 0; j < cnt; j++)
+        const int index = JitRLHookCSEDecisions.GetData()[i] - 1;
+        if ((index < 0) || (index >= (int)cnt))
         {
-            CSEdsc* const dsc = m_pCompiler->optCSEtab[j];
-            if (dsc->csdIndex == index)
-            {
-                // We only produce viable candidates, we should not be asked to apply a non-viable one.
-                assert(dsc->IsViable());
-
-                found = true;
-
-                const int     attempt = m_pCompiler->optCSEattempt++;
-                CSE_Candidate candidate(this, dsc);
-
-                JITDUMP("\nRLHook attempting " FMT_CSE "\n", candidate.CseIndex());
-                JITDUMP("CSE Expression : \n");
-                JITDUMPEXEC(m_pCompiler->gtDispTree(candidate.Expr()));
-                JITDUMP("\n");
-
-                PerformCSE(&candidate);
-                madeChanges = true;
-
-                break;
-            }
+            JITDUMP("Invalid candidate number %d\n", index + 1);
+            continue;
         }
+
+        CSEdsc* const dsc = m_pCompiler->optCSEtab[index];
+        if (!dsc->IsViable())
+        {
+            JITDUMP("Abandoned " FMT_CSE " -- not viable\n", dsc->csdIndex);
+            continue;
+        }
+
+        const int     attempt = m_pCompiler->optCSEattempt++;
+        CSE_Candidate candidate(this, dsc);
+
+        JITDUMP("\nRLHook attempting " FMT_CSE "\n", candidate.CseIndex());
+        JITDUMP("CSE Expression : \n");
+        JITDUMPEXEC(m_pCompiler->gtDispTree(candidate.Expr()));
+        JITDUMP("\n");
+
+        PerformCSE(&candidate);
+        madeChanges = true;
     }
 }
 
@@ -3052,19 +3049,15 @@ void CSE_HeuristicRLHook::DumpFeatures()
 {
     for (unsigned i = 0; i < m_pCompiler->optCSECandidateCount; i++)
     {
-        CSEdsc* const dsc = m_pCompiler->optCSEtab[i];
-        if (!dsc->IsViable())
-        {
-            continue;
-        }
+        CSEdsc* const cse = m_pCompiler->optCSEtab[i];
 
         int features[maxFeatures];
-        GetFeatures(dsc, features);
+        GetFeatures(cse, features);
 
-        printf(" features " FMT_CSE, dsc->csdIndex);
-        for (int i = 0; i < maxFeatures; i++)
+        printf(" features #%i,", cse->csdIndex);
+        for (int j = 0; j < maxFeatures; j++)
         {
-            printf("%s%d", (i == 0) ? "" : ",", features[i]);
+            printf("%s%d", (j == 0) ? "" : ",", features[j]);
         }
     }
 }
@@ -3152,6 +3145,7 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
 #endif
 
     int i = 0;
+    features[i++] = cse->IsViable() ? 1 : 0;
     features[i++] = type;
     features[i++] = cse->csdTree->GetCostEx();
     features[i++] = cse->csdTree->GetCostSz();
@@ -3179,6 +3173,7 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
 
 const char* const CSE_HeuristicRLHook::s_featureNameAndType[] =
 {
+    "isViable",
     "type",
     "costEx",
     "costSz",

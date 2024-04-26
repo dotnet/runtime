@@ -234,7 +234,7 @@ private:
 
     enum
     {
-        maxFeatures = 16,
+        maxFeatures = 17,
     };
 
     enum
