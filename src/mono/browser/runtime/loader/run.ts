@@ -432,7 +432,7 @@ function importModules () {
 
     let jsModuleHybridGlobalizationPromise: Promise<NativeModuleExportsInternal> | undefined = undefined;
     // todo: move it for after runtime startup
-    if (WasmEnableThreads) {
+    if (!WasmEnableThreads) {
         const jsModuleHybridGlobalization = resolve_single_asset_path("js-module-globalization");
         if (typeof jsModuleHybridGlobalization.moduleExports === "object") {
             jsModuleHybridGlobalizationPromise = jsModuleHybridGlobalization.moduleExports;
@@ -450,7 +450,7 @@ async function initializeModules (es6Modules: [RuntimeModuleExportsInternal, Nat
     const { default: emscriptenFactory } = es6Modules[1];
     setRuntimeGlobals(globalObjectsRoot);
     initializeExports(globalObjectsRoot);
-    if (WasmEnableThreads) {
+    if (!WasmEnableThreads) {
         const { initHybrid } = es6Modules[2];
         initHybrid(runtimeHelpers);
     }
