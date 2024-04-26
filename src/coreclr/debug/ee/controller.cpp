@@ -2430,7 +2430,7 @@ bool DebuggerController::MatchPatch(Thread *thread,
     // the appdomain switches halfway through a step.
     if (patch->pAppDomain != NULL)
     {
-        AppDomain *pAppDomainCur = thread->GetDomain();
+        AppDomain *pAppDomainCur = AppDomain::GetCurrentDomain();
 
         if (pAppDomainCur != patch->pAppDomain)
         {
@@ -2517,7 +2517,7 @@ DebuggerPatchSkip *DebuggerController::ActivatePatchSkip(Thread *thread,
         //
         // !!! check result
         LOG((LF_CORDB,LL_INFO10000, "DC::APS: About to skip from PC=0x%p\n", PC));
-        skip = new (interopsafe) DebuggerPatchSkip(thread, patch, thread->GetDomain());
+        skip = new (interopsafe) DebuggerPatchSkip(thread, patch, AppDomain::GetCurrentDomain());
         TRACE_ALLOC(skip);
     }
 
@@ -2962,7 +2962,7 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
             if (!event->m_deleted)
             {
 #ifdef DEBUGGING_SUPPORTED
-                if (thread->GetDomain()->IsDebuggerAttached())
+                if (AppDomain::GetCurrentDomain()->IsDebuggerAttached())
                 {
                     if (event->SendEvent(thread, fIpChanged))
                     {
@@ -4658,7 +4658,7 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
 
     if (m_pAppDomain != NULL)
     {
-        AppDomain *pAppDomainCur = thread->GetDomain();
+        AppDomain *pAppDomainCur = AppDomain::GetCurrentDomain();
 
         if (pAppDomainCur != m_pAppDomain)
         {
@@ -4799,7 +4799,7 @@ bool DebuggerPatchSkip::TriggerSingleStep(Thread *thread, const BYTE *ip)
 
     if (m_pAppDomain != NULL)
     {
-        AppDomain *pAppDomainCur = thread->GetDomain();
+        AppDomain *pAppDomainCur = AppDomain::GetCurrentDomain();
 
         if (pAppDomainCur != m_pAppDomain)
         {
@@ -8259,7 +8259,7 @@ void DebuggerThreadStarter::TriggerTraceCall(Thread *thread, const BYTE *ip)
 {
     LOG((LF_CORDB, LL_EVERYTHING, "DTS::TTC called\n"));
 #ifdef DEBUGGING_SUPPORTED
-    if (thread->GetDomain()->IsDebuggerAttached())
+    if (AppDomain::GetCurrentDomain()->IsDebuggerAttached())
     {
         TraceDestination trace;
 
