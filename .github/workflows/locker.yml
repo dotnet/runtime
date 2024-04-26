@@ -23,7 +23,7 @@ jobs:
     if: ${{ github.repository_owner == 'dotnet' }}
     steps:
       - name: Checkout Actions
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.1.4
         with:
           repository: "microsoft/vscode-github-triage-actions"
           path: ./actions
