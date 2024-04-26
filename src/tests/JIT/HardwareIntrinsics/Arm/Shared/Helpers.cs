@@ -5986,5 +5986,45 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return result;
         }
+
+        public static int WhileLessThanMask(int op1, int op2)
+        {
+            return (op1 < op2) ? 1 : 0;
+        }
+
+        public static uint WhileLessThanMask(uint op1, uint op2)
+        {
+            return (uint)((op1 < op2) ? 1 : 0);
+        }
+
+        public static long WhileLessThanMask(long op1, long op2)
+        {
+            return (op1 < op2) ? 1 : 0;
+        }
+
+        public static ulong WhileLessThanMask(ulong op1, ulong op2)
+        {
+            return (ulong)((op1 < op2) ? 1 : 0);
+        }
+
+        public static int WhileLessThanOrEqualMask(int op1, int op2)
+        {
+            return (op1 <= op2) ? 1 : 0;
+        }
+
+        public static uint WhileLessThanOrEqualMask(uint op1, uint op2)
+        {
+            return (uint)((op1 <= op2) ? 1 : 0);
+        }
+
+        public static long WhileLessThanOrEqualMask(long op1, long op2)
+        {
+            return (op1 <= op2) ? 1 : 0;
+        }
+
+        public static ulong WhileLessThanOrEqualMask(ulong op1, ulong op2)
+        {
+            return (ulong)((op1 <= op2) ? 1 : 0);
+        }
     }
 }

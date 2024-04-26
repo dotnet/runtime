@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
   </ItemGroup>
 
