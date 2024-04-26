@@ -281,10 +281,7 @@ bool ABIPassingInformation::IsSplitAcrossRegistersAndStack() const
 //
 ABIPassingInformation ABIPassingInformation::FromSegment(Compiler* comp, const ABIPassingSegment& segment)
 {
-    ABIPassingInformation info;
-    info.NumSegments = 1;
-    info.Segments    = new (comp, CMK_ABI) ABIPassingSegment(segment);
-    return info;
+    return {1, new (comp, CMK_ABI) ABIPassingSegment(segment)};
 }
 
 #ifdef DEBUG
@@ -418,6 +415,9 @@ ABIPassingInformation SwiftABIClassifier::Classify(Compiler*    comp,
             {
                 ABIPassingSegment newSegment = elemInfo.Segments[j];
                 newSegment.Offset += lowering->offsets[i];
+                // Adjust the tail size if necessary; the lowered sequence can
+                // pass the tail as a larger type than the tail size.
+                newSegment.Size = min(newSegment.Size, structLayout->GetSize() - newSegment.Offset);
                 segments.Push(newSegment);
             }
         }

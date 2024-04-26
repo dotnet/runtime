@@ -39,6 +39,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			TestStringEmpty ();
 
+			AnnotationOnUnsupportedField.Test ();
 			WriteArrayField.Test ();
 			AccessReturnedInstanceField.Test ();
 		}
@@ -319,6 +320,39 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 			public static Type _staticTypeWithPublicParameterlessConstructor;
+		}
+
+		class AnnotationOnUnsupportedField
+		{
+			class UnsupportedType
+			{
+			}
+
+			static UnsupportedType GetUnsupportedTypeInstance () => null;
+
+			[ExpectedWarning ("IL2097")]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			static UnsupportedType unsupportedTypeInstance;
+
+			[ExpectedWarning ("IL2098")]
+			static void RequirePublicFields (
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+				UnsupportedType unsupportedTypeInstance)
+			{
+			}
+
+			[ExpectedWarning ("IL2077", ProducedBy = Tool.Analyzer)] // https://github.com/dotnet/runtime/issues/101211
+			static void TestFlowOutOfField ()
+			{
+				RequirePublicFields (unsupportedTypeInstance);
+			}
+
+			[ExpectedWarning ("IL2074", ProducedBy = Tool.Analyzer)] // https://github.com/dotnet/runtime/issues/101211
+			public static void Test () {
+				var t = GetUnsupportedTypeInstance ();
+				unsupportedTypeInstance = t;
+				TestFlowOutOfField ();
+			}
 		}
 
 		class WriteArrayField

@@ -2203,6 +2203,7 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
     case DB_IPCE_BEFORE_GARBAGE_COLLECTION:
     case DB_IPCE_AFTER_GARBAGE_COLLECTION:
     case DB_IPCE_DISABLE_OPTS_RESULT:
+    case DB_IPCE_CATCH_HANDLER_FOUND_RESULT:
         cbAdditionalSize = 0;
         break;
 
@@ -2500,6 +2501,9 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
 
     case DB_IPCE_DISABLE_OPTS:
         cbAdditionalSize = sizeof(pEvent->DisableOptData);
+        break;
+    case DB_IPCE_FORCE_CATCH_HANDLER_FOUND:
+        cbAdditionalSize = sizeof(pEvent->ForceCatchHandlerFoundData);
         break;
 
     default:

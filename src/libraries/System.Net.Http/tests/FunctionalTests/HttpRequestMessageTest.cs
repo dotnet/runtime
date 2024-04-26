@@ -239,6 +239,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("OPTIONS")]
         [InlineData("HEAD")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/86317", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task HttpRequest_BodylessMethod_NoContentLength(string method)
         {
             using (HttpClient client = CreateHttpClient())
