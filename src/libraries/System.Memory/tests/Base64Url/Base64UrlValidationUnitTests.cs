@@ -9,6 +9,27 @@ namespace System.Buffers.Text.Tests
 {
     public class Base64UrlValidationUnitTests : Base64TestBase
     {
+        public static readonly byte[] s_encodingMap = {
+            65, 66, 67, 68, 69, 70, 71, 72,         //A..H
+            73, 74, 75, 76, 77, 78, 79, 80,         //I..P
+            81, 82, 83, 84, 85, 86, 87, 88,         //Q..X
+            89, 90, 97, 98, 99, 100, 101, 102,      //Y..Z, a..f
+            103, 104, 105, 106, 107, 108, 109, 110, //g..n
+            111, 112, 113, 114, 115, 116, 117, 118, //o..v
+            119, 120, 121, 122, 48, 49, 50, 51,     //w..z, 0..3
+            52, 53, 54, 55, 56, 57, 45, 95          //4..9, -, _
+        };
+
+        private static void InitializeDecodableBytes(Span<byte> bytes, int seed = 100)
+        {
+            var rnd = new Random(seed);
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                int index = (byte)rnd.Next(0, s_encodingMap.Length);
+                bytes[i] = s_encodingMap[index];
+            }
+        }
+
         [Fact]
         public void BasicValidationBytes()
         {
@@ -22,10 +43,10 @@ namespace System.Buffers.Text.Tests
                 } while (numBytes % 4 != 0);    // ensure we have a valid length
 
                 Span<byte> source = new byte[numBytes];
-                Base64TestHelper.InitializeDecodableBytes(source, numBytes);
+                InitializeDecodableBytes(source, numBytes);
 
                 Assert.True(Base64Url.IsValid(source));
-                Assert.True(Base64Url.IsValid(source, out int decodedLength));  
+                Assert.True(Base64Url.IsValid(source, out int decodedLength));
                 Assert.True(decodedLength > 0);
             }
         }
@@ -43,7 +64,7 @@ namespace System.Buffers.Text.Tests
                 } while (numBytes % 4 != 0);    // ensure we have a valid length
 
                 Span<byte> source = new byte[numBytes];
-                Base64TestHelper.InitializeDecodableBytes(source, numBytes);
+                InitializeDecodableBytes(source, numBytes);
                 Span<char> chars = source
                     .ToArray()
                     .Select(Convert.ToChar)
@@ -203,6 +224,9 @@ namespace System.Buffers.Text.Tests
         [InlineData("YQ ==", 1)]
         [InlineData("YQ= =", 1)]
         [InlineData("YQ== ", 1)]
+        [InlineData("YQ%%", 1)]
+        [InlineData("YWI%", 2)]
+        [InlineData("YW% ", 1)]
         public void ValidateWithPaddingReturnsCorrectCountBytes(string utf8WithByteToBeIgnored, int expectedLength)
         {
             byte[] utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithByteToBeIgnored);
@@ -226,6 +250,9 @@ namespace System.Buffers.Text.Tests
         [InlineData("YQ ==", 1)]
         [InlineData("YQ= =", 1)]
         [InlineData("YQ== ", 1)]
+        [InlineData("YQ%%", 1)]
+        [InlineData("YWI%", 2)]
+        [InlineData("YW% ", 1)]
         public void ValidateWithPaddingReturnsCorrectCountChars(string utf8WithByteToBeIgnored, int expectedLength)
         {
             ReadOnlySpan<char> utf8BytesWithByteToBeIgnored = utf8WithByteToBeIgnored.ToArray();
@@ -250,8 +277,8 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [InlineData("YWJ", true, 2)]
-        //[InlineData("YW", true, 1)]
-        //[InlineData("Y", false, 0)]
+        [InlineData("YW", true, 1)]
+        [InlineData("Y", false, 0)]
         public void SmallSizeBytes(string utf8Text, bool isValid, int expectedDecodedLength)
         {
             byte[] utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8Text);
@@ -263,9 +290,9 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [InlineData("YWJ", true, 2)]
-        //[InlineData("YW", true, 1)]
-        //[InlineData("Y", false, 0)]
-        public void InvalidSizeChars(string utf8Text, bool isValid, int expectedDecodedLength)
+        [InlineData("YW", true, 1)]
+        [InlineData("Y", false, 0)]
+        public void SmallSizeChars(string utf8Text, bool isValid, int expectedDecodedLength)
         {
             ReadOnlySpan<char> utf8BytesWithByteToBeIgnored = utf8Text;
 
@@ -290,6 +317,8 @@ namespace System.Buffers.Text.Tests
         [InlineData("aYQ= =a")]
         [InlineData("aYQ== a")]
         [InlineData("aYQ==a ")]
+        [InlineData("YQ+a")] // plus invalid
+        [InlineData("/Qab")] // slash invalid
         public void InvalidBase64UrlBytes(string utf8WithByteToBeIgnored)
         {
             byte[] utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithByteToBeIgnored);

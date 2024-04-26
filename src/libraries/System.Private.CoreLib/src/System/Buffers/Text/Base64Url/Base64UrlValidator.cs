@@ -49,6 +49,21 @@ namespace System.Buffers.Text
         public static bool IsValid(ReadOnlySpan<byte> utf8Base64UrlText, out int decodedLength) =>
             Base64.IsValid<byte, Base64UrlByteValidatable>(utf8Base64UrlText, out decodedLength);
 
+        private static bool ValidateAndDecodeLength(int length, int paddingCount, out int decodedLength)
+        {
+            if (length == 1)
+            {
+                decodedLength = 0;
+                return false;
+            }
+
+            // Padding is optional for Base64Url, so need to account remainder.
+            int remainder = length % 4;
+            decodedLength = (int)((uint)length / 4 * 3) + (remainder > 0 ? remainder - 1 : 0) - paddingCount;
+            return true;
+        }
+
+        private const uint UrlEncodingPad = '%'; // url padding
 
         private readonly struct Base64UrlCharValidatable : Base64.IBase64Validatable<char>
         {
@@ -57,11 +72,8 @@ namespace System.Buffers.Text
             public static int IndexOfAnyExcept(ReadOnlySpan<char> span) => span.IndexOfAnyExcept(s_validBase64UrlChars);
             public static bool IsWhiteSpace(char value) => Base64.IsWhiteSpace(value);
             public static bool IsEncodingPad(char value) => value == Base64.EncodingPad || value == UrlEncodingPad;
-            public static bool ValidateAndDecodeLength(int length, out int decodedLength)
-            {
-                decodedLength = (int)((uint)length / 4 * 3) + length % 4;
-                return true;
-            }
+            public static bool ValidateAndDecodeLength(int length, int paddingCount, out int decodedLength) =>
+                Base64Url.ValidateAndDecodeLength(length, paddingCount, out decodedLength);
         }
 
         private readonly struct Base64UrlByteValidatable : Base64.IBase64Validatable<byte>
@@ -71,13 +83,8 @@ namespace System.Buffers.Text
             public static int IndexOfAnyExcept(ReadOnlySpan<byte> span) => span.IndexOfAnyExcept(s_validBase64UrlChars);
             public static bool IsWhiteSpace(byte value) => Base64.IsWhiteSpace(value);
             public static bool IsEncodingPad(byte value) => value == Base64.EncodingPad || value == UrlEncodingPad;
-            public static bool ValidateAndDecodeLength(int length, out int decodedLength)
-            {
-                decodedLength = (int)((uint)length / 4 * 3) + length % 4;
-                return true;
-            }
+            public static bool ValidateAndDecodeLength(int length, int paddingCount, out int decodedLength) =>
+                Base64Url.ValidateAndDecodeLength(length, paddingCount, out decodedLength);
         }
-
-        private const uint UrlEncodingPad = '%'; // url padding
     }
 }
