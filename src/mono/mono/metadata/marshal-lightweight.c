@@ -2393,6 +2393,27 @@ update_signature (MonoMethod *accessor_method)
 	g_assert_not_reached ();
 }
 
+static MonoClass *
+get_container_class (MonoClass *klass)
+{
+	return mono_class_is_ginst (klass) ? mono_class_get_generic_class (klass)->container_class : klass;
+}
+
+static MonoMethod *
+inflate_method (MonoClass *klass, MonoMethod *method, MonoMethod *accessor_method, MonoError *error)
+{
+	MonoMethod *result = method;
+	MonoGenericContext context = { NULL, NULL };
+	if (mono_class_is_ginst (klass))
+		context.class_inst = mono_class_get_generic_class (klass)->context.class_inst;
+	if (accessor_method->is_inflated)
+		context.method_inst = mono_method_get_context (accessor_method)->method_inst;
+	if ((context.class_inst != NULL) || (context.method_inst != NULL))
+		result = mono_class_inflate_generic_method_checked (method, &context, error);
+	
+	return result;
+}
+
 static void
 emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoGenericContext *ctx, MonoUnsafeAccessorKind kind, const char *member_name)
 {
@@ -2420,7 +2441,7 @@ emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_m
 
 	MonoMethodSignature *member_sig = ctor_sig_from_accessor_sig (mb, sig, ctx);
 	
-	MonoClass *in_class = mono_class_is_ginst (target_class) ? mono_class_get_generic_class (target_class)->container_class : target_class;
+	MonoClass *in_class = get_container_class (target_class);
 
 	MonoMethod *target_method = mono_unsafe_accessor_find_ctor (in_class, member_sig, target_class, find_method_error);
 	if (!is_ok (find_method_error) || target_method == NULL) {
@@ -2432,13 +2453,7 @@ emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_m
 		return;
 	}
 
-	MonoGenericContext context = { NULL, NULL };
-	if (mono_class_is_ginst (target_class))
-		context.class_inst = mono_class_get_generic_class (target_class)->context.class_inst;
-	if (accessor_method->is_inflated)
-		context.method_inst = mono_method_get_context (accessor_method)->method_inst;
-	if ((context.class_inst != NULL) || (context.method_inst != NULL))
-		target_method = mono_class_inflate_generic_method_checked (target_method, &context, find_method_error);
+	target_method = inflate_method (target_class, target_method, accessor_method, find_method_error);
 
 	g_assert (target_method->klass == target_class);
 
@@ -2478,7 +2493,7 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor
 
 	MonoMethodSignature *member_sig = method_sig_from_accessor_sig (mb, hasthis, sig, ctx);
 
-	MonoClass *in_class = mono_class_is_ginst (target_class) ? mono_class_get_generic_class (target_class)->container_class : target_class;
+	MonoClass *in_class = get_container_class (target_class);
 
 	MonoMethod *target_method = NULL;
 	if (!ctor_as_method)
@@ -2494,13 +2509,7 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor
 		return;
 	}
 
-	MonoGenericContext context = { NULL, NULL };
-	if (mono_class_is_ginst (target_class))
-		context.class_inst = mono_class_get_generic_class (target_class)->context.class_inst;
-	if (accessor_method->is_inflated)
-		context.method_inst = mono_method_get_context (accessor_method)->method_inst;
-	if ((context.class_inst != NULL) || (context.method_inst != NULL))
-		target_method = mono_class_inflate_generic_method_checked (target_method, &context, find_method_error);
+	target_method = inflate_method (target_class, target_method, accessor_method, find_method_error);
 
 	if (!hasthis && target_method->klass != target_class) {
 		emit_missing_method_error (mb, find_method_error, member_name);
