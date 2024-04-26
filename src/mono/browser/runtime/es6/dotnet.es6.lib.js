@@ -79,6 +79,8 @@ function injectDependencies() {
 
     #if USE_PTHREADS
     createWasmImportStubsFrom(methodIndexByName.mono_wasm_threads_imports);
+    #else
+    createWasmImportStubsFrom(methodIndexByName.mono_wasm_hybrid_globalization_imports);
     #endif
 
     DotnetSupportLib["$DOTNET__postset"] = `DOTNET.setup({ ` +

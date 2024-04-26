@@ -161,6 +161,9 @@ export function normalizeConfig () {
                 case "js-module-threads":
                     toMerge.jsModuleWorker = resource;
                     break;
+                case "js-module-globalization":
+                    toMerge.jsModuleGlobalization = resource;
+                    break;
                 case "js-module-runtime":
                     toMerge.jsModuleRuntime = resource;
                     break;

@@ -26,6 +26,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
                { "dotnet.js.map", false },
                { "dotnet.native.js", true },
                { "dotnet.native.js.symbols", false },
+               { "dotnet.globalization.js", true },
                { "dotnet.native.wasm", false },
                { "dotnet.native.worker.js", true },
                { "dotnet.runtime.js", true },
@@ -39,6 +40,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
            "dotnet.js",
            "dotnet.native.wasm",
            "dotnet.native.js",
+           "dotnet.globalization.js",
            "dotnet.runtime.js",
         };
         if (assertOptions.RuntimeType is RuntimeVariant.MultiThreaded)
@@ -107,7 +109,14 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         string buildType = assertOptions.IsPublish ? "publish" : "build";
         var nativeFilesToCheck = new List<string>() { "dotnet.native.wasm", "dotnet.native.js" };
         if (assertOptions.RuntimeType == RuntimeVariant.MultiThreaded)
+        {
             nativeFilesToCheck.Add("dotnet.native.worker.js");
+        }
+        else
+        {
+            nativeFilesToCheck.Add("dotnet.globalization.js"); // change to HG flag
+        }
+
         foreach (string nativeFilename in nativeFilesToCheck)
         {
             if (!actualDotnetFiles.TryGetValue(nativeFilename, out DotNetFileName? dotnetFile))

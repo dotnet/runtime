@@ -219,7 +219,7 @@ const hybridGlobalizationConfig = {
     output: [
         {
             format: "es",
-            file: nativeBinDir + "/dotnet.hybrid.js", // todo: change name to dotnet.globalization.js
+            file: nativeBinDir + "/dotnet.globalization.js",
             banner,
             sourcemap: true,
             sourcemapPathTransform,
@@ -283,7 +283,8 @@ const allConfigs = [
     runtimeConfig,
     wasmImportsConfig,
     typesConfig,
-].concat(workerConfigs)
+]
+    .concat(workerConfigs)
     .concat(diagnosticMockTypesConfig ? [diagnosticMockTypesConfig] : [])
     .concat(wasmEnableThreads ? [] : [hybridGlobalizationConfig]); // ToDo: change it to use hybridGlobalization switch, not MT
 export default defineConfig(allConfigs);

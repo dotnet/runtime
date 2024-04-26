@@ -28,6 +28,7 @@ const jsRuntimeModulesAssetTypes: {
     [k: string]: boolean
 } = {
     "js-module-threads": true,
+    "js-module-globalization": true,
     "js-module-runtime": true,
     "js-module-dotnet": true,
     "js-module-native": true,
@@ -266,6 +267,8 @@ export function prepareAssets () {
         convert_single_asset(modulesAssets, resources.jsModuleRuntime, "js-module-runtime");
         if (WasmEnableThreads) {
             convert_single_asset(modulesAssets, resources.jsModuleWorker, "js-module-threads");
+        } else {
+            convert_single_asset(modulesAssets, resources.jsModuleGlobalization, "js-module-globalization");
         }
 
         if (resources.assembly) {

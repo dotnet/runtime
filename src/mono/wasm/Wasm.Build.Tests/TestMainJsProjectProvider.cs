@@ -26,6 +26,7 @@ public class TestMainJsProjectProvider : ProjectProviderBase
                { "dotnet.js.map", false },
                { "dotnet.native.js", false },
                { "dotnet.native.js.symbols", false },
+               { "dotnet.globalization.js", false },
                { "dotnet.native.wasm", false },
                { "dotnet.native.worker.js", false },
                { "dotnet.runtime.js", false },
@@ -40,6 +41,7 @@ public class TestMainJsProjectProvider : ProjectProviderBase
             res.Add("dotnet.js");
             res.Add("dotnet.native.wasm");
             res.Add("dotnet.native.js");
+            res.Add("dotnet.globalization.js"); // change to: is HG condition
             res.Add("dotnet.runtime.js");
             res.Add("dotnet.js.map");
             res.Add("dotnet.runtime.js.map");

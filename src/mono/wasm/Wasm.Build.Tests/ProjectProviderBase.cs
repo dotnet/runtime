@@ -293,6 +293,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
             Path.Combine(paths.BundleDir, "_framework", "dotnet.native.wasm"),
             Path.Combine(paths.BundleDir, "_framework", "dotnet.native.js"),
+            Path.Combine(paths.BundleDir, "_framework", "dotnet.globalization.js"),
         };
 
         if (buildArgs.AOT)
@@ -415,6 +416,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         var bootJsonEntries = bootJson.resources.jsModuleNative.Keys
             .Union(bootJson.resources.jsModuleRuntime.Keys)
             .Union(bootJson.resources.jsModuleWorker?.Keys ?? Enumerable.Empty<string>())
+            .Union(bootJson.resources.jsModuleGlobalization?.Keys ?? Enumerable.Empty<string>())
             .Union(bootJson.resources.wasmSymbols?.Keys ?? Enumerable.Empty<string>())
             .Union(bootJson.resources.wasmNative.Keys)
             .ToArray();

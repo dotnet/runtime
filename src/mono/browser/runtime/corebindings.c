@@ -56,7 +56,6 @@ extern void mono_wasm_warn_about_blocking_wait (void* ptr, int32_t length);
 #else
 extern void* mono_wasm_bind_js_import_ST (void *signature);
 extern void mono_wasm_invoke_jsimport_ST (int function_handle, void *args);
-#endif /* DISABLE_THREADS */
 
 // HybridGlobalization
 extern char16_t* mono_wasm_change_case_invariant (const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper);
@@ -70,6 +69,7 @@ extern char16_t* mono_wasm_get_culture_info (const uint16_t* culture, int32_t cu
 extern char16_t* mono_wasm_get_locale_info (const uint16_t* locale, int32_t localeLength, const uint16_t* culture, int32_t cultureLength, const uint16_t* result, int32_t resultMaxLength, int *resultLength);
 extern char16_t* mono_wasm_get_first_day_of_week (const uint16_t* culture, int32_t cultureLength, int *resultPtr);
 extern char16_t* mono_wasm_get_first_week_of_year (const uint16_t* culture, int32_t cultureLength, int *resultPtr);
+#endif /* DISABLE_THREADS */
 
 void bindings_initialize_internals (void)
 {
@@ -103,6 +103,7 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/Runtime::GetAssemblyExport", mono_wasm_get_assembly_export);
 	mono_add_internal_call ("System.ConsolePal::Clear", mono_wasm_console_clear);
 
+#ifdef DISABLE_THREADS
 // HybridGlobalization
 	mono_add_internal_call ("Interop/JsGlobalization::ChangeCaseInvariant", mono_wasm_change_case_invariant);
 	mono_add_internal_call ("Interop/JsGlobalization::ChangeCase", mono_wasm_change_case);
@@ -115,6 +116,7 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/JsGlobalization::GetCultureInfo", mono_wasm_get_culture_info);
 	mono_add_internal_call ("Interop/JsGlobalization::GetFirstDayOfWeek", mono_wasm_get_first_day_of_week);
 	mono_add_internal_call ("Interop/JsGlobalization::GetFirstWeekOfYear", mono_wasm_get_first_week_of_year);
+#endif /* DISABLE_THREADS */
 }
 
 static MonoAssembly* _mono_wasm_assembly_load (char *assembly_name)
