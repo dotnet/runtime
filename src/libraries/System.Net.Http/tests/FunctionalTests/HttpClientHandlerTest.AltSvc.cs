@@ -8,8 +8,6 @@ using Xunit.Abstractions;
 using System.Net.Test.Common;
 using System.Net.Quic;
 
-using Microsoft.DotNet.XUnitExtensions;
-
 namespace System.Net.Http.Functional.Tests
 {
     public abstract class HttpClientHandler_AltSvc_Test : HttpClientHandlerTestBase
@@ -73,14 +71,9 @@ namespace System.Net.Http.Functional.Tests
                 { HttpVersion.Version20, false }
             };
 
-        [ConditionalFact]
+        [Fact]
         public async Task AltSvc_ConnectionFrame_UpgradeFrom20_Success()
         {
-            if (UseVersion == HttpVersion30)
-            {
-                throw new SkipTestException("https://github.com/dotnet/runtime/issues/101376");
-            }
-
             using Http2LoopbackServer firstServer = Http2LoopbackServer.CreateServer();
             using Http3LoopbackServer secondServer = CreateHttp3LoopbackServer();
             using HttpClient client = CreateHttpClient(HttpVersion.Version20);
