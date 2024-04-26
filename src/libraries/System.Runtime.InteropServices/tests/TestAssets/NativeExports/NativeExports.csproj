@@ -91,12 +91,12 @@
 
   <Target Name="GetAppleBuildArgumentsForDNNE" Condition="'$(_TargetsAppleOS)' == 'true'">
     <PropertyGroup Condition=" '$(TargetOS)' == 'maccatalyst'">
-      <TargetTriple Condition="'$(TargetArchitecture)' == 'arm64'">arm64-apple-ios14.2-macabi</TargetTriple>
-      <TargetTriple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-apple-ios13.5-macabi</TargetTriple>
+      <TargetTriple Condition="'$(TargetArchitecture)' == 'arm64'">arm64-apple-ios$(MacCatalystVersionMin)-macabi</TargetTriple>
+      <TargetTriple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-apple-ios$(MacCatalystVersionMin)-macabi</TargetTriple>
     </PropertyGroup>
     <PropertyGroup Condition="'$(TargetOS)' == 'osx'">
-      <TargetTriple Condition="'$(TargetArchitecture)' == 'arm64'">arm64-apple-macos11</TargetTriple>
-      <TargetTriple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-apple-macos10.15</TargetTriple>
+      <TargetTriple Condition="'$(TargetArchitecture)' == 'arm64'">arm64-apple-macos$(macOSVersionMin)</TargetTriple>
+      <TargetTriple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-apple-macos$(macOSVersionMin)</TargetTriple>
       <XCodeSdkName>macosx</XCodeSdkName>
     </PropertyGroup>
 

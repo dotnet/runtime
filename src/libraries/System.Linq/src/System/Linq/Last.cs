@@ -77,7 +77,7 @@ namespace System.Linq
 
         private static TSource? TryGetLastNonIterator<TSource>(IEnumerable<TSource> source, out bool found)
         {
-            if (source is IList<TSource> list)
+            if (source is IReadOnlyList<TSource> list)
             {
                 int count = list.Count;
                 if (count > 0)
@@ -126,7 +126,7 @@ namespace System.Linq
                 return ordered.TryGetLast(predicate, out found);
             }
 
-            if (source is IList<TSource> list)
+            if (source is IReadOnlyList<TSource> list)
             {
                 for (int i = list.Count - 1; i >= 0; --i)
                 {
