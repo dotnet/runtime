@@ -4139,8 +4139,6 @@ _SetMinOpts:
             codeGen->SetAlignLoops(JitConfig.JitAlignLoops() == 1);
         }
     }
-
-    fgCanRelocateEHRegions = true;
 }
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)

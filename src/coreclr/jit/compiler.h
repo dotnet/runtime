@@ -5210,10 +5210,9 @@ public:
     // - Rationalization links all nodes into linear form which is kept until
     //   the end of compilation. The first and last nodes are stored in the block.
     NodeThreading fgNodeThreading;
-    bool          fgCanRelocateEHRegions; // true if we are allowed to relocate the EH regions
-    weight_t      fgCalledCount;          // count of the number of times this method was called
-                                          // This is derived from the profile data
-                                          // or is BB_UNITY_WEIGHT when we don't have profile data
+    weight_t      fgCalledCount; // count of the number of times this method was called
+                                 // This is derived from the profile data
+                                 // or is BB_UNITY_WEIGHT when we don't have profile data
 
     bool fgFuncletsCreated; // true if the funclet creation phase has been run
 

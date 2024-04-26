@@ -933,12 +933,9 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 
     // We cannot compact two blocks in different EH regions.
     //
-    if (fgCanRelocateEHRegions)
+    if (!BasicBlock::sameEHRegion(block, bNext))
     {
-        if (!BasicBlock::sameEHRegion(block, bNext))
-        {
-            return false;
-        }
+        return false;
     }
 
     // If there is a switch predecessor don't bother because we'd have to update the uniquesuccs as well
