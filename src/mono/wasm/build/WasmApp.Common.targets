@@ -249,8 +249,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <_ExistingNativeLibrary Include="@(NativeLibrary->Exists())" />
-    <NativeFileReference Include="@(_ExistingNativeLibrary->'%(Identity)')" />
     <UpToDateCheckInput Include="@(NativeFileReference)" />
   </ItemGroup>
   
@@ -296,6 +294,11 @@
       <_WasmShouldAOT Condition="'$(RunAOTCompilationAfterBuild)' == 'true' and '$(RunAOTCompilation)' == 'true'">true</_WasmShouldAOT>
       <_WasmShouldAOT Condition="'$(_WasmShouldAOT)' == ''">false</_WasmShouldAOT>
     </PropertyGroup>
+
+    <ItemGroup>
+      <_ExistingNativeLibrary Include="@(NativeLibrary->Exists())" />
+      <NativeFileReference Include="@(_ExistingNativeLibrary->'%(Identity)')" />
+    </ItemGroup>
 
     <ItemGroup Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' == ''">
       <!-- find the path with the assemblies, so we don't have to hardcode the tfm.
