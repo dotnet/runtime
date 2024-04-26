@@ -2541,6 +2541,7 @@ class Compiler
     friend class CSE_HeuristicReplay;
     friend class CSE_HeuristicRL;
     friend class CSE_HeuristicParameterized;
+    friend class CSE_HeuristicRLHook;
     friend class CSE_Heuristic;
     friend class CodeGenInterface;
     friend class CodeGen;

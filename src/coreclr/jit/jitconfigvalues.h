@@ -498,6 +498,12 @@ CONFIG_STRING(JitRLCSEAlpha, W("JitRLCSEAlpha"))
 // If nonzero, dump candidate feature values
 CONFIG_INTEGER(JitRLCSECandidateFeatures, W("JitRLCSECandidateFeatures"), 0)
 
+// Enable a reinforcement learning hook.
+CONFIG_INTEGER(JitRLHook, W("JitRLHook"), 0) // If 1, emit RL callbacks
+CONFIG_INTEGER(JitRLHookEmitFeatureNames, W("JitRLHookEmitFeatureNames"), 0) // If 1, emit feature column names
+CONFIG_STRING(JitRLHookCSEDecisions, W("JitRLHookCSEDecisions"))
+
+
 #if !defined(DEBUG) && !defined(_DEBUG)
 RELEASE_CONFIG_INTEGER(JitEnableNoWayAssert, W("JitEnableNoWayAssert"), 0)
 #else  // defined(DEBUG) || defined(_DEBUG)

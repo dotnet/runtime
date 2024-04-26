@@ -2973,6 +2973,223 @@ void CSE_HeuristicParameterized::DumpChoices(ArrayStack<Choice>& choices, CSEdsc
 
 #ifdef DEBUG
 
+CSE_HeuristicRLHook::CSE_HeuristicRLHook(Compiler* pCompiler)
+    : CSE_HeuristicCommon(pCompiler)
+{
+}
+
+bool CSE_HeuristicRLHook::ConsiderTree(GenTree* tree, bool isReturn)
+{
+    return CanConsiderTree(tree, isReturn);
+}
+
+void CSE_HeuristicRLHook::ConsiderCandidates()
+{
+    ApplyDecisions();
+
+    if (JitConfig.JitRLHookEmitFeatureNames() > 0)
+    {
+        DumpFeatureNames();
+    }
+
+    DumpFeatures();
+}
+
+void CSE_HeuristicRLHook::ApplyDecisions()
+{
+    ConfigIntArray JitRLHookCSEDecisions;
+    JitRLHookCSEDecisions.EnsureInit(JitConfig.JitRLHookCSEDecisions());
+
+    unsigned cnt = m_pCompiler->optCSECandidateCount;
+    for (unsigned i = 0; i < JitRLHookCSEDecisions.GetLength(); i++)
+    {
+        // optCSEtab is 0-based; candidate numbers are 1-based
+        //
+        const int index = JitRLHookCSEDecisions.GetData()[i] - 1;
+
+        if ((index < 0) || (index >= (int)cnt))
+        {
+            JITDUMP("Invalid candidate number %d\n", index + 1);
+            continue;
+        }
+
+        const int     attempt = m_pCompiler->optCSEattempt++;
+        CSEdsc* const dsc     = m_pCompiler->optCSEtab[index];
+        CSE_Candidate candidate(this, dsc);
+
+        JITDUMP("\nRLHook attempting " FMT_CSE "\n", candidate.CseIndex());
+        JITDUMP("CSE Expression : \n");
+        JITDUMPEXEC(m_pCompiler->gtDispTree(candidate.Expr()));
+        JITDUMP("\n");
+
+        if (!dsc->IsViable())
+        {
+            JITDUMP("Abandoned " FMT_CSE " -- not viable\n", candidate.CseIndex());
+            continue;
+        }
+
+        PerformCSE(&candidate);
+        madeChanges = true;
+    }
+}
+
+void CSE_HeuristicRLHook::DumpFeatureNames()
+{
+    printf(" featureNames");
+    for (int i = 0; s_featureNameAndType[i] != nullptr; i++)
+    {
+        printf("%s%s", (i == 0) ? "" : ",", s_featureNameAndType[i]);
+    }
+}
+
+void CSE_HeuristicRLHook::DumpFeatures()
+{
+    for (unsigned i = 0; i < m_pCompiler->optCSECandidateCount; i++)
+    {
+        CSEdsc* const dsc = m_pCompiler->optCSEtab[i];
+        double features[maxFeatures];
+        GetFeatures(dsc, features);
+
+        printf(" features " FMT_CSE, dsc->csdIndex);
+        for (int i = 0; i < maxFeatures; i++)
+        {
+            printf("%s%f", (i == 0) ? "" : ",", features[i]);
+        }
+    }
+}
+
+const char* const CSE_HeuristicRLHook::s_featureNameAndType[] =
+{
+    "viable",
+    "type",
+    "costEx",
+    "costSz",
+    "useCount",
+    "defCount",
+    "useWtCnt",
+    "defWtCnt",
+    "liveAcrossCall",
+    "const",
+    "sharedConst",
+    "makeCse",
+    "numDistinctLocals",
+    "numLocalOccurrences",
+    "hasCall",
+    "containable",
+    "enregCount",
+    nullptr
+};
+
+void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, double* features)
+{
+    assert(cse != nullptr);
+    assert(features != nullptr);
+    CSE_Candidate candidate(this, cse);
+
+    int enregCount = 0;
+    for (unsigned trackedIndex = 0; trackedIndex < m_pCompiler->lvaTrackedCount; trackedIndex++)
+    {
+        LclVarDsc* varDsc = m_pCompiler->lvaGetDescByTrackedIndex(trackedIndex);
+        var_types  varTyp = varDsc->TypeGet();
+
+        // Locals with no references aren't enregistered
+        if (varDsc->lvRefCnt() == 0)
+        {
+            continue;
+        }
+
+        // Some LclVars always have stack homes
+        if (varDsc->lvDoNotEnregister)
+        {
+            continue;
+        }
+
+        if (!varTypeIsFloating(varTyp))
+        {
+            enregCount++; // The primitive types, including TYP_SIMD types use one register
+
+#ifndef TARGET_64BIT
+            if (varTyp == TYP_LONG)
+            {
+                enregCount++; // on 32-bit targets longs use two registers
+            }
+#endif
+        }
+    }
+
+    bool isMakeCse = false;
+    for (treeStmtLst* treeList = cse->csdTreeList; treeList != nullptr; treeList = treeList->tslNext)
+    {
+        if ((treeList->tslTree->gtFlags & GTF_MAKE_CSE) != 0)
+        {
+            isMakeCse = true;
+            break;
+        }
+    }
+
+    int type = rlHookTypeOther;
+    if (candidate.Expr()->TypeIs(TYP_INT))
+    {
+        type = rlHookTypeInt;
+    }
+    else if (candidate.Expr()->TypeIs(TYP_LONG))
+    {
+        type = rlHookTypeLong;
+    }
+    else if (candidate.Expr()->TypeIs(TYP_FLOAT))
+    {
+        type = rlHookTypeFloat;
+    }
+    else if (candidate.Expr()->TypeIs(TYP_DOUBLE))
+    {
+        type = rlHookTypeDouble;
+    }
+    else if (candidate.Expr()->TypeIs(TYP_STRUCT))
+    {
+        type = rlHookTypeStruct;
+    }
+
+#ifdef FEATURE_SIMD
+    else if (varTypeIsSIMD(candidate.Expr()->TypeGet()))
+    {
+        type = rlHookTypeSimd;
+    }
+#ifdef TARGET_XARCH
+    else if (candidate.Expr()->TypeIs(TYP_SIMD32, TYP_SIMD64))
+    {
+        type = rlHookTypeSimd;
+    }
+#endif
+#endif
+
+    for (int j = 0; j < maxFeatures; j++)
+    {
+        features[j] = 0;
+    }
+
+    int i = 0;
+    features[i++] = cse->IsViable() ? 1 : 0;
+    features[i++] = type;
+    features[i++] = cse->csdTree->GetCostEx();
+    features[i++] = cse->csdTree->GetCostSz();
+    features[i++] = cse->csdUseCount;
+    features[i++] = cse->csdDefCount;
+    features[i++] = cse->csdUseWtCnt;
+    features[i++] = cse->csdDefWtCnt;
+    features[i++] = cse->csdLiveAcrossCall ? 1 : 0;
+    features[i++] = cse->csdTree->OperIsConst() ? 1 : 0;
+    features[i++] = cse->csdIsSharedConst ? 1 : 0;
+    features[i++] = isMakeCse ? 1 : 0;
+    features[i++] = cse->numDistinctLocals;
+    features[i++] = cse->numLocalOccurrences;
+    features[i++] = ((cse->csdTree->gtFlags & GTF_CALL) != 0) ? 1 : 0;
+    features[i++] = cse->csdTree->OperIs(GT_ADD, GT_NOT, GT_MUL, GT_LSH);
+    features[i++] = enregCount;
+
+    assert(i <= maxFeatures);
+}
+
+
 //------------------------------------------------------------------------
 // CSE_HeuristicRL: construct RL CSE heuristic
 //
@@ -3055,6 +3272,7 @@ CSE_HeuristicRL::CSE_HeuristicRL(Compiler* pCompiler)
         // Reward
         //
         ConfigDoubleArray rewards;
+
         rewards.EnsureInit(JitConfig.JitReplayCSEReward());
         const unsigned rewardsLength = rewards.GetLength();
 
@@ -5165,8 +5383,19 @@ CSE_HeuristicCommon* Compiler::optGetCSEheuristic()
 
     // Enable optional policies
     //
-    // RL takes precedence
+    // RL hook takes precedence
     //
+    if (optCSEheuristic == nullptr)
+    {
+        bool useRLHook = (JitConfig.JitRLHook() > 0);
+
+        if (useRLHook)
+        {
+            optCSEheuristic = new (this, CMK_CSE) CSE_HeuristicRLHook(this);
+        }
+    }
+
+    // then RL
     if (optCSEheuristic == nullptr)
     {
         bool useRLHeuristic = (JitConfig.JitRLCSE() != nullptr);
