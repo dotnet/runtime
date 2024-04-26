@@ -11,6 +11,7 @@ services:
       - server
     environment:
       - HTTPSTRESS_ARGS=-runMode client -serverUri https://server:5001 ${HTTPSTRESS_CLIENT_ARGS}
+      - DUMPS_SHARE_MOUNT_ROOT=${DUMPS_SHARE_MOUNT_ROOT}
   server:
     build:
       context: .
@@ -22,3 +23,4 @@ services:
       - "5001:5001"
     environment:
       - HTTPSTRESS_ARGS=-runMode server -serverUri https://+:5001 ${HTTPSTRESS_SERVER_ARGS}
+      - DUMPS_SHARE_MOUNT_ROOT=${DUMPS_SHARE_MOUNT_ROOT}

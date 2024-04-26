@@ -7,7 +7,8 @@ RUN apt-get update -y && \
     apt-get upgrade -y && \
     apt-get install -y cmake clang ruby-dev gem lttng-tools libssl-dev && \
     gem install fpm
-RUN git clone --recursive https://github.com/microsoft/msquic --depth 1
+RUN git clone --recursive https://github.com/microsoft/msquic
+RUN cd msquic && git checkout  131cacef9ebcd4e8def54126ad3e6907fb92bfc1
 RUN cd msquic/ && \
     mkdir build && \
     cmake -B build -DCMAKE_BUILD_TYPE=Debug -DQUIC_ENABLE_LOGGING=false -DQUIC_USE_SYSTEM_LIBCRYPTO=true -DQUIC_BUILD_TOOLS=off -DQUIC_BUILD_TEST=off -DQUIC_BUILD_PERF=off -DQUIC_TLS=openssl3 && \
@@ -21,7 +22,7 @@ RUN cd msquic/build/bin/Debug && \
     dpkg -i libmsquic_*.deb
 
 ARG VERSION=9.0
-ARG CONFIGURATION=Release
+ARG CONFIGURATION=Debug
 
 # Build the stress server
 WORKDIR /app
@@ -46,5 +47,6 @@ EXPOSE 5001
 
 ENV VERSION=$VERSION
 ENV CONFIGURATION=$CONFIGURATION
+ENV DUMPS_SHARE_MOUNT_ROOT=$DUMPS_SHARE_MOUNT_ROOT
 ENV HTTPSTRESS_ARGS=''
 CMD ./run.sh

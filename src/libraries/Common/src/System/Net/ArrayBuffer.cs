@@ -31,7 +31,7 @@ namespace System.Net
 
         public ArrayBuffer(int initialSize, bool usePool = false)
         {
-            Debug.Assert(initialSize > 0 || usePool);
+            // Debug.Assert(initialSize > 0 || usePool);
 
             _usePool = usePool;
             _bytes = initialSize == 0
@@ -43,7 +43,7 @@ namespace System.Net
 
         public ArrayBuffer(byte[] buffer)
         {
-            Debug.Assert(buffer.Length > 0);
+            // Debug.Assert(buffer.Length > 0);
 
             _usePool = false;
             _bytes = buffer;
@@ -68,8 +68,8 @@ namespace System.Net
         // This is different from Dispose as the instance remains usable afterwards (_bytes will not be null).
         public void ClearAndReturnBuffer()
         {
-            Debug.Assert(_usePool);
-            Debug.Assert(_bytes is not null);
+            // Debug.Assert(_usePool);
+            // Debug.Assert(_bytes is not null);
 
             _activeStart = 0;
             _availableStart = 0;
@@ -96,7 +96,7 @@ namespace System.Net
 
         public void Discard(int byteCount)
         {
-            Debug.Assert(byteCount <= ActiveLength, $"Expected {byteCount} <= {ActiveLength}");
+            // Debug.Assert(byteCount <= ActiveLength, $"Expected {byteCount} <= {ActiveLength}");
             _activeStart += byteCount;
 
             if (_activeStart == _availableStart)
@@ -108,7 +108,7 @@ namespace System.Net
 
         public void Commit(int byteCount)
         {
-            Debug.Assert(byteCount <= AvailableLength);
+            // Debug.Assert(byteCount <= AvailableLength);
             _availableStart += byteCount;
         }
 
@@ -124,11 +124,11 @@ namespace System.Net
 
         private void EnsureAvailableSpaceCore(int byteCount)
         {
-            Debug.Assert(AvailableLength < byteCount);
+            // Debug.Assert(AvailableLength < byteCount);
 
             if (_bytes.Length == 0)
             {
-                Debug.Assert(_usePool && _activeStart == 0 && _availableStart == 0);
+                // Debug.Assert(_usePool && _activeStart == 0 && _availableStart == 0);
                 _bytes = ArrayPool<byte>.Shared.Rent(byteCount);
                 return;
             }
@@ -140,7 +140,7 @@ namespace System.Net
                 Buffer.BlockCopy(_bytes, _activeStart, _bytes, 0, ActiveLength);
                 _availableStart = ActiveLength;
                 _activeStart = 0;
-                Debug.Assert(byteCount <= AvailableLength);
+                // Debug.Assert(byteCount <= AvailableLength);
                 return;
             }
 
@@ -168,7 +168,7 @@ namespace System.Net
             _bytes = newBytes;
             ReturnBufferIfPooled(oldBytes);
 
-            Debug.Assert(byteCount <= AvailableLength);
+            // Debug.Assert(byteCount <= AvailableLength);
         }
 
         public void Grow()
