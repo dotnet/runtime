@@ -4155,7 +4155,7 @@ void CodeGen::genHomeStackSegment(unsigned lclNum, const ABIPassingSegment& seg,
     int loadOffset =
         -(isFramePointerUsed() ? genCallerSPtoFPdelta() : genCallerSPtoInitialSPdelta()) + (int)seg.GetStackOffset();
 #ifdef TARGET_XARCH
-    GetEmitter()->emitIns_R_AR(ins_Load(loadType), size, initReg, genFramePointerReg(), offset);
+    GetEmitter()->emitIns_R_AR(ins_Load(loadType), size, initReg, genFramePointerReg(), loadOffset);
 #else
     genInstrWithConstant(ins_Load(loadType), size, initReg, genFramePointerReg(), loadOffset, initReg);
 #endif
