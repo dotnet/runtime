@@ -38,11 +38,9 @@ namespace System.Numerics
             ulong carry = 0UL;
             for (int i = left.Length - 1; i >= 0; i--)
             {
-                // TODO: https://github.com/dotnet/runtime/issues/5213
                 ulong value = (carry << 32) | left[i];
-                ulong digit = value / right;
+                (ulong digit, carry) = Math.DivRem(value, right);
                 quotient[i] = (uint)digit;
-                carry = value - digit * right;
             }
         }
 
