@@ -3147,20 +3147,20 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
     int i = 0;
     features[i++] = cse->IsViable() ? 1 : 0;
     features[i++] = type;
+    features[i++] = cse->csdLiveAcrossCall ? 1 : 0;
+    features[i++] = cse->csdTree->OperIsConst() ? 1 : 0;
+    features[i++] = cse->csdIsSharedConst ? 1 : 0;
+    features[i++] = isMakeCse ? 1 : 0;
+    features[i++] = ((cse->csdTree->gtFlags & GTF_CALL) != 0) ? 1 : 0;
+    features[i++] = cse->csdTree->OperIs(GT_ADD, GT_NOT, GT_MUL, GT_LSH) ? 1 : 0;
     features[i++] = cse->csdTree->GetCostEx();
     features[i++] = cse->csdTree->GetCostSz();
     features[i++] = cse->csdUseCount;
     features[i++] = cse->csdDefCount;
     features[i++] = cse->csdUseWtCnt;
     features[i++] = cse->csdDefWtCnt;
-    features[i++] = cse->csdLiveAcrossCall ? 1 : 0;
-    features[i++] = cse->csdTree->OperIsConst() ? 1 : 0;
-    features[i++] = cse->csdIsSharedConst ? 1 : 0;
-    features[i++] = isMakeCse ? 1 : 0;
     features[i++] = cse->numDistinctLocals;
     features[i++] = cse->numLocalOccurrences;
-    features[i++] = ((cse->csdTree->gtFlags & GTF_CALL) != 0) ? 1 : 0;
-    features[i++] = cse->csdTree->OperIs(GT_ADD, GT_NOT, GT_MUL, GT_LSH);
     features[i++] = enregCount;
 
     assert(i <= maxFeatures);
@@ -3173,7 +3173,13 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
 
 const char* const CSE_HeuristicRLHook::s_featureNameAndType[] =
 {
-    "isViable",
+    "viable",
+    "liveAcrossCall",
+    "const",
+    "sharedConst",
+    "makeCse",
+    "hasCall",
+    "containable",
     "type",
     "costEx",
     "costSz",
@@ -3181,14 +3187,8 @@ const char* const CSE_HeuristicRLHook::s_featureNameAndType[] =
     "defCount",
     "useWtCnt",
     "defWtCnt",
-    "liveAcrossCall",
-    "const",
-    "sharedConst",
-    "makeCse",
     "numDistinctLocals",
     "numLocalOccurrences",
-    "hasCall",
-    "containable",
     "enregCount",
 };
 
