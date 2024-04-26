@@ -45,7 +45,7 @@ namespace System.Runtime.Serialization.Schema.Tests
         [MemberData(nameof(CanImport_MemberData))]
         public void CanImport(bool expectedResult, Func<XsdDataContractImporter, bool> canImport, Type expectedExceptionType = null, string msg = null)
         {
-            XsdDataContractImporter importer = SchemaUtils.CreateImporterWithDefaultOptions();
+            XsdDataContractImporter importer = SchemaUtils.CreateImporterWithOptions();
             if (expectedExceptionType == null)
             {
                 Assert.Equal(expectedResult, canImport(importer));
@@ -100,7 +100,7 @@ namespace System.Runtime.Serialization.Schema.Tests
         [MemberData(nameof(Import_MemberData))]
         public void Import(Action<XsdDataContractImporter> import, int codeLength = -1)
         {
-            XsdDataContractImporter importer = SchemaUtils.CreateImporterWithDefaultOptions();
+            XsdDataContractImporter importer = SchemaUtils.CreateImporterWithOptions();
             import(importer);
             string code = SchemaUtils.DumpCode(importer.CodeCompileUnit);
             _output.WriteLine(code);
@@ -112,13 +112,20 @@ namespace System.Runtime.Serialization.Schema.Tests
             int newlineSize = Environment.NewLine.Length;
 
             // Import(XmlSchemaSet)
-            yield return new object[] { (XsdDataContractImporter imp) => imp.Import(SchemaUtils.PositiveSchemas), 5060 + (168 * newlineSize) };   // 168 lines
+            yield return new object[] { (XsdDataContractImporter imp) => imp.Import(SchemaUtils.PositiveSchemas), 5060 + (168 * newlineSize) }; // 168 lines
+            yield return new object[] { (XsdDataContractImporter imp) => imp.Import(SchemaUtils.ReferenceSchemas), 2059 + (56 * newlineSize) }; // 56 lines
+            yield return new object[] { (XsdDataContractImporter imp) => { imp.Options.ImportXmlType = true; imp.Import(SchemaUtils.XmlTypeSchemas); }, 2127 + (58 * newlineSize) }; // 58 lines
 
             // Import(XmlSchemaSet, ICollection<XmlQualifiedName>)
-            yield return new object[] { (XsdDataContractImporter imp) => imp.Import(SchemaUtils.PositiveSchemas, new XmlQualifiedName[] { SchemaUtils.ValidTypeNames[0] }), 1515 + (50 * newlineSize) }; // 50 lines
+            yield return new object[] { (XsdDataContractImporter imp) => imp.Import(SchemaUtils.AllPositiveSchemas, SchemaUtils.ValidTypeNames), 6770 + (215 * newlineSize) }; // 215 lines
+            yield return new object[] { (XsdDataContractImporter imp) => { imp.Options.ImportXmlType = true; imp.Import(SchemaUtils.XmlTypeSchemas, SchemaUtils.XmlTypeNames); }, 2127 + (58 * newlineSize) }; // 58 lines
 
             // Import(XmlSchemaSet, XmlQualifiedName)
             yield return new object[] { (XsdDataContractImporter imp) => imp.Import(SchemaUtils.PositiveSchemas, SchemaUtils.ValidTypeNames[0]), 1515 + (50 * newlineSize) }; // 50 lines
+            yield return new object[] { (XsdDataContractImporter imp) => imp.Import(SchemaUtils.PositiveSchemas, SchemaUtils.ValidTypeNames[1]), 1514 + (50 * newlineSize) }; // 50 lines
+            yield return new object[] { (XsdDataContractImporter imp) => imp.Import(SchemaUtils.PositiveSchemas, SchemaUtils.ValidTypeNames[2]), 2729 + (86 * newlineSize) }; // 86 lines
+            yield return new object[] { (XsdDataContractImporter imp) => imp.Import(SchemaUtils.ReferenceSchemas, SchemaUtils.ValidTypeNames[3]), 1258 + (36 * newlineSize) }; // 36 lines
+            yield return new object[] { (XsdDataContractImporter imp) => imp.Import(SchemaUtils.ReferenceSchemas, SchemaUtils.ValidTypeNames[4]), 1236 + (36 * newlineSize) }; // 36 lines
 
             // Import(XmlSchemaSet, XmlSchemaElement)
             // TODO
@@ -191,7 +198,7 @@ namespace System.Runtime.Serialization.Schema.Tests
         [MemberData(nameof(Import_NegativeCases_MemberData))]
         public void Import_NegativeCases(Action<XsdDataContractImporter> import, Type expectedExceptionType, string msg = null)
         {
-            XsdDataContractImporter importer = SchemaUtils.CreateImporterWithDefaultOptions();
+            XsdDataContractImporter importer = SchemaUtils.CreateImporterWithOptions();
             var ex = Assert.Throws(expectedExceptionType, () => import(importer));
 
             if (!string.IsNullOrEmpty(msg))
@@ -335,7 +342,7 @@ namespace System.Runtime.Serialization.Schema.Tests
         [MemberData(nameof(GetCodeTypeReference_MemberData))]
         public void GetCodeTypeReference(XmlSchemaSet schemas, XmlQualifiedName qname, string exptectedType, Type expectedExceptionType = null, string msg = null)
         {
-            XsdDataContractImporter importer = SchemaUtils.CreateImporterWithDefaultOptions();
+            XsdDataContractImporter importer = SchemaUtils.CreateImporterWithOptions();
 
             if (schemas != null)
                 importer.Import(schemas);
@@ -375,7 +382,7 @@ namespace System.Runtime.Serialization.Schema.Tests
         [MemberData(nameof(GetKnownTypeReferences_MemberData))]
         public void GetKnownTypeReferences(XmlSchemaSet schemas, XmlQualifiedName qname, int expectedRefCount, Type expectedExceptionType = null, string msg = null)
         {
-            XsdDataContractImporter importer = SchemaUtils.CreateImporterWithDefaultOptions();
+            XsdDataContractImporter importer = SchemaUtils.CreateImporterWithOptions();
 
             if (schemas != null)
                 importer.Import(schemas);
