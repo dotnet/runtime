@@ -4611,7 +4611,7 @@ void Compiler::fgDoReversePostOrderLayout()
 
     // Now, update the EH descriptors
     //
-    unsigned XTnum;
+    unsigned  XTnum;
     EHblkDsc* HBtab;
     for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
     {
