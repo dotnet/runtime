@@ -1669,18 +1669,18 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
-    public static void DCJS_ClassImplementingIXmlSerialiable()
+    public static void DCJS_ClassImplementingIXmlSerializable()
     {
-        ClassImplementingIXmlSerialiable value = new ClassImplementingIXmlSerialiable() { StringValue = "Foo" };
-        var deserializedValue = SerializeAndDeserialize<ClassImplementingIXmlSerialiable>(value, @"""<ClassImplementingIXmlSerialiable StringValue=\""Foo\"" BoolValue=\""True\"" xmlns=\""http:\/\/schemas.datacontract.org\/2004\/07\/SerializationTypes\""\/>""");
+        ClassImplementingIXmlSerializable value = new ClassImplementingIXmlSerializable() { StringValue = "Foo" };
+        var deserializedValue = SerializeAndDeserialize<ClassImplementingIXmlSerializable>(value, @"""<ClassImplementingIXmlSerializable StringValue=\""Foo\"" BoolValue=\""True\"" xmlns=\""http:\/\/schemas.datacontract.org\/2004\/07\/SerializationTypes\""\/>""");
         Assert.Equal(value.StringValue, deserializedValue.StringValue);
     }
 
     [Fact]
-    public static void DCJS_TypeWithNestedGenericClassImplementingIXmlSerialiable()
+    public static void DCJS_TypeWithNestedGenericClassImplementingIXmlSerializable()
     {
-        TypeWithNestedGenericClassImplementingIXmlSerialiable.NestedGenericClassImplementingIXmlSerialiable<bool> value = new TypeWithNestedGenericClassImplementingIXmlSerialiable.NestedGenericClassImplementingIXmlSerialiable<bool>() { StringValue = "Foo" };
-        var deserializedValue = SerializeAndDeserialize<TypeWithNestedGenericClassImplementingIXmlSerialiable.NestedGenericClassImplementingIXmlSerialiable<bool>>(value, @"""<TypeWithNestedGenericClassImplementingIXmlSerialiable.NestedGenericClassImplementingIXmlSerialiableOfbooleanRvdAXEcW StringValue=\""Foo\"" xmlns=\""http:\/\/schemas.datacontract.org\/2004\/07\/SerializationTypes\""\/>""");
+        TypeWithNestedGenericClassImplementingIXmlSerializable.NestedGenericClassImplementingIXmlSerializable<bool> value = new TypeWithNestedGenericClassImplementingIXmlSerializable.NestedGenericClassImplementingIXmlSerializable<bool>() { StringValue = "Foo" };
+        var deserializedValue = SerializeAndDeserialize<TypeWithNestedGenericClassImplementingIXmlSerializable.NestedGenericClassImplementingIXmlSerializable<bool>>(value, @"""<TypeWithNestedGenericClassImplementingIXmlSerializable.NestedGenericClassImplementingIXmlSerializableOfbooleanRvdAXEcW StringValue=\""Foo\"" xmlns=\""http:\/\/schemas.datacontract.org\/2004\/07\/SerializationTypes\""\/>""");
         Assert.Equal(value.StringValue, deserializedValue.StringValue);
     }
 

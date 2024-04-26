@@ -4,13 +4,16 @@
 using System.CodeDom;
 using System.CodeDom.Compiler;
 using System.IO;
+using System.Text;
 using System.Xml;
 using System.Xml.Schema;
 
 namespace System.Runtime.Serialization.Schema.Tests
 {
-    internal class SchemaUtils
+    internal static class SchemaUtils
     {
+        internal static string SerializationNamespace = "http://schemas.microsoft.com/2003/10/Serialization/";
+
         static XmlWriterSettings writerSettings = new XmlWriterSettings() { Indent = true };
 
         #region Test Data
@@ -31,8 +34,9 @@ namespace System.Runtime.Serialization.Schema.Tests
                     </schema>",
             };
         internal static XmlSchemaSet PositiveSchemas => ReadStringsIntoSchemaSet(_positiveSchemas);
+        internal static XmlSchemaSet AllPositiveSchemas => ReadStringsIntoSchemaSet(_positiveSchemas).AddStrings(_referenceSchemas);
 
-        private static string[] _isReferenceSchemas = new string[] {
+        private static string[] _referenceSchemas = new string[] {
                     @"<?xml version='1.0' encoding='utf-8'?>
                     <xs:schema xmlns:tns='http://schemas.datacontract.org/2004/07/Suites.SchemaImport.ReferencedTypes' xmlns:ser='http://schemas.microsoft.com/2003/10/Serialization/' elementFormDefault='qualified' targetNamespace='http://schemas.datacontract.org/2004/07/Suites.SchemaImport.ReferencedTypes' xmlns:xs='http://www.w3.org/2001/XMLSchema'>
                       <xs:import namespace='http://schemas.microsoft.com/2003/10/Serialization/' />
@@ -53,7 +57,7 @@ namespace System.Runtime.Serialization.Schema.Tests
                       </xs:complexType>
                     </xs:schema>",
             };
-        internal static XmlSchemaSet IsReferenceSchemas => ReadStringsIntoSchemaSet(_isReferenceSchemas);
+        internal static XmlSchemaSet ReferenceSchemas => ReadStringsIntoSchemaSet(_referenceSchemas);
 
         private static string[] _mixedSchemas = new string[] {
                     @"<?xml version='1.0' encoding='utf-8'?><schema elementFormDefault='qualified' targetNamespace='http://schemas.datacontract.org/2004/07/fooNs' xmlns:tns='http://schemas.datacontract.org/2004/07/fooNs' xmlns:ser='http://schemas.microsoft.com/2003/10/Serialization/' xmlns='http://www.w3.org/2001/XMLSchema'>
@@ -68,6 +72,13 @@ namespace System.Runtime.Serialization.Schema.Tests
                     </schema>",
         };
         internal static XmlSchemaSet MixedSchemas => ReadStringsIntoSchemaSet(_mixedSchemas);
+
+        private static string[] _xmlTypeSchemas = new string[] {
+                    @"<?xml version='1.0' encoding='utf-8'?><schema elementFormDefault='qualified' targetNamespace='http://schemas.datacontract.org/2004/07/Suites.SchemaImport' xmlns:tns='http://schemas.datacontract.org/2004/07/Suites.SchemaImport' xmlns:ser='http://schemas.microsoft.com/2003/10/Serialization/' xmlns='http://www.w3.org/2001/XMLSchema'>
+                      <complexType name='SerializableWithSpecialAttributes'><attribute name='nestedAsAttributeString' type='string' use='optional' /></complexType>
+                    </schema>",
+            };
+        internal static XmlSchemaSet XmlTypeSchemas => ReadStringsIntoSchemaSet(_xmlTypeSchemas);
 
         internal static string[] NegativeSchemaStrings =
             new string[] {
@@ -192,6 +203,10 @@ namespace System.Runtime.Serialization.Schema.Tests
                 new XmlQualifiedName("RefType1", "http://schemas.datacontract.org/2004/07/Suites.SchemaImport.ReferencedTypes"),
             };
 
+        internal static XmlQualifiedName[] XmlTypeNames = new XmlQualifiedName[] {
+                new XmlQualifiedName("SerializableWithSpecialAttributes", "http://schemas.datacontract.org/2004/07/Suites.SchemaImport"),
+            };
+
         internal static XmlQualifiedName[] InvalidTypeNames = new XmlQualifiedName[] {
                 new XmlQualifiedName("InvalidType", "http://schemas.datacontract.org/2004/07/fooNs"),
             };
@@ -222,10 +237,10 @@ namespace System.Runtime.Serialization.Schema.Tests
         #endregion
 
 
-        internal static XsdDataContractImporter CreateImporterWithDefaultOptions()
+        internal static XsdDataContractImporter CreateImporterWithOptions(ImportOptions opts = null)
         {
             XsdDataContractImporter importer = new XsdDataContractImporter();
-            importer.Options = new ImportOptions();
+            importer.Options ??= new ImportOptions();
             return importer;
         }
 
@@ -242,6 +257,22 @@ namespace System.Runtime.Serialization.Schema.Tests
             StringWriter sw = new StringWriter();
             provider.GenerateCodeFromCompileUnit(ccu, sw, options);
             return sw.ToString();
+        }
+
+        public static string DumpSchema(XmlSchemaSet schemas)
+        {
+            StringBuilder sb = new StringBuilder();
+            StringWriter sw = new StringWriter(sb);
+            foreach (XmlSchema schema in schemas.Schemas())
+            {
+                if (schema.TargetNamespace != SerializationNamespace)
+                {
+                    schema.Write(sw);
+                }
+                sw.WriteLine();
+            }
+            sw.Flush();
+            return sb.ToString();
         }
 
         internal static XmlSchema GetSchema(XmlSchemaSet schemaSet, string targetNs)
@@ -356,6 +387,11 @@ namespace System.Runtime.Serialization.Schema.Tests
         internal static XmlSchemaSet ReadStringsIntoSchemaSet(params string[] schemaStrings)
         {
             XmlSchemaSet schemaSet = new XmlSchemaSet();
+            return schemaSet.AddStrings(schemaStrings);
+        }
+
+        internal static XmlSchemaSet AddStrings(this XmlSchemaSet schemaSet, params string[] schemaStrings)
+        {
             foreach (string schemaString in schemaStrings)
             {
                 StringReader reader = new StringReader(schemaString);
