@@ -80,6 +80,38 @@ coreCLREventPipeDataTypeMapping={
     "BYTE"              : "BYTE",
 }
 
+coreCLRUserEventDataTypeMapping={
+    "win:UInt8" : "TraceLoggingUInt8",
+    "win:UInt16" : "TraceLoggingUInt16",
+    "win:Int32" : "TraceLoggingInt32",
+    "win:UInt32" : "TraceLoggingUInt32",
+    "win:HexInt32" : "TraceLoggingHexInt32",
+    "win:UInt64" : "TraceLoggingUInt64",
+    "win:Int64" : "TraceLoggingInt64",
+    "win:HexInt64" : "TraceLoggingHexInt64",
+    "win:Pointer" : "TraceLoggingPointer",
+    "win:Boolean" : "TraceLoggingBoolean",
+    "win:UnicodeString" : "TraceLoggingString16",
+    "win:GUID" : "TraceLoggingGuid",
+    "win:Binary" : "TraceLoggingBinary",
+    "win:Double" : "TraceLoggingFloat64",
+    "win:AnsiString" : "TraceLoggingString",
+}
+
+coreCLRUserEventLogLevelMapping={
+    "win:LogAlways" : "0",
+    "win:Critical" : "1",
+    "win:Error" : "2",
+    "win:Warning" : "3",
+    "win:Informational" : "4",
+    "win:Verbose" : "5",
+}
+
+coreCLRUserEventArrayTypeMapping={
+    "win:UInt32" : "TraceLoggingUInt32Array",
+    "win:Binary" : "TraceLoggingUInt8Array",
+    "win:UInt64" : "TraceLoggingUInt64Array",
+}
 monoPalDataTypeMapping={
     #constructed types
     "win:null"          :" ",
@@ -143,6 +175,25 @@ aotEventPipeDataTypeMapping={
     "WCHAR"             : "WCHAR",
     "BYTE"              : "BYTE",
 }
+def getUserEventDataTypeMapping(runtimeFlavor):
+    if runtimeFlavor.coreclr:
+        return coreCLRUserEventDataTypeMapping
+    # elif runtimeFlavor.mono:
+    #     return monoEventPipeDataTypeMapping
+    # elif runtimeFlavor.nativeaot:
+    #     return aotEventPipeDataTypeMapping
+
+def getUserEventLogLevelMapping(runtimeFlavor):
+    if runtimeFlavor.coreclr:
+        return coreCLRUserEventLogLevelMapping
+
+def getArrayDataTypeMapping(runtimeFlavor):
+    if runtimeFlavor.coreclr:
+        return coreCLRUserEventArrayTypeMapping
+    # elif runtimeFlavor.mono:
+    #     return monoEventPipeDataTypeMapping
+    # elif runtimeFlavor.nativeaot:
+    #     return aotEventPipeDataTypeMapping
 
 def getEventPipeDataTypeMapping(runtimeFlavor):
     if runtimeFlavor.coreclr:
@@ -159,7 +210,7 @@ def getPalDataTypeMapping(runtimeFlavor):
         return monoPalDataTypeMapping
     elif runtimeFlavor.nativeaot:
         return aotPalDataTypeMapping
-
+#maybe need to add getUserEventDataTypeMapping
 def includeProvider(providerName, runtimeFlavor):
     if (runtimeFlavor.coreclr or runtimeFlavor.nativeaot) and providerName == "Microsoft-DotNETRuntimeMonoProfiler":
         return False
@@ -167,7 +218,7 @@ def includeProvider(providerName, runtimeFlavor):
         return False
     else:
         return True
-    
+
 def includeEvent(inclusionList, providerName, eventName):
     if len(inclusionList) == 0:
         return True
@@ -543,7 +594,7 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, wr
             if runtimeFlavor.coreclr or write_xplatheader:
                 fnbody.append(lindent)
                 fnbody.append("status &= FireEtXplat" + eventName + "(" + ''.join(line) + ");\n")
-            
+
             if runtimeFlavor.nativeaot:
                 if providerName == "Microsoft-Windows-DotNETRuntime" or providerName == "Microsoft-Windows-DotNETRuntimePrivate":
                     fnbody.append("#ifndef TARGET_UNIX\n")
@@ -781,7 +832,7 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_
         elif generatedFileType == "source-impl-noop":
             Clrallevents.write('#include <CommonTypes.h>\n')
             Clrallevents.write('#include <CommonMacros.h>\n\n')
-            Clrallevents.write('#include <PalRedhawk.h>\n\n')            
+            Clrallevents.write('#include <PalRedhawk.h>\n\n')
             Clrallevents.write('#ifndef ERROR_SUCCESS\n')
             Clrallevents.write('#define ERROR_SUCCESS 0L\n')
             Clrallevents.write('#endif\n\n')
