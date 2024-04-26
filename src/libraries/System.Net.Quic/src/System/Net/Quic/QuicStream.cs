@@ -121,6 +121,12 @@ public sealed partial class QuicStream
     private readonly QuicStreamType _type;
 
     /// <summary>
+    /// Provided via <see cref="StartAsync(Action{QuicStreamType}, CancellationToken)" /> from <see cref="QuicConnection" /> so that <see cref="QuicStream"/> can decrement its available stream count field.
+    /// When <see cref="HandleEventStartComplete(ref START_COMPLETE_DATA)">START_COMPLETE</see> arrives it gets invoked and unset back to <c>null</c> to not to hold any unintended reference to <see cref="QuicConnection"/>.
+    /// </summary>
+    private Action<QuicStreamType>? _decrementAvailableStreamCount;
+
+    /// <summary>
     /// Stream id, see <see href="https://www.rfc-editor.org/rfc/rfc9000.html#name-stream-types-and-identifier" />.
     /// </summary>
     public long Id => _id;
@@ -239,9 +245,10 @@ public sealed partial class QuicStream
     /// If no more concurrent streams can be opened at the moment, the operation will wait until it can,
     /// either by closing some existing streams or receiving more available stream ids from the peer.
     /// </summary>
+    /// <param name="decrementAvailableStreamCount"></param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
     /// <returns>An asynchronous task that completes with the opened <see cref="QuicStream" />.</returns>
-    internal ValueTask StartAsync(CancellationToken cancellationToken = default)
+    internal ValueTask StartAsync(Action<QuicStreamType> decrementAvailableStreamCount, CancellationToken cancellationToken = default)
     {
         _startedTcs.TryInitialize(out ValueTask valueTask, this, cancellationToken);
         {
@@ -258,6 +265,7 @@ public sealed partial class QuicStream
             }
         }
 
+        _decrementAvailableStreamCount = decrementAvailableStreamCount;
         return valueTask;
     }
 
@@ -525,9 +533,13 @@ public sealed partial class QuicStream
 
     private unsafe int HandleEventStartComplete(ref START_COMPLETE_DATA data)
     {
+        Debug.Assert(_decrementAvailableStreamCount is not null);
+
         _id = unchecked((long)data.ID);
         if (StatusSucceeded(data.Status))
         {
+            _decrementAvailableStreamCount(Type);
+
             if (data.PeerAccepted != 0)
             {
                 _startedTcs.TrySetResult();
@@ -542,6 +554,7 @@ public sealed partial class QuicStream
             }
         }
 
+        _decrementAvailableStreamCount = null;
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventReceive(ref RECEIVE_DATA data)

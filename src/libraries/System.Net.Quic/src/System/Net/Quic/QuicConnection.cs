@@ -180,9 +180,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// </summary>
     private IPEndPoint _localEndPoint = null!;
     /// <summary>
+    /// Represents how many bidirectional streams can be accepted by the peer. Is only manipulated from MsQuic thread.
     /// </summary>
     private int _availableBidirectionalStreamsCount;
     /// <summary>
+    /// Represents how many unidirectional streams can be accepted by the peer. Is only manipulated from MsQuic thread.
     /// </summary>
     private int _availableUnidirectionalStreamsCount;
     /// <summary>
@@ -440,6 +442,25 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
 
     /// <summary>
+    /// In order to provide meaningful increments in <see cref="StreamsAvailable"/>, available streams count can be only manipulated from MsQuic thread.
+    /// For that purpose we pass this function to <see cref="QuicStream"/> so that it can call it from <c>START_COMPLETE</c> event handler.
+    ///
+    /// Note that MsQuic itself manipulates stream counts right before indicating <c>START_COMPLETE</c> event.
+    /// </summary>
+    /// <param name="streamType">Type of the stream to decrement appropriate field.</param>
+    private void DecrementAvailableStreamCount(QuicStreamType streamType)
+    {
+        if (streamType == QuicStreamType.Unidirectional)
+        {
+            --_availableUnidirectionalStreamsCount;
+        }
+        else
+        {
+            --_availableBidirectionalStreamsCount;
+        }
+    }
+
+    /// <summary>
     /// Create an outbound uni/bidirectional <see cref="QuicStream" />.
     /// In case the connection doesn't have any available stream capacity, i.e.: the peer limits the concurrent stream count,
     /// the operation will pend until the stream can be opened (other stream gets closed or peer increases the stream limit).
@@ -461,15 +482,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 NetEventSource.Info(this, $"{this} New outbound {type} stream {stream}.");
             }
 
-            await stream.StartAsync(cancellationToken).ConfigureAwait(false);
-            if (type == QuicStreamType.Unidirectional)
-            {
-                Interlocked.Decrement(ref _availableUnidirectionalStreamsCount);
-            }
-            else
-            {
-                Interlocked.Decrement(ref _availableBidirectionalStreamsCount);
-            }
+            await stream.StartAsync(DecrementAvailableStreamCount, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -653,8 +666,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
     {
         int bidirectionalStreamsCountIncrement = data.BidirectionalCount - _availableBidirectionalStreamsCount;
         int unidirectionalStreamsCountIncrement = data.UnidirectionalCount - _availableUnidirectionalStreamsCount;
-        Volatile.Write(ref _availableBidirectionalStreamsCount, data.BidirectionalCount);
-        Volatile.Write(ref _availableUnidirectionalStreamsCount, data.UnidirectionalCount);
+        _availableBidirectionalStreamsCount = data.BidirectionalCount;
+        _availableUnidirectionalStreamsCount = data.UnidirectionalCount;
         OnStreamsAvailable(bidirectionalStreamsCountIncrement, unidirectionalStreamsCountIncrement);
         return QUIC_STATUS_SUCCESS;
     }
