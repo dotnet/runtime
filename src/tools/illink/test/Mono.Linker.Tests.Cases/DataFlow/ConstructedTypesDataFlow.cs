@@ -21,7 +21,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class DeconstructedVariable
 		{
 			// https://github.com/dotnet/linker/issues/3158
-			[ExpectedWarning ("IL2077", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2077", Tool.Trimmer | Tool.NativeAot, "")]
 			static void DeconstructVariableNoAnnotation ((Type type, object instance) input)
 			{
 				var (type, instance) = input;
@@ -31,7 +31,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			static (Type type, object instance) GetInput (int unused) => (typeof (string), null);
 
 			// https://github.com/dotnet/linker/issues/3158
-			[ExpectedWarning ("IL2077", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2077", Tool.Trimmer | Tool.NativeAot, "")]
 			static void DeconstructVariableFlowCapture (bool b = true)
 			{
 				// This creates a control-flow graph where the tuple elements assigned to
@@ -51,8 +51,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			static ref Type AnnotatedProperty => ref annotatedfield;
 
 			// https://github.com/dotnet/linker/issues/3158
-			[ExpectedWarning ("IL2062", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2078", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2062", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2078", Tool.Trimmer | Tool.NativeAot, "")]
 			static void DeconstructVariablePropertyReference ((Type type, object instance) input)
 			{
 				object instance;
@@ -72,7 +72,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			// For analyzer, this is currently
 			// https://github.com/dotnet/linker/issues/3158
 			//   But it's possible that with that fixed there won't be a warning from the analyzer anyway (depends on the implementation)
-			[ExpectedWarning ("IL2067", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2067", Tool.Trimmer | Tool.NativeAot, "")]
 			static void DeconstructRecordWithAnnotation (TypeAndInstance value)
 			{
 				var (type, instance) = value;
@@ -119,7 +119,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// https://github.com/dotnet/linker/issues/3158
-			[ExpectedWarning ("IL2067", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2067", Tool.Trimmer | Tool.NativeAot, "")]
 			static void DeconstructRecordManualWithMismatchAnnotation (TypeAndInstanceRecordManual value)
 			{
 				var (type, instance) = value;
