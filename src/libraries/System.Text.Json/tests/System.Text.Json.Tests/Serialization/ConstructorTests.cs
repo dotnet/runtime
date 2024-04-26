@@ -31,6 +31,12 @@ namespace System.Text.Json.Serialization.Tests
     public class ConstructorTests_Pipe : ConstructorTests
     {
         public ConstructorTests_Pipe()
-            : base(JsonSerializerWrapper.PipeSerializer) { }
+            : base(JsonSerializerWrapper.AsyncPipeSerializer) { }
+    }
+
+    public class ConstructorTests_PipeWithSmallBuffer : ConstructorTests
+    {
+        public ConstructorTests_PipeWithSmallBuffer()
+            : base(JsonSerializerWrapper.AsyncPipeSerializerWithSmallBuffer) { }
     }
 }

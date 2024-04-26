@@ -49,7 +49,12 @@ namespace System.Text.Json.Serialization.Tests
 
     public class MetadataTests_Pipe : MetadataTests
     {
-        public MetadataTests_Pipe() : base(JsonSerializerWrapper.PipeSerializer) { }
+        public MetadataTests_Pipe() : base(JsonSerializerWrapper.AsyncPipeSerializer) { }
+    }
+
+    public class MetadataTests_PipeWithSmallBuffer : MetadataTests
+    {
+        public MetadataTests_PipeWithSmallBuffer() : base(JsonSerializerWrapper.AsyncPipeSerializerWithSmallBuffer) { }
     }
 
     public abstract partial class MetadataTests

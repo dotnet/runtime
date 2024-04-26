@@ -25,6 +25,11 @@ namespace System.Text.Json.Serialization.Tests
 
     public sealed class JsonCreationHandlingTests_Pipe : JsonCreationHandlingTests
     {
-        public JsonCreationHandlingTests_Pipe() : base(JsonSerializerWrapper.PipeSerializer) { }
+        public JsonCreationHandlingTests_Pipe() : base(JsonSerializerWrapper.AsyncPipeSerializer) { }
+    }
+
+    public sealed class JsonCreationHandlingTests_PipeWithSmallBuffer : JsonCreationHandlingTests
+    {
+        public JsonCreationHandlingTests_PipeWithSmallBuffer() : base(JsonSerializerWrapper.AsyncPipeSerializerWithSmallBuffer) { }
     }
 }

@@ -77,7 +77,7 @@ namespace System.Text.Json.Serialization.Metadata
                 Debug.Assert(CanUseSerializeHandler);
                 Debug.Assert(Converter is JsonMetadataServicesConverter<T>);
 
-                using var bufferWriter = new PooledByteBufferWriter(Options.DefaultBufferSize);
+                using PooledByteBufferWriter? bufferWriter = new PooledByteBufferWriter(Options.DefaultBufferSize);
                 Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriter(Options, bufferWriter);
 
                 try
@@ -118,8 +118,8 @@ namespace System.Text.Json.Serialization.Metadata
 
                 state.CancellationToken = cancellationToken;
 
-                using var bufferWriter = new PooledByteBufferWriter(Options.DefaultBufferSize);
-                using var writer = new Utf8JsonWriter(bufferWriter, Options.GetWriterOptions());
+                using PooledByteBufferWriter bufferWriter = new PooledByteBufferWriter(Options.DefaultBufferSize);
+                using Utf8JsonWriter writer = new Utf8JsonWriter(bufferWriter, Options.GetWriterOptions());
 
                 try
                 {
@@ -245,14 +245,13 @@ namespace System.Text.Json.Serialization.Metadata
 
                 state.CancellationToken = cancellationToken;
 
-                using var writer = new Utf8JsonWriter(utf8Json, Options.GetWriterOptions());
+                using Utf8JsonWriter writer = new Utf8JsonWriter(utf8Json, Options.GetWriterOptions());
 
                 try
                 {
                     do
                     {
-                        // Arbitrary threshold, default Pipe buffers are 4k so this allows 4 buffers to be created and filled (mostly) before flushing.
-                        state.FlushThreshold = (int)(16384 * JsonSerializer.FlushThreshold);
+                        state.FlushThreshold = (int)((4 * PipeOptions.Default.MinimumSegmentSize) * JsonSerializer.FlushThreshold);
 
                         try
                         {
@@ -267,7 +266,11 @@ namespace System.Text.Json.Serialization.Metadata
                             }
                             else
                             {
-                                await utf8Json.FlushAsync(cancellationToken).ConfigureAwait(false);
+                                FlushResult result = await utf8Json.FlushAsync(cancellationToken).ConfigureAwait(false);
+                                if (result.IsCanceled || result.IsCompleted)
+                                {
+                                    break;
+                                }
                             }
                         }
                         finally
@@ -368,8 +371,8 @@ namespace System.Text.Json.Serialization.Metadata
                     supportContinuation: true,
                     supportAsync: false);
 
-                using var bufferWriter = new PooledByteBufferWriter(Options.DefaultBufferSize);
-                using var writer = new Utf8JsonWriter(bufferWriter, Options.GetWriterOptions());
+                using PooledByteBufferWriter bufferWriter = new PooledByteBufferWriter(Options.DefaultBufferSize);
+                using Utf8JsonWriter writer = new Utf8JsonWriter(bufferWriter, Options.GetWriterOptions());
 
                 do
                 {

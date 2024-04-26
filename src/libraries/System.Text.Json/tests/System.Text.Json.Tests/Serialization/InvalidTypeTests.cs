@@ -39,7 +39,12 @@ namespace System.Text.Json.Serialization.Tests
 
     public class InvalidTypeTests_Pipe : InvalidTypeTests
     {
-        public InvalidTypeTests_Pipe() : base(JsonSerializerWrapper.PipeSerializer) { }
+        public InvalidTypeTests_Pipe() : base(JsonSerializerWrapper.AsyncPipeSerializer) { }
+    }
+
+    public class InvalidTypeTests_PipeWithSmallBuffer : InvalidTypeTests
+    {
+        public InvalidTypeTests_PipeWithSmallBuffer() : base(JsonSerializerWrapper.AsyncPipeSerializerWithSmallBuffer) { }
     }
 
     public abstract class InvalidTypeTests

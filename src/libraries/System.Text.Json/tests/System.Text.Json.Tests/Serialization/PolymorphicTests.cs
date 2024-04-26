@@ -57,7 +57,12 @@ namespace System.Text.Json.Serialization.Tests
 
     public class PolymorphicTests_Pipe : PolymorphicTests
     {
-        public PolymorphicTests_Pipe() : base(JsonSerializerWrapper.PipeSerializer) { }
+        public PolymorphicTests_Pipe() : base(JsonSerializerWrapper.AsyncPipeSerializer) { }
+    }
+
+    public class PolymorphicTests_PipeWithSmallBuffer : PolymorphicTests
+    {
+        public PolymorphicTests_PipeWithSmallBuffer() : base(JsonSerializerWrapper.AsyncPipeSerializerWithSmallBuffer) { }
     }
 
     public abstract partial class PolymorphicTests : SerializerTests

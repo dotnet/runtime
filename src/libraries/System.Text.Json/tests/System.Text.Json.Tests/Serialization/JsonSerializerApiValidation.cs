@@ -53,7 +53,12 @@ namespace System.Text.Json.Serialization.Tests
 
     public class JsonSerializerApiValidation_Pipe : JsonSerializerApiValidation
     {
-        public JsonSerializerApiValidation_Pipe() : base(JsonSerializerWrapper.PipeSerializer) { }
+        public JsonSerializerApiValidation_Pipe() : base(JsonSerializerWrapper.AsyncPipeSerializer) { }
+    }
+
+    public class JsonSerializerApiValidation_PipeWithSmallBuffer : JsonSerializerApiValidation
+    {
+        public JsonSerializerApiValidation_PipeWithSmallBuffer() : base(JsonSerializerWrapper.AsyncPipeSerializerWithSmallBuffer) { }
     }
 }
 
