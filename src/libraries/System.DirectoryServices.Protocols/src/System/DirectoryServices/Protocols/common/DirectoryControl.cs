@@ -90,6 +90,8 @@ namespace System.DirectoryServices.Protocols
 
     public class DirectoryControl
     {
+        internal static readonly UTF8Encoding s_utf8Encoding = new(false, true);
+
         internal byte[] _directoryControlValue;
 
         public DirectoryControl(string type, byte[] value, bool isCritical, bool serverSide)
@@ -124,6 +126,8 @@ namespace System.DirectoryServices.Protocols
 
         internal static void TransformControls(DirectoryControl[] controls)
         {
+            Span<byte> scratchSpace = stackalloc byte[256];
+
             for (int i = 0; i < controls.Length; i++)
             {
                 Debug.Assert(controls[i] != null);
@@ -203,10 +207,13 @@ namespace System.DirectoryServices.Protocols
                     asnSpan = asnSpan.Slice(bytesConsumed);
 
                     // Attribute name is optional: AD for example never returns attribute name
-                    asnReadSuccessful = AsnDecoder.TryReadEncodedValue(asnSpan, AsnEncodingRules.BER, out Asn1Tag octetStringTag, out _, out _, out _);
+                    asnReadSuccessful = AsnDecoder.TryReadEncodedValue(asnSpan, AsnEncodingRules.BER, out Asn1Tag octetStringTag, out _, out int octetStringLength, out _);
                     if (asnReadSuccessful)
                     {
-                        attribute = AsnDecoder.ReadCharacterString(asnSpan, AsnEncodingRules.BER, UniversalTagNumber.UTF8String, out _, octetStringTag);
+                        Span<byte> attributeNameBuffer = octetStringLength < scratchSpace.Length ? scratchSpace.Slice(0, octetStringLength) : new byte[octetStringLength];
+
+                        _ = AsnDecoder.TryReadOctetString(asnSpan, attributeNameBuffer, AsnEncodingRules.BER, out _, out _);
+                        attribute = s_utf8Encoding.GetString(attributeNameBuffer);
                     }
 
                     SortResponseControl sort = new SortResponseControl(result, attribute, controls[i].IsCritical, value);
@@ -249,8 +256,6 @@ namespace System.DirectoryServices.Protocols
 
     public class AsqRequestControl : DirectoryControl
     {
-        private static readonly UTF8Encoding s_utf8Encoding = new(false, true);
-
         public AsqRequestControl() : base("1.2.840.113556.1.4.1504", null, true, true)
         {
         }
@@ -264,7 +269,8 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            AsnWriter writer = new(AsnEncodingRules.BER);
+            int sizeEstimate = 4 + (AttributeName?.Length ?? 0);
+            AsnWriter writer = new(AsnEncodingRules.BER, sizeEstimate);
 
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.18.
              * ASQRequestValue ::= SEQUENCE {
@@ -302,8 +308,6 @@ namespace System.DirectoryServices.Protocols
 
     public class CrossDomainMoveControl : DirectoryControl
     {
-        private static readonly UTF8Encoding s_utf8Encoding = new UTF8Encoding(false);
-
         public CrossDomainMoveControl() : base("1.2.840.113556.1.4.521", null, true, true)
         {
         }
@@ -368,7 +372,8 @@ namespace System.DirectoryServices.Protocols
         }
         public override byte[] GetValue()
         {
-            AsnWriter writer = new(AsnEncodingRules.BER);
+            int sizeEstimate = 8;
+            AsnWriter writer = new(AsnEncodingRules.BER, sizeEstimate);
 
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.5.
              * ExtendedDNRequestValue ::= SEQUENCE {
@@ -414,7 +419,8 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            AsnWriter writer = new(AsnEncodingRules.BER);
+            int sizeEstimate = 8;
+            AsnWriter writer = new(AsnEncodingRules.BER, sizeEstimate);
 
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.11.
              * SDFlagsRequestValue ::= SEQUENCE {
@@ -454,7 +460,8 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            AsnWriter writer = new(AsnEncodingRules.BER);
+            int sizeEstimate = 8;
+            AsnWriter writer = new(AsnEncodingRules.BER, sizeEstimate);
 
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.12.
              * SearchOptionsRequestValue ::= SEQUENCE {
@@ -508,7 +515,8 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            AsnWriter writer = new(AsnEncodingRules.BER);
+            int sizeEstimate = 10 + 2 * (ServerName?.Length ?? 0);
+            AsnWriter writer = new(AsnEncodingRules.BER, sizeEstimate);
 
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.16.
              * VerifyNameRequestValue ::= SEQUENCE {
@@ -593,7 +601,8 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            AsnWriter writer = new(AsnEncodingRules.BER);
+            int sizeEstimate = 16 + (_dirsyncCookie?.Length ?? 0);
+            AsnWriter writer = new(AsnEncodingRules.BER, sizeEstimate);
 
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.3.
              * DirSyncRequestValue ::= SEQUENCE {
@@ -605,7 +614,7 @@ namespace System.DirectoryServices.Protocols
             {
                 writer.WriteInteger((int)Option);
                 writer.WriteInteger(AttributeCount);
-                writer.WriteOctetString(_dirsyncCookie);
+                writer.WriteOctetString(_dirsyncCookie ?? []);
             }
             _directoryControlValue = writer.Encode();
 
@@ -689,7 +698,8 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            AsnWriter writer = new(AsnEncodingRules.BER);
+            int sizeEstimate = 6 + (_pageCookie?.Length ?? 1);
+            AsnWriter writer = new(AsnEncodingRules.BER, sizeEstimate);
 
             /* This is as laid out in RFC2696.
              * realSearchControlValue ::= SEQUENCE {
@@ -735,10 +745,10 @@ namespace System.DirectoryServices.Protocols
 
     public class SortRequestControl : DirectoryControl
     {
-        private static readonly UTF8Encoding s_utf8Encoding = new(false, true);
         private static readonly Asn1Tag s_orderingRuleTag = new(TagClass.ContextSpecific, 0, false);
         private static readonly Asn1Tag s_reverseOrderTag = new(TagClass.ContextSpecific, 1, false);
 
+        private int _keysAsnLength;
         private SortKey[] _keys = Array.Empty<SortKey>();
         public SortRequestControl(params SortKey[] sortKeys) : base("1.2.840.113556.1.4.473", null, true, true)
         {
@@ -752,10 +762,12 @@ namespace System.DirectoryServices.Protocols
                 }
             }
 
+            _keysAsnLength = 0;
             _keys = new SortKey[sortKeys.Length];
             for (int i = 0; i < sortKeys.Length; i++)
             {
                 _keys[i] = new SortKey(sortKeys[i].AttributeName, sortKeys[i].MatchingRule, sortKeys[i].ReverseOrder);
+                _keysAsnLength += 13 + (sortKeys[i].AttributeName?.Length ?? 0) + (sortKeys[i].MatchingRule?.Length ?? 0);
             }
         }
 
@@ -767,6 +779,7 @@ namespace System.DirectoryServices.Protocols
         {
             SortKey key = new SortKey(attributeName, matchingRule, reverseOrder);
             _keys = new SortKey[] { key };
+            _keysAsnLength = 13 + (attributeName?.Length ?? 0) + (matchingRule?.Length ?? 0);
         }
 
         public SortKey[] SortKeys
@@ -800,17 +813,20 @@ namespace System.DirectoryServices.Protocols
                     }
                 }
 
+                _keysAsnLength = 0;
                 _keys = new SortKey[value.Length];
                 for (int i = 0; i < value.Length; i++)
                 {
                     _keys[i] = new SortKey(value[i].AttributeName, value[i].MatchingRule, value[i].ReverseOrder);
+                    _keysAsnLength += 13 + (value[i].AttributeName?.Length ?? 0) + (value[i].MatchingRule?.Length ?? 0);
                 }
             }
         }
 
         public override byte[] GetValue()
         {
-            AsnWriter writer = new(AsnEncodingRules.BER);
+            int sizeEstimate = 12 + _keysAsnLength;
+            AsnWriter writer = new(AsnEncodingRules.BER, sizeEstimate);
 
             /* This is as laid out in RFC2891.
              * SortKeyList ::= SEQUENCE OF SEQUENCE {
@@ -903,8 +919,7 @@ namespace System.DirectoryServices.Protocols
             AfterCount = afterCount;
             if (target != null)
             {
-                UTF8Encoding encoder = new UTF8Encoding();
-                _target = encoder.GetBytes(target);
+                _target = s_utf8Encoding.GetBytes(target);
             }
         }
 
@@ -1001,7 +1016,8 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            AsnWriter writer = new(AsnEncodingRules.BER);
+            int sizeEstimate = 16 + (_target?.Length ?? 12) + (_context?.Length ?? 1);
+            AsnWriter writer = new(AsnEncodingRules.BER, sizeEstimate);
 
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.17.
              * VLVRequestValue ::= SEQUENCE {
@@ -1093,7 +1109,8 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            AsnWriter writer = new(AsnEncodingRules.BER);
+            int sizeEstimate = 4 + (_sid?.Length ?? 0);
+            AsnWriter writer = new(AsnEncodingRules.BER, sizeEstimate);
 
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.19.
              * QuotaRequestValue ::= SEQUENCE {
