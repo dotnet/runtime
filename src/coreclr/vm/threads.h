@@ -936,15 +936,10 @@ public:
     void DoExtraWorkForFinalizer();
 
 #ifndef DACCESS_COMPILE
-    DWORD CatchAtSafePoint()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_State & TS_CatchAtSafePoint);
-    }
-
     DWORD CatchAtSafePointOpportunistic()
     {
         LIMITED_METHOD_CONTRACT;
+
         return HasThreadStateOpportunistic(TS_CatchAtSafePoint);
     }
 #endif // DACCESS_COMPILE
@@ -1423,7 +1418,9 @@ public:
         m_ulEnablePreemptiveGCCount ++;
 #endif  // _DEBUG
 
-        if (CatchAtSafePoint())
+        // TODO: VS remove this. no polling on going to preemptive
+        //       Delete RareEnablePreemptiveGC as well.
+        if (CatchAtSafePointOpportunistic())
             RareEnablePreemptiveGC();
 #endif
     }

@@ -2413,7 +2413,8 @@ void Thread::PulseGCMode()
 
     _ASSERTE(this == GetThread());
 
-    if (PreemptiveGCDisabled() && CatchAtSafePoint())
+    // TODO: VS no need to check, but assert coop
+    if (PreemptiveGCDisabled() && CatchAtSafePointOpportunistic())
     {
         EnablePreemptiveGC();
         DisablePreemptiveGC();
