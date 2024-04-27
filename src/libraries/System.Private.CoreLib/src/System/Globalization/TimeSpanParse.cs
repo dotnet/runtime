@@ -49,8 +49,6 @@
 
 using System.Buffers.Text;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.Globalization
@@ -581,7 +579,7 @@ namespace System.Globalization
                 10000000,
             ];
             Debug.Assert(powersOfTen.Length == MaxFractionDigits + 1);
-            return Unsafe.Add(ref MemoryMarshal.GetReference(powersOfTen), pow);
+            return powersOfTen[pow];
         }
 
         private static bool TryTimeToTicks(bool positive, TimeSpanToken days, TimeSpanToken hours, TimeSpanToken minutes, TimeSpanToken seconds, TimeSpanToken fraction, out long result)
