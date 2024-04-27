@@ -212,9 +212,7 @@ class JitEnv(gym.Env):
         return candidate.can_apply
 
     def _take_one_action(self, action, state : JitEnvState):
-        result = self._jit_method(state.method.index, JitMetrics=1, JitRLHook=1,
-                                          JitRLHookCSEDecisions=state.choices)
-
+        result = self._jit_method(state.method.index, JitMetrics=1, JitRLHook=1, JitRLHookCSEDecisions=state.choices)
         if result is None:
             return False
 
@@ -233,7 +231,7 @@ class JitEnv(gym.Env):
             print (f"Failed to JIT method {index} - removing")
             self.__remove_method(index)
 
-        if np.isclose(result.perf_score, 0.0, rtol=1e-05, atol=1e-08, equal_nan=False):
+        elif np.isclose(result.perf_score, 0.0, rtol=1e-05, atol=1e-08, equal_nan=False):
             print(f"Method {index} has a perf score of 0.0 - removing")
             self.__remove_method(index)
             result = None
