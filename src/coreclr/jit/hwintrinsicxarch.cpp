@@ -1440,12 +1440,40 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector128_ConvertToInt32:
+        case NI_Vector256_ConvertToInt32:
+        case NI_Vector512_ConvertToInt32:
+        {
+            assert(sig->numArgs == 1);
+            assert(simdBaseType == TYP_FLOAT);
+
+            if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            {
+                op1     = impSIMDPopStack();
+                retNode = gtNewSimdCvtNode(retType, op1, CORINFO_TYPE_INT, simdBaseJitType, simdSize);
+            }
+            break;
+        }
+
+        case NI_Vector128_ConvertToInt32Native:
+        case NI_Vector256_ConvertToInt32Native:
+        case NI_Vector512_ConvertToInt32Native:
+        {
+            assert(sig->numArgs == 1);
+            assert(simdBaseType == TYP_FLOAT);
+
+            op1     = impSIMDPopStack();
+            retNode = gtNewSimdCvtNativeNode(retType, op1, CORINFO_TYPE_INT, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_Vector128_ConvertToInt64:
         case NI_Vector256_ConvertToInt64:
         case NI_Vector512_ConvertToInt64:
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_DOUBLE);
+
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
                 op1     = impSIMDPopStack();
@@ -1454,44 +1482,17 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector128_ConvertToUInt32:
-        case NI_Vector256_ConvertToUInt32:
-        case NI_Vector512_ConvertToUInt32:
-        {
-            assert(sig->numArgs == 1);
-            assert(simdBaseType == TYP_FLOAT);
-            if (IsBaselineVector512IsaSupportedOpportunistically())
-            {
-                op1     = impSIMDPopStack();
-                retNode = gtNewSimdCvtNode(retType, op1, CORINFO_TYPE_UINT, simdBaseJitType, simdSize);
-            }
-            break;
-        }
-
-        case NI_Vector128_ConvertToUInt64:
-        case NI_Vector256_ConvertToUInt64:
-        case NI_Vector512_ConvertToUInt64:
+        case NI_Vector128_ConvertToInt64Native:
+        case NI_Vector256_ConvertToInt64Native:
+        case NI_Vector512_ConvertToInt64Native:
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_DOUBLE);
+
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
                 op1     = impSIMDPopStack();
-                retNode = gtNewSimdCvtNode(retType, op1, CORINFO_TYPE_ULONG, simdBaseJitType, simdSize);
-            }
-            break;
-        }
-
-        case NI_Vector128_ConvertToInt32:
-        case NI_Vector256_ConvertToInt32:
-        case NI_Vector512_ConvertToInt32:
-        {
-            assert(sig->numArgs == 1);
-            assert(simdBaseType == TYP_FLOAT);
-            if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
-            {
-                op1     = impSIMDPopStack();
-                retNode = gtNewSimdCvtNode(retType, op1, CORINFO_TYPE_INT, simdBaseJitType, simdSize);
+                retNode = gtNewSimdCvtNativeNode(retType, op1, CORINFO_TYPE_LONG, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -1541,6 +1542,65 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 op1     = impSIMDPopStack();
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+            }
+            break;
+        }
+
+        case NI_Vector128_ConvertToUInt32:
+        case NI_Vector256_ConvertToUInt32:
+        case NI_Vector512_ConvertToUInt32:
+        {
+            assert(sig->numArgs == 1);
+            assert(simdBaseType == TYP_FLOAT);
+
+            if (IsBaselineVector512IsaSupportedOpportunistically())
+            {
+                op1     = impSIMDPopStack();
+                retNode = gtNewSimdCvtNode(retType, op1, CORINFO_TYPE_UINT, simdBaseJitType, simdSize);
+            }
+            break;
+        }
+
+        case NI_Vector128_ConvertToUInt32Native:
+        case NI_Vector256_ConvertToUInt32Native:
+        case NI_Vector512_ConvertToUInt32Native:
+        {
+            assert(sig->numArgs == 1);
+            assert(simdBaseType == TYP_FLOAT);
+
+            if (IsBaselineVector512IsaSupportedOpportunistically())
+            {
+                op1     = impSIMDPopStack();
+                retNode = gtNewSimdCvtNativeNode(retType, op1, CORINFO_TYPE_UINT, simdBaseJitType, simdSize);
+            }
+            break;
+        }
+
+        case NI_Vector128_ConvertToUInt64:
+        case NI_Vector256_ConvertToUInt64:
+        case NI_Vector512_ConvertToUInt64:
+        {
+            assert(sig->numArgs == 1);
+            assert(simdBaseType == TYP_DOUBLE);
+            if (IsBaselineVector512IsaSupportedOpportunistically())
+            {
+                op1     = impSIMDPopStack();
+                retNode = gtNewSimdCvtNode(retType, op1, CORINFO_TYPE_ULONG, simdBaseJitType, simdSize);
+            }
+            break;
+        }
+
+        case NI_Vector128_ConvertToUInt64Native:
+        case NI_Vector256_ConvertToUInt64Native:
+        case NI_Vector512_ConvertToUInt64Native:
+        {
+            assert(sig->numArgs == 1);
+            assert(simdBaseType == TYP_DOUBLE);
+
+            if (IsBaselineVector512IsaSupportedOpportunistically())
+            {
+                op1     = impSIMDPopStack();
+                retNode = gtNewSimdCvtNativeNode(retType, op1, CORINFO_TYPE_ULONG, simdBaseJitType, simdSize);
             }
             break;
         }

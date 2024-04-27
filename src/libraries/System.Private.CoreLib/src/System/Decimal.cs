@@ -1117,6 +1117,14 @@ namespace System
         // IFloatingPoint
         //
 
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToInteger{TInteger}(TSelf)" />
+        public static TInteger ConvertToInteger<TInteger>(decimal value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
+        public static TInteger ConvertToIntegerNative<TInteger>(decimal value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
         int IFloatingPoint<decimal>.GetExponentByteCount() => sizeof(sbyte);
 

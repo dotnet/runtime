@@ -1256,27 +1256,6 @@ public:
         this->scaleBBWeight(BB_ZERO_WEIGHT);
     }
 
-    // makeBlockHot()
-    //     This is used to override any profiling data
-    //     and force a block to be in the hot region.
-    //     We only call this method for handler entry point
-    //     and only when HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION is 1.
-    //     Doing this helps fgReorderBlocks() by telling
-    //     it to try to move these blocks into the hot region.
-    //     Note that we do this strictly as an optimization,
-    //     not for correctness. fgDetermineFirstColdBlock()
-    //     will find all handler entry points and ensure that
-    //     for now we don't place them in the cold section.
-    //
-    void makeBlockHot()
-    {
-        if (this->bbWeight == BB_ZERO_WEIGHT)
-        {
-            this->RemoveFlags(BBF_RUN_RARELY | BBF_PROF_WEIGHT);
-            this->bbWeight = 1;
-        }
-    }
-
     bool isMaxBBWeight() const
     {
         return (bbWeight >= BB_MAX_WEIGHT);
