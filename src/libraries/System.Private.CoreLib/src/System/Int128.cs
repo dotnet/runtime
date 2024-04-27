@@ -1043,57 +1043,29 @@ namespace System
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(Int128 left, Int128 right)
         {
-            if (IsNegative(left) == IsNegative(right))
-            {
-                return (left._upper < right._upper)
-                    || ((left._upper == right._upper) && (left._lower < right._lower));
-            }
-            else
-            {
-                return IsNegative(left);
-            }
+            return ((long)left._upper < (long)right._upper)
+                || ((left._upper == right._upper) && (left._lower < right._lower));
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(Int128 left, Int128 right)
         {
-            if (IsNegative(left) == IsNegative(right))
-            {
-                return (left._upper < right._upper)
-                    || ((left._upper == right._upper) && (left._lower <= right._lower));
-            }
-            else
-            {
-                return IsNegative(left);
-            }
+            return ((long)left._upper < (long)right._upper)
+                || ((left._upper == right._upper) && (left._lower <= right._lower));
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(Int128 left, Int128 right)
         {
-            if (IsNegative(left) == IsNegative(right))
-            {
-                return (left._upper > right._upper)
-                    || ((left._upper == right._upper) && (left._lower > right._lower));
-            }
-            else
-            {
-                return IsNegative(right);
-            }
+            return ((long)left._upper > (long)right._upper)
+                || ((left._upper == right._upper) && (left._lower > right._lower));
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(Int128 left, Int128 right)
         {
-            if (IsNegative(left) == IsNegative(right))
-            {
-                return (left._upper > right._upper)
-                    || ((left._upper == right._upper) && (left._lower >= right._lower));
-            }
-            else
-            {
-                return IsNegative(right);
-            }
+            return ((long)left._upper > (long)right._upper)
+                || ((left._upper == right._upper) && (left._lower >= right._lower));
         }
 
         //
