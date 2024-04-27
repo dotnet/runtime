@@ -3,17 +3,21 @@
 import os
 from typing import List
 
-from stable_baselines3 import PPO
+from stable_baselines3 import A2C, DQN, PPO
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import SubprocVecEnv
 
-from jitml.jitenv import JitEnv
-
-from .superpmi import MethodContext, SuperPmi
+from .jitenv import JitEnv
+from .superpmi import MethodContext
 
 class JitRLModel:
     """The raw implementation of the machine learning agent."""
-    def __init__(self, model_path, device='auto', ent_coef=0.01, verbose=False):
+    def __init__(self, algorithm, model_path, device='auto', ent_coef=0.01, verbose=False):
+        if algorithm not in ('PPO', 'A2C', 'DQN'):
+            raise ValueError(f"Unknown algorithm {algorithm}.  Must be one of: PPO, A2C, DQN")
+
+        self.algorithm = algorithm
+
         self.model_path = model_path
         if not os.path.exists(model_path):
             os.makedirs(model_path, exist_ok=True)
@@ -23,9 +27,10 @@ class JitRLModel:
         self.verbose = verbose
         self._model = None
 
-    def load(self, path) -> PPO:
+    def load(self, path):
         """Loads the model from the specified path."""
-        self._model = PPO.load(path, device=self.device)
+        alg = self.__get_algorithm()
+        self._model = alg.load(path, device=self.device)
         return self._model
 
     def save(self, path):
@@ -66,5 +71,17 @@ class JitRLModel:
         finally:
             env.close()
 
-    def _create(self, env, **kwargs) -> PPO:
-        return PPO('MlpPolicy', env, device=self.device, ent_coef=self.ent_coef, verbose=self.verbose, **kwargs)
+    def _create(self, env, **kwargs):
+        alg = self.__get_algorithm()
+        return alg('MlpPolicy', env, device=self.device, ent_coef=self.ent_coef, verbose=self.verbose, **kwargs)
+
+    def __get_algorithm(self):
+        match self.algorithm:
+            case 'PPO':
+                return PPO
+            case 'A2C':
+                return A2C
+            case 'DQN':
+                return DQN
+            case _:
+                raise ValueError(f"Unknown algorithm {self.algorithm}.  Must be one of: PPO, A2C, DQN")
