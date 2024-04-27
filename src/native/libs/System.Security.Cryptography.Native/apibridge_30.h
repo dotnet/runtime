@@ -6,6 +6,10 @@
 #pragma once
 #include "pal_types.h"
 
+typedef void *(*CRYPTO_malloc_fn)(size_t num, const char *file, int line);
+typedef void *(*CRYPTO_realloc_fn)(void *addr, size_t num, const char *file, int line);
+typedef void (*CRYPTO_free_fn)(void *addr, const char *file, int line);
+
 typedef struct evp_kdf_st EVP_KDF;
 typedef struct evp_kdf_ctx_st EVP_KDF_CTX;
 typedef struct evp_mac_st EVP_MAC;
