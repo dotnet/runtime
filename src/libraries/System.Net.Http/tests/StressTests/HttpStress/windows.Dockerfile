@@ -9,7 +9,7 @@ WORKDIR /app
 COPY . .
 
 ARG VERSION=9.0
-ARG CONFIGURATION=Debug
+ARG CONFIGURATION=Release
 
 RUN dotnet build -c $env:CONFIGURATION `
     -p:MsQuicInteropIncludes="C:/live-runtime-artifacts/msquic-interop/*.cs" `

@@ -22,7 +22,7 @@ RUN cd msquic/build/bin/Debug && \
     dpkg -i libmsquic_*.deb
 
 ARG VERSION=9.0
-ARG CONFIGURATION=Debug
+ARG CONFIGURATION=Release
 
 # Build the stress server
 WORKDIR /app

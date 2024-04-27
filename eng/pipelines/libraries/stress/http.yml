@@ -36,7 +36,6 @@ extends:
         timeoutInMinutes: 240
         variables:
           DUMPS_SHARE_MOUNT_ROOT: "/dumps-share"
-          BUILD_CONFIGURATION: "Debug"
         pool:
           name: $(DncEngPublicBuildPool)
           demands: ImageOverride -equals 1es-ubuntu-1804-open
