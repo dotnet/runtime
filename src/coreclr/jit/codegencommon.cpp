@@ -132,7 +132,6 @@ NodeInternalRegisters::NodeInternalRegisters(Compiler* comp)
 void NodeInternalRegisters::Add(GenTree* tree, regMaskTP regs)
 {
     assert(regs != RBM_NONE);
-    tree->gtFlags |= GTF_INTERNAL_REGS;
 
     regMaskTP* result = m_table.LookupPointer(tree);
     if (result == nullptr)
@@ -160,7 +159,6 @@ void NodeInternalRegisters::Add(GenTree* tree, regMaskTP regs)
 //
 regNumber NodeInternalRegisters::Extract(GenTree* tree, regMaskTP mask)
 {
-    assert((tree->gtFlags & GTF_INTERNAL_REGS) != 0);
     regMaskTP* regs = m_table.LookupPointer(tree);
     assert(regs != nullptr);
 
@@ -188,7 +186,6 @@ regNumber NodeInternalRegisters::Extract(GenTree* tree, regMaskTP mask)
 //
 regNumber NodeInternalRegisters::GetSingle(GenTree* tree, regMaskTP mask)
 {
-    assert((tree->gtFlags & GTF_INTERNAL_REGS) != 0);
     regMaskTP* regs = m_table.LookupPointer(tree);
     assert(regs != nullptr);
 
@@ -212,14 +209,8 @@ regNumber NodeInternalRegisters::GetSingle(GenTree* tree, regMaskTP mask)
 //
 regMaskTP NodeInternalRegisters::GetAll(GenTree* tree)
 {
-    if ((tree->gtFlags & GTF_INTERNAL_REGS) == 0)
-    {
-        return RBM_NONE;
-    }
-
-    regMaskTP* regs = m_table.LookupPointer(tree);
-    assert(regs != nullptr);
-    return *regs;
+    regMaskTP regs;
+    return m_table.Lookup(tree, &regs) ? regs : RBM_NONE;
 }
 
 //------------------------------------------------------------------------
@@ -235,14 +226,8 @@ regMaskTP NodeInternalRegisters::GetAll(GenTree* tree)
 //
 unsigned NodeInternalRegisters::Count(GenTree* tree, regMaskTP mask)
 {
-    if ((tree->gtFlags & GTF_INTERNAL_REGS) == 0)
-    {
-        return 0;
-    }
-
-    regMaskTP* regs = m_table.LookupPointer(tree);
-    assert(regs != nullptr);
-    return genCountBits(*regs & mask);
+    regMaskTP regs;
+    return m_table.Lookup(tree, &regs) ? genCountBits(regs) : 0;
 }
 
 // CodeGen constructor

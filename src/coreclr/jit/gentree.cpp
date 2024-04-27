@@ -9783,7 +9783,6 @@ DONE:
 
     copy->CopyRawCosts(tree);
     copy->CopyReg(tree);
-    assert(((copy->gtFlags & GTF_INTERNAL_REGS) == 0) && "Cannot clone nodes after LSRA");
     return copy;
 }
 
