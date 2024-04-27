@@ -3000,6 +3000,12 @@ void CSE_HeuristicRLHook::ApplyDecisions()
     for (unsigned i = 0; i < JitRLHookCSEDecisions.GetLength(); i++)
     {
         const int index = JitRLHookCSEDecisions.GetData()[i] - 1;
+        if (index == -1)
+        {
+            // An input of 0 means stop processing.
+            break;
+        }
+
         if ((index < 0) || (index >= (int)cnt))
         {
             JITDUMP("Invalid candidate number %d\n", index + 1);
@@ -3145,8 +3151,8 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
 #endif
 
     int i = 0;
-    features[i++] = cse->IsViable() ? 1 : 0;
     features[i++] = type;
+    features[i++] = cse->IsViable() ? 1 : 0;
     features[i++] = cse->csdLiveAcrossCall ? 1 : 0;
     features[i++] = cse->csdTree->OperIsConst() ? 1 : 0;
     features[i++] = cse->csdIsSharedConst ? 1 : 0;
@@ -3173,23 +3179,23 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
 
 const char* const CSE_HeuristicRLHook::s_featureNameAndType[] =
 {
-    "viable",
-    "liveAcrossCall",
-    "const",
-    "sharedConst",
-    "makeCse",
-    "hasCall",
-    "containable",
     "type",
-    "costEx",
-    "costSz",
-    "useCount",
-    "defCount",
-    "useWtCnt",
-    "defWtCnt",
-    "numDistinctLocals",
-    "numLocalOccurrences",
-    "enregCount",
+    "viable",
+    "live_across_call",
+    "const",
+    "shared_const",
+    "make_cse",
+    "has_call",
+    "containable",
+    "cost_ex",
+    "cost_sz",
+    "use_count",
+    "def_count",
+    "use_wt_cnt",
+    "def_wt_cnt",
+    "distinct_locals",
+    "local_occurrences",
+    "enreg_count",
 };
 
 //------------------------------------------------------------------------
