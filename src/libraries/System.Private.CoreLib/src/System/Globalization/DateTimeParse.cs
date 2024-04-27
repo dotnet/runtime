@@ -3179,6 +3179,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
         private static bool ParseFractionExact(ref __DTString str, int maxDigitLen, scoped ref double result)
         {
+            Debug.Assert(maxDigitLen <= DateTimeFormat.MaxSecondsFractionDigits);
             if (!str.GetNextDigit())
             {
                 str.Index--;

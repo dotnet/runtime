@@ -311,7 +311,7 @@ namespace System.Globalization
             int seconds = (int)(time / TimeSpan.TicksPerSecond % 60);
             int fraction = (int)(time % TimeSpan.TicksPerSecond);
 
-            long tmp;
+            int tmp;
             int i = 0;
             int tokenLen;
 
@@ -357,7 +357,7 @@ namespace System.Globalization
 
                         tmp = fraction;
                         tmp /= TimeSpanParse.Pow10(DateTimeFormat.MaxSecondsFractionDigits - tokenLen);
-                        DateTimeFormat.FormatFraction(ref result, (int)tmp, DateTimeFormat.fixedNumberFormats[tokenLen - 1]);
+                        DateTimeFormat.FormatFraction(ref result, tmp, DateTimeFormat.fixedNumberFormats[tokenLen - 1]);
                         break;
                     case 'F':
                         //
@@ -386,7 +386,7 @@ namespace System.Globalization
                         }
                         if (effectiveDigits > 0)
                         {
-                            DateTimeFormat.FormatFraction(ref result, (int)tmp, DateTimeFormat.fixedNumberFormats[effectiveDigits - 1]);
+                            DateTimeFormat.FormatFraction(ref result, tmp, DateTimeFormat.fixedNumberFormats[effectiveDigits - 1]);
                         }
                         break;
                     case 'd':
