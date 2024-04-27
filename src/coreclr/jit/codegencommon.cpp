@@ -62,6 +62,68 @@ CodeGenInterface* getCodeGenerator(Compiler* comp)
     return new (comp, CMK_Codegen) CodeGen(comp);
 }
 
+////------------------------------------------------------------------------
+//// The following functions manage the set of internal temporary registers
+//// created by LSRA during code generation.
+//
+////------------------------------------------------------------------------
+//// AvailableTempRegCount: return the number of available temporary registers in the (optional) given set
+//// (typically, RBM_ALLINT or RBM_ALLFLOAT).
+////
+//// Arguments:
+////    mask - (optional) Check for available temporary registers only in this set.
+////
+//// Return Value:
+////    Count of available temporary registers in given set.
+////
+// unsigned GenTree::AvailableTempRegCount(regMaskTP mask /* = (regMaskTP)-1 */) const
+//{
+//     return genCountBits(gtRsvdRegs & mask);
+// }
+//
+////------------------------------------------------------------------------
+//// GetSingleTempReg: There is expected to be exactly one available temporary register
+//// in the given mask in the gtRsvdRegs set. Get that register. No future calls to get
+//// a temporary register are expected. Removes the register from the set, but only in
+//// DEBUG to avoid doing unnecessary work in non-DEBUG builds.
+////
+//// Arguments:
+////    mask - (optional) Get an available temporary register only in this set.
+////
+//// Return Value:
+////    Available temporary register in given mask.
+////
+// regNumber GenTree::GetSingleTempReg(regMaskTP mask /* = (regMaskTP)-1 */)
+//{
+//     regMaskTP availableSet = gtRsvdRegs & mask;
+//     assert(genCountBits(availableSet) == 1);
+//     regNumber tempReg = genRegNumFromMask(availableSet);
+//     INDEBUG(gtRsvdRegs &= ~availableSet;) // Remove the register from the set, so it can't be used again.
+//     return tempReg;
+// }
+//
+////------------------------------------------------------------------------
+//// ExtractTempReg: Find the lowest number temporary register from the gtRsvdRegs set
+//// that is also in the optional given mask (typically, RBM_ALLINT or RBM_ALLFLOAT),
+//// and return it. Remove this register from the temporary register set, so it won't
+//// be returned again.
+////
+//// Arguments:
+////    mask - (optional) Extract an available temporary register only in this set.
+////
+//// Return Value:
+////    Available temporary register in given mask.
+////
+// regNumber GenTree::ExtractTempReg(regMaskTP mask /* = (regMaskTP)-1 */)
+//{
+//     regMaskTP availableSet = gtRsvdRegs & mask;
+//     assert(genCountBits(availableSet) >= 1);
+//     regNumber tempReg = genFirstRegNumFromMask(availableSet);
+//     gtRsvdRegs ^= genRegMask(tempReg);
+//     return tempReg;
+// }
+//
+
 NodeInternalRegisters::NodeInternalRegisters(Compiler* comp)
     : m_table(comp->getAllocator(CMK_LSRA))
 {
@@ -83,6 +145,19 @@ void NodeInternalRegisters::Add(GenTree* tree, regMaskTP regs)
     }
 }
 
+//------------------------------------------------------------------------
+// Extract: Find the lowest number temporary register from the gtRsvdRegs set
+// that is also in the optional given mask (typically, RBM_ALLINT or
+// RBM_ALLFLOAT), and return it. Remove this register from the temporary
+// register set, so it won't be returned again.
+//
+// Parameters:
+//   tree - IR node whose internal registers to extract
+//   mask - Mask of allowed registers that can be returned
+//
+// Returns:
+//   Register number.
+//
 regNumber NodeInternalRegisters::Extract(GenTree* tree, regMaskTP mask)
 {
     assert((tree->gtFlags & GTF_INTERNAL_REGS) != 0);
@@ -98,6 +173,19 @@ regNumber NodeInternalRegisters::Extract(GenTree* tree, regMaskTP mask)
     return result;
 }
 
+//------------------------------------------------------------------------
+// GetSingleTempReg: There is expected to be exactly one available temporary register
+// in the given mask in the internal register set. Get that register. No future calls to get
+// a temporary register are expected. Removes the register from the set, but only in
+// DEBUG to avoid doing unnecessary work in non-DEBUG builds.
+//
+// Parameters:
+//   tree - IR node whose internal registers to extract
+//   mask - Mask of allowed registers that can be returned
+//
+// Returns:
+//   Register number.
+//
 regNumber NodeInternalRegisters::GetSingle(GenTree* tree, regMaskTP mask)
 {
     assert((tree->gtFlags & GTF_INTERNAL_REGS) != 0);
@@ -113,6 +201,15 @@ regNumber NodeInternalRegisters::GetSingle(GenTree* tree, regMaskTP mask)
     return result;
 }
 
+//------------------------------------------------------------------------
+// GetAll: Get all internal registers for the specified IR node.
+//
+// Parameters:
+//   tree - IR node whose internal registers to query
+//
+// Returns:
+//   Mask of registers.
+//
 regMaskTP NodeInternalRegisters::GetAll(GenTree* tree)
 {
     if ((tree->gtFlags & GTF_INTERNAL_REGS) == 0)
@@ -125,6 +222,17 @@ regMaskTP NodeInternalRegisters::GetAll(GenTree* tree)
     return *regs;
 }
 
+//------------------------------------------------------------------------
+// Count: return the number of available temporary registers in the (optional)
+// given set (typically, RBM_ALLINT or RBM_ALLFLOAT).
+//
+// Parameters:
+//  tree - IR node whose internal registers to query
+//  mask - Mask of registers to count
+//
+// Returns:
+//   Count of nodes
+//
 unsigned NodeInternalRegisters::Count(GenTree* tree, regMaskTP mask)
 {
     if ((tree->gtFlags & GTF_INTERNAL_REGS) == 0)
