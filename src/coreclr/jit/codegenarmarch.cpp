@@ -3376,7 +3376,7 @@ void CodeGen::genCall(GenTreeCall* call)
                 call->IsVirtualStubRelativeIndir() ? compiler->virtualStubParamInfo->GetReg() : REG_R2R_INDIRECT_PARAM;
             GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, callAddrReg);
             // We will use this again when emitting the jump in genCallInstruction in the epilog
-            internalRegisters.Add(call, genRegMask(tmpReg));
+            internalRegisters.Add(call, tmpReg);
         }
 #endif
 

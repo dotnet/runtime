@@ -67,6 +67,11 @@ NodeInternalRegisters::NodeInternalRegisters(Compiler* comp)
 {
 }
 
+void NodeInternalRegisters::Clear(GenTree* tree)
+{
+    tree->m_internalRegTag = 0;
+}
+
 //------------------------------------------------------------------------
 // Add: Add internal allocated registers for the specified node.
 //
@@ -74,18 +79,24 @@ NodeInternalRegisters::NodeInternalRegisters(Compiler* comp)
 //   tree - IR node to add internal allocated registers to
 //   regs - Registers to add
 //
-void NodeInternalRegisters::Add(GenTree* tree, regMaskTP regs)
+void NodeInternalRegisters::Add(GenTree* tree, regNumber reg)
 {
     assert(regs != RBM_NONE);
 
-    regMaskTP* result = m_table.LookupPointer(tree);
-    if (result == nullptr)
+    if (tree->m_internalRegTag == 0)
     {
-        m_table.Set(tree, regs);
+        tree->m_internalRegTag = (uint8_t)(1 + reg);
+    }
+    else if (tree->m_internalRegTag != 0xFF)
+    {
+        regMaskTP newRegs = genRegMask(reg) | genRegMask((regNumber)(tree->m_internalRegTag - 1));
+        m_table.Set(tree, newRegs);
+        tree->m_internalRegTag = 0xFF;
     }
     else
     {
-        *result |= regs;
+        regMaskTP* oldRegs = m_table.LookupPointer(tree);
+        *oldRegs |= genRegMask(reg);
     }
 }
 
@@ -104,6 +115,15 @@ void NodeInternalRegisters::Add(GenTree* tree, regMaskTP regs)
 //
 regNumber NodeInternalRegisters::Extract(GenTree* tree, regMaskTP mask)
 {
+    assert(tree->m_internalRegTag != 0);
+    if (tree->m_internalRegTag != 0xFF)
+    {
+        regNumber result = (regNumber)(tree->m_internalRegTag - 1);
+        assert((mask & genRegMask(result)) != RBM_NONE);
+        tree->m_internalRegTag = 0;
+        return result;
+    }
+
     regMaskTP* regs = m_table.LookupPointer(tree);
     assert(regs != nullptr);
 
@@ -131,6 +151,14 @@ regNumber NodeInternalRegisters::Extract(GenTree* tree, regMaskTP mask)
 //
 regNumber NodeInternalRegisters::GetSingle(GenTree* tree, regMaskTP mask)
 {
+    assert(tree->m_internalRegTag != 0);
+    if (tree->m_internalRegTag != 0xFF)
+    {
+        regNumber result = (regNumber)(tree->m_internalRegTag - 1);
+        assert((mask & genRegMask(result)) != RBM_NONE);
+        return result;
+    }
+
     regMaskTP* regs = m_table.LookupPointer(tree);
     assert(regs != nullptr);
 
@@ -154,8 +182,17 @@ regNumber NodeInternalRegisters::GetSingle(GenTree* tree, regMaskTP mask)
 //
 regMaskTP NodeInternalRegisters::GetAll(GenTree* tree)
 {
-    regMaskTP regs;
-    return m_table.Lookup(tree, &regs) ? regs : RBM_NONE;
+    if (tree->m_internalRegTag == 0)
+    {
+        return RBM_NONE;
+    }
+
+    if (tree->m_internalRegTag != 0xFF)
+    {
+        return genRegMask((regNumber)(tree->m_internalRegTag - 1));
+    }
+
+    return m_table[tree];
 }
 
 //------------------------------------------------------------------------
@@ -171,8 +208,17 @@ regMaskTP NodeInternalRegisters::GetAll(GenTree* tree)
 //
 unsigned NodeInternalRegisters::Count(GenTree* tree, regMaskTP mask)
 {
-    regMaskTP regs;
-    return m_table.Lookup(tree, &regs) ? genCountBits(regs & mask) : 0;
+    if (tree->m_internalRegTag == 0)
+    {
+        return 0;
+    }
+
+    if (tree->m_internalRegTag != 0xFF)
+    {
+        return (mask & genRegMask((regNumber)(tree->m_internalRegTag - 1))) != RBM_NONE ? 1 : 0;
+    }
+
+    return genCountBits(m_table[tree] & mask);
 }
 
 // CodeGen constructor
