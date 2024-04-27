@@ -2802,7 +2802,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-#if !defined(TARGET_RISCV64)
 struct RegNode;
 
 struct RegNodeEdge
@@ -3345,8 +3344,6 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
         }
     }
 }
-
-#endif
 
 // -----------------------------------------------------------------------------
 // genGetParameterHomingTempRegisterCandidates: Get the registers that are
@@ -4122,15 +4119,69 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
     }
 }
 
+#if defined(SWIFT_SUPPORT) || defined(TARGET_RISCV64)
+//-----------------------------------------------------------------------------
+// genHomeSwiftStructParameters: Move the incoming segment to the local stack frame.
+//
+// Arguments:
+//    lclNum - Number of local variable to home
+//    seg - Stack segment of the local variable to home
+//    initReg - Scratch register to use if needed
+//    initRegStillZeroed - Set to false if the scratch register was needed
+//
+void CodeGen::genHomeStackSegment(unsigned                 lclNum,
+                                  const ABIPassingSegment& seg,
+                                  regNumber                initReg,
+                                  bool*                    initRegStillZeroed)
+{
+    var_types loadType = TYP_UNDEF;
+    switch (seg.Size)
+    {
+        case 1:
+            loadType = TYP_UBYTE;
+            break;
+        case 2:
+            loadType = TYP_USHORT;
+            break;
+        case 3:
+        case 4:
+            loadType = TYP_INT;
+            break;
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+            loadType = TYP_LONG;
+            break;
+        default:
+            assert(!"Unexpected segment size for struct parameter not passed implicitly by ref");
+            return;
+    }
+    emitAttr size = emitTypeSize(loadType);
+
+    int loadOffset =
+        -(isFramePointerUsed() ? genCallerSPtoFPdelta() : genCallerSPtoInitialSPdelta()) + (int)seg.GetStackOffset();
+#ifdef TARGET_XARCH
+    GetEmitter()->emitIns_R_AR(ins_Load(loadType), size, initReg, genFramePointerReg(), loadOffset);
+#else
+    genInstrWithConstant(ins_Load(loadType), size, initReg, genFramePointerReg(), loadOffset, initReg);
+#endif
+    GetEmitter()->emitIns_S_R(ins_Store(loadType), size, initReg, lclNum, seg.Offset);
+
+    if (initRegStillZeroed)
+        *initRegStillZeroed = false;
+}
+#endif // defined(SWIFT_SUPPORT) || defined(TARGET_RISCV64)
+
 #ifdef SWIFT_SUPPORT
 
 //-----------------------------------------------------------------------------
 // genHomeSwiftStructParameters:
-//  Reassemble Swift struct parameters if necessary.
+//    Reassemble Swift struct parameters if necessary.
 //
-// Parameters:
-//   handleStack - If true, reassemble the segments that were passed on the stack.
-//                 If false, reassemble the segments that were passed in registers.
+// Arguments:
+//    handleStack - If true, reassemble the segments that were passed on the stack.
+//                  If false, reassemble the segments that were passed in registers.
 //
 void CodeGen::genHomeSwiftStructParameters(bool handleStack)
 {
@@ -4176,55 +4227,54 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack)
             }
             else
             {
-                var_types loadType = TYP_UNDEF;
-                switch (seg.Size)
-                {
-                    case 1:
-                        loadType = TYP_UBYTE;
-                        break;
-                    case 2:
-                        loadType = TYP_USHORT;
-                        break;
-                    case 4:
-                        loadType = TYP_INT;
-                        break;
-                    case 8:
-                        loadType = TYP_LONG;
-                        break;
-                    default:
-                        assert(!"Unexpected segment size for struct parameter not passed implicitly by ref");
-                        continue;
-                }
-
-                int offset;
-                if (isFramePointerUsed())
-                {
-                    offset = -genCallerSPtoFPdelta();
-                }
-                else
-                {
-                    offset = -genCallerSPtoInitialSPdelta();
-                }
-
-                offset += (int)seg.GetStackOffset();
-
-                // Move the incoming segment to the local stack frame. We can
-                // use REG_SCRATCH as a temporary register here as we ensured
-                // that during LSRA build.
-#ifdef TARGET_XARCH
-                GetEmitter()->emitIns_R_AR(ins_Load(loadType), emitTypeSize(loadType), REG_SCRATCH,
-                                           genFramePointerReg(), offset);
-#else
-                genInstrWithConstant(ins_Load(loadType), emitTypeSize(loadType), REG_SCRATCH, genFramePointerReg(),
-                                     offset, REG_SCRATCH);
-#endif
-
-                GetEmitter()->emitIns_S_R(ins_Store(loadType), emitTypeSize(loadType), REG_SCRATCH, lclNum, seg.Offset);
+                // We can use REG_SCRATCH as a temporary register here as we ensured that during LSRA build.
+                genHomeStackSegment(lclNum, seg, REG_SCRATCH, nullptr);
             }
         }
     }
 }
 #endif
+
+//-----------------------------------------------------------------------------
+// genHomeStackPartOfSplitParameter: Home the tail (stack) portion of a split parameter next to where the head
+// (register) portion is homed.
+//
+// Arguments:
+//    initReg - scratch register to use if needed
+//    initRegStillZeroed - set to false if scratch register was needed
+//
+// Notes:
+//    No-op on platforms where argument registers are already homed to form a contiguous space with incoming stack.
+//
+void CodeGen::genHomeStackPartOfSplitParameter(regNumber initReg, bool* initRegStillZeroed)
+{
+#ifdef TARGET_RISCV64
+    unsigned lclNum = 0;
+    for (; lclNum < compiler->info.compArgsCount; lclNum++)
+    {
+        LclVarDsc* var = compiler->lvaGetDesc(lclNum);
+        if (!var->lvIsSplit || !var->lvOnFrame)
+            continue;
+
+        JITDUMP("Homing stack part of split parameter V%02u\n", lclNum);
+
+        assert(varTypeIsStruct(var));
+        assert(!compiler->lvaIsImplicitByRefLocal(lclNum));
+        const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
+        assert(abiInfo.NumSegments == 2);
+        assert(abiInfo.Segments[0].GetRegister() == REG_ARG_LAST);
+        const ABIPassingSegment& seg = abiInfo.Segments[1];
+
+        genHomeStackSegment(lclNum, seg, initReg, initRegStillZeroed);
+
+        for (lclNum += 1; lclNum < compiler->info.compArgsCount; lclNum++)
+        {
+            assert(!compiler->lvaGetDesc(lclNum)->lvIsSplit); // There should be only one split parameter
+        }
+        break;
+    }
+#endif
+}
 
 /*-----------------------------------------------------------------------------
  *
@@ -4744,20 +4794,13 @@ void CodeGen::genFinalizeFrame()
 #endif // defined(TARGET_XARCH)
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    if (isFramePointerUsed())
-    {
-        // For a FP based frame we have to push/pop the FP register
-        //
-        maskCalleeRegsPushed |= RBM_FPBASE;
+    // This assert check that we are not using REG_FP
+    assert(!regSet.rsRegsModified(RBM_FPBASE));
 
-        // This assert check that we are not using REG_FP
-        // as both the frame pointer and as a codegen register
-        //
-        assert(!regSet.rsRegsModified(RBM_FPBASE));
-    }
+    assert(isFramePointerUsed());
+    // we always push FP/RA.  See genPushCalleeSavedRegisters
+    maskCalleeRegsPushed |= (RBM_FPBASE | RBM_RA);
 
-    // we always push RA.  See genPushCalleeSavedRegisters
-    maskCalleeRegsPushed |= RBM_RA;
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
     compiler->compCalleeRegsPushed = genCountBits(maskCalleeRegsPushed);
@@ -5549,6 +5592,8 @@ void CodeGen::genFnProlog()
     else
     {
         compiler->lvaUpdateArgsWithInitialReg();
+
+        genHomeStackPartOfSplitParameter(initReg, &initRegZeroed);
 
         if ((intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn) != RBM_NONE)
         {
