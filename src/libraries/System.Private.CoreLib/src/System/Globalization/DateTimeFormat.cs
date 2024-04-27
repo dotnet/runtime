@@ -485,7 +485,7 @@ namespace System
                         if (tokenLen <= MaxSecondsFractionDigits)
                         {
                             int fraction = (int)(dateTime.Ticks % Calendar.TicksPerSecond);
-                            fraction /= TimeSpanParse.Pow10(MaxSecondsFractionDigits - tokenLen);
+                            fraction /= (int)TimeSpanParse.Pow10(MaxSecondsFractionDigits - tokenLen);
                             if (ch == 'f')
                             {
                                 FormatFraction(ref result, fraction, fixedNumberFormats[tokenLen - 1]);
