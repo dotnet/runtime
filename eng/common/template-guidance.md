@@ -130,8 +130,8 @@ In the table above, a file is designated as "shim", "logic", or "redirect".
 
 - redirect- represents a file in `core-templates` which redirects to the "logic" file in either `templates` or `templates-official`.
 
-Logic for Arcade's templates live **primarily** in the `core-templates` folder.  The exceptions to the location of the logic files are around artifact publishing, which is handled differently between 1es pipeline templates and standard templates.  `templates` and `templates-official` provide shim entry points which redirect to `core-templates` while also defining the `is1ESPipeline` parameter.  If a shim is referenced in `templates`, then `is1ESPipeline` is set to `false`.  If a shim is referenced in `templates-official`, then `is1ESPipeline` is set to `true`. 
+Logic for Arcade's templates live **primarily** in the `core-templates` folder.  The exceptions to the location of the logic files are around artifact publishing, which is handled differently between 1es pipeline templates and standard templates.  `templates` and `templates-official` provide shim entry points which redirect to `core-templates` while also defining the `is1ESPipeline` parameter.  If a shim is referenced in `templates`, then `is1ESPipeline` is set to `false`.  If a shim is referenced in `templates-official`, then `is1ESPipeline` is set to `true`.
 
 Within `templates` and `templates-official`, the templates at the "stages", and "jobs" / "job" level have been replaced with shims.  Templates at the "steps" and "variables" level are typically too granular to be replaced with shims and instead persist logic which is directly applicable to either scenario.
 
-Within `core-templates`, there are a handful of places where logic is dependent on which shim entry point was used.  In those places, we redirect back to the respective logic file in `templates` or `templates-official`.  
+Within `core-templates`, there are a handful of places where logic is dependent on which shim entry point was used.  In those places, we redirect back to the respective logic file in `templates` or `templates-official`.
