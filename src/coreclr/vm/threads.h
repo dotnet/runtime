@@ -1397,11 +1397,6 @@ public:
         // holding a spin lock in coop mode and transit to preemp mode will cause deadlock on GC
         _ASSERTE ((m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
 
-#ifdef ENABLE_CONTRACTS_IMPL
-        _ASSERTE(!GCForbidden());
-        TriggersGC(this);
-#endif
-
         // ------------------------------------------------------------------------
         //   ** WARNING ** WARNING ** WARNING ** WARNING ** WARNING ** WARNING **  |
         // ------------------------------------------------------------------------
@@ -1414,21 +1409,12 @@ public:
         // ------------------------------------------------------------------------
 
         m_fPreemptiveGCDisabled.StoreWithoutBarrier(0);
-#ifdef ENABLE_CONTRACTS
-        m_ulEnablePreemptiveGCCount ++;
-#endif  // _DEBUG
-
-        // TODO: VS remove this. no polling on going to preemptive
-        //       Delete RareEnablePreemptiveGC as well.
-        if (CatchAtSafePointOpportunistic())
-            RareEnablePreemptiveGC();
 #endif
     }
 
 #if defined(STRESS_HEAP) && defined(_DEBUG)
     void PerformPreemptiveGC();
 #endif
-    void RareEnablePreemptiveGC();
     void PulseGCMode();
 
     //--------------------------------------------------------------
@@ -2803,11 +2789,6 @@ public:
     Dbg_TrackSync   *m_pTrackSync;
 
 #endif // TRACK_SYNC
-
-private:
-#ifdef ENABLE_CONTRACTS_DATA
-    ULONG  m_ulEnablePreemptiveGCCount;
-#endif  // _DEBUG
 
 private:
     // For suspends:

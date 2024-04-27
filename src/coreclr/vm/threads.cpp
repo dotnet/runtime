@@ -1399,13 +1399,6 @@ Thread::Thread()
 #ifdef _DEBUG
     m_ulForbidTypeLoad      = 0;
     m_GCOnTransitionsOK     = TRUE;
-#endif
-
-#ifdef ENABLE_CONTRACTS
-    m_ulEnablePreemptiveGCCount  = 0;
-#endif
-
-#ifdef _DEBUG
     dbg_m_cSuspendedThreads = 0;
     dbg_m_cSuspendedThreadsWithoutOSLock = 0;
     m_Creator.Clear();

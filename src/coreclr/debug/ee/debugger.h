@@ -3807,7 +3807,7 @@ HANDLE OpenWin32EventOrThrow(
 // debugger may not be expecting it.  Instead, just leave the lock and retry.
 // When we leave, we'll enter coop mode first and get suspended if a suspension is in progress.
 // Afterwards, we'll transition back into preemptive mode, and we'll block because this thread
-// has been suspended by the debugger (see code:Thread::RareEnablePreemptiveGC).
+// has been suspended by the debugger (see code:Thread::RareDisablePreemptiveGC).
 #define SENDIPCEVENT_BEGIN_EX(pDebugger, thread, gcxStmt)                                 \
   {                                                                                       \
     FireEtwDebugIPCEventStart();                                                          \
