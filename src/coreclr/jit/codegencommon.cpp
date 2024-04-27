@@ -172,7 +172,7 @@ regMaskTP NodeInternalRegisters::GetAll(GenTree* tree)
 unsigned NodeInternalRegisters::Count(GenTree* tree, regMaskTP mask)
 {
     regMaskTP regs;
-    return m_table.Lookup(tree, &regs) ? genCountBits(regs) : 0;
+    return m_table.Lookup(tree, &regs) ? genCountBits(regs & mask) : 0;
 }
 
 // CodeGen constructor
