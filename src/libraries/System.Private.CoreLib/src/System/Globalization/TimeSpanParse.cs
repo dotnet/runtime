@@ -568,9 +568,8 @@ namespace System.Globalization
 
         internal static int Pow10(int pow)
         {
-            Debug.Assert(pow > 0);
+            Debug.Assert(pow >= 0);
             Debug.Assert(pow <= MaxFractionDigits);
-
             ReadOnlySpan<int> powersOfTen = [
                 1,
                 10,
