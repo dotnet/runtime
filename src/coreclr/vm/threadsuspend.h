@@ -108,9 +108,6 @@ struct SuspendStatistics
     ///////////////////////////////////////////////////////////////////////////////////////////////
     // There are some interesting events that are worth counting, because they show where the time is going:
 
-    // number of times we waited on g_pGCSuspendEvent while trying to suspend the EE
-    int cntWaits;
-
     // and the number of times those Waits timed out rather than being signalled by a cooperating thread
     int cntWaitTimeouts;
 
@@ -192,7 +189,6 @@ public:
     static void Initialize();
 
 private:
-    static CLREvent * g_pGCSuspendEvent;
 
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
     static void* g_returnAddressHijackTarget;

@@ -5184,9 +5184,6 @@ void ThreadStore::InitThreadStore()
 
     g_pThinLockThreadIdDispenser = new IdDispenser();
 
-    ThreadSuspend::g_pGCSuspendEvent = new CLREvent();
-    ThreadSuspend::g_pGCSuspendEvent->CreateManualEvent(FALSE);
-
     s_pWaitForStackCrawlEvent = new CLREvent();
     s_pWaitForStackCrawlEvent->CreateManualEvent(FALSE);
 
