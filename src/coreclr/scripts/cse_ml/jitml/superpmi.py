@@ -94,6 +94,9 @@ class SuperPmi:
         core_root is the path to the coreclr build, usually at [repo]/artifiacts/bin/coreclr/[arch]/.
         jit is the full path to the jit to use. Default is None.
         verbosity is the verbosity level of the superpmi process. Default is 'q'."""
+        self._process = None
+        self._feature_names = None
+
         if not os.path.exists(core_root):
             raise FileNotFoundError(f"core_root {core_root} does not exist.")
 
@@ -116,18 +119,15 @@ class SuperPmi:
         if not os.path.exists(self.jit_path):
             raise FileNotFoundError(f"jit {self.jit_path} does not exist.")
 
-        self._process = None
-        self._feature_names = None
-
     def __del__(self):
-        self.__close()
+        self.stop()
 
     def __enter__(self):
-        self.__create_process()
+        self.start()
         return self
 
     def __exit__(self, *_):
-        self.__close()
+        self.stop()
 
     def jit_method(self, method_or_id : int | MethodContext, **options) -> MethodContext:
         """Jits the method given by id or MethodContext."""
@@ -226,7 +226,7 @@ class SuperPmi:
 
         return MethodContext(**properties)
 
-    def __create_process(self):
+    def start(self):
         """Returns the superpmi process."""
         if self._process is None:
             params = [self.superpmi_path, self.jit_path, '-streaming', 'stdin', self.mch]
@@ -238,7 +238,8 @@ class SuperPmi:
 
         return self._process
 
-    def __close(self):
+    def stop(self):
+        """Closes the superpmi process."""
         if self._process is not None:
             self._process.stdin.write(b"quit\n")
             self._process.terminate()

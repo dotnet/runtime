@@ -25,8 +25,6 @@ class JitEnvState:
         self.no_cse_score = no_cse_score
         self.choices = []
         self.results = []
-
-        self.last_obs = None
         self.invalid_action_count = 0
 
     def choose(self, action : int, result : MethodContext):
@@ -69,14 +67,12 @@ class JitEnvState:
 
 class JitEnv(gym.Env):
     """A gymnasium environment for the JIT."""
-    def __init__(self, superpmi : SuperPmi, methods : Optional[List[MethodContext]]):
+    def __init__(self, core_root : str, mch : str, methods : Optional[List[int]] = None):
+        self.core_root = core_root
+        self.mch = mch
         self._state = None
-        self.superpmi = superpmi
-        if methods is None:
-            methods = [x for x in self.superpmi.enumerate_methods() if JitEnv.is_acceptable(x)]
-        else:
-            methods = [x for x in methods if JitEnv.is_acceptable(x)]
 
+        self.__superpmi = None
         self.methods = methods
 
         lower_bounds = np.zeros((MAX_CSE, FEATURES))
@@ -86,27 +82,39 @@ class JitEnv(gym.Env):
 
         self.action_space = gym.spaces.Discrete(MAX_CSE + 1)
 
+    def __del__(self):
+        if self.__superpmi is not None:
+            self.__superpmi.stop()
+
     def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None):
         super().reset(seed=seed, options=options)
 
-        method = random.choice(self.methods)
-
         failure_count = 0
-        while not JitEnv.is_acceptable(method):
+        while True:
+            index = self.__select_method()
+            no_cse = self._jit_method(index, JitMetrics=1, JitRLHook=1, JitRLHookCSEDecisions=[0])
+            if no_cse is None:
+                print(f"Failed to JIT method {index}")
+                continue
+
+            if JitEnv.is_acceptable(no_cse):
+                original_heuristic = self._jit_method(index, JitMetrics=1)
+                if original_heuristic is None:
+                    print(f"Failed to JIT method {index}")
+                    continue
+                break
+
             failure_count += 1
             if failure_count > 512:
                 raise ValueError("No valid methods found")
 
-            method = random.choice(self.methods)
 
-        heuristic_score = self.superpmi.jit_method(method.index, JitMetrics=1).perf_score
-        no_cse = self.superpmi.jit_method(method.index, JitMetrics=1, JitRLHook=1, JitRLHookCSEDecisions=[0])
         no_cse_score = no_cse.perf_score
-        state = JitEnvState(method, heuristic_score, no_cse_score)
+        heuristic_score = original_heuristic.perf_score
 
-        self._state = state
+        self._state = JitEnvState(no_cse, heuristic_score, no_cse_score)
         obs = self.get_observation(no_cse)
-        info = self.get_info(state)
+        info = self.get_info(self._state)
         return obs, info
 
     def step(self, action):
@@ -125,21 +133,19 @@ class JitEnv(gym.Env):
             if terminated or truncated:
                 self._state = None
 
+            observation = self.get_observation(state.current)
             info = self.get_info(state)
-            return state.last_obs, INVALID_ACTION_PENALTY, terminated, truncated, info
+            return observation, INVALID_ACTION_PENALTY, terminated, truncated, info
 
-        # JIT the method and update state with the result
-        self._take_one_action(action, state)
+        # JIT the method and update state with the result, this can return False if there was an
+        # issue with JIT'ing the method.
+        truncated = not self._take_one_action(action, state)
 
         current = state.current
-
-
-        observation = self.get_observation(state.current)
+        observation = self.get_observation(current)
         terminated = action == 0 or not any((x for x in current.cse_candidates if x.can_apply))
-        reward = self.get_rewards(state, terminated)
+        reward = self.get_rewards(state, terminated) if not truncated else 0.0
         info = self.get_info(state)
-
-        state.last_obs = observation
 
         if terminated or truncated:
             self._state = None
@@ -206,10 +212,61 @@ class JitEnv(gym.Env):
         return candidate.can_apply
 
     def _take_one_action(self, action, state : JitEnvState):
-        result = self.superpmi.jit_method(state.method.index, JitMetrics=1, JitRLHook=1,
+        result = self._jit_method(state.method.index, JitMetrics=1, JitRLHook=1,
                                           JitRLHookCSEDecisions=state.choices)
 
+        if result is None:
+            return False
+
         state.choose(action, result)
+        return True
+
+    def _jit_method(self, index, *args, **kwargs):
+        superpmi = self.__get_superpmi()
+        result = superpmi.jit_method(index, *args, **kwargs)
+
+        if result is None:
+            superpmi = self.__reset_superpmi()
+            result = superpmi.jit_method(index, *args, **kwargs)
+
+        if result is None:
+            print (f"Failed to JIT method {index} - removing")
+            self.__remove_method(index)
+
+        if np.isclose(result.perf_score, 0.0, rtol=1e-05, atol=1e-08, equal_nan=False):
+            print(f"Method {index} has a perf score of 0.0 - removing")
+            self.__remove_method(index)
+            result = None
+
+        return result
+
+    def __reset_superpmi(self):
+        superpmi = self.__superpmi
+        self.__superpmi = None
+        if superpmi is not None:
+            superpmi.stop()
+
+        return self.__get_superpmi()
+
+    def __select_method(self):
+        if self.methods is None:
+            superpmi = self.__get_superpmi()
+            self.methods = [x.index for x in superpmi.enumerate_methods() if JitEnv.is_acceptable(x)]
+
+        return np.random.choice(self.methods)
+
+    def __remove_method(self, index):
+        if self.methods is None:
+            return
+
+        self.methods = [x for x in self.methods if x != index]
+
+    def __get_superpmi(self):
+        if self.__superpmi is None:
+            self.__superpmi = SuperPmi(self.core_root, self.mch)
+            self.__superpmi.start()
+
+        return self.__superpmi
 
     @staticmethod
     def is_acceptable(method : MethodContext):

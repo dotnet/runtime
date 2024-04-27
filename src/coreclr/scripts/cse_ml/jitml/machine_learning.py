@@ -42,7 +42,8 @@ class JitRLModel:
         action, _ = self._model.predict(obs, deterministic=deterministic)
         return action
 
-    def train(self, superpmi : SuperPmi, methods : List[MethodContext] = None, iterations = None, parallel = None):
+    def train(self, core_root : str, mch : str, methods : List[MethodContext] = None,
+              iterations = None, parallel = None):
         """Trains the model from scratch."""
         model_dir = os.path.join(self.model_path, 'PPO')
         os.makedirs(model_dir, exist_ok=True)
@@ -50,7 +51,7 @@ class JitRLModel:
         iterations = 100_000 if iterations is None else iterations
 
         def make_env():
-            return JitEnv(superpmi, methods)
+            return JitEnv(core_root, mch, methods)
 
         if parallel is not None and parallel > 1:
             env = make_vec_env(make_env, n_envs=parallel, vec_env_cls=SubprocVecEnv)
