@@ -8106,7 +8106,7 @@ void LinearScan::resolveRegisters()
             assert(currentRefPosition->isIntervalRef());
             if (currentRefPosition->getInterval()->isInternal)
             {
-                compiler->codeGen->internalRegisters.Add(treeNode, currentRefPosition->assignedReg());
+                compiler->codeGen->internalRegisters.Add(treeNode, currentRefPosition->registerAssignment);
             }
             else
             {

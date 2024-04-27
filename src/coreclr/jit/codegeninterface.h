@@ -54,8 +54,7 @@ class NodeInternalRegisters
 public:
     NodeInternalRegisters(Compiler* comp);
 
-    void      Clear(GenTree* tree);
-    void      Add(GenTree* tree, regNumber reg);
+    void      Add(GenTree* tree, regMaskTP reg);
     regNumber Extract(GenTree* tree, regMaskTP mask = static_cast<regMaskTP>(-1));
     regNumber GetSingle(GenTree* tree, regMaskTP mask = static_cast<regMaskTP>(-1));
     regMaskTP GetAll(GenTree* tree);

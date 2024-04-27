@@ -853,9 +853,6 @@ private:
     friend struct GenTreeMultiOp;
     uint8_t m_operandCount;
 
-    friend class NodeInternalRegisters;
-    uint8_t m_internalRegTag;
-
 public:
     // The register number is stored in a small format (8 bits), but the getters return and the setters take
     // a full-size (unsigned) format, to localize the casts here.

@@ -1730,8 +1730,6 @@ int LinearScan::ComputeAvailableSrcCount(GenTree* node)
 //
 void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc)
 {
-    compiler->codeGen->internalRegisters.Clear(tree);
-
 #ifdef DEBUG
     if (VERBOSE)
     {
