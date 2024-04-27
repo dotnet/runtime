@@ -6011,7 +6011,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
 //   partially reaches into caller allocated space (i.e. negative)
 //  - On arm32 we sometimes prespill argument registers and consider it to be
 //  caller allocated, making this function also return a negative offset for
-//  some registers in that case.
+//  some register parameters in that case.
 //
 bool Compiler::lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(unsigned lclNum, int* offset)
 {
@@ -6056,7 +6056,9 @@ bool Compiler::lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(unsigned l
                 regMaskTP higherPrespills = prespills & (regMaskTP)(~((1ULL << (int)segment.GetRegister()) - 1));
                 *offset                   = -(int)genCountBits(higherPrespills) * TARGET_POINTER_SIZE;
 
-                // This might be a split parameter, so there may be other prespills as well.
+                // Adjust for a potential split (we currently always expect all
+                // split structs to be fully prespilled, but this makes the
+                // general and matches the logic below).
                 *offset -= segment.Offset;
                 return true;
             }
@@ -6081,15 +6083,18 @@ bool Compiler::lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(unsigned l
             // - LA64/RISCV64 both allow splitting of 16-byte structs across 1 register and stack
             // - The Swift ABI can split parameters across multiple register and multiple stack segments
             //
-            // Of these we handle Swift separately (by reassembling structs
-            // entirely on the local stack frame). However, all other ABIs
-            // admit a simple strategy to reassemble the struct on the stack
-            // frame: we consider the local itself to start right before the
-            // "virtual 0", such that spilling the register parts will end up
-            // with the local fully reassembled and contiguous, without having
-            // to move any of the stack segments. The subtraction of the
-            // segment offset accomplishes that here.
-
+            // Of these, Swift and RISCV64/LA64 are handled separately, by
+            // reassembling the split structs entirely on the local stack
+            // frame. Thus the offsets returned here and assigned inside
+            // lvaAssignVirtualFrameOffsetsToArgs are overwritten later.
+            //
+            // For ARM64 and ARM32 we use a different strategy to reassemble
+            // the struct on the stack frame: we consider the local itself to
+            // start right before the "virtual 0", such that spilling the
+            // register parts will end up with the local fully reassembled and
+            // contiguous, without having to move any of the stack segments.
+            // The subtraction of the segment offset accomplishes that here.
+            //
             *offset = (int)segment.GetStackOffset() - (int)segment.Offset;
         }
 
