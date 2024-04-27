@@ -1,3 +1,5 @@
 pydantic
 gymnasium
 numpy
+stable_baselines3
+stable-baselines3[extra]

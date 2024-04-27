@@ -1,0 +1,69 @@
+"""The machine learning agent which drives CSE optimization."""
+
+import os
+from typing import List
+
+from stable_baselines3 import PPO
+from stable_baselines3.common.env_util import make_vec_env
+from stable_baselines3.common.vec_env import SubprocVecEnv
+
+from jitml.jitenv import JitEnv
+
+from .superpmi import MethodContext, SuperPmi
+
+class JitRLModel:
+    """The raw implementation of the machine learning agent."""
+    def __init__(self, model_path, device='auto', ent_coef=0.01, verbose=False):
+        self.model_path = model_path
+        if not os.path.exists(model_path):
+            os.makedirs(model_path, exist_ok=True)
+
+        self.device = device
+        self.ent_coef = ent_coef
+        self.verbose = verbose
+        self._model = None
+
+    def load(self, path) -> PPO:
+        """Loads the model from the specified path."""
+        self._model = PPO.load(path, device=self.device)
+        return self._model
+
+    def save(self, path):
+        """Saves the model to the specified path."""
+        self._model.save(path)
+
+    @property
+    def num_timesteps(self):
+        """Returns the number of timesteps the model has been trained for."""
+        return self._model.num_timesteps if self._model is not None else 0
+
+    def predict(self, obs, deterministic = False):
+        """Predicts the action to take based on the observation."""
+        action, _ = self._model.predict(obs, deterministic=deterministic)
+        return action
+
+    def train(self, superpmi : SuperPmi, methods : List[MethodContext] = None, iterations = None, parallel = None):
+        """Trains the model from scratch."""
+        model_dir = os.path.join(self.model_path, 'PPO')
+        os.makedirs(model_dir, exist_ok=True)
+
+        iterations = 100_000 if iterations is None else iterations
+
+        def make_env():
+            return JitEnv(superpmi, methods)
+
+        if parallel is not None and parallel > 1:
+            env = make_vec_env(make_env, n_envs=parallel, vec_env_cls=SubprocVecEnv)
+        else:
+            env = make_env()
+
+        try:
+            ml_model = self._create(env, tensorboard_log=os.path.join(model_dir, 'logs'))
+            ml_model.learn(iterations, progress_bar=True)
+            ml_model.save(os.path.join(model_dir, 'last.zip'))
+
+        finally:
+            env.close()
+
+    def _create(self, env, **kwargs) -> PPO:
+        return PPO('MlpPolicy', env, device=self.device, ent_coef=self.ent_coef, verbose=self.verbose, **kwargs)

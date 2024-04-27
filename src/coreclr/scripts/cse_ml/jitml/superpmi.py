@@ -4,11 +4,13 @@ from enum import Enum
 import os
 import subprocess
 import re
-from typing import Dict, Iterable, List, Optional
-from pydantic import BaseModel
+from typing import Iterable, List, Optional
+from pydantic import BaseModel, ValidationError, field_validator
 
+JITTYPE_ONEHOT_SIZE = 6
 
 class JitType(Enum):
+    """The type of a CSE candidate.  Mirrors CSE_HeuristicRLHook's enum."""
     OTHER : int = 0
     INT : int = 1
     LONG : int = 2
@@ -17,25 +19,54 @@ class JitType(Enum):
     STRUCT : int = 5
     SIMD : int = 6
 
+    @property
+    def one_hot(self) -> List[float]:
+        """Returns a one hot encoding of the type."""
+        result = [0.0] * 6
+        result[self.value - 1] = 1.0
+        return result
+
+
+
 class CseCandidate(BaseModel):
+    """A CSE candidate.  Mirrors CSE_Candidate features in CSE_HeuristicRLHook.cpp."""
     index : int
+    applied : Optional[bool] = False
     viable : bool
-    liveAcrossCall : bool
+    live_across_call : bool
     const : bool
-    sharedConst : bool
-    makeCse : bool
-    hasCall : bool
+    shared_const : bool
+    make_cse : bool
+    has_call : bool
     containable : bool
     type : JitType
-    costEx : int
-    costSz : int
-    useCount : int
-    defCount : int
-    useWtCnt : int
-    defWtCnt : int
-    numDistinctLocals : int
-    numLocalOccurrences : int
-    enregCount : int
+    cost_ex : int
+    cost_sz : int
+    use_count : int
+    def_count : int
+    use_wt_cnt : int
+    def_wt_cnt : int
+    distinct_locals : int
+    local_occurrences : int
+    enreg_count : int
+
+    @field_validator('applied', 'viable', 'live_across_call', 'const', 'shared_const', 'make_cse', 'has_call',
+                     'containable', mode='before')
+    @classmethod
+    def validate_bool(cls, v):
+        """Validates that the value is a boolean or is a 0 or 1."""
+        if isinstance(v, int) and v in [0, 1]:
+            return bool(v)
+
+        if isinstance(v, bool):
+            return v
+
+        raise ValidationError(f"Value must be either 1, 0, or a boolean, got {v}")
+
+    @property
+    def can_apply(self):
+        """Returns True if the candidate is viable and not applied."""
+        return self.viable and not self.applied
 
 class MethodContext(BaseModel):
     """A superpmi method context."""
@@ -115,8 +146,6 @@ class SuperPmi:
         torun = f"{method_or_id}!"
         torun += "!".join([f"{key}={value}" for key, value in options.items()])
 
-        print(f"input: {torun}")
-
         self._process.stdin.write(f"{torun}\n".encode('utf-8'))
         self._process.stdin.flush()
 
@@ -132,20 +161,35 @@ class SuperPmi:
 
     def enumerate_methods(self) -> Iterable[MethodContext]:
         """List all methods in the mch file."""
-        params = [self.superpmi_path, self.jit_path, self.mch, '-v', 'q', '-jitoption', 'JitMetrics=1']
-        with subprocess.Popen(params, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as process:
+        params = [self.superpmi_path, self.jit_path, self.mch, '-v', 'q', '-jitoption', 'JitMetrics=1',
+                  '-jitoption', 'JitRLHook=1']
+
+        if self._feature_names is None:
+            params.extend(['-jitoption', 'JitRLHookEmitFeatureNames=1'])
+
+        try:
+            process = subprocess.Popen(params, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             for line in process.stdout:
                 line = line.decode('utf-8').strip()
                 if line.startswith(';'):
                     yield self._parse_method_context(line)
 
+        finally:
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
+
     def _parse_method_context(self, line:str) -> MethodContext:
         if self._feature_names is None:
             # find featureNames in line
             feature_names_header = 'featureNames '
-            i = line.find(feature_names_header)
-            if i > 0:
-                self._feature_names = line[i + len(feature_names_header):].split(',')
+            start = line.find(feature_names_header)
+            stop = line.find(' ', start + len(feature_names_header))
+            if start > 0:
+                self._feature_names = line[start + len(feature_names_header):stop].split(',')
                 self._feature_names.insert(0, 'id')
 
         properties = {}
@@ -170,7 +214,7 @@ class SuperPmi:
         cse_candidates = None
         if self._feature_names is not None:
             # features CSE #032,3,10,3,3,150,150,1,1,0,0,0,0,0,0,37
-            candidates = re.findall(r'features CSE #([0-9,]+)', line)
+            candidates = re.findall(r'features #([0-9,]+)', line)
             if candidates is not None:
                 cse_candidates = [{self._feature_names[i]: int(x) for i, x in enumerate(candidate.split(','))}
                                   for candidate in candidates]

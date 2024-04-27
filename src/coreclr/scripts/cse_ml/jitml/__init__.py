@@ -1,3 +1,4 @@
+"""JIT Machine Learning (JITML) is a Python library for the .Net JIT's reinforcement learning algorithms."""
 from .superpmi import SuperPmi
-
-__all__ = ['SuperPmi']
+from .jitenv import JitEnv
+from .machine_learning import JitRLModel
