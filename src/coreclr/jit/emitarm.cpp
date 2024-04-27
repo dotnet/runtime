@@ -7869,15 +7869,15 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             var_types type = indir->AsStoreInd()->Data()->TypeGet();
             if (type == TYP_FLOAT)
             {
-                regNumber tmpReg = indir->GetSingleTempReg();
+                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
                 emitIns_Mov(INS_vmov_f2i, EA_4BYTE, tmpReg, dataReg, /* canSkip */ false);
                 emitInsLoadStoreOp(INS_str, EA_4BYTE, tmpReg, indir, 0);
                 return;
             }
             else if (type == TYP_DOUBLE)
             {
-                regNumber tmpReg1 = indir->ExtractTempReg();
-                regNumber tmpReg2 = indir->GetSingleTempReg();
+                regNumber tmpReg1 = codeGen->internalRegisters.Extract(indir);
+                regNumber tmpReg2 = codeGen->internalRegisters.GetSingle(indir);
                 emitIns_R_R_R(INS_vmov_d2i, EA_8BYTE, tmpReg1, tmpReg2, dataReg);
                 emitInsLoadStoreOp(INS_str, EA_4BYTE, tmpReg1, indir, 0);
                 emitInsLoadStoreOp(INS_str, EA_4BYTE, tmpReg2, indir, 4);
@@ -7889,15 +7889,15 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             var_types type = indir->TypeGet();
             if (type == TYP_FLOAT)
             {
-                regNumber tmpReg = indir->GetSingleTempReg();
+                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
                 emitInsLoadStoreOp(INS_ldr, EA_4BYTE, tmpReg, indir, 0);
                 emitIns_Mov(INS_vmov_i2f, EA_4BYTE, dataReg, tmpReg, /* canSkip */ false);
                 return;
             }
             else if (type == TYP_DOUBLE)
             {
-                regNumber tmpReg1 = indir->ExtractTempReg();
-                regNumber tmpReg2 = indir->GetSingleTempReg();
+                regNumber tmpReg1 = codeGen->internalRegisters.Extract(indir);
+                regNumber tmpReg2 = codeGen->internalRegisters.GetSingle(indir);
                 emitInsLoadStoreOp(INS_ldr, EA_4BYTE, tmpReg1, indir, 0);
                 emitInsLoadStoreOp(INS_ldr, EA_4BYTE, tmpReg2, indir, 4);
                 emitIns_R_R_R(INS_vmov_i2d, EA_8BYTE, dataReg, tmpReg1, tmpReg2);
@@ -7940,7 +7940,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
             if (offset != 0)
             {
-                regNumber tmpReg = indir->GetSingleTempReg();
+                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
 
                 // If the LEA produces a GCREF or BYREF, we need to be careful to mark any temp register
                 // computed with the base register as a BYREF.
@@ -8023,7 +8023,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             else
             {
                 // We require a tmpReg to hold the offset
-                regNumber tmpReg = indir->GetSingleTempReg();
+                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
 
                 // First load/store tmpReg with the large offset constant
                 codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
@@ -8175,7 +8175,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     {
         if (isMulOverflow)
         {
-            regNumber extraReg = dst->GetSingleTempReg();
+            regNumber extraReg = codeGen->internalRegisters.GetSingle(dst);
             assert(extraReg != dst->GetRegNum());
 
             if ((dst->gtFlags & GTF_UNSIGNED) != 0)

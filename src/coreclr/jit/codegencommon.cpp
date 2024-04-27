@@ -62,10 +62,87 @@ CodeGenInterface* getCodeGenerator(Compiler* comp)
     return new (comp, CMK_Codegen) CodeGen(comp);
 }
 
+NodeInternalRegisters::NodeInternalRegisters(Compiler* comp)
+    : m_table(comp->getAllocator(CMK_LSRA))
+{
+}
+
+void NodeInternalRegisters::Add(GenTree* tree, regMaskTP regs)
+{
+    assert(regs != RBM_NONE);
+    tree->gtFlags |= GTF_INTERNAL_REGS;
+
+    regMaskTP* result = m_table.LookupPointer(tree);
+    if (result == nullptr)
+    {
+        m_table.Set(tree, regs);
+    }
+    else
+    {
+        *result |= regs;
+    }
+}
+
+regNumber NodeInternalRegisters::Extract(GenTree* tree, regMaskTP mask)
+{
+    assert((tree->gtFlags & GTF_INTERNAL_REGS) != 0);
+    regMaskTP* regs = m_table.LookupPointer(tree);
+    assert(regs != nullptr);
+
+    regMaskTP availableSet = *regs & mask;
+    assert(availableSet != RBM_NONE);
+
+    regNumber result = genFirstRegNumFromMask(availableSet);
+    *regs ^= genRegMask(result);
+
+    return result;
+}
+
+regNumber NodeInternalRegisters::GetSingle(GenTree* tree, regMaskTP mask)
+{
+    assert((tree->gtFlags & GTF_INTERNAL_REGS) != 0);
+    regMaskTP* regs = m_table.LookupPointer(tree);
+    assert(regs != nullptr);
+
+    regMaskTP availableSet = *regs & mask;
+    assert(genExactlyOneBit(availableSet));
+
+    regNumber result = genFirstRegNumFromMask(availableSet);
+    INDEBUG(*regs &= ~genRegMask(result));
+
+    return result;
+}
+
+regMaskTP NodeInternalRegisters::GetAll(GenTree* tree)
+{
+    if ((tree->gtFlags & GTF_INTERNAL_REGS) == 0)
+    {
+        return RBM_NONE;
+    }
+
+    regMaskTP* regs = m_table.LookupPointer(tree);
+    assert(regs != nullptr);
+    return *regs;
+}
+
+unsigned NodeInternalRegisters::Count(GenTree* tree, regMaskTP mask)
+{
+    if ((tree->gtFlags & GTF_INTERNAL_REGS) == 0)
+    {
+        return 0;
+    }
+
+    regMaskTP* regs = m_table.LookupPointer(tree);
+    assert(regs != nullptr);
+    return genCountBits(*regs & mask);
+}
+
+
 // CodeGen constructor
 CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
     : gcInfo(theCompiler)
     , regSet(theCompiler, gcInfo)
+    , internalRegisters(theCompiler)
     , compiler(theCompiler)
     , treeLifeUpdater(nullptr)
 {

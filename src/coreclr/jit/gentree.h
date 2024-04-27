@@ -403,6 +403,7 @@ enum GenTreeFlags : unsigned int
 
     GTF_UNSIGNED    = 0x00008000, // With GT_CAST:   the source operand is an unsigned type
                                   // With operators: the specified node is an unsigned operator
+    GTF_INTERNAL_REGS = 0x00010000, // Node has any internal registers allocated by LSRA.
     GTF_SPILL       = 0x00020000, // Needs to be spilled here
 
 // The extra flag GTF_IS_IN_CSE is used to tell the consumer of the side effect flags
@@ -955,12 +956,6 @@ public:
 #endif // defined(DEBUG)
 
     ValueNumPair gtVNPair;
-
-    regMaskSmall gtRsvdRegs; // set of fixed trashed  registers
-
-    unsigned  AvailableTempRegCount(regMaskTP mask = (regMaskTP)-1) const;
-    regNumber GetSingleTempReg(regMaskTP mask = (regMaskTP)-1);
-    regNumber ExtractTempReg(regMaskTP mask = (regMaskTP)-1);
 
     void SetVNsFromNode(GenTree* tree)
     {
