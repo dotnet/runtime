@@ -133,7 +133,7 @@ namespace System.Globalization
                     // .000001  normalize to 10 ticks
                     // .1       normalize to 1,000,000 ticks
 
-                    _num *= Pow10(MaxFractionDigits - totalDigitsCount);
+                    _num *= Pow10UpToMaxFractionDigits(MaxFractionDigits - totalDigitsCount);
                     return true;
                 }
 
@@ -564,10 +564,8 @@ namespace System.Globalization
             }
         }
 
-        internal static int Pow10(int pow)
+        internal static int Pow10UpToMaxFractionDigits(int pow)
         {
-            Debug.Assert(pow >= 0);
-            Debug.Assert(pow <= MaxFractionDigits);
             ReadOnlySpan<int> powersOfTen = [
                 1,
                 10,

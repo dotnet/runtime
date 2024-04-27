@@ -3198,7 +3198,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 result = result * 10 + str.GetDigit();
             }
 
-            result /= TimeSpanParse.Pow10(digitLen);
+            result /= TimeSpanParse.Pow10UpToMaxFractionDigits(digitLen);
             return digitLen == maxDigitLen;
         }
 
