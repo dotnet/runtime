@@ -1820,13 +1820,13 @@ public:
     BasicBlockVisit VisitEHEnclosedHandlerSecondPassSuccs(Compiler* comp, TFunc func);
 
     template <typename TFunc>
-    BasicBlockVisit VisitAllSuccs(Compiler* comp, TFunc func);
+    BasicBlockVisit VisitAllSuccs(Compiler* comp, TFunc func, const bool useProfile = false);
 
     template <typename TFunc>
     BasicBlockVisit VisitEHSuccs(Compiler* comp, TFunc func);
 
     template <typename TFunc>
-    BasicBlockVisit VisitRegularSuccs(Compiler* comp, TFunc func, const bool useProfile = false);
+    BasicBlockVisit VisitRegularSuccs(Compiler* comp, TFunc func);
 
     bool HasPotentialEHSuccs(Compiler* comp);
 
@@ -2519,49 +2519,6 @@ class AllSuccessorEnumerator
 public:
     // Constructs an enumerator of all `block`'s successors.
     AllSuccessorEnumerator(Compiler* comp, BasicBlock* block, const bool useProfile = false);
-
-    // Gets the block whose successors are enumerated.
-    BasicBlock* Block()
-    {
-        return m_block;
-    }
-
-    // Returns the next available successor or `nullptr` if there are no more successors.
-    BasicBlock* NextSuccessor()
-    {
-        m_curSucc++;
-        if (m_curSucc >= m_numSuccs)
-        {
-            return nullptr;
-        }
-
-        if (m_numSuccs <= ArrLen(m_successors))
-        {
-            return m_successors[m_curSucc];
-        }
-
-        return m_pSuccessors[m_curSucc];
-    }
-};
-
-// An enumerator of a block's non-EH successors. Used for RPO traversals that exclude EH regions.
-class RegularSuccessorEnumerator
-{
-    BasicBlock* m_block;
-    union
-    {
-        // We store up to 4 successors inline in the enumerator. For ASP.NET
-        // and libraries.pmi this is enough in 99.7% of cases.
-        BasicBlock*  m_successors[4];
-        BasicBlock** m_pSuccessors;
-    };
-
-    unsigned m_numSuccs;
-    unsigned m_curSucc = UINT_MAX;
-
-public:
-    // Constructs an enumerator of `block`'s regular successors.
-    RegularSuccessorEnumerator(Compiler* comp, BasicBlock* block, const bool useProfile);
 
     // Gets the block whose successors are enumerated.
     BasicBlock* Block()

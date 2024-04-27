@@ -139,7 +139,7 @@ void FlowEdge::addLikelihood(weight_t addedLikelihood)
 //  Arguments:
 //     comp       - Compiler instance
 //     block      - The block whose successors are to be iterated
-//     useProfile - Unused; this is needed to match RegularSuccessorEnumerator's parameter list
+//     useProfile - If true, determines the order of successors visited using profile data
 //
 AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block, const bool useProfile /* = false */)
     : m_block(block)
@@ -153,7 +153,7 @@ AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block
 
         m_numSuccs++;
         return BasicBlockVisit::Continue;
-    });
+    }, useProfile);
 
     if (m_numSuccs > ArrLen(m_successors))
     {
@@ -164,50 +164,7 @@ AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block
             assert(numSuccs < m_numSuccs);
             m_pSuccessors[numSuccs++] = succ;
             return BasicBlockVisit::Continue;
-        });
-
-        assert(numSuccs == m_numSuccs);
-    }
-}
-
-//------------------------------------------------------------------------
-//  RegularSuccessorEnumerator: Construct an instance of the enumerator.
-//
-//  Arguments:
-//     comp       - Compiler instance
-//     block      - The block whose successors are to be iterated
-//     useProfile - If true, determines the order of successors visited using profile data
-//
-RegularSuccessorEnumerator::RegularSuccessorEnumerator(Compiler* comp, BasicBlock* block, const bool useProfile)
-    : m_block(block)
-{
-    m_numSuccs = 0;
-    block->VisitRegularSuccs(
-        comp,
-        [this](BasicBlock* succ) {
-        if (m_numSuccs < ArrLen(m_successors))
-        {
-            m_successors[m_numSuccs] = succ;
-        }
-
-        m_numSuccs++;
-        return BasicBlockVisit::Continue;
-    },
-        useProfile);
-
-    if (m_numSuccs > ArrLen(m_successors))
-    {
-        m_pSuccessors = new (comp, CMK_BasicBlock) BasicBlock*[m_numSuccs];
-
-        unsigned numSuccs = 0;
-        block->VisitRegularSuccs(
-            comp,
-            [this, &numSuccs](BasicBlock* succ) {
-            assert(numSuccs < m_numSuccs);
-            m_pSuccessors[numSuccs++] = succ;
-            return BasicBlockVisit::Continue;
-        },
-            useProfile);
+        }, useProfile);
 
         assert(numSuccs == m_numSuccs);
     }

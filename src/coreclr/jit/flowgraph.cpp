@@ -4064,7 +4064,6 @@ bool FlowGraphDfsTree::IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) 
 // fgComputeDfs: Compute a depth-first search tree for the flow graph.
 //
 // Type parameters:
-//   skipEH -     If true, does not iterate EH successors
 //   useProfile - If true, determines order of successors visited using profile data
 //
 // Returns:
@@ -4074,7 +4073,7 @@ bool FlowGraphDfsTree::IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) 
 //   Preorder and postorder numbers are assigned into the BasicBlock structure.
 //   The tree returned contains a postorder of the basic blocks.
 //
-template <const bool skipEH /* = false */, const bool useProfile /* = false */>
+template <const bool useProfile /* = false */>
 FlowGraphDfsTree* Compiler::fgComputeDfs()
 {
     BasicBlock** postOrder = new (this, CMK_DepthFirstSearch) BasicBlock*[fgBBcount];
@@ -4100,19 +4099,13 @@ FlowGraphDfsTree* Compiler::fgComputeDfs()
         }
     };
 
-    unsigned numBlocks =
-        skipEH ? fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge),
-                          RegularSuccessorEnumerator, useProfile>(visitPreorder, visitPostorder, visitEdge)
-               : fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge),
-                          AllSuccessorEnumerator, useProfile>(visitPreorder, visitPostorder, visitEdge);
+    unsigned numBlocks = fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge), useProfile>(visitPreorder, visitPostorder, visitEdge);
     return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, numBlocks, hasCycle);
 }
 
 // Add explicit instantiations.
-template FlowGraphDfsTree* Compiler::fgComputeDfs<false, false>();
-template FlowGraphDfsTree* Compiler::fgComputeDfs<false, true>();
-template FlowGraphDfsTree* Compiler::fgComputeDfs<true, false>();
-template FlowGraphDfsTree* Compiler::fgComputeDfs<true, true>();
+template FlowGraphDfsTree* Compiler::fgComputeDfs<false>();
+template FlowGraphDfsTree* Compiler::fgComputeDfs<true>();
 
 //------------------------------------------------------------------------
 // fgInvalidateDfsTree: Invalidate computed DFS tree and dependent annotations

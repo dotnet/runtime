@@ -4537,13 +4537,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 #endif
 
 //-----------------------------------------------------------------------------
-// fgDoReversePostOrderLayout: Reorder blocks using a greedy RPO of the method's
-//   main body (i.e. non-EH) successors.
-//
-// Notes:
-//   This won't reorder blocks in the funclet section, if there are any.
-//   In the main method body, this will reorder blocks in the same EH region
-//   to avoid making any regions non-contiguous.
+// fgDoReversePostOrderLayout: Reorder blocks using a greedy RPO traversal.
 //
 void Compiler::fgDoReversePostOrderLayout()
 {
@@ -4560,7 +4554,7 @@ void Compiler::fgDoReversePostOrderLayout()
 
     // Compute DFS of main function body's blocks, using profile data to determine the order successors are visited in
     //
-    FlowGraphDfsTree* const dfsTree = fgComputeDfs</* skipEH */ true, /* useProfile */ true>();
+    FlowGraphDfsTree* const dfsTree = fgComputeDfs</* useProfile */ true>();
 
     // Fast path: We don't have any EH regions, so just reorder the blocks
     //
@@ -4577,39 +4571,88 @@ void Compiler::fgDoReversePostOrderLayout()
         return;
     }
 
-    // We have EH regions, so make sure the RPO doesn't make any regions non-contiguous
-    // by only reordering blocks within the same region
+    // The RPO will break up call-finally pairs, so save them before re-ordering
+    //
+    BlockToBlockMap callFinallyPairs(getAllocator());
+
+    for (BasicBlock* const block : Blocks())
+    {
+        if (block->isBBCallFinallyPair())
+        {
+            callFinallyPairs.Set(block, block->Next());
+        }
+    }
+
+    // Reorder blocks
     //
     for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
     {
         BasicBlock* const block       = dfsTree->GetPostOrder(i);
         BasicBlock* const blockToMove = dfsTree->GetPostOrder(i - 1);
 
+        // Only reorder blocks within the same EH region -- we don't want to make them non-contiguous
+        //
         if (BasicBlock::sameEHRegion(block, blockToMove))
         {
+            // Don't reorder EH regions with filter handlers -- we want the filter to come first
+            //
+            if (block->hasHndIndex() && ehGetDsc(block->getHndIndex())->HasFilter())
+            {
+                continue;
+            }
+
             fgUnlinkBlock(blockToMove);
             fgInsertBBafter(block, blockToMove);
         }
     }
 
-    // The RPO won't change the entry blocks of any try regions, but reordering can change the last block in a region
+    // Fix up call-finally pairs
+    //
+    for (BlockToBlockMap::Node* const iter : BlockToBlockMap::KeyValueIteration(&callFinallyPairs))
+    {
+        BasicBlock* const callFinally = iter->GetKey();
+        BasicBlock* const callFinallyRet = iter->GetValue();
+        fgUnlinkBlock(callFinallyRet);
+        fgInsertBBafter(callFinally, callFinallyRet);
+    }
+
+    // The RPO won't change the entry blocks of any EH regions, but reordering can change the last block in a region
     // (for example, by pushing throw blocks unreachable via normal flow to the end of the region).
-    // First, determine the new try region ends.
+    // First, determine the new EH region ends.
     //
     BasicBlock** const tryRegionEnds = new (this, CMK_Generic) BasicBlock* [compHndBBtabCount] {};
+    bool* const tryRegionInMainBody = new (this, CMK_Generic) bool[compHndBBtabCount] {};
+    BasicBlock** const hndRegionEnds = new (this, CMK_Generic) BasicBlock* [compHndBBtabCount] {};
 
-    // If we aren't using EH funclets, fgFirstFuncletBB is nullptr, and we'll traverse the entire blocklist.
-    // Else if we do have funclets, don't extend the end of a try region to include its funclet blocks.
-    //
-    for (BasicBlock* block = fgFirstBB; block != fgFirstFuncletBB; block = block->Next())
+    for (BasicBlock* const block : Blocks(fgFirstBB, fgLastBBInMainFunction()))
     {
         if (block->hasTryIndex())
+        {
+            const unsigned tryIndex = block->getTryIndex();
+            tryRegionEnds[tryIndex] = block;
+            tryRegionInMainBody[tryIndex] = true;
+        }
+
+        if (block->hasHndIndex())
+        {
+            hndRegionEnds[block->getHndIndex()] = block;
+        }
+    }
+
+    for (BasicBlock* const block : Blocks(fgFirstFuncletBB))
+    {
+        if (block->hasHndIndex())
+        {
+            hndRegionEnds[block->getHndIndex()] = block;
+        }
+
+        if (block->hasTryIndex() && !tryRegionInMainBody[block->getTryIndex()])
         {
             tryRegionEnds[block->getTryIndex()] = block;
         }
     }
 
-    // Now, update the EH descriptors
+    // Now, update the EH descriptors, starting with the try regions
     //
     unsigned  XTnum;
     EHblkDsc* HBtab;
@@ -4646,6 +4689,36 @@ void Compiler::fgDoReversePostOrderLayout()
             if ((enclosingTryEnd == nullptr) || enclosingTryEnd->NextIs(HBtab->ebdTryBeg))
             {
                 tryRegionEnds[enclosingTryIndex] = tryEnd;
+            }
+        }
+    }
+
+    // Now, do the handler regions
+    //
+    for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
+    {
+        BasicBlock* const hndEnd = hndRegionEnds[XTnum];
+        assert(hndEnd != nullptr);
+
+        // Update the end pointer of this handler region to the new last block
+        //
+        HBtab->ebdHndLast = hndEnd;
+        const unsigned enclosingHndIndex = HBtab->ebdEnclosingHndIndex;
+
+        // If this handler region is nested in another one, we might need to update its enclosing region's end block
+        //
+        if (enclosingHndIndex != EHblkDsc::NO_ENCLOSING_INDEX)
+        {
+            BasicBlock* const enclosingHndEnd = hndRegionEnds[enclosingHndIndex];
+            assert(enclosingHndEnd != nullptr);
+
+            // If the enclosing region ends right before the nested region begins,
+            // extend the enclosing region's last block to the end of the nested region.
+            //
+            BasicBlock* const hndBeg = HBtab->HasFilter() ? HBtab->ebdFilter : HBtab->ebdHndBeg;
+            if (enclosingHndEnd->NextIs(hndBeg))
+            {
+                hndRegionEnds[enclosingHndIndex] = hndEnd;
             }
         }
     }

@@ -623,12 +623,13 @@ BasicBlockVisit BasicBlock::VisitEHSuccs(Compiler* comp, TFunc func)
 // Arguments:
 //   comp  - Compiler instance
 //   func  - Callback
+//   useProfile - If true, determines the order of successors visited using profile data
 //
 // Returns:
 //   Whether or not the visiting was aborted.
 //
 template <typename TFunc>
-BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
+BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func, const bool useProfile /* = false */)
 {
     switch (bbKind)
     {
@@ -662,10 +663,18 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
             return VisitEHSuccs(comp, func);
 
         case BBJ_COND:
-            RETURN_ON_ABORT(func(GetFalseTarget()));
-
-            if (!TrueEdgeIs(GetFalseEdge()))
+            if (TrueEdgeIs(GetFalseEdge()))
             {
+                RETURN_ON_ABORT(func(GetFalseTarget()));
+            }
+            else if (useProfile && (GetTrueEdge()->getLikelihood() < GetFalseEdge()->getLikelihood()))
+            {
+                RETURN_ON_ABORT(func(GetTrueTarget()));
+                RETURN_ON_ABORT(func(GetFalseTarget()));
+            }
+            else
+            {
+                RETURN_ON_ABORT(func(GetFalseTarget()));
                 RETURN_ON_ABORT(func(GetTrueTarget()));
             }
 
@@ -698,13 +707,12 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
 // Arguments:
 //   comp       - Compiler instance
 //   func       - Callback
-//   useProfile - If true, determines the order of successors visited using profile data
 //
 // Returns:
 //   Whether or not the visiting was aborted.
 //
 template <typename TFunc>
-BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func, const bool useProfile /* = false */)
+BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
 {
     switch (bbKind)
     {
@@ -722,14 +730,6 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func, const 
             return BasicBlockVisit::Continue;
 
         case BBJ_CALLFINALLY:
-            if (useProfile)
-            {
-                // Don't visit EH successor if using profile data for block reordering.
-                return isBBCallFinallyPair() ? func(Next()) : BasicBlockVisit::Continue;
-            }
-
-            return func(GetTarget());
-
         case BBJ_CALLFINALLYRET:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
@@ -738,18 +738,10 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func, const 
             return func(GetTarget());
 
         case BBJ_COND:
-            if (TrueEdgeIs(GetFalseEdge()))
+            RETURN_ON_ABORT(func(GetFalseTarget()));
+
+            if (!TrueEdgeIs(GetFalseEdge()))
             {
-                RETURN_ON_ABORT(func(GetFalseTarget()));
-            }
-            else if (useProfile && (GetTrueEdge()->getLikelihood() < GetFalseEdge()->getLikelihood()))
-            {
-                RETURN_ON_ABORT(func(GetTrueTarget()));
-                RETURN_ON_ABORT(func(GetFalseTarget()));
-            }
-            else
-            {
-                RETURN_ON_ABORT(func(GetFalseTarget()));
                 RETURN_ON_ABORT(func(GetTrueTarget()));
             }
 
@@ -4759,11 +4751,10 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
 // fgRunDfs: Run DFS over the flow graph.
 //
 // Type parameters:
-//   VisitPreorder       - Functor type that takes a BasicBlock* and its preorder number
-//   VisitPostorder      - Functor type that takes a BasicBlock* and its postorder number
-//   VisitEdge           - Functor type that takes two BasicBlock*.
-//   SuccessorEnumerator - Enumerator type for controlling which successors are visited
-//   useProfile          - If true, determines order of successors visited using profile data
+//   VisitPreorder  - Functor type that takes a BasicBlock* and its preorder number
+//   VisitPostorder - Functor type that takes a BasicBlock* and its postorder number
+//   VisitEdge      - Functor type that takes two BasicBlock*.
+//   useProfile     - If true, determines order of successors visited using profile data
 //
 // Parameters:
 //   visitPreorder  - Functor to visit block in its preorder
@@ -4777,7 +4768,6 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
 template <typename VisitPreorder,
           typename VisitPostorder,
           typename VisitEdge,
-          typename SuccessorEnumerator /* = AllSuccessorEnumerator */,
           const bool useProfile /* = false */>
 unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPostorder, VisitEdge visitEdge)
 {
@@ -4787,7 +4777,7 @@ unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPos
     unsigned preOrderIndex  = 0;
     unsigned postOrderIndex = 0;
 
-    ArrayStack<SuccessorEnumerator> blocks(getAllocator(CMK_DepthFirstSearch));
+    ArrayStack<AllSuccessorEnumerator> blocks(getAllocator(CMK_DepthFirstSearch));
 
     auto dfsFrom = [&](BasicBlock* firstBB) {
         BitVecOps::AddElemD(&traits, visited, firstBB->bbNum);
