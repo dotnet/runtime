@@ -1962,7 +1962,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         // since we don't need any internal registers.
         if (compiler->info.compInitMem)
         {
-            assert(tree->AvailableTempRegCount() == 0);
+            assert(internalRegisters.Count(tree) == 0);
             regCnt = targetReg;
         }
         else
@@ -2064,7 +2064,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         assert(regCnt == REG_NA);
         if (compiler->info.compInitMem)
         {
-            assert(tree->AvailableTempRegCount() == 0);
+            assert(internalRegisters.Count(tree) == 0);
             regCnt = targetReg;
         }
         else
@@ -6019,7 +6019,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
     assert(srcOffset < INT32_MAX - static_cast<int>(size));
     assert(dstOffset < INT32_MAX - static_cast<int>(size));
 
-    regNumber tempReg = cpBlkNode->ExtractTempReg(RBM_ALLINT);
+    regNumber tempReg = internalRegisters.Extract(cpBlkNode, RBM_ALLINT);
 
     if (size >= 2 * REGSIZE_BYTES)
     {
@@ -6255,7 +6255,7 @@ void CodeGen::genCall(GenTreeCall* call)
                 call->IsVirtualStubRelativeIndir() ? compiler->virtualStubParamInfo->GetReg() : REG_R2R_INDIRECT_PARAM;
             GetEmitter()->emitIns_R_R_I(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, callAddrReg, 0);
             // We will use this again when emitting the jump in genCallInstruction in the epilog
-            call->gtRsvdRegs |= genRegMask(tmpReg);
+            internalRegisters.Add(call, genRegMask(tmpReg));
         }
 #endif
 

@@ -2852,7 +2852,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     regNumber loc       = locOp->GetRegNum();
     regNumber val       = valOp->GetRegNum();
     regNumber comparand = comparandOp->GetRegNum();
-    regNumber storeErr  = treeNode->ExtractTempReg(RBM_ALLINT);
+    regNumber storeErr  = internalRegisters.Extract(treeNode, RBM_ALLINT);
 
     // Register allocator should have extended the lifetimes of all input and internal registers
     // They should all be different
@@ -6156,7 +6156,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
     assert(srcOffset < INT32_MAX - static_cast<int>(size));
     assert(dstOffset < INT32_MAX - static_cast<int>(size));
 
-    regNumber tempReg = cpBlkNode->ExtractTempReg(RBM_ALLINT);
+    regNumber tempReg = internalRegisters.Extract(cpBlkNode, RBM_ALLINT);
 
     if (size >= 2 * REGSIZE_BYTES)
     {
@@ -6399,7 +6399,7 @@ void CodeGen::genCall(GenTreeCall* call)
                 call->IsVirtualStubRelativeIndir() ? compiler->virtualStubParamInfo->GetReg() : REG_R2R_INDIRECT_PARAM;
             GetEmitter()->emitIns_R_R_I(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, callAddrReg, 0);
             // We will use this again when emitting the jump in genCallInstruction in the epilog
-            call->gtRsvdRegs |= genRegMask(tmpReg);
+            internalRegisters.Add(call, genRegMask(tmpReg));
         }
 #endif
 
