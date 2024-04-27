@@ -6058,7 +6058,7 @@ bool Compiler::lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(unsigned l
 
                 // Adjust for a potential split (we currently always expect all
                 // split structs to be fully prespilled, but this makes the
-                // general and matches the logic below).
+                // logic general and matches the logic below).
                 *offset -= segment.Offset;
                 return true;
             }
