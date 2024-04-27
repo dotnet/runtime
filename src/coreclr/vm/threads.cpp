@@ -7078,7 +7078,7 @@ void CommonTripThread()
     Thread  *thread = GetThread();
     thread->HandleThreadAbort ();
 
-    if (thread->CatchAtSafePoint())
+    if (thread->CatchAtSafePointOpportunistic())
     {
         _ASSERTE(!ThreadStore::HoldingThreadStore(thread));
 #ifdef FEATURE_HIJACK

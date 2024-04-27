@@ -328,14 +328,6 @@ bool Thread::IsGCSpecial()
     return IsStateSet(TSF_IsGcSpecialThread);
 }
 
-bool Thread::CatchAtSafePoint()
-{
-    // This is only called by the GC on a background GC worker thread that's explicitly interested in letting
-    // a foreground GC proceed at that point. So it's always safe to return true.
-    ASSERT(IsGCSpecial());
-    return true;
-}
-
 uint64_t Thread::GetPalThreadIdForLogging()
 {
     return m_threadId;
