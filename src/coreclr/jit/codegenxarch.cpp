@@ -2971,7 +2971,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     }
 
     // We should not have any temp registers at this point.
-    assert(internalRegisters.Count(tree)  == 0);
+    assert(internalRegisters.Count(tree) == 0);
 
     if (compiler->info.compInitMem)
     {

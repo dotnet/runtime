@@ -1187,7 +1187,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         if (intrin.op1->OperIsLocal())
                         {
                             unsigned varNum = intrin.op1->AsLclVarCommon()->GetLclNum();
-                            baseReg = internalRegisters.Extract(node);
+                            baseReg         = internalRegisters.Extract(node);
 
                             // Load the address of varNum
                             GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, baseReg, varNum, 0);

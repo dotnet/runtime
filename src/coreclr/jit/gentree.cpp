@@ -27733,10 +27733,10 @@ regMaskTP ReturnTypeDesc::GetABIReturnRegs(CorInfoCallConvExtension callConv) co
 //// Return Value:
 ////    Count of available temporary registers in given set.
 ////
-//unsigned GenTree::AvailableTempRegCount(regMaskTP mask /* = (regMaskTP)-1 */) const
+// unsigned GenTree::AvailableTempRegCount(regMaskTP mask /* = (regMaskTP)-1 */) const
 //{
-//    return genCountBits(gtRsvdRegs & mask);
-//}
+//     return genCountBits(gtRsvdRegs & mask);
+// }
 //
 ////------------------------------------------------------------------------
 //// GetSingleTempReg: There is expected to be exactly one available temporary register
@@ -27750,14 +27750,14 @@ regMaskTP ReturnTypeDesc::GetABIReturnRegs(CorInfoCallConvExtension callConv) co
 //// Return Value:
 ////    Available temporary register in given mask.
 ////
-//regNumber GenTree::GetSingleTempReg(regMaskTP mask /* = (regMaskTP)-1 */)
+// regNumber GenTree::GetSingleTempReg(regMaskTP mask /* = (regMaskTP)-1 */)
 //{
-//    regMaskTP availableSet = gtRsvdRegs & mask;
-//    assert(genCountBits(availableSet) == 1);
-//    regNumber tempReg = genRegNumFromMask(availableSet);
-//    INDEBUG(gtRsvdRegs &= ~availableSet;) // Remove the register from the set, so it can't be used again.
-//    return tempReg;
-//}
+//     regMaskTP availableSet = gtRsvdRegs & mask;
+//     assert(genCountBits(availableSet) == 1);
+//     regNumber tempReg = genRegNumFromMask(availableSet);
+//     INDEBUG(gtRsvdRegs &= ~availableSet;) // Remove the register from the set, so it can't be used again.
+//     return tempReg;
+// }
 //
 ////------------------------------------------------------------------------
 //// ExtractTempReg: Find the lowest number temporary register from the gtRsvdRegs set
@@ -27771,24 +27771,24 @@ regMaskTP ReturnTypeDesc::GetABIReturnRegs(CorInfoCallConvExtension callConv) co
 //// Return Value:
 ////    Available temporary register in given mask.
 ////
-//regNumber GenTree::ExtractTempReg(regMaskTP mask /* = (regMaskTP)-1 */)
+// regNumber GenTree::ExtractTempReg(regMaskTP mask /* = (regMaskTP)-1 */)
 //{
-//    regMaskTP availableSet = gtRsvdRegs & mask;
-//    assert(genCountBits(availableSet) >= 1);
-//    regNumber tempReg = genFirstRegNumFromMask(availableSet);
-//    gtRsvdRegs ^= genRegMask(tempReg);
-//    return tempReg;
-//}
+//     regMaskTP availableSet = gtRsvdRegs & mask;
+//     assert(genCountBits(availableSet) >= 1);
+//     regNumber tempReg = genFirstRegNumFromMask(availableSet);
+//     gtRsvdRegs ^= genRegMask(tempReg);
+//     return tempReg;
+// }
 //
 //------------------------------------------------------------------------
-// GetNum: Get the SSA number for a given field.
+//  GetNum: Get the SSA number for a given field.
 //
-// Arguments:
-//    compiler - The Compiler instance
-//    index    - The field index
+//  Arguments:
+//     compiler - The Compiler instance
+//     index    - The field index
 //
-// Return Value:
-//    The SSA number corresponding to the field at "index".
+//  Return Value:
+//     The SSA number corresponding to the field at "index".
 //
 unsigned SsaNumInfo::GetNum(Compiler* compiler, unsigned index) const
 {

@@ -137,7 +137,6 @@ unsigned NodeInternalRegisters::Count(GenTree* tree, regMaskTP mask)
     return genCountBits(*regs & mask);
 }
 
-
 // CodeGen constructor
 CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
     : gcInfo(theCompiler)

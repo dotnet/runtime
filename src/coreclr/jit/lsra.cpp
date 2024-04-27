@@ -1428,13 +1428,13 @@ PhaseStatus LinearScan::doLinearScan()
     }
     compiler->EndPhase(PHASE_LINEAR_SCAN_RESOLVE);
 
-    //for (BasicBlock* block : compiler->Blocks())
+    // for (BasicBlock* block : compiler->Blocks())
     //{
-    //    for (GenTree* node : LIR::AsRange(block))
-    //    {
-    //        static const unsigned s_buckets[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 0 };
-    //        static Histogram s_numInternalTemps(s_buckets);
-    //        static DumpOnShutdown s_d("Num internal temps", &s_numInternalTemps);
+    //     for (GenTree* node : LIR::AsRange(block))
+    //     {
+    //         static const unsigned s_buckets[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 0 };
+    //         static Histogram s_numInternalTemps(s_buckets);
+    //         static DumpOnShutdown s_d("Num internal temps", &s_numInternalTemps);
 
     //        s_numInternalTemps.record(genCountBits(compiler->codeGen->internalRegisters.GetAll(node)));
     //    }

@@ -2225,7 +2225,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             regNumber op2Reg       = op2->GetRegNum();
             regNumber addrBaseReg  = REG_NA;
             regNumber addrIndexReg = REG_NA;
-            regNumber maskReg = internalRegisters.Extract(node, RBM_ALLFLOAT);
+            regNumber maskReg      = internalRegisters.Extract(node, RBM_ALLFLOAT);
 
             if (numArgs == 5)
             {
