@@ -8057,7 +8057,7 @@ BOOL Debugger::ShouldSendCustomNotification(DomainAssembly *pAssembly, mdTypeDef
 
     Module *pModule = pAssembly->GetModule();
     TypeInModule tim(pModule, typeDef);
-    return m_pCustomNotificationTable->Lookup(tim) != NULL;
+    return !(m_pCustomNotificationTable->Lookup(tim).IsNull());
 }
 
 // Actually send the catch handler found event.
@@ -12455,18 +12455,20 @@ HRESULT Debugger::UpdateCustomNotificationTable(Module *pModule, mdTypeDef class
     TypeInModule tim(pModule, classToken);
     if (enabled)
     {
-        if (m_pCustomNotificationTable->Lookup(tim) == NULL)
+        if (m_pCustomNotificationTable->Lookup(tim).IsNull())
         {
             m_pCustomNotificationTable->Add(tim);
         }
     }
     else
     {
-        if (m_pCustomNotificationTable->Lookup(tim) != NULL)
+        if (!(m_pCustomNotificationTable->Lookup(tim).IsNull()))
         {
             m_pCustomNotificationTable->Remove(tim);
         }
     }
+
+    return S_OK;
 }
 
 HRESULT Debugger::UpdateForceCatchHandlerFoundTable(BOOL enableEvents, OBJECTREF exObj, AppDomain *pAppDomain)

@@ -597,24 +597,24 @@ private:
 
 public:
 
-    bool operator ==(const MethodInModule& other) const
+    bool operator ==(const TypeInModule& other) const
     {
         return m_module == other.m_module && m_typeDef == other.m_typeDef;
     }
 
-    bool operator !=(const MethodInModule& other) const
+    bool operator !=(const TypeInModule& other) const
     {
         return !(*this == other);
     }
 
-    bool IsNull()
+    bool IsNull() const
     {
         return m_module == NULL && m_typeDef == 0;
     }
 
-    INT32 Hash()
+    INT32 Hash() const
     {
-        return m_module ^ m_typeDef;
+        return (INT32)((UINT_PTR)m_module ^ m_typeDef);
     }
 
     TypeInModule(Module * module, mdTypeDef typeDef)
@@ -630,7 +630,6 @@ public:
     }
 };
 
-}
 class EMPTY_BASES_DECL CustomNotificationSHashTraits : public DefaultSHashTraits<TypeInModule>
 {
     public:
@@ -644,7 +643,7 @@ class EMPTY_BASES_DECL CustomNotificationSHashTraits : public DefaultSHashTraits
         {
             return e == f;
         }
-        static OBJECTHANDLE GetKey(constTypeInModule &e)
+        static TypeInModule GetKey(const TypeInModule &e)
         {
             return e;
         }
@@ -667,7 +666,7 @@ class EMPTY_BASES_DECL CustomNotificationSHashTraits : public DefaultSHashTraits
         }
         static TypeInModule Deleted()
         {
-            TypeInModule tim((Module *)-1, -1)
+            TypeInModule tim((Module *)-1, -1);
             return tim;
         }
         static bool IsDeleted(const TypeInModule &e)
