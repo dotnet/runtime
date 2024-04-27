@@ -5950,9 +5950,9 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     // code in the callee to spill the argument registers as the very first
     // thing, and consider those to be actually passed by the caller. The
     // virtual 0 is actually below these prespills.
-    // TODO-Cleanup: Unify arm32 with everyone else. arm64/RISCV64/LA64 also
-    // needs a similar mechanism for split parameters, but they do not consider
-    // the "virtual 0" to be below the prespills, which simplifies things
+    // TODO-Cleanup: Unify arm32 with arm64. arm64 also needs a similar
+    // mechanism for split parameters in varargs, but it does not consider the
+    // "virtual 0" to be below the prespills, which simplifies things
     // considerably.
     regMaskTP prespilled = codeGen->regSet.rsMaskPreSpillRegs(true);
     JITDUMP("Prespill regs is ");
