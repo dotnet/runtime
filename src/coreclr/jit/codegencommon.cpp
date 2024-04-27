@@ -78,15 +78,8 @@ void NodeInternalRegisters::Add(GenTree* tree, regMaskTP regs)
 {
     assert(regs != RBM_NONE);
 
-    regMaskTP* result = m_table.LookupPointer(tree);
-    if (result == nullptr)
-    {
-        m_table.Set(tree, regs);
-    }
-    else
-    {
-        *result |= regs;
-    }
+    regMaskTP* result = m_table.LookupPointerOrAdd(tree, RBM_NONE);
+    *result |= regs;
 }
 
 //------------------------------------------------------------------------
