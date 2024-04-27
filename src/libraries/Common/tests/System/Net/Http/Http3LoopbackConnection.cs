@@ -190,10 +190,10 @@ namespace System.Net.Test.Common
         public async Task EstablishControlStreamAsync(SettingsEntry[] settingsEntries)
         {
             _output?.WriteLine($"{this} Establishing control stream");
-            _outboundControlStream = await OpenUnidirectionalStreamAsync();
+            _outboundControlStream = await OpenUnidirectionalStreamAsync().ConfigureAwait(false);
             _output?.WriteLine($"{this} {_outboundControlStream.Stream} Stream opened.");
-            await _outboundControlStream.SendUnidirectionalStreamTypeAsync(Http3LoopbackStream.ControlStream);
-            await _outboundControlStream.SendSettingsFrameAsync(settingsEntries);
+            await _outboundControlStream.SendUnidirectionalStreamTypeAsync(Http3LoopbackStream.ControlStream).ConfigureAwait(false);
+            await _outboundControlStream.SendSettingsFrameAsync(settingsEntries).ConfigureAwait(false);
         }
 
         public async Task DisposeCurrentStream()
