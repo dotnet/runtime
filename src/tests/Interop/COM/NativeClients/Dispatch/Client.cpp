@@ -11,6 +11,7 @@ void Validate_Float_In_ReturnAndUpdateByRef();
 void Validate_Double_In_ReturnAndUpdateByRef();
 void Validate_LCID_Marshaled();
 void Validate_Enumerator();
+void Validate_ParamCoerce();
 
 template<COINIT TM>
 struct ComInit
@@ -48,6 +49,7 @@ int __cdecl main()
         Validate_Double_In_ReturnAndUpdateByRef();
         Validate_LCID_Marshaled();
         Validate_Enumerator();
+        Validate_ParamCoerce();
     }
     catch (HRESULT hr)
     {
@@ -458,4 +460,53 @@ void Validate_Enumerator()
 
     ::printf(" -- Validate returned IEnumVARIANT\n");
     ValidateReturnedEnumerator(&result);
+}
+
+void Validate_ParamCoerce()
+{
+    HRESULT hr;
+
+    CoreShimComActivation csact{ W("NETServer"), W("DispatchCoerceTesting") };
+
+    ComSmartPtr<IDispatchCoerceTesting> dispatchCoerceTesting;
+    THROW_IF_FAILED(::CoCreateInstance(CLSID_DispatchCoerceTesting, nullptr, CLSCTX_INPROC, IID_IDispatchCoerceTesting, (void**)&dispatchCoerceTesting));
+
+    LPOLESTR numericMethodName = (LPOLESTR)W("ManagedArgument");
+    LCID lcid = MAKELCID(LANG_USER_DEFAULT, SORT_DEFAULT);
+    DISPID methodId;
+
+    ::wprintf(W("Invoke %s\n"), numericMethodName);
+    THROW_IF_FAILED(dispatchCoerceTesting->GetIDsOfNames(
+        IID_NULL,
+        &numericMethodName,
+        1,
+        lcid,
+        &methodId));
+    
+    {
+        DISPPARAMS params;
+        params.cArgs = 1;
+        params.rgvarg = new VARIANTARG[params.cArgs];
+        params.cNamedArgs = 0;
+        params.rgdispidNamedArgs = nullptr;
+
+        VARIANT result;
+
+        V_VT(&params.rgvarg[0]) = VT_I8;
+        V_I8(&params.rgvarg[0]) = 42;
+
+
+        THROW_IF_FAILED(dispatchCoerceTesting->Invoke(
+            methodId,
+            IID_NULL,
+            lcid,
+            DISPATCH_METHOD,
+            &params,
+            &result,
+            nullptr,
+            nullptr
+        ));
+
+        THROW_FAIL_IF_FALSE(V_I4(&result) == 42);
+    }
 }
