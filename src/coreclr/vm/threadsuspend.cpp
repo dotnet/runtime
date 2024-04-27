@@ -56,11 +56,6 @@ extern "C" void             RedirectedHandledJITCaseForGCStress_Stub(void);
 #endif // HAVE_GCCOVER && USE_REDIRECT_FOR_GCSTRESS
 #endif // TARGET_AMD64 || TARGET_ARM
 
-// Every PING_JIT_TIMEOUT ms, check to see if a thread in JITted code has wandered
-// into some fully interruptible code (or should have a different hijack to improve
-// our chances of snagging it at a safe spot).
-#define PING_JIT_TIMEOUT        1
-
 // When we find a thread in a spot that's not safe to abort -- how long to wait before
 // we try again.
 #define ABORT_POLL_TIMEOUT      10
