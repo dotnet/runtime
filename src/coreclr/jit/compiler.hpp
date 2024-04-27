@@ -705,8 +705,8 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func, const bool
 // VisitRegularSuccs: Visit regular successors of this block.
 //
 // Arguments:
-//   comp       - Compiler instance
-//   func       - Callback
+//   comp - Compiler instance
+//   func - Callback
 //
 // Returns:
 //   Whether or not the visiting was aborted.
