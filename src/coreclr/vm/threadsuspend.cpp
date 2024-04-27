@@ -5699,9 +5699,10 @@ retry_for_debugger:
 
         LOG((LF_GCROOTS | LF_GC | LF_CORDB, LL_INFO10, "The EE is free now...\n"));
 
-        // If someone's trying to suspent *this* thread, this is a good opportunity.
+        // If someone's trying to suspend *this* thread, this is a good opportunity.
         if (pCurThread && pCurThread->CatchAtSafePointOpportunistic())
         {
+
             pCurThread->PulseGCMode();  // Go suspend myself.
         }
         else
@@ -5807,7 +5808,8 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 
         frame.Push(pThread);
 
-        pThread->PulseGCMode();
+        pThread->EnablePreemptiveGC();
+        pThread->DisablePreemptiveGC();
 
         INSTALL_MANAGED_EXCEPTION_DISPATCHER;
         INSTALL_UNWIND_AND_CONTINUE_HANDLER;
