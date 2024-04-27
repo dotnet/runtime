@@ -475,36 +475,6 @@ private:
     PTR_NativeCodeVersionNode m_pFirstVersionNode;
 };
 
-class MethodDescVersioningStateHashTraits : public NoRemoveSHashTraits<DefaultSHashTraits<PTR_MethodDescVersioningState>>
-{
-public:
-    typedef typename DefaultSHashTraits<PTR_MethodDescVersioningState>::element_t element_t;
-    typedef typename DefaultSHashTraits<PTR_MethodDescVersioningState>::count_t count_t;
-
-    typedef const PTR_MethodDesc key_t;
-
-    static key_t GetKey(element_t e)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return e->GetMethodDesc();
-    }
-    static BOOL Equals(key_t k1, key_t k2)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return k1 == k2;
-    }
-    static count_t Hash(key_t k)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (count_t)dac_cast<TADDR>(k);
-    }
-
-    static element_t Null() { LIMITED_METHOD_CONTRACT; return dac_cast<PTR_MethodDescVersioningState>(nullptr); }
-    static bool IsNull(const element_t &e) { LIMITED_METHOD_CONTRACT; return e == NULL; }
-};
-
-typedef SHash<MethodDescVersioningStateHashTraits> MethodDescVersioningStateHash;
-
 class ILCodeVersioningState
 {
 public:
@@ -572,7 +542,7 @@ class CodeVersionManager
     friend class ILCodeVersion;
 
 public:
-    CodeVersionManager();
+    CodeVersionManager() = default;
 
     DWORD GetNonDefaultILVersionCount();
     ILCodeVersionCollection GetILCodeVersions(PTR_MethodDesc pMethod);
@@ -647,9 +617,6 @@ private:
 
     //Module,MethodDef -> ILCodeVersioningState
     ILCodeVersioningStateHash m_ilCodeVersioningStateMap;
-
-    //closed MethodDesc -> MethodDescVersioningState
-    MethodDescVersioningStateHash m_methodDescVersioningStateMap;
 
 private:
     static CrstStatic s_lock;

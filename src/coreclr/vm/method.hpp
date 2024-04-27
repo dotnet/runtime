@@ -35,7 +35,6 @@ class Dictionary;
 class GCCoverageInfo;
 class DynamicMethodDesc;
 class ReJitManager;
-class CodeVersionManager;
 class PrepareCodeConfig;
 
 typedef DPTR(FCallMethodDesc)        PTR_FCallMethodDesc;
@@ -159,6 +158,12 @@ enum MethodDescFlags
     mdfIsIntrinsic                      = 0x8000  // Jit may expand method as an intrinsic
 };
 
+struct MethodDescCodeData
+{
+    PTR_MethodDescVersioningState MDState;
+};
+using PTR_MethodDescCodeData = DPTR(MethodDescCodeData);
+
 // The size of this structure needs to be a multiple of MethodDesc::ALIGNMENT
 //
 // @GENERICS:
@@ -177,18 +182,6 @@ enum MethodDescFlags
 // It also knows how to get at its IL code (code:IMAGE_COR_ILMETHOD)
 class MethodDesc
 {
-    friend class EEClass;
-    friend class MethodTableBuilder;
-    friend class ArrayClass;
-    friend class NDirect;
-    friend class MethodDescChunk;
-    friend class InstantiatedMethodDesc;
-    friend class MethodImpl;
-    friend class CheckAsmOffsets;
-    friend class ClrDataAccess;
-
-    friend class MethodDescCallSite;
-
 public:
 
 #ifdef TARGET_64BIT
@@ -1624,6 +1617,7 @@ protected:
 
     WORD m_wSlotNumber; // The slot number of this MethodDesc in the vtable array.
     WORD m_wFlags; // See MethodDescFlags
+    PTR_MethodDescCodeData m_codeData;
 
 public:
 #ifdef DACCESS_COMPILE
@@ -1632,14 +1626,24 @@ public:
 
     BYTE GetMethodDescIndex()
     {
+        LIMITED_METHOD_CONTRACT;
         return m_methodIndex;
     }
 
     void SetMethodDescIndex(COUNT_T index)
     {
+        LIMITED_METHOD_CONTRACT;
         _ASSERTE(index <= 255);
         m_methodIndex = (BYTE)index;
     }
+
+#ifndef DACCESS_COMPILE
+    void AllocateCodeData(LoaderHeap* pHeap, AllocMemTracker* pamTracker);
+
+    bool SetMethodDescVersionState(PTR_MethodDescVersioningState state);
+#endif //!DACCESS_COMPILE
+
+    PTR_MethodDescVersioningState GetMethodDescVersionState();
 
 public:
     inline DWORD GetClassification() const
@@ -2108,7 +2112,6 @@ public:
 class MethodDescChunk
 {
     friend class MethodDesc;
-    friend class CheckAsmOffsets;
 
     enum {
         enum_flag_TokenRangeMask                           = 0x0FFF, // This must equal METHOD_TOKEN_RANGE_MASK calculated higher in this file
@@ -2411,9 +2414,7 @@ typedef DPTR(DynamicResolver)         PTR_DynamicResolver;
 class DynamicMethodDesc : public StoredSigMethodDesc
 {
     friend class ILStubCache;
-    friend class ILStubState;
     friend class DynamicMethodTable;
-    friend class MethodDesc;
 
 protected:
     PTR_CUTF8           m_pszMethodName;

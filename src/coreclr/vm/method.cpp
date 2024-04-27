@@ -209,8 +209,36 @@ LoaderAllocator * MethodDesc::GetDomainSpecificLoaderAllocator()
 
 }
 
+void MethodDesc::AllocateCodeData(LoaderHeap* pHeap, AllocMemTracker* pamTracker)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        PRECONDITION(pHeap != NULL);
+        PRECONDITION(pamTracker != NULL);
+    }
+    CONTRACTL_END;
+
+    m_codeData = (MethodDescCodeData*)pamTracker->Track(
+        pHeap->AllocMem(S_SIZE_T(sizeof(MethodDescCodeData))));
+}
+
+bool MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState state)
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(m_codeData != NULL);
+    return InterlockedCompareExchangeT(&m_codeData->MDState, state, NULL) == NULL;
+}
+
 #endif //!DACCESS_COMPILE
 
+PTR_MethodDescVersioningState MethodDesc::GetMethodDescVersionState()
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(m_codeData != NULL);
+    return m_codeData->MDState;
+}
 
 //*******************************************************************************
 LPCUTF8 MethodDesc::GetNameThrowing()
@@ -1719,6 +1747,7 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
         {
             pMD->SetChunkIndex(pChunk);
             pMD->SetMethodDescIndex(i);
+            pMD->AllocateCodeData(pHeap, pamTracker);
 
             pMD->SetClassification(classification);
             if (fNonVtableSlot)
