@@ -133,7 +133,7 @@ namespace System.Globalization
                     // .000001  normalize to 10 ticks
                     // .1       normalize to 1,000,000 ticks
 
-                    _num *= (int)Pow10(MaxFractionDigits - totalDigitsCount);
+                    _num *= Pow10(MaxFractionDigits - totalDigitsCount);
                     return true;
                 }
 
@@ -564,20 +564,22 @@ namespace System.Globalization
             }
         }
 
-        internal static long Pow10(int pow)
+        internal static int Pow10(int pow)
         {
-            return pow switch
-            {
-                0 => 1,
-                1 => 10,
-                2 => 100,
-                3 => 1000,
-                4 => 10000,
-                5 => 100000,
-                6 => 1000000,
-                7 => 10000000,
-                _ => (long)Math.Pow(10, pow),
-            };
+            Debug.Assert(pow >= 0);
+            Debug.Assert(pow <= MaxFractionDigits);
+            ReadOnlySpan<int> powersOfTen = [
+                1,
+                10,
+                100,
+                1000,
+                10000,
+                100000,
+                1000000,
+                10000000,
+            ];
+            Debug.Assert(powersOfTen.Length == MaxFractionDigits + 1);
+            return powersOfTen[pow];
         }
 
         private static bool TryTimeToTicks(bool positive, TimeSpanToken days, TimeSpanToken hours, TimeSpanToken minutes, TimeSpanToken seconds, TimeSpanToken fraction, out long result)

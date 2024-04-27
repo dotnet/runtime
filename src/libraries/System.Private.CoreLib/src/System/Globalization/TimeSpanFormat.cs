@@ -356,7 +356,7 @@ namespace System.Globalization
                         }
 
                         tmp = fraction;
-                        tmp /= (int)TimeSpanParse.Pow10(DateTimeFormat.MaxSecondsFractionDigits - tokenLen);
+                        tmp /= TimeSpanParse.Pow10(DateTimeFormat.MaxSecondsFractionDigits - tokenLen);
                         DateTimeFormat.FormatFraction(ref result, tmp, DateTimeFormat.fixedNumberFormats[tokenLen - 1]);
                         break;
                     case 'F':
@@ -370,7 +370,7 @@ namespace System.Globalization
                         }
 
                         tmp = fraction;
-                        tmp /= (int)TimeSpanParse.Pow10(DateTimeFormat.MaxSecondsFractionDigits - tokenLen);
+                        tmp /= TimeSpanParse.Pow10(DateTimeFormat.MaxSecondsFractionDigits - tokenLen);
                         int effectiveDigits = tokenLen;
                         while (effectiveDigits > 0)
                         {
