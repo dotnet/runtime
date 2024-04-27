@@ -12111,7 +12111,8 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
             PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
             uint32_t *                 pCountSchemaItems,          // pointer to the count schema items
             uint8_t **                 pInstrumentationData,       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
-            PgoSource *                pPgoSource                  // source of pgo data
+            PgoSource *                pPgoSource,                 // source of pgo data
+            bool *                     pDynamicPgo                 // true if Dynamic PGO is enabled
             )
 {
     CONTRACTL {
@@ -12124,6 +12125,7 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
     *pCountSchemaItems = 0;
     *pInstrumentationData = NULL;
     *pPgoSource = PgoSource::Unknown;
+    *pDynamicPgo = g_pConfig->TieredPGO();
 
     JIT_TO_EE_TRANSITION();
 
@@ -14417,7 +14419,8 @@ HRESULT CEEInfo::getPgoInstrumentationResults(
             PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
             uint32_t *                 pCountSchemaItems,          // pointer to the count schema items
             uint8_t **                 pInstrumentationData,       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
-            PgoSource *                pPgoSource
+            PgoSource *                pPgoSource,   
+            bool *                     pDynamicPgo
             )
 {
     LIMITED_METHOD_CONTRACT;

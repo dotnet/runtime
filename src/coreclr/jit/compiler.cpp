@@ -2791,11 +2791,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     fgPgoHaveWeights = false;
     fgPgoSynthesized = false;
     fgPgoConsistent  = false;
+    fgPgoDynamic     = false;
 
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
-        fgPgoQueryResult = info.compCompHnd->getPgoInstrumentationResults(info.compMethodHnd, &fgPgoSchema,
-                                                                          &fgPgoSchemaCount, &fgPgoData, &fgPgoSource);
+        fgPgoQueryResult =
+            info.compCompHnd->getPgoInstrumentationResults(info.compMethodHnd, &fgPgoSchema, &fgPgoSchemaCount,
+                                                           &fgPgoData, &fgPgoSource, &fgPgoDynamic);
 
         // a failed result that also has a non-NULL fgPgoSchema
         // indicates that the ILSize for the method no longer matches
@@ -2818,6 +2820,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             fgPgoData        = nullptr;
             fgPgoSchema      = nullptr;
             fgPgoDisabled    = true;
+            fgPgoDynamic     = false;
         }
 #ifdef DEBUG
         // Optionally, enable use of profile data for only some methods.
