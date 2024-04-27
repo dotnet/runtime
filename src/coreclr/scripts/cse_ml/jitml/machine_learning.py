@@ -17,11 +17,7 @@ class JitRLModel:
             raise ValueError(f"Unknown algorithm {algorithm}.  Must be one of: PPO, A2C, DQN")
 
         self.algorithm = algorithm
-
         self.model_path = model_path
-        if not os.path.exists(model_path):
-            os.makedirs(model_path, exist_ok=True)
-
         self.device = device
         self.ent_coef = ent_coef
         self.verbose = verbose
@@ -50,7 +46,7 @@ class JitRLModel:
     def train(self, core_root : str, mch : str, methods : List[MethodContext] = None,
               iterations = None, parallel = None):
         """Trains the model from scratch."""
-        model_dir = os.path.join(self.model_path, 'PPO')
+        model_dir = os.path.join(self.model_path)
         os.makedirs(model_dir, exist_ok=True)
 
         iterations = 100_000 if iterations is None else iterations
@@ -66,7 +62,6 @@ class JitRLModel:
         try:
             ml_model = self._create(env, tensorboard_log=os.path.join(model_dir, 'logs'))
             ml_model.learn(iterations, progress_bar=True)
-            ml_model.save(os.path.join(model_dir, 'last.zip'))
 
         finally:
             env.close()
