@@ -3666,15 +3666,17 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         if (callThroughIndirReg != REG_NA)
         {
             assert(call->IsR2ROrVirtualStubRelativeIndir());
-            regNumber targetAddrReg = internalRegisters.GetSingle(call);
+            regNumber targetAddrReg;
             // For fast tailcalls we have already loaded the call target when processing the call node.
             if (!call->IsFastTailCall())
             {
+                targetAddrReg = REG_LR;
                 GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), targetAddrReg,
                                           callThroughIndirReg);
             }
             else
             {
+                targetAddrReg = internalRegisters.GetSingle(call);
                 // Register where we save call address in should not be overridden by epilog.
                 assert((genRegMask(targetAddrReg) & (RBM_INT_CALLEE_TRASH & ~RBM_LR)) == genRegMask(targetAddrReg));
             }

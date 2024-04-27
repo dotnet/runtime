@@ -291,7 +291,7 @@ public:
             n = n->m_next;
         }
 
-        n = new (m_alloc) Node(m_table[index], k, defaultValue);
+        n              = new (m_alloc) Node(m_table[index], k, defaultValue);
         m_table[index] = n;
         m_tableCount++;
         return &n->m_val;
