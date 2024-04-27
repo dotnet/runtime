@@ -2108,6 +2108,48 @@ void Thread::RareDisablePreemptiveGC()
         goto Exit;
     }
 
+#if defined(STRESS_HEAP) && defined(_DEBUG)
+    if (!IsDetached())
+    {
+        PerformPreemptiveGC();
+    }
+#endif
+
+    // TODO: VS can we actually hold TSL here?
+    if (m_State & TS_DebugSuspendPending)
+    {
+        if (!ThreadStore::HoldingThreadStore(this))
+        {
+    #ifdef FEATURE_HIJACK
+            // TODO: VS can we have hijacks here? why do we remove them?
+            // Remove any hijacks we might have.
+            UnhijackThread();
+    #endif // FEATURE_HIJACK
+
+            // If GC suspend is in progress we will block while switching to coop mode.
+            // But if we are doing a non-GC suspend, we need to block now.
+            // Give the debugger precedence over user suspensions:
+            while ((m_State & TS_DebugSuspendPending) && !IsInForbidSuspendForDebuggerRegion())
+            {
+    #ifdef DEBUGGING_SUPPORTED
+                // We don't notify the debugger that this thread is now suspended. We'll just
+                // let the debugger's helper thread sweep and pick it up.
+                // We also never take the TSL in here either.
+                // Life's much simpler this way...
+    #endif // DEBUGGING_SUPPORTED
+
+    #ifdef LOGGING
+                {
+                    LOG((LF_CORDB, LL_INFO1000, "[0x%x] SUSPEND: debug suspended while switching to coop mode.\n", GetThreadId()));
+                }
+    #endif
+                // unsets TS_DebugSuspendPending | TS_SyncSuspended
+                WaitSuspendEvents();
+            }
+        }
+    }
+
+
     // Note IsGCInProgress is also true for say Pause (anywhere SuspendEE happens) and GCThread is the
     // thread that did the Pause. While in Pause if another thread attempts Rev/Pinvoke it should get inside the following and
     // block until resume
@@ -2186,6 +2228,7 @@ void Thread::RareDisablePreemptiveGC()
                 break;
             }
 
+            // TODO: VS why is this? Have we not just pulsed through GC?
             __SwitchToThread(0, ++dwSwitchCount);
         }
         STRESS_LOG0(LF_SYNC, LL_INFO1000, "RareDisablePreemptiveGC: leaving\n");
@@ -2271,7 +2314,7 @@ void Thread::PreWorkForThreadAbort()
 
 #if defined(STRESS_HEAP) && defined(_DEBUG)
 
-// This function is for GC stress testing.  Before we enable preemptive GC, let us do a GC
+// This function is for GC stress testing.  Before we disable preemptive GC, let us do a GC
 // because GC may happen while the thread is in preemptive GC mode.
 void Thread::PerformPreemptiveGC()
 {
@@ -2328,76 +2371,6 @@ void Thread::PerformPreemptiveGC()
     m_GCOnTransitionsOK = TRUE;
 }
 #endif  // STRESS_HEAP && DEBUG
-
-// To leave cooperative mode and enter preemptive mode, if a GC is in progress, we
-// no longer care to suspend this thread.  But if we are trying to suspend the thread
-// for other reasons (e.g. Thread.Suspend()), now is a good time.
-//
-// Note that it is possible for an N/Direct call to leave the EE without explicitly
-// enabling preemptive GC.
-void Thread::RareEnablePreemptiveGC()
-{
-    CONTRACTL {
-        NOTHROW;
-        DISABLED(GC_TRIGGERS); // I think this is actually wrong: prevents a p->c->p mode switch inside a NOTRIGGER region.
-    }
-    CONTRACTL_END;
-
-    // @todo -  Needs a hard SO probe
-    CONTRACT_VIOLATION(GCViolation|FaultViolation);
-
-    // If we have already received our PROCESS_DETACH during shutdown, there is only one thread in the
-    // process and no coordination is necessary.
-    if (IsAtProcessExit())
-        return;
-
-    _ASSERTE (!m_fPreemptiveGCDisabled);
-
-    // holding a spin lock in coop mode and transit to preemp mode will cause deadlock on GC
-    _ASSERTE ((m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
-
-    _ASSERTE(!MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread() || IsInForbidSuspendForDebuggerRegion());
-
-#if defined(STRESS_HEAP) && defined(_DEBUG)
-    if (!IsDetached())
-        PerformPreemptiveGC();
-#endif
-
-    STRESS_LOG1(LF_SYNC, LL_INFO100000, "RareEnablePreemptiveGC: entering. Thread state = %x\n", m_State.Load());
-    if (!ThreadStore::HoldingThreadStore(this))
-    {
-#ifdef FEATURE_HIJACK
-        // Remove any hijacks we might have.
-        UnhijackThread();
-#endif // FEATURE_HIJACK
-
-        // for GC, the fact that we are leaving the EE means that it no longer needs to
-        // suspend us.  But if we are doing a non-GC suspend, we need to block now.
-        // Give the debugger precedence over user suspensions:
-        while ((m_State & TS_DebugSuspendPending) && !IsInForbidSuspendForDebuggerRegion())
-        {
-
-#ifdef DEBUGGING_SUPPORTED
-            // We don't notify the debugger that this thread is now suspended. We'll just
-            // let the debugger's helper thread sweep and pick it up.
-            // We also never take the TSL in here either.
-            // Life's much simpler this way...
-
-
-#endif // DEBUGGING_SUPPORTED
-
-#ifdef LOGGING
-            {
-                LOG((LF_CORDB, LL_INFO1000, "[0x%x] SUSPEND: suspended while enabling gc.\n", GetThreadId()));
-            }
-#endif
-
-            WaitSuspendEvents(); // sets bits, too
-
-        }
-    }
-    STRESS_LOG0(LF_SYNC, LL_INFO100000, "RareEnablePreemptiveGC: leaving.\n");
-}
 
 // Called when we are passing through a safe point in CommonTripThread or
 // HandleSuspensionForInterruptedThread. Do the right thing with this thread,

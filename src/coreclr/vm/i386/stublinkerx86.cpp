@@ -45,8 +45,6 @@
 
 
 #ifndef DACCESS_COMPILE
-
-extern "C" VOID __cdecl StubRareEnable(Thread *pThread);
 #ifdef FEATURE_COMINTEROP
 extern "C" HRESULT __cdecl StubRareDisableHR(Thread *pThread);
 #endif // FEATURE_COMINTEROP
@@ -2615,6 +2613,8 @@ void StubLinkerCPU::EmitComMethodStubEpilog(TADDR pFrameVptr,
         PRECONDITION(rgRareLabels[0] != NULL && rgRareLabels[1] != NULL && rgRareLabels[2] != NULL);
         PRECONDITION(rgRejoinLabels != NULL);
         PRECONDITION(rgRejoinLabels[0] != NULL && rgRejoinLabels[1] != NULL && rgRejoinLabels[2] != NULL);
+        PRECONDITION(4 == sizeof( ((Thread*)0)->m_State ));
+        PRECONDITION(4 == sizeof( ((Thread*)0)->m_fPreemptiveGCDisabled ));
     }
     CONTRACTL_END;
 
@@ -2623,11 +2623,9 @@ void StubLinkerCPU::EmitComMethodStubEpilog(TADDR pFrameVptr,
     // mov [ebx + Thread.GetFrame()], edi  ;; restore previous frame
     X86EmitIndexRegStore(kEBX, Thread::GetOffsetOfCurrentFrame(), kEDI);
 
-    //-----------------------------------------------------------------------
-    // Generate the inline part of disabling preemptive GC
-    //-----------------------------------------------------------------------
-    EmitEnable(rgRareLabels[2]); // rare gc
-    EmitLabel(rgRejoinLabels[2]);        // rejoin for rare gc
+    // move byte ptr [ebx + Thread.m_fPreemptiveGCDisabled],0
+    X86EmitOffsetModRM(0xc6, (X86Reg)0, kEBX, Thread::GetOffsetOfGCFlag());
+    Emit8(0);
 
     // add esp, popstack
     X86EmitAddEsp(sizeof(GSCookie) + UnmanagedToManagedFrame::GetOffsetOfCalleeSavedRegisters());
@@ -2650,12 +2648,6 @@ void StubLinkerCPU::EmitComMethodStubEpilog(TADDR pFrameVptr,
     // indicates that no more code needs to be disassembled, if the stack-walker
     // keeps on going past the previous "jmp eax".
     X86EmitReturn(0);
-
-    //-----------------------------------------------------------------------
-    // The out-of-line portion of enabling preemptive GC - rarely executed
-    //-----------------------------------------------------------------------
-    EmitLabel(rgRareLabels[2]);  // label for rare enable gc
-    EmitRareEnable(rgRejoinLabels[2]); // emit rare enable gc
 
     //-----------------------------------------------------------------------
     // The out-of-line portion of disabling preemptive GC - rarely executed
@@ -2736,6 +2728,8 @@ void StubLinkerCPU::EmitSharedComMethodStubEpilog(TADDR pFrameVptr,
         PRECONDITION(rgRareLabels[0] != NULL && rgRareLabels[1] != NULL && rgRareLabels[2] != NULL);
         PRECONDITION(rgRejoinLabels != NULL);
         PRECONDITION(rgRejoinLabels[0] != NULL && rgRejoinLabels[1] != NULL && rgRejoinLabels[2] != NULL);
+        PRECONDITION(4 == sizeof( ((Thread*)0)->m_State ));
+        PRECONDITION(4 == sizeof( ((Thread*)0)->m_fPreemptiveGCDisabled ));
     }
     CONTRACTL_END;
 
@@ -2748,12 +2742,13 @@ void StubLinkerCPU::EmitSharedComMethodStubEpilog(TADDR pFrameVptr,
     X86EmitIndexRegStore(kEBX, Thread::GetOffsetOfCurrentFrame(), kEDI);
 
     //-----------------------------------------------------------------------
-    // Generate the inline part of enabling preemptive GC
+    // Generate enabling preemptive GC
     //-----------------------------------------------------------------------
     EmitLabel(NoEntryLabel);    // need to enable preemp mode even when we fail the disable as rare disable will return in coop mode
 
-    EmitEnable(rgRareLabels[2]);     // rare enable gc
-    EmitLabel(rgRejoinLabels[2]);        // rejoin for rare enable gc
+    // move byte ptr [ebx + Thread.m_fPreemptiveGCDisabled],0
+    X86EmitOffsetModRM(0xc6, (X86Reg)0, kEBX, Thread::GetOffsetOfGCFlag());
+    Emit8(0);
 
 #ifdef PROFILING_SUPPORTED
     // If profiling is active, emit code to notify profiler of transition
@@ -2799,12 +2794,6 @@ void StubLinkerCPU::EmitSharedComMethodStubEpilog(TADDR pFrameVptr,
     // indicates that no more code needs to be disassembled, if the stack-walker
     // keeps on going past the previous "jmp ecx".
     X86EmitReturn(0);
-
-    //-----------------------------------------------------------------------
-    // The out-of-line portion of enabling preemptive GC - rarely executed
-    //-----------------------------------------------------------------------
-    EmitLabel(rgRareLabels[2]);  // label for rare enable gc
-    EmitRareEnable(rgRejoinLabels[2]); // emit rare enable gc
 
     //-----------------------------------------------------------------------
     // The out-of-line portion of disabling preemptive GC - rarely executed
@@ -3334,77 +3323,6 @@ VOID StubLinkerCPU::EmitUnwindInfoCheckSubfunction()
 
 
 #if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
-
-//-----------------------------------------------------------------------
-// Generates the inline portion of the code to enable preemptive GC. Hopefully,
-// the inline code is all that will execute most of the time. If this code
-// path is entered at certain times, however, it will need to jump out to
-// a separate out-of-line path which is more expensive. The "pForwardRef"
-// label indicates the start of the out-of-line path.
-//
-// Assumptions:
-//      ebx = Thread
-// Preserves
-//      all registers except ecx.
-//
-//-----------------------------------------------------------------------
-VOID StubLinkerCPU::EmitEnable(CodeLabel *pForwardRef)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-
-        PRECONDITION(4 == sizeof( ((Thread*)0)->m_State ));
-        PRECONDITION(4 == sizeof( ((Thread*)0)->m_fPreemptiveGCDisabled ));
-    }
-    CONTRACTL_END;
-
-    // move byte ptr [ebx + Thread.m_fPreemptiveGCDisabled],0
-    X86EmitOffsetModRM(0xc6, (X86Reg)0, kEBX, Thread::GetOffsetOfGCFlag());
-    Emit8(0);
-
-    _ASSERTE(FitsInI1(Thread::TS_CatchAtSafePoint));
-
-    // test byte ptr [ebx + Thread.m_State], TS_CatchAtSafePoint
-    X86EmitOffsetModRM(0xf6, (X86Reg)0, kEBX, Thread::GetOffsetOfState());
-    Emit8(Thread::TS_CatchAtSafePoint);
-
-    // jnz RarePath
-    X86EmitCondJump(pForwardRef, X86CondCode::kJNZ);
-
-#ifdef _DEBUG
-    X86EmitDebugTrashReg(kECX);
-#endif
-
-}
-
-
-//-----------------------------------------------------------------------
-// Generates the out-of-line portion of the code to enable preemptive GC.
-// After the work is done, the code jumps back to the "pRejoinPoint"
-// which should be emitted right after the inline part is generated.
-//
-// Assumptions:
-//      ebx = Thread
-// Preserves
-//      all registers except ecx.
-//
-//-----------------------------------------------------------------------
-VOID StubLinkerCPU::EmitRareEnable(CodeLabel *pRejoinPoint)
-{
-    STANDARD_VM_CONTRACT;
-
-    X86EmitCall(NewExternalCodeLabel((LPVOID) StubRareEnable), 0);
-#ifdef _DEBUG
-    X86EmitDebugTrashReg(kECX);
-#endif
-    if (pRejoinPoint)
-    {
-        X86EmitNearJump(pRejoinPoint);
-    }
-
-}
-
 
 //-----------------------------------------------------------------------
 // Generates the inline portion of the code to disable preemptive GC. Hopefully,
