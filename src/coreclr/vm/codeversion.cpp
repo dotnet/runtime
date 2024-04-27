@@ -1306,9 +1306,6 @@ void ILCodeVersioningState::LinkILCodeVersionNode(ILCodeVersionNode* pILCodeVers
 bool CodeVersionManager::s_initialNativeCodeVersionMayNotBeTheDefaultNativeCodeVersion = false;
 #endif
 
-CodeVersionManager::CodeVersionManager()
-{}
-
 PTR_ILCodeVersioningState CodeVersionManager::GetILCodeVersioningState(PTR_Module pModule, mdMethodDef methodDef) const
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -1319,7 +1316,7 @@ PTR_ILCodeVersioningState CodeVersionManager::GetILCodeVersioningState(PTR_Modul
 PTR_MethodDescVersioningState CodeVersionManager::GetMethodDescVersioningState(PTR_MethodDesc pClosedMethodDesc) const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return m_methodDescVersioningStateMap.Lookup(pClosedMethodDesc);
+    return pClosedMethodDesc->GetMethodDescVersionState();
 }
 
 #ifndef DACCESS_COMPILE
@@ -1354,28 +1351,25 @@ HRESULT CodeVersionManager::GetOrCreateILCodeVersioningState(Module* pModule, md
 
 HRESULT CodeVersionManager::GetOrCreateMethodDescVersioningState(MethodDesc* pMethod, MethodDescVersioningState** ppMethodVersioningState)
 {
-    LIMITED_METHOD_CONTRACT;
-    HRESULT hr = S_OK;
-    MethodDescVersioningState* pMethodVersioningState = m_methodDescVersioningStateMap.Lookup(pMethod);
+    CONTRACTL
+    {
+        NOTHROW;
+        PRECONDITION(pMethod != NULL);
+        PRECONDITION(ppMethodVersioningState != NULL);
+    }
+    CONTRACTL_END;
+
+    MethodDescVersioningState* pMethodVersioningState = pMethod->GetMethodDescVersionState();
     if (pMethodVersioningState == NULL)
     {
         pMethodVersioningState = new (nothrow) MethodDescVersioningState(pMethod);
         if (pMethodVersioningState == NULL)
-        {
             return E_OUTOFMEMORY;
-        }
-        EX_TRY
-        {
-            // This throws when out of memory, but remains internally
-            // consistent (without adding the new element)
-            m_methodDescVersioningStateMap.Add(pMethodVersioningState);
-        }
-        EX_CATCH_HRESULT(hr);
-        if (FAILED(hr))
-        {
+
+        if (!pMethod->SetMethodDescVersionState(pMethodVersioningState))
             delete pMethodVersioningState;
-            return hr;
-        }
+
+        pMethodVersioningState = pMethod->GetMethodDescVersionState();
     }
     *ppMethodVersioningState = pMethodVersioningState;
     return S_OK;
