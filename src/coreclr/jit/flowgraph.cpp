@@ -4099,7 +4099,10 @@ FlowGraphDfsTree* Compiler::fgComputeDfs()
         }
     };
 
-    unsigned numBlocks = fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge), useProfile>(visitPreorder, visitPostorder, visitEdge);
+    unsigned numBlocks =
+        fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge), useProfile>(visitPreorder,
+                                                                                                     visitPostorder,
+                                                                                                     visitEdge);
     return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, numBlocks, hasCycle);
 }
 

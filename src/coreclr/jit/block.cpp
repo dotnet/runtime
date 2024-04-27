@@ -145,7 +145,9 @@ AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block
     : m_block(block)
 {
     m_numSuccs = 0;
-    block->VisitAllSuccs(comp, [this](BasicBlock* succ) {
+    block->VisitAllSuccs(
+        comp,
+        [this](BasicBlock* succ) {
         if (m_numSuccs < ArrLen(m_successors))
         {
             m_successors[m_numSuccs] = succ;
@@ -153,18 +155,22 @@ AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block
 
         m_numSuccs++;
         return BasicBlockVisit::Continue;
-    }, useProfile);
+    },
+        useProfile);
 
     if (m_numSuccs > ArrLen(m_successors))
     {
         m_pSuccessors = new (comp, CMK_BasicBlock) BasicBlock*[m_numSuccs];
 
         unsigned numSuccs = 0;
-        block->VisitAllSuccs(comp, [this, &numSuccs](BasicBlock* succ) {
+        block->VisitAllSuccs(
+            comp,
+            [this, &numSuccs](BasicBlock* succ) {
             assert(numSuccs < m_numSuccs);
             m_pSuccessors[numSuccs++] = succ;
             return BasicBlockVisit::Continue;
-        }, useProfile);
+        },
+            useProfile);
 
         assert(numSuccs == m_numSuccs);
     }

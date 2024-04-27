@@ -4610,7 +4610,7 @@ void Compiler::fgDoReversePostOrderLayout()
     //
     for (BlockToBlockMap::Node* const iter : BlockToBlockMap::KeyValueIteration(&callFinallyPairs))
     {
-        BasicBlock* const callFinally = iter->GetKey();
+        BasicBlock* const callFinally    = iter->GetKey();
         BasicBlock* const callFinallyRet = iter->GetValue();
         fgUnlinkBlock(callFinallyRet);
         fgInsertBBafter(callFinally, callFinallyRet);
@@ -4620,16 +4620,16 @@ void Compiler::fgDoReversePostOrderLayout()
     // (for example, by pushing throw blocks unreachable via normal flow to the end of the region).
     // First, determine the new EH region ends.
     //
-    BasicBlock** const tryRegionEnds = new (this, CMK_Generic) BasicBlock* [compHndBBtabCount] {};
-    bool* const tryRegionInMainBody = new (this, CMK_Generic) bool[compHndBBtabCount] {};
-    BasicBlock** const hndRegionEnds = new (this, CMK_Generic) BasicBlock* [compHndBBtabCount] {};
+    BasicBlock** const tryRegionEnds       = new (this, CMK_Generic) BasicBlock* [compHndBBtabCount] {};
+    bool* const        tryRegionInMainBody = new (this, CMK_Generic) bool[compHndBBtabCount]{};
+    BasicBlock** const hndRegionEnds       = new (this, CMK_Generic) BasicBlock* [compHndBBtabCount] {};
 
     for (BasicBlock* const block : Blocks(fgFirstBB, fgLastBBInMainFunction()))
     {
         if (block->hasTryIndex())
         {
-            const unsigned tryIndex = block->getTryIndex();
-            tryRegionEnds[tryIndex] = block;
+            const unsigned tryIndex       = block->getTryIndex();
+            tryRegionEnds[tryIndex]       = block;
             tryRegionInMainBody[tryIndex] = true;
         }
 
@@ -4697,12 +4697,14 @@ void Compiler::fgDoReversePostOrderLayout()
     //
     for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
     {
+        // The end of each handler region should have been visited by iterating the blocklist above
+        //
         BasicBlock* const hndEnd = hndRegionEnds[XTnum];
         assert(hndEnd != nullptr);
 
         // Update the end pointer of this handler region to the new last block
         //
-        HBtab->ebdHndLast = hndEnd;
+        HBtab->ebdHndLast                = hndEnd;
         const unsigned enclosingHndIndex = HBtab->ebdEnclosingHndIndex;
 
         // If this handler region is nested in another one, we might need to update its enclosing region's end block

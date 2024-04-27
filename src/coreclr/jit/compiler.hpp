@@ -4765,10 +4765,7 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
 // Returns:
 //   Number of blocks visited.
 //
-template <typename VisitPreorder,
-          typename VisitPostorder,
-          typename VisitEdge,
-          const bool useProfile /* = false */>
+template <typename VisitPreorder, typename VisitPostorder, typename VisitEdge, const bool useProfile /* = false */>
 unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPostorder, VisitEdge visitEdge)
 {
     BitVecTraits traits(fgBBNumMax + 1, this);
