@@ -6017,7 +6017,18 @@ gc_heap::get_segment (size_t size, gc_oh_num oh)
 
             if (gc_heap::grow_brick_card_tables (start, end, size, result, __this, uoh_p) != 0)
             {
-                virtual_free (mem, size);
+                // release_segment needs the flags to decrement the proper bucket
+                size_t flags = 0;
+                if (oh == poh)
+                {
+                    flags = heap_segment_flags_poh;
+                }
+                else if (oh == loh)
+                {
+                    flags = heap_segment_flags_loh;
+                }
+                result->flags |= flags;
+                release_segment (result);
                 return 0;
             }
         }
