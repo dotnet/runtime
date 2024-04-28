@@ -2,26 +2,44 @@
 
 """Trains JIT reinforcment learning on superpmi data."""
 import os
+import json
 import time
 import argparse
 
 from jitml import SuperPmi, JitEnv, JitRLModel
 
+def enumerate_methods(core_root, mch):
+    """Enumerates all methods in the mch file."""
+    fn = os.path.basename(mch)
+    print(f"Parsing {fn} (this may take a while)...")
+    start = time.time()
+    found = []
+    with SuperPmi(core_root, mch) as pmi:
+        for method in pmi.enumerate_methods():
+            yield method
+            found.append(method)
+
+            if len(found) % 10000 == 0:
+                print('.', end='', flush=True)
+
+    print()
+    print(f"Parsed {mch} in {time.time() - start:.2f} seconds.")
+    print()
+
+
 def get_acceptable_methods(core_root, mch):
     """Returns a list of acceptable methods to train on."""
-    start = time.time()
-    acceptable = []
-    with SuperPmi(core_root, mch) as pmi:
-        print("Finding acceptable methods to train on (this may take a while)...")
+    json_file = f"{mch}.json"
 
-        for method in pmi.enumerate_methods():
-            if JitEnv.is_acceptable(method):
-                acceptable.append(method.index)
-                if len(acceptable) % 10_000 == 0:
-                    print(f"Found {len(acceptable)} acceptable methods so far...")
+    if os.path.exists(json_file):
+        with open(json_file, 'r', encoding="utf8") as f:
+            return [int(x) for x in json.load(f)]
 
-        print(f"Found {len(acceptable)} acceptable methods in {time.time() - start:.2f} seconds.")
-        print()
+    sequence = enumerate_methods(core_root, mch)
+    acceptable = [method.index for method in sequence if JitEnv.is_acceptable(method)]
+
+    with open(json_file, 'w', encoding="utf8") as f:
+        json.dump(acceptable, f)
 
     return acceptable
 
@@ -46,6 +64,7 @@ def parse_args():
 def main(args):
     """Main entry point."""
     acceptable = get_acceptable_methods(args.core_root, args.mch)
+    print(f"Trainig with {len(acceptable)} methods.")
 
     iterations = args.iterations if args.iterations is not None else 1_000_000
 
