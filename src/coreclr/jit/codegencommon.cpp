@@ -4159,14 +4159,14 @@ void CodeGen::genHomeStackSegment(unsigned                 lclNum,
     }
     emitAttr size = emitTypeSize(loadType);
 
-    int loadOffset;
+    int loadOffset = (int)seg.GetStackOffset();
     if (isFramePointerUsed())
     {
-        loadOffset = -genCallerSPtoFPdelta();
+        loadOffset -= genCallerSPtoFPdelta();
     }
     else
     {
-        loadOffset = -(int)seg.GetStackOffset() - genCallerSPtoInitialSPdelta();
+        loadOffset -= genCallerSPtoInitialSPdelta();
     }
 
 #ifdef TARGET_XARCH
