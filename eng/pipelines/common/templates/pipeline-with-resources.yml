@@ -61,7 +61,7 @@ extends:
           ROOTFS_DIR: /crossrootfs/x64
 
       linux_x86:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-x86-net8.0
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-x86-net9.0
         env:
           ROOTFS_DIR: /crossrootfs/x86
 
