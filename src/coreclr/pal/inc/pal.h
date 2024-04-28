@@ -3404,17 +3404,6 @@ EXTERN_C PALIMPORT inline RETURN_TYPE PALAPI METHOD_DECL        \
 
 #endif  // HOST_ARM64
 
-#ifdef TARGET_X86
-#define Define_InterlockMethodAligned(RETURN_TYPE, METHOD_DECL, METHOD_INVOC, INTRINSIC_NAME, ALIGNMENT) \
-EXTERN_C PALIMPORT inline RETURN_TYPE PALAPI METHOD_DECL        \
-{                                                               \
-    ALIGNMENT;                                                  \
-    RETURN_TYPE result = INTRINSIC_NAME;                        \
-    PAL_InterlockedOperationBarrier();                          \
-    return result;                                              \
-}
-#endif
-
 /*++
 Function:
 InterlockedAdd
@@ -3475,22 +3464,12 @@ Define_InterlockMethod(
     __sync_add_and_fetch(lpAddend, (LONG)1)
 )
 
-#ifdef TARGET_X86
-Define_InterlockMethodAligned(
-    LONGLONG,
-    InterlockedIncrement64(IN OUT LONGLONG volatile *lpAddend),
-    InterlockedIncrement64(lpAddend),
-    __sync_add_and_fetch(&lAddendAligned, (LONGLONG)1),
-    LONGLONG volatile DECLSPEC_ALIGN(8) lAddendAligned = *lpAddend
-)
-#else
 Define_InterlockMethod(
     LONGLONG,
     InterlockedIncrement64(IN OUT LONGLONG volatile *lpAddend),
     InterlockedIncrement64(lpAddend),
     __sync_add_and_fetch(lpAddend, (LONGLONG)1)
 )
-#endif
 
 /*++
 Function:
@@ -3520,22 +3499,12 @@ Define_InterlockMethod(
 
 #define InterlockedDecrementRelease InterlockedDecrement
 
-#ifdef TARGET_X86
-Define_InterlockMethodAligned(
-    LONGLONG,
-    InterlockedDecrement64(IN OUT LONGLONG volatile *lpAddend),
-    InterlockedDecrement64(lpAddend),
-    __sync_sub_and_fetch(&lAddendAligned, (LONGLONG)1),
-    LONGLONG volatile DECLSPEC_ALIGN(8) lAddendAligned = *lpAddend
-)
-#else
 Define_InterlockMethod(
     LONGLONG,
     InterlockedDecrement64(IN OUT LONGLONG volatile *lpAddend),
     InterlockedDecrement64(lpAddend),
     __sync_sub_and_fetch(lpAddend, (LONGLONG)1)
 )
-#endif
 
 /*++
 Function:
@@ -3629,18 +3598,6 @@ Define_InterlockMethod(
 #define InterlockedCompareExchangeAcquire InterlockedCompareExchange
 #define InterlockedCompareExchangeRelease InterlockedCompareExchange
 
-#ifdef TARGET_X86
-Define_InterlockMethodAligned(
-    LONGLONG,
-    InterlockedCompareExchange64(IN OUT LONGLONG volatile *Destination, IN LONGLONG Exchange, IN LONGLONG Comperand),
-    InterlockedCompareExchange64(Destination, Exchange, Comperand),
-    __sync_val_compare_and_swap(
-        &DestinationAligned, /* The pointer to a variable whose value is to be compared with. */
-        Comperand, /* The value to be compared */
-        Exchange /* The value to be stored */),
-    LONGLONG volatile DECLSPEC_ALIGN(8) DestinationAligned = *Destination
-)
-#else
 Define_InterlockMethod(
     LONGLONG,
     InterlockedCompareExchange64(IN OUT LONGLONG volatile *Destination, IN LONGLONG Exchange, IN LONGLONG Comperand),
@@ -3650,7 +3607,6 @@ Define_InterlockMethod(
         Comperand, /* The value to be compared */
         Exchange /* The value to be stored */)
 )
-#endif
 
 /*++
 Function:
