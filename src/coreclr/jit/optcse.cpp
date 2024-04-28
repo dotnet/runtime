@@ -2999,7 +2999,7 @@ void CSE_HeuristicRLHook::ApplyDecisions()
     unsigned cnt = m_pCompiler->optCSECandidateCount;
     for (unsigned i = 0; i < JitRLHookCSEDecisions.GetLength(); i++)
     {
-        const int index = JitRLHookCSEDecisions.GetData()[i] - 1;
+        const int index = JitRLHookCSEDecisions.GetData()[i];
         if (index == -1)
         {
             // An input of 0 means stop processing.

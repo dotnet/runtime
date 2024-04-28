@@ -10,16 +10,12 @@ import numpy as np
 import pandas
 import tqdm
 
-from jitml import SuperPmi, JitRLModel, get_observation
+from jitml import SuperPmi, JitRLModel, get_observation, MethodContext
 
 class ModelResult(Enum):
     """Analysis errors."""
     OK = 0
     JIT_FAILED = 1
-    SELECTED_NO_CSE = 2
-    SELECTED_OUT_OF_BOUNDS = 3
-    SELECTED_NON_VIABLE = 4
-    SELECTED_ALREADY_APPLIED = 5
 
 def jit_with_retry(superpmi, m_id, *args, **kwargs):
     """Attempts to JIT a method, retrying if necessary."""
@@ -38,6 +34,31 @@ def set_result(data, m_id, heuristic_score, no_cse_score, model_score, error = M
     data["no_cse_score"].append(no_cse_score)
     data["model_score"].append(model_score)
     data["failed"].append(error)
+
+def get_most_likley_allowed_action(jitrl, method : MethodContext, can_terminate : bool):
+    """Returns the most likely allowed actions."""
+    obs = get_observation(method)
+    probabilities = jitrl.action_probabilities(obs)
+
+    # If we are not allowed to terminate, remove the terminate action.
+    terminate_action = len(probabilities) - 1
+    if not can_terminate:
+        all_actions = all_actions[:-1]
+
+    # Sorted by most likely action descending
+    sorted_actions = np.flip(np.argsort(probabilities))[0]
+    candidates = method.cse_candidates
+
+    for action in sorted_actions:
+        if action == terminate_action:
+            return None
+
+        if action < len(candidates) and candidates[action].can_apply:
+            return action
+
+    # We are supposed to terminate instead of applying a CSE if none are available.
+    # If we got here there's some kind of error.
+    raise ValueError("No valid action found.")
 
 def test_model(superpmi, jitrl : JitRLModel, method_ids, model_name):
     """Tests the model on the test set."""
@@ -70,25 +91,13 @@ def test_model(superpmi, jitrl : JitRLModel, method_ids, model_name):
             # If we have no more CSEs to apply, we are done.  We expect this not to happen on the first
             # iteration because we filter out methods that have no CSEs to apply.
             if not any(x.can_apply for x in prev_method.cse_candidates):
-                assert choices
                 set_result(data, m_id, original.perf_score, no_cse.perf_score, prev_method.perf_score)
+
+                assert choices  # We must have made at least one selection
                 break
 
-            obs = get_observation(prev_method)
-            action_probabilities = jitrl.action_probabilities(obs)
-            actions = [x for x in np.flip(np.argsort(action_probabilities))[0]
-                      if x - 1 < len(prev_method.cse_candidates) and prev_method.cse_candidates[x - 1].can_apply]
-
-            if not actions:
-                set_result(data, m_id, original.perf_score, no_cse.perf_score, prev_method.perf_score,
-                            ModelResult.SELECTED_NON_VIABLE)
-                break
-
-            if not choices and len(actions) > 1 and actions[0] == 0:
-                actions = actions[1:]
-
-            action = actions[0]
-            if action == 0:
+            action = get_most_likley_allowed_action(jitrl, prev_method, choices)
+            if action is None:
                 set_result(data, m_id, original.perf_score, no_cse.perf_score, prev_method.perf_score)
                 break
 
@@ -104,7 +113,7 @@ def test_model(superpmi, jitrl : JitRLModel, method_ids, model_name):
 
             # mark choices as applied
             for c in choices:
-                new_method.cse_candidates[c - 1].applied = True
+                new_method.cse_candidates[c].applied = True
 
     return pandas.DataFrame(data)
 
@@ -145,6 +154,7 @@ def print_result(result, model, kind):
     print(f"Better than heuristic: {len(improved)}")
     print(f"Worse than heuristic: {len(underperformed)}")
     print(f"Same as heuristic: {len(no_jit_failure) - len(improved) - len(underperformed)}")
+    print(f"Total: {len(result)}")
     print()
 
     # next calculate how often we improved on the no CSE score
@@ -156,13 +166,8 @@ def print_result(result, model, kind):
     print()
 
     print("Failures:")
-    print(f"Total: {len(result)}")
     print(f"Failed: {len(result[result['failed'] != ModelResult.OK])}")
     print(f"JIT Failed: {len(result[result['failed'] == ModelResult.JIT_FAILED])}")
-    print(f"Selected No CSE: {len(result[result['failed'] == ModelResult.SELECTED_NO_CSE])}")
-    print(f"Selected Out of Bounds: {len(result[result['failed'] == ModelResult.SELECTED_OUT_OF_BOUNDS])}")
-    print(f"Selected Non Viable: {len(result[result['failed'] == ModelResult.SELECTED_NON_VIABLE])}")
-    print(f"Selected Already Applied: {len(result[result['failed'] == ModelResult.SELECTED_ALREADY_APPLIED])}")
     print()
 
 def evaluate(superpmi, jitrl, methods, model_name, csv_file) -> pandas.DataFrame:
