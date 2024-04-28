@@ -2105,6 +2105,9 @@ void Thread::RareDisablePreemptiveGC()
 
     if (ThreadStore::HoldingThreadStore(this))
     {
+        // A thread performing GC may swithch modes around locks inside GC. We will ignore that.
+        // Otherwise noone should be holding TSL and try switching to coop mode.
+        _ASSERTE(ThreadSuspend::GetSuspensionThread() == this);
         goto Exit;
     }
 
@@ -2119,79 +2122,75 @@ void Thread::RareDisablePreemptiveGC()
 
     while (true)
     {
-        // TODO: VS can we actually hold TSL here?
-        if (!ThreadStore::HoldingThreadStore(this))
+        // If debugger wants the thread to suspend, give the debugger precedence.
+        if ((m_State & TS_DebugSuspendPending) && !IsInForbidSuspendForDebuggerRegion())
         {
-            // If debugger wants the thread to suspend, give the debugger precedence.
-            if ((m_State & TS_DebugSuspendPending) && !IsInForbidSuspendForDebuggerRegion())
-            {
 #ifdef DEBUGGING_SUPPORTED
-                // We don't notify the debugger that this thread is now suspended. We'll just
-                // let the debugger's helper thread sweep and pick it up.
-                // We also never take the TSL in here either.
-                // Life's much simpler this way...
+            // We don't notify the debugger that this thread is now suspended. We'll just
+            // let the debugger's helper thread sweep and pick it up.
+            // We also never take the TSL in here either.
+            // Life's much simpler this way...
 #endif // DEBUGGING_SUPPORTED
 
 #ifdef FEATURE_HIJACK
-                // TODO: VS can we have hijacks here? why do we remove them?
-                // Remove any hijacks we might have.
-                UnhijackThread();
+            // TODO: VS can we have hijacks here? why do we remove them?
+            // Remove any hijacks we might have.
+            UnhijackThread();
 #endif // FEATURE_HIJACK
 
 #ifdef LOGGING
-                {
-                    LOG((LF_CORDB, LL_INFO1000, "[0x%x] SUSPEND: debug suspended while switching to coop mode.\n", GetThreadId()));
-                }
-#endif
-                // unsets TS_DebugSuspendPending | TS_SyncSuspended
-                WaitSuspendEvents();
-
-               // check again if we have something to do
-               continue;
-            }
-
-            if (GCHeapUtilities::IsGCInProgress())
             {
-                EnablePreemptiveGC();
+                LOG((LF_CORDB, LL_INFO1000, "[0x%x] SUSPEND: debug suspended while switching to coop mode.\n", GetThreadId()));
+            }
+#endif
+            // unsets TS_DebugSuspendPending | TS_SyncSuspended
+            WaitSuspendEvents();
+
+            // check again if we have something to do
+            continue;
+        }
+
+        if (GCHeapUtilities::IsGCInProgress())
+        {
+            EnablePreemptiveGC();
 
 #ifdef PROFILING_SUPPORTED
-                // If profiler desires GC events, notify it that this thread is waiting until the GC is over
-                // Do not send suspend notifications for debugger suspensions
+            // If profiler desires GC events, notify it that this thread is waiting until the GC is over
+            // Do not send suspend notifications for debugger suspensions
+            {
+                BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
+                if (!(m_State & TS_DebugSuspendPending))
                 {
-                    BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
-                    if (!(m_State & TS_DebugSuspendPending))
-                    {
-                        (&g_profControlBlock)->RuntimeThreadSuspended((ThreadID)this);
-                    }
-                    END_PROFILER_CALLBACK();
+                    (&g_profControlBlock)->RuntimeThreadSuspended((ThreadID)this);
                 }
+                END_PROFILER_CALLBACK();
+            }
 #endif // PROFILING_SUPPORTED
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
-                ResetThreadState(Thread::TS_GCSuspendRedirected);
+            ResetThreadState(Thread::TS_GCSuspendRedirected);
 #endif
 
-                DWORD status = GCHeapUtilities::GetGCHeap()->WaitUntilGCComplete();
-                if (status != S_OK)
-                {
-                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Waiting for GC completion failed"));
-                }
+            DWORD status = GCHeapUtilities::GetGCHeap()->WaitUntilGCComplete();
+            if (status != S_OK)
+            {
+                EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Waiting for GC completion failed"));
+            }
 
 #ifdef PROFILING_SUPPORTED
-                // Let the profiler know that this thread is resuming
-                {
-                    BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
-                    (&g_profControlBlock)->RuntimeThreadResumed((ThreadID)this);
-                    END_PROFILER_CALLBACK();
-                }
+            // Let the profiler know that this thread is resuming
+            {
+                BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
+                (&g_profControlBlock)->RuntimeThreadResumed((ThreadID)this);
+                END_PROFILER_CALLBACK();
+            }
 #endif // PROFILING_SUPPORTED
 
-                // disable preemptive gc.
-                m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
+            // disable preemptive gc.
+            m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
 
-                // check again if we have something to do
-                continue;
-            }
+            // check again if we have something to do
+            continue;
         }
 
         if (HasThreadState(TS_StackCrawlNeeded))
