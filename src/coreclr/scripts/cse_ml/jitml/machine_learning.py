@@ -2,10 +2,11 @@
 
 import os
 import json
-import torch
 from typing import List
 
+import torch
 import numpy as np
+
 from stable_baselines3 import A2C, DQN, PPO
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.env_util import make_vec_env
