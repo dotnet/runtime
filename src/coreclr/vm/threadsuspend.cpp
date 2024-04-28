@@ -2103,13 +2103,15 @@ void Thread::RareDisablePreemptiveGC()
         goto Exit;
     }
 
-    if (ThreadStore::HoldingThreadStore(this))
+    // A thread performing GC may try swithch modes around locks inside GC. We will ignore that.
+    // (NativeAOT analog scenario would have the thread in DoNotTriggerGc mode)
+    if (ThreadSuspend::GetSuspensionThread() == this)
     {
-        // A thread performing GC may swithch modes around locks inside GC. We will ignore that.
-        // Otherwise noone should be holding TSL and try switching to coop mode.
-        _ASSERTE(ThreadSuspend::GetSuspensionThread() == this);
         goto Exit;
     }
+
+    // Noone else should be holding TSL and try switching to coop mode.
+    _ASSERTE(!ThreadStore::HoldingThreadStore(this));
 
     STRESS_LOG1(LF_SYNC, LL_INFO1000, "RareDisablePreemptiveGC: entering. Thread state = %x\n", m_State.Load());
 
