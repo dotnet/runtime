@@ -4261,25 +4261,34 @@ void CodeGen::genHomeStackPartOfSplitParameter(regNumber initReg, bool* initRegS
     for (; lclNum < compiler->info.compArgsCount; lclNum++)
     {
         LclVarDsc* var = compiler->lvaGetDesc(lclNum);
-        if (!var->lvIsSplit || !var->lvOnFrame)
-            continue;
-
-        JITDUMP("Homing stack part of split parameter V%02u\n", lclNum);
-
-        assert(varTypeIsStruct(var));
-        assert(!compiler->lvaIsImplicitByRefLocal(lclNum));
-        const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
-        assert(abiInfo.NumSegments == 2);
-        assert(abiInfo.Segments[0].GetRegister() == REG_ARG_LAST);
-        const ABIPassingSegment& seg = abiInfo.Segments[1];
-
-        genHomeStackSegment(lclNum, seg, initReg, initRegStillZeroed);
-
-        for (lclNum += 1; lclNum < compiler->info.compArgsCount; lclNum++)
+        if (!var->lvOnFrame || !varTypeIsStruct(var))
         {
-            assert(!compiler->lvaGetDesc(lclNum)->lvIsSplit); // There should be only one split parameter
+            continue;
         }
-        break;
+
+        const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
+        if (abiInfo.IsSplitAcrossRegistersAndStack())
+        {
+            assert(var->lvIsSplit);
+            JITDUMP("Homing stack part of split parameter V%02u\n", lclNum);
+
+            assert(abiInfo.NumSegments == 2);
+            assert(abiInfo.Segments[0].GetRegister() == REG_ARG_LAST);
+            assert(abiInfo.Segments[1].GetStackOffset() == 0);
+            const ABIPassingSegment& seg = abiInfo.Segments[1];
+
+            genHomeStackSegment(lclNum, seg, initReg, initRegStillZeroed);
+
+#ifdef DEBUG
+            for (lclNum += 1; lclNum < compiler->info.compArgsCount; lclNum++)
+            {
+                abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
+                // There should be only one split parameter
+                assert(!abiInfo.IsSplitAcrossRegistersAndStack());
+            }
+#endif
+            break;
+        }
     }
 #endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 }
