@@ -5,7 +5,7 @@ import gymnasium as gym
 import numpy as np
 
 from .superpmi import SuperPmi, MethodContext
-from .observation import get_observation
+from .conversions import get_observation
 from .constants import (MAX_CSE, MIN_CSE, BOOLEAN_FEATURES, FLOAT_FEATURES, FEATURES, REWARD_SCALE, REWARD_MIN,
                         REWARD_MAX, FOUND_BEST_REWARD, NO_BETTER_METHOD_REWARD, INVALID_ACTION_PENALTY,
                         INVALID_ACTION_LIMIT)

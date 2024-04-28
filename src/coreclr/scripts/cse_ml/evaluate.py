@@ -5,11 +5,10 @@ from enum import Enum
 import json
 import os
 import argparse
+import shutil
 import numpy as np
 import pandas
 import tqdm
-import shutil
-import torch
 
 from jitml import SuperPmi, JitRLModel, get_observation
 
