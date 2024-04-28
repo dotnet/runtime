@@ -5,9 +5,11 @@ from enum import Enum
 import json
 import os
 import argparse
+import numpy as np
 import pandas
 import tqdm
 import shutil
+import torch
 
 from jitml import SuperPmi, JitRLModel, get_observation
 
@@ -38,7 +40,7 @@ def set_result(data, m_id, heuristic_score, no_cse_score, model_score, error = M
     data["model_score"].append(model_score)
     data["failed"].append(error)
 
-def test_model(superpmi, jitrl, method_ids, model_name):
+def test_model(superpmi, jitrl : JitRLModel, method_ids, model_name):
     """Tests the model on the test set."""
     data = {
         "method_id" : [],
@@ -74,40 +76,22 @@ def test_model(superpmi, jitrl, method_ids, model_name):
                 break
 
             obs = get_observation(prev_method)
-            action = jitrl.predict(obs, deterministic=True)
-            if action ==0:
-                # Was the first choice to terminate?
-                if len(choices) == 0:
-                    set_result(data, m_id, original.perf_score, no_cse.perf_score, no_cse.perf_score,
-                                ModelResult.SELECTED_NO_CSE)
-                    break
+            action_probabilities = jitrl.action_probabilities(obs)
+            actions = [x for x in np.flip(np.argsort(action_probabilities))[0]
+                      if x - 1 < len(prev_method.cse_candidates) and prev_method.cse_candidates[x - 1].can_apply]
 
-                # otherwise, we are done!
-                set_result(data, m_id, original.perf_score, no_cse.perf_score, prev_method.perf_score)
-                break
-
-            # did the model try to select a non-existent CSE?
-            index = action - 1
-            if index >= len(prev_method.cse_candidates):
-                set_result(data, m_id, original.perf_score, no_cse.perf_score, prev_method.perf_score,
-                            ModelResult.SELECTED_OUT_OF_BOUNDS)
-                break
-
-            # the candidate
-            cse_selected = prev_method.cse_candidates[index]
-
-            # did the model try to select a non-viable CSE?
-            if not cse_selected.viable:
+            if not actions:
                 set_result(data, m_id, original.perf_score, no_cse.perf_score, prev_method.perf_score,
                             ModelResult.SELECTED_NON_VIABLE)
                 break
 
-            # did the model try to select a CSE that was already applied?
-            if cse_selected.applied:
-                set_result(data, m_id, original.perf_score, no_cse.perf_score, prev_method.perf_score,
-                            ModelResult.SELECTED_ALREADY_APPLIED)
-                break
+            if not choices and len(actions) > 1 and actions[0] == 0:
+                actions = actions[1:]
 
+            action = actions[0]
+            if action == 0:
+                set_result(data, m_id, original.perf_score, no_cse.perf_score, prev_method.perf_score)
+                break
 
             # apply the CSE
             choices.append(action)
@@ -157,16 +141,16 @@ def print_result(result, model, kind):
     no_jit_failure = result[result['failed'] != ModelResult.JIT_FAILED]
 
     # next calculate how often we improved on the heuristic
-    improved = no_jit_failure[no_jit_failure['model_score'] > no_jit_failure['heuristic_score']]
-    underperformed = no_jit_failure[no_jit_failure['model_score'] < no_jit_failure['heuristic_score']]
+    improved = no_jit_failure[no_jit_failure['model_score'] < no_jit_failure['heuristic_score']]
+    underperformed = no_jit_failure[no_jit_failure['model_score'] > no_jit_failure['heuristic_score']]
     print(f"Better than heuristic: {len(improved)}")
     print(f"Worse than heuristic: {len(underperformed)}")
     print(f"Same as heuristic: {len(no_jit_failure) - len(improved) - len(underperformed)}")
     print()
 
     # next calculate how often we improved on the no CSE score
-    improved = no_jit_failure[no_jit_failure['model_score'] > no_jit_failure['no_cse_score']]
-    underperformed = no_jit_failure[no_jit_failure['model_score'] < no_jit_failure['no_cse_score']]
+    improved = no_jit_failure[no_jit_failure['model_score'] < no_jit_failure['no_cse_score']]
+    underperformed = no_jit_failure[no_jit_failure['model_score'] > no_jit_failure['no_cse_score']]
     print(f"Better than no CSE: {len(improved)}")
     print(f"Worse than no CSE: {len(underperformed)}")
     print(f"Same as no CSE: {len(no_jit_failure) - len(improved) - len(underperformed)}")

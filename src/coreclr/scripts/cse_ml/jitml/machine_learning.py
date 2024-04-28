@@ -2,6 +2,7 @@
 
 import os
 import json
+import torch
 from typing import List
 
 import numpy as np
@@ -46,6 +47,13 @@ class JitRLModel:
         action, _ = self._model.predict(obs, deterministic=deterministic)
         return action
 
+    def action_probabilities(self, obs):
+        """Gets the probability of every action."""
+        obs_tensor = torch.tensor(obs, dtype=torch.float32).unsqueeze(0).to(self._model.device)
+        action_distribution = self._model.policy.get_distribution(obs_tensor)
+        probs = action_distribution.distribution.probs
+        return probs.cpu().detach().numpy()
+
     def train(self, core_root : str, mch : str, methods : List[MethodContext] = None,
               iterations = None, parallel = None):
         """Trains the model from scratch."""
@@ -63,9 +71,8 @@ class JitRLModel:
             env = make_env()
 
         try:
-            ml_model = self._create(env, tensorboard_log=os.path.join(model_dir, 'logs'))
-            ml_model.learn(iterations, progress_bar=True, callback=LogRewardCallback(ml_model, model_dir))
-            self._model = ml_model
+            self._model = self._create(env, tensorboard_log=os.path.join(model_dir, 'logs'))
+            self._model.learn(iterations, progress_bar=True, callback=LogRewardCallback(self._model, model_dir))
 
         finally:
             env.close()
