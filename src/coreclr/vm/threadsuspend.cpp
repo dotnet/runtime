@@ -2125,24 +2125,24 @@ void Thread::RareDisablePreemptiveGC()
             // If debugger wants the thread to suspend, give the debugger precedence.
             if ((m_State & TS_DebugSuspendPending) && !IsInForbidSuspendForDebuggerRegion())
             {
-    #ifdef DEBUGGING_SUPPORTED
+#ifdef DEBUGGING_SUPPORTED
                 // We don't notify the debugger that this thread is now suspended. We'll just
                 // let the debugger's helper thread sweep and pick it up.
                 // We also never take the TSL in here either.
                 // Life's much simpler this way...
-    #endif // DEBUGGING_SUPPORTED
+#endif // DEBUGGING_SUPPORTED
 
-    #ifdef FEATURE_HIJACK
+#ifdef FEATURE_HIJACK
                 // TODO: VS can we have hijacks here? why do we remove them?
                 // Remove any hijacks we might have.
                 UnhijackThread();
-    #endif // FEATURE_HIJACK
+#endif // FEATURE_HIJACK
 
-    #ifdef LOGGING
+#ifdef LOGGING
                 {
                     LOG((LF_CORDB, LL_INFO1000, "[0x%x] SUSPEND: debug suspended while switching to coop mode.\n", GetThreadId()));
                 }
-    #endif
+#endif
                 // unsets TS_DebugSuspendPending | TS_SyncSuspended
                 WaitSuspendEvents();
 
@@ -2166,6 +2166,10 @@ void Thread::RareDisablePreemptiveGC()
                     END_PROFILER_CALLBACK();
                 }
 #endif // PROFILING_SUPPORTED
+
+#if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
+                ResetThreadState(Thread::TS_GCSuspendRedirected);
+#endif
 
                 DWORD status = GCHeapUtilities::GetGCHeap()->WaitUntilGCComplete();
                 if (status != S_OK)
@@ -3331,146 +3335,14 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
                 remaining++;
                 if (!observeOnly)
                 {
-                    // TODO: VS factor out;
-
-                    if (!Thread::UseContextBasedThreadRedirection())
-                    {
-                        // On platforms that do not support safe thread suspension, we do one of the following:
-                        //
-                        //     - If we're on a Unix platform where hijacking is enabled, we attempt
-                        //       to inject an activation which will try to redirect or hijack the
-                        //       thread to get it to a safe point.
-                        //
-                        //     - Similarly to above, if we're on a Windows platform where the special
-                        //       user-mode APC is available, that is used if redirection is necessary.
-                        //
-                        //     - Otherwise, we rely on the GCPOLL mechanism enabled by
-                        //       TrapReturningThreads.
-
-#ifdef FEATURE_THREAD_ACTIVATION
-                        bool success = pTargetThread->InjectActivation(Thread::ActivationReason::SuspendForGC);
-                        if (!success)
-                        {
-                            STRESS_LOG1(LF_SYNC, LL_INFO1000, "Thread::SuspendRuntime() -   Failed to inject an activation for thread %p.\n", pCurThread);
-                        }
-#endif // FEATURE_THREAD_ACTIVATION
-
-                        continue;
-                    }
-
-                    #ifndef DISABLE_THREADSUSPEND
-
-                    if (pTargetThread->HasThreadStateOpportunistic(Thread::TS_GCSuspendRedirected))
-                    {
-                        // We have seen this thead before and have redirected it.
-                        // No point in suspending it again. It will not run hijackable code until it parks itself.
-                        continue;
-                    }
-
-#ifdef TIME_SUSPEND
-                    DWORD startSuspend = g_SuspendStatistics.GetTime();
-#endif
-
-                    //
-                    // Suspend the native thread.
-                    //
-
-                    // We can not allocate memory after we suspend a thread.
-                    // Otherwise, we may deadlock the process, because the thread we just suspended
-                    // might hold locks we would need to acquire while allocating.
-                    ThreadStore::AllocateOSContext();
-                    Thread::SuspendThreadResult str = pTargetThread->SuspendThread(/*fOneTryOnly*/ TRUE);
-
-                    // We should just always build with this TIME_SUSPEND stuff, and report the results via ETW.
-#ifdef TIME_SUSPEND
-                    g_SuspendStatistics.osSuspend.Accumulate(
-                            SuspendStatistics::GetElapsed(startSuspend,
-                                                            g_SuspendStatistics.GetTime()));
-
-                    if (str == Thread::STR_Success)
-                        g_SuspendStatistics.cntOSSuspendResume++;
-                    else
-                        g_SuspendStatistics.cntFailedSuspends++;
-#endif
-
-                    switch (str)
-                    {
-                    case Thread::STR_Success:
-                        // let's check the state of this one.
-                        break;
-
-                    case Thread::STR_Forbidden:
-                        STRESS_LOG1(LF_SYNC, LL_INFO1000, "    Suspending thread 0x%x forbidden\n", pCurThread);
-                        continue;
-
-                    case Thread::STR_NoStressLog:
-                        STRESS_LOG2(LF_SYNC, LL_ERROR, "    ERROR: Could not suspend thread 0x%x, result = %d\n", pCurThread, str);
-                        continue;
-
-                    case Thread::STR_UnstartedOrDead:
-                    case Thread::STR_Failure:
-                         STRESS_LOG3(LF_SYNC, LL_ERROR, "    ERROR: Could not suspend thread 0x%x, result = %d, lastError = 0x%x\n", pCurThread, str, GetLastError());
-                         continue;
-                    }
-
-                    // the thread is suspended here, we can hijack, if platform supports.
-
-                    if (!pTargetThread->m_fPreemptiveGCDisabled.LoadWithoutBarrier())
-                    {
-                        // actually, we are done with this one
-                        STRESS_LOG1(LF_SYNC, LL_INFO1000, "    Thread %x went preemptive while suspending it is at a GC safe point\n", pCurThread);
-                        pTargetThread->ResetThreadState(Thread::TS_GCSuspendFlags);
-                        pTargetThread->ResumeThread();
-                        continue;
-                    }
-
-                    // We now know for sure that the thread is still in cooperative mode.  If it's in JIT'd code, here
-                    // is where we try to hijack/redirect the thread.  If it's in VM code, we have to just let the VM
-                    // finish what it's doing.
-
-#if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
-                    {
-                        Thread::WorkingOnThreadContextHolder workingOnThreadContext(pCurThread);
-
-                        // Note that pTargetThread->HandledJITCase is not a simple predicate - it actually will hijack the thread if that's possible.
-                        // So HandledJITCase can do one of these:
-                        //   - Return TRUE, in which case it's our responsibility to redirect the thread
-                        //   - Return FALSE after hijacking the thread - we shouldn't try to redirect
-                        //   - Return FALSE but not hijack the thread - there's nothing we can do either
-                        if (workingOnThreadContext.Acquired() && pTargetThread->HandledJITCase())
-                        {
-                            // Thread is in cooperative state and stopped in interruptible code.
-                            // Redirect thread so we can capture a good thread context
-                            // (GetThreadContext is not sufficient, due to an OS bug).
-                            if (!pTargetThread->CheckForAndDoRedirectForGC())
-                            {
-#ifdef TIME_SUSPEND
-                                g_SuspendStatistics.cntFailedRedirections++;
-#endif
-                                STRESS_LOG1(LF_SYNC, LL_INFO1000, "Failed to CheckForAndDoRedirectForGC(). Thread %p\n", pTargetThread);
-                            }
-                            else
-                            {
-#ifdef TIME_SUSPEND
-                                g_SuspendStatistics.cntRedirections++;
-#endif
-                                pTargetThread->SetThreadState(Thread::TS_GCSuspendRedirected);
-                                STRESS_LOG1(LF_SYNC, LL_INFO1000, "Thread::SuspendRuntime() -   Thread %p redirected().\n", pTargetThread);
-                            }
-                        }
-                    }
-#endif // FEATURE_HIJACK && !TARGET_UNIX
-
-                    pTargetThread->ResumeThread();
-                    STRESS_LOG1(LF_SYNC, LL_INFO1000, "    Thread 0x%x is in cooperative needs to rendezvous\n", pTargetThread);
-#endif // !DISABLE_THREADSUSPEND
+                    pTargetThread->Hijack();
                 }
             }
             else
             {
                 if (pTargetThread->HasThreadStateOpportunistic(Thread::TS_GCSuspendPending))
                 {
-                    pTargetThread->ResetThreadState(Thread::TS_GCSuspendFlags);
+                    pTargetThread->ResetThreadState(Thread::TS_GCSuspendPending);
                 }
             }
         }
@@ -3504,9 +3376,9 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
 #ifdef PROFILING_SUPPORTED
     // If a profiler is keeping track of GC events, notify it
     {
-    BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
-    (&g_profControlBlock)->RuntimeSuspendFinished();
-    END_PROFILER_CALLBACK();
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
+        (&g_profControlBlock)->RuntimeSuspendFinished();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -3536,6 +3408,137 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
 #endif // HAVE_GCCOVER
 
     STRESS_LOG0(LF_SYNC, LL_INFO1000, "Thread::SuspendRuntime() - Success\n");
+}
+
+void Thread::Hijack()
+{
+    if (!Thread::UseContextBasedThreadRedirection())
+    {
+        // On platforms that have signal-like API, we do one of the following:
+        // - If we're on a Unix platform where hijacking is enabled, we attempt
+        //   to inject an activation which will try to redirect or hijack the
+        //   thread to get it to a safe point.
+        //
+        // - Similarly to above, if we're on a Windows platform where the special
+        //   user-mode APC is available, that is used if redirection is necessary.
+        //
+        // - Otherwise, we rely on the GCPOLL mechanism enabled by
+        //   TrapReturningThreads.
+#ifdef FEATURE_THREAD_ACTIVATION
+        bool success = InjectActivation(Thread::ActivationReason::SuspendForGC);
+        if (!success)
+        {
+            STRESS_LOG1(LF_SYNC, LL_INFO1000, "Thread::SuspendRuntime() -   Failed to inject an activation for thread %p.\n", this);
+        }
+#endif // FEATURE_THREAD_ACTIVATION
+        return;
+    }
+
+#ifndef DISABLE_THREADSUSPEND
+    if (HasThreadStateOpportunistic(Thread::TS_GCSuspendRedirected))
+    {
+        // We have seen this thead before and have redirected it.
+        // No point in suspending it again. It will not run hijackable code until it blocks on GC event.
+        return;
+    }
+
+#ifdef TIME_SUSPEND
+    DWORD startSuspend = g_SuspendStatistics.GetTime();
+#endif
+
+    //
+    // Suspend the native thread.
+    //
+
+    // We can not allocate memory after we suspend a thread.
+    // Otherwise, we may deadlock the process, because the thread we just suspended
+    // might hold locks we would need to acquire while allocating.
+    ThreadStore::AllocateOSContext();
+    Thread::SuspendThreadResult str = SuspendThread(/*fOneTryOnly*/ TRUE);
+
+    // We should just always build with this TIME_SUSPEND stuff, and report the results via ETW.
+#ifdef TIME_SUSPEND
+    g_SuspendStatistics.osSuspend.Accumulate(
+            SuspendStatistics::GetElapsed(startSuspend,
+                                            g_SuspendStatistics.GetTime()));
+
+    if (str == Thread::STR_Success)
+        g_SuspendStatistics.cntOSSuspendResume++;
+    else
+        g_SuspendStatistics.cntFailedSuspends++;
+#endif
+
+    switch (str)
+    {
+    case Thread::STR_Success:
+        // let's check the state of this one.
+        break;
+
+    case Thread::STR_Forbidden:
+        STRESS_LOG1(LF_SYNC, LL_INFO1000, "    Suspending thread 0x%x forbidden\n", this);
+        return;
+
+    case Thread::STR_NoStressLog:
+        STRESS_LOG2(LF_SYNC, LL_ERROR, "    ERROR: Could not suspend thread 0x%x, result = %d\n", this, str);
+        return;
+
+    case Thread::STR_UnstartedOrDead:
+    case Thread::STR_Failure:
+        STRESS_LOG3(LF_SYNC, LL_ERROR, "    ERROR: Could not suspend thread 0x%x, result = %d, lastError = 0x%x\n", this, str, GetLastError());
+        return;
+    }
+
+    // the thread is suspended here, we can hijack, if it is stopped in hijackable location
+
+    if (!m_fPreemptiveGCDisabled.LoadWithoutBarrier())
+    {
+        // actually, we are done with this one
+        STRESS_LOG1(LF_SYNC, LL_INFO1000, "    Thread %x went preemptive while suspending it is at a GC safe point\n", this);
+        ResetThreadState(Thread::TS_GCSuspendFlags);
+        ResumeThread();
+        return;
+    }
+
+    // We now know for sure that the thread is still in cooperative mode.  If it's in JIT'd code, here
+    // is where we try to hijack/redirect the thread.  If it's in VM code, we have to just let the VM
+    // finish what it's doing.
+
+#if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
+    {
+        Thread::WorkingOnThreadContextHolder workingOnThreadContext(this);
+
+        // Note that pTargetThread->HandledJITCase is not a simple predicate - it actually will hijack the thread if that's possible.
+        // So HandledJITCase can do one of these:
+        //   - Return TRUE, in which case it's our responsibility to redirect the thread
+        //   - Return FALSE after hijacking the thread - we shouldn't try to redirect
+        //   - Return FALSE but not hijack the thread - there's nothing we can do either
+        if (workingOnThreadContext.Acquired() && HandledJITCase())
+        {
+            // Thread is in cooperative state and stopped in interruptible code.
+            // Redirect thread so we can capture a good thread context
+            // (GetThreadContext is not sufficient, due to an OS bug).
+            if (!CheckForAndDoRedirectForGC())
+            {
+#ifdef TIME_SUSPEND
+                g_SuspendStatistics.cntFailedRedirections++;
+#endif
+                STRESS_LOG1(LF_SYNC, LL_INFO1000, "Failed to CheckForAndDoRedirectForGC(). Thread %p\n", this);
+            }
+            else
+            {
+#ifdef TIME_SUSPEND
+                g_SuspendStatistics.cntRedirections++;
+#endif
+                SetThreadState(Thread::TS_GCSuspendRedirected);
+                STRESS_LOG1(LF_SYNC, LL_INFO1000, "Thread::SuspendRuntime() -   Thread %p redirected().\n", this);
+            }
+        }
+    }
+#endif // FEATURE_HIJACK && !TARGET_UNIX
+
+    ResumeThread();
+    STRESS_LOG1(LF_SYNC, LL_INFO1000, "    Thread 0x%x is in cooperative needs to rendezvous\n", this);
+#endif // !DISABLE_THREADSUSPEND
 }
 
 #ifdef HAVE_GCCOVER
@@ -5689,6 +5692,8 @@ retry_for_debugger:
 // is in a function where we can safely handle an activation.
 BOOL CheckActivationSafePoint(SIZE_T ip, BOOL checkingCurrentThread)
 {
+    // TODO: VS isn't it always for checkingCurrentThread?
+
     Thread *pThread = GetThreadNULLOk();
     // It is safe to call the ExecutionManager::IsManagedCode only if we are making the check for
     // a thread different from the current one or if the current thread is in the cooperative mode.
@@ -5696,7 +5701,13 @@ BOOL CheckActivationSafePoint(SIZE_T ip, BOOL checkingCurrentThread)
     // thread was holding the ExecutionManager's writer lock.
     // When the thread is in preemptive mode, we know for sure that it is not executing managed code.
     BOOL checkForManagedCode = !checkingCurrentThread || (pThread != NULL && pThread->PreemptiveGCDisabled());
-    return checkForManagedCode && ExecutionManager::IsManagedCode(ip);
+    BOOL isSafePoint = checkForManagedCode && ExecutionManager::IsManagedCode(ip);
+    if (!isSafePoint)
+    {
+        pThread->m_hasPendingActivation = false;
+    }
+
+    return isSafePoint;
 }
 
 // This function is called when thread suspension is pending. It tries to ensure that the current
@@ -5716,6 +5727,14 @@ BOOL CheckActivationSafePoint(SIZE_T ip, BOOL checkingCurrentThread)
 //
 void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 {
+    struct AutoClearPendingThreadActivation
+    {
+        ~AutoClearPendingThreadActivation()
+        {
+            GetThread()->m_hasPendingActivation = false;
+        }
+    } autoClearPendingThreadActivation;
+
     Thread *pThread = GetThread();
 
     if (pThread->PreemptiveGCDisabled() != TRUE)
@@ -5756,6 +5775,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 
         frame.Push(pThread);
 
+        // TODO: VS pThread->PulseGCMode();
         pThread->EnablePreemptiveGC();
         pThread->DisablePreemptiveGC();
 
@@ -5830,14 +5850,6 @@ void Thread::ApcActivationCallback(ULONG_PTR Parameter)
     ActivationReason reason = (ActivationReason)pData->Parameter;
     PCONTEXT pContext = pData->ContextRecord;
 
-    struct AutoClearPendingThreadActivation
-    {
-        ~AutoClearPendingThreadActivation()
-        {
-            GetThread()->m_hasPendingActivation = false;
-        }
-    } autoClearPendingThreadActivation;
-
     if (!CheckActivationSafePoint(GetIP(pContext), true /* checkingCurrentThread */))
     {
         return;
@@ -5859,14 +5871,16 @@ void Thread::ApcActivationCallback(ULONG_PTR Parameter)
 
 bool Thread::InjectActivation(ActivationReason reason)
 {
-#ifdef FEATURE_SPECIAL_USER_MODE_APC
-    _ASSERTE(UseSpecialUserModeApc());
-
+    // Try to avoid sending signals/APCs when another one is in progress,
+    // as they may interrupt one another or queue up.
+    // Just one at a time is enough. More is not better here.
     if (m_hasPendingActivation)
     {
-        // Try to avoid nesting special user-mode APCs, as they can interrupt one another
         return true;
     }
+
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+    _ASSERTE(UseSpecialUserModeApc());
 
     HANDLE hThread = GetThreadHandle();
     if (hThread == INVALID_HANDLE_VALUE)
@@ -5887,12 +5901,15 @@ bool Thread::InjectActivation(ActivationReason reason)
     _ASSERTE((reason == ActivationReason::SuspendForGC) || (reason == ActivationReason::ThreadAbort) || (reason == ActivationReason::SuspendForDebugger));
 
     static ConfigDWORD injectionEnabled;
-    if (injectionEnabled.val(CLRConfig::INTERNAL_ThreadSuspendInjection) == 0)
-        return false;
-
-    HANDLE hThread = GetThreadHandle();
-    if (hThread != INVALID_HANDLE_VALUE)
-        return ::PAL_InjectActivation(hThread);
+    if (injectionEnabled.val(CLRConfig::INTERNAL_ThreadSuspendInjection) != 0)
+    {
+        HANDLE hThread = GetThreadHandle();
+        if (hThread != INVALID_HANDLE_VALUE)
+        {
+            m_hasPendingActivation = true;
+            return ::PAL_InjectActivation(hThread);
+        }
+    }
 
     return false;
 #else

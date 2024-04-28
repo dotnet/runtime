@@ -548,6 +548,7 @@ class Thread
     friend void STDCALL OnHijackWorker(HijackArgs * pArgs);
 #ifdef FEATURE_THREAD_ACTIVATION
     friend void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext);
+    friend BOOL CheckActivationSafePoint(SIZE_T ip, BOOL checkingCurrentThread);
 #endif // FEATURE_THREAD_ACTIVATION
 
 #endif // FEATURE_HIJACK
@@ -1801,7 +1802,9 @@ public:
         ThreadAbort,
     };
 
+    void Hijack();
     bool InjectActivation(ActivationReason reason);
+
 #endif // FEATURE_THREAD_ACTIVATION
 
 #ifndef DISABLE_THREADSUSPEND
