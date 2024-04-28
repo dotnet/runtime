@@ -8907,8 +8907,6 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
     }
 #endif
 
-    //LowerStoreIndirCoalescing(ind);
-
     return next;
 }
 
