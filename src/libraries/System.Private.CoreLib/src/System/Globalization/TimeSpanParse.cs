@@ -144,7 +144,17 @@ namespace System.Globalization
                 // .099999999   normalize to 1,000,000 ticks
 
                 Debug.Assert(_zeroes > 0); // Already validated that in the condition _zeroes == 0 && _num > MaxFraction
-                _num = (int)Math.Round(_num / Math.Pow(10, totalDigitsCount - MaxFractionDigits), MidpointRounding.AwayFromZero);
+
+                if (_zeroes > MaxFractionDigits)
+                {
+                    // If there are 8 leading zeroes, it rounds to zero
+                    _num = 0;
+                    return true;
+                }
+
+                Debug.Assert(totalDigitsCount - MaxFractionDigits <= MaxFractionDigits);
+                uint power = (uint)Pow10UpToMaxFractionDigits(totalDigitsCount - MaxFractionDigits);
+                _num = (int)(((uint)_num + power / 2) / power);
                 Debug.Assert(_num < MaxFraction);
 
                 return true;
