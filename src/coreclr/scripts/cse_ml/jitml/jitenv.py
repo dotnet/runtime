@@ -204,7 +204,7 @@ class JitEnv(gym.Env):
         return result
 
     def _get_boolean_features(self, cse : CseCandidate):
-        return [cse.applied, cse.live_across_call, cse.const, cse.shared_const, cse.make_cse, cse.has_call,
+        return [cse.can_apply, cse.live_across_call, cse.const, cse.shared_const, cse.make_cse, cse.has_call,
                 cse.containable]
 
     def _get_float_features(self, cse : CseCandidate):
