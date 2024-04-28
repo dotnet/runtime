@@ -191,7 +191,13 @@ int LinearScan::BuildCall(GenTreeCall* call)
         }
         else
         {
-            // For non tailcalls the backend can just use REG_LR.
+            // For arm64 we can use lr for non-tailcalls so we skip the
+            // internal register as a TP optimization. We could do the same for
+            // arm32, but loading into lr cannot be encoded in 2 bytes, so
+            // another register is usually better.
+#ifdef TARGET_ARM
+            buildInternalIntRegisterDefForNode(call);
+#endif
         }
     }
 #ifdef TARGET_ARM
