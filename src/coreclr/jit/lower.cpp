@@ -8367,7 +8367,7 @@ bool Lowering::GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescing
         return false;
     }
 
-    const bool isStore = ind->OperIs(GT_STOREIND);
+    const bool isStore = ind->OperIs(GT_STOREIND, GT_STORE_BLK);
     const bool isLoad  = ind->OperIs(GT_IND);
 
     auto isNodeInvariant = [](Compiler* comp, GenTree* node, bool allowNull) {
@@ -8484,16 +8484,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
         return;
     }
 
-    // TODO-ARM64-CQ: enable TYP_REF if we find a case where it's beneficial.
-    // The algorithm does support TYP_REF (with null value), but it seems to be not worth
-    // it on ARM64 where it's pretty efficient to do "stp xzr, xzr, [addr]" to clear two
-    // items at once. Although, it may be profitable to do "stp q0, q0, [addr]".
-    if (!varTypeIsIntegral(ind) && !varTypeIsSIMD(ind))
-    {
-        return;
-    }
-
-    if (!ind->OperIs(GT_STOREIND))
+    if (!ind->OperIs(GT_STOREIND, GT_STORE_BLK))
     {
         // Load coalescing is not yet supported
         return;
@@ -8530,22 +8521,18 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
             prevTree = prevTree->gtPrev;
         }
 
-        // It's not a STOREIND - bail out.
-        if ((prevTree == nullptr) || !prevTree->OperIs(GT_STOREIND))
+        // It's not a store - bail out.
+        if ((prevTree == nullptr) || !prevTree->OperIs(GT_STOREIND, GT_STORE_BLK))
         {
             return;
         }
 
         // Get coalescing data for the previous STOREIND
-        GenTreeStoreInd* prevInd = prevTree->AsStoreInd();
+        GenTreeIndir* prevInd = prevTree->AsIndir();
         if (!GetLoadStoreCoalescingData(prevInd, &prevData))
         {
             return;
         }
-
-        // STOREIND aren't value nodes.
-        LIR::Use use;
-        assert(!BlockRange().TryGetUse(prevInd, &use) && !BlockRange().TryGetUse(ind, &use));
 
         if (!currData.IsAddressEqual(prevData, /*ignoreOffset*/ true))
         {
@@ -8560,6 +8547,20 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
             BlockRange().Remove(prevData.rangeStart, prevData.rangeEnd);
             continue;
         }
+
+        // TODO-ARM64-CQ: enable TYP_REF if we find a case where it's beneficial.
+        // The algorithm does support TYP_REF (with null value), but it seems to be not worth
+        // it on ARM64 where it's pretty efficient to do "stp xzr, xzr, [addr]" to clear two
+        // items at once. Although, it may be profitable to do "stp q0, q0, [addr]".
+        if (!varTypeIsIntegral(ind) && !varTypeIsSIMD(ind))
+        {
+            return;
+        }
+
+        assert(ind->OperIs(GT_STOREIND));
+        assert(prevInd->OperIs(GT_STOREIND));
+        assert(prevData.IsStore());
+        assert(currData.IsStore());
 
         // For now, only constants are supported for data.
         if (!prevData.value->OperIsConst() || !currData.value->OperIsConst())
@@ -8710,7 +8711,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
 
         // We should not be here for stores requiring write barriers.
         assert(!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind->AsStoreInd()));
-        assert(!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(prevInd));
+        assert(!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(prevInd->AsStoreInd()));
 
         // Delete previous STOREIND entirely
         BlockRange().Remove(prevData.rangeStart, prevData.rangeEnd);
@@ -9420,6 +9421,7 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
     }
 
     LowerBlockStore(blkNode);
+    LowerStoreIndirCoalescing(blkNode);
 }
 
 //------------------------------------------------------------------------
