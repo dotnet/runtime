@@ -44,6 +44,22 @@ def get_acceptable_methods(core_root, mch):
 
     return acceptable
 
+def split_data(output_dir, data, percent):
+    """Splits the data into training and testing sets."""
+    random.shuffle(data)
+
+    num_test = int(len(data) * percent)
+    train, test = data[num_test:], data[:num_test]
+
+    with open(os.path.join(output_dir, "train.json"), 'w', encoding="utf8") as f:
+        json.dump(train, f)
+
+    with open(os.path.join(output_dir, "test.json"), 'w', encoding="utf8") as f:
+        json.dump(test, f)
+
+    return train, test
+
+
 def parse_args():
     """usage:  train.py [-h] [--core_root CORE_ROOT] [--parallel n] [--iterations i] model_path mch"""
     parser = argparse.ArgumentParser()
@@ -66,34 +82,24 @@ def parse_args():
 
 def main(args):
     """Main entry point."""
+
+    # Create directories.
+    iterations = args.iterations if args.iterations is not None else 1_000_000
+    output = os.path.join(args.model_path, args.algorithm)
+    model_path = os.path.join(output, "model.zip")
+
+    if not os.path.exists(output):
+        os.makedirs(output, exist_ok=True)
+
+    # Load data.
     acceptable = get_acceptable_methods(args.core_root, args.mch)
-
-    # shuffle acceptable methods
-    random.shuffle(acceptable)
-
-    num_test = int(len(acceptable) * args.test_percent)
-    train, test = acceptable[num_test:], acceptable[:num_test]
-
-
+    test, train = split_data(output, acceptable, args.test_percent)
     print(f"Trainig with {len(train)} methods, holding back {len(test)} for testing.")
 
-    iterations = args.iterations if args.iterations is not None else 1_000_000
-
-    model_path = os.path.join(args.model_path, args.algorithm)
-    if not os.path.exists(model_path):
-        os.makedirs(model_path, exist_ok=True)
-
-    model = os.path.join(model_path, "model.zip")
-
-    with open(os.path.join(model_path, "train.json"), 'w', encoding="utf8") as f:
-        json.dump(train, f)
-
-    with open(os.path.join(model_path, "test.json"), 'w', encoding="utf8") as f:
-        json.dump(test, f)
-
-    rl = JitRLModel(args.algorithm, model_path)
+    # Train the model.
+    rl = JitRLModel(args.algorithm, output)
     rl.train(args.core_root, args.mch, train, iterations=iterations, parallel=args.parallel)
-    rl.save(os.path.expanduser(model))
+    rl.save(model_path)
 
 if __name__ == "__main__":
     main(parse_args())
