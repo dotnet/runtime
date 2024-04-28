@@ -323,7 +323,8 @@ class JitEnv(gym.Env):
     @staticmethod
     def is_acceptable(method : MethodContext):
         """Returns True if the method is acceptable for training."""
-        return MIN_CSE <= len(method.cse_candidates) <= MAX_CSE
+        applicable = len([x for x in method.cse_candidates if x.viable])
+        return MIN_CSE <= applicable and len(method.cse_candidates) <= MAX_CSE
 
     def render(self) -> None:
         state = self._state
