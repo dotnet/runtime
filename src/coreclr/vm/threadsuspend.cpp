@@ -2201,7 +2201,7 @@ void Thread::RareDisablePreemptiveGC()
         // nothing else to do
         break;
     }
-
+       
     STRESS_LOG0(LF_SYNC, LL_INFO1000, "RareDisablePreemptiveGC: leaving\n");
 
 Exit: ;

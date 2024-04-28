@@ -2504,9 +2504,9 @@ void StubLinkerCPU::EmitComMethodStubProlog(TADDR pFrameVptr,
         STANDARD_VM_CHECK;
 
         PRECONDITION(rgRareLabels != NULL);
-        PRECONDITION(rgRareLabels[0] != NULL && rgRareLabels[1] != NULL && rgRareLabels[2] != NULL);
+        PRECONDITION(rgRareLabels[0] != NULL && rgRareLabels[1] != NULL);
         PRECONDITION(rgRejoinLabels != NULL);
-        PRECONDITION(rgRejoinLabels[0] != NULL && rgRejoinLabels[1] != NULL && rgRejoinLabels[2] != NULL);
+        PRECONDITION(rgRejoinLabels[0] != NULL && rgRejoinLabels[1] != NULL);
     }
     CONTRACTL_END;
 
@@ -2610,9 +2610,9 @@ void StubLinkerCPU::EmitComMethodStubEpilog(TADDR pFrameVptr,
         STANDARD_VM_CHECK;
 
         PRECONDITION(rgRareLabels != NULL);
-        PRECONDITION(rgRareLabels[0] != NULL && rgRareLabels[1] != NULL && rgRareLabels[2] != NULL);
+        PRECONDITION(rgRareLabels[0] != NULL && rgRareLabels[1] != NULL);
         PRECONDITION(rgRejoinLabels != NULL);
-        PRECONDITION(rgRejoinLabels[0] != NULL && rgRejoinLabels[1] != NULL && rgRejoinLabels[2] != NULL);
+        PRECONDITION(rgRejoinLabels[0] != NULL && rgRejoinLabels[1] != NULL);
         PRECONDITION(4 == sizeof( ((Thread*)0)->m_State ));
         PRECONDITION(4 == sizeof( ((Thread*)0)->m_fPreemptiveGCDisabled ));
     }
@@ -2725,9 +2725,9 @@ void StubLinkerCPU::EmitSharedComMethodStubEpilog(TADDR pFrameVptr,
         STANDARD_VM_CHECK;
 
         PRECONDITION(rgRareLabels != NULL);
-        PRECONDITION(rgRareLabels[0] != NULL && rgRareLabels[1] != NULL && rgRareLabels[2] != NULL);
+        PRECONDITION(rgRareLabels[0] != NULL && rgRareLabels[1] != NULL);
         PRECONDITION(rgRejoinLabels != NULL);
-        PRECONDITION(rgRejoinLabels[0] != NULL && rgRejoinLabels[1] != NULL && rgRejoinLabels[2] != NULL);
+        PRECONDITION(rgRejoinLabels[0] != NULL && rgRejoinLabels[1] != NULL);
         PRECONDITION(4 == sizeof( ((Thread*)0)->m_State ));
         PRECONDITION(4 == sizeof( ((Thread*)0)->m_fPreemptiveGCDisabled ));
     }
