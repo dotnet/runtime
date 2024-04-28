@@ -1340,13 +1340,11 @@ Stub* ComCall::CreateGenericComCallStub(BOOL isFieldAccess)
 
     CodeLabel* rgRareLabels[] = {
                                   psl->NewCodeLabel(),
-                                  psl->NewCodeLabel(),
                                   psl->NewCodeLabel()
                                 };
 
 
     CodeLabel* rgRejoinLabels[] = {
-                                    psl->NewCodeLabel(),
                                     psl->NewCodeLabel(),
                                     psl->NewCodeLabel()
                                   };
