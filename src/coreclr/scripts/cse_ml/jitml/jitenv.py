@@ -1,6 +1,5 @@
 """A gymnasium environment for training RL to optimize the .Net JIT's CSE usage."""
 
-import random
 from typing import Any, List, Optional
 import gymnasium as gym
 import numpy as np
