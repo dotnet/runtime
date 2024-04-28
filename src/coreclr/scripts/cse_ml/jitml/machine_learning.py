@@ -1,9 +1,12 @@
 """The machine learning agent which drives CSE optimization."""
 
 import os
+import json
 from typing import List
 
+import numpy as np
 from stable_baselines3 import A2C, DQN, PPO
+from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import SubprocVecEnv
 
@@ -61,7 +64,7 @@ class JitRLModel:
 
         try:
             ml_model = self._create(env, tensorboard_log=os.path.join(model_dir, 'logs'))
-            ml_model.learn(iterations, progress_bar=True)
+            ml_model.learn(iterations, progress_bar=True, callback=LogRewardCallback(ml_model, model_dir))
 
         finally:
             env.close()
@@ -80,3 +83,85 @@ class JitRLModel:
                 return DQN
             case _:
                 raise ValueError(f"Unknown algorithm {self.algorithm}.  Must be one of: PPO, A2C, DQN")
+
+class LogRewardCallback(BaseCallback):
+    """A callback to log reward values to tensorboard and save the best models."""
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(self, model : PPO, save_dir : str, last_model_freq = 500_000):
+        super().__init__()
+
+        self.model = model
+        self.next_save = model.n_steps
+        self.last_model_freq = last_model_freq
+        self.last_model_next_save = self.last_model_freq
+
+        self.best_reward = -np.inf
+
+        self.save_dir = save_dir
+
+        self._rewards = []
+        self._result_vs_heuristic = []
+        self._result_vs_no_cse = []
+        self._better_or_worse = []
+        self._choice_count = []
+
+
+    def _on_step(self) -> bool:
+        self._update_stats()
+
+        if self.n_calls > self.next_save:
+            self.next_save += self.model.n_steps
+
+            rew_mean = np.mean(self._rewards) if self._rewards else -np.inf
+            if rew_mean > self.best_reward:
+                self.best_reward = rew_mean
+                self._save_incremental(rew_mean, os.path.join(self.save_dir, 'best_reward.zip'))
+
+            if self.model.num_timesteps >= self.last_model_next_save:
+                self.last_model_next_save += self.last_model_freq
+                self._save_incremental(rew_mean, os.path.join(self.save_dir, f'model_{self.model.num_timesteps}.zip'))
+
+            if self._result_vs_heuristic:
+                self.logger.record('results/vs_heuristic', np.mean(self._result_vs_heuristic))
+
+            if self._result_vs_no_cse:
+                self.logger.record('results/vs_no_cse', np.mean(self._result_vs_no_cse))
+
+            if self._better_or_worse:
+                self.logger.record('results/better_than_heuristic', np.mean(self._better_or_worse))
+
+            if self._choice_count:
+                self.logger.record('results/num_cse', np.mean(self._choice_count))
+
+            self._result_vs_heuristic.clear()
+            self._result_vs_no_cse.clear()
+            self._better_or_worse.clear()
+            self._choice_count.clear()
+
+        return True
+
+    def _update_stats(self):
+        for info in self.locals['infos']:
+            if 'final_score' not in info or 'choices' not in info:
+                continue
+
+            final = info['final_score']
+            heuristic = info['heuristic_score']
+            no_cse = info['no_cse_score']
+
+            if heuristic != 0:
+                self._result_vs_heuristic.append((heuristic - final) / heuristic)
+
+            if no_cse != 0:
+                self._result_vs_no_cse.append((no_cse - final) / no_cse)
+
+            self._better_or_worse.append(1 if final > heuristic else -1 if final < heuristic else 0)
+            self._choice_count.append(len(info['choices']))
+
+    def _save_incremental(self, reward, save_path):
+        self.model.save(save_path)
+
+        metadata = { "iterations" : self.num_timesteps, 'reward' : reward}
+        with open(save_path + '.json', 'w', encoding='utf-8') as f:
+            json.dump(metadata, f, indent=4)

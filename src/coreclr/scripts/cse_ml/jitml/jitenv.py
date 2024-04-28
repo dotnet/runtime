@@ -26,6 +26,7 @@ class JitEnvState:
         self.choices = []
         self.results = []
         self.invalid_action_count = 0
+        self.total_reward = 0.0
 
     def choose(self, action : int, result : MethodContext):
         """Chooses an action and updates the state."""
@@ -135,7 +136,10 @@ class JitEnv(gym.Env):
 
             observation = self.get_observation(state.current)
             info = self.get_info(state)
-            return observation, INVALID_ACTION_PENALTY, terminated, truncated, info
+            reward = INVALID_ACTION_PENALTY
+
+            state.total_reward += reward
+            return observation, reward, terminated, truncated, info
 
         # JIT the method and update state with the result, this can return False if there was an
         # issue with JIT'ing the method.
@@ -146,6 +150,15 @@ class JitEnv(gym.Env):
         terminated = action == 0 or not any((x for x in current.cse_candidates if x.can_apply))
         reward = self.get_rewards(state, terminated) if not truncated else 0.0
         info = self.get_info(state)
+
+        state.total_reward += reward
+        if terminated:
+            info['heuristic_score'] = state.heuristic_score
+            info['no_cse_score'] = state.no_cse_score
+            info['final_score'] = current.perf_score
+            info['choices'] = state.choices
+            info['total_reward'] = state.total_reward
+            info['invalid_actions'] = state.invalid_action_count
 
         if terminated or truncated:
             self._state = None
