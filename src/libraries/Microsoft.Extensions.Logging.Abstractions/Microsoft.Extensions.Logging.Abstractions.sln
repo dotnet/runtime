@@ -15,6 +15,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Loggin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Generators.Roslyn4.4", "gen\Microsoft.Extensions.Logging.Generators.Roslyn4.4.csproj", "{BF948816-45E1-4F0F-985A-0B4DB4D3BF40}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Generators.Roslyn4.8", "gen\Microsoft.Extensions.Logging.Generators.Roslyn4.8.csproj", "{40FA38ED-D2C9-4608-B85E-F731655C1864}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Abstractions", "ref\Microsoft.Extensions.Logging.Abstractions.csproj", "{7F536552-0E2A-4642-B7CF-863727C2F9CD}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Abstractions", "src\Microsoft.Extensions.Logging.Abstractions.csproj", "{75C579F7-F20B-41F1-8CAF-641DE7ADA4EE}"
@@ -22,6 +24,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Generators.Roslyn3.11.Tests", "tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Roslyn3.11.Tests.csproj", "{C333EC5A-F386-4A01-AE20-12D499551304}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Generators.Roslyn4.0.Tests", "tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Roslyn4.0.Tests.csproj", "{1CB869A7-2EEC-4A53-9C33-DF9E0C75825B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Generators.Roslyn4.8.Tests", "tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Roslyn4.8.Tests.csproj", "{D6167506-0671-46A3-94E5-7A98032DCEC6}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", "..\System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj", "{852D4E16-58C3-47C2-A6BC-A5B12B37209F}"
 EndProject
@@ -135,6 +139,14 @@ Global
 		{F3186815-B9A5-455F-B0DF-E39D4235C24F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F3186815-B9A5-455F-B0DF-E39D4235C24F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F3186815-B9A5-455F-B0DF-E39D4235C24F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{40FA38ED-D2C9-4608-B85E-F731655C1864}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{40FA38ED-D2C9-4608-B85E-F731655C1864}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{40FA38ED-D2C9-4608-B85E-F731655C1864}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{40FA38ED-D2C9-4608-B85E-F731655C1864}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D6167506-0671-46A3-94E5-7A98032DCEC6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D6167506-0671-46A3-94E5-7A98032DCEC6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D6167506-0671-46A3-94E5-7A98032DCEC6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D6167506-0671-46A3-94E5-7A98032DCEC6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -162,6 +174,8 @@ Global
 		{8215F79E-510B-4CA1-B775-50C47BB58360} = {58760833-B4F5-429D-9ABD-15FDF83E25CD}
 		{F3186815-B9A5-455F-B0DF-E39D4235C24F} = {14DFA192-3C7E-4F10-B5FD-3953BC82A6B1}
 		{14DFA192-3C7E-4F10-B5FD-3953BC82A6B1} = {58760833-B4F5-429D-9ABD-15FDF83E25CD}
+		{40FA38ED-D2C9-4608-B85E-F731655C1864} = {03F31CEE-D63E-4E7F-949F-139B33DC3385}
+		{D6167506-0671-46A3-94E5-7A98032DCEC6} = {4DE63935-DCA9-4D63-9C1F-AAE79C89CA8B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {450DA749-CBDC-4BDC-950F-8A491CF59D49}

@@ -417,6 +417,62 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 #endif
 
+        [Fact]
+        public async Task FieldOnOtherPartialDeclarationOK()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    private ILogger _logger;
+
+                    public C(ILogger logger)
+                    {
+                        _logger = logger;
+                    }
+                }
+
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
+                    public partial void M1();
+                }
+            ");
+
+            Assert.Empty(diagnostics);
+        }
+
+#if ROSLYN4_8_OR_GREATER
+        [Fact]
+        public async Task PrimaryConstructorOK()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C(ILogger logger)
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
+                    public partial void M1();
+                }
+            ");
+
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public async Task PrimaryConstructorOnOtherPartialDeclarationOK()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C(ILogger logger);
+
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
+                    public partial void M1();
+                }
+            ");
+
+            Assert.Empty(diagnostics);
+        }
+#endif
+
         [Theory]
         [InlineData("false")]
         [InlineData("true")]
