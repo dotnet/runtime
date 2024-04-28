@@ -48,7 +48,7 @@ def split_data(output_dir, data, percent):
     np.random.shuffle(data)
 
     num_test = int(len(data) * percent)
-    train, test = data[num_test:], data[:num_test]
+    test, train = data[num_test:], data[:num_test]
 
     with open(os.path.join(output_dir, "train.json"), 'w', encoding="utf8") as f:
         json.dump(train, f)
