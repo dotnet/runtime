@@ -2152,6 +2152,7 @@ void Thread::RareDisablePreemptiveGC()
             continue;
         }
 
+        // TODO: VS should check if suspension is requested.
         if (GCHeapUtilities::IsGCInProgress())
         {
             EnablePreemptiveGC();
@@ -5691,24 +5692,25 @@ retry_for_debugger:
 
 // This function is called by a thread activation to check if the specified instruction pointer
 // is in a function where we can safely handle an activation.
-BOOL CheckActivationSafePoint(SIZE_T ip, BOOL checkingCurrentThread)
+// WARNING: This method is called by suspension while one thread is interrupted
+//          in a random location, possibly holding random locks.
+//          It is unsafe to use blocking APIs or allocate in this method.
+BOOL CheckActivationSafePoint(SIZE_T ip)
 {
-    // TODO: VS isn't it always for checkingCurrentThread?
-
     Thread *pThread = GetThreadNULLOk();
-    // It is safe to call the ExecutionManager::IsManagedCode only if we are making the check for
-    // a thread different from the current one or if the current thread is in the cooperative mode.
-    // Otherwise ExecutionManager::IsManagedCode could deadlock if the activation happened when the
-    // thread was holding the ExecutionManager's writer lock.
-    // When the thread is in preemptive mode, we know for sure that it is not executing managed code.
-    BOOL checkForManagedCode = !checkingCurrentThread || (pThread != NULL && pThread->PreemptiveGCDisabled());
-    BOOL isSafePoint = checkForManagedCode && ExecutionManager::IsManagedCode(ip);
-    if (!isSafePoint)
+
+    // The criteria for safe activation is to be running managed code.
+    // Also we are not interested in handling interruption if we are already in preemptive mode.
+    BOOL isActivationSafePoint = pThread != NULL &&
+        pThread->PreemptiveGCDisabled() &&
+        ExecutionManager::IsManagedCode(ip);
+
+    if (!isActivationSafePoint)
     {
         pThread->m_hasPendingActivation = false;
     }
 
-    return isSafePoint;
+    return isActivationSafePoint;
 }
 
 // This function is called when thread suspension is pending. It tries to ensure that the current
@@ -5745,7 +5747,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 
     // This function can only be called when the interrupted thread is in
     // an activation safe point.
-    _ASSERTE(CheckActivationSafePoint(ip, /* checkingCurrentThread */ TRUE));
+    _ASSERTE(CheckActivationSafePoint(ip));
 
     Thread::WorkingOnThreadContextHolder workingOnThreadContext(pThread);
     if (!workingOnThreadContext.Acquired())
@@ -5851,7 +5853,7 @@ void Thread::ApcActivationCallback(ULONG_PTR Parameter)
     ActivationReason reason = (ActivationReason)pData->Parameter;
     PCONTEXT pContext = pData->ContextRecord;
 
-    if (!CheckActivationSafePoint(GetIP(pContext), true /* checkingCurrentThread */))
+    if (!CheckActivationSafePoint(GetIP(pContext)))
     {
         return;
     }
