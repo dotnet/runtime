@@ -65,6 +65,7 @@ class JitRLModel:
         try:
             ml_model = self._create(env, tensorboard_log=os.path.join(model_dir, 'logs'))
             ml_model.learn(iterations, progress_bar=True, callback=LogRewardCallback(ml_model, model_dir))
+            self._model = ml_model
 
         finally:
             env.close()
@@ -158,6 +159,7 @@ class LogRewardCallback(BaseCallback):
 
             self._better_or_worse.append(1 if final < heuristic else -1 if final < heuristic else 0)
             self._choice_count.append(len(info['choices']))
+            self._rewards.append(info['total_reward'])
 
     def _save_incremental(self, reward, save_path):
         self.model.save(save_path)
