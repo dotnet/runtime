@@ -5,7 +5,7 @@ import os
 import json
 import time
 import argparse
-import random
+import numpy as np
 
 from jitml import SuperPmi, JitEnv, JitRLModel
 
@@ -27,7 +27,6 @@ def enumerate_methods(core_root, mch):
     print(f"Parsed {mch} in {time.time() - start:.2f} seconds.")
     print()
 
-
 def get_acceptable_methods(core_root, mch):
     """Returns a list of acceptable methods to train on."""
     json_file = f"{mch}.json"
@@ -46,7 +45,7 @@ def get_acceptable_methods(core_root, mch):
 
 def split_data(output_dir, data, percent):
     """Splits the data into training and testing sets."""
-    random.shuffle(data)
+    np.random.shuffle(data)
 
     num_test = int(len(data) * percent)
     train, test = data[num_test:], data[:num_test]
@@ -58,7 +57,6 @@ def split_data(output_dir, data, percent):
         json.dump(test, f)
 
     return train, test
-
 
 def parse_args():
     """usage:  train.py [-h] [--core_root CORE_ROOT] [--parallel n] [--iterations i] model_path mch"""
@@ -94,7 +92,7 @@ def main(args):
     # Load data.
     acceptable = get_acceptable_methods(args.core_root, args.mch)
     test, train = split_data(output, acceptable, args.test_percent)
-    print(f"Trainig with {len(train)} methods, holding back {len(test)} for testing.")
+    print(f"Training with {len(train)} methods, holding back {len(test)} for testing.")
 
     # Train the model.
     rl = JitRLModel(args.algorithm, output)
