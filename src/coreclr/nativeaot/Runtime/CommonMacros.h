@@ -127,29 +127,6 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 
 #define OS_PAGE_SIZE    PalOsPageSize()
 
-#if defined(HOST_AMD64)
-
-#define DATA_ALIGNMENT  8
-
-#elif defined(HOST_X86)
-
-#define DATA_ALIGNMENT  4
-
-#elif defined(HOST_ARM)
-
-#define DATA_ALIGNMENT  4
-
-#elif defined(HOST_ARM64)
-
-#define DATA_ALIGNMENT  8
-
-#elif defined(HOST_WASM)
-
-#define DATA_ALIGNMENT  4
-
-#else
-#error Unsupported target architecture
-#endif
 #endif // __GCENV_BASE_INCLUDED__
 
 #if defined(TARGET_ARM)
