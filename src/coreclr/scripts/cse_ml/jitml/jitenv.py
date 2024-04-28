@@ -4,24 +4,11 @@ from typing import Any, List, Optional
 import gymnasium as gym
 import numpy as np
 
-from .superpmi import CseCandidate, SuperPmi, MethodContext, JITTYPE_ONEHOT_SIZE
-
-MAX_CSE = 16
-MIN_CSE = 3
-
-BOOLEAN_FEATURES = JITTYPE_ONEHOT_SIZE + 7
-FLOAT_FEATURES = 9
-FEATURES = BOOLEAN_FEATURES + FLOAT_FEATURES
-
-REWARD_SCALE = 10
-REWARD_MIN = -1.0
-REWARD_MAX = 1.0
-
-FOUND_BEST_REWARD = 0.1
-NO_BETTER_METHOD_REWARD = 0.01
-
-INVALID_ACTION_PENALTY = -0.01
-INVALID_ACTION_LIMIT = 128
+from .superpmi import SuperPmi, MethodContext
+from .observation import get_observation
+from .constants import (MAX_CSE, MIN_CSE, BOOLEAN_FEATURES, FLOAT_FEATURES, FEATURES, REWARD_SCALE, REWARD_MIN,
+                        REWARD_MAX, FOUND_BEST_REWARD, NO_BETTER_METHOD_REWARD, INVALID_ACTION_PENALTY,
+                        INVALID_ACTION_LIMIT)
 
 class JitEnvState:
     """The state of the JIT environment."""
@@ -247,31 +234,7 @@ class JitEnv(gym.Env):
 
     def get_observation(self, method : MethodContext):
         """Builds the observation from a method."""
-        tensors = [self._get_tensor(x) for i, x in enumerate(method.cse_candidates) if i < MAX_CSE]
-        while len(tensors) < MAX_CSE:
-            tensors.append(np.zeros(FEATURES))
-
-        result = np.vstack(tensors)
-
-        return result
-
-    def _get_tensor(self, cse : CseCandidate):
-        result = np.zeros(FEATURES)
-
-        result[:JITTYPE_ONEHOT_SIZE] = cse.type.one_hot
-        bool_features = self._get_boolean_features(cse)
-        result[JITTYPE_ONEHOT_SIZE:JITTYPE_ONEHOT_SIZE + len(bool_features)] = bool_features
-        result[JITTYPE_ONEHOT_SIZE + len(bool_features):] = self._get_float_features(cse)
-
-        return result
-
-    def _get_boolean_features(self, cse : CseCandidate):
-        return [cse.can_apply, cse.live_across_call, cse.const, cse.shared_const, cse.make_cse, cse.has_call,
-                cse.containable]
-
-    def _get_float_features(self, cse : CseCandidate):
-        return [cse.cost_ex, cse.cost_sz, cse.use_count, cse.def_count, cse.use_wt_cnt, cse.def_wt_cnt,
-                cse.distinct_locals, cse.local_occurrences, cse.enreg_count]
+        return get_observation(method)
 
     def _is_valid_action(self, action):
         state = self._state
