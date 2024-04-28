@@ -1794,6 +1794,8 @@ public:
         STR_NoStressLog,
     };
 
+    void Hijack();
+
 #ifdef FEATURE_THREAD_ACTIVATION
     enum class ActivationReason
     {
@@ -1802,9 +1804,7 @@ public:
         ThreadAbort,
     };
 
-    void Hijack();
     bool InjectActivation(ActivationReason reason);
-
 #endif // FEATURE_THREAD_ACTIVATION
 
 #ifndef DISABLE_THREADSUSPEND
