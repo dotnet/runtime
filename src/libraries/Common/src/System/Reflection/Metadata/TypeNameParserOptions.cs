@@ -3,19 +3,9 @@
 
 namespace System.Reflection.Metadata
 {
-#if SYSTEM_PRIVATE_CORELIB
-    internal
-#else
-    public
-#endif
-    sealed class TypeNameParseOptions
+    public sealed class TypeNameParseOptions
     {
-        private int _maxNodes =
-#if SYSTEM_PRIVATE_CORELIB
-            int.MaxValue; // CoreLib has never introduced any limits
-#else
-            20;
-#endif
+        private int _maxNodes = 20;
 
         /// <summary>
         /// Limits the maximum value of <seealso cref="TypeName.GetNodeCount">node count</seealso> that parser can handle.
@@ -37,5 +27,7 @@ namespace System.Reflection.Metadata
                 _maxNodes = value;
             }
         }
+
+        internal bool IsMaxDepthExceeded(int depth) => depth >= _maxNodes;
     }
 }
