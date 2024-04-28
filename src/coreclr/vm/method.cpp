@@ -209,16 +209,20 @@ LoaderAllocator * MethodDesc::GetDomainSpecificLoaderAllocator()
 
 }
 
-void MethodDesc::AllocateCodeData()
+void MethodDesc::AllocateCodeData(LoaderHeap* pHeap, AllocMemTracker* pamTracker)
 {
     CONTRACTL
     {
         THROWS;
+        PRECONDITION(pHeap != NULL);
+        PRECONDITION(pamTracker != NULL);
         PRECONDITION(m_codeData == NULL);
+        POSTCONDITION(m_codeData != NULL);
     }
     CONTRACTL_END;
 
-    m_codeData = (MethodDescCodeData*)(void*)GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(MethodDescCodeData)));
+    m_codeData = (MethodDescCodeData*)pamTracker->Track(
+        pHeap->AllocMem(S_SIZE_T(sizeof(MethodDescCodeData))));
 }
 
 bool MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState state)
@@ -1744,7 +1748,7 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
         {
             pMD->SetChunkIndex(pChunk);
             pMD->SetMethodDescIndex(i);
-            pMD->AllocateCodeData();
+            pMD->AllocateCodeData(pHeap, pamTracker);
 
             pMD->SetClassification(classification);
             if (fNonVtableSlot)
