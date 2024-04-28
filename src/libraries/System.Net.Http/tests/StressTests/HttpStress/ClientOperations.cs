@@ -509,7 +509,7 @@ namespace HttpStress
 
         private static void ValidateByteContent(byte[] content, int length, string? details = null)
         {
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < content.Length; i++)
             {
                 if (content[i] != (byte)i)
                 {
