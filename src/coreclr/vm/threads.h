@@ -4281,6 +4281,7 @@ private:
     // this means that no thread sharing the same scheduler with T2 can run.  If T1 needs a lock which
     // is owned by one thread on the scheduler, T1 will wait forever.
     // Our solution is to move T2 to a safe point, resume it, and then do stack crawl.
+    // TODO: VS verify if above is true
     static CLREvent *s_pWaitForStackCrawlEvent;
 public:
     static void WaitForStackCrawlEvent()

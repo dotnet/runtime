@@ -2046,7 +2046,7 @@ extern void WaitForEndOfShutdown();
 //----------------------------------------------------------------------------
 
 // A note on SUSPENSIONS.
-//
+// TODO: VS comment needs updating?
 // We must not suspend a thread while it is holding the ThreadStore lock, or
 // the lock on the thread.  Why?  Because we need those locks to resume the
 // thread (and to perform a GC, use the debugger, spawn or kill threads, etc.)
@@ -2108,6 +2108,8 @@ void Thread::RareDisablePreemptiveGC()
         goto Exit;
     }
 
+    STRESS_LOG1(LF_SYNC, LL_INFO1000, "RareDisablePreemptiveGC: entering. Thread state = %x\n", m_State.Load());
+
 #if defined(STRESS_HEAP) && defined(_DEBUG)
     if (!IsDetached())
     {
@@ -2115,21 +2117,13 @@ void Thread::RareDisablePreemptiveGC()
     }
 #endif
 
-    // TODO: VS can we actually hold TSL here?
-    if (m_State & TS_DebugSuspendPending)
+    while (true)
     {
+        // TODO: VS can we actually hold TSL here?
         if (!ThreadStore::HoldingThreadStore(this))
         {
-    #ifdef FEATURE_HIJACK
-            // TODO: VS can we have hijacks here? why do we remove them?
-            // Remove any hijacks we might have.
-            UnhijackThread();
-    #endif // FEATURE_HIJACK
-
-            // If GC suspend is in progress we will block while switching to coop mode.
-            // But if we are doing a non-GC suspend, we need to block now.
-            // Give the debugger precedence over user suspensions:
-            while ((m_State & TS_DebugSuspendPending) && !IsInForbidSuspendForDebuggerRegion())
+            // If debugger wants the thread to suspend, give the debugger precedence.
+            if ((m_State & TS_DebugSuspendPending) && !IsInForbidSuspendForDebuggerRegion())
             {
     #ifdef DEBUGGING_SUPPORTED
                 // We don't notify the debugger that this thread is now suspended. We'll just
@@ -2138,6 +2132,12 @@ void Thread::RareDisablePreemptiveGC()
                 // Life's much simpler this way...
     #endif // DEBUGGING_SUPPORTED
 
+    #ifdef FEATURE_HIJACK
+                // TODO: VS can we have hijacks here? why do we remove them?
+                // Remove any hijacks we might have.
+                UnhijackThread();
+    #endif // FEATURE_HIJACK
+
     #ifdef LOGGING
                 {
                     LOG((LF_CORDB, LL_INFO1000, "[0x%x] SUSPEND: debug suspended while switching to coop mode.\n", GetThreadId()));
@@ -2145,35 +2145,15 @@ void Thread::RareDisablePreemptiveGC()
     #endif
                 // unsets TS_DebugSuspendPending | TS_SyncSuspended
                 WaitSuspendEvents();
+
+               // check again if we have something to do
+               continue;
             }
-        }
-    }
 
-
-    // Note IsGCInProgress is also true for say Pause (anywhere SuspendEE happens) and GCThread is the
-    // thread that did the Pause. While in Pause if another thread attempts Rev/Pinvoke it should get inside the following and
-    // block until resume
-    if ((GCHeapUtilities::IsGCInProgress() && (this != ThreadSuspend::GetSuspensionThread())) ||
-        ((m_State & TS_DebugSuspendPending) && !IsInForbidSuspendForDebuggerRegion()) ||
-        (m_State & TS_StackCrawlNeeded))
-    {
-        STRESS_LOG1(LF_SYNC, LL_INFO1000, "RareDisablePreemptiveGC: entering. Thread state = %x\n", m_State.Load());
-
-        DWORD dwSwitchCount = 0;
-
-        while (true)
-        {
-            EnablePreemptiveGC();
-
-            // Cannot use GCX_PREEMP_NO_DTOR here because we're inside of the thread
-            // PREEMP->COOP switch mechanism and GCX_PREEMP's assert's will fire.
-            // Instead we use BEGIN_GCX_ASSERT_PREEMP to inform Scan of the mode
-            // change here.
-            BEGIN_GCX_ASSERT_PREEMP;
-
-            // just wait until the GC is over.
-            if (this != ThreadSuspend::GetSuspensionThread())
+            if (GCHeapUtilities::IsGCInProgress())
             {
+                EnablePreemptiveGC();
+
 #ifdef PROFILING_SUPPORTED
                 // If profiler desires GC events, notify it that this thread is waiting until the GC is over
                 // Do not send suspend notifications for debugger suspensions
@@ -2193,14 +2173,6 @@ void Thread::RareDisablePreemptiveGC()
                     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Waiting for GC completion failed"));
                 }
 
-                if (!GCHeapUtilities::IsGCInProgress())
-                {
-                    if (HasThreadState(TS_StackCrawlNeeded))
-                    {
-                        ThreadStore::WaitForStackCrawlEvent();
-                    }
-                }
-
 #ifdef PROFILING_SUPPORTED
                 // Let the profiler know that this thread is resuming
                 {
@@ -2209,30 +2181,28 @@ void Thread::RareDisablePreemptiveGC()
                     END_PROFILER_CALLBACK();
                 }
 #endif // PROFILING_SUPPORTED
+
+                // disable preemptive gc.
+                m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
+
+                // check again if we have something to do
+                continue;
             }
-
-            END_GCX_ASSERT_PREEMP;
-
-            // disable preemptive gc.
-            InterlockedOr((LONG*)&m_fPreemptiveGCDisabled, 1);
-
-            // The fact that we check whether 'this' is the GC thread may seem
-            // strange.  After all, we determined this before entering the method.
-            // However, it is possible for the current thread to become the GC
-            // thread while in this loop.  This happens if you use the COM+
-            // debugger to suspend this thread and then release it.
-            if (! ((GCHeapUtilities::IsGCInProgress() && (this != ThreadSuspend::GetSuspensionThread())) ||
-                    ((m_State & TS_DebugSuspendPending) && !IsInForbidSuspendForDebuggerRegion()) ||
-                    (m_State & TS_StackCrawlNeeded)) )
-            {
-                break;
-            }
-
-            // TODO: VS why is this? Have we not just pulsed through GC?
-            __SwitchToThread(0, ++dwSwitchCount);
         }
-        STRESS_LOG0(LF_SYNC, LL_INFO1000, "RareDisablePreemptiveGC: leaving\n");
+
+        if (HasThreadState(TS_StackCrawlNeeded))
+        {
+            ThreadStore::WaitForStackCrawlEvent();
+
+            // check again if we have something to do
+            continue;
+        }
+
+        // nothing else to do
+        break;
     }
+
+    STRESS_LOG0(LF_SYNC, LL_INFO1000, "RareDisablePreemptiveGC: leaving\n");
 
 Exit: ;
     END_PRESERVE_LAST_ERROR;
@@ -3353,12 +3323,15 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
 
             if (pTargetThread->m_fPreemptiveGCDisabled.LoadWithoutBarrier())
             {
-                // TODO: VS rethink this.
-                pTargetThread->SetThreadState(Thread::TS_GCSuspendPending);
+                if (!pTargetThread->HasThreadStateOpportunistic(Thread::TS_GCSuspendPending))
+                {
+                    pTargetThread->SetThreadState(Thread::TS_GCSuspendPending);
+                }
+
                 remaining++;
                 if (!observeOnly)
                 {
-                    // TODO: VS pTargetThread->Hijack();
+                    // TODO: VS factor out;
 
                     if (!Thread::UseContextBasedThreadRedirection())
                     {
@@ -3495,8 +3468,10 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
             }
             else
             {
-                // TODO: VS rethink this.
-                pTargetThread->ResetThreadState(Thread::TS_GCSuspendFlags);
+                if (pTargetThread->HasThreadStateOpportunistic(Thread::TS_GCSuspendPending))
+                {
+                    pTargetThread->ResetThreadState(Thread::TS_GCSuspendFlags);
+                }
             }
         }
 
