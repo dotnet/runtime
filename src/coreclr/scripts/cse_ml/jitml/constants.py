@@ -90,3 +90,11 @@ class MethodContext(BaseModel):
 
     def __str__(self):
         return f"{self.index}: {self.name}"
+
+    # validate that perf_score is never negative:
+    @field_validator('perf_score', mode='before')
+    @classmethod
+    def _validate_perf_score(cls, v):
+        if v < 0:
+            raise ValueError("perf_score must be non-negative")
+        return v
