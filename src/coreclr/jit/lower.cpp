@@ -8347,54 +8347,57 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
 #endif
 }
 
-struct StoreCoalescingData
-{
-    var_types targetType;
-    GenTree*  baseAddr;
-    GenTree*  index;
-    GenTree*  value;
-    uint32_t  scale;
-    int       offset;
-};
-
 //------------------------------------------------------------------------
-// GetStoreCoalescingData: given a STOREIND node, get the data needed to perform
-//    store coalescing including pointer to the previous node.
+// GetLoadStoreCoalescingData: given a STOREIND/IND node, get the data needed to perform
+//    store/load coalescing including pointer to the previous node.
 //
 // Arguments:
 //    comp     - the compiler instance
-//    ind      - the STOREIND node
-//    data     - [OUT] the data needed for store coalescing
+//    ind      - the STOREIND/IND node
+//    data     - [OUT] the data needed for store/load coalescing
 //
 // Return Value:
 //    true if the data was successfully retrieved, false otherwise.
-//    Basically, false means that we definitely can't do store coalescing.
 //
-static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCoalescingData* data)
+bool Lowering::GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescingData* data) const
 {
-    // Don't merge volatile stores.
+    // Don't merge volatile load/stores.
     if (ind->IsVolatile())
     {
         return false;
     }
 
-    // Data has to be INT_CNS, can be also VEC_CNS in future.
-    if (!ind->Data()->IsCnsIntOrI() && !ind->Data()->IsVectorConst())
-    {
-        return false;
-    }
+    const bool isStore = ind->OperIs(GT_STOREIND);
+    const bool isLoad  = ind->OperIs(GT_IND);
 
     auto isNodeInvariant = [](Compiler* comp, GenTree* node, bool allowNull) {
         if (node == nullptr)
         {
             return allowNull;
         }
+        if (node->OperIsConst())
+        {
+            return true;
+        }
         // We can allow bigger trees here, but it's not clear if it's worth it.
         return node->OperIs(GT_LCL_VAR) && !comp->lvaVarAddrExposed(node->AsLclVar()->GetLclNum());
     };
 
+    if (isStore)
+    {
+        // For stores, Data() is expected to be an invariant node
+        if (!isNodeInvariant(comp, ind->Data(), false))
+        {
+            return false;
+        }
+    }
+    else if (!isLoad)
+    {
+        return false;
+    }
+
     data->targetType = ind->TypeGet();
-    data->value      = ind->Data();
+    data->value      = isStore ? ind->Data() : nullptr;
     if (ind->Addr()->OperIs(GT_LEA))
     {
         GenTree* base  = ind->Addr()->AsAddrMode()->Base();
@@ -8430,12 +8433,24 @@ static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCo
         // Address is not LEA or local.
         return false;
     }
+
+    bool isClosedRange = false;
+    // Make sure there are no other unexpected nodes in-between.
+    LIR::ReadOnlyRange range = BlockRange().GetTreeRange(ind, &isClosedRange);
+    if (!isClosedRange)
+    {
+        return false;
+    }
+
+    data->rangeStart = range.FirstNode();
+    data->rangeEnd   = range.LastNode();
+
     return true;
 }
 
 //------------------------------------------------------------------------
-// LowerStoreIndirCoalescing: If the given STOREIND node is followed by a similar
-//    STOREIND node, try to merge them into a single store of a twice wider type. Example:
+// LowerStoreIndirCoalescing: If the given IND/STOREIND node is followed by a similar
+//    IND/STOREIND node, try to merge them into a single store of a twice wider type. Example:
 //
 //    *  STOREIND  int
 //    +--*  LCL_VAR   byref  V00
@@ -8459,7 +8474,7 @@ static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCo
 // Arguments:
 //    ind - the current STOREIND node
 //
-void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
+void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
 {
 // LA, RISC-V and ARM32 more likely to recieve a terrible performance hit from
 // unaligned accesses making this optimization questionable.
@@ -8478,6 +8493,12 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         return;
     }
 
+    if (!ind->OperIs(GT_STOREIND))
+    {
+        // Load coalescing is not yet supported
+        return;
+    }
+
     // We're going to do it in a loop while we see suitable STOREINDs to coalesce.
     // E.g.: we have the following LIR sequence:
     //
@@ -8492,24 +8513,16 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
     // to get a single store of 8 bytes.
     do
     {
-        StoreCoalescingData currData;
-        StoreCoalescingData prevData;
+        LoadStoreCoalescingData currData;
+        LoadStoreCoalescingData prevData;
 
         // Get coalescing data for the current STOREIND
-        if (!GetStoreCoalescingData(comp, ind, &currData))
+        if (!GetLoadStoreCoalescingData(ind, &currData))
         {
             return;
         }
 
-        bool isClosedRange = false;
-        // Now we need to find the very first LIR node representing the current STOREIND
-        // and make sure that there are no other unexpected nodes in-between.
-        LIR::ReadOnlyRange currIndRange = BlockRange().GetTreeRange(ind, &isClosedRange);
-        if (!isClosedRange)
-        {
-            return;
-        }
-        GenTree* prevTree = currIndRange.FirstNode()->gtPrev;
+        GenTree* prevTree = currData.rangeStart->gtPrev;
         // Now we need to find the previous STOREIND,
         // we can ignore any NOPs or IL_OFFSETs in-between
         while ((prevTree != nullptr) && prevTree->OperIs(GT_NOP, GT_IL_OFFSET))
@@ -8525,14 +8538,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
 
         // Get coalescing data for the previous STOREIND
         GenTreeStoreInd* prevInd = prevTree->AsStoreInd();
-        if (!GetStoreCoalescingData(comp, prevInd->AsStoreInd(), &prevData))
-        {
-            return;
-        }
-
-        // Same for the previous STOREIND, make sure there are no unexpected nodes around.
-        LIR::ReadOnlyRange prevIndRange = BlockRange().GetTreeRange(prevInd, &isClosedRange);
-        if (!isClosedRange)
+        if (!GetLoadStoreCoalescingData(prevInd, &prevData))
         {
             return;
         }
@@ -8541,23 +8547,24 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         LIR::Use use;
         assert(!BlockRange().TryGetUse(prevInd, &use) && !BlockRange().TryGetUse(ind, &use));
 
-        // BaseAddr, Index, Scale and Type all have to match.
-        if ((prevData.scale != currData.scale) || (prevData.targetType != currData.targetType) ||
-            !GenTree::Compare(prevData.baseAddr, currData.baseAddr) ||
-            !GenTree::Compare(prevData.index, currData.index))
+        if (!currData.IsAddressEqual(prevData, /*ignoreOffset*/ true))
         {
+            // Non-offset part of the address is not the same - bail out.
             return;
         }
-
-        // At this point we know that we have two consecutive STOREINDs with the same base address,
-        // index and scale, the only variable thing is the offset (constant)
 
         // The same offset means that we're storing to the same location of the same width.
         // Just remove the previous store then.
         if (prevData.offset == currData.offset)
         {
-            BlockRange().Remove(std::move(prevIndRange));
+            BlockRange().Remove(prevData.rangeStart, prevData.rangeEnd);
             continue;
+        }
+
+        // For now, only constants are supported for data.
+        if (!prevData.value->OperIsConst() || !currData.value->OperIsConst())
+        {
+            return;
         }
 
         // Otherwise, the difference between two offsets has to match the size of the type.
@@ -8702,11 +8709,11 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         }
 
         // We should not be here for stores requiring write barriers.
-        assert(!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind));
+        assert(!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind->AsStoreInd()));
         assert(!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(prevInd));
 
         // Delete previous STOREIND entirely
-        BlockRange().Remove(std::move(prevIndRange));
+        BlockRange().Remove(prevData.rangeStart, prevData.rangeEnd);
 
         // It's not expected to be contained yet, but just in case...
         ind->Data()->ClearContained();
@@ -8899,6 +8906,8 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
         OptimizeForLdp(ind);
     }
 #endif
+
+    //LowerStoreIndirCoalescing(ind);
 
     return next;
 }
