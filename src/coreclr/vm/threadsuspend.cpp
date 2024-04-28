@@ -2105,7 +2105,7 @@ void Thread::RareDisablePreemptiveGC()
 
     // A thread performing GC may try swithch modes around locks inside GC. We will ignore that.
     // (NativeAOT analog scenario would have the thread in DoNotTriggerGc mode)
-    if (ThreadSuspend::GetSuspensionThread() == this)
+    if (IsGCSpecialThread() || ThreadSuspend::GetSuspensionThread() == this)
     {
         goto Exit;
     }
@@ -2362,8 +2362,7 @@ void Thread::PulseGCMode()
 
     _ASSERTE(this == GetThread());
 
-    // TODO: VS no need to check, but assert coop
-    if (PreemptiveGCDisabled() && CatchAtSafePointOpportunistic())
+    if (PreemptiveGCDisabled())
     {
         EnablePreemptiveGC();
         DisablePreemptiveGC();
@@ -5778,9 +5777,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 
         frame.Push(pThread);
 
-        // TODO: VS pThread->PulseGCMode();
-        pThread->EnablePreemptiveGC();
-        pThread->DisablePreemptiveGC();
+        pThread->PulseGCMode();
 
         INSTALL_MANAGED_EXCEPTION_DISPATCHER;
         INSTALL_UNWIND_AND_CONTINUE_HANDLER;
