@@ -58,7 +58,6 @@ public:
     regNumber Extract(GenTree* tree, regMaskTP mask = static_cast<regMaskTP>(-1));
     regNumber GetSingle(GenTree* tree, regMaskTP mask = static_cast<regMaskTP>(-1));
     regMaskTP GetAll(GenTree* tree);
-    regMaskTP ExtractAll(GenTree* tree);
     unsigned  Count(GenTree* tree, regMaskTP mask = static_cast<regMaskTP>(-1));
 };
 
