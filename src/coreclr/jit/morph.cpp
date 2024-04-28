@@ -4596,10 +4596,14 @@ GenTree* Compiler::fgMorphExpandStackArgForVarArgs(GenTreeLclVarCommon* lclNode)
         return nullptr;
     }
 
-    LclVarDsc* varDsc       = lvaGetDesc(lclNode);
-    GenTree*   argsBaseAddr = gtNewLclvNode(lvaVarargsBaseOfStkArgs, TYP_I_IMPL);
-    ssize_t    offset =
-        varDsc->GetStackOffset() - codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES - lclNode->GetLclOffs();
+    LclVarDsc*                   varDsc  = lvaGetDesc(lclNode);
+    const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNode->GetLclNum());
+    assert(abiInfo.HasExactlyOneStackSegment());
+
+    GenTree* argsBaseAddr = gtNewLclvNode(lvaVarargsBaseOfStkArgs, TYP_I_IMPL);
+    ssize_t  offset       = (ssize_t)abiInfo.Segments[0].GetStackOffset() - lclNode->GetLclOffs();
+    assert(abiInfo.Segments[0].GetStackOffset() ==
+           (varDsc->GetStackOffset() - codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES));
     GenTree* offsetNode = gtNewIconNode(offset, TYP_I_IMPL);
     GenTree* argAddr    = gtNewOperNode(GT_SUB, TYP_I_IMPL, argsBaseAddr, offsetNode);
 
@@ -6486,7 +6490,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
     DISPTREE(call);
 
     // Don't support tail calling helper methods
-    assert(call->gtCallType != CT_HELPER);
+    assert(!call->IsHelperCall());
 
     // We come this route only for tail prefixed calls that cannot be dispatched as
     // fast tail calls
@@ -7038,7 +7042,7 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
     assert(call->IsVirtual() || (call->gtCallType != CT_INDIRECT) || (call->gtCallCookie == nullptr));
 
     // Don't support tail calling helper methods
-    assert(call->gtCallType != CT_HELPER);
+    assert(!call->IsHelperCall());
 
     // We come this route only for tail prefixed calls that cannot be dispatched as
     // fast tail calls
@@ -7754,7 +7758,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
     // Morph stelem.ref helper call to store a null value, into a store into an array without the helper.
     // This needs to be done after the arguments are morphed to ensure constant propagation has already taken place.
-    if (opts.OptimizationEnabled() && (call->gtCallType == CT_HELPER) &&
+    if (opts.OptimizationEnabled() && call->IsHelperCall() &&
         (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ARRADDR_ST)))
     {
         assert(call->gtArgs.CountArgs() == 3);
@@ -8733,34 +8737,61 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             return fgMorphIntoHelperCall(tree, helper, true /* morphArgs */, op1, op2);
 
         case GT_RETURN:
+        case GT_SWIFT_ERROR_RET:
+        {
+            GenTree* retVal = tree->AsOp()->GetReturnValue();
+
             if (!tree->TypeIs(TYP_VOID))
             {
-                if (op1->OperIs(GT_LCL_FLD))
+                if (retVal->OperIs(GT_LCL_FLD))
                 {
-                    op1 = fgMorphRetInd(tree->AsUnOp());
+                    retVal = fgMorphRetInd(tree->AsOp());
                 }
 
-                fgTryReplaceStructLocalWithField(op1);
+                fgTryReplaceStructLocalWithField(retVal);
             }
 
             // normalize small integer return values
-            if (fgGlobalMorph && varTypeIsSmall(info.compRetType) && (op1 != nullptr) && !op1->TypeIs(TYP_VOID) &&
-                fgCastNeeded(op1, info.compRetType))
+            if (fgGlobalMorph && varTypeIsSmall(info.compRetType) && (retVal != nullptr) && !retVal->TypeIs(TYP_VOID) &&
+                fgCastNeeded(retVal, info.compRetType))
             {
+#ifdef SWIFT_SUPPORT
+                // Morph error operand if tree is a GT_SWIFT_ERROR_RET node
+                if (tree->OperIs(GT_SWIFT_ERROR_RET))
+                {
+                    GenTree* const errorVal = fgMorphTree(tree->gtGetOp1());
+                    tree->AsOp()->gtOp1     = errorVal;
+
+                    // Propagate side effect flags
+                    tree->SetAllEffectsFlags(errorVal);
+                }
+#endif // SWIFT_SUPPORT
+
                 // Small-typed return values are normalized by the callee
-                op1 = gtNewCastNode(TYP_INT, op1, false, info.compRetType);
+                retVal = gtNewCastNode(TYP_INT, retVal, false, info.compRetType);
 
                 // Propagate GTF_COLON_COND
-                op1->gtFlags |= (tree->gtFlags & GTF_COLON_COND);
+                retVal->gtFlags |= (tree->gtFlags & GTF_COLON_COND);
 
-                tree->AsOp()->gtOp1 = fgMorphTree(op1);
+                retVal = fgMorphTree(retVal);
+                tree->AsOp()->SetReturnValue(retVal);
 
                 // Propagate side effect flags
-                tree->SetAllEffectsFlags(tree->AsOp()->gtGetOp1());
+                tree->SetAllEffectsFlags(retVal);
 
                 return tree;
             }
+
+            if (tree->OperIs(GT_RETURN))
+            {
+                op1 = retVal;
+            }
+            else
+            {
+                op2 = retVal;
+            }
             break;
+        }
 
         case GT_EQ:
         case GT_NE:
@@ -9627,15 +9658,18 @@ DONE_MORPHING_CHILDREN:
             break;
 
         case GT_RETURN:
-
-            // Retry updating op1 to a field -- assertion
-            // prop done when morphing op1 changed the local.
+        case GT_SWIFT_ERROR_RET:
+        {
+            // Retry updating return operand to a field -- assertion
+            // prop done when morphing this operand changed the local.
             //
-            if (op1 != nullptr)
+            GenTree* const retVal = tree->AsOp()->GetReturnValue();
+            if (retVal != nullptr)
             {
-                fgTryReplaceStructLocalWithField(op1);
+                fgTryReplaceStructLocalWithField(retVal);
             }
             break;
+        }
 
         default:
             break;
@@ -9690,7 +9724,7 @@ DONE_MORPHING_CHILDREN:
 //    tree - tree to examine and possibly modify
 //
 // Notes:
-//    Currently only called when the tree parent is a GT_RETURN.
+//    Currently only called when the tree parent is a GT_RETURN/GT_SWIFT_ERROR_RET.
 //
 void Compiler::fgTryReplaceStructLocalWithField(GenTree* tree)
 {
@@ -11534,16 +11568,16 @@ GenTree* Compiler::fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow,
 // fgMorphRetInd: Try to get rid of extra local indirections in a return tree.
 //
 // Arguments:
-//    node - The return node that uses an local field.
+//    node - The return node that uses a local field.
 //
 // Return Value:
-//    the original op1 of the ret if there was no optimization or an optimized new op1.
+//    the original return operand if there was no optimization, or an optimized new return operand.
 //
-GenTree* Compiler::fgMorphRetInd(GenTreeUnOp* ret)
+GenTree* Compiler::fgMorphRetInd(GenTreeOp* ret)
 {
-    assert(ret->OperIs(GT_RETURN));
-    assert(ret->gtGetOp1()->OperIs(GT_LCL_FLD));
-    GenTreeLclFld* lclFld = ret->gtGetOp1()->AsLclFld();
+    assert(ret->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET));
+    assert(ret->GetReturnValue()->OperIs(GT_LCL_FLD));
+    GenTreeLclFld* lclFld = ret->GetReturnValue()->AsLclFld();
     unsigned       lclNum = lclFld->GetLclNum();
 
     if (fgGlobalMorph && varTypeIsStruct(lclFld) && !lvaIsImplicitByRefLocal(lclNum))
@@ -13179,80 +13213,28 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetFalseEdge());
             }
 
-            if (fgHaveValidEdgeWeights)
+            // We examine the taken edge (block -> bTaken)
+            // if block has valid profile weight and bTaken does not we try to adjust bTaken's weight
+            // else if bTaken has valid profile weight and block does not we try to adjust block's weight
+            // We can only adjust the block weights when (the edge block -> bTaken) is the only edge into bTaken
+            //
+            if (block->hasProfileWeight())
             {
-                // We are removing an edge from block to bNotTaken
-                // and we have already computed the edge weights, so
-                // we will try to adjust some of the weights
-                //
-                BasicBlock* bUpdated = nullptr; // non-NULL if we updated the weight of an internal block
-
-                // We examine the taken edge (block -> bTaken)
-                // if block has valid profile weight and bTaken does not we try to adjust bTaken's weight
-                // else if bTaken has valid profile weight and block does not we try to adjust block's weight
-                // We can only adjust the block weights when (the edge block -> bTaken) is the only edge into bTaken
-                //
-                if (block->hasProfileWeight())
+                if (!bTaken->hasProfileWeight())
                 {
-                    // The edge weights for (block -> bTaken) are 100% of block's weight
-
-                    edgeTaken->setEdgeWeights(block->bbWeight, block->bbWeight, bTaken);
-
-                    if (!bTaken->hasProfileWeight())
+                    if ((bTaken->countOfInEdges() == 1) || (bTaken->bbWeight < block->bbWeight))
                     {
-                        if ((bTaken->countOfInEdges() == 1) || (bTaken->bbWeight < block->bbWeight))
-                        {
-                            // Update the weight of bTaken
-                            bTaken->inheritWeight(block);
-                            bUpdated = bTaken;
-                        }
+                        // Update the weight of bTaken
+                        bTaken->inheritWeight(block);
                     }
                 }
-                else if (bTaken->hasProfileWeight())
+            }
+            else if (bTaken->hasProfileWeight())
+            {
+                if (bTaken->countOfInEdges() == 1)
                 {
-                    if (bTaken->countOfInEdges() == 1)
-                    {
-                        // There is only one in edge to bTaken
-                        edgeTaken->setEdgeWeights(bTaken->bbWeight, bTaken->bbWeight, bTaken);
-
-                        // Update the weight of block
-                        block->inheritWeight(bTaken);
-                        bUpdated = block;
-                    }
-                }
-
-                if (bUpdated != nullptr)
-                {
-                    weight_t newMinWeight;
-                    weight_t newMaxWeight;
-
-                    FlowEdge* edge;
-                    // Now fix the weights of the edges out of 'bUpdated'
-                    switch (bUpdated->GetKind())
-                    {
-                        case BBJ_COND:
-                            edge         = bUpdated->GetFalseEdge();
-                            newMaxWeight = bUpdated->bbWeight;
-                            newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->GetFalseTarget());
-
-                            edge         = bUpdated->GetTrueEdge();
-                            newMaxWeight = bUpdated->bbWeight;
-                            newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->GetFalseTarget());
-                            break;
-
-                        case BBJ_ALWAYS:
-                            edge         = bUpdated->GetTargetEdge();
-                            newMaxWeight = bUpdated->bbWeight;
-                            newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->Next());
-                            break;
-
-                        default:
-                            // We don't handle BBJ_SWITCH
-                            break;
-                    }
+                    // Update the weight of block
+                    block->inheritWeight(bTaken);
                 }
             }
 
@@ -14067,7 +14049,7 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
     Statement* lastStmt = block->lastStmt();
     GenTree*   ret      = (lastStmt != nullptr) ? lastStmt->GetRootNode() : nullptr;
 
-    if ((ret != nullptr) && (ret->OperGet() == GT_RETURN) && ((ret->gtFlags & GTF_RET_MERGED) != 0))
+    if ((ret != nullptr) && ret->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET) && ((ret->gtFlags & GTF_RET_MERGED) != 0))
     {
         // This return was generated during epilog merging, so leave it alone
     }
@@ -14088,27 +14070,40 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
             fgReturnCount--;
         }
 
+#ifdef SWIFT_SUPPORT
+        // If merging GT_SWIFT_ERROR_RET nodes, ensure the error operand is stored to the merged return error local,
+        // so the correct error value is retrieved in the merged return block.
+        if ((ret != nullptr) && ret->OperIs(GT_SWIFT_ERROR_RET))
+        {
+            assert(genReturnErrorLocal != BAD_VAR_NUM);
+            const DebugInfo& di              = lastStmt->GetDebugInfo();
+            GenTree*         swiftErrorStore = gtNewTempStore(genReturnErrorLocal, ret->gtGetOp1());
+            Statement* const newStmt         = gtNewStmt(swiftErrorStore, di);
+            fgInsertStmtBefore(block, lastStmt, newStmt);
+        }
+#endif // SWIFT_SUPPORT
+
         if (genReturnLocal != BAD_VAR_NUM)
         {
-            // replace the GT_RETURN node to be a STORE_LCL_VAR that stores the return value into genReturnLocal.
+            // replace the GT_RETURN/GT_SWIFT_ERROR_RET node to be a STORE_LCL_VAR that stores the return value into
+            // genReturnLocal.
 
             // Method must be returning a value other than TYP_VOID.
             noway_assert(compMethodHasRetVal());
 
-            // This block must be ending with a GT_RETURN
+            // This block must be ending with a GT_RETURN/GT_SWIFT_ERROR_RET
             noway_assert(lastStmt != nullptr);
             noway_assert(lastStmt->GetNextStmt() == nullptr);
             noway_assert(ret != nullptr);
 
-            // GT_RETURN must have non-null operand as the method is returning the value assigned to
+            // Return node must have non-null operand as the method is returning the value assigned to
             // genReturnLocal
-            noway_assert(ret->OperGet() == GT_RETURN);
-            noway_assert(ret->gtGetOp1() != nullptr);
+            GenTree* const retVal = ret->AsOp()->GetReturnValue();
+            noway_assert(retVal != nullptr);
 
             Statement*       pAfterStatement = lastStmt;
             const DebugInfo& di              = lastStmt->GetDebugInfo();
-            GenTree*         tree =
-                gtNewTempStore(genReturnLocal, ret->gtGetOp1(), CHECK_SPILL_NONE, &pAfterStatement, di, block);
+            GenTree* tree = gtNewTempStore(genReturnLocal, retVal, CHECK_SPILL_NONE, &pAfterStatement, di, block);
             if (tree->OperIsCopyBlkOp())
             {
                 tree = fgMorphCopyBlock(tree);
@@ -14131,16 +14126,17 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
                 lastStmt = newStmt;
             }
         }
-        else if (ret != nullptr && ret->OperGet() == GT_RETURN)
+        else if ((ret != nullptr) && ret->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
         {
-            // This block ends with a GT_RETURN
+            // This block ends with a GT_RETURN/GT_SWIFT_ERROR_RET
             noway_assert(lastStmt != nullptr);
             noway_assert(lastStmt->GetNextStmt() == nullptr);
 
-            // Must be a void GT_RETURN with null operand; delete it as this block branches to oneReturn
-            // block
+            // Must be a void return node with null operand; delete it as this block branches to
+            // oneReturn block
+            GenTree* const retVal = ret->AsOp()->GetReturnValue();
             noway_assert(ret->TypeGet() == TYP_VOID);
-            noway_assert(ret->gtGetOp1() == nullptr);
+            noway_assert(retVal == nullptr);
 
             if (opts.compDbgCode && lastStmt->GetDebugInfo().IsValid())
             {
@@ -14232,6 +14228,13 @@ void Compiler::fgSetOptions()
     if (info.compXcptnsCount > 0)
     {
         codeGen->setFramePointerRequiredEH(true);
+
+        if (UsesFunclets())
+        {
+            assert(!codeGen->isGCTypeFixed());
+            // Enforce fully interruptible codegen for funclet unwinding
+            SetInterruptible(true);
+        }
     }
 
 #else // !TARGET_X86
@@ -14242,15 +14245,6 @@ void Compiler::fgSetOptions()
     }
 
 #endif // TARGET_X86
-
-#ifdef UNIX_X86_ABI
-    if (info.compXcptnsCount > 0)
-    {
-        assert(!codeGen->isGCTypeFixed());
-        // Enforce fully interruptible codegen for funclet unwinding
-        SetInterruptible(true);
-    }
-#endif // UNIX_X86_ABI
 
     if (compMethodRequiresPInvokeFrame())
     {
@@ -14710,12 +14704,11 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
 
     if (hasTrueExpr)
     {
-        if (trueExpr->OperIs(GT_CALL) && (trueExpr->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN))
+        if (trueExpr->OperIs(GT_CALL) && trueExpr->AsCall()->IsNoReturn())
         {
             Statement* trueStmt = fgNewStmtFromTree(trueExpr, stmt->GetDebugInfo());
             fgInsertStmtAtEnd(thenBlock, trueStmt);
             fgConvertBBToThrowBB(thenBlock);
-            setMethodHasNoReturnCalls();
             introducedThrow = true;
         }
         else
@@ -14734,12 +14727,11 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     // Assign the falseExpr into the dst or tmp, insert in elseBlock
     if (hasFalseExpr)
     {
-        if (falseExpr->OperIs(GT_CALL) && (falseExpr->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN))
+        if (falseExpr->OperIs(GT_CALL) && falseExpr->AsCall()->IsNoReturn())
         {
             Statement* falseStmt = fgNewStmtFromTree(falseExpr, stmt->GetDebugInfo());
             fgInsertStmtAtEnd(elseBlock, falseStmt);
             fgConvertBBToThrowBB(elseBlock);
-            setMethodHasNoReturnCalls();
             introducedThrow = true;
         }
         else

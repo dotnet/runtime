@@ -158,7 +158,7 @@ namespace Wasm.Build.Tests
         {
             if (testUnicode)
             {
-                string projectNameCore = buildArgs.ProjectName.Trim(new char[] {s_unicodeChar});
+                string projectNameCore = buildArgs.ProjectName.Replace(s_unicodeChars, "");
                 TestUtils.AssertMatches(@$"{projectNameCore}\S+.dll -> {projectNameCore}\S+.dll.bc", buildOutput, contains: expectAOT);
                 TestUtils.AssertMatches(@$"{projectNameCore}\S+.dll.bc -> {projectNameCore}\S+.dll.o", buildOutput, contains: expectAOT);
             }

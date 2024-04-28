@@ -290,6 +290,10 @@ void HWIntrinsicInfo::lookupImmBounds(
             case NI_Sve_CreateTrueMaskUInt16:
             case NI_Sve_CreateTrueMaskUInt32:
             case NI_Sve_CreateTrueMaskUInt64:
+            case NI_Sve_Count16BitElements:
+            case NI_Sve_Count32BitElements:
+            case NI_Sve_Count64BitElements:
+            case NI_Sve_Count8BitElements:
                 immLowerBound = (int)SVE_PATTERN_POW2;
                 immUpperBound = (int)SVE_PATTERN_ALL;
                 break;
@@ -621,28 +625,28 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_Vector64_ConvertToInt32:
+        case NI_Vector64_ConvertToInt32Native:
         case NI_Vector128_ConvertToInt32:
+        case NI_Vector128_ConvertToInt32Native:
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_FLOAT);
 
-            op1 = impSIMDPopStack();
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_ConvertToInt32RoundToZero, simdBaseJitType, simdSize);
+            op1     = impSIMDPopStack();
+            retNode = gtNewSimdCvtNativeNode(retType, op1, CORINFO_TYPE_INT, simdBaseJitType, simdSize);
             break;
         }
 
         case NI_Vector64_ConvertToInt64:
+        case NI_Vector64_ConvertToInt64Native:
         case NI_Vector128_ConvertToInt64:
+        case NI_Vector128_ConvertToInt64Native:
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_DOUBLE);
 
-            intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_ConvertToInt64RoundToZeroScalar
-                                        : NI_AdvSimd_Arm64_ConvertToInt64RoundToZero;
-
             op1     = impSIMDPopStack();
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+            retNode = gtNewSimdCvtNativeNode(retType, op1, CORINFO_TYPE_LONG, simdBaseJitType, simdSize);
             break;
         }
 
@@ -658,28 +662,28 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_Vector64_ConvertToUInt32:
+        case NI_Vector64_ConvertToUInt32Native:
         case NI_Vector128_ConvertToUInt32:
+        case NI_Vector128_ConvertToUInt32Native:
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_FLOAT);
 
             op1     = impSIMDPopStack();
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_ConvertToUInt32RoundToZero, simdBaseJitType,
-                                               simdSize);
+            retNode = gtNewSimdCvtNativeNode(retType, op1, CORINFO_TYPE_UINT, simdBaseJitType, simdSize);
             break;
         }
 
         case NI_Vector64_ConvertToUInt64:
+        case NI_Vector64_ConvertToUInt64Native:
         case NI_Vector128_ConvertToUInt64:
+        case NI_Vector128_ConvertToUInt64Native:
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_DOUBLE);
 
-            intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_ConvertToUInt64RoundToZeroScalar
-                                        : NI_AdvSimd_Arm64_ConvertToUInt64RoundToZero;
-
             op1     = impSIMDPopStack();
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+            retNode = gtNewSimdCvtNativeNode(retType, op1, CORINFO_TYPE_ULONG, simdBaseJitType, simdSize);
             break;
         }
 
@@ -2222,9 +2226,8 @@ GenTree* Compiler::gtNewSimdConvertVectorToMaskNode(var_types   type,
     assert(varTypeIsSIMD(node));
 
     // ConvertVectorToMask uses cmpne which requires an embedded mask.
-    GenTree* embeddedMask = gtNewSimdHWIntrinsicNode(TYP_MASK, NI_Sve_CreateTrueMaskAll, simdBaseJitType, simdSize);
-    return gtNewSimdHWIntrinsicNode(TYP_MASK, embeddedMask, node, NI_Sve_ConvertVectorToMask, simdBaseJitType,
-                                    simdSize);
+    GenTree* trueMask = gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
+    return gtNewSimdHWIntrinsicNode(TYP_MASK, trueMask, node, NI_Sve_ConvertVectorToMask, simdBaseJitType, simdSize);
 }
 
 //------------------------------------------------------------------------
@@ -2244,6 +2247,21 @@ GenTree* Compiler::gtNewSimdConvertMaskToVectorNode(GenTreeHWIntrinsic* node, va
 
     return gtNewSimdHWIntrinsicNode(type, node, NI_Sve_ConvertMaskToVector, node->GetSimdBaseJitType(),
                                     node->GetSimdSize());
+}
+
+//------------------------------------------------------------------------
+// gtNewSimdEmbeddedMaskNode: Create an embedded mask
+//
+// Arguments:
+//    simdBaseJitType -- the base jit type of the nodes being masked
+//    simdSize        -- the simd size of the nodes being masked
+//
+// Return Value:
+//    The mask
+//
+GenTree* Compiler::gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigned simdSize)
+{
+    return gtNewSimdHWIntrinsicNode(TYP_MASK, NI_Sve_CreateTrueMaskAll, simdBaseJitType, simdSize);
 }
 
 #endif // FEATURE_HW_INTRINSICS
