@@ -4119,7 +4119,7 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
     }
 }
 
-#if defined(SWIFT_SUPPORT) || defined(TARGET_RISCV64)
+#if defined(SWIFT_SUPPORT) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 //-----------------------------------------------------------------------------
 // genHomeSwiftStructParameters: Move the incoming segment to the local stack frame.
 //
@@ -4159,8 +4159,16 @@ void CodeGen::genHomeStackSegment(unsigned                 lclNum,
     }
     emitAttr size = emitTypeSize(loadType);
 
-    int loadOffset =
-        -(isFramePointerUsed() ? genCallerSPtoFPdelta() : genCallerSPtoInitialSPdelta()) + (int)seg.GetStackOffset();
+    int loadOffset;
+    if (isFramePointerUsed())
+    {
+        loadOffset = -genCallerSPtoFPdelta();
+    }
+    else
+    {
+        loadOffset = -(int)seg.GetStackOffset() - genCallerSPtoInitialSPdelta();
+    }
+
 #ifdef TARGET_XARCH
     GetEmitter()->emitIns_R_AR(ins_Load(loadType), size, initReg, genFramePointerReg(), loadOffset);
 #else
@@ -4171,7 +4179,7 @@ void CodeGen::genHomeStackSegment(unsigned                 lclNum,
     if (initRegStillZeroed)
         *initRegStillZeroed = false;
 }
-#endif // defined(SWIFT_SUPPORT) || defined(TARGET_RISCV64)
+#endif // defined(SWIFT_SUPPORT) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 
 #ifdef SWIFT_SUPPORT
 
@@ -4248,7 +4256,7 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack)
 //
 void CodeGen::genHomeStackPartOfSplitParameter(regNumber initReg, bool* initRegStillZeroed)
 {
-#ifdef TARGET_RISCV64
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     unsigned lclNum = 0;
     for (; lclNum < compiler->info.compArgsCount; lclNum++)
     {
@@ -4273,7 +4281,7 @@ void CodeGen::genHomeStackPartOfSplitParameter(regNumber initReg, bool* initRegS
         }
         break;
     }
-#endif
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 }
 
 /*-----------------------------------------------------------------------------
