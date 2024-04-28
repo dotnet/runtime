@@ -67,6 +67,8 @@ NodeInternalRegisters::NodeInternalRegisters(Compiler* comp)
 {
 }
 
+//static NodeCounts     s_nodeCounts;
+//static DumpOnShutdown s_d("Node types with internal regs", &s_nodeCounts);
 //------------------------------------------------------------------------
 // Add: Add internal allocated registers for the specified node.
 //
@@ -78,6 +80,7 @@ void NodeInternalRegisters::Add(GenTree* tree, regMaskTP regs)
 {
     assert(regs != RBM_NONE);
 
+    //s_nodeCounts.record(tree->gtOper);
     regMaskTP* result = m_table.LookupPointerOrAdd(tree, RBM_NONE);
     *result |= regs;
 }
@@ -149,6 +152,28 @@ regMaskTP NodeInternalRegisters::GetAll(GenTree* tree)
 {
     regMaskTP regs;
     return m_table.Lookup(tree, &regs) ? regs : RBM_NONE;
+}
+
+//------------------------------------------------------------------------
+// ExtractAll: Extract all internal registers for the specified IR node.
+//
+// Parameters:
+//   tree - IR node whose internal registers to query
+//
+// Returns:
+//   Mask of registers.
+//
+regMaskTP NodeInternalRegisters::ExtractAll(GenTree* tree)
+{
+    regMaskTP* regs = m_table.LookupPointer(tree);
+    if (regs == nullptr)
+    {
+        return RBM_NONE;
+    }
+
+    regMaskTP result = *regs;
+    *regs = RBM_NONE;
+    return result;
 }
 
 //------------------------------------------------------------------------
@@ -1982,6 +2007,31 @@ void CodeGen::genGenerateMachineCode()
 
     /* Now generate code for the function */
     genCodeForBBlist();
+
+    //for (BasicBlock* block : compiler->Blocks())
+    //{
+    //    for (GenTree* node : LIR::AsRange(block))
+    //    {
+    //        static const unsigned buckets[] = { 0,1,2,3,4,5,6,7,8,0 };
+    //        static Histogram s_numInternalRegs(buckets);
+    //        static DumpOnShutdown s_d("Internal registers after codegen", &s_numInternalRegs);
+    //        if (!node->IsCall() || node->AsCall()->IsFastTailCall())
+    //        {
+    //            s_numInternalRegs.record(0);
+    //        }
+    //        else
+    //        {
+    //            unsigned count = internalRegisters.Count(node);
+    //            s_numInternalRegs.record(count);
+
+    //            static NodeCounts s_internalRegsByNode;
+    //            static DumpOnShutdown s_d2("Opers with internal registers after codegen", &s_internalRegsByNode);
+    //            if (count > 0)
+    //                s_internalRegsByNode.record(node->gtOper);
+    //        }
+
+    //    }
+    //}
 
 #ifdef DEBUG
     // After code generation, dump the frame layout again. It should be the same as before code generation, if code

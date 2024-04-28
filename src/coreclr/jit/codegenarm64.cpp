@@ -3668,7 +3668,8 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     unsigned     slots  = layout->GetSlotCount();
 
     // Temp register(s) used to perform the sequence of loads and stores.
-    regNumber tmpReg  = internalRegisters.Extract(cpObjNode, RBM_ALLINT);
+    regMaskTP internalRegs = internalRegisters.ExtractAll(cpObjNode);
+    regNumber tmpReg = genFirstRegNumFromMaskAndToggle(internalRegs, RBM_ALLINT);
     regNumber tmpReg2 = REG_NA;
 
     assert(genIsValidIntReg(tmpReg));
@@ -3677,7 +3678,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 
     if (slots > 1)
     {
-        tmpReg2 = internalRegisters.Extract(cpObjNode, RBM_ALLINT);
+        tmpReg2 = genFirstRegNumFromMaskAndToggle(internalRegs, RBM_ALLINT);
         assert(tmpReg2 != tmpReg);
         assert(genIsValidIntReg(tmpReg2));
         assert(tmpReg2 != REG_WRITE_BARRIER_DST_BYREF);
@@ -3730,8 +3731,8 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         regNumber tmpSimdReg2 = REG_NA;
         if ((slots >= 4) && compiler->IsBaselineSimdIsaSupported())
         {
-            tmpSimdReg1 = internalRegisters.Extract(cpObjNode, RBM_ALLFLOAT);
-            tmpSimdReg2 = internalRegisters.Extract(cpObjNode, RBM_ALLFLOAT);
+            tmpSimdReg1 = genFirstRegNumFromMaskAndToggle(internalRegs, RBM_ALLFLOAT);
+            tmpSimdReg2 = genFirstRegNumFromMaskAndToggle(internalRegs, RBM_ALLFLOAT);
         }
 
         unsigned i = 0;

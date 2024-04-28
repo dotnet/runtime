@@ -1428,6 +1428,23 @@ PhaseStatus LinearScan::doLinearScan()
     }
     compiler->EndPhase(PHASE_LINEAR_SCAN_RESOLVE);
 
+    //for (BasicBlock* block : compiler->Blocks())
+    //{
+    //    for (GenTree* node : LIR::AsRange(block))
+    //    {
+    //        static const unsigned buckets[] = { 0,1,2,3,4,5,6,7,8,0 };
+    //        static Histogram s_numInternalRegs(buckets);
+    //        static DumpOnShutdown s_d("Internal registers after LSRA", &s_numInternalRegs);
+    //        unsigned count = compiler->codeGen->internalRegisters.Count(node);
+    //        s_numInternalRegs.record(count);
+
+    //        static NodeCounts s_internalRegsByNode;
+    //        static DumpOnShutdown s_d2("Opers with internal registers after LSRA", &s_internalRegsByNode);
+    //        if (count > 0)
+    //            s_internalRegsByNode.record(node->gtOper);
+    //    }
+    //}
+
     assert(blockSequencingDone); // Should do at least one traversal.
     assert(blockEpoch == compiler->GetCurBasicBlockEpoch());
 

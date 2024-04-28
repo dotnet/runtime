@@ -2965,25 +2965,27 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         GetEmitter()->emitDisableGC();
     }
 
+    regMaskTP internalRegs = internalRegisters.ExtractAll(node);
+
     if ((srcOffsetAdjustment != 0) && (dstOffsetAdjustment != 0))
     {
-        const regNumber tempReg1 = internalRegisters.Extract(node, RBM_ALLINT);
+        const regNumber tempReg1 = genFirstRegNumFromMaskAndToggle(internalRegs, RBM_ALLINT);
         genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg1, srcReg, srcOffsetAdjustment, tempReg1);
         srcReg = tempReg1;
 
-        const regNumber tempReg2 = internalRegisters.Extract(node, RBM_ALLINT);
+        const regNumber tempReg2 = genFirstRegNumFromMaskAndToggle(internalRegs, RBM_ALLINT);
         genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg2, dstReg, dstOffsetAdjustment, tempReg2);
         dstReg = tempReg2;
     }
     else if (srcOffsetAdjustment != 0)
     {
-        const regNumber tempReg = internalRegisters.Extract(node, RBM_ALLINT);
+        const regNumber tempReg = genFirstRegNumFromMaskAndToggle(internalRegs, RBM_ALLINT);
         genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg, srcReg, srcOffsetAdjustment, tempReg);
         srcReg = tempReg;
     }
     else if (dstOffsetAdjustment != 0)
     {
-        const regNumber tempReg = internalRegisters.Extract(node, RBM_ALLINT);
+        const regNumber tempReg = genFirstRegNumFromMaskAndToggle(internalRegs, RBM_ALLINT);
         genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg, dstReg, dstOffsetAdjustment, tempReg);
         dstReg = tempReg;
     }
@@ -2991,16 +2993,16 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     regNumber intReg1 = REG_NA;
     regNumber intReg2 = REG_NA;
 
-    const unsigned intRegCount = internalRegisters.Count(node, RBM_ALLINT);
+    const unsigned intRegCount = genCountBits(internalRegs & RBM_ALLINT);
 
     if (intRegCount >= 2)
     {
-        intReg1 = internalRegisters.Extract(node, RBM_ALLINT);
-        intReg2 = internalRegisters.Extract(node, RBM_ALLINT);
+        intReg1 = genFirstRegNumFromMaskAndToggle(internalRegs, RBM_ALLINT);
+        intReg2 = genFirstRegNumFromMaskAndToggle(internalRegs, RBM_ALLINT);
     }
     else if (intRegCount == 1)
     {
-        intReg1 = internalRegisters.GetSingle(node, RBM_ALLINT);
+        intReg1 = genFirstRegNumFromMaskAndToggle(internalRegs, RBM_ALLINT);
         intReg2 = rsGetRsvdReg();
     }
     else
@@ -3010,8 +3012,8 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
     if (shouldUse16ByteWideInstrs)
     {
-        const regNumber simdReg1 = internalRegisters.Extract(node, RBM_ALLFLOAT);
-        const regNumber simdReg2 = internalRegisters.GetSingle(node, RBM_ALLFLOAT);
+        const regNumber simdReg1 = genFirstRegNumFromMaskAndToggle(internalRegs, RBM_ALLFLOAT);
+        const regNumber simdReg2 = genFirstRegNumFromMaskAndToggle(internalRegs, RBM_ALLFLOAT);
 
         helper.Unroll(FP_REGSIZE_BYTES, intReg1, simdReg1, simdReg2, srcReg, dstReg, GetEmitter());
     }
@@ -3146,14 +3148,15 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
     unsigned simdSize = FP_REGSIZE_BYTES;
     if (size >= simdSize)
     {
+        regMaskTP internalRegs = internalRegisters.ExtractAll(tree);
         // Number of SIMD regs needed to save the whole src to regs.
-        const unsigned numberOfSimdRegs = internalRegisters.Count(tree, RBM_ALLFLOAT);
+        const unsigned numberOfSimdRegs = genCountBits(internalRegs & RBM_ALLFLOAT);
 
         // Pop all temp regs to a local array, currently, this impl is limited with LSRA's MaxInternalCount
         regNumber tempRegs[LinearScan::MaxInternalCount] = {};
         for (unsigned i = 0; i < numberOfSimdRegs; i++)
         {
-            tempRegs[i] = internalRegisters.Extract(tree, RBM_ALLFLOAT);
+            tempRegs[i] = genFirstRegNumFromMaskAndToggle(internalRegs, RBM_ALLFLOAT);
         }
 
         auto emitSimdLoadStore = [&](bool load) {
@@ -3197,8 +3200,9 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
         else
         {
             assert(internalRegisters.Count(tree) == 2);
-            const regNumber tmpReg1 = internalRegisters.Extract(tree, RBM_ALLINT);
-            const regNumber tmpReg2 = internalRegisters.Extract(tree, RBM_ALLINT);
+            regMaskTP internalRegs = internalRegisters.ExtractAll(tree);
+            const regNumber tmpReg1 = genFirstRegNumFromMaskAndToggle(internalRegs, RBM_ALLINT);
+            const regNumber tmpReg2 = genFirstRegNumFromMaskAndToggle(internalRegs, RBM_ALLINT);
             emitLoadStore(/* load */ true, loadStoreSize, tmpReg1, 0);
             emitLoadStore(/* load */ true, loadStoreSize, tmpReg2, size - loadStoreSize);
             emitLoadStore(/* load */ false, loadStoreSize, tmpReg1, 0);
