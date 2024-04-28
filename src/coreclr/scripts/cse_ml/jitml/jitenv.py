@@ -14,6 +14,13 @@ BOOLEAN_FEATURES = JITTYPE_ONEHOT_SIZE + 7
 FLOAT_FEATURES = 9
 FEATURES = BOOLEAN_FEATURES + FLOAT_FEATURES
 
+REWARD_SCALE = 10
+REWARD_MIN = -1.0
+REWARD_MAX = 1.0
+
+FOUND_BEST_REWARD = 0.1
+NO_BETTER_METHOD_REWARD = 0.01
+
 INVALID_ACTION_PENALTY = -0.01
 INVALID_ACTION_LIMIT = 128
 
@@ -95,13 +102,11 @@ class JitEnv(gym.Env):
             index = self.__select_method()
             no_cse = self._jit_method(index, JitMetrics=1, JitRLHook=1, JitRLHookCSEDecisions=[0])
             if no_cse is None:
-                print(f"Failed to JIT method {index}")
                 continue
 
             if JitEnv.is_acceptable(no_cse):
                 original_heuristic = self._jit_method(index, JitMetrics=1)
                 if original_heuristic is None:
-                    print(f"Failed to JIT method {index}")
                     continue
                 break
 
@@ -177,11 +182,69 @@ class JitEnv(gym.Env):
 
     def get_rewards(self, state : JitEnvState, completed : bool):
         """Returns the reward based on the change in performance score."""
-        prev = state.heuristic_score if completed else state.previous_score
-        curr = state.current.perf_score
 
-        change = (prev - curr) / prev
-        return change
+        # always reward for how much better/worse we got for this choice
+        prev = state.previous_score
+        curr = state.current.perf_score
+        rewards = (prev - curr) / prev
+
+        # if we are done, check some extra conditions
+        if completed:
+            # First, check if there is a CSE we could have applied for an immediate improvement
+            # and penalize for not finding that.
+            any_other_cses = any((x for x in state.current.cse_candidates if x.can_apply))
+            better_method = None
+            if any_other_cses:
+
+                better_method = self._find_best_cse(state)
+                if better_method is not None:
+                    # if there was a better method, penalize for that.
+                    prev = better_method.perf_score
+                    curr = state.current.perf_score
+                    rewards += (prev - curr) / prev
+
+                else:
+                    # otherwise give a tiny reward for not taking a bad CSE
+                    rewards += NO_BETTER_METHOD_REWARD
+
+            # Next, check if we are better than the heuristic and reward/penalize for that.
+            prev = state.heuristic_score
+            curr = state.current.perf_score
+            heuristic_reward = (prev - curr) / prev
+
+            # But if there was a better method, don't reward for beating the heuristic.  In that case,
+            # we don't want to reward the early termination
+            if better_method is None:
+                rewards += heuristic_reward
+
+            elif heuristic_reward < 0:
+                rewards += heuristic_reward
+
+            # If we beat the heuristic and there wasn't another CSE we should have immediately applied,
+            # add an additional reward for besting the heuristic.
+            if any_other_cses and better_method is None and state.heuristic_score > state.current.perf_score:
+                rewards += FOUND_BEST_REWARD
+
+        rewards *= REWARD_SCALE
+        rewards = np.clip(rewards, REWARD_MIN, REWARD_MAX)
+
+        return rewards
+
+    def _find_best_cse(self, state : JitEnvState):
+        """Check to see if any of the CSE's are immediately better."""
+        best = None
+
+        for cse in state.current.cse_candidates:
+            if cse.can_apply:
+                choices = state.choices[:-1] + [cse.index + 1, 0]
+                method = self._jit_method(state.method.index, JitMetrics=1, JitRLHook=1, JitRLHookCSEDecisions=choices)
+                if method is not None:
+                    if method.perf_score < state.current.perf_score:
+                        if best is None or method.perf_score < best.perf_score:
+                            best = method
+
+        return best
+
 
     def get_observation(self, method : MethodContext):
         """Builds the observation from a method."""
@@ -241,11 +304,9 @@ class JitEnv(gym.Env):
             result = superpmi.jit_method(index, *args, **kwargs)
 
         if result is None:
-            print (f"Failed to JIT method {index} - removing")
             self.__remove_method(index)
 
         elif np.isclose(result.perf_score, 0.0, rtol=1e-05, atol=1e-08, equal_nan=False):
-            print(f"Method {index} has a perf score of 0.0 - removing")
             self.__remove_method(index)
             result = None
 
