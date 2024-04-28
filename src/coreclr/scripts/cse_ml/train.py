@@ -5,6 +5,7 @@ import os
 import json
 import time
 import argparse
+import random
 
 from jitml import SuperPmi, JitEnv, JitRLModel
 
@@ -52,6 +53,8 @@ def parse_args():
     parser.add_argument("--parallel", type=int, default=None, help="The number of parallel environments to use.")
     parser.add_argument("--iterations", type=int, default=None, help="The number of iterations to train for.")
     parser.add_argument("--algorithm", default="PPO", help="The algorithm to use. (default: PPO)")
+    parser.add_argument("--test_percent", type=float, default=0.1,
+                        help="The percentage of data to use for testing. (default: 0.1)")
 
     args = parser.parse_args()
     if args.core_root is None:
@@ -64,7 +67,15 @@ def parse_args():
 def main(args):
     """Main entry point."""
     acceptable = get_acceptable_methods(args.core_root, args.mch)
-    print(f"Trainig with {len(acceptable)} methods.")
+
+    # shuffle acceptable methods
+    random.shuffle(acceptable)
+
+    num_test = int(len(acceptable) * args.test_percent)
+    train, test = acceptable[num_test:], acceptable[:num_test]
+
+
+    print(f"Trainig with {len(train)} methods, holding back {len(test)} for testing.")
 
     iterations = args.iterations if args.iterations is not None else 1_000_000
 
@@ -74,8 +85,14 @@ def main(args):
 
     model = os.path.join(model_path, "model.zip")
 
+    with open(os.path.join(model_path, "train.json"), 'w', encoding="utf8") as f:
+        json.dump(train, f)
+
+    with open(os.path.join(model_path, "test.json"), 'w', encoding="utf8") as f:
+        json.dump(test, f)
+
     rl = JitRLModel(args.algorithm, model_path)
-    rl.train(args.core_root, args.mch, acceptable, iterations=iterations, parallel=args.parallel)
+    rl.train(args.core_root, args.mch, train, iterations=iterations, parallel=args.parallel)
     rl.save(os.path.expanduser(model))
 
 if __name__ == "__main__":
