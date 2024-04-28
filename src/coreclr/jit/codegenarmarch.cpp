@@ -3670,7 +3670,15 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             // For fast tailcalls we have already loaded the call target when processing the call node.
             if (!call->IsFastTailCall())
             {
+#ifdef TARGET_ARM
+                // For arm32 we've allocated an internal register to load the target into.
+                // Loading into lr takes 4 bytes (instead of potentially 2 with another register).
+                targetAddrReg = internalRegisters.GetSingle(call);
+#else
+                // For arm64 we just use lr and skip the internal register.
                 targetAddrReg = REG_LR;
+#endif
+
                 GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), targetAddrReg,
                                           callThroughIndirReg);
             }
