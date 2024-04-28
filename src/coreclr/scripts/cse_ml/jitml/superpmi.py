@@ -131,7 +131,8 @@ class SuperPmi:
 
     def jit_method(self, method_or_id : int | MethodContext, **options) -> MethodContext:
         """Jits the method given by id or MethodContext."""
-        if self._process is None:
+        process = self._process
+        if process is None:
             raise ValueError("SuperPmi process is not running.  Use a 'with' statement.")
 
         if isinstance(method_or_id, MethodContext):
@@ -146,14 +147,18 @@ class SuperPmi:
         torun = f"{method_or_id}!"
         torun += "!".join([f"{key}={value}" for key, value in options.items()])
 
-        self._process.stdin.write(f"{torun}\n".encode('utf-8'))
-        self._process.stdin.flush()
+        if not process.poll():
+            self.stop()
+            process = self.start()
+
+        process.stdin.write(f"{torun}\n".encode('utf-8'))
+        process.stdin.flush()
 
         result = None
         output = ""
 
         while not output.startswith('[streaming] Done.'):
-            output = self._process.stdout.readline().decode('utf-8').strip()
+            output = process.stdout.readline().decode('utf-8').strip()
             if output.startswith(';'):
                 result = self._parse_method_context(output)
 
