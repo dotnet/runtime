@@ -18,37 +18,12 @@
       <ContentsDiffer ParameterType="System.Boolean" Output="true" />
     </ParameterGroup>
     <Task>
-      <Using Namespace="System" />
-      <Using Namespace="System.Collections.Generic" />
       <Using Namespace="System.IO" />
+      <Using Namespace="System.Linq" />
       <Code Type="Fragment" Language="cs">
         <![CDATA[
-          if (!File.Exists(ExistingFile.ItemSpec))
-          {
-              ContentsDiffer = true;
-              return true;
-          }
-
-          using (IEnumerator<string> existingLines = File.ReadLines(ExistingFile.ItemSpec).GetEnumerator())
-          using (IEnumerator<string> generatedLines = File.ReadLines(GeneratedFile.ItemSpec).GetEnumerator())
-          {
-              while (generatedLines.MoveNext())
-              {
-                  if (!existingLines.MoveNext())
-                  {
-                      ContentsDiffer = true;
-                      return true;
-                  }
-
-                  if (generatedLines.Current != existingLines.Current)
-                  {
-                      ContentsDiffer = true;
-                      return true;
-                  }
-              }
-
-              ContentsDiffer = existingLines.MoveNext();
-          }
+        ContentsDiffer = !File.Exists(ExistingFile.ItemSpec) ||
+          !File.ReadLines(ExistingFile.ItemSpec).SequenceEqual(File.ReadLines(GeneratedFile.ItemSpec));
         ]]>
       </Code>
     </Task>
@@ -77,10 +52,10 @@
     </CompareFilesIgnoreLineEndings>
 
     <Copy
-      Condition="'@(_FilesDiffer)' == 'True'"
+      Condition="'@(_FilesDiffer)' == 'true'"
       SourceFiles="@(AsnXml -> '$(_AsnIntermediatePath)%(filename).cs')"
       DestinationFiles="@(AsnXml -> '%(Identity).cs')" />
 
-    <Warning Condition="'@(_FilesDiffer)' == 'True'" Text="AsnXml regenerated files, be sure to check them in: @(AsnXml -> '%(Identity).cs')" />
+    <Warning Condition="'@(_FilesDiffer)' == 'true'" Text="AsnXml regenerated files, be sure to check them in: @(AsnXml -> '%(Identity).cs')" />
   </Target>
 </Project>
