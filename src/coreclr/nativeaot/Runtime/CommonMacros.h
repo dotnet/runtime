@@ -125,11 +125,7 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 
 #ifndef __GCENV_BASE_INCLUDED__
 
-#if defined(HOST_WASM)
-#define OS_PAGE_SIZE    0x4
-#else
 #define OS_PAGE_SIZE    PalOsPageSize()
-#endif
 
 #if defined(HOST_AMD64)
 
