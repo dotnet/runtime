@@ -187,7 +187,7 @@ namespace System.Runtime.CompilerServices
                 if (weaklyTypedBox.StateMachine == null)
                 {
                     Debugger.NotifyOfCrossThreadDependency(); // same explanation as with usage below
-                    weaklyTypedBox.StateMachine = Unsafe.As<IAsyncStateMachine>(RuntimeHelpers.Box(ref Unsafe.As<TStateMachine, byte>(ref stateMachine), typeof(TStateMachine).TypeHandle));
+                    weaklyTypedBox.StateMachine = stateMachine;
                 }
 
                 // Update the context.  This only happens with a debugger, so no need to spend
