@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -9,8 +10,19 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
-    internal sealed record ComInterfaceContext(ComInterfaceInfo Info, ComInterfaceContext? Base, ComInterfaceOptions Options)
+    internal sealed class ComInterfaceContext: IEquatable<ComInterfaceContext>
     {
+        internal ComInterfaceInfo Info { get; }
+        internal ComInterfaceContext? Base { get; }
+        internal ComInterfaceOptions Options { get; }
+
+        private ComInterfaceContext(ComInterfaceInfo info, ComInterfaceContext? @base, ComInterfaceOptions options)
+        {
+            Info = info;
+            Base = @base;
+            Options = options;
+        }
+
         /// <summary>
         /// Takes a list of ComInterfaceInfo, and creates a list of ComInterfaceContext.
         /// </summary>
@@ -76,5 +88,18 @@ namespace Microsoft.Interop
                 currBase = currBase.Base;
             return currBase;
         }
+
+        public bool Equals(ComInterfaceContext other)
+            => other.Info.Equals(Info)
+                && other.Base == Base
+                && other.Options == Options;
+
+
+        public override bool Equals(object obj)
+            => obj is ComInterfaceContext other
+                && Equals(other);
+
+        public override int GetHashCode() => HashCode.Combine(Info, Base, Options);
+
     }
 }

@@ -14,17 +14,39 @@ namespace Microsoft.Interop
     /// <summary>
     /// Information about a Com interface, but not its methods.
     /// </summary>
-    internal sealed record ComInterfaceInfo(
-        ManagedTypeInfo Type,
-        string ThisInterfaceKey, // For associating interfaces to its base
-        string? BaseInterfaceKey, // For associating interfaces to its base
-        InterfaceDeclarationSyntax Declaration,
-        ContainingSyntaxContext TypeDefinitionContext,
-        ContainingSyntax ContainingSyntax,
-        Guid InterfaceId,
-        ComInterfaceOptions Options,
-        Location DiagnosticLocation)
+    internal sealed class ComInterfaceInfo
     {
+        private ComInterfaceInfo(
+            ManagedTypeInfo type,
+            string thisInterfaceKey,
+            string? baseInterfaceKey,
+            InterfaceDeclarationSyntax declaration,
+            ContainingSyntaxContext typeDefinitionContext,
+            ContainingSyntax containingSyntax,
+            Guid interfaceId,
+            ComInterfaceOptions options,
+            Location diagnosticLocation)
+        {
+            Type = type;
+            ThisInterfaceKey = thisInterfaceKey;
+            BaseInterfaceKey = baseInterfaceKey;
+            Declaration = declaration;
+            TypeDefinitionContext = typeDefinitionContext;
+            ContainingSyntax = containingSyntax;
+            InterfaceId = interfaceId;
+            Options = options;
+            DiagnosticLocation = diagnosticLocation;
+        }
+        public ManagedTypeInfo Type { get; }
+        public string ThisInterfaceKey { get; }
+        public string? BaseInterfaceKey { get; }
+        public InterfaceDeclarationSyntax Declaration { get; }
+        public ContainingSyntaxContext TypeDefinitionContext { get; }
+        public ContainingSyntax ContainingSyntax { get; }
+        public Guid InterfaceId { get; }
+        public ComInterfaceOptions Options { get; }
+        public Location DiagnosticLocation { get; }
+
         public static DiagnosticOrInterfaceInfo From(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax, StubEnvironment env, CancellationToken _)
         {
             if (env.Compilation.Options is not CSharpCompilationOptions { AllowUnsafe: true }) // Unsafe code enabled
