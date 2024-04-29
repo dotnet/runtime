@@ -364,7 +364,7 @@ namespace Internal.Cryptography
             return ToUpperHexString(serialBytes);
         }
 
-#if NET5_0_OR_GREATER
+#if NET
         private static string ToUpperHexString(ReadOnlySpan<byte> ba)
         {
             return Convert.ToHexString(ba);

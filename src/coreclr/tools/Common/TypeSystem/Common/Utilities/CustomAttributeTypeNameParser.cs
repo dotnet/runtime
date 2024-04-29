@@ -29,6 +29,8 @@ namespace System.Reflection
 {
     internal partial struct TypeNameParser
     {
+        private static readonly TypeNameParseOptions s_typeNameParseOptions = new() { MaxNodes = int.MaxValue };
+
         private ModuleDesc _module;
         private bool _throwIfNotFound;
         private Func<ModuleDesc, string, MetadataType> _canonResolver;
@@ -36,7 +38,7 @@ namespace System.Reflection
         public static TypeDesc ResolveType(ModuleDesc module, string name, bool throwIfNotFound,
             Func<ModuleDesc, string, MetadataType> canonResolver)
         {
-            if (!TypeName.TryParse(name.AsSpan(), out TypeName parsed))
+            if (!TypeName.TryParse(name.AsSpan(), out TypeName parsed, s_typeNameParseOptions))
             {
                 ThrowHelper.ThrowTypeLoadException(name, module);
             }

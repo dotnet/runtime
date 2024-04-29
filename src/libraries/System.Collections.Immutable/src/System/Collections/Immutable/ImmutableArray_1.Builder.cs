@@ -589,7 +589,7 @@ namespace System.Collections.Immutable
                 if (index + length < this._count)
                 {
 
-#if NET6_0_OR_GREATER
+#if NET
                     if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                     {
                         Array.Clear(_elements, index, length); // Clear the elements so that the gc can reclaim the references.
@@ -919,7 +919,7 @@ namespace System.Collections.Immutable
             /// </summary>
             public void Reverse()
             {
-#if NETCOREAPP2_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+#if NET || NETSTANDARD2_1_OR_GREATER
                 Array.Reverse<T>(_elements, 0, _count);
 #else
                 // The non-generic Array.Reverse is not used because it does not perform
@@ -963,7 +963,7 @@ namespace System.Collections.Immutable
 
                 if (Count > 1)
                 {
-#if NET6_0_OR_GREATER
+#if NET
                     // MemoryExtensions.Sort is not available in .NET Framework / Standard 2.0.
                     // But the overload with a Comparison argument doesn't allocate.
                     _elements.AsSpan(0, _count).Sort(comparison);

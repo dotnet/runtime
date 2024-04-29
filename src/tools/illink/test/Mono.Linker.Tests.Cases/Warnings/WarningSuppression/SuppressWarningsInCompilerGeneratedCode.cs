@@ -278,7 +278,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 
 			class DynamicallyAccessedLocalFunction
 			{
-				[ExpectedWarning ("IL2118", "LocalFunction", ProducedBy = Tool.Trimmer)]
+				[ExpectedWarning ("IL2118", "LocalFunction", Tool.Trimmer, "")]
 				[UnconditionalSuppressMessage ("Test", "IL2026")]
 				public static void TestCallRUCMethodInDynamicallyAccessedLocalFunction ()
 				{
@@ -426,7 +426,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 
 			class DynamicallyAccessedLambda
 			{
-				[ExpectedWarning ("IL2118", nameof (TestCallRUCMethodInDynamicallyAccessedLambda), ProducedBy = Tool.Trimmer)]
+				[ExpectedWarning ("IL2118", nameof (TestCallRUCMethodInDynamicallyAccessedLambda), Tool.Trimmer, "")]
 				[UnconditionalSuppressMessage ("Test", "IL2026")]
 				public static void TestCallRUCMethodInDynamicallyAccessedLambda ()
 				{
@@ -440,7 +440,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 
 			class DynamicallyAccessedLambdaUnused
 			{
-				[ExpectedWarning ("IL2118", nameof (TestCallRUCMethodInDynamicallyAccessedLambda), ProducedBy = Tool.Trimmer)]
+				[ExpectedWarning ("IL2118", nameof (TestCallRUCMethodInDynamicallyAccessedLambda), Tool.Trimmer, "")]
 				[UnconditionalSuppressMessage ("Test", "IL2026")]
 				public static void TestCallRUCMethodInDynamicallyAccessedLambda ()
 				{
@@ -454,7 +454,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			{
 				var lambda =
 				// https://github.com/dotnet/roslyn/issues/59746
-				[ExpectedWarning ("IL2026", ProducedBy = Tool.Analyzer)]
+				[ExpectedWarning ("IL2026", Tool.Analyzer, "")]
 				[UnconditionalSuppressMessage ("Test", "IL2026")]
 				() => RequiresUnreferencedCodeMethod ();
 
@@ -466,7 +466,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			{
 				var lambda =
 				// https://github.com/dotnet/roslyn/issues/59746
-				[ExpectedWarning ("IL2026", ProducedBy = Tool.Analyzer)]
+				[ExpectedWarning ("IL2026", Tool.Analyzer, "")]
 				[UnconditionalSuppressMessage ("Test", "IL2026")]
 				(Type unknownType) => {
 					RequiresUnreferencedCodeMethod ();
@@ -577,8 +577,8 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			static event EventHandler TestEvent;
 
 			// https://github.com/dotnet/runtime/issues/82956 - the suppression is ignored
-			[ExpectedWarning ("IL2026", CompilerGeneratedCode = true, ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2121", CompilerGeneratedCode = true, ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2121", Tool.Trimmer, "", CompilerGeneratedCode = true)]
 			static void TestLambdaInLocalFunction ()
 			{
 				LocalFunction ();
@@ -595,7 +595,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			// https://github.com/dotnet/runtime/issues/82956 - the suppression is ignored
 			// https://github.com/dotnet/roslyn/issues/59746
 			[ExpectedWarning ("IL2026", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL2121", CompilerGeneratedCode = true, ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2121", Tool.Trimmer, "", CompilerGeneratedCode = true)]
 			static void TestLocalFunctionInLambda ()
 			{
 				TestEvent +=
