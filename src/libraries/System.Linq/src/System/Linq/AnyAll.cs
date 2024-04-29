@@ -15,7 +15,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (source is IReadOnlyCollection<TSource> gc)
+            if (source is ICollection<TSource> gc)
             {
                 return gc.Count != 0;
             }

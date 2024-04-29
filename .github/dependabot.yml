@@ -1,10 +1,5 @@
 version: 2
-registries:
-  public-nuget:
-    type: nuget-feed
-    url: https://api.nuget.org/v3/index.json
 updates:
-
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

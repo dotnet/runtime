@@ -331,53 +331,64 @@ namespace System.Reflection.Metadata
         }
 
         [DoesNotReturn]
-        internal static void ThrowInvalidOperation_MaxNodesExceeded(int limit) => throw
+        internal static void ThrowArgumentException_InvalidTypeName(int errorIndex)
+        {
+            throw new ArgumentException(SR.Argument_InvalidTypeName, $"typeName@{errorIndex}");
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowInvalidOperation_MaxNodesExceeded(int limit)
+        {
 #if SYSTEM_REFLECTION_METADATA
-            new InvalidOperationException(SR.Format(SR.InvalidOperation_MaxNodesExceeded, limit));
-#else // corelib and tools that reference this file as a link
-            new InvalidOperationException();
+            throw new InvalidOperationException(SR.Format(SR.InvalidOperation_MaxNodesExceeded, limit));
+#else
+            Debug.Fail("Expected to be unreachable");
+            throw new InvalidOperationException();
 #endif
+        }
 
         [DoesNotReturn]
-        internal static void ThrowArgumentException_InvalidTypeName(int errorIndex) => throw
-#if SYSTEM_PRIVATE_CORELIB
-            new ArgumentException(SR.Arg_ArgumentException, $"typeName@{errorIndex}");
-#elif SYSTEM_REFLECTION_METADATA
-            new ArgumentException(SR.Argument_InvalidTypeName, $"typeName@{errorIndex}");
-#else // tools that reference this file as a link
-            new ArgumentException();
-#endif
-
-        [DoesNotReturn]
-        internal static void ThrowInvalidOperation_NotGenericType() => throw
-#if SYSTEM_REFLECTION_METADATA || SYSTEM_PRIVATE_CORELIB
-            new InvalidOperationException(SR.InvalidOperation_NotGenericType);
-#else // tools that reference this file as a link
-            new InvalidOperationException();
-#endif
-
-        [DoesNotReturn]
-        internal static void ThrowInvalidOperation_NotNestedType() => throw
+        internal static void ThrowInvalidOperation_NotGenericType()
+        {
 #if SYSTEM_REFLECTION_METADATA
-            new InvalidOperationException(SR.InvalidOperation_NotNestedType);
-#else // corelib and tools that reference this file as a link
-            new InvalidOperationException();
+            throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
+#else
+            Debug.Fail("Expected to be unreachable");
+            throw new InvalidOperationException();
 #endif
+        }
 
         [DoesNotReturn]
-        internal static void ThrowInvalidOperation_NoElement() => throw
+        internal static void ThrowInvalidOperation_NotNestedType()
+        {
 #if SYSTEM_REFLECTION_METADATA
-            new InvalidOperationException(SR.InvalidOperation_NoElement);
-#else // corelib and tools that reference this file as a link
-            new InvalidOperationException();
+            throw new InvalidOperationException(SR.InvalidOperation_NotNestedType);
+#else
+            Debug.Fail("Expected to be unreachable");
+            throw new InvalidOperationException();
 #endif
+        }
 
         [DoesNotReturn]
-        internal static void ThrowInvalidOperation_HasToBeArrayClass() => throw
-#if SYSTEM_REFLECTION_METADATA || SYSTEM_PRIVATE_CORELIB
-            new InvalidOperationException(SR.Argument_HasToBeArrayClass);
-#else // tools that reference this file as a link
-            new InvalidOperationException();
+        internal static void ThrowInvalidOperation_NoElement()
+        {
+#if SYSTEM_REFLECTION_METADATA
+            throw new InvalidOperationException(SR.InvalidOperation_NoElement);
+#else
+            Debug.Fail("Expected to be unreachable");
+            throw new InvalidOperationException();
 #endif
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowInvalidOperation_HasToBeArrayClass()
+        {
+#if SYSTEM_REFLECTION_METADATA
+            throw new InvalidOperationException(SR.Argument_HasToBeArrayClass);
+#else
+            Debug.Fail("Expected to be unreachable");
+            throw new InvalidOperationException();
+#endif
+        }
     }
 }
