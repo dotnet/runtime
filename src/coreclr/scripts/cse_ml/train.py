@@ -7,7 +7,7 @@ import time
 import argparse
 import numpy as np
 
-from jitml import SuperPmi, JitCseEnv, JitRLModel
+from jitml import SuperPmi, JitCseEnv, JitCseModel
 
 def enumerate_methods(core_root, mch):
     """Enumerates all methods in the mch file."""
@@ -95,7 +95,7 @@ def main(args):
     print(f"Training with {len(train)} methods, holding back {len(test)} for testing.")
 
     # Train the model.
-    rl = JitRLModel(args.algorithm, output)
+    rl = JitCseModel(args.algorithm, output)
     rl.train(args.core_root, args.mch, train, iterations=iterations, parallel=args.parallel)
     rl.save(model_path)
 

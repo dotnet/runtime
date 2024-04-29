@@ -10,7 +10,7 @@ import numpy as np
 import pandas
 import tqdm
 
-from jitml import SuperPmi, JitRLModel, get_observation, MethodContext
+from jitml import SuperPmi, JitCseModel, get_observation, MethodContext
 
 class ModelResult(Enum):
     """Analysis errors."""
@@ -35,7 +35,7 @@ def set_result(data, m_id, heuristic_score, no_cse_score, model_score, error = M
     data["model_score"].append(model_score)
     data["failed"].append(error)
 
-def get_most_likley_allowed_action(jitrl : JitRLModel, method : MethodContext, can_terminate : bool):
+def get_most_likley_allowed_action(jitrl : JitCseModel, method : MethodContext, can_terminate : bool):
     """Returns the most likely allowed actions."""
     obs = get_observation(method)
     probabilities = jitrl.action_probabilities(obs)
@@ -60,7 +60,7 @@ def get_most_likley_allowed_action(jitrl : JitRLModel, method : MethodContext, c
     # If we got here there's some kind of error.
     raise ValueError("No valid action found.")
 
-def test_model(superpmi, jitrl : JitRLModel, method_ids, model_name):
+def test_model(superpmi, jitrl : JitCseModel, method_ids, model_name):
     """Tests the model on the test set."""
     data = {
         "method_id" : [],
@@ -230,7 +230,7 @@ def main(args):
     for file in enumerate_models(data_dir):
         with SuperPmi(args.core_root, args.mch) as superpmi:
             # load the underlying model
-            jitrl = JitRLModel(args.algorithm, data_dir)
+            jitrl = JitCseModel(args.algorithm, data_dir)
             jitrl.load(os.path.join(data_dir, file))
 
             print(f"Evaluting model {file} on training and test data:")

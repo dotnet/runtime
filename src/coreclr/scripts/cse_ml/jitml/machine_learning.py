@@ -1,4 +1,8 @@
-"""The machine learning agent which drives CSE optimization."""
+"""The default machine learning agent which drives CSE optimization."""
+
+# This file is expected to contain all of the torch/stable-baselines3 related code.  If possible,
+# it would be best to avoid spilling those concepts outside of this file.  This is so that JitCseEnv can
+# be used without requiring folks to use torch/stable-baselines3 and instead can use their own model.
 
 import os
 import json
@@ -15,7 +19,7 @@ from stable_baselines3.common.vec_env import SubprocVecEnv
 from .jit_cse import JitCseEnv
 from .superpmi import MethodContext
 
-class JitRLModel:
+class JitCseModel:
     """The raw implementation of the machine learning agent."""
     def __init__(self, algorithm, model_path, device='auto', ent_coef=0.01, verbose=False):
         if algorithm not in ('PPO', 'A2C', 'DQN'):
@@ -73,14 +77,20 @@ class JitRLModel:
 
         try:
             self._model = self._create(env, tensorboard_log=os.path.join(model_dir, 'logs'))
-            self._model.learn(iterations, progress_bar=True, callback=LogRewardCallback(self._model, model_dir))
+
+            callback = PPOLogCallback(self._model, model_dir) if self.algorithm == 'PPO' else None
+            self._model.learn(iterations, progress_bar=True, callback=callback)
 
         finally:
             env.close()
 
     def _create(self, env, **kwargs):
         alg = self.__get_algorithm()
-        return alg('MlpPolicy', env, device=self.device, ent_coef=self.ent_coef, verbose=self.verbose, **kwargs)
+        if alg == PPO:
+            return alg('MlpPolicy', env, device=self.device, ent_coef=self.ent_coef, verbose=self.verbose, **kwargs)
+
+        return alg('MlpPolicy', env, device=self.device, verbose=self.verbose, **kwargs)
+
 
     def __get_algorithm(self):
         match self.algorithm:
@@ -93,7 +103,7 @@ class JitRLModel:
             case _:
                 raise ValueError(f"Unknown algorithm {self.algorithm}.  Must be one of: PPO, A2C, DQN")
 
-class LogRewardCallback(BaseCallback):
+class PPOLogCallback(BaseCallback):
     """A callback to log reward values to tensorboard and save the best models."""
     # pylint: disable=too-many-instance-attributes
 
