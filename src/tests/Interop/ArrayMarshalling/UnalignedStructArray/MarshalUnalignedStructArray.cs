@@ -39,7 +39,7 @@ public static unsafe class MarshalUnalignedStructArrayTest
         {
             byte* ptr = (byte*)pStruct;
             ptr += 12;
-            Assert.Equal(3, *(int*)ptr);
+            Assert.Equal(3, *(long*)ptr);
             Assert.Equal(4, *(int*)(ptr + 8));
         }
         
