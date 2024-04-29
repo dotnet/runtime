@@ -5,6 +5,8 @@
 using System;
 using Xunit;
 
+namespace JIT.Methodical.MDArray.DataTypes.@uint;
+
 public struct VT
 {
     public uint[,] uint2darr;

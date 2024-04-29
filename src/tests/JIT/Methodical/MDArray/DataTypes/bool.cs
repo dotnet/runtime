@@ -5,6 +5,8 @@
 using System;
 using Xunit;
 
+namespace JIT.Methodical.MDArray.DataTypes.@bool;
+
 public struct VT
 {
     public bool[,] bool2darr;

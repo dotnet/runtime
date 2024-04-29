@@ -5,6 +5,8 @@
 using System;
 using Xunit;
 
+namespace JIT.Methodical.MDArray.DataTypes.@sbyte;
+
 public struct VT
 {
     public sbyte[,] sbyte2darr;

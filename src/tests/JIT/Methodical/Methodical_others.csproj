@@ -12,12 +12,12 @@
     <MergedWrapperProjectReference Remove="*/**/*_ro.??proj" />
     <ProjectReference Include="../common/localloc_common.ilproj" />
     <ProjectReference Include="../common/eh_common.csproj" />
+    <ProjectReference Include="flowgraph/dev10_bug679008/helper.ilproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Arrays\misc\IndexingSideEffects.cs" />
     <Compile Include="Boxing\boxunbox\BoxPatternMatchAndSideEffects.cs" />
     <Compile Include="Boxing\misc\unusedindir.cs" />
-    <Compile Include="Boxing\xlang\sinlib.cs" />
     <Compile Include="Coverage\b433189.cs" />
     <Compile Include="delegate\GSDelegate.cs" />
     <Compile Include="delegate\VirtualDelegate.cs" />
@@ -57,7 +57,6 @@
     <Compile Include="largeframes\skip6\skippage6.cs" />
     <Compile Include="largeframes\skip7\skippage7.cs" />
     <Compile Include="largeframes\skip\skippage.cs" />
-    <Compile Include="localloc\call\call01.cs" />
     <Compile Include="nonvirtualcall\classic.cs" />
     <Compile Include="nonvirtualcall\delegate.cs" />
     <Compile Include="nonvirtualcall\generics.cs" />

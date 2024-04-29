@@ -63,6 +63,7 @@
     <Compile Include="Invoke\implicit\obj.cs" />
     <Compile Include="Invoke\SEH\catchfinally.cs" />
     <Compile Include="Invoke\SEH\catchfinally_tail.cs" />
+    <Compile Include="localloc\call\call01.cs" />
     <Compile Include="MDArray\basics\classarr.cs" />
     <Compile Include="MDArray\basics\doublearr.cs" />
     <Compile Include="MDArray\basics\jaggedarr.cs" />

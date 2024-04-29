@@ -5,6 +5,8 @@
 using System;
 using Xunit;
 
+namespace JIT.Methodical.MDArray.DataTypes.@short;
+
 public struct VT
 {
     public short[,] short2darr;

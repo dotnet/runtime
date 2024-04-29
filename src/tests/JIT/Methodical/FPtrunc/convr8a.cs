@@ -6,6 +6,8 @@
 using System;
 using Xunit;
 
+namespace JIT.Methodical.MDArray.FPtrunc.convr8a;
+
 public struct VT
 {
     public double f1;

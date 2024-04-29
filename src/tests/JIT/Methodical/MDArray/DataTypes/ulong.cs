@@ -5,6 +5,8 @@
 using System;
 using Xunit;
 
+namespace JIT.Methodical.MDArray.DataTypes.@ulong;
+
 public struct VT
 {
     public ulong[,] ulong2darr;

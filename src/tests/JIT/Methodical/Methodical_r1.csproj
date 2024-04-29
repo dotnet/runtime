@@ -10,6 +10,8 @@
     <MergedWrapperProjectReference Include="e*/**/*_r.??proj" />
     <ProjectReference Include="../common/localloc_common.ilproj" />
     <ProjectReference Include="../common/eh_common.csproj" />
+    <ProjectReference Include="Boxing/xlang/sinlib_cs.csproj" Aliases="sinlib_cs" />
+    <ProjectReference Include="Boxing/xlang/sinlib_il.ilproj" Aliases="sinlib_il" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Arrays\lcs\lcs.cs" />

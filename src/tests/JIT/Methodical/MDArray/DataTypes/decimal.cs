@@ -5,6 +5,8 @@
 using System;
 using Xunit;
 
+namespace JIT.Methodical.MDArray.DataTypes.@decimal;
+
 public struct VT
 {
     public decimal[,] decimal2darr;

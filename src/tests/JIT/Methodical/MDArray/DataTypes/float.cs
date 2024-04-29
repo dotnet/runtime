@@ -5,6 +5,8 @@
 using System;
 using Xunit;
 
+namespace JIT.Methodical.MDArray.DataTypes.@float;
+
 public struct VT
 {
     public float[,] float2darr;
