@@ -268,6 +268,8 @@ public sealed partial class QuicStream
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
+        Memory<byte> originalBuffer = buffer;
+
         if (!_canRead)
         {
             throw new InvalidOperationException(SR.net_quic_reading_notallowed);
@@ -337,6 +339,15 @@ public sealed partial class QuicStream
         if (NetEventSource.Log.IsEnabled())
         {
             NetEventSource.Info(this, $"{this} Stream read '{totalCopied}' bytes.");
+        }
+
+        if (_type == QuicStreamType.Bidirectional && !_bailValidation)
+        {
+            _readArrayBuffer.EnsureAvailableSpace(totalCopied);
+            originalBuffer.Span.Slice(0, totalCopied).CopyTo(_readArrayBuffer.AvailableSpan);
+            _readArrayBuffer.Commit(totalCopied);
+
+            Validate(_isServer, ref _readArrayBuffer, ref _readHeaders, ref _readOffset);
         }
 
         return totalCopied;
@@ -609,10 +620,16 @@ public sealed partial class QuicStream
 
 
     private bool _isServer;
-    private int _offset;
-    private bool _receivedHeaders;
     private bool _bailValidation;
+
+    private int _recvOffset;
+    private bool _recvHeaders;
     private ArrayBuffer _recvArrayBuffer = new ArrayBuffer(0, usePool: true);
+
+    private int _readOffset;
+    private bool _readHeaders;
+    private ArrayBuffer _readArrayBuffer = new ArrayBuffer(0, usePool: true);
+
     private int _writeOffset;
     private bool _wroteHeaders;
     private ArrayBuffer _sendArrayBuffer = new ArrayBuffer(0, usePool: true);
@@ -645,7 +662,7 @@ public sealed partial class QuicStream
                 _recvArrayBuffer.Commit((int)buffer.Length);
             }
 
-            Validate(_isServer, ref _recvArrayBuffer, ref _receivedHeaders, ref _offset);
+            Validate(_isServer, ref _recvArrayBuffer, ref _recvHeaders, ref _recvOffset);
         }
 
         ulong totalCopied = (ulong)_receiveBuffers.CopyFrom(
@@ -837,6 +854,7 @@ public sealed partial class QuicStream
         Debug.Assert(_startedTcs.IsCompleted);
         _handle.Dispose();
         _recvArrayBuffer.Dispose();
+        _readArrayBuffer.Dispose();
         _sendArrayBuffer.Dispose();
 
         unsafe void StreamShutdown(QUIC_STREAM_SHUTDOWN_FLAGS flags, long errorCode)
