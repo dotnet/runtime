@@ -258,7 +258,7 @@
     <SdkVersionForWorkloadTesting>$(MicrosoftDotnetSdkInternalVersion)</SdkVersionForWorkloadTesting>
     <EmsdkPackageVersion>9.0.0-preview.4.24175.6</EmsdkPackageVersion>
     <NodePackageVersion>9.0.0-alpha.1.24175.1</NodePackageVersion>
-    <EmsdkVersion>3.1.56</EmsdkVersion>
+    <EmsdkVersion>3.1.34</EmsdkVersion>
     <MicrosoftNETRuntimeEmscripten3134Nodeosxarm64Version>$(EmsdkPackageVersion)</MicrosoftNETRuntimeEmscripten3134Nodeosxarm64Version>
     <MicrosoftNETRuntimeEmscripten3134Sdkosxarm64Version>$(EmsdkPackageVersion)</MicrosoftNETRuntimeEmscripten3134Sdkosxarm64Version>
     <MicrosoftNETRuntimeEmscripten3134Sdkosxx64Version>$(EmsdkPackageVersion)</MicrosoftNETRuntimeEmscripten3134Sdkosxx64Version>
