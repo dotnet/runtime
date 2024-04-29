@@ -502,7 +502,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 void Method();
             }
             {{GeneratedComInterface()}}
-            interface IComInterface1: IComInterface
+            partial interface IComInterface1: IComInterface
             {
                 new void Method1();
             }
