@@ -25,7 +25,7 @@ public class EmitterTests
         foreach (var file in Directory.GetFiles("TestClasses"))
         {
 #if NET
-            sources.Add("#define NETCOREAPP3_1_OR_GREATER\n" + File.ReadAllText(file));
+            sources.Add("#define NET\n" + File.ReadAllText(file));
 #else
             sources.Add(File.ReadAllText(file));
 #endif
