@@ -2017,7 +2017,7 @@ namespace Internal.NativeFormat
         // Calculates the highest bit set in a given unsigned integer.
         private static int HighestBit(uint x)
         {
-            return 1 << (sizeof(uint) * 8) - BitOperations.LeadingZeroCount(x);
+            return 1 << ((sizeof(uint) * 8) - BitOperations.LeadingZeroCount(x));
         }
 
         // Helper method to back patch entry index in the bucket table
