@@ -359,6 +359,10 @@ namespace R2RDump
                     case Machine.ArmThumb2:
                         break;
 
+                    case Machine.RiscV64:
+                        ProbeRiscV64Quirks(rtf, imageOffset, rtfOffset, ref fixedTranslatedLine);
+                        break;
+
                     default:
                         break;
                 }
@@ -1207,6 +1211,224 @@ namespace R2RDump
 
             runtimeFunctionIndex = -1;
             return false;
+        }
+
+        /// <summary>
+        /// Improves disassembler output for RiscV64 by adding comments at the end of instructions.
+        /// </summary>
+        /// <param name="rtf">Runtime function</param>
+        /// <param name="imageOffset">Offset within the image byte array</param>
+        /// <param name="rtfOffset">Offset within the runtime function</param>
+        /// <param name="instruction">Textual representation of the instruction</param>
+        private void ProbeRiscV64Quirks(RuntimeFunction rtf, int imageOffset, int rtfOffset, ref string instruction)
+        {
+            const int InstructionSize = 4;
+            uint instr = BitConverter.ToUInt32(_reader.Image, imageOffset + rtfOffset);
+
+            // Now, we assume that only the jalr instructions are improved.
+            if (IsRiscV64jalr(instr))
+            {
+                AnalyzeRiscV64Itype(instr, out uint rd, out uint rs1, out int imm);
+                uint register = rs1;
+                int immValue = imm;
+
+                int target = 0;
+                bool isFound = false;
+                int currentInstrOffset = rtfOffset - InstructionSize;
+                // skip all subsequent ld,lw instructions until first non-ld,lw instruction
+                do
+                {
+                    instr = BitConverter.ToUInt32(_reader.Image, imageOffset + currentInstrOffset);
+
+                    if (IsRiscV64ld(instr) || IsRiscV64lw(instr))
+                    {
+                        AnalyzeRiscV64Itype(instr, out rd, out rs1, out imm);
+                        if (rd == register)
+                        {
+                            immValue = imm;
+                            register = rs1;
+                        }
+                    }
+                    else
+                    {
+                        // frist non-ld instruction
+                        isFound = StaticAnalyzeRiscV64Assembly(
+                            rtf.StartAddress + currentInstrOffset, 
+                            currentInstrOffset, 
+                            imageOffset, 
+                            register, 
+                            ref target);
+                        break;
+                    }
+
+                    currentInstrOffset -= InstructionSize;
+                } while (currentInstrOffset > 0);
+
+                if (isFound)
+                {
+                    TryGetImportCellName(target + immValue, out string targetName);
+
+                    StringBuilder updatedInstruction = new();
+                    updatedInstruction.Append(instruction);
+                    updatedInstruction.Append(" // ");
+                    updatedInstruction.Append(targetName);
+                    instruction = updatedInstruction.ToString();
+                }
+            }
+
+        }
+
+        /// <summary>
+        /// Counts the value stored in a given register.
+        /// </summary>
+        /// <param name="currentPC">Program Counter of analyzed instruction</param>
+        /// <param name="currentInstrOffset">Offset within the runtime function of analyzed instruction</param>
+        /// <param name="imageOffset">Offset within the image byte array</param>
+        /// <param name="register">Register whose value is being searched for</param>
+        /// <param name="registerValue">Found value of the register</param>
+        /// <returns>If the value stored in a given register is countable, the function returns true. Otherwise false</returns>
+        private bool StaticAnalyzeRiscV64Assembly(int currentPC, int currentInstrOffset, int imageOffset, uint register, ref int registerValue)
+        {
+            const int InstructionSize = 4;
+
+            // if currentInstrOffset is less than 0 then it is the end of this analyzed method
+            if (currentInstrOffset < 0)
+            {
+                return false;
+            }
+
+            do
+            {
+                uint instr = BitConverter.ToUInt32(_reader.Image, imageOffset + currentInstrOffset);
+                if (IsRiscV64addi(instr))
+                {
+                    
+                    AnalyzeRiscV64Itype(instr, out uint rd, out uint rs1, out int imm);
+                    if (rd == register)
+                    {
+                        int rs1Value = 0;
+                        bool returnValue = StaticAnalyzeRiscV64Assembly(currentPC - InstructionSize, currentInstrOffset - InstructionSize, imageOffset, rs1, ref rs1Value);
+                        registerValue = rs1Value + imm;
+                        return returnValue;
+                    }
+                }
+                else if (IsRiscV64auipc(instr))
+                {
+                    AnalyzeRiscV64Utype(instr, out uint rd, out int imm);
+                    if (rd == register)
+                    {
+                        registerValue = currentPC + imm;
+                        return true;
+                    }
+                }
+                else
+                {
+                    // check if "register" is counted using an unsupported instruction
+                    uint rd = (instr >> 7) & 0b_11111U;
+                    if (rd == register)
+                    {
+                        return false;
+                    }
+                }
+
+                currentInstrOffset -= InstructionSize;
+                currentPC -= InstructionSize;
+            } while (currentInstrOffset > 0);
+
+            return false;
+        }
+
+        /// <summary>
+        /// Checks if instruction is auipc.
+        /// </summary>
+        /// <param name="instruction">Assembly code of instruction</param>
+        /// <returns>It returns true if instruction is auipc. Otherwise false</returns>
+        private bool IsRiscV64auipc(uint instruction)
+        {
+            const uint OpcodeAuipc = 0b_0010111;
+            return (instruction & 127U) == OpcodeAuipc;
+        }
+
+        /// <summary>
+        /// Checks if instruction is jalr.
+        /// </summary>
+        /// <param name="instruction">Assembly code of instruction</param>
+        /// <returns>It returns true if instruction is jalr. Otherwise false</returns>
+        private bool IsRiscV64jalr(uint instruction)
+        {
+            const uint OpcodeJalr = 0b_1100111;
+            const uint Funct3Jalr = 0b_000;
+            return (instruction & 127U) == OpcodeJalr &&
+                ((instruction >> 12) & 7U) == Funct3Jalr;
+        }
+
+        /// <summary>
+        /// Checks if instruction is addi.
+        /// </summary>
+        /// <param name="instruction">Assembly code of instruction</param>
+        /// <returns>It returns true if instruction is addi. Otherwise false</returns>
+        private bool IsRiscV64addi(uint instruction)
+        {
+            const uint OpcodeAddi = 0b_0010011;
+            const uint Funct3Addi = 0b_000;
+            return (instruction & 127U) == OpcodeAddi &&
+                ((instruction >> 12) & 7U) == Funct3Addi;
+        }
+
+        /// <summary>
+        /// Checks if instruction is ld.
+        /// </summary>
+        /// <param name="instruction">Assembly code of instruction</param>
+        /// <returns>It returns true if instruction is ld. Otherwise false</returns>
+        private bool IsRiscV64ld(uint instruction)
+        {
+            const uint OpcodeLd = 0b_0000011;
+            const uint Funct3Ld = 0b_011;
+            return (instruction & 127U) == OpcodeLd &&
+                ((instruction >> 12) & 7U) == Funct3Ld;
+        }
+
+        /// <summary>
+        /// Checks if instruction is lw.
+        /// </summary>
+        /// <param name="instruction">Assembly code of instruction</param>
+        /// <returns>It returns true if instruction is lw. Otherwise false</returns>
+        private bool IsRiscV64lw(uint instruction)
+        {
+            const uint OpcodeLw = 0b_0000011;
+            const uint Funct3Lw = 0b_010;
+            return (instruction & 127U) == OpcodeLw &&
+                ((instruction >> 12) & 7U) == Funct3Lw;
+        }
+
+        /// <summary>
+        /// Retrieves output register and immediate value from U-type instruction.
+        /// </summary>
+        /// <param name="instruction">Assembly code of instruction</param>
+        /// <param name="rd">Output register</param>
+        /// <param name="imm">Immediate value</param>
+        private void AnalyzeRiscV64Utype(uint instruction, out uint rd, out int imm)
+        {
+            // U-type    31                12   11    7   6      0
+            //          [        imm         ] [   rd  ] [ opcode ]
+            rd = (instruction >> 7) & 0b_11111U;
+            imm = unchecked((int)(instruction & (1048575U << 12)));
+        }
+
+        /// <summary>
+        /// Retrieves output register, resource register and immediate value from U-type instruction.
+        /// </summary>
+        /// <param name="instruction">Assembly code of instruction</param>
+        /// <param name="rd">Output register</param>
+        /// <param name="rs1">Resource register</param>
+        /// <param name="imm">Immediate value</param>
+        private void AnalyzeRiscV64Itype(uint instruction, out uint rd, out uint rs1, out int imm)
+        {
+            // I-type    31       20  19    15   14    12  11    7   6      0
+            //          [    imm   ] [  rs1  ] [ funct3 ] [   rd  ] [ opcode ]
+            rd = (instruction >> 7) & 0b_11111U;
+            rs1 = (instruction >> 15) & 0b_11111U;
+            imm = unchecked((int)(instruction & (4095U << 20))) >> 20;
         }
 
         /// <summary>
