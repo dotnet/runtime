@@ -99,7 +99,7 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTre
             // using the same approach as in hwintrinsicxarch.cpp - adding an additional indirection level in form of a
             // branch table.
             assert(!HWIntrinsicInfo::GeneratesMultipleIns(intrin->GetHWIntrinsicId()));
-            branchTargetReg = intrin->GetSingleTempReg();
+            branchTargetReg = codeGen->internalRegisters.GetSingle(intrin);
         }
 
         endLabel = codeGen->genCreateTempLabel();
@@ -1206,7 +1206,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         if (intrin.op1->OperIsLocal())
                         {
                             unsigned varNum = intrin.op1->AsLclVarCommon()->GetLclNum();
-                            baseReg         = node->ExtractTempReg();
+                            baseReg         = internalRegisters.Extract(node);
 
                             // Load the address of varNum
                             GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, baseReg, varNum, 0);
@@ -1226,7 +1226,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         unsigned simdInitTempVarNum = compiler->lvaSIMDInitTempVarNum;
                         noway_assert(simdInitTempVarNum != BAD_VAR_NUM);
 
-                        baseReg = node->ExtractTempReg();
+                        baseReg = internalRegisters.Extract(node);
 
                         // Load the address of simdInitTempVarNum
                         GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, baseReg, simdInitTempVarNum, 0);
