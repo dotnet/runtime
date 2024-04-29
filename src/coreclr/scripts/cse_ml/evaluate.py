@@ -35,7 +35,7 @@ def set_result(data, m_id, heuristic_score, no_cse_score, model_score, error = M
     data["model_score"].append(model_score)
     data["failed"].append(error)
 
-def get_most_likley_allowed_action(jitrl, method : MethodContext, can_terminate : bool):
+def get_most_likley_allowed_action(jitrl : JitRLModel, method : MethodContext, can_terminate : bool):
     """Returns the most likely allowed actions."""
     obs = get_observation(method)
     probabilities = jitrl.action_probabilities(obs)
@@ -43,10 +43,10 @@ def get_most_likley_allowed_action(jitrl, method : MethodContext, can_terminate 
     # If we are not allowed to terminate, remove the terminate action.
     terminate_action = len(probabilities) - 1
     if not can_terminate:
-        all_actions = all_actions[:-1]
+        probabilities = probabilities[:-1]
 
     # Sorted by most likely action descending
-    sorted_actions = np.flip(np.argsort(probabilities))[0]
+    sorted_actions = np.flip(np.argsort(probabilities))
     candidates = method.cse_candidates
 
     for action in sorted_actions:
@@ -80,7 +80,7 @@ def test_model(superpmi, jitrl : JitRLModel, method_ids, model_name):
         no_cse = jit_with_retry(superpmi, m_id, JitMetrics=1, JitRLHook=1, JitRLHookCSEDecisions=[0])
 
         if original is None or no_cse is None:
-            set_result(results, m_id, 0, 0, 0, ModelResult.JIT_FAILED)
+            set_result(data, m_id, 0, 0, 0, ModelResult.JIT_FAILED)
             continue
 
         choices = []
@@ -157,6 +157,13 @@ def print_result(result, model, kind):
     print(f"Total: {len(result)}")
     print()
 
+    # sum up total difference
+    heuristic_diff = no_jit_failure['heuristic_score'].sum() - no_jit_failure['model_score'].sum()
+    print(f"Total heuristic difference: {heuristic_diff} ({heuristic_diff / len(no_jit_failure)} per method)")
+    no_cse_diff = no_jit_failure['no_cse_score'].sum() - no_jit_failure['model_score'].sum()
+    print(f"Total no CSE difference: {no_cse_diff} ({no_cse_diff / len(no_jit_failure)} per method)")
+    print()
+
     # next calculate how often we improved on the no CSE score
     improved = no_jit_failure[no_jit_failure['model_score'] < no_jit_failure['no_cse_score']]
     underperformed = no_jit_failure[no_jit_failure['model_score'] > no_jit_failure['no_cse_score']]
@@ -172,6 +179,9 @@ def print_result(result, model, kind):
 
 def evaluate(superpmi, jitrl, methods, model_name, csv_file) -> pandas.DataFrame:
     """Evaluate the model and save to the specified CSV file."""
+    print(csv_file)
+    print(model_name)
+    print(len(methods))
     if os.path.exists(csv_file):
         return pandas.read_csv(csv_file)
 

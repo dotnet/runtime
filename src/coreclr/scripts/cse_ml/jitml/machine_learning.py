@@ -53,7 +53,7 @@ class JitRLModel:
         obs_tensor = torch.tensor(obs, dtype=torch.float32).unsqueeze(0).to(self._model.device)
         action_distribution = self._model.policy.get_distribution(obs_tensor)
         probs = action_distribution.distribution.probs
-        return probs.cpu().detach().numpy()
+        return probs.cpu().detach().numpy()[0]
 
     def train(self, core_root : str, mch : str, methods : List[MethodContext] = None,
               iterations = None, parallel = None):
