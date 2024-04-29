@@ -39,6 +39,7 @@ namespace ILLink.Shared.TrimAnalysis
         {
             _reflectionMarker = reflectionMarker;
             _operation = operation;
+            _isNewObj = operation == ILOpcode.newobj;
             _diagnosticContext = diagnosticContext;
             _callingMethod = callingMethod;
             _annotations = annotations;
