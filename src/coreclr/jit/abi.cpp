@@ -258,12 +258,20 @@ bool ABIPassingInformation::HasExactlyOneStackSegment() const
 //
 bool ABIPassingInformation::IsSplitAcrossRegistersAndStack() const
 {
-    if (NumSegments != 2)
+    if (NumSegments < 2)
     {
         return false;
     }
 
-    return Segments[0].IsPassedInRegister() && Segments[1].IsPassedOnStack();
+    bool isFirstInReg = Segments[0].IsPassedInRegister();
+    for (unsigned i = 1; i < NumSegments; i++)
+    {
+        if (isFirstInReg != Segments[i].IsPassedInRegister())
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 //-----------------------------------------------------------------------------

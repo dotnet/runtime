@@ -4282,9 +4282,9 @@ void CodeGen::genHomeStackPartOfSplitParameter(regNumber initReg, bool* initRegS
 #ifdef DEBUG
             for (lclNum += 1; lclNum < compiler->info.compArgsCount; lclNum++)
             {
-                abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
+                const ABIPassingInformation& abiInfo2 = compiler->lvaGetParameterABIInfo(lclNum);
                 // There should be only one split parameter
-                assert(!abiInfo.IsSplitAcrossRegistersAndStack());
+                assert(!abiInfo2.IsSplitAcrossRegistersAndStack());
             }
 #endif
             break;
