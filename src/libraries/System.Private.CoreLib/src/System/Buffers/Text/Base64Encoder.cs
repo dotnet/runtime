@@ -340,7 +340,15 @@ namespace System.Buffers.Text
                 7, 6, 8, 7,
                 10, 9, 11, 10);
 
-            Vector256<sbyte> lut = TBase64Encoder.Avx2Lut;
+            Vector256<sbyte> lut = Vector256.Create(
+                            65, 71, -4, -4,
+                            -4, -4, -4, -4,
+                            -4, -4, -4, -4,
+                            TBase64Encoder.Avx2LutChar62, TBase64Encoder.Avx2LutChar63, 0, 0,
+                            65, 71, -4, -4,
+                            -4, -4, -4, -4,
+                            -4, -4, -4, -4,
+                            TBase64Encoder.Avx2LutChar62, TBase64Encoder.Avx2LutChar63, 0, 0);
 
             Vector256<sbyte> maskAC = Vector256.Create(0x0fc0fc00).AsSByte();
             Vector256<sbyte> maskBB = Vector256.Create(0x003f03f0).AsSByte();
@@ -492,7 +500,7 @@ namespace System.Buffers.Text
             Vector128<byte> tblEnc1 = Vector128.Create("ABCDEFGHIJKLMNOP"u8).AsByte();
             Vector128<byte> tblEnc2 = Vector128.Create("QRSTUVWXYZabcdef"u8).AsByte();
             Vector128<byte> tblEnc3 = Vector128.Create("ghijklmnopqrstuv"u8).AsByte();
-            Vector128<byte> tblEnc4 = TBase64Encoder.AdvSimdLut4;
+            Vector128<byte> tblEnc4 = Vector128.Create(TBase64Encoder.AdvSimdLut4).AsByte();
             byte* src = srcBytes;
             byte* dest = destBytes;
 
@@ -550,7 +558,7 @@ namespace System.Buffers.Text
 
             // The JIT won't hoist these "constants", so help it
             Vector128<byte>   shuffleVec = Vector128.Create(0x01020001, 0x04050304, 0x07080607, 0x0A0B090A).AsByte();
-            Vector128<byte>   lut = TBase64Encoder.Ssse3AdvSimdLut;
+            Vector128<byte>   lut = Vector128.Create(0xFCFC4741, 0xFCFCFCFC, 0xFCFCFCFC, TBase64Encoder.Ssse3AdvSimdLutE3).AsByte();
             Vector128<byte>   maskAC = Vector128.Create(0x0fc0fc00).AsByte();
             Vector128<byte>   maskBB = Vector128.Create(0x003f03f0).AsByte();
             Vector128<ushort> shiftAC = Vector128.Create(0x04000040).AsUInt16();
@@ -692,19 +700,13 @@ namespace System.Buffers.Text
         {
             public static ReadOnlySpan<byte> EncodingMap => "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"u8;
 
-            public static Vector256<sbyte> Avx2Lut => Vector256.Create(
-                            65, 71, -4, -4,
-                            -4, -4, -4, -4,
-                            -4, -4, -4, -4,
-                            -19, -16, 0, 0,
-                            65, 71, -4, -4,
-                            -4, -4, -4, -4,
-                            -4, -4, -4, -4,
-                            -19, -16, 0, 0);
+            public static sbyte Avx2LutChar62 => -19;  // char '+' diff
 
-            public static Vector128<byte> AdvSimdLut4 => Vector128.Create("wxyz0123456789+/"u8).AsByte();
+            public static sbyte Avx2LutChar63 => -16;  // char '/' diff
 
-            public static Vector128<byte> Ssse3AdvSimdLut => Vector128.Create(0xFCFC4741, 0xFCFCFCFC, 0xFCFCFCFC, 0x0000F0ED).AsByte();
+            public static ReadOnlySpan<byte> AdvSimdLut4 => "wxyz0123456789+/"u8;
+
+            public static uint Ssse3AdvSimdLutE3 => 0x0000F0ED;
 
             public static int IncrementPadTwo => 4;
 

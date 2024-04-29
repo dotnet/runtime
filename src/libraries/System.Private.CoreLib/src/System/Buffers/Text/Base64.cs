@@ -39,15 +39,23 @@ namespace System.Buffers.Text
 
         internal interface IBase64Encoder
         {
-            static abstract int IncrementPadTwo { get; }
-            static abstract int IncrementPadOne { get; }
             static abstract ReadOnlySpan<byte> EncodingMap { get; }
-            static abstract Vector256<sbyte> Avx2Lut { get; }
-            static abstract Vector128<byte> AdvSimdLut4 { get; }
-            static abstract Vector128<byte> Ssse3AdvSimdLut { get; }
+            static abstract sbyte Avx2LutChar62 { get; }
+            static abstract sbyte Avx2LutChar63 { get; }
+            static abstract ReadOnlySpan<byte> AdvSimdLut4 { get; }
+            static abstract uint Ssse3AdvSimdLutE3 { get; }
             static abstract int GetMaxSrcLength(int srcLength, int destLength);
             static abstract unsafe uint EncodeOneOptionallyPadTwo(byte* oneByte, ref byte encodingMap);
             static abstract unsafe uint EncodeTwoOptionallyPadOne(byte* oneByte, ref byte encodingMap);
+            static abstract int IncrementPadTwo { get; }
+            static abstract int IncrementPadOne { get; }
+        }
+
+        internal interface IBase64Decoder
+        {
+            static abstract ReadOnlySpan<sbyte> DecodingMap { get; }
+            static abstract Vector512<sbyte> VbmiLookup0 { get; }
+            static abstract Vector512<sbyte> VbmiLookup1 { get; }
         }
     }
 }

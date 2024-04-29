@@ -30,7 +30,7 @@ namespace System.Buffers.Text.Tests
                 string expectedText = Convert.ToBase64String(bytes, 0, value + 1).Replace('+', '-').Replace('/', '_').TrimEnd('=');
                 Assert.Equal(expectedText, encodedText);
 
-                /*Assert.Equal(0, encodedBytes.Length % 4);
+                /*TODO Assert.Equal(0, encodedBytes.Length % 4);
                 Span<byte> decodedBytes = new byte[Base64.GetMaxDecodedFromUtf8Length(encodedBytes.Length)];
                 Assert.Equal(OperationStatus.Done, Base64.DecodeFromUtf8(encodedBytes, decodedBytes, out consumed, out int decodedByteCount));
                 Assert.Equal(encodedBytes.Length, consumed);

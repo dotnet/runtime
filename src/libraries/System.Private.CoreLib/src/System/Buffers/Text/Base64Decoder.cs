@@ -35,9 +35,10 @@ namespace System.Buffers.Text
         ///   or if the input is incomplete (i.e. not a multiple of 4) and <paramref name="isFinalBlock"/> is <see langword="true"/>.
         /// </returns>
         public static OperationStatus DecodeFromUtf8(ReadOnlySpan<byte> utf8, Span<byte> bytes, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true) =>
-            DecodeFromUtf8(utf8, bytes, out bytesConsumed, out bytesWritten, isFinalBlock, ignoreWhiteSpace: true);
+            DecodeFromUtf8<Base64Decoder>(utf8, bytes, out bytesConsumed, out bytesWritten, isFinalBlock, ignoreWhiteSpace: true);
 
-        private static unsafe OperationStatus DecodeFromUtf8(ReadOnlySpan<byte> utf8, Span<byte> bytes, out int bytesConsumed, out int bytesWritten, bool isFinalBlock, bool ignoreWhiteSpace)
+        internal static unsafe OperationStatus DecodeFromUtf8<TBase64Decoder>(ReadOnlySpan<byte> utf8, Span<byte> bytes, out int bytesConsumed, out int bytesWritten, bool isFinalBlock, bool ignoreWhiteSpace)
+            where TBase64Decoder : IBase64Decoder
         {
             if (utf8.IsEmpty)
             {
@@ -71,7 +72,7 @@ namespace System.Buffers.Text
                     byte* end = srcMax - 88;
                     if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported && (end >= src))
                     {
-                        Avx512Decode(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
+                        Avx512Decode<TBase64Decoder>(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
 
                         if (src == srcEnd)
                         {
@@ -118,7 +119,7 @@ namespace System.Buffers.Text
                     maxSrcLength = (destLength / 3) * 4;
                 }
 
-                ref sbyte decodingMap = ref MemoryMarshal.GetReference(DecodingMap);
+                ref sbyte decodingMap = ref MemoryMarshal.GetReference(TBase64Decoder.DecodingMap);
                 srcMax = srcBytes + maxSrcLength;
 
                 while (src < srcMax)
@@ -294,7 +295,7 @@ namespace System.Buffers.Text
                         // Fall back to block-wise decoding. This is very slow, but it's also very non-standard
                         // formatting of the input; whitespace is typically only found between blocks, such as
                         // when Convert.ToBase64String inserts a line break every 76 output characters.
-                        return DecodeWithWhiteSpaceBlockwise(utf8, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);
+                        return DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(utf8, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);
                     }
 
                     // Skip over the starting whitespace and continue.
@@ -302,7 +303,7 @@ namespace System.Buffers.Text
                     utf8 = utf8.Slice(localConsumed);
 
                     // Try again after consumed whitespace
-                    status = DecodeFromUtf8(utf8, bytes, out localConsumed, out int localWritten, isFinalBlock, ignoreWhiteSpace: false);
+                    status = DecodeFromUtf8<TBase64Decoder>(utf8, bytes, out localConsumed, out int localWritten, isFinalBlock, ignoreWhiteSpace: false);
                     bytesConsumed += localConsumed;
                     bytesWritten += localWritten;
                     if (status is not OperationStatus.InvalidData)
@@ -352,9 +353,10 @@ namespace System.Buffers.Text
         /// hence can only be called once with all the data in the buffer.
         /// </returns>
         public static OperationStatus DecodeFromUtf8InPlace(Span<byte> buffer, out int bytesWritten) =>
-            DecodeFromUtf8InPlace(buffer, out bytesWritten, ignoreWhiteSpace: true);
+            DecodeFromUtf8InPlace<Base64Decoder>(buffer, out bytesWritten, ignoreWhiteSpace: true);
 
-        private static unsafe OperationStatus DecodeFromUtf8InPlace(Span<byte> buffer, out int bytesWritten, bool ignoreWhiteSpace)
+        private static unsafe OperationStatus DecodeFromUtf8InPlace<TBase64Decoder>(Span<byte> buffer, out int bytesWritten, bool ignoreWhiteSpace)
+            where TBase64Decoder : IBase64Decoder
         {
             if (buffer.IsEmpty)
             {
@@ -374,7 +376,7 @@ namespace System.Buffers.Text
                     goto InvalidExit;
                 }
 
-                ref sbyte decodingMap = ref MemoryMarshal.GetReference(DecodingMap);
+                ref sbyte decodingMap = ref MemoryMarshal.GetReference(TBase64Decoder.DecodingMap);
 
                 while (sourceIndex < bufferLength - 4)
                 {
@@ -454,12 +456,13 @@ namespace System.Buffers.Text
             InvalidExit:
                 bytesWritten = (int)destIndex;
                 return ignoreWhiteSpace ?
-                    DecodeWithWhiteSpaceFromUtf8InPlace(buffer, ref bytesWritten, sourceIndex) : // The input may have whitespace, attempt to decode while ignoring whitespace.
+                    DecodeWithWhiteSpaceFromUtf8InPlace<TBase64Decoder>(buffer, ref bytesWritten, sourceIndex) : // The input may have whitespace, attempt to decode while ignoring whitespace.
                     OperationStatus.InvalidData;
             }
         }
 
-        private static OperationStatus DecodeWithWhiteSpaceBlockwise(ReadOnlySpan<byte> utf8, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
+        private static OperationStatus DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(ReadOnlySpan<byte> utf8, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
+            where TBase64Decoder : IBase64Decoder
         {
             const int BlockSize = 4;
             Span<byte> buffer = stackalloc byte[BlockSize];
@@ -511,7 +514,7 @@ namespace System.Buffers.Text
                     localIsFinalBlock = false;
                 }
 
-                status = DecodeFromUtf8(buffer.Slice(0, bufferIdx), bytes, out int localConsumed, out int localWritten, localIsFinalBlock, ignoreWhiteSpace: false);
+                status = DecodeFromUtf8<TBase64Decoder>(buffer.Slice(0, bufferIdx), bytes, out int localConsumed, out int localWritten, localIsFinalBlock, ignoreWhiteSpace: false);
                 bytesConsumed += localConsumed;
                 bytesWritten += localWritten;
 
@@ -557,7 +560,8 @@ namespace System.Buffers.Text
             return padding;
         }
 
-        private static OperationStatus DecodeWithWhiteSpaceFromUtf8InPlace(Span<byte> utf8, ref int destIndex, uint sourceIndex)
+        private static OperationStatus DecodeWithWhiteSpaceFromUtf8InPlace<TBase64Decoder>(Span<byte> utf8, ref int destIndex, uint sourceIndex)
+            where TBase64Decoder : IBase64Decoder
         {
             const int BlockSize = 4;
             Span<byte> buffer = stackalloc byte[BlockSize];
@@ -607,7 +611,7 @@ namespace System.Buffers.Text
                     break;
                 }
 
-                status = DecodeFromUtf8InPlace(buffer, out localBytesWritten, ignoreWhiteSpace: false);
+                status = DecodeFromUtf8InPlace<TBase64Decoder>(buffer, out localBytesWritten, ignoreWhiteSpace: false);
                 localDestIndex += localBytesWritten;
                 hasPaddingBeenProcessed = localBytesWritten < 3;
 
@@ -630,7 +634,8 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx512BW))]
         [CompExactlyDependsOn(typeof(Avx512Vbmi))]
-        private static unsafe void Avx512Decode(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
+        private static unsafe void Avx512Decode<TBase64Decoder>(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
+            where TBase64Decoder : IBase64Decoder
         {
             // Reference for VBMI implementation : https://github.com/WojciechMula/base64simd/tree/master/decode
             // If we have AVX512 support, pick off 64 bytes at a time for as long as we can,
@@ -641,17 +646,6 @@ namespace System.Buffers.Text
             byte* src = srcBytes;
             byte* dest = destBytes;
 
-            // The JIT won't hoist these "constants", so help it
-            Vector512<sbyte> vbmiLookup0 = Vector512.Create(
-                0x80808080, 0x80808080, 0x80808080, 0x80808080,
-                0x80808080, 0x80808080, 0x80808080, 0x80808080,
-                0x80808080, 0x80808080, 0x3e808080, 0x3f808080,
-                0x37363534, 0x3b3a3938, 0x80803d3c, 0x80808080).AsSByte();
-            Vector512<sbyte> vbmiLookup1 = Vector512.Create(
-                0x02010080, 0x06050403, 0x0a090807, 0x0e0d0c0b,
-                0x1211100f, 0x16151413, 0x80191817, 0x80808080,
-                0x1c1b1a80, 0x201f1e1d, 0x24232221, 0x28272625,
-                0x2c2b2a29, 0x302f2e2d, 0x80333231, 0x80808080).AsSByte();
             Vector512<byte> vbmiPackedLanesControl = Vector512.Create(
                 0x06000102, 0x090a0405, 0x0c0d0e08, 0x16101112,
                 0x191a1415, 0x1c1d1e18, 0x26202122, 0x292a2425,
@@ -662,7 +656,7 @@ namespace System.Buffers.Text
             Vector512<short> mergeConstant1 = Vector512.Create(0x00011000).AsInt16();
 
             // This algorithm requires AVX512VBMI support.
-            // Vbmi was first introduced in CannonLake and is avaialable from IceLake on.
+            // Vbmi was first introduced in CannonLake and is available from IceLake on.
             do
             {
                 AssertRead<Vector512<sbyte>>(src, srcStart, sourceLength);
@@ -672,7 +666,7 @@ namespace System.Buffers.Text
                 // This step also checks for invalid inputs and exits.
                 // After this, we have indices which are verified to have upper 2 bits set to 0 in each byte.
                 // origIndex      = [...|00dddddd|00cccccc|00bbbbbb|00aaaaaa]
-                Vector512<sbyte> origIndex = Avx512Vbmi.PermuteVar64x8x2(vbmiLookup0, str, vbmiLookup1);
+                Vector512<sbyte> origIndex = Avx512Vbmi.PermuteVar64x8x2(TBase64Decoder.VbmiLookup0, str, TBase64Decoder.VbmiLookup1);
                 Vector512<sbyte> errorVec = (origIndex.AsInt32() | str.AsInt32()).AsSByte();
                 if (errorVec.ExtractMostSignificantBits() != 0)
                 {
@@ -699,6 +693,7 @@ namespace System.Buffers.Text
             destBytes = dest;
         }
 
+        // TODO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx2))]
         private static unsafe void Avx2Decode(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
@@ -924,15 +919,15 @@ namespace System.Buffers.Text
             // 1111 0x10 andlut     0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10
 
             // The JIT won't hoist these "constants", so help it
-            Vector128<byte>  lutHi = Vector128.Create(0x02011010, 0x08040804, 0x10101010, 0x10101010).AsByte();
-            Vector128<byte>  lutLo = Vector128.Create(0x11111115, 0x11111111, 0x1A131111, 0x1A1B1B1B).AsByte();
+            Vector128<byte> lutHi = Vector128.Create(0x02011010, 0x08040804, 0x10101010, 0x10101010).AsByte();
+            Vector128<byte> lutLo = Vector128.Create(0x11111115, 0x11111111, 0x1A131111, 0x1A1B1B1B).AsByte();
             Vector128<sbyte> lutShift = Vector128.Create(0x04131000, 0xb9b9bfbf, 0x00000000, 0x00000000).AsSByte();
             Vector128<sbyte> packBytesMask = Vector128.Create(0x06000102, 0x090A0405, 0x0C0D0E08, 0xffffffff).AsSByte();
-            Vector128<byte>  mergeConstant0 = Vector128.Create(0x01400140).AsByte();
+            Vector128<byte> mergeConstant0 = Vector128.Create(0x01400140).AsByte();
             Vector128<short> mergeConstant1 = Vector128.Create(0x00011000).AsInt16();
-            Vector128<byte>  one = Vector128.Create((byte)1);
-            Vector128<byte>  mask2F = Vector128.Create((byte)'/');
-            Vector128<byte>  mask8F = Vector128.Create((byte)0x8F);
+            Vector128<byte> one = Vector128.Create((byte)1);
+            Vector128<byte> mask2F = Vector128.Create((byte)'/');
+            Vector128<byte> mask8F = Vector128.Create((byte)0x8F);
 
             byte* src = srcBytes;
             byte* dest = destBytes;
@@ -1088,25 +1083,40 @@ namespace System.Buffers.Text
             return value == 32;
         }
 
-        // Pre-computing this table using a custom string(s_characters) and GenerateDecodingMapAndVerify (found in tests)
-        private static ReadOnlySpan<sbyte> DecodingMap =>
-        [
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63,         //62 is placed at index 43 (for +), 63 at index 47 (for /)
-            52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1,         //52-61 are placed at index 48-57 (for 0-9), 64 at index 61 (for =)
-            -1,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
-            15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,         //0-25 are placed at index 65-90 (for A-Z)
-            -1, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
-            41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1,         //26-51 are placed at index 97-122 (for a-z)
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // Bytes over 122 ('z') are invalid and cannot be decoded
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // Hence, padding the map with 255, which indicates invalid input
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        ];
+        private readonly struct Base64Decoder : IBase64Decoder
+        {
+            // Pre-computing this table using a custom string(s_characters) and GenerateDecodingMapAndVerify (found in tests)
+            public static ReadOnlySpan<sbyte> DecodingMap =>
+                [
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63,         //62 is placed at index 43 (for +), 63 at index 47 (for /)
+                    52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1,         //52-61 are placed at index 48-57 (for 0-9), 64 at index 61 (for =)
+                    -1,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+                    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,         //0-25 are placed at index 65-90 (for A-Z)
+                    -1, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+                    41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1,         //26-51 are placed at index 97-122 (for a-z)
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // Bytes over 122 ('z') are invalid and cannot be decoded
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // Hence, padding the map with 255, which indicates invalid input
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                ];
+
+            public static Vector512<sbyte> VbmiLookup0 => Vector512.Create(
+                0x80808080, 0x80808080, 0x80808080, 0x80808080,
+                0x80808080, 0x80808080, 0x80808080, 0x80808080,
+                0x80808080, 0x80808080, 0x3e808080, 0x3f808080,
+                0x37363534, 0x3b3a3938, 0x80803d3c, 0x80808080).AsSByte();
+
+            public static Vector512<sbyte> VbmiLookup1 => Vector512.Create(
+                0x02010080, 0x06050403, 0x0a090807, 0x0e0d0c0b,
+                0x1211100f, 0x16151413, 0x80191817, 0x80808080,
+                0x1c1b1a80, 0x201f1e1d, 0x24232221, 0x28272625,
+                0x2c2b2a29, 0x302f2e2d, 0x80333231, 0x80808080).AsSByte();
+        }
     }
 }

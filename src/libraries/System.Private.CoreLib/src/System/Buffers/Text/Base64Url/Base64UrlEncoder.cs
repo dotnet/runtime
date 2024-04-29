@@ -258,20 +258,13 @@ namespace System.Buffers.Text
         private readonly struct Base64UrlEncoder : IBase64Encoder
         {
             public static ReadOnlySpan<byte> EncodingMap => "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"u8;
+            public static sbyte Avx2LutChar62 => -17;  // char '-' diff
 
-            public static Vector256<sbyte> Avx2Lut => Vector256.Create(
-                            65, 71, -4, -4,
-                            -4, -4, -4, -4,
-                            -4, -4, -4, -4,
-                            -17, 32, 0, 0,
-                            65, 71, -4, -4,
-                            -4, -4, -4, -4,
-                            -4, -4, -4, -4,
-                            -17, 32, 0, 0);
+            public static sbyte Avx2LutChar63 => 32;   // char '_' diff
 
-            public static Vector128<byte> AdvSimdLut4 => Vector128.Create("wxyz0123456789-_"u8).AsByte();
+            public static ReadOnlySpan<byte> AdvSimdLut4 => "wxyz0123456789-_"u8;
 
-            public static Vector128<byte> Ssse3AdvSimdLut => Vector128.Create(0xFCFC4741, 0xFCFCFCFC, 0xFCFCFCFC, 0x000020EF).AsByte();
+            public static uint Ssse3AdvSimdLutE3 => 0x000020EF;
 
             public static int IncrementPadTwo => 2;
 
