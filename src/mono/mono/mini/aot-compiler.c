@@ -12422,6 +12422,9 @@ emit_file_info (MonoAotCompile *acfg)
 		mono_llvm_emit_aot_file_info (info, acfg->has_jitted_code);
 	else
 		emit_aot_file_info (acfg, info);
+
+	if (acfg->static_linking_symbol != NULL)
+		g_free (acfg->static_linking_symbol);
 }
 
 static void
@@ -14284,6 +14287,7 @@ acfg_free (MonoAotCompile *acfg)
 	g_free (acfg->static_linking_symbol);
 	g_free (acfg->got_symbol);
 	g_free (acfg->plt_symbol);
+	g_free (acfg->global_prefix);
 	g_ptr_array_free (acfg->methods, TRUE);
 	g_ptr_array_free (acfg->image_table, TRUE);
 	g_ptr_array_free (acfg->globals, TRUE);

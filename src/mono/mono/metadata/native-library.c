@@ -1247,9 +1247,9 @@ is_symbol_char_underscore (unsigned char c)
 
 static int mono_precompute_size (const char *key)
 {
-	int size = 1; // Null terminator
-	int len = (int)strlen (key);
-	for (int i = 0; i < len; ++i) {
+	size_t size = 1; // Null terminator
+	size_t len = (int)strlen (key);
+	for (size_t i = 0; i < len; ++i) {
 		unsigned char b = key[i];
 		if (is_symbol_char_verbatim (b) || is_symbol_char_underscore (b)) {
 			size++;
@@ -1263,12 +1263,12 @@ static int mono_precompute_size (const char *key)
 
 // Keep synced with FixupSymbolName from src/tasks/Common/Utils.cs
 char* mono_fixup_symbol_name (const char *prefix, const char *key, const char *suffix) {
-	int size = mono_precompute_size (key) + strlen (prefix) + strlen (suffix);
+	size_t size = mono_precompute_size (key) + strlen (prefix) + strlen (suffix);
 	GString *str = g_string_sized_new (size);
-	int len = (int)strlen (key);
+	size_t len = (int)strlen (key);
 	g_string_append_printf (str, "%s", prefix);
 
-	for (int i = 0; i < len; ++i) {
+	for (size_t i = 0; i < len; ++i) {
 		unsigned char b = key[i];
 		if (is_symbol_char_verbatim (b)) {
 			g_string_append_c (str, b);
