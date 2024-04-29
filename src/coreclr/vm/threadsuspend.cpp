@@ -2104,6 +2104,11 @@ void Thread::RareDisablePreemptiveGC()
         goto Exit;
     }
 
+    if (this == ThreadSuspend::GetSuspensionThread())
+    {
+        goto Exit;
+    }
+
     // TODO: VS why can we see this?
     if (ThreadStore::HoldingThreadStore(this))
     {
