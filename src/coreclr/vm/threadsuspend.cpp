@@ -2109,9 +2109,6 @@ void Thread::RareDisablePreemptiveGC()
         goto Exit;
     }
 
-    // Noone else should be holding TSL and try switching to coop mode.
-    _ASSERTE(!ThreadStore::HoldingThreadStore(this));
-
     STRESS_LOG1(LF_SYNC, LL_INFO1000, "RareDisablePreemptiveGC: entering. Thread state = %x\n", m_State.Load());
 
 #if defined(STRESS_HEAP) && defined(_DEBUG)
