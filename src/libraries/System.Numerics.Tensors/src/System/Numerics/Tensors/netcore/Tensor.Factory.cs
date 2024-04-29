@@ -130,12 +130,12 @@ namespace System.Numerics.Tensors
         /// <typeparam name="T"></typeparam>
         /// <param name="lengths"></param>
         /// <returns></returns>
-        public static Tensor<T> CreateUniform<T>(params ReadOnlySpan<nint> lengths)
+        public static Tensor<T> CreateAndFillUniform<T>(params ReadOnlySpan<nint> lengths)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>
         {
             var linearLength = SpanNDHelpers.CalculateTotalLength(lengths);
             T[] values = new T[linearLength];
-            Random rand = new Random();
+            Random rand = Random.Shared;
             for (int i = 0; i < values.Length; i++)
                 values[i] = T.CreateChecked(rand.NextSingle());
 
@@ -149,7 +149,7 @@ namespace System.Numerics.Tensors
         /// <typeparam name="T"></typeparam>
         /// <param name="lengths"></param>
         /// <returns></returns>
-        public static Tensor<T> CreateGaussianNormal<T>(params ReadOnlySpan<nint> lengths)
+        public static Tensor<T> CreateAndFillGaussianNormal<T>(params ReadOnlySpan<nint> lengths)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>
         {
             var linearLength = SpanNDHelpers.CalculateTotalLength(lengths);

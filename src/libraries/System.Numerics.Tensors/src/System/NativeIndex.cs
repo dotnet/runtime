@@ -19,10 +19,10 @@ namespace System
         private readonly nint _value;
 
         /// <summary>Construct a NativeIndex using a value and indicating if the NativeIndex is from the start or from the end.</summary>
-        /// <param name="value">The NativeIndex value. it has to be zero or positive number.</param>
-        /// <param name="fromEnd">Indicating if the NativeIndex is from the start or from the end.</param>
+        /// <param name="value">The index value. it has to be zero or positive number.</param>
+        /// <param name="fromEnd">Indicating if the index is from the start or from the end.</param>
         /// <remarks>
-        /// If the NativeIndex constructed from the end, index value 1 means pointing at the last element and NativeIndex value 0 means pointing at beyond last element.
+        /// If the NativeIndex constructed from the end, index value 1 means pointing at the last element and index value 0 means pointing at beyond last element.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeIndex(nint value, bool fromEnd = false)
@@ -51,7 +51,7 @@ namespace System
         public static NativeIndex End => new NativeIndex(~0);
 
         /// <summary>Create a NativeIndex from the start at the position indicated by the value.</summary>
-        /// <param name="value">The NativeIndex value from the start.</param>
+        /// <param name="value">The index value from the start.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static NativeIndex FromStart(nint value)
         {
@@ -64,7 +64,7 @@ namespace System
         }
 
         /// <summary>Create a NativeIndex from the end at the position indicated by the value.</summary>
-        /// <param name="value">The NativeIndex value from the end.</param>
+        /// <param name="value">The index value from the end.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static NativeIndex FromEnd(nint value)
         {
@@ -116,15 +116,14 @@ namespace System
 
         /// <summary>Indicates whether the current NativeIndex object is equal to another object of the same type.</summary>
         /// <param name="value">An object to compare with this object</param>
-        public override bool Equals([NotNullWhen(true)] object? value) => value is NativeIndex && _value == ((NativeIndex)value)._value;
+        public override bool Equals([NotNullWhen(true)] object? value) => value is NativeIndex other && _value == other._value;
 
         /// <summary>Indicates whether the current NativeIndex object is equal to another NativeIndex object.</summary>
         /// <param name="other">An object to compare with this object</param>
         public bool Equals(NativeIndex other) => _value == other._value;
 
-        // BUGBUG: FIX THIS. THE CONVERSION IS JUST TO FIX ERROR FOR NOW.
         /// <summary>Returns the hash code for this instance.</summary>
-        public override int GetHashCode() => (int)_value;
+        public override int GetHashCode() => _value.GetHashCode();
 
         /// <summary>Converts integer number to a NativeIndex.</summary>
         public static implicit operator NativeIndex(int value) => FromStart(value);

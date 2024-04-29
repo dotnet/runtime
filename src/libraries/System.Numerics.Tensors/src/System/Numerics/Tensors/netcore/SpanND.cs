@@ -53,13 +53,14 @@ namespace System.Numerics.Tensors
             }
             if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
                 ThrowHelper.ThrowArrayTypeMismatchException();
-            _linearLength = SpanNDHelpers.CalculateTotalLength(lengths);
-            if (_linearLength != array.Length)
+            nint linearLength = SpanNDHelpers.CalculateTotalLength(lengths);
+            if (linearLength != array.Length)
                 ThrowHelper.ThrowArgument_LengthsMustEqualArrayLength();
 
+            _linearLength = linearLength;
             _reference = ref MemoryMarshal.GetArrayDataReference(array);
             _lengths = lengths.ToArray();
-            _strides = SpanNDHelpers.CalculateStrides(Rank, lengths);
+            _strides = SpanNDHelpers.CalculateStrides(lengths);
         }
 
         /// <summary>
@@ -80,13 +81,14 @@ namespace System.Numerics.Tensors
             }
             if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
                 ThrowHelper.ThrowArrayTypeMismatchException();
-            _linearLength = SpanNDHelpers.CalculateTotalLength(lengths);
-            if (_linearLength != array.Length)
+            nint linearLength = SpanNDHelpers.CalculateTotalLength(lengths);
+            if (linearLength != array.Length)
                 ThrowHelper.ThrowArgument_LengthsMustEqualArrayLength();
 
+            _linearLength = linearLength;
             _reference = ref MemoryMarshal.GetArrayDataReference(array);
             _lengths = lengths.ToArray();
-            _strides = SpanNDHelpers.CalculateStrides(Rank, lengths);
+            _strides = SpanNDHelpers.CalculateStrides(lengths);
             _isPinned = IsPinned;
         }
 
@@ -106,29 +108,25 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public SpanND(T[]? array, nint start, ReadOnlySpan<nint> lengths)
         {
-            _linearLength = SpanNDHelpers.CalculateTotalLength(lengths);
+            nint linearLength = SpanNDHelpers.CalculateTotalLength(lengths);
             if (array == null)
             {
-                if (start != 0 || _linearLength != 0)
+                if (start != 0 || linearLength != 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException();
                 this = default;
                 return; // returns default
             }
             if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
                 ThrowHelper.ThrowArrayTypeMismatchException();
-#if TARGET_64BIT
-            // See comment in SpanND<T>.Slice for how this works.
-            if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)array.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException();
-#else
-            if ((uint)start > (uint)array.Length || (uint)_linearLength > (uint)(array.Length - start))
-                ThrowHelper.ThrowArgumentOutOfRangeException();
-#endif
 
+            if ((uint)start > (uint)array.Length || (uint)linearLength > (uint)(array.Length - start))
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+
+            _linearLength = linearLength;
             _reference = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), (nint)(uint)start /* force zero-extension */);
 
             _lengths = lengths.ToArray();
-            _strides = SpanNDHelpers.CalculateStrides(Rank, lengths);
+            _strides = SpanNDHelpers.CalculateStrides(lengths);
         }
 
         /// <summary>
@@ -151,12 +149,11 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe SpanND(void* pointer, ReadOnlySpan<nint> lengths, bool isPinned, ReadOnlySpan<nint> strides = default)
         {
-            _linearLength = SpanNDHelpers.CalculateTotalLength(lengths);
+            nint linearLength = SpanNDHelpers.CalculateTotalLength(lengths);
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
-            if (_linearLength < 0)
-                ThrowHelper.ThrowArgumentOutOfRangeException();
 
+            _linearLength = linearLength;
             _isPinned = isPinned;
 
             _reference = ref *(T*)pointer;
@@ -164,16 +161,16 @@ namespace System.Numerics.Tensors
             _lengths = lengths.ToArray();
             _strides = strides.ToArray();
             if (strides == ReadOnlySpan<nint>.Empty)
-                _strides = SpanNDHelpers.CalculateStrides(Rank, lengths);
+                _strides = SpanNDHelpers.CalculateStrides(lengths);
         }
 
         // Constructor for internal use only. It is not safe to expose publicly, and is instead exposed via the unsafe MemoryMarshal.CreateSpan.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal SpanND(ref T reference, ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides, bool isPinned)
         {
-            _linearLength = SpanNDHelpers.CalculateTotalLength(lengths);
-            Debug.Assert(_linearLength >= 0);
+            nint linearLength = SpanNDHelpers.CalculateTotalLength(lengths);
 
+            _linearLength = linearLength;
             _reference = ref reference;
 
             _lengths = lengths.ToArray();
@@ -197,7 +194,7 @@ namespace System.Numerics.Tensors
                 if (indices.Length != Rank)
                     ThrowHelper.ThrowIndexOutOfRangeException();
 
-                var index = SpanNDHelpers.GetIndex(indices, Strides, Shape);
+                var index = SpanNDHelpers.ComputeLinearIndex(indices, Strides, Shape);
                 return ref Unsafe.Add(ref _reference, index /* force zero-extension */);
             }
         }
@@ -230,8 +227,7 @@ namespace System.Numerics.Tensors
         /// <summary>
         /// The number of items in the span.
         /// </summary>
-        // REVIEW: Calling this just Length for now based on our discussions. Can rename if we desire.
-        public nint Length => _linearLength;
+        public nint LinearLength => _linearLength;
 
         /// <summary>
         /// Gets a value indicating whether this <see cref="SpanND{T}"/> is empty.
@@ -266,6 +262,16 @@ namespace System.Numerics.Tensors
         /// this does *not* check to see if the *contents* are equal.
         /// </summary>
         public static bool operator !=(SpanND<T> left, SpanND<T> right) => !(left == right);
+
+        /// <summary>
+        /// Returns true if left and right point at the same memory and have the same length.  Note that
+        /// this does *not* check to see if the *contents* are equal.
+        /// </summary>
+        public static bool operator ==(SpanND<T> left, SpanND<T> right) =>
+            left._linearLength == right._linearLength &&
+            left.Rank == right.Rank &&
+            left._lengths == right._lengths &&
+            Unsafe.AreSame(ref left._reference, ref right._reference);
 
         /// <summary>
         /// This method is not supported as spans cannot be boxed. To compare two spans, use operator==.
@@ -324,10 +330,10 @@ namespace System.Numerics.Tensors
             {
                 SpanNDHelpers.AdjustIndices(_span.Rank - 1, 1, ref _curIndices, _span.Shape);
 
-                if (_items < _span.Length)
+                if (_items < _span.LinearLength)
                     _items++;
 
-                return _items < _span.Length;
+                return _items < _span.LinearLength;
             }
 
             /// <summary>Gets the element at the current position of the enumerator.</summary>
@@ -361,7 +367,7 @@ namespace System.Numerics.Tensors
             nint clearedValues = 0;
             while (clearedValues < _linearLength)
             {
-                SpanNDHelpers.Clear(ref Unsafe.Add(ref _reference, SpanNDHelpers.GetIndex(curIndices, Strides, Shape)), (nuint)Shape[Rank - 1]);
+                SpanNDHelpers.Clear(ref Unsafe.Add(ref _reference, SpanNDHelpers.ComputeLinearIndex(curIndices, Strides, Shape)), (nuint)Shape[Rank - 1]);
                 SpanNDHelpers.AdjustIndices(Rank - 2, 1, ref curIndices, _lengths);
                 clearedValues += Shape[Rank - 1];
             }
@@ -379,7 +385,7 @@ namespace System.Numerics.Tensors
             // REVIEW: If we track the actual length of the backing data, because Length doesn't always equal the actual length, we could use that here to not need to loop.
             while (filledValues < _linearLength)
             {
-                SpanNDHelpers.Fill(ref Unsafe.Add(ref _reference, SpanNDHelpers.GetIndex(curIndices, Strides, Shape)), (nuint)Shape[Rank - 1], value);
+                SpanNDHelpers.Fill(ref Unsafe.Add(ref _reference, SpanNDHelpers.ComputeLinearIndex(curIndices, Strides, Shape)), (nuint)Shape[Rank - 1], value);
                 SpanNDHelpers.AdjustIndices(Rank - 2, 1, ref curIndices, _lengths);
                 filledValues += Shape[Rank - 1];
             }
@@ -403,14 +409,14 @@ namespace System.Numerics.Tensors
             // Using "if (!TryCopyTo(...))" results in two branches: one for the length
             // check, and one for the result of TryCopyTo. Since these checks are equivalent,
             // we can optimize by performing the check once ourselves then calling Memmove directly.
-            if (_linearLength <= destination.Length)
+            if (_linearLength <= destination.LinearLength)
             {
                 Span<nint> curIndices = stackalloc nint[Rank];
                 nint copiedValues = 0;
                 var slice = destination.Slice(_lengths);
                 while (copiedValues < _linearLength)
                 {
-                    SpanNDHelpers.Memmove(ref Unsafe.Add(ref slice._reference, SpanNDHelpers.GetIndex(curIndices, destination.Strides, Shape)), ref Unsafe.Add(ref _reference, SpanNDHelpers.GetIndex(curIndices, Strides, Shape)), Shape[Rank - 1]);
+                    SpanNDHelpers.Memmove(ref Unsafe.Add(ref slice._reference, SpanNDHelpers.ComputeLinearIndex(curIndices, destination.Strides, Shape)), ref Unsafe.Add(ref _reference, SpanNDHelpers.ComputeLinearIndex(curIndices, Strides, Shape)), Shape[Rank - 1]);
                     SpanNDHelpers.AdjustIndices(Rank - 2, 1, ref curIndices, _lengths);
                     copiedValues += Shape[Rank - 1];
                 }
@@ -434,14 +440,14 @@ namespace System.Numerics.Tensors
         {
             bool retVal = false;
 
-            if (_linearLength <= destination.Length)
+            if (_linearLength <= destination.LinearLength)
             {
                 Span<nint> curIndices = stackalloc nint[Rank];
                 nint copiedValues = 0;
                 var slice = destination.Slice(_lengths);
                 while (copiedValues < _linearLength)
                 {
-                    SpanNDHelpers.Memmove(ref Unsafe.Add(ref slice._reference, SpanNDHelpers.GetIndex(curIndices, Strides, Shape)), ref Unsafe.Add(ref _reference, SpanNDHelpers.GetIndex(curIndices, Strides, Shape)), Shape[Rank - 1]);
+                    SpanNDHelpers.Memmove(ref Unsafe.Add(ref slice._reference, SpanNDHelpers.ComputeLinearIndex(curIndices, Strides, Shape)), ref Unsafe.Add(ref _reference, SpanNDHelpers.ComputeLinearIndex(curIndices, Strides, Shape)), Shape[Rank - 1]);
                     SpanNDHelpers.AdjustIndices(Rank - 2, 1, ref curIndices, _lengths);
                     copiedValues += Shape[Rank - 1];
                 }
@@ -450,16 +456,6 @@ namespace System.Numerics.Tensors
             }
             return retVal;
         }
-
-        /// <summary>
-        /// Returns true if left and right point at the same memory and have the same length.  Note that
-        /// this does *not* check to see if the *contents* are equal.
-        /// </summary>
-        public static bool operator ==(SpanND<T> left, SpanND<T> right) =>
-            left._linearLength == right._linearLength &&
-            left.Rank == right.Rank &&
-            left._lengths == right._lengths &&
-            Unsafe.AreSame(ref left._reference, ref right._reference);
 
         /// <summary>
         /// Defines an implicit conversion of a <see cref="SpanND{T}"/> to a <see cref="ReadOnlySpanND{T}"/>
@@ -534,7 +530,7 @@ namespace System.Numerics.Tensors
             nint copiedValues = 0;
             while (copiedValues < _linearLength)
             {
-                SpanNDHelpers.Memmove(ref Unsafe.Add(ref dstRef, copiedValues), ref Unsafe.Add(ref _reference, SpanNDHelpers.GetIndex(curIndices, Strides, Shape)), Shape[Rank - 1]);
+                SpanNDHelpers.Memmove(ref Unsafe.Add(ref dstRef, copiedValues), ref Unsafe.Add(ref _reference, SpanNDHelpers.ComputeLinearIndex(curIndices, Strides, Shape)), Shape[Rank - 1]);
                 SpanNDHelpers.AdjustIndices(Rank - 2, 1, ref curIndices, _lengths);
                 copiedValues += Shape[Rank - 1];
             }

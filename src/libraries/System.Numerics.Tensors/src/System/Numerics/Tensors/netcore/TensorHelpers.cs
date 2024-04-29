@@ -29,7 +29,7 @@ namespace System.Numerics.Tensors
         /// <returns>How many boolean values are true.</returns>
         public static nint CountTrueElements(Tensor<bool> filter)
         {
-            var filterSpan = MemoryMarshal.CreateSpan(ref filter._values[0], (int)filter._linearLength);
+            Span<bool> filterSpan = MemoryMarshal.CreateSpan(ref filter._values[0], (int)filter._linearLength);
             nint count = 0;
             for (int i = 0; i < filterSpan.Length; i++)
             {

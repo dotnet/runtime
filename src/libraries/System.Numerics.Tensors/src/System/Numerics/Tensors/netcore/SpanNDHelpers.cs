@@ -18,13 +18,20 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nint CalculateTotalLength(ref nint[] lengths)
         {
-            nint totalLength = 1;
-            for (int i = 0; i < lengths.Length; i++)
+            nuint totalLength = 0;
+
+            if (lengths.Length != 0)
             {
-                totalLength *= lengths[i];
+                totalLength = (nuint)lengths[0];
+
+                for (int i = 1; i < lengths.Length; i++)
+                {
+                    nuint length = (nuint)lengths[i]; // We don't need to check this, since the multiplication and final cast will handle it instead
+                    totalLength = checked(totalLength * length);
+                }
             }
 
-            return totalLength;
+            return checked((nint)totalLength);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -36,6 +43,9 @@ namespace System.Numerics.Tensors
                 totalLength *= lengths[i];
             }
 
+            if (totalLength < 0)
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+
             return totalLength;
         }
 
@@ -43,9 +53,9 @@ namespace System.Numerics.Tensors
         /// Gets the set of strides that can be used to calculate the offset of n-dimensions in a 1-dimensional layout
         /// </summary>
         /// <returns></returns>
-        public static nint[] CalculateStrides(int rank, ReadOnlySpan<nint> lengths)
+        public static nint[] CalculateStrides(ReadOnlySpan<nint> lengths)
         {
-            nint[] strides = new nint[rank];
+            nint[] strides = new nint[lengths.Length];
 
             nint stride = 1;
 
@@ -65,7 +75,7 @@ namespace System.Numerics.Tensors
         /// <param name="strides"></param>
         /// <param name="lengths"></param>
         /// <returns></returns>
-        public static nint GetIndex(ReadOnlySpan<nint> indices, ReadOnlySpan<nint> strides, ReadOnlySpan<nint> lengths)
+        public static nint ComputeLinearIndex(ReadOnlySpan<nint> indices, ReadOnlySpan<nint> strides, ReadOnlySpan<nint> lengths)
         {
             Debug.Assert(strides.Length == indices.Length);
 
@@ -74,7 +84,7 @@ namespace System.Numerics.Tensors
             {
                 if (indices[i] >= lengths[i])
                     ThrowHelper.ThrowIndexOutOfRangeException();
-                index += strides[i] * (indices[i]);
+                index += strides[i] * indices[i];
             }
 
             return index;

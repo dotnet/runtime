@@ -56,11 +56,9 @@ namespace System.Numerics.Tensors
         {
             _linearLength = SpanNDHelpers.CalculateTotalLength(lengths);
 
-            Debug.Assert(_linearLength >= 0);
-
             _values = values;
             _lengths = lengths.ToArray();
-            _strides = SpanNDHelpers.CalculateStrides(Rank, _lengths);
+            _strides = SpanNDHelpers.CalculateStrides(_lengths);
             _isPinned = isPinned;
         }
 
@@ -69,13 +67,11 @@ namespace System.Numerics.Tensors
         {
             _linearLength = SpanNDHelpers.CalculateTotalLength(lengths);
 
-            Debug.Assert(_linearLength >= 0);
-
             _values = values;
             _lengths = lengths.ToArray();
             _strides = strides.ToArray();
             if (strides == Array.Empty<nint>())
-                _strides = SpanNDHelpers.CalculateStrides(Rank, lengths);
+                _strides = SpanNDHelpers.CalculateStrides(lengths);
             _isPinned = isPinned;
 
         }
@@ -105,7 +101,7 @@ namespace System.Numerics.Tensors
         /// <summary>
         /// The number of items in the span.
         /// </summary>
-        public nint Length => _linearLength;
+        public nint LinearLength => _linearLength;
 
         // REIVEW: Calling this Shape for now as Lengths didn't seem to be the most liked option based on our discussion. Can rename if we desire.
         /// <summary>
@@ -129,6 +125,12 @@ namespace System.Numerics.Tensors
         public ref T this[params ReadOnlySpan<nint> indices] => ref AsSpanND()[indices];
 
         // REVIEW: WE WILL WANT THIS CHANGED FROM A BOOL TO SOME FILTER EXPRESSION.
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
         public Tensor<T> this[Tensor<bool> filter]
         {
             get
@@ -142,8 +144,8 @@ namespace System.Numerics.Tensors
                         ThrowHelper.ThrowArgument_FilterTensorMustEqualTensorLength();
                 }
 
-                Span<T> srcSpan = MemoryMarshal.CreateSpan(ref _values[0], (int)_linearLength);
-                Span<bool> filterSpan = MemoryMarshal.CreateSpan(ref filter._values[0], (int)_linearLength);
+                Span<T> srcSpan = _values;
+                Span<bool> filterSpan = filter._values;
 
                 nint linearLength = TensorHelpers.CountTrueElements(filter);
 
@@ -190,7 +192,7 @@ namespace System.Numerics.Tensors
                 throw new ArgumentOutOfRangeException(nameof(ranges), "Number of dimensions to slice does not equal the number of dimensions in the span");
 
             var s = AsSpanND(ranges);
-            T[] values = _isPinned ? GC.AllocateArray<T>(checked((int)s.Length), _isPinned) : (new T[s.Length]);
+            T[] values = _isPinned ? GC.AllocateArray<T>(checked((int)s.LinearLength), _isPinned) : (new T[s.LinearLength]);
             var outTensor = new Tensor<T>(values, s.Shape.ToArray(), _isPinned);
             s.CopyTo(outTensor);
             return outTensor;
@@ -273,7 +275,7 @@ namespace System.Numerics.Tensors
                 SpanNDHelpers.AdjustIndices(_tensor.Rank - 1, 1, ref _curIndices, _tensor.Shape);
 
                 _items++;
-                return _items < _tensor.Length;
+                return _items < _tensor.LinearLength;
             }
 
             /// <summary>
