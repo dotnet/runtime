@@ -4,6 +4,7 @@ updates:
     directory: "/"
     schedule:
       interval: daily
+    update-types: major
     open-pull-requests-limit: 5
     labels:
       - area-codeflow
