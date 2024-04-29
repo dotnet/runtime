@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using ILLink.Shared.DataFlow;
 using Mono.Cecil;
@@ -17,9 +18,10 @@ namespace ILLink.Shared.TrimAnalysis
 	/// </summary>
 	internal partial record MethodReturnValue
 	{
-		public static MethodReturnValue Create (MethodDefinition method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, LinkContext context)
+		public static MethodReturnValue Create (MethodDefinition method, bool isNewObj, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, LinkContext context)
 		{
-			var staticType = method.IsConstructor ? method.DeclaringType : method.ReturnType.ResolveToTypeDefinition (context);
+			Debug.Assert (!isNewObj || method.IsConstructor, "isNewObj can only be true for constructors");
+			var staticType = isNewObj ? method.DeclaringType : method.ReturnType.ResolveToTypeDefinition (context);
 			return new MethodReturnValue (staticType, method, dynamicallyAccessedMemberTypes);
 		}
 

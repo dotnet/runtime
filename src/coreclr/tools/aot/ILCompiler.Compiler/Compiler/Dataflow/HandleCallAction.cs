@@ -384,7 +384,7 @@ namespace ILLink.Shared.TrimAnalysis
                             if (staticType is null || (!staticType.IsDefType && !staticType.IsArray))
                             {
                                 // We don't know anything about the type GetType was called on. Track this as a usual "result of a method call without any annotations"
-                                AddReturnValue(_reflectionMarker.Annotations.GetMethodReturnValue(calledMethod));
+                                AddReturnValue(_reflectionMarker.Annotations.GetMethodReturnValue(calledMethod, _isNewObj));
                             }
                             else if (staticType.IsSealed() || staticType.IsTypeOf("System", "Delegate"))
                             {
@@ -419,7 +419,7 @@ namespace ILLink.Shared.TrimAnalysis
                                 // Return a value which is "unknown type" with annotation. For now we'll use the return value node
                                 // for the method, which means we're loosing the information about which staticType this
                                 // started with. For now we don't need it, but we can add it later on.
-                                AddReturnValue(_reflectionMarker.Annotations.GetMethodReturnValue(calledMethod, annotation));
+                                AddReturnValue(_reflectionMarker.Annotations.GetMethodReturnValue(calledMethod, _isNewObj, annotation));
                             }
                         }
                     }
