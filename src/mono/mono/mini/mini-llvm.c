@@ -14542,22 +14542,9 @@ emit_aot_file_info (MonoLLVMModule *module)
 	LLVMSetInitializer (info_var, LLVMConstNamedStruct (module->info_var_type, fields, nfields));
 
 	if (module->static_link) {
-		char *s;
 		LLVMValueRef var;
 
-		s = g_strdup_printf ("mono_aot_module_%s_info", module->assembly->aname.name);
-#ifdef TARGET_WASM
-		var = LLVMAddGlobal (module->lmodule, pointer_type (LLVMInt8Type ()), g_strdup (mono_fixup_symbol_name(s)));
-#else
-		/* Get rid of characters which cannot occur in symbols */
-		char *p = s;
-		for (p = s; *p; ++p) {
-			if (!(isalnum (*p) || *p == '_'))
-			*p = '_';
-		}
-		var = LLVMAddGlobal (module->lmodule, pointer_type (LLVMInt8Type ()), s);
-#endif
-		g_free (s);
+		var = LLVMAddGlobal (module->lmodule, pointer_type (LLVMInt8Type ()), g_strdup (mono_fixup_symbol_name("mono_aot_module_", module->assembly->aname.name, "_info")));
 		LLVMSetInitializer (var, LLVMConstBitCast (LLVMGetNamedGlobal (module->lmodule, "mono_aot_file_info"), pointer_type (LLVMInt8Type ())));
 		LLVMSetLinkage (var, LLVMExternalLinkage);
 	}

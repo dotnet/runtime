@@ -12407,25 +12407,15 @@ emit_file_info (MonoAotCompile *acfg)
 	init_aot_file_info (acfg, info);
 
 	if (acfg->aot_opts.static_link) {
-		char symbol [MAX_SYMBOL_SIZE];
+		char prefix [MAX_SYMBOL_SIZE];
 
 		/*
 		 * Emit a global symbol which can be passed by an embedding app to
 		 * mono_aot_register_module (). The symbol points to a pointer to the file info
 		 * structure.
 		 */
-		sprintf (symbol, "%smono_aot_module_%s_info", acfg->user_symbol_prefix, acfg->image->assembly->aname.name);
-#ifdef TARGET_WASM
-		acfg->static_linking_symbol = g_strdup (mono_fixup_symbol_name(symbol));
-#else
-		/* Get rid of characters which cannot occur in symbols */
-		char *p = symbol;
-		for (p = symbol; *p; ++p) {
-			if (!(isalnum (*p) || *p == '_'))
-				*p = '_';
-		}
-		acfg->static_linking_symbol = g_strdup (symbol);
-#endif	
+		sprintf (prefix, "%smono_aot_module_", acfg->user_symbol_prefix);
+		acfg->static_linking_symbol = g_strdup (mono_fixup_symbol_name(prefix, acfg->image->assembly->aname.name, "_info"));
 	}
 
 	if (acfg->llvm)
@@ -15122,17 +15112,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 		acfg->flags = (MonoAotFileFlags)(acfg->flags | MONO_AOT_FILE_FLAG_LLVM_ONLY);
 
 	acfg->assembly_name_sym = g_strdup (get_assembly_prefix (acfg->image));
-#ifdef TARGET_WASM
-	acfg->global_prefix = g_strdup_printf ("mono_aot_%s", g_strdup(mono_fixup_symbol_name (acfg->assembly_name_sym)));
-#else
-	char *p;
-    /* Get rid of characters which cannot occur in symbols */
-	for (p = acfg->assembly_name_sym; *p; ++p) {
-		if (!(isalnum (*p) || *p == '_'))
-			*p = '_';
-	}
-	acfg->global_prefix = g_strdup_printf ("mono_aot_%s", acfg->assembly_name_sym);
-#endif
+	acfg->global_prefix = mono_fixup_symbol_name("mono_aot_", acfg->assembly_name_sym, "");
 	acfg->plt_symbol = g_strdup_printf ("%s_plt", acfg->global_prefix);
 	acfg->got_symbol = g_strdup_printf ("%s_got", acfg->global_prefix);
  	if (acfg->llvm) {
