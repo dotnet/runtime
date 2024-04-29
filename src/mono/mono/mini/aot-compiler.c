@@ -12414,8 +12414,8 @@ emit_file_info (MonoAotCompile *acfg)
 		 * mono_aot_register_module (). The symbol points to a pointer to the file info
 		 * structure.
 		 */
-		sprintf (prefix, "%smono_aot_module_", acfg->user_symbol_prefix);
-		acfg->static_linking_symbol = g_strdup (mono_fixup_symbol_name(prefix, acfg->image->assembly->aname.name, "_info"));
+		snprintf (prefix, MAX_SYMBOL_SIZE, "%smono_aot_module_", acfg->user_symbol_prefix);
+		acfg->static_linking_symbol = mono_fixup_symbol_name (prefix, acfg->image->assembly->aname.name, "_info");
 	}
 
 	if (acfg->llvm)
@@ -15112,7 +15112,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 		acfg->flags = (MonoAotFileFlags)(acfg->flags | MONO_AOT_FILE_FLAG_LLVM_ONLY);
 
 	acfg->assembly_name_sym = g_strdup (get_assembly_prefix (acfg->image));
-	acfg->global_prefix = mono_fixup_symbol_name("mono_aot_", acfg->assembly_name_sym, "");
+	acfg->global_prefix = mono_fixup_symbol_name ("mono_aot_", acfg->assembly_name_sym, "");
 	acfg->plt_symbol = g_strdup_printf ("%s_plt", acfg->global_prefix);
 	acfg->got_symbol = g_strdup_printf ("%s_got", acfg->global_prefix);
  	if (acfg->llvm) {

@@ -1223,16 +1223,35 @@ mono_loader_install_pinvoke_override (PInvokeOverrideFn override_fn)
 	pinvoke_override = override_fn;
 }
 
+static gboolean
+is_symbol_char_verbatim (unsigned char b)
+{
+	return ((b >= '0' && b <= '9') || (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z'));
+}
+
+static gboolean
+is_symbol_char_underscore (unsigned char c)
+{
+	switch (c) {
+	case '_':
+	case '.':
+	case '-':
+	case '+':
+	case '<':
+	case '>':
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
 static int mono_precompute_size (const char *key)
 {
 	int size = 1; // Null terminator
 	int len = (int)strlen (key);
 	for (int i = 0; i < len; ++i) {
 		unsigned char b = key[i];
-		if ((b >= '0' && b <= '9') ||
-		    (b >= 'a' && b <= 'z') ||
-			(b >= 'A' && b <= 'Z') ||
-			b == '_' || b == '.' || b == '-' || b ==  '+' || b == '<' || b == '>') {
+		if (is_symbol_char_verbatim (b) || is_symbol_char_underscore (b)) {
 			size++;
 		}
 		else {
@@ -1245,32 +1264,21 @@ static int mono_precompute_size (const char *key)
 // Keep synced with FixupSymbolName from src/tasks/Common/Utils.cs
 char* mono_fixup_symbol_name (const char *prefix, const char *key, const char *suffix) {
 	int size = mono_precompute_size (key) + strlen (prefix) + strlen (suffix);
-	char fixedName[size];
-	int sb_index = 0;
+	GString *str = g_string_sized_new (size);
 	int len = (int)strlen (key);
-	strcpy(fixedName, prefix);
+	g_string_append_printf (str, "%s", prefix);
 
 	for (int i = 0; i < len; ++i) {
 		unsigned char b = key[i];
-		if ((b >= '0' && b <= '9') ||
-		    (b >= 'a' && b <= 'z') ||
-			(b >= 'A' && b <= 'Z') ||
-			(b == '_')) {
-			fixedName[sb_index++] = b;
-		}
-		else if (b == '.' || b == '-' || b ==  '+' || b == '<' || b == '>') {
-			fixedName[sb_index++] = '_';
-		}
-		else {
-			// Append the hexadecimal representation of b between underscores
-			snprintf(&fixedName[sb_index], sizeof(fixedName) - sb_index - 1, "_%X_", b);
-			sb_index += 4; // Move the index after the appended hexadecimal characters
+		if (is_symbol_char_verbatim (b)) {
+			g_string_append_c (str, b);
+		} else if (is_symbol_char_underscore (b)) {
+			g_string_append_c (str, '_');
+		} else {
+			// Append the hex representation of b between underscores
+			g_string_append_printf (str, "_%X_", b);
 		}
 	}
-
-	strcpy(&fixedName[sb_index], suffix);
-
-	// Null-terminate the fixedName string
-	fixedName[size-1] = '\0';
-	return fixedName;
+	g_string_append_printf (str, "%s", suffix);
+	return g_string_free (str, FALSE);
 }

@@ -14543,8 +14543,9 @@ emit_aot_file_info (MonoLLVMModule *module)
 
 	if (module->static_link) {
 		LLVMValueRef var;
-
-		var = LLVMAddGlobal (module->lmodule, pointer_type (LLVMInt8Type ()), g_strdup (mono_fixup_symbol_name("mono_aot_module_", module->assembly->aname.name, "_info")));
+		char *fixedName = mono_fixup_symbol_name ("mono_aot_module_", module->assembly->aname.name, "_info");
+		var = LLVMAddGlobal (module->lmodule, pointer_type (LLVMInt8Type ()), fixedName);
+		free (fixedName);
 		LLVMSetInitializer (var, LLVMConstBitCast (LLVMGetNamedGlobal (module->lmodule, "mono_aot_file_info"), pointer_type (LLVMInt8Type ())));
 		LLVMSetLinkage (var, LLVMExternalLinkage);
 	}
