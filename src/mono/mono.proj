@@ -89,70 +89,13 @@
                       GeneratePathProperty="true" />
   </ItemGroup>
 
-  <Choose>
-    <When Condition="'$(HostOS)' == 'linux'">
-      <Choose>
-        <When Condition="'$(BuildArchitecture)' == 'x64'">
-          <PropertyGroup Condition="'$(NeedEmscriptenPackages)' == 'true'">
-            <NodePkgVersion>$(runtimelinuxx64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
-            <EmsdkCacheVersion>$(MicrosoftNETRuntimeEmscripten3134Cachelinuxx64Version)</EmsdkCacheVersion>
-            <EmsdkSdkVersion>$(MicrosoftNETRuntimeEmscripten3134Sdklinuxx64Version)</EmsdkSdkVersion>
-          </PropertyGroup>
-        </When>
-        <When Condition="'$(BuildArchitecture)' == 'arm64'">
-          <PropertyGroup Condition="'$(NeedEmscriptenPackages)' == 'true'">
-            <NodePkgVersion>$(runtimelinuxarm64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
-            <EmsdkCacheVersion>$(MicrosoftNETRuntimeEmscripten3134Cachelinuxarm64Version)</EmsdkCacheVersion>
-            <EmsdkSdkVersion>$(MicrosoftNETRuntimeEmscripten3134Sdklinuxarm64Version)</EmsdkSdkVersion>
-          </PropertyGroup>
-        </When>
-      </Choose>
-    </When>
-    <When Condition="'$(HostOS)' == 'windows'">
-      <Choose>
-        <When Condition="'$(BuildArchitecture)' == 'x64'">
-          <PropertyGroup Condition="'$(NeedEmscriptenPackages)' == 'true'">
-            <NodePkgVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
-            <EmsdkCacheVersion>$(MicrosoftNETRuntimeEmscripten3134Cachewinx64Version)</EmsdkCacheVersion>
-            <EmsdkSdkVersion>$(MicrosoftNETRuntimeEmscripten3134Sdkwinx64Version)</EmsdkSdkVersion>
-          </PropertyGroup>
-        </When>
-        <When Condition="'$(BuildArchitecture)' == 'arm64'">
-          <PropertyGroup Condition="'$(NeedEmscriptenPackages)' == 'true'">
-            <NodePkgVersion>$(runtimewinarm64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
-            <EmsdkCacheVersion>$(MicrosoftNETRuntimeEmscripten3134Cachewinarm64Version)</EmsdkCacheVersion>
-            <EmsdkSdkVersion>$(MicrosoftNETRuntimeEmscripten3134Sdkwinarm64Version)</EmsdkSdkVersion>
-          </PropertyGroup>
-        </When>
-      </Choose>
-    </When>
-    <When Condition="'$(HostOS)' == 'osx'">
-      <Choose>
-        <When Condition="'$(BuildArchitecture)' == 'x64'">
-          <PropertyGroup Condition="'$(NeedEmscriptenPackages)' == 'true'">
-            <NodePkgVersion>$(runtimeosxx64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
-            <EmsdkCacheVersion>$(MicrosoftNETRuntimeEmscripten3134Cacheosxx64Version)</EmsdkCacheVersion>
-            <EmsdkSdkVersion>$(MicrosoftNETRuntimeEmscripten3134Sdkosxx64Version)</EmsdkSdkVersion>
-          </PropertyGroup>
-        </When>
-        <When Condition="'$(BuildArchitecture)' == 'arm64'">
-          <PropertyGroup Condition="'$(NeedEmscriptenPackages)' == 'true'">
-            <NodePkgVersion>$(runtimeosxarm64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
-            <EmsdkCacheVersion>$(MicrosoftNETRuntimeEmscripten3134Cacheosxarm64Version)</EmsdkCacheVersion>
-            <EmsdkSdkVersion>$(MicrosoftNETRuntimeEmscripten3134Sdkosxarm64Version)</EmsdkSdkVersion>
-          </PropertyGroup>
-        </When>
-      </Choose>
-    </When>
-  </Choose>
-
   <ItemGroup Condition="'$(NeedEmscriptenPackages)' == 'true'">
     <PackageReference Include="Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Cache.$(_portableHostOS)-$(BuildArchitecture)"
                       PrivateAssets="all"
                       Version="$(EmsdkPackageVersion)"
                       PackageArch="$(BuildArchitecture)" />
     <PackageReference Include="runtime.$(_portableHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Wasm.Node.Transport"
-                      Version="$(NodePkgVersion)"
+                      Version="$(NodePackageVersion)"
                       PackageArch="$(BuildArchitecture)" />
     <PackageReference Include="Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Sdk.$(_portableHostOS)-$(BuildArchitecture)"
                       PrivateAssets="all"
