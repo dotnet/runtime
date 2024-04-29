@@ -72,7 +72,7 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingAssembly.SecurityRuleSet; }
         }
 
-#if NETCOREAPP
+#if NET
         [Obsolete]
         [RequiresAssemblyFiles]
 #endif
@@ -91,7 +91,7 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingAssembly.EntryPoint; }
         }
 
-#if NETCOREAPP
+#if NET
         [Obsolete]
         [RequiresAssemblyFiles]
 #endif
@@ -200,7 +200,7 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingAssembly.GetTypes();
         }
 
-#if NETCOREAPP
+#if NET
         [Obsolete]
 #endif
         public override bool GlobalAssemblyCache

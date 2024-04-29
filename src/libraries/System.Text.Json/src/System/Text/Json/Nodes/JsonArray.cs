@@ -246,7 +246,7 @@ namespace System.Text.Json.Nodes
                 Debug.Assert(index >= 0);
 
                 path.Append('[');
-#if NETCOREAPP
+#if NET
                 Span<char> chars = stackalloc char[JsonConstants.MaximumFormatUInt32Length];
                 bool formatted = ((uint)index).TryFormat(chars, out int charsWritten);
                 Debug.Assert(formatted);

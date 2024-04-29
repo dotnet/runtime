@@ -45,7 +45,7 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             internal override bool VerifySignature(
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
                 ReadOnlySpan<byte> valueHash,
                 ReadOnlyMemory<byte> signature,
 #else
@@ -81,7 +81,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 return publicKey.VerifyHash(
                     valueHash,
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
                     signature.Span,
 #else
                     signature,
@@ -97,7 +97,7 @@ namespace System.Security.Cryptography.Pkcs
                 int digestValueLength);
 
             private protected static bool SignCore(
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
                 ReadOnlySpan<byte> dataHash,
 #else
                 byte[] dataHash,
@@ -122,7 +122,7 @@ namespace System.Security.Cryptography.Pkcs
                     return false;
                 }
 
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
                 byte[] signature = new byte[privateKey.KeySize / 8];
 
                 bool signed = privateKey.TrySignHash(
@@ -147,7 +147,7 @@ namespace System.Security.Cryptography.Pkcs
                 }
 #endif
                 signatureValue = privateKey.SignHash(
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
                     dataHash.ToArray(),
 #else
                     dataHash,
@@ -199,7 +199,7 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             protected override bool Sign(
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
                 ReadOnlySpan<byte> dataHash,
 #else
                 byte[] dataHash,
@@ -319,7 +319,7 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             protected override bool Sign(
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
                 ReadOnlySpan<byte> dataHash,
 #else
                 byte[] dataHash,

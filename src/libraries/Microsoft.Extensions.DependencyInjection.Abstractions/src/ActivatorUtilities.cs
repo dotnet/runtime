@@ -12,7 +12,7 @@ using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Internal;
 
-#if NETCOREAPP
+#if NET
 [assembly: System.Reflection.Metadata.MetadataUpdateHandler(typeof(Microsoft.Extensions.DependencyInjection.ActivatorUtilities.ActivatorUtilitiesUpdateHandler))]
 #endif
 
@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// </summary>
     public static class ActivatorUtilities
     {
-#if NETCOREAPP
+#if NET
         // Support caching of constructor metadata for the common case of types in non-collectible assemblies.
         private static readonly ConcurrentDictionary<Type, ConstructorInfoEx[]> s_constructorInfos = new();
 
@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
             ConstructorInfoEx[]? constructors;
-#if NETCOREAPP
+#if NET
             if (!s_constructorInfos.TryGetValue(instanceType, out constructors))
             {
                 constructors = GetOrAddConstructors(instanceType);
@@ -135,7 +135,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     if (bestLength < length)
                     {
                         bestLength = length;
-#if NETCOREAPP
+#if NET
                         ctorArgs.CopyTo(bestCtorArgs);
 #else
                         if (i == constructors.Length - 1)
@@ -191,7 +191,7 @@ namespace Microsoft.Extensions.DependencyInjection
             matcher.MapParameters(parameterMap, parameters);
             return matcher.CreateInstance(provider);
 
-#if NETCOREAPP
+#if NET
             int GetMaxArgCount()
             {
                 int max = 0;
@@ -222,7 +222,7 @@ namespace Microsoft.Extensions.DependencyInjection
 #endif
         }
 
-#if NETCOREAPP
+#if NET
         private static ConstructorInfoEx[] GetOrAddConstructors(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
@@ -451,7 +451,7 @@ namespace Microsoft.Extensions.DependencyInjection
             FindApplicableConstructor(instanceType, argumentTypes, constructors: null, out ConstructorInfo constructor, out int?[] parameterMap);
             Type declaringType = constructor.DeclaringType!;
 
-#if NETCOREAPP
+#if NET
             ConstructorInvoker invoker = ConstructorInvoker.Create(constructor);
 
             ParameterInfo[] constructorParameters = constructor.GetParameters();
@@ -644,7 +644,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             if (constructors is null)
             {
-#if NETCOREAPP
+#if NET
                 if (!s_constructorInfos.TryGetValue(instanceType, out constructors))
                 {
                     constructors = GetOrAddConstructors(instanceType);
@@ -725,7 +725,7 @@ namespace Microsoft.Extensions.DependencyInjection
             public readonly ParameterInfo[] Parameters;
             public readonly bool IsPreferred;
             private readonly object?[]? _parameterKeys;
-#if NETCOREAPP
+#if NET
             public ConstructorInvoker? _invoker;
             public ConstructorInvoker Invoker
             {
@@ -801,7 +801,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             private readonly ConstructorInfoEx _constructor;
 
-#if NETCOREAPP
+#if NET
             private readonly Span<object?> _parameterValues;
             public ConstructorMatcher(ConstructorInfoEx constructor, Span<object?> parameterValues)
 #else
@@ -884,7 +884,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     }
                 }
 
-#if NETCOREAPP
+#if NET
                 return _constructor.Invoker.Invoke(_parameterValues.Slice(0, _constructor.Parameters.Length));
 #else
                 try
@@ -922,7 +922,7 @@ namespace Microsoft.Extensions.DependencyInjection
             throw new InvalidOperationException(SR.Format(SR.MarkedCtorMissingArgumentTypes, nameof(ActivatorUtilitiesConstructorAttribute)));
         }
 
-#if NETCOREAPP // Use the faster ConstructorInvoker which also has alloc-free APIs when <= 4 parameters.
+#if NET // Use the faster ConstructorInvoker which also has alloc-free APIs when <= 4 parameters.
         private static object ReflectionFactoryServiceOnlyFixed(
             ConstructorInvoker invoker,
             FactoryParameterContext[] parameters,
@@ -1197,7 +1197,7 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 #endif
 
-#if NETCOREAPP
+#if NET
         internal static class ActivatorUtilitiesUpdateHandler
         {
             public static void ClearCache(Type[]? _)

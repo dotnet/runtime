@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 CacheEntry entry = _cache.GetOrAdd(
                     key,
-#if NETCOREAPP
+#if NET
                     static (TKey key, Func<TKey, TValue> valueFactory) => new(valueFactory(key)),
                     valueFactory);
 #else
