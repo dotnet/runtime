@@ -57,6 +57,7 @@ if (ENVIRONMENT_IS_WEB && isFirefox) {
     Error.stackTraceLimit = 1000;
 }
 
+// as soon as possible, see https://github.com/dotnet/runtime/issues/101169
 if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_WORKER && !isFirefox) {
     console.log("Running in: " + globalThis.navigator.userAgent);
     console.log("Running at: " + globalThis.location.href);
@@ -321,7 +322,8 @@ async function run() {
         App.runtime = await dotnet.create();
         App.runArgs = runArgs
 
-        if (ENVIRONMENT_IS_WEB && isFirefox) {
+        // after console proxy was setup, see https://github.com/dotnet/runtime/issues/101169
+        if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_WORKER && isFirefox) {
             console.log("Application arguments: " + runArgs.applicationArguments.join(' '));
             console.log("Running in: " + globalThis.navigator.userAgent);
             console.log("Running at: " + globalThis.location.href);

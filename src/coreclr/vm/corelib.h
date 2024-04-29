@@ -583,6 +583,10 @@ END_ILLINK_FEATURE_SWITCH()
 DEFINE_CLASS(MONITOR,               Threading,              Monitor)
 DEFINE_METHOD(MONITOR,              ENTER,                  Enter,                      SM_Obj_RetVoid)
 
+DEFINE_CLASS(THREAD_BLOCKING_INFO,  Threading,              ThreadBlockingInfo)
+DEFINE_FIELD(THREAD_BLOCKING_INFO,  OFFSET_OF_LOCK_OWNER_OS_THREAD_ID, s_monitorObjectOffsetOfLockOwnerOSThreadId)
+DEFINE_FIELD(THREAD_BLOCKING_INFO,  FIRST,                  t_first)
+
 DEFINE_CLASS(PARAMETER,             Reflection,             ParameterInfo)
 
 DEFINE_CLASS(PARAMETER_MODIFIER,    Reflection,             ParameterModifier)
@@ -603,11 +607,6 @@ DEFINE_METHOD(PROPERTY,             GET_SETTER,             GetSetMethod,       
 DEFINE_METHOD(PROPERTY,             GET_GETTER,             GetGetMethod,               IM_Bool_RetMethodInfo)
 
 DEFINE_CLASS(PROPERTY_INFO,         Reflection,             PropertyInfo)
-
-
-
-DEFINE_CLASS(METADATA_IMPORT,       Reflection,             MetadataImport)
-DEFINE_METHOD(METADATA_IMPORT,      THROW_ERROR,            ThrowError,                 SM_Int_RetVoid)
 
 DEFINE_CLASS(RESOLVER,              System,                 Resolver)
 DEFINE_METHOD(RESOLVER,             GET_JIT_CONTEXT,        GetJitContext,              IM_RefInt_RetRuntimeType)

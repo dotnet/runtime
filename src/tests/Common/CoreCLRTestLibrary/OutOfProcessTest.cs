@@ -49,7 +49,7 @@ namespace TestLibrary
             && !OperatingSystem.IsBrowser()
             && !OperatingSystem.IsOSPlatform("Wasi");
 
-        public static void RunOutOfProcessTest(string assemblyPath)
+        public static void RunOutOfProcessTest(string assemblyPath, string testPathPrefix)
         {
             int ret = -100;
             string baseDir = AppContext.BaseDirectory;
@@ -63,17 +63,23 @@ namespace TestLibrary
             {
                 CoreclrTestWrapperLib wrapper = new CoreclrTestWrapperLib();
 
+                string testScriptPath = assemblyPath;
+                if (testPathPrefix != null)
+                    testScriptPath = Path.Combine(testPathPrefix, testScriptPath);
+
                 if (OperatingSystem.IsWindows())
                 {
-                    testExecutable = Path.Combine(baseDir, Path.ChangeExtension(assemblyPath, ".cmd"));
+                    testExecutable = Path.Combine(baseDir, Path.ChangeExtension(testScriptPath, ".cmd"));
                 }
                 else
                 {
-                    testExecutable = Path.Combine(baseDir, Path.ChangeExtension(assemblyPath.Replace("\\", "/"), ".sh"));
+                    testExecutable = Path.Combine(baseDir, Path.ChangeExtension(testScriptPath.Replace("\\", "/"), ".sh"));
                 }
 
                 if (!File.Exists(testExecutable))
                 {
+                    Console.WriteLine($"Test executable '{testExecutable}' not found, skipping.");
+
                     // Skip platform-specific test when running on the excluded platform
                     return;
                 }
