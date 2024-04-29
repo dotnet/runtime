@@ -3000,12 +3000,6 @@ void CSE_HeuristicRLHook::ApplyDecisions()
     for (unsigned i = 0; i < JitRLHookCSEDecisions.GetLength(); i++)
     {
         const int index = JitRLHookCSEDecisions.GetData()[i];
-        if (index == -1)
-        {
-            // An input of 0 means stop processing.
-            break;
-        }
-
         if ((index < 0) || (index >= (int)cnt))
         {
             JITDUMP("Invalid candidate number %d\n", index + 1);
@@ -3060,10 +3054,10 @@ void CSE_HeuristicRLHook::DumpFeatures()
         int features[maxFeatures];
         GetFeatures(cse, features);
 
-        printf(" features #%i,", cse->csdIndex);
+        printf(" features #%i", cse->csdIndex);
         for (int j = 0; j < maxFeatures; j++)
         {
-            printf("%s%d", (j == 0) ? "" : ",", features[j]);
+            printf(",%d", features[j]);
         }
     }
 }
