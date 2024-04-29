@@ -49,6 +49,6 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_EnsureOpenSslInitialized")]
-        private static partial int EnsureOpenSslInitialized();
+        private static partial int EnsureOpenSslInitialized(void* mallocFunction, void* reallocFunction, void* freeFunction);
     }
 }
