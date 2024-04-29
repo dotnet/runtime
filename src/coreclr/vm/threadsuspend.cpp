@@ -4519,7 +4519,7 @@ BOOL Thread::WaitSuspendEventsHelper(void)
 
 
 // There's a bit of a workaround here
-void Thread::WaitSuspendEvents(BOOL fDoWait)
+void Thread::WaitSuspendEvents()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -4528,35 +4528,29 @@ void Thread::WaitSuspendEvents(BOOL fDoWait)
     _ASSERTE((m_State & TS_SyncSuspended) == 0);
 
     // Let us do some useful work before suspending ourselves.
-
-    // If we're required to perform a wait, do so.  Typically, this is
-    // skipped if this thread is a Debugger Special Thread.
-    if (fDoWait)
+    while (TRUE)
     {
-        while (TRUE)
+        WaitSuspendEventsHelper();
+
+        ThreadState oldState = m_State;
+
+        //
+        // If all reasons to suspend are off, we think we can exit
+        // this loop, but we need to check atomically.
+        //
+        if ((oldState & TS_DebugSuspendPending) == 0)
         {
-            WaitSuspendEventsHelper();
-
-            ThreadState oldState = m_State;
-
             //
-            // If all reasons to suspend are off, we think we can exit
-            // this loop, but we need to check atomically.
+            // Construct the destination state we desire - all suspension bits turned off.
             //
-            if ((oldState & TS_DebugSuspendPending) == 0)
+            ThreadState newState = (ThreadState)(oldState & ~(TS_DebugSuspendPending | TS_SyncSuspended));
+
+            if (InterlockedCompareExchange((LONG *)&m_State, newState, oldState) == (LONG)oldState)
             {
                 //
-                // Construct the destination state we desire - all suspension bits turned off.
+                // We are done.
                 //
-                ThreadState newState = (ThreadState)(oldState & ~(TS_DebugSuspendPending | TS_SyncSuspended));
-
-                if (InterlockedCompareExchange((LONG *)&m_State, newState, oldState) == (LONG)oldState)
-                {
-                    //
-                    // We are done.
-                    //
-                    break;
-                }
+                break;
             }
         }
     }
@@ -4628,6 +4622,7 @@ void Thread::HijackThread(ReturnKind returnKind, ExecutionState *esb)
 
     SetHijackReturnKind(returnKind);
 
+    // TODO: VS ensure that new hijack is better
     if (m_State & TS_Hijacked)
         UnhijackThread();
 

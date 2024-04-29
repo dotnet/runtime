@@ -2650,7 +2650,7 @@ private:
 
     // For suspends.  The thread waits on this event.  A client sets the event to cause
     // the thread to resume.
-    void    WaitSuspendEvents(BOOL fDoWait = TRUE);
+    void    WaitSuspendEvents();
     BOOL    WaitSuspendEventsHelper(void);
 
     // Helpers to ensure that the bits for suspension and the number of active
