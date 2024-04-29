@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Numerics;
 
 // Managed mirror of NativeFormatWriter.h/.cpp
 namespace Internal.NativeFormat
@@ -2013,16 +2014,10 @@ namespace Internal.NativeFormat
             _Entries.Add(new Entry(hashcode, element));
         }
 
-        // Returns 1 + log2(x) rounded up, 0 iff x == 0
+        // Calculates the highest bit set in a given unsigned integer.
         private static int HighestBit(uint x)
         {
-            int ret = 0;
-            while (x != 0)
-            {
-                x >>= 1;
-                ret++;
-            }
-            return ret;
+            return 1 << (sizeof(uint) * 8) - BitOperations.LeadingZeroCount(x);
         }
 
         // Helper method to back patch entry index in the bucket table
@@ -2051,7 +2046,7 @@ namespace Internal.NativeFormat
             uint bucketsEstimate = (uint)(_Entries.Count / _nFillFactor);
 
             // Round number of buckets up to the power of two
-            _nBuckets = (uint)(1 << HighestBit(bucketsEstimate));
+            _nBuckets = (uint)HighestBit(bucketsEstimate);
 
             // Lowest byte of the hashcode is used for lookup within the bucket. Keep it sorted too so that
             // we can use the ordering to terminate the lookup prematurely.
