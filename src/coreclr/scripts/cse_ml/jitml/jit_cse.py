@@ -6,11 +6,15 @@ import numpy as np
 
 from .superpmi import SuperPmi, MethodContext
 from .conversions import get_observation
-from .constants import (MAX_CSE, MIN_CSE, BOOLEAN_FEATURES, FLOAT_FEATURES, FEATURES, REWARD_SCALE, REWARD_MIN,
-                        REWARD_MAX, FOUND_BEST_REWARD, NO_BETTER_METHOD_REWARD, INVALID_ACTION_PENALTY,
-                        INVALID_ACTION_LIMIT)
+from .constants import (BOOLEAN_FEATURES, FLOAT_FEATURES, FEATURES, REWARD_SCALE, REWARD_MIN, REWARD_MAX,
+                        FOUND_BEST_REWARD, NO_BETTER_METHOD_REWARD, INVALID_ACTION_PENALTY, INVALID_ACTION_LIMIT)
 
-class JitEnvState:
+# The basic version of the JIT CSE environment only allows up to 16 CSEs to be applied.
+# This can be overridden by GymWrappers by pulling CSEs from info.
+MIN_CSE = 3
+MAX_CSE = 16
+
+class JitCseEnvState:
     """The state of the JIT environment."""
     def __init__(self, no_cse_method : MethodContext, heuristic_method : MethodContext):
         self.no_cse_method = no_cse_method
@@ -67,7 +71,7 @@ class JitEnvState:
 
         return self.no_cse_method
 
-class JitEnv(gym.Env):
+class JitCseEnv(gym.Env):
     """A gymnasium environment for the JIT."""
     def __init__(self, core_root : str, mch : str, methods : Optional[List[int]] = None):
         self.core_root = core_root
@@ -80,8 +84,8 @@ class JitEnv(gym.Env):
         lower_bounds = np.zeros((MAX_CSE, FEATURES))
         upper_bounds = np.ones((MAX_CSE, FEATURES))
         upper_bounds[:, BOOLEAN_FEATURES:] = np.full((MAX_CSE, FLOAT_FEATURES), np.inf)
-        self.observation_space = gym.spaces.Box(lower_bounds, upper_bounds, dtype=np.float32)
 
+        self.observation_space = gym.spaces.Box(lower_bounds, upper_bounds, dtype=np.float32)
         self.action_space = gym.spaces.Discrete(MAX_CSE + 1)
 
     def __del__(self):
@@ -98,7 +102,7 @@ class JitEnv(gym.Env):
             if no_cse is None:
                 continue
 
-            if JitEnv.is_acceptable(no_cse):
+            if JitCseEnv.is_acceptable(no_cse):
                 original_heuristic = self._jit_method(index, JitMetrics=1)
                 if original_heuristic is None:
                     continue
@@ -108,7 +112,7 @@ class JitEnv(gym.Env):
             if failure_count > 512:
                 raise ValueError("No valid methods found")
 
-        self._state = JitEnvState(no_cse, original_heuristic)
+        self._state = JitCseEnvState(no_cse, original_heuristic)
         obs = self.get_observation(no_cse)
         info = self.get_info(self._state, False)
         return obs, info
@@ -157,7 +161,7 @@ class JitEnv(gym.Env):
 
         return observation, reward, terminated, truncated, info
 
-    def get_info(self, state : JitEnvState, terminated : bool):
+    def get_info(self, state : JitCseEnvState, terminated : bool):
         """Returns the info dictionary for the current state."""
         result = {
             'no_cse_method': state.no_cse_method,
@@ -178,7 +182,7 @@ class JitEnv(gym.Env):
 
         return result
 
-    def get_rewards(self, state : JitEnvState, completed : bool):
+    def get_rewards(self, state : JitCseEnvState, completed : bool):
         """Returns the reward based on the change in performance score."""
 
         # always reward for how much better/worse we got for this choice
@@ -228,7 +232,7 @@ class JitEnv(gym.Env):
 
         return rewards
 
-    def _find_best_cse(self, state : JitEnvState):
+    def _find_best_cse(self, state : JitCseEnvState):
         """Check to see if any of the CSE's are immediately better."""
         best = None
 
@@ -260,7 +264,7 @@ class JitEnv(gym.Env):
         candidate = curr.cse_candidates[action] if action < len(curr.cse_candidates) else None
         return candidate is not None and candidate.can_apply
 
-    def _perform_cse(self, action, state : JitEnvState):
+    def _perform_cse(self, action, state : JitCseEnvState):
         """Performs the CSE and updates the state.  Returns True if successful, False if there was
         an error and we have to truncate this episode."""
         if action is None:
@@ -303,7 +307,7 @@ class JitEnv(gym.Env):
     def __select_method(self):
         if self.methods is None:
             superpmi = self.__get_superpmi()
-            self.methods = [x.index for x in superpmi.enumerate_methods() if JitEnv.is_acceptable(x)]
+            self.methods = [x.index for x in superpmi.enumerate_methods() if JitCseEnv.is_acceptable(x)]
 
         return np.random.choice(self.methods)
 
@@ -333,3 +337,5 @@ class JitEnv(gym.Env):
             print(f"{state.no_cse_method.index} heuristic_score: {state.heuristic_score} "
                   f"no_cse_score: {state.no_cse_score} choices:{state.choices} results:{scores}"
                   f"invalid_count:{state.invalid_action_count} ({state.no_cse_method.name})")
+
+__all__ = ['JitCseEnv']

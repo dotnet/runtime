@@ -5,8 +5,6 @@ from typing import List, Optional
 from pydantic import BaseModel, ValidationError, field_validator
 
 JITTYPE_ONEHOT_SIZE = 6
-MAX_CSE = 16
-MIN_CSE = 3
 
 BOOLEAN_FEATURES = JITTYPE_ONEHOT_SIZE + 7
 FLOAT_FEATURES = 9

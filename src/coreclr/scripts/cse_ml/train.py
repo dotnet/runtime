@@ -7,7 +7,7 @@ import time
 import argparse
 import numpy as np
 
-from jitml import SuperPmi, JitEnv, JitRLModel
+from jitml import SuperPmi, JitCseEnv, JitRLModel
 
 def enumerate_methods(core_root, mch):
     """Enumerates all methods in the mch file."""
@@ -36,7 +36,7 @@ def get_acceptable_methods(core_root, mch):
             return [int(x) for x in json.load(f)]
 
     sequence = enumerate_methods(core_root, mch)
-    acceptable = [method.index for method in sequence if JitEnv.is_acceptable(method)]
+    acceptable = [method.index for method in sequence if JitCseEnv.is_acceptable(method)]
 
     with open(json_file, 'w', encoding="utf8") as f:
         json.dump(acceptable, f)

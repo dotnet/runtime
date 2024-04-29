@@ -12,7 +12,7 @@ from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import SubprocVecEnv
 
-from .jitenv import JitEnv
+from .jit_cse import JitCseEnv
 from .superpmi import MethodContext
 
 class JitRLModel:
@@ -64,7 +64,7 @@ class JitRLModel:
         iterations = 100_000 if iterations is None else iterations
 
         def make_env():
-            return JitEnv(core_root, mch, methods)
+            return JitCseEnv(core_root, mch, methods)
 
         if parallel is not None and parallel > 1:
             env = make_vec_env(make_env, n_envs=parallel, vec_env_cls=SubprocVecEnv)
