@@ -57,6 +57,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     ConfigTypes = _createdTypeSpecs.Values.OrderBy(s => s.TypeRef.FullyQualifiedName).ToImmutableEquatableArray(),
                     EmitEnumParseMethod = _emitEnumParseMethod,
                     EmitGenericParseEnum = _emitGenericParseEnum,
+                    EmitNotNullIfNotNull = _typeSymbols.NotNullIfNotNullAttribute is not null,
                     EmitThrowIfNullMethod = IsThrowIfNullMethodToBeEmitted()
                 };
             }
