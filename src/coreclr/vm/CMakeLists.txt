@@ -103,7 +103,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     peassembly.cpp
     peimage.cpp
     perfmap.cpp
-    perfinfo.cpp
     pgo.cpp
     precode.cpp
     prestub.cpp
