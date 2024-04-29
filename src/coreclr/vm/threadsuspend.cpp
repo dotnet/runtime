@@ -2103,9 +2103,8 @@ void Thread::RareDisablePreemptiveGC()
         goto Exit;
     }
 
-    // A thread performing GC may try swithch modes around locks inside GC. We will ignore that.
-    // (NativeAOT analog scenario would have the thread in DoNotTriggerGc mode)
-    if (IsGCSpecialThread() || ThreadSuspend::GetSuspensionThread() == this)
+    // TODO: VS why can we see this?
+    if (ThreadStore::HoldingThreadStore(this))
     {
         goto Exit;
     }
