@@ -3176,6 +3176,17 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 
     if (expandInline)
     {
+        // After a certain number of GC pointers, the write barriers used
+        // in inline expansion stop being profitable.
+        ClassLayout* layout = typGetObjLayout(pResolvedToken->hClass);
+        if (layout->GetGCPtrCount() > 3)
+        {
+            expandInline = false;
+        }
+    }
+
+    if (expandInline)
+    {
         JITDUMP(" inline allocate/copy sequence\n");
 
         // we are doing 'normal' boxing.  This means that we can inline the box operation
