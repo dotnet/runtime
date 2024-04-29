@@ -4,15 +4,11 @@ from typing import Any, List, Optional
 import gymnasium as gym
 import numpy as np
 
-from .superpmi import SuperPmi, MethodContext
-from .conversions import get_observation
-from .constants import (BOOLEAN_FEATURES, FLOAT_FEATURES, FEATURES, REWARD_SCALE, REWARD_MIN, REWARD_MAX,
-                        FOUND_BEST_REWARD, NO_BETTER_METHOD_REWARD, INVALID_ACTION_PENALTY, INVALID_ACTION_LIMIT)
-
-# The basic version of the JIT CSE environment only allows up to 16 CSEs to be applied.
-# This can be overridden by GymWrappers by pulling CSEs from info.
-MIN_CSE = 3
-MAX_CSE = 16
+from .method_context import MethodContext
+from .superpmi import SuperPmi
+from .default_observation import get_observation, create_observation
+from .constants import (REWARD_SCALE, REWARD_MIN, REWARD_MAX, FOUND_BEST_REWARD, NO_BETTER_METHOD_REWARD,
+                        INVALID_ACTION_PENALTY, INVALID_ACTION_LIMIT, MIN_CSE, MAX_CSE)
 
 class JitCseEnvState:
     """The state of the JIT environment."""
@@ -77,16 +73,12 @@ class JitCseEnv(gym.Env):
         self.core_root = core_root
         self.mch = mch
         self._state = None
-
         self.__superpmi = None
         self.methods = methods
-
-        lower_bounds = np.zeros((MAX_CSE, FEATURES))
-        upper_bounds = np.ones((MAX_CSE, FEATURES))
-        upper_bounds[:, BOOLEAN_FEATURES:] = np.full((MAX_CSE, FLOAT_FEATURES), np.inf)
-
-        self.observation_space = gym.spaces.Box(lower_bounds, upper_bounds, dtype=np.float32)
         self.action_space = gym.spaces.Discrete(MAX_CSE + 1)
+
+        self.observation_function = get_observation
+        self.observation_space = create_observation()
 
     def __del__(self):
         if self.__superpmi is not None:
@@ -161,6 +153,10 @@ class JitCseEnv(gym.Env):
 
         return observation, reward, terminated, truncated, info
 
+    def get_observation(self, method : MethodContext):
+        """Returns the observation for the current state.  Implemented here so it can be replaced."""
+        return self.observation_function(method)
+
     def get_info(self, state : JitCseEnvState, terminated : bool):
         """Returns the info dictionary for the current state."""
         result = {
@@ -172,6 +168,7 @@ class JitCseEnv(gym.Env):
             'invalid_action_count': state.invalid_action_count
         }
 
+        # Reported only once, when the episode is done.
         if terminated:
             result['heuristic_score'] = state.heuristic_score
             result['no_cse_score'] = state.no_cse_score
@@ -247,11 +244,6 @@ class JitCseEnv(gym.Env):
                             best = method
 
         return best
-
-
-    def get_observation(self, method : MethodContext):
-        """Builds the observation from a method."""
-        return get_observation(method)
 
     def _is_valid_action(self, action):
         state = self._state

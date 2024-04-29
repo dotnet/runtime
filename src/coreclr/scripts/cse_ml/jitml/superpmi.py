@@ -5,7 +5,7 @@ import subprocess
 import re
 from typing import Iterable, Optional
 
-from .constants import MethodContext
+from .method_context import MethodContext
 
 class SuperPmi:
     """Controls one instance of superpmi."""

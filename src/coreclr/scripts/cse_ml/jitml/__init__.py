@@ -3,6 +3,6 @@ from .method_context import MethodContext, CseCandidate, JitType
 from .superpmi import SuperPmi
 from .jit_cse import JitCseEnv
 from .machine_learning import JitCseModel
-from .conversions import get_observation
+from .default_observation import get_observation
 
 __all__ = ['SuperPmi', 'JitCseEnv', 'JitCseModel', 'get_observation', 'MethodContext', 'CseCandidate', 'JitType']
