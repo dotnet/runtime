@@ -494,8 +494,15 @@ enum gc_oh_num
 };
 
 const int total_oh_count = gc_oh_num::poh + 1;
+#ifdef USE_REGIONS
 const int recorded_committed_free_bucket = total_oh_count;
 const int recorded_committed_bookkeeping_bucket = recorded_committed_free_bucket + 1;
+const int recorded_committed_mark_array_bucket = recorded_committed_bookkeeping_bucket;
+#else
+const int recorded_committed_ignored_bucket = total_oh_count;
+const int recorded_committed_bookkeeping_bucket = recorded_committed_ignored_bucket + 1;
+const int recorded_committed_mark_array_bucket = recorded_committed_ignored_bucket;
+#endif //USE_REGIONS
 const int recorded_committed_bucket_counts = recorded_committed_bookkeeping_bucket + 1;
 
 gc_oh_num gen_to_oh (int gen);
@@ -1575,9 +1582,7 @@ private:
 #endif //VERIFY_HEAP
 
     PER_HEAP_METHOD void verify_committed_bytes_per_heap();
-#ifdef USE_REGIONS
     PER_HEAP_ISOLATED_METHOD void verify_committed_bytes();
-#endif //USE_REGIONS
 
     PER_HEAP_ISOLATED_METHOD void fire_per_heap_hist_event (gc_history_per_heap* current_gc_data_per_heap, int heap_num);
 
@@ -2380,6 +2385,8 @@ private:
     PER_HEAP_ISOLATED_METHOD bool virtual_alloc_commit_for_heap (void* addr, size_t size, int h_number);
     PER_HEAP_ISOLATED_METHOD bool virtual_commit (void* address, size_t size, int bucket, int h_number=-1, bool* hard_limit_exceeded_p=NULL);
     PER_HEAP_ISOLATED_METHOD bool virtual_decommit (void* address, size_t size, int bucket, int h_number=-1);
+    friend void destroy_card_table (uint32_t*);
+    PER_HEAP_ISOLATED_METHOD void destroy_card_table_helper (uint32_t* c_table);
     PER_HEAP_ISOLATED_METHOD void virtual_free (void* add, size_t size, heap_segment* sg=NULL);
     PER_HEAP_ISOLATED_METHOD void reset_memory(uint8_t* o, size_t sizeo);
     PER_HEAP_METHOD void clear_gen0_bricks();
@@ -3352,11 +3359,10 @@ private:
         size_t new_current_total_committed);
 
     PER_HEAP_METHOD size_t compute_committed_bytes_per_heap(int oh, size_t& committed_bookkeeping);
-#ifdef USE_REGIONS
+
     PER_HEAP_ISOLATED_METHOD void compute_committed_bytes(size_t& total_committed, size_t& committed_decommit, size_t& committed_free, 
                                   size_t& committed_bookkeeping, size_t& new_current_total_committed, size_t& new_current_total_committed_bookkeeping, 
                                   size_t* new_committed_by_oh);
-#endif
 
     PER_HEAP_METHOD void update_collection_counts ();
 
