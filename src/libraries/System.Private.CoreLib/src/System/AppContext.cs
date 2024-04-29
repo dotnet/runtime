@@ -141,17 +141,7 @@ namespace System
             }
         }
 
-#if !NATIVEAOT
-        internal static unsafe void Setup(char** pNames, char** pValues, int count)
-        {
-            Debug.Assert(s_dataStore == null, "s_dataStore is not expected to be inited before Setup is called");
-            s_dataStore = new Dictionary<string, object?>(count);
-            for (int i = 0; i < count; i++)
-            {
-                s_dataStore.Add(new string(pNames[i]), new string(pValues[i]));
-            }
-        }
-
+#if MONO
         internal static unsafe void Setup(char** pNames, uint* pNameLengths, char** pValues, uint* pValueLengths, int count)
         {
             Debug.Assert(s_dataStore == null, "s_dataStore is not expected to be inited before Setup is called");
@@ -159,6 +149,16 @@ namespace System
             for (int i = 0; i < count; i++)
             {
                 s_dataStore.Add(new string(pNames[i], 0, (int)pNameLengths[i]), new string(pValues[i], 0, (int)pValueLengths[i]));
+            }
+        }
+#elif !NATIVEAOT
+        internal static unsafe void Setup(char** pNames, char** pValues, int count)
+        {
+            Debug.Assert(s_dataStore == null, "s_dataStore is not expected to be inited before Setup is called");
+            s_dataStore = new Dictionary<string, object?>(count);
+            for (int i = 0; i < count; i++)
+            {
+                s_dataStore.Add(new string(pNames[i]), new string(pValues[i]));
             }
         }
 #endif
