@@ -158,10 +158,14 @@ def print_result(result, model, kind):
     print()
 
     # sum up total difference
-    heuristic_diff = no_jit_failure['heuristic_score'].sum() - no_jit_failure['model_score'].sum()
+    h_score = no_jit_failure['heuristic_score'].sum()
+    heuristic_diff = no_jit_failure['model_score'].sum() - h_score
     print(f"Total heuristic difference: {heuristic_diff} ({heuristic_diff / len(no_jit_failure)} per method)")
-    no_cse_diff = no_jit_failure['no_cse_score'].sum() - no_jit_failure['model_score'].sum()
+    print(f"Pct improvement: {-heuristic_diff / h_score * 100:.2f}%")
+    nc_score = no_jit_failure['no_cse_score'].sum()
+    no_cse_diff = no_jit_failure['model_score'].sum() - nc_score
     print(f"Total no CSE difference: {no_cse_diff} ({no_cse_diff / len(no_jit_failure)} per method)")
+    print(f"Pct improvement: {-no_cse_diff / nc_score * 100:.2f}%")
     print()
 
     # next calculate how often we improved on the no CSE score

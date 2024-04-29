@@ -56,7 +56,7 @@ def split_data(output_dir, data, percent):
     with open(os.path.join(output_dir, "test.json"), 'w', encoding="utf8") as f:
         json.dump(test, f)
 
-    return train, test
+    return test, train
 
 def parse_args():
     """usage:  train.py [-h] [--core_root CORE_ROOT] [--parallel n] [--iterations i] model_path mch"""
