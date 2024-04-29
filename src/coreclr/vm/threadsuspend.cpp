@@ -2092,10 +2092,11 @@ void Thread::RareDisablePreemptiveGC()
         goto Exit;
     }
 
+    _ASSERTE (m_fPreemptiveGCDisabled);
+
     // Holding a spin lock in preemp mode and switch to coop mode could cause other threads spinning
     // waiting for GC
     _ASSERTE ((m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
-
     _ASSERTE(!MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread() || IsInForbidSuspendForDebuggerRegion());
 
     if (!GCHeapUtilities::IsGCHeapInitialized())
@@ -2112,23 +2113,35 @@ void Thread::RareDisablePreemptiveGC()
     STRESS_LOG1(LF_SYNC, LL_INFO1000, "RareDisablePreemptiveGC: entering. Thread state = %x\n", m_State.Load());
 
 #if defined(STRESS_HEAP) && defined(_DEBUG)
-    if (!IsDetached())
+    if (GCStressPolicy::IsEnabled() && GCStress<cfg_transition>::IsEnabled() && !IsDetached())
     {
+        EnablePreemptiveGC();
         PerformPreemptiveGC();
+        // disable preemptive gc.
+        m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
     }
 #endif
 
+    // The general strategy of this loop:
+    // - we check for additional conditions while in coop mode.
+    // - if there is something, we had to do before going to coop mode (such as wait for GC), we
+    //     - revert to preempt
+    //     - perform additional work
+    //     - set coop mode and do the loop again
+    // 
+    // NOTE: It is important that the check is done in coop mode, at least for the GC handshake,
+    // as per contract with the setter of the conditions, we have to check the condition _before_
+    // switching to coop mode.
     while (true)
     {
+#ifdef DEBUGGING_SUPPORTED
         // If debugger wants the thread to suspend, give the debugger precedence.
         if ((m_State & TS_DebugSuspendPending) && !IsInForbidSuspendForDebuggerRegion())
         {
-#ifdef DEBUGGING_SUPPORTED
+            EnablePreemptiveGC();
+
             // We don't notify the debugger that this thread is now suspended. We'll just
             // let the debugger's helper thread sweep and pick it up.
-            // We also never take the TSL in here either.
-            // Life's much simpler this way...
-#endif // DEBUGGING_SUPPORTED
 
 #ifdef FEATURE_HIJACK
             // TODO: VS can we have hijacks here? why do we remove them?
@@ -2144,9 +2157,13 @@ void Thread::RareDisablePreemptiveGC()
             // unsets TS_DebugSuspendPending | TS_SyncSuspended
             WaitSuspendEvents();
 
+            // disable preemptive gc.
+            m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
+
             // check again if we have something to do
             continue;
         }
+#endif // DEBUGGING_SUPPORTED
 
         // TODO: VS should check if suspension is requested.
         if (GCHeapUtilities::IsGCInProgress())
@@ -2194,7 +2211,11 @@ void Thread::RareDisablePreemptiveGC()
 
         if (HasThreadState(TS_StackCrawlNeeded))
         {
+            EnablePreemptiveGC();
             ThreadStore::WaitForStackCrawlEvent();
+
+            // disable preemptive gc.
+            m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
 
             // check again if we have something to do
             continue;
