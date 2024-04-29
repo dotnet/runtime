@@ -1418,6 +1418,10 @@ FORCEINLINE void* GetThreadLocalStaticBaseIfExistsAndInitialized(TLSIndex index)
         }
         pTLSBaseAddress = (TADDR)OBJECTREFToObject(tlsArray->GetAt(index.GetIndexOffset() - NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY));
     }
+    else if (index.GetTLSIndexType() == TLSIndexType::DirectOnThreadLocalData)
+    {
+        return ((BYTE*)&t_ThreadStatics) + index.GetIndexOffset();
+    }
     else
     {
         int32_t cTLSData = t_ThreadStatics.cTLSData;
@@ -1532,6 +1536,30 @@ HCIMPL1(void*, JIT_GetNonGCThreadStaticBaseOptimized, UINT32 staticBlockIndex)
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
     TLSIndex tlsIndex(staticBlockIndex);
+    // Check if the class constructor needs to be run
+    MethodTable *pMT = LookupMethodTableForThreadStaticKnownToBeAllocated(tlsIndex);
+    pMT->CheckRunClassInitThrowing();
+
+    // Lookup the non-GC statics base pointer
+    staticBlock = (void*) pMT->GetNonGCThreadStaticsBasePointer();
+    HELPER_METHOD_FRAME_END();
+
+    return staticBlock;
+}
+HCIMPLEND
+
+// *** This helper corresponds CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2.
+//      Even though we always check if the class constructor has been run, we have a separate
+//      helper ID for the "no ctor" version because it allows the JIT to do some reordering that
+//      otherwise wouldn't be possible.
+HCIMPL1(void*, JIT_GetNonGCThreadStaticBaseOptimized2, UINT32 staticBlockIndex)
+{
+    void* staticBlock = nullptr;
+
+    FCALL_CONTRACT;
+
+    HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
+    TLSIndex tlsIndex(TLSIndexType::DirectOnThreadLocalData, staticBlockIndex);
     // Check if the class constructor needs to be run
     MethodTable *pMT = LookupMethodTableForThreadStaticKnownToBeAllocated(tlsIndex);
     pMT->CheckRunClassInitThrowing();

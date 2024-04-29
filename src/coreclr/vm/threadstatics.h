@@ -94,6 +94,7 @@ enum class TLSIndexType
 {
     NonCollectible, // IndexOffset for this form of TLSIndex is scaled by sizeof(OBJECTREF) and used as an index into the array at ThreadLocalData::pNonCollectibleTlsReferenceData to get the final address
     Collectible, // IndexOffset for this form of TLSIndex is scaled by sizeof(void*) and then added to ThreadLocalData::pTLSArrayData to get the final address
+    DirectOnThreadLocalData, // IndexOffset for this form of TLS index is an offset into the ThreadLocalData structure itself. This is used for very high performance scenarios, and scenario where the runtime native code needs to hold a TLS pointer to a managed TLS slot. Each one of these is hand-opted into this model.
 };
 
 struct TLSIndex
@@ -122,6 +123,7 @@ struct ThreadLocalData
     TADDR pTLSArrayData; // Points at the Thread local array data.
     Thread *pThread;
     PTR_InFlightTLSData pInFlightData; // Points at the in-flight TLS data (TLS data that exists before the class constructor finishes running)
+    TADDR ThreadBlockingInfo_First; // System.Threading.ThreadBlockingInfo.First
 };
 
 typedef DPTR(ThreadLocalData) PTR_ThreadLocalData;

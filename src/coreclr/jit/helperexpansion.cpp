@@ -455,8 +455,9 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
 }
 
 //------------------------------------------------------------------------------
-// fgExpandThreadLocalAccess: Inline the CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED
-//      or CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED helper. See
+// fgExpandThreadLocalAccess: Inline the CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
+//      CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED, or
+//      CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZEDhelper. See
 //      fgExpandThreadLocalAccessForCall for details.
 //
 // Returns:
@@ -764,8 +765,8 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
 }
 
 //------------------------------------------------------------------------------
-// fgExpandThreadLocalAccessForCall : Expand the CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED
-//  or CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED, that access fields marked with [ThreadLocal].
+// fgExpandThreadLocalAccessForCall : Expand the CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED
+//  or CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED, that access fields marked with [ThreadLocal].
 //
 // Arguments:
 //    pBlock - Block containing the helper call to expand. If expansion is performed,
@@ -795,7 +796,8 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     CorInfoHelpFunc helper = call->GetHelperNum();
 
     if ((helper != CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) &&
-        (helper != CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED))
+        (helper != CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) &&
+        (helper != CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2))
     {
         return false;
     }
@@ -987,139 +989,183 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     // Cache the tls value
     tlsValueDef             = gtNewStoreLclVarNode(tlsLclNum, tlsValue);
     GenTree* tlsLclValueUse = gtNewLclVarNode(tlsLclNum);
-
-    size_t offsetOfThreadStaticBlocksVal    = threadStaticBlocksInfo.offsetOfThreadStaticBlocks;
-    size_t offsetOfMaxThreadStaticBlocksVal = threadStaticBlocksInfo.offsetOfMaxThreadStaticBlocks;
-
-    // Create tree for "maxThreadStaticBlocks = tls[offsetOfMaxThreadStaticBlocks]"
-    GenTree* offsetOfMaxThreadStaticBlocks = gtNewIconNode(offsetOfMaxThreadStaticBlocksVal, TYP_I_IMPL);
-    GenTree* maxThreadStaticBlocksRef =
-        gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse), offsetOfMaxThreadStaticBlocks);
-    maxThreadStaticBlocksValue = gtNewIndir(TYP_INT, maxThreadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
-
-    GenTree* threadStaticBlocksRef = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse),
-                                                   gtNewIconNode(offsetOfThreadStaticBlocksVal, TYP_I_IMPL));
-    threadStaticBlocksValue = gtNewIndir(TYP_REF, threadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
-
-    // Create tree for "if (maxThreadStaticBlocks < typeIndex)"
     GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetArgByIndex(0)->GetNode();
-    GenTree* maxThreadStaticBlocksCond =
-        gtNewOperNode(GT_LE, TYP_INT, maxThreadStaticBlocksValue, gtCloneExpr(typeThreadStaticBlockIndexValue));
-    maxThreadStaticBlocksCond = gtNewOperNode(GT_JTRUE, TYP_VOID, maxThreadStaticBlocksCond);
 
-    // Create tree to "threadStaticBlockValue = threadStaticBlockBase[typeIndex]"
-    typeThreadStaticBlockIndexValue = gtNewOperNode(GT_MUL, TYP_INT, gtCloneExpr(typeThreadStaticBlockIndexValue),
-                                                    gtNewIconNode(TARGET_POINTER_SIZE, TYP_INT));
-    GenTree* typeThreadStaticBlockRef =
-        gtNewOperNode(GT_ADD, TYP_BYREF, threadStaticBlocksValue, typeThreadStaticBlockIndexValue);
-    GenTree* typeThreadStaticBlockValue = gtNewIndir(TYP_BYREF, typeThreadStaticBlockRef, GTF_IND_NONFAULTING);
-
-    // Cache the threadStaticBlock value
-    unsigned threadStaticBlockBaseLclNum         = lvaGrabTemp(true DEBUGARG("ThreadStaticBlockBase access"));
-    lvaTable[threadStaticBlockBaseLclNum].lvType = TYP_BYREF;
-    GenTree* threadStaticBlockBaseDef = gtNewStoreLclVarNode(threadStaticBlockBaseLclNum, typeThreadStaticBlockValue);
-    GenTree* threadStaticBlockBaseLclValueUse = gtNewLclVarNode(threadStaticBlockBaseLclNum);
-
-    // Create tree for "if (threadStaticBlockValue != nullptr)"
-    GenTree* threadStaticBlockNullCond =
-        gtNewOperNode(GT_NE, TYP_INT, threadStaticBlockBaseLclValueUse, gtNewIconNode(0, TYP_I_IMPL));
-    threadStaticBlockNullCond = gtNewOperNode(GT_JTRUE, TYP_VOID, threadStaticBlockNullCond);
-
-    // prevBb (BBJ_ALWAYS):                                             [weight: 1.0]
-    //      ...
-    //
-    // maxThreadStaticBlocksCondBB (BBJ_COND):                          [weight: 1.0]
-    //      tlsValue = tls_access_code
-    //      if (maxThreadStaticBlocks <= typeIndex)
-    //          goto fallbackBb;
-    //
-    // threadStaticBlockNullCondBB (BBJ_COND):                          [weight: 1.0]
-    //      fastPathValue = t_threadStaticBlocks[typeIndex]
-    //      if (fastPathValue != nullptr)
-    //          goto fastPathBb;
-    //
-    // fallbackBb (BBJ_ALWAYS):                                         [weight: 0]
-    //      threadStaticBlockBase = HelperCall();
-    //      goto block;
-    //
-    // fastPathBb(BBJ_ALWAYS):                                          [weight: 1.0]
-    //      threadStaticBlockBase = fastPathValue;
-    //
-    // block (...):                                                     [weight: 1.0]
-    //      use(threadStaticBlockBase);
-
-    // maxThreadStaticBlocksCondBB
-
-    // maxThreadStaticBlocksCondBB conditionally jumps to fallbackBb, but fallbackBb must be initialized last
-    // so it can be placed after it. So set the jump target later.
-    BasicBlock* maxThreadStaticBlocksCondBB = fgNewBBFromTreeAfter(BBJ_COND, prevBb, tlsValueDef, debugInfo);
-
-    fgInsertStmtAfter(maxThreadStaticBlocksCondBB, maxThreadStaticBlocksCondBB->firstStmt(),
-                      fgNewStmtFromTree(maxThreadStaticBlocksCond));
-
-    // Similarly, set threadStaticBlockNulLCondBB to jump to fastPathBb once the latter exists.
-    BasicBlock* threadStaticBlockNullCondBB =
-        fgNewBBFromTreeAfter(BBJ_COND, maxThreadStaticBlocksCondBB, threadStaticBlockBaseDef, debugInfo);
-    fgInsertStmtAfter(threadStaticBlockNullCondBB, threadStaticBlockNullCondBB->firstStmt(),
-                      fgNewStmtFromTree(threadStaticBlockNullCond));
-
-    // fallbackBb
-    GenTree*    fallbackValueDef = gtNewStoreLclVarNode(threadStaticBlockLclNum, call);
-    BasicBlock* fallbackBb =
-        fgNewBBFromTreeAfter(BBJ_ALWAYS, threadStaticBlockNullCondBB, fallbackValueDef, debugInfo, true);
-
-    GenTree* fastPathValueDef =
-        gtNewStoreLclVarNode(threadStaticBlockLclNum, gtCloneExpr(threadStaticBlockBaseLclValueUse));
-    BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, true);
-
-    //
-    // Update preds in all new blocks
-    //
-    assert(prevBb->KindIs(BBJ_ALWAYS));
-    fgRedirectTargetEdge(prevBb, maxThreadStaticBlocksCondBB);
-
+    if (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2)
     {
-        FlowEdge* const trueEdge  = fgAddRefPred(fallbackBb, maxThreadStaticBlocksCondBB);
-        FlowEdge* const falseEdge = fgAddRefPred(threadStaticBlockNullCondBB, maxThreadStaticBlocksCondBB);
-        maxThreadStaticBlocksCondBB->SetTrueEdge(trueEdge);
-        maxThreadStaticBlocksCondBB->SetFalseEdge(falseEdge);
-        trueEdge->setLikelihood(0.0);
-        falseEdge->setLikelihood(1.0);
-    }
+        // In this case we can entirely remove the block which uses the helper call, and just get the TLS pointer directly
 
+        // prevBb (BBJ_NONE):                                               [weight: 1.0]
+        //      ...
+        //
+        // tlsBaseComputeBB (BBJ_COND):                                     [weight: 1.0]
+        //      tlsRoot = [tlsRootAddress]
+        //
+        // block (...):                                                     [weight: 1.0]
+        //      use(tlsRoot);
+        // ...
+
+        GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetArgByIndex(0)->GetNode();
+        GenTree* threadStaticBase = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse), gtCloneExpr(typeThreadStaticBlockIndexValue));
+        GenTree* tlsStaticBaseStoreLcl = gtNewStoreLclVarNode(threadStaticBlockLclNum, threadStaticBase);
+        
+        BasicBlock* tlsBaseComputeBB = fgNewBBFromTreeAfter(BBJ_ALWAYS, prevBb, tlsValueDef, debugInfo, true);
+        fgInsertStmtAfter(tlsBaseComputeBB, tlsBaseComputeBB->firstStmt(), fgNewStmtFromTree(tlsStaticBaseStoreLcl));
+
+        //
+        // Update preds in all new blocks
+        //
+
+        FlowEdge* const newEdge = fgAddRefPred(block, tlsBaseComputeBB);
+        tlsBaseComputeBB->SetTargetEdge(newEdge);
+
+        assert(prevBb->KindIs(BBJ_ALWAYS));
+        fgRedirectTargetEdge(prevBb, tlsBaseComputeBB);
+
+        // Inherit the weights
+        block->inheritWeight(prevBb);
+        tlsBaseComputeBB->inheritWeight(prevBb);
+
+        // All blocks are expected to be in the same EH region
+        assert(BasicBlock::sameEHRegion(prevBb, block));
+        assert(BasicBlock::sameEHRegion(prevBb, tlsBaseComputeBB));
+
+        JITDUMP("tlsBaseComputeBB: " FMT_BB "\n", tlsBaseComputeBB->bbNum);
+    }
+    else
     {
-        FlowEdge* const trueEdge  = fgAddRefPred(fastPathBb, threadStaticBlockNullCondBB);
-        FlowEdge* const falseEdge = fgAddRefPred(fallbackBb, threadStaticBlockNullCondBB);
-        threadStaticBlockNullCondBB->SetTrueEdge(trueEdge);
-        threadStaticBlockNullCondBB->SetFalseEdge(falseEdge);
-        trueEdge->setLikelihood(1.0);
-        falseEdge->setLikelihood(0.0);
+        size_t offsetOfThreadStaticBlocksVal    = threadStaticBlocksInfo.offsetOfThreadStaticBlocks;
+        size_t offsetOfMaxThreadStaticBlocksVal = threadStaticBlocksInfo.offsetOfMaxThreadStaticBlocks;
+
+        // Create tree for "maxThreadStaticBlocks = tls[offsetOfMaxThreadStaticBlocks]"
+        GenTree* offsetOfMaxThreadStaticBlocks = gtNewIconNode(offsetOfMaxThreadStaticBlocksVal, TYP_I_IMPL);
+        GenTree* maxThreadStaticBlocksRef =
+            gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse), offsetOfMaxThreadStaticBlocks);
+        maxThreadStaticBlocksValue = gtNewIndir(TYP_INT, maxThreadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+        GenTree* threadStaticBlocksRef = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse),
+                                                    gtNewIconNode(offsetOfThreadStaticBlocksVal, TYP_I_IMPL));
+        threadStaticBlocksValue = gtNewIndir(TYP_REF, threadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+        // Create tree for "if (maxThreadStaticBlocks < typeIndex)"
+        GenTree* maxThreadStaticBlocksCond =
+            gtNewOperNode(GT_LE, TYP_INT, maxThreadStaticBlocksValue, gtCloneExpr(typeThreadStaticBlockIndexValue));
+        maxThreadStaticBlocksCond = gtNewOperNode(GT_JTRUE, TYP_VOID, maxThreadStaticBlocksCond);
+
+        // Create tree to "threadStaticBlockValue = threadStaticBlockBase[typeIndex]"
+        typeThreadStaticBlockIndexValue = gtNewOperNode(GT_MUL, TYP_INT, gtCloneExpr(typeThreadStaticBlockIndexValue),
+                                                        gtNewIconNode(TARGET_POINTER_SIZE, TYP_INT));
+        GenTree* typeThreadStaticBlockRef =
+            gtNewOperNode(GT_ADD, TYP_BYREF, threadStaticBlocksValue, typeThreadStaticBlockIndexValue);
+        GenTree* typeThreadStaticBlockValue = gtNewIndir(TYP_BYREF, typeThreadStaticBlockRef, GTF_IND_NONFAULTING);
+
+        // Cache the threadStaticBlock value
+        unsigned threadStaticBlockBaseLclNum         = lvaGrabTemp(true DEBUGARG("ThreadStaticBlockBase access"));
+        lvaTable[threadStaticBlockBaseLclNum].lvType = TYP_BYREF;
+        GenTree* threadStaticBlockBaseDef = gtNewStoreLclVarNode(threadStaticBlockBaseLclNum, typeThreadStaticBlockValue);
+        GenTree* threadStaticBlockBaseLclValueUse = gtNewLclVarNode(threadStaticBlockBaseLclNum);
+
+        // Create tree for "if (threadStaticBlockValue != nullptr)"
+        GenTree* threadStaticBlockNullCond =
+            gtNewOperNode(GT_NE, TYP_INT, threadStaticBlockBaseLclValueUse, gtNewIconNode(0, TYP_I_IMPL));
+        threadStaticBlockNullCond = gtNewOperNode(GT_JTRUE, TYP_VOID, threadStaticBlockNullCond);
+
+        // prevBb (BBJ_ALWAYS):                                             [weight: 1.0]
+        //      ...
+        //
+        // maxThreadStaticBlocksCondBB (BBJ_COND):                          [weight: 1.0]
+        //      tlsValue = tls_access_code
+        //      if (maxThreadStaticBlocks <= typeIndex)
+        //          goto fallbackBb;
+        //
+        // threadStaticBlockNullCondBB (BBJ_COND):                          [weight: 1.0]
+        //      fastPathValue = t_threadStaticBlocks[typeIndex]
+        //      if (fastPathValue != nullptr)
+        //          goto fastPathBb;
+        //
+        // fallbackBb (BBJ_ALWAYS):                                         [weight: 0]
+        //      threadStaticBlockBase = HelperCall();
+        //      goto block;
+        //
+        // fastPathBb(BBJ_ALWAYS):                                          [weight: 1.0]
+        //      threadStaticBlockBase = fastPathValue;
+        //
+        // block (...):                                                     [weight: 1.0]
+        //      use(threadStaticBlockBase);
+
+        // maxThreadStaticBlocksCondBB
+
+        // maxThreadStaticBlocksCondBB conditionally jumps to fallbackBb, but fallbackBb must be initialized last
+        // so it can be placed after it. So set the jump target later.
+        BasicBlock* maxThreadStaticBlocksCondBB = fgNewBBFromTreeAfter(BBJ_COND, prevBb, tlsValueDef, debugInfo);
+
+        fgInsertStmtAfter(maxThreadStaticBlocksCondBB, maxThreadStaticBlocksCondBB->firstStmt(),
+                        fgNewStmtFromTree(maxThreadStaticBlocksCond));
+
+        // Similarly, set threadStaticBlockNulLCondBB to jump to fastPathBb once the latter exists.
+        BasicBlock* threadStaticBlockNullCondBB =
+            fgNewBBFromTreeAfter(BBJ_COND, maxThreadStaticBlocksCondBB, threadStaticBlockBaseDef, debugInfo);
+        fgInsertStmtAfter(threadStaticBlockNullCondBB, threadStaticBlockNullCondBB->firstStmt(),
+                        fgNewStmtFromTree(threadStaticBlockNullCond));
+
+        // fallbackBb
+        GenTree*    fallbackValueDef = gtNewStoreLclVarNode(threadStaticBlockLclNum, call);
+        BasicBlock* fallbackBb =
+            fgNewBBFromTreeAfter(BBJ_ALWAYS, threadStaticBlockNullCondBB, fallbackValueDef, debugInfo, true);
+
+        GenTree* fastPathValueDef =
+            gtNewStoreLclVarNode(threadStaticBlockLclNum, gtCloneExpr(threadStaticBlockBaseLclValueUse));
+        BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, true);
+
+        //
+        // Update preds in all new blocks
+        //
+        assert(prevBb->KindIs(BBJ_ALWAYS));
+        fgRedirectTargetEdge(prevBb, maxThreadStaticBlocksCondBB);
+
+        {
+            FlowEdge* const trueEdge  = fgAddRefPred(fallbackBb, maxThreadStaticBlocksCondBB);
+            FlowEdge* const falseEdge = fgAddRefPred(threadStaticBlockNullCondBB, maxThreadStaticBlocksCondBB);
+            maxThreadStaticBlocksCondBB->SetTrueEdge(trueEdge);
+            maxThreadStaticBlocksCondBB->SetFalseEdge(falseEdge);
+            trueEdge->setLikelihood(0.0);
+            falseEdge->setLikelihood(1.0);
+        }
+
+        {
+            FlowEdge* const trueEdge  = fgAddRefPred(fastPathBb, threadStaticBlockNullCondBB);
+            FlowEdge* const falseEdge = fgAddRefPred(fallbackBb, threadStaticBlockNullCondBB);
+            threadStaticBlockNullCondBB->SetTrueEdge(trueEdge);
+            threadStaticBlockNullCondBB->SetFalseEdge(falseEdge);
+            trueEdge->setLikelihood(1.0);
+            falseEdge->setLikelihood(0.0);
+        }
+
+        {
+            FlowEdge* const newEdge = fgAddRefPred(block, fastPathBb);
+            fastPathBb->SetTargetEdge(newEdge);
+        }
+
+        {
+            FlowEdge* const newEdge = fgAddRefPred(block, fallbackBb);
+            fallbackBb->SetTargetEdge(newEdge);
+        }
+
+        // Inherit the weights
+        block->inheritWeight(prevBb);
+        maxThreadStaticBlocksCondBB->inheritWeight(prevBb);
+        threadStaticBlockNullCondBB->inheritWeight(prevBb);
+        fastPathBb->inheritWeight(prevBb);
+
+        // fallback will just execute first time
+        fallbackBb->bbSetRunRarely();
+
+        // All blocks are expected to be in the same EH region
+        assert(BasicBlock::sameEHRegion(prevBb, block));
+        assert(BasicBlock::sameEHRegion(prevBb, maxThreadStaticBlocksCondBB));
+        assert(BasicBlock::sameEHRegion(prevBb, threadStaticBlockNullCondBB));
+        assert(BasicBlock::sameEHRegion(prevBb, fastPathBb));
     }
-
-    {
-        FlowEdge* const newEdge = fgAddRefPred(block, fastPathBb);
-        fastPathBb->SetTargetEdge(newEdge);
-    }
-
-    {
-        FlowEdge* const newEdge = fgAddRefPred(block, fallbackBb);
-        fallbackBb->SetTargetEdge(newEdge);
-    }
-
-    // Inherit the weights
-    block->inheritWeight(prevBb);
-    maxThreadStaticBlocksCondBB->inheritWeight(prevBb);
-    threadStaticBlockNullCondBB->inheritWeight(prevBb);
-    fastPathBb->inheritWeight(prevBb);
-
-    // fallback will just execute first time
-    fallbackBb->bbSetRunRarely();
-
-    // All blocks are expected to be in the same EH region
-    assert(BasicBlock::sameEHRegion(prevBb, block));
-    assert(BasicBlock::sameEHRegion(prevBb, maxThreadStaticBlocksCondBB));
-    assert(BasicBlock::sameEHRegion(prevBb, threadStaticBlockNullCondBB));
-    assert(BasicBlock::sameEHRegion(prevBb, fastPathBb));
 
     return true;
 }

@@ -30,7 +30,7 @@ PTR_VOID GetThreadLocalStaticBaseNoCreate(Thread* pThread, TLSIndex index)
     SpinLockHolder spinLock(&pThread->m_TlsSpinLock);
 #endif
 
-    ThreadLocalData* pThreadLocalData = pThread->GetThreadLocalDataPtr();
+    PTR_ThreadLocalData pThreadLocalData = pThread->GetThreadLocalDataPtr();
     if (pThreadLocalData == NULL)
         return NULL;
 
@@ -43,6 +43,10 @@ PTR_VOID GetThreadLocalStaticBaseNoCreate(Thread* pThread, TLSIndex index)
             return NULL;
         }
         pTLSBaseAddress = dac_cast<TADDR>(OBJECTREFToObject(tlsArray->GetAt(index.GetIndexOffset() - NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY)));
+    }
+    else if (index.GetTLSIndexType() == TLSIndexType::DirectOnThreadLocalData)
+    {
+        return dac_cast<PTR_VOID>((dac_cast<TADDR>(pThreadLocalData)) + index.GetIndexOffset());
     }
     else
     {
@@ -89,6 +93,17 @@ PTR_MethodTable LookupMethodTableForThreadStaticKnownToBeAllocated(TLSIndex inde
     {
         return g_pThreadStaticNonCollectibleTypeIndices->LookupTlsIndexKnownToBeAllocated(index);
     }
+    else if (index.GetTLSIndexType() == TLSIndexType::DirectOnThreadLocalData)
+    {
+        if (index.GetIndexOffset() == offsetof(ThreadLocalData, ThreadBlockingInfo_First))
+        {
+            return CoreLibBinder::GetClass(CLASS__THREAD_BLOCKING_INFO);
+        }
+        else
+        {
+            return NULL;
+        }
+    }
     else
     {
         return g_pThreadStaticCollectibleTypeIndices->LookupTlsIndexKnownToBeAllocated(index);
@@ -112,6 +127,19 @@ PTR_MethodTable LookupMethodTableAndFlagForThreadStatic(TLSIndex index, bool *pI
     {
         retVal = g_pThreadStaticNonCollectibleTypeIndices->Lookup(index, pIsGCStatic, pIsCollectible);
     }
+    else if (index.GetTLSIndexType() == TLSIndexType::DirectOnThreadLocalData)
+    {
+        *pIsGCStatic = false;
+        *pIsCollectible = false;
+        if (index.GetIndexOffset() == offsetof(ThreadLocalData, ThreadBlockingInfo_First))
+        {
+            retVal = CoreLibBinder::GetClass(CLASS__THREAD_BLOCKING_INFO);
+        }
+        else
+        {
+            retVal = NULL;
+        }
+    }
     else
     {
         retVal = g_pThreadStaticCollectibleTypeIndices->Lookup(index, pIsGCStatic, pIsCollectible);
@@ -132,6 +160,10 @@ bool ReportTLSIndexCarefully(TLSIndex index, int32_t cLoaderHandles, PTR_LOADERH
     CONTRACTL_END;
     bool isGCStatic;
     bool isCollectible;
+
+    if (index.GetTLSIndexType() == TLSIndexType::DirectOnThreadLocalData)
+        return true;
+
     PTR_MethodTable pMT = LookupMethodTableAndFlagForThreadStatic(index, &isGCStatic, &isCollectible);
     _ASSERTE(index.GetTLSIndexType() == TLSIndexType::NonCollectible || (((pMT == NULL) || isCollectible) && index.GetTLSIndexType() == TLSIndexType::Collectible));
     if (index.GetTLSIndexType() == TLSIndexType::Collectible && pLoaderHandles[index.GetIndexOffset()] == NULL)
@@ -536,6 +568,15 @@ void* GetThreadLocalStaticBase(TLSIndex index)
         }
         gcBaseAddresses.ppTLSBaseAddress = (TADDR*)(tlsArray->GetDataPtr() + (index.GetIndexOffset() - NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY)) ;
         useWriteBarrierToWriteTLSBase = true;
+        gcBaseAddresses.pTLSBaseAddress = *gcBaseAddresses.ppTLSBaseAddress;
+    }
+    else if (index.GetTLSIndexType() == TLSIndexType::DirectOnThreadLocalData)
+    {
+        // All of the current cases only require a single pointer sized field
+        _ASSERTE(pMT->GetClass()->GetNonGCThreadStaticFieldBytes() == sizeof(TADDR));
+        _ASSERTE(!isGCStatic);
+        _ASSERTE(!isCollectible);
+        gcBaseAddresses.pTLSBaseAddress = ((TADDR)&t_ThreadStatics) + index.GetIndexOffset();
     }
     else
     {
@@ -575,8 +616,8 @@ void* GetThreadLocalStaticBase(TLSIndex index)
 
         TADDR pTLSArrayData = t_ThreadStatics.pTLSArrayData;
         gcBaseAddresses.ppTLSBaseAddress = reinterpret_cast<TADDR*>(reinterpret_cast<uintptr_t*>(pTLSArrayData) + index.GetIndexOffset());
+        gcBaseAddresses.pTLSBaseAddress = *gcBaseAddresses.ppTLSBaseAddress;
     }
-    gcBaseAddresses.pTLSBaseAddress = *gcBaseAddresses.ppTLSBaseAddress;
 
     if (gcBaseAddresses.pTLSBaseAddress == NULL)
     {
@@ -686,9 +727,17 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
 
     if (!pMT->Collectible())
     {
-        uint32_t tlsRawIndex = g_NextNonCollectibleTLSSlot++;
-        newTLSIndex = TLSIndex(TLSIndexType::NonCollectible, tlsRawIndex);
-        g_pThreadStaticNonCollectibleTypeIndices->Set(newTLSIndex, pMT, gcStatic);
+        if (!gcStatic && pMT == CoreLibBinder::GetClassIfExist(CLASS__THREAD_BLOCKING_INFO))
+        {
+            _ASSERTE(!pMT->HasClassConstructor()); // The DirectOnThreadLocalData scenario is not supported for types with class constructors
+            newTLSIndex = TLSIndex(TLSIndexType::DirectOnThreadLocalData, offsetof(ThreadLocalData, ThreadBlockingInfo_First));
+        }
+        else
+        {
+            uint32_t tlsRawIndex = g_NextNonCollectibleTLSSlot++;
+            newTLSIndex = TLSIndex(TLSIndexType::NonCollectible, tlsRawIndex);
+            g_pThreadStaticNonCollectibleTypeIndices->Set(newTLSIndex, pMT, gcStatic);
+        }
     }
     else
     {

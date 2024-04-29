@@ -1511,6 +1511,15 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                     {
                         fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
                         pResult->helper = CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
+                        if (pFieldMT->GetModule()->IsSystem())
+                        {
+                            // Check for highly optimized DirectOnThreadLocalData case
+                            pFieldMT->EnsureTlsIndexAllocated();
+                            if (pFieldMT->GetThreadStaticsInfo()->NonGCTlsIndex.GetTLSIndexType() == TLSIndexType::DirectOnThreadLocalData)
+                            {
+                                pResult->helper = CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2;
+                            }
+                        }
                     }
                     else if ((pResult->helper == CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR) ||
                             (pResult->helper == CORINFO_HELP_GET_GCTHREADSTATIC_BASE) ||
