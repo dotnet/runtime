@@ -115,48 +115,6 @@ namespace System.Numerics.Tensors
         ///
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="address"></param>
-        /// <param name="lengths"></param>
-        /// <returns></returns>
-        [CLSCompliant(false)]
-        public static unsafe SpanND<T> CreateSpan<T>(T* address, ReadOnlySpan<nint> lengths) => new SpanND<T>(address, lengths, false);
-
-        /// <summary>
-        ///
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="address"></param>
-        /// <param name="lengths"></param>
-        /// <param name="strides"></param>
-        /// <returns></returns>
-        [CLSCompliant(false)]
-        public static unsafe SpanND<T> CreateSpan<T>(T* address, ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides) => new SpanND<T>(address, lengths, false, strides);
-
-        /// <summary>
-        ///
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="address"></param>
-        /// <param name="lengths"></param>
-        /// <returns></returns>
-        [CLSCompliant(false)]
-        public static unsafe ReadOnlySpanND<T> CreateReadOnlySpan<T>(T* address, ReadOnlySpan<nint> lengths) => new ReadOnlySpanND<T>(address, lengths, false);
-
-        /// <summary>
-        ///
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="address"></param>
-        /// <param name="lengths"></param>
-        /// <param name="strides"></param>
-        /// <returns></returns>
-        [CLSCompliant(false)]
-        public static unsafe ReadOnlySpanND<T> CreateReadOnlySpan<T>(T* address, ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides) => new ReadOnlySpanND<T>(address, lengths, false, strides);
-
-        /// <summary>
-        ///
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
         /// <param name="data"></param>
         /// <returns></returns>
         public static Tensor<T> CreateFromEnumerable<T>(IEnumerable<T> data)

@@ -80,21 +80,12 @@ namespace System.Numerics.Tensors
 
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        private static class EmptyTensor
-        {
-#pragma warning disable CA1825 // this is the implementation of Tensor.Empty<T>()
-            internal static readonly Tensor<T> Value = new Tensor<T>();
-#pragma warning restore CA1825
-        }
         // ITensor
 
         /// <summary>
         ///
         /// </summary>
-        public static Tensor<T> Empty => EmptyTensor.Value;
+        public static Tensor<T> Empty { get; } = new();
 
         /// <summary>
         ///
@@ -154,7 +145,7 @@ namespace System.Numerics.Tensors
                 Span<T> srcSpan = MemoryMarshal.CreateSpan(ref _values[0], (int)_linearLength);
                 Span<bool> filterSpan = MemoryMarshal.CreateSpan(ref filter._values[0], (int)_linearLength);
 
-                nint linearLength = SpanNDHelpers.CountTrueElements(filter);
+                nint linearLength = TensorHelpers.CountTrueElements(filter);
 
                 T[] values = _isPinned ? GC.AllocateArray<T>((int)linearLength, _isPinned) : (new T[linearLength]);
                 int index = 0;

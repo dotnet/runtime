@@ -11,6 +11,7 @@ using System.Linq;
 using System.Net.NetworkInformation;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CSharp.RuntimeBinder;
@@ -20,6 +21,24 @@ namespace System.Numerics.Tensors
 {
     internal static class TensorHelpers
     {
+
+        /// <summary>
+        /// Counts the number of true elements in a boolean filter tensor so we know how much space we will need.
+        /// </summary>
+        /// <param name="filter"></param>
+        /// <returns>How many boolean values are true.</returns>
+        public static nint CountTrueElements(Tensor<bool> filter)
+        {
+            var filterSpan = MemoryMarshal.CreateSpan(ref filter._values[0], (int)filter._linearLength);
+            nint count = 0;
+            for (int i = 0; i < filterSpan.Length; i++)
+            {
+                if (filterSpan[i])
+                    count++;
+            }
+
+            return count;
+        }
 
         internal static bool AreShapesBroadcastCompatible<T>(Tensor<T> tensor1, Tensor<T> tensor2)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool> => AreShapesBroadcastCompatible(tensor1.Shape, tensor2.Shape);

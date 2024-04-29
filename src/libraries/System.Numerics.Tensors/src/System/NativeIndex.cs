@@ -38,7 +38,7 @@ namespace System
                 _value = value;
         }
 
-        // The following private constructors mainly created for perf reason to avoid the checks
+        // The following private constructor exists to skip the checks in the public ctor
         private NativeIndex(nint value)
         {
             _value = value;

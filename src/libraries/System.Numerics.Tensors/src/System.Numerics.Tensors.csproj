@@ -24,7 +24,6 @@
     <Compile Include="System\Numerics\Tensors\netcore\SpanNDDebugView.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\SpanNDExtensions.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\ReadOnlySpanND.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\SpanNDHelpers.ByteMemOps.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\SpanNDHelpers.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\SpanNDHelpers.T.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\SpanND.cs" />

@@ -357,23 +357,15 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void Clear()
         {
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            Span<nint> curIndices = stackalloc nint[Rank];
+            nint clearedValues = 0;
+            while (clearedValues < _linearLength)
             {
-                SpanNDHelpers.ClearWithReferences(ref Unsafe.As<T, IntPtr>(ref _reference), (nuint)_linearLength * (nuint)(sizeof(T) / sizeof(nuint)));
+                SpanNDHelpers.Clear(ref Unsafe.Add(ref _reference, SpanNDHelpers.GetIndex(curIndices, Strides, Shape)), (nuint)Shape[Rank - 1]);
+                SpanNDHelpers.AdjustIndices(Rank - 2, 1, ref curIndices, _lengths);
+                clearedValues += Shape[Rank - 1];
             }
-            else
-            {
-                Span<nint> curIndices = stackalloc nint[Rank];
-                nint clearedValues = 0;
-                // REVIEW: If we track the actual length of the backing data, because Length doesn't always equal the actual length, we could use that here to not need to loop.
-                while (clearedValues < _linearLength)
-                {
-                    SpanNDHelpers.ClearWithoutReferences(ref Unsafe.As<T, byte>(ref Unsafe.Add(ref _reference, SpanNDHelpers.GetIndex(curIndices, Strides, Shape))), (nuint)Shape[Rank-1] * (nuint)sizeof(T));
-                    SpanNDHelpers.AdjustIndices(Rank - 2, 1, ref curIndices, _lengths);
-                    clearedValues += Shape[Rank - 1];
-                }
-                Debug.Assert(clearedValues == _linearLength, "Didn't clear the right amount");
-            }
+            Debug.Assert(clearedValues == _linearLength, "Didn't clear the right amount");
         }
 
         /// <summary>

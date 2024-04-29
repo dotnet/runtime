@@ -1056,6 +1056,143 @@ namespace System.Numerics.Tensors.Tests
             {
                 Assert.Equal(0, enumerator.Current);
             }
+
+            // Make sure clearing a slice of a SPan doesn't clear the whole thing.
+            a = [.. Enumerable.Range(0, 9)];
+            spanInt = a.AsSpanND(3, 3);
+            var spanSlice = spanInt.Slice(0..1, 0..3);
+            spanSlice.Clear();
+            var spanEnumerator = spanSlice.GetEnumerator();
+            while (spanEnumerator.MoveNext())
+            {
+                Assert.Equal(0, spanEnumerator.Current);
+            }
+
+            Assert.Equal(0, spanInt[0, 0]);
+            Assert.Equal(0, spanInt[0, 1]);
+            Assert.Equal(0, spanInt[0, 2]);
+            Assert.Equal(3, spanInt[1, 0]);
+            Assert.Equal(4, spanInt[1, 1]);
+            Assert.Equal(5, spanInt[1, 2]);
+            Assert.Equal(6, spanInt[2, 0]);
+            Assert.Equal(7, spanInt[2, 1]);
+            Assert.Equal(8, spanInt[2, 2]);
+
+            // Make sure clearing a slice from the middle of a SPan doesn't clear the whole thing.
+            a = [.. Enumerable.Range(0, 9)];
+            spanInt = a.AsSpanND(3, 3);
+            spanSlice = spanInt.Slice(1..2, 0..3);
+            spanSlice.Clear();
+            spanEnumerator = spanSlice.GetEnumerator();
+            while (spanEnumerator.MoveNext())
+            {
+                Assert.Equal(0, spanEnumerator.Current);
+            }
+
+            Assert.Equal(0, spanInt[0, 0]);
+            Assert.Equal(1, spanInt[0, 1]);
+            Assert.Equal(2, spanInt[0, 2]);
+            Assert.Equal(0, spanInt[1, 0]);
+            Assert.Equal(0, spanInt[1, 1]);
+            Assert.Equal(0, spanInt[1, 2]);
+            Assert.Equal(6, spanInt[2, 0]);
+            Assert.Equal(7, spanInt[2, 1]);
+            Assert.Equal(8, spanInt[2, 2]);
+
+            // Make sure clearing a slice from the end of a SPan doesn't clear the whole thing.
+            a = [.. Enumerable.Range(0, 9)];
+            spanInt = a.AsSpanND(3, 3);
+            spanSlice = spanInt.Slice(2..3, 0..3);
+            spanSlice.Clear();
+            spanEnumerator = spanSlice.GetEnumerator();
+            while (spanEnumerator.MoveNext())
+            {
+                Assert.Equal(0, spanEnumerator.Current);
+            }
+
+            Assert.Equal(0, spanInt[0, 0]);
+            Assert.Equal(1, spanInt[0, 1]);
+            Assert.Equal(2, spanInt[0, 2]);
+            Assert.Equal(3, spanInt[1, 0]);
+            Assert.Equal(4, spanInt[1, 1]);
+            Assert.Equal(5, spanInt[1, 2]);
+            Assert.Equal(0, spanInt[2, 0]);
+            Assert.Equal(0, spanInt[2, 1]);
+            Assert.Equal(0, spanInt[2, 2]);
+
+            // Make sure it works with reference types.
+            object[] o = [new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object()];
+            SpanND<object> spanObj = o.AsSpanND(3, 3);
+            spanObj.Clear();
+
+            var oSpanEnumerator = spanObj.GetEnumerator();
+            while (oSpanEnumerator.MoveNext())
+            {
+                Assert.Null(oSpanEnumerator.Current);
+            }
+
+            // Make sure clearing a slice of a SPan with references it doesn't clear the whole thing.
+            o = [new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object()];
+            spanObj = o.AsSpanND(3, 3);
+            var oSpanSlice = spanObj.Slice(0..1, 0..3);
+            oSpanSlice.Clear();
+            oSpanEnumerator = oSpanSlice.GetEnumerator();
+            while (oSpanEnumerator.MoveNext())
+            {
+                Assert.Null(oSpanEnumerator.Current);
+            }
+
+            Assert.Null(spanObj[0, 0]);
+            Assert.Null(spanObj[0, 1]);
+            Assert.Null(spanObj[0, 2]);
+            Assert.NotNull(spanObj[1, 0]);
+            Assert.NotNull(spanObj[1, 1]);
+            Assert.NotNull(spanObj[1, 2]);
+            Assert.NotNull(spanObj[2, 0]);
+            Assert.NotNull(spanObj[2, 1]);
+            Assert.NotNull(spanObj[2, 2]);
+
+            // Make sure clearing a slice of a SPan with references it doesn't clear the whole thing.
+            o = [new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object()];
+            spanObj = o.AsSpanND(3, 3);
+            oSpanSlice = spanObj.Slice(1..2, 0..3);
+            oSpanSlice.Clear();
+            oSpanEnumerator = oSpanSlice.GetEnumerator();
+            while (oSpanEnumerator.MoveNext())
+            {
+                Assert.Null(oSpanEnumerator.Current);
+            }
+
+            Assert.NotNull(spanObj[0, 0]);
+            Assert.NotNull(spanObj[0, 1]);
+            Assert.NotNull(spanObj[0, 2]);
+            Assert.Null(spanObj[1, 0]);
+            Assert.Null(spanObj[1, 1]);
+            Assert.Null(spanObj[1, 2]);
+            Assert.NotNull(spanObj[2, 0]);
+            Assert.NotNull(spanObj[2, 1]);
+            Assert.NotNull(spanObj[2, 2]);
+
+            // Make sure clearing a slice of a SPan with references it doesn't clear the whole thing.
+            o = [new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object()];
+            spanObj = o.AsSpanND(3, 3);
+            oSpanSlice = spanObj.Slice(2..3, 0..3);
+            oSpanSlice.Clear();
+            oSpanEnumerator = oSpanSlice.GetEnumerator();
+            while (oSpanEnumerator.MoveNext())
+            {
+                Assert.Null(oSpanEnumerator.Current);
+            }
+
+            Assert.NotNull(spanObj[0, 0]);
+            Assert.NotNull(spanObj[0, 1]);
+            Assert.NotNull(spanObj[0, 2]);
+            Assert.NotNull(spanObj[1, 0]);
+            Assert.NotNull(spanObj[1, 1]);
+            Assert.NotNull(spanObj[1, 2]);
+            Assert.Null(spanObj[2, 0]);
+            Assert.Null(spanObj[2, 1]);
+            Assert.Null(spanObj[2, 2]);
         }
 
         [Fact]
