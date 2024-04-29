@@ -528,28 +528,30 @@ enum CorInfoHelpFunc
     // ICorClassInfo::getSharedStaticsOrCCtorHelper to determine which helper to use
 
     // Helpers for regular statics
-    CORINFO_HELP_GETGENERICS_GCSTATIC_BASE,
-    CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE,
-    CORINFO_HELP_GETSHARED_GCSTATIC_BASE,
-    CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE,
-    CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR,
-    CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR,
-    CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS,
-    CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS,
-    // Helper to class initialize shared generic with dynamicclass, but not get static field address
-    CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS,
+    CORINFO_HELP_GET_GCSTATIC_BASE,
+    CORINFO_HELP_GET_NONGCSTATIC_BASE,
+    CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE,
+    CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE,
+    CORINFO_HELP_GETPINNED_GCSTATIC_BASE,
+    CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE,
+    CORINFO_HELP_GET_GCSTATIC_BASE_NOCTOR,
+    CORINFO_HELP_GET_NONGCSTATIC_BASE_NOCTOR,
+    CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR,
+    CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE_NOCTOR,
+    CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR,
+    CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR,
 
     // Helpers for thread statics
-    CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE,
-    CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE,
-    CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE,
-    CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE,
-    CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR,
-    CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR,
-    CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS,
-    CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS,
-    CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
-    CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
+    CORINFO_HELP_GET_GCTHREADSTATIC_BASE,
+    CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE,
+    CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE,
+    CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE,
+    CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR,
+    CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR,
+    CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR,
+    CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR,
+    CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
+    CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
 
     /* Debugger */
 
@@ -1698,7 +1700,6 @@ struct CORINFO_THREAD_STATIC_BLOCKS_INFO
     uint32_t offsetOfThreadLocalStoragePointer; // windows specific
     uint32_t offsetOfMaxThreadStaticBlocks;
     uint32_t offsetOfThreadStaticBlocks;
-    uint32_t offsetOfGCDataPointer;
 };
 
 //----------------------------------------------------------------------------
@@ -2399,18 +2400,20 @@ public:
     virtual void* LongLifetimeMalloc(size_t sz) = 0;
     virtual void LongLifetimeFree(void* obj) = 0;
 
-    virtual size_t getClassModuleIdForStatics (
-            CORINFO_CLASS_HANDLE    cls,
-            CORINFO_MODULE_HANDLE * pModule,
-            void **                 ppIndirection
-            ) = 0;
-
     virtual bool getIsClassInitedFlagAddress(
             CORINFO_CLASS_HANDLE  cls,
             CORINFO_CONST_LOOKUP* addr,
             int*                  offset
             ) = 0;
 
+    virtual size_t getClassStaticDynamicInfo (
+            CORINFO_CLASS_HANDLE    cls
+            ) = 0;
+
+    virtual size_t getClassThreadStaticDynamicInfo (
+            CORINFO_CLASS_HANDLE    cls
+            ) = 0;
+            
     virtual bool getStaticBaseAddress(
             CORINFO_CLASS_HANDLE  cls,
             bool                  isGc,
@@ -2820,8 +2823,7 @@ public:
 
     // Returns the thread static block information like offsets, etc. from current TLS.
     virtual void getThreadLocalStaticBlocksInfo (
-            CORINFO_THREAD_STATIC_BLOCKS_INFO*  pInfo,
-            bool                                isGCType
+            CORINFO_THREAD_STATIC_BLOCKS_INFO*  pInfo
             ) = 0;
 
     virtual void getThreadLocalStaticInfo_NativeAOT(
@@ -3239,12 +3241,6 @@ public:
 
             // out params
             CORINFO_CALL_INFO       *pResult
-            ) = 0;
-
-    // Returns the class's domain ID for accessing shared statics
-    virtual unsigned getClassDomainID (
-            CORINFO_CLASS_HANDLE    cls,
-            void                  **ppIndirection = NULL
             ) = 0;
 
     //------------------------------------------------------------------------------

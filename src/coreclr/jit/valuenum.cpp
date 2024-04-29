@@ -12921,23 +12921,35 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             vnf = opts.IsReadyToRun() ? VNF_JitReadyToRunNewArr : VNF_JitNewArr;
             break;
 
-        case CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
-            vnf = VNF_GetgenericsGcstaticBase;
+        case CORINFO_HELP_GET_GCSTATIC_BASE:
+            vnf = VNF_GetGcstaticBase;
             break;
-        case CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE:
-            vnf = VNF_GetgenericsNongcstaticBase;
+        case CORINFO_HELP_GET_NONGCSTATIC_BASE:
+            vnf = VNF_GetNongcstaticBase;
             break;
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
-            vnf = VNF_GetsharedGcstaticBase;
+        case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE:
+            vnf = VNF_GetdynamicGcstaticBase;
             break;
-        case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
-            vnf = VNF_GetsharedNongcstaticBase;
+        case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE:
+            vnf = VNF_GetdynamicNongcstaticBase;
             break;
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR:
-            vnf = VNF_GetsharedGcstaticBaseNoctor;
+        case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR:
+            vnf = VNF_GetdynamicGcstaticBaseNoctor;
             break;
-        case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
-            vnf = VNF_GetsharedNongcstaticBaseNoctor;
+        case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE_NOCTOR:
+            vnf = VNF_GetdynamicNongcstaticBaseNoctor;
+            break;
+        case CORINFO_HELP_GETPINNED_GCSTATIC_BASE:
+            vnf = VNF_GetpinnedGcstaticBase;
+            break;
+        case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE:
+            vnf = VNF_GetpinnedNongcstaticBase;
+            break;
+        case CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR:
+            vnf = VNF_GetpinnedGcstaticBaseNoctor;
+            break;
+        case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR:
+            vnf = VNF_GetpinnedNongcstaticBaseNoctor;
             break;
         case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
             vnf = VNF_ReadyToRunStaticBaseGC;
@@ -12957,44 +12969,35 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
         case CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE:
             vnf = VNF_ReadyToRunGenericStaticBase;
             break;
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS:
-            vnf = VNF_GetsharedGcstaticBaseDynamicclass;
+        case CORINFO_HELP_GET_GCTHREADSTATIC_BASE:
+            vnf = VNF_GetGcthreadstaticBase;
             break;
-        case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS:
-            vnf = VNF_GetsharedNongcstaticBaseDynamicclass;
+        case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
+            vnf = VNF_GetNongcthreadstaticBase;
             break;
-        case CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS:
-            vnf = VNF_ClassinitSharedDynamicclass;
+        case CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR:
+            vnf = VNF_GetGcthreadstaticBaseNoctor;
             break;
-        case CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE:
-            vnf = VNF_GetgenericsGcthreadstaticBase;
+        case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR:
+            vnf = VNF_GetNongcthreadstaticBaseNoctor;
             break;
-        case CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE:
-            vnf = VNF_GetgenericsNongcthreadstaticBase;
+        case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
+            vnf = VNF_GetdynamicGcthreadstaticBase;
             break;
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE:
-            vnf = VNF_GetsharedGcthreadstaticBase;
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
+            vnf = VNF_GetdynamicNongcthreadstaticBase;
             break;
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE:
-            vnf = VNF_GetsharedNongcthreadstaticBase;
+        case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
+            vnf = VNF_GetdynamicGcthreadstaticBaseNoctor;
             break;
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
-            vnf = VNF_GetsharedGcthreadstaticBaseNoctor;
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR:
+            vnf = VNF_GetdynamicNongcthreadstaticBaseNoctor;
             break;
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
-            vnf = VNF_GetsharedGcthreadstaticBaseNoctorOptimized;
+        case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            vnf = VNF_GetdynamicGcthreadstaticBaseNoctorOptimized;
             break;
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
-            vnf = VNF_GetsharedNongcthreadstaticBaseNoctor;
-            break;
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
-            vnf = VNF_GetsharedNongcthreadstaticBaseNoctorOptimized;
-            break;
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
-            vnf = VNF_GetsharedGcthreadstaticBaseDynamicclass;
-            break;
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS:
-            vnf = VNF_GetsharedNongcthreadstaticBaseDynamicclass;
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            vnf = VNF_GetdynamicNongcthreadstaticBaseNoctorOptimized;
             break;
         case CORINFO_HELP_GETSTATICFIELDADDR_TLS:
             vnf = VNF_GetStaticAddrTLS;
@@ -13182,33 +13185,6 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
                 break;
             }
 
-            case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
-            case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
-            case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS:
-            case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS:
-            case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE:
-            case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE:
-            case CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS:
-            case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
-            case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS:
-                // These all take (Module*, class ID) as parameters.
-                //
-                // Strictly speaking the exact possible exception thrown by the
-                // static constructor depends on heap state too, but given that
-                // the constructor is only invoked once we can model that for
-                // the same class the same exceptions are thrown. Downstream
-                // code like CSE/copy prop that makes use VNs innately need to
-                // establish some form of dominance around the individual trees
-                // that makes this ok.
-                //
-                vnpExc = vnStore->VNPExcSetSingleton(
-                    vnStore->VNPairForFunc(TYP_REF, VNF_ClassInitExc,
-                                           vnStore->VNPNormalPair(
-                                               call->gtArgs.GetUserArgByIndex(0)->GetNode()->gtVNPair),
-                                           vnStore->VNPNormalPair(
-                                               call->gtArgs.GetUserArgByIndex(1)->GetNode()->gtVNPair)));
-                break;
-
 #ifdef FEATURE_READYTORUN
             case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
             case CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
@@ -13225,13 +13201,43 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
             }
 #endif
 
-            case CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE:
-            case CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE:
-            case CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
-            case CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GET_GCSTATIC_BASE:
+            case CORINFO_HELP_GET_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GET_GCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GET_NONGCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GET_GCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR:
                 // These take class handles as parameters.
                 vnpExc = vnStore->VNPExcSetSingleton(
                     vnStore->VNPairForFunc(TYP_REF, VNF_ClassInitGenericExc,
+                                           vnStore->VNPNormalPair(
+                                               call->gtArgs.GetUserArgByIndex(0)->GetNode()->gtVNPair)));
+                break;
+
+            case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GETPINNED_GCSTATIC_BASE:
+            case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR:
+                // These take DynamicClassInfo handles as parameters.
+                vnpExc = vnStore->VNPExcSetSingleton(
+                    vnStore->VNPairForFunc(TYP_REF, VNF_DynamicClassInitExc,
+                                           vnStore->VNPNormalPair(
+                                               call->gtArgs.GetUserArgByIndex(0)->GetNode()->gtVNPair)));
+                break;
+
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR:
+                // These take ThreadStaticInfo as parameters.
+                vnpExc = vnStore->VNPExcSetSingleton(
+                    vnStore->VNPairForFunc(TYP_REF, VNF_ThreadClassInitExc,
                                            vnStore->VNPNormalPair(
                                                call->gtArgs.GetUserArgByIndex(0)->GetNode()->gtVNPair)));
                 break;

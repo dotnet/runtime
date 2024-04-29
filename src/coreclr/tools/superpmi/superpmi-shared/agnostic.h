@@ -538,7 +538,6 @@ struct Agnostic_GetThreadLocalStaticBlocksInfo
     DWORD                         offsetOfThreadLocalStoragePointer;
     DWORD                         offsetOfMaxThreadStaticBlocks;
     DWORD                         offsetOfThreadStaticBlocks;
-    DWORD                         offsetOfGCDataPointer;
 };
 
 struct Agnostic_GetThreadStaticInfo_NativeAOT

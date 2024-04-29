@@ -185,7 +185,7 @@ End
 Crst DelegateToFPtrHash
 End
 
-Crst DomainLocalBlock
+Crst GenericDictionaryExpansion
     AcquiredBefore PinnedHeapHandleTable IbcProfile LoaderHeap SystemDomainDelayedUnloadList UniqueStack
 End
 
@@ -265,7 +265,7 @@ Crst InstMethodHashTable
 End
 
 Crst Interop
-    AcquiredBefore PinnedHeapHandleTable AvailableParamTypes ClassInit DeadlockDetection DomainLocalBlock
+    AcquiredBefore PinnedHeapHandleTable AvailableParamTypes ClassInit DeadlockDetection GenericDictionaryExpansion
                    HandleTable InstMethodHashTable InteropData JitGenericHandleCache LoaderHeap SigConvert
                    StubDispatchCache StubUnwindInfoHeapSegments SyncBlockCache TypeIDMap UnresolvedClassLock
                    PendingTypeLoadEntry
@@ -315,7 +315,7 @@ End
 
 Crst LoaderAllocator
     AcquiredBefore PinnedHeapHandleTable HandleTable UniqueStack ThreadStore
-    AcquiredAfter DomainLocalBlock
+    AcquiredAfter GenericDictionaryExpansion
 End
 
 Crst LoaderAllocatorReferences
@@ -364,7 +364,7 @@ End
 Crst PendingTypeLoadEntry
     AcquiredBefore AppDomainCache PinnedHeapHandleTable AssemblyLoader AvailableClass AvailableParamTypes
                    BaseDomain ClassInit DeadlockDetection DebuggerController DebuggerJitInfo DebuggerMutex
-                   DomainLocalBlock Exception ExecuteManRangeLock FuncPtrStubs
+                   GenericDictionaryExpansion Exception ExecuteManRangeLock FuncPtrStubs
                    FusionAppCtx GlobalStrLiteralMap HandleTable IbcProfile
                    IJWFixupData IJWHash ISymUnmanagedReader Jit JumpStubCache LoaderHeap
                    Module ModuleLookupTable PEImage
@@ -476,6 +476,10 @@ End
 Crst SystemDomainDelayedUnloadList
 End
 
+Crst ThreadLocalStorageLock
+    AcquiredBefore ModuleLookupTable
+End
+
 Crst ThreadIdDispenser
 End
 
@@ -541,7 +545,7 @@ End
 
 Crst EventPipe
     AcquiredAfter PendingTypeLoadEntry
-    AcquiredBefore ThreadIdDispenser ThreadStore DomainLocalBlock InstMethodHashTable
+    AcquiredBefore ThreadIdDispenser ThreadStore GenericDictionaryExpansion InstMethodHashTable
 End
 
 Crst NotifyGdb
@@ -572,10 +576,6 @@ End
 
 Crst PgoData
     AcquiredBefore LoaderHeap
-End
-
-Crst StaticBoxInit
-    AcquiredBefore LoaderHeap FrozenObjectHeap AssemblyLoader
 End
 
 Crst PerfMap

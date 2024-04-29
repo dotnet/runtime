@@ -349,6 +349,8 @@ protected:
     Volatile<PgoManager *> m_pgoManager;
 #endif // FEATURE_PGO
 
+    SArray<TLSIndex> m_tlsIndices;
+
 public:
     BYTE *GetVSDHeapInitialBlock(DWORD *pSize);
     BYTE *GetCodeHeapInitialBlock(const BYTE * loAddr, const BYTE * hiAddr, DWORD minimumSize, DWORD *pSize);
@@ -388,6 +390,12 @@ protected:
 #endif
 
     PTR_VirtualCallStubManager m_pVirtualCallStubManager;
+
+public:
+    SArray<TLSIndex>& GetTLSIndexList()
+    {
+        return m_tlsIndices;
+    }
 
 private:
     LoaderAllocatorSet m_LoaderAllocatorReferences;
@@ -631,6 +639,7 @@ public:
     }
 
     LOADERALLOCATORREF GetExposedObject();
+    bool IsExposedObjectLive();
 
 #ifndef DACCESS_COMPILE
     bool InsertObjectIntoFieldWithLifetimeOfCollectibleLoaderAllocator(OBJECTREF value, Object** pField);
@@ -642,7 +651,7 @@ public:
 
     // The default implementation is a no-op. Only collectible loader allocators implement this method.
     virtual void RegisterHandleForCleanup(OBJECTHANDLE /* objHandle */) { }
-    virtual void RegisterHandleForCleanupLocked(OBJECTHANDLE /* objHandle*/ ) {}
+    virtual void RegisterHandleForCleanupLocked(OBJECTHANDLE /* objHandle */) { }
     virtual void UnregisterHandleFromCleanup(OBJECTHANDLE /* objHandle */) { }
     virtual void CleanupHandles() { }
 
@@ -732,6 +741,8 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_nGCCount;
     }
+    void AllocateBytesForStaticVariables(DynamicStaticsInfo* pStaticsInfo, uint32_t cbMem);
+    void AllocateGCHandlesBytesForStaticVariables(DynamicStaticsInfo* pStaticsInfo, uint32_t cSlots, MethodTable* pMTWithStaticBoxes);
 
     static BOOL Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator);
 

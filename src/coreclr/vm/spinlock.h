@@ -134,7 +134,8 @@ enum LOCK_TYPE
 #endif
     LOCK_REFLECTCACHE = 5,
     LOCK_CORMAP = 7,
-    LOCK_TYPE_DEFAULT  = 8
+    LOCK_TLSDATA = 8,
+    LOCK_TYPE_DEFAULT = 9
 };
 
 //----------------------------------------------------------------------------
@@ -204,6 +205,7 @@ public:
     static void AcquireLock(SpinLock *s);
     static void ReleaseLock(SpinLock *s);
 
+#ifndef DACCESS_COMPILE
     class Holder
     {
         SpinLock *  m_pSpinLock;
@@ -224,9 +226,10 @@ public:
             m_pSpinLock->FreeLock();
         }
     };
+#endif // !DACCESS_COMPILE
 };
 
-
+#ifndef DACCESS_COMPILE
 typedef SpinLock::Holder SpinLockHolder;
 #define TAKE_SPINLOCK_AND_DONOT_TRIGGER_GC(lock) \
                         SpinLockHolder __spinLockHolder(lock);\
@@ -243,6 +246,8 @@ typedef SpinLock::Holder SpinLockHolder;
 #define RELEASE_SPINLOCK_NO_HOLDER(lock)        \
     SpinLock::ReleaseLock(lock);                \
 }                                               \
+
+#endif // !DACCESS_COMPILE
 
 __inline BOOL IsOwnerOfSpinLock (LPVOID lock)
 {
