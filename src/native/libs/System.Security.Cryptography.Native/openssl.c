@@ -1481,8 +1481,20 @@ static int32_t EnsureOpenSslInitializedCore(CRYPTO_malloc_fn  mallocFunction, CR
     if (mallocFunction != NULL && reallocFunction != NULL && freefunction != NULL)
     {
         // This needs to be done before any allocation is done e.g. EnsureOpenSsl* is called.
-        // And it also needs to be after the pointers are loaded for AGNOSTIC_SSL
+        // And it also needs to be after the pointers are loaded for DISTRO_AGNOSTIC_SSL
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+        if (!API_EXISTS(SSL_state))
+        {
+            // CRYPTO_set_mem_functions exists in OpenSSL 1.0.1 as well but it has different prototype
+            // and that makes it difficult to use with managed callbacks.
+            // Since 1.0 is long time out of support we use it only on 1.1.1+
+            CRYPTO_set_mem_functions11(mallocFunction, reallocFunction, freefunction);
+        }
+#elif OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0_RTM
+        // OpenSSL 1.0 has different prototypes and it is out of support so we enable this only
+        // on 1.1.1+
         CRYPTO_set_mem_functions(mallocFunction, reallocFunction, freefunction);
+#endif
     }
 
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
