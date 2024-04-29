@@ -99,7 +99,7 @@ public sealed class TestEventListener : EventListener
     protected override void OnEventWritten(EventWrittenEventArgs eventData)
     {
         StringBuilder sb = new StringBuilder().
-#if NETCOREAPP2_2_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+#if NET || NETSTANDARD2_1_OR_GREATER
             Append($"{eventData.TimeStamp:HH:mm:ss.fffffff}[{eventData.EventName}] ");
 #else
             Append($"[{eventData.EventName}] ");

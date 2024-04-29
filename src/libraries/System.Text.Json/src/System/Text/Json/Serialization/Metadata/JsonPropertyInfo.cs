@@ -626,7 +626,7 @@ namespace System.Text.Json.Serialization.Metadata
 #if NETCOREAPP
                 potentialNumberType == typeof(Half) ||
 #endif
-#if NET7_0_OR_GREATER
+#if NET
                 potentialNumberType == typeof(Int128) ||
                 potentialNumberType == typeof(UInt128) ||
 #endif
