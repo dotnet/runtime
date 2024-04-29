@@ -773,6 +773,11 @@ mono_method_get_method_definition (MonoMethod *method)
 static gboolean
 verify_class_overrides (MonoClass *klass, MonoMethod **overrides, int onum)
 {
+#ifndef ENABLE_CHECKED_BUILD
+	if (klass->image == mono_defaults.corlib)
+		return TRUE;
+#endif
+
 	int i;
 
 	for (i = 0; i < onum; ++i) {
@@ -1760,7 +1765,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 			MonoMethod *override = iface_overrides [i*2 + 1];
 			if (mono_class_is_gtd (override->klass)) {
 				override = mono_class_inflate_generic_method_full_checked (override, ic, mono_class_get_context (ic), error);
-			} 
+			}
 			// there used to be code here to inflate decl if decl->is_inflated, but in https://github.com/dotnet/runtime/pull/64102#discussion_r790019545 we
 			// think that this does not correspond to any real code.
 			if (!apply_override (klass, ic, vtable, decl, override, &override_map, &override_class_map, &conflict_map))

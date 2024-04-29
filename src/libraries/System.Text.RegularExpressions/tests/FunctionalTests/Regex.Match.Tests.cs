@@ -698,6 +698,11 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(...)(?(1)\w*|\s*)[a1 ]", "zabcaaaaaaa", RegexOptions.RightToLeft, 0, 11, true, "aaaa");
                 yield return (@"(...)(?(1)\w*|\s*)[a1 ]", "----       ", RegexOptions.RightToLeft, 0, 11, true, "---       ");
                 yield return (@"(aaa)(?(1)aaa|b?)*", "aaaaaa", RegexOptions.None, 0, 6, true, "aaaaaa");
+
+                yield return (@"AAB|AAC", "AABAACD", RegexOptions.RightToLeft, 0, 6, true, "AAC");
+                yield return (@"AAB|AA\d", "AABAACD", RegexOptions.RightToLeft, 0, 6, true, "AAB");
+                yield return (@"(AB){3,}", "1234ABABABAB5678", RegexOptions.RightToLeft, 0, 16, true, "ABABABAB");
+                yield return (@"(AB){1,3}", "1234ABABABAB5678", RegexOptions.RightToLeft, 0, 16, true, "ABABAB");
             }
 
             // Character Class Subtraction
@@ -1167,6 +1172,7 @@ namespace System.Text.RegularExpressions.Tests
 
         public static IEnumerable<object[]> Match_DeepNesting_MemberData()
         {
+            foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.IgnoreCase })
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
                 if (RegexHelpers.IsNonBacktracking(engine))
@@ -1175,15 +1181,15 @@ namespace System.Text.RegularExpressions.Tests
                     continue;
                 }
 
-                yield return new object[] { engine, 1 };
-                yield return new object[] { engine, 10 };
-                yield return new object[] { engine, 100 };
+                yield return new object[] { engine, options, 1 };
+                yield return new object[] { engine, options, 10 };
+                yield return new object[] { engine, options, 100 };
             }
         }
 
         [Theory]
         [MemberData(nameof(Match_DeepNesting_MemberData))]
-        public async Task Match_DeepNesting(RegexEngine engine, int count)
+        public async Task Match_DeepNesting(RegexEngine engine, RegexOptions options, int count)
         {
             const string Start = @"((?>abc|(?:def[ghi]", End = @")))";
             const string Match = "defg";
@@ -1191,7 +1197,7 @@ namespace System.Text.RegularExpressions.Tests
             string pattern = string.Concat(Enumerable.Repeat(Start, count)) + string.Concat(Enumerable.Repeat(End, count));
             string input = string.Concat(Enumerable.Repeat(Match, count));
 
-            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
             Match m = r.Match(input);
 
             Assert.True(m.Success);

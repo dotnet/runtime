@@ -1338,6 +1338,23 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        public void JsImportCallback_ActionIntLongDouble()
+        {
+            int calledA = -1;
+            long calledB = -1;
+            double calledC = -1;
+            JavaScriptTestHelper.back4_ActionIntLongDouble((a, b, c) =>
+            {
+                calledA = a;
+                calledB = b;
+                calledC = c;
+            }, 42, 43, 44.5);
+            Assert.Equal(42, calledA);
+            Assert.Equal(43, calledB);
+            Assert.Equal(44.5, calledC);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsImportCallback_ActionIntThrow()
         {
             int called = -1;

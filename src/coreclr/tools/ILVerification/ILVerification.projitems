@@ -66,11 +66,20 @@
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\Utilities\CustomAttributeTypeNameParser.cs">
       <Link>Utilities\CustomAttributeTypeNameParser.cs</Link>
     </Compile>
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\TypeNameParser.cs">
-      <Link>Utilities\TypeNameParser.cs</Link>
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+      <Link>System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+      <Link>System\Diagnostics\CodeAnalysis\NullableAttributes.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\TypeNameParser.Helpers.cs">
+      <Link>Utilities\CustomAttributeTypeNameParser.Helpers</Link>
     </Compile>
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\ValueStringBuilder.cs">
       <Link>Utilities\ValueStringBuilder.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\ValueStringBuilder.AppendSpanFormattable.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+      <Link>Utilities\ValueStringBuilder.AppendSpanFormattable.cs</Link>
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs">
       <Link>Utilities\LockFreeReaderHashtable.cs</Link>

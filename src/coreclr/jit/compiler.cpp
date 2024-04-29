@@ -2791,11 +2791,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     fgPgoHaveWeights = false;
     fgPgoSynthesized = false;
     fgPgoConsistent  = false;
+    fgPgoDynamic     = false;
 
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
-        fgPgoQueryResult = info.compCompHnd->getPgoInstrumentationResults(info.compMethodHnd, &fgPgoSchema,
-                                                                          &fgPgoSchemaCount, &fgPgoData, &fgPgoSource);
+        fgPgoQueryResult =
+            info.compCompHnd->getPgoInstrumentationResults(info.compMethodHnd, &fgPgoSchema, &fgPgoSchemaCount,
+                                                           &fgPgoData, &fgPgoSource, &fgPgoDynamic);
 
         // a failed result that also has a non-NULL fgPgoSchema
         // indicates that the ILSize for the method no longer matches
@@ -2818,6 +2820,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             fgPgoData        = nullptr;
             fgPgoSchema      = nullptr;
             fgPgoDisabled    = true;
+            fgPgoDynamic     = false;
         }
 #ifdef DEBUG
         // Optionally, enable use of profile data for only some methods.
@@ -4629,11 +4632,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_IMPORTATION, &Compiler::fgImport);
 
-    // Drop back to just checking profile likelihoods.
-    //
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
-
     // If this is a failed inline attempt, we're done.
     //
     if (compIsForInlining() && compInlineResult->IsFailure())
@@ -4687,6 +4685,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         return;
     }
+
+    // Drop back to just checking profile likelihoods.
+    //
+    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
+    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
 
     // At this point in the phase list, all the inlinee phases have
     // been run, and inlinee compiles have exited, so we should only

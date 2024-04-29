@@ -4681,7 +4681,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     const int counterBump = g_pConfig->OSR_CounterBump();
     *counter = counterBump;
 
-#if _DEBUG
+#ifdef _DEBUG
     const int ppId = ppInfo->m_patchpointId;
 #endif
 
@@ -4926,6 +4926,12 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         // Install new entry point as IP
         SetIP(pFrameContext, osrMethodCode);
 
+#ifdef _DEBUG
+        // Keep this context around to aid in debugging OSR transition problems
+        static CONTEXT s_lastOSRTransitionContext;
+        s_lastOSRTransitionContext = *pFrameContext;
+#endif
+
         // Restore last error (since call below does not return)
         // END_PRESERVE_LAST_ERROR;
         ::SetLastError(dwLastError);
@@ -4962,7 +4968,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
     // Patchpoint identity is the helper return address
     PCODE ip = (PCODE)_ReturnAddress();
 
-#if _DEBUG
+#ifdef _DEBUG
     // Friendly ID number
     int ppId = 0;
 #endif
@@ -4976,7 +4982,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
     OnStackReplacementManager* manager = allocator->GetOnStackReplacementManager();
     ppInfo = manager->GetPerPatchpointInfo(ip);
 
-#if _DEBUG
+#ifdef _DEBUG
     ppId = ppInfo->m_patchpointId;
 #endif
 

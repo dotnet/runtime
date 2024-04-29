@@ -523,20 +523,23 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             return nullptr;
         }
 
-        case NI_VectorT_ConvertToInt64:
-        case NI_VectorT_ConvertToUInt32:
-        case NI_VectorT_ConvertToUInt64:
+        case NI_VectorT_ConvertToInt32:
         {
-            if (IsBaselineVector512IsaSupportedOpportunistically())
+            if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
             {
                 break;
             }
             return nullptr;
         }
 
-        case NI_VectorT_ConvertToInt32:
+        case NI_VectorT_ConvertToInt64:
+        case NI_VectorT_ConvertToInt64Native:
+        case NI_VectorT_ConvertToUInt32:
+        case NI_VectorT_ConvertToUInt32Native:
+        case NI_VectorT_ConvertToUInt64:
+        case NI_VectorT_ConvertToUInt64Native:
         {
-            if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            if (IsBaselineVector512IsaSupportedOpportunistically())
             {
                 break;
             }
@@ -1175,34 +1178,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 }
 
 #if defined(TARGET_XARCH)
-
-                case NI_VectorT_ConvertToInt64:
-                {
-                    assert(sig->numArgs == 1);
-                    assert(simdBaseType == TYP_DOUBLE);
-                    return gtNewSimdCvtNode(retType, op1, CORINFO_TYPE_LONG, simdBaseJitType, simdSize);
-                }
-
-                case NI_VectorT_ConvertToUInt32:
-                {
-                    assert(sig->numArgs == 1);
-                    assert(simdBaseType == TYP_FLOAT);
-                    return gtNewSimdCvtNode(retType, op1, CORINFO_TYPE_UINT, simdBaseJitType, simdSize);
-                }
-
-                case NI_VectorT_ConvertToUInt64:
-                {
-                    assert(sig->numArgs == 1);
-                    assert(simdBaseType == TYP_DOUBLE);
-                    return gtNewSimdCvtNode(retType, op1, CORINFO_TYPE_ULONG, simdBaseJitType, simdSize);
-                }
-
-                case NI_VectorT_ConvertToInt32:
-                {
-                    assert(simdBaseType == TYP_FLOAT);
-                    return gtNewSimdCvtNode(retType, op1, CORINFO_TYPE_INT, simdBaseJitType, simdSize);
-                }
-
                 case NI_VectorT_ConvertToDouble:
                 {
                     assert(sig->numArgs == 1);
@@ -1273,43 +1248,71 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                                     simdSize);
                 }
 
-                case NI_VectorT_ConvertToInt32:
-                {
-                    assert(simdBaseType == TYP_FLOAT);
-                    return gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_ConvertToInt32RoundToZero, simdBaseJitType,
-                                                    simdSize);
-                }
-
-                case NI_VectorT_ConvertToInt64:
-                {
-                    assert(simdBaseType == TYP_DOUBLE);
-                    return gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_Arm64_ConvertToInt64RoundToZero,
-                                                    simdBaseJitType, simdSize);
-                }
-
                 case NI_VectorT_ConvertToSingle:
                 {
                     assert((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT));
                     return gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_ConvertToSingle, simdBaseJitType,
                                                     simdSize);
                 }
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+                case NI_VectorT_ConvertToInt32:
+                {
+                    assert(sig->numArgs == 1);
+                    assert(simdBaseType == TYP_FLOAT);
+                    return gtNewSimdCvtNode(retType, op1, CORINFO_TYPE_INT, simdBaseJitType, simdSize);
+                }
+
+                case NI_VectorT_ConvertToInt32Native:
+                {
+                    assert(sig->numArgs == 1);
+                    assert(simdBaseType == TYP_FLOAT);
+                    return gtNewSimdCvtNativeNode(retType, op1, CORINFO_TYPE_INT, simdBaseJitType, simdSize);
+                }
+
+                case NI_VectorT_ConvertToInt64:
+                {
+                    assert(sig->numArgs == 1);
+                    assert(simdBaseType == TYP_DOUBLE);
+                    return gtNewSimdCvtNode(retType, op1, CORINFO_TYPE_LONG, simdBaseJitType, simdSize);
+                }
+
+                case NI_VectorT_ConvertToInt64Native:
+                {
+                    assert(sig->numArgs == 1);
+                    assert(simdBaseType == TYP_DOUBLE);
+                    return gtNewSimdCvtNativeNode(retType, op1, CORINFO_TYPE_LONG, simdBaseJitType, simdSize);
+                }
 
                 case NI_VectorT_ConvertToUInt32:
                 {
+                    assert(sig->numArgs == 1);
                     assert(simdBaseType == TYP_FLOAT);
-                    return gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_ConvertToUInt32RoundToZero,
-                                                    simdBaseJitType, simdSize);
+                    return gtNewSimdCvtNode(retType, op1, CORINFO_TYPE_UINT, simdBaseJitType, simdSize);
+                }
+
+                case NI_VectorT_ConvertToUInt32Native:
+                {
+                    assert(sig->numArgs == 1);
+                    assert(simdBaseType == TYP_FLOAT);
+                    return gtNewSimdCvtNativeNode(retType, op1, CORINFO_TYPE_UINT, simdBaseJitType, simdSize);
                 }
 
                 case NI_VectorT_ConvertToUInt64:
                 {
+                    assert(sig->numArgs == 1);
                     assert(simdBaseType == TYP_DOUBLE);
-                    return gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_Arm64_ConvertToUInt64RoundToZero,
-                                                    simdBaseJitType, simdSize);
+                    return gtNewSimdCvtNode(retType, op1, CORINFO_TYPE_ULONG, simdBaseJitType, simdSize);
                 }
-#else
-#error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
+
+                case NI_VectorT_ConvertToUInt64Native:
+                {
+                    assert(sig->numArgs == 1);
+                    assert(simdBaseType == TYP_DOUBLE);
+                    return gtNewSimdCvtNativeNode(retType, op1, CORINFO_TYPE_ULONG, simdBaseJitType, simdSize);
+                }
 
                 default:
                 {
