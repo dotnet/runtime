@@ -1,4 +1,3 @@
-#define DEBUG
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -398,7 +397,7 @@ public sealed partial class QuicStream
                 {
                     if (buffer.ActiveSpan[bytesRead + i] != (byte)offset)
                     {
-                        Debug.Fail($"Diverging at offset {offset}, expected 0x{(byte)offset:x2}, got 0x{buffer.ActiveSpan[bytesRead + i]:x2}");
+                        Environment.FailFast($"Diverging at offset {offset}, expected 0x{(byte)offset:x2}, got 0x{buffer.ActiveSpan[bytesRead + i]:x2}");
                     }
                     offset++;
                 }

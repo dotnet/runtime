@@ -2,4 +2,5 @@
 
 if ($LASTEXITCODE -ne 0) {
     cp "C:/live-runtime-artifacts/testhost/net$env:VERSION-windows-$env:CONFIGURATION-x64/" $env:DUMPS_SHARE_MOUNT_ROOT
+    exit 1;
 }
