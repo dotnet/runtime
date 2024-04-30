@@ -297,7 +297,7 @@ namespace System.Collections.Frozen.Tests
 
         private sealed class EmptySet :
             ISet<T>
-#if NET5_0_OR_GREATER
+#if NET
             , IReadOnlySet<T>
 #endif
         {

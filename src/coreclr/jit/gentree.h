@@ -956,12 +956,6 @@ public:
 
     ValueNumPair gtVNPair;
 
-    regMaskSmall gtRsvdRegs; // set of fixed trashed  registers
-
-    unsigned  AvailableTempRegCount(regMaskTP mask = (regMaskTP)-1) const;
-    regNumber GetSingleTempReg(regMaskTP mask = (regMaskTP)-1);
-    regNumber ExtractTempReg(regMaskTP mask = (regMaskTP)-1);
-
     void SetVNsFromNode(GenTree* tree)
     {
         gtVNPair = tree->gtVNPair;

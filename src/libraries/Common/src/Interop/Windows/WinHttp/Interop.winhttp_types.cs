@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-#if NET7_0_OR_GREATER
+#if NET
 using System.Runtime.InteropServices.Marshalling;
 #endif
 using System.Text;
@@ -247,7 +247,7 @@ internal static partial class Interop
             IntPtr statusInformation,
             uint statusInformationLength);
 
-#if NET7_0_OR_GREATER
+#if NET
         [NativeMarshalling(typeof(Marshaller))]
 #endif
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -261,7 +261,7 @@ internal static partial class Interop
             public uint Reserved2;
             [MarshalAs(UnmanagedType.Bool)]
             public bool AutoLoginIfChallenged;
-#if NET7_0_OR_GREATER
+#if NET
             [CustomMarshaller(typeof(WINHTTP_AUTOPROXY_OPTIONS), MarshalMode.Default, typeof(Marshaller))]
             public static class Marshaller
             {
