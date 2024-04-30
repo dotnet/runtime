@@ -220,7 +220,7 @@ namespace System.Reflection
         // internal test hook
         private static Assembly? s_overriddenEntryAssembly;
 
-        public void SetEntryAssembly(Assembly newAssembly)
+        public static void SetEntryAssembly(Assembly newAssembly)
         {
             s_overriddenEntryAssembly = newAssembly;
         }
