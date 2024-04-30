@@ -61,4 +61,8 @@ def get_observation_columns():
              "EnregCount"
             ]
 
-__all__ = ['get_observation', 'get_observation_columns', 'create_observation']
+__all__ = [
+    get_observation.__name__,
+    get_observation_columns.__name__,
+    create_observation.__name__
+]

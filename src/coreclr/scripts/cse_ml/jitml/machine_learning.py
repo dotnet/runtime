@@ -16,7 +16,6 @@ from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import SubprocVecEnv
 
-from .deep_rewards import DeepCseRewardWrapper
 from .jit_cse import JitCseEnv
 from .superpmi import MethodContext
 
@@ -188,3 +187,5 @@ class PPOLogCallback(BaseCallback):
         metadata = { "iterations" : self.num_timesteps, 'reward' : reward}
         with open(save_path + '.json', 'w', encoding='utf-8') as f:
             json.dump(metadata, f, indent=4)
+
+__all__ = [JitCseModel.__name__]

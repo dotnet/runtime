@@ -50,7 +50,6 @@ class DeepCseRewardWrapper(gym.RewardWrapper):
             if np.isclose(curr.perf_score, previous_score):
                 reward += NEUTRAL_PENALTY
 
-
             # If we improved the performance score, give a bonus for choosing the best option out of all of them.
             elif curr.perf_score < previous_score:
                 # We improved the performance score, but was it the best choice?
@@ -78,3 +77,5 @@ class DeepCseRewardWrapper(gym.RewardWrapper):
         choices.append(cse.index)
 
         return self.superpmi.jit_with_retry(m_id, JitMetrics=1, JitRLHook=1, JitRLHookCSEDecisions=choices)
+
+__all__ = [DeepCseRewardWrapper.__name__]

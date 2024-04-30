@@ -184,3 +184,7 @@ class SuperPmi:
             self._process.stdin.write(b"quit\n")
             self._process.terminate()
             self._process = None
+
+__all__ = [
+    SuperPmi.__name__,
+]

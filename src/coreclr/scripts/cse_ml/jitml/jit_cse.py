@@ -276,4 +276,4 @@ class JitCseEnv(gym.Env):
                   f"no_cse_score: {state.no_cse_score} choices:{state.choices} results:{scores}"
                   f"invalid_count:{state.invalid_action_count} ({state.no_cse_method.name})")
 
-__all__ = ['JitCseEnv', 'JitCseEnvState']
+__all__ = [JitCseEnv.__name__, JitCseEnvState.__name__]

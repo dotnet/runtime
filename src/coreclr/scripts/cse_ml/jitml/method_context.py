@@ -81,3 +81,9 @@ class MethodContext(BaseModel):
         if v < 0:
             raise ValueError("perf_score must not be negative")
         return v
+
+__all__ = [
+    CseCandidate.__name__,
+    MethodContext.__name__,
+    JitType.__name__
+]
