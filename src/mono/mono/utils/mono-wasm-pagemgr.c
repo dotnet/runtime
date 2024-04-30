@@ -1,0 +1,222 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+#include <config.h>
+#include "mono-wasm-pagemgr.h"
+#include <memory.h>
+#include <unistd.h>
+#include <glib.h>
+
+static uint8_t page_table[MWPM_MAX_PAGES];
+static uint8_t is_initialized = 0;
+static uint32_t
+	// The index of the first page that we control. Not all pages after this
+	//  necessarily belong to us, but scans can start here.
+	first_controlled_page_index = UINT32_MAX,
+	// The index of the last page we've allocated. Not all pages between this
+	//  and first_controlled_page_index belong to us, but scans can end here.
+	last_controlled_page_index = 0,
+	// The index of the first page we control that we know is free. Scans
+	//  for allocation purposes can start here.
+	first_free_page_index = UINT32_MAX;
+
+static void *
+address_from_page_index (uint32_t page_index) {
+	uint64_t address = (page_index * MWPM_PAGE_SIZE);
+	g_assert (address < UINT32_MAX);
+	return (void *)(uint32_t)address;
+}
+
+static uint32_t
+first_page_from_address (void *addr) {
+	return ((uint32_t)addr) / MWPM_PAGE_SIZE;
+}
+
+static uint32_t
+page_count_from_size (size_t size) {
+	return ((size + MWPM_PAGE_SIZE - 1) / MWPM_PAGE_SIZE);
+}
+
+static uint32_t
+last_page_of_range (void *addr, size_t size) {
+	uint32_t page_count_rounded_up = page_count_from_size (size),
+		first_page = first_page_from_address (addr);
+	return first_page + page_count_rounded_up - 1;
+}
+
+static uint32_t
+page_count_from_range (void *addr, size_t size) {
+	return last_page_of_range (addr, size) - first_page_from_address (addr) + 1;
+}
+
+// returns 1 if all pages in range were successfully transitioned from from_state to
+//  to_state. If one or more of the pages in the range were not transitioned, returns 0.
+static uint8_t
+transition_page_states (mwpm_page_state from_state, mwpm_page_state to_state, uint32_t first_page, uint32_t page_count) {
+	if (page_count == 0)
+		return 1;
+
+	uint32_t last_page = first_page + (page_count - 1);
+	g_assert (last_page >= first_page);
+
+	uint8_t result = 1;
+	// POSIX specifies that munmap () on an address range that isn't mapped has no,
+	//  effect, so we need to make sure that it's harmless to try and unmap pages we
+	//  don't control. We can't use memset since it might trample UNKNOWN pages.
+	for (uint32_t i = first_page; i <= last_page; i++) {
+		if (page_table[i] != from_state) {
+			result = 0;
+			continue;
+		}
+
+		page_table[i] = to_state;
+		// Maintain the first free page index, used for allocation scans
+		if ((to_state >= MWPM_FREE_ZEROED) && (i < first_free_page_index))
+			first_free_page_index = i;
+	}
+
+	return result;
+}
+
+static void *
+acquire_new_pages_initialized (uint32_t page_count) {
+	if (page_count < 1)
+		return NULL;
+	// NOTE: If we change MWPM_PAGE_SIZE to != the WASM page size, we will need
+	//  to round this up to an integral number of WASM pages.
+	uint64_t bytes = page_count * MWPM_PAGE_SIZE;
+	if (bytes >= UINT32_MAX)
+		return NULL;
+	// We know that on WASM, sbrk grows the heap by a set number of pages,
+	//  and returns the start of the new allocation, which will be the start
+	//  of the first new page.
+	void *result = sbrk ((uint32_t)bytes);
+	// Mark all the allocated pages as free and zeroed
+	uint32_t first_page_index = first_page_from_address (result),
+		last_page_index = last_page_of_range (result, bytes);
+	g_assert (transition_page_states (MWPM_UNKNOWN, MWPM_FREE_ZEROED, first_page_index, page_count) == 1);
+	last_controlled_page_index = last_page_index;
+	g_print ("mwpm acquired %u bytes of new zeroed pages\n", (uint32_t)bytes);
+	return result;
+}
+
+static void
+free_pages_initialized (uint32_t first_page, uint32_t page_count) {
+	// expected behavior: freeing UNKNOWN pages leaves them unknown.
+	// freeing FREE_ZEROED pages leaves them zeroed.
+	// freeing ALLOCATED or FREE_DIRTY pages makes them FREE_DIRTY.
+	transition_page_states (MWPM_ALLOCATED, MWPM_FREE_DIRTY, first_page, page_count);
+}
+
+// Scans all controlled pages to look for at least page_count free pages.
+static uint32_t
+find_n_free_pages (uint32_t first_page_to_check, uint32_t page_count) {
+	if (page_count == 0)
+		return UINT32_MAX;
+
+	uint32_t i = first_page_to_check;
+	while (i <= last_controlled_page_index) {
+		uint8_t found_obstruction = 0;
+		uint32_t j = i + page_count - 1;
+		if (j > last_controlled_page_index)
+			return UINT32_MAX;
+
+		// Scan backwards from the last candidate page to look for any non-free pages
+		//  the first non-free page we find is the next place we will search from.
+		for (; j >= i; j--) {
+			if (page_table[j] < MWPM_FREE_ZEROED) {
+				i = j + 1;
+				found_obstruction = 1;
+				break;
+			}
+		}
+
+		if (found_obstruction)
+			continue;
+
+		// We scanned page_count pages starting from i and they were all free.
+		return i;
+	}
+
+	// FIXME: If we found free pages at the end of our allocated space, but not enough
+	//  free pages to service the allocation, communicate that to the caller somehow so
+	//  that it knows it can do a partial grow in order to have enough pages.
+	return UINT32_MAX;
+}
+
+static void
+mwpm_init () {
+	// Set the entire page table to 'unknown state'. As we acquire pages from sbrk, we will
+	//  set those respective ranges in the table to a known state.
+	memset (page_table, MWPM_UNKNOWN, sizeof(page_table));
+	void *first_controlled_page_address = acquire_new_pages_initialized (MWPM_MINIMUM_PAGE_COUNT);
+	g_assert (first_controlled_page_address);
+	first_free_page_index = first_controlled_page_index =
+		first_page_from_address (first_controlled_page_address);
+	is_initialized = 1;
+}
+
+static void
+mwpm_ensure_initialized () {
+	if (is_initialized)
+		return;
+
+	mwpm_init ();
+}
+
+void *
+mwpm_alloc_range (size_t size, uint8_t zeroed) {
+	void *result = NULL;
+
+	mwpm_ensure_initialized ();
+	if (!size)
+		return result;
+
+	uint32_t page_count = page_count_from_size (size),
+		first_existing_page = find_n_free_pages (first_free_page_index, page_count);
+
+	// If we didn't find existing pages to service our alloc,
+	if (first_existing_page == UINT32_MAX) {
+		if (page_count < MWPM_MINIMUM_PAGE_COUNT)
+			page_count = MWPM_MINIMUM_PAGE_COUNT;
+		// Ensure we have space for the whole allocation
+		void *start_of_new_pages = acquire_new_pages_initialized (page_count);
+		if (start_of_new_pages) {
+			// FIXME: Scan backwards from the new allocation to look for free pages
+			//  before it that we can use to reduce fragmentation
+			result = start_of_new_pages;
+		}
+	} else {
+		result = address_from_page_index (first_existing_page);
+	}
+
+	if (!result)
+		return result;
+
+	uint32_t first_result_page = first_page_from_address (result);
+	// FIXME: Do this in one pass instead of two
+	if (transition_page_states (MWPM_FREE_ZEROED, MWPM_ALLOCATED, first_result_page, page_count) != page_count) {
+		// If we got here, not all of the pages in our allocation were in FREE_ZEROED state, so we need to
+		//  zero at least one of them.
+		if (zeroed) {
+			g_print ("mwpm zeroing %u bytes at %u\n", size, (uint32_t)result);
+			// FIXME: Only zero the dirty pages instead of the whole region.
+			memset (result, 0, size);
+		}
+	}
+	transition_page_states (MWPM_FREE_DIRTY, MWPM_ALLOCATED, first_result_page, page_count);
+
+	g_print ("mwpm allocated %u bytes at %u\n", size, (uint32_t)result);
+	return result;
+}
+
+void
+mwpm_free_range (void *base, size_t size) {
+	mwpm_ensure_initialized ();
+
+	uint32_t first_page = first_page_from_address (base),
+		page_count = page_count_from_range (base, size);
+	free_pages_initialized (first_page, page_count);
+
+	g_print ("mwpm freed %u bytes at %u\n", size, (uint32_t)base);
+}
