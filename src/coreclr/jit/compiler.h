@@ -6055,6 +6055,7 @@ public:
 
     bool fgReorderBlocks(bool useProfile);
     void fgDoReversePostOrderLayout();
+    void fgMoveColdBlocks();
 
     bool fgFuncletsAreCold();
 

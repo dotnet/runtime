@@ -3417,6 +3417,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
         if (JitConfig.JitDoReversePostOrderLayout())
         {
             fgDoReversePostOrderLayout();
+            fgMoveColdBlocks();
 
 #ifdef DEBUG
             if (expensiveDebugCheckLevel >= 2)
@@ -4654,11 +4655,10 @@ void Compiler::fgDoReversePostOrderLayout()
 
     // Now, update the EH descriptors, starting with the try regions
     //
-    unsigned  XTnum;
-    EHblkDsc* HBtab;
-    for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
+    unsigned XTnum = 0;
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
-        BasicBlock* const tryEnd = tryRegionEnds[XTnum];
+        BasicBlock* const tryEnd = tryRegionEnds[XTnum++];
 
         // We can have multiple EH descriptors map to the same try region,
         // but we will only update the try region's last block pointer at the index given by BasicBlock::getTryIndex,
@@ -4695,11 +4695,12 @@ void Compiler::fgDoReversePostOrderLayout()
 
     // Now, do the handler regions
     //
-    for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
+    XTnum = 0;
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
         // The end of each handler region should have been visited by iterating the blocklist above
         //
-        BasicBlock* const hndEnd = hndRegionEnds[XTnum];
+        BasicBlock* const hndEnd = hndRegionEnds[XTnum++];
         assert(hndEnd != nullptr);
 
         // Update the end pointer of this handler region to the new last block
@@ -4723,6 +4724,124 @@ void Compiler::fgDoReversePostOrderLayout()
                 hndRegionEnds[enclosingHndIndex] = hndEnd;
             }
         }
+    }
+}
+
+//-----------------------------------------------------------------------------
+// fgMoveColdBlocks: Move rarely-run blocks to the end of their respective regions.
+//
+// Notes:
+//    Exception handlers are assumed to be cold, so we won't move blocks within them.
+//
+void Compiler::fgMoveColdBlocks()
+{
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In fgMoveColdBlocks()\n");
+
+        printf("\nInitial BasicBlocks");
+        fgDispBasicBlocks(verboseTrees);
+        printf("\n");
+    }
+#endif // DEBUG
+
+    // In a single pass, find the end blocks of each region that we can use as insertion points for cold blocks
+    //
+    BasicBlock** const lastColdTryBlocks =
+        (compHndBBtabCount == 0) ? nullptr : new (this, CMK_Generic) BasicBlock* [compHndBBtabCount] {};
+    BasicBlock* const lastMainBB        = fgLastBBInMainFunction();
+    BasicBlock*       lastColdMainBlock = nullptr;
+
+    for (BasicBlock* const block : Blocks(fgFirstBB, lastMainBB))
+    {
+        // If a region ends with a call-finally pair, don't split the pair up.
+        // Instead, set the end of the region to the BBJ_CALLFINALLY block in the pair.
+        // Also, don't consider blocks in handler regions.
+        // (If all of some try region X is enclosed in an exception handler,
+        // lastColdTryBlocks[X] will be null. We will handle this case later.)
+        //
+        if (!block->isBBCallFinallyPairTail() && !block->hasHndIndex())
+        {
+            if (block->hasTryIndex())
+            {
+                lastColdTryBlocks[block->getTryIndex()] = block;
+            }
+            else
+            {
+                lastColdMainBlock = block;
+            }
+        }
+    }
+
+    // Returns true if block was moved to before insertionPoint, false otherwise
+    //
+    auto tryMovingBlock = [this](BasicBlock* const block, BasicBlock* const insertionPoint) -> bool {
+        assert(block != nullptr);
+        assert(!block->IsFirst());
+
+        // We don't save insertion points for handler regions,
+        // so if we're in one, insertionPoint will be null.
+        // This shouldn't apply in any other case.
+        //
+        if (insertionPoint == nullptr)
+        {
+            assert(block->hasHndIndex());
+            return false;
+        }
+
+        // If we're in a handler region inside a try region,
+        // we might have an insertion point saved,
+        // but we don't bother with moving blocks within handler regions
+        //
+        if (block->hasHndIndex())
+        {
+            return false;
+        }
+
+        // At this point, block and insertionPoint should be in the same try region,
+        // and should not be in a handler region
+        //
+        assert(BasicBlock::sameEHRegion(block, insertionPoint));
+
+        if (block == insertionPoint)
+        {
+            return false;
+        }
+
+        // Don't move any part of a call-finally pair -- these need to stay together
+        //
+        if (block->isBBCallFinallyPair() || block->isBBCallFinallyPairTail())
+        {
+            return false;
+        }
+
+        // Don't move the entry to a try region
+        //
+        if (this->bbIsTryBeg(block))
+        {
+            return false;
+        }
+
+        this->fgUnlinkBlock(block);
+        this->fgInsertBBbefore(insertionPoint, block);
+        return true;
+    };
+
+    // Search the main method body for rarely-run blocks to move
+    //
+    for (BasicBlock* block = lastMainBB; block != fgFirstBB;)
+    {
+        BasicBlock* const  prev = block->Prev();
+        BasicBlock** const lastColdBlockPtr =
+            block->hasTryIndex() ? (lastColdTryBlocks + block->getTryIndex()) : &lastColdMainBlock;
+
+        if (block->isRunRarely() && tryMovingBlock(block, *lastColdBlockPtr))
+        {
+            *lastColdBlockPtr = block;
+        }
+
+        block = prev;
     }
 }
 
