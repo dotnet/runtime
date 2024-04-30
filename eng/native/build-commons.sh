@@ -40,7 +40,7 @@ check_prereqs()
             pkg-config openssl || { echo >&2 "Please install openssl before running this script, see https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/macos-requirements.md"; exit 1; }
         fi
     elif [[ "$__HostOS" == "linux" ]]; then
-        # Check presence of pkg-config on the path
+        # Check presence of cmake on the path
         command -v cmake 2>/dev/null || { echo >&2 "Please install cmake before running this script, see https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/linux-requirements.md"; exit 1; }
     fi
 
