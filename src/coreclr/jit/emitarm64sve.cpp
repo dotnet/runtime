@@ -2185,7 +2185,7 @@ void emitter::emitInsSve_R_R(instruction     ins,
         case INS_sve_uunpkhi:
         case INS_sve_uunpklo:
             assert(insScalableOptsNone(sopt));
-            assert(insOptsScalableAtLeastHalf(opt));
+            assert(insOptsScalableWide(opt));
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isScalableVectorSize(size));
@@ -11797,7 +11797,6 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
         case IF_SVE_BJ_2A: // ........xx...... ......nnnnnddddd -- SVE floating-point exponential accelerator
         case IF_SVE_CG_2A: // ........xx...... ......nnnnnddddd -- SVE reverse vector elements
-        case IF_SVE_CH_2A: // ........xx...... ......nnnnnddddd -- SVE unpack vector elements
         case IF_SVE_HF_2A: // ........xx...... ......nnnnnddddd -- SVE floating-point reciprocal estimate (unpredicated)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                      // ddddd
@@ -11806,6 +11805,13 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_CH_2A: // ........xx...... ......nnnnnddddd -- SVE unpack vector elements
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V<4, 0>(id->idReg1());                      // ddddd
+            code |= insEncodeReg_V<9, 5>(id->idReg2());                      // nnnnn
+            code |= insEncodeSveElemsize(optGetSveElemsize((insOpts)(id->idInsOpt() + 1))); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
         case IF_SVE_BF_2A: // ........xx.xxiii ......nnnnnddddd -- SVE bitwise shift by immediate (unpredicated)
         case IF_SVE_FT_2A: // ........xx.xxiii ......nnnnnddddd -- SVE2 bitwise shift and insert
         case IF_SVE_FU_2A: // ........xx.xxiii ......nnnnnddddd -- SVE2 bitwise shift right and accumulate
@@ -14372,7 +14378,7 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
         case IF_SVE_BJ_2A: // ........xx...... ......nnnnnddddd -- SVE floating-point exponential accelerator
         case IF_SVE_CH_2A: // ........xx...... ......nnnnnddddd -- SVE unpack vector elements
         case IF_SVE_HF_2A: // ........xx...... ......nnnnnddddd -- SVE floating-point reciprocal estimate (unpredicated)
-            assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
+            assert(insOptsScalableWide(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
             break;
@@ -16214,8 +16220,8 @@ void emitter::emitDispInsSveHelp(instrDesc* id)
         case IF_SVE_HH_2A: // ................ ......nnnnnddddd -- SVE2 FP8 upconverts
         // <Zd>.<T>, <Zn>.<Tb>
         case IF_SVE_CH_2A: // ........xx...... ......nnnnnddddd -- SVE unpack vector elements
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
-            emitDispSveReg(id->idReg2(), (insOpts)((unsigned)id->idInsOpt() - 1), false);
+            emitDispSveReg(id->idReg1(), (insOpts)(id->idInsOpt() + 1), true);
+            emitDispSveReg(id->idReg2(), id->idInsOpt(), false);
             break;
 
         // <Zd>.<T>, <Zn>.<T>
