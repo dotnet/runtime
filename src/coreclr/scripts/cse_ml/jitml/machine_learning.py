@@ -164,7 +164,7 @@ class PPOLogCallback(BaseCallback):
 
     def _update_stats(self):
         for info in self.locals['infos']:
-            if 'final_score' not in info or 'choices' not in info:
+            if 'final_score' not in info:
                 continue
 
             final = info['final_score']
@@ -178,7 +178,7 @@ class PPOLogCallback(BaseCallback):
                 self._result_vs_no_cse.append((no_cse - final) / no_cse)
 
             self._better_or_worse.append(1 if final < heuristic else -1 if final < heuristic else 0)
-            self._choice_count.append(len(info['choices']))
+            self._choice_count.append(len(info['current'].cses_chosen))
             self._rewards.append(info['total_reward'])
 
     def _save_incremental(self, reward, save_path):
