@@ -85,6 +85,7 @@ class DeepCseRewardWrapper(gym.RewardWrapper):
         cses_not_chosen = [self.jit_method(m_id, state.choices, x) for x in state.previous.cse_candidates
                            if x.can_apply and x.index != chosen_index]
 
+        cses_not_chosen = [x for x in cses_not_chosen if x is not None]
         return cses_not_chosen
 
     def jit_method(self, m_id : int, choices : List[int], cse : CseCandidate) -> MethodContext:
