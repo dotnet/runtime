@@ -10,6 +10,11 @@
 #include <string.h>
 #include <unistd.h>
 
+#if !HAVE_DIRENT_NAME_SIZE
+#undef DIRENT_NAME_SIZE
+#define DIRENT_NAME_SIZE NAME_MAX
+#endif // !HAVE_DIRENT_NAME_SIZE
+
 c_static_assert(PAL_X509_V_OK == X509_V_OK);
 c_static_assert(PAL_X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT);
 c_static_assert(PAL_X509_V_ERR_UNABLE_TO_GET_CRL == X509_V_ERR_UNABLE_TO_GET_CRL);
@@ -450,7 +455,7 @@ static DIR* OpenUserStore(const char* storePath, char** pathTmp, size_t* pathTmp
 
     // d_name is a fixed length char[], not a char*.
     // Leave one byte for '\0' and one for '/'
-    size_t allocSize = storePathLen + sizeof(ent->d_name) + 2;
+    size_t allocSize = storePathLen + DIRENT_NAME_SIZE + 2;
     char* tmp = (char*)calloc(allocSize, sizeof(char));
     if (!tmp)
     {
@@ -479,7 +484,7 @@ static X509* ReadNextPublicCert(DIR* dir, X509Stack* tmpStack, char* pathTmp, si
 
     while ((next = readdir(dir)) != NULL)
     {
-        size_t len = strnlen(next->d_name, sizeof(next->d_name));
+        size_t len = strnlen(next->d_name, DIRENT_NAME_SIZE);
 
         if (len > 4 && 0 == strncasecmp(".pfx", next->d_name + len - 4, 4))
         {
