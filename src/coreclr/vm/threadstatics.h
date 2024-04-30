@@ -115,6 +115,15 @@ struct TLSIndex
 struct InFlightTLSData;
 typedef DPTR(InFlightTLSData) PTR_InFlightTLSData;
 
+#define HARDCODED_DIRECT_THREAD_LOCAL_TLS_INDICES_USED 1 // The only one currently is ThreadBlockingInfo_First
+#define MAX_DIRECT_THREAD_LOCAL_COUNT 16
+
+#ifdef TARGET_ARM
+typedef double DIRECT_THREAD_LOCAL_CHUNK_TYPE;
+#else
+typedef TADDR DIRECT_THREAD_LOCAL_CHUNK_TYPE;
+#endif
+
 struct ThreadLocalData
 {
     int32_t cNonCollectibleTlsData; // Size of offset into the non-collectible TLS array which is valid, NOTE: this is relative to the start of the pNonCollectibleTlsReferenceData object, not the start of the data in the array
@@ -124,6 +133,10 @@ struct ThreadLocalData
     Thread *pThread;
     PTR_InFlightTLSData pInFlightData; // Points at the in-flight TLS data (TLS data that exists before the class constructor finishes running)
     TADDR ThreadBlockingInfo_First; // System.Threading.ThreadBlockingInfo.First
+#ifdef TARGET_ARM
+    TADDR Padding;
+#endif
+    DIRECT_THREAD_LOCAL_CHUNK_TYPE ExtendedDirectThreadLocalTLSData[MAX_DIRECT_THREAD_LOCAL_COUNT - HARDCODED_DIRECT_THREAD_LOCAL_TLS_INDICES_USED]; // The first one is always ThreadBlockInfo_First which is directly used by the runtime
 };
 
 typedef DPTR(ThreadLocalData) PTR_ThreadLocalData;
@@ -355,7 +368,7 @@ void InitializeCurrentThreadsStaticData(Thread* pThread);
 void FreeLoaderAllocatorHandlesForTLSData(Thread* pThread);
 void FreeThreadStaticData(ThreadLocalData *pThreadLocalData, Thread* pThread);
 void AssertThreadStaticDataFreed(ThreadLocalData *pThreadLocalData);
-void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pIndex);
+void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pIndex, uint32_t bytesNeeded);
 void FreeTLSIndicesForLoaderAllocator(LoaderAllocator *pLoaderAllocator);
 void* GetThreadLocalStaticBase(TLSIndex index);
 void GetThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);

@@ -78,6 +78,19 @@ PTR_VOID GetThreadLocalStaticBaseNoCreate(Thread* pThread, TLSIndex index)
 
 TLSIndexToMethodTableMap *g_pThreadStaticCollectibleTypeIndices;
 TLSIndexToMethodTableMap *g_pThreadStaticNonCollectibleTypeIndices;
+PTR_MethodTable g_pMethodTablesForDirectThreadLocalData[MAX_DIRECT_THREAD_LOCAL_COUNT];
+
+int32_t IndexOffsetToDirectThreadLocalIndex(int32_t indexOffset)
+{
+    LIMITED_METHOD_CONTRACT;
+    int32_t adjustedIndexOffset = indexOffset + OFFSETOF__CORINFO_Array__data;
+    _ASSERTE(adjustedIndexOffset >= offsetof(ThreadLocalData, ThreadBlockingInfo_First));
+    _ASSERTE((adjustedIndexOffset & (sizeof(DIRECT_THREAD_LOCAL_CHUNK_TYPE) - 1)) == 0);
+    _ASSERTE(offsetof(ThreadLocalData, ExtendedDirectThreadLocalTLSData) - offsetof(ThreadLocalData, ThreadBlockingInfo_First) == sizeof(DIRECT_THREAD_LOCAL_CHUNK_TYPE) * HARDCODED_DIRECT_THREAD_LOCAL_TLS_INDICES_USED);
+    int32_t directThreadLocalIndex = (adjustedIndexOffset - offsetof(ThreadLocalData, ThreadBlockingInfo_First)) / sizeof(DIRECT_THREAD_LOCAL_CHUNK_TYPE);
+    _ASSERTE(directThreadLocalIndex < MAX_DIRECT_THREAD_LOCAL_COUNT);
+    return directThreadLocalIndex;
+}
 
 PTR_MethodTable LookupMethodTableForThreadStaticKnownToBeAllocated(TLSIndex index)
 {
@@ -95,14 +108,7 @@ PTR_MethodTable LookupMethodTableForThreadStaticKnownToBeAllocated(TLSIndex inde
     }
     else if (index.GetTLSIndexType() == TLSIndexType::DirectOnThreadLocalData)
     {
-        if (index.GetIndexOffset() == offsetof(ThreadLocalData, ThreadBlockingInfo_First))
-        {
-            return CoreLibBinder::GetClass(CLASS__THREAD_BLOCKING_INFO);
-        }
-        else
-        {
-            return NULL;
-        }
+        return VolatileLoadWithoutBarrier(&g_pMethodTablesForDirectThreadLocalData[IndexOffsetToDirectThreadLocalIndex(index.GetIndexOffset())]);
     }
     else
     {
@@ -131,14 +137,7 @@ PTR_MethodTable LookupMethodTableAndFlagForThreadStatic(TLSIndex index, bool *pI
     {
         *pIsGCStatic = false;
         *pIsCollectible = false;
-        if (index.GetIndexOffset() == offsetof(ThreadLocalData, ThreadBlockingInfo_First))
-        {
-            retVal = CoreLibBinder::GetClass(CLASS__THREAD_BLOCKING_INFO);
-        }
-        else
-        {
-            retVal = NULL;
-        }
+        retVal = g_pMethodTablesForDirectThreadLocalData[IndexOffsetToDirectThreadLocalIndex(index.GetIndexOffset())];
     }
     else
     {
@@ -572,8 +571,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
     }
     else if (index.GetTLSIndexType() == TLSIndexType::DirectOnThreadLocalData)
     {
-        // All of the current cases only require a single pointer sized field
-        _ASSERTE(pMT->GetClass()->GetNonGCThreadStaticFieldBytes() == sizeof(TADDR));
+        // All of the current cases are non GC static, non-collectible
         _ASSERTE(!isGCStatic);
         _ASSERTE(!isCollectible);
         gcBaseAddresses.pTLSBaseAddress = ((TADDR)&t_ThreadStatics) + index.GetIndexOffset();
@@ -712,7 +710,9 @@ void* GetThreadLocalStaticBase(TLSIndex index)
     return reinterpret_cast<void*>(gcBaseAddresses.pTLSBaseAddress);
 }
 
-void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pIndex)
+static uint32_t g_directThreadLocalTLSBytesAvailable = (MAX_DIRECT_THREAD_LOCAL_COUNT - HARDCODED_DIRECT_THREAD_LOCAL_TLS_INDICES_USED) * sizeof(TADDR);
+
+void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pIndex, uint32_t bytesNeeded)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -727,10 +727,20 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
 
     if (!pMT->Collectible())
     {
-        if (!gcStatic && pMT == CoreLibBinder::GetClassIfExist(CLASS__THREAD_BLOCKING_INFO))
+        if (!gcStatic && ((pMT == CoreLibBinder::GetClassIfExist(CLASS__THREAD_BLOCKING_INFO)) || ((g_directThreadLocalTLSBytesAvailable >= bytesNeeded) && (!pMT->HasClassConstructor() || pMT->IsClassInited()))))
         {
-            _ASSERTE(!pMT->HasClassConstructor()); // The DirectOnThreadLocalData scenario is not supported for types with class constructors
-            newTLSIndex = TLSIndex(TLSIndexType::DirectOnThreadLocalData, offsetof(ThreadLocalData, ThreadBlockingInfo_First));
+            if (pMT == CoreLibBinder::GetClassIfExist(CLASS__THREAD_BLOCKING_INFO))
+            {
+                newTLSIndex = TLSIndex(TLSIndexType::DirectOnThreadLocalData, offsetof(ThreadLocalData, ThreadBlockingInfo_First) - OFFSETOF__CORINFO_Array__data);
+            }
+            else
+            {
+                g_directThreadLocalTLSBytesAvailable -= bytesNeeded;
+                g_directThreadLocalTLSBytesAvailable = AlignDown((ULONG)g_directThreadLocalTLSBytesAvailable, sizeof(DIRECT_THREAD_LOCAL_CHUNK_TYPE));
+                int32_t indexOffset = offsetof(ThreadLocalData, ThreadBlockingInfo_First) - OFFSETOF__CORINFO_Array__data + g_directThreadLocalTLSBytesAvailable;
+                newTLSIndex = TLSIndex(TLSIndexType::DirectOnThreadLocalData, indexOffset);
+            }
+            VolatileStoreWithoutBarrier(&g_pMethodTablesForDirectThreadLocalData[IndexOffsetToDirectThreadLocalIndex(newTLSIndex.GetIndexOffset())], pMT);
         }
         else
         {

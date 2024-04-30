@@ -4396,11 +4396,24 @@ void MethodTable::EnsureTlsIndexAllocated()
     {
         ThreadStaticsInfo *pThreadStaticsInfo = MethodTableAuxiliaryData::GetThreadStaticsInfo(GetAuxiliaryDataForWrite());
         // Allocate space for normal statics if we might have them
-        if (!pThreadStaticsInfo->NonGCTlsIndex.IsAllocated() && GetClass()->GetNonGCThreadStaticFieldBytes() > 0)
-            GetTLSIndexForThreadStatic(this, false, &pThreadStaticsInfo->NonGCTlsIndex);
+        if (!pThreadStaticsInfo->NonGCTlsIndex.IsAllocated())
+        {
+            DWORD bytesNeeded = GetClass()->GetNonGCThreadStaticFieldBytes();
+            if (bytesNeeded > 0)
+            {
+                GetTLSIndexForThreadStatic(this, false, &pThreadStaticsInfo->NonGCTlsIndex, bytesNeeded);
+            }
+        }
 
-        if (!pThreadStaticsInfo->GCTlsIndex.IsAllocated() && GetClass()->GetNumHandleThreadStatics() > 0)
-            GetTLSIndexForThreadStatic(this, true, &pThreadStaticsInfo->GCTlsIndex);
+        if (!pThreadStaticsInfo->GCTlsIndex.IsAllocated())
+        {
+            DWORD bytesNeeded = GetClass()->GetNumHandleThreadStatics() * sizeof(OBJECTREF);
+            if (bytesNeeded > 0)
+            {
+                GetTLSIndexForThreadStatic(this, true, &pThreadStaticsInfo->GCTlsIndex, bytesNeeded);
+            }
+        }
+            
     }
     pAuxiliaryData->SetIsTlsIndexAllocated();
 }
