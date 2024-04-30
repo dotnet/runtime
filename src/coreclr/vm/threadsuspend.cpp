@@ -2046,7 +2046,6 @@ extern void WaitForEndOfShutdown();
 //----------------------------------------------------------------------------
 
 // A note on SUSPENSIONS.
-// TODO: VS comment needs updating?
 // We must not suspend a thread while it is holding the ThreadStore lock, or
 // the lock on the thread.  Why?  Because we need those locks to resume the
 // thread (and to perform a GC, use the debugger, spawn or kill threads, etc.)
@@ -3246,7 +3245,7 @@ void SpinWait(int iteration, int usecLimit)
 // which leaves cooperative mode and waits for the GC to complete.
 //
 // See code:Thread#SuspendingTheRuntime for more
-void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
+void ThreadSuspend::SuspendAllThreads()
 {
     CONTRACTL {
         NOTHROW;
@@ -3261,56 +3260,7 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
     }
     CONTRACTL_END;
 
-    // This thread
-    Thread  *pCurThread = GetThreadNULLOk();
-
-    // Caller is expected to be holding the ThreadStore lock.  Also, caller must
-    // have set GcInProgress before coming here, or things will break;
-    _ASSERTE(ThreadStore::HoldingThreadStore() || IsAtProcessExit());
-    _ASSERTE(GCHeapUtilities::IsGCInProgress() );
-
-    STRESS_LOG1(LF_SYNC, LL_INFO1000, "Thread::SuspendRuntime(reason=0x%x)\n", reason);
-
-
-#ifdef PROFILING_SUPPORTED
-    // If the profiler desires information about GCs, then let it know that one
-    // is starting.
-    {
-        BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
-        _ASSERTE(reason != ThreadSuspend::SUSPEND_FOR_DEBUGGER);
-        _ASSERTE(reason != ThreadSuspend::SUSPEND_FOR_DEBUGGER_SWEEP);
-
-        {
-            (&g_profControlBlock)->RuntimeSuspendStarted(
-                GCSuspendReasonToProfSuspendReason(reason));
-        }
-        if (pCurThread)
-        {
-            // Notify the profiler that the thread that is actually doing the GC is 'suspended',
-            // meaning that it is doing stuff other than run the managed code it was before the
-            // GC started.
-            (&g_profControlBlock)->RuntimeThreadSuspended((ThreadID)pCurThread);
-        }
-        END_PROFILER_CALLBACK();
-    }
-#endif // PROFILING_SUPPORTED
-
-    //
-    // If this thread is running at low priority, boost its priority.  We remember the old
-    // priority so that we can restore it in ResumeRuntime.
-    //
-    if (pCurThread)     // concurrent GC occurs on threads we don't know about
-    {
-        _ASSERTE(pCurThread->m_Priority == INVALID_THREAD_PRIORITY);
-        int priority = pCurThread->GetThreadPriority();
-        if (priority < THREAD_PRIORITY_NORMAL)
-        {
-            pCurThread->m_Priority = priority;
-            pCurThread->SetThreadPriority(THREAD_PRIORITY_NORMAL);
-        }
-    }
-
-    _ASSERTE(!pCurThread || !pCurThread->HasThreadState(Thread::TS_GCSuspendFlags));
+    STRESS_LOG(LF_SYNC, LL_INFO1000, "Thread::SuspendAllThreads()\n");
 
     // From this point until the end of the function, consider all active thread
     // suspension to be in progress.  This is mainly to give the profiler API a hint
@@ -3318,6 +3268,31 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
     // overall EE suspension.  So the profiler API would early-abort the stackwalk
     // in such a case.
     SuspendRuntimeInProgressHolder hldSuspendRuntimeInProgress;
+
+    // Caller is expected to be holding the ThreadStore lock.  Also, caller must
+    // have set GcInProgress before coming here, or things will break;
+    _ASSERTE(ThreadStore::HoldingThreadStore() || IsAtProcessExit());
+
+    // This thread
+    Thread  *pCurThread = GetThreadNULLOk();
+
+    
+    //
+    // Remember that we're the one suspending the EE
+    //
+    g_pSuspensionThread = pCurThread;
+
+    //
+    // First, we reset the event that we're about to tell other threads to wait for.
+    //
+    GCHeapUtilities::GetGCHeap()->ResetWaitForGCEvent();
+
+    //
+    // Tell all threads, globally, to wait for WaitForGCEvent.
+    //
+    ThreadStore::TrapReturningThreads(TRUE);
+
+    _ASSERTE(!pCurThread || !pCurThread->HasThreadState(Thread::TS_GCSuspendFlags));
 
     // Flush the store buffers on all CPUs, to ensure two things:
     // - we get a reliable reading of the threads' m_fPreemptiveGCDisabled state
@@ -3389,41 +3364,17 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
         }
     }
 
-#ifdef PROFILING_SUPPORTED
-    // If a profiler is keeping track of GC events, notify it
-    {
-        BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
-        (&g_profControlBlock)->RuntimeSuspendFinished();
-        END_PROFILER_CALLBACK();
-    }
-#endif // PROFILING_SUPPORTED
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+    // Flush the store buffers on all CPUs, to ensure that all changes made so far are seen
+    // by the GC threads. This only matters on weak memory ordered processors as
+    // the strong memory ordered processors wouldn't have reordered the relevant writes.
+    // This is needed to synchronize threads that were running in preemptive mode thus were
+    // left alone by suspension to flush their writes that they made before they switched to
+    // preemptive mode.
+    ::FlushProcessWriteBuffers();
+#endif //TARGET_ARM || TARGET_ARM64
 
-#ifdef _DEBUG
-    if (reason == ThreadSuspend::SUSPEND_FOR_GC)
-    {
-        Thread* thread = NULL;
-        while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
-        {
-            thread->DisableStressHeap();
-            _ASSERTE(!thread->HasThreadState(Thread::TS_GCSuspendPending));
-        }
-    }
-#endif
-
-#ifdef HAVE_GCCOVER
-    //
-    // Now that the EE has been suspended, let's see if any oustanding
-    // gcstress instruction updates need to occur.  Each thread can
-    // have only one pending at a time.
-    //
-    Thread* thread = NULL;
-    while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
-    {
-        thread->CommitGCStressInstructionUpdate();
-    }
-#endif // HAVE_GCCOVER
-
-    STRESS_LOG0(LF_SYNC, LL_INFO1000, "Thread::SuspendRuntime() - Success\n");
+    STRESS_LOG0(LF_SYNC, LL_INFO1000, "Thread::SuspendAllThreads() - Success\n");
 }
 
 void Thread::Hijack()
@@ -3450,7 +3401,7 @@ void Thread::Hijack()
         bool success = InjectActivation(Thread::ActivationReason::SuspendForGC);
         if (!success)
         {
-            STRESS_LOG1(LF_SYNC, LL_INFO1000, "Thread::SuspendRuntime() -   Failed to inject an activation for thread %p.\n", this);
+            STRESS_LOG1(LF_SYNC, LL_INFO1000, "Thread::Hijack() -   Failed to inject an activation for thread %p.\n", this);
         }
 #endif // FEATURE_THREAD_ACTIVATION
         return;
@@ -3552,7 +3503,7 @@ void Thread::Hijack()
                 g_SuspendStatistics.cntRedirections++;
 #endif
                 SetThreadState(Thread::TS_GCSuspendRedirected);
-                STRESS_LOG1(LF_SYNC, LL_INFO1000, "Thread::SuspendRuntime() -   Thread %p redirected().\n", this);
+                STRESS_LOG1(LF_SYNC, LL_INFO1000, "Thread::Hijack() -   Thread %p redirected().\n", this);
             }
         }
     }
@@ -3623,7 +3574,7 @@ void EnableStressHeapHelper()
 
 // We're done with our GC.  Let all the threads run again.
 // By this point we've already unblocked most threads.  This just releases the ThreadStore lock.
-void ThreadSuspend::ResumeRuntime(BOOL bFinishedGC, BOOL SuspendSucceeded)
+void ThreadSuspend::ResumeAllThreads(BOOL SuspendSucceeded)
 {
     CONTRACTL {
         NOTHROW;
@@ -3631,72 +3582,48 @@ void ThreadSuspend::ResumeRuntime(BOOL bFinishedGC, BOOL SuspendSucceeded)
     }
     CONTRACTL_END;
 
-    Thread  *pCurThread = GetThreadNULLOk();
+    // Caller is expected to be holding the ThreadStore lock since we will be iterating threads.
+    _ASSERTE(ThreadStore::HoldingThreadStore());
+    //
+    // Unhijack all threads, and reset their "suspend pending" flags.
+    //
+    Thread  *thread = NULL;
+    while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
+    {
+        thread->PrepareForEERestart(SuspendSucceeded);
+    }
 
-    // Caller is expected to be holding the ThreadStore lock.  But they must have
-    // reset GcInProgress, or threads will continue to suspend themselves and won't
-    // be resumed until the next GC.
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+        // Flush the store buffers on all CPUs, to ensure that they all see changes made
+        // by the GC threads. This only matters on weak memory ordered processors as
+        // the strong memory ordered processors wouldn't have reordered the relevant reads.
+        // This is needed to synchronize threads that were running in preemptive mode while
+        // the runtime was suspended and that will return to cooperative mode after the runtime
+        // is restarted.
+        ::FlushProcessWriteBuffers();
+#endif //TARGET_ARM || TARGET_ARM64
+
+    //
+    // Allow threads to enter COOP mode (though we still need to wake the ones
+    // that we hijacked).
+    //
+    // Note: this is the last barrier that keeps managed threads
+    // from entering cooperative mode. If the sequence changes,
+    // you may have to change routine GCHeapUtilities::SafeToRestartManagedThreads
+    // as well.
+    //
+    ThreadStore::TrapReturningThreads(FALSE);
+    g_pSuspensionThread    = 0;
+
+    //
+    // Any threads that are waiting in WaitUntilGCComplete will continue now.
+    //
+    GCHeapUtilities::GetGCHeap()->SetWaitForGCEvent();
     _ASSERTE(IsGCSpecialThread() || ThreadStore::HoldingThreadStore());
-    _ASSERTE(!GCHeapUtilities::IsGCInProgress() );
-
-    STRESS_LOG2(LF_SYNC, LL_INFO1000, "Thread::ResumeRuntime(finishedGC=%d, SuspendSucceeded=%d) - Start\n", bFinishedGC, SuspendSucceeded);
-
-    //
-    // Notify everyone who cares, that this suspension is over, and this thread is going to go do other things.
-    //
 
 
-#ifdef PROFILING_SUPPORTED
-    // Need to give resume event for the GC thread
-    {
-        BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
-        if (pCurThread)
-        {
-            (&g_profControlBlock)->RuntimeThreadResumed((ThreadID)pCurThread);
-        }
-        END_PROFILER_CALLBACK();
-    }
-#endif // PROFILING_SUPPORTED
-
-#ifdef TIME_SUSPEND
-    DWORD startRelease = g_SuspendStatistics.GetTime();
-#endif
-
-    //
-    // Unlock the thread store.  At this point, all threads should be allowed to run.
-    //
-    ThreadSuspend::UnlockThreadStore();
-
-#ifdef TIME_SUSPEND
-    g_SuspendStatistics.releaseTSL.Accumulate(SuspendStatistics::GetElapsed(startRelease,
-                                                                            g_SuspendStatistics.GetTime()));
-#endif
-
-#ifdef PROFILING_SUPPORTED
-    //
-    // This thread is logically "resuming" from a GC now.  Tell the profiler.
-    //
-    {
-        BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
-        GCX_PREEMP();
-        (&g_profControlBlock)->RuntimeResumeFinished();
-        END_PROFILER_CALLBACK();
-    }
-#endif // PROFILING_SUPPORTED
-
-    //
-    // If we raised this thread's priority in SuspendRuntime, we restore it here.
-    //
-    if (pCurThread)
-    {
-        if (pCurThread->m_Priority != INVALID_THREAD_PRIORITY)
-        {
-            pCurThread->SetThreadPriority(pCurThread->m_Priority);
-            pCurThread->m_Priority = INVALID_THREAD_PRIORITY;
-        }
-    }
-
-    STRESS_LOG0(LF_SYNC, LL_INFO1000, "Thread::ResumeRuntime() - End\n");
+    STRESS_LOG1(LF_SYNC, LL_INFO1000, "ResumeAllThreads(SuspendSucceeded=%d) - Start\n", SuspendSucceeded);
+    STRESS_LOG0(LF_SYNC, LL_INFO1000, "ResumeAllThreads() - End\n");
 }
 
 #ifndef TARGET_UNIX
@@ -3900,7 +3827,7 @@ BOOL Thread::HandleJITCaseForAbort()
 // Threads suspended by ClrSuspendThread() are resumed in two ways.  If we
 // suspended them in error, they are resumed via ClrResumeThread().  But if
 // this is the HandledJIT() case and the thread is in fully interruptible code, we
-// can resume them under special control.  ResumeRuntime and UserResume are cases
+// can resume them under special control.  ResumeAllThreads and UserResume are cases
 // of this.
 //
 // The suspension has done its work (e.g. GC or user thread suspension).  But during
@@ -5480,40 +5407,68 @@ void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceeded)
 #endif // PROFILING_SUPPORTED
 
     //
-    // Unhijack all threads, and reset their "suspend pending" flags.  Why isn't this in
-    // Thread::ResumeRuntime?
-    //
-    Thread  *thread = NULL;
-    while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
-    {
-        thread->PrepareForEERestart(SuspendSucceeded);
-    }
-
-    //
     // Revert to being a normal thread
     //
     ClrFlsClearThreadType (ThreadType_DynamicSuspendEE);
     GCHeapUtilities::GetGCHeap()->SetGCInProgress(false);
 
-    //
-    // Allow threads to enter COOP mode (though we still need to wake the ones
-    // that we hijacked).
-    //
-    // Note: this is the last barrier that keeps managed threads
-    // from entering cooperative mode. If the sequence changes,
-    // you may have to change routine GCHeapUtilities::SafeToRestartManagedThreads
-    // as well.
-    //
-    ThreadStore::TrapReturningThreads(FALSE);
-    g_pSuspensionThread    = 0;
+    ResumeAllThreads(SuspendSucceeded);
 
     //
-    // Any threads that are waiting in WaitUntilGCComplete will continue now.
+    // Notify everyone who cares, that this suspension is over, and this thread is going to go do other things.
     //
-    GCHeapUtilities::GetGCHeap()->SetWaitForGCEvent();
-    _ASSERTE(IsGCSpecialThread() || ThreadStore::HoldingThreadStore());
 
-    ResumeRuntime(bFinishedGC, SuspendSucceeded);
+    Thread  *pCurThread = GetThreadNULLOk();
+
+#ifdef PROFILING_SUPPORTED
+    // Need to give resume event for the GC thread
+    {
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
+        if (pCurThread)
+        {
+            (&g_profControlBlock)->RuntimeThreadResumed((ThreadID)pCurThread);
+        }
+        END_PROFILER_CALLBACK();
+    }
+#endif // PROFILING_SUPPORTED
+
+#ifdef TIME_SUSPEND
+    DWORD startRelease = g_SuspendStatistics.GetTime();
+#endif
+
+    //
+    // Unlock the thread store.  At this point, all threads should be allowed to run.
+    //
+    ThreadSuspend::UnlockThreadStore();
+
+#ifdef TIME_SUSPEND
+    g_SuspendStatistics.releaseTSL.Accumulate(SuspendStatistics::GetElapsed(startRelease,
+                                                                            g_SuspendStatistics.GetTime()));
+#endif
+
+#ifdef PROFILING_SUPPORTED
+    //
+    // This thread is logically "resuming" from a GC now.  Tell the profiler.
+    //
+    {
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
+        GCX_PREEMP();
+        (&g_profControlBlock)->RuntimeResumeFinished();
+        END_PROFILER_CALLBACK();
+    }
+#endif // PROFILING_SUPPORTED
+
+    //
+    // If we raised this thread's priority in SuspendRuntime, we restore it here.
+    //
+    if (pCurThread)
+    {
+        if (pCurThread->m_Priority != INVALID_THREAD_PRIORITY)
+        {
+            pCurThread->SetThreadPriority(pCurThread->m_Priority);
+            pCurThread->m_Priority = INVALID_THREAD_PRIORITY;
+        }
+    }
 
     FireEtwGCRestartEEEnd_V1(GetClrInstanceId());
 
@@ -5527,13 +5482,13 @@ void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceeded)
 //  SuspendEE:
 //      LockThreadStore
 //      SetGCInProgress
-//      SuspendRuntime
+//      SuspendAllThreads
 //
 //      ... perform the GC ...
 //
 // RestartEE:
 //      SetGCDone
-//      ResumeRuntime
+//      ResumeAllThreads
 //         calls UnlockThreadStore
 //
 // Note that this is intentionally *not* symmetrical.  The EE will assert that the
@@ -5588,24 +5543,6 @@ retry_for_debugger:
 #endif
 
     //
-    // Now we're going to acquire an exclusive lock on managed code execution (including
-    // "manually managed" code in GCX_COOP regions).
-    //
-    // First, we reset the event that we're about to tell other threads to wait for.
-    //
-    GCHeapUtilities::GetGCHeap()->ResetWaitForGCEvent();
-
-    //
-    // Remember that we're the one suspending the EE
-    //
-    g_pSuspensionThread = pCurThread;
-
-    //
-    // Tell all threads, globally, to wait for WaitForGCEvent.
-    //
-    ThreadStore::TrapReturningThreads(TRUE);
-
-    //
     // Remember why we're doing this.
     //
     m_suspendReason = reason;
@@ -5622,13 +5559,85 @@ retry_for_debugger:
 
     _ASSERTE(ThreadStore::HoldingThreadStore() || g_fProcessDetach);
 
+#ifdef PROFILING_SUPPORTED
+    // If the profiler desires information about GCs, then let it know that one
+    // is starting.
+    {
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
+        _ASSERTE(reason != ThreadSuspend::SUSPEND_FOR_DEBUGGER);
+        _ASSERTE(reason != ThreadSuspend::SUSPEND_FOR_DEBUGGER_SWEEP);
+
+        {
+            (&g_profControlBlock)->RuntimeSuspendStarted(
+                GCSuspendReasonToProfSuspendReason(reason));
+        }
+        if (pCurThread)
+        {
+            // Notify the profiler that the thread that is actually doing the GC is 'suspended',
+            // meaning that it is doing stuff other than run the managed code it was before the
+            // GC started.
+            (&g_profControlBlock)->RuntimeThreadSuspended((ThreadID)pCurThread);
+        }
+        END_PROFILER_CALLBACK();
+    }
+#endif // PROFILING_SUPPORTED
+
+    //
+    // If this thread is running at low priority, boost its priority.  We remember the old
+    // priority so that we can restore it in ResumeEE.
+    //
+    if (pCurThread)     // concurrent GC occurs on threads we don't know about
+    {
+        _ASSERTE(pCurThread->m_Priority == INVALID_THREAD_PRIORITY);
+        int priority = pCurThread->GetThreadPriority();
+        if (priority < THREAD_PRIORITY_NORMAL)
+        {
+            pCurThread->m_Priority = priority;
+            pCurThread->SetThreadPriority(THREAD_PRIORITY_NORMAL);
+        }
+    }
+
     //
     // Now that we've instructed all threads to please stop,
     // go interrupt the ones that are running managed code and force them to stop.
     // This does not return until all threads have acknowledged that they
     // will not run managed code.
     //
-    SuspendRuntime(reason);
+    SuspendAllThreads();
+
+#ifdef PROFILING_SUPPORTED
+    // If a profiler is keeping track of GC events, notify it
+    {
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
+        (&g_profControlBlock)->RuntimeSuspendFinished();
+        END_PROFILER_CALLBACK();
+    }
+#endif // PROFILING_SUPPORTED
+
+#ifdef _DEBUG
+    if (reason == ThreadSuspend::SUSPEND_FOR_GC)
+    {
+        Thread* thread = NULL;
+        while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
+        {
+            thread->DisableStressHeap();
+            _ASSERTE(!thread->HasThreadState(Thread::TS_GCSuspendPending));
+        }
+    }
+#endif
+
+#ifdef HAVE_GCCOVER
+    //
+    // Now that the EE has been suspended, let's see if any oustanding
+    // gcstress instruction updates need to occur.  Each thread can
+    // have only one pending at a time.
+    //
+    Thread* thread = NULL;
+    while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
+    {
+        thread->CommitGCStressInstructionUpdate();
+    }
+#endif // HAVE_GCCOVER
 
 #ifdef DEBUGGING_SUPPORTED
     // If the debugging services are attached, then its possible
@@ -5689,16 +5698,6 @@ retry_for_debugger:
     g_SuspendStatistics.EndSuspend(reason == SUSPEND_FOR_GC || reason == SUSPEND_FOR_GC_PREP);
 #endif //TIME_SUSPEND
     ThreadSuspend::s_fSuspended = true;
-
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
-    // Flush the store buffers on all CPUs, to ensure that all changes made so far are seen
-    // by the GC threads. This only matters on weak memory ordered processors as
-    // the strong memory ordered processors wouldn't have reordered the relevant writes.
-    // This is needed to synchronize threads that were running in preemptive mode thus were
-    // left alone by suspension to flush their writes that they made before they switched to
-    // preemptive mode.
-    ::FlushProcessWriteBuffers();
-#endif //TARGET_ARM || TARGET_ARM64
 }
 
 #ifdef FEATURE_THREAD_ACTIVATION
