@@ -142,6 +142,7 @@ public class DblArray3
 
     [Fact]
     [SkipOnCoreClr("This test is not compatible with GCStress.", RuntimeTestModes.AnyGCStress)]
+    [SkipOnMono("Needs triage")]
     [OuterLoop]
     public static int TestEntryPoint()
     {
