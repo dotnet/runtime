@@ -8871,6 +8871,12 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
             // for volatile loads since there is no ldar for SIMD regs
             var_types targetType = ind->TypeGet();
             ind->ChangeType(ind->TypeIs(TYP_DOUBLE) ? TYP_LONG : TYP_INT);
+
+            // Now it might be eligible for some addressing modes with LDAPUR:
+            const bool isContainable = IsInvariantInRange(ind->Addr(), ind);
+            TryCreateAddrMode(ind->Addr(), isContainable, ind);
+
+            // Wrap the resulting IND into BITCAST:
             GenTree* castOp = comp->gtNewBitCastNode(targetType, ind);
             BlockRange().InsertAfter(ind, castOp);
             use.ReplaceWith(castOp);
