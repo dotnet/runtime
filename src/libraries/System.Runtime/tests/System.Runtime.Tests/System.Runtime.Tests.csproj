@@ -12,9 +12,7 @@
      <!-- some tests require full ICU data, force it -->
     <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
 
-    <!-- The test is looking for debugger attributes we would have stripped with NativeAOT -->
-    <IlcKeepManagedDebuggerSupport>true</IlcKeepManagedDebuggerSupport>
-    <!-- Same for ILLink -->
+    <!-- The test is looking for debugger attributes we would have stripped -->
     <DebuggerSupport>true</DebuggerSupport>
     <!-- Active issue: https://github.com/dotnet/runtime/issues/97809 -->
     <ShouldILStrip>false</ShouldILStrip>

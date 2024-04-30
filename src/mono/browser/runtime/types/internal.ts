@@ -237,6 +237,7 @@ export type RuntimeHelpers = {
     jiterpreter_dump_stats?: (concise?: boolean) => void,
     forceDisposeProxies: (disposeMethods: boolean, verbose: boolean) => void,
     dumpThreads: () => void,
+    mono_wasm_print_thread_dump: () => void,
 }
 
 export type AOTProfilerOptions = {
