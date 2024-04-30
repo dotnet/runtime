@@ -5139,6 +5139,7 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
         JITDUMP("\nimpResetLeaveBlock: Profile data could not be locally repaired. Data %s inconsisent.\n",
                 fgPgoConsistent ? "is now" : "was already");
         fgPgoConsistent = false;
+        Metrics.ProfileInconsistentResetLeave++;
     }
 }
 
@@ -7319,6 +7320,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                         fgRemoveRefPred(removedEdge);
                         block->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
+                        Metrics.ImporterBranchFold++;
 
                         // If we removed an edge carrying profile, try to do a local repair.
                         //
@@ -7370,6 +7372,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 JITDUMP("Profile data could not be locally repaired. Data %s inconsistent.\n",
                                         fgPgoConsistent ? "is now" : "was already");
                                 fgPgoConsistent = false;
+                                Metrics.ProfileInconsistentImporterBranchFold++;
                             }
                         }
                     }
@@ -7615,6 +7618,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     unsigned   jumpCnt   = block->GetSwitchTargets()->bbsCount;
                     FlowEdge** jumpTab   = block->GetSwitchTargets()->bbsDstTab;
                     bool       foundVal  = false;
+                    Metrics.ImporterSwitchFold++;
 
                     for (unsigned val = 0; val < jumpCnt; val++, jumpTab++)
                     {
@@ -7656,6 +7660,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         JITDUMP("Profile data could not be locally repaired. Data %s inconsisent.\n",
                                 fgPgoConsistent ? "is now" : "was already");
                         fgPgoConsistent = false;
+                        Metrics.ProfileInconsistentImporterSwitchFold++;
                     }
 
                     // Create a NOP node
@@ -7998,6 +8003,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     /* Append the value to the tree list */
                     goto SPILL_APPEND;
+                }
+                else
+                {
+                    if (op1->IsBoxedValue())
+                    {
+                        JITDUMP("\n CEE_POP box...\n");
+                        gtTryRemoveBoxUpstreamEffects(op1);
+                    }
                 }
 
                 /* No side effects - just throw the <BEEP> thing away */

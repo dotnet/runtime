@@ -143,7 +143,7 @@ export function get_signature_arg2_type (sig: JSMarshalerType): MarshalerType {
 
 export function get_signature_arg3_type (sig: JSMarshalerType): MarshalerType {
     mono_assert(sig, "Null sig");
-    return <any>getU8(<any>sig + JSBindingTypeOffsets.Arg2MarshalerType);
+    return <any>getU8(<any>sig + JSBindingTypeOffsets.Arg3MarshalerType);
 }
 
 export function get_signature_argument_count (signature: JSFunctionSignature): number {

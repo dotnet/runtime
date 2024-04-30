@@ -202,7 +202,7 @@ namespace System.Collections.Frozen
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
     [DebuggerDisplay("Count = {Count}")]
     public abstract class FrozenSet<T> : ISet<T>,
-#if NET5_0_OR_GREATER
+#if NET
         IReadOnlySet<T>,
 #endif
         IReadOnlyCollection<T>, ICollection

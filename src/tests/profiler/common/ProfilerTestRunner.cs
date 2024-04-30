@@ -135,9 +135,9 @@ namespace Profiler.Tests
 
             if (!verifier.HasPassingOutput)
             {
-                FailFastWithMessage("Profiler tests are expected to contain the text \'" + verifier.SuccessPhrase + "\' in the console output " +
-                    "of the profilee app to indicate a passing test. Usually it is printed from the Shutdown() method of the profiler implementation. This " +
-                    "text was not found in the output above.");
+                FailFastWithMessage($"Profiler tests are expected to contain the text '{verifier.SuccessPhrase}' in the console output " +
+                    $"of the profilee app to indicate a passing test. Usually it is printed from the Shutdown() method of the profiler implementation. This " +
+                    $"text was not found in the output above. Profilee returned exit code {process.ExitCode}.");
             }
 
             if (process.ExitCode != 100)
@@ -195,14 +195,16 @@ namespace Profiler.Tests
         /// </summary>
         class ProfileeOutputVerifier
         {
+            private volatile bool _hasPassingOutput;
+
             public string SuccessPhrase = "PROFILER TEST PASSES";
-            public bool HasPassingOutput { get; private set; }
+            public bool HasPassingOutput => _hasPassingOutput;
 
             public void WriteLine(string message)
             {
                 if (message != null && message.Contains(SuccessPhrase))
                 {
-                    HasPassingOutput = true;
+                    _hasPassingOutput = true;
                 }
             }
 
@@ -210,7 +212,7 @@ namespace Profiler.Tests
             {
                 if (string.Format(format,args).Contains(SuccessPhrase))
                 {
-                    HasPassingOutput = true;
+                    _hasPassingOutput = true;
                 }
             }
         }
