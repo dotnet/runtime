@@ -58,6 +58,11 @@ internal static partial class Interop
                 // we need to prepare everything as some allocations do happen during initialization itself.
                 _allocations = new HashSet<IntPtr>();
                 _allocationsDiff = new HashSet<IntPtr>();
+
+                // prevent trimming
+                EnableTracking();
+                DisableTracking();
+                GetIncrementalAllocations();
             }
 
             if (EnsureOpenSslInitialized(DebugMemory ? &CryptoMalloc : null, DebugMemory ? &CryptoRealloc : null, DebugMemory ? &CryptoFree : null) != 0)
@@ -83,15 +88,6 @@ internal static partial class Interop
             string? value = Environment.GetEnvironmentVariable(name);
             if (int.TryParse(value, CultureInfo.InvariantCulture, out int enabled))
             {
-                if (enabled == 2)
-                {
-                    EnableTracking();
-                }
-                else if (enabled == 3)
-                {
-                    GetIncrementalAllocations();
-                }
-
                 return enabled == 1;
             }
 
