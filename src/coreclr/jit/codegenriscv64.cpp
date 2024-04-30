@@ -1536,7 +1536,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             else
             {
                 // Get a temp integer register to compute long address.
-                // regNumber addrReg = tree->GetSingleTempReg();
+                // regNumber addrReg = internalRegisters.GetSingle(tree);
 
                 // We must load the FP constant from the constant pool
                 // Emit a data section constant for the float or double constant.
@@ -1616,7 +1616,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
         assert(EA_SIZE(attr) == EA_4BYTE);
         if (isUnsigned)
         {
-            regNumber tempReg = treeNode->GetSingleTempReg();
+            regNumber tempReg = internalRegisters.GetSingle(treeNode);
             emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tempReg, op1->GetRegNum(), 32);
             emit->emitIns_R_R_I(INS_slli, EA_8BYTE, targetReg, op2->GetRegNum(), 32);
             emit->emitIns_R_R_R(INS_mulhu, EA_8BYTE, targetReg, tempReg, targetReg);
@@ -1982,7 +1982,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         }
         else
         {
-            regCnt = tree->ExtractTempReg();
+            regCnt = internalRegisters.Extract(tree);
             if (regCnt != targetReg)
             {
                 emit->emitIns_R_R_I(INS_ori, easz, regCnt, targetReg, 0);
@@ -2012,7 +2012,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         unsigned outgoingArgSpaceAligned = roundUp(compiler->lvaOutgoingArgSpaceSize, STACK_ALIGN);
         // assert((compiler->lvaOutgoingArgSpaceSize % STACK_ALIGN) == 0); // This must be true for the stack to remain
         //                                                                // aligned
-        tempReg = tree->ExtractTempReg();
+        tempReg = internalRegisters.Extract(tree);
         genInstrWithConstant(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, outgoingArgSpaceAligned, tempReg);
         stackAdjustment += outgoingArgSpaceAligned;
     }
@@ -2067,7 +2067,7 @@ void CodeGen::genLclHeap(GenTree* tree)
             else
             {
                 if (tempReg == REG_NA)
-                    tempReg = tree->ExtractTempReg();
+                    tempReg = internalRegisters.Extract(tree);
                 emit->emitLoadImmediate(EA_PTRSIZE, tempReg, amount);
                 emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, tempReg);
             }
@@ -2085,7 +2085,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         }
         else
         {
-            regCnt = tree->ExtractTempReg();
+            regCnt = internalRegisters.Extract(tree);
         }
         instGen_Set_Reg_To_Imm(((unsigned int)amount == amount) ? EA_4BYTE : EA_8BYTE, regCnt, amount);
     }
@@ -2152,9 +2152,9 @@ void CodeGen::genLclHeap(GenTree* tree)
         //
 
         if (tempReg == REG_NA)
-            tempReg = tree->ExtractTempReg();
+            tempReg = internalRegisters.Extract(tree);
 
-        regNumber rPageSize = tree->GetSingleTempReg();
+        regNumber rPageSize = internalRegisters.GetSingle(tree);
 
         assert(regCnt != tempReg);
         emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, tempReg, REG_SPBASE, regCnt);
@@ -2359,7 +2359,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
             ssize_t intConst = (int)(divisorOp->AsIntCon()->gtIconVal);
             if (!emitter::isGeneralRegister(divisorReg))
             {
-                tempReg    = tree->GetSingleTempReg();
+                tempReg    = internalRegisters.GetSingle(tree);
                 divisorReg = tempReg;
             }
             emit->emitLoadImmediate(EA_PTRSIZE, divisorReg, intConst);
@@ -2382,7 +2382,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
             if ((exceptions & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
             {
                 if (tempReg == REG_NA)
-                    tempReg = tree->GetSingleTempReg();
+                    tempReg = internalRegisters.GetSingle(tree);
 
                 // Check if the divisor is not -1 branch to 'sdivLabel'
                 emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, REG_ZERO, -1);
@@ -2608,7 +2608,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     unsigned     slots  = layout->GetSlotCount();
 
     // Temp register(s) used to perform the sequence of loads and stores.
-    regNumber tmpReg  = cpObjNode->ExtractTempReg();
+    regNumber tmpReg  = internalRegisters.Extract(cpObjNode);
     regNumber tmpReg2 = REG_NA;
 
     assert(genIsValidIntReg(tmpReg));
@@ -2617,7 +2617,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 
     if (slots > 1)
     {
-        tmpReg2 = cpObjNode->GetSingleTempReg();
+        tmpReg2 = internalRegisters.GetSingle(cpObjNode);
         assert(tmpReg2 != tmpReg);
         assert(genIsValidIntReg(tmpReg2));
         assert(tmpReg2 != REG_WRITE_BARRIER_DST_BYREF);
@@ -2752,7 +2752,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
     regNumber idxReg  = treeNode->AsOp()->gtOp1->GetRegNum();
     regNumber baseReg = treeNode->AsOp()->gtOp2->GetRegNum();
 
-    regNumber tmpReg = treeNode->GetSingleTempReg();
+    regNumber tmpReg = internalRegisters.GetSingle(treeNode);
 
     // load the ip-relative offset (which is relative to start of fgFirstBB)
     GetEmitter()->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpReg, idxReg, 2);
@@ -2852,7 +2852,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     regNumber loc       = locOp->GetRegNum();
     regNumber val       = valOp->GetRegNum();
     regNumber comparand = comparandOp->GetRegNum();
-    regNumber storeErr  = treeNode->ExtractTempReg(RBM_ALLINT);
+    regNumber storeErr  = internalRegisters.Extract(treeNode, RBM_ALLINT);
 
     // Register allocator should have extended the lifetimes of all input and internal registers
     // They should all be different
@@ -3559,7 +3559,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
 
     genConsumeOperands(treeNode->AsOp());
 
-    regNumber tmpReg = treeNode->GetSingleTempReg();
+    regNumber tmpReg = internalRegisters.GetSingle(treeNode);
     assert(tmpReg != treeNode->GetRegNum());
     assert(tmpReg != op1->GetRegNum());
 
@@ -3606,7 +3606,7 @@ void CodeGen::genCkfinite(GenTree* treeNode)
     emitAttr attr = emitActualTypeSize(treeNode);
 
     // Extract exponent into a register.
-    regNumber intReg = treeNode->GetSingleTempReg();
+    regNumber intReg = internalRegisters.GetSingle(treeNode);
     regNumber fpReg  = genConsumeReg(op1);
 
     emit->emitIns_R_R(attr == EA_4BYTE ? INS_fclass_s : INS_fclass_d, attr, intReg, fpReg);
@@ -3671,7 +3671,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             }
             else if (tree->OperIs(GT_EQ))
             {
-                regNumber tempReg = tree->GetSingleTempReg();
+                regNumber tempReg = internalRegisters.GetSingle(tree);
                 skipLabel         = genCreateTempLabel();
                 emit->emitIns_R_R(cmpSize == EA_4BYTE ? INS_fclass_s : INS_fclass_d, cmpSize, targetReg, regOp1);
                 emit->emitIns_R_R(cmpSize == EA_4BYTE ? INS_fclass_s : INS_fclass_d, cmpSize, tempReg, regOp2);
@@ -3716,7 +3716,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             }
             else if (tree->OperIs(GT_NE))
             {
-                regNumber tempReg = tree->GetSingleTempReg();
+                regNumber tempReg = internalRegisters.GetSingle(tree);
                 emit->emitIns_R_R(cmpSize == EA_4BYTE ? INS_fclass_s : INS_fclass_d, cmpSize, targetReg, regOp1);
                 emit->emitIns_R_R(cmpSize == EA_4BYTE ? INS_fclass_s : INS_fclass_d, cmpSize, tempReg, regOp2);
                 emit->emitIns_R_R_R(INS_or, EA_8BYTE, tempReg, targetReg, tempReg);
@@ -3755,7 +3755,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                     {
                         imm = static_cast<uint32_t>(imm);
 
-                        regNumber tmpRegOp1 = tree->GetSingleTempReg();
+                        regNumber tmpRegOp1 = internalRegisters.GetSingle(tree);
                         assert(regOp1 != tmpRegOp1);
 
                         emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp1, regOp1, 32);
@@ -3884,7 +3884,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             if (cmpSize == EA_4BYTE)
             {
                 regNumber tmpRegOp1 = REG_RA;
-                regNumber tmpRegOp2 = tree->GetSingleTempReg();
+                regNumber tmpRegOp2 = internalRegisters.GetSingle(tree);
                 assert(regOp1 != tmpRegOp2);
                 assert(regOp2 != tmpRegOp2);
 
@@ -5280,7 +5280,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
             // Setup loReg from the internal registers that we reserved in lower.
             //
-            regNumber loReg = treeNode->ExtractTempReg();
+            regNumber loReg = internalRegisters.Extract(treeNode);
 
             GenTreeLclVarCommon* srcLclNode = nullptr;
             regNumber            addrReg    = REG_NA;
@@ -5523,7 +5523,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             regNumber allocatedValueReg = REG_NA;
             if (treeNode->gtNumRegs == 1)
             {
-                allocatedValueReg = treeNode->ExtractTempReg();
+                allocatedValueReg = internalRegisters.Extract(treeNode);
             }
 
             // Pick a register to store intermediate values in for the to-stack
@@ -5670,13 +5670,13 @@ void CodeGen::genRangeCheck(GenTree* oper)
 
     if (genActualType(length) == TYP_INT)
     {
-        regNumber tempReg = oper->ExtractTempReg();
+        regNumber tempReg = internalRegisters.Extract(oper);
         GetEmitter()->emitIns_R_R_I(INS_addiw, EA_4BYTE, tempReg, lengthReg, 0); // sign-extend
         lengthReg = tempReg;
     }
     if (genActualType(index) == TYP_INT)
     {
-        regNumber tempReg = oper->GetSingleTempReg();
+        regNumber tempReg = internalRegisters.GetSingle(oper);
         GetEmitter()->emitIns_R_R_I(INS_addiw, EA_4BYTE, tempReg, indexReg, 0); // sign-extend
         indexReg = tempReg;
     }
@@ -5759,7 +5759,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
 
     if (tree->OperIs(GT_ROR, GT_ROL))
     {
-        regNumber tempReg  = tree->GetSingleTempReg();
+        regNumber tempReg  = internalRegisters.GetSingle(tree);
         unsigned  immWidth = emitter::getBitWidth(size); // For RISCV64, immWidth will be set to 32 or 64
         if (!shiftBy->IsCnsIntOrI())
         {
@@ -5949,7 +5949,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     // The index is never contained, even if it is a constant.
     assert(index->isUsedFromReg());
 
-    regNumber tempReg = node->GetSingleTempReg();
+    regNumber tempReg = internalRegisters.GetSingle(node);
 
     // Generate the bounds check if necessary.
     if (node->IsBoundsChecked())
@@ -6156,7 +6156,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
     assert(srcOffset < INT32_MAX - static_cast<int>(size));
     assert(dstOffset < INT32_MAX - static_cast<int>(size));
 
-    regNumber tempReg = cpBlkNode->ExtractTempReg(RBM_ALLINT);
+    regNumber tempReg = internalRegisters.Extract(cpBlkNode, RBM_ALLINT);
 
     if (size >= 2 * REGSIZE_BYTES)
     {
@@ -6285,7 +6285,7 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
         // Extend liveness of dstReg in case if it gets killed by the store.
         gcInfo.gcMarkRegPtrVal(dstReg, dstNode->TypeGet());
 
-        const regNumber tempReg = initBlkNode->GetSingleTempReg();
+        const regNumber tempReg = internalRegisters.GetSingle(initBlkNode);
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, tempReg, size - TARGET_POINTER_SIZE);
 
         // tempReg = dstReg + tempReg (a new interior pointer, but in a nongc region)
@@ -6391,7 +6391,7 @@ void CodeGen::genCall(GenTreeCall* call)
                    (call->IsVirtualStubRelativeIndir() && (call->gtEntryPoint.accessType == IAT_VALUE)));
             assert(call->gtControlExpr == nullptr);
 
-            regNumber tmpReg = call->GetSingleTempReg();
+            regNumber tmpReg = internalRegisters.GetSingle(call);
             // Register where we save call address in should not be overridden by epilog.
             assert((genRegMask(tmpReg) & (RBM_INT_CALLEE_TRASH & ~RBM_RA)) == genRegMask(tmpReg));
 
@@ -6399,7 +6399,7 @@ void CodeGen::genCall(GenTreeCall* call)
                 call->IsVirtualStubRelativeIndir() ? compiler->virtualStubParamInfo->GetReg() : REG_R2R_INDIRECT_PARAM;
             GetEmitter()->emitIns_R_R_I(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, callAddrReg, 0);
             // We will use this again when emitting the jump in genCallInstruction in the epilog
-            call->gtRsvdRegs |= genRegMask(tmpReg);
+            internalRegisters.Add(call, genRegMask(tmpReg));
         }
 #endif
 
@@ -6617,7 +6617,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         if (callThroughIndirReg != REG_NA)
         {
             assert(call->IsR2ROrVirtualStubRelativeIndir());
-            regNumber targetAddrReg = call->GetSingleTempReg();
+            regNumber targetAddrReg = internalRegisters.GetSingle(call);
             // For fast tailcalls we have already loaded the call target when processing the call node.
             if (!call->IsFastTailCall())
             {
@@ -6885,7 +6885,7 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 
         case GenIntCastDesc::CHECK_UINT_RANGE:
         {
-            regNumber tempReg = cast->GetSingleTempReg();
+            regNumber tempReg = internalRegisters.GetSingle(cast);
             // We need to check if the value is not greater than 0xFFFFFFFF
             // if the upper 32 bits are zero.
             ssize_t imm = -1;
@@ -6899,7 +6899,7 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 
         case GenIntCastDesc::CHECK_POSITIVE_INT_RANGE:
         {
-            regNumber tempReg = cast->GetSingleTempReg();
+            regNumber tempReg = internalRegisters.GetSingle(cast);
             // We need to check if the value is not greater than 0x7FFFFFFF
             // if the upper 33 bits are zero.
             // instGen_Set_Reg_To_Imm(EA_8BYTE, tempReg, 0xFFFFFFFF80000000LL);
@@ -6915,7 +6915,7 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 
         case GenIntCastDesc::CHECK_INT_RANGE:
         {
-            const regNumber tempReg = cast->GetSingleTempReg();
+            const regNumber tempReg = internalRegisters.GetSingle(cast);
             assert(tempReg != reg);
             GetEmitter()->emitLoadImmediate(EA_8BYTE, tempReg, INT32_MAX);
             genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, tempReg, nullptr, reg);
@@ -6930,7 +6930,7 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
             assert(desc.CheckKind() == GenIntCastDesc::CHECK_SMALL_INT_RANGE);
             const int       castMaxValue = desc.CheckSmallIntMax();
             const int       castMinValue = desc.CheckSmallIntMin();
-            const regNumber tempReg      = cast->GetSingleTempReg();
+            const regNumber tempReg      = internalRegisters.GetSingle(cast);
             instruction     ins;
 
             if (castMaxValue > 2047)
@@ -7229,7 +7229,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
         assert(isPow2(lea->gtScale));
         BitScanForward(&scale, lea->gtScale);
         assert(scale <= 4);
-        regNumber scaleTempReg = scale ? lea->ExtractTempReg() : REG_NA;
+        regNumber scaleTempReg = scale ? internalRegisters.Extract(lea) : REG_NA;
 
         if (offset == 0)
         {
@@ -7250,7 +7250,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
             }
             else
             {
-                regNumber tmpReg = lea->GetSingleTempReg();
+                regNumber tmpReg = internalRegisters.GetSingle(lea);
 
                 noway_assert(tmpReg != index->GetRegNum());
                 noway_assert(tmpReg != memBase->GetRegNum());
@@ -7287,7 +7287,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
         else
         {
             // We require a tmpReg to hold the offset
-            regNumber tmpReg = lea->GetSingleTempReg();
+            regNumber tmpReg = internalRegisters.GetSingle(lea);
 
             // First load tmpReg with the large offset constant
             emit->emitLoadImmediate(EA_PTRSIZE, tmpReg, offset);
@@ -7960,449 +7960,6 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
         }
         compiler->unwindAllocStack(tier0FrameSize);
     }
-}
-
-void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
-{
-    *initRegStillZeroed = false;
-    assert(!(intRegState.rsCalleeRegArgMaskLiveIn & floatRegState.rsCalleeRegArgMaskLiveIn));
-
-    regMaskTP regArgMaskLive = intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn;
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In genFnPrologCalleeRegArgs() RISCV64:0x%llx.\n", regArgMaskLive);
-    }
-#endif
-
-    // We should be generating the prolog block when we are called
-    assert(compiler->compGeneratingProlog);
-
-    // We expect to have some registers of the type we are doing, that are LiveIn, otherwise we don't need to be called.
-    noway_assert(regArgMaskLive != 0);
-
-    unsigned varNum;
-    unsigned regArgNum = 0;
-    // Process any rearrangements including circular dependencies.
-    regNumber regArg[MAX_REG_ARG + MAX_FLOAT_REG_ARG];
-    regNumber regArgInit[MAX_REG_ARG + MAX_FLOAT_REG_ARG];
-    emitAttr  regArgAttr[MAX_REG_ARG + MAX_FLOAT_REG_ARG];
-
-    for (int i = 0; i < MAX_REG_ARG + MAX_FLOAT_REG_ARG; i++)
-    {
-        regArg[i] = REG_NA;
-
-#ifdef DEBUG
-        regArgInit[i] = REG_NA;
-        regArgAttr[i] = EA_UNKNOWN;
-#endif
-    }
-
-    for (varNum = 0; varNum < compiler->lvaCount; ++varNum)
-    {
-        LclVarDsc* varDsc = compiler->lvaTable + varNum;
-
-        // Is this variable a register arg?
-        if (!varDsc->lvIsParam)
-        {
-            continue;
-        }
-
-        if (!varDsc->lvIsRegArg)
-        {
-            continue;
-        }
-
-        if (varDsc->lvIsInReg())
-        {
-            assert(genIsValidIntReg(varDsc->GetArgReg()) || genIsValidFloatReg(varDsc->GetArgReg()));
-            assert(!(genIsValidIntReg(varDsc->GetOtherArgReg()) || genIsValidFloatReg(varDsc->GetOtherArgReg())));
-            if (varDsc->GetArgInitReg() != varDsc->GetArgReg())
-            {
-                if (genIsValidIntReg(varDsc->GetArgInitReg()))
-                {
-                    if (varDsc->GetArgInitReg() > REG_ARG_LAST)
-                    {
-                        bool        isSkip;
-                        instruction ins;
-                        emitAttr    size;
-                        if (genIsValidIntReg(varDsc->GetArgReg()))
-                        {
-                            ins = INS_mov;
-                            if (varDsc->TypeGet() == TYP_INT)
-                            {
-                                size   = EA_4BYTE;
-                                isSkip = false;
-                            }
-                            else
-                            {
-                                size   = EA_PTRSIZE;
-                                isSkip = true;
-                            }
-                        }
-                        else
-                        {
-                            ins    = INS_fmv_x_d;
-                            size   = EA_PTRSIZE;
-                            isSkip = true;
-                        }
-                        GetEmitter()->emitIns_Mov(ins, size, varDsc->GetArgInitReg(), varDsc->GetArgReg(), isSkip);
-                        regArgMaskLive &= ~genRegMask(varDsc->GetArgReg());
-                    }
-                    else
-                    {
-                        if (genIsValidIntReg(varDsc->GetArgReg()))
-                        {
-                            assert(isValidIntArgReg(varDsc->GetArgReg(), compiler->info.compCallConv));
-                            regArg[varDsc->GetArgReg() - REG_ARG_FIRST]     = varDsc->GetArgReg();
-                            regArgInit[varDsc->GetArgReg() - REG_ARG_FIRST] = varDsc->GetArgInitReg();
-                            regArgAttr[varDsc->GetArgReg() - REG_ARG_FIRST] =
-                                varDsc->TypeGet() == TYP_INT ? EA_4BYTE : EA_PTRSIZE;
-                        }
-                        else
-                        {
-                            assert(isValidFloatArgReg(varDsc->GetArgReg()));
-                            regArg[varDsc->GetArgReg() - REG_ARG_FP_FIRST + MAX_REG_ARG]     = varDsc->GetArgReg();
-                            regArgInit[varDsc->GetArgReg() - REG_ARG_FP_FIRST + MAX_REG_ARG] = varDsc->GetArgInitReg();
-                            regArgAttr[varDsc->GetArgReg() - REG_ARG_FP_FIRST + MAX_REG_ARG] =
-                                varDsc->TypeGet() == TYP_FLOAT ? EA_4BYTE : EA_PTRSIZE;
-                        }
-                        regArgNum++;
-                    }
-                }
-                else
-                {
-                    assert(genIsValidFloatReg(varDsc->GetArgInitReg()));
-                    if (genIsValidIntReg(varDsc->GetArgReg()))
-                    {
-                        emitAttr size = (varDsc->TypeGet() == TYP_FLOAT) ? EA_4BYTE : EA_PTRSIZE;
-                        GetEmitter()->emitIns_Mov(size, varDsc->GetArgInitReg(), varDsc->GetArgReg(), false);
-                        regArgMaskLive &= ~genRegMask(varDsc->GetArgReg());
-                    }
-                    else if (varDsc->GetArgInitReg() > REG_ARG_FP_LAST)
-                    {
-                        GetEmitter()->emitIns_Mov(INS_fsgnj_d, EA_PTRSIZE, varDsc->GetArgInitReg(), varDsc->GetArgReg(),
-                                                  true);
-                        regArgMaskLive &= ~genRegMask(varDsc->GetArgReg());
-                    }
-                    else
-                    {
-                        assert(isValidFloatArgReg(varDsc->GetArgReg()));
-                        regArg[varDsc->GetArgReg() - REG_ARG_FP_FIRST + MAX_REG_ARG]     = varDsc->GetArgReg();
-                        regArgInit[varDsc->GetArgReg() - REG_ARG_FP_FIRST + MAX_REG_ARG] = varDsc->GetArgInitReg();
-                        regArgAttr[varDsc->GetArgReg() - REG_ARG_FP_FIRST + MAX_REG_ARG] =
-                            varDsc->TypeGet() == TYP_FLOAT ? EA_4BYTE : EA_PTRSIZE;
-                        regArgNum++;
-                    }
-                }
-            }
-            else
-            {
-                // TODO-RISCV64: should delete this by optimization "struct {long a; int32_t b;};"
-                // liking AMD64_ABI within morph.
-                if (genIsValidIntReg(varDsc->GetArgReg()) && (varDsc->TypeGet() == TYP_INT))
-                {
-                    GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, varDsc->GetArgInitReg(), varDsc->GetArgReg(), false);
-                }
-                regArgMaskLive &= ~genRegMask(varDsc->GetArgReg());
-            }
-#ifdef USING_SCOPE_INFO
-            psiMoveToReg(varNum);
-#endif // USING_SCOPE_INFO
-            if (!varDsc->lvLiveInOutOfHndlr)
-            {
-                continue;
-            }
-        }
-
-        // When we have a promoted struct we have two possible LclVars that can represent the incoming argument
-        // in the regArgTab[], either the original TYP_STRUCT argument or the introduced lvStructField.
-        // We will use the lvStructField if we have a TYPE_INDEPENDENT promoted struct field otherwise
-        // use the original TYP_STRUCT argument.
-        //
-        if (varDsc->lvPromoted || varDsc->lvIsStructField)
-        {
-            LclVarDsc* parentVarDsc = varDsc;
-            if (varDsc->lvIsStructField)
-            {
-                assert(!varDsc->lvPromoted);
-                parentVarDsc = &compiler->lvaTable[varDsc->lvParentLcl];
-            }
-
-            Compiler::lvaPromotionType promotionType = compiler->lvaGetPromotionType(parentVarDsc);
-
-            if (promotionType == Compiler::PROMOTION_TYPE_INDEPENDENT)
-            {
-                // For register arguments that are independent promoted structs we put the promoted field varNum
-                // in the regArgTab[]
-                if (varDsc->lvPromoted)
-                {
-                    continue;
-                }
-            }
-            else
-            {
-                // For register arguments that are not independent promoted structs we put the parent struct varNum
-                // in the regArgTab[]
-                if (varDsc->lvIsStructField)
-                {
-                    continue;
-                }
-            }
-        }
-
-        var_types storeType = TYP_UNDEF;
-        int       slotSize  = TARGET_POINTER_SIZE;
-
-        if (varTypeIsStruct(varDsc))
-        {
-            if (emitter::isFloatReg(varDsc->GetArgReg()))
-            {
-                storeType = varDsc->lvIs4Field1 ? TYP_FLOAT : TYP_DOUBLE;
-            }
-            else
-            {
-                assert(emitter::isGeneralRegister(varDsc->GetArgReg()));
-                if (varDsc->lvIs4Field1)
-                {
-                    storeType = TYP_INT;
-                }
-                else
-                {
-                    storeType = varDsc->GetLayout()->GetGCPtrType(0);
-                }
-            }
-            slotSize = (int)EA_SIZE(emitActualTypeSize(storeType));
-
-#if FEATURE_MULTIREG_ARGS
-            // Must be <= MAX_PASS_MULTIREG_BYTES or else it wouldn't be passed in registers
-            noway_assert(varDsc->lvSize() <= MAX_PASS_MULTIREG_BYTES);
-#endif
-        }
-        else // Not a struct type
-        {
-            storeType = compiler->mangleVarArgsType(genActualType(varDsc->TypeGet()));
-            if (emitter::isFloatReg(varDsc->GetArgReg()) != varTypeIsFloating(storeType))
-            {
-                assert(varTypeIsFloating(storeType));
-                storeType = storeType == TYP_DOUBLE ? TYP_I_IMPL : TYP_INT;
-            }
-        }
-        emitAttr size = emitActualTypeSize(storeType);
-
-        regNumber srcRegNum = varDsc->GetArgReg();
-
-        // Stack argument - if the ref count is 0 don't care about it
-        if (!varDsc->lvOnFrame)
-        {
-            noway_assert(varDsc->lvRefCnt() == 0);
-            regArgMaskLive &= ~genRegMask(varDsc->GetArgReg());
-            if (varDsc->GetOtherArgReg() < REG_STK)
-            {
-                regArgMaskLive &= ~genRegMask(varDsc->GetOtherArgReg());
-            }
-        }
-        else
-        {
-            assert(srcRegNum != varDsc->GetOtherArgReg());
-
-            regNumber tmpReg = REG_NA;
-
-            bool FPbased;
-            int  baseOffset = compiler->lvaFrameAddress(varNum, &FPbased);
-
-            // First store the `varDsc->GetArgReg()` on stack.
-            if (emitter::isValidSimm12(baseOffset))
-            {
-                GetEmitter()->emitIns_S_R(ins_Store(storeType), size, srcRegNum, varNum, 0);
-            }
-            else
-            {
-                assert(tmpReg == REG_NA);
-
-                tmpReg = REG_RA;
-                // Prepare tmpReg to possible future use
-                GetEmitter()->emitLoadImmediate(EA_PTRSIZE, tmpReg, baseOffset);
-                GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, tmpReg, tmpReg, FPbased ? REG_FPBASE : REG_SPBASE);
-                GetEmitter()->emitIns_S_R_R(ins_Store(storeType), size, srcRegNum, tmpReg, varNum, 0);
-            }
-
-            regArgMaskLive &= ~genRegMask(srcRegNum);
-
-            // Then check if varDsc is a struct arg
-            if (varTypeIsStruct(varDsc))
-            {
-                if (emitter::isFloatReg(varDsc->GetOtherArgReg()))
-                {
-                    srcRegNum = varDsc->GetOtherArgReg();
-                    storeType = varDsc->lvIs4Field2 ? TYP_FLOAT : TYP_DOUBLE;
-                    size      = EA_SIZE(emitActualTypeSize(storeType));
-
-                    slotSize = slotSize < (int)size ? (int)size : slotSize;
-                }
-                else if (emitter::isGeneralRegister(varDsc->GetOtherArgReg()))
-                {
-                    if (varDsc->lvIs4Field2)
-                    {
-                        storeType = TYP_INT;
-                    }
-                    else
-                    {
-                        storeType = varDsc->GetLayout()->GetGCPtrType(1);
-                    }
-
-                    srcRegNum = varDsc->GetOtherArgReg();
-                    size      = emitActualTypeSize(storeType);
-
-                    slotSize = slotSize < (int)EA_SIZE(size) ? (int)EA_SIZE(size) : slotSize;
-                }
-                baseOffset += slotSize;
-
-                // if the struct passed by two register, then store the second register `varDsc->GetOtherArgReg()`.
-                if (srcRegNum == varDsc->GetOtherArgReg())
-                {
-                    GetEmitter()->emitIns_S_R_R(ins_Store(storeType), size, srcRegNum, tmpReg, varNum, slotSize);
-                    regArgMaskLive &= ~genRegMask(srcRegNum); // maybe do this later is better!
-                }
-                else if (varDsc->lvIsSplit)
-                {
-                    // the struct is a split struct.
-                    assert(varDsc->GetArgReg() == REG_ARG_LAST && varDsc->GetOtherArgReg() == REG_STK);
-
-                    // For the RISCV64's ABI, the split struct arg will be passed via `A7` and a stack slot on caller.
-                    // But if the `A7` is stored on stack on the callee side, the whole split struct should be
-                    // stored continuous on the stack on the callee side.
-                    // So, after we save `A7` on the stack in prolog, it has to copy the stack slot of the split struct
-                    // which was passed by the caller. Here we load the stack slot to `REG_SCRATCH`, and save it
-                    // on the stack following the `A7` in prolog.
-                    if (emitter::isValidSimm12(genTotalFrameSize()))
-                    {
-                        GetEmitter()->emitIns_R_R_I(INS_ld, size, REG_SCRATCH, REG_SPBASE, genTotalFrameSize());
-                    }
-                    else
-                    {
-                        assert(!EA_IS_RELOC(size));
-                        GetEmitter()->emitLoadImmediate(size, REG_SCRATCH, genTotalFrameSize());
-                        GetEmitter()->emitIns_R_R_R(INS_add, size, REG_SCRATCH, REG_SCRATCH, REG_SPBASE);
-                        GetEmitter()->emitIns_R_R_I(INS_ld, size, REG_SCRATCH, REG_SCRATCH, 0);
-                    }
-
-                    GetEmitter()->emitIns_S_R_R(ins_Store(storeType), size, REG_SCRATCH, tmpReg, varNum, slotSize);
-                }
-            }
-
-#ifdef USING_SCOPE_INFO
-            {
-                psiMoveToStack(varNum);
-            }
-#endif // USING_SCOPE_INFO
-        }
-    }
-
-    if (regArgNum > 0)
-    {
-        for (int i = MAX_REG_ARG + MAX_FLOAT_REG_ARG - 1; i >= 0; i--)
-        {
-            if (regArg[i] != REG_NA && !isValidIntArgReg(regArgInit[i], compiler->info.compCallConv) &&
-                !isValidFloatArgReg(regArgInit[i]))
-            {
-                assert(regArg[i] != regArgInit[i]);
-                assert(isValidIntArgReg(regArg[i], compiler->info.compCallConv) || isValidFloatArgReg(regArg[i]));
-
-                GetEmitter()->emitIns_Mov(regArgAttr[i], regArgInit[i], regArg[i], false);
-
-                regArgMaskLive &= ~genRegMask(regArg[i]);
-                regArg[i] = REG_NA;
-                regArgNum -= 1;
-            }
-        }
-    }
-
-    if (regArgNum > 0)
-    {
-        for (int i = MAX_REG_ARG + MAX_FLOAT_REG_ARG - 1; i >= 0; i--)
-        {
-            if (regArg[i] != REG_NA)
-            {
-                assert(regArg[i] != regArgInit[i]);
-
-                // regArg indexes list
-                unsigned indexList[MAX_REG_ARG + MAX_FLOAT_REG_ARG];
-                int      count = 0;     // Number of nodes in list
-                bool     loop  = false; // List has a loop
-
-                for (unsigned cur = i; regArg[cur] != REG_NA; count++)
-                {
-                    if (cur == i && count > 0)
-                    {
-                        loop = true;
-                        break;
-                    }
-
-                    indexList[count] = cur;
-
-                    for (int count2 = 0; count2 < count; count2++)
-                    {
-                        // The list could not have backlinks except last to first case which handled above.
-                        assert(cur != indexList[count2] && "Attempt to move several values on same register.");
-                    }
-                    assert(cur < MAX_REG_ARG + MAX_FLOAT_REG_ARG);
-                    assert(isValidIntArgReg(regArg[cur], compiler->info.compCallConv) ||
-                           isValidFloatArgReg(regArg[cur]));
-
-                    if (isValidIntArgReg(regArgInit[cur], compiler->info.compCallConv))
-                    {
-                        cur = regArgInit[cur] - REG_ARG_FIRST;
-                    }
-                    else if (isValidFloatArgReg(regArgInit[cur]))
-                    {
-                        cur = regArgInit[cur] - REG_ARG_FP_FIRST + MAX_REG_ARG;
-                    }
-                    else
-                    {
-                        assert(!"Argument register is neither valid float nor valid int argument register");
-                    }
-                }
-
-                if (loop)
-                {
-                    unsigned tmpArg = indexList[count - 1];
-
-                    GetEmitter()->emitIns_Mov(regArgAttr[tmpArg], rsGetRsvdReg(), regArg[tmpArg], false);
-                    count--; // Decrease count to not access last node which regArgInit points to start node i
-                    assert(count > 0);
-                }
-
-                for (int cur = count - 1; cur >= 0; cur--)
-                {
-                    unsigned tmpArg = indexList[cur];
-
-                    GetEmitter()->emitIns_Mov(regArgAttr[tmpArg], regArgInit[tmpArg], regArg[tmpArg], false);
-
-                    regArgMaskLive &= ~genRegMask(regArg[tmpArg]);
-                    regArg[tmpArg] = REG_NA;
-                    regArgNum--;
-                    assert(regArgNum >= 0);
-                };
-
-                if (loop)
-                {
-                    unsigned tmpArg = indexList[count]; // count was decreased for loop case
-
-                    GetEmitter()->emitIns_Mov(regArgAttr[i], regArg[tmpArg], rsGetRsvdReg(), false);
-
-                    regArgMaskLive &= ~genRegMask(regArg[tmpArg]);
-                    regArg[tmpArg] = REG_NA;
-                    regArgNum--;
-                }
-                assert(regArgNum >= 0);
-            }
-        }
-    }
-
-    assert(regArgNum == 0);
-    assert(!regArgMaskLive);
 }
 
 #ifdef PROFILING_SUPPORTED

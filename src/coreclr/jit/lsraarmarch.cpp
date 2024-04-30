@@ -181,16 +181,24 @@ int LinearScan::BuildCall(GenTreeCall* call)
     }
     else if (call->IsR2ROrVirtualStubRelativeIndir())
     {
-        // For R2R and VSD we have stub address in REG_R2R_INDIRECT_PARAM
-        // and will load call address into the temp register from this register.
-        regMaskTP candidates = RBM_NONE;
         if (call->IsFastTailCall())
         {
-            candidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH;
+            // For R2R and VSD we have stub address in REG_R2R_INDIRECT_PARAM
+            // and will load call address into the temp register from this register.
+            regMaskTP candidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH;
             assert(candidates != RBM_NONE);
+            buildInternalIntRegisterDefForNode(call, candidates);
         }
-
-        buildInternalIntRegisterDefForNode(call, candidates);
+        else
+        {
+            // For arm64 we can use lr for non-tailcalls so we skip the
+            // internal register as a TP optimization. We could do the same for
+            // arm32, but loading into lr cannot be encoded in 2 bytes, so
+            // another register is usually better.
+#ifdef TARGET_ARM
+            buildInternalIntRegisterDefForNode(call);
+#endif
+        }
     }
 #ifdef TARGET_ARM
     else

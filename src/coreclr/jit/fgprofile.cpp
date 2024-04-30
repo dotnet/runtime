@@ -3018,21 +3018,10 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 //
 // Notes:
 //   Does inlinee scaling.
-//   Handles handler entry special case.
 //
 void Compiler::fgSetProfileWeight(BasicBlock* block, weight_t profileWeight)
 {
     block->setBBProfileWeight(profileWeight);
-
-#if HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
-    // Handle a special case -- some handler entries can't have zero profile count.
-    //
-    if (this->bbIsHandlerBeg(block) && block->isRunRarely())
-    {
-        JITDUMP("Suppressing zero count for " FMT_BB " as it is a handler entry\n", block->bbNum);
-        block->makeBlockHot();
-    }
-#endif
 }
 
 //------------------------------------------------------------------------
