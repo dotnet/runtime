@@ -216,7 +216,6 @@ void MethodDesc::AllocateCodeData(LoaderHeap* pHeap, AllocMemTracker* pamTracker
         THROWS;
         PRECONDITION(pHeap != NULL);
         PRECONDITION(pamTracker != NULL);
-        PRECONDITION(m_codeData == NULL);
     }
     CONTRACTL_END;
 
