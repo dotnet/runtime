@@ -4,10 +4,7 @@
 //
 // codeman.cpp - a managment class for handling multiple code managers
 //
-#if defined(TARGET_LINUX)
-#include <sys/prctl.h>
-#include <sys/syscall.h>
-#endif // defined(TARGET_LINUX)
+
 #include "common.h"
 #include "jitinterface.h"
 #include "corjit.h"
@@ -44,13 +41,6 @@
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
 #endif
-
-#if defined(TARGET_LINUX) && !defined(PR_SVE_GET_VL)
-#define PR_SVE_SET_VL           50	/* set task vector length */
-#define PR_SVE_GET_VL           51	/* get task vector length */
-#define PR_SVE_VL_LEN_MASK      0xffff
-#define PR_SVE_VL_INHERIT       (1 << 17) /* inherit across exec */
-#endif // defined(TARGET_LINUX) && !defined(PR_SVE_GET_VL)
 
 // Default number of jump stubs in a jump stub block
 #define DEFAULT_JUMPSTUBS_PER_BLOCK  32
@@ -1535,23 +1525,16 @@ void EEJitManager::SetCpuInfo()
 
     if (((cpuFeatures & ARM64IntrinsicConstants_Sve) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Sve))
     {
-#if defined(TARGET_LINUX)
-        // prctl() expects vector length in bytes.
         int maxVectorLength = (maxVectorTBitWidth >> 3);
+        uint64_t systemVectorTLength = GetSystemVectorLength();
 
-        // Limit the SVE vector length to 'maxVectorLength' if the underlying hardware offers longer vectors.
-        if ((prctl(PR_SVE_GET_VL, 0,0,0,0) & PR_SVE_VL_LEN_MASK) > maxVectorLength)
+        if (maxVectorLength >= systemVectorTLength)
         {
-            if (prctl(PR_SVE_SET_VL, (maxVectorLength | PR_SVE_VL_INHERIT), 0, 0, 0) == -1)
-            {
-                LogErrorToHost("LoadAndInitializeJIT: prctl() FAILED - unable to set maxVectorLength to %d", maxVectorLength);
-            }
+            // Enable SVE only when user specified vector length larger than or equal to the system
+            // vector length. When eabled, SVE would use full vector length available to the process.
+            // For a 256-bit machine, if user provides DOTNET_MaxVectorTBitWidth=128, disable SVE.
+            CPUCompileFlags.Set(InstructionSet_Sve);
         }
-#elif defined(TARGET_WINDOWS)
-        // TODO-SVE: Add prctl() equivalent for windows.
-#endif
-
-        CPUCompileFlags.Set(InstructionSet_Sve);
     }
 
     // DCZID_EL0<4> (DZP) indicates whether use of DC ZVA instructions is permitted (0) or prohibited (1).

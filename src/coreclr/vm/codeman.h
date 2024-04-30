@@ -1912,6 +1912,16 @@ public:
         return m_CPUCompileFlags;
     }
 
+#ifdef __GNUC__
+    __attribute__((target("sve")))
+#endif
+    inline UINT64 GetSystemVectorLength()
+    {
+        UINT64 size;
+        __asm__ __volatile__("cntb %0" : "=r"(size));
+        return size;
+    }
+
 private:
     bool m_storeRichDebugInfo;
 
