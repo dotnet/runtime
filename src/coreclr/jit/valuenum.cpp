@@ -6521,6 +6521,7 @@ bool ValueNumStore::IsVNPositiveInt32Constant(ValueNum vn)
 // IsVNArrLenUnsignedBound: Checks if the specified vn represents an expression
 //    of one of the following forms:
 //    - "(uint)i < (uint)len" that implies (0 <= i < len)
+//    - "(ulong)i < (ulong)len" that implies (0 <= i < len)
 //    - "const < (uint)len" that implies "len > const"
 //    - "const <= (uint)len" that implies "len > const - 1"
 //
