@@ -59,7 +59,7 @@ namespace System.Net.Http
         private SslClientAuthenticationOptions? _sslOptionsHttp3;
         private readonly SslClientAuthenticationOptions? _sslOptionsProxy;
 
-        private readonly CredentialCache? _preAuthCredentials;
+        private readonly PreAuthCredentialCache? _preAuthCredentials;
 
         /// <summary>Whether the pool has been used since the last time a cleanup occurred.</summary>
         private bool _usedSinceLastCleanup = true;
@@ -237,7 +237,7 @@ namespace System.Net.Http
             // Set up for PreAuthenticate.  Access to this cache is guarded by a lock on the cache itself.
             if (_poolManager.Settings._preAuthenticate)
             {
-                _preAuthCredentials = new CredentialCache();
+                _preAuthCredentials = new PreAuthCredentialCache();
             }
 
             _http11RequestQueue = new RequestQueue<HttpConnection>();
@@ -296,7 +296,7 @@ namespace System.Net.Http
         public bool IsSecure => _kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.SslSocksTunnel;
         public Uri? ProxyUri => _proxyUri;
         public ICredentials? ProxyCredentials => _poolManager.ProxyCredentials;
-        public CredentialCache? PreAuthCredentials => _preAuthCredentials;
+        public PreAuthCredentialCache? PreAuthCredentials => _preAuthCredentials;
         public bool IsDefaultPort => OriginAuthority.Port == (IsSecure ? DefaultHttpsPort : DefaultHttpPort);
         private bool DoProxyAuth => (_kind == HttpConnectionKind.Proxy || _kind == HttpConnectionKind.ProxyConnect);
 
