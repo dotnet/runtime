@@ -3418,14 +3418,6 @@ bool Compiler::fgReorderBlocks(bool useProfile)
         {
             fgDoReversePostOrderLayout();
             fgMoveColdBlocks();
-
-#ifdef DEBUG
-            if (expensiveDebugCheckLevel >= 2)
-            {
-                fgDebugCheckBBlist();
-            }
-#endif // DEBUG
-
             return true;
         }
 
@@ -4553,7 +4545,7 @@ void Compiler::fgDoReversePostOrderLayout()
     }
 #endif // DEBUG
 
-    // Compute DFS of main function body's blocks, using profile data to determine the order successors are visited in
+    // Compute DFS of all blocks in the method, using profile data to determine the order successors are visited in
     //
     FlowGraphDfsTree* const dfsTree = fgComputeDfs</* useProfile */ true>();
 
@@ -4572,15 +4564,41 @@ void Compiler::fgDoReversePostOrderLayout()
         return;
     }
 
+    // The RPO will scramble the EH regions, requiring us to correct their state.
+    // To do so, we will need to determine the new end blocks of each region.
+    //
+    struct EHLayoutInfo
+    {
+        BasicBlock* tryRegionEnd;
+        BasicBlock* hndRegionEnd;
+        bool        tryRegionInMainBody;
+
+        // Default constructor provided so we can call ArrayStack::Emplace
+        //
+        EHLayoutInfo() = default;
+    };
+
+    ArrayStack<EHLayoutInfo> regions(getAllocator(), compHndBBtabCount);
+
     // The RPO will break up call-finally pairs, so save them before re-ordering
     //
     BlockToBlockMap callFinallyPairs(getAllocator());
 
-    for (BasicBlock* const block : Blocks())
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
-        if (block->isBBCallFinallyPair())
+        // Default-initialize a EHLayoutInfo for each EH clause
+        regions.Emplace();
+
+        if (HBtab->HasFinallyHandler())
         {
-            callFinallyPairs.Set(block, block->Next());
+            for (BasicBlock* const pred : HBtab->ebdHndBeg->PredBlocks())
+            {
+                assert(pred->KindIs(BBJ_CALLFINALLY));
+                if (pred->isBBCallFinallyPair())
+                {
+                    callFinallyPairs.Set(pred, pred->Next());
+                }
+            }
         }
     }
 
@@ -4621,22 +4639,19 @@ void Compiler::fgDoReversePostOrderLayout()
     // (for example, by pushing throw blocks unreachable via normal flow to the end of the region).
     // First, determine the new EH region ends.
     //
-    BasicBlock** const tryRegionEnds       = new (this, CMK_Generic) BasicBlock* [compHndBBtabCount] {};
-    bool* const        tryRegionInMainBody = new (this, CMK_Generic) bool[compHndBBtabCount]{};
-    BasicBlock** const hndRegionEnds       = new (this, CMK_Generic) BasicBlock* [compHndBBtabCount] {};
 
     for (BasicBlock* const block : Blocks(fgFirstBB, fgLastBBInMainFunction()))
     {
         if (block->hasTryIndex())
         {
-            const unsigned tryIndex       = block->getTryIndex();
-            tryRegionEnds[tryIndex]       = block;
-            tryRegionInMainBody[tryIndex] = true;
+            EHLayoutInfo& layoutInfo       = regions.TopRef(block->getTryIndex());
+            layoutInfo.tryRegionEnd        = block;
+            layoutInfo.tryRegionInMainBody = true;
         }
 
         if (block->hasHndIndex())
         {
-            hndRegionEnds[block->getHndIndex()] = block;
+            regions.TopRef(block->getHndIndex()).hndRegionEnd = block;
         }
     }
 
@@ -4644,12 +4659,17 @@ void Compiler::fgDoReversePostOrderLayout()
     {
         if (block->hasHndIndex())
         {
-            hndRegionEnds[block->getHndIndex()] = block;
+            regions.TopRef(block->getHndIndex()).hndRegionEnd = block;
         }
 
-        if (block->hasTryIndex() && !tryRegionInMainBody[block->getTryIndex()])
+        if (block->hasTryIndex())
         {
-            tryRegionEnds[block->getTryIndex()] = block;
+            EHLayoutInfo& layoutInfo = regions.TopRef(block->getTryIndex());
+
+            if (!layoutInfo.tryRegionInMainBody)
+            {
+                layoutInfo.tryRegionEnd = block;
+            }
         }
     }
 
@@ -4658,7 +4678,7 @@ void Compiler::fgDoReversePostOrderLayout()
     unsigned XTnum = 0;
     for (EHblkDsc* const HBtab : EHClauses(this))
     {
-        BasicBlock* const tryEnd = tryRegionEnds[XTnum++];
+        BasicBlock* const tryEnd = regions.TopRef(XTnum++).tryRegionEnd;
 
         // We can have multiple EH descriptors map to the same try region,
         // but we will only update the try region's last block pointer at the index given by BasicBlock::getTryIndex,
@@ -4679,7 +4699,7 @@ void Compiler::fgDoReversePostOrderLayout()
         //
         if (enclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
         {
-            BasicBlock* const enclosingTryEnd = tryRegionEnds[enclosingTryIndex];
+            BasicBlock* const enclosingTryEnd = regions.TopRef(enclosingTryIndex).tryRegionEnd;
 
             // If multiple EH descriptors map to the same try region,
             // then the enclosing region's last block might be null in the table, so set it here.
@@ -4688,7 +4708,7 @@ void Compiler::fgDoReversePostOrderLayout()
             //
             if ((enclosingTryEnd == nullptr) || enclosingTryEnd->NextIs(HBtab->ebdTryBeg))
             {
-                tryRegionEnds[enclosingTryIndex] = tryEnd;
+                regions.TopRef(enclosingTryIndex).tryRegionEnd = tryEnd;
             }
         }
     }
@@ -4700,7 +4720,7 @@ void Compiler::fgDoReversePostOrderLayout()
     {
         // The end of each handler region should have been visited by iterating the blocklist above
         //
-        BasicBlock* const hndEnd = hndRegionEnds[XTnum++];
+        BasicBlock* const hndEnd = regions.TopRef(XTnum++).hndRegionEnd;
         assert(hndEnd != nullptr);
 
         // Update the end pointer of this handler region to the new last block
@@ -4712,7 +4732,7 @@ void Compiler::fgDoReversePostOrderLayout()
         //
         if (enclosingHndIndex != EHblkDsc::NO_ENCLOSING_INDEX)
         {
-            BasicBlock* const enclosingHndEnd = hndRegionEnds[enclosingHndIndex];
+            BasicBlock* const enclosingHndEnd = regions.TopRef(enclosingHndIndex).hndRegionEnd;
             assert(enclosingHndEnd != nullptr);
 
             // If the enclosing region ends right before the nested region begins,
@@ -4721,7 +4741,7 @@ void Compiler::fgDoReversePostOrderLayout()
             BasicBlock* const hndBeg = HBtab->HasFilter() ? HBtab->ebdFilter : HBtab->ebdHndBeg;
             if (enclosingHndEnd->NextIs(hndBeg))
             {
-                hndRegionEnds[enclosingHndIndex] = hndEnd;
+                regions.TopRef(enclosingHndIndex).hndRegionEnd = hndEnd;
             }
         }
     }
@@ -4759,7 +4779,7 @@ void Compiler::fgMoveColdBlocks()
         // Instead, set the end of the region to the BBJ_CALLFINALLY block in the pair.
         // Also, don't consider blocks in handler regions.
         // (If all of some try region X is enclosed in an exception handler,
-        // lastColdTryBlocks[X] will be null. We will handle this case later.)
+        // lastColdTryBlocks[X] will be null. We will check for this case in tryMovingBlock below.)
         //
         if (!block->isBBCallFinallyPairTail() && !block->hasHndIndex())
         {

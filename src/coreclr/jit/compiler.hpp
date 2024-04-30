@@ -669,6 +669,10 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func, const bool
             }
             else if (useProfile && (GetTrueEdge()->getLikelihood() < GetFalseEdge()->getLikelihood()))
             {
+                // When building an RPO-based block layout, we want to visit the unlikely successor first
+                // so that in the DFS computation, the likely successor will be processed right before this block,
+                // meaning the RPO-based layout will enable fall-through into the likely successor.
+                //
                 RETURN_ON_ABORT(func(GetTrueTarget()));
                 RETURN_ON_ABORT(func(GetFalseTarget()));
             }
