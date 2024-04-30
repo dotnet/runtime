@@ -5569,7 +5569,7 @@ bool FlowGraphNaturalLoop::InitBlockEntersLoopOnTrue(BasicBlock* initBlock)
 // the loop.
 //
 // Returns:
-//   Block with highest bbNum.
+//   First block in block order contained in the loop.
 //
 // Remarks:
 //   Mostly exists as a quirk while transitioning from the old loop
@@ -5577,12 +5577,13 @@ bool FlowGraphNaturalLoop::InitBlockEntersLoopOnTrue(BasicBlock* initBlock)
 //
 BasicBlock* FlowGraphNaturalLoop::GetLexicallyTopMostBlock()
 {
-    BasicBlock* top = m_header;
-    VisitLoopBlocks([&top](BasicBlock* loopBlock) {
-        if (loopBlock->bbNum < top->bbNum)
-            top = loopBlock;
-        return BasicBlockVisit::Continue;
-    });
+    BasicBlock* top = m_dfsTree->GetCompiler()->fgFirstBB;
+
+    while (!ContainsBlock(top))
+    {
+        top = top->Next();
+        assert(top != nullptr);
+    }
 
     return top;
 }
@@ -5592,7 +5593,7 @@ BasicBlock* FlowGraphNaturalLoop::GetLexicallyTopMostBlock()
 // within the loop.
 //
 // Returns:
-//   Block with highest bbNum.
+//   Last block in block order contained in the loop.
 //
 // Remarks:
 //   Mostly exists as a quirk while transitioning from the old loop
@@ -5600,12 +5601,13 @@ BasicBlock* FlowGraphNaturalLoop::GetLexicallyTopMostBlock()
 //
 BasicBlock* FlowGraphNaturalLoop::GetLexicallyBottomMostBlock()
 {
-    BasicBlock* bottom = m_header;
-    VisitLoopBlocks([&bottom](BasicBlock* loopBlock) {
-        if (loopBlock->bbNum > bottom->bbNum)
-            bottom = loopBlock;
-        return BasicBlockVisit::Continue;
-    });
+    BasicBlock* bottom = m_dfsTree->GetCompiler()->fgLastBB;
+
+    while (!ContainsBlock(bottom))
+    {
+        bottom = bottom->Prev();
+        assert(bottom != nullptr);
+    }
 
     return bottom;
 }
