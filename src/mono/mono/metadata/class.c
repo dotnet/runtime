@@ -5264,7 +5264,7 @@ mono_class_get_fields_internal (MonoClass *klass, gpointer *iter)
  * mono_class_get_methods:
  * \param klass the \c MonoClass to act on
  *
- * This routine is an iterator routine for retrieving the fields in a class.
+ * This routine is an iterator routine for retrieving the methods in a class.
  *
  * You must pass a \c gpointer that points to zero and is treated as an opaque handle to
  * iterate over all of the elements.  When no more values are

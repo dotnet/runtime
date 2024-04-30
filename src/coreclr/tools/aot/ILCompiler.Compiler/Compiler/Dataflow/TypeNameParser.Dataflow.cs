@@ -9,6 +9,8 @@ namespace System.Reflection
 {
     internal partial struct TypeNameParser
     {
+        private static readonly TypeNameParseOptions s_typeNameParseOptions = new() { MaxNodes = int.MaxValue };
+
         private TypeSystemContext _context;
         private ModuleDesc _callingModule;
         private List<ModuleDesc> _referencedModules;
@@ -17,7 +19,7 @@ namespace System.Reflection
         public static TypeDesc ResolveType(string name, ModuleDesc callingModule,
             TypeSystemContext context, List<ModuleDesc> referencedModules, out bool typeWasNotFoundInAssemblyNorBaseLibrary)
         {
-            if (!TypeName.TryParse(name, out TypeName parsed))
+            if (!TypeName.TryParse(name, out TypeName parsed, s_typeNameParseOptions))
             {
                 typeWasNotFoundInAssemblyNorBaseLibrary = false;
                 return null;

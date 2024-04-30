@@ -720,7 +720,7 @@ namespace System.Security.Cryptography.Xml
             return collection;
         }
 
-#if NET5_0_OR_GREATER
+#if NET
         internal static string EncodeHexString(byte[] sArray)
         {
             return Convert.ToHexString(sArray);

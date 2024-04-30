@@ -1427,15 +1427,18 @@ convert (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype)
 }
 
 static void
-emit_memset (EmitContext *ctx, LLVMValueRef v, LLVMValueRef size, int alignment)
+emit_memset (EmitContext *ctx, LLVMValueRef dest, LLVMValueRef val, LLVMValueRef size, int alignment)
 {
 	LLVMValueRef args [5];
 	int aindex = 0;
 
-	args [aindex ++] = v;
-	args [aindex ++] = LLVMConstInt (LLVMInt8Type (), 0, FALSE);
+	args [aindex ++] = dest;
+	if (val)
+		args [aindex ++] = val;
+	else
+		args [aindex ++] = LLVMConstInt (LLVMInt8Type (), 0, FALSE);
 	args [aindex ++] = size;
-	args [aindex ++] = LLVMConstInt (LLVMInt1Type (), 0, FALSE);
+	args [aindex ++] = LLVMConstInt (LLVMInt1Type (), 0, FALSE); // is_volatile
 	call_intrins (ctx, INTRINS_MEMSET, args, "");
 }
 
@@ -6159,7 +6162,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 						 * load it into registers.
 						 */
 						LLVMValueRef buf = build_alloca_llvm_type_name (ctx, pointer_type (ret_type), 0, "ret_buf");
-						emit_memset (ctx, buf, LLVMSizeOf (ret_type), 1);
+						emit_memset (ctx, buf, NULL, LLVMSizeOf (ret_type), 1);
 
 						int width = mono_type_size (sig->ret, NULL);
 						LLVMValueRef args [] = {
@@ -7000,7 +7003,7 @@ MONO_RESTORE_WARNING
 			v = mono_llvm_build_alloca (builder, LLVMInt8Type (), const_int32 (size), MONO_ARCH_FRAME_ALIGNMENT, "");
 
 			if (ins->flags & MONO_INST_INIT)
-				emit_memset (ctx, v, const_int32 (size), MONO_ARCH_FRAME_ALIGNMENT);
+				emit_memset (ctx, v, NULL, const_int32 (size), MONO_ARCH_FRAME_ALIGNMENT);
 
 			values [ins->dreg] = v;
 			break;
@@ -7013,7 +7016,7 @@ MONO_RESTORE_WARNING
 			v = mono_llvm_build_alloca (builder, LLVMInt8Type (), size, MONO_ARCH_FRAME_ALIGNMENT, "");
 
 			if (ins->flags & MONO_INST_INIT)
-				emit_memset (ctx, v, size, MONO_ARCH_FRAME_ALIGNMENT);
+				emit_memset (ctx, v, NULL, size, MONO_ARCH_FRAME_ALIGNMENT);
 			values [ins->dreg] = v;
 			break;
 		}
@@ -7229,6 +7232,19 @@ MONO_RESTORE_WARNING
 			args [argn++] = LLVMConstInt (LLVMInt1Type (), 0, FALSE);  // is_volatile
 
 			call_intrins (ctx, INTRINS_MEMMOVE, args, "");
+			break;
+		}
+		case OP_MEMSET_ZERO: {
+			LLVMValueRef dest = convert (ctx, values [ins->sreg1], pointer_type (LLVMInt8Type ()));
+			LLVMValueRef size = convert (ctx, values [ins->sreg2], LLVMInt64Type ());
+			emit_memset (ctx, dest, NULL, size, MONO_ARCH_FRAME_ALIGNMENT);
+			break;
+		}
+		case OP_MEMSET: {
+			LLVMValueRef dest = convert (ctx, values [ins->sreg1], pointer_type (LLVMInt8Type ()));
+			LLVMValueRef val = convert (ctx, values [ins->sreg2], LLVMInt8Type ());
+			LLVMValueRef size = convert (ctx, values [ins->sreg3], LLVMInt64Type ());
+			emit_memset (ctx, dest, val, size, MONO_ARCH_FRAME_ALIGNMENT);
 			break;
 		}
 		case OP_NOT_REACHED:
@@ -7863,7 +7879,7 @@ MONO_RESTORE_WARNING
 				addresses [ins->dreg] = create_address (ctx, build_named_alloca (ctx, m_class_get_byval_arg (klass), "vzero"), etype);
 			}
 			LLVMValueRef ptr = build_ptr_cast (builder, addresses [ins->dreg]->value, pointer_type (LLVMInt8Type ()));
-			emit_memset (ctx, ptr, const_int32 (mono_class_value_size (klass, NULL)), 0);
+			emit_memset (ctx, ptr, NULL, const_int32 (mono_class_value_size (klass, NULL)), 0);
 			break;
 		}
 		case OP_DUMMY_VZERO:
