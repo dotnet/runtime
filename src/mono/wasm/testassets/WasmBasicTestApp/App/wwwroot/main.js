@@ -37,7 +37,7 @@ switch (testCase) {
             let alreadyFailed = [];
             dotnet.withDiagnosticTracing(true).withResourceLoader((type, name, defaultUri, integrity, behavior) => {
                 if (type === "dotnetjs") {
-                    // loadBootResource could return string with unqualified name of resource. 
+                    // loadBootResource could return string with unqualified name of resource.
                     // It assumes that we resolve it with document.baseURI
                     // we test it here
                     return `_framework/${name}`;
@@ -131,8 +131,8 @@ try {
                 }
             });
             const iterationCount = params.get("iterationCount") ?? 70;
-            for (let i = 0; i < iterationCount; i++) { 
-                exports.InterpPgoTest.Greeting(); 
+            for (let i = 0; i < iterationCount; i++) {
+                exports.InterpPgoTest.Greeting();
             };
             await INTERNAL.interp_pgo_save_data();
             exit(0);

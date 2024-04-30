@@ -17,7 +17,8 @@ namespace System.Reflection.Metadata
     [DebuggerDisplay("{_inputString}")]
     internal ref struct TypeNameParser
     {
-        private static readonly TypeNameParseOptions _defaults = new();
+        private static readonly TypeNameParseOptions s_defaults = new();
+
         private readonly bool _throwOnError;
         private readonly TypeNameParseOptions _parseOptions;
         private ReadOnlySpan<char> _inputString;
@@ -26,7 +27,7 @@ namespace System.Reflection.Metadata
         {
             _inputString = name;
             _throwOnError = throwOnError;
-            _parseOptions = options ?? _defaults;
+            _parseOptions = options ?? s_defaults;
         }
 
         internal static TypeName? Parse(ReadOnlySpan<char> typeName, bool throwOnError, TypeNameParseOptions? options = default)
@@ -50,7 +51,7 @@ namespace System.Reflection.Metadata
             {
                 if (throwOnError)
                 {
-                    if (recursiveDepth >= parser._parseOptions.MaxNodes)
+                    if (parser._parseOptions.IsMaxDepthExceeded(recursiveDepth))
                     {
                         ThrowInvalidOperation_MaxNodesExceeded(parser._parseOptions.MaxNodes);
                     }
@@ -249,7 +250,7 @@ namespace System.Reflection.Metadata
 
         private bool TryDive(ref int depth)
         {
-            if (depth >= _parseOptions.MaxNodes)
+            if (_parseOptions.IsMaxDepthExceeded(depth))
             {
                 return false;
             }

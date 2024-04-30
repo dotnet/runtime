@@ -1539,6 +1539,17 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         }
                         break;
 
+                    case NI_Sve_CreateWhileLessThanMask8Bit:
+                    case NI_Sve_CreateWhileLessThanOrEqualMask8Bit:
+                    case NI_Sve_CreateWhileLessThanMask16Bit:
+                    case NI_Sve_CreateWhileLessThanOrEqualMask16Bit:
+                    case NI_Sve_CreateWhileLessThanMask32Bit:
+                    case NI_Sve_CreateWhileLessThanOrEqualMask32Bit:
+                    case NI_Sve_CreateWhileLessThanMask64Bit:
+                    case NI_Sve_CreateWhileLessThanOrEqualMask64Bit:
+                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(sigReader.op1JitType);
+                        break;
+
                     default:
                         break;
                 }
@@ -1611,7 +1622,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         GenTree* op1 = retNode->AsHWIntrinsic()->Op(1);
         if (intrinsic == NI_Sve_ConditionalSelect)
         {
-            if (op1->IsVectorAllBitsSet())
+            if (op1->IsVectorAllBitsSet() || op1->IsMaskAllBitsSet())
             {
                 return retNode->AsHWIntrinsic()->Op(2);
             }
