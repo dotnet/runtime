@@ -8,6 +8,28 @@ using System.Text;
 
 #nullable enable
 
+#if SYSTEM_PRIVATE_CORELIB
+namespace System.Reflection.Metadata
+{
+    internal struct TypeNameParseOptions
+    {
+        public TypeNameParseOptions() { }
+#pragma warning disable CA1822 // Mark members as static
+        // CoreLib does not enforce any limits
+        public bool IsMaxDepthExceeded(int _) => false;
+        public int MaxNodes
+        {
+            get
+            {
+                 Debug.Fail("Expected to be unreachable");
+                 return 0;
+            }
+        }
+#pragma warning restore CA1822
+    }
+}
+#endif
+
 namespace System.Reflection
 {
     internal partial struct TypeNameParser

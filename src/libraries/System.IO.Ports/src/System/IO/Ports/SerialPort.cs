@@ -963,7 +963,7 @@ namespace System.IO.Ports
                 Buffer.BlockCopy(_inBuffer, _readPos, bytesReceived, 0, CachedBytesToRead);
             }
 
-#if NET7_0_OR_GREATER
+#if NET
             _internalSerialStream.ReadExactly(bytesReceived, CachedBytesToRead, bytesReceived.Length - CachedBytesToRead);    // get everything
 #else
             int readCount = bytesReceived.Length - CachedBytesToRead;
