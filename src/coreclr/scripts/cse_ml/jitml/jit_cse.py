@@ -93,7 +93,7 @@ class JitCseEnv(gym.Env):
         failure_count = 0
         while True:
             index = self.__select_method()
-            no_cse = self._jit_method(index, JitMetrics=1, JitRLHook=1, JitRLHookCSEDecisions=[0])
+            no_cse = self._jit_method(index, JitMetrics=1, JitRLHook=1, JitRLHookCSEDecisions=[])
             if no_cse is None:
                 continue
 

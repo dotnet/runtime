@@ -77,7 +77,7 @@ def test_model(superpmi, jitrl : JitCseModel, method_ids, model_name):
                             ascii=False):
         # the original JIT method
         original = jit_with_retry(superpmi, m_id, JitMetrics=1)
-        no_cse = jit_with_retry(superpmi, m_id, JitMetrics=1, JitRLHook=1, JitRLHookCSEDecisions=[0])
+        no_cse = jit_with_retry(superpmi, m_id, JitMetrics=1, JitRLHook=1, JitRLHookCSEDecisions=[])
 
         if original is None or no_cse is None:
             set_result(data, m_id, 0, 0, 0, ModelResult.JIT_FAILED)
