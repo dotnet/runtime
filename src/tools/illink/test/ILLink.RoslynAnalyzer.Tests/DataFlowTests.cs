@@ -290,6 +290,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task MethodOutParameterDataFlow ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task MethodParametersDataFlow ()
 		{
 			return RunTest (nameof (MethodParametersDataFlow));
