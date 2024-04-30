@@ -6,6 +6,7 @@
     <MergedWrapperProjectReference Include="*/**/*_ro.??proj" />
     <ProjectReference Include="../common/localloc_common.ilproj" />
     <ProjectReference Include="../common/eh_common.csproj" />
+    <ProjectReference Include="cctor/misc/testlib_misc.csproj" />
     <ProjectReference Include="Boxing/xlang/sinlib_cs.csproj" Aliases="sinlib_cs" />
     <ProjectReference Include="Boxing/xlang/sinlib_il.ilproj" Aliases="sinlib_il" />
   </ItemGroup>
@@ -251,12 +252,6 @@
     <Compile Include="refany\stress1.cs" />
     <Compile Include="refany\stress3-64bit.cs" />
     <Compile Include="refany\virtcall.cs" />
-    <Compile Include="unsafecsharp\main.cs" />
-    <Compile Include="unsafecsharp\main.cs" />
-    <Compile Include="unsafecsharp\main.cs" />
-    <Compile Include="unsafecsharp\main.cs" />
-    <Compile Include="unsafecsharp\main.cs" />
-    <Compile Include="unsafecsharp\main.cs" />
     <Compile Include="unsafecsharp\main.cs" />
     <Compile Include="unsafecsharp\unsafe-0.cs" />
     <Compile Include="unsafecsharp\unsafe-1.cs" />

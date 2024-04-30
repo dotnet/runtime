@@ -10,9 +10,11 @@
     <MergedWrapperProjectReference Remove="*/**/*_do.??proj" />
     <MergedWrapperProjectReference Remove="*/**/*_r.??proj" />
     <MergedWrapperProjectReference Remove="*/**/*_ro.??proj" />
+    <!-- Treat these references as regular project references. -->
     <ProjectReference Include="../common/localloc_common.ilproj" />
     <ProjectReference Include="../common/eh_common.csproj" />
     <ProjectReference Include="flowgraph/dev10_bug679008/helper.ilproj" />
+    <MergedWrapperProjectReference Remove="flowgraph/dev10_bug679008/helper.ilproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Arrays\misc\IndexingSideEffects.cs" />

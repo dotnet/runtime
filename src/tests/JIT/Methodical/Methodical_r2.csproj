@@ -113,12 +113,6 @@
     <Compile Include="refany\virtcall.cs" />
     <Compile Include="tailcall\widen.cs" />
     <Compile Include="unsafecsharp\main.cs" />
-    <Compile Include="unsafecsharp\main.cs" />
-    <Compile Include="unsafecsharp\main.cs" />
-    <Compile Include="unsafecsharp\main.cs" />
-    <Compile Include="unsafecsharp\main.cs" />
-    <Compile Include="unsafecsharp\main.cs" />
-    <Compile Include="unsafecsharp\main.cs" />
     <Compile Include="unsafecsharp\unsafe-0.cs" />
     <Compile Include="unsafecsharp\unsafe-1.cs" />
     <Compile Include="unsafecsharp\unsafe-2.cs" />
