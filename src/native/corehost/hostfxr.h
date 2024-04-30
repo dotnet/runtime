@@ -355,7 +355,7 @@ struct hostfxr_dotnet_environment_info
 //
 // String encoding:
 //   Windows     - UTF-16 (pal::char_t is 2 byte wchar_t)
-//   Unix        - UTF-8  (pal::char_t is 1 byte char)
+//   Non-Windows - UTF-8  (pal::char_t is 1 byte char)
 //
 typedef int32_t(HOSTFXR_CALLTYPE* hostfxr_get_dotnet_environment_info_fn)(
     const char_t* dotnet_root,
@@ -403,11 +403,11 @@ typedef void (HOSTFXR_CALLTYPE* hostfxr_resolve_frameworks_result_fn)(
 //      Optional. Additional context passed to the result callback.
 //
 // Return value:
-//     0 on success, otherwise failure.
+//   0 on success, otherwise failure.
 //
 // String encoding:
-//     Windows  - UTF-16 (pal::char_t is 2-byte wchar_t)
-//     Unix     - UTF-8  (pal::char_t is 1-byte char)
+//   Windows     - UTF-16 (pal::char_t is 2-byte wchar_t)
+//   Non-Windows - UTF-8  (pal::char_t is 1-byte char)
 //
 typedef int32_t(HOSTFXR_CALLTYPE* hostfxr_resolve_frameworks_for_runtime_config_fn)(
     const char_t* runtime_config_path,

@@ -114,7 +114,7 @@ SHARED_API int HOSTFXR_CALLTYPE hostfxr_main(const int argc, const pal::char_t* 
 //
 // String encoding:
 //   Windows     - UTF-16 (pal::char_t is 2 byte wchar_t)
-//   Unix        - UTF-8  (pal::char_t is 1 byte char)
+//   Non-Windows - UTF-8  (pal::char_t is 1 byte char)
 //
 SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_sdk(
     const pal::char_t* exe_dir,
@@ -234,7 +234,7 @@ typedef void (HOSTFXR_CALLTYPE *hostfxr_resolve_sdk2_result_fn)(
 //
 // String encoding:
 //   Windows     - UTF-16 (pal::char_t is 2 byte wchar_t)
-//   Unix        - UTF-8  (pal::char_t is 1 byte char)
+//   Non-Windows - UTF-8  (pal::char_t is 1 byte char)
 //
 SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_sdk2(
     const pal::char_t* exe_dir,
@@ -317,7 +317,7 @@ typedef void (HOSTFXR_CALLTYPE *hostfxr_get_available_sdks_result_fn)(
 //
 // String encoding:
 //   Windows     - UTF-16 (pal::char_t is 2 byte wchar_t)
-//   Unix        - UTF-8  (pal::char_t is 1 byte char)
+//   Non-Windows - UTF-8  (pal::char_t is 1 byte char)
 //
 SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_available_sdks(
     const pal::char_t* exe_dir,
@@ -492,7 +492,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_dotnet_environment_info(
 //
 // String encoding:
 //   Windows     - UTF-16 (pal::char_t is 2 byte wchar_t)
-//   Unix        - UTF-8  (pal::char_t is 1 byte char)
+//   Non-Windows - UTF-8  (pal::char_t is 1 byte char)
 //
 SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_native_search_directories(const int argc, const pal::char_t* argv[], pal::char_t buffer[], int32_t buffer_size, int32_t* required_buffer_size)
 {
