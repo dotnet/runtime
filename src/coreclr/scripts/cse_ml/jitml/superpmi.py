@@ -49,6 +49,21 @@ class SuperPmi:
     def __exit__(self, *_):
         self.stop()
 
+    def jit_with_retry(self, method_or_id : int | MethodContext, retry=1, **options) -> MethodContext:
+        """Attempts to jit the method, and retries if it fails up to "retry" times."""
+        if retry < 1:
+            raise ValueError("retry must be greater than 0.")
+
+        for _ in range(retry):
+            result = self.jit_method(method_or_id, **options)
+            if result is not None:
+                return result
+
+            self.stop()
+            self.start()
+
+        return None
+
     def jit_method(self, method_or_id : int | MethodContext, **options) -> MethodContext:
         """Jits the method given by id or MethodContext."""
         process = self._process
@@ -152,7 +167,7 @@ class SuperPmi:
         return MethodContext(**properties)
 
     def start(self):
-        """Returns the superpmi process."""
+        """Starts and returns the superpmi process."""
         if self._process is None:
             params = [self.superpmi_path, self.jit_path, '-streaming', 'stdin', self.mch]
             if self.verbose is not None:

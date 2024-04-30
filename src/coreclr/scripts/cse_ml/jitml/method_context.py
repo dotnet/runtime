@@ -78,6 +78,6 @@ class MethodContext(BaseModel):
     @field_validator('perf_score', mode='before')
     @classmethod
     def _validate_perf_score(cls, v):
-        if v < 0:
-            raise ValueError("perf_score must be non-negative")
+        if v <= 0:
+            raise ValueError("perf_score must be positive")
         return v

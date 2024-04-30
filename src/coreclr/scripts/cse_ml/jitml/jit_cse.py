@@ -7,8 +7,7 @@ import numpy as np
 from .method_context import MethodContext
 from .superpmi import SuperPmi
 from .default_observation import get_observation, create_observation
-from .constants import (REWARD_SCALE, REWARD_MIN, REWARD_MAX, FOUND_BEST_REWARD, NO_BETTER_METHOD_REWARD,
-                        INVALID_ACTION_PENALTY, INVALID_ACTION_LIMIT, MIN_CSE, MAX_CSE)
+from .constants import (INVALID_ACTION_PENALTY, INVALID_ACTION_LIMIT, MIN_CSE, MAX_CSE)
 
 class JitCseEnvState:
     """The state of the JIT environment."""
@@ -19,6 +18,10 @@ class JitCseEnvState:
         self.results = []
         self.invalid_action_count = 0
         self.total_reward = 0.0
+        self.terminated = False
+        self.truncated = False
+        self.last_action = None
+        self.last_action_valid = False
 
     def choose(self, index : int, result : MethodContext):
         """Chooses an action and updates the state."""
@@ -72,12 +75,10 @@ class JitCseEnv(gym.Env):
     def __init__(self, core_root : str, mch : str, methods : Optional[List[int]] = None):
         self.core_root = core_root
         self.mch = mch
-        self._state = None
+        self.state = None
         self.__superpmi = None
         self.methods = methods
         self.action_space = gym.spaces.Discrete(MAX_CSE + 1)
-
-        self.observation_function = get_observation
         self.observation_space = create_observation()
 
     def __del__(self):
@@ -104,61 +105,51 @@ class JitCseEnv(gym.Env):
             if failure_count > 512:
                 raise ValueError("No valid methods found")
 
-        self._state = JitCseEnvState(no_cse, original_heuristic)
+        self.state = JitCseEnvState(no_cse, original_heuristic)
         obs = self.get_observation(no_cse)
-        info = self.get_info(self._state, False)
-        return obs, info
+        return obs, self._get_info()
 
     def step(self, action):
         # the last action is always to terminate
         if action == self.action_space.n - 1:
             action = None
 
-        state = self._state
+        state = self.state
         if state is None:
             raise ValueError("Must call reset() before step()")
 
-        terminated = False
-        truncated = False
+        state.last_action = action
 
         # validate that the selected the action is valid
-        if not self._is_valid_action(action):
+        state.last_action_valid = self._is_valid_action(action)
+        if not state.last_action_valid:
             state.invalid_action_count += 1
 
-            truncated = state.invalid_action_count >= INVALID_ACTION_LIMIT
-            if terminated or truncated:
-                self._state = None
-
+            self.state.truncated = state.invalid_action_count >= INVALID_ACTION_LIMIT
             observation = self.get_observation(state.current)
-            info = self.get_info(state, terminated)
             reward = INVALID_ACTION_PENALTY
 
             state.total_reward += reward
-            return observation, reward, terminated, truncated, info
+            return observation, reward, state.terminated, state.truncated, self._get_info()
 
         # _perform_cse will return False if there was an error and we need to truncate
-        truncated = not self._perform_cse(action, state)
+        state.truncated = not self._perform_cse(action, state)
 
         current = state.current
         observation = self.get_observation(current)
-        terminated = action is None or not any((x for x in current.cse_candidates if x.can_apply))
-        reward = self.get_rewards(state, terminated) if not truncated else INVALID_ACTION_PENALTY
+        state.terminated = action is None or not any((x for x in current.cse_candidates if x.can_apply))
+        reward = self.get_rewards() if not state.truncated else INVALID_ACTION_PENALTY
         state.total_reward += reward
 
-        # must be after updating total_reward
-        info = self.get_info(state, terminated)
-
-        if terminated or truncated:
-            self._state = None
-
-        return observation, reward, terminated, truncated, info
+        return observation, reward, state.terminated, state.truncated, self._get_info()
 
     def get_observation(self, method : MethodContext):
         """Returns the observation for the current state.  Implemented here so it can be replaced."""
-        return self.observation_function(method)
+        return get_observation(method)
 
-    def get_info(self, state : JitCseEnvState, terminated : bool):
+    def _get_info(self):
         """Returns the info dictionary for the current state."""
+        state = self.state
         result = {
             'no_cse_method': state.no_cse_method,
             'heuristic_method': state.heuristic_method,
@@ -169,7 +160,7 @@ class JitCseEnv(gym.Env):
         }
 
         # Reported only once, when the episode is done.
-        if terminated:
+        if state.terminated:
             result['heuristic_score'] = state.heuristic_score
             result['no_cse_score'] = state.no_cse_score
             result['final_score'] = state.current.perf_score
@@ -179,55 +170,17 @@ class JitCseEnv(gym.Env):
 
         return result
 
-    def get_rewards(self, state : JitCseEnvState, completed : bool):
+    def get_rewards(self):
         """Returns the reward based on the change in performance score."""
-
-        # always reward for how much better/worse we got for this choice
+        state = self.state
         prev = state.previous_score
         curr = state.current.perf_score
-        rewards = (prev - curr) / prev
 
-        # if we are done, check some extra conditions
-        if completed:
-            # First, check if there is a CSE we could have applied for an immediate improvement
-            # and penalize for not finding that.
-            any_other_cses = any((x for x in state.current.cse_candidates if x.can_apply))
-            better_method = None
-            if any_other_cses:
+        # should not happen
+        if np.isclose(prev, 0.0, rtol=1e-05, atol=1e-08, equal_nan=False):
+            return 0.0
 
-                better_method = self._find_best_cse(state)
-                if better_method is not None:
-                    # if there was a better method, penalize for that.
-                    prev = better_method.perf_score
-                    curr = state.current.perf_score
-                    rewards += (prev - curr) / prev
-
-                else:
-                    # otherwise give a tiny reward for not taking a bad CSE
-                    rewards += NO_BETTER_METHOD_REWARD
-
-            # Next, check if we are better than the heuristic and reward/penalize for that.
-            prev = state.heuristic_score
-            curr = state.current.perf_score
-            heuristic_reward = (prev - curr) / prev
-
-            # But if there was a better method, don't reward for beating the heuristic.  In that case,
-            # we don't want to reward the early termination
-            if better_method is None:
-                rewards += heuristic_reward
-
-            elif heuristic_reward < 0:
-                rewards += heuristic_reward
-
-            # If we beat the heuristic and there wasn't another CSE we should have immediately applied,
-            # add an additional reward for besting the heuristic.
-            if any_other_cses and better_method is None and state.heuristic_score > state.current.perf_score:
-                rewards += FOUND_BEST_REWARD
-
-        rewards *= REWARD_SCALE
-        rewards = np.clip(rewards, REWARD_MIN, REWARD_MAX)
-
-        return rewards
+        return (prev - curr) / prev
 
     def _find_best_cse(self, state : JitCseEnvState):
         """Check to see if any of the CSE's are immediately better."""
@@ -246,7 +199,7 @@ class JitCseEnv(gym.Env):
         return best
 
     def _is_valid_action(self, action):
-        state = self._state
+        state = self.state
 
         # Terminating is only valid if we have performed a CSE.  Doing no CSEs isn't allowed.
         if action is None:
@@ -271,14 +224,9 @@ class JitCseEnv(gym.Env):
         return True
 
     def _jit_method(self, m_id, *args, **kwargs):
-        superpmi = self.__get_superpmi()
-        result = superpmi.jit_method(m_id, *args, **kwargs)
+        superpmi = self.__get_or_create_superpmi()
 
-        # retry once
-        if result is None:
-            superpmi = self.__reset_superpmi()
-            result = superpmi.jit_method(m_id, *args, **kwargs)
-
+        result = superpmi.jit_with_retry(m_id, retry=2, *args, **kwargs)
         if result is None:
             self.__remove_method(m_id)
 
@@ -288,17 +236,9 @@ class JitCseEnv(gym.Env):
 
         return result
 
-    def __reset_superpmi(self):
-        superpmi = self.__superpmi
-        self.__superpmi = None
-        if superpmi is not None:
-            superpmi.stop()
-
-        return self.__get_superpmi()
-
     def __select_method(self):
         if self.methods is None:
-            superpmi = self.__get_superpmi()
+            superpmi = self.__get_or_create_superpmi()
             self.methods = [x.index for x in superpmi.enumerate_methods() if JitCseEnv.is_acceptable(x)]
 
         return np.random.choice(self.methods)
@@ -309,9 +249,13 @@ class JitCseEnv(gym.Env):
 
         self.methods = [x for x in self.methods if x != index]
 
-    def __get_superpmi(self):
+    def create_superpmi(self):
+        """Creates a superpmi instance."""
+        return SuperPmi(self.core_root, self.mch)
+
+    def __get_or_create_superpmi(self):
         if self.__superpmi is None:
-            self.__superpmi = SuperPmi(self.core_root, self.mch)
+            self.__superpmi = self.create_superpmi()
             self.__superpmi.start()
 
         return self.__superpmi
@@ -323,11 +267,11 @@ class JitCseEnv(gym.Env):
         return MIN_CSE <= applicable and len(method.cse_candidates) <= MAX_CSE
 
     def render(self) -> None:
-        state = self._state
+        state = self.state
         if state is not None:
             scores = [x.perf_score for x in state.results]
             print(f"{state.no_cse_method.index} heuristic_score: {state.heuristic_score} "
                   f"no_cse_score: {state.no_cse_score} choices:{state.choices} results:{scores}"
                   f"invalid_count:{state.invalid_action_count} ({state.no_cse_method.name})")
 
-__all__ = ['JitCseEnv']
+__all__ = ['JitCseEnv', 'JitCseEnvState']

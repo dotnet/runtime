@@ -69,6 +69,7 @@ def parse_args():
     parser.add_argument("--algorithm", default="PPO", help="The algorithm to use. (default: PPO)")
     parser.add_argument("--test_percent", type=float, default=0.1,
                         help="The percentage of data to use for testing. (default: 0.1)")
+    parser.add_argument("--deep_rewards", action='store_true', help="Use smarter rewards. (default: False)")
 
     args = parser.parse_args()
     if args.core_root is None:
