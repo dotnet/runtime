@@ -768,14 +768,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             public SharedTestState()
             {
-                HostApiInvokerApp = TestApp.CreateFromBuiltAssets("HostApiInvokerApp");
-
-                if (!OperatingSystem.IsWindows())
-                {
-                    // On non-Windows, we can't just P/Invoke to already loaded hostfxr, so copy it next to the app dll.
-                    File.Copy(Binaries.HostFxr.FilePath, Path.Combine(HostApiInvokerApp.Location, Binaries.HostFxr.FileName));
-                }
-
                 // Make a copy of the built .NET, as we will enable test-only behaviour
                 copiedDotnet = TestArtifact.CreateFromCopy(nameof(NativeHostApis), TestContext.BuiltDotNet.BinPath);
                 TestBehaviorEnabledDotNet = new DotNetCli(copiedDotnet.Location);
@@ -783,6 +775,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 // Enable test-only behavior for the copied .NET. We don't bother disabling the behaviour later,
                 // as we just delete the entire copy after the tests run.
                 _ = TestOnlyProductBehavior.Enable(TestBehaviorEnabledDotNet.GreatestVersionHostFxrFilePath);
+
+                HostApiInvokerApp = TestApp.CreateFromBuiltAssets("HostApiInvokerApp");
+
+                // On non-Windows, we can't just P/Invoke to already loaded hostfxr, so provide the app with
+                // paths to hostfxr so that it can handle resolving the library.
+                RuntimeConfig.FromFile(HostApiInvokerApp.RuntimeConfigJson)
+                    .WithProperty("HOSTFXR_PATH", TestContext.BuiltDotNet.GreatestVersionHostFxrFilePath)
+                    .WithProperty("HOSTFXR_PATH_TEST_BEHAVIOR", TestBehaviorEnabledDotNet.GreatestVersionHostFxrFilePath);
 
                 SdkAndFrameworkFixture = new SdkAndFrameworkFixture();
             }
