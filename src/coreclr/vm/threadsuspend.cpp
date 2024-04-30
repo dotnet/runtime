@@ -2104,16 +2104,16 @@ void Thread::RareDisablePreemptiveGC()
         goto Exit;
     }
 
+    // A thread that performs GC may switch modes inside GC and come here.
+    // We will not try suspending a thread that is responsible for the suspension.
     if (this == ThreadSuspend::GetSuspensionThread())
     {
         goto Exit;
     }
 
-    // TODO: VS why can we see this?
-    if (ThreadStore::HoldingThreadStore(this))
-    {
-        goto Exit;
-    }
+    // Regular threads should not try getting into coop mode
+    // while holding TS lock.
+    _ASSERTE(!ThreadStore::HoldingThreadStore(this));
 
     STRESS_LOG1(LF_SYNC, LL_INFO1000, "RareDisablePreemptiveGC: entering. Thread state = %x\n", m_State.Load());
 
@@ -2149,7 +2149,6 @@ void Thread::RareDisablePreemptiveGC()
             // let the debugger's helper thread sweep and pick it up.
 
 #ifdef FEATURE_HIJACK
-            // TODO: VS can we have hijacks here? why do we remove them?
             // Remove any hijacks we might have.
             UnhijackThread();
 #endif // FEATURE_HIJACK
@@ -5751,7 +5750,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 
     Thread *pThread = GetThread();
 
-    if (pThread->PreemptiveGCDisabled())
+    if (pThread->PreemptiveGCDisabled() != TRUE)
         return;
 
     PCODE ip = GetIP(interruptedContext);
