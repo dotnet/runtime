@@ -108,7 +108,7 @@ namespace System.Text.Json.Serialization.Metadata
         public static JsonConverter<long> Int64Converter => s_int64Converter ??= new Int64Converter();
         private static JsonConverter<long>? s_int64Converter;
 
-#if NET7_0_OR_GREATER
+#if NET
         /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="Int128"/> values.
         /// </summary>
