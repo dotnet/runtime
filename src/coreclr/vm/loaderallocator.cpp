@@ -1833,9 +1833,9 @@ void AssemblyLoaderAllocator::RegisterHandleForCleanup(OBJECTHANDLE objHandle)
 {
     CONTRACTL
     {
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         THROWS;
-        MODE_ANY;
+        MODE_COOPERATIVE;
         CAN_TAKE_LOCK;
         PRECONDITION(CheckPointer(objHandle));
         INJECT_FAULT(COMPlusThrowOM(););
@@ -1846,6 +1846,25 @@ void AssemblyLoaderAllocator::RegisterHandleForCleanup(OBJECTHANDLE objHandle)
 
     // InsertTail must be protected by a lock. Just use the loader allocator lock
     CrstHolder ch(&m_crstLoaderAllocator);
+    m_handleCleanupList.InsertTail(new (pItem) HandleCleanupListItem(objHandle));
+}
+
+void AssemblyLoaderAllocator::RegisterHandleForCleanupLocked(OBJECTHANDLE objHandle)
+{
+    CONTRACTL
+    {
+        GC_NOTRIGGER;
+        THROWS;
+        MODE_COOPERATIVE;
+        CAN_TAKE_LOCK;
+        PRECONDITION(CheckPointer(objHandle));
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END;
+
+    void * pItem = GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(HandleCleanupListItem)));
+    // InsertTail must be protected by a lock. Just use the loader allocator lock
+    _ASSERTE(m_crstLoaderAllocator.OwnedByCurrentThread());
     m_handleCleanupList.InsertTail(new (pItem) HandleCleanupListItem(objHandle));
 }
 
@@ -2198,3 +2217,56 @@ PTR_OnStackReplacementManager LoaderAllocator::GetOnStackReplacementManager()
 #endif //
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
+
+#ifndef DACCESS_COMPILE
+bool LoaderAllocator::InsertObjectIntoFieldWithLifetimeOfCollectibleLoaderAllocator(OBJECTREF value, Object** pField)
+{
+    CONTRACTL {
+
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        INJECT_FAULT(COMPlusThrowOM());
+        //REENTRANT
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(IsCollectible());
+    bool result = false;
+
+    GCPROTECT_BEGIN(value);
+    LOADERHANDLEHolder keepAliveForCollectibleLifetime(AllocateHandle(value), this);
+
+    // At this point we are no longer allowed to trigger a GC.
+    GCX_FORBID();
+    {
+        CrstHolder cs(&m_crstLoaderAllocator);
+        if (*pField == NULL)
+        {
+            // Allocating a weak interior handle is a tricky thing.
+            // 1. If there are multiple weak interior handles that point at a given interior pointer location, there will be heap corruption
+            // 2. If the interior handle is created, but not registered for cleanup, it is a memory leak
+            // 3. Since the weak interior handle doesn't actually keep the object alive, it needs to be kept alive by some other means
+            //
+            // We work around these details by the following means
+            // 1. We use a LOADERHANDLE to keep the object alive until the LoaderAllocator is freed.
+            // 2. We hold the crstLoaderAllocatorLock lock, and double check to ensure that the data is ready to be filled in
+            // 3. We create the weak interior handle, and register it for cleanup (which can fail with an OOM) before updating the statics data to have the pointer
+            // 4. Registration for cleanup cannot trigger a GC
+            // 5. We then unconditionally set the statics pointer.
+            WeakInteriorHandleHolder weakHandleHolder = GetAppDomain()->CreateWeakInteriorHandle(value, pField);
+            RegisterHandleForCleanupLocked(weakHandleHolder.GetValue());
+
+            // Cannot fail after here
+            VolatileStore(pField, OBJECTREFToObject(value));
+
+            weakHandleHolder.SuppressRelease();
+            keepAliveForCollectibleLifetime.SuppressRelease();
+            result = true;
+        }
+    }
+    GCPROTECT_END();
+    return result;
+}
+
+#endif

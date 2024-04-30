@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -66,7 +67,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			}
 
 			if (message.Length > 0) {
-				Assert.Fail(message);
+				Assert.Fail (message);
 			}
 		}
 
@@ -207,13 +208,18 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		static bool IsExpectedDiagnostic (AttributeSyntax attribute)
 		{
-			switch (attribute.Name.ToString ()) {
-			case "ExpectedWarning":
-			case "LogContains":
+			switch (attribute.Name.ToString () + "Attribute") {
+			case nameof (ExpectedWarningAttribute):
+			case nameof (UnexpectedWarningAttribute):
+			case nameof (LogContainsAttribute):
 				var args = LinkerTestBase.GetAttributeArguments (attribute);
 				if (args.TryGetValue ("ProducedBy", out var producedBy)) {
 					// Skip if this warning is not expected to be produced by any of the analyzers that we are currently testing.
 					return GetProducedBy (producedBy).HasFlag (Tool.Analyzer);
+				}
+				var toolArg = args.Where (arg => arg.Key.StartsWith ('#')).Count () - 2;
+				if (args.TryGetValue ($"#{toolArg}", out var maybeProducedBy) && TryGetProducedBy (maybeProducedBy, out Tool producedByTool)) {
+					return producedByTool.HasFlag (Tool.Analyzer);
 				}
 
 				return true;
@@ -221,37 +227,43 @@ namespace ILLink.RoslynAnalyzer.Tests
 				return false;
 			}
 
-			static Tool GetProducedBy (ExpressionSyntax expression)
+			static bool TryGetProducedBy (ExpressionSyntax expression, out Tool producedBy)
 			{
-				var producedBy = (Tool) 0x0;
+				producedBy = (Tool) 0x0;
 				switch (expression) {
-				case BinaryExpressionSyntax binaryExpressionSyntax:
+				case BinaryExpressionSyntax binaryExpressionSyntax when binaryExpressionSyntax.Kind () == SyntaxKind.BitwiseOrExpression:
 					if (!Enum.TryParse<Tool> ((binaryExpressionSyntax.Left as MemberAccessExpressionSyntax)!.Name.Identifier.ValueText, out var besProducedBy))
-						throw new ArgumentException ("Expression must be a ProducedBy value", nameof (expression));
+						return false;
 					producedBy |= besProducedBy;
 					producedBy |= GetProducedBy (binaryExpressionSyntax.Right);
 					break;
 
 				case MemberAccessExpressionSyntax memberAccessExpressionSyntax:
 					if (!Enum.TryParse<Tool> (memberAccessExpressionSyntax.Name.Identifier.ValueText, out var maeProducedBy))
-						throw new ArgumentException ("Expression must be a ProducedBy value", nameof (expression));
+						return false;
 					producedBy |= maeProducedBy;
 					break;
 
 				default:
-					break;
+					return false;
 				}
 
-				return producedBy;
+				return true;
+			}
+
+			static Tool GetProducedBy (ExpressionSyntax expression)
+			{
+				return TryGetProducedBy (expression, out var tool) ? tool : throw new ArgumentException ("Expression must be a ProducedBy value", nameof (expression));
 			}
 		}
 
 		bool TryValidateExpectedDiagnostic (AttributeSyntax attribute, List<Diagnostic> diagnostics, [NotNullWhen (true)] out int? matchIndex, [NotNullWhen (false)] out string? missingDiagnosticMessage)
 		{
-			switch (attribute.Name.ToString ()) {
-			case "ExpectedWarning":
+			switch (attribute.Name.ToString () + "Attribute") {
+			case nameof (ExpectedWarningAttribute):
+			case nameof (UnexpectedWarningAttribute):
 				return TryValidateExpectedWarningAttribute (attribute!, diagnostics, out matchIndex, out missingDiagnosticMessage);
-			case "LogContains":
+			case nameof (LogContainsAttribute):
 				return TryValidateLogContainsAttribute (attribute!, diagnostics, out matchIndex, out missingDiagnosticMessage);
 			default:
 				throw new InvalidOperationException ($"Unsupported attribute type {attribute.Name}");
@@ -268,10 +280,29 @@ namespace ILLink.RoslynAnalyzer.Tests
 			if (!expectedWarningCode.StartsWith ("IL"))
 				throw new InvalidOperationException ($"Expected warning code should start with \"IL\" prefix.");
 
-			List<string> expectedMessages = args
-				.Where (arg => arg.Key.StartsWith ("#") && arg.Key != "#0")
-				.Select (arg => LinkerTestBase.GetStringFromExpression (arg.Value, _semanticModel))
-				.ToList ();
+			List<string> expectedMessages = ((IMethodSymbol) (_semanticModel.GetSymbolInfo (attribute).Symbol!)).Parameters switch {
+				// ExpectedWarningAttribute(string warningCode, params string[] expectedMessages)
+				[_, { IsParams: true }]
+					=> args
+						.Where (arg => arg.Key.StartsWith ('#') && arg.Key != "#0")
+						.Select (arg => LinkerTestBase.GetStringFromExpression (arg.Value, _semanticModel))
+						.ToList (),
+				// ExpectedWarningAttribute(string warningCode, string[] expectedMessages, Tool producedBy, string issueLink)
+				[_, { Type.TypeKind: TypeKind.Array }, _, _]
+					=> ((CollectionExpressionSyntax) args["#1"]).Elements
+						.Select (arg => LinkerTestBase.GetStringFromExpression (((ExpressionElementSyntax) arg).Expression, _semanticModel))
+						.ToList (),
+				// ExpectedWarningAttribute(string warningCode, string expectedMessage, Tool producedBy, string issueLink)
+				[_, { Type.SpecialType: SpecialType.System_String }, _, _]
+					=> [LinkerTestBase.GetStringFromExpression (args["#1"], _semanticModel)],
+				// ExpectedWarningAttribute(string warningCode, string expectedMessage1, string expectedMessage2, Tool producedBy, string issueLink)
+				[_, { Type.SpecialType: SpecialType.System_String }, { Type.SpecialType: SpecialType.System_String }, _, _]
+					=> [LinkerTestBase.GetStringFromExpression (args["#1"], _semanticModel), LinkerTestBase.GetStringFromExpression (args["#2"], _semanticModel)],
+				// ExpectedWarningAttribute(string warningCode, Tool producedBy, string issueLink)
+				[_, _, _]
+					=> [],
+				_ => throw new UnreachableException (),
+			};
 
 			for (int i = 0; i < diagnostics.Count; i++) {
 				if (Matches (diagnostics[i])) {
@@ -318,7 +349,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			Assert.False (args.ContainsKey ("#1"));
 			_ = LinkerTestBase.GetStringFromExpression (arg, _semanticModel);
 			if (LogContains (attribute, diagnosticMessages, out var matchIndex, out var findText)) {
-				Assert.Fail($"LogDoesNotContain failure: Text\n\"{findText}\"\nfound in diagnostic:\n {diagnosticMessages[(int) matchIndex]}");
+				Assert.Fail ($"LogDoesNotContain failure: Text\n\"{findText}\"\nfound in diagnostic:\n {diagnosticMessages[(int) matchIndex]}");
 			}
 		}
 

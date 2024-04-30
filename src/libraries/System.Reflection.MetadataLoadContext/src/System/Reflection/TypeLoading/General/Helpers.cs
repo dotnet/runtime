@@ -134,7 +134,7 @@ namespace System.Reflection.TypeLoading
 
         public static string UnescapeTypeNameIdentifier(this string identifier)
         {
-#if NET5_0_OR_GREATER
+#if NET
             if (identifier.Contains('\\'))
 #else
             if (identifier.IndexOf('\\') != -1)

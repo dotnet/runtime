@@ -178,6 +178,13 @@ const EVP_MD *EVP_shake256(void);
 int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
 #endif
 
+#if !HAVE_OPENSSL_SHA3_SQUEEZE
+#undef HAVE_OPENSSL_SHA3_SQUEEZE
+#define HAVE_OPENSSL_SHA3_SQUEEZE 1
+int EVP_DigestSqueeze(EVP_MD_CTX *ctx, unsigned char *out, size_t outlen);
+#endif
+
+
 #define API_EXISTS(fn) (fn != NULL)
 
 // List of all functions from the libssl that are used in the System.Security.Cryptography.Native.
@@ -369,6 +376,7 @@ int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
     REQUIRED_FUNCTION(EVP_DigestFinal_ex) \
     LIGHTUP_FUNCTION(EVP_DigestFinalXOF) \
     REQUIRED_FUNCTION(EVP_DigestInit_ex) \
+    LIGHTUP_FUNCTION(EVP_DigestSqueeze) \
     REQUIRED_FUNCTION(EVP_DigestUpdate) \
     REQUIRED_FUNCTION(EVP_get_digestbyname) \
     LIGHTUP_FUNCTION(EVP_MAC_fetch) \
@@ -895,6 +903,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_DigestFinal_ex EVP_DigestFinal_ex_ptr
 #define EVP_DigestFinalXOF EVP_DigestFinalXOF_ptr
 #define EVP_DigestInit_ex EVP_DigestInit_ex_ptr
+#define EVP_DigestSqueeze EVP_DigestSqueeze_ptr
 #define EVP_DigestUpdate EVP_DigestUpdate_ptr
 #define EVP_get_digestbyname EVP_get_digestbyname_ptr
 #define EVP_md5 EVP_md5_ptr

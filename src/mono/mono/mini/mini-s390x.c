@@ -1580,7 +1580,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 						inst->inst_offset  = offset + (8 - size);
 				}
 			}
-			offset += MAX(size, 8);
+			offset += 8;
 		}
 		curinst++;
 	}
