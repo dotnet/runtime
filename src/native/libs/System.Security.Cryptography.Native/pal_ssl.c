@@ -673,14 +673,7 @@ int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, int con
     // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
 
     // We never reuse same CTX for both client and server
-    int modeFlags = SSL_SESS_CACHE_BOTH;
-    if (newSessionCb && removeSessionCb)
-    {
-        // sessions are completely controlled externally (from .NET), disable internal cache
-        modeFlags |= SSL_SESS_CACHE_NO_INTERNAL_STORE;
-    }
-
-    SSL_CTX_ctrl(ctx, SSL_CTRL_SET_SESS_CACHE_MODE,  mode ? modeFlags : SSL_SESS_CACHE_OFF, NULL);
+    SSL_CTX_ctrl(ctx, SSL_CTRL_SET_SESS_CACHE_MODE,  mode ? SSL_SESS_CACHE_BOTH : SSL_SESS_CACHE_OFF, NULL);
     if (mode == 0)
     {
         SSL_CTX_set_options(ctx, SSL_OP_NO_TICKET);
