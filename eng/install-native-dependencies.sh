@@ -11,20 +11,21 @@ set -e
 os="$(echo "$1" | tr "[:upper:]" "[:lower:]")"
 
 if [ -z "$os" ]; then
+    # shellcheck source-path=SCRIPTDIR
     . "$(dirname "$0")"/common/native/init-os-and-arch.sh
 fi
 
 case "$os" in
     linux)
         if [ -e /etc/os-release ]; then
+            # shellcheck source=/dev/null
             . /etc/os-release
         fi
 
         if [ "$ID" = "debian" ] || [ "$ID_LIKE" = "debian" ]; then
             apt update
 
-            apt install -y build-essential gettext locales cmake llvm clang lldb liblldb-dev libunwind8-dev libicu-dev liblttng-ust-dev \
-                libssl-dev libkrb5-dev zlib1g-dev
+            xargs apt-get install -y < eng/debian-reqs.txt
 
             localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
         elif [ "$ID" = "alpine" ]; then
