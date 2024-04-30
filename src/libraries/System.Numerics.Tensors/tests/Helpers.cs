@@ -28,6 +28,11 @@ namespace System.Numerics.Tensors.Tests
 
         public static bool IsEqualWithTolerance<T>(T expected, T actual, T? tolerance = null) where T : unmanaged, INumber<T>
         {
+            if (T.IsNaN(expected) != T.IsNaN(actual))
+            {
+                return false;
+            }
+
             tolerance = tolerance ?? DefaultTolerance<T>.Value;
             T diff = T.Abs(expected - actual);
             return !(diff > tolerance && diff > T.Max(T.Abs(expected), T.Abs(actual)) * tolerance);
@@ -35,6 +40,11 @@ namespace System.Numerics.Tensors.Tests
 #else
         public static bool IsEqualWithTolerance(float expected, float actual, float? tolerance = null)
         {
+            if (float.IsNaN(expected) != float.IsNaN(actual))
+            {
+                return false;
+            }
+
             tolerance ??= DefaultFloatTolerance;
             float diff = MathF.Abs(expected - actual);
             return !(diff > tolerance && diff > MathF.Max(MathF.Abs(expected), MathF.Abs(actual)) * tolerance);

@@ -66,7 +66,7 @@ All official builds are cross-builds with a rootfs for the target OS, and will u
 | Azure Linux (x64)     | Ubuntu 16.04 | arm32 (armhf)   | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-arm-net9.0`          | `/crossrootfs/arm`   |
 | Azure Linux (x64)     | Alpine       | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-arm64-alpine-net9.0` | `/crossrootfs/arm64` |
 | Azure Linux (x64)     | Ubuntu 16.04 | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-arm64-net9.0`        | `/crossrootfs/arm64` |
-| Azure Linux (x64)     | Ubuntu 16.04 | x86             | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-x86-net8.0`          | `/crossrootfs/x86` |
+| Azure Linux (x64)     | Ubuntu 16.04 | x86             | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-x86-net9.0`          | `/crossrootfs/x86` |
 | CBL-mariner 2.0 (x64)    | FreeBSD 13     | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-amd64-freebsd-13`            | `/crossrootfs/x64`   |
 
 These Docker images are built using the Dockerfiles maintained in the [dotnet-buildtools-prereqs-docker repo](https://github.com/dotnet/dotnet-buildtools-prereqs-docker).

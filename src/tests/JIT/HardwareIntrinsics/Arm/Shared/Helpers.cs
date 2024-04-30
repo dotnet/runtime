@@ -1701,6 +1701,29 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long MultiplyWideningUpperAndSubtract(long[] op1, int[] op2, int[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
+        public static T SignExtend<T>(T n, int numBits, bool zeroExtend) where T : struct, IComparable, IConvertible
+        {
+            // Get the underlying integer value
+            dynamic value = Convert.ChangeType(n, typeof(long));
+
+            // Mask to extract the lowest numBits
+            long mask = (1L << numBits) - 1;
+            long lowestBits = value & mask;
+
+            // Sign extension for signed integers
+            long signBitMask = 1L << (numBits - 1);
+            if (!zeroExtend && ((lowestBits & signBitMask) != 0))
+            {
+                // If sign bit is set, it's a negative number
+                return (T)Convert.ChangeType(-((~lowestBits & mask) + 1), typeof(T));
+            }
+            else
+            {
+                // If sign bit is not set, it's a positive number
+                return (T)Convert.ChangeType(lowestBits, typeof(T));
+            }
+        }
+
         public static int SubtractHighNarrowing(long op1, long op2) => HighNarrowing((long)(op1 - op2), round: false);
 
         public static long SubtractHighNarrowingUpper(int[] op1, long[] op2, long[] op3, int i) => i < op1.Length ? op1[i] : SubtractHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
