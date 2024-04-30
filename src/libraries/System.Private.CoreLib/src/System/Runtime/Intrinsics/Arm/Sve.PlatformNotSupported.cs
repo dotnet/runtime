@@ -1407,13 +1407,52 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> ZeroExtend8(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
 
+        ///  ZeroExtendWideningLower : Unpack and extend low half
+
+        /// <summary>
+        /// svuint16_t svunpklo[_u16](svuint8_t op)
+        ///   UUNPKLO Zresult.H, Zop.B
+        /// </summary>
+        public static unsafe Vector<ushort> ZeroExtendWideningLower(Vector<byte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svunpklo[_u32](svuint16_t op)
+        ///   UUNPKLO Zresult.S, Zop.H
+        /// </summary>
+        public static unsafe Vector<uint> ZeroExtendWideningLower(Vector<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svunpklo[_u64](svuint32_t op)
+        ///   UUNPKLO Zresult.D, Zop.S
+        /// </summary>
+        public static unsafe Vector<ulong> ZeroExtendWideningLower(Vector<uint> value) { throw new PlatformNotSupportedException(); }
+
+
+        ///  ZeroExtendWideningUpper : Unpack and extend high half
+
+        /// <summary>
+        /// svuint16_t svunpkhi[_u16](svuint8_t op)
+        ///   UUNPKHI Zresult.H, Zop.B
+        /// </summary>
+        public static unsafe Vector<ushort> ZeroExtendWideningUpper(Vector<byte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svunpkhi[_u32](svuint16_t op)
+        ///   UUNPKHI Zresult.S, Zop.H
+        /// </summary>
+        public static unsafe Vector<uint> ZeroExtendWideningUpper(Vector<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svunpkhi[_u64](svuint32_t op)
+        ///   UUNPKHI Zresult.D, Zop.S
+        /// </summary>
+        public static unsafe Vector<ulong> ZeroExtendWideningUpper(Vector<uint> value) { throw new PlatformNotSupportedException(); }
+
         ///  ZipHigh : Interleave elements from high halves of two inputs
 
         /// <summary>
         /// svuint8_t svzip2[_u8](svuint8_t op1, svuint8_t op2)
         ///   ZIP2 Zresult.B, Zop1.B, Zop2.B
-        /// svbool_t svzip2_b8(svbool_t op1, svbool_t op2)
-        ///   ZIP2 Presult.B, Pop1.B, Pop2.B
         /// </summary>
         public static unsafe Vector<byte> ZipHigh(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
 
