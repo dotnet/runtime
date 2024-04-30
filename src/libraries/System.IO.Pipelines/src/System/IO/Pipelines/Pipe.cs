@@ -40,6 +40,9 @@ namespace System.IO.Pipelines
         private long PauseWriterThreshold => _options.PauseWriterThreshold;
         private long ResumeWriterThreshold => _options.ResumeWriterThreshold;
 
+        private bool _bailValidation;
+        private int _validationOffset;
+
         private PipeScheduler ReaderScheduler => _options.ReaderScheduler;
         private PipeScheduler WriterScheduler => _options.WriterScheduler;
 
@@ -333,6 +336,30 @@ namespace System.IO.Pipelines
             return resumeReader;
         }
 
+        private void ValidateWritten(Span<byte> written)
+        {
+            if (_bailValidation)
+            {
+                return;
+            }
+
+            foreach (var b in written)
+            {
+                if ((byte)_validationOffset != b)
+                {
+                    if (_validationOffset < 16)
+                    {
+                        _bailValidation = true;
+                        break;
+                    }
+
+                    Environment.FailFast($"Pipe content validation failed at offset {_validationOffset}. Expected: 0x{(byte)_validationOffset:x2} Actual: {b:x2}");
+                }
+
+                _validationOffset++;
+            }
+        }
+
         internal void Advance(int bytes)
         {
             lock (SyncObj)
@@ -341,6 +368,8 @@ namespace System.IO.Pipelines
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes);
                 }
+
+                ValidateWritten(_writingHeadMemory.Span.Slice(0, bytes));
 
                 // If the reader is completed we no-op Advance but leave GetMemory and FlushAsync alone
                 if (_readerCompletion.IsCompleted)
