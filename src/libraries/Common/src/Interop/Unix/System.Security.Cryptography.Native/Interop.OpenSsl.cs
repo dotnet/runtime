@@ -787,7 +787,7 @@ internal static partial class Interop
 
             IntPtr name = Ssl.SessionGetHostname(session);
             Debug.Assert(name != IntPtr.Zero);
-            ctxHandle.RemoveSession(name);
+            ctxHandle.RemoveSession(name, session);
         }
 
 #if DEBUG
