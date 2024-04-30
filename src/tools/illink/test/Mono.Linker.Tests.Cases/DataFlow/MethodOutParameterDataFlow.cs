@@ -56,7 +56,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			typeWithMethods.RequiresPublicMethods ();
 		}
 
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicFields), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicFields), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2632")]
 		static void TestInitializedReadFromOutParameter_MismatchOnOutput ()
 		{
 			Type typeWithMethods = null;
@@ -64,9 +64,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			typeWithMethods.RequiresPublicFields ();
 		}
 
-		// https://github.com/dotnet/linker/issues/2632
 		// This test should generate a warning since there's mismatch on annotations
-		[ExpectedWarning ("IL2068", nameof (TryGetAnnotatedValue), nameof (DynamicallyAccessedMemberTypes.PublicFields), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		[ExpectedWarning ("IL2068", nameof (TryGetAnnotatedValue), nameof (DynamicallyAccessedMemberTypes.PublicFields), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2632")]
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 		static Type TestInitializedReturnOutParameter_MismatchOnOutput ()
 		{
@@ -75,9 +74,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			return typeWithMethods;
 		}
 
-		// https://github.com/dotnet/linker/issues/2632
 		// This test should generate a warning since there's mismatch on annotations
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicFields), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicFields), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2632")]
 		static void TestInitializedReadFromOutParameter_MismatchOnOutput_PassedTwice ()
 		{
 			Type typeWithMethods = null;
@@ -85,10 +83,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			typeWithMethods.RequiresPublicFields ();
 		}
 
-		// https://github.com/dotnet/linker/issues/2632
 		// This warning should not be generated, the value of typeWithMethods should have PublicMethods
 		// after the call with out parameter.
-		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods), Tool.Analyzer, "")]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods), Tool.Analyzer, "https://github.com/dotnet/linker/issues/2632")]
 		static void TestInitializedReadFromOutParameter_MismatchOnInput ()
 		{
 			Type typeWithMethods = GetTypeWithFields ();
@@ -98,10 +95,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[ExpectedWarning ("IL2072", nameof (TryGetAnnotatedValueFromValue))]
-		// https://github.com/dotnet/linker/issues/2632
 		// This warning should not be generated, the value of typeWithMethods should have PublicMethods
 		// after the call with out parameter.
-		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods), Tool.Analyzer, "")]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods), Tool.Analyzer, "https://github.com/dotnet/linker/issues/2632")]
 		static void TestInitializedReadFromOutParameter_MismatchOnInput_PassedTwice ()
 		{
 			Type typeWithMethods = GetTypeWithFields ();
@@ -115,7 +111,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TryGetAnnotatedValue (out typeWithMethods);
 		}
 
-		[ExpectedWarning ("IL2067", "typeWithFields", nameof (TryGetAnnotatedValue), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		[ExpectedWarning ("IL2067", "typeWithFields", nameof (TryGetAnnotatedValue), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2632")]
 		static void TestPassingOutParameter_Mismatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] out Type typeWithFields)
 		{
 			TryGetAnnotatedValue (out typeWithFields);
