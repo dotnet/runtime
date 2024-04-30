@@ -61,10 +61,14 @@ class DeepCseRewardWrapper(gym.RewardWrapper):
 
     def _get_all_cses(self, state : JitCseEnvState):
         m_id = state.current.index
+        previous = state.previous
+        selected = state.current.cses_chosen[-1]
+        assert selected not in previous.cses_chosen
+
         all_cses = [self.superpmi.jit_with_retry(m_id, JitMetrics=1, JitRLHook=1,
-                                                 JitRLHookCSEDecisions=state.previous.cses_chosen + [x.index])
-                    for x in state.previous.cse_candidates
-                    if x.can_apply]
+                                                 JitRLHookCSEDecisions=previous.cses_chosen + [x.index])
+                    for x in previous.cse_candidates
+                    if x.index != selected and x.can_apply]
 
         all_cses = [x for x in all_cses if x is not None]
         return all_cses
