@@ -425,42 +425,27 @@ extends:
           - windows_arm64
 
       #
-      # Build PGO CoreCLR release
+      # Build PGO Instrumented CoreCLR Release
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-          buildConfig: release
-          platforms:
-          - windows_x64
-          - windows_x86
-          - linux_x64
-          - windows_arm64
-          - linux_arm64
-          jobParameters:
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            signBinaries: false
-            testGroup: innerloop
-            pgoType: 'PGO'
-
-      #
-      # PGO Build
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: Release
-          jobParameters:
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            liveRuntimeBuildConfig: release
-            liveLibrariesBuildConfig: Release
-            pgoType: 'PGO'
+          helixQueueGroup: ci
           platforms:
           - windows_x64
           - windows_x86
           - linux_x64
           - windows_arm64
           - linux_arm64
+          jobParameters:
+            buildArgs: -s clr.native+clr.corelib+clr.tools+clr.nativecorelib+libs+host+packs -c $(_BuildConfig) -pgoinstrument
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            nameSuffix: PGO
+            extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+            extraStepsParameters:
+              name: PGO
+            timeoutInMinutes: 95
 
       #
       # Build Workloads
@@ -490,9 +475,9 @@ extends:
             - Build_tvossimulator_arm64_release_AllSubsets_Mono
             - Build_tvossimulator_x64_release_AllSubsets_Mono
             - Build_windows_x64_release_CrossAOT_Mono
-            - installer__coreclr__windows_x64_Release_
-            - installer__coreclr__windows_x86_Release_
-            - installer__coreclr__windows_arm64_Release_
+            - installer_coreclr__windows_x64_Release_
+            - installer_coreclr__windows_x86_Release_
+            - installer_coreclr__windows_arm64_Release_
 
     - ${{ if eq(variables.isOfficialBuild, true) }}:
       - template: /eng/pipelines/official/stages/publish.yml
