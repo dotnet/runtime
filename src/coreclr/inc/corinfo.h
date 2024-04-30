@@ -1701,6 +1701,7 @@ struct CORINFO_THREAD_STATIC_BLOCKS_INFO
     uint32_t offsetOfThreadLocalStoragePointer; // windows specific
     uint32_t offsetOfMaxThreadStaticBlocks;
     uint32_t offsetOfThreadStaticBlocks;
+    uint32_t offsetOfBaseOfThreadLocalData;
 };
 
 //----------------------------------------------------------------------------

@@ -840,6 +840,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
             dspOffset(threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer));
     JITDUMP("offsetOfMaxThreadStaticBlocks= %u\n", dspOffset(threadStaticBlocksInfo.offsetOfMaxThreadStaticBlocks));
     JITDUMP("offsetOfThreadStaticBlocks= %u\n", dspOffset(threadStaticBlocksInfo.offsetOfThreadStaticBlocks));
+    JITDUMP("offsetOfBaseOfThreadLocalData= %u\n", dspOffset(threadStaticBlocksInfo.offsetOfBaseOfThreadLocalData));
 
     assert(call->gtArgs.CountArgs() == 1);
 
@@ -1006,7 +1007,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         // ...
 
         GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetArgByIndex(0)->GetNode();
-        GenTree* threadStaticBase = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse), gtCloneExpr(typeThreadStaticBlockIndexValue));
+        GenTree* threadStaticBase = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse), gtCloneExpr(typeThreadStaticBlockIndexValue)), gtNewIconNode(threadStaticBlocksInfo.offsetOfBaseOfThreadLocalData, TYP_I_IMPL));
         GenTree* tlsStaticBaseStoreLcl = gtNewStoreLclVarNode(threadStaticBlockLclNum, threadStaticBase);
         
         BasicBlock* tlsBaseComputeBB = fgNewBBFromTreeAfter(BBJ_ALWAYS, prevBb, tlsValueDef, debugInfo, true);

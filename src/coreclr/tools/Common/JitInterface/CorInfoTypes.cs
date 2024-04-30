@@ -1158,6 +1158,7 @@ namespace Internal.JitInterface
         public uint offsetOfThreadLocalStoragePointer;
         public uint offsetOfMaxThreadStaticBlocks;
         public uint offsetOfThreadStaticBlocks;
+        public uint offsetOfBaseOfThreadLocalData;
     };
 
 

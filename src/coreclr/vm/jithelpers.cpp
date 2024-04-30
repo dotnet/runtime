@@ -1549,26 +1549,11 @@ HCIMPL1(void*, JIT_GetNonGCThreadStaticBaseOptimized, UINT32 staticBlockIndex)
 HCIMPLEND
 
 // *** This helper corresponds CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2.
-//      Even though we always check if the class constructor has been run, we have a separate
-//      helper ID for the "no ctor" version because it allows the JIT to do some reordering that
-//      otherwise wouldn't be possible.
 HCIMPL1(void*, JIT_GetNonGCThreadStaticBaseOptimized2, UINT32 staticBlockIndex)
 {
-    void* staticBlock = nullptr;
-
     FCALL_CONTRACT;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
-    TLSIndex tlsIndex(TLSIndexType::DirectOnThreadLocalData, staticBlockIndex);
-    // Check if the class constructor needs to be run
-    MethodTable *pMT = LookupMethodTableForThreadStaticKnownToBeAllocated(tlsIndex);
-    pMT->CheckRunClassInitThrowing();
-
-    // Lookup the non-GC statics base pointer
-    staticBlock = (void*) pMT->GetNonGCThreadStaticsBasePointer();
-    HELPER_METHOD_FRAME_END();
-
-    return staticBlock;
+    return ((BYTE*)&t_ThreadStatics) + staticBlockIndex;
 }
 HCIMPLEND
 

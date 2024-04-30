@@ -78,17 +78,16 @@ PTR_VOID GetThreadLocalStaticBaseNoCreate(Thread* pThread, TLSIndex index)
 
 TLSIndexToMethodTableMap *g_pThreadStaticCollectibleTypeIndices;
 TLSIndexToMethodTableMap *g_pThreadStaticNonCollectibleTypeIndices;
-PTR_MethodTable g_pMethodTablesForDirectThreadLocalData[MAX_DIRECT_THREAD_LOCAL_COUNT];
+PTR_MethodTable g_pMethodTablesForDirectThreadLocalData[offsetof(ThreadLocalData, ExtendedDirectThreadLocalTLSData) - offsetof(ThreadLocalData, ThreadBlockingInfo_First) + EXTENDED_DIRECT_THREAD_LOCAL_SIZE];
 
 int32_t IndexOffsetToDirectThreadLocalIndex(int32_t indexOffset)
 {
     LIMITED_METHOD_CONTRACT;
     int32_t adjustedIndexOffset = indexOffset + OFFSETOF__CORINFO_Array__data;
     _ASSERTE(adjustedIndexOffset >= offsetof(ThreadLocalData, ThreadBlockingInfo_First));
-    _ASSERTE((adjustedIndexOffset & (sizeof(DIRECT_THREAD_LOCAL_CHUNK_TYPE) - 1)) == 0);
-    _ASSERTE(offsetof(ThreadLocalData, ExtendedDirectThreadLocalTLSData) - offsetof(ThreadLocalData, ThreadBlockingInfo_First) == sizeof(DIRECT_THREAD_LOCAL_CHUNK_TYPE) * HARDCODED_DIRECT_THREAD_LOCAL_TLS_INDICES_USED);
-    int32_t directThreadLocalIndex = (adjustedIndexOffset - offsetof(ThreadLocalData, ThreadBlockingInfo_First)) / sizeof(DIRECT_THREAD_LOCAL_CHUNK_TYPE);
-    _ASSERTE(directThreadLocalIndex < MAX_DIRECT_THREAD_LOCAL_COUNT);
+    int32_t directThreadLocalIndex = adjustedIndexOffset - offsetof(ThreadLocalData, ThreadBlockingInfo_First);
+    _ASSERTE(directThreadLocalIndex < (sizeof(g_pMethodTablesForDirectThreadLocalData) / sizeof(g_pMethodTablesForDirectThreadLocalData[0])));
+    _ASSERTE(directThreadLocalIndex >= 0);
     return directThreadLocalIndex;
 }
 
@@ -710,7 +709,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
     return reinterpret_cast<void*>(gcBaseAddresses.pTLSBaseAddress);
 }
 
-static uint32_t g_directThreadLocalTLSBytesAvailable = (MAX_DIRECT_THREAD_LOCAL_COUNT - HARDCODED_DIRECT_THREAD_LOCAL_TLS_INDICES_USED) * sizeof(TADDR);
+static uint32_t g_directThreadLocalTLSBytesAvailable = EXTENDED_DIRECT_THREAD_LOCAL_SIZE;
 
 void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pIndex, uint32_t bytesNeeded)
 {
@@ -727,22 +726,44 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
 
     if (!pMT->Collectible())
     {
+        bool usedDirectOnThreadLocalDataPath = false;
+
         if (!gcStatic && ((pMT == CoreLibBinder::GetClassIfExist(CLASS__THREAD_BLOCKING_INFO)) || ((g_directThreadLocalTLSBytesAvailable >= bytesNeeded) && (!pMT->HasClassConstructor() || pMT->IsClassInited()))))
         {
             if (pMT == CoreLibBinder::GetClassIfExist(CLASS__THREAD_BLOCKING_INFO))
             {
                 newTLSIndex = TLSIndex(TLSIndexType::DirectOnThreadLocalData, offsetof(ThreadLocalData, ThreadBlockingInfo_First) - OFFSETOF__CORINFO_Array__data);
+                usedDirectOnThreadLocalDataPath = true;
             }
             else
             {
-                g_directThreadLocalTLSBytesAvailable -= bytesNeeded;
-                g_directThreadLocalTLSBytesAvailable = AlignDown((ULONG)g_directThreadLocalTLSBytesAvailable, sizeof(DIRECT_THREAD_LOCAL_CHUNK_TYPE));
-                int32_t indexOffset = offsetof(ThreadLocalData, ThreadBlockingInfo_First) - OFFSETOF__CORINFO_Array__data + g_directThreadLocalTLSBytesAvailable;
-                newTLSIndex = TLSIndex(TLSIndexType::DirectOnThreadLocalData, indexOffset);
+                // This is a top down bump allocator that aligns data at the largest alignment that might be needed
+                uint32_t newBytesAvailable = g_directThreadLocalTLSBytesAvailable - bytesNeeded;
+                uint32_t indexOffsetWithoutAlignment = offsetof(ThreadLocalData, ExtendedDirectThreadLocalTLSData) - OFFSETOF__CORINFO_Array__data + newBytesAvailable;
+                uint32_t alignment;
+                if (bytesNeeded >= 8)
+                    alignment = 8;
+                if (bytesNeeded >= 4)
+                    alignment = 4;
+                else if (bytesNeeded >= 2)
+                    alignment = 2;
+                else 
+                    alignment = 1;
+                
+                uint32_t actualIndexOffset = AlignDown(indexOffsetWithoutAlignment, alignment);
+                uint32_t alignmentAdjust = indexOffsetWithoutAlignment - actualIndexOffset;
+                if (alignmentAdjust <= newBytesAvailable)
+                {
+                    g_directThreadLocalTLSBytesAvailable = newBytesAvailable - alignmentAdjust;
+                    newTLSIndex = TLSIndex(TLSIndexType::DirectOnThreadLocalData, actualIndexOffset);
+                }
+                usedDirectOnThreadLocalDataPath = true;
             }
-            VolatileStoreWithoutBarrier(&g_pMethodTablesForDirectThreadLocalData[IndexOffsetToDirectThreadLocalIndex(newTLSIndex.GetIndexOffset())], pMT);
+            if (usedDirectOnThreadLocalDataPath)
+                VolatileStoreWithoutBarrier(&g_pMethodTablesForDirectThreadLocalData[IndexOffsetToDirectThreadLocalIndex(newTLSIndex.GetIndexOffset())], pMT);
         }
-        else
+
+        if (!usedDirectOnThreadLocalDataPath)
         {
             uint32_t tlsRawIndex = g_NextNonCollectibleTLSSlot++;
             newTLSIndex = TLSIndex(TLSIndexType::NonCollectible, tlsRawIndex);
@@ -938,6 +959,7 @@ void GetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 
     pInfo->offsetOfMaxThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadLocalData, cNonCollectibleTlsData));
     pInfo->offsetOfThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadLocalData, pNonCollectibleTlsReferenceData));
+    pInfo->offsetOfBaseOfThreadLocalData = (uint32_t)threadStaticBaseOffset;
 }
 #endif // !DACCESS_COMPILE
 

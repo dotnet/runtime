@@ -115,28 +115,19 @@ struct TLSIndex
 struct InFlightTLSData;
 typedef DPTR(InFlightTLSData) PTR_InFlightTLSData;
 
-#define HARDCODED_DIRECT_THREAD_LOCAL_TLS_INDICES_USED 1 // The only one currently is ThreadBlockingInfo_First
-#define MAX_DIRECT_THREAD_LOCAL_COUNT 16
-
-#ifdef TARGET_ARM
-typedef double DIRECT_THREAD_LOCAL_CHUNK_TYPE;
-#else
-typedef TADDR DIRECT_THREAD_LOCAL_CHUNK_TYPE;
-#endif
+#define EXTENDED_DIRECT_THREAD_LOCAL_SIZE 48
 
 struct ThreadLocalData
 {
+    alignas(8) // This is to ensure that the ExtendedDirectThreadLocalTLSData is aligned to be able to hold a double on arm legally
     int32_t cNonCollectibleTlsData; // Size of offset into the non-collectible TLS array which is valid, NOTE: this is relative to the start of the pNonCollectibleTlsReferenceData object, not the start of the data in the array
     int32_t cTLSData; // Size of offset into the TLS array which is valid
     PTR_Object pNonCollectibleTlsReferenceData;
     TADDR pTLSArrayData; // Points at the Thread local array data.
     Thread *pThread;
     PTR_InFlightTLSData pInFlightData; // Points at the in-flight TLS data (TLS data that exists before the class constructor finishes running)
-    TADDR ThreadBlockingInfo_First; // System.Threading.ThreadBlockingInfo.First
-#ifdef TARGET_ARM
-    TADDR Padding;
-#endif
-    DIRECT_THREAD_LOCAL_CHUNK_TYPE ExtendedDirectThreadLocalTLSData[MAX_DIRECT_THREAD_LOCAL_COUNT - HARDCODED_DIRECT_THREAD_LOCAL_TLS_INDICES_USED]; // The first one is always ThreadBlockInfo_First which is directly used by the runtime
+    TADDR ThreadBlockingInfo_First; // System.Threading.ThreadBlockingInfo.First, This starts the region of ThreadLocalData which is referenceable by TLSIndexType::DirectOnThreadLocalData
+    BYTE ExtendedDirectThreadLocalTLSData[EXTENDED_DIRECT_THREAD_LOCAL_SIZE];
 };
 
 typedef DPTR(ThreadLocalData) PTR_ThreadLocalData;
