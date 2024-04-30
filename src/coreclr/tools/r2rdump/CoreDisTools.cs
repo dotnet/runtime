@@ -1225,8 +1225,17 @@ namespace R2RDump
             const int InstructionSize = 4;
             uint instr = BitConverter.ToUInt32(_reader.Image, imageOffset + rtfOffset);
 
-            // Now, we assume that only the jalr instructions are improved.
-            if (IsRiscV64jalr(instr))
+            /*
+                Pattern:
+                    auipc
+                    addi
+                    ld
+                    jarl
+                , where addi and ld may be repeated many times.
+                Instructions that have no effect on the jump 
+                address calculation are skipped.
+            */
+            if (IsRiscV64JalrInstruction(instr))
             {
                 AnalyzeRiscV64Itype(instr, out uint rd, out uint rs1, out int imm);
                 uint register = rs1;
@@ -1240,7 +1249,7 @@ namespace R2RDump
                 {
                     instr = BitConverter.ToUInt32(_reader.Image, imageOffset + currentInstrOffset);
 
-                    if (IsRiscV64ld(instr) || IsRiscV64lw(instr))
+                    if (IsRiscV64LdInstruction(instr) || IsRiscV64LwInstruction(instr))
                     {
                         AnalyzeRiscV64Itype(instr, out rd, out rs1, out imm);
                         if (rd == register)
@@ -1266,7 +1275,10 @@ namespace R2RDump
 
                 if (isFound)
                 {
-                    TryGetImportCellName(target + immValue, out string targetName);
+                    if (!TryGetImportCellName(target + immValue, out string targetName) || string.IsNullOrWhiteSpace(targetName))
+                    {
+                        return;
+                    }
 
                     StringBuilder updatedInstruction = new();
                     updatedInstruction.Append(instruction);
@@ -1300,9 +1312,8 @@ namespace R2RDump
             do
             {
                 uint instr = BitConverter.ToUInt32(_reader.Image, imageOffset + currentInstrOffset);
-                if (IsRiscV64addi(instr))
+                if (IsRiscV64AddiInstruction(instr))
                 {
-                    
                     AnalyzeRiscV64Itype(instr, out uint rd, out uint rs1, out int imm);
                     if (rd == register)
                     {
@@ -1312,7 +1323,7 @@ namespace R2RDump
                         return returnValue;
                     }
                 }
-                else if (IsRiscV64auipc(instr))
+                else if (IsRiscV64AuipcInstruction(instr))
                 {
                     AnalyzeRiscV64Utype(instr, out uint rd, out int imm);
                     if (rd == register)
@@ -1323,7 +1334,7 @@ namespace R2RDump
                 }
                 else
                 {
-                    // check if "register" is counted using an unsupported instruction
+                    // check if "register" is calculated using an unsupported instruction
                     uint rd = (instr >> 7) & 0b_11111U;
                     if (rd == register)
                     {
@@ -1343,10 +1354,10 @@ namespace R2RDump
         /// </summary>
         /// <param name="instruction">Assembly code of instruction</param>
         /// <returns>It returns true if instruction is auipc. Otherwise false</returns>
-        private bool IsRiscV64auipc(uint instruction)
+        private bool IsRiscV64AuipcInstruction(uint instruction)
         {
             const uint OpcodeAuipc = 0b_0010111;
-            return (instruction & 127U) == OpcodeAuipc;
+            return (instruction & 0x7f) == OpcodeAuipc;
         }
 
         /// <summary>
@@ -1354,12 +1365,12 @@ namespace R2RDump
         /// </summary>
         /// <param name="instruction">Assembly code of instruction</param>
         /// <returns>It returns true if instruction is jalr. Otherwise false</returns>
-        private bool IsRiscV64jalr(uint instruction)
+        private bool IsRiscV64JalrInstruction(uint instruction)
         {
             const uint OpcodeJalr = 0b_1100111;
             const uint Funct3Jalr = 0b_000;
-            return (instruction & 127U) == OpcodeJalr &&
-                ((instruction >> 12) & 7U) == Funct3Jalr;
+            return (instruction & 0x7f) == OpcodeJalr &&
+                ((instruction >> 12) & 0b_111) == Funct3Jalr;
         }
 
         /// <summary>
@@ -1367,12 +1378,12 @@ namespace R2RDump
         /// </summary>
         /// <param name="instruction">Assembly code of instruction</param>
         /// <returns>It returns true if instruction is addi. Otherwise false</returns>
-        private bool IsRiscV64addi(uint instruction)
+        private bool IsRiscV64AddiInstruction(uint instruction)
         {
             const uint OpcodeAddi = 0b_0010011;
             const uint Funct3Addi = 0b_000;
-            return (instruction & 127U) == OpcodeAddi &&
-                ((instruction >> 12) & 7U) == Funct3Addi;
+            return (instruction & 0x7f) == OpcodeAddi &&
+                ((instruction >> 12) & 0b_111) == Funct3Addi;
         }
 
         /// <summary>
@@ -1380,12 +1391,12 @@ namespace R2RDump
         /// </summary>
         /// <param name="instruction">Assembly code of instruction</param>
         /// <returns>It returns true if instruction is ld. Otherwise false</returns>
-        private bool IsRiscV64ld(uint instruction)
+        private bool IsRiscV64LdInstruction(uint instruction)
         {
             const uint OpcodeLd = 0b_0000011;
             const uint Funct3Ld = 0b_011;
-            return (instruction & 127U) == OpcodeLd &&
-                ((instruction >> 12) & 7U) == Funct3Ld;
+            return (instruction & 0x7f) == OpcodeLd &&
+                ((instruction >> 12) & 0b_111) == Funct3Ld;
         }
 
         /// <summary>
@@ -1393,12 +1404,12 @@ namespace R2RDump
         /// </summary>
         /// <param name="instruction">Assembly code of instruction</param>
         /// <returns>It returns true if instruction is lw. Otherwise false</returns>
-        private bool IsRiscV64lw(uint instruction)
+        private bool IsRiscV64LwInstruction(uint instruction)
         {
             const uint OpcodeLw = 0b_0000011;
             const uint Funct3Lw = 0b_010;
-            return (instruction & 127U) == OpcodeLw &&
-                ((instruction >> 12) & 7U) == Funct3Lw;
+            return (instruction & 0x7f) == OpcodeLw &&
+                ((instruction >> 12) & 0b_111) == Funct3Lw;
         }
 
         /// <summary>
@@ -1412,7 +1423,7 @@ namespace R2RDump
             // U-type    31                12   11    7   6      0
             //          [        imm         ] [   rd  ] [ opcode ]
             rd = (instruction >> 7) & 0b_11111U;
-            imm = unchecked((int)(instruction & (1048575U << 12)));
+            imm = unchecked((int)(instruction & (0xfffff << 12)));
         }
 
         /// <summary>
@@ -1424,11 +1435,11 @@ namespace R2RDump
         /// <param name="imm">Immediate value</param>
         private void AnalyzeRiscV64Itype(uint instruction, out uint rd, out uint rs1, out int imm)
         {
-            // I-type    31       20  19    15   14    12  11    7   6      0
+            // I-type    31      20   19   15   14    12   11    7   6      0
             //          [    imm   ] [  rs1  ] [ funct3 ] [   rd  ] [ opcode ]
             rd = (instruction >> 7) & 0b_11111U;
             rs1 = (instruction >> 15) & 0b_11111U;
-            imm = unchecked((int)(instruction & (4095U << 20))) >> 20;
+            imm = unchecked((int)instruction) >> 20;
         }
 
         /// <summary>
