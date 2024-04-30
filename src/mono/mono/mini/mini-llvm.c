@@ -1960,7 +1960,7 @@ static char*
 get_aotconst_name (MonoJumpInfoType type, gconstpointer data, int got_offset)
 {
 	char *name;
-	size_t len;
+	//size_t len;
 
 	switch (type) {
 	case MONO_PATCH_INFO_JIT_ICALL_ID:
