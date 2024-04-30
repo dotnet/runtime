@@ -70,176 +70,175 @@ enum HWIntrinsicCategory : uint8_t
 #else
 #error Unsupported platform
 #endif
-
 enum HWIntrinsicFlag : unsigned int
 {
     HW_Flag_NoFlag = 0,
 
     // Commutative
     // - if a binary-op intrinsic is commutative (e.g., Add, Multiply), its op1 can be contained
-    HW_Flag_Commutative = (1 << 0),
+    HW_Flag_Commutative = 0x1,
 
     // NoCodeGen
     // - should be transformed in the compiler front-end, cannot reach CodeGen
-    HW_Flag_NoCodeGen = (1 << 1),
+    HW_Flag_NoCodeGen = 0x2,
 
     // Multi-instruction
     // - that one intrinsic can generate multiple instructions
-    HW_Flag_MultiIns = (1 << 2),
+    HW_Flag_MultiIns = 0x4,
 
     // Select base type using the first argument type
-    HW_Flag_BaseTypeFromFirstArg = (1 << 3),
+    HW_Flag_BaseTypeFromFirstArg = 0x8,
 
     // Select base type using the second argument type
-    HW_Flag_BaseTypeFromSecondArg = (1 << 4),
+    HW_Flag_BaseTypeFromSecondArg = 0x10,
 
     // Indicates compFloatingPointUsed does not need to be set.
-    HW_Flag_NoFloatingPointUsed = (1 << 5),
+    HW_Flag_NoFloatingPointUsed = 0x20,
 
     // NoJmpTable IMM
     // the imm intrinsic does not need jumptable fallback when it gets non-const argument
-    HW_Flag_NoJmpTableIMM = (1 << 6),
+    HW_Flag_NoJmpTableIMM = 0x40,
 
     // Special codegen
     // the intrinsics need special rules in CodeGen,
     // but may be table-driven in the front-end
-    HW_Flag_SpecialCodeGen = (1 << 7),
+    HW_Flag_SpecialCodeGen = 0x80,
 
     // Special import
     // the intrinsics need special rules in importer,
     // but may be table-driven in the back-end
-    HW_Flag_SpecialImport = (1 << 8),
+    HW_Flag_SpecialImport = 0x100,
 
     // The intrinsic returns result in multiple registers.
-    HW_Flag_MultiReg = (1 << 9),
+    HW_Flag_MultiReg = 0x200,
+
+// The below is for defining platform-specific flags
+#if defined(TARGET_XARCH)
+    // Full range IMM intrinsic
+    // - the immediate value is valid on the full range of imm8 (0-255)
+    HW_Flag_FullRangeIMM = 0x400,
+
+    // Maybe IMM
+    // the intrinsic has either imm or Vector overloads
+    HW_Flag_MaybeIMM = 0x800,
+
+    // Copy Upper bits
+    // some SIMD scalar intrinsics need the semantics of copying upper bits from the source operand
+    HW_Flag_CopyUpperBits = 0x1000,
+
+    // Maybe Memory Load/Store
+    // - some intrinsics may have pointer overloads but without HW_Category_MemoryLoad/HW_Category_MemoryStore
+    HW_Flag_MaybeMemoryLoad  = 0x2000,
+    HW_Flag_MaybeMemoryStore = 0x4000,
+
+    // No Read/Modify/Write Semantics
+    // the intrinsic doesn't have read/modify/write semantics in two/three-operand form.
+    HW_Flag_NoRMWSemantics = 0x8000,
+
+    // NoContainment
+    // the intrinsic cannot be handled by containment,
+    // all the intrinsic that have explicit memory load/store semantics should have this flag
+    HW_Flag_NoContainment = 0x10000,
+
+    // Returns Per-Element Mask
+    // the intrinsic returns a vector containing elements that are either "all bits set" or "all bits clear"
+    // this output can be used as a per-element mask
+    HW_Flag_ReturnsPerElementMask = 0x20000,
+
+    // AvxOnlyCompatible
+    // the intrinsic can be used on hardware with AVX but not AVX2 support
+    HW_Flag_AvxOnlyCompatible = 0x40000,
+
+    // MaybeCommutative
+    // - if a binary-op intrinsic is maybe commutative (e.g., Max or Min for float/double), its op1 can possibly be
+    // contained
+    HW_Flag_MaybeCommutative = 0x80000,
+
+    // The intrinsic has no EVEX compatible form
+    HW_Flag_NoEvexSemantics = 0x100000,
+
+#elif defined(TARGET_ARM64)
+    // The intrinsic has an immediate operand
+    // - the value can be (and should be) encoded in a corresponding instruction when the operand value is constant
+    HW_Flag_HasImmediateOperand = 0x400,
+
+    // The intrinsic has read/modify/write semantics in multiple-operands form.
+    HW_Flag_HasRMWSemantics = 0x800,
+
+    // The intrinsic operates on the lower part of a SIMD register
+    // - the upper part of the source registers are ignored
+    // - the upper part of the destination register is zeroed
+    HW_Flag_SIMDScalar = 0x1000,
+
+    // The intrinsic supports some sort of containment analysis
+    HW_Flag_SupportsContainment = 0x2000,
+
+    // The intrinsic needs consecutive registers
+    HW_Flag_NeedsConsecutiveRegisters = 0x4000,
+
+    // The intrinsic uses scalable registers
+    HW_Flag_Scalable = 0x8000,
+
+    // Returns Per-Element Mask
+    // the intrinsic returns a vector containing elements that are either "all bits set" or "all bits clear"
+    // this output can be used as a per-element mask
+    HW_Flag_ReturnsPerElementMask = 0x10000,
+
+    // The intrinsic uses a mask in arg1 to select elements present in the result
+    HW_Flag_ExplicitMaskedOperation = 0x20000,
+
+    // The intrinsic uses a mask in arg1 to select elements present in the result, and must use a low register.
+    HW_Flag_LowMaskedOperation = 0x40000,
+
+    // The intrinsic can optionally use a mask in arg1 to select elements present in the result, which is not present in
+    // the API call
+    HW_Flag_OptionalEmbeddedMaskedOperation = 0x80000,
+
+    // The intrinsic uses a mask in arg1 to select elements present in the result, which is not present in the API call
+    HW_Flag_EmbeddedMaskedOperation = 0x100000,
+
+#else
+#error Unsupported platform
+#endif
 
     // The intrinsic has some barrier special side effect that should be tracked
-    HW_Flag_SpecialSideEffect_Barrier = (1 << 10),
+    HW_Flag_SpecialSideEffect_Barrier = 0x200000,
 
     // The intrinsic has some other special side effect that should be tracked
-    HW_Flag_SpecialSideEffect_Other = (1 << 11),
+    HW_Flag_SpecialSideEffect_Other = 0x400000,
 
     HW_Flag_SpecialSideEffectMask = (HW_Flag_SpecialSideEffect_Barrier | HW_Flag_SpecialSideEffect_Other),
 
     // MaybeNoJmpTable IMM
     // the imm intrinsic may not need jumptable fallback when it gets non-const argument
-    HW_Flag_MaybeNoJmpTableIMM = (1 << 12),
+    HW_Flag_MaybeNoJmpTableIMM = 0x800000,
 
-    HW_Flag_CanBenefitFromConstantProp = (1 << 13),
-
-    // Used as a base for shifting the platform specific flags.
-    HW_Flag_PlatformBase = 13,
-#define HW_TARGET_FLAG(id) (unsigned int)(1 << (id + HW_Flag_PlatformBase))
-
-// Platform-specific flags
 #if defined(TARGET_XARCH)
-    // Full range IMM intrinsic
-    // - the immediate value is valid on the full range of imm8 (0-255)
-    HW_Flag_FullRangeIMM = HW_TARGET_FLAG(1),
-
-    // Maybe IMM
-    // the intrinsic has either imm or Vector overloads
-    HW_Flag_MaybeIMM = HW_TARGET_FLAG(2),
-
-    // Copy Upper bits
-    // some SIMD scalar intrinsics need the semantics of copying upper bits from the source operand
-    HW_Flag_CopyUpperBits = HW_TARGET_FLAG(3),
-
-    // Maybe Memory Load/Store
-    // - some intrinsics may have pointer overloads but without HW_Category_MemoryLoad/HW_Category_MemoryStore
-    HW_Flag_MaybeMemoryLoad  = HW_TARGET_FLAG(4),
-    HW_Flag_MaybeMemoryStore = HW_TARGET_FLAG(5),
-
-    // No Read/Modify/Write Semantics
-    // the intrinsic doesn't have read/modify/write semantics in two/three-operand form.
-    HW_Flag_NoRMWSemantics = HW_TARGET_FLAG(6),
-
-    // NoContainment
-    // the intrinsic cannot be handled by containment,
-    // all the intrinsic that have explicit memory load/store semantics should have this flag
-    HW_Flag_NoContainment = HW_TARGET_FLAG(7),
-
-    // Returns Per-Element Mask
-    // the intrinsic returns a vector containing elements that are either "all bits set" or "all bits clear"
-    // this output can be used as a per-element mask
-    HW_Flag_ReturnsPerElementMask = HW_TARGET_FLAG(8),
-
-    // AvxOnlyCompatible
-    // the intrinsic can be used on hardware with AVX but not AVX2 support
-    HW_Flag_AvxOnlyCompatible = HW_TARGET_FLAG(9),
-
-    // MaybeCommutative
-    // - if a binary-op intrinsic is maybe commutative (e.g., Max or Min for float/double), its op1 can possibly be
-    // contained
-    HW_Flag_MaybeCommutative = HW_TARGET_FLAG(10),
-
-    // The intrinsic has no EVEX compatible form
-    HW_Flag_NoEvexSemantics = HW_TARGET_FLAG(11),
-
     // The intrinsic is an RMW intrinsic
-    HW_Flag_RmwIntrinsic = HW_TARGET_FLAG(12),
+    HW_Flag_RmwIntrinsic = 0x1000000,
 
     // The intrinsic is a FusedMultiplyAdd intrinsic
-    HW_Flag_FmaIntrinsic = HW_TARGET_FLAG(13),
+    HW_Flag_FmaIntrinsic = 0x2000000,
 
     // The intrinsic is a PermuteVar2x intrinsic
-    HW_Flag_PermuteVar2x = HW_TARGET_FLAG(14),
+    HW_Flag_PermuteVar2x = 0x4000000,
 
     // The intrinsic is an embedded broadcast compatible intrinsic
-    HW_Flag_EmbBroadcastCompatible = HW_TARGET_FLAG(15),
+    HW_Flag_EmbBroadcastCompatible = 0x8000000,
 
     // The intrinsic is an embedded rounding compatible intrinsic
-    HW_Flag_EmbRoundingCompatible = HW_TARGET_FLAG(16),
+    HW_Flag_EmbRoundingCompatible = 0x10000000,
 
     // The intrinsic is an embedded masking incompatible intrinsic
-    HW_Flag_EmbMaskingIncompatible = HW_TARGET_FLAG(17),
-
+    HW_Flag_EmbMaskingIncompatible = 0x20000000,
 #elif defined(TARGET_ARM64)
-    // The intrinsic has an immediate operand
-    // - the value can be (and should be) encoded in a corresponding instruction when the operand value is constant
-    HW_Flag_HasImmediateOperand = HW_TARGET_FLAG(1),
-
-    // The intrinsic has read/modify/write semantics in multiple-operands form.
-    HW_Flag_HasRMWSemantics = HW_TARGET_FLAG(2),
-
-    // The intrinsic operates on the lower part of a SIMD register
-    // - the upper part of the source registers are ignored
-    // - the upper part of the destination register is zeroed
-    HW_Flag_SIMDScalar = HW_TARGET_FLAG(3),
-
-    // The intrinsic supports some sort of containment analysis
-    HW_Flag_SupportsContainment = HW_TARGET_FLAG(4),
-
-    // The intrinsic needs consecutive registers
-    HW_Flag_NeedsConsecutiveRegisters = HW_TARGET_FLAG(5),
-
-    // The intrinsic uses scalable registers
-    HW_Flag_Scalable = HW_TARGET_FLAG(6),
-
-    // Returns Per-Element Mask
-    // the intrinsic returns a vector containing elements that are either "all bits set" or "all bits clear"
-    // this output can be used as a per-element mask
-    HW_Flag_ReturnsPerElementMask = HW_TARGET_FLAG(7),
-
-    // The intrinsic uses a mask in arg1 to select elements present in the result
-    HW_Flag_ExplicitMaskedOperation = HW_TARGET_FLAG(8),
-
-    // The intrinsic uses a mask in arg1 to select elements present in the result, and must use a low register.
-    HW_Flag_LowMaskedOperation = HW_TARGET_FLAG(9),
-
-    // The intrinsic can optionally use a mask in arg1 to select elements present in the result, which is not present in
-    // the API call
-    HW_Flag_OptionalEmbeddedMaskedOperation = HW_TARGET_FLAG(10),
-
-    // The intrinsic uses a mask in arg1 to select elements present in the result, which is not present in the API call
-    HW_Flag_EmbeddedMaskedOperation = HW_TARGET_FLAG(11),
 
     // The intrinsic has an enum operand. Using this implies HW_Flag_HasImmediateOperand.
-    HW_Flag_HasEnumOperand = HW_TARGET_FLAG(12),
+    HW_Flag_HasEnumOperand = 0x1000000,
 
-#else
-#error Unsupported platform
-#endif
+#endif // TARGET_XARCH
+
+    HW_Flag_CanBenefitFromConstantProp = 0x80000000,
 };
 
 #if defined(TARGET_XARCH)
