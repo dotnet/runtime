@@ -940,6 +940,14 @@ typedef struct {
 	gboolean no_aot_trampoline;
 } MethodRef;
 
+static MonoMethod*
+instantiate_wrapper_like_decl (MonoMethod *extern_decl, MonoGenericContext *ctx, MonoUnsafeAccessorKind accessor_kind, const char *member_name, MonoError *error)
+{
+	MonoMethod *generic_wrapper = mono_marshal_get_unsafe_accessor_wrapper (extern_decl, accessor_kind, member_name);
+	MonoMethod *inflated_wrapper = mono_class_inflate_generic_method_checked (generic_wrapper, ctx, error);
+	return inflated_wrapper;
+}
+
 /*
  * decode_method_ref_with_target:
  *
@@ -1079,7 +1087,17 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				uint32_t name_len = decode_value (p, &p);
 				const char *member_name = (const char*)p;
 				p += name_len + 1;
-				ref->method = mono_marshal_get_unsafe_accessor_wrapper (m, kind, member_name);
+				uint8_t inflated = decode_value (p, &p);
+				if (inflated) {
+					MonoGenericContext ctx = {0,};
+					decode_generic_context (module, &ctx, p, &p, error);
+					mono_error_assert_ok (error);
+					ref->method = instantiate_wrapper_like_decl (m, &ctx, kind, member_name, error);
+					if (!is_ok (error))
+						return FALSE;
+				} else {
+					ref->method = mono_marshal_get_unsafe_accessor_wrapper (m, kind, member_name);
+				}
 			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN) {
 				ref->method = mono_marshal_get_gsharedvt_in_wrapper ();
 			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT) {

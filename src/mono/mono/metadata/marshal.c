@@ -5226,31 +5226,80 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 	MonoMethod *res;
 	GHashTable *cache;
 	MonoGenericContext *ctx = NULL;
+	MonoGenericContainer *container = NULL;
 	MonoMethod *orig_method = NULL;
 	WrapperInfo *info;
+	gboolean is_generic = FALSE;
 
 	if (member_name == NULL && kind != MONO_UNSAFE_ACCESSOR_CTOR)
 		member_name = accessor_method->name;
+
+	if (accessor_method->is_generic) {
+		/* got a generic method definition. need to make a generic method definition wrapper */
+		g_assert (!accessor_method->is_inflated);
+		printf ("accessor method is generic: %s\n", mono_method_full_name (accessor_method, TRUE));
+		is_generic = TRUE;
+	}
+
+	/* FIXME: Support generic methods too */
+	if (accessor_method->is_inflated && !mono_method_get_context (accessor_method)->method_inst) {
+		orig_method = accessor_method;
+		ctx = &((MonoMethodInflated*)accessor_method)->context;
+		accessor_method = ((MonoMethodInflated*)accessor_method)->declaring;
+		container = mono_method_get_generic_container (accessor_method);
+		if (!container)
+			container = mono_class_try_get_generic_container (accessor_method->klass); //FIXME is this a case of a try?
+		g_assert (container);
+	} else if (accessor_method->is_inflated && mono_method_get_context(accessor_method)->method_inst) {
+		// FIXME: ak: do we need a different case? it should work, right?
+		// N.B. both method_inst and type_inst might be set
+		orig_method = accessor_method;
+		ctx = &((MonoMethodInflated*)accessor_method)->context;
+		accessor_method = ((MonoMethodInflated*)accessor_method)->declaring;
+		container = mono_method_get_generic_container (accessor_method);
+		if (!container)
+			container = mono_class_try_get_generic_container (accessor_method->klass); //FIXME is this a case of a try?
+		g_assert (container);
+	}
 
 	/*
 	 * Check cache
 	 */
 	if (ctx) {
-		cache = NULL;
-		g_assert_not_reached ();
+		/* FIXME get the right cache */
+		cache = NULL; /* get_cache (&((MonoMethodInflated*)orig_method)->owner->wrapper_caches.synchronized_cache , mono_aligned_addr_hash, NULL); */
+		/* res = check_generic_wrapper_cache (cache, orig_method, orig_method, method);*/
+		res = NULL;
+		if (res)
+			return res;
 	} else {
 		cache = get_cache (&mono_method_get_wrapper_cache (accessor_method)->unsafe_accessor_cache, mono_aligned_addr_hash, NULL);
 		if ((res = mono_marshal_find_in_cache (cache, accessor_method)))
 			return res;
 	}
 
-	sig = mono_metadata_signature_dup_full (get_method_image (accessor_method), mono_method_signature_internal (accessor_method));
-	sig->pinvoke = 0;
 
 	mb = mono_mb_new (accessor_method->klass, accessor_method->name, MONO_WRAPPER_OTHER);
+	if (is_generic) {
+		mb->method->is_generic = is_generic;
+		container = mono_class_try_get_generic_container (accessor_method->klass);
+		container = mono_metadata_load_generic_params (m_class_get_image (accessor_method->klass), accessor_method->token, container, /*owner:*/mb->method);
+		mono_method_set_generic_container (mb->method, container);
+
+		MonoGenericContext ctx = {0,};
+		ctx.method_inst = container->context.method_inst;
+
+		ERROR_DECL (error);
+		sig = mono_inflate_generic_signature (mono_method_signature_internal (accessor_method), &ctx, error);
+		mono_error_assert_ok (error); // FIXME
+	} else {
+		sig = mono_metadata_signature_dup_full (get_method_image (accessor_method), mono_method_signature_internal (accessor_method));
+	}
+	sig->pinvoke = 0;
 
 	get_marshal_cb ()->mb_skip_visibility (mb);
 
+	// TODO: pass container, too
 	get_marshal_cb ()->emit_unsafe_accessor_wrapper (mb, accessor_method, sig, ctx, kind, member_name);
 
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_UNSAFE_ACCESSOR);

@@ -16,7 +16,10 @@ public class Program
     public static void Main()
     {
         var box = new MyBox<string>("xyz");
-        RunIt<string>(box, "abc");
+        //Thinger<string>(box);
+        //RunIt<string>(box, "abc");
+        //Console.WriteLine (box.Value);
+        RunItAgain<string>(box, "hjk");
         Console.WriteLine (box.Value);
     }
 
@@ -27,6 +30,22 @@ public class Program
         boxWriter = input;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void RunItAgain<S> (MyBox<S> dest, S input)
+    {
+        ref S boxWriter = ref AccessHelper<S>.AccessBox2(dest);
+        boxWriter = input;
+    }
+
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_value")]
     private static extern ref W AccessBox<W>(MyBox<W> x);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static ref W Thinger<W>(MyBox<W> x) => throw new InvalidOperationException("oops");
+}
+
+public class AccessHelper<Q>
+{
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_value")]
+    public static extern ref Q AccessBox2(MyBox<Q> q);
 }

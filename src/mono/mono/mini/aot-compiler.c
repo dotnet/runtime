@@ -3874,6 +3874,15 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 					encode_value (len, p, &p);
 					encode_string (info->d.unsafe_accessor.member_name, p, &p);
 				}
+				if (method->is_inflated) {
+					encode_value(1, p, &p);
+					MonoMethodInflated *inflated = (MonoMethodInflated*)method;
+					MonoGenericContext *ctx = &inflated->context;
+					encode_generic_context (acfg, ctx, p, &p);
+				} else {
+					encode_value(0, p, &p);
+				}
+
 			}
 			else if (info->subtype == WRAPPER_SUBTYPE_INTERP_IN)
 				encode_signature (acfg, info->d.interp_in.sig, p, &p);
@@ -4829,6 +4838,18 @@ mono_aot_can_enter_interp (MonoMethod *method)
 	return FALSE;
 }
 
+static MonoMethod*
+instantiate_wrapper_like_decl (MonoMethod *extern_method_inst, MonoUnsafeAccessorKind accessor_kind, const char *member_name, MonoError *error)
+{
+	g_assert (extern_method_inst->is_inflated);
+	MonoMethodInflated *infl = (MonoMethodInflated*)extern_method_inst;
+	MonoMethod *extern_decl = infl->declaring;
+	MonoMethod *generic_wrapper = mono_marshal_get_unsafe_accessor_wrapper (extern_decl, accessor_kind, member_name);
+	MonoGenericContext *ctx = &infl->context;
+	MonoMethod *inflated_wrapper = mono_class_inflate_generic_method_checked (generic_wrapper, ctx, error);
+	return inflated_wrapper;
+}
+
 /**
  * Replaces some extern \c method by a wrapper.
  *
@@ -4848,6 +4869,8 @@ replace_generated_method (MonoAotCompile *acfg, MonoMethod *method, MonoError *e
 	{
 		char * method_name = mono_method_get_full_name (method);
 		g_print ("ADDING no header %s generic instances\n", method_name);
+		if (strstr (method_name, "!!0") != NULL)
+			g_print("anon\n");
 		g_free (method_name);
 	}
 
@@ -4857,15 +4880,20 @@ replace_generated_method (MonoAotCompile *acfg, MonoMethod *method, MonoError *e
 	char *member_name = NULL;
 	int accessor_kind = -1;
 	if (mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
-		// FIXME: if `method` was inflated, get the uninflated wrapper and then re-inflate
-		// it.
-		MonoMethod *wrapper = mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name);
-		{
-			char * method_name = mono_method_get_full_name (wrapper);
-			g_print ("REPLACED by %s in generic instances\n", method_name);
-			g_free (method_name);
+		MonoMethod *wrapper = NULL;
+		if (method->is_inflated) {
+			wrapper = instantiate_wrapper_like_decl (method, (MonoUnsafeAccessorKind)accessor_kind, member_name, error);
+		} else {
+			wrapper = mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name);
 		}
-		return wrapper;
+		if (is_ok (error)) {
+			{
+				char * method_name = mono_method_get_full_name (wrapper);
+				g_print ("REPLACED by %s in generic instances\n", method_name);
+				g_free (method_name);
+			}
+			return wrapper;
+		}
 	}
 
 	if (!is_ok (error)) {
@@ -7925,6 +7953,12 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg, gboolean stor
 		 */
 		buf2 = (guint8 *)g_malloc (4096);
 		p2 = buf2;
+		if (cfg->method->wrapper_type && cfg->method->is_generic) {
+			printf ("barf\n");
+		}
+		if (jinfo->d.method->wrapper_type && jinfo->d.method->is_generic) {
+			printf ("barf2\n");
+		}
 		encode_method_ref (acfg, jinfo->d.method, p2, &p2);
 		len = GPTRDIFF_TO_INT (p2 - buf2);
 		g_assert (len < 4096);

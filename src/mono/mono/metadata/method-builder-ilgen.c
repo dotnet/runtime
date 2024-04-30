@@ -214,6 +214,18 @@ create_method_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *signature, int 
 		mono_image_unlock (image);
 	}
 
+	if (mb->method->is_generic) {
+		method->is_generic = TRUE;
+		MonoGenericContainer *container = mono_method_get_generic_container (mb->method);
+		mono_method_set_generic_container (method, container);
+		g_assert (!container->is_anonymous);
+		g_assert (container->is_method);
+		g_assert (container->owner.method == mb->method);
+		// HACK: reassign container owner from the method builder placeholder to the
+		// final created method
+		container->owner.method = method;
+	}
+
 	return method;
 }
 
