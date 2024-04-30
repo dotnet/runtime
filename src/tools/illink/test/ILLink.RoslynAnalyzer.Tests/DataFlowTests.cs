@@ -314,6 +314,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task ObjectGetTypeDataflow ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task PropertyDataFlow ()
 		{
 			return RunTest (nameof (PropertyDataFlow));
