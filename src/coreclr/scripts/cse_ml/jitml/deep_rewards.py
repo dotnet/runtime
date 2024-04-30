@@ -9,13 +9,9 @@ from .method_context import CseCandidate, MethodContext
 from .jit_cse import JitCseEnvState, JitCseEnv
 from .superpmi import SuperPmi
 
-REWARD_OPTIMAL = 1.0        # Agent found the best CSE
-REWARD_IMPROVEMENT = 0.5    # Agent improved the performance score, but there were better options.
-REWARD_NEUTRAL = -0.25      # Don't reward for equal performance, CSEs have a cost.
-PENALTY_WORSE = -0.5        # Agent made the performance score worse.
-PENALTY_INVALID = -1.0      # Agent made an invalid choice.
-REWARD_CORRECT_STOP = 0.25  # Agent stopped when there were no better options.
-PENALTY_BAD_STOP = -0.5     # Agent stopped early, but there were better options.
+OPTIMAL_BONUS = 0.05
+SUBOPTIMAL_PENALTY = -0.01
+NEUTRAL_PENALTY = -0.005
 
 class DeepCseRewardWrapper(gym.RewardWrapper):
     """A wrapper for the CSE environment that provides rewards based not just on the change in
@@ -30,60 +26,47 @@ class DeepCseRewardWrapper(gym.RewardWrapper):
         # pylint: disable=too-many-branches
         state : JitCseEnvState = self.env.state
 
-        # If the state is truncated, we will defer to the reward passed in.
-        if state.truncated:
+        # We'll let the parent class handle the reward in these cases.
+        if state.truncated or not state.last_action_valid:
             return reward
 
-        if not state.last_action_valid:
-            return PENALTY_INVALID
-
-        # Don't use the reward passed in, we will calculate our own.
-        reward = 0.0
         previous_score = state.previous.perf_score
 
         # Did we choose to end optimization?
         if state.last_action is None:
-            # Were there more CSEs we could have applied?
-            alternate_cses = self._get_alternate_cses(state, None)
-            if alternate_cses:
-                best = min(alternate_cses, key=lambda x: x.perf_score)
-                if not np.isclose(best.perf_score, previous_score) and best.perf_score < previous_score:
-                    reward = PENALTY_BAD_STOP
-                else:
-                    reward = REWARD_CORRECT_STOP
+            alternates = self._get_alternate_cses(state)
+            best_perf_score = min(alternates, key=lambda x: x.perf_score).perf_score if alternates else np.inf
 
-            else:
-                # We had no choices and chose to stop, perfect.
-                reward = REWARD_CORRECT_STOP
+            if not np.isclose(best_perf_score, previous_score) and best_perf_score < previous_score:
+                reward += SUBOPTIMAL_PENALTY
 
-        # We chose a CSE.
+        # Otherwise we chose a CSE
         else:
             curr = state.current
+
+            # We apply a tiny penalty for choosing a CSE that matches the previous score.  Choosing a CSE that
+            # doesn't change the score still has a cost, but we don't want this penalty to be so high that the
+            # agent avoids making choices.
             if np.isclose(curr.perf_score, previous_score):
-                reward = REWARD_NEUTRAL
+                reward += NEUTRAL_PENALTY
 
-            elif curr.perf_score > previous_score:
-                reward = PENALTY_WORSE
 
-            else:
+            # If we improved the performance score, give a bonus for choosing the best option out of all of them.
+            elif curr.perf_score < previous_score:
                 # We improved the performance score, but was it the best choice?
-                alternate_cses = self._get_alternate_cses(state, state.choices[-1])
-                if not alternate_cses:
-                    reward = REWARD_OPTIMAL
-
-                else:
-                    best = min(alternate_cses, key=lambda x: x.perf_score)
-                    if np.isclose(best.perf_score, curr.perf_score) or curr.perf_score < best.perf_score:
-                        reward = REWARD_OPTIMAL
-                    else:
-                        reward = REWARD_IMPROVEMENT
+                alternates = self._get_alternate_cses(state)
+                best_perf_score = min(alternates, key=lambda x: x.perf_score).perf_score if alternates else np.inf
+                if np.isclose(best_perf_score, curr.perf_score) or curr.perf_score < best_perf_score:
+                    reward += OPTIMAL_BONUS
 
         return reward
 
-    def _get_alternate_cses(self, state, chosen_index):
+    def _get_alternate_cses(self, state : JitCseEnvState):
         m_id = state.current.index
-        cses_not_chosen = [self.jit_method(m_id, state.choices, x) for x in state.previous.cse_candidates
-                           if x.can_apply and x.index != chosen_index]
+        cses_not_chosen = [self.superpmi.jit_with_retry(m_id, JitMetrics=1, JitRLHook=1,
+                                                        JitRLHookCSEDecisions=state.choices[:-1])
+                           for x in state.previous.cse_candidates
+                           if x.can_apply]
 
         cses_not_chosen = [x for x in cses_not_chosen if x is not None]
         return cses_not_chosen

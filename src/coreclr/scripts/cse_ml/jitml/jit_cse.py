@@ -9,6 +9,8 @@ from .superpmi import SuperPmi
 from .default_observation import get_observation, create_observation
 from .constants import (INVALID_ACTION_PENALTY, INVALID_ACTION_LIMIT, MIN_CSE, MAX_CSE)
 
+REWARD_SCALE = 5.0
+
 class JitCseEnvState:
     """The state of the JIT environment."""
     def __init__(self, no_cse_method : MethodContext, heuristic_method : MethodContext):
@@ -180,7 +182,7 @@ class JitCseEnv(gym.Env):
         if np.isclose(prev, 0.0, rtol=1e-05, atol=1e-08, equal_nan=False):
             return 0.0
 
-        return (prev - curr) / prev
+        return REWARD_SCALE * (prev - curr) / prev
 
     def _find_best_cse(self, state : JitCseEnvState):
         """Check to see if any of the CSE's are immediately better."""
@@ -203,7 +205,7 @@ class JitCseEnv(gym.Env):
 
         # Terminating is only valid if we have performed a CSE.  Doing no CSEs isn't allowed.
         if action is None:
-            return state.choices
+            return bool(state.choices)
 
         curr = state.current
         candidate = curr.cse_candidates[action] if action < len(curr.cse_candidates) else None
