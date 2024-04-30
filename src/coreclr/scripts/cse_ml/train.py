@@ -96,7 +96,7 @@ def main(args):
     print(f"Training with {len(train)} methods, holding back {len(test)} for testing.")
 
     # Train the model.
-    rl = JitCseModel(args.algorithm, output)
+    rl = JitCseModel(args.algorithm, output, deep_rewards=args.deep_rewards)
     rl.train(args.core_root, args.mch, train, iterations=iterations, parallel=args.parallel)
     rl.save(model_path)
 
