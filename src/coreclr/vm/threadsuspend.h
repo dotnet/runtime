@@ -182,8 +182,8 @@ public:
 private:
     static SUSPEND_REASON    m_suspendReason;    // This contains the reason why the runtime is suspended
 
-    static void SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason);
-    static void ResumeRuntime(BOOL bFinishedGC, BOOL SuspendSucceeded);
+    static void SuspendAllThreads();
+    static void ResumeAllThreads(BOOL SuspendSucceeded);
 public:
     // Initialize thread suspension support
     static void Initialize();
