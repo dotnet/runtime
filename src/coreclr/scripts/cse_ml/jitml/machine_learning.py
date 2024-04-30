@@ -22,7 +22,7 @@ from .superpmi import MethodContext
 
 class JitCseModel:
     """The raw implementation of the machine learning agent."""
-    def __init__(self, algorithm, model_path, device='auto', deep_rewards=False, ent_coef=0.01, verbose=False):
+    def __init__(self, algorithm, model_path, device='auto', make_env=None, ent_coef=0.01, verbose=False):
         if algorithm not in ('PPO', 'A2C', 'DQN'):
             raise ValueError(f"Unknown algorithm {algorithm}.  Must be one of: PPO, A2C, DQN")
 
@@ -31,7 +31,7 @@ class JitCseModel:
         self.device = device
         self.ent_coef = ent_coef
         self.verbose = verbose
-        self.deep_rewards = deep_rewards
+        self.make_env = make_env
         self._model = None
 
     def load(self, path):
@@ -69,13 +69,10 @@ class JitCseModel:
 
         iterations = 100_000 if iterations is None else iterations
 
-        def make_env():
-            env = JitCseEnv(core_root, mch, methods)
-            if self.deep_rewards:
-                env = DeepCseRewardWrapper(env)
+        def default_make_env():
+            return JitCseEnv(core_root, mch, methods)
 
-            return env
-
+        make_env = self.make_env or default_make_env
         if parallel is not None and parallel > 1:
             env = make_vec_env(make_env, n_envs=parallel, vec_env_cls=SubprocVecEnv)
         else:

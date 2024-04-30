@@ -7,7 +7,7 @@ import time
 import argparse
 import numpy as np
 
-from jitml import SuperPmi, JitCseEnv, JitCseModel
+from jitml import SuperPmi, JitCseEnv, JitCseModel, DeepCseRewardWrapper
 
 def enumerate_methods(core_root, mch):
     """Enumerates all methods in the mch file."""
@@ -79,6 +79,15 @@ def parse_args():
 
     return args
 
+def deep_reward_make_env(core_root, mch, methods):
+    """Returns a JitCseEnv with deep rewards."""
+    def make_env():
+        env = JitCseEnv(core_root, mch, methods)
+        env = DeepCseRewardWrapper(env)
+        return env
+
+    return make_env
+
 def main(args):
     """Main entry point."""
 
@@ -96,7 +105,8 @@ def main(args):
     print(f"Training with {len(train)} methods, holding back {len(test)} for testing.")
 
     # Train the model.
-    rl = JitCseModel(args.algorithm, output, deep_rewards=args.deep_rewards)
+    make_env = deep_reward_make_env(args.core_root, args.mch, train) if args.deep_rewards else None
+    rl = JitCseModel(args.algorithm, output, make_env=make_env)
     rl.train(args.core_root, args.mch, train, iterations=iterations, parallel=args.parallel)
     rl.save(model_path)
 
