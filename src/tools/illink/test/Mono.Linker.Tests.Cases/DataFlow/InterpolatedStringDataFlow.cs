@@ -33,7 +33,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			Debug.Assert (b, $"Debug interpolated string handler {b}");
 		}
 
-		[ExpectedWarning ("IL2057", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101733")]
+		[ExpectedWarning ("IL2057")]
 		static void TestUnknownInterpolatedString (string input = "test") {
 			Type.GetType ($"{input}");
 		}
