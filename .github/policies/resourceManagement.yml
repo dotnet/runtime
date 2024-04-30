@@ -1916,6 +1916,10 @@ configuration:
             isActivitySender:
               user: github-actions
               issueAuthor: False
+        - not:
+            isActivitySender:
+              user: dependabot[bot]
+              issueAuthor: False
       then:
       - addLabel:
           label: community-contribution
