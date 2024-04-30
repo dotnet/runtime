@@ -2111,9 +2111,12 @@ void Thread::RareDisablePreemptiveGC()
         goto Exit;
     }
 
-    // Regular threads should not try getting into coop mode
-    // while holding TS lock.
-    _ASSERTE(!ThreadStore::HoldingThreadStore(this));
+    if (ThreadStore::HoldingThreadStore(this))
+    {
+        // In theory threads should not try entering coop mode while holding TS lock,
+        // but some scenarios like GCCoopHackNoThread end up here
+        goto Exit;
+    }
 
     STRESS_LOG1(LF_SYNC, LL_INFO1000, "RareDisablePreemptiveGC: entering. Thread state = %x\n", m_State.Load());
 
