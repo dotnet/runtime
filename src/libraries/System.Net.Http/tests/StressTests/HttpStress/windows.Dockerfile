@@ -20,7 +20,7 @@ RUN dotnet build -c $env:CONFIGURATION `
 # Enable dump collection
 ENV DOTNET_DbgEnableMiniDump=1
 ENV DOTNET_DbgMiniDumpType=MiniDumpWithFullMemory
-ENV DOTNET_DbgMiniDumpName="C:/dumps-share/coredump.%p"
+ENV DOTNET_DbgMiniDumpName="C:/dumps-share/coredump.%p.%t"
 
 EXPOSE 5001
 
