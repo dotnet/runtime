@@ -160,7 +160,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
 
             IChangeToken changeToken;
-#if NET5_0_OR_GREATER
+#if NET
             bool isWildCard = pattern.Contains('*');
 #else
             bool isWildCard = pattern.IndexOf('*') != -1;

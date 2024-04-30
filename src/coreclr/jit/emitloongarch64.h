@@ -19,10 +19,6 @@ struct CnsVal
     bool    cnsReloc;
 };
 
-#ifdef DEBUG
-/************************************************************************/
-/*             Debug-only routines to display instructions              */
-/************************************************************************/
 enum insDisasmFmt
 {
     DF_G_INVALID = 0,
@@ -108,7 +104,6 @@ code_t       emitGetInsMask(int ins);
 insDisasmFmt emitGetInsFmt(instruction ins);
 void         emitDispInst(instruction ins);
 void         emitDisInsName(code_t code, const BYTE* addr, instrDesc* id);
-#endif // DEBUG
 
 void emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1 = REG_R0, regNumber reg2 = REG_R0);
 void emitIns_I_la(emitAttr attr, regNumber reg, ssize_t imm);
@@ -333,7 +328,7 @@ enum EmitCallType
 
     EC_FUNC_TOKEN, //   Direct call to a helper/static/nonvirtual/global method
                    //  EC_FUNC_TOKEN_INDIR,    // Indirect call to a helper/static/nonvirtual/global method
-    // EC_FUNC_ADDR,  // Direct call to an absolute address
+                   // EC_FUNC_ADDR,  // Direct call to an absolute address
 
     EC_INDIR_R, // Indirect call via register
 

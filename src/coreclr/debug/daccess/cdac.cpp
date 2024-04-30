@@ -28,8 +28,12 @@ namespace
 
     int ReadFromTargetCallback(uint64_t addr, uint8_t* dest, uint32_t count, void* context)
     {
-        CDAC* cdac = reinterpret_cast<CDAC*>(context);
-        return cdac->ReadFromTarget(addr, dest, count);
+        ICorDebugDataTarget* target = reinterpret_cast<ICorDebugDataTarget*>(context);
+        HRESULT hr = ReadFromDataTarget(target, addr, dest, count);
+        if (FAILED(hr))
+            return hr;
+
+        return S_OK;
     }
 }
 
@@ -37,32 +41,37 @@ CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target)
 {
     HMODULE cdacLib;
     if (!TryLoadCDACLibrary(&cdacLib))
-        return CDAC::Invalid();
+        return {};
 
-    return CDAC{cdacLib, descriptorAddr, target};
-}
+    decltype(&cdac_reader_init) init = reinterpret_cast<decltype(&cdac_reader_init)>(::GetProcAddress(cdacLib, "cdac_reader_init"));
+    _ASSERTE(init != nullptr);
 
-CDAC::CDAC(HMODULE module, uint64_t descriptorAddr, ICorDebugDataTarget* target)
-    : m_module(module)
-    , m_target{target}
-{
-    if (m_module == NULL)
+    intptr_t handle;
+    if (init(descriptorAddr, &ReadFromTargetCallback, target, &handle) != 0)
     {
-        m_cdac_handle = NULL;
-        return;
+        ::FreeLibrary(cdacLib);
+        return {};
     }
 
-    decltype(&cdac_reader_init) init = reinterpret_cast<decltype(&cdac_reader_init)>(::GetProcAddress(m_module, "cdac_reader_init"));
-    decltype(&cdac_reader_get_sos_interface) getSosInterface = reinterpret_cast<decltype(&cdac_reader_get_sos_interface)>(::GetProcAddress(m_module, "cdac_reader_get_sos_interface"));
-    _ASSERTE(init != nullptr && getSosInterface != nullptr);
+    return CDAC{cdacLib, handle, target};
+}
 
-    init(descriptorAddr, &ReadFromTargetCallback, this, &m_cdac_handle);
+CDAC::CDAC(HMODULE module, intptr_t handle, ICorDebugDataTarget* target)
+    : m_module{module}
+    , m_cdac_handle{handle}
+    , m_target{target}
+{
+    _ASSERTE(m_module != NULL && m_cdac_handle != 0 && m_target != NULL);
+
+    m_target->AddRef();
+    decltype(&cdac_reader_get_sos_interface) getSosInterface = reinterpret_cast<decltype(&cdac_reader_get_sos_interface)>(::GetProcAddress(m_module, "cdac_reader_get_sos_interface"));
+    _ASSERTE(getSosInterface != nullptr);
     getSosInterface(m_cdac_handle, &m_sos);
 }
 
 CDAC::~CDAC()
 {
-    if (m_cdac_handle != NULL)
+    if (m_cdac_handle)
     {
         decltype(&cdac_reader_free) free = reinterpret_cast<decltype(&cdac_reader_free)>(::GetProcAddress(m_module, "cdac_reader_free"));
         _ASSERTE(free != nullptr);
@@ -76,13 +85,4 @@ CDAC::~CDAC()
 IUnknown* CDAC::SosInterface()
 {
     return m_sos;
-}
-
-int CDAC::ReadFromTarget(uint64_t addr, uint8_t* dest, uint32_t count)
-{
-    HRESULT hr = ReadFromDataTarget(m_target, addr, dest, count);
-    if (FAILED(hr))
-        return hr;
-
-    return S_OK;
 }

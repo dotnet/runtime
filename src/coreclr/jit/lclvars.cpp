@@ -1885,6 +1885,42 @@ void Compiler::lvaClassifyParameterABI()
             }
         }
     }
+
+    for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+    {
+        const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
+
+        if (lvaIsImplicitByRefLocal(lclNum))
+        {
+            assert((abiInfo.NumSegments == 1) && (abiInfo.Segments[0].Size == TARGET_POINTER_SIZE));
+        }
+        else
+        {
+            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            {
+                const ABIPassingSegment& segment = abiInfo.Segments[i];
+                assert(segment.Size > 0);
+                assert(segment.Offset + segment.Size <= lvaLclExactSize(lclNum));
+
+                if (i > 0)
+                {
+                    assert(segment.Offset > abiInfo.Segments[i - 1].Offset);
+                }
+
+                for (unsigned j = 0; j < abiInfo.NumSegments; j++)
+                {
+                    if (i == j)
+                    {
+                        continue;
+                    }
+
+                    const ABIPassingSegment& otherSegment = abiInfo.Segments[j];
+                    assert((segment.Offset + segment.Size <= otherSegment.Offset) ||
+                           (segment.Offset >= otherSegment.Offset + otherSegment.Size));
+                }
+            }
+        }
+    }
 #endif // DEBUG
 }
 
@@ -5669,23 +5705,52 @@ void Compiler::lvaFixVirtualFrameOffsets()
         // We set FP to be after LR, FP
         delta += 2 * REGSIZE_BYTES;
     }
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64)
     else
     {
         // FP is used.
         JITDUMP("--- delta bump %d for FP frame\n", codeGen->genTotalFrameSize() - codeGen->genSPtoFPdelta());
         delta += codeGen->genTotalFrameSize() - codeGen->genSPtoFPdelta();
     }
-#endif // TARGET_AMD64 || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    else
+    {
+        // FP is used.
+        delta += (compCalleeRegsPushed << 3);
+
+        if ((lvaMonAcquired != BAD_VAR_NUM) && !opts.IsOSR())
+        {
+            int offset = lvaTable[lvaMonAcquired].GetStackOffset() + delta;
+            lvaTable[lvaMonAcquired].SetStackOffset(offset);
+
+            if (lvaPSPSym != BAD_VAR_NUM)
+            {
+                int offset = lvaTable[lvaPSPSym].GetStackOffset() + delta;
+                lvaTable[lvaPSPSym].SetStackOffset(offset);
+                delta += TARGET_POINTER_SIZE;
+            }
+
+            delta += lvaLclSize(lvaMonAcquired);
+        }
+        else if (lvaPSPSym != BAD_VAR_NUM)
+        {
+            int offset = lvaTable[lvaPSPSym].GetStackOffset() + delta;
+            lvaTable[lvaPSPSym].SetStackOffset(offset);
+            delta += TARGET_POINTER_SIZE;
+        }
+
+        JITDUMP("--- delta bump %d for FP frame\n", delta);
+    }
+#endif // !TARGET_LOONGARCH64 || !TARGET_RISCV64
 
     if (opts.IsOSR())
     {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
         // Stack offset includes Tier0 frame.
         //
         JITDUMP("--- delta bump %d for OSR + Tier0 frame\n", info.compPatchpointInfo->TotalFrameSize());
         delta += info.compPatchpointInfo->TotalFrameSize();
-#endif
+#endif // TARGET_AMD64 || TARGET_ARM64
     }
 
     JITDUMP("--- virtual stack offset to actual stack offset delta is %d\n", delta);
@@ -5775,26 +5840,20 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
 #endif // FEATURE_FIXED_OUT_ARGS
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // We normally add alignment below the locals between them and the outgoing
     // arg space area. When we store fp/lr(ra) at the bottom, however, this will
     // be below the alignment. So we should not apply the alignment adjustment to
     // them. It turns out we always store these at +0 and +8 of the FP,
     // so instead of dealing with skipping adjustment just for them we just set
     // them here always.
+    // For LoongArch64 and RISCV64, the RA is always at fp+8.
     assert(codeGen->isFramePointerUsed());
     if (lvaRetAddrVar != BAD_VAR_NUM)
     {
         lvaTable[lvaRetAddrVar].SetStackOffset(REGSIZE_BYTES);
     }
-#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    assert(codeGen->isFramePointerUsed());
-    if (lvaRetAddrVar != BAD_VAR_NUM)
-    {
-        // For LoongArch64 and RISCV64, the RA is below the fp. see the `genPushCalleeSavedRegisters`
-        lvaTable[lvaRetAddrVar].SetStackOffset(-REGSIZE_BYTES);
-    }
-#endif // !TARGET_LOONGARCH64
+#endif // !TARGET_ARM64 || !TARGET_LOONGARCH64 || !TARGET_RISCV64
 }
 
 #ifdef TARGET_ARM
@@ -6548,9 +6607,13 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     //
     if (opts.IsOSR())
     {
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        originalFrameStkOffs = info.compPatchpointInfo->TotalFrameSize();
+#else
         originalFrameSize    = info.compPatchpointInfo->TotalFrameSize();
         originalFrameStkOffs = stkOffs;
         stkOffs -= originalFrameSize;
+#endif
     }
 
 #ifdef TARGET_XARCH
@@ -6606,7 +6669,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
-    assert(compCalleeRegsPushed >= 2);
+    assert(compCalleeRegsPushed >= 2); // always FP/RA.
+    stkOffs -= (compCalleeRegsPushed << 3);
 
 #else // !TARGET_LOONGARCH64 && !TARGET_RISCV64
 #ifdef TARGET_ARM
@@ -7331,14 +7395,9 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif // FEATURE_FIXED_OUT_ARGS
 
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // For LoongArch64 and RISCV64, CalleeSavedRegs are at bottom.
-    int pushedCount = 0;
-#else
     // compLclFrameSize equals our negated virtual stack offset minus the pushed registers and return address
     // and the pushed frame pointer register which for some strange reason isn't part of 'compCalleeRegsPushed'.
     int pushedCount = compCalleeRegsPushed;
-#endif
 
 #ifdef TARGET_ARM64
     if (info.compIsVarArgs)
