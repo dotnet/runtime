@@ -147,9 +147,9 @@ class SuperPmi:
 
         seq = re.search(r'seq ([0-9,]+) spmi', line)
         if seq is not None:
-            properties['heuristic_sequence'] = [int(x) for x in seq.group(1).split(',')]
+            properties['cses_chosen'] = [int(x) for x in seq.group(1).split(',')]
         else:
-            properties['heuristic_sequence'] = []
+            properties['cses_chosen'] = []
 
         cse_candidates = None
         if self._feature_names is not None:
@@ -161,6 +161,8 @@ class SuperPmi:
 
                 for i, candidate in enumerate(cse_candidates):
                     candidate['index'] = i
+                    if i in properties['cses_chosen']:
+                        candidate['applied'] = True
 
         properties['cse_candidates'] = cse_candidates if cse_candidates is not None else []
 

@@ -228,13 +228,11 @@ private:
     static const char* const s_featureNameAndType[];
 
     void ApplyDecisions();
-    void DumpFeatureNames();
-    void DumpFeatures();
     void GetFeatures(CSEdsc* cse, int* features);
 
     enum
     {
-        maxFeatures = 17,
+        maxFeatures = 19,
     };
 
     enum

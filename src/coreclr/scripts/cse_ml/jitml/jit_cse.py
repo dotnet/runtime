@@ -16,7 +16,6 @@ class JitCseEnvState:
     def __init__(self, no_cse_method : MethodContext, heuristic_method : MethodContext):
         self.no_cse_method = no_cse_method
         self.heuristic_method = heuristic_method
-        self.choices = []
         self.results = []
         self.invalid_action_count = 0
         self.total_reward = 0.0
@@ -24,15 +23,6 @@ class JitCseEnvState:
         self.truncated = False
         self.last_action = None
         self.last_action_valid = False
-
-    def choose(self, index : int, result : MethodContext):
-        """Chooses an action and updates the state."""
-        assert 0 <= index < MAX_CSE
-        self.choices.append(index)
-        self.results.append(result)
-        for i in self.choices:
-            assert result.cse_candidates[i].index == i
-            result.cse_candidates[i].applied = True
 
     @property
     def heuristic_score(self):
@@ -156,7 +146,6 @@ class JitCseEnv(gym.Env):
             'no_cse_method': state.no_cse_method,
             'heuristic_method': state.heuristic_method,
             'method' : state.current,
-            'choices': state.choices,
             'results': state.results,
             'invalid_action_count': state.invalid_action_count
         }
@@ -166,7 +155,6 @@ class JitCseEnv(gym.Env):
             result['heuristic_score'] = state.heuristic_score
             result['no_cse_score'] = state.no_cse_score
             result['final_score'] = state.current.perf_score
-            result['choices'] = state.choices
             result['total_reward'] = state.total_reward
             result['invalid_actions'] = state.invalid_action_count
 
@@ -184,28 +172,12 @@ class JitCseEnv(gym.Env):
 
         return REWARD_SCALE * (prev - curr) / prev
 
-    def _find_best_cse(self, state : JitCseEnvState):
-        """Check to see if any of the CSE's are immediately better."""
-        best = None
-
-        for cse in state.current.cse_candidates:
-            if cse.can_apply:
-                method = self._jit_method(state.no_cse_method.index, JitMetrics=1, JitRLHook=1,
-                                          JitRLHookCSEDecisions=state.choices)
-
-                if method is not None:
-                    if method.perf_score < state.current.perf_score:
-                        if best is None or method.perf_score < best.perf_score:
-                            best = method
-
-        return best
-
     def _is_valid_action(self, action):
         state = self.state
 
         # Terminating is only valid if we have performed a CSE.  Doing no CSEs isn't allowed.
         if action is None:
-            return bool(state.choices)
+            return bool(state.current.cses_chosen)
 
         curr = state.current
         candidate = curr.cse_candidates[action] if action < len(curr.cse_candidates) else None
@@ -217,12 +189,14 @@ class JitCseEnv(gym.Env):
         if action is None:
             return True    # We "successfully" performed no action, do not truncate
 
+        cse_choices = state.current.cses_chosen + [action]
         result = self._jit_method(state.no_cse_method.index, JitMetrics=1, JitRLHook=1,
-                                  JitRLHookCSEDecisions=state.choices)
+                                  JitRLHookCSEDecisions=cse_choices)
         if result is None:
             return False
 
-        state.choose(action, result)
+        assert result.cses_chosen == cse_choices
+        state.results.append(result)
         return True
 
     def _jit_method(self, m_id, *args, **kwargs):
@@ -273,7 +247,7 @@ class JitCseEnv(gym.Env):
         if state is not None:
             scores = [x.perf_score for x in state.results]
             print(f"{state.no_cse_method.index} heuristic_score: {state.heuristic_score} "
-                  f"no_cse_score: {state.no_cse_score} choices:{state.choices} results:{scores}"
+                  f"no_cse_score: {state.no_cse_score} choices:{state.current.cses_chosen} results:{scores}"
                   f"invalid_count:{state.invalid_action_count} ({state.no_cse_method.name})")
 
 __all__ = [JitCseEnv.__name__, JitCseEnvState.__name__]

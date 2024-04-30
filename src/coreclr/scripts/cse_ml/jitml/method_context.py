@@ -35,6 +35,8 @@ class CseCandidate(BaseModel):
     def_wt_cnt : int
     distinct_locals : int
     local_occurrences : int
+    bb_count : int
+    block_spread : int
     enreg_count : int
 
     @field_validator('applied', 'viable', 'live_across_call', 'const', 'shared_const', 'make_cse', 'has_call',
@@ -68,7 +70,7 @@ class MethodContext(BaseModel):
     num_cse : int
     num_cse_candidate : int
     heuristic : str
-    heuristic_sequence : List[int]
+    cses_chosen : List[int]
     cse_candidates : List[CseCandidate]
 
     def __str__(self):

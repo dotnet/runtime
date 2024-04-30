@@ -3028,25 +3028,17 @@ void CSE_HeuristicRLHook::ApplyDecisions()
 
 void CSE_HeuristicRLHook::DumpMetrics()
 {
+    // Feature names, if requested
     if (JitConfig.JitRLHookEmitFeatureNames() > 0)
     {
-        DumpFeatureNames();
+        printf(" featureNames ");
+        for (int i = 0; i < maxFeatures; i++)
+        {
+            printf("%s%s", (i == 0) ? "" : ",", s_featureNameAndType[i]);
+        }
     }
 
-    DumpFeatures();
-}
-
-void CSE_HeuristicRLHook::DumpFeatureNames()
-{
-    printf(" featureNames ");
-    for (int i = 0; i < maxFeatures; i++)
-    {
-        printf("%s%s", (i == 0) ? "" : ",", s_featureNameAndType[i]);
-    }
-}
-
-void CSE_HeuristicRLHook::DumpFeatures()
-{
+    // features
     for (unsigned i = 0; i < m_pCompiler->optCSECandidateCount; i++)
     {
         CSEdsc* const cse = m_pCompiler->optCSEtab[i];
@@ -3058,6 +3050,19 @@ void CSE_HeuristicRLHook::DumpFeatures()
         for (int j = 0; j < maxFeatures; j++)
         {
             printf(",%d", features[j]);
+        }
+    }
+
+    // The selected sequence of CSEs that were applied
+    ConfigIntArray JitRLHookCSEDecisions;
+    JitRLHookCSEDecisions.EnsureInit(JitConfig.JitRLHookCSEDecisions());
+
+    if (JitRLHookCSEDecisions.GetLength() > 0)
+    {
+        printf(" seq ");
+        for (unsigned i = 0; i < JitRLHookCSEDecisions.GetLength(); i++)
+        {
+            printf("%s%d", (i == 0) ? "" : ",", JitRLHookCSEDecisions.GetData()[i]);
         }
     }
 }
@@ -3099,15 +3104,32 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
         }
     }
 
-    bool isMakeCse = false;
+    const unsigned numBBs            = m_pCompiler->fgBBcount;
+    bool           isMakeCse         = false;
+    unsigned       minPostorderNum   = numBBs;
+    unsigned       maxPostorderNum   = 0;
+    BasicBlock*    minPostorderBlock = nullptr;
+    BasicBlock*    maxPostorderBlock = nullptr;
     for (treeStmtLst* treeList = cse->csdTreeList; treeList != nullptr; treeList = treeList->tslNext)
     {
-        if ((treeList->tslTree->gtFlags & GTF_MAKE_CSE) != 0)
+        BasicBlock* const treeBlock    = treeList->tslBlock;
+        unsigned          postorderNum = treeBlock->bbPostorderNum;
+        if (postorderNum < minPostorderNum)
         {
-            isMakeCse = true;
-            break;
+            minPostorderNum   = postorderNum;
+            minPostorderBlock = treeBlock;
         }
+
+        if (postorderNum > maxPostorderNum)
+        {
+            maxPostorderNum   = postorderNum;
+            maxPostorderBlock = treeBlock;
+        }
+
+        isMakeCse |= ((treeList->tslTree->gtFlags & GTF_MAKE_CSE) != 0);
     }
+
+    const unsigned blockSpread = maxPostorderNum - minPostorderNum;
 
     int type = rlHookTypeOther;
     if (candidate.Expr()->TypeIs(TYP_INT))
@@ -3161,6 +3183,8 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
     features[i++] = cse->csdDefWtCnt;
     features[i++] = cse->numDistinctLocals;
     features[i++] = cse->numLocalOccurrences;
+    features[i++] = numBBs;
+    features[i++] = blockSpread;
     features[i++] = enregCount;
 
     assert(i <= maxFeatures);
@@ -3189,6 +3213,8 @@ const char* const CSE_HeuristicRLHook::s_featureNameAndType[] =
     "def_wt_cnt",
     "distinct_locals",
     "local_occurrences",
+    "bb_count",
+    "block_spread",
     "enreg_count",
 };
 
