@@ -3308,6 +3308,8 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
         }
     }
 
+    _ASSERTE(!pCurThread || !pCurThread->HasThreadState(Thread::TS_GCSuspendFlags));
+
     // From this point until the end of the function, consider all active thread
     // suspension to be in progress.  This is mainly to give the profiler API a hint
     // that trying to suspend a thread (in order to walk its stack) could delay the
@@ -3321,17 +3323,10 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
     // See VSW 475315 and 488918 for details.
     ::FlushProcessWriteBuffers();
 
-    //
-    // Make a pass through all threads.  We do a couple of things here:
-    // 1) we count the number of threads that are observed to be in cooperative mode.
-    // 2) for threads currently running managed code, we try to redirect/jihack them.
-
     int retries = 0;
     int prevRemaining = 0;
     int remaining = 0;
     bool observeOnly = false;
-
-    _ASSERTE(!pCurThread || !pCurThread->HasThreadState(Thread::TS_GCSuspendFlags));
 
     while(true)
     {
@@ -3342,10 +3337,6 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
         while ((pTargetThread = ThreadStore::GetThreadList(pTargetThread)) != NULL)
         {
             if (pTargetThread == pCurThread)
-                continue;
-
-            // GC threads can not be forced to run preemptively, so we will not try.
-            if (pTargetThread->IsGCSpecial())
                 continue;
 
             if (pTargetThread->m_fPreemptiveGCDisabled.LoadWithoutBarrier())
@@ -3435,6 +3426,12 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
 
 void Thread::Hijack()
 {
+    if (IsGCSpecial())
+    {
+        // GC threads can not be forced to run preemptively, so we will not try.
+        return;
+    }
+
     if (!Thread::UseContextBasedThreadRedirection())
     {
         // On platforms that have signal-like API, we do one of the following:
@@ -4645,7 +4642,6 @@ void Thread::HijackThread(ReturnKind returnKind, ExecutionState *esb)
 
     SetHijackReturnKind(returnKind);
 
-    // TODO: VS ensure that new hijack is better
     if (m_State & TS_Hijacked)
         UnhijackThread();
 
@@ -5671,7 +5667,6 @@ retry_for_debugger:
         // If someone's trying to suspend *this* thread, this is a good opportunity.
         if (pCurThread && pCurThread->CatchAtSafePointOpportunistic())
         {
-
             pCurThread->PulseGCMode();  // Go suspend myself.
         }
         else
@@ -5756,7 +5751,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 
     Thread *pThread = GetThread();
 
-    if (pThread->PreemptiveGCDisabled() != TRUE)
+    if (pThread->PreemptiveGCDisabled())
         return;
 
     PCODE ip = GetIP(interruptedContext);
