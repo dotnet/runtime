@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.Logging.Generators
             /// <summary>
             /// Gets the set of logging classes containing methods to output.
             /// </summary>
-            public IReadOnlyList<LoggerClass> GetLogClasses(IReadOnlyCollection<ClassDeclarationSyntax> classes)
+            public IReadOnlyList<LoggerClass> GetLogClasses(IEnumerable<ClassDeclarationSyntax> classes)
             {
                 INamedTypeSymbol? loggerMessageAttribute = _compilation.GetBestTypeByMetadataName(LoggerMessageAttribute);
                 if (loggerMessageAttribute == null)
@@ -71,528 +71,527 @@ namespace Microsoft.Extensions.Logging.Generators
                 var eventIds = new HashSet<int>();
                 var eventNames = new HashSet<string>();
 
-                // we only instantiate one semantic models per syntax tree since they're expensive
-                Dictionary<SyntaxTree, SemanticModel> semanticModels = classes
-                    .Select(c => c.SyntaxTree)
-                    .Distinct()
-                    .ToDictionary(st => st, st => _compilation.GetSemanticModel(st));
-
-                foreach (ClassDeclarationSyntax classDec in classes)
+                // we enumerate by syntax tree, to minimize the need to instantiate semantic models (since they're expensive)
+                foreach (IGrouping<SyntaxTree, ClassDeclarationSyntax> group in classes.GroupBy(x => x.SyntaxTree))
                 {
-                    SemanticModel sm = semanticModels[classDec.SyntaxTree];
+                    SyntaxTree syntaxTree = group.Key;
+                    SemanticModel sm = _compilation.GetSemanticModel(syntaxTree);
 
-                    // stop if we're asked to
-                    _cancellationToken.ThrowIfCancellationRequested();
-
-                    LoggerClass? lc = null;
-                    string nspace = string.Empty;
-                    string? loggerField = null;
-                    bool multipleLoggerFields = false;
-
-                    // events ids and names should be unique in a class
-                    eventIds.Clear();
-                    eventNames.Clear();
-
-                    foreach (MemberDeclarationSyntax member in classDec.Members)
+                    foreach (ClassDeclarationSyntax classDec in group)
                     {
-                        var method = member as MethodDeclarationSyntax;
-                        if (method == null)
-                        {
-                            // we only care about methods
-                            continue;
-                        }
+                        // stop if we're asked to
+                        _cancellationToken.ThrowIfCancellationRequested();
 
-                        IMethodSymbol logMethodSymbol = sm.GetDeclaredSymbol(method, _cancellationToken)!;
-                        Debug.Assert(logMethodSymbol != null, "log method is present.");
-                        (int eventId, int? level, string message, string? eventName, bool skipEnabledCheck) = (-1, null, string.Empty, null, false);
-                        bool suppliedEventId = false;
+                        LoggerClass? lc = null;
+                        string nspace = string.Empty;
+                        string? loggerField = null;
+                        bool multipleLoggerFields = false;
 
-                        foreach (AttributeListSyntax mal in method.AttributeLists)
+                        // events ids and names should be unique in a class
+                        eventIds.Clear();
+                        eventNames.Clear();
+
+                        foreach (MemberDeclarationSyntax member in classDec.Members)
                         {
-                            foreach (AttributeSyntax ma in mal.Attributes)
+                            var method = member as MethodDeclarationSyntax;
+                            if (method == null)
                             {
-                                IMethodSymbol attrCtorSymbol = sm.GetSymbolInfo(ma, _cancellationToken).Symbol as IMethodSymbol;
-                                if (attrCtorSymbol == null || !loggerMessageAttribute.Equals(attrCtorSymbol.ContainingType, SymbolEqualityComparer.Default))
-                                {
-                                    // badly formed attribute definition, or not the right attribute
-                                    continue;
-                                }
+                                // we only care about methods
+                                continue;
+                            }
 
-                                bool hasMisconfiguredInput = false;
-                                ImmutableArray<AttributeData> boundAttributes = logMethodSymbol.GetAttributes();
+                            IMethodSymbol logMethodSymbol = sm.GetDeclaredSymbol(method, _cancellationToken)!;
+                            Debug.Assert(logMethodSymbol != null, "log method is present.");
+                            (int eventId, int? level, string message, string? eventName, bool skipEnabledCheck) = (-1, null, string.Empty, null, false);
+                            bool suppliedEventId = false;
 
-                                if (boundAttributes.Length == 0)
+                            foreach (AttributeListSyntax mal in method.AttributeLists)
+                            {
+                                foreach (AttributeSyntax ma in mal.Attributes)
                                 {
-                                    continue;
-                                }
+                                    IMethodSymbol attrCtorSymbol = sm.GetSymbolInfo(ma, _cancellationToken).Symbol as IMethodSymbol;
+                                    if (attrCtorSymbol == null || !loggerMessageAttribute.Equals(attrCtorSymbol.ContainingType, SymbolEqualityComparer.Default))
+                                    {
+                                        // badly formed attribute definition, or not the right attribute
+                                        continue;
+                                    }
 
-                                foreach (AttributeData attributeData in boundAttributes)
-                                {
-                                    if (!SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, loggerMessageAttribute))
+                                    bool hasMisconfiguredInput = false;
+                                    ImmutableArray<AttributeData> boundAttributes = logMethodSymbol.GetAttributes();
+
+                                    if (boundAttributes.Length == 0)
                                     {
                                         continue;
                                     }
 
-                                    // supports: [LoggerMessage(0, LogLevel.Warning, "custom message")]
-                                    // supports: [LoggerMessage(eventId: 0, level: LogLevel.Warning, message: "custom message")]
-                                    if (attributeData.ConstructorArguments.Any())
+                                    foreach (AttributeData attributeData in boundAttributes)
                                     {
-                                        foreach (TypedConstant typedConstant in attributeData.ConstructorArguments)
+                                        if (!SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, loggerMessageAttribute))
                                         {
-                                            if (typedConstant.Kind == TypedConstantKind.Error)
+                                            continue;
+                                        }
+
+                                        // supports: [LoggerMessage(0, LogLevel.Warning, "custom message")]
+                                        // supports: [LoggerMessage(eventId: 0, level: LogLevel.Warning, message: "custom message")]
+                                        if (attributeData.ConstructorArguments.Any())
+                                        {
+                                            foreach (TypedConstant typedConstant in attributeData.ConstructorArguments)
                                             {
-                                                hasMisconfiguredInput = true;
-                                                break; // if a compilation error was found, no need to keep evaluating other args
+                                                if (typedConstant.Kind == TypedConstantKind.Error)
+                                                {
+                                                    hasMisconfiguredInput = true;
+                                                    break; // if a compilation error was found, no need to keep evaluating other args
+                                                }
+                                            }
+
+                                            ImmutableArray<TypedConstant> items = attributeData.ConstructorArguments;
+
+                                            switch (items.Length)
+                                            {
+                                                case 1:
+                                                    // LoggerMessageAttribute(LogLevel level)
+                                                    // LoggerMessageAttribute(string message)
+                                                    if (items[0].Type.SpecialType == SpecialType.System_String)
+                                                    {
+                                                        message = (string)GetItem(items[0]);
+                                                        level = null;
+                                                    }
+                                                    else
+                                                    {
+                                                        message = string.Empty;
+                                                        level = items[0].IsNull ? null : (int?)GetItem(items[0]);
+                                                    }
+                                                    break;
+
+                                                case 2:
+                                                    // LoggerMessageAttribute(LogLevel level, string message)
+                                                    level = items[0].IsNull ? null : (int?)GetItem(items[0]);
+                                                    message = items[1].IsNull ? string.Empty : (string)GetItem(items[1]);
+                                                    break;
+
+                                                case 3:
+                                                    // LoggerMessageAttribute(int eventId, LogLevel level, string message)
+                                                    if (!items[0].IsNull)
+                                                    {
+                                                        suppliedEventId = true;
+                                                        eventId = (int)GetItem(items[0]);
+                                                    }
+                                                    level = items[1].IsNull ? null : (int?)GetItem(items[1]);
+                                                    message = items[2].IsNull ? string.Empty : (string)GetItem(items[2]);
+                                                    break;
+
+                                                default:
+                                                    Debug.Assert(false, "Unexpected number of arguments in attribute constructor.");
+                                                    break;
                                             }
                                         }
 
-                                        ImmutableArray<TypedConstant> items = attributeData.ConstructorArguments;
-
-                                        switch (items.Length)
+                                        // argument syntax takes parameters. e.g. EventId = 0
+                                        // supports: e.g. [LoggerMessage(EventId = 0, Level = LogLevel.Warning, Message = "custom message")]
+                                        if (attributeData.NamedArguments.Any())
                                         {
-                                            case 1:
-                                                // LoggerMessageAttribute(LogLevel level)
-                                                // LoggerMessageAttribute(string message)
-                                                if (items[0].Type.SpecialType == SpecialType.System_String)
+                                            foreach (KeyValuePair<string, TypedConstant> namedArgument in attributeData.NamedArguments)
+                                            {
+                                                TypedConstant typedConstant = namedArgument.Value;
+                                                if (typedConstant.Kind == TypedConstantKind.Error)
                                                 {
-                                                    message = (string)GetItem(items[0]);
-                                                    level = null;
+                                                    hasMisconfiguredInput = true;
+                                                    break; // if a compilation error was found, no need to keep evaluating other args
                                                 }
                                                 else
                                                 {
-                                                    message = string.Empty;
-                                                    level = items[0].IsNull ? null : (int?)GetItem(items[0]);
+                                                    TypedConstant value = namedArgument.Value;
+                                                    switch (namedArgument.Key)
+                                                    {
+                                                        case "EventId":
+                                                            eventId = (int)GetItem(value);
+                                                            suppliedEventId = true;
+                                                            break;
+                                                        case "Level":
+                                                            level = value.IsNull ? null : (int?)GetItem(value);
+                                                            break;
+                                                        case "SkipEnabledCheck":
+                                                            skipEnabledCheck = (bool)GetItem(value);
+                                                            break;
+                                                        case "EventName":
+                                                            eventName = (string?)GetItem(value);
+                                                            break;
+                                                        case "Message":
+                                                            message = value.IsNull ? string.Empty : (string)GetItem(value);
+                                                            break;
+                                                    }
                                                 }
-                                                break;
-
-                                            case 2:
-                                                // LoggerMessageAttribute(LogLevel level, string message)
-                                                level = items[0].IsNull ? null : (int?)GetItem(items[0]);
-                                                message = items[1].IsNull ? string.Empty : (string)GetItem(items[1]);
-                                                break;
-
-                                            case 3:
-                                                // LoggerMessageAttribute(int eventId, LogLevel level, string message)
-                                                if (!items[0].IsNull)
-                                                {
-                                                    suppliedEventId = true;
-                                                    eventId = (int)GetItem(items[0]);
-                                                }
-                                                level = items[1].IsNull ? null : (int?)GetItem(items[1]);
-                                                message = items[2].IsNull ? string.Empty : (string)GetItem(items[2]);
-                                                break;
-
-                                            default:
-                                                Debug.Assert(false, "Unexpected number of arguments in attribute constructor.");
-                                                break;
+                                            }
                                         }
                                     }
 
-                                    // argument syntax takes parameters. e.g. EventId = 0
-                                    // supports: e.g. [LoggerMessage(EventId = 0, Level = LogLevel.Warning, Message = "custom message")]
-                                    if (attributeData.NamedArguments.Any())
+                                    if (hasMisconfiguredInput)
                                     {
-                                        foreach (KeyValuePair<string, TypedConstant> namedArgument in attributeData.NamedArguments)
+                                        // skip further generator execution and let compiler generate the errors
+                                        break;
+                                    }
+
+                                    if (!suppliedEventId)
+                                    {
+                                        eventId = GetNonRandomizedHashCode(string.IsNullOrWhiteSpace(eventName) ? logMethodSymbol.Name : eventName);
+                                    }
+
+                                    var lm = new LoggerMethod
+                                    {
+                                        Name = logMethodSymbol.Name,
+                                        Level = level,
+                                        Message = message,
+                                        EventId = eventId,
+                                        EventName = eventName,
+                                        IsExtensionMethod = logMethodSymbol.IsExtensionMethod,
+                                        Modifiers = method.Modifiers.ToString(),
+                                        SkipEnabledCheck = skipEnabledCheck
+                                    };
+
+                                    bool keepMethod = true;   // whether or not we want to keep the method definition or if it's got errors making it so we should discard it instead
+
+                                    bool success = ExtractTemplates(message, lm.TemplateMap, lm.TemplateList);
+                                    if (!success)
+                                    {
+                                        Diag(DiagnosticDescriptors.MalformedFormatStrings, method.Identifier.GetLocation(), method.Identifier.ToString());
+                                        keepMethod = false;
+                                    }
+
+                                    if (lm.Name[0] == '_')
+                                    {
+                                        // can't have logging method names that start with _ since that can lead to conflicting symbol names
+                                        // because the generated symbols start with _
+                                        Diag(DiagnosticDescriptors.InvalidLoggingMethodName, method.Identifier.GetLocation());
+                                        keepMethod = false;
+                                    }
+
+                                    if (!logMethodSymbol.ReturnsVoid)
+                                    {
+                                        // logging methods must return void
+                                        Diag(DiagnosticDescriptors.LoggingMethodMustReturnVoid, method.ReturnType.GetLocation());
+                                        keepMethod = false;
+                                    }
+
+                                    if (method.Arity > 0)
+                                    {
+                                        // we don't currently support generic methods
+                                        Diag(DiagnosticDescriptors.LoggingMethodIsGeneric, method.Identifier.GetLocation());
+                                        keepMethod = false;
+                                    }
+
+                                    bool isStatic = false;
+                                    bool isPartial = false;
+                                    foreach (SyntaxToken mod in method.Modifiers)
+                                    {
+                                        if (mod.IsKind(SyntaxKind.PartialKeyword))
                                         {
-                                            TypedConstant typedConstant = namedArgument.Value;
-                                            if (typedConstant.Kind == TypedConstantKind.Error)
+                                            isPartial = true;
+                                        }
+                                        else if (mod.IsKind(SyntaxKind.StaticKeyword))
+                                        {
+                                            isStatic = true;
+                                        }
+                                    }
+
+                                    if (!isPartial)
+                                    {
+                                        Diag(DiagnosticDescriptors.LoggingMethodMustBePartial, method.GetLocation());
+                                        keepMethod = false;
+                                    }
+
+                                    CSharpSyntaxNode? methodBody = method.Body as CSharpSyntaxNode ?? method.ExpressionBody;
+                                    if (methodBody != null)
+                                    {
+                                        Diag(DiagnosticDescriptors.LoggingMethodHasBody, methodBody.GetLocation());
+                                        keepMethod = false;
+                                    }
+
+                                    // ensure there are no duplicate event ids.
+                                    // We don't check Id duplication for the auto-generated event id.
+                                    if (suppliedEventId && !eventIds.Add(lm.EventId))
+                                    {
+                                        Diag(DiagnosticDescriptors.ShouldntReuseEventIds, ma.GetLocation(), lm.EventId, classDec.Identifier.Text);
+                                    }
+
+                                    // ensure there are no duplicate event names.
+                                    if (lm.EventName != null && !eventNames.Add(lm.EventName))
+                                    {
+                                        Diag(DiagnosticDescriptors.ShouldntReuseEventNames, ma.GetLocation(), lm.EventName, classDec.Identifier.Text);
+                                    }
+
+                                    string msg = lm.Message;
+                                    if (msg.StartsWith("INFORMATION:", StringComparison.OrdinalIgnoreCase)
+                                        || msg.StartsWith("INFO:", StringComparison.OrdinalIgnoreCase)
+                                        || msg.StartsWith("WARNING:", StringComparison.OrdinalIgnoreCase)
+                                        || msg.StartsWith("WARN:", StringComparison.OrdinalIgnoreCase)
+                                        || msg.StartsWith("ERROR:", StringComparison.OrdinalIgnoreCase)
+                                        || msg.StartsWith("ERR:", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        Diag(DiagnosticDescriptors.RedundantQualifierInMessage, ma.GetLocation(), method.Identifier.ToString());
+                                    }
+
+                                    bool foundLogger = false;
+                                    bool foundException = false;
+                                    bool foundLogLevel = level != null;
+                                    foreach (IParameterSymbol paramSymbol in logMethodSymbol.Parameters)
+                                    {
+                                        string paramName = paramSymbol.Name;
+                                        bool needsAtSign = false;
+                                        if (paramSymbol.DeclaringSyntaxReferences.Length > 0)
+                                        {
+                                            ParameterSyntax paramSyntax = paramSymbol.DeclaringSyntaxReferences[0].GetSyntax(_cancellationToken) as ParameterSyntax;
+                                            if (paramSyntax != null && !string.IsNullOrEmpty(paramSyntax.Identifier.Text))
                                             {
-                                                hasMisconfiguredInput = true;
-                                                break; // if a compilation error was found, no need to keep evaluating other args
+                                                needsAtSign = paramSyntax.Identifier.Text[0] == '@';
+                                            }
+                                        }
+                                        if (string.IsNullOrWhiteSpace(paramName))
+                                        {
+                                            // semantic problem, just bail quietly
+                                            keepMethod = false;
+                                            break;
+                                        }
+
+                                        ITypeSymbol paramTypeSymbol = paramSymbol.Type;
+                                        if (paramTypeSymbol is IErrorTypeSymbol)
+                                        {
+                                            // semantic problem, just bail quietly
+                                            keepMethod = false;
+                                            break;
+                                        }
+
+                                        string? qualifier = null;
+                                        if (paramSymbol.RefKind == RefKind.In)
+                                        {
+                                            qualifier = "in";
+                                        }
+                                        else if (paramSymbol.RefKind == RefKind.Ref)
+                                        {
+                                            qualifier = "ref";
+                                        }
+                                        else if (paramSymbol.RefKind == RefKind.Out)
+                                        {
+                                            Diag(DiagnosticDescriptors.InvalidLoggingMethodParameterOut, paramSymbol.Locations[0], paramName);
+                                            keepMethod = false;
+                                            break;
+                                        }
+
+                                        string typeName = paramTypeSymbol.ToDisplayString(
+                                            SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
+                                                SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
+
+                                        var lp = new LoggerParameter
+                                        {
+                                            Name = paramName,
+                                            Type = typeName,
+                                            Qualifier = qualifier,
+                                            CodeName = needsAtSign ? "@" + paramName : paramName,
+                                            IsLogger = !foundLogger && IsBaseOrIdentity(paramTypeSymbol, loggerSymbol),
+                                            IsException = !foundException && IsBaseOrIdentity(paramTypeSymbol, exceptionSymbol),
+                                            IsLogLevel = !foundLogLevel && IsBaseOrIdentity(paramTypeSymbol, logLevelSymbol),
+                                            IsEnumerable = IsBaseOrIdentity(paramTypeSymbol, enumerableSymbol) && !IsBaseOrIdentity(paramTypeSymbol, stringSymbol),
+                                        };
+
+                                        foundLogger |= lp.IsLogger;
+                                        foundException |= lp.IsException;
+                                        foundLogLevel |= lp.IsLogLevel;
+
+                                        bool forceAsTemplateParams = false;
+                                        if (lp.IsLogger && lm.TemplateMap.ContainsKey(paramName))
+                                        {
+                                            Diag(DiagnosticDescriptors.ShouldntMentionLoggerInMessage, paramSymbol.Locations[0], paramName);
+                                            forceAsTemplateParams = true;
+                                        }
+                                        else if (lp.IsException && lm.TemplateMap.ContainsKey(paramName))
+                                        {
+                                            Diag(DiagnosticDescriptors.ShouldntMentionExceptionInMessage, paramSymbol.Locations[0], paramName);
+                                            forceAsTemplateParams = true;
+                                        }
+                                        else if (lp.IsLogLevel && lm.TemplateMap.ContainsKey(paramName))
+                                        {
+                                            Diag(DiagnosticDescriptors.ShouldntMentionLogLevelInMessage, paramSymbol.Locations[0], paramName);
+                                            forceAsTemplateParams = true;
+                                        }
+                                        else if (lp.IsLogLevel && level != null && !lm.TemplateMap.ContainsKey(paramName) && !lm.TemplateMap.ContainsKey(lp.CodeName))
+                                        {
+                                            Diag(DiagnosticDescriptors.ArgumentHasNoCorrespondingTemplate, paramSymbol.Locations[0], paramName);
+                                        }
+                                        else if (lp.IsTemplateParameter && !lm.TemplateMap.ContainsKey(paramName) && !lm.TemplateMap.ContainsKey($"@{paramName}") && !lm.TemplateMap.ContainsKey(lp.CodeName))
+                                        {
+                                            Diag(DiagnosticDescriptors.ArgumentHasNoCorrespondingTemplate, paramSymbol.Locations[0], paramName);
+                                        }
+
+                                        if (paramName[0] == '_')
+                                        {
+                                            // can't have logging method parameter names that start with _ since that can lead to conflicting symbol names
+                                            // because all generated symbols start with _
+                                            Diag(DiagnosticDescriptors.InvalidLoggingMethodParameterName, paramSymbol.Locations[0]);
+                                        }
+
+                                        lm.AllParameters.Add(lp);
+                                        if (lp.IsTemplateParameter || forceAsTemplateParams)
+                                        {
+                                            lm.TemplateParameters.Add(lp);
+                                        }
+                                    }
+
+                                    if (keepMethod)
+                                    {
+                                        if (isStatic && !foundLogger)
+                                        {
+                                            Diag(DiagnosticDescriptors.MissingLoggerArgument, method.GetLocation(), lm.Name);
+                                            keepMethod = false;
+                                        }
+                                        else if (!isStatic && foundLogger)
+                                        {
+                                            Diag(DiagnosticDescriptors.LoggingMethodShouldBeStatic, method.GetLocation());
+                                        }
+                                        else if (!isStatic && !foundLogger)
+                                        {
+                                            if (loggerField == null)
+                                            {
+                                                (loggerField, multipleLoggerFields) = FindLoggerField(sm, classDec, loggerSymbol);
+                                            }
+
+                                            if (multipleLoggerFields)
+                                            {
+                                                Diag(DiagnosticDescriptors.MultipleLoggerFields, method.GetLocation(), classDec.Identifier.Text);
+                                                keepMethod = false;
+                                            }
+                                            else if (loggerField == null)
+                                            {
+                                                Diag(DiagnosticDescriptors.MissingLoggerField, method.GetLocation(), classDec.Identifier.Text);
+                                                keepMethod = false;
                                             }
                                             else
                                             {
-                                                TypedConstant value = namedArgument.Value;
-                                                switch (namedArgument.Key)
+                                                lm.LoggerField = loggerField;
+                                            }
+                                        }
+
+                                        if (level == null && !foundLogLevel)
+                                        {
+                                            Diag(DiagnosticDescriptors.MissingLogLevel, method.GetLocation());
+                                            keepMethod = false;
+                                        }
+
+                                        foreach (KeyValuePair<string, string> t in lm.TemplateMap)
+                                        {
+                                            bool found = false;
+                                            foreach (LoggerParameter p in lm.AllParameters)
+                                            {
+                                                if (t.Key.Equals(p.Name, StringComparison.OrdinalIgnoreCase) ||
+                                                    t.Key.Equals(p.CodeName, StringComparison.OrdinalIgnoreCase) ||
+                                                    t.Key[0] == '@' && t.Key.Substring(1).Equals(p.CodeName, StringComparison.OrdinalIgnoreCase))
                                                 {
-                                                    case "EventId":
-                                                        eventId = (int)GetItem(value);
-                                                        suppliedEventId = true;
-                                                        break;
-                                                    case "Level":
-                                                        level = value.IsNull ? null : (int?)GetItem(value);
-                                                        break;
-                                                    case "SkipEnabledCheck":
-                                                        skipEnabledCheck = (bool)GetItem(value);
-                                                        break;
-                                                    case "EventName":
-                                                        eventName = (string?)GetItem(value);
-                                                        break;
-                                                    case "Message":
-                                                        message = value.IsNull ? string.Empty : (string)GetItem(value);
-                                                        break;
+                                                    found = true;
+                                                    break;
                                                 }
                                             }
-                                        }
-                                    }
-                                }
 
-                                if (hasMisconfiguredInput)
-                                {
-                                    // skip further generator execution and let compiler generate the errors
-                                    break;
-                                }
-
-                                if (!suppliedEventId)
-                                {
-                                    eventId = GetNonRandomizedHashCode(string.IsNullOrWhiteSpace(eventName) ? logMethodSymbol.Name : eventName);
-                                }
-
-                                var lm = new LoggerMethod
-                                {
-                                    Name = logMethodSymbol.Name,
-                                    Level = level,
-                                    Message = message,
-                                    EventId = eventId,
-                                    EventName = eventName,
-                                    IsExtensionMethod = logMethodSymbol.IsExtensionMethod,
-                                    Modifiers = method.Modifiers.ToString(),
-                                    SkipEnabledCheck = skipEnabledCheck
-                                };
-
-                                bool keepMethod = true;   // whether or not we want to keep the method definition or if it's got errors making it so we should discard it instead
-
-                                bool success = ExtractTemplates(message, lm.TemplateMap, lm.TemplateList);
-                                if (!success)
-                                {
-                                    Diag(DiagnosticDescriptors.MalformedFormatStrings, method.Identifier.GetLocation(), method.Identifier.ToString());
-                                    keepMethod = false;
-                                }
-
-                                if (lm.Name[0] == '_')
-                                {
-                                    // can't have logging method names that start with _ since that can lead to conflicting symbol names
-                                    // because the generated symbols start with _
-                                    Diag(DiagnosticDescriptors.InvalidLoggingMethodName, method.Identifier.GetLocation());
-                                    keepMethod = false;
-                                }
-
-                                if (!logMethodSymbol.ReturnsVoid)
-                                {
-                                    // logging methods must return void
-                                    Diag(DiagnosticDescriptors.LoggingMethodMustReturnVoid, method.ReturnType.GetLocation());
-                                    keepMethod = false;
-                                }
-
-                                if (method.Arity > 0)
-                                {
-                                    // we don't currently support generic methods
-                                    Diag(DiagnosticDescriptors.LoggingMethodIsGeneric, method.Identifier.GetLocation());
-                                    keepMethod = false;
-                                }
-
-                                bool isStatic = false;
-                                bool isPartial = false;
-                                foreach (SyntaxToken mod in method.Modifiers)
-                                {
-                                    if (mod.IsKind(SyntaxKind.PartialKeyword))
-                                    {
-                                        isPartial = true;
-                                    }
-                                    else if (mod.IsKind(SyntaxKind.StaticKeyword))
-                                    {
-                                        isStatic = true;
-                                    }
-                                }
-
-                                if (!isPartial)
-                                {
-                                    Diag(DiagnosticDescriptors.LoggingMethodMustBePartial, method.GetLocation());
-                                    keepMethod = false;
-                                }
-
-                                CSharpSyntaxNode? methodBody = method.Body as CSharpSyntaxNode ?? method.ExpressionBody;
-                                if (methodBody != null)
-                                {
-                                    Diag(DiagnosticDescriptors.LoggingMethodHasBody, methodBody.GetLocation());
-                                    keepMethod = false;
-                                }
-
-                                // ensure there are no duplicate event ids.
-                                // We don't check Id duplication for the auto-generated event id.
-                                if (suppliedEventId && !eventIds.Add(lm.EventId))
-                                {
-                                    Diag(DiagnosticDescriptors.ShouldntReuseEventIds, ma.GetLocation(), lm.EventId, classDec.Identifier.Text);
-                                }
-
-                                // ensure there are no duplicate event names.
-                                if (lm.EventName != null && !eventNames.Add(lm.EventName))
-                                {
-                                    Diag(DiagnosticDescriptors.ShouldntReuseEventNames, ma.GetLocation(), lm.EventName, classDec.Identifier.Text);
-                                }
-
-                                string msg = lm.Message;
-                                if (msg.StartsWith("INFORMATION:", StringComparison.OrdinalIgnoreCase)
-                                    || msg.StartsWith("INFO:", StringComparison.OrdinalIgnoreCase)
-                                    || msg.StartsWith("WARNING:", StringComparison.OrdinalIgnoreCase)
-                                    || msg.StartsWith("WARN:", StringComparison.OrdinalIgnoreCase)
-                                    || msg.StartsWith("ERROR:", StringComparison.OrdinalIgnoreCase)
-                                    || msg.StartsWith("ERR:", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    Diag(DiagnosticDescriptors.RedundantQualifierInMessage, ma.GetLocation(), method.Identifier.ToString());
-                                }
-
-                                bool foundLogger = false;
-                                bool foundException = false;
-                                bool foundLogLevel = level != null;
-                                foreach (IParameterSymbol paramSymbol in logMethodSymbol.Parameters)
-                                {
-                                    string paramName = paramSymbol.Name;
-                                    bool needsAtSign = false;
-                                    if (paramSymbol.DeclaringSyntaxReferences.Length > 0)
-                                    {
-                                        ParameterSyntax paramSyntax = paramSymbol.DeclaringSyntaxReferences[0].GetSyntax(_cancellationToken) as ParameterSyntax;
-                                        if (paramSyntax != null && !string.IsNullOrEmpty(paramSyntax.Identifier.Text))
-                                        {
-                                            needsAtSign = paramSyntax.Identifier.Text[0] == '@';
-                                        }
-                                    }
-                                    if (string.IsNullOrWhiteSpace(paramName))
-                                    {
-                                        // semantic problem, just bail quietly
-                                        keepMethod = false;
-                                        break;
-                                    }
-
-                                    ITypeSymbol paramTypeSymbol = paramSymbol.Type;
-                                    if (paramTypeSymbol is IErrorTypeSymbol)
-                                    {
-                                        // semantic problem, just bail quietly
-                                        keepMethod = false;
-                                        break;
-                                    }
-
-                                    string? qualifier = null;
-                                    if (paramSymbol.RefKind == RefKind.In)
-                                    {
-                                        qualifier = "in";
-                                    }
-                                    else if (paramSymbol.RefKind == RefKind.Ref)
-                                    {
-                                        qualifier = "ref";
-                                    }
-                                    else if (paramSymbol.RefKind == RefKind.Out)
-                                    {
-                                        Diag(DiagnosticDescriptors.InvalidLoggingMethodParameterOut, paramSymbol.Locations[0], paramName);
-                                        keepMethod = false;
-                                        break;
-                                    }
-
-                                    string typeName = paramTypeSymbol.ToDisplayString(
-                                        SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
-                                            SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
-
-                                    var lp = new LoggerParameter
-                                    {
-                                        Name = paramName,
-                                        Type = typeName,
-                                        Qualifier = qualifier,
-                                        CodeName = needsAtSign ? "@" + paramName : paramName,
-                                        IsLogger = !foundLogger && IsBaseOrIdentity(paramTypeSymbol, loggerSymbol),
-                                        IsException = !foundException && IsBaseOrIdentity(paramTypeSymbol, exceptionSymbol),
-                                        IsLogLevel = !foundLogLevel && IsBaseOrIdentity(paramTypeSymbol, logLevelSymbol),
-                                        IsEnumerable = IsBaseOrIdentity(paramTypeSymbol, enumerableSymbol) && !IsBaseOrIdentity(paramTypeSymbol, stringSymbol),
-                                    };
-
-                                    foundLogger |= lp.IsLogger;
-                                    foundException |= lp.IsException;
-                                    foundLogLevel |= lp.IsLogLevel;
-
-                                    bool forceAsTemplateParams = false;
-                                    if (lp.IsLogger && lm.TemplateMap.ContainsKey(paramName))
-                                    {
-                                        Diag(DiagnosticDescriptors.ShouldntMentionLoggerInMessage, paramSymbol.Locations[0], paramName);
-                                        forceAsTemplateParams = true;
-                                    }
-                                    else if (lp.IsException && lm.TemplateMap.ContainsKey(paramName))
-                                    {
-                                        Diag(DiagnosticDescriptors.ShouldntMentionExceptionInMessage, paramSymbol.Locations[0], paramName);
-                                        forceAsTemplateParams = true;
-                                    }
-                                    else if (lp.IsLogLevel && lm.TemplateMap.ContainsKey(paramName))
-                                    {
-                                        Diag(DiagnosticDescriptors.ShouldntMentionLogLevelInMessage, paramSymbol.Locations[0], paramName);
-                                        forceAsTemplateParams = true;
-                                    }
-                                    else if (lp.IsLogLevel && level != null && !lm.TemplateMap.ContainsKey(paramName) && !lm.TemplateMap.ContainsKey(lp.CodeName))
-                                    {
-                                        Diag(DiagnosticDescriptors.ArgumentHasNoCorrespondingTemplate, paramSymbol.Locations[0], paramName);
-                                    }
-                                    else if (lp.IsTemplateParameter && !lm.TemplateMap.ContainsKey(paramName) && !lm.TemplateMap.ContainsKey($"@{paramName}") && !lm.TemplateMap.ContainsKey(lp.CodeName))
-                                    {
-                                        Diag(DiagnosticDescriptors.ArgumentHasNoCorrespondingTemplate, paramSymbol.Locations[0], paramName);
-                                    }
-
-                                    if (paramName[0] == '_')
-                                    {
-                                        // can't have logging method parameter names that start with _ since that can lead to conflicting symbol names
-                                        // because all generated symbols start with _
-                                        Diag(DiagnosticDescriptors.InvalidLoggingMethodParameterName, paramSymbol.Locations[0]);
-                                    }
-
-                                    lm.AllParameters.Add(lp);
-                                    if (lp.IsTemplateParameter || forceAsTemplateParams)
-                                    {
-                                        lm.TemplateParameters.Add(lp);
-                                    }
-                                }
-
-                                if (keepMethod)
-                                {
-                                    if (isStatic && !foundLogger)
-                                    {
-                                        Diag(DiagnosticDescriptors.MissingLoggerArgument, method.GetLocation(), lm.Name);
-                                        keepMethod = false;
-                                    }
-                                    else if (!isStatic && foundLogger)
-                                    {
-                                        Diag(DiagnosticDescriptors.LoggingMethodShouldBeStatic, method.GetLocation());
-                                    }
-                                    else if (!isStatic && !foundLogger)
-                                    {
-                                        if (loggerField == null)
-                                        {
-                                            (loggerField, multipleLoggerFields) = FindLoggerField(sm, classDec, semanticModels, loggerSymbol);
-                                        }
-
-                                        if (multipleLoggerFields)
-                                        {
-                                            Diag(DiagnosticDescriptors.MultipleLoggerFields, method.GetLocation(), classDec.Identifier.Text);
-                                            keepMethod = false;
-                                        }
-                                        else if (loggerField == null)
-                                        {
-                                            Diag(DiagnosticDescriptors.MissingLoggerField, method.GetLocation(), classDec.Identifier.Text);
-                                            keepMethod = false;
-                                        }
-                                        else
-                                        {
-                                            lm.LoggerField = loggerField;
-                                        }
-                                    }
-
-                                    if (level == null && !foundLogLevel)
-                                    {
-                                        Diag(DiagnosticDescriptors.MissingLogLevel, method.GetLocation());
-                                        keepMethod = false;
-                                    }
-
-                                    foreach (KeyValuePair<string, string> t in lm.TemplateMap)
-                                    {
-                                        bool found = false;
-                                        foreach (LoggerParameter p in lm.AllParameters)
-                                        {
-                                            if (t.Key.Equals(p.Name, StringComparison.OrdinalIgnoreCase) ||
-                                                t.Key.Equals(p.CodeName, StringComparison.OrdinalIgnoreCase) ||
-                                                t.Key[0] == '@' && t.Key.Substring(1).Equals(p.CodeName, StringComparison.OrdinalIgnoreCase))
+                                            if (!found)
                                             {
-                                                found = true;
-                                                break;
+                                                Diag(DiagnosticDescriptors.TemplateHasNoCorrespondingArgument, ma.GetLocation(), t.Key);
                                             }
                                         }
-
-                                        if (!found)
-                                        {
-                                            Diag(DiagnosticDescriptors.TemplateHasNoCorrespondingArgument, ma.GetLocation(), t.Key);
-                                        }
                                     }
-                                }
 
-                                if (lc == null)
-                                {
-                                    // determine the namespace the class is declared in, if any
-                                    SyntaxNode? potentialNamespaceParent = classDec.Parent;
-                                    while (potentialNamespaceParent != null &&
-                                            potentialNamespaceParent is not NamespaceDeclarationSyntax
-#if ROSLYN4_0_OR_GREATER
-                                            && potentialNamespaceParent is not FileScopedNamespaceDeclarationSyntax
-#endif
-                                            )
+                                    if (lc == null)
                                     {
-                                        potentialNamespaceParent = potentialNamespaceParent.Parent;
-                                    }
+                                        // determine the namespace the class is declared in, if any
+                                        SyntaxNode? potentialNamespaceParent = classDec.Parent;
+                                        while (potentialNamespaceParent != null &&
+                                               potentialNamespaceParent is not NamespaceDeclarationSyntax
+#if ROSLYN4_0_OR_GREATER
+                                               && potentialNamespaceParent is not FileScopedNamespaceDeclarationSyntax
+#endif
+                                               )
+                                        {
+                                            potentialNamespaceParent = potentialNamespaceParent.Parent;
+                                        }
 
 #if ROSLYN4_0_OR_GREATER
-                                    if (potentialNamespaceParent is BaseNamespaceDeclarationSyntax namespaceParent)
+                                        if (potentialNamespaceParent is BaseNamespaceDeclarationSyntax namespaceParent)
 #else
-                                        if (potentialNamespaceParent is NamespaceDeclarationSyntax namespaceParent)
+                                            if (potentialNamespaceParent is NamespaceDeclarationSyntax namespaceParent)
 #endif
-                                    {
-                                        nspace = namespaceParent.Name.ToString();
-                                        while (true)
                                         {
-                                            namespaceParent = namespaceParent.Parent as NamespaceDeclarationSyntax;
-                                            if (namespaceParent == null)
+                                            nspace = namespaceParent.Name.ToString();
+                                            while (true)
                                             {
-                                                break;
-                                            }
+                                                namespaceParent = namespaceParent.Parent as NamespaceDeclarationSyntax;
+                                                if (namespaceParent == null)
+                                                {
+                                                    break;
+                                                }
 
-                                            nspace = $"{namespaceParent.Name}.{nspace}";
+                                                nspace = $"{namespaceParent.Name}.{nspace}";
+                                            }
                                         }
                                     }
-                                }
 
-                                if (keepMethod)
-                                {
-                                    lc ??= new LoggerClass
+                                    if (keepMethod)
                                     {
-                                        Keyword = classDec.Keyword.ValueText,
-                                        Namespace = nspace,
-                                        Name = GenerateClassName(classDec),
-                                        ParentClass = null,
-                                    };
-
-                                    LoggerClass currentLoggerClass = lc;
-                                    var parentLoggerClass = (classDec.Parent as TypeDeclarationSyntax);
-
-                                    static bool IsAllowedKind(SyntaxKind kind) =>
-                                        kind == SyntaxKind.ClassDeclaration ||
-                                        kind == SyntaxKind.StructDeclaration ||
-                                        kind == SyntaxKind.RecordDeclaration;
-
-                                    while (parentLoggerClass != null && IsAllowedKind(parentLoggerClass.Kind()))
-                                    {
-                                        currentLoggerClass.ParentClass = new LoggerClass
+                                        lc ??= new LoggerClass
                                         {
-                                            Keyword = parentLoggerClass.Keyword.ValueText,
+                                            Keyword = classDec.Keyword.ValueText,
                                             Namespace = nspace,
-                                            Name = GenerateClassName(parentLoggerClass),
+                                            Name = GenerateClassName(classDec),
                                             ParentClass = null,
                                         };
 
-                                        currentLoggerClass = currentLoggerClass.ParentClass;
-                                        parentLoggerClass = (parentLoggerClass.Parent as TypeDeclarationSyntax);
-                                    }
+                                        LoggerClass currentLoggerClass = lc;
+                                        var parentLoggerClass = (classDec.Parent as TypeDeclarationSyntax);
 
-                                    lc.Methods.Add(lm);
+                                        static bool IsAllowedKind(SyntaxKind kind) =>
+                                            kind == SyntaxKind.ClassDeclaration ||
+                                            kind == SyntaxKind.StructDeclaration ||
+                                            kind == SyntaxKind.RecordDeclaration;
+
+                                        while (parentLoggerClass != null && IsAllowedKind(parentLoggerClass.Kind()))
+                                        {
+                                            currentLoggerClass.ParentClass = new LoggerClass
+                                            {
+                                                Keyword = parentLoggerClass.Keyword.ValueText,
+                                                Namespace = nspace,
+                                                Name = GenerateClassName(parentLoggerClass),
+                                                ParentClass = null,
+                                            };
+
+                                            currentLoggerClass = currentLoggerClass.ParentClass;
+                                            parentLoggerClass = (parentLoggerClass.Parent as TypeDeclarationSyntax);
+                                        }
+
+                                        lc.Methods.Add(lm);
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    if (lc != null)
-                    {
-                        //once we've collected all methods for the given class, check for overloads
-                        //and provide unique names for logger methods
-                        var methods = new Dictionary<string, int>(lc.Methods.Count);
-                        foreach (LoggerMethod lm in lc.Methods)
+                        if (lc != null)
                         {
-                            if (methods.TryGetValue(lm.Name, out int currentCount))
+                            //once we've collected all methods for the given class, check for overloads
+                            //and provide unique names for logger methods
+                            var methods = new Dictionary<string, int>(lc.Methods.Count);
+                            foreach (LoggerMethod lm in lc.Methods)
                             {
-                                lm.UniqueName = $"{lm.Name}{currentCount}";
-                                methods[lm.Name] = currentCount + 1;
+                                if (methods.TryGetValue(lm.Name, out int currentCount))
+                                {
+                                    lm.UniqueName = $"{lm.Name}{currentCount}";
+                                    methods[lm.Name] = currentCount + 1;
+                                }
+                                else
+                                {
+                                    lm.UniqueName = lm.Name;
+                                    methods[lm.Name] = 1; //start from 1
+                                }
                             }
-                            else
-                            {
-                                lm.UniqueName = lm.Name;
-                                methods[lm.Name] = 1; //start from 1
-                            }
+                            results.Add(lc);
                         }
-                        results.Add(lc);
                     }
                 }
 
-                if (results.Count > 0 && _compilation is CSharpCompilation { LanguageVersion: LanguageVersion version and < LanguageVersion.CSharp8 })
+                if (results.Count > 0 && _compilation is CSharpCompilation { LanguageVersion : LanguageVersion version and < LanguageVersion.CSharp8 })
                 {
                     // we only support C# 8.0 and above
                     Diag(DiagnosticDescriptors.LoggingUnsupportedLanguageVersion, null, version.ToDisplayString(), LanguageVersion.CSharp8.ToDisplayString());
@@ -625,8 +624,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 return typeDeclaration.Identifier.ToString() + typeDeclaration.TypeParameterList;
             }
 
-            private (string? loggerField, bool multipleLoggerFields) FindLoggerField(SemanticModel sm, TypeDeclarationSyntax classDec,
-                Dictionary<SyntaxTree, SemanticModel> semanticModels, ITypeSymbol loggerSymbol)
+            private (string? loggerField, bool multipleLoggerFields) FindLoggerField(SemanticModel sm, TypeDeclarationSyntax classDec, ITypeSymbol loggerSymbol)
             {
                 string? loggerField = null;
 
@@ -635,35 +633,19 @@ namespace Microsoft.Extensions.Logging.Generators
                 bool onMostDerivedType = true;
 
 #if ROSLYN4_8_OR_GREATER
-                IEnumerable<ClassDeclarationSyntax> primaryConstructors = classType.InstanceConstructors
-                    .SelectMany(ic => ic.DeclaringSyntaxReferences)
-                    .Select(ds => ds.GetSyntax())
-                    .OfType<ClassDeclarationSyntax>();
+                IEnumerable<IMethodSymbol> primaryConstructors = classType.InstanceConstructors
+                    .Where(ic => ic.DeclaringSyntaxReferences
+                        .Any(ds => ds.GetSyntax() is ClassDeclarationSyntax));
 
-                foreach (ClassDeclarationSyntax primaryConstructor in primaryConstructors)
+                foreach (IMethodSymbol primaryConstructor in primaryConstructors)
                 {
-                    if (primaryConstructor.ParameterList?.Parameters is SeparatedSyntaxList<ParameterSyntax> parameters)
+                    foreach (IParameterSymbol parameter in primaryConstructor.Parameters)
                     {
-                        // this may be in a syntax tree without LoggerMessage attributes for which we don't yet have a semantic model
-                        if (!semanticModels.TryGetValue(primaryConstructor.SyntaxTree, out SemanticModel? semanticModel))
+                        if (IsBaseOrIdentity(parameter.Type, loggerSymbol))
                         {
-                            semanticModel = _compilation.GetSemanticModel(primaryConstructor.SyntaxTree);
-                            semanticModels.Add(primaryConstructor.SyntaxTree, semanticModel);
-                        }
-
-                        foreach (ParameterSyntax parameter in parameters)
-                        {
-                            if (semanticModel.GetSymbolInfo(parameter.Type).Symbol is not ITypeSymbol parameterType)
-                            {
-                                continue;
-                            }
-                            if (!IsBaseOrIdentity(parameterType, loggerSymbol))
-                            {
-                                continue;
-                            }
                             if (loggerField == null)
                             {
-                                loggerField = parameter.Identifier.Text;
+                                loggerField = parameter.Name;
                             }
                             else
                             {
