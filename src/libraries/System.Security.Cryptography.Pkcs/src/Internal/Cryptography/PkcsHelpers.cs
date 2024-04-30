@@ -369,7 +369,7 @@ namespace Internal.Cryptography
         {
             return Convert.ToHexString(ba);
         }
-#elif NETCOREAPP || NETSTANDARD2_1
+#elif NETSTANDARD2_1
         private static string ToUpperHexString(ReadOnlySpan<byte> ba)
         {
             return HexConverter.ToString(ba, HexConverter.Casing.Upper);

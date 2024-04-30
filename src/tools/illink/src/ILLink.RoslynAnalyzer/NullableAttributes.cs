@@ -86,7 +86,7 @@ namespace System.Diagnostics.CodeAnalysis
 
 #endif
 
-#if !NET || NETCOREAPP3_1
+#if !NET
 
 	/// <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values.</summary>
 	[AttributeUsage (AttributeTargets.Method | AttributeTargets.Property, Inherited = false, AllowMultiple = true)]

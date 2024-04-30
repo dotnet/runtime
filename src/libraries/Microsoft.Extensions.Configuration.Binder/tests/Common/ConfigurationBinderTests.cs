@@ -2149,7 +2149,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 #if NET
             // Value property is not publicly exposed in .NET Framework.
             Assert.Equal("Info", ts.Value);
-#endif // NETCOREAPP
+#endif // NET
         }
 #endif
 

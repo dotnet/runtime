@@ -246,7 +246,7 @@ namespace Microsoft.Extensions.DependencyInjection
             s_collectibleConstructorInfos.Value.AddOrUpdate(type, value);
             return value;
         }
-#endif // NETCOREAPP
+#endif // NET
 
         private static ConstructorInfoEx[] CreateConstructorInfoExs(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
@@ -277,7 +277,7 @@ namespace Microsoft.Extensions.DependencyInjection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             Type[] argumentTypes)
         {
-#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP
+#if NETSTANDARD2_1_OR_GREATER || NET
             if (!RuntimeFeature.IsDynamicCodeCompiled)
             {
                 // Create a reflection-based factory when dynamic code is not compiled\jitted as would be the case with
@@ -314,7 +314,7 @@ namespace Microsoft.Extensions.DependencyInjection
             CreateFactory<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(
                 Type[] argumentTypes)
         {
-#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP
+#if NETSTANDARD2_1_OR_GREATER || NET
             if (!RuntimeFeature.IsDynamicCodeCompiled)
             {
                 // See the comment above in the non-generic CreateFactory() for why we use 'IsDynamicCodeCompiled' here.
@@ -437,7 +437,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 Expression.New(constructor, constructorArguments));
         }
 
-#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP
+#if NETSTANDARD2_1_OR_GREATER || NET
         [DoesNotReturn]
         private static void ThrowHelperArgumentNullExceptionServiceProvider()
         {
@@ -520,7 +520,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             FactoryParameterContext[] parameters = GetFactoryParameterContext();
             return (serviceProvider, arguments) => ReflectionFactoryCanonical(constructor, parameters, declaringType, serviceProvider, arguments);
-#endif // NETCOREAPP
+#endif // NET
 
             FactoryParameterContext[] GetFactoryParameterContext()
             {
@@ -542,7 +542,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 return parameters;
             }
         }
-#endif // NETSTANDARD2_1_OR_GREATER || NETCOREAPP
+#endif // NETSTANDARD2_1_OR_GREATER || NET
 
         private readonly struct FactoryParameterContext
         {
@@ -1167,7 +1167,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             throw new NullReferenceException();
         }
-#elif NETSTANDARD2_1_OR_GREATER || NETCOREAPP
+#elif NETSTANDARD2_1_OR_GREATER || NET
         private static object ReflectionFactoryCanonical(
             ConstructorInfo constructor,
             FactoryParameterContext[] parameters,

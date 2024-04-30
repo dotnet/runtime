@@ -60,7 +60,7 @@ public class EmitterTests
         string generatedSource = File.ReadAllText(@"Baselines/EmitterWithCustomValidator.netcore.g.cs");
 #else
         string generatedSource = File.ReadAllText(@"Baselines/EmitterWithCustomValidator.netfx.g.cs");
-#endif // NETCOREAPP
+#endif // NET
         Assert.Equal(generatedSource.Replace("\r\n", "\n"), generatedSources[0].SourceText.ToString().Replace("\r\n", "\n"));
     }
 
@@ -1728,7 +1728,7 @@ public class EmitterTests
         """;
 #else
 string lengthAttribute = "";
-#endif //NETCOREAPP
+#endif //NET
 
         string source = $$"""
             using System;
@@ -1861,7 +1861,7 @@ string lengthAttribute = "";
         string generatedSource = File.ReadAllText(@"Baselines/UsingInterfaceAsPropertyTypeForLengthAttributesTests.netcore.g.cs");
 #else
         string generatedSource = File.ReadAllText(@"Baselines/UsingInterfaceAsPropertyTypeForLengthAttributesTests.netfx.g.cs");
-#endif // NETCOREAPP
+#endif // NET
         Assert.Equal(generatedSource.Replace("\r\n", "\n"), generatedSources[0].SourceText.ToString().Replace("\r\n", "\n"));
     }
 
@@ -1911,7 +1911,7 @@ string lengthAttribute = "";
         string generatedSource = File.ReadAllText(@"Baselines/OptionsExtendingSystemClassTest.netcore.g.cs");
 #else
         string generatedSource = File.ReadAllText(@"Baselines/OptionsExtendingSystemClassTest.netfx.g.cs");
-#endif // NETCOREAPP
+#endif // NET
         Assert.Equal(generatedSource.Replace("\r\n", "\n"), src[0].SourceText.ToString().Replace("\r\n", "\n"));
     }
 }
