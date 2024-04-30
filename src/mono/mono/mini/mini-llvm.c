@@ -1960,7 +1960,7 @@ static char*
 get_aotconst_name (MonoJumpInfoType type, gconstpointer data, int got_offset)
 {
 	char *name;
-	//size_t len;
+	size_t len;
 
 	switch (type) {
 	case MONO_PATCH_INFO_JIT_ICALL_ID:
@@ -1986,16 +1986,15 @@ get_aotconst_name (MonoJumpInfoType type, gconstpointer data, int got_offset)
 	case MONO_PATCH_INFO_METHOD_RGCTX: {
 		MonoMethod *method = (MonoMethod*)data;
 		char *typestr = ji_type_to_string_lower (type);
-		char *fixedName = mono_fixup_symbol_name (typestr, method->name, "");
-		// char *n = g_strdup (method->name);
-		// len = strlen (n);
-		// for (size_t i = 0; i < len; ++i) {
-		// 	if (!isalnum (n [i]))
-		// 		n [i] = '_';
-		// }
-		name = g_strdup_printf ("%s_%d", fixedName, got_offset);
+		char *n = g_strdup (method->name);
+		len = strlen (n);
+		for (size_t i = 0; i < len; ++i) {
+			if (!isalnum (n [i]))
+				n [i] = '_';
+		}
+		name = g_strdup_printf ("%s_%s_%d", typestr, n, got_offset);
 		g_free (typestr);
-		g_free (fixedName);
+		g_free (n);
 		break;
 	}
 	default: {
