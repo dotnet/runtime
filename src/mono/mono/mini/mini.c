@@ -3474,10 +3474,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	cfg->intvars = (guint16 *)mono_mempool_alloc0 (cfg->mempool, sizeof (guint16) * STACK_MAX * header->max_stack);
 
 	if (cfg->verbose_level > 0) {
-		char *method_name;
+		char *v_method_name;
 
-		method_name = mono_method_get_full_name (method);
-		g_print ("converting %s%s%s%smethod %s\n", COMPILE_LLVM (cfg) ? "llvm " : "", cfg->gsharedvt ? "gsharedvt " : "", (cfg->gshared && !cfg->gsharedvt) ? "gshared " : "", cfg->interp_entry_only ? "interp only " : "", method_name);
+		v_method_name = mono_method_get_full_name (method);
+		g_print ("converting %s%s%s%smethod %s\n", COMPILE_LLVM (cfg) ? "llvm " : "", cfg->gsharedvt ? "gsharedvt " : "", (cfg->gshared && !cfg->gsharedvt) ? "gshared " : "", cfg->interp_entry_only ? "interp only " : "", v_method_name);
 		/*
 		if (COMPILE_LLVM (cfg))
 			g_print ("converting llvm method %s\n", method_name = mono_method_full_name (method, TRUE));
@@ -3488,7 +3488,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		else
 			g_print ("converting method %s\n", method_name = mono_method_full_name (method, TRUE));
 		*/
-		g_free (method_name);
+		g_free (v_method_name);
 	}
 
 	if (cfg->opt & MONO_OPT_ABCREM)
