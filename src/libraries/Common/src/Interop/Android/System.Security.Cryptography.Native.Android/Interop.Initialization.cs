@@ -31,7 +31,7 @@ internal static partial class Interop
     {
         static CryptoInitializer()
         {
-            if (EnsureOpenSslInitialized(null, null, null) != 0)
+            if (EnsureOpenSslInitialized() != 0)
             {
                 // Ideally this would be a CryptographicException, but we use
                 // OpenSSL in libraries lower than System.Security.Cryptography.
@@ -49,6 +49,6 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_EnsureOpenSslInitialized")]
-        private static unsafe partial int EnsureOpenSslInitialized(void* mallocFunction, void* reallocFunction, void* freeFunction);
+        private static partial int EnsureOpenSslInitialized();
     }
 }
