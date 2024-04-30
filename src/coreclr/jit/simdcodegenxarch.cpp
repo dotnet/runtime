@@ -96,7 +96,7 @@ void CodeGen::genStoreIndTypeSimd12(GenTreeStoreInd* treeNode)
     }
     else
     {
-        regNumber tmpReg = treeNode->GetSingleTempReg();
+        regNumber tmpReg = internalRegisters.GetSingle(treeNode);
 
         // Extract upper 4 bytes from data
         emit->emitIns_R_R(INS_movhlps, EA_16BYTE, tmpReg, dataReg);
@@ -295,7 +295,7 @@ void CodeGen::genEmitStoreLclTypeSimd12(GenTree* store, unsigned lclNum, unsigne
     }
     else
     {
-        regNumber tmpReg = store->GetSingleTempReg();
+        regNumber tmpReg = internalRegisters.GetSingle(store);
 
         // Extract upper 4 bytes from data
         emit->emitIns_R_R(INS_movhlps, EA_16BYTE, tmpReg, dataReg);
@@ -391,7 +391,7 @@ void CodeGen::genPutArgStkSimd12(GenTreePutArgStk* treeNode)
     regNumber dataReg = genConsumeReg(data);
 
     // Need an additional Xmm register to extract upper 4 bytes from data.
-    regNumber tmpReg = treeNode->GetSingleTempReg();
+    regNumber tmpReg = internalRegisters.GetSingle(treeNode);
 
     genStoreSimd12ToStack(dataReg, tmpReg);
 }

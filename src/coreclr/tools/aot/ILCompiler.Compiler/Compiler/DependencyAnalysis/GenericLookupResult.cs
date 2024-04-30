@@ -781,7 +781,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
             MethodDesc defaultCtor = Compilation.GetConstructorForCreateInstanceIntrinsic(instantiatedType);
-            return factory.CanonicalEntrypoint(defaultCtor);
+            return instantiatedType.IsValueType ? factory.ExactCallableAddress(defaultCtor) : factory.CanonicalEntrypoint(defaultCtor);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

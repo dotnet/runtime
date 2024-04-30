@@ -360,8 +360,9 @@ namespace Internal.IL
                     }
                     else
                     {
-                        MethodDesc ctor = Compilation.GetConstructorForCreateInstanceIntrinsic(method.Instantiation[0]);
-                        _dependencies.Add(_factory.CanonicalEntrypoint(ctor), reason);
+                        TypeDesc type = method.Instantiation[0];
+                        MethodDesc ctor = Compilation.GetConstructorForCreateInstanceIntrinsic(type);
+                        _dependencies.Add(type.IsValueType ? _factory.ExactCallableAddress(ctor) : _factory.CanonicalEntrypoint(ctor), reason);
                     }
 
                     return;
@@ -1230,12 +1231,16 @@ namespace Internal.IL
                     break;
                 case ILOpcode.div:
                 case ILOpcode.div_un:
-                    if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
+                    if (_compilation.TypeSystemContext.Target.Architecture is TargetArchitecture.ARM or TargetArchitecture.X86)
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ULDiv), "_uldiv");
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.LDiv), "_ldiv");
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.UDiv), "_udiv");
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Div), "_div");
+
+                        if (_compilation.TypeSystemContext.Target.Architecture is TargetArchitecture.ARM)
+                        {
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.UDiv), "_udiv");
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Div), "_div");
+                        }
                     }
                     else if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM64)
                     {
@@ -1248,12 +1253,15 @@ namespace Internal.IL
                     break;
                 case ILOpcode.rem:
                 case ILOpcode.rem_un:
-                    if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
+                    if (_compilation.TypeSystemContext.Target.Architecture is TargetArchitecture.ARM or TargetArchitecture.X86)
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ULMod), "_ulmod");
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.LMod), "_lmod");
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.UMod), "_umod");
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Mod), "_mod");
+                        if (_compilation.TypeSystemContext.Target.Architecture is TargetArchitecture.ARM)
+                        {
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.UMod), "_umod");
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Mod), "_mod");
+                        }
                     }
                     else if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM64)
                     {

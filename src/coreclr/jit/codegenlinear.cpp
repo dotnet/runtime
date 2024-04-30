@@ -376,16 +376,25 @@ void CodeGen::genCodeForBBlist()
 
         bool firstMapping = true;
 
-#if defined(FEATURE_EH_FUNCLETS)
         if (block->HasFlag(BBF_FUNCLET_BEG))
         {
+            assert(compiler->UsesFunclets());
             genReserveFuncletProlog(block);
         }
-#endif // FEATURE_EH_FUNCLETS
 
         // Clear compCurStmt and compCurLifeTree.
         compiler->compCurStmt     = nullptr;
         compiler->compCurLifeTree = nullptr;
+
+#ifdef SWIFT_SUPPORT
+        // Reassemble Swift struct parameters on the local stack frame in the
+        // scratch BB right after the prolog. There can be arbitrary amounts of
+        // codegen related to doing this, so it cannot be done in the prolog.
+        if (compiler->fgBBisScratch(block) && compiler->lvaHasAnySwiftStackParamToReassemble())
+        {
+            genHomeSwiftStructParameters(/* handleStack */ true);
+        }
+#endif
 
         // Emit poisoning into scratch BB that comes right after prolog.
         // We cannot emit this code in the prolog as it might make the prolog too large.
@@ -396,7 +405,6 @@ void CodeGen::genCodeForBBlist()
 
         // Traverse the block in linear order, generating code for each node as we
         // as we encounter it.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
         // Set the use-order numbers for each node.
@@ -490,9 +498,10 @@ void CodeGen::genCodeForBBlist()
         // as the determiner because something we are tracking as a byref
         // might be used as a return value of a int function (which is legal)
         GenTree* blockLastNode = block->lastNode();
-        if ((blockLastNode != nullptr) && (blockLastNode->gtOper == GT_RETURN) &&
+        if ((blockLastNode != nullptr) && (blockLastNode->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET)) &&
             (varTypeIsGC(compiler->info.compRetType) ||
-             (blockLastNode->AsOp()->gtOp1 != nullptr && varTypeIsGC(blockLastNode->AsOp()->gtOp1->TypeGet()))))
+             (blockLastNode->AsOp()->GetReturnValue() != nullptr &&
+              varTypeIsGC(blockLastNode->AsOp()->GetReturnValue()->TypeGet()))))
         {
             nonVarPtrRegs &= ~RBM_INTRET;
         }
@@ -713,9 +722,7 @@ void CodeGen::genCodeForBBlist()
 
                     if ((call != nullptr) && (call->gtOper == GT_CALL))
                     {
-                        if ((call->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0 ||
-                            ((call->AsCall()->gtCallType == CT_HELPER) &&
-                             Compiler::s_helperCallProperties.AlwaysThrow(call->AsCall()->GetHelperNum())))
+                        if (call->AsCall()->IsNoReturn())
                         {
                             instGen(INS_BREAKPOINT); // This should never get executed
                         }
@@ -728,50 +735,39 @@ void CodeGen::genCodeForBBlist()
                 block = genCallFinally(block);
                 break;
 
-#if defined(FEATURE_EH_FUNCLETS)
-
             case BBJ_EHCATCHRET:
+                assert(compiler->UsesFunclets());
                 genEHCatchRet(block);
                 FALLTHROUGH;
 
             case BBJ_EHFINALLYRET:
             case BBJ_EHFAULTRET:
             case BBJ_EHFILTERRET:
-                genReserveFuncletEpilog(block);
+                if (compiler->UsesFunclets())
+                {
+                    genReserveFuncletEpilog(block);
+                }
+#if defined(FEATURE_EH_WINDOWS_X86)
+                else
+                {
+                    genEHFinallyOrFilterRet(block);
+                }
+#endif // FEATURE_EH_WINDOWS_X86
                 break;
-
-#else // !FEATURE_EH_FUNCLETS
-
-            case BBJ_EHCATCHRET:
-                noway_assert(!"Unexpected BBJ_EHCATCHRET"); // not used on x86
-                break;
-
-            case BBJ_EHFINALLYRET:
-            case BBJ_EHFAULTRET:
-            case BBJ_EHFILTERRET:
-                genEHFinallyOrFilterRet(block);
-                break;
-
-#endif // !FEATURE_EH_FUNCLETS
 
             case BBJ_SWITCH:
                 break;
 
             case BBJ_ALWAYS:
             {
+#ifdef DEBUG
                 GenTree* call = block->lastNode();
                 if ((call != nullptr) && (call->gtOper == GT_CALL))
                 {
-                    if ((call->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0 ||
-                        ((call->AsCall()->gtCallType == CT_HELPER) &&
-                         Compiler::s_helperCallProperties.AlwaysThrow(call->AsCall()->GetHelperNum())))
-                    {
-                        // NOTE: We should probably never see a BBJ_ALWAYS block ending with a throw in a first place.
-                        //       If that is fixed, this condition can be just an assert.
-                        //       For the reasons why we insert a BP, see the similar code in "case BBJ_THROW:" above.
-                        instGen(INS_BREAKPOINT); // This should never get executed
-                    }
+                    // At this point, BBJ_ALWAYS should never end with a call that doesn't return.
+                    assert(!call->AsCall()->IsNoReturn());
                 }
+#endif // DEBUG
 
                 // If this block jumps to the next one, we might be able to skip emitting the jump
                 if (block->CanRemoveJumpToNext(compiler))
@@ -829,9 +825,7 @@ void CodeGen::genCodeForBBlist()
 
             assert(ShouldAlignLoops());
             assert(!block->isBBCallFinallyPairTail());
-#if FEATURE_EH_CALLFINALLY_THUNKS
             assert(!block->KindIs(BBJ_CALLFINALLY));
-#endif // FEATURE_EH_CALLFINALLY_THUNKS
 
             GetEmitter()->emitLoopAlignment(DEBUG_ARG1(block->KindIs(BBJ_ALWAYS) && !removedJmp));
         }
@@ -857,7 +851,7 @@ void CodeGen::genCodeForBBlist()
 #endif // DEBUG
     }  //------------------ END-FOR each block of the method -------------------
 
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
     // If this is a synchronized method on x86, and we generated all the code without
     // generating the "exit monitor" call, then we must have deleted the single return block
     // with that call because it was dead code. We still need to report the monitor range
@@ -867,14 +861,15 @@ void CodeGen::genCodeForBBlist()
     // Do this before cleaning the GC refs below; we don't want to create an IG that clears
     // the `this` pointer for lvaKeepAliveAndReportThis.
 
-    if ((compiler->info.compFlags & CORINFO_FLG_SYNCH) && (compiler->syncEndEmitCookie == nullptr))
+    if (!compiler->UsesFunclets() && (compiler->info.compFlags & CORINFO_FLG_SYNCH) &&
+        (compiler->syncEndEmitCookie == nullptr))
     {
         JITDUMP("Synchronized method with missing exit monitor call; adding final label\n");
         compiler->syncEndEmitCookie =
             GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
         noway_assert(compiler->syncEndEmitCookie != nullptr);
     }
-#endif // !FEATURE_EH_FUNCLETS
+#endif
 
     // There could be variables alive at this point. For example see lvaKeepAliveAndReportThis.
     // This call is for cleaning the GC refs
@@ -1653,7 +1648,6 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             // Update the life of the lcl var.
             genUpdateLife(tree);
         }
-#ifdef TARGET_XARCH
 #ifdef FEATURE_HW_INTRINSICS
         else if (tree->OperIs(GT_HWINTRINSIC))
         {
@@ -1661,8 +1655,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             genConsumeMultiOpOperands(hwintrinsic);
         }
 #endif // FEATURE_HW_INTRINSICS
-#endif // TARGET_XARCH
-        else if (tree->OperIs(GT_BITCAST, GT_NEG, GT_CAST, GT_LSH, GT_RSH, GT_RSZ, GT_BSWAP, GT_BSWAP16))
+        else if (tree->OperIs(GT_BITCAST, GT_NEG, GT_CAST, GT_LSH, GT_RSH, GT_RSZ, GT_ROR, GT_BSWAP, GT_BSWAP16))
         {
             genConsumeRegs(tree->gtGetOp1());
         }
@@ -1780,7 +1773,6 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
 
     // If the op1 is already in the dstReg - nothing to do.
     // Otherwise load the op1 (the address) into the dstReg to copy the struct on the stack by value.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_X86
     assert(dstReg != REG_SPBASE);
@@ -1913,7 +1905,7 @@ void CodeGen::genSetBlockSize(GenTreeBlk* blkNode, regNumber sizeReg)
 {
     if (sizeReg != REG_NA)
     {
-        assert((blkNode->gtRsvdRegs & genRegMask(sizeReg)) != 0);
+        assert((internalRegisters.GetAll(blkNode) & genRegMask(sizeReg)) != 0);
         // This can go via helper which takes the size as a native uint.
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, sizeReg, blkNode->Size());
     }

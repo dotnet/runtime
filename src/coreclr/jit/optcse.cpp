@@ -1798,7 +1798,7 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
     }
 
     // Don't allow non-SIMD struct CSEs under a return; we don't fully
-    // re-morph these if we introduce a CSE assignment, and so may create
+    // re-morph these if we introduce a CSE store, and so may create
     // IR that lower is not yet prepared to handle.
     //
     if (isReturn && varTypeIsStruct(tree->gtType) && !varTypeIsSIMD(tree->gtType))
@@ -1869,7 +1869,7 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
             // more exceptions (NullRef) so we abandon this CSE.
             // If we don't mark CALL ALLOC_HELPER as a CSE candidate, we are able
             // to use GT_IND(x) in [2] as a CSE def.
-            if ((call->gtCallType == CT_HELPER) &&
+            if (call->IsHelperCall() &&
                 Compiler::s_helperCallProperties.IsAllocator(m_pCompiler->eeGetHelperNum(call->gtCallMethHnd)))
             {
                 return false;
@@ -4465,7 +4465,7 @@ bool CSE_HeuristicCommon::IsCompatibleType(var_types cseLclVarTyp, var_types exp
 // Arguments:
 //    successfulCandidate - cse candidate to perform
 //
-// It will replace all of the CSE defs with assignments to a new "cse0" LclVar
+// It will replace all of the CSE defs with writes to a new "cse0" LclVar
 // and will replace all of the CSE uses with reads of the "cse0" LclVar
 //
 // It will also put cse0 into SSA if there is just one def.
@@ -4528,8 +4528,8 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
     m_pCompiler->optCSEcount++;
     m_pCompiler->Metrics.CseCount++;
 
-    //  Walk all references to this CSE, adding an assignment
-    //  to the CSE temp to all defs and changing all refs to
+    //  Walk all references to this CSE, adding an store to
+    //  the CSE temp to all defs and changing all refs to
     //  a simple use of the CSE temp.
     //
     //  Later we will unmark any nested CSE's for the CSE uses.
@@ -4813,8 +4813,12 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
 
                             assert(vnStore->IsVNCompareCheckedBoundArith(oldCmpVN));
                             vnStore->GetCompareCheckedBoundArithInfo(oldCmpVN, &info);
-                            newCmpArgVN = vnStore->VNForFunc(vnStore->TypeOfVN(info.arrOp), (VNFunc)info.arrOper,
-                                                             info.arrOp, theConservativeVN);
+
+                            ValueNum arrOp1 = info.arrOpLHS ? info.arrOp : theConservativeVN;
+                            ValueNum arrOp2 = info.arrOpLHS ? theConservativeVN : info.arrOp;
+
+                            newCmpArgVN =
+                                vnStore->VNForFunc(vnStore->TypeOfVN(info.arrOp), (VNFunc)info.arrOper, arrOp1, arrOp2);
                         }
                         ValueNum newCmpVN = vnStore->VNForFunc(vnStore->TypeOfVN(oldCmpVN), (VNFunc)info.cmpOper,
                                                                info.cmpOp, newCmpArgVN);
@@ -4891,7 +4895,7 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
             if (!store->OperIs(GT_STORE_LCL_VAR))
             {
                 // This can only be the case for a struct in which the 'val' was a COMMA, so
-                // the assignment is sunk below it.
+                // the store is sunk below it.
                 store = store->gtEffectiveVal();
                 noway_assert(origStore->OperIs(GT_COMMA) && (origStore == val));
             }
@@ -4958,7 +4962,7 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
             /* Create a comma node for the CSE assignment */
             cse           = m_pCompiler->gtNewOperNode(GT_COMMA, expTyp, origStore, cseUse);
             cse->gtVNPair = cseUse->gtVNPair; // The comma's value is the same as 'val'
-            // as the assignment to the CSE LclVar
+            // as the store to the CSE LclVar
             // cannot add any new exceptions
         }
 

@@ -154,7 +154,7 @@ private:
     bool       TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition, GenCondition* code);
     GenTreeCC* LowerNodeCC(GenTree* node, GenCondition condition);
     void       LowerJmpMethod(GenTree* jmp);
-    void       LowerRet(GenTreeUnOp* ret);
+    void       LowerRet(GenTreeOp* ret);
     void       LowerStoreLocCommon(GenTreeLclVarCommon* lclVar);
     void       LowerRetStruct(GenTreeUnOp* ret);
     void       LowerRetSingleRegStructLclVar(GenTreeUnOp* ret);
@@ -242,16 +242,16 @@ private:
         GenTree* oldUseNode = use.Def();
         if ((oldUseNode->gtOper != GT_LCL_VAR) || (tempNum != BAD_VAR_NUM))
         {
-            GenTree* assign;
-            use.ReplaceWithLclVar(comp, tempNum, &assign);
+            GenTree* store;
+            use.ReplaceWithLclVar(comp, tempNum, &store);
 
             GenTree* newUseNode = use.Def();
             ContainCheckRange(oldUseNode->gtNext, newUseNode);
 
-            // We need to lower the LclVar and assignment since there may be certain
+            // We need to lower the LclVar and store since there may be certain
             // types or scenarios, such as TYP_SIMD12, that need special handling
 
-            LowerNode(assign);
+            LowerNode(store);
             LowerNode(newUseNode);
 
             return newUseNode->AsLclVar();
@@ -358,7 +358,7 @@ private:
                                      GenTree*    switchValue,
                                      weight_t    defaultLikelihood);
 
-    void LowerCast(GenTree* node);
+    GenTree* LowerCast(GenTree* node);
 
 #if !CPU_LOAD_STORE_ARCH
     bool IsRMWIndirCandidate(GenTree* operand, GenTree* storeInd);

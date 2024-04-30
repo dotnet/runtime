@@ -37,7 +37,6 @@ GTNODE(LABEL            , GenTree            ,0,0,GTK_LEAF)             // Jump-
 GTNODE(JMP              , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // Jump to another function
 GTNODE(FTN_ADDR         , GenTreeFptrVal     ,0,0,GTK_LEAF)             // Address of a function
 GTNODE(RET_EXPR         , GenTreeRetExpr     ,0,0,GTK_LEAF|DBK_NOTLIR)  // Place holder for the return expression from an inline candidate
-GTNODE(SWIFT_ERROR      , GenTree            ,0,0,GTK_LEAF)             // Error register value post-Swift call
 
 //-----------------------------------------------------------------------------
 //  Constant nodes:
@@ -283,9 +282,17 @@ GTNODE(START_PREEMPTGC  , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHI
 GTNODE(PROF_HOOK        , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Profiler Enter/Leave/TailCall hook.
 
 GTNODE(RETFILT          , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE) // End filter with TYP_I_IMPL return value.
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
 GTNODE(END_LFIN         , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // End locally-invoked finally.
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
+
+//-----------------------------------------------------------------------------
+//  Swift interop-specific nodes:
+//-----------------------------------------------------------------------------
+
+GTNODE(SWIFT_ERROR      , GenTree            ,0,0,GTK_LEAF)              // Error register value post-Swift call
+GTNODE(SWIFT_ERROR_RET  , GenTreeOp          ,0,1,GTK_BINOP|GTK_NOVALUE) // Returns normal return value, and SwiftError pseudolocal's value in REG_SWIFT_ERROR.
+																		 // op1 is the error value, and op2 is the return value (or null if the method returns void).
 
 //-----------------------------------------------------------------------------
 //  Nodes used by Lower to generate a closer CPU representation of other nodes

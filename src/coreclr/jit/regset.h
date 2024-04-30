@@ -74,11 +74,45 @@ private:
     bool rsModifiedRegsMaskInitialized; // Has rsModifiedRegsMask been initialized? Guards against illegal use.
 #endif                                  // DEBUG
 
+#ifdef SWIFT_SUPPORT
+    regMaskTP rsAllCalleeSavedMask;
+    regMaskTP rsIntCalleeSavedMask;
+#else  // !SWIFT_SUPPORT
+    static constexpr regMaskTP rsAllCalleeSavedMask = RBM_CALLEE_SAVED;
+    static constexpr regMaskTP rsIntCalleeSavedMask = RBM_INT_CALLEE_SAVED;
+#endif // !SWIFT_SUPPORT
+
 public:
     regMaskTP rsGetModifiedRegsMask() const
     {
         assert(rsModifiedRegsMaskInitialized);
         return rsModifiedRegsMask;
+    }
+
+    regMaskTP rsGetModifiedCalleeSavedRegsMask() const
+    {
+        assert(rsModifiedRegsMaskInitialized);
+        return (rsModifiedRegsMask & rsAllCalleeSavedMask);
+    }
+
+    regMaskTP rsGetModifiedIntCalleeSavedRegsMask() const
+    {
+        assert(rsModifiedRegsMaskInitialized);
+        return (rsModifiedRegsMask & rsIntCalleeSavedMask);
+    }
+
+#ifdef TARGET_AMD64
+    regMaskTP rsGetModifiedOsrIntCalleeSavedRegsMask() const
+    {
+        assert(rsModifiedRegsMaskInitialized);
+        return (rsModifiedRegsMask & (rsIntCalleeSavedMask | RBM_EBP));
+    }
+#endif // TARGET_AMD64
+
+    regMaskTP rsGetModifiedFltCalleeSavedRegsMask() const
+    {
+        assert(rsModifiedRegsMaskInitialized);
+        return (rsModifiedRegsMask & RBM_FLT_CALLEE_SAVED);
     }
 
     void rsClearRegsModified();
@@ -124,8 +158,9 @@ private:
     regMaskTP _rsMaskVars; // backing store for rsMaskVars property
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    // TODO: the funclet's callee-saved registers should not shared with main function.
     regMaskTP rsMaskCalleeSaved; // mask of the registers pushed/popped in the prolog/epilog
-#endif                           // TARGET_ARMARCH || TARGET_LOONGARCH64
+#endif                           // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 public:                    // TODO-Cleanup: Should be private, but Compiler uses it
     regMaskTP rsMaskResvd; // mask of the registers that are reserved for special purposes (typically empty)

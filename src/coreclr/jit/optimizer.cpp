@@ -1693,7 +1693,6 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
 
     // The old loop body is unreachable now, but we will remove those
     // blocks after we finish unrolling.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     if (verbose)
@@ -2315,54 +2314,6 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n", bTest->bbNum, weightTest,
                 weightTop);
         bTest->inheritWeight(bTop);
-
-        // Determine the new edge weights.
-        //
-        // We project the next/jump ratio for block and bTest by using
-        // the original likelihoods out of bTest.
-        //
-        // Note "next" is the loop top block, not bTest's bbNext,
-        // we'll call this latter block "after".
-        //
-        weight_t const testToNextLikelihood  = min(1.0, weightTop / weightTest);
-        weight_t const testToAfterLikelihood = 1.0 - testToNextLikelihood;
-
-        // Adjust edges out of bTest (which now has weight weightTop)
-        //
-        weight_t const testToNextWeight  = weightTop * testToNextLikelihood;
-        weight_t const testToAfterWeight = weightTop * testToAfterLikelihood;
-
-        FlowEdge* const edgeTestToNext  = bTest->GetTrueEdge();
-        FlowEdge* const edgeTestToAfter = bTest->GetFalseEdge();
-
-        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (iterate loop)\n", bTest->bbNum, bTop->bbNum,
-                testToNextWeight);
-        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (exit loop)\n", bTest->bbNum,
-                bTest->Next()->bbNum, testToAfterWeight);
-
-        edgeTestToNext->setEdgeWeights(testToNextWeight, testToNextWeight, bTop);
-        edgeTestToAfter->setEdgeWeights(testToAfterWeight, testToAfterWeight, bTest->GetFalseTarget());
-
-        // Adjust edges out of block, using the same distribution.
-        //
-        JITDUMP("Profile weight of " FMT_BB " remains unchanged at " FMT_WT "\n", block->bbNum, weightBlock);
-
-        weight_t const blockToNextLikelihood  = testToNextLikelihood;
-        weight_t const blockToAfterLikelihood = testToAfterLikelihood;
-
-        weight_t const blockToNextWeight  = weightBlock * blockToNextLikelihood;
-        weight_t const blockToAfterWeight = weightBlock * blockToAfterLikelihood;
-
-        FlowEdge* const edgeBlockToNext  = bNewCond->GetFalseEdge();
-        FlowEdge* const edgeBlockToAfter = bNewCond->GetTrueEdge();
-
-        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (enter loop)\n", bNewCond->bbNum,
-                bNewCond->GetFalseTarget()->bbNum, blockToNextWeight);
-        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (avoid loop)\n", bNewCond->bbNum,
-                bNewCond->GetTrueTarget()->bbNum, blockToAfterWeight);
-
-        edgeBlockToNext->setEdgeWeights(blockToNextWeight, blockToNextWeight, bNewCond->GetFalseTarget());
-        edgeBlockToAfter->setEdgeWeights(blockToAfterWeight, blockToAfterWeight, bNewCond->GetTrueTarget());
 
 #ifdef DEBUG
         // If we're checking profile data, see if profile for the two target blocks is consistent.
@@ -3185,8 +3136,7 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
     JITDUMP("Canonicalize exit " FMT_BB " for " FMT_LP " to have only loop predecessors\n", exit->bbNum,
             loop->GetIndex());
 
-#if FEATURE_EH_CALLFINALLY_THUNKS
-    if (exit->KindIs(BBJ_CALLFINALLY))
+    if (UsesCallFinallyThunks() && exit->KindIs(BBJ_CALLFINALLY))
     {
         // Branches to a BBJ_CALLFINALLY _must_ come from inside its associated
         // try region, and when we have callfinally thunks the BBJ_CALLFINALLY
@@ -3207,7 +3157,6 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
         }
     }
     else
-#endif // FEATURE_EH_CALLFINALLY_THUNKS
     {
         newExit = fgNewBBbefore(BBJ_ALWAYS, exit, false);
         fgSetEHRegionForNewPreheaderOrExit(newExit);
@@ -3236,91 +3185,6 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
 }
 
 //-----------------------------------------------------------------------------
-// optEstimateEdgeLikelihood: Given a block "from" that may transfer control to
-// "to", estimate the likelihood that this will happen taking profile into
-// account if available.
-//
-// Parameters:
-//   from        - From block
-//   to          - To block
-//   fromProfile - [out] Whether or not the estimate is based on profile data
-//
-// Returns:
-//   Estimated likelihood of the edge being taken.
-//
-weight_t Compiler::optEstimateEdgeLikelihood(BasicBlock* from, BasicBlock* to, bool* fromProfile)
-{
-    *fromProfile = (from->HasFlag(BBF_PROF_WEIGHT) != BBF_EMPTY) && (to->HasFlag(BBF_PROF_WEIGHT) != BBF_EMPTY);
-    if (!fgIsUsingProfileWeights() || !from->HasFlag(BBF_PROF_WEIGHT) || !to->HasFlag(BBF_PROF_WEIGHT) ||
-        from->KindIs(BBJ_ALWAYS))
-    {
-        return 1.0 / from->NumSucc(this);
-    }
-
-    bool useEdgeWeights = fgHaveValidEdgeWeights;
-
-    weight_t takenCount    = 0;
-    weight_t notTakenCount = 0;
-
-    if (useEdgeWeights)
-    {
-        from->VisitRegularSuccs(this, [&, to](BasicBlock* succ) {
-            *fromProfile &= succ->hasProfileWeight();
-            FlowEdge* edge       = fgGetPredForBlock(succ, from);
-            weight_t  edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2.0;
-
-            if (succ == to)
-            {
-                takenCount += edgeWeight;
-            }
-            else
-            {
-                notTakenCount += edgeWeight;
-            }
-            return BasicBlockVisit::Continue;
-        });
-
-        // Watch out for cases where edge weights were not properly maintained
-        // so that it appears no profile flow goes to 'to'.
-        //
-        useEdgeWeights = !fgProfileWeightsConsistent(takenCount, BB_ZERO_WEIGHT);
-    }
-
-    if (!useEdgeWeights)
-    {
-        takenCount    = 0;
-        notTakenCount = 0;
-
-        from->VisitRegularSuccs(this, [&, to](BasicBlock* succ) {
-            *fromProfile &= succ->hasProfileWeight();
-            if (succ == to)
-            {
-                takenCount += succ->bbWeight;
-            }
-            else
-            {
-                notTakenCount += succ->bbWeight;
-            }
-
-            return BasicBlockVisit::Continue;
-        });
-    }
-
-    if (!*fromProfile)
-    {
-        return 1.0 / from->NumSucc(this);
-    }
-
-    if (fgProfileWeightsConsistent(takenCount, BB_ZERO_WEIGHT))
-    {
-        return 0;
-    }
-
-    weight_t likelihood = takenCount / (takenCount + notTakenCount);
-    return likelihood;
-}
-
-//-----------------------------------------------------------------------------
 // optSetWeightForPreheaderOrExit: Set the weight of a newly created preheader
 // or exit, after it has been added to the flowgraph.
 //
@@ -3330,52 +3194,34 @@ weight_t Compiler::optEstimateEdgeLikelihood(BasicBlock* from, BasicBlock* to, b
 //
 void Compiler::optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicBlock* block)
 {
-    bool hasProfWeight = true;
+    bool     hasProfWeight = true;
+    weight_t newWeight     = BB_ZERO_WEIGHT;
 
-    assert(block->GetUniqueSucc() != nullptr);
-    // Inherit first estimate from the target target; optEstimateEdgeLikelihood
-    // may use it in its estimate if we do not have edge weights to estimate
-    // from (we also assume the edges into 'block' already inherited their edge
-    // weights from the previous edge).
-    block->inheritWeight(block->GetTarget());
-
-    weight_t newWeight = BB_ZERO_WEIGHT;
-    for (FlowEdge* edge : block->PredEdges())
+    for (FlowEdge* const edge : block->PredEdges())
     {
-        BasicBlock* predBlock = edge->getSourceBlock();
-
-        bool     fromProfile = false;
-        weight_t likelihood  = optEstimateEdgeLikelihood(predBlock, block, &fromProfile);
-        hasProfWeight &= fromProfile;
-
-        weight_t contribution = predBlock->bbWeight * likelihood;
-        JITDUMP("  Estimated likelihood " FMT_BB " -> " FMT_BB " to be " FMT_WT " (contribution: " FMT_WT ")\n",
-                predBlock->bbNum, block->bbNum, likelihood, contribution);
-
-        newWeight += contribution;
-
-        // Normalize pred -> new block weight
-        edge->setEdgeWeights(contribution, contribution, block);
+        newWeight += edge->getLikelyWeight();
+        hasProfWeight &= edge->getSourceBlock()->hasProfileWeight();
     }
 
-    block->RemoveFlags(BBF_PROF_WEIGHT | BBF_RUN_RARELY);
-
     block->bbWeight = newWeight;
+
     if (hasProfWeight)
     {
         block->SetFlags(BBF_PROF_WEIGHT);
+    }
+    else
+    {
+        block->RemoveFlags(BBF_PROF_WEIGHT);
     }
 
     if (newWeight == BB_ZERO_WEIGHT)
     {
         block->SetFlags(BBF_RUN_RARELY);
-        return;
     }
-
-    // Normalize block -> target weight
-    FlowEdge* const edgeFromBlock = block->GetTargetEdge();
-    assert(edgeFromBlock != nullptr);
-    edgeFromBlock->setEdgeWeights(block->bbWeight, block->bbWeight, block->GetTarget());
+    else
+    {
+        block->RemoveFlags(BBF_RUN_RARELY);
+    }
 }
 
 /*****************************************************************************
@@ -3418,7 +3264,6 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
         switch (oper)
         {
             /* Constants can usually be narrowed by changing their value */
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifndef TARGET_64BIT
             __int64 lval;
@@ -4903,7 +4748,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
                         if (op1->OperIs(GT_CALL))
                         {
                             GenTreeCall* call = op1->AsCall();
-                            if ((call->gtCallType == CT_HELPER) &&
+                            if (call->IsHelperCall() &&
                                 s_helperCallProperties.MayRunCctor(eeGetHelperNum(call->gtCallMethHnd)))
                             {
                                 // Hoisting the comma is ok because it would hoist the initialization along
@@ -4949,7 +4794,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
                 if (treeIsHoistable && tree->IsCall())
                 {
                     GenTreeCall* call = tree->AsCall();
-                    if (call->gtCallType != CT_HELPER)
+                    if (!call->IsHelperCall())
                     {
                         INDEBUG(failReason = "non-helper call";)
                         treeIsHoistable = false;
@@ -5031,7 +4876,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
                     // Further, if it may run a cctor, it must be labeled as "Hoistable"
                     // (meaning it won't run a cctor because the class is not precise-init).
                     GenTreeCall* call = tree->AsCall();
-                    if (call->gtCallType != CT_HELPER)
+                    if (!call->IsHelperCall())
                     {
                         m_beforeSideEffect = false;
                     }
@@ -5471,8 +5316,6 @@ PhaseStatus Compiler::fgCanonicalizeFirstBB()
 
     assert(!fgFirstBBisScratch());
     fgEnsureFirstBBisScratch();
-    // TODO-Quirk: Remove
-    fgCanonicalizedFirstBB = true;
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
@@ -5763,7 +5606,7 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNatura
                     // Record that this loop contains a call
                     AddContainsCallAllContainingLoops(mostNestedLoop);
 
-                    if (call->gtCallType == CT_HELPER)
+                    if (call->IsHelperCall())
                     {
                         CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
                         if (s_helperCallProperties.MutatesHeap(helpFunc))
@@ -6026,21 +5869,21 @@ typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned> Lc
 // Notes:
 //    This phase iterates over basic blocks starting with the first basic block until there is no unique
 //    basic block successor or until it detects a loop. It keeps track of local nodes it encounters.
-//    When it gets to an assignment to a local variable or a local field, it checks whether the assignment
+//    When it gets to a store to a local variable or a local field, it checks whether the store
 //    is the first reference to the local (or to the parent of the local field), and, if so,
 //    it may do one of two optimizations:
 //      1. If the following conditions are true:
 //            the local is untracked,
-//            the rhs of the assignment is 0,
+//            the value to store is 0,
 //            the local is guaranteed to be fully initialized in the prolog,
 //         then the explicit zero initialization is removed.
 //      2. If the following conditions are true:
-//            the assignment is to a local (and not a field),
-//            the local is not lvLiveInOutOfHndlr or no exceptions can be thrown between the prolog and the assignment,
-//            either the local has no gc pointers or there are no gc-safe points between the prolog and the assignment,
+//            the store is to a local (and not a field),
+//            the local is not lvLiveInOutOfHndlr or no exceptions can be thrown between the prolog and the store,
+//            either the local has no gc pointers or there are no gc-safe points between the prolog and the store,
 //         then the local is marked with lvHasExplicitInit which tells the codegen not to insert zero initialization
 //         for this local in the prolog.
-
+//
 void Compiler::optRemoveRedundantZeroInits()
 {
 #ifdef DEBUG
@@ -6177,7 +6020,7 @@ void Compiler::optRemoveRedundantZeroInits()
                             break;
                         }
 
-                        // The local hasn't been referenced before this assignment.
+                        // The local hasn't been referenced before this store.
                         bool removedExplicitZeroInit = false;
                         bool isEntire                = !tree->IsPartialLclFld(this);
 
@@ -6199,7 +6042,7 @@ void Compiler::optRemoveRedundantZeroInits()
                                 {
                                     // We are guaranteed to have a zero initialization in the prolog or a
                                     // dominating explicit zero initialization and the local hasn't been redefined
-                                    // between the prolog and this explicit zero initialization so the assignment
+                                    // between the prolog and this explicit zero initialization so the store
                                     // can be safely removed.
                                     if (tree == stmt->GetRootNode())
                                     {

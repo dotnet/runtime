@@ -430,7 +430,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
             {
                 // This is an explicit (not special) var, so add its varNumber + 1 to our
                 // max count ("+1" because varNumber is zero-based).
-                oldNumVars = max(oldNumVars, unsigned(-ICorDebugInfo::UNKNOWN_ILNUM) + varNumber + 1);
+                oldNumVars = max(oldNumVars, (unsigned)(unsigned(-ICorDebugInfo::UNKNOWN_ILNUM) + varNumber + 1));
             }
         }
 
@@ -484,7 +484,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
             {
                 // This is an explicit (not special) var, so add its varNumber + 1 to our
                 // max count ("+1" because varNumber is zero-based).
-                newNumVars = max(newNumVars, unsigned(-ICorDebugInfo::UNKNOWN_ILNUM) + varNumber + 1);
+                newNumVars = max(newNumVars, (unsigned)(unsigned(-ICorDebugInfo::UNKNOWN_ILNUM) + varNumber + 1));
             }
         }
 
@@ -1180,7 +1180,6 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -2011,7 +2010,7 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
             // Detect the end of GS cookie scope by comparing its address with SP
             // gcInfoDecoder.GetGSCookieValidRangeEnd() is not accurate. It does not
             // account for GS cookie going out of scope inside epilog or multiple epilogs.
-            return (LPVOID) ((ptr >= pContext->SP) ? ptr : NULL);
+            return (ptr >= pContext->SP) ? (LPVOID)ptr : nullptr;
         }
     }
     return NULL;

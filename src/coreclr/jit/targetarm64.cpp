@@ -86,10 +86,11 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
             }
             else
             {
-                unsigned alignment = compAppleArm64Abi() ? min(elemSize, TARGET_POINTER_SIZE) : TARGET_POINTER_SIZE;
-                m_stackArgSize     = roundUp(m_stackArgSize, alignment);
-                info = ABIPassingInformation::FromSegment(comp, ABIPassingSegment::OnStack(m_stackArgSize, 0,
-                                                                                           structLayout->GetSize()));
+                unsigned alignment =
+                    compAppleArm64Abi() ? min(elemSize, (unsigned)TARGET_POINTER_SIZE) : TARGET_POINTER_SIZE;
+                m_stackArgSize = roundUp(m_stackArgSize, alignment);
+                info           = ABIPassingInformation::FromSegment(comp, ABIPassingSegment::OnStack(m_stackArgSize, 0,
+                                                                                                     structLayout->GetSize()));
                 m_stackArgSize += roundUp(structLayout->GetSize(), alignment);
                 // After passing any float value on the stack, we should not enregister more float values.
                 m_floatRegs.Clear();
@@ -153,7 +154,7 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
         {
             info.NumSegments  = slots;
             info.Segments     = new (comp, CMK_ABI) ABIPassingSegment[slots];
-            unsigned slotSize = varTypeIsStruct(type) ? TARGET_POINTER_SIZE : genTypeSize(type);
+            unsigned slotSize = min(passedSize, (unsigned)TARGET_POINTER_SIZE);
             info.Segments[0]  = ABIPassingSegment::InRegister(regs->Dequeue(), 0, slotSize);
             if (slots == 2)
             {

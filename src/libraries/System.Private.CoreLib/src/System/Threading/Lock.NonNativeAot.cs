@@ -16,6 +16,12 @@ namespace System.Threading
         /// </summary>
         public Lock() => _spinCount = s_maxSpinCount;
 
+        internal ulong OwningOSThreadId => _owningThreadId;
+
+#pragma warning disable CA1822 // can be marked as static - varies between runtimes
+        internal int OwningManagedThreadId => 0;
+#pragma warning restore CA1822
+
         private static TryLockResult LazyInitializeOrEnter() => TryLockResult.Spin;
         private static bool IsSingleProcessor => Environment.IsSingleProcessor;
 

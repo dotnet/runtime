@@ -731,17 +731,8 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                 //
                 auto addConditionalFlow = [this, entryStateVar, &entryJumpTarget, &addedBlocks](BasicBlock* fromBlock,
                                                                                                 BasicBlock* toBlock) {
-                    // We may have previously though this try entry was unreachable, but now we're going to
-                    // step through it on the way to the OSR entry. So ensure it has plausible profile weight.
-                    //
-                    if (fgHaveProfileWeights() && !fromBlock->hasProfileWeight())
-                    {
-                        JITDUMP("Updating block weight for now-reachable try entry " FMT_BB " via " FMT_BB "\n",
-                                fromBlock->bbNum, fgFirstBB->bbNum);
-                        fromBlock->inheritWeight(fgFirstBB);
-                    }
-
                     BasicBlock* const newBlock = fgSplitBlockAtBeginning(fromBlock);
+                    newBlock->inheritWeight(fromBlock);
                     fromBlock->SetFlags(BBF_INTERNAL);
                     newBlock->RemoveFlags(BBF_DONT_REMOVE);
                     addedBlocks++;
@@ -754,16 +745,40 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                     fgNewStmtAtBeg(fromBlock, jumpIfEntryStateZero);
 
                     FlowEdge* const osrTryEntryEdge = fgAddRefPred(toBlock, fromBlock);
-                    newBlock->inheritWeight(fromBlock);
                     fromBlock->SetCond(osrTryEntryEdge, normalTryEntryEdge);
 
-                    // Not sure what the correct edge likelihoods are just yet;
-                    // for now we'll say the OSR path is the likely one.
-                    //
-                    // Todo: can we leverage profile data here to get a better answer?
-                    //
-                    osrTryEntryEdge->setLikelihood(0.9);
-                    normalTryEntryEdge->setLikelihood(0.1);
+                    if (fgHaveProfileWeights())
+                    {
+                        // We are adding a path from (ultimately) the method entry to "fromBlock"
+                        // Update the profile weight.
+                        //
+                        weight_t const entryWeight = fgFirstBB->bbWeight;
+
+                        JITDUMP("Updating block weight for now-reachable try entry " FMT_BB " via " FMT_BB "\n",
+                                fromBlock->bbNum, fgFirstBB->bbNum);
+                        fromBlock->setBBProfileWeight(fromBlock->bbWeight + entryWeight);
+
+                        // We updated the weight of fromBlock above.
+                        //
+                        // Set the likelihoods such that the additional weight flows to toBlock
+                        // (and so the "normal path" profile out of fromBlock to newBlock is unaltered)
+                        //
+                        // In some stress cases we may have a zero-weight OSR entry.
+                        // Tolerate this by capping the fromToLikelihood.
+                        //
+                        weight_t const fromWeight       = fromBlock->bbWeight;
+                        weight_t const fromToLikelihood = min(1.0, entryWeight / fromWeight);
+
+                        osrTryEntryEdge->setLikelihood(fromToLikelihood);
+                        normalTryEntryEdge->setLikelihood(1.0 - fromToLikelihood);
+                    }
+                    else
+                    {
+                        // Just set likelihoods arbitrarily
+                        //
+                        osrTryEntryEdge->setLikelihood(0.9);
+                        normalTryEntryEdge->setLikelihood(0.1);
+                    }
 
                     entryJumpTarget = fromBlock;
                 };
@@ -1449,33 +1464,14 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
 
         //
         // When we optimize a branch to branch we need to update the profile weight
-        // of bDest by subtracting out the block/edge weight of the path that is being optimized.
+        // of bDest by subtracting out the weight of the path that is being optimized.
         //
-        if (fgHaveValidEdgeWeights && bDest->hasProfileWeight())
+        if (bDest->hasProfileWeight())
         {
-            FlowEdge* edge1 = fgGetPredForBlock(bDest, block);
-            noway_assert(edge1 != nullptr);
+            FlowEdge* const edge = fgGetPredForBlock(bDest, block);
+            noway_assert(edge != nullptr);
 
-            weight_t edgeWeight;
-
-            if (edge1->edgeWeightMin() != edge1->edgeWeightMax())
-            {
-                //
-                // We only have an estimate for the edge weight
-                //
-                edgeWeight = (edge1->edgeWeightMin() + edge1->edgeWeightMax()) / 2;
-                //
-                //  Clear the profile weight flag
-                //
-                bDest->RemoveFlags(BBF_PROF_WEIGHT);
-            }
-            else
-            {
-                //
-                // We only have the exact edge weight
-                //
-                edgeWeight = edge1->edgeWeightMin();
-            }
+            const weight_t edgeWeight = edge->getLikelyWeight();
 
             //
             // Update the bDest->bbWeight
@@ -1488,36 +1484,6 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
             {
                 bDest->bbWeight = BB_ZERO_WEIGHT;
                 bDest->SetFlags(BBF_RUN_RARELY); // Set the RarelyRun flag
-            }
-
-            FlowEdge* edge2 = bDest->GetTargetEdge();
-
-            if (edge2 != nullptr)
-            {
-                //
-                // Update the edge2 min/max weights
-                //
-                weight_t newEdge2Min;
-                weight_t newEdge2Max;
-
-                if (edge2->edgeWeightMin() > edge1->edgeWeightMin())
-                {
-                    newEdge2Min = edge2->edgeWeightMin() - edge1->edgeWeightMin();
-                }
-                else
-                {
-                    newEdge2Min = BB_ZERO_WEIGHT;
-                }
-
-                if (edge2->edgeWeightMax() > edge1->edgeWeightMin())
-                {
-                    newEdge2Max = edge2->edgeWeightMax() - edge1->edgeWeightMin();
-                }
-                else
-                {
-                    newEdge2Max = BB_ZERO_WEIGHT;
-                }
-                edge2->setEdgeWeights(newEdge2Min, newEdge2Max, bDest);
             }
         }
 
@@ -1630,7 +1596,6 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                 break;
             }
 
-#if defined(FEATURE_EH_FUNCLETS)
             /* Don't remove an empty block that is in a different EH region
              * from its successor block, if the block is the target of a
              * catch return. It is required that the return address of a
@@ -1638,6 +1603,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
              * abort exceptions to work. Insert a NOP in the empty block
              * to ensure we generate code for the block, if we keep it.
              */
+            if (UsesFunclets())
             {
                 BasicBlock* succBlock = block->GetTarget();
 
@@ -1693,7 +1659,6 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                     }
                 }
             }
-#endif // FEATURE_EH_FUNCLETS
 
             if (!ehCanDeleteEmptyBlock(block))
             {
@@ -1710,7 +1675,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                 break;
             }
 
-            // When using profile weights, fgComputeEdgeWeights expects the first non-internal block to have profile
+            // When using profile weights, fgComputeCalledCount expects the first non-internal block to have profile
             // weight.
             // Make sure we don't break that invariant.
             if (fgIsUsingProfileWeights() && block->hasProfileWeight() && !block->HasFlag(BBF_INTERNAL))
@@ -1806,29 +1771,24 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         {
             //
             // When we optimize a branch to branch we need to update the profile weight
-            // of bDest by subtracting out the block/edge weight of the path that is being optimized.
+            // of bDest by subtracting out the block weight of the path that is being optimized.
             //
+            FlowEdge* const oldEdge = *jmpTab;
+
             if (fgIsUsingProfileWeights() && bDest->hasProfileWeight())
             {
-                if (fgHaveValidEdgeWeights)
+                weight_t const branchThroughWeight = oldEdge->getLikelyWeight();
+                if (bDest->bbWeight > branchThroughWeight)
                 {
-                    FlowEdge* edge                = *jmpTab;
-                    weight_t  branchThroughWeight = edge->edgeWeightMin();
-
-                    if (bDest->bbWeight > branchThroughWeight)
-                    {
-                        bDest->bbWeight -= branchThroughWeight;
-                    }
-                    else
-                    {
-                        bDest->bbWeight = BB_ZERO_WEIGHT;
-                        bDest->SetFlags(BBF_RUN_RARELY);
-                    }
+                    bDest->bbWeight -= branchThroughWeight;
+                }
+                else
+                {
+                    bDest->bbSetRunRarely();
                 }
             }
 
             // Update the switch jump table
-            FlowEdge* const oldEdge = *jmpTab;
             fgRemoveRefPred(oldEdge);
             FlowEdge* const newEdge = fgAddRefPred(bNewDest, block, oldEdge);
             *jmpTab                 = newEdge;
@@ -1897,7 +1857,6 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
     if (block->NumSucc(this) == 1)
     {
         // Use BBJ_ALWAYS for a switch with only a default clause, or with only one unique successor.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
         if (verbose)
@@ -2007,7 +1966,6 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         // replace it with a COMMA node.  In such a case we will end up with GT_JTRUE node pointing to
         // a COMMA node which results in noway asserts in fgMorphSmpOp(), optAssertionGen() and rpPredictTreeRegUse().
         // For the same reason fgMorphSmpOp() marks GT_JTRUE nodes with RELOP children as GTF_DONT_CSE.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
         if (verbose)
@@ -2095,7 +2053,7 @@ bool Compiler::fgBlockEndFavorsTailDuplication(BasicBlock* block, unsigned lclNu
     }
 
     // Tail duplication tends to pay off when the last statement
-    // is an assignment of a constant, arraylength, or a relop.
+    // is a local store of a constant, arraylength, or a relop.
     // This is because these statements produce information about values
     // that would otherwise be lost at the upcoming merge point.
     //
@@ -2111,8 +2069,8 @@ bool Compiler::fgBlockEndFavorsTailDuplication(BasicBlock* block, unsigned lclNu
         GenTree* const tree = stmt->GetRootNode();
         if (tree->OperIsLocalStore() && !tree->OperIsBlkOp() && (tree->AsLclVarCommon()->GetLclNum() == lclNum))
         {
-            GenTree* const data = tree->Data();
-            if (data->OperIsArrLength() || data->OperIsConst() || data->OperIsCompare())
+            GenTree* const value = tree->Data();
+            if (value->OperIsArrLength() || value->OperIsConst() || value->OperIsCompare())
             {
                 return true;
             }
@@ -2161,7 +2119,7 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
     // ultimately feeds a simple conditional branch.
     //
     // These blocks are small, and when duplicated onto the tail of blocks that end in
-    // assignments, there is a high probability of the branch completely going away.
+    // local stores, there is a high probability of the branch completely going away.
     //
     // This is by no means the only kind of tail that it is beneficial to duplicate,
     // just the only one we recognize for now.
@@ -2467,7 +2425,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
         //
         weight_t targetWeight = target->bbWeight;
         weight_t blockWeight  = block->bbWeight;
-        target->setBBProfileWeight(max(0, targetWeight - blockWeight));
+        target->setBBProfileWeight(max(0.0, targetWeight - blockWeight));
         JITDUMP("Decreased " FMT_BB " profile weight from " FMT_WT " to " FMT_WT "\n", target->bbNum, targetWeight,
                 target->bbWeight);
     }
@@ -3044,46 +3002,8 @@ bool Compiler::fgOptimizeSwitchJumps()
 
         newBlock->setBBProfileWeight(blockToNewBlockWeight);
 
-        blockToTargetEdge->setEdgeWeights(blockToTargetWeight, blockToTargetWeight, dominantTarget);
         blockToTargetEdge->setLikelihood(fraction);
-        blockToNewBlockEdge->setEdgeWeights(blockToNewBlockWeight, blockToNewBlockWeight, block);
-        blockToNewBlockEdge->setLikelihood(max(0, 1.0 - fraction));
-
-        // There may be other switch cases that lead to this same block, but there's just
-        // one edge in the flowgraph. So we need to subtract off the profile data that now flows
-        // along the peeled edge.
-        //
-        for (FlowEdge* pred = dominantTarget->bbPreds; pred != nullptr; pred = pred->getNextPredEdge())
-        {
-            if (pred->getSourceBlock() == newBlock)
-            {
-                if (pred->getDupCount() == 1)
-                {
-                    // The only switch case leading to the dominant target was the one we peeled.
-                    // So the edge from the switch now has zero weight.
-                    //
-                    pred->setEdgeWeights(BB_ZERO_WEIGHT, BB_ZERO_WEIGHT, dominantTarget);
-                }
-                else
-                {
-                    // Other switch cases also lead to the dominant target.
-                    // Subtract off the weight we transferred to the peel.
-                    //
-                    weight_t newMinWeight = pred->edgeWeightMin() - blockToTargetWeight;
-                    weight_t newMaxWeight = pred->edgeWeightMax() - blockToTargetWeight;
-
-                    if (newMinWeight < BB_ZERO_WEIGHT)
-                    {
-                        newMinWeight = BB_ZERO_WEIGHT;
-                    }
-                    if (newMaxWeight < BB_ZERO_WEIGHT)
-                    {
-                        newMaxWeight = BB_ZERO_WEIGHT;
-                    }
-                    pred->setEdgeWeights(newMinWeight, newMaxWeight, dominantTarget);
-                }
-            }
-        }
+        blockToNewBlockEdge->setLikelihood(max(0.0, 1.0 - fraction));
 
         // For now we leave the switch as is, since there's no way
         // to indicate that one of the cases is now unreachable.
@@ -3456,9 +3376,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 {
     noway_assert(opts.compDbgCode == false);
 
-#if defined(FEATURE_EH_FUNCLETS)
-    assert(fgFuncletsCreated);
-#endif // FEATURE_EH_FUNCLETS
+    assert(UsesFunclets() == fgFuncletsCreated);
 
     // We can't relocate anything if we only have one block
     if (fgFirstBB->IsLast())
@@ -3474,9 +3392,12 @@ bool Compiler::fgReorderBlocks(bool useProfile)
     // First let us expand the set of run rarely blocks
     newRarelyRun |= fgExpandRarelyRunBlocks();
 
-#if !defined(FEATURE_EH_FUNCLETS)
-    movedBlocks |= fgRelocateEHRegions();
-#endif // !FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_WINDOWS_X86)
+    if (!UsesFunclets())
+    {
+        movedBlocks |= fgRelocateEHRegions();
+    }
+#endif // FEATURE_EH_WINDOWS_X86
 
     //
     // If we are using profile weights we can change some
@@ -3635,43 +3556,19 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                         //
                         bool moveDestUp = true;
 
-                        if (fgHaveValidEdgeWeights)
-                        {
-                            //
-                            // The edge bPrev -> bDest must have a higher minimum weight
-                            // than every other edge into bDest
-                            //
-                            FlowEdge* edgeFromPrev = bPrev->GetTargetEdge();
-                            noway_assert(edgeFromPrev != nullptr);
+                        //
+                        // The edge bPrev -> bDest must have a higher weight
+                        // than every other edge into bDest
+                        //
+                        weight_t const weightToBeat = bPrev->GetTargetEdge()->getLikelyWeight();
 
-                            // Examine all of the other edges into bDest
-                            for (FlowEdge* const edge : bDest->PredEdges())
-                            {
-                                if (edge != edgeFromPrev)
-                                {
-                                    if (edge->edgeWeightMax() >= edgeFromPrev->edgeWeightMin())
-                                    {
-                                        moveDestUp = false;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        else
+                        // Examine all of the other edges into bDest
+                        for (FlowEdge* const edge : bDest->PredEdges())
                         {
-                            //
-                            // The block bPrev must have a higher weight
-                            // than every other block that goes into bDest
-                            //
-
-                            // Examine all of the other edges into bDest
-                            for (BasicBlock* const predBlock : bDest->PredBlocks())
+                            if (edge->getLikelyWeight() > weightToBeat)
                             {
-                                if ((predBlock != bPrev) && (predBlock->bbWeight >= bPrev->bbWeight))
-                                {
-                                    moveDestUp = false;
-                                    break;
-                                }
+                                moveDestUp = false;
+                                break;
                             }
                         }
 
@@ -3705,98 +3602,43 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                 {
                     noway_assert(bPrev->KindIs(BBJ_COND));
                     //
-                    // We will reverse branch if the taken-jump to bDest ratio (i.e. 'takenRatio')
-                    // is more than 51%
+                    // We will reverse branch if the true edge's likelihood is more than 51%.
                     //
-                    // We will setup profHotWeight to be maximum bbWeight that a block
-                    // could have for us not to want to reverse the conditional branch
+                    // We will set up profHotWeight to be maximum bbWeight that a block
+                    // could have for us not to want to reverse the conditional branch.
                     //
                     // We will consider all blocks that have less weight than profHotWeight to be
-                    // uncommonly run blocks as compared with the hot path of bPrev taken-jump to bDest
+                    // uncommonly run blocks compared to the weight of bPrev's true edge.
                     //
-                    if (fgHaveValidEdgeWeights)
-                    {
-                        // We have valid edge weights, however even with valid edge weights
-                        // we may have a minimum and maximum range for each edges value
-                        //
-                        // We will check that the min weight of the bPrev to bDest edge
-                        //  is more than twice the max weight of the bPrev to block edge.
-                        //
-                        //                  bPrev -->   [BB04, weight 31]
-                        //                                     |         \.
-                        //          edgeToBlock -------------> O          \.
-                        //          [min=8,max=10]             V           \.
-                        //                  block -->   [BB05, weight 10]   \.
-                        //                                                   \.
-                        //          edgeToDest ----------------------------> O
-                        //          [min=21,max=23]                          |
-                        //                                                   V
-                        //                  bDest --------------->   [BB08, weight 21]
-                        //
-                        assert(bPrev->FalseTargetIs(block));
-                        FlowEdge* edgeToDest  = bPrev->GetTrueEdge();
-                        FlowEdge* edgeToBlock = bPrev->GetFalseEdge();
-                        noway_assert(edgeToDest != nullptr);
-                        noway_assert(edgeToBlock != nullptr);
-                        //
-                        // Calculate the taken ratio
-                        //   A takenRation of 0.10 means taken 10% of the time, not taken 90% of the time
-                        //   A takenRation of 0.50 means taken 50% of the time, not taken 50% of the time
-                        //   A takenRation of 0.90 means taken 90% of the time, not taken 10% of the time
-                        //
-                        double takenCount =
-                            ((double)edgeToDest->edgeWeightMin() + (double)edgeToDest->edgeWeightMax()) / 2.0;
-                        double notTakenCount =
-                            ((double)edgeToBlock->edgeWeightMin() + (double)edgeToBlock->edgeWeightMax()) / 2.0;
-                        double totalCount = takenCount + notTakenCount;
+                    // We will check if bPrev's true edge weight
+                    // is more than twice bPrev's false edge weight.
+                    //
+                    //                  bPrev -->   [BB04, weight 100]
+                    //                                     |         \.
+                    //          falseEdge ---------------> O          \.
+                    //          [likelihood=0.33]          V           \.
+                    //                  block -->   [BB05, weight 33]   \.
+                    //                                                   \.
+                    //          trueEdge ------------------------------> O
+                    //          [likelihood=0.67]                        |
+                    //                                                   V
+                    //                  bDest --------------->   [BB08, weight 67]
+                    //
+                    assert(bPrev->FalseTargetIs(block));
+                    FlowEdge* trueEdge  = bPrev->GetTrueEdge();
+                    FlowEdge* falseEdge = bPrev->GetFalseEdge();
+                    noway_assert(trueEdge != nullptr);
+                    noway_assert(falseEdge != nullptr);
 
-                        // If the takenRatio (takenCount / totalCount) is greater or equal to 51% then we will reverse
-                        // the branch
-                        if (takenCount < (0.51 * totalCount))
-                        {
-                            reorderBlock = false;
-                        }
-                        else
-                        {
-                            // set profHotWeight
-                            profHotWeight = (edgeToBlock->edgeWeightMin() + edgeToBlock->edgeWeightMax()) / 2 - 1;
-                        }
+                    // If we take the true branch more than half the time, we will reverse the branch.
+                    if (trueEdge->getLikelihood() < 0.51)
+                    {
+                        reorderBlock = false;
                     }
                     else
                     {
-                        // We don't have valid edge weight so we will be more conservative
-                        // We could have bPrev, block or bDest as part of a loop and thus have extra weight
-                        //
-                        // We will do two checks:
-                        //   1. Check that the weight of bDest is at least two times more than block
-                        //   2. Check that the weight of bPrev is at least three times more than block
-                        //
-                        //                  bPrev -->   [BB04, weight 31]
-                        //                                     |         \.
-                        //                                     V          \.
-                        //                  block -->   [BB05, weight 10]  \.
-                        //                                                  \.
-                        //                                                  |
-                        //                                                  V
-                        //                  bDest --------------->   [BB08, weight 21]
-                        //
-                        //  For this case weightDest is calculated as (21+1)/2  or 11
-                        //            and weightPrev is calculated as (31+2)/3  also 11
-                        //
-                        //  Generally both weightDest and weightPrev should calculate
-                        //  the same value unless bPrev or bDest are part of a loop
-                        //
-                        weight_t weightDest = bDest->isMaxBBWeight() ? bDest->bbWeight : (bDest->bbWeight + 1) / 2;
-                        weight_t weightPrev = bPrev->isMaxBBWeight() ? bPrev->bbWeight : (bPrev->bbWeight + 2) / 3;
-
-                        // select the lower of weightDest and weightPrev
-                        profHotWeight = (weightDest < weightPrev) ? weightDest : weightPrev;
-
-                        // if the weight of block is greater (or equal) to profHotWeight then we don't reverse the cond
-                        if (block->bbWeight >= profHotWeight)
-                        {
-                            reorderBlock = false;
-                        }
+                        // set profHotWeight
+                        profHotWeight = falseEdge->getLikelyWeight() - 1;
                     }
                 }
             }
@@ -3995,13 +3837,11 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                     break;
                 }
 
-#if defined(FEATURE_EH_FUNCLETS)
                 // Check if we've reached the funclets region, at the end of the function
                 if (bEnd->NextIs(fgFirstFuncletBB))
                 {
                     break;
                 }
-#endif // FEATURE_EH_FUNCLETS
 
                 if (bNext == bDest)
                 {
@@ -4910,9 +4750,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                     //
                     if (fgIsUsingProfileWeights())
                     {
-                        // if block and bdest are in different hot/cold regions we can't do this optimization
+                        // if block and bDest are in different hot/cold regions we can't do this optimization
                         // because we can't allow fall-through into the cold region.
-                        if (!fgEdgeWeightsComputed || fgInDifferentRegions(block, bDest))
+                        if (fgInDifferentRegions(block, bDest))
                         {
                             optimizeJump = false;
                         }

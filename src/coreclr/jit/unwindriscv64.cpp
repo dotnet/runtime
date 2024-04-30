@@ -923,7 +923,6 @@ void UnwindPrologCodes::SetFinalSize(int headerBytes, int epilogBytes)
                   &upcMem[upcCodeSlot], prologBytes);
 
         // Note that the three UWC_END padding bytes still exist at the end of the array.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
         // Zero out the epilog codes memory, to ensure we've copied the right bytes. Don't zero the padding bytes.
@@ -1946,7 +1945,6 @@ void UnwindInfo::Split()
     // the actual offsets of the splits since we haven't issued the instructions yet, so store
     // an emitter location instead of an offset, and "finalize" the offset in the unwindEmit() phase,
     // like we do for the function length and epilog offsets.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     if (uwiComp->verbose)

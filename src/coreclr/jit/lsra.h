@@ -773,7 +773,6 @@ private:
     // At least for x86 and AMD64, and potentially other architecture that will support SIMD,
     // we need a minimum of 5 fp regs in order to support the InitN intrinsic for Vector4.
     // Hence the "SmallFPSet" has 5 elements.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_AMD64)
 #ifdef UNIX_AMD64_ABI
@@ -964,6 +963,11 @@ private:
         return ((lsraStressMask & (LSRA_LIMIT_MASK | LSRA_SELECT_MASK)) != 0);
     }
 
+    bool stressInitialParamReg()
+    {
+        return compiler->compStressCompile(Compiler::STRESS_INITIAL_PARAM_REG, 25);
+    }
+
     // Dump support
     void dumpDefList();
     void lsraDumpIntervals(const char* msg);
@@ -1016,6 +1020,10 @@ private:
         // do nothing; checked only under #DEBUG
     }
     bool candidatesAreStressLimited()
+    {
+        return false;
+    }
+    bool stressInitialParamReg()
     {
         return false;
     }
@@ -1601,6 +1609,8 @@ private:
                                  RegisterScore registerScore = NONE);
 
     void validateIntervals();
+
+    void stressSetRandomParameterPreferences();
 #endif // DEBUG
 
 #if TRACK_LSRA_STATS

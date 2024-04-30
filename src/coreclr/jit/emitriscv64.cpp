@@ -479,7 +479,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
         case INS_auipc:
             assert(reg != REG_R0);
             assert(isGeneralRegister(reg));
-            assert((((size_t)imm) >> 20) == 0);
+            assert(isValidSimm20(imm));
 
             code |= reg << 7;
             code |= (imm & 0xfffff) << 12;
@@ -1253,7 +1253,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     // Since ADDIW use sign extension fo immediate
     // we have to adjust higher 19 bit loaded by LUI
     // for case when low part is bigger than 0x800.
-    UINT32 high19 = (high31 + 0x800) >> 12;
+    INT32 high19 = ((int32_t)(high31 + 0x800)) >> 12;
 
     emitIns_R_I(INS_lui, size, reg, high19);
     emitIns_R_R_I(INS_addiw, size, reg, reg, high31 & 0xFFF);
@@ -1448,10 +1448,13 @@ void emitter::emitIns_Call(EmitCallType          callType,
                    VarSetOps::ToString(emitComp, ((instrDescCGCA*)id)->idcGCvars));
         }
     }
-
-    id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
-    id->idDebugOnlyInfo()->idCallSig   = sigInfo;
 #endif // DEBUG
+
+    if (m_debugInfoSize > 0)
+    {
+        INDEBUG(id->idDebugOnlyInfo()->idCallSig = sigInfo);
+        id->idDebugOnlyInfo()->idMemCookie = reinterpret_cast<size_t>(methHnd); // method token
+    }
 
 #ifdef LATE_DISASM
     if (addr != nullptr)
@@ -1847,7 +1850,6 @@ AGAIN:
         jmp->idjOffs += adjSJ;
 
         // If this is a jump via register, the instruction size does not change, so we are done.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
         /* Have we bound this jump's target already? */
 
@@ -1868,7 +1870,6 @@ AGAIN:
         else
         {
             /* First time we've seen this label, convert its target */
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
             tgtIG = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
 
@@ -4462,7 +4463,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
             if (offset != 0)
             {
-                regNumber tmpReg = indir->GetSingleTempReg();
+                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
 
                 if (isValidSimm12(offset))
                 {
@@ -4495,7 +4496,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                     noway_assert(emitInsIsLoad(ins) || (tmpReg != dataReg));
                     noway_assert(tmpReg != index->GetRegNum());
 
-                    regNumber scaleReg = indir->GetSingleTempReg();
+                    regNumber scaleReg = codeGen->internalRegisters.GetSingle(indir);
                     // Then load/store dataReg from/to [tmpReg + index*scale]
                     emitIns_R_R_I(INS_slli, addType, scaleReg, index->GetRegNum(), lsl);
                     emitIns_R_R_R(INS_add, addType, tmpReg, tmpReg, scaleReg);
@@ -4604,7 +4605,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             else
             {
                 // We require a tmpReg to hold the offset
-                regNumber tmpReg = indir->GetSingleTempReg();
+                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
 
                 // First load/store tmpReg with the large offset constant
                 emitLoadImmediate(EA_PTRSIZE, tmpReg, offset);
@@ -4770,7 +4771,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
         assert(ins == INS_addi || ins == INS_addiw || ins == INS_andi || ins == INS_ori || ins == INS_xori);
 
-        regNumber tempReg = needCheckOv ? dst->ExtractTempReg() : REG_NA;
+        regNumber tempReg = needCheckOv ? codeGen->internalRegisters.Extract(dst) : REG_NA;
 
         if (needCheckOv)
         {
@@ -4822,7 +4823,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     }
     else
     {
-        regNumber tempReg = needCheckOv ? dst->ExtractTempReg() : REG_NA;
+        regNumber tempReg = needCheckOv ? codeGen->internalRegisters.Extract(dst) : REG_NA;
 
         switch (dst->OperGet())
         {
@@ -4896,7 +4897,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                         }
                         else
                         {
-                            regNumber tempReg2 = dst->ExtractTempReg();
+                            regNumber tempReg2 = codeGen->internalRegisters.Extract(dst);
                             assert(tempReg2 != dstReg);
                             assert(tempReg2 != src1Reg);
                             assert(tempReg2 != src2Reg);
@@ -5002,7 +5003,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     else
                     {
                         tempReg1 = REG_RA;
-                        tempReg2 = dst->ExtractTempReg();
+                        tempReg2 = codeGen->internalRegisters.Extract(dst);
                         assert(tempReg1 != tempReg2);
                         assert(tempReg1 != saveOperReg1);
                         assert(tempReg2 != saveOperReg2);

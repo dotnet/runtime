@@ -100,7 +100,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     // Swift calls that might throw use a SwiftError* arg that requires additional IR to handle,
     // so if we're importing a Swift call, look for this type in the signature
-    CallArg* swiftErrorArg = nullptr;
+    GenTree* swiftErrorNode = nullptr;
 
     /*-------------------------------------------------------------------------
      * First create the call node
@@ -323,7 +323,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                         return TYP_UNDEF;
                     }
 
-                    impStoreTemp(lclNum, stubAddr, CHECK_SPILL_NONE);
+                    impStoreToTemp(lclNum, stubAddr, CHECK_SPILL_NONE);
                     stubAddr = gtNewLclvNode(lclNum, TYP_I_IMPL);
 
                     // Create the actual call node
@@ -417,7 +417,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 // Now make an indirect call through the function pointer
 
                 unsigned lclNum = lvaGrabTemp(true DEBUGARG("VirtualCall through function pointer"));
-                impStoreTemp(lclNum, fptr, CHECK_SPILL_ALL);
+                impStoreToTemp(lclNum, fptr, CHECK_SPILL_ALL);
                 fptr = gtNewLclvNode(lclNum, TYP_I_IMPL);
 
                 call->AsCall()->gtCallAddr = fptr;
@@ -488,7 +488,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 // Now make an indirect call through the function pointer
 
                 unsigned lclNum = lvaGrabTemp(true DEBUGARG("Indirect call through function pointer"));
-                impStoreTemp(lclNum, fptr, CHECK_SPILL_ALL);
+                impStoreToTemp(lclNum, fptr, CHECK_SPILL_ALL);
                 fptr = gtNewLclvNode(lclNum, TYP_I_IMPL);
 
                 call = gtNewIndCallNode(fptr, callRetTyp, di);
@@ -587,7 +587,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
            tailcall to a function with a different number of arguments, we
            are hosed. There are ways around this (caller remembers esp value,
            varargs is not caller-pop, etc), but not worth it. */
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_X86
         if (canTailCall)
@@ -669,7 +668,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         checkForSmallType = true;
 
-        impPopArgsForUnmanagedCall(call->AsCall(), sig, &swiftErrorArg);
+        impPopArgsForUnmanagedCall(call->AsCall(), sig, &swiftErrorNode);
 
         goto DONE;
     }
@@ -885,7 +884,21 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     }
 
     //-------------------------------------------------------------------------
-    // The main group of arguments
+    // The main group of arguments, and the this pointer.
+
+    // 'this' is pushed on the IL stack before all call args, but if this is a
+    // constrained call 'this' is a byref that may need to be dereferenced.
+    // That dereference should happen _after_ all args, so we need to spill
+    // them if they can interfere.
+    bool hasThis;
+    hasThis = ((mflags & CORINFO_FLG_STATIC) == 0) && ((sig->callConv & CORINFO_CALLCONV_EXPLICITTHIS) == 0) &&
+              ((opcode != CEE_NEWOBJ) || (newobjThis != nullptr));
+
+    if (hasThis && (constraintCallThisTransform == CORINFO_DEREF_THIS))
+    {
+        impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG(
+                                       "constrained call requires dereference for 'this' right before call"));
+    }
 
     impPopCallArgs(sig, call->AsCall());
     if (extraArg.Node != nullptr)
@@ -905,8 +918,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     //-------------------------------------------------------------------------
     // The "this" pointer
 
-    if (((mflags & CORINFO_FLG_STATIC) == 0) && ((sig->callConv & CORINFO_CALLCONV_EXPLICITTHIS) == 0) &&
-        !((opcode == CEE_NEWOBJ) && (newobjThis == nullptr)))
+    if (hasThis)
     {
         GenTree* obj;
 
@@ -1419,8 +1431,8 @@ DONE_CALL:
                         }
 
                         // TODO-Bug: CHECK_SPILL_NONE here looks wrong.
-                        impStoreTemp(calliSlot, call, CHECK_SPILL_NONE);
-                        // impStoreTemp can change src arg list and return type for call that returns struct.
+                        impStoreToTemp(calliSlot, call, CHECK_SPILL_NONE);
+                        // impStoreToTemp can change src arg list and return type for call that returns struct.
                         var_types type = genActualType(lvaTable[calliSlot].TypeGet());
                         call           = gtNewLclvNode(calliSlot, type);
                     }
@@ -1438,8 +1450,8 @@ DONE_CALL:
                 if (call->IsCall())
                 {
                     GenTreeCall* callNode = call->AsCall();
-                    if ((callNode->gtCallType == CT_HELPER) && (gtIsTypeHandleToRuntimeTypeHelper(callNode) ||
-                                                                gtIsTypeHandleToRuntimeTypeHandleHelper(callNode)))
+                    if (callNode->IsHelperCall() && (gtIsTypeHandleToRuntimeTypeHelper(callNode) ||
+                                                     gtIsTypeHandleToRuntimeTypeHandleHelper(callNode)))
                     {
                         spillStack = false;
                     }
@@ -1464,7 +1476,7 @@ DONE_CALL:
                         {
                             // QMARK has to be a root node
                             unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for Qmark"));
-                            impStoreTemp(tmp, call, CHECK_SPILL_ALL);
+                            impStoreToTemp(tmp, call, CHECK_SPILL_ALL);
                             call = gtNewLclvNode(tmp, call->TypeGet());
                         }
                     }
@@ -1502,9 +1514,9 @@ DONE_CALL:
 #ifdef SWIFT_SUPPORT
     // If call is a Swift call with error handling, append additional IR
     // to handle storing the error register's value post-call.
-    if (swiftErrorArg != nullptr)
+    if (swiftErrorNode != nullptr)
     {
-        impAppendSwiftErrorStore(call->AsCall(), swiftErrorArg);
+        impAppendSwiftErrorStore(swiftErrorNode);
     }
 #endif // SWIFT_SUPPORT
 
@@ -1756,7 +1768,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
             // This is allowed by the managed ABI and impStoreStruct will
             // never introduce copies due to this.
             unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Retbuf for unmanaged call"));
-            impStoreTemp(tmpNum, call, CHECK_SPILL_ALL);
+            impStoreToTemp(tmpNum, call, CHECK_SPILL_ALL);
             return gtNewLclvNode(tmpNum, lvaGetDesc(tmpNum)->TypeGet());
         }
 
@@ -1844,17 +1856,18 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugI
 // Arguments:
 //    call - The unmanaged call
 //    sig  - The signature of the call site
-//    swiftErrorArg - [out] If this is a Swift call with a SwiftError* argument, then the argument is returned here.
-//                    Otherwise left at its existing value.
+//    swiftErrorNode - [out] If this is a Swift call with a SwiftError* argument,
+//                     then swiftErrorNode points to the node.
+//                     Otherwise left at its existing value.
 //
-void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, CallArg** swiftErrorArg)
+void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, GenTree** swiftErrorNode)
 {
     assert(call->gtFlags & GTF_CALL_UNMANAGED);
 
 #ifdef SWIFT_SUPPORT
     if (call->unmgdCallConv == CorInfoCallConvExtension::Swift)
     {
-        impPopArgsForSwiftCall(call, sig, swiftErrorArg);
+        impPopArgsForSwiftCall(call, sig, swiftErrorNode);
         return;
     }
 #endif
@@ -2000,12 +2013,12 @@ const CORINFO_SWIFT_LOWERING* Compiler::GetSwiftLowering(CORINFO_CLASS_HANDLE hC
 // impPopArgsForSwiftCall: Pop arguments from IL stack to a Swift pinvoke node.
 //
 // Arguments:
-//    call          - The Swift call
-//    sig           - The signature of the call site
-//    swiftErrorArg - [out] An argument that represents the SwiftError*
-//                    argument. Left at its existing value if no such argument exists.
+//    call           - The Swift call
+//    sig            - The signature of the call site
+//    swiftErrorNode - [out] Pointer to the SwiftError* argument.
+//                     Left at its existing value if no such argument exists.
 //
-void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, CallArg** swiftErrorArg)
+void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, GenTree** swiftErrorNode)
 {
     JITDUMP("Creating args for Swift call [%06u]\n", dspTreeID(call));
 
@@ -2023,13 +2036,12 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
     {
         CORINFO_CLASS_HANDLE argClass;
         CorInfoType          argType         = strip(info.compCompHnd->getArgType(sig, sigArg, &argClass));
-        bool                 argIsByrefOrPtr = false;
+        const bool           argIsByrefOrPtr = (argType == CORINFO_TYPE_BYREF) || (argType == CORINFO_TYPE_PTR);
 
-        if ((argType == CORINFO_TYPE_BYREF) || (argType == CORINFO_TYPE_PTR))
+        if (argIsByrefOrPtr)
         {
-            argClass        = info.compCompHnd->getArgClass(sig, sigArg);
-            argType         = info.compCompHnd->getChildType(argClass, &argClass);
-            argIsByrefOrPtr = true;
+            argClass = info.compCompHnd->getArgClass(sig, sigArg);
+            argType  = info.compCompHnd->getChildType(argClass, &argClass);
         }
 
         if (argType != CORINFO_TYPE_VALUECLASS)
@@ -2115,10 +2127,9 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
     DISPTREE(call);
     JITDUMP("\n");
 
-    if (swiftErrorIndex != sig->numArgs)
-    {
-        *swiftErrorArg = call->gtArgs.GetArgByIndex(swiftErrorIndex);
-    }
+    // Get SwiftError* arg (if it exists) before modifying the arg list
+    CallArg* const swiftErrorArg =
+        (swiftErrorIndex != sig->numArgs) ? call->gtArgs.GetArgByIndex(swiftErrorIndex) : nullptr;
 
     // Now expand struct args that must be lowered into primitives
     unsigned argIndex = 0;
@@ -2261,6 +2272,23 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         arg = insertAfter->GetNext();
     }
 
+    if (swiftErrorArg != nullptr)
+    {
+        // Before calling a Swift method that may throw, the error register must be cleared,
+        // as we will check for a nonzero error value after the call returns.
+        // By adding a well-known "sentinel" argument that uses the error register,
+        // the JIT will emit code for clearing the error register before the call,
+        // and will mark the error register as busy so it isn't used to hold the function call's address.
+        GenTree* const errorSentinelValueNode = gtNewIconNode(0);
+        call->gtArgs.InsertAfter(this, swiftErrorArg,
+                                 NewCallArg::Primitive(errorSentinelValueNode).WellKnown(WellKnownArg::SwiftError));
+
+        // Swift call isn't going to use the SwiftError* arg, so don't bother emitting it
+        assert(swiftErrorNode != nullptr);
+        *swiftErrorNode = swiftErrorArg->GetNode();
+        call->gtArgs.Remove(swiftErrorArg);
+    }
+
 #ifdef DEBUG
     if (verbose && call->TypeIs(TYP_STRUCT) && (sig->retTypeClass != NO_CLASS_HANDLE))
     {
@@ -2291,39 +2319,22 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
 
 //------------------------------------------------------------------------
 // impAppendSwiftErrorStore: Append IR to store the Swift error register value
-// to the SwiftError* argument specified by swiftErrorArg, post-Swift call
+// to the SwiftError* argument represented by swiftErrorNode, post-Swift call
 //
 // Arguments:
-//    call - the Swift call
-//    swiftErrorArg - the SwiftError* argument passed to call
+//    swiftErrorNode - the SwiftError* argument
 //
-void Compiler::impAppendSwiftErrorStore(GenTreeCall* call, CallArg* const swiftErrorArg)
+void Compiler::impAppendSwiftErrorStore(GenTree* const swiftErrorNode)
 {
-    assert(call != nullptr);
-    assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
-    assert(swiftErrorArg != nullptr);
-
-    GenTree* const argNode = swiftErrorArg->GetNode();
-    assert(argNode != nullptr);
+    assert(swiftErrorNode != nullptr);
 
     // Store the error register value to where the SwiftError* points to
     GenTree* errorRegNode = new (this, GT_SWIFT_ERROR) GenTree(GT_SWIFT_ERROR, TYP_I_IMPL);
     errorRegNode->SetHasOrderingSideEffect();
     errorRegNode->gtFlags |= (GTF_CALL | GTF_GLOB_REF);
 
-    GenTreeStoreInd* swiftErrorStore = gtNewStoreIndNode(argNode->TypeGet(), argNode, errorRegNode);
+    GenTreeStoreInd* swiftErrorStore = gtNewStoreIndNode(swiftErrorNode->TypeGet(), swiftErrorNode, errorRegNode);
     impAppendTree(swiftErrorStore, CHECK_SPILL_ALL, impCurStmtDI, false);
-
-    // Before calling a Swift method that may throw, the error register must be cleared for the error check to work.
-    // By adding a well-known "sentinel" argument that uses the error register,
-    // the JIT will emit code for clearing the error register before the call, and will mark the error register as busy
-    // so that it isn't used to hold the function call's address.
-    GenTree* errorSentinelValueNode = gtNewIconNode(0);
-    call->gtArgs.InsertAfter(this, swiftErrorArg,
-                             NewCallArg::Primitive(errorSentinelValueNode).WellKnown(WellKnownArg::SwiftError));
-
-    // Swift call isn't going to use the SwiftError* arg, so don't bother emitting it
-    call->gtArgs.Remove(swiftErrorArg);
 }
 #endif // SWIFT_SUPPORT
 
@@ -2364,8 +2375,8 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     //
 
     // Check to see if the ldtoken helper call is what we see here.
-    if (fieldTokenNode->gtOper != GT_CALL || (fieldTokenNode->AsCall()->gtCallType != CT_HELPER) ||
-        (fieldTokenNode->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD)))
+    if (!fieldTokenNode->OperIs(GT_CALL) ||
+        !fieldTokenNode->AsCall()->IsHelperCall(eeFindHelper(CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD)))
     {
         return nullptr;
     }
@@ -2418,7 +2429,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     //
 
     GenTree* newArrayCall = arrayLocalStore->AsLclVar()->Data();
-    if ((newArrayCall->gtOper != GT_CALL) || (newArrayCall->AsCall()->gtCallType != CT_HELPER))
+    if (!newArrayCall->OperIs(GT_CALL) || !newArrayCall->AsCall()->IsHelperCall())
     {
         return nullptr;
     }
@@ -2660,8 +2671,8 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
 
     //
     // At this point we are ready to commit to implementing the InitializeArray
-    // intrinsic using a struct assignment.  Pop the arguments from the stack and
-    // return the struct assignment node.
+    // intrinsic using a struct store.  Pop the arguments from the stack and
+    // return the store node.
     //
 
     impPopStack();
@@ -2707,8 +2718,8 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
     //
 
     // Check to see if the ldtoken helper call is what we see here.
-    if (fieldTokenNode->gtOper != GT_CALL || (fieldTokenNode->AsCall()->gtCallType != CT_HELPER) ||
-        (fieldTokenNode->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD)))
+    if (!fieldTokenNode->OperIs(GT_CALL) ||
+        !fieldTokenNode->AsCall()->IsHelperCall(eeFindHelper(CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD)))
     {
         return nullptr;
     }
@@ -3423,7 +3434,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 noway_assert(genTypeSize(rawHandle->TypeGet()) == genTypeSize(TYP_I_IMPL));
 
                 unsigned rawHandleSlot = lvaGrabTemp(true DEBUGARG("rawHandle"));
-                impStoreTemp(rawHandleSlot, rawHandle, CHECK_SPILL_NONE);
+                impStoreToTemp(rawHandleSlot, rawHandle, CHECK_SPILL_NONE);
 
                 GenTree*  lclVarAddr = gtNewLclVarAddrNode(rawHandleSlot);
                 var_types resultType = JITtype2varType(sig->retType);
@@ -3618,7 +3629,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             {
                 GenTree*        op1 = impStackTop(0).val;
                 CorInfoHelpFunc typeHandleHelper;
-                if (op1->gtOper == GT_CALL && (op1->AsCall()->gtCallType == CT_HELPER) &&
+                if (op1->gtOper == GT_CALL && op1->AsCall()->IsHelperCall() &&
                     gtIsTypeHandleToRuntimeTypeHandleHelper(op1->AsCall(), &typeHandleHelper))
                 {
                     op1 = impPopStack().val;
@@ -4670,7 +4681,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
                 // In order to change the class handle of the object we need to spill it to a temp
                 // and update class info for that temp.
                 unsigned localNum = lvaGrabTemp(true DEBUGARG("updating class info"));
-                impStoreTemp(localNum, op, CHECK_SPILL_ALL);
+                impStoreToTemp(localNum, op, CHECK_SPILL_ALL);
 
                 // NOTE: we still can't say for sure that it is the exact type of the argument
                 lvaSetClass(localNum, inst, /*isExact*/ false);
@@ -4719,6 +4730,14 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             ClassLayout*         toLayout  = nullptr;
             var_types            toType    = TypeHandleToVarType(toTypeHnd, &toLayout);
 
+            if (fromType == TYP_REF || info.compCompHnd->isNullableType(fromTypeHnd) != TypeCompareState::MustNot ||
+                toType == TYP_REF || info.compCompHnd->isNullableType(toTypeHnd) != TypeCompareState::MustNot)
+            {
+                // Fallback to the software implementation to throw when the types fail a "default(T) is not null"
+                // check.
+                return nullptr;
+            }
+
             unsigned fromSize = fromLayout != nullptr ? fromLayout->GetSize() : genTypeSize(fromType);
             unsigned toSize   = toLayout != nullptr ? toLayout->GetSize() : genTypeSize(toType);
 
@@ -4730,8 +4749,6 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
                 // Fallback to the software implementation to throw when sizes don't match
                 return nullptr;
             }
-
-            assert((fromType != TYP_REF) && (toType != TYP_REF));
 
             GenTree* op1 = impPopStack().val;
 
@@ -4816,7 +4833,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             if (varTypeIsIntegral(valType) && (genTypeSize(valType) < fromSize))
             {
                 unsigned lclNum = lvaGrabTemp(true DEBUGARG("bitcast small type extension"));
-                impStoreTemp(lclNum, op1, CHECK_SPILL_ALL);
+                impStoreToTemp(lclNum, op1, CHECK_SPILL_ALL);
                 addr = gtNewLclVarAddrNode(lclNum, TYP_I_IMPL);
             }
             else
@@ -5147,12 +5164,16 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
     assert(sig->sigInst.classInstCount == 0);
 
     var_types retType = JITtype2varType(sig->retType);
-    assert(varTypeIsArithmetic(retType));
+
+    if (!varTypeIsArithmetic(retType))
+    {
+        assert((intrinsic == NI_PRIMITIVE_ConvertToInteger) || (intrinsic == NI_PRIMITIVE_ConvertToIntegerNative));
+        return nullptr;
+    }
 
     NamedIntrinsic hwintrinsic = NI_Illegal;
 
     CORINFO_ARG_LIST_HANDLE args = sig->args;
-
     assert((sig->numArgs == 1) || (sig->numArgs == 2));
 
     CORINFO_CLASS_HANDLE op1ClsHnd;
@@ -5163,6 +5184,113 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
     switch (intrinsic)
     {
+        case NI_PRIMITIVE_ConvertToInteger:
+        case NI_PRIMITIVE_ConvertToIntegerNative:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+            assert(varTypeIsFloating(baseType));
+
+            var_types tgtType = JitType2PreciseVarType(sig->retType);
+            retType           = genActualType(retType);
+            bool uns          = varTypeIsUnsigned(tgtType) && !varTypeIsSmall(tgtType);
+
+            GenTree* res = nullptr;
+            GenTree* op1 = nullptr;
+
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+            if ((intrinsic == NI_PRIMITIVE_ConvertToIntegerNative) && IsBaselineSimdIsaSupported())
+            {
+                NamedIntrinsic hwIntrinsicId = NI_Illegal;
+
+                if (retType == TYP_INT)
+                {
+                    if (baseType == TYP_FLOAT)
+                    {
+                        if (!uns)
+                        {
+                            hwIntrinsicId = NI_SSE_ConvertToInt32WithTruncation;
+                        }
+                        else if (IsBaselineVector512IsaSupportedOpportunistically())
+                        {
+                            hwIntrinsicId = NI_AVX512F_ConvertToUInt32WithTruncation;
+                        }
+                    }
+                    else
+                    {
+                        assert(baseType == TYP_DOUBLE);
+
+                        if (!uns)
+                        {
+                            hwIntrinsicId = NI_SSE2_ConvertToInt32WithTruncation;
+                        }
+                        else if (IsBaselineVector512IsaSupportedOpportunistically())
+                        {
+                            hwIntrinsicId = NI_AVX512F_ConvertToUInt32WithTruncation;
+                        }
+                    }
+                }
+#if defined(TARGET_AMD64)
+                else
+                {
+                    assert(retType == TYP_LONG);
+
+                    if (baseType == TYP_FLOAT)
+                    {
+                        if (!uns)
+                        {
+                            hwIntrinsicId = NI_SSE_X64_ConvertToInt64WithTruncation;
+                        }
+                        else if (IsBaselineVector512IsaSupportedOpportunistically())
+                        {
+                            hwIntrinsicId = NI_AVX512F_X64_ConvertToUInt64WithTruncation;
+                        }
+                    }
+                    else
+                    {
+                        assert(baseType == TYP_DOUBLE);
+
+                        if (!uns)
+                        {
+                            hwIntrinsicId = NI_SSE2_X64_ConvertToInt64WithTruncation;
+                        }
+                        else if (IsBaselineVector512IsaSupportedOpportunistically())
+                        {
+                            hwIntrinsicId = NI_AVX512F_X64_ConvertToUInt64WithTruncation;
+                        }
+                    }
+                }
+#endif // TARGET_AMD64
+
+                if (hwIntrinsicId != NI_Illegal)
+                {
+                    op1 = impPopStack().val;
+                    res = gtNewSimdHWIntrinsicNode(retType, op1, hwIntrinsicId, baseJitType, 16);
+
+                    if (varTypeIsSmall(tgtType))
+                    {
+                        res = gtNewCastNode(TYP_INT, res, /* uns */ false, tgtType);
+                    }
+                    return res;
+                }
+            }
+#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
+
+            op1 = impPopStack().val;
+
+            if (varTypeIsSmall(tgtType))
+            {
+                res = gtNewCastNodeL(retType, op1, /* uns */ false, retType);
+                res = gtFoldExpr(res);
+                res = gtNewCastNode(TYP_INT, res, /* uns */ false, tgtType);
+            }
+            else
+            {
+                res = gtNewCastNodeL(retType, op1, /* uns */ false, tgtType);
+            }
+
+            return gtFoldExpr(res);
+        }
+
         case NI_PRIMITIVE_Crc32C:
         {
             assert(sig->numArgs == 2);
@@ -5312,7 +5440,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 result = gtNewQmarkNode(baseType, cond, colon);
 
                 unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for LeadingZeroCount Qmark"));
-                impStoreTemp(tmp, result, CHECK_SPILL_NONE);
+                impStoreToTemp(tmp, result, CHECK_SPILL_NONE);
                 result = gtNewLclvNode(tmp, baseType);
             }
 #elif defined(TARGET_ARM64)
@@ -5643,7 +5771,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 result = gtNewQmarkNode(baseType, cond, colon);
 
                 unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for TrailingZeroCount Qmark"));
-                impStoreTemp(tmp, result, CHECK_SPILL_NONE);
+                impStoreToTemp(tmp, result, CHECK_SPILL_NONE);
                 result = gtNewLclvNode(tmp, baseType);
             }
 #elif defined(TARGET_ARM64)
@@ -6152,7 +6280,7 @@ private:
         assert(retExpr->OperGet() == GT_RET_EXPR);
         const unsigned tmp = comp->lvaGrabTemp(true DEBUGARG("spilling ret_expr"));
         JITDUMP("Storing return expression [%06u] to a local var V%02u.\n", comp->dspTreeID(retExpr), tmp);
-        comp->impStoreTemp(tmp, retExpr, Compiler::CHECK_SPILL_NONE);
+        comp->impStoreToTemp(tmp, retExpr, Compiler::CHECK_SPILL_NONE);
         *pRetExpr = comp->gtNewLclvNode(tmp, retExpr->TypeGet());
 
         assert(comp->lvaTable[tmp].lvSingleDef == 0);
@@ -7103,7 +7231,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
     /* Ignore helper calls */
 
-    if (call->gtCallType == CT_HELPER)
+    if (call->IsHelperCall())
     {
         assert(!call->IsGuardedDevirtualizationCandidate());
         inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_CALL_TO_HELPER);
@@ -7743,6 +7871,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // the resulting method would be a generic method of the non-generic SZArrayHelper class.
     //
     assert(canDevirtualize);
+    Metrics.DevirtualizedCall++;
 
     JITDUMP("    %s; can devirtualize\n", note);
 
@@ -7971,6 +8100,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                         // We may end up inlining this call, so the local copy must be marked as "aliased",
                         // making sure the inlinee importer will know when to spill references to its value.
                         lvaGetDesc(localCopyThis->AsLclFld())->lvHasLdAddrOp = true;
+                        Metrics.DevirtualizedCallRemovedBox++;
+                        Metrics.DevirtualizedCallUnboxedEntry++;
 
 #if FEATURE_TAILCALL_OPT
                         if (call->IsImplicitTailCall())
@@ -8034,6 +8165,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                             derivedMethodAttribs  = unboxedMethodAttribs;
 
                             call->gtArgs.InsertInstParam(this, methodTableArg);
+                            Metrics.DevirtualizedCallUnboxedEntry++;
                         }
                     }
                     else
@@ -8049,6 +8181,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                         INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
                         derivedMethod         = unboxedEntryMethod;
                         pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
+                        Metrics.DevirtualizedCallUnboxedEntry++;
                     }
                 }
             }
@@ -9782,8 +9915,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         // be behind a relevant IsSupported check and will never be hit and the
                         // software fallback will be executed instead.
 
-                        CLANG_FORMAT_COMMENT_ANCHOR;
-
 #ifdef FEATURE_HW_INTRINSICS
                         namespaceName += 10;
                         const char* platformNamespaceName;
@@ -10051,6 +10182,19 @@ NamedIntrinsic Compiler::lookupPrimitiveFloatNamedIntrinsic(CORINFO_METHOD_HANDL
             else if (strcmp(methodName, "Ceiling") == 0)
             {
                 result = NI_System_Math_Ceiling;
+            }
+            else if (strncmp(methodName, "ConvertToInteger", 16) == 0)
+            {
+                methodName += 16;
+
+                if (methodName[0] == '\0')
+                {
+                    result = NI_PRIMITIVE_ConvertToInteger;
+                }
+                else if (strcmp(methodName, "Native") == 0)
+                {
+                    result = NI_PRIMITIVE_ConvertToIntegerNative;
+                }
             }
             else if (strncmp(methodName, "Cos", 3) == 0)
             {
@@ -10457,7 +10601,7 @@ GenTree* Compiler::impArrayAccessIntrinsic(
 
     if (intrinsicName == NI_Array_Set)
     {
-        // Assignment of a struct is more work, and there are more gets than sets.
+        // Stores of structs require more work, and there are more gets than sets.
         // TODO-CQ: support SET (`a[i,j,k] = s`) for struct element arrays.
         if (varTypeIsStruct(elemType))
         {

@@ -46,7 +46,7 @@ namespace System.Text.Json.Serialization.Tests
             yield return WrapArgs(DateTime.MaxValue, 1, expectedJson: $@"{{""{DateTime.MaxValue:O}"":1}}");
             yield return WrapArgs(DateTimeOffset.MaxValue, 1, expectedJson: $@"{{""{DateTimeOffset.MaxValue:O}"":1}}");
             yield return WrapArgs(TimeSpan.MaxValue, 1, expectedJson: $@"{{""{TimeSpan.MaxValue}"":1}}");
-#if NET6_0_OR_GREATER
+#if NET
             yield return WrapArgs(DateOnly.MaxValue, 1, expectedJson: $@"{{""{DateOnly.MaxValue:O}"":1}}");
             yield return WrapArgs(TimeOnly.MaxValue, 1, expectedJson: $@"{{""{TimeOnly.MaxValue:O}"":1}}");
 #endif

@@ -45,16 +45,6 @@
 #define NOINLINE __attribute__((noinline))
 #endif
 
-#include <limits>
-
-#ifndef max
-template <typename T>
-T max(T a, T b) {
-    if (a > b)
-        return a;
-    else
-        return b;
-}
-#endif
-
+using std::max;
+using std::min;
 #endif  // VXSORT_DEFS_H

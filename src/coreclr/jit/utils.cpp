@@ -323,7 +323,6 @@ const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regN
                 minSiz -= strlen(sep) + strlen(nam);
 
                 // What kind of separator should we use for this range (if it is indeed going to be a range)?
-                CLANG_FORMAT_COMMENT_ANCHOR;
 
                 if (genIsValidIntReg(regNum))
                 {
@@ -355,7 +354,6 @@ const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regN
                     }
 #elif defined(TARGET_X86)
                     // No register ranges
-                    CLANG_FORMAT_COMMENT_ANCHOR;
 #elif defined(TARGET_LOONGARCH64)
                     if (REG_A0 <= regNum && regNum <= REG_T8)
                     {
@@ -3441,11 +3439,6 @@ uint32_t BitOperations::Log2(uint64_t value)
 // Return Value:
 //    The population count (number of bits set) of value
 //
-#if defined(_MSC_VER)
-// Disable optimizations for PopCount to avoid the compiler from generating intrinsics
-// not supported on all platforms.
-#pragma optimize("", off)
-#endif // _MSC_VER
 uint32_t BitOperations::PopCount(uint32_t value)
 {
 #if defined(_MSC_VER)
@@ -3498,9 +3491,6 @@ uint32_t BitOperations::PopCount(uint64_t value)
     return static_cast<uint32_t>(result);
 #endif
 }
-#if defined(_MSC_VER)
-#pragma optimize("", on)
-#endif // _MSC_VER
 
 //------------------------------------------------------------------------
 // BitOperations::ReverseBits: Reverses the bits in an integer value
@@ -4050,7 +4040,7 @@ T GetSignedMagic(T denom, int* shift /*out*/)
     UT  t;
     T   result_magic;
 
-    absDenom = abs(denom);
+    absDenom = std::abs(denom);
     t        = two_nminus1 + (UT(denom) >> bits_minus_1);
     absNc    = t - 1 - (t % absDenom);        // absolute value of nc
     p        = bits_minus_1;                  // initialize p

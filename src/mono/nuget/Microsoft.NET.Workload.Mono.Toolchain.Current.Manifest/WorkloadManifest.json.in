@@ -8,6 +8,7 @@
       "description": ".NET WebAssembly build tools",
       "packs": [
         "Microsoft.NET.Runtime.WebAssembly.Sdk",
+        "Microsoft.NET.Sdk.WebAssembly.Pack",
         "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.browser-wasm"
       ],
@@ -175,6 +176,10 @@
     },
     "Microsoft.NET.Runtime.WebAssembly.Sdk": {
       "kind": "Sdk",
+      "version": "${PackageVersion}"
+    },
+    "Microsoft.NET.Sdk.WebAssembly.Pack": {
+      "kind": "library",
       "version": "${PackageVersion}"
     },
     "Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk": {

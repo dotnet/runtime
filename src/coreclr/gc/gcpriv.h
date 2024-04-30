@@ -140,10 +140,10 @@ inline void FATAL_GC_ERROR()
 //
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
-// For now disable regions for StandAlone GC, NativeAOT and MacOS builds
+// For now disable regions for standalone GC and macOS builds
 #if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__)
 #define USE_REGIONS
-#endif //HOST_64BIT && BUILD_AS_STANDALONE
+#endif //HOST_64BIT && BUILD_AS_STANDALONE && !__APPLE__
 
 //#define SPINLOCK_HISTORY
 //#define RECORD_LOH_STATE
@@ -3345,8 +3345,8 @@ private:
         size_t new_current_total_committed);
 
 #ifdef USE_REGIONS
-    PER_HEAP_ISOLATED_METHOD void compute_committed_bytes(size_t& total_committed, size_t& committed_decommit, size_t& committed_free, 
-                                  size_t& committed_bookkeeping, size_t& new_current_total_committed, size_t& new_current_total_committed_bookkeeping, 
+    PER_HEAP_ISOLATED_METHOD void compute_committed_bytes(size_t& total_committed, size_t& committed_decommit, size_t& committed_free,
+                                  size_t& committed_bookkeeping, size_t& new_current_total_committed, size_t& new_current_total_committed_bookkeeping,
                                   size_t* new_committed_by_oh);
 #endif
 
@@ -4226,7 +4226,7 @@ private:
 
 #ifdef DYNAMIC_HEAP_COUNT
     // Sample collection -
-    // 
+    //
     // For every GC, we collect the msl wait time + GC pause duration info and use both to calculate the
     // throughput cost percentage. We will also be using the wait time and the GC pause duration separately
     // for other purposes in the future.
@@ -6019,3 +6019,6 @@ public:
 #else
 #define THIS_ARG
 #endif // FEATURE_CARD_MARKING_STEALING
+
+using std::min;
+using std::max;
