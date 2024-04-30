@@ -5286,11 +5286,11 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 		container = mono_metadata_load_generic_params (m_class_get_image (accessor_method->klass), accessor_method->token, container, /*owner:*/mb->method);
 		mono_method_set_generic_container (mb->method, container);
 
-		MonoGenericContext ctx = {0,};
-		ctx.method_inst = container->context.method_inst;
+		MonoGenericContext inst_ctx = {0,};
+		inst_ctx.method_inst = container->context.method_inst;
 
 		ERROR_DECL (error);
-		sig = mono_inflate_generic_signature (mono_method_signature_internal (accessor_method), &ctx, error);
+		sig = mono_inflate_generic_signature (mono_method_signature_internal (accessor_method), &inst_ctx, error);
 		mono_error_assert_ok (error); // FIXME
 	} else {
 		sig = mono_metadata_signature_dup_full (get_method_image (accessor_method), mono_method_signature_internal (accessor_method));
