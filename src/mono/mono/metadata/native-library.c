@@ -1245,7 +1245,7 @@ is_symbol_char_underscore (unsigned char c)
 	}
 }
 
-static int mono_precompute_size (const char *key)
+static size_t mono_precompute_size (const char *key)
 {
 	size_t size = 1; // Null terminator
 	size_t len = (int)strlen (key);
