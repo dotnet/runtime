@@ -2517,7 +2517,7 @@ DebuggerPatchSkip *DebuggerController::ActivatePatchSkip(Thread *thread,
         //
         // !!! check result
         LOG((LF_CORDB,LL_INFO10000, "DC::APS: About to skip from PC=0x%p\n", PC));
-        skip = new (interopsafe) DebuggerPatchSkip(thread, patch, AppDomain::GetCurrentDomain());
+        skip = new (interopsafe) DebuggerPatchSkip(thread, patch);
         TRACE_ALLOC(skip);
     }
 
@@ -4295,9 +4295,8 @@ bool DebuggerController::DispatchNativeException(EXCEPTION_RECORD *pException,
 // * -------------------------------------------------------------------------
 
 DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
-                                     DebuggerControllerPatch *patch,
-                                     AppDomain *pAppDomain)
-  : DebuggerController(thread, pAppDomain),
+                                     DebuggerControllerPatch *patch)
+  : DebuggerController(thread, AppDomain::GetCurrentDomain()),
     m_address(patch->address)
 {
     LOG((LF_CORDB, LL_INFO10000,
@@ -4656,17 +4655,6 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
     }
     CONTRACTL_END;
 
-    if (m_pAppDomain != NULL)
-    {
-        AppDomain *pAppDomainCur = AppDomain::GetCurrentDomain();
-
-        if (pAppDomainCur != m_pAppDomain)
-        {
-            LOG((LF_CORDB,LL_INFO10000, "DPS::TEH: Appdomain mismatch - not skiiping!\n"));
-            return TPR_IGNORE;
-        }
-    }
-
     LOG((LF_CORDB,LL_INFO10000, "DPS::TEH: doing the patch-skip thing\n"));
 
 #if defined(TARGET_ARM64) && !defined(FEATURE_EMULATE_SINGLESTEP)
@@ -4796,18 +4784,6 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
 bool DebuggerPatchSkip::TriggerSingleStep(Thread *thread, const BYTE *ip)
 {
     LOG((LF_CORDB,LL_INFO10000, "DPS::TSS: basically a no-op\n"));
-
-    if (m_pAppDomain != NULL)
-    {
-        AppDomain *pAppDomainCur = AppDomain::GetCurrentDomain();
-
-        if (pAppDomainCur != m_pAppDomain)
-        {
-            LOG((LF_CORDB,LL_INFO10000, "DPS::TSS: Appdomain mismatch - "
-                "not SingSteping!!\n"));
-            return false;
-        }
-    }
 
 #if defined(TARGET_AMD64)
     // Dev11 91932: for RIP-relative writes we need to copy the value that was written in our buffer to the actual address
