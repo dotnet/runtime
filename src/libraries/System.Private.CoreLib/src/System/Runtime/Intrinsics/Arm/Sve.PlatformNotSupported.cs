@@ -1214,6 +1214,48 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<double> Subtract(Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
 
+        ///  SignExtendWideningLower : Unpack and extend low half
+
+        /// <summary>
+        /// svint16_t svunpklo[_s16](svint8_t op)
+        ///   SUNPKLO Zresult.H, Zop.B
+        /// </summary>
+        public static unsafe Vector<short> SignExtendWideningLower(Vector<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svunpklo[_s32](svint16_t op)
+        ///   SUNPKLO Zresult.S, Zop.H
+        /// </summary>
+        public static unsafe Vector<int> SignExtendWideningLower(Vector<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svunpklo[_s64](svint32_t op)
+        ///   SUNPKLO Zresult.D, Zop.S
+        /// </summary>
+        public static unsafe Vector<long> SignExtendWideningLower(Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+
+        ///  SignExtendWideningUpper : Unpack and extend high half
+
+        /// <summary>
+        /// svint16_t svunpkhi[_s16](svint8_t op)
+        ///   SUNPKHI Zresult.H, Zop.B
+        /// </summary>
+        public static unsafe Vector<short> SignExtendWideningUpper(Vector<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svunpkhi[_s32](svint16_t op)
+        ///   SUNPKHI Zresult.S, Zop.H
+        /// </summary>
+        public static unsafe Vector<int> SignExtendWideningUpper(Vector<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svunpkhi[_s64](svint32_t op)
+        ///   SUNPKHI Zresult.D, Zop.S
+        /// </summary>
+        public static unsafe Vector<long> SignExtendWideningUpper(Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+
         ///  UnzipEven : Concatenate even elements from two inputs
 
         /// <summary>
