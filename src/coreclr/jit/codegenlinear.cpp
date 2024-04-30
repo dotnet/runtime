@@ -1905,7 +1905,7 @@ void CodeGen::genSetBlockSize(GenTreeBlk* blkNode, regNumber sizeReg)
 {
     if (sizeReg != REG_NA)
     {
-        assert((blkNode->gtRsvdRegs & genRegMask(sizeReg)) != 0);
+        assert((internalRegisters.GetAll(blkNode) & genRegMask(sizeReg)) != 0);
         // This can go via helper which takes the size as a native uint.
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, sizeReg, blkNode->Size());
     }

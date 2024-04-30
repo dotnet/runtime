@@ -41,7 +41,7 @@ namespace System.IO.Hashing.Tests
                 Assert.Equal(expectedHash128, ReadHashBigEndian(XxHash128.Hash(input, test.Seed)));
                 Assert.Equal(expectedHash128, ReadHashBigEndian(XxHash128.Hash((ReadOnlySpan<byte>)input, test.Seed)));
 
-#if NET7_0_OR_GREATER
+#if NET
                 // Validate `XxHash128.HashToUInt128`
                 Assert.Equal(new UInt128(test.HashHigh, test.HashLow), XxHash128.HashToUInt128(input, test.Seed));
 #endif
@@ -110,7 +110,7 @@ namespace System.IO.Hashing.Tests
 
                             // Validate that the hash we get from doing a one-shot of all the data up to this point
                             // matches the incremental hash for the data appended until now.
-#if NET7_0_OR_GREATER
+#if NET
                             Assert.Equal(XxHash128.HashToUInt128(asciiBytes.AsSpan(0, processed), test.Seed), hash.GetCurrentHashAsUInt128());
 #endif
                             Assert.True(hash.TryGetCurrentHash(destination, out int bytesWritten));
@@ -120,7 +120,7 @@ namespace System.IO.Hashing.Tests
                         }
 
                         // Validate the final hash code.
-#if NET7_0_OR_GREATER
+#if NET
                         Assert.Equal(new UInt128(test.HashHigh, test.HashLow), hash.GetCurrentHashAsUInt128());
 #endif
                         Array.Clear(destination, 0, destination.Length);

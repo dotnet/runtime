@@ -297,7 +297,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			// https://github.com/dotnet/runtime/issues/93718
 			// This should not warn
-			[ExpectedWarning ("IL2075", "GetMethod", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2075", "GetMethod", Tool.Trimmer | Tool.NativeAot, "")]
 			static void TestStruct (BasicAnnotatedStruct instance)
 			{
 				instance.GetType ().GetMethod ("UsedMethod");
@@ -1409,7 +1409,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			[Kept]
 			// https://github.com/dotnet/runtime/issues/93719
-			[ExpectedWarning ("IL2075", nameof (Type.GetType), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2075", nameof (Type.GetType), Tool.Trimmer | Tool.NativeAot, "")]
 			public static void Test ()
 			{
 				foreach (var instance in GetInstances ()) {
