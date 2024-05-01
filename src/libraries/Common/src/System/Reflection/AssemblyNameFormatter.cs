@@ -6,8 +6,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 
-#nullable enable
-
 namespace System.Reflection
 {
     internal static class AssemblyNameFormatter
