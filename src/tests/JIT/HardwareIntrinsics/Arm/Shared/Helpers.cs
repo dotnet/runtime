@@ -1443,6 +1443,8 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short AddAcrossWidening(sbyte[] op1) => Reduce(AddWidening, op1);
 
+        public static long AddAcrossWideningLong(sbyte[] op1) => Reduce(AddWidening, op1);
+
         public static short AddPairwiseWidening(sbyte[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
 
         public static short AddPairwiseWideningAndAdd(short[] op1, sbyte[] op2, int i) => (short)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
@@ -1468,6 +1470,8 @@ namespace JIT.HardwareIntrinsics.Arm
         public static short AddWidening(sbyte op1, sbyte op2) => (short)((short)op1 + (short)op2);
 
         public static short AddWidening(short op1, sbyte op2) => (short)(op1 + op2);
+
+        public static long AddWidening(long op1, sbyte op2) => (long)(op1 + (long)op2);
 
         public static short AddWideningUpper(sbyte[] op1, sbyte[] op2, int i) => AddWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
 
@@ -1533,6 +1537,18 @@ namespace JIT.HardwareIntrinsics.Arm
             return acc;
         }
 
+        private static long Reduce(Func<long, sbyte, long> reduceOp, sbyte[] op1)
+        {
+            long acc = op1[0];
+
+            for (int i = 1; i < op1.Length; i++)
+            {
+                acc = reduceOp(acc, op1[i]);
+            }
+
+            return acc;
+        }
+
         public static uint AbsoluteDifferenceWidening(short op1, short op2) => op1 < op2 ? (uint)(op2 - op1) : (uint)(op1 - op2);
 
         public static uint AbsoluteDifferenceWideningUpper(short[] op1, short[] op2, int i) => AbsoluteDifferenceWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
@@ -1542,6 +1558,8 @@ namespace JIT.HardwareIntrinsics.Arm
         public static int AbsoluteDifferenceWideningUpperAndAdd(int[] op1, short[] op2, short[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
         public static int AddAcrossWidening(short[] op1) => Reduce(AddWidening, op1);
+
+        public static long AddAcrossWideningLong(short[] op1) => Reduce(AddWidening, op1);
 
         public static int AddPairwiseWidening(short[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
 
@@ -1568,6 +1586,8 @@ namespace JIT.HardwareIntrinsics.Arm
         public static int AddWidening(short op1, short op2) => (int)((int)op1 + (int)op2);
 
         public static int AddWidening(int op1, short op2) => (int)(op1 + op2);
+
+        public static long AddWidening(long op1, short op2) => (long)(op1 + (long)op2);
 
         public static int AddWideningUpper(short[] op1, short[] op2, int i) => AddWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
 
@@ -1624,6 +1644,18 @@ namespace JIT.HardwareIntrinsics.Arm
         private static int Reduce(Func<int, short, int> reduceOp, short[] op1)
         {
             int acc = op1[0];
+
+            for (int i = 1; i < op1.Length; i++)
+            {
+                acc = reduceOp(acc, op1[i]);
+            }
+
+            return acc;
+        }
+
+        private static long Reduce(Func<long, short, long> reduceOp, short[] op1)
+        {
+            long acc = op1[0];
 
             for (int i = 1; i < op1.Length; i++)
             {
@@ -1701,6 +1733,29 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long MultiplyWideningUpperAndSubtract(long[] op1, int[] op2, int[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
+        public static T SignExtend<T>(T n, int numBits, bool zeroExtend) where T : struct, IComparable, IConvertible
+        {
+            // Get the underlying integer value
+            dynamic value = Convert.ChangeType(n, typeof(long));
+
+            // Mask to extract the lowest numBits
+            long mask = (1L << numBits) - 1;
+            long lowestBits = value & mask;
+
+            // Sign extension for signed integers
+            long signBitMask = 1L << (numBits - 1);
+            if (!zeroExtend && ((lowestBits & signBitMask) != 0))
+            {
+                // If sign bit is set, it's a negative number
+                return (T)Convert.ChangeType(-((~lowestBits & mask) + 1), typeof(T));
+            }
+            else
+            {
+                // If sign bit is not set, it's a positive number
+                return (T)Convert.ChangeType(lowestBits, typeof(T));
+            }
+        }
+
         public static int SubtractHighNarrowing(long op1, long op2) => HighNarrowing((long)(op1 - op2), round: false);
 
         public static long SubtractHighNarrowingUpper(int[] op1, long[] op2, long[] op3, int i) => i < op1.Length ? op1[i] : SubtractHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
@@ -1743,6 +1798,8 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ushort AddAcrossWidening(byte[] op1) => Reduce(AddWidening, op1);
 
+        public static ulong AddAcrossWideningULong(byte[] op1) => Reduce(AddWidening, op1);
+
         public static ushort AddPairwiseWidening(byte[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
 
         public static ushort AddPairwiseWideningAndAdd(ushort[] op1, byte[] op2, int i) => (ushort)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
@@ -1768,6 +1825,8 @@ namespace JIT.HardwareIntrinsics.Arm
         public static ushort AddWidening(byte op1, byte op2) => (ushort)((ushort)op1 + (ushort)op2);
 
         public static ushort AddWidening(ushort op1, byte op2) => (ushort)(op1 + op2);
+
+        public static ulong AddWidening(ulong op1, byte op2) => (ulong)(op1 + (ulong)op2);
 
         public static ushort AddWideningUpper(byte[] op1, byte[] op2, int i) => AddWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
 
@@ -1833,6 +1892,18 @@ namespace JIT.HardwareIntrinsics.Arm
             return acc;
         }
 
+        private static ulong Reduce(Func<ulong, byte, ulong> reduceOp, byte[] op1)
+        {
+            ulong acc = op1[0];
+
+            for (int i = 1; i < op1.Length; i++)
+            {
+                acc = reduceOp(acc, op1[i]);
+            }
+
+            return acc;
+        }
+
         public static uint AbsoluteDifferenceWidening(ushort op1, ushort op2) => op1 < op2 ? (uint)(op2 - op1) : (uint)(op1 - op2);
 
         public static uint AbsoluteDifferenceWideningUpper(ushort[] op1, ushort[] op2, int i) => AbsoluteDifferenceWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
@@ -1842,6 +1913,8 @@ namespace JIT.HardwareIntrinsics.Arm
         public static uint AbsoluteDifferenceWideningUpperAndAdd(uint[] op1, ushort[] op2, ushort[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
         public static uint AddAcrossWidening(ushort[] op1) => Reduce(AddWidening, op1);
+
+        public static ulong AddAcrossWideningULong(ushort[] op1) => Reduce(AddWidening, op1);
 
         public static uint AddPairwiseWidening(ushort[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
 
@@ -1868,6 +1941,8 @@ namespace JIT.HardwareIntrinsics.Arm
         public static uint AddWidening(ushort op1, ushort op2) => (uint)((uint)op1 + (uint)op2);
 
         public static uint AddWidening(uint op1, ushort op2) => (uint)(op1 + op2);
+
+        public static ulong AddWidening(ulong op1, ushort op2) => (ulong)(op1 + (ulong)op2);
 
         public static uint AddWideningUpper(ushort[] op1, ushort[] op2, int i) => AddWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
 
@@ -1924,6 +1999,18 @@ namespace JIT.HardwareIntrinsics.Arm
         private static uint Reduce(Func<uint, ushort, uint> reduceOp, ushort[] op1)
         {
             uint acc = op1[0];
+
+            for (int i = 1; i < op1.Length; i++)
+            {
+                acc = reduceOp(acc, op1[i]);
+            }
+
+            return acc;
+        }
+
+        private static ulong Reduce(Func<ulong, ushort, ulong> reduceOp, ushort[] op1)
+        {
+            ulong acc = op1[0];
 
             for (int i = 1; i < op1.Length; i++)
             {
@@ -2032,6 +2119,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return acc;
         }
+
+        public static double AddWidening(double op1, float op2) => (double)(op1 + (double)op2);
+
 
         private static bool SignedSatQ(short val, out sbyte result)
         {
@@ -5134,6 +5224,42 @@ namespace JIT.HardwareIntrinsics.Arm
             return acc;
         }
 
+        public static long AddAcross(long[] op1) => Reduce(Add, op1);
+
+        public static long MaxAcross(long[] op1) => Reduce(Max, op1);
+
+        public static long MinAcross(long[] op1) => Reduce(Min, op1);
+
+        private static long Reduce(Func<long, long, long> reduceOp, long[] op1)
+        {
+            long acc = op1[0];
+
+            for (int i = 1; i < op1.Length; i++)
+            {
+                acc = reduceOp(acc, op1[i]);
+            }
+
+            return acc;
+        }
+
+        public static ulong AddAcross(ulong[] op1) => Reduce(Add, op1);
+
+        public static ulong MaxAcross(ulong[] op1) => Reduce(Max, op1);
+
+        public static ulong MinAcross(ulong[] op1) => Reduce(Min, op1);
+
+        private static ulong Reduce(Func<ulong, ulong, ulong> reduceOp, ulong[] op1)
+        {
+            ulong acc = op1[0];
+
+            for (int i = 1; i < op1.Length; i++)
+            {
+                acc = reduceOp(acc, op1[i]);
+            }
+
+            return acc;
+        }
+
         public static float AddAcross(float[] op1) => Reduce(Add, op1);
 
         public static float MaxAcross(float[] op1) => Reduce(Max, op1);
@@ -5152,6 +5278,31 @@ namespace JIT.HardwareIntrinsics.Arm
             return acc;
         }
 
+        public static float AddAcrossRecursivePairwise(float[] op1) => ReduceRecursivePairwise(Add, op1);
+
+        private static float ReduceRecursivePairwise(Func<float, float, float> reduceOp, float[] op1)
+        {
+            if (op1.Length == 2)
+            {
+                return reduceOp(op1[0], op1[1]);
+            }
+
+            if (op1.Length % 2 != 0)
+            {
+                return float.NaN;
+            }
+
+            float[] l = new float[op1.Length / 2];
+            Array.Copy(op1, 0, l, 0, (op1.Length / 2));
+            float l_reduced = ReduceRecursivePairwise(reduceOp, l);
+
+            float[] r = new float[op1.Length / 2];
+            Array.Copy(op1, (op1.Length / 2), r, 0, (op1.Length / 2));
+            float r_reduced = ReduceRecursivePairwise(reduceOp, r);
+
+            return reduceOp(l_reduced, r_reduced);
+        }
+
         public static double AddAcross(double[] op1) => Reduce(Add, op1);
 
         public static double MaxAcross(double[] op1) => Reduce(Max, op1);
@@ -5168,6 +5319,31 @@ namespace JIT.HardwareIntrinsics.Arm
             }
 
             return acc;
+        }
+
+        public static double AddAcrossRecursivePairwise(double[] op1) => ReduceRecursivePairwise(Add, op1);
+
+        private static double ReduceRecursivePairwise(Func<double, double, double> reduceOp, double[] op1)
+        {
+            if (op1.Length == 2)
+            {
+                return reduceOp(op1[0], op1[1]);
+            }
+
+            if (op1.Length % 2 != 0)
+            {
+                return double.NaN;
+            }
+
+            double[] l = new double[op1.Length / 2];
+            Array.Copy(op1, 0, l, 0, (op1.Length / 2));
+            double l_reduced = ReduceRecursivePairwise(reduceOp, l);
+
+            double[] r = new double[op1.Length / 2];
+            Array.Copy(op1, (op1.Length / 2), r, 0, (op1.Length / 2));
+            double r_reduced = ReduceRecursivePairwise(reduceOp, r);
+
+            return reduceOp(l_reduced, r_reduced);
         }
 
         public static float MaxNumberAcross(float[] op1) => Reduce(MaxNumber, op1);
@@ -5985,6 +6161,46 @@ namespace JIT.HardwareIntrinsics.Arm
             }
 
             return result;
+        }
+
+        public static int WhileLessThanMask(int op1, int op2)
+        {
+            return (op1 < op2) ? 1 : 0;
+        }
+
+        public static uint WhileLessThanMask(uint op1, uint op2)
+        {
+            return (uint)((op1 < op2) ? 1 : 0);
+        }
+
+        public static long WhileLessThanMask(long op1, long op2)
+        {
+            return (op1 < op2) ? 1 : 0;
+        }
+
+        public static ulong WhileLessThanMask(ulong op1, ulong op2)
+        {
+            return (ulong)((op1 < op2) ? 1 : 0);
+        }
+
+        public static int WhileLessThanOrEqualMask(int op1, int op2)
+        {
+            return (op1 <= op2) ? 1 : 0;
+        }
+
+        public static uint WhileLessThanOrEqualMask(uint op1, uint op2)
+        {
+            return (uint)((op1 <= op2) ? 1 : 0);
+        }
+
+        public static long WhileLessThanOrEqualMask(long op1, long op2)
+        {
+            return (op1 <= op2) ? 1 : 0;
+        }
+
+        public static ulong WhileLessThanOrEqualMask(ulong op1, ulong op2)
+        {
+            return (ulong)((op1 <= op2) ? 1 : 0);
         }
     }
 }

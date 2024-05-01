@@ -3188,13 +3188,17 @@ public:
                                  CorInfoType simdBaseJitType,
                                  unsigned    simdSize);
 
-#if defined(TARGET_XARCH)
-    GenTree* gtNewSimdCvtNode(var_types              type,
-                              GenTree*               op1,
-                              CorInfoType            simdTargetBaseJitType,
-                              CorInfoType            simdSourceBaseJitType,
-                              unsigned               simdSize);
-#endif //TARGET_XARCH
+    GenTree* gtNewSimdCvtNode(var_types   type,
+                              GenTree*    op1,
+                              CorInfoType simdTargetBaseJitType,
+                              CorInfoType simdSourceBaseJitType,
+                              unsigned    simdSize);
+
+    GenTree* gtNewSimdCvtNativeNode(var_types   type,
+                                    GenTree*    op1,
+                                    CorInfoType simdTargetBaseJitType,
+                                    CorInfoType simdSourceBaseJitType,
+                                    unsigned    simdSize);
 
     GenTree* gtNewSimdCreateBroadcastNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
@@ -3473,6 +3477,7 @@ public:
 #if defined(TARGET_ARM64)
     GenTree* gtNewSimdConvertVectorToMaskNode(var_types type, GenTree* node, CorInfoType simdBaseJitType, unsigned simdSize);
     GenTree* gtNewSimdConvertMaskToVectorNode(GenTreeHWIntrinsic* node, var_types type);
+    GenTree* gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigned simdSize);
 #endif
 
     //------------------------------------------------------------------------
@@ -5928,7 +5933,7 @@ public:
     void fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, BasicBlock* newSucc);
 
     void fgRemoveEhfSuccessor(BasicBlock* block, const unsigned succIndex);
-    
+
     void fgRemoveEhfSuccessor(FlowEdge* succEdge);
 
     void fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, BasicBlock* newTarget);
@@ -6280,6 +6285,7 @@ public:
     unsigned                               fgPgoInlineeNoPgoSingleBlock;
     bool                                   fgPgoHaveWeights;
     bool                                   fgPgoSynthesized;
+    bool                                   fgPgoDynamic;
     bool                                   fgPgoConsistent;
 
 #ifdef DEBUG

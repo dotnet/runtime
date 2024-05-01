@@ -101,6 +101,16 @@ private:
         }
     }
 
+#if defined(TARGET_ARM64)
+    regNumber getNextSIMDRegWithWraparound(regNumber reg)
+    {
+        regNumber nextReg = REG_NEXT(reg);
+
+        // Wraparound if necessary, REG_V0 comes next after REG_V31.
+        return (nextReg > REG_V31) ? REG_V0 : nextReg;
+    }
+#endif // defined(TARGET_ARM64)
+
     static GenTreeIndir    indirForm(var_types type, GenTree* base);
     static GenTreeStoreInd storeIndirForm(var_types type, GenTree* base, GenTree* data);
 
@@ -274,7 +284,9 @@ protected:
     void genEnregisterOSRArgsAndLocals();
 #endif
 
+    void genHomeStackSegment(unsigned lclNum, const ABIPassingSegment& seg, regNumber initReg, bool* pInitRegZeroed);
     void genHomeSwiftStructParameters(bool handleStack);
+    void genHomeStackPartOfSplitParameter(regNumber initReg, bool* initRegStillZeroed);
 
     void genCheckUseBlockInit();
 #if defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)

@@ -2,16 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Reflection;
-
+using System.Reflection.Metadata;
 using Internal.TypeSystem;
 
 namespace System.Reflection
 {
     internal partial struct TypeNameParser
     {
+        private static readonly TypeNameParseOptions s_typeNameParseOptions = new() { MaxNodes = int.MaxValue };
+
         private TypeSystemContext _context;
         private ModuleDesc _callingModule;
         private List<ModuleDesc> _referencedModules;
@@ -20,14 +19,20 @@ namespace System.Reflection
         public static TypeDesc ResolveType(string name, ModuleDesc callingModule,
             TypeSystemContext context, List<ModuleDesc> referencedModules, out bool typeWasNotFoundInAssemblyNorBaseLibrary)
         {
-            var parser = new TypeNameParser(name)
+            if (!TypeName.TryParse(name, out TypeName parsed, s_typeNameParseOptions))
+            {
+                typeWasNotFoundInAssemblyNorBaseLibrary = false;
+                return null;
+            }
+
+            var parser = new TypeNameParser()
             {
                 _context = context,
                 _callingModule = callingModule,
                 _referencedModules = referencedModules
             };
 
-            TypeDesc result = parser.Parse()?.Value;
+            TypeDesc result = parser.Resolve(parsed)?.Value;
 
             typeWasNotFoundInAssemblyNorBaseLibrary = parser._typeWasNotFoundInAssemblyNorBaseLibrary;
             return result;
@@ -52,16 +57,13 @@ namespace System.Reflection
             }
         }
 
-        private static bool CheckTopLevelAssemblyQualifiedName() => true;
-
-        private Type GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, string assemblyNameIfAny)
+        private Type GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, TypeName parsedName)
         {
             ModuleDesc module;
 
-            if (assemblyNameIfAny != null)
+            if (parsedName.AssemblyName != null)
             {
-                module = (TryParseAssemblyName(assemblyNameIfAny) is AssemblyName an) ?
-                    _context.ResolveAssembly(an, throwIfNotFound: false) : null;
+                module = _context.ResolveAssembly(parsedName.AssemblyName.ToAssemblyName(), throwIfNotFound: false);
             }
             else
             {
@@ -79,7 +81,7 @@ namespace System.Reflection
             }
 
             // If it didn't resolve and wasn't assembly-qualified, we also try core library
-            if (assemblyNameIfAny == null)
+            if (parsedName.AssemblyName == null)
             {
                 Type type = GetTypeCore(_context.SystemModule, typeName, nestedTypeNames);
                 if (type != null)
@@ -92,22 +94,6 @@ namespace System.Reflection
             }
 
             return null;
-        }
-
-        private static AssemblyName TryParseAssemblyName(string assemblyName)
-        {
-            try
-            {
-                return new AssemblyName(assemblyName);
-            }
-            catch (FileLoadException)
-            {
-                return null;
-            }
-            catch (ArgumentException)
-            {
-                return null;
-            }
         }
 
         private static Type GetTypeCore(ModuleDesc module, string typeName, ReadOnlySpan<string> nestedTypeNames)
@@ -126,10 +112,6 @@ namespace System.Reflection
             }
 
             return new Type(type);
-        }
-
-        private static void ParseError()
-        {
         }
     }
 }

@@ -9,6 +9,14 @@
     <WasmBuildTargetsDir>$([MSBuild]::NormalizeDirectory($(WasmProjectRoot), 'build'))</WasmBuildTargetsDir>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
+    <WorkItemPrefix Condition="'$(TestUsingWorkloads)' == 'true'">Workloads-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(TestUsingWorkloads)' != 'true'">NoWorkload-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(TestUsingWebcil)' == 'false'">$(WorkItemPrefix)NoWebcil-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(WasmEnableThreads)' != 'true'">$(WorkItemPrefix)ST-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(WasmEnableThreads)' == 'true'">$(WorkItemPrefix)MT-</WorkItemPrefix>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
     <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
     <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
@@ -27,12 +35,6 @@
   </ItemGroup>
 
   <Target Name="_AddWorkItemsForBuildWasmApps" Condition="'$(Scenario)' == 'BuildWasmApps'">
-    <PropertyGroup>
-      <WorkItemPrefix Condition="'$(TestUsingWorkloads)' == 'true'">Workloads-</WorkItemPrefix>
-      <WorkItemPrefix Condition="'$(TestUsingWorkloads)' != 'true'">NoWorkload-</WorkItemPrefix>
-      <WorkItemPrefix Condition="'$(TestUsingWebcil)' == 'false'">$(WorkItemPrefix)NoWebcil-</WorkItemPrefix>
-    </PropertyGroup>
-
     <ItemGroup>
       <!-- for buildwasmapps, the archive path is set in src/libraries/Directory.Build.props, so use that -->
       <_WasmWorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />

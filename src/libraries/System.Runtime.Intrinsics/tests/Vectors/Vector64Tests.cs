@@ -4,6 +4,7 @@
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
 using Xunit;
 
 namespace System.Runtime.Intrinsics.Tests.Vectors
@@ -4286,6 +4287,78 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         {
             Vector64<float> actualResult = Vector64.Log2(Vector64.Create(value));
             AssertEqual(Vector64.Create(expectedResult), actualResult, Vector64.Create(variance));
+        }
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
+        public void ConvertToInt32Test()
+        {
+            Assert.Equal(Vector64.Create(int.MinValue), Vector64.ConvertToInt32(Vector64.Create(float.MinValue)));
+            Assert.Equal(Vector64.Create(2), Vector64.ConvertToInt32(Vector64.Create(2.6f)));
+            Assert.Equal(Vector64.Create(int.MaxValue), Vector64.ConvertToInt32(Vector64.Create(float.MaxValue)));
+        }
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
+        public void ConvertToInt32NativeTest()
+        {
+            Assert.Equal(Vector64.Create(int.MinValue), Vector64.ConvertToInt32Native(Vector64.Create(float.MinValue)));
+            Assert.Equal(Vector64.Create(2), Vector64.ConvertToInt32Native(Vector64.Create(2.6f)));
+            Assert.Equal(Vector64.Create(int.MaxValue), Vector64.ConvertToInt32Native(Vector64.Create(float.MaxValue)));
+        }
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
+        public void ConvertToInt64Test()
+        {
+            Assert.Equal(Vector64.Create(long.MinValue), Vector64.ConvertToInt64(Vector64.Create(double.MinValue)));
+            Assert.Equal(Vector64.Create(2L), Vector64.ConvertToInt64(Vector64.Create(2.6)));
+            Assert.Equal(Vector64.Create(long.MaxValue), Vector64.ConvertToInt64(Vector64.Create(double.MaxValue)));
+        }
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
+        public void ConvertToInt64NativeTest()
+        {
+            Assert.Equal(Vector64.Create(long.MinValue), Vector64.ConvertToInt64Native(Vector64.Create(double.MinValue)));
+            Assert.Equal(Vector64.Create(2L), Vector64.ConvertToInt64Native(Vector64.Create(2.6)));
+            Assert.Equal(Vector64.Create(long.MaxValue), Vector64.ConvertToInt64Native(Vector64.Create(double.MaxValue)));
+        }
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
+        public void ConvertToUInt32Test()
+        {
+            Assert.Equal(Vector64.Create(uint.MinValue), Vector64.ConvertToUInt32(Vector64.Create(float.MinValue)));
+            Assert.Equal(Vector64.Create(2u), Vector64.ConvertToUInt32(Vector64.Create(2.6f)));
+            Assert.Equal(Vector64.Create(uint.MaxValue), Vector64.ConvertToUInt32(Vector64.Create(float.MaxValue)));
+        }
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
+        public void ConvertToUInt32NativeTest()
+        {
+            Assert.Equal(Vector64.Create(uint.MinValue), Vector64.ConvertToUInt32Native(Vector64.Create(float.MinValue)));
+            Assert.Equal(Vector64.Create(2u), Vector64.ConvertToUInt32Native(Vector64.Create(2.6f)));
+            Assert.Equal(Vector64.Create(uint.MaxValue), Vector64.ConvertToUInt32Native(Vector64.Create(float.MaxValue)));
+        }
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
+        public void ConvertToUInt64Test()
+        {
+            Assert.Equal(Vector64.Create(ulong.MinValue), Vector64.ConvertToUInt64(Vector64.Create(double.MinValue)));
+            Assert.Equal(Vector64.Create(2UL), Vector64.ConvertToUInt64(Vector64.Create(2.6)));
+            Assert.Equal(Vector64.Create(ulong.MaxValue), Vector64.ConvertToUInt64(Vector64.Create(double.MaxValue)));
+        }
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
+        public void ConvertToUInt64NativeTest()
+        {
+            Assert.Equal(Vector64.Create(ulong.MinValue), Vector64.ConvertToUInt64Native(Vector64.Create(double.MinValue)));
+            Assert.Equal(Vector64.Create(2UL), Vector64.ConvertToUInt64Native(Vector64.Create(2.6)));
+            Assert.Equal(Vector64.Create(ulong.MaxValue), Vector64.ConvertToUInt64Native(Vector64.Create(double.MaxValue)));
         }
     }
 }
