@@ -9,7 +9,7 @@ import numpy as np
 import pandas
 import tqdm
 
-from jitml import SuperPmi, SuperPmiContext, JitCseModel, get_observation, MethodContext
+from jitml import SuperPmi, SuperPmiContext, JitCseModel, MethodContext, JitCseEnv
 from train import validate_core_root
 
 class ModelResult(Enum):
@@ -27,7 +27,7 @@ def set_result(data, m_id, heuristic_score, no_cse_score, model_score, error = M
 
 def get_most_likley_allowed_action(jitrl : JitCseModel, method : MethodContext, can_terminate : bool):
     """Returns the most likely allowed actions."""
-    obs = get_observation(method)
+    obs = JitCseEnv.get_observation(method)
     probabilities = jitrl.action_probabilities(obs)
 
     # If we are not allowed to terminate, remove the terminate action.

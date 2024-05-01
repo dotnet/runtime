@@ -4,15 +4,38 @@ from typing import Any, Dict, List, Optional
 import gymnasium as gym
 import numpy as np
 
-from .method_context import MethodContext
+from .method_context import JitType, MethodContext
 from .superpmi import SuperPmi, SuperPmiContext
-from .default_observation import get_observation, create_observation
 from .constants import (INVALID_ACTION_PENALTY, INVALID_ACTION_LIMIT, MAX_CSE, is_acceptable_method)
 
+# observation space
+JITTYPE_ONEHOT_SIZE = 6
+BOOLEAN_FEATURES = 7
+FLOAT_FEATURES = 9
+FEATURES = JITTYPE_ONEHOT_SIZE + BOOLEAN_FEATURES + FLOAT_FEATURES
+
+# Scale up the reward to make it more meaningful.
 REWARD_SCALE = 5.0
 
 class JitCseEnv(gym.Env):
     """A gymnasium environment for the JIT."""
+    observation_columns : List[str] = [f"type_{JitType(i).name.lower()}" for i in range(1, 7)] + \
+        [
+            "can_apply", "live_across_call", "const", "shared_const", "make_cse", "has_call", "containable",
+            "cost_ex", "cost_sz", "use_count", "def_count", "use_wt_cnt", "def_wt_cnt", "distinct_locals",
+            "local_occurrences", "enreg_count"
+        ]
+
+    # Calculated using scripts/calculate_feature_norm.py
+    obs_subtract = np.array([0.0, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+                             0.0, 0.0, 0.0], dtype=np.float32)
+    obs_scale = np.array([1.0, 1.0, 1.0, 1.0, 1, 1.0, 1.0, 1.0, 1.0, 1, 1.0, 1.0, 1.0, 0.012658227848101266,
+                       0.018867924528301886, 0.001763668430335097, 0.005291005291005291, 0.06988495589628721,
+                       0.07344255107610509, 0.2, 0.16666666666666666, 0.0013623978201634877], dtype=np.float32)
+    obs_log1p = np.array([False, False, False, False, False, False, False, False, False, False, False, False, False,
+                          False, False, False, False, True, True, False, False, False], dtype=bool)
+
+
     def __init__(self, context : SuperPmiContext, methods : Optional[List[int]] = None, **kwargs):
         super().__init__(**kwargs)
 
@@ -23,8 +46,9 @@ class JitCseEnv(gym.Env):
 
         self.__superpmi : SuperPmi = None
         self.action_space = gym.spaces.Discrete(MAX_CSE + 1)
-
-        self.observation_space = create_observation()
+        self.observation_space = gym.spaces.Box(np.zeros((MAX_CSE, FEATURES)),
+                                                np.ones((MAX_CSE, FEATURES)),
+                                                dtype=np.float32)
 
         self.last_info : Optional[Dict[str,object]] = None
 
@@ -59,7 +83,7 @@ class JitCseEnv(gym.Env):
             if failure_count > 512:
                 raise ValueError("No valid methods found")
 
-        observation = get_observation(no_cse)
+        observation = self.get_observation(no_cse)
         self.last_info = {
             'invalid_actions' : 0,
             'method_index' : index,
@@ -101,7 +125,7 @@ class JitCseEnv(gym.Env):
                                     JitRLHookCSEDecisions=previous.cses_chosen + [action])
 
             if current is not None:
-                observation = get_observation(current)
+                observation = self.get_observation(current)
                 truncated = False
                 terminated = not current.cse_candidates or action is None
                 reward = self.get_rewards(previous, current)
@@ -160,6 +184,55 @@ class JitCseEnv(gym.Env):
 
         candidate = method.cse_candidates[action] if action < len(method.cse_candidates) else None
         return candidate is not None and candidate.can_apply
+
+    @classmethod
+    def get_observation(cls, method : MethodContext, fill=True):
+        """Builds the observation from a method."""
+        observation = cls.get_observation_without_norm(method, fill=fill)
+
+        # normalize the data
+        observation[:, cls.obs_log1p] = np.log1p(observation[:, cls.obs_log1p])
+        observation = (observation - cls.obs_subtract) * cls.obs_scale
+
+        # We still need to clip the data since there could be some values we didn't encounter when building
+        # the scaling factors
+        np.clip(observation, 0.0, 1.0, out=observation)
+
+        return observation
+
+    @classmethod
+    def get_observation_without_norm(cls, method : MethodContext, fill=True):
+        """Builds the observation from a method without normalizing the data."""
+        tensors = []
+        for cse in method.cse_candidates:
+            tensor = []
+
+            # one-hot encode the type
+            one_hot = [0.0] * 6
+            one_hot[cse.type.value - 1] = 1.0
+            tensor.extend(one_hot)
+
+            # boolean features
+            tensor.extend([
+                cse.can_apply, cse.live_across_call, cse.const, cse.shared_const, cse.make_cse, cse.has_call,
+                cse.containable
+            ])
+
+            # float features
+            tensor.extend([
+                cse.cost_ex, cse.cost_sz, cse.use_count, cse.def_count, cse.use_wt_cnt, cse.def_wt_cnt,
+                cse.distinct_locals, cse.local_occurrences, cse.enreg_count
+            ])
+
+            tensors.append(tensor)
+
+        if fill:
+            while len(tensors) < MAX_CSE:
+                tensors.append([0.0] * FEATURES)
+
+        observation = np.vstack(tensors)
+        return observation
+
 
     def _jit_method_with_cleanup(self, m_id, *args, **kwargs):
         """Jits a method, but if it fails, we remove it from future consideration.  Note that the

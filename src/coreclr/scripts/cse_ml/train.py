@@ -58,11 +58,13 @@ def main(args):
 
     print(f"Training with {len(ctx.training_methods)} methods, holding back {len(ctx.test_methods)} for testing.")
 
-    # Train the model.
+    # Define our own environment (with wrappers) if requested.
     make_env = deep_reward_make_env(ctx) if args.deep_rewards else None
-    iterations = args.iterations if args.iterations is not None else 1_000_000
 
+    # Train the model.
     rl = JitCseModel(args.algorithm, make_env=make_env)
+
+    iterations = args.iterations if args.iterations is not None else 1_000_000
     path = rl.train(ctx, output_dir, iterations=iterations, parallel=args.parallel)
     print(f"Model saved to: {path}")
 

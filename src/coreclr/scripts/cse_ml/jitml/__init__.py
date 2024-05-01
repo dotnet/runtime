@@ -4,7 +4,6 @@ from .superpmi import SuperPmi, SuperPmiContext
 from .jit_cse import JitCseEnv
 from .machine_learning import JitCseModel
 from .deep_rewards import DeepCseRewardWrapper
-from .default_observation import get_observation
 
 __all__ = [
     SuperPmi.__name__,
@@ -15,5 +14,4 @@ __all__ = [
     CseCandidate.__name__,
     JitType.__name__,
     DeepCseRewardWrapper.__name__,
-    get_observation.__name__,
 ]
