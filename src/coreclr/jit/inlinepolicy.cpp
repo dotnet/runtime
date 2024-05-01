@@ -1122,7 +1122,7 @@ void RandomPolicy::NoteInt(InlineObservation obs, int value)
 //    methodInfo -- method info for the callee
 //
 // Notes:
-//    The random policy makes random decisions about profitablity.
+//    The random policy makes random decisions about profitability.
 //    Generally we aspire to inline differently, not necessarily to
 //    inline more.
 
