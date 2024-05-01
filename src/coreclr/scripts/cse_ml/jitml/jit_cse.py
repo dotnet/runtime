@@ -23,7 +23,9 @@ class JitCseEnv(gym.Env):
 
         self.__superpmi : SuperPmi = None
         self.action_space = gym.spaces.Discrete(MAX_CSE + 1)
+
         self.observation_space = create_observation()
+
         self.last_info : Optional[Dict[str,object]] = None
 
     def __del__(self):
@@ -43,12 +45,12 @@ class JitCseEnv(gym.Env):
         failure_count = 0
         while True:
             index = self.__select_method()
-            no_cse = self._jit_method(index, JitMetrics=1, JitRLHook=1, JitRLHookCSEDecisions=[])
+            no_cse = self._jit_method_with_cleanup(index, JitMetrics=1, JitRLHook=1, JitRLHookCSEDecisions=[])
             if no_cse is None:
                 continue
 
             if is_acceptable_method(no_cse):
-                original_heuristic = self._jit_method(index, JitMetrics=1)
+                original_heuristic = self._jit_method_with_cleanup(index, JitMetrics=1)
                 if original_heuristic is None:
                     continue
                 break
@@ -95,7 +97,7 @@ class JitCseEnv(gym.Env):
         # Ensure the selected action is valid.
         info['action_is_valid'] = self._is_valid_action(action, previous)
         if info['action_is_valid']:
-            current = self._jit_method(info['method_index'], JitMetrics=1, JitRLHook=1,
+            current = self._jit_method_with_cleanup(info['method_index'], JitMetrics=1, JitRLHook=1,
                                     JitRLHookCSEDecisions=previous.cses_chosen + [action])
 
             if current is not None:
@@ -159,7 +161,9 @@ class JitCseEnv(gym.Env):
         candidate = method.cse_candidates[action] if action < len(method.cse_candidates) else None
         return candidate is not None and candidate.can_apply
 
-    def _jit_method(self, m_id, *args, **kwargs):
+    def _jit_method_with_cleanup(self, m_id, *args, **kwargs):
+        """Jits a method, but if it fails, we remove it from future consideration.  Note that the
+        SuperPmi class will retry before returning None, so we know this method is not going to work."""
         superpmi = self.__get_or_create_superpmi()
 
         result = superpmi.jit_method(m_id, retry=2, *args, **kwargs)
