@@ -191,6 +191,12 @@ RefPosition* LinearScan::newRefPositionRaw(LsraLocation nodeLocation, GenTree* t
         assert(!((refType == RefTypeParamDef) || (refType == RefTypeZeroInit) || (refType == RefTypeDummyDef) ||
                  (refType == RefTypeExpUse)));
     }
+
+    switch (refType)
+    {
+#define DEF_REFTYPE(name, x, y) case name: compiler->Metrics.Num ## name++; break;
+#include "lsra_reftypes.h"
+    }
 #endif // DEBUG
     return newRP;
 }
