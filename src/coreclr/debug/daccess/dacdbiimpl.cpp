@@ -4924,11 +4924,6 @@ VMPTR_AppDomain DacDbiInterfaceImpl::GetCurrentAppDomain(VMPTR_Thread vmThread)
     Thread *    pThread    = vmThread.GetDacPtr();
     AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
 
-    if (pAppDomain == NULL)
-    {
-        ThrowHR(E_FAIL);
-    }
-
     VMPTR_AppDomain vmAppDomain = VMPTR_AppDomain::NullPtr();
     vmAppDomain.SetDacTargetPtr(PTR_HOST_TO_TADDR(pAppDomain));
     return vmAppDomain;
