@@ -179,21 +179,25 @@ def getUserEventDataTypeMapping(runtimeFlavor):
     if runtimeFlavor.coreclr:
         return coreCLRUserEventDataTypeMapping
     # elif runtimeFlavor.mono:
-    #     return monoEventPipeDataTypeMapping
+    #     return monoUserEventDataTypeMapping
     # elif runtimeFlavor.nativeaot:
-    #     return aotEventPipeDataTypeMapping
+    #     return aotUserEventDataTypeMapping
 
 def getUserEventLogLevelMapping(runtimeFlavor):
     if runtimeFlavor.coreclr:
         return coreCLRUserEventLogLevelMapping
+    # elif runtimeFlavor.mono:
+    #     return monoUserEventLogLevelMapping
+    # elif runtimeFlavor.nativeaot:
+    #     return aotUserEventLogLevelMapping
 
 def getArrayDataTypeMapping(runtimeFlavor):
     if runtimeFlavor.coreclr:
         return coreCLRUserEventArrayTypeMapping
     # elif runtimeFlavor.mono:
-    #     return monoEventPipeDataTypeMapping
+    #     return monoUserEventArrayTypeMapping
     # elif runtimeFlavor.nativeaot:
-    #     return aotEventPipeDataTypeMapping
+    #     return aotUserEventArrayTypeMapping
 
 def getEventPipeDataTypeMapping(runtimeFlavor):
     if runtimeFlavor.coreclr:
@@ -210,7 +214,8 @@ def getPalDataTypeMapping(runtimeFlavor):
         return monoPalDataTypeMapping
     elif runtimeFlavor.nativeaot:
         return aotPalDataTypeMapping
-#maybe need to add getUserEventDataTypeMapping
+
+
 def includeProvider(providerName, runtimeFlavor):
     if (runtimeFlavor.coreclr or runtimeFlavor.nativeaot) and providerName == "Microsoft-DotNETRuntimeMonoProfiler":
         return False

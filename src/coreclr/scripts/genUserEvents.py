@@ -100,11 +100,7 @@ def generateClrUserEventWriteEventsImpl(providerNode, providerPrettyName, provid
         if not includeEvent(inclusionList, providerName, eventName):
             continue
 
-        eventIsEnabledFunc = ""
-        if runtimeFlavor.coreclr:
-            eventIsEnabledFunc = "TraceLoggingProviderEnabled"
-        elif (runtimeFlavor.mono or runtimeFlavor.nativeaot):
-            eventIsEnabledFunc = "ep_event_is_enabled"
+        eventIsEnabledFunc = "TraceLoggingProviderEnabled"
 
         # generate UserEventEnabled function
         eventEnabledImpl = generateMethodSignatureEnabled(eventName, runtimeFlavor, providerName, eventLevel, eventKeywords) + """
@@ -137,16 +133,13 @@ def generateClrUserEventWriteEventsImpl(providerNode, providerPrettyName, provid
             body = generateWriteEventBody(template, providerPrettyName, eventName, runtimeFlavor, eventLevel, eventKeywordsMask)
             WriteEventImpl.append(body)
             WriteEventImpl.append("}\n\n")
-        else: #not too sure about this
+        else:
             if runtimeFlavor.coreclr:
                 WriteEventImpl.append(
                     "    TraceLoggingWriteActivity(%s, \"%s\"" %(providerPrettyName, eventName) +
                     ", ActivityId, RelatedActivityId);\n")
-            # elif (runtimeFlavor.mono or runtimeFlavor.nativeaot):
-            #     WriteEventImpl.append(
-            #         "    ep_write_event (EventPipeEvent" +
-            #         eventName +
-            #         ", (uint8_t *) NULL, 0, (const uint8_t *)ActivityId, (const uint8_t *)RelatedActivityId);\n")
+            elif (runtimeFlavor.mono or runtimeFlavor.nativeaot):
+
             WriteEventImpl.append("\n    return ERROR_SUCCESS;\n}\n\n")
     return ''.join(WriteEventImpl)
 
@@ -190,7 +183,7 @@ def generateEventKeywords(eventKeywords):
 
 def getCoreCLRUserEventHelperFileImplPrefix():
     return """
-//#include "common.h"
+#include "common.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -201,365 +194,19 @@ def getCoreCLRUserEventHelperFileImplPrefix():
 #include "pal.h"
 #endif //TARGET_UNIX
 
-bool ResizeBuffer(BYTE *&buffer, size_t& size, size_t currLen, size_t newSize, bool &fixedBuffer)
-{
-    newSize = (size_t)(newSize * 1.5);
-    _ASSERTE(newSize > size); // check for overflow
-
-    if (newSize < 32)
-        newSize = 32;
-
-    BYTE *newBuffer = new (nothrow) BYTE[newSize];
-
-    if (newBuffer == NULL)
-        return false;
-
-    memcpy(newBuffer, buffer, currLen);
-
-    if (!fixedBuffer)
-        delete[] buffer;
-
-    buffer = newBuffer;
-    size = newSize;
-    fixedBuffer = false;
-
-    return true;
-}
-
-bool WriteToBuffer(const BYTE *src, size_t len, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
-{
-    if (!src) return true;
-    if (offset + len > size)
-    {
-        if (!ResizeBuffer(buffer, size, offset, size + len, fixedBuffer))
-            return false;
-    }
-
-    memcpy(buffer + offset, src, len);
-    offset += len;
-    return true;
-}
-
-bool WriteToBuffer(PCWSTR str, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
-{
-    if (!str) return true;
-    size_t byteCount = (u16_strlen(str) + 1) * sizeof(*str);
-
-    if (offset + byteCount > size)
-    {
-        if (!ResizeBuffer(buffer, size, offset, size + byteCount, fixedBuffer))
-            return false;
-    }
-
-    memcpy(buffer + offset, str, byteCount);
-    offset += byteCount;
-    return true;
-}
-
-bool WriteToBuffer(const char *str, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
-{
-    if (!str) return true;
-    size_t len = strlen(str) + 1;
-    if (offset + len > size)
-    {
-        if (!ResizeBuffer(buffer, size, offset, size + len, fixedBuffer))
-            return false;
-    }
-
-    memcpy(buffer + offset, str, len);
-    offset += len;
-    return true;
-}
-
 """
 
 def getCoreCLRUserEventHelperFileImplSuffix():
     return ""
 
 def getMonoUserEventHelperFileImplPrefix():
-    return """#include <config.h>
-#ifdef ENABLE_PERFTRACING
-#include <userevent/ep-rt-config.h>
-#include <userevent/ep-types.h>
-#include <userevent/ep-rt.h>
-#include <userevent/ep.h>
-#include <userevent/ep-event.h>
-
-bool
-resize_buffer (
-    uint8_t **buffer,
-    size_t *size,
-    size_t current_size,
-    size_t new_size,
-    bool *fixed_buffer);
-
-bool
-write_buffer (
-    const uint8_t *value,
-    size_t value_size,
-    uint8_t **buffer,
-    size_t *offset,
-    size_t *size,
-    bool *fixed_buffer);
-
-bool
-write_buffer_string_utf8_to_utf16_t (
-    const ep_char8_t *value,
-    size_t value_len,
-    uint8_t **buffer,
-    size_t *offset,
-    size_t *size,
-    bool *fixed_buffer);
-
-bool
-write_buffer_string_utf8_t (
-    const ep_char8_t *value,
-    size_t value_len,
-    uint8_t **buffer,
-    size_t *offset,
-    size_t *size,
-    bool *fixed_buffer);
-
-bool
-resize_buffer (
-    uint8_t **buffer,
-    size_t *size,
-    size_t current_size,
-    size_t new_size,
-    bool *fixed_buffer)
-{
-    EP_ASSERT (buffer != NULL);
-    EP_ASSERT (size != NULL);
-    EP_ASSERT (fixed_buffer != NULL);
-
-    new_size = (size_t)(new_size * 1.5);
-    if (new_size < *size) {
-        EP_ASSERT (!"Overflow");
-        return false;
-    }
-
-    if (new_size < 32)
-        new_size = 32;
-
-    uint8_t *new_buffer;
-    new_buffer = ep_rt_byte_array_alloc (new_size);
-    ep_raise_error_if_nok (new_buffer != NULL);
-
-    memcpy (new_buffer, *buffer, current_size);
-
-    if (!*fixed_buffer)
-        ep_rt_byte_array_free (*buffer);
-
-    *buffer = new_buffer;
-    *size = new_size;
-    *fixed_buffer = false;
-
-    return true;
-
-    ep_on_error:
-    return false;
-}
-
-bool
-write_buffer (
-    const uint8_t *value,
-    size_t value_size,
-    uint8_t **buffer,
-    size_t *offset,
-    size_t *size,
-    bool *fixed_buffer)
-{
-    EP_ASSERT (buffer != NULL);
-    EP_ASSERT (offset != NULL);
-    EP_ASSERT (size != NULL);
-    EP_ASSERT (fixed_buffer != NULL);
-
-    if ((value_size + *offset) > *size)
-        ep_raise_error_if_nok (resize_buffer (buffer, size, *offset, *size + value_size, fixed_buffer));
-
-    memcpy (*buffer + *offset, value, value_size);
-    *offset += value_size;
-
-    return true;
-
-ep_on_error:
-    return false;
-}
-
-bool
-write_buffer_string_utf8_to_utf16_t (
-    const ep_char8_t *value,
-    size_t value_len,
-    uint8_t **buffer,
-    size_t *offset,
-    size_t *size,
-    bool *fixed_buffer)
-{
-    if (!value || value_len == 0) {
-        value_len = sizeof (ep_char16_t);
-        if ((value_len + *offset) > *size)
-            ep_raise_error_if_nok (resize_buffer (buffer, size, *offset, *size + value_len, fixed_buffer));
-        (*buffer) [*offset] = 0;
-        (*offset)++;
-        (*buffer) [*offset] = 0;
-        (*offset)++;
-        return true;
-    }
-
-    GFixedBufferCustomAllocatorData custom_alloc_data;
-    custom_alloc_data.buffer = *buffer + *offset;
-    custom_alloc_data.buffer_size = *size - *offset;
-    custom_alloc_data.req_buffer_size = 0;
-
-    if (!g_utf8_to_utf16le_custom_alloc (value, (glong)value_len, NULL, NULL, g_fixed_buffer_custom_allocator, &custom_alloc_data, NULL)) {
-        ep_raise_error_if_nok (resize_buffer (buffer, size, *offset, *size + custom_alloc_data.req_buffer_size, fixed_buffer));
-        custom_alloc_data.buffer = *buffer + *offset;
-        custom_alloc_data.buffer_size = *size - *offset;
-        custom_alloc_data.req_buffer_size = 0;
-        ep_raise_error_if_nok (g_utf8_to_utf16le_custom_alloc (value, (glong)value_len, NULL, NULL, g_fixed_buffer_custom_allocator, &custom_alloc_data, NULL) != NULL);
-    }
-
-    *offset += custom_alloc_data.req_buffer_size;
-    return true;
-
-ep_on_error:
-    return false;
-}
-
-bool
-write_buffer_string_utf8_t (
-    const ep_char8_t *value,
-    size_t value_len,
-    uint8_t **buffer,
-    size_t *offset,
-    size_t *size,
-    bool *fixed_buffer)
-{
-    if (!value)
-        value_len = 0;
-
-    if ((value_len + 1 + *offset) > *size)
-        ep_raise_error_if_nok (resize_buffer (buffer, size, *offset, *size + value_len + 1, fixed_buffer));
-
-    if (value_len != 0) {
-        memcpy (*buffer + *offset, value, value_len);
-        *offset += value_len;
-    }
-
-    (*buffer) [*offset] = 0;
-    (*offset)++;
-
-    return true;
-
-ep_on_error:
-    return false;
-}
-
-"""
+    return ""
 
 def getMonoUserEventHelperFileImplSuffix():
-    return "#endif\n"
+    return ""
 
 def getAotUserEventHelperFileImplPrefix():
-    return """
-//#include <common.h>
-#include <gcenv.h>
-
-#include <eventtrace_context.h>
-#include <gcheaputilities.h>
-
-#include <userevent/ep.h>
-#include <userevent/ep-provider.h>
-#include <userevent/ep-config.h>
-#include <userevent/ep-event.h>
-#include <userevent/ep-event-instance.h>
-#include <userevent/ep-session.h>
-#include <userevent/ep-session-provider.h>
-#include <userevent/ep-metadata-generator.h>
-#include <userevent/ep-event-payload.h>
-#include <userevent/ep-buffer-manager.h>
-
-%s
-
-bool ResizeBuffer(BYTE *&buffer, size_t& size, size_t currLen, size_t newSize, bool &fixedBuffer)
-{
-    newSize = (size_t)(newSize * 1.5);
-    _ASSERTE(newSize > size); // check for overflow
-
-    if (newSize < 32)
-        newSize = 32;
-
-    BYTE *newBuffer = new (nothrow) BYTE[newSize];
-
-    if (newBuffer == NULL)
-        return false;
-
-    memcpy(newBuffer, buffer, currLen);
-
-    if (!fixedBuffer)
-        delete[] buffer;
-
-    buffer = newBuffer;
-    size = newSize;
-    fixedBuffer = false;
-
-    return true;
-}
-
-bool WriteToBuffer(const BYTE *src, size_t len, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
-{
-    if (!src) return true;
-    if (offset + len > size)
-    {
-        if (!ResizeBuffer(buffer, size, offset, size + len, fixedBuffer))
-            return false;
-    }
-
-    memcpy(buffer + offset, src, len);
-    offset += len;
-    return true;
-}
-
-bool WriteToBuffer(const WCHAR*  str, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
-{
-    if (!str) return true;
-    size_t byteCount = (ep_rt_utf16_string_len(reinterpret_cast<const ep_char16_t*>(str)) + 1) * sizeof(*str);
-
-    if (offset + byteCount > size)
-    {
-        if (!ResizeBuffer(buffer, size, offset, size + byteCount, fixedBuffer))
-            return false;
-    }
-
-    memcpy(buffer + offset, str, byteCount);
-    offset += byteCount;
-    return true;
-}
-
-bool WriteToBuffer(const char *str, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
-{
-    if (!str) return true;
-    size_t len = strlen(str) + 1;
-    if (offset + len > size)
-    {
-        if (!ResizeBuffer(buffer, size, offset, size + len, fixedBuffer))
-            return false;
-    }
-
-    memcpy(buffer + offset, str, len);
-    offset += len;
-    return true;
-}
-
-UserEventProvider * create_provider(const WCHAR* providerName, UserEventCallback callback, void* pCallbackContext = nullptr)
-{
-    ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName));
-    UserEventProvider * provider = ep_create_provider (providerNameUTF8, callback, pCallbackContext);
-    ep_rt_utf8_string_free (providerNameUTF8);
-    return provider;
-}
-
-""" % (getCoreCLRMonoNativeAotTypeAdaptionDefines())
+    return ""
 
 def getAotUserEventHelperFileImplSuffix():
     return ""
@@ -624,296 +271,16 @@ def getCoreCLRUserEventImplFileSuffix():
     return ""
 
 def getMonoUserEventImplFilePrefix():
-    return """#include <userevent/ep-rt-config.h>
-#ifdef ENABLE_PERFTRACING
-#include <userevent/ep.h>
-#include <userevent/ep-event.h>
-#include "clrusereventwriteevents.h"
-%s
-/*
- * Forward declares of functions.
- */
-
-bool
-resize_buffer (
-    uint8_t **buffer,
-    size_t *size,
-    size_t current_size,
-    size_t new_size,
-    bool *fixed_buffer);
-
-bool
-write_buffer (
-    const uint8_t *value,
-    size_t value_size,
-    uint8_t **buffer,
-    size_t *offset,
-    size_t *size,
-    bool *fixed_buffer);
-
-bool
-write_buffer_string_utf8_t (
-    const ep_char8_t *value,
-    size_t value_len,
-    uint8_t **buffer,
-    size_t *offset,
-    size_t *size,
-    bool *fixed_buffer);
-
-bool
-write_buffer_string_utf8_to_utf16_t (
-    const ep_char8_t *value,
-    size_t value_len,
-    uint8_t **buffer,
-    size_t *offset,
-    size_t *size,
-    bool *fixed_buffer);
-
-static
-inline
-bool
-write_buffer_guid_t (
-    const uint8_t *value,
-    uint8_t **buffer,
-    size_t *offset,
-    size_t *size,
-    bool *fixed_buffer)
-{
-    return write_buffer (value, EP_GUID_SIZE, buffer, offset, size, fixed_buffer);
-}
-
-static
-inline
-bool
-write_buffer_uint8_t (
-    uint8_t value,
-    uint8_t **buffer,
-    size_t *offset,
-    size_t *size,
-    bool *fixed_buffer)
-{
-    return write_buffer ((const uint8_t *)&value, sizeof (uint8_t), buffer, offset, size, fixed_buffer);
-}
-
-static
-inline
-bool
-write_buffer_uint16_t (
-    uint16_t value,
-    uint8_t **buffer,
-    size_t *offset,
-    size_t *size,
-    bool *fixed_buffer)
-{
-    value = ep_rt_val_uint16_t (value);
-    return write_buffer ((const uint8_t *)&value, sizeof (uint16_t), buffer, offset, size, fixed_buffer);
-}
-
-static
-inline
-bool
-write_buffer_uint32_t (
-    uint32_t value,
-    uint8_t **buffer,
-    size_t *offset,
-    size_t *size,
-    bool *fixed_buffer)
-{
-    value = ep_rt_val_uint32_t (value);
-    return write_buffer ((const uint8_t *)&value, sizeof (uint32_t), buffer, offset, size, fixed_buffer);
-}
-
-static
-inline
-bool
-write_buffer_int32_t (
-    int32_t value,
-    uint8_t **buffer,
-    size_t *offset,
-    size_t *size,
-    bool *fixed_buffer)
-{
-    value = ep_rt_val_int32_t (value);
-    return write_buffer ((const uint8_t *)&value, sizeof (int32_t), buffer, offset, size, fixed_buffer);
-}
-
-static
-inline
-bool
-write_buffer_uint64_t (
-    uint64_t value,
-    uint8_t **buffer,
-    size_t *offset,
-    size_t *size,
-    bool *fixed_buffer)
-{
-    value = ep_rt_val_uint64_t (value);
-    return write_buffer ((const uint8_t *)&value, sizeof (uint64_t), buffer, offset, size, fixed_buffer);
-}
-
-static
-inline
-bool
-write_buffer_int64_t (
-    int64_t value,
-    uint8_t **buffer,
-    size_t *offset,
-    size_t *size,
-    bool *fixed_buffer)
-{
-    value = ep_rt_val_int64_t (value);
-    return write_buffer ((const uint8_t *)&value, sizeof (int64_t), buffer, offset, size, fixed_buffer);
-}
-
-static
-inline
-bool
-write_buffer_double_t (
-    double value,
-    uint8_t **buffer,
-    size_t *offset,
-    size_t *size,
-    bool *fixed_buffer)
-{
-#if BIGENDIAN
-    uint64_t value_as_uint64_t;
-    memcpy (&value_as_uint64_t, &value, sizeof (uint64_t));
-    value_as_uint64_t = ep_rt_val_uint64_t (value_as_uint64_t);
-    memcpy (&value, &value_as_uint64_t, sizeof (uint64_t));
-#endif
-    return write_buffer ((const uint8_t *)&value, sizeof (double), buffer, offset, size, fixed_buffer);
-}
-
-static
-inline
-bool
-write_buffer_bool_t (
-    bool value,
-    uint8_t **buffer,
-    size_t *offset,
-    size_t *size,
-    bool *fixed_buffer)
-{
-    return write_buffer_int32_t (value, buffer, offset, size, fixed_buffer);
-}
-
-static
-inline
-bool
-write_buffer_uintptr_t (
-    uintptr_t value,
-    uint8_t **buffer,
-    size_t *offset,
-    size_t *size,
-    bool *fixed_buffer)
-{
-    value = ep_rt_val_uintptr_t (value);
-    return write_buffer ((const uint8_t *)&value, sizeof (uintptr_t), buffer, offset, size, fixed_buffer);
-}
-
-static
-inline
-UserEventEvent *
-provider_add_event (
-    UserEventProvider *provider,
-    uint32_t event_id,
-    uint64_t keywords,
-    uint32_t event_version,
-    UserEventEventLevel level,
-    bool need_stack)
-{
-    return ep_provider_add_event (provider, event_id, keywords, event_version, level, need_stack, NULL, 0);
-}
-
-static
-inline
-UserEventProvider *
-create_provider (
-    const wchar_t *provider_name,
-    UserEventCallback callback_func)
-{
-    ep_char8_t *provider_name_utf8 = NULL;
-
-#if WCHAR_MAX == 0xFFFF
-    provider_name_utf8 = g_utf16_to_utf8 ((const gunichar2 *)provider_name, -1, NULL, NULL, NULL);
-#else
-    gunichar2 *provider_name_utf16 = g_ucs4_to_utf16 ((const gunichar *)provider_name, -1, NULL, NULL, NULL);
-    provider_name_utf8 = g_utf16_to_utf8 (provider_name_utf16, -1, NULL, NULL, NULL);
-    g_free (provider_name_utf16);
-#endif
-
-    ep_return_null_if_nok (provider_name_utf8 != NULL);
-
-    UserEventProvider *provider = ep_create_provider (provider_name_utf8, callback_func, NULL);
-
-    g_free (provider_name_utf8);
-    return provider;
-}
-""" % (getCoreCLRMonoNativeAotTypeAdaptionDefines())
+    return ""
 
 def getMonoUserEventImplFileSuffix():
-    return "#endif\n"
+    return ""
 
 def getAotUserEventImplFilePrefix():
-    return """
-//#include <common.h>
-#include <gcenv.h>
-
-#include <eventtrace_context.h>
-#include <gcheaputilities.h>
-
-#include <userevent/ep.h>
-#include <userevent/ep-provider.h>
-#include <userevent/ep-config.h>
-#include <userevent/ep-event.h>
-#include <userevent/ep-event-instance.h>
-#include <userevent/ep-session.h>
-#include <userevent/ep-session-provider.h>
-#include <userevent/ep-metadata-generator.h>
-#include <userevent/ep-event-payload.h>
-#include <userevent/ep-buffer-manager.h>
-
-%s
-
-bool ResizeBuffer(BYTE *&buffer, size_t& size, size_t currLen, size_t newSize, bool &fixedBuffer);
-bool WriteToBuffer(const WCHAR* str, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
-bool WriteToBuffer(const BYTE *src, size_t len, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
-
-UserEventProvider * create_provider(const WCHAR*, UserEventCallback, void* pCallbackContext = nullptr);
-
-template <typename T>
-bool WriteToBuffer(const T &value, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
-{
-    if (sizeof(T) + offset > size)
-    {
-        if (!ResizeBuffer(buffer, size, offset, size + sizeof(T), fixedBuffer))
-            return false;
-    }
-
-    memcpy(buffer + offset, (char *)&value, sizeof(T));
-    offset += sizeof(T);
-    return true;
-}
-
-""" % (getCoreCLRMonoNativeAotTypeAdaptionDefines())
+    return ""
 
 def getAotUserEventImplFileSuffix():
-    return """
-bool DotNETRuntimeProvider_IsEnabled(unsigned char level, unsigned long long keyword)
-{
-    if (!ep_enabled())
-        return false;
-
-    USEREVENT_TRACE_CONTEXT& context = MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context.UserEventProvider;
-    if (!context.IsEnabled)
-        return false;
-
-    if (level > context.Level)
-        return false;
-
-    return (keyword == (ULONGLONG)0) || (keyword & context.EnabledKeywordsBitmask) != 0;
-}
-"""
+    return ""
 
 def generateUserEventImplFiles(
         etwmanifest, userevent_directory, extern, target_cpp, runtimeFlavor, inclusionList, exclusionList, dryRun):
@@ -963,18 +330,7 @@ def generateUserEventImplFiles(
                     header = getAotUserEventImplFilePrefix()
 
                 usereventImpl.write(header + "\n")
-                #usereventImpl.write(
-                #    "const %s* %sName = W(\"%s\");\n" % (
-                 #       getEventPipeDataTypeMapping(runtimeFlavor)["WCHAR"], #FIX
-                 #       providerPrettyName,
-                 #       providerName
-                #    )
-                #)
 
-                #usereventImpl.write(
-                #    "UserEventProvider *UserEventProvider" + providerPrettyName +
-                 #   (" = nullptr;\n" if target_cpp else " = NULL;\n")
-                #)
                 templateNodes = providerNode.getElementsByTagName('template')
                 allTemplates = parseTemplateNodes(templateNodes)
                 eventNodes = providerNode.getElementsByTagName('event')
@@ -1000,6 +356,9 @@ def generateUserEventImplFiles(
 
 def generateUserEventFiles(
         etwmanifest, intermediate, extern, target_cpp, runtimeFlavor, inclusionList, exclusionList, dryRun):
+    if runtimeFlavor.nativeaot or runtimeFlavor.mono:
+        raise Exception("genUserEvents.py only supports coreclr currently.")
+    
     userevent_directory = os.path.join(intermediate, userevent_dirname)
     tree = DOM.parse(etwmanifest)
 
