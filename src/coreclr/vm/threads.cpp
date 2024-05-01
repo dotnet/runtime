@@ -5850,7 +5850,7 @@ Retry:
     // return).
     //
     // Note: we don't actually assert this if
-    // ThreadStore::TrapReturningThreadsIncrement() updated g_TrapReturningThreads
+    // ThreadStore::IncrementTrapReturningThreads() updated g_TrapReturningThreads
     // between the beginning of this function and the moment of the assert.
     // *** The order of evaluation in the if condition is important ***
     _ASSERTE(
