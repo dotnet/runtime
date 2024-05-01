@@ -27,8 +27,14 @@ class JitCseEnv(gym.Env):
         self.last_info : Optional[Dict[str,object]] = None
 
     def __del__(self):
+        self.close()
+
+    def close(self):
+        """Closes the environment and cleans up resources."""
+        super().close()
         if self.__superpmi is not None:
             self.__superpmi.stop()
+            self.__superpmi = None
 
     def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None):
         super().reset(seed=seed, options=options)
