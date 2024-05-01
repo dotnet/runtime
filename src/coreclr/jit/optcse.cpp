@@ -2973,59 +2973,98 @@ void CSE_HeuristicParameterized::DumpChoices(ArrayStack<Choice>& choices, CSEdsc
 
 #ifdef DEBUG
 
+//------------------------------------------------------------------------
+// CSE_HeuristicRLHook: a generic 'hook' for driving CSE decisions out of
+//                      process using reinforcement learning
+//
+// Arguments;
+//  pCompiler - compiler instance
+//
+// Notes:
+//  This creates a hook to control CSE decisions from an external process
+//  when JitRLHook=1 is set.  This will cause the JIT to emit a series of
+//  feature building blocks for each CSE in the method.  Feature names for
+//  these values can be found by setting JitRLHookEmitFeatureNames=1. To
+//  control the CSE decisions, set JitRLHookCSEDecisions with a sequence
+//  of CSE indices to apply.
+//
+//  This hook is only available in debug/checked builds, and does not
+//  contain any machine learning code.
+//
 CSE_HeuristicRLHook::CSE_HeuristicRLHook(Compiler* pCompiler)
     : CSE_HeuristicCommon(pCompiler)
 {
 }
 
+//------------------------------------------------------------------------
+// ConsiderTree: check if this tree can be a CSE candidate
+//
+// Arguments:
+//   tree - tree in question
+//   isReturn - true if tree is part of a return statement
+//
+// Returns:
+//    true if this tree can be a CSE
 bool CSE_HeuristicRLHook::ConsiderTree(GenTree* tree, bool isReturn)
 {
     return CanConsiderTree(tree, isReturn);
 }
 
+//------------------------------------------------------------------------
+// ConsiderCandidates: examine candidates and perform CSEs.
+// This simply defers to the JitRLHookCSEDecisions config value.
+//
 void CSE_HeuristicRLHook::ConsiderCandidates()
 {
     if (JitConfig.JitRLHookCSEDecisions() != nullptr)
     {
-        ApplyDecisions();
+        ConfigIntArray JitRLHookCSEDecisions;
+        JitRLHookCSEDecisions.EnsureInit(JitConfig.JitRLHookCSEDecisions());
+
+        unsigned cnt = m_pCompiler->optCSECandidateCount;
+        for (unsigned i = 0; i < JitRLHookCSEDecisions.GetLength(); i++)
+        {
+            const int index = JitRLHookCSEDecisions.GetData()[i];
+            if ((index < 0) || (index >= (int)cnt))
+            {
+                JITDUMP("Invalid candidate number %d\n", index + 1);
+                continue;
+            }
+
+            CSEdsc* const dsc = m_pCompiler->optCSEtab[index];
+            if (!dsc->IsViable())
+            {
+                JITDUMP("Abandoned " FMT_CSE " -- not viable\n", dsc->csdIndex);
+                continue;
+            }
+
+            const int     attempt = m_pCompiler->optCSEattempt++;
+            CSE_Candidate candidate(this, dsc);
+
+            JITDUMP("\nRLHook attempting " FMT_CSE "\n", candidate.CseIndex());
+            JITDUMP("CSE Expression : \n");
+            JITDUMPEXEC(m_pCompiler->gtDispTree(candidate.Expr()));
+            JITDUMP("\n");
+
+            PerformCSE(&candidate);
+            madeChanges = true;
+        }
     }
 }
 
-void CSE_HeuristicRLHook::ApplyDecisions()
-{
-    ConfigIntArray JitRLHookCSEDecisions;
-    JitRLHookCSEDecisions.EnsureInit(JitConfig.JitRLHookCSEDecisions());
-
-    unsigned cnt = m_pCompiler->optCSECandidateCount;
-    for (unsigned i = 0; i < JitRLHookCSEDecisions.GetLength(); i++)
-    {
-        const int index = JitRLHookCSEDecisions.GetData()[i];
-        if ((index < 0) || (index >= (int)cnt))
-        {
-            JITDUMP("Invalid candidate number %d\n", index + 1);
-            continue;
-        }
-
-        CSEdsc* const dsc = m_pCompiler->optCSEtab[index];
-        if (!dsc->IsViable())
-        {
-            JITDUMP("Abandoned " FMT_CSE " -- not viable\n", dsc->csdIndex);
-            continue;
-        }
-
-        const int     attempt = m_pCompiler->optCSEattempt++;
-        CSE_Candidate candidate(this, dsc);
-
-        JITDUMP("\nRLHook attempting " FMT_CSE "\n", candidate.CseIndex());
-        JITDUMP("CSE Expression : \n");
-        JITDUMPEXEC(m_pCompiler->gtDispTree(candidate.Expr()));
-        JITDUMP("\n");
-
-        PerformCSE(&candidate);
-        madeChanges = true;
-    }
-}
-
+//------------------------------------------------------------------------
+// DumpMetrics: write out features for each CSE candidate
+// Format:
+//   featureNames <comma separated list of feature names>
+//   features #<CSE index>,<comma separated list of feature values>
+//   seq <comma separated list of CSE indices>
+//
+// Notes:
+//   featureNames are emitted only if JitRLHookEmitFeatureNames is set.
+//   features are 0 indexed, and the index is the first value, following #.
+//   seq is a comma separated list of CSE indices that were applied, or
+//      omitted if none were selected
+//
 void CSE_HeuristicRLHook::DumpMetrics()
 {
     // Feature names, if requested
@@ -3070,6 +3109,25 @@ void CSE_HeuristicRLHook::DumpMetrics()
     }
 }
 
+
+//------------------------------------------------------------------------
+// GetFeatures: extract features for this CSE
+// Arguments:
+//   cse - cse descriptor
+//   features - array to fill in with feature values, this must be of length
+//              maxFeatures or greater
+//
+// Notes:
+//   Features are intended to be building blocks of "real" features that
+//   are further defined and refined in the machine learning model.  That
+//   means that each "feature" here is a simple value and not a composite
+//   of multiple values.
+//
+//   Features do not need to be stable across builds, they can be changed,
+//   added, or removed.  However, the corresponding code needs to be updated
+//   to match: src/coreclr/scripts/cse_ml/jitml/method_context.py
+//   See src/coreclr/scripts/cse_ml/README.md for more information.
+//
 void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
 {
     assert(cse != nullptr);
@@ -3198,6 +3256,8 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
     }
 }
 
+// These need to match the features above, and match the field name of MethodContext
+// in src/coreclr/scripts/cse_ml/jitml/method_context.py
 const char* const CSE_HeuristicRLHook::s_featureNameAndType[] =
 {
     "type",

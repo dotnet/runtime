@@ -227,7 +227,6 @@ class CSE_HeuristicRLHook : public CSE_HeuristicCommon
 private:
     static const char* const s_featureNameAndType[];
 
-    void ApplyDecisions();
     void GetFeatures(CSEdsc* cse, int* features);
 
     enum
