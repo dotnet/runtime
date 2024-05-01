@@ -99,10 +99,11 @@ jobs:
         - name: crossArg
           value: '-cross'
 
-      - ${{ if ne(parameters.jobParameters.crossrootfsDir, '') }}:
-        # This is only required for cross builds.
-        - name: ROOTFS_DIR
-          value: ${{ parameters.jobParameters.crossrootfsDir }}
+      - name: UseContainerLibcxxArg
+        value: ''
+      - ${{ if eq(parameters.useContainerLibcxx, true) }}:
+        - name: UseContainerLibcxxArg
+          value: /p:UseContainerLibcxx=true
 
       - name: _officialBuildParameter
         ${{ if eq(parameters.isOfficialBuild, true) }}:

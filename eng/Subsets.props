@@ -127,6 +127,15 @@
     <UseNativeAotCoreLib Condition="'$(TestNativeAot)' == 'true' or ($(_subset.Contains('+clr.nativeaotlibs+')) and !$(_subset.Contains('+clr.native+')) and !$(_subset.Contains('+clr.runtime+')) and !$(_subset.Contains('+clr.corelib+')))">true</UseNativeAotCoreLib>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(UseContainerLibcxx)' == 'true'">
+    <UseContainerLibcxxProperties>CxxStandardLibrary=libc++;CxxStandardLibraryStatic=true</UseContainerLibcxxProperties>
+    <!-- 
+      When we are building a sanitized build using the libc++ in our containers, we'll use an instrumented libc++abi for better coverage.
+      When we're building the product for shipping, we'll use the system-provided libstdc++ for the ABI for size savings.
+    -->
+    <UseContainerLibcxxProperties Condition="'$(EnableNativeSanitizers)' == ''">$(UseContainerLibcxxProperties);CxxAbiLibrary=libstdc++</UseContainerLibcxxProperties>
+  </PropertyGroup>
+
   <ItemGroup>
     <!-- CoreClr -->
     <SubsetName Include="Clr" Description="The full CoreCLR runtime. Equivalent to: $(DefaultCoreClrSubsets)" />
@@ -265,7 +274,7 @@
   <ItemGroup Condition="'$(ClrRuntimeBuildSubsets)' != ''">
     <ProjectToBuild
       Include="$(CoreClrProjectRoot)runtime.proj"
-      AdditionalProperties="%(AdditionalProperties);$(ClrRuntimeBuildSubsets)"
+      AdditionalProperties="%(AdditionalProperties);$(ClrRuntimeBuildSubsets);$(UseContainerLibcxxProperties)"
       Category="clr" />
   </ItemGroup>
 
@@ -455,7 +464,7 @@
   <!-- Host sets -->
   <ItemGroup Condition="$(_subset.Contains('+host.native+'))">
     <CorehostProjectToBuild Include="$(SharedNativeRoot)corehost\corehost.proj" SignPhase="Binaries" />
-    <ProjectToBuild Include="@(CorehostProjectToBuild)" Pack="true" Category="host" />
+    <ProjectToBuild Include="@(CorehostProjectToBuild)" AdditionalProperties="$(UseContainerLibcxxProperties)" Pack="true" Category="host" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+host.tools+'))">
