@@ -4,7 +4,7 @@
 import os
 import argparse
 
-from jitml import SuperPmiContext, JitCseEnv, JitCseModel, DeepCseRewardWrapper
+from jitml import SuperPmiContext, JitCseEnv, JitCseModel, DeepCseRewardWrapper, RemoveFeaturesWrapper
 
 def validate_core_root(core_root):
     """Validates and returns the core_root directory."""
@@ -35,6 +35,7 @@ def deep_reward_make_env(spmi_ctx: SuperPmiContext):
     """Returns a JitCseEnv with deep rewards."""
     def make_env():
         env = JitCseEnv(spmi_ctx, spmi_ctx.training_methods)
+        env = RemoveFeaturesWrapper(env)
         env = DeepCseRewardWrapper(env)
         return env
 

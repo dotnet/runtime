@@ -17,6 +17,7 @@ from stable_baselines3.common.vec_env import SubprocVecEnv
 
 from .jit_cse import JitCseEnv
 from .superpmi import SuperPmiContext
+from .wrappers import RemoveFeaturesWrapper
 
 class JitCseModel:
     """The raw implementation of the machine learning agent."""
@@ -75,7 +76,9 @@ class JitCseModel:
         os.makedirs(output_dir, exist_ok=True)
 
         def default_make_env():
-            return JitCseEnv(pmi_context, pmi_context.training_methods)
+            env = JitCseEnv(pmi_context, pmi_context.training_methods)
+            env = RemoveFeaturesWrapper(env)
+            return env
 
         make_env = self.make_env or default_make_env
         if parallel is not None and parallel > 1:

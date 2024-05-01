@@ -13,19 +13,21 @@ OPTIMAL_BONUS = 0.05
 SUBOPTIMAL_PENALTY = -0.01
 NEUTRAL_PENALTY = -0.005
 
-class DeepCseRewardWrapper(gym.RewardWrapper):
+class DeepCseRewardWrapper(gym.Wrapper):
     """A wrapper for the CSE environment that provides rewards based not just on the change in
     performance score, but also on the quality of the CSE choices made."""
     def __init__(self, env : JitCseEnv):
         super().__init__(env)
-        self.superpmi : SuperPmi = env.pmi_context.create_superpmi()
+        self.superpmi : SuperPmi = env.unwrapped.pmi_context.create_superpmi()
         self.superpmi.start()
 
-    def reward(self, reward : SupportsFloat) -> SupportsFloat:
-        """Returns the reward based on the change in performance score."""
-        # pylint: disable=too-many-branches
-        info = self.env.last_info
+    def step(self, action):
+        """Steps the environment."""
+        observation, reward, terminated, truncated, info = self.env.step(action)
+        reward = self.reward(reward, info)
+        return observation, reward, terminated, truncated, info
 
+    def reward(self, reward : SupportsFloat, info) -> SupportsFloat:
         # We'll let the parent class handle the reward in these cases.
         if info['truncated'] or not info['action_is_valid']:
             return reward
@@ -73,4 +75,27 @@ class DeepCseRewardWrapper(gym.RewardWrapper):
         all_cses = [x for x in all_cses if x is not None]
         return all_cses
 
-__all__ = [DeepCseRewardWrapper.__name__]
+
+class RemoveFeaturesWrapper(gym.ObservationWrapper):
+    """Removes unused features from the observation space."""
+
+    unused_features = ['shared_const', 'type_struct']
+
+    def __init__(self, env):
+        super().__init__(env)
+
+        # Remove the unused features from the observation space.
+        self.filter = np.array([name in RemoveFeaturesWrapper.unused_features for name in env.observation_columns],
+                          dtype=bool)
+
+        self.observation_space = gym.spaces.Box(
+            low=env.observation_space.low[:, self.filter],
+            high=env.observation_space.high[:, self.filter],
+            dtype=env.observation_space.dtype
+        )
+
+    def observation(self, observation):
+        """Removes the unused features from the observation."""
+        return observation[:, self.filter]
+
+__all__ = [RemoveFeaturesWrapper.__name__, DeepCseRewardWrapper.__name__]
