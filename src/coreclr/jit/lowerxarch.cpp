@@ -457,6 +457,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
         if (doCpObj)
         {
+            // Try to use bulk copy helper
             if (TryLowerBlockStoreAsGcBulkCopyCall(blkNode))
             {
                 return;

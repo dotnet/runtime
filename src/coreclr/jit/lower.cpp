@@ -8212,9 +8212,15 @@ void Lowering::ContainCheckBitCast(GenTree* node)
     }
 }
 
+//------------------------------------------------------------------------
+// TryLowerBlockStoreAsGcBulkCopyCall: Lower a block store node as a CORINFO_HELP_ASSIGN_STRUCT call
+//
+// Arguments:
+//    blkNode - The block store node to lower
+//
 bool Lowering::TryLowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
 {
-    if (comp->opts.OptimizationDisabled() || !ISMETHOD("Test"))
+    if (comp->opts.OptimizationDisabled())
     {
         return false;
     }
@@ -8222,79 +8228,93 @@ bool Lowering::TryLowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
     // Replace STORE_BLK (struct copy) with CORINFO_HELP_ASSIGN_STRUCT which performs
     // bulk copy for byrefs.
     const unsigned bulkCopyThreshold = 4;
-    if (blk->OperIs(GT_STORE_BLK) && !blk->OperIsInitBlkOp() &&
-        (blk->GetLayout()->GetGCPtrCount() >= bulkCopyThreshold))
+    if (!blk->OperIs(GT_STORE_BLK) || blk->OperIsInitBlkOp() || (blk->GetLayout()->GetGCPtrCount() < bulkCopyThreshold))
     {
-        GenTree* addr = blk->Addr();
-        GenTree* data = blk->Data();
-
-        const unsigned gcPtrs = blk->GetLayout()->GetGCPtrCount();
-        if (!CheckedOps::MulOverflows((int)gcPtrs, TARGET_POINTER_SIZE, true))
-        {
-            if (data->OperIs(GT_IND))
-            {
-                // Drop GT_IND nodes
-                BlockRange().Remove(data);
-                data = data->AsIndir()->Addr();
-            }
-            else
-            {
-                assert(data->OperIs(GT_LCL_VAR, GT_LCL_FLD));
-
-                // Convert local to LCL_ADDR
-                unsigned lclOffset = data->AsLclVarCommon()->GetLclOffs();
-                data->ChangeOper(GT_LCL_ADDR);
-                data->ChangeType(TYP_I_IMPL);
-                data->AsLclFld()->SetLclOffs(lclOffset);
-                data->ClearContained();
-            }
-
-            // Size is a constant
-            GenTreeIntCon* size = comp->gtNewIconNode((ssize_t)gcPtrs * TARGET_POINTER_SIZE, TYP_I_IMPL);
-            BlockRange().InsertBefore(data, size);
-
-            // A hacky way to safely call fgMorphTree in Lower
-            GenTree* destPlaceholder = comp->gtNewZeroConNode(addr->TypeGet());
-            GenTree* dataPlaceholder = comp->gtNewZeroConNode(genActualType(data));
-            GenTree* sizePlaceholder = comp->gtNewZeroConNode(genActualType(size));
-
-            GenTreeCall* call = comp->gtNewHelperCallNode(CORINFO_HELP_ASSIGN_STRUCT, TYP_VOID, destPlaceholder, dataPlaceholder, sizePlaceholder);
-            comp->fgMorphArgs(call);
-
-            LIR::Range range = LIR::SeqTree(comp, call);
-            GenTree* rangeStart = range.FirstNode();
-            GenTree* rangeEnd = range.LastNode();
-
-            BlockRange().InsertBefore(blk, std::move(range));
-            blk->gtBashToNOP();
-
-            LIR::Use destUse;
-            LIR::Use sizeUse;
-            BlockRange().TryGetUse(destPlaceholder, &destUse);
-            BlockRange().TryGetUse(sizePlaceholder, &sizeUse);
-            destUse.ReplaceWith(addr);
-            sizeUse.ReplaceWith(size);
-            destPlaceholder->SetUnusedValue();
-            sizePlaceholder->SetUnusedValue();
-
-            LIR::Use dataUse;
-            BlockRange().TryGetUse(dataPlaceholder, &dataUse);
-            dataUse.ReplaceWith(data);
-            dataPlaceholder->SetUnusedValue();
-
-            LowerRange(rangeStart, rangeEnd);
-
-            // Finally move all GT_PUTARG_* nodes
-            // Re-use the existing logic for CFG call args here
-            MoveCFGCallArgs(call);
-
-            BlockRange().Remove(destPlaceholder);
-            BlockRange().Remove(sizePlaceholder);
-            BlockRange().Remove(dataPlaceholder);
-            return true;
-        }
+        return false;
     }
-    return false;
+
+    GenTree* dest = blk->Addr();
+    GenTree* data = blk->Data();
+
+    if (data->OperIs(GT_IND))
+    {
+        // Drop GT_IND nodes
+        BlockRange().Remove(data);
+        data = data->AsIndir()->Addr();
+    }
+    else
+    {
+        assert(data->OperIs(GT_LCL_VAR, GT_LCL_FLD));
+
+        // Convert local to LCL_ADDR
+        unsigned lclOffset = data->AsLclVarCommon()->GetLclOffs();
+        data->ChangeOper(GT_LCL_ADDR);
+        data->ChangeType(TYP_I_IMPL);
+        data->AsLclFld()->SetLclOffs(lclOffset);
+        data->ClearContained();
+    }
+
+    // Size is a constant
+    GenTreeIntCon* size = comp->gtNewIconNode((ssize_t)blk->GetLayout()->GetSize(), TYP_I_IMPL);
+    BlockRange().InsertBefore(data, size);
+
+    // A hacky way to safely call fgMorphTree in Lower
+    GenTree* destPlaceholder = comp->gtNewZeroConNode(dest->TypeGet());
+    GenTree* dataPlaceholder = comp->gtNewZeroConNode(genActualType(data));
+    GenTree* sizePlaceholder = comp->gtNewZeroConNode(genActualType(size));
+
+    GenTreeCall* call = comp->gtNewHelperCallNode(CORINFO_HELP_ASSIGN_STRUCT, TYP_VOID, destPlaceholder,
+                                                  dataPlaceholder, sizePlaceholder);
+    comp->fgMorphArgs(call);
+
+    LIR::Range range      = LIR::SeqTree(comp, call);
+    GenTree*   rangeStart = range.FirstNode();
+    GenTree*   rangeEnd   = range.LastNode();
+
+    BlockRange().InsertBefore(blk, std::move(range));
+    blk->gtBashToNOP();
+
+    LIR::Use destUse;
+    LIR::Use sizeUse;
+    BlockRange().TryGetUse(destPlaceholder, &destUse);
+    BlockRange().TryGetUse(sizePlaceholder, &sizeUse);
+    destUse.ReplaceWith(dest);
+    sizeUse.ReplaceWith(size);
+    destPlaceholder->SetUnusedValue();
+    sizePlaceholder->SetUnusedValue();
+
+    LIR::Use dataUse;
+    BlockRange().TryGetUse(dataPlaceholder, &dataUse);
+    dataUse.ReplaceWith(data);
+    dataPlaceholder->SetUnusedValue();
+
+    LowerRange(rangeStart, rangeEnd);
+
+    // Finally move all GT_PUTARG_* nodes
+    // Re-use the existing logic for CFG call args here
+    MoveCFGCallArgs(call);
+
+    BlockRange().Remove(destPlaceholder);
+    BlockRange().Remove(sizePlaceholder);
+    BlockRange().Remove(dataPlaceholder);
+
+    // Add implicit nullchecks for dest and data if needed:
+    //
+    auto wrapWithNullcheck = [&](GenTree* node) {
+        if (comp->fgAddrCouldBeNull(node))
+        {
+            LIR::Use nodeUse;
+            BlockRange().TryGetUse(node, &nodeUse);
+            GenTree* nodeClone = comp->gtNewLclvNode(nodeUse.ReplaceWithLclVar(comp), genActualType(node));
+            GenTree* nullcheck = comp->gtNewNullCheck(nodeClone, comp->compCurBB);
+            BlockRange().InsertAfter(nodeUse.Def(), nodeClone, nullcheck);
+            LowerNode(nullcheck);
+        }
+    };
+    wrapWithNullcheck(dest);
+    wrapWithNullcheck(data);
+
+    return true;
 }
 
 //------------------------------------------------------------------------
