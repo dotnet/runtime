@@ -4675,47 +4675,19 @@ void Compiler::fgDoReversePostOrderLayout()
 
     // Now, update the EH descriptors, starting with the try regions
     //
-    unsigned XTnum = 0;
-    for (EHblkDsc* const HBtab : EHClauses(this))
-    {
-        BasicBlock* const tryEnd = regions.TopRef(XTnum++).tryRegionEnd;
+    auto getTryLast = [&regions](const unsigned index) -> BasicBlock* {
+        return regions.TopRef(index).tryRegionEnd;
+    };
 
-        // We can have multiple EH descriptors map to the same try region,
-        // but we will only update the try region's last block pointer at the index given by BasicBlock::getTryIndex,
-        // so the duplicate EH descriptors' last block pointers can be null.
-        // Tolerate this.
-        //
-        if (tryEnd == nullptr)
-        {
-            continue;
-        }
+    auto setTryLast = [&regions](const unsigned index, BasicBlock* const block) {
+        regions.TopRef(index).tryRegionEnd = block;
+    };
 
-        // Update the end pointer of this try region to the new last block
-        //
-        HBtab->ebdTryLast                = tryEnd;
-        const unsigned enclosingTryIndex = HBtab->ebdEnclosingTryIndex;
-
-        // If this try region is nested in another one, we might need to update its enclosing region's end block
-        //
-        if (enclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
-        {
-            BasicBlock* const enclosingTryEnd = regions.TopRef(enclosingTryIndex).tryRegionEnd;
-
-            // If multiple EH descriptors map to the same try region,
-            // then the enclosing region's last block might be null in the table, so set it here.
-            // Similarly, if the enclosing region ends right before the nested region begins,
-            // extend the enclosing region's last block to the end of the nested region.
-            //
-            if ((enclosingTryEnd == nullptr) || enclosingTryEnd->NextIs(HBtab->ebdTryBeg))
-            {
-                regions.TopRef(enclosingTryIndex).tryRegionEnd = tryEnd;
-            }
-        }
-    }
+    ehUpdateTryLasts<decltype(getTryLast), decltype(setTryLast)>(getTryLast, setTryLast);
 
     // Now, do the handler regions
     //
-    XTnum = 0;
+    unsigned XTnum = 0;
     for (EHblkDsc* const HBtab : EHClauses(this))
     {
         // The end of each handler region should have been visited by iterating the blocklist above
@@ -4981,15 +4953,39 @@ void Compiler::fgMoveColdBlocks()
 
     // Now, update EH descriptors
     //
-    for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
-    {
-        BasicBlock* const tryEnd = tryRegionEnds[XTnum];
+    auto getTryLast = [tryRegionEnds](const unsigned index) -> BasicBlock* {
+        return tryRegionEnds[index];
+    };
 
-        // We can have multiple EH descriptors map to the same try region,
-        // but we will only update the try region's last block pointer at the index given by BasicBlock::getTryIndex,
-        // so the duplicate EH descriptors' last block pointers can be null.
-        // Tolerate this.
-        //
+    auto setTryLast = [tryRegionEnds](const unsigned index, BasicBlock* const block) {
+        tryRegionEnds[index] = block;
+    };
+
+    ehUpdateTryLasts<decltype(getTryLast), decltype(setTryLast)>(getTryLast, setTryLast);
+}
+
+//-------------------------------------------------------------
+// ehUpdateTryLasts: Iterates EH descriptors, updating each try region's
+// end block as determined by getTryLast.
+//
+// Type parameters:
+//    GetTryLast - Functor type that takes an EH index,
+//    and returns the corresponding region's new try end block
+//    SetTryLast - Functor type that takes an EH index and a BasicBlock*,
+//    and updates some internal state tracking the new try end block of each EH region
+//
+// Parameters:
+//    getTryLast - Functor to get new try end block for an EH region
+//    setTryLast - Functor to update the new try end block for an EH region
+//
+template <typename GetTryLast, typename SetTryLast>
+void Compiler::ehUpdateTryLasts(GetTryLast getTryLast, SetTryLast setTryLast)
+{
+    unsigned XTnum = 0;
+    for (EHblkDsc* const HBtab : EHClauses(this))
+    {
+        BasicBlock* const tryEnd = getTryLast(XTnum++);
+
         if (tryEnd == nullptr)
         {
             continue;
@@ -4997,7 +4993,6 @@ void Compiler::fgMoveColdBlocks()
 
         // Update the end pointer of this try region to the new last block
         //
-        EHblkDsc* const HBtab            = ehGetDsc(XTnum);
         HBtab->ebdTryLast                = tryEnd;
         const unsigned enclosingTryIndex = HBtab->ebdEnclosingTryIndex;
 
@@ -5005,7 +5000,7 @@ void Compiler::fgMoveColdBlocks()
         //
         if (enclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
         {
-            BasicBlock* const enclosingTryEnd = tryRegionEnds[enclosingTryIndex];
+            BasicBlock* const enclosingTryEnd = getTryLast(enclosingTryIndex);
 
             // If multiple EH descriptors map to the same try region,
             // then the enclosing region's last block might be null in the table, so set it here.
@@ -5014,7 +5009,7 @@ void Compiler::fgMoveColdBlocks()
             //
             if ((enclosingTryEnd == nullptr) || enclosingTryEnd->NextIs(HBtab->ebdTryBeg))
             {
-                tryRegionEnds[enclosingTryIndex] = tryEnd;
+                setTryLast(enclosingTryIndex, tryEnd);
             }
         }
     }
