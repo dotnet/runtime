@@ -3602,12 +3602,7 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             fmt = IF_SVE_GW_3A;
             break;
 
-        case INS_sve_clz:
-        case INS_sve_cls:
-        case INS_sve_cnt:
-        case INS_sve_cnot:
         case INS_sve_not:
-        case INS_sve_nots:
             if (isPredicateRegister(reg1) && sopt != INS_SCALABLE_OPTS_UNPREDICATED)
             {
                 assert(opt == INS_OPTS_SCALABLE_B);
@@ -3625,6 +3620,26 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
                 assert(insScalableOptsNone(sopt));
                 fmt = IF_SVE_AP_3A;
             }
+            break;
+
+        case INS_sve_nots:
+            assert(opt == INS_OPTS_SCALABLE_B);
+            assert(isPredicateRegister(reg1)); // DDDD
+            assert(isPredicateRegister(reg2)); // gggg
+            assert(isPredicateRegister(reg3)); // NNNN
+            fmt = IF_SVE_CZ_4A;
+            break;
+
+        case INS_sve_clz:
+        case INS_sve_cls:
+        case INS_sve_cnt:
+        case INS_sve_cnot:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableStandard(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_AP_3A;
             break;
 
         case INS_sve_fabs:

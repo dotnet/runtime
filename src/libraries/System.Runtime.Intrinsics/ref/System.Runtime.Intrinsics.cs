@@ -4215,6 +4215,24 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> AndAcross(System.Numerics.Vector<uint> value) { throw null; }
         public static System.Numerics.Vector<ulong> AndAcross(System.Numerics.Vector<ulong> value) { throw null; }
 
+        public static System.Numerics.Vector<byte> BitwiseClear(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<short> BitwiseClear(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> BitwiseClear(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> BitwiseClear(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> BitwiseClear(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<ushort> BitwiseClear(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> BitwiseClear(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> BitwiseClear(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+
+        public static System.Numerics.Vector<byte> BooleanNot(System.Numerics.Vector<byte> value) { throw null; }
+        public static System.Numerics.Vector<short> BooleanNot(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<int> BooleanNot(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<long> BooleanNot(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<sbyte> BooleanNot(System.Numerics.Vector<sbyte> value) { throw null; }
+        public static System.Numerics.Vector<ushort> BooleanNot(System.Numerics.Vector<ushort> value) { throw null; }
+        public static System.Numerics.Vector<uint> BooleanNot(System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<ulong> BooleanNot(System.Numerics.Vector<ulong> value) { throw null; }
+
         public static ulong Count16BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static ulong Count32BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static ulong Count64BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
