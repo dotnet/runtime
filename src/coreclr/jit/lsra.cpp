@@ -3982,9 +3982,9 @@ void LinearScan::processKills(RefPosition* killRefPosition)
     regMaskTP killedRegs = killRefPosition->registerAssignment;
     while (killedRegs != RBM_NONE)
     {
-        regNumber killedReg = genFirstRegNumFromMaskAndToggle(killedRegs);
-        RegRecord* regRecord = getRegisterRecord(killedReg);
-        Interval* assignedInterval = regRecord->assignedInterval;
+        regNumber  killedReg        = genFirstRegNumFromMaskAndToggle(killedRegs);
+        RegRecord* regRecord        = getRegisterRecord(killedReg);
+        Interval*  assignedInterval = regRecord->assignedInterval;
         if (assignedInterval != nullptr)
         {
             unassignPhysReg(regRecord, assignedInterval->recentRefPosition);
@@ -3993,12 +3993,15 @@ void LinearScan::processKills(RefPosition* killRefPosition)
         }
 
         assert((nextFixedRef[killedReg] == killRefPosition->nodeLocation) || (killedReg >= AVAILABLE_REG_COUNT));
-        RefPosition* regNextRefPos = regRecord->recentRefPosition == nullptr ? regRecord->firstRefPosition : regRecord->recentRefPosition->nextRefPosition;
+        RefPosition* regNextRefPos = regRecord->recentRefPosition == nullptr
+                                         ? regRecord->firstRefPosition
+                                         : regRecord->recentRefPosition->nextRefPosition;
         updateNextFixedRef(regRecord, regNextRefPos, nextKill);
     }
 
     regsBusyUntilKill &= ~killRefPosition->registerAssignment;
-    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KILL_REGS, nullptr, REG_NA, nullptr, NONE, killRefPosition->registerAssignment));
+    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KILL_REGS, nullptr, REG_NA, nullptr, NONE,
+                                    killRefPosition->registerAssignment));
 }
 
 //------------------------------------------------------------------------
@@ -4939,8 +4942,8 @@ void LinearScan::allocateRegistersMinimal()
     }
 #endif // DEBUG
 
-    BasicBlock* currentBlock = nullptr;
-    RefPosition* nextKill = killHead;
+    BasicBlock*  currentBlock = nullptr;
+    RefPosition* nextKill     = killHead;
 
     LsraLocation prevLocation            = MinLocation;
     regMaskTP    regsToFree              = RBM_NONE;
@@ -5619,8 +5622,8 @@ void LinearScan::allocateRegisters()
     }
 #endif // DEBUG
 
-    BasicBlock* currentBlock = nullptr;
-    RefPosition* nextKill = killHead;
+    BasicBlock*  currentBlock = nullptr;
+    RefPosition* nextKill     = killHead;
 
     LsraLocation prevLocation            = MinLocation;
     regMaskTP    regsToFree              = RBM_NONE;
@@ -11004,8 +11007,12 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
     printf("\n\n");
 }
 
-void LinearScan::dumpLsraAllocationEvent(
-    LsraDumpEvent event, Interval* interval, regNumber reg, BasicBlock* currentBlock, RegisterScore registerScore, regMaskTP regMask)
+void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
+                                         Interval*     interval,
+                                         regNumber     reg,
+                                         BasicBlock*   currentBlock,
+                                         RegisterScore registerScore,
+                                         regMaskTP     regMask)
 {
     if (!(VERBOSE))
     {
@@ -11774,8 +11781,8 @@ void LinearScan::verifyFreeRegisters(regMaskTP regsToFree)
             assert(nextIntervalRef[reg] == MaxLocation);
             assert(spillCost[reg] == 0);
         }
-        //LsraLocation thisNextFixedRef = physRegRecord->getNextRefLocation();
-        //assert(nextFixedRef[reg] == thisNextFixedRef);
+        // LsraLocation thisNextFixedRef = physRegRecord->getNextRefLocation();
+        // assert(nextFixedRef[reg] == thisNextFixedRef);
 #ifdef TARGET_ARM
         // If this is occupied by a double interval, skip the corresponding float reg.
         if ((assignedInterval != nullptr) && (assignedInterval->registerType == TYP_DOUBLE))
@@ -11981,7 +11988,8 @@ void LinearScan::verifyFinalAllocation()
             break;
 
             case RefTypeKill:
-                dumpLsraAllocationEvent(LSRA_EVENT_KILL_REGS, nullptr, REG_NA, currentBlock, NONE, currentRefPosition.registerAssignment);
+                dumpLsraAllocationEvent(LSRA_EVENT_KILL_REGS, nullptr, REG_NA, currentBlock, NONE,
+                                        currentRefPosition.registerAssignment);
                 break;
 
             case RefTypeFixedReg:
@@ -13305,7 +13313,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*                current
         else if (refPosition->isFixedRegRef && nextRefPos != nullptr && RefTypeIsUse(nextRefPos->refType) &&
                  !nextRefPos->isFixedRegRef && genMaxOneBit(refPosition->registerAssignment))
         {
-            regNumber  defReg       = refPosition->assignedReg();
+            regNumber defReg = refPosition->assignedReg();
 
             // If there is another fixed reference to this register before the use, change the candidates
             // on this RefPosition to include that of nextRefPos.
@@ -13766,7 +13774,7 @@ regMaskTP LinearScan::RegisterSelection::selectMinimal(Interval*                
         else if (refPosition->isFixedRegRef && nextRefPos != nullptr && RefTypeIsUse(nextRefPos->refType) &&
                  !nextRefPos->isFixedRegRef && genMaxOneBit(refPosition->registerAssignment))
         {
-            regNumber  defReg       = refPosition->assignedReg();
+            regNumber defReg = refPosition->assignedReg();
 
             // If there is another fixed reference to this register before the use, change the candidates
             // on this RefPosition to include that of nextRefPos.

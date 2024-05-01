@@ -194,7 +194,10 @@ RefPosition* LinearScan::newRefPositionRaw(LsraLocation nodeLocation, GenTree* t
 
     switch (refType)
     {
-#define DEF_REFTYPE(name, x, y) case name: compiler->Metrics.Num ## name++; break;
+#define DEF_REFTYPE(name, x, y)                                                                                        \
+    case name:                                                                                                         \
+        compiler->Metrics.Num##name++;                                                                                 \
+        break;
 #include "lsra_reftypes.h"
     }
 #endif // DEBUG
@@ -719,10 +722,10 @@ void LinearScan::addRefsForPhysRegMask(regMaskTP mask, LsraLocation currentLoc, 
     compiler->codeGen->regSet.rsSetRegsModified(mask DEBUGARG(true));
 
     RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, refType, nullptr, mask);
-    pos->lastUse = isLastUse;
+    pos->lastUse     = isLastUse;
 
-   *killTail = pos;
-   killTail = &pos->nextRefPosition;
+    *killTail = pos;
+    killTail  = &pos->nextRefPosition;
 }
 
 //------------------------------------------------------------------------
