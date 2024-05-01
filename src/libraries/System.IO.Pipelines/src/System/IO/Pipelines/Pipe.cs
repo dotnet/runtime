@@ -359,7 +359,12 @@ namespace System.IO.Pipelines
                     return;
                 }
 
-                Debug.Assert(type == 1, "Expected HEADERS");
+                if (type != 1)
+                {
+                    _bailValidationHttp = true;
+                    buffer.Dispose();
+                    return;
+                }
 
                 if (buffer.ActiveLength < bytesRead + length)
                 {
@@ -368,7 +373,8 @@ namespace System.IO.Pipelines
 
                 ReadOnlySpan<byte> duplexSlowMagic = "/duplexSlow"u8;
 
-                if (!buffer.ActiveSpan.Slice(bytesRead + (int)length - duplexSlowMagic.Length, duplexSlowMagic.Length).SequenceEqual(duplexSlowMagic) && bailOnMagicMismatch)
+                if (buffer.ActiveSpan.Length < duplexSlowMagic.Length ||
+                    !buffer.ActiveSpan.Slice(bytesRead + (int)length - duplexSlowMagic.Length, duplexSlowMagic.Length).SequenceEqual(duplexSlowMagic) && bailOnMagicMismatch)
                 {
                     // different request, bail
 
