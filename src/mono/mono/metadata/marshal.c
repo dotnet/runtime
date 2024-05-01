@@ -5237,7 +5237,6 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 	if (accessor_method->is_generic) {
 		/* got a generic method definition. need to make a generic method definition wrapper */
 		g_assert (!accessor_method->is_inflated);
-		printf ("accessor method is generic: %s\n", mono_method_full_name (accessor_method, TRUE));
 		is_generic = TRUE;
 	}
 

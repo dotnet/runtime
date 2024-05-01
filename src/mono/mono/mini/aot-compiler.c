@@ -4325,14 +4325,6 @@ add_method_with_index (MonoAotCompile *acfg, MonoMethod *method, int index, gboo
 {
 	g_assert (method);
 	if (!g_hash_table_lookup (acfg->method_indexes, method)) {
-		{
-			char * method_name = mono_method_get_full_name (method);
-			g_print ("inserting %s into acfg\n", method_name);
-			if (strstr(method_name, "W_REF& Program:AccessBox<W_REF") == method_name) {
-				printf ("haraa\n");
-			}
-			g_free (method_name);
-		}
 		g_ptr_array_add (acfg->methods, method);
 		g_hash_table_insert (acfg->method_indexes, method, GUINT_TO_POINTER (index + 1));
 		acfg->nmethods = acfg->methods->len + 1;
@@ -4866,14 +4858,6 @@ replace_generated_method (MonoAotCompile *acfg, MonoMethod *method, MonoError *e
 	if (G_LIKELY (mono_method_metadata_has_header (method)))
 		return NULL;
 
-	{
-		char * method_name = mono_method_get_full_name (method);
-		g_print ("ADDING no header %s generic instances\n", method_name);
-		if (strstr (method_name, "!!0") != NULL)
-			g_print("anon\n");
-		g_free (method_name);
-	}
-
 	/* Unsafe accessors methods.  Replace attempts to compile the accessor method by
 	 * its wrapper.
 	 */
@@ -4887,9 +4871,9 @@ replace_generated_method (MonoAotCompile *acfg, MonoMethod *method, MonoError *e
 			wrapper = mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name);
 		}
 		if (is_ok (error)) {
-			{
+			if (mono_trace_is_traced (G_LOG_LEVEL_INFO, MONO_TRACE_AOT)) {
 				char * method_name = mono_method_get_full_name (wrapper);
-				g_print ("REPLACED by %s in generic instances\n", method_name);
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "Replacing generated method by %s", method_name);
 				g_free (method_name);
 			}
 			return wrapper;
@@ -4897,7 +4881,9 @@ replace_generated_method (MonoAotCompile *acfg, MonoMethod *method, MonoError *e
 	}
 
 	if (!is_ok (error)) {
-		aot_printerrf (acfg, "Could not get unsafe accessor wrapper due to %s ", mono_error_get_message (error));
+		char *method_name = mono_method_get_full_name (method);
+		aot_printerrf (acfg, "Could not get generated wrapper for %s due to %s", method_name, mono_error_get_message (error));
+		g_free (method_name);
 	}
 
 	return NULL;
@@ -7953,12 +7939,6 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg, gboolean stor
 		 */
 		buf2 = (guint8 *)g_malloc (4096);
 		p2 = buf2;
-		if (cfg->method->wrapper_type && cfg->method->is_generic) {
-			printf ("barf\n");
-		}
-		if (jinfo->d.method->wrapper_type && jinfo->d.method->is_generic) {
-			printf ("barf2\n");
-		}
 		encode_method_ref (acfg, jinfo->d.method, p2, &p2);
 		len = GPTRDIFF_TO_INT (p2 - buf2);
 		g_assert (len < 4096);
@@ -9552,7 +9532,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 		(method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
 		(method->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
-		printf ("Skip (impossible): %s\n", mono_method_full_name (method, TRUE));
+		//printf ("Skip (impossible): %s\n", mono_method_full_name (method, TRUE));
 		return;
 	}
 
