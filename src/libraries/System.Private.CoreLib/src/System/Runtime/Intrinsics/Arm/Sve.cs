@@ -177,6 +177,69 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<double> Add(Vector<double> left, Vector<double> right) => Add(left, right);
 
 
+        ///  AddAcross : Add reduction
+
+        /// <summary>
+        /// float64_t svaddv[_f64](svbool_t pg, svfloat64_t op)
+        ///   FADDV Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> AddAcross(Vector<double> value) => AddAcross(value);
+
+        /// <summary>
+        /// int64_t svaddv[_s16](svbool_t pg, svint16_t op)
+        ///   SADDV Dresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<long> AddAcross(Vector<short> value) => AddAcross(value);
+
+        /// <summary>
+        /// int64_t svaddv[_s32](svbool_t pg, svint32_t op)
+        ///   SADDV Dresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<long> AddAcross(Vector<int> value) => AddAcross(value);
+
+        /// <summary>
+        /// int64_t svaddv[_s8](svbool_t pg, svint8_t op)
+        ///   SADDV Dresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<long> AddAcross(Vector<sbyte> value) => AddAcross(value);
+
+        /// <summary>
+        /// int64_t svaddv[_s64](svbool_t pg, svint64_t op)
+        ///   UADDV Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> AddAcross(Vector<long> value) => AddAcross(value);
+
+        /// <summary>
+        /// float32_t svaddv[_f32](svbool_t pg, svfloat32_t op)
+        ///   FADDV Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> AddAcross(Vector<float> value) => AddAcross(value);
+
+        /// <summary>
+        /// uint64_t svaddv[_u8](svbool_t pg, svuint8_t op)
+        ///   UADDV Dresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<ulong> AddAcross(Vector<byte> value) => AddAcross(value);
+
+        /// <summary>
+        /// uint64_t svaddv[_u16](svbool_t pg, svuint16_t op)
+        ///   UADDV Dresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<ulong> AddAcross(Vector<ushort> value) => AddAcross(value);
+
+        /// <summary>
+        /// uint64_t svaddv[_u32](svbool_t pg, svuint32_t op)
+        ///   UADDV Dresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<ulong> AddAcross(Vector<uint> value) => AddAcross(value);
+
+        /// <summary>
+        /// uint64_t svaddv[_u64](svbool_t pg, svuint64_t op)
+        ///   UADDV Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> AddAcross(Vector<ulong> value) => AddAcross(value);
+
+
         ///  ConditionalSelect : Conditionally select elements
 
         /// <summary>
@@ -1144,6 +1207,48 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<long> SignExtend8(Vector<long> value) => SignExtend8(value);
 
+
+        ///  SignExtendWideningLower : Unpack and extend low half
+
+        /// <summary>
+        /// svint16_t svunpklo[_s16](svint8_t op)
+        ///   SUNPKLO Zresult.H, Zop.B
+        /// </summary>
+        public static unsafe Vector<short> SignExtendWideningLower(Vector<sbyte> value) => SignExtendWideningLower(value);
+
+        /// <summary>
+        /// svint32_t svunpklo[_s32](svint16_t op)
+        ///   SUNPKLO Zresult.S, Zop.H
+        /// </summary>
+        public static unsafe Vector<int> SignExtendWideningLower(Vector<short> value) => SignExtendWideningLower(value);
+
+        /// <summary>
+        /// svint64_t svunpklo[_s64](svint32_t op)
+        ///   SUNPKLO Zresult.D, Zop.S
+        /// </summary>
+        public static unsafe Vector<long> SignExtendWideningLower(Vector<int> value) => SignExtendWideningLower(value);
+
+
+        ///  SignExtendWideningUpper : Unpack and extend high half
+
+        /// <summary>
+        /// svint16_t svunpkhi[_s16](svint8_t op)
+        ///   SUNPKHI Zresult.H, Zop.B
+        /// </summary>
+        public static unsafe Vector<short> SignExtendWideningUpper(Vector<sbyte> value) => SignExtendWideningUpper(value);
+
+        /// <summary>
+        /// svint32_t svunpkhi[_s32](svint16_t op)
+        ///   SUNPKHI Zresult.S, Zop.H
+        /// </summary>
+        public static unsafe Vector<int> SignExtendWideningUpper(Vector<short> value) => SignExtendWideningUpper(value);
+
+        /// <summary>
+        /// svint64_t svunpkhi[_s64](svint32_t op)
+        ///   SUNPKHI Zresult.D, Zop.S
+        /// </summary>
+        public static unsafe Vector<long> SignExtendWideningUpper(Vector<int> value) => SignExtendWideningUpper(value);
+
         ///  Subtract : Subtract
 
         /// <summary>
@@ -1489,16 +1594,55 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> ZeroExtend8(Vector<ulong> value) => ZeroExtend8(value);
 
+        ///  ZeroExtendWideningLower : Unpack and extend low half
+
+        /// <summary>
+        /// svuint16_t svunpklo[_u16](svuint8_t op)
+        ///   UUNPKLO Zresult.H, Zop.B
+        /// </summary>
+        public static unsafe Vector<ushort> ZeroExtendWideningLower(Vector<byte> value) => ZeroExtendWideningLower(value);
+
+        /// <summary>
+        /// svuint32_t svunpklo[_u32](svuint16_t op)
+        ///   UUNPKLO Zresult.S, Zop.H
+        /// </summary>
+        public static unsafe Vector<uint> ZeroExtendWideningLower(Vector<ushort> value) => ZeroExtendWideningLower(value);
+
+        /// <summary>
+        /// svuint64_t svunpklo[_u64](svuint32_t op)
+        ///   UUNPKLO Zresult.D, Zop.S
+        /// </summary>
+        public static unsafe Vector<ulong> ZeroExtendWideningLower(Vector<uint> value) => ZeroExtendWideningLower(value);
+
+
+        ///  ZeroExtendWideningUpper : Unpack and extend high half
+
+        /// <summary>
+        /// svuint16_t svunpkhi[_u16](svuint8_t op)
+        ///   UUNPKHI Zresult.H, Zop.B
+        /// </summary>
+        public static unsafe Vector<ushort> ZeroExtendWideningUpper(Vector<byte> value) => ZeroExtendWideningUpper(value);
+
+        /// <summary>
+        /// svuint32_t svunpkhi[_u32](svuint16_t op)
+        ///   UUNPKHI Zresult.S, Zop.H
+        /// svbool_t svunpkhi[_b](svbool_t op)
+        ///   PUNPKHI Presult.H, Pop.B
+        /// </summary>
+        public static unsafe Vector<uint> ZeroExtendWideningUpper(Vector<ushort> value) => ZeroExtendWideningUpper(value);
+
+        /// <summary>
+        /// svuint64_t svunpkhi[_u64](svuint32_t op)
+        ///   UUNPKHI Zresult.D, Zop.S
+        /// </summary>
+        public static unsafe Vector<ulong> ZeroExtendWideningUpper(Vector<uint> value) => ZeroExtendWideningUpper(value);
+
         ///  ZipHigh : Interleave elements from high halves of two inputs
 
         /// <summary>
         /// svuint8_t svzip2[_u8](svuint8_t op1, svuint8_t op2)
         ///   ZIP2 Zresult.B, Zop1.B, Zop2.B
-        /// svbool_t svzip2_b8(svbool_t op1, svbool_t op2)
-        ///   ZIP2 Presult.B, Pop1.B, Pop2.B
         /// </summary>
-
-
         public static unsafe Vector<byte> ZipHigh(Vector<byte> left, Vector<byte> right) => ZipHigh(left, right);
 
         /// <summary>
