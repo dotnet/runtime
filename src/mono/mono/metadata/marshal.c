@@ -5235,23 +5235,16 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 		member_name = accessor_method->name;
 
 	if (accessor_method->is_generic) {
+		// FullAOT compilation with gshared or gsharedvt will get here.
 		/* got a generic method definition. need to make a generic method definition wrapper */
 		g_assert (!accessor_method->is_inflated);
 		is_generic = TRUE;
 	}
 
 	/* FIXME: Support generic methods too */
-	if (accessor_method->is_inflated && !mono_method_get_context (accessor_method)->method_inst) {
-		orig_method = accessor_method;
-		ctx = &((MonoMethodInflated*)accessor_method)->context;
-		accessor_method = ((MonoMethodInflated*)accessor_method)->declaring;
-		container = mono_method_get_generic_container (accessor_method);
-		if (!container)
-			container = mono_class_try_get_generic_container (accessor_method->klass); //FIXME is this a case of a try?
-		g_assert (container);
-	} else if (accessor_method->is_inflated && mono_method_get_context(accessor_method)->method_inst) {
-		// FIXME: ak: do we need a different case? it should work, right?
-		// N.B. both method_inst and type_inst might be set
+	if (accessor_method->is_inflated) {
+		// non-full AOT may get here
+		g_assert (!is_generic);
 		orig_method = accessor_method;
 		ctx = &((MonoMethodInflated*)accessor_method)->context;
 		accessor_method = ((MonoMethodInflated*)accessor_method)->declaring;
@@ -5266,9 +5259,8 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 	 */
 	if (ctx) {
 		/* FIXME get the right cache */
-		cache = NULL; /* get_cache (&((MonoMethodInflated*)orig_method)->owner->wrapper_caches.synchronized_cache , mono_aligned_addr_hash, NULL); */
-		/* res = check_generic_wrapper_cache (cache, orig_method, orig_method, method);*/
-		res = NULL;
+		cache = get_cache (&((MonoMethodInflated*)orig_method)->owner->wrapper_caches.unsafe_accessor_cache , mono_aligned_addr_hash, NULL);
+		res = check_generic_wrapper_cache (cache, orig_method, orig_method, accessor_method);
 		if (res)
 			return res;
 	} else {
