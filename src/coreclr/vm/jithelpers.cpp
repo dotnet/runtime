@@ -2935,7 +2935,7 @@ HCIMPL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj)
     if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
             (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
             (pMT2->IsEnum() || pMT2->IsTruePrimitive()) &&
-            g_TrapReturningThreads.LoadWithoutBarrier() == 0)
+            g_TrapReturningThreads == 0)
     {
         return obj->GetData();
     }
@@ -4826,7 +4826,7 @@ HCIMPL0(VOID, JIT_PollGC)
     FCALL_CONTRACT;
 
     // As long as we can have GCPOLL_CALL polls, it would not hurt to check the trap flag.
-    if (!g_TrapReturningThreads.LoadWithoutBarrier())
+    if (!g_TrapReturningThreads)
         return;
 
     // Does someone want this thread stopped?
@@ -6171,7 +6171,7 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
 
         // Manually inline the fast path in Thread::DisablePreemptiveGC().
         thread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
-        if (g_TrapReturningThreads.LoadWithoutBarrier() != 0)
+        if (g_TrapReturningThreads != 0)
         {
             // If we're in an IL stub, we want to trace the address of the target method,
             // not the next instruction in the stub.
@@ -6208,7 +6208,7 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
 
         // Manually inline the fast path in Thread::DisablePreemptiveGC().
         thread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
-        if (g_TrapReturningThreads.LoadWithoutBarrier() != 0)
+        if (g_TrapReturningThreads != 0)
         {
             JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress());
         }

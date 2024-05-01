@@ -1295,7 +1295,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
                 // The thread being aborted may clear the TS_AbortRequested bit and the matching increment
                 // of g_TrapReturningThreads behind our back. Increment g_TrapReturningThreads here
                 // to ensure that we stop for the stack crawl even if the TS_AbortRequested bit is cleared.
-                ThreadStore::TrapReturningThreads(TRUE);
+                ThreadStore::TrapReturningThreadsIncrement();
             }
             void NeedStackCrawl()
             {
@@ -1310,7 +1310,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
                 if (m_NeedRelease)
                 {
                     m_NeedRelease = FALSE;
-                    ThreadStore::TrapReturningThreads(FALSE);
+                    ThreadStore::TrapReturningThreadsDecrement();
                     ThreadStore::SetStackCrawlEvent();
                     m_pThread->ResetThreadState(TS_StackCrawlNeeded);
                     if (!m_fHoldingThreadStoreLock)
@@ -1755,7 +1755,7 @@ void Thread::SetAbortRequestBit()
         }
         if (InterlockedCompareExchange((LONG*)&m_State, curValue|TS_AbortRequested, curValue) == curValue)
         {
-            ThreadStore::TrapReturningThreads(TRUE);
+            ThreadStore::TrapReturningThreadsIncrement();
 
             break;
         }
@@ -1771,7 +1771,7 @@ void Thread::RemoveAbortRequestBit()
 
 #ifdef _DEBUG
     // There's a race between removing the TS_AbortRequested bit and decrementing g_TrapReturningThreads
-    // We may remove the bit, but before we have a chance to call ThreadStore::TrapReturningThreads(FALSE)
+    // We may remove the bit, but before we have a chance to call ThreadStore::TrapReturningThreadsDecrement()
     // DbgFindThread() may execute, and find too few threads with the bit set.
     // To ensure the assert in DbgFindThread does not fire under such a race we set the ChgInFlight before hand.
     CounterHolder trtHolder(&g_trtChgInFlight);
@@ -1785,7 +1785,7 @@ void Thread::RemoveAbortRequestBit()
         }
         if (InterlockedCompareExchange((LONG*)&m_State, curValue&(~TS_AbortRequested), curValue) == curValue)
         {
-            ThreadStore::TrapReturningThreads(FALSE);
+            ThreadStore::TrapReturningThreadsDecrement();
 
             break;
         }
@@ -2171,8 +2171,7 @@ void Thread::RareDisablePreemptiveGC()
         }
 #endif // DEBUGGING_SUPPORTED
 
-        // TODO: VS should check if suspension is requested.
-        if (GCHeapUtilities::IsGCInProgress())
+        if (ThreadStore::IsTrappingThreadsForSuspension())
         {
             EnablePreemptiveGC();
 
@@ -2395,7 +2394,7 @@ void Thread::PulseGCMode()
 // Indicate whether threads should be trapped when returning to the EE (i.e. disabling
 // preemptive GC mode)
 Volatile<LONG> g_fTrapReturningThreadsLock;
-void ThreadStore::TrapReturningThreads(BOOL yes)
+void ThreadStore::TrapReturningThreadsIncrement()
 {
     CONTRACTL {
         NOTHROW;
@@ -2418,29 +2417,71 @@ void ThreadStore::TrapReturningThreads(BOOL yes)
         suspend.Acquire();
     }
 
-    if (yes)
-    {
 #ifdef _DEBUG
-        CounterHolder trtHolder(&g_trtChgInFlight);
-        InterlockedIncrement(&g_trtChgStamp);
+    CounterHolder trtHolder(&g_trtChgInFlight);
+    InterlockedIncrement(&g_trtChgStamp);
 #endif
 
-        GCHeapUtilities::GetGCHeap()->SetSuspensionPending(true);
-        InterlockedIncrement ((LONG *)&g_TrapReturningThreads);
-        _ASSERTE(g_TrapReturningThreads > 0);
+    InterlockedAdd ((LONG *)&g_TrapReturningThreads, 2);
+    _ASSERTE(g_TrapReturningThreads > 0);
 
 #ifdef _DEBUG
-        trtHolder.Release();
+    trtHolder.Release();
 #endif
-    }
-    else
-    {
-        InterlockedDecrement ((LONG *)&g_TrapReturningThreads);
-        GCHeapUtilities::GetGCHeap()->SetSuspensionPending(false);
-        _ASSERTE(g_TrapReturningThreads >= 0);
-    }
 
     g_fTrapReturningThreadsLock = 0;
+}
+
+void ThreadStore::TrapReturningThreadsDecrement()
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    // make sure that a thread doesn't get suspended holding g_fTrapReturningThreadsLock
+    // if a suspended thread held this lock and then the suspending thread called in
+    // here (which it does) the suspending thread would deadlock causing the suspension
+    // as a whole to deadlock
+    ForbidSuspendThreadHolder suspend;
+
+    DWORD dwSwitchCount = 0;
+    while (1 == InterlockedExchange(&g_fTrapReturningThreadsLock, 1))
+    {
+        // we can't forbid suspension while we are sleeping and don't hold the lock
+        // this will trigger an assert on SQLCLR but is a general issue
+        suspend.Release();
+        __SwitchToThread(0, ++dwSwitchCount);
+        suspend.Acquire();
+    }
+
+    InterlockedAdd ((LONG *)&g_TrapReturningThreads, -2);
+    _ASSERTE(g_TrapReturningThreads >= 0);
+
+    g_fTrapReturningThreadsLock = 0;
+}
+
+void ThreadStore::SetThreadTrapForSuspension()
+{
+    _ASSERTE(ThreadStore::HoldingThreadStore());
+
+    _ASSERTE(!IsTrappingThreadsForSuspension());
+    GCHeapUtilities::GetGCHeap()->SetSuspensionPending(true);
+    InterlockedIncrement((LONG *)&g_TrapReturningThreads);
+}
+
+void ThreadStore::UnsetThreadTrapForSuspension()
+{
+    _ASSERTE(ThreadStore::HoldingThreadStore());
+
+    _ASSERTE(IsTrappingThreadsForSuspension());
+    InterlockedDecrement((LONG *)&g_TrapReturningThreads);
+    GCHeapUtilities::GetGCHeap()->SetSuspensionPending(false);
+}
+
+bool ThreadStore::IsTrappingThreadsForSuspension()
+{
+    return (g_TrapReturningThreads & 1) != 0;
 }
 
 #ifdef FEATURE_HIJACK
@@ -3290,7 +3331,7 @@ void ThreadSuspend::SuspendAllThreads()
     //
     // Tell all threads, globally, to wait for WaitForGCEvent.
     //
-    ThreadStore::TrapReturningThreads(TRUE);
+    ThreadStore::SetThreadTrapForSuspension();
 
     _ASSERTE(!pCurThread || !pCurThread->HasThreadState(Thread::TS_GCSuspendFlags));
 
@@ -3612,7 +3653,7 @@ void ThreadSuspend::ResumeAllThreads(BOOL SuspendSucceeded)
     // you may have to change routine GCHeapUtilities::SafeToRestartManagedThreads
     // as well.
     //
-    ThreadStore::TrapReturningThreads(FALSE);
+    ThreadStore::UnsetThreadTrapForSuspension();
     g_pSuspensionThread    = 0;
 
     //
@@ -3950,7 +3991,7 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
     }
 
     LOG((LF_CORDB, LL_INFO1000, "[0x%x] SUSPEND: starting suspend.  Trap count: %d\n",
-         pCurThread ? pCurThread->GetThreadId() : (DWORD) -1, g_TrapReturningThreads.Load()));
+         pCurThread ? pCurThread->GetThreadId() : (DWORD) -1, g_TrapReturningThreads));
 
     // Caller is expected to be holding the ThreadStore lock
     _ASSERTE(ThreadStore::HoldingThreadStore() || IsAtProcessExit());
@@ -4409,7 +4450,7 @@ void Thread::SysResumeFromDebug(AppDomain *pAppDomain)
         }
     }
 
-    LOG((LF_CORDB, LL_INFO1000, "RESUME: resume complete. Trap count: %d\n", g_TrapReturningThreads.Load()));
+    LOG((LF_CORDB, LL_INFO1000, "RESUME: resume complete. Trap count: %d\n", g_TrapReturningThreads));
 }
 
 /*
@@ -5335,7 +5376,7 @@ void Thread::MarkForSuspension(ULONG bit)
     _ASSERTE((m_State & bit) == 0);
 
     InterlockedOr((LONG*)&m_State, bit);
-    ThreadStore::TrapReturningThreads(TRUE);
+    ThreadStore::TrapReturningThreadsIncrement();
 }
 
 void Thread::UnmarkForSuspension(ULONG mask)
@@ -5354,7 +5395,7 @@ void Thread::UnmarkForSuspension(ULONG mask)
     _ASSERTE((m_State & ~mask) != 0);
 
     // we decrement the global first to be able to satisfy the assert from DbgFindThread
-    ThreadStore::TrapReturningThreads(FALSE);
+    ThreadStore::TrapReturningThreadsDecrement();
     InterlockedAnd((LONG*)&m_State, mask);
 }
 

@@ -1366,7 +1366,7 @@ public:
 
         m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
 
-        if (g_TrapReturningThreads.LoadWithoutBarrier())
+        if (g_TrapReturningThreads)
         {
             RareDisablePreemptiveGC();
         }
@@ -4148,14 +4148,19 @@ public:
                 == m_BackgroundThreadCount);
     }
 
-    // If you want to trap threads re-entering the EE (be this for GC, or debugging,
-    // or Thread.Suspend() or whatever, you need to TrapReturningThreads(TRUE).  When
-    // you are finished snagging threads, call TrapReturningThreads(FALSE).  This
+    // If you want to trap threads re-entering the EE (for debugging,
+    // or Thread.Suspend() or whatever, you need to TrapReturningThreadsIncrement().  When
+    // you are finished snagging threads, call TrapReturningThreadsDecrement().  This
     // counts internally.
     //
     // Of course, you must also fix RareDisablePreemptiveGC to do the right thing
     // when the trap occurs.
-    static void     TrapReturningThreads(BOOL yes);
+    static void TrapReturningThreadsIncrement();
+    static void TrapReturningThreadsDecrement();
+
+    static void SetThreadTrapForSuspension();
+    static void UnsetThreadTrapForSuspension();
+    static bool IsTrappingThreadsForSuspension();
 
 private:
 
@@ -4319,8 +4324,8 @@ public:
 };
 
 struct TSSuspendHelper {
-    static void SetTrap() { ThreadStore::TrapReturningThreads(TRUE); }
-    static void UnsetTrap() { ThreadStore::TrapReturningThreads(FALSE); }
+    static void SetTrap() { ThreadStore::TrapReturningThreadsIncrement(); }
+    static void UnsetTrap() { ThreadStore::TrapReturningThreadsDecrement(); }
 };
 typedef StateHolder<TSSuspendHelper::SetTrap, TSSuspendHelper::UnsetTrap> TSSuspendHolder;
 
@@ -4511,7 +4516,7 @@ inline void Thread::MarkForDebugSuspend(void)
     if (!HasThreadState(TS_DebugSuspendPending))
     {
         SetThreadState(TS_DebugSuspendPending);
-        ThreadStore::TrapReturningThreads(TRUE);
+        ThreadStore::TrapReturningThreadsIncrement();
     }
 }
 
@@ -4522,13 +4527,13 @@ inline void Thread::IncrementTraceCallCount()
 {
     WRAPPER_NO_CONTRACT;
     InterlockedIncrement(&m_TraceCallCount);
-    ThreadStore::TrapReturningThreads(TRUE);
+    ThreadStore::TrapReturningThreadsIncrement();
 }
 
 inline void Thread::DecrementTraceCallCount()
 {
     WRAPPER_NO_CONTRACT;
-    ThreadStore::TrapReturningThreads(FALSE);
+    ThreadStore::TrapReturningThreadsDecrement();
     InterlockedDecrement(&m_TraceCallCount);
 }
 
