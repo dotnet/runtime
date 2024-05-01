@@ -11781,8 +11781,6 @@ void LinearScan::verifyFreeRegisters(regMaskTP regsToFree)
             assert(nextIntervalRef[reg] == MaxLocation);
             assert(spillCost[reg] == 0);
         }
-        // LsraLocation thisNextFixedRef = physRegRecord->getNextRefLocation();
-        // assert(nextFixedRef[reg] == thisNextFixedRef);
 #ifdef TARGET_ARM
         // If this is occupied by a double interval, skip the corresponding float reg.
         if ((assignedInterval != nullptr) && (assignedInterval->registerType == TYP_DOUBLE))
