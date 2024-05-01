@@ -2,7 +2,6 @@
 
 """Evaluates a model on a given dataset."""
 from enum import Enum
-import json
 import os
 import argparse
 import shutil
@@ -10,22 +9,13 @@ import numpy as np
 import pandas
 import tqdm
 
-from jitml import SuperPmi, JitCseModel, get_observation, MethodContext
+from jitml import SuperPmi, SuperPmiContext, JitCseModel, get_observation, MethodContext
+from train import validate_core_root
 
 class ModelResult(Enum):
     """Analysis errors."""
     OK = 0
     JIT_FAILED = 1
-
-def jit_with_retry(superpmi, m_id, *args, **kwargs):
-    """Attempts to JIT a method, retrying if necessary."""
-    result = superpmi.jit_method(m_id, *args, **kwargs)
-    if result is None:
-        superpmi.stop()
-        superpmi.start()
-        result = superpmi.jit_method(m_id, *args, **kwargs)
-
-    return result
 
 def set_result(data, m_id, heuristic_score, no_cse_score, model_score, error = ModelResult.OK):
     """Sets the results for the given method id."""
@@ -60,7 +50,7 @@ def get_most_likley_allowed_action(jitrl : JitCseModel, method : MethodContext, 
     # If we got here there's some kind of error.
     raise ValueError("No valid action found.")
 
-def test_model(superpmi, jitrl : JitCseModel, method_ids, model_name):
+def test_model(superpmi : SuperPmi, jitrl : JitCseModel, method_ids, model_name):
     """Tests the model on the test set."""
     data = {
         "method_id" : [],
@@ -76,8 +66,8 @@ def test_model(superpmi, jitrl : JitCseModel, method_ids, model_name):
                             ncols=shutil.get_terminal_size().columns - 8,
                             ascii=False):
         # the original JIT method
-        original = jit_with_retry(superpmi, m_id, JitMetrics=1)
-        no_cse = jit_with_retry(superpmi, m_id, JitMetrics=1, JitRLHook=1, JitRLHookCSEDecisions=[])
+        original = superpmi.jit_method(m_id, JitMetrics=1)
+        no_cse = superpmi.jit_method(m_id, JitMetrics=1, JitRLHook=1, JitRLHookCSEDecisions=[])
 
         if original is None or no_cse is None:
             set_result(data, m_id, 0, 0, 0, ModelResult.JIT_FAILED)
@@ -103,7 +93,7 @@ def test_model(superpmi, jitrl : JitCseModel, method_ids, model_name):
 
             # apply the CSE
             choices.append(action)
-            new_method = jit_with_retry(superpmi, m_id, JitMetrics=1, JitRLHook=1, JitRLHookCSEDecisions=choices)
+            new_method = superpmi.jit_method(m_id, JitMetrics=1, JitRLHook=1, JitRLHookCSEDecisions=choices)
             if new_method is None:
                 set_result(data, m_id, original.perf_score, no_cse.perf_score, prev_method.perf_score,
                             ModelResult.JIT_FAILED)
@@ -117,24 +107,28 @@ def test_model(superpmi, jitrl : JitCseModel, method_ids, model_name):
 
     return pandas.DataFrame(data)
 
-def load_data(data_dir):
-    """Loads the data from the specified directory."""
-    training_file = os.path.join(data_dir, "train.json")
-    test_file = os.path.join(data_dir, "test.json")
+def evaluate(superpmi, jitrl, methods, model_name, csv_file) -> pandas.DataFrame:
+    """Evaluate the model and save to the specified CSV file."""
+    print(csv_file)
+    print(model_name)
+    print(len(methods))
+    if os.path.exists(csv_file):
+        return pandas.read_csv(csv_file)
 
-    if not os.path.exists(training_file):
-        raise FileNotFoundError(f"Training file {training_file} does not exist.")
+    result = test_model(superpmi, jitrl, methods, model_name)
+    result.to_csv(csv_file)
+    return result
 
-    if not os.path.exists(test_file):
-        raise FileNotFoundError(f"Test file {test_file} does not exist.")
+def enumerate_models(dir_or_file):
+    """Enumerates the models in the specified directory."""
+    if os.path.isfile(dir_or_file):
+        return [dir_or_file]
 
-    with open(training_file, 'r', encoding="utf8") as f:
-        train = json.load(f)
+    def extract_number(file):
+        return int(file.split("_")[-1]) if file.split("_")[-1].isdigit() else 100000000
 
-    with open(test_file, 'r', encoding="utf8") as f:
-        test = json.load(f)
-
-    return test, train
+    files = [os.path.splitext(file)[0] for file in os.listdir(dir_or_file) if file.endswith(".zip")]
+    return sorted(files, key=extract_number, reverse=True)
 
 def print_result(result, model, kind):
     """Prints the results."""
@@ -181,68 +175,52 @@ def print_result(result, model, kind):
     print(f"JIT Failed: {len(result[result['failed'] == ModelResult.JIT_FAILED])}")
     print()
 
-def evaluate(superpmi, jitrl, methods, model_name, csv_file) -> pandas.DataFrame:
-    """Evaluate the model and save to the specified CSV file."""
-    print(csv_file)
-    print(model_name)
-    print(len(methods))
-    if os.path.exists(csv_file):
-        return pandas.read_csv(csv_file)
-
-    result = test_model(superpmi, jitrl, methods, model_name)
-    result.to_csv(csv_file)
-    return result
-
-def enumerate_models(data_dir):
-    """Enumerates the models in the specified directory."""
-    def extract_number(file):
-        return int(file.split("_")[-1]) if file.split("_")[-1].isdigit() else 100000000
-
-    files = [os.path.splitext(file)[0] for file in os.listdir(data_dir) if file.endswith(".zip")]
-    return sorted(files, key=extract_number, reverse=True)
-
 def parse_args():
     """usage:  train.py [-h] [--core_root CORE_ROOT] [--parallel n] [--iterations i] model_path mch"""
     parser = argparse.ArgumentParser()
-    parser.add_argument("model_path", help="The directory to load the model from.")
-    parser.add_argument("mch", help="The mch file of functions to train on.")
+    parser.add_argument("model_path", help="The directory or model path to load from.")
+    parser.add_argument("mch", help="The mch file of functions to evaluate the model with.")
     parser.add_argument("--core_root", default=None, help="The coreclr root directory.")
     parser.add_argument("--algorithm", default="PPO", help="The algorithm to use. (default: PPO)")
 
     args = parser.parse_args()
-    if args.core_root is None:
-        args.core_root = os.environ.get("CORE_ROOT", None)
-        if args.core_root is None:
-            raise ValueError("--core_root must be specified or set as the environment variable CORE_ROOT.")
-
+    args.core_root = validate_core_root(args.core_root)
     return args
 
 def main(args):
     """Main entry point."""
-    data_dir = os.path.join(args.model_path, args.algorithm)
+    dir_or_path = args.model_path
 
-    if not os.path.exists(data_dir):
-        raise FileNotFoundError(f"Model directory {data_dir} does not exist.")
+    if not os.path.exists(dir_or_path):
+        raise FileNotFoundError(f"Path {dir_or_path} does not exist.")
 
     # Load data.
-    test_methods, train_methods = load_data(data_dir)
+    spmi_file = args.mch + ".json"
+    if os.path.exists(spmi_file):
+        spmi_context = SuperPmiContext.load(spmi_file)
+    else:
+        print(f"Creating SuperPmiContext '{spmi_file}', this may take several minutes...")
+        spmi_context = SuperPmiContext(core_root=args.core_root, mch=args.mch)
+        spmi_context.find_methods_and_split(0.1)
+        spmi_context.save(spmi_file)
 
-    for file in enumerate_models(data_dir):
-        with SuperPmi(args.core_root, args.mch) as superpmi:
+    for file in enumerate_models(dir_or_path):
+        print(file)
+        with spmi_context.create_superpmi() as superpmi:
             # load the underlying model
-            jitrl = JitCseModel(args.algorithm, data_dir)
-            jitrl.load(os.path.join(data_dir, file))
+            jitrl = JitCseModel(args.algorithm)
+            jitrl.load(os.path.join(dir_or_path, file))
 
             print(f"Evaluting model {file} on training and test data:")
 
             model_name = os.path.splitext(file)[0]
 
-            filename = os.path.join(data_dir, f"{model_name}_test.csv")
-            result = evaluate(superpmi, jitrl, test_methods, model_name, filename)
+            filename = os.path.join(dir_or_path, f"{model_name}_test.csv")
+            result = evaluate(superpmi, jitrl, spmi_context.test_methods, model_name, filename)
             print_result(result, model_name, "Test")
 
-            filename = os.path.join(data_dir, f"{model_name}_train.csv")
-            result = evaluate(superpmi, jitrl, train_methods, model_name, filename)
+            filename = os.path.join(dir_or_path, f"{model_name}_train.csv")
+            result = evaluate(superpmi, jitrl, spmi_context.training_methods, model_name, filename)
             print_result(result, model_name, "Train")
 
 if __name__ == "__main__":

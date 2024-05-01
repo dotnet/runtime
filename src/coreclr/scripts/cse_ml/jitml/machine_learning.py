@@ -6,7 +6,6 @@
 
 import os
 import json
-from typing import List
 
 import torch
 import numpy as np
@@ -17,16 +16,15 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import SubprocVecEnv
 
 from .jit_cse import JitCseEnv
-from .superpmi import MethodContext
+from .superpmi import SuperPmiContext
 
 class JitCseModel:
     """The raw implementation of the machine learning agent."""
-    def __init__(self, algorithm, model_path, device='auto', make_env=None, ent_coef=0.01, verbose=False):
+    def __init__(self, algorithm, device='auto', make_env=None, ent_coef=0.01, verbose=False):
         if algorithm not in ('PPO', 'A2C', 'DQN'):
             raise ValueError(f"Unknown algorithm {algorithm}.  Must be one of: PPO, A2C, DQN")
 
         self.algorithm = algorithm
-        self.model_path = model_path
         self.device = device
         self.ent_coef = ent_coef
         self.verbose = verbose
@@ -60,16 +58,24 @@ class JitCseModel:
         probs = action_distribution.distribution.probs
         return probs.cpu().detach().numpy()[0]
 
-    def train(self, core_root : str, mch : str, methods : List[MethodContext] = None,
-              iterations = None, parallel = None):
-        """Trains the model from scratch."""
-        model_dir = os.path.join(self.model_path)
-        os.makedirs(model_dir, exist_ok=True)
+    def train(self, pmi_context : SuperPmiContext, output_dir : str, iterations = None, parallel = None,
+              progress_bar = True) -> str:
+        """Trains a model from scratch.
 
-        iterations = 100_000 if iterations is None else iterations
+        Args:
+            pmi_context: The SuperPmiContext to use for training.
+            output_dir: The directory to save the model to.
+            iterations: The number of iterations to train for.  Defaults to 100,000.
+            parallel: The number of parallel environments to use.  Defaults to single-process (None).
+            progress_bar: Whether to display a progress bar.  Defaults to True.
+
+        Returns:
+            The full path to the trained model.
+        """
+        os.makedirs(output_dir, exist_ok=True)
 
         def default_make_env():
-            return JitCseEnv(core_root, mch, methods)
+            return JitCseEnv(pmi_context, pmi_context.training_methods)
 
         make_env = self.make_env or default_make_env
         if parallel is not None and parallel > 1:
@@ -78,10 +84,15 @@ class JitCseModel:
             env = make_env()
 
         try:
-            self._model = self._create(env, tensorboard_log=os.path.join(model_dir, 'logs'))
+            self._model = self._create(env, tensorboard_log=os.path.join(output_dir, 'logs'))
 
-            callback = PPOLogCallback(self._model, model_dir) if self.algorithm == 'PPO' else None
-            self._model.learn(iterations, progress_bar=True, callback=callback)
+            iterations = 100_000 if iterations is None else iterations
+            callback = PPOLogCallback(self._model, output_dir) if self.algorithm == 'PPO' else None
+            self._model.learn(iterations, progress_bar=progress_bar, callback=callback)
+
+            save_path = os.path.join(output_dir, self.algorithm.lower() +'.zip')
+            self.save(save_path)
+            return save_path
 
         finally:
             env.close()
@@ -92,7 +103,6 @@ class JitCseModel:
             return alg('MlpPolicy', env, device=self.device, ent_coef=self.ent_coef, verbose=self.verbose, **kwargs)
 
         return alg('MlpPolicy', env, device=self.device, verbose=self.verbose, **kwargs)
-
 
     def __get_algorithm(self):
         match self.algorithm:
@@ -141,7 +151,7 @@ class PPOLogCallback(BaseCallback):
 
             if self.model.num_timesteps >= self.last_model_next_save:
                 self.last_model_next_save += self.last_model_freq
-                self._save_incremental(rew_mean, os.path.join(self.save_dir, f'model_{self.model.num_timesteps}.zip'))
+                self._save_incremental(rew_mean, os.path.join(self.save_dir, f'ppo_{self.model.num_timesteps}.zip'))
 
             if self._result_vs_heuristic:
                 self.logger.record('results/vs_heuristic', np.mean(self._result_vs_heuristic))

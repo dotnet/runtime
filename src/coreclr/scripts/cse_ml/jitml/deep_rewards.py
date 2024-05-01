@@ -18,7 +18,7 @@ class DeepCseRewardWrapper(gym.RewardWrapper):
     performance score, but also on the quality of the CSE choices made."""
     def __init__(self, env : JitCseEnv):
         super().__init__(env)
-        self.superpmi : SuperPmi = env.create_superpmi()
+        self.superpmi : SuperPmi = env.pmi_context.create_superpmi()
         self.superpmi.start()
 
     def reward(self, reward : SupportsFloat) -> SupportsFloat:
@@ -65,7 +65,7 @@ class DeepCseRewardWrapper(gym.RewardWrapper):
         # If we aren't given a current method, then no CSEs were applied.
         assert selected not in previous.cses_chosen
 
-        all_cses = [self.superpmi.jit_with_retry(m_idx, JitMetrics=1, JitRLHook=1,
+        all_cses = [self.superpmi.jit_method(m_idx, JitMetrics=1, JitRLHook=1,
                                                  JitRLHookCSEDecisions=previous.cses_chosen + [x.index])
                     for x in previous.cse_candidates
                     if x.index != selected and x.can_apply]

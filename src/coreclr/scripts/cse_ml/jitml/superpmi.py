@@ -1,40 +1,105 @@
 """Functions for interacting with SuperPmi."""
 
+import json
 import os
 import subprocess
 import re
-from typing import Iterable, Optional
+from typing import Iterable, List, Optional
+import numpy as np
+from pydantic import BaseModel, field_validator
 
+from .constants import is_acceptable_method
 from .method_context import MethodContext
+
+class SuperPmiContext(BaseModel):
+    """Information about how to construct a SuperPmi object.  This tells us where to find CLR's CORE_ROOT with
+    the superpmi and jit, and which .mch file to use.  Additionally, it tells us which methods to use for training
+    and testing."""
+    core_root : str
+    mch : str
+    jit : Optional[str] = None
+    test_methods : Optional[List[int]] = []
+    training_methods : Optional[List[int]] = []
+
+    @field_validator('core_root', 'mch', mode='before')
+    @classmethod
+    def _validate_path(cls, v):
+        if not os.path.exists(v):
+            raise FileNotFoundError(f"{v} does not exist.")
+
+        return v
+
+    @field_validator('jit', mode='before')
+    @classmethod
+    def _validate_optional_path(cls, v):
+        if v is not None and not os.path.exists(v):
+            raise FileNotFoundError(f"{v} does not exist.")
+
+        return v
+
+    def resplit_data(self, test_percent:float):
+        """Splits the data into training and testing sets."""
+        if not self.test_methods and not self.training_methods:
+            raise ValueError("No methods to split.  Try calling 'find_methods_and_split' first.")
+
+        all_methods = self.test_methods + self.training_methods
+        np.random.shuffle(all_methods)
+        self.test_methods = all_methods[:int(len(all_methods) * test_percent)]
+        self.training_methods = all_methods[len(self.test_methods):]
+
+    def find_methods_and_split(self, test_percent:float):
+        """Loads the SuperPmiContext from the specified arguments."""
+        suitable_methods = []
+        with SuperPmi(self) as superpmi:
+            for method in superpmi.enumerate_methods():
+                if is_acceptable_method(method):
+                    suitable_methods.append(method.index)
+
+        self.test_methods = suitable_methods
+        self.resplit_data(test_percent)
+
+    def save(self, file_path:str):
+        """Saves the SuperPmiContext to a file."""
+        with open(file_path, 'w', encoding="utf8") as f:
+            json.dump(self.model_dump(), f)
+
+
+    def create_superpmi(self, verbosity:str = 'q'):
+        """Creates a SuperPmi object from this context."""
+        return SuperPmi(self, verbosity)
+
+    @staticmethod
+    def load(file_path:str):
+        """Loads the SuperPmiContext from a file."""
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"{file_path} does not exist.")
+
+        with open(file_path, 'r', encoding="utf8") as f:
+            data = json.load(f)
+            return SuperPmiContext(**data)
+
 
 class SuperPmi:
     """Controls one instance of superpmi."""
-    def __init__(self, core_root:str, mch:str, jit:Optional[str] = None, verbosity:str = 'q'):
+    def __init__(self, context : SuperPmiContext, verbosity:str = 'q'):
         """Constructor.
         core_root is the path to the coreclr build, usually at [repo]/artifiacts/bin/coreclr/[arch]/.
         jit is the full path to the jit to use. Default is None.
         verbosity is the verbosity level of the superpmi process. Default is 'q'."""
         self._process = None
         self._feature_names = None
-
-        if not os.path.exists(core_root):
-            raise FileNotFoundError(f"core_root {core_root} does not exist.")
-
-        self.mch = mch
+        self.context = context
         self.verbose = verbosity
 
         if os.uname().sysname == 'Windows':
-            self.superpmi_path = os.path.join(core_root, 'superpmi.exe')
-            self.jit_path = os.path.join(core_root, jit if jit is not None else 'clrjit.dll')
+            self.superpmi_path = os.path.join(context.core_root, 'superpmi.exe')
+            self.jit_path = os.path.join(context.core_root, context.jit if context.jit else 'clrjit.dll')
         else:
-            self.superpmi_path = os.path.join(core_root, 'superpmi')
-            self.jit_path = os.path.join(core_root, jit if jit is not None else 'libclrjit.so')
+            self.superpmi_path = os.path.join(context.core_root, 'superpmi')
+            self.jit_path = os.path.join(context.core_root, context.jit if context.jit else 'libclrjit.so')
 
         if not os.path.exists(self.superpmi_path):
             raise FileNotFoundError(f"superpmi {self.superpmi_path} does not exist.")
-
-        if not os.path.exists(self.mch):
-            raise FileNotFoundError(f"mch {self.mch} does not exist.")
 
         if not os.path.exists(self.jit_path):
             raise FileNotFoundError(f"jit {self.jit_path} does not exist.")
@@ -49,13 +114,13 @@ class SuperPmi:
     def __exit__(self, *_):
         self.stop()
 
-    def jit_with_retry(self, method_or_id : int | MethodContext, retry=1, **options) -> MethodContext:
+    def jit_method(self, method_or_id : int | MethodContext, retry=1, **options) -> MethodContext:
         """Attempts to jit the method, and retries if it fails up to "retry" times."""
         if retry < 1:
             raise ValueError("retry must be greater than 0.")
 
         for _ in range(retry):
-            result = self.jit_method(method_or_id, **options)
+            result = self.__jit_method(method_or_id, **options)
             if result is not None:
                 return result
 
@@ -64,7 +129,7 @@ class SuperPmi:
 
         return None
 
-    def jit_method(self, method_or_id : int | MethodContext, **options) -> MethodContext:
+    def __jit_method(self, method_or_id : int | MethodContext, **options) -> MethodContext:
         """Jits the method given by id or MethodContext."""
         process = self._process
         if process is None:
@@ -101,13 +166,11 @@ class SuperPmi:
 
     def enumerate_methods(self) -> Iterable[MethodContext]:
         """List all methods in the mch file."""
-        params = [self.superpmi_path, self.jit_path, self.mch, '-v', 'q', '-jitoption', 'JitMetrics=1',
-                  '-jitoption', 'JitRLHook=1']
-
-        if self._feature_names is None:
-            params.extend(['-jitoption', 'JitRLHookEmitFeatureNames=1'])
+        params = [self.superpmi_path, self.jit_path, self.context.mch, '-v', 'q', '-jitoption', 'JitMetrics=1',
+                  '-jitoption', 'JitRLHook=1', '-jitoption', 'JitRLHookEmitFeatureNames=1']
 
         try:
+            # pylint: disable=consider-using-with
             process = subprocess.Popen(params, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             for line in process.stdout:
                 line = line.decode('utf-8').strip()
@@ -115,12 +178,13 @@ class SuperPmi:
                     yield self._parse_method_context(line)
 
         finally:
-            process.terminate()
-            try:
-                process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait()
+            if process.poll():
+                process.terminate()
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait()
 
     def _parse_method_context(self, line:str) -> MethodContext:
         if self._feature_names is None:
@@ -171,7 +235,7 @@ class SuperPmi:
     def start(self):
         """Starts and returns the superpmi process."""
         if self._process is None:
-            params = [self.superpmi_path, self.jit_path, '-streaming', 'stdin', self.mch]
+            params = [self.superpmi_path, self.jit_path, '-streaming', 'stdin', self.context.mch]
             if self.verbose is not None:
                 params.extend(['-v', self.verbose])
 
@@ -189,4 +253,5 @@ class SuperPmi:
 
 __all__ = [
     SuperPmi.__name__,
+    SuperPmiContext.__name__,
 ]

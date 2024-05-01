@@ -2,61 +2,17 @@
 
 """Trains JIT reinforcment learning on superpmi data."""
 import os
-import json
-import time
 import argparse
-import numpy as np
 
-from jitml import SuperPmi, JitCseEnv, JitCseModel, DeepCseRewardWrapper
+from jitml import SuperPmiContext, JitCseEnv, JitCseModel, DeepCseRewardWrapper
 
-def enumerate_methods(core_root, mch):
-    """Enumerates all methods in the mch file."""
-    fn = os.path.basename(mch)
-    print(f"Parsing {fn} (this may take a while)...")
-    start = time.time()
-    found = []
-    with SuperPmi(core_root, mch) as pmi:
-        for method in pmi.enumerate_methods():
-            yield method
-            found.append(method)
+def validate_core_root(core_root):
+    """Validates and returns the core_root directory."""
+    core_root = core_root or os.environ.get("CORE_ROOT", None)
+    if core_root is None:
+        raise ValueError("--core_root must be specified or set as the environment variable CORE_ROOT.")
 
-            if len(found) % 10000 == 0:
-                print('.', end='', flush=True)
-
-    print()
-    print(f"Parsed {mch} in {time.time() - start:.2f} seconds.")
-    print()
-
-def get_acceptable_methods(core_root, mch):
-    """Returns a list of acceptable methods to train on."""
-    json_file = f"{mch}.json"
-
-    if os.path.exists(json_file):
-        with open(json_file, 'r', encoding="utf8") as f:
-            return [int(x) for x in json.load(f)]
-
-    sequence = enumerate_methods(core_root, mch)
-    acceptable = [method.index for method in sequence if JitCseEnv.is_acceptable(method)]
-
-    with open(json_file, 'w', encoding="utf8") as f:
-        json.dump(acceptable, f)
-
-    return acceptable
-
-def split_data(output_dir, data, percent):
-    """Splits the data into training and testing sets."""
-    np.random.shuffle(data)
-
-    num_test = int(len(data) * percent)
-    test, train = data[-num_test:], data[:-num_test]
-
-    with open(os.path.join(output_dir, "train.json"), 'w', encoding="utf8") as f:
-        json.dump(train, f)
-
-    with open(os.path.join(output_dir, "test.json"), 'w', encoding="utf8") as f:
-        json.dump(test, f)
-
-    return test, train
+    return core_root
 
 def parse_args():
     """usage:  train.py [-h] [--core_root CORE_ROOT] [--parallel n] [--iterations i] model_path mch"""
@@ -72,17 +28,13 @@ def parse_args():
     parser.add_argument("--deep_rewards", action='store_true', help="Use smarter rewards. (default: False)")
 
     args = parser.parse_args()
-    if args.core_root is None:
-        args.core_root = os.environ.get("CORE_ROOT", None)
-        if args.core_root is None:
-            raise ValueError("--core_root must be specified or set as the environment variable CORE_ROOT.")
-
+    args.core_root = validate_core_root(args.core_root)
     return args
 
-def deep_reward_make_env(core_root, mch, methods):
+def deep_reward_make_env(spmi_ctx: SuperPmiContext):
     """Returns a JitCseEnv with deep rewards."""
     def make_env():
-        env = JitCseEnv(core_root, mch, methods)
+        env = JitCseEnv(spmi_ctx, spmi_ctx.training_methods)
         env = DeepCseRewardWrapper(env)
         return env
 
@@ -90,25 +42,29 @@ def deep_reward_make_env(core_root, mch, methods):
 
 def main(args):
     """Main entry point."""
+    output_dir = args.model_path
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir, exist_ok=True)
 
-    # Create directories.
-    iterations = args.iterations if args.iterations is not None else 1_000_000
-    output = os.path.join(args.model_path, args.algorithm)
-    model_path = os.path.join(output, "model.zip")
+    # Load or create the superpmi context.
+    spmi_file = args.mch + ".json"
+    if os.path.exists(spmi_file):
+        ctx = SuperPmiContext.load(spmi_file)
+    else:
+        print(f"Creating SuperPmiContext '{spmi_file}', this may take several minutes...")
+        ctx = SuperPmiContext(core_root=args.core_root, mch=args.mch)
+        ctx.find_methods_and_split(args.test_percent)
+        ctx.save(spmi_file)
 
-    if not os.path.exists(output):
-        os.makedirs(output, exist_ok=True)
-
-    # Load data.
-    acceptable = get_acceptable_methods(args.core_root, args.mch)
-    test, train = split_data(output, acceptable, args.test_percent)
-    print(f"Training with {len(train)} methods, holding back {len(test)} for testing.")
+    print(f"Training with {len(ctx.training_methods)} methods, holding back {len(ctx.test_methods)} for testing.")
 
     # Train the model.
-    make_env = deep_reward_make_env(args.core_root, args.mch, train) if args.deep_rewards else None
-    rl = JitCseModel(args.algorithm, output, make_env=make_env)
-    rl.train(args.core_root, args.mch, train, iterations=iterations, parallel=args.parallel)
-    rl.save(model_path)
+    make_env = deep_reward_make_env(ctx) if args.deep_rewards else None
+    iterations = args.iterations if args.iterations is not None else 1_000_000
+
+    rl = JitCseModel(args.algorithm, make_env=make_env)
+    path = rl.train(ctx, output_dir, iterations=iterations, parallel=args.parallel)
+    print(f"Model saved to: {path}")
 
 if __name__ == "__main__":
     main(parse_args())

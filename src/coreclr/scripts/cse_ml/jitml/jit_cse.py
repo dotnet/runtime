@@ -5,19 +5,23 @@ import gymnasium as gym
 import numpy as np
 
 from .method_context import MethodContext
-from .superpmi import SuperPmi
+from .superpmi import SuperPmi, SuperPmiContext
 from .default_observation import get_observation, create_observation
-from .constants import (INVALID_ACTION_PENALTY, INVALID_ACTION_LIMIT, MIN_CSE, MAX_CSE)
+from .constants import (INVALID_ACTION_PENALTY, INVALID_ACTION_LIMIT, MAX_CSE, is_acceptable_method)
 
 REWARD_SCALE = 5.0
 
 class JitCseEnv(gym.Env):
     """A gymnasium environment for the JIT."""
-    def __init__(self, core_root : str, mch : str, methods : Optional[List[int]] = None):
-        self.core_root = core_root
-        self.mch = mch
-        self.__superpmi = None
-        self.methods = methods
+    def __init__(self, context : SuperPmiContext, methods : Optional[List[int]] = None, **kwargs):
+        super().__init__(**kwargs)
+
+        self.pmi_context = context
+        self.methods = methods or context.training_methods
+        if not self.methods:
+            raise ValueError("No methods to train on.")
+
+        self.__superpmi : SuperPmi = None
         self.action_space = gym.spaces.Discrete(MAX_CSE + 1)
         self.observation_space = create_observation()
         self.last_info : Optional[Dict[str,object]] = None
@@ -37,7 +41,7 @@ class JitCseEnv(gym.Env):
             if no_cse is None:
                 continue
 
-            if JitCseEnv.is_acceptable(no_cse):
+            if is_acceptable_method(no_cse):
                 original_heuristic = self._jit_method(index, JitMetrics=1)
                 if original_heuristic is None:
                     continue
@@ -152,7 +156,7 @@ class JitCseEnv(gym.Env):
     def _jit_method(self, m_id, *args, **kwargs):
         superpmi = self.__get_or_create_superpmi()
 
-        result = superpmi.jit_with_retry(m_id, retry=2, *args, **kwargs)
+        result = superpmi.jit_method(m_id, retry=2, *args, **kwargs)
         if result is None:
             self.__remove_method(m_id)
 
@@ -165,7 +169,7 @@ class JitCseEnv(gym.Env):
     def __select_method(self):
         if self.methods is None:
             superpmi = self.__get_or_create_superpmi()
-            self.methods = [x.index for x in superpmi.enumerate_methods() if JitCseEnv.is_acceptable(x)]
+            self.methods = [x.index for x in superpmi.enumerate_methods() if is_acceptable_method(x)]
 
         return np.random.choice(self.methods)
 
@@ -175,22 +179,12 @@ class JitCseEnv(gym.Env):
 
         self.methods = [x for x in self.methods if x != index]
 
-    def create_superpmi(self):
-        """Creates a superpmi instance."""
-        return SuperPmi(self.core_root, self.mch)
-
     def __get_or_create_superpmi(self):
         if self.__superpmi is None:
-            self.__superpmi = self.create_superpmi()
+            self.__superpmi = self.pmi_context.create_superpmi()
             self.__superpmi.start()
 
         return self.__superpmi
-
-    @staticmethod
-    def is_acceptable(method : MethodContext):
-        """Returns True if the method is acceptable for training."""
-        applicable = len([x for x in method.cse_candidates if x.viable])
-        return MIN_CSE <= applicable and len(method.cse_candidates) <= MAX_CSE
 
     def render(self) -> None:
         info = self.last_info
