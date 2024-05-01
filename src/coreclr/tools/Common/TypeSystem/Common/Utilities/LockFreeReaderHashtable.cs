@@ -367,7 +367,7 @@ namespace Internal.TypeSystem
 
         private TValue AddOrGetExistingInner(TValue value, out bool addedValue)
         {
-#if NET5_0_OR_GREATER
+#if NET
             ArgumentNullException.ThrowIfNull(value);
 #else
             if (value == null)
@@ -596,7 +596,7 @@ namespace Internal.TypeSystem
         /// <returns>Value from the hashtable if found, otherwise null.</returns>
         public TValue GetValueIfExists(TValue value)
         {
-#if NET5_0_OR_GREATER
+#if NET
             ArgumentNullException.ThrowIfNull(value);
 #else
             if (value == null)

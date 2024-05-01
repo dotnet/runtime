@@ -129,7 +129,7 @@ namespace System.Reflection
                 vsb.Append(quoteChar);
         }
 
-#if !NETCOREAPP
+#if !NET
         private static void AppendSpanFormattable(this ref ValueStringBuilder vsb, ushort value)
         {
             vsb.Append(value.ToString());

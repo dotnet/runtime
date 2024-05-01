@@ -5052,7 +5052,7 @@ void Compiler::optHoistCandidate(GenTree*              tree,
                                  FlowGraphNaturalLoop* loop,
                                  LoopHoistContext*     hoistCtxt)
 {
-    // It must pass the hoistable profitablity tests for this loop level
+    // It must pass the hoistable profitability tests for this loop level
     if (!optIsProfitableToHoistTree(tree, loop, hoistCtxt))
     {
         JITDUMP("   ... not profitable to hoist\n");
