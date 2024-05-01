@@ -124,6 +124,8 @@ namespace System.IO.Pipelines
             _lastExaminedIndex = -1;
             _unflushedBytes = 0;
             _unconsumedBytes = 0;
+            _bailValidation = false;
+            _validationOffset = 0;
         }
 
         internal Memory<byte> GetMemory(int sizeHint)
@@ -354,7 +356,7 @@ namespace System.IO.Pipelines
                         break;
                     }
 
-                    Environment.FailFast($"Pipe content validation failed at offset {_validationOffset}. Expected: 0x{expected:x2} Actual: {b:x2}");
+                    Environment.FailFast($"Pipe content validation failed at offset {_validationOffset}. Expected: 0x{expected:x2} Actual: 0x{b:x2}");
                 }
 
                 _validationOffset++;
