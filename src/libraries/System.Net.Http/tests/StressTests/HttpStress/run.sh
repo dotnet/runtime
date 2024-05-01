@@ -1,5 +1,5 @@
 
-cp /live-runtime-artifacts/System.IO.Pipelines/$CONFIGURATION/net$VERSION/System.IO.Pipelines.dll /live-runtime-artifacts/testhost/net$VERSION-linux-$CONFIGURATION-x64/shared/Microsoft.AspNetCore.App/*/
+cp /live-runtime-artifacts/System.IO.Pipelines.dll /live-runtime-artifacts/testhost/net$VERSION-linux-$CONFIGURATION-x64/shared/Microsoft.AspNetCore.App/*/
 
 /live-runtime-artifacts/testhost/net$VERSION-linux-$CONFIGURATION-x64/dotnet exec --roll-forward Major ./bin/$CONFIGURATION/net$VERSION/HttpStress.dll $HTTPSTRESS_ARGS
 

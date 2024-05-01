@@ -48,8 +48,13 @@ COPY --from=corefxbuild \
     /repo/src/libraries/System.Net.Quic/src/System/Net/Quic/Interop \
     /live-runtime-artifacts/msquic-interop
 
+COPY --from=corefxbuild \
+    /repo/artifacts/bin/System.IO.Pipelines/$CONFIGURATION/net$VERSION/System.IO.Pipelines.dll \
+    /live-runtime-artifacts
+
 # Add AspNetCore bits to testhost:
 ENV _ASPNETCORE_SOURCE="/usr/share/dotnet/shared/Microsoft.AspNetCore.App/$VERSION*"
 ENV _ASPNETCORE_DEST="/live-runtime-artifacts/testhost/net$VERSION-linux-$CONFIGURATION-x64/shared/Microsoft.AspNetCore.App"
 RUN mkdir -p $_ASPNETCORE_DEST
 RUN cp -r $_ASPNETCORE_SOURCE $_ASPNETCORE_DEST
+
