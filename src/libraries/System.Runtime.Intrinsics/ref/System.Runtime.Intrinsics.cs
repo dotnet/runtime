@@ -4187,6 +4187,16 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ulong> Add(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
         public static System.Numerics.Vector<float> Add(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
         public static System.Numerics.Vector<double> Add(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<double> AddAcross(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<long> AddAcross(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<long> AddAcross(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<long> AddAcross(System.Numerics.Vector<sbyte> value) { throw null; }
+        public static System.Numerics.Vector<long> AddAcross(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<float> AddAcross(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<ulong> AddAcross(System.Numerics.Vector<byte> value) { throw null; }
+        public static System.Numerics.Vector<ulong> AddAcross(System.Numerics.Vector<ushort> value) { throw null; }
+        public static System.Numerics.Vector<ulong> AddAcross(System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<ulong> AddAcross(System.Numerics.Vector<ulong> value) { throw null; }
         public static ulong Count16BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static ulong Count32BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static ulong Count64BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
