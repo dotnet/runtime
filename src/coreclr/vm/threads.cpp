@@ -7065,22 +7065,20 @@ void CommonTripThread()
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
     Thread  *thread = GetThread();
-    thread->HandleThreadAbort ();
+    thread->HandleThreadAbort();
 
-    if (thread->CatchAtSafePointOpportunistic())
-    {
-        _ASSERTE(!ThreadStore::HoldingThreadStore(thread));
+    _ASSERTE(!ThreadStore::HoldingThreadStore(thread));
 #ifdef FEATURE_HIJACK
-        thread->UnhijackThread();
+    thread->UnhijackThread();
 #endif // FEATURE_HIJACK
 
-        // Trap
-        thread->PulseGCMode();
-    }
+    // Trap
+    thread->PulseGCMode();
 #else
     DacNotImpl();
 #endif // #ifndef DACCESS_COMPILE

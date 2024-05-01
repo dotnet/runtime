@@ -3317,7 +3317,6 @@ void ThreadSuspend::SuspendAllThreads()
     // This thread
     Thread  *pCurThread = GetThreadNULLOk();
 
-    
     //
     // Remember that we're the one suspending the EE
     //
@@ -3332,8 +3331,6 @@ void ThreadSuspend::SuspendAllThreads()
     // Tell all threads, globally, to wait for WaitForGCEvent.
     //
     ThreadStore::SetThreadTrapForSuspension();
-
-    _ASSERTE(!pCurThread || !pCurThread->HasThreadState(Thread::TS_GCSuspendFlags));
 
     // Flush the store buffers on all CPUs, to ensure two things:
     // - we get a reliable reading of the threads' m_fPreemptiveGCDisabled state
@@ -3359,22 +3356,10 @@ void ThreadSuspend::SuspendAllThreads()
 
             if (pTargetThread->m_fPreemptiveGCDisabled.LoadWithoutBarrier())
             {
-                if (!pTargetThread->HasThreadStateOpportunistic(Thread::TS_GCSuspendPending))
-                {
-                    pTargetThread->SetThreadState(Thread::TS_GCSuspendPending);
-                }
-
                 remaining++;
                 if (!observeOnly)
                 {
                     pTargetThread->Hijack();
-                }
-            }
-            else
-            {
-                if (pTargetThread->HasThreadStateOpportunistic(Thread::TS_GCSuspendPending))
-                {
-                    pTargetThread->ResetThreadState(Thread::TS_GCSuspendPending);
                 }
             }
         }
@@ -3503,12 +3488,10 @@ void Thread::Hijack()
     }
 
     // the thread is suspended here, we can hijack, if it is stopped in hijackable location
-
     if (!m_fPreemptiveGCDisabled.LoadWithoutBarrier())
     {
         // actually, we are done with this one
         STRESS_LOG1(LF_SYNC, LL_INFO1000, "    Thread %x went preemptive while suspending it is at a GC safe point\n", this);
-        ResetThreadState(Thread::TS_GCSuspendFlags);
         ResumeThread();
         return;
     }
@@ -5662,7 +5645,6 @@ retry_for_debugger:
         while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
         {
             thread->DisableStressHeap();
-            _ASSERTE(!thread->HasThreadState(Thread::TS_GCSuspendPending));
         }
     }
 #endif
@@ -5717,7 +5699,7 @@ retry_for_debugger:
         LOG((LF_GCROOTS | LF_GC | LF_CORDB, LL_INFO10, "The EE is free now...\n"));
 
         // If someone's trying to suspend *this* thread, this is a good opportunity.
-        if (pCurThread && pCurThread->CatchAtSafePointOpportunistic())
+        if (pCurThread && pCurThread->CatchAtSafePoint())
         {
             pCurThread->PulseGCMode();  // Go suspend myself.
         }

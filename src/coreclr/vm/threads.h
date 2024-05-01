@@ -592,7 +592,7 @@ public:
 
 public:
     // If we are trying to suspend a thread, we set the appropriate pending bit to
-    // indicate why we want to suspend it (TS_GCSuspendPending or TS_DebugSuspendPending).
+    // indicate why we want to suspend it (TS_AbortRequested or TS_DebugSuspendPending).
     //
     // If instead the thread has blocked itself, via WaitSuspendEvent, we indicate
     // this with TS_SyncSuspended.  However, we need to know whether the synchronous
@@ -608,9 +608,8 @@ public:
 
         TS_AbortRequested         = 0x00000001,    // Abort the thread
 
-        TS_GCSuspendPending       = 0x00000002,    // ThreadSuspend::SuspendRuntime watches this thread to leave coop mode.
+        // unused                 = 0x00000002,
         TS_GCSuspendRedirected    = 0x00000004,    // ThreadSuspend::SuspendRuntime has redirected the thread to suspention routine.
-        TS_GCSuspendFlags         = TS_GCSuspendPending | TS_GCSuspendRedirected, // used to track suspension progress. Only SuspendRuntime writes/resets these.
 
         TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads?
         TS_GCOnTransitions        = 0x00000010,    // Force a GC on stub transitions (GCStress only)
@@ -671,8 +670,7 @@ public:
         //         enum is changed, we also need to update SOS to reflect this.</TODO>
 
         // We require (and assert) that the following bits are less than 0x100.
-        TS_CatchAtSafePoint = (TS_AbortRequested | TS_GCSuspendPending |
-                               TS_DebugSuspendPending | TS_GCOnTransitions),
+        TS_CatchAtSafePoint = (TS_AbortRequested | TS_DebugSuspendPending | TS_GCOnTransitions),
     };
 
     // Thread flags that aren't really states in themselves but rather things the thread
@@ -937,11 +935,18 @@ public:
     void DoExtraWorkForFinalizer();
 
 #ifndef DACCESS_COMPILE
-    DWORD CatchAtSafePointOpportunistic()
+    DWORD CatchAtSafePoint()
     {
-        LIMITED_METHOD_CONTRACT;
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
 
-        return HasThreadStateOpportunistic(TS_CatchAtSafePoint);
+        return g_TrapReturningThreads & 1 ||
+            HasThreadStateOpportunistic(TS_CatchAtSafePoint);
     }
 #endif // DACCESS_COMPILE
 
@@ -3222,8 +3227,6 @@ public:
         if (SuspendSucceeded)
             UnhijackThread();
 #endif // FEATURE_HIJACK
-
-        _ASSERTE(!HasThreadStateOpportunistic(Thread::TS_GCSuspendPending));
     }
 
     static LPVOID GetStaticFieldAddress(FieldDesc *pFD);

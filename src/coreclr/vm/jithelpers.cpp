@@ -3651,7 +3651,7 @@ NOINLINE static void JIT_MonEnter_Helper(Object* obj, BYTE* pbLockTaken, LPVOID 
 
     GCPROTECT_BEGININTERIOR(pbLockTaken);
 
-    if (GET_THREAD()->CatchAtSafePointOpportunistic())
+    if (GET_THREAD()->CatchAtSafePoint())
     {
         GET_THREAD()->PulseGCMode();
     }
@@ -3730,7 +3730,7 @@ NOINLINE static void JIT_MonTryEnter_Helper(Object* obj, INT32 timeOut, BYTE* pb
 
     GCPROTECT_BEGININTERIOR(pbLockTaken);
 
-    if (GET_THREAD()->CatchAtSafePointOpportunistic())
+    if (GET_THREAD()->CatchAtSafePoint())
     {
         GET_THREAD()->PulseGCMode();
     }
@@ -3764,7 +3764,7 @@ HCIMPL3(void, JIT_MonTryEnter_Portable, Object* obj, INT32 timeOut, BYTE* pbLock
 
     pCurThread = GetThread();
 
-    if (pCurThread->CatchAtSafePointOpportunistic())
+    if (pCurThread->CatchAtSafePoint())
     {
         goto FramedLockHelper;
     }
@@ -3936,7 +3936,7 @@ HCIMPL_MONHELPER(JIT_MonEnterStatic_Portable, AwareLock *lock)
     MONHELPER_STATE(_ASSERTE(pbLockTaken != NULL && *pbLockTaken == 0));
 
     Thread *pCurThread = GetThread();
-    if (pCurThread->CatchAtSafePointOpportunistic())
+    if (pCurThread->CatchAtSafePoint())
     {
         goto FramedLockHelper;
     }
@@ -4815,7 +4815,7 @@ HCIMPL0(VOID, JIT_PollGC)
         return;
 
     // Does someone want this thread stopped?
-    if (!GetThread()->CatchAtSafePointOpportunistic())
+    if (!GetThread()->CatchAtSafePoint())
         return;
 
     // Tailcall to the slow helper
