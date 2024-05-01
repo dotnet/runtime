@@ -18,7 +18,7 @@ FEATURES = JITTYPE_ONEHOT_SIZE + BOOLEAN_FEATURES + FLOAT_FEATURES
 REWARD_SCALE = 5.0
 
 class JitCseEnv(gym.Env):
-    """A gymnasium environment for the JIT."""
+    """A gymnasium environment for CSE optimization selection in the JIT."""
     observation_columns : List[str] = [f"type_{JitType(i).name.lower()}" for i in range(1, 7)] + \
         [
             "can_apply", "live_across_call", "const", "shared_const", "make_cse", "has_call", "containable",
