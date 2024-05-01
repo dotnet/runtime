@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#if NETCOREAPP
+#if NET
 using System.Runtime.Intrinsics;
 #endif
 
@@ -22,7 +22,7 @@ namespace System.Text.Encodings.Web
             [FieldOffset(0)] // ensure same offset with AsVector field
             private fixed byte AsBytes[16];
 
-#if NETCOREAPP
+#if NET
 #if !TARGET_BROWSER
             [FieldOffset(0)] // ensure same offset with AsBytes field
             internal Vector128<byte> AsVector;

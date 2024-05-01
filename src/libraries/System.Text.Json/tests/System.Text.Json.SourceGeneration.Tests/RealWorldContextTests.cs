@@ -893,7 +893,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             }
         }
 
-#if NETCOREAPP
+#if NET
         [Fact]
         public virtual void ClassWithDateOnlyAndTimeOnlyValues_Roundtrip()
         {
