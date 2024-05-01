@@ -4152,14 +4152,14 @@ public:
     }
 
     // If you want to trap threads re-entering the EE (for debugging,
-    // or Thread.Suspend() or whatever, you need to TrapReturningThreadsIncrement().  When
-    // you are finished snagging threads, call TrapReturningThreadsDecrement().  This
+    // or Thread.Suspend() or whatever, you need to IncrementTrapReturningThreads().  When
+    // you are finished snagging threads, call DecrementTrapReturningThreads().  This
     // counts internally.
     //
     // Of course, you must also fix RareDisablePreemptiveGC to do the right thing
     // when the trap occurs.
-    static void TrapReturningThreadsIncrement();
-    static void TrapReturningThreadsDecrement();
+    static void IncrementTrapReturningThreads();
+    static void DecrementTrapReturningThreads();
 
     static void SetThreadTrapForSuspension();
     static void UnsetThreadTrapForSuspension();
@@ -4327,8 +4327,8 @@ public:
 };
 
 struct TSSuspendHelper {
-    static void SetTrap() { ThreadStore::TrapReturningThreadsIncrement(); }
-    static void UnsetTrap() { ThreadStore::TrapReturningThreadsDecrement(); }
+    static void SetTrap() { ThreadStore::IncrementTrapReturningThreads(); }
+    static void UnsetTrap() { ThreadStore::DecrementTrapReturningThreads(); }
 };
 typedef StateHolder<TSSuspendHelper::SetTrap, TSSuspendHelper::UnsetTrap> TSSuspendHolder;
 
@@ -4519,7 +4519,7 @@ inline void Thread::MarkForDebugSuspend(void)
     if (!HasThreadState(TS_DebugSuspendPending))
     {
         SetThreadState(TS_DebugSuspendPending);
-        ThreadStore::TrapReturningThreadsIncrement();
+        ThreadStore::IncrementTrapReturningThreads();
     }
 }
 
@@ -4530,13 +4530,13 @@ inline void Thread::IncrementTraceCallCount()
 {
     WRAPPER_NO_CONTRACT;
     InterlockedIncrement(&m_TraceCallCount);
-    ThreadStore::TrapReturningThreadsIncrement();
+    ThreadStore::IncrementTrapReturningThreads();
 }
 
 inline void Thread::DecrementTraceCallCount()
 {
     WRAPPER_NO_CONTRACT;
-    ThreadStore::TrapReturningThreadsDecrement();
+    ThreadStore::DecrementTrapReturningThreads();
     InterlockedDecrement(&m_TraceCallCount);
 }
 

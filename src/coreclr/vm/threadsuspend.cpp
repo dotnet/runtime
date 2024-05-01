@@ -1295,7 +1295,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
                 // The thread being aborted may clear the TS_AbortRequested bit and the matching increment
                 // of g_TrapReturningThreads behind our back. Increment g_TrapReturningThreads here
                 // to ensure that we stop for the stack crawl even if the TS_AbortRequested bit is cleared.
-                ThreadStore::TrapReturningThreadsIncrement();
+                ThreadStore::IncrementTrapReturningThreads();
             }
             void NeedStackCrawl()
             {
@@ -1310,7 +1310,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
                 if (m_NeedRelease)
                 {
                     m_NeedRelease = FALSE;
-                    ThreadStore::TrapReturningThreadsDecrement();
+                    ThreadStore::DecrementTrapReturningThreads();
                     ThreadStore::SetStackCrawlEvent();
                     m_pThread->ResetThreadState(TS_StackCrawlNeeded);
                     if (!m_fHoldingThreadStoreLock)
@@ -1755,7 +1755,7 @@ void Thread::SetAbortRequestBit()
         }
         if (InterlockedCompareExchange((LONG*)&m_State, curValue|TS_AbortRequested, curValue) == curValue)
         {
-            ThreadStore::TrapReturningThreadsIncrement();
+            ThreadStore::IncrementTrapReturningThreads();
 
             break;
         }
@@ -1771,7 +1771,7 @@ void Thread::RemoveAbortRequestBit()
 
 #ifdef _DEBUG
     // There's a race between removing the TS_AbortRequested bit and decrementing g_TrapReturningThreads
-    // We may remove the bit, but before we have a chance to call ThreadStore::TrapReturningThreadsDecrement()
+    // We may remove the bit, but before we have a chance to call ThreadStore::DecrementTrapReturningThreads()
     // DbgFindThread() may execute, and find too few threads with the bit set.
     // To ensure the assert in DbgFindThread does not fire under such a race we set the ChgInFlight before hand.
     CounterHolder trtHolder(&g_trtChgInFlight);
@@ -1785,7 +1785,7 @@ void Thread::RemoveAbortRequestBit()
         }
         if (InterlockedCompareExchange((LONG*)&m_State, curValue&(~TS_AbortRequested), curValue) == curValue)
         {
-            ThreadStore::TrapReturningThreadsDecrement();
+            ThreadStore::DecrementTrapReturningThreads();
 
             break;
         }
@@ -2113,7 +2113,7 @@ void Thread::RareDisablePreemptiveGC()
     if (ThreadStore::HoldingThreadStore(this))
     {
         // In theory threads should not try entering coop mode while holding TS lock,
-        // but some scenarios like GCCoopHackNoThread end up here
+        // but some scenarios like GCCoopHackNoThread and GCX_COOP_NO_THREAD_BROKEN end up here
         goto Exit;
     }
 
@@ -2143,7 +2143,7 @@ void Thread::RareDisablePreemptiveGC()
     {
 #ifdef DEBUGGING_SUPPORTED
         // If debugger wants the thread to suspend, give the debugger precedence.
-        if ((m_State & TS_DebugSuspendPending) && !IsInForbidSuspendForDebuggerRegion())
+        if (HasThreadStateOpportunistic(TS_DebugSuspendPending) && !IsInForbidSuspendForDebuggerRegion())
         {
             EnablePreemptiveGC();
 
@@ -2214,7 +2214,7 @@ void Thread::RareDisablePreemptiveGC()
             continue;
         }
 
-        if (HasThreadState(TS_StackCrawlNeeded))
+        if (HasThreadStateOpportunistic(TS_StackCrawlNeeded))
         {
             EnablePreemptiveGC();
             ThreadStore::WaitForStackCrawlEvent();
@@ -2394,7 +2394,7 @@ void Thread::PulseGCMode()
 // Indicate whether threads should be trapped when returning to the EE (i.e. disabling
 // preemptive GC mode)
 Volatile<LONG> g_fTrapReturningThreadsLock;
-void ThreadStore::TrapReturningThreadsIncrement()
+void ThreadStore::IncrementTrapReturningThreads()
 {
     CONTRACTL {
         NOTHROW;
@@ -2432,7 +2432,7 @@ void ThreadStore::TrapReturningThreadsIncrement()
     g_fTrapReturningThreadsLock = 0;
 }
 
-void ThreadStore::TrapReturningThreadsDecrement()
+void ThreadStore::DecrementTrapReturningThreads()
 {
     CONTRACTL {
         NOTHROW;
@@ -3210,14 +3210,14 @@ COR_PRF_SUSPEND_REASON GCSuspendReasonToProfSuspendReason(ThreadSuspend::SUSPEND
 }
 #endif // PROFILING_SUPPORTED
 
-int64_t QueryPerformanceCounter()
+static int64_t QueryPerformanceCounter()
 {
     LARGE_INTEGER ts;
     QueryPerformanceCounter(&ts);
     return ts.QuadPart;
 }
 
-int64_t QueryPerformanceFrequency()
+static int64_t QueryPerformanceFrequency()
 {
     LARGE_INTEGER ts;
     QueryPerformanceFrequency(&ts);
@@ -3596,8 +3596,6 @@ void EnableStressHeapHelper()
 }
 #endif
 
-// We're done with our GC.  Let all the threads run again.
-// By this point we've already unblocked most threads.  This just releases the ThreadStore lock.
 void ThreadSuspend::ResumeAllThreads(BOOL SuspendSucceeded)
 {
     CONTRACTL {
@@ -5359,7 +5357,7 @@ void Thread::MarkForSuspension(ULONG bit)
     _ASSERTE((m_State & bit) == 0);
 
     InterlockedOr((LONG*)&m_State, bit);
-    ThreadStore::TrapReturningThreadsIncrement();
+    ThreadStore::IncrementTrapReturningThreads();
 }
 
 void Thread::UnmarkForSuspension(ULONG mask)
@@ -5378,7 +5376,7 @@ void Thread::UnmarkForSuspension(ULONG mask)
     _ASSERTE((m_State & ~mask) != 0);
 
     // we decrement the global first to be able to satisfy the assert from DbgFindThread
-    ThreadStore::TrapReturningThreadsDecrement();
+    ThreadStore::DecrementTrapReturningThreads();
     InterlockedAnd((LONG*)&m_State, mask);
 }
 
