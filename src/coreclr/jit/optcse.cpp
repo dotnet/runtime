@@ -3054,15 +3054,18 @@ void CSE_HeuristicRLHook::DumpMetrics()
     }
 
     // The selected sequence of CSEs that were applied
-    ConfigIntArray JitRLHookCSEDecisions;
-    JitRLHookCSEDecisions.EnsureInit(JitConfig.JitRLHookCSEDecisions());
-
-    if (JitRLHookCSEDecisions.GetLength() > 0)
+    if (JitConfig.JitRLHookCSEDecisions() != nullptr)
     {
-        printf(" seq ");
-        for (unsigned i = 0; i < JitRLHookCSEDecisions.GetLength(); i++)
+        ConfigIntArray JitRLHookCSEDecisions;
+        JitRLHookCSEDecisions.EnsureInit(JitConfig.JitRLHookCSEDecisions());
+
+        if (JitRLHookCSEDecisions.GetLength() > 0)
         {
-            printf("%s%d", (i == 0) ? "" : ",", JitRLHookCSEDecisions.GetData()[i]);
+            printf(" seq ");
+            for (unsigned i = 0; i < JitRLHookCSEDecisions.GetLength(); i++)
+            {
+                printf("%s%d", (i == 0) ? "" : ",", JitRLHookCSEDecisions.GetData()[i]);
+            }
         }
     }
 }
