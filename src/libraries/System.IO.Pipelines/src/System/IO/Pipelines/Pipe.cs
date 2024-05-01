@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Net;
 using System.Threading.Tasks.Sources;
 
 namespace System.IO.Pipelines
@@ -39,9 +40,6 @@ namespace System.IO.Pipelines
         private int MinimumSegmentSize => _options.MinimumSegmentSize;
         private long PauseWriterThreshold => _options.PauseWriterThreshold;
         private long ResumeWriterThreshold => _options.ResumeWriterThreshold;
-
-        private bool _bailValidation;
-        private int _validationOffset;
 
         private PipeScheduler ReaderScheduler => _options.ReaderScheduler;
         private PipeScheduler WriterScheduler => _options.WriterScheduler;
@@ -124,8 +122,14 @@ namespace System.IO.Pipelines
             _lastExaminedIndex = -1;
             _unflushedBytes = 0;
             _unconsumedBytes = 0;
+
             _bailValidation = false;
+            _bailValidationHttp = false;
+            _validationOffsetHttp = 0;
             _validationOffset = 0;
+            _validationBuffer.Dispose();
+            _validationBuffer = new ArrayBuffer(0, usePool: true);
+            _wroteHeaders = false;
         }
 
         internal Memory<byte> GetMemory(int sizeHint)
@@ -338,29 +342,114 @@ namespace System.IO.Pipelines
             return resumeReader;
         }
 
-        private void ValidateWritten(Span<byte> written)
+
+        private bool _bailValidation;
+        private int _validationOffset;
+        private bool _wroteHeaders;
+        private bool _bailValidationHttp;
+        private int _validationOffsetHttp;
+        private ArrayBuffer _validationBuffer = new ArrayBuffer(0, usePool: true);
+
+        private void Validate(bool bailOnMagicMismatch, ref ArrayBuffer buffer, ref bool headersDone, ref int offset)
         {
-            if (_bailValidation)
+            if (!headersDone)
             {
-                return;
+                if (!TryReadIntegerPair(buffer.ActiveSpan, out long type, out long length, out int bytesRead))
+                {
+                    return;
+                }
+
+                Debug.Assert(type == 1, "Expected HEADERS");
+
+                if (buffer.ActiveLength < bytesRead + length)
+                {
+                    return; // not enough data
+                }
+
+                ReadOnlySpan<byte> duplexSlowMagic = "/duplexSlow"u8;
+
+                if (!buffer.ActiveSpan.Slice(bytesRead + (int)length - duplexSlowMagic.Length, duplexSlowMagic.Length).SequenceEqual(duplexSlowMagic) && bailOnMagicMismatch)
+                {
+                    // different request, bail
+
+                    _bailValidationHttp = true;
+                    buffer.Dispose();
+                    return;
+                }
+
+                buffer.Discard(bytesRead + (int)length);
+                headersDone = true;
+                // System.Console.WriteLine($"{(bailOnMagicMismatch ? "Send" : "Recv")} headers done");
             }
 
-            foreach (var b in written)
+            while (TryReadIntegerPair(buffer.ActiveSpan, out long type, out long length, out int bytesRead) && buffer.ActiveLength >= bytesRead + length)
             {
-                byte expected = (byte)(_validationOffset % 128);
-                if (expected != b)
+                if (type == 0)
                 {
-                    if (_validationOffset < 16)
+                    for (int i = 0; i < length; i++)
                     {
+                        byte expected = (byte)(offset % 128);
+                        if (buffer.ActiveSpan[bytesRead + i] != expected)
+                        {
+                            Environment.FailFast($"Diverging at offset {offset}, expected 0x{expected:x2}, got 0x{buffer.ActiveSpan[bytesRead + i]:x2}");
+                        }
+                        offset++;
+                    }
+                }
+
+                buffer.Discard(bytesRead + (int)length);
+                // System.Console.WriteLine($"{(bailOnMagicMismatch ? "Send" : "Recv")} processed frame {type} with length {length}");
+            }
+
+            static bool TryReadIntegerPair(ReadOnlySpan<byte> buffer, out long a, out long b, out int bytesRead)
+            {
+                if (System.Net.Http.VariableLengthIntegerHelper.TryRead(buffer, out a, out int aLength))
+                {
+                    buffer = buffer.Slice(aLength);
+                    if (System.Net.Http.VariableLengthIntegerHelper.TryRead(buffer, out b, out int bLength))
+                    {
+                        bytesRead = aLength + bLength;
+                        return true;
+                    }
+                }
+
+                b = 0;
+                bytesRead = 0;
+                return false;
+            }
+        }
+
+        private void ValidateWritten(Span<byte> written)
+        {
+            if (!_bailValidation)
+            {
+                foreach (byte b in written)
+                {
+                    byte expected = (byte)(_validationOffset % 128);
+                    if (b != expected)
+                    {
+                        if (_validationOffset > 16)
+                        {
+                            Environment.FailFast($"Diverging at offset {_validationOffset}, expected 0x{expected:x2}, got 0x{b:x2}");
+                        }
+
                         _bailValidation = true;
                         break;
                     }
 
-                    Environment.FailFast($"Pipe content validation failed at offset {_validationOffset}. Expected: 0x{expected:x2} Actual: 0x{b:x2}");
+                    _validationOffset++;
                 }
-
-                _validationOffset++;
             }
+
+            if (_bailValidationHttp)
+            {
+                return;
+            }
+
+            _validationBuffer.EnsureAvailableSpace(written.Length);
+            written.CopyTo(_validationBuffer.AvailableSpan);
+            _validationBuffer.Commit(written.Length);
+            Validate(true, ref _validationBuffer, ref _wroteHeaders, ref _validationOffsetHttp);
         }
 
         internal void Advance(int bytes)
