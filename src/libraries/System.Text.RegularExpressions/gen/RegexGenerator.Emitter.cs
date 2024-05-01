@@ -5602,7 +5602,7 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         private static string ToHexStringNoDashes(byte[] bytes) =>
-#if NETCOREAPP
+#if NET
             Convert.ToHexString(bytes);
 #else
             BitConverter.ToString(bytes).Replace("-", "");

@@ -5314,11 +5314,11 @@ void CodeGen::genArm64EmitterUnitTestsSve()
 #endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
 
     // IF_SVE_AI_3A
-    theEmitter->emitIns_R_R_R(INS_sve_saddv, EA_1BYTE, REG_V1, REG_P4, REG_V2,
+    theEmitter->emitIns_R_R_R(INS_sve_saddv, EA_SCALABLE, REG_V1, REG_P4, REG_V2,
                               INS_OPTS_SCALABLE_B); // SADDV   <Dd>, <Pg>, <Zn>.<T>
-    theEmitter->emitIns_R_R_R(INS_sve_saddv, EA_2BYTE, REG_V2, REG_P5, REG_V3,
+    theEmitter->emitIns_R_R_R(INS_sve_saddv, EA_SCALABLE, REG_V2, REG_P5, REG_V3,
                               INS_OPTS_SCALABLE_H); // SADDV   <Dd>, <Pg>, <Zn>.<T>
-    theEmitter->emitIns_R_R_R(INS_sve_uaddv, EA_4BYTE, REG_V3, REG_P6, REG_V4,
+    theEmitter->emitIns_R_R_R(INS_sve_uaddv, EA_SCALABLE, REG_V3, REG_P6, REG_V4,
                               INS_OPTS_SCALABLE_S); // UADDV   <Dd>, <Pg>, <Zn>.<T>
 
 // IF_SVE_AJ_3A
@@ -6768,15 +6768,15 @@ void CodeGen::genArm64EmitterUnitTestsSve()
 #endif                                              // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
 
     // IF_SVE_HE_3A
-    theEmitter->emitIns_R_R_R(INS_sve_faddv, EA_2BYTE, REG_V21, REG_P7, REG_V7,
+    theEmitter->emitIns_R_R_R(INS_sve_faddv, EA_SCALABLE, REG_V21, REG_P7, REG_V7,
                               INS_OPTS_SCALABLE_H); // FADDV   <V><d>, <Pg>, <Zn>.<T>
-    theEmitter->emitIns_R_R_R(INS_sve_fmaxnmv, EA_2BYTE, REG_V22, REG_P6, REG_V6,
+    theEmitter->emitIns_R_R_R(INS_sve_fmaxnmv, EA_SCALABLE, REG_V22, REG_P6, REG_V6,
                               INS_OPTS_SCALABLE_H); // FMAXNMV <V><d>, <Pg>, <Zn>.<T>
-    theEmitter->emitIns_R_R_R(INS_sve_fmaxv, EA_4BYTE, REG_V23, REG_P5, REG_V5,
+    theEmitter->emitIns_R_R_R(INS_sve_fmaxv, EA_SCALABLE, REG_V23, REG_P5, REG_V5,
                               INS_OPTS_SCALABLE_S); // FMAXV   <V><d>, <Pg>, <Zn>.<T>
-    theEmitter->emitIns_R_R_R(INS_sve_fminnmv, EA_8BYTE, REG_V24, REG_P4, REG_V4,
+    theEmitter->emitIns_R_R_R(INS_sve_fminnmv, EA_SCALABLE, REG_V24, REG_P4, REG_V4,
                               INS_OPTS_SCALABLE_D); // FMINNMV <V><d>, <Pg>, <Zn>.<T>
-    theEmitter->emitIns_R_R_R(INS_sve_fminv, EA_4BYTE, REG_V25, REG_P3, REG_V3,
+    theEmitter->emitIns_R_R_R(INS_sve_fminv, EA_SCALABLE, REG_V25, REG_P3, REG_V3,
                               INS_OPTS_SCALABLE_S); // FMINV   <V><d>, <Pg>, <Zn>.<T>
 
     // IF_SVE_HQ_3A
