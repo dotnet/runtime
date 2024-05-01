@@ -504,7 +504,7 @@ void LinearScan::associateRefPosWithInterval(RefPosition* rp)
     }
     else
     {
-        assert((rp->refType == RefTypeBB) || (rp->refType == RefTypeKillGCRefs));
+        assert((rp->refType == RefTypeBB) || (rp->refType == RefTypeKillGCRefs) || (rp->refType == RefTypeKill));
     }
 }
 
@@ -576,7 +576,7 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
     }
     else
     {
-        assert(theRefType == RefTypeBB || theRefType == RefTypeKillGCRefs);
+        assert(theRefType == RefTypeBB || theRefType == RefTypeKillGCRefs || theRefType == RefTypeKill);
     }
 #ifdef DEBUG
     if (theInterval != nullptr && regType(theInterval->registerType) == FloatRegisterType)
@@ -718,19 +718,11 @@ void LinearScan::addRefsForPhysRegMask(regMaskTP mask, LsraLocation currentLoc, 
     // modified until codegen, which is too late.
     compiler->codeGen->regSet.rsSetRegsModified(mask DEBUGARG(true));
 
-    for (regMaskTP candidates = mask; candidates != RBM_NONE;)
-    {
-        regNumber reg = genFirstRegNumFromMaskAndToggle(candidates);
-        // This assumes that these are all "special" RefTypes that
-        // don't need to be recorded on the tree (hence treeNode is nullptr)
-        RefPosition* pos = newRefPosition(reg, currentLoc, refType, nullptr,
-                                          genRegMask(reg)); // This MUST occupy the physical register (obviously)
+    RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, refType, nullptr, mask);
+    pos->lastUse = isLastUse;
 
-        if (isLastUse)
-        {
-            pos->lastUse = true;
-        }
-    }
+   *killTail = pos;
+   killTail = &pos->nextRefPosition;
 }
 
 //------------------------------------------------------------------------
