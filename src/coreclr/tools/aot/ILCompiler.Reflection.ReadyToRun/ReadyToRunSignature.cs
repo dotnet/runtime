@@ -1672,6 +1672,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("BYREF_WRITE_BARRIER");
                     break;
 
+                case ReadyToRunHelper.AssignStruct:
+                    builder.Append("ASSIGN_STRUCT");
+                    break;
+
                 // Array helpers
                 case ReadyToRunHelper.Stelem_Ref:
                     builder.Append("STELEM_REF");

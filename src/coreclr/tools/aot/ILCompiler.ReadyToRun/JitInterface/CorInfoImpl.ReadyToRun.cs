@@ -1000,6 +1000,9 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_BYREF:
                     id = ReadyToRunHelper.ByRefWriteBarrier;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_STRUCT:
+                    id = ReadyToRunHelper.AssignStruct;
+                    break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_ARRADDR_ST:
                     id = ReadyToRunHelper.Stelem_Ref;
