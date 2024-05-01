@@ -24,10 +24,10 @@ class DeepCseRewardWrapper(gym.Wrapper):
     def step(self, action):
         """Steps the environment."""
         observation, reward, terminated, truncated, info = self.env.step(action)
-        reward = self.reward(reward, info)
+        reward = self._get_reward(reward, info)
         return observation, reward, terminated, truncated, info
 
-    def reward(self, reward : SupportsFloat, info) -> SupportsFloat:
+    def _get_reward(self, reward : SupportsFloat, info) -> SupportsFloat:
         # We'll let the parent class handle the reward in these cases.
         if info['truncated'] or not info['action_is_valid']:
             return reward
