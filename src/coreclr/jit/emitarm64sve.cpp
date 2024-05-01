@@ -2919,7 +2919,10 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
 
             if (sopt == INS_SCALABLE_OPTS_UNPREDICATED)
             {
-                assert(opt == INS_OPTS_SCALABLE_D);
+                // The instruction only has a .D variant. However, this doesn't matter as
+                // it operates on bits not lanes. Effectively this means all standard opt
+                // sizes are supported.
+                assert(insOptsScalableStandard(opt));
                 assert(isVectorRegister(reg2)); // nnnnn
                 fmt = IF_SVE_AU_3A;
             }
@@ -3728,7 +3731,7 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             else if (sopt == INS_SCALABLE_OPTS_WITH_SIMD_SCALAR)
             {
                 assert(isFloatReg(reg1));
-                assert(isValidVectorElemsize(size));
+                assert(isScalableVectorSize(size));
                 fmt = IF_SVE_CN_3A;
             }
             else
@@ -3748,7 +3751,7 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             if (sopt == INS_SCALABLE_OPTS_UNPREDICATED)
             {
                 assert(ins == INS_sve_mov);
-                assert(opt == INS_OPTS_SCALABLE_D);
+                assert(insOptsScalableStandard(opt));
                 assert(isVectorRegister(reg1)); // ddddd
                 assert(isVectorRegister(reg2)); // nnnnn
                 assert(isVectorRegister(reg3)); // mmmmm
@@ -12622,7 +12625,7 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1()));          // ddddd
             assert(isLowPredicateRegister(id->idReg2()));    // ggg
             assert(isVectorRegister(id->idReg3()));          // mmmmm
-            assert(isValidVectorElemsize(id->idOpSize()));
+            assert(isScalableVectorSize(id->idOpSize()));
             break;
 
         // Scalable to FP SIMD scalar.
