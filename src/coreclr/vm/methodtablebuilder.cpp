@@ -10839,21 +10839,6 @@ MethodTableBuilder::SetupMethodTable2(
             pChunk->EnsureTemporaryEntryPointsCreated(GetLoaderAllocator(), GetMemTracker());
         }
     }
-#else
-#if MAYBE_WE_DONT_NEED_THIS
-    for (bmtVtable::Iterator slotIt = bmtVT->IterateSlots(); !slotIt.AtEnd(); ++slotIt)
-    {
-        SLOT_INDEX iCurSlot = static_cast<SLOT_INDEX>(slotIt.CurrentIndex());
-
-        // We need to ensure that all vtable slots have temporary entrypoints created for them.
-        MethodDesc * pMD = NULL;
-        if (iCurSlot < bmtVT->cVtableSlots)
-        {
-            pMD = slotIt->Impl().GetMethodDesc();
-            pMD->EnsureTemporaryEntryPointCore(GetLoaderAllocator(), GetMemTracker());
-        }
-    }
-#endif
 #endif
 
     {   // copy onto the real vtable (methods only)

@@ -1476,7 +1476,7 @@ void StubLinkerCPU::EmitCallLabel(CodeLabel *target, BOOL fTailCall, BOOL fIndir
 
 void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
 {
-    pMD->EnsureTemporaryEntryPoint(pMD->GetLoaderAllocator()); // THIS And CODE LIKE THIS SHOULD USE A FUNCTION which checks RequiresStableEntryPoint and fills that in as needed
+    pMD->EnsureSlotFilled();
 
     // Use direct call if possible.
     if (pMD->HasStableEntryPoint())

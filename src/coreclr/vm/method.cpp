@@ -506,7 +506,7 @@ PCODE MethodDesc::GetMethodEntryPoint()
 #if !defined(HAS_COMPACT_ENTRYPOINTS) && !defined(DACCESS_COMPILE)
         if (*PTR_PCODE(pSlot) == NULL)
         {
-            EnsureTemporaryEntryPoint(GetLoaderAllocator());
+            EnsureSlotFilled();
             _ASSERTE(*PTR_PCODE(pSlot) != NULL);
         }
 #endif
@@ -2026,6 +2026,11 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
         _ASSERTE((accessFlags & ~CORINFO_ACCESS_LDFTN) == 0);
     }
 
+#ifndef HAS_COMPACT_ENTRYPOINTS
+    if (RequiresStableEntryPoint() && !HasStableEntryPoint())
+        EnsureSlotFilled();
+#endif
+
     // We create stable entrypoints for these upfront
     if (IsWrapperStub() || IsEnCAddedMethod())
         return GetStableEntryPoint();
@@ -3085,6 +3090,10 @@ Precode* MethodDesc::GetOrCreatePrecode()
 
         if (InterlockedCompareExchangeT(pSlot, pPrecode->GetEntryPoint(), tempEntry) == tempEntry)
             amt.SuppressRelease();
+    }
+    else if (*pSlot == NULL)
+    {
+        InterlockedCompareExchangeT(pSlot, tempEntry, (PCODE)NULL);
     }
 
     // Set the flags atomically

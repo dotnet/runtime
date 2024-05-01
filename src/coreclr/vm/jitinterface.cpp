@@ -8696,7 +8696,7 @@ void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
 
     MethodDesc* method = GetMethod(methodHnd);
 #ifndef HAS_COMPACT_ENTRYPOINTS
-    method->EnsureTemporaryEntryPoint(method->GetLoaderAllocator());
+    method->EnsureSlotFilled();
 #endif
 
     //@GENERICS: shouldn't be doing this for instantiated methods as they live elsewhere
@@ -9157,7 +9157,7 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
             _ASSERTE(!ftn->InEnCEnabledModule());
 
 #ifndef HAS_COMPACT_ENTRYPOINTS
-            ftn->EnsureTemporaryEntryPoint(ftn->GetLoaderAllocator());
+            ftn->EnsureSlotFilled();
 #endif
             ret = (void *)ftn->GetAddrOfSlot();
 

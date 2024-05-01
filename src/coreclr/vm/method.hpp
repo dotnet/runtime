@@ -1460,6 +1460,36 @@ public:
 #ifndef HAS_COMPACT_ENTRYPOINTS
     void EnsureTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator);
     void EnsureTemporaryEntryPointCore(LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
+
+#ifndef DACCESS_COMPILE
+    void EnsureSlotFilled()
+    {
+        WRAPPER_NO_CONTRACT;
+        EnsureTemporaryEntryPoint(GetLoaderAllocator());
+        PCODE *pSlot = GetAddrOfSlot();
+        if (*pSlot == NULL)
+        {
+            if (RequiresStableEntryPoint())
+            {
+                GetOrCreatePrecode();
+            }
+            else
+            {
+                *pSlot = GetTemporaryEntryPoint();
+            }
+        }
+        else
+        {
+            if (RequiresStableEntryPoint() && !HasStableEntryPoint())
+            {
+                _ASSERTE(*pSlot == GetTemporaryEntryPoint());
+                // We may be in a race with another thread that will be setting HasStableEntryPoint
+                // Just set it now along with HasPrecode
+                InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint | enum_flag3_HasPrecode, FALSE);
+            }
+        }
+    }
+#endif // DACCESS_COMPILE
 #endif
 
     //*******************************************************************************

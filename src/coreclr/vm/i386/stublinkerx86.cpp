@@ -3072,7 +3072,7 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
 VOID StubLinkerCPU::EmitLoadMethodAddressIntoAX(MethodDesc *pMD)
 {
 #ifndef HAS_COMPACT_ENTRYPOINTS
-    pMD->EnsureTemporaryEntryPoint(pMD->GetLoaderAllocator());
+    pMD->EnsureSlotFilled();
 #endif
 
     if (pMD->HasStableEntryPoint())
@@ -3094,6 +3094,9 @@ VOID StubLinkerCPU::EmitTailJumpToMethod(MethodDesc *pMD)
     EmitLoadMethodAddressIntoAX(pMD);
     Emit16(X86_INSTR_JMP_EAX);
 #else
+#ifndef HAS_COMPACT_ENTRYPOINTS
+    pMD->EnsureSlotFilled();
+#endif
     // Use direct call if possible
     if (pMD->HasStableEntryPoint())
     {
@@ -3101,9 +3104,6 @@ VOID StubLinkerCPU::EmitTailJumpToMethod(MethodDesc *pMD)
     }
     else
     {
-#ifndef HAS_COMPACT_ENTRYPOINTS
-        pMD->EnsureTemporaryEntryPoint(pMD->GetLoaderAllocator());
-#endif
         // jmp [slot]
         Emit16(0x25ff);
         Emit32((DWORD)(size_t)pMD->GetAddrOfSlot());
