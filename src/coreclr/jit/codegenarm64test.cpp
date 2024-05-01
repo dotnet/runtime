@@ -4572,14 +4572,24 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                               INS_OPTS_SCALABLE_S); // EOR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_orr, EA_SCALABLE, REG_V29, REG_P7, REG_V31,
                               INS_OPTS_SCALABLE_D); // ORR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
-
-    // IF_SVE_AB_3A
     theEmitter->emitIns_R_R_R(INS_sve_add, EA_SCALABLE, REG_V5, REG_P6, REG_V7,
                               INS_OPTS_SCALABLE_B); // ADD     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_sub, EA_SCALABLE, REG_V15, REG_P7, REG_V29,
                               INS_OPTS_SCALABLE_H); // SUB     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_subr, EA_SCALABLE, REG_V2, REG_P0, REG_V13,
                               INS_OPTS_SCALABLE_S); // SUBR    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_smax, EA_SCALABLE, REG_V24, REG_P0, REG_V2,
+                              INS_OPTS_SCALABLE_B); // SMAX    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_smin, EA_SCALABLE, REG_V9, REG_P1, REG_V27,
+                              INS_OPTS_SCALABLE_H); // SMIN    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_sabd, EA_SCALABLE, REG_V5, REG_P2, REG_V6,
+                              INS_OPTS_SCALABLE_B); // SABD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_uabd, EA_SCALABLE, REG_V23, REG_P3, REG_V9,
+                              INS_OPTS_SCALABLE_S); // UABD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_umax, EA_SCALABLE, REG_V15, REG_P4, REG_V2,
+                              INS_OPTS_SCALABLE_S); // UMAX    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_umin, EA_SCALABLE, REG_V12, REG_P7, REG_V0,
+                              INS_OPTS_SCALABLE_D); // UMIN    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
     // IF_SVE_AB_3B
@@ -4598,20 +4608,6 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                               INS_OPTS_SCALABLE_S); // UDIV    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_udivr, EA_SCALABLE, REG_V13, REG_P7, REG_V15,
                               INS_OPTS_SCALABLE_D); // UDIVR    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
-
-    // IF_SVE_AD_3A
-    theEmitter->emitIns_R_R_R(INS_sve_smax, EA_SCALABLE, REG_V24, REG_P0, REG_V2,
-                              INS_OPTS_SCALABLE_B); // SMAX    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
-    theEmitter->emitIns_R_R_R(INS_sve_smin, EA_SCALABLE, REG_V9, REG_P1, REG_V27,
-                              INS_OPTS_SCALABLE_H); // SMIN    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
-    theEmitter->emitIns_R_R_R(INS_sve_sabd, EA_SCALABLE, REG_V5, REG_P2, REG_V6,
-                              INS_OPTS_SCALABLE_B); // SABD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
-    theEmitter->emitIns_R_R_R(INS_sve_uabd, EA_SCALABLE, REG_V23, REG_P3, REG_V9,
-                              INS_OPTS_SCALABLE_S); // UABD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
-    theEmitter->emitIns_R_R_R(INS_sve_umax, EA_SCALABLE, REG_V15, REG_P4, REG_V2,
-                              INS_OPTS_SCALABLE_S); // UMAX    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
-    theEmitter->emitIns_R_R_R(INS_sve_umin, EA_SCALABLE, REG_V12, REG_P7, REG_V0,
-                              INS_OPTS_SCALABLE_D); // UMIN    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
 
     // IF_SVE_AE_3A
     theEmitter->emitIns_R_R_R(INS_sve_mul, EA_SCALABLE, REG_V5, REG_P1, REG_V3,
