@@ -28,7 +28,9 @@
 #define MWPM_MAX_PAGES (MWPM_MAX_MEMORY / MWPM_PAGE_SIZE)
 // When allocating new zeroed pages, always allocate at least this many.
 // This ensures that we don't waste a bunch of time allocating 1-2 pages at once.
-#define MWPM_MINIMUM_PAGE_COUNT 1
+// sbrk() also doesn't return page-aligned addresses, so this produces fewer
+//  wasted page fragments.
+#define MWPM_MINIMUM_PAGE_COUNT 64
 
 typedef enum {
 	// We don't know the state of this page
