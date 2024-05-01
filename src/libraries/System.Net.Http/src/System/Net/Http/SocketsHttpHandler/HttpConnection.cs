@@ -74,8 +74,9 @@ namespace System.Net.Http
             HttpConnectionPool pool,
             Stream stream,
             TransportContext? transportContext,
+            Activity? activity,
             IPEndPoint? remoteEndPoint)
-            : base(pool, remoteEndPoint)
+            : base(pool, activity, remoteEndPoint)
         {
             Debug.Assert(pool != null);
             Debug.Assert(stream != null);
@@ -113,6 +114,7 @@ namespace System.Net.Http
                 if (disposing)
                 {
                     GC.SuppressFinalize(this);
+                    _activity?.Stop();
                     _stream.Dispose();
                 }
             }
@@ -500,6 +502,7 @@ namespace System.Net.Http
             Debug.Assert(_readAheadTaskStatus != ReadAheadTask_Started);
 
             MarkConnectionAsNotIdle();
+            LinkRequestActivity();
 
             TaskCompletionSource<bool>? allowExpect100ToContinue = null;
             Task? sendRequestContentTask = null;

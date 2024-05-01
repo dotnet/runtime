@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -21,6 +22,8 @@ namespace System.Net.Http
         // May be null if none of the counters were enabled when the connection was established.
         private readonly ConnectionMetrics? _connectionMetrics;
 
+        protected readonly Activity? _activity;
+
         // Indicates whether we've counted this connection as established, so that we can
         // avoid decrementing the counter once it's closed in case telemetry was enabled in between.
         private readonly bool _httpTelemetryMarkedConnectionAsOpened;
@@ -35,11 +38,12 @@ namespace System.Net.Http
 
         public long Id { get; } = Interlocked.Increment(ref s_connectionCounter);
 
-        public HttpConnectionBase(HttpConnectionPool pool, IPEndPoint? remoteEndPoint)
+        public HttpConnectionBase(HttpConnectionPool pool, Activity? activity, IPEndPoint? remoteEndPoint)
         {
             Debug.Assert(this is HttpConnection or Http2Connection or Http3Connection);
             Debug.Assert(pool.Settings._metrics is not null);
 
+            _activity = activity;
             SocketsHttpHandlerMetrics metrics = pool.Settings._metrics;
 
             if (metrics.OpenConnections.Enabled || metrics.ConnectionDuration.Enabled)
@@ -102,6 +106,17 @@ namespace System.Net.Http
         public void MarkConnectionAsNotIdle()
         {
             _connectionMetrics?.IdleStateChanged(idle: false);
+        }
+
+        public void LinkRequestActivity()
+        {
+            Activity? requestActivity = Activity.Current;
+            if (_activity is null || requestActivity?.OperationName is not DiagnosticsHandlerLoggingStrings.RequestActivityName)
+            {
+                return;
+            }
+
+            requestActivity.AddLink(new ActivityLink(_activity.Context));
         }
 
         /// <summary>Uses <see cref="HeaderDescriptor.GetHeaderValue"/>, but first special-cases several known headers for which we can use caching.</summary>

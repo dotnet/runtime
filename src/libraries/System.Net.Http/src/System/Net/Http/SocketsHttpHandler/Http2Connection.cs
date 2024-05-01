@@ -129,8 +129,8 @@ namespace System.Net.Http
         private long _keepAlivePingTimeoutTimestamp;
         private volatile KeepAliveState _keepAliveState;
 
-        public Http2Connection(HttpConnectionPool pool, Stream stream, IPEndPoint? remoteEndPoint)
-            : base(pool, remoteEndPoint)
+        public Http2Connection(HttpConnectionPool pool, Stream stream, Activity? activity, IPEndPoint? remoteEndPoint)
+            : base(pool, activity, remoteEndPoint)
         {
             _pool = pool;
             _stream = stream;
@@ -1850,6 +1850,7 @@ namespace System.Net.Http
 
             GC.SuppressFinalize(this);
 
+            _activity?.Stop();
             _stream.Dispose();
 
             _connectionWindow.Dispose();
@@ -1993,6 +1994,7 @@ namespace System.Net.Http
             Debug.Assert(async);
             Debug.Assert(!_pool.HasSyncObjLock);
             if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
+            LinkRequestActivity();
 
             try
             {
