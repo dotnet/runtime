@@ -8521,6 +8521,54 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
             prevTree = prevTree->gtPrev;
         }
 
+        // Special case, if the previous tree is an allocator - we can omit stores writing zeros, e.g.
+        //
+        //  lcl = CORINFO_HELP_NEWSFAST(typeof(int));
+        //  *(lcl + sizeof(void*)) = 0;
+        //
+        if ((prevTree != nullptr) && prevTree->OperIs(GT_STORE_LCL_VAR) && currData.IsStore() &&
+            (currData.value->IsIntegralConst(0)))
+        {
+            // Check that the local is the same:
+            if (currData.baseAddr->OperIs(GT_LCL_VAR) &&
+                (prevTree->AsLclVarCommon()->GetLclNum() == currData.baseAddr->AsLclVar()->GetLclNum()) &&
+                prevTree->AsLclVarCommon()->Data()->IsHelperCall())
+            {
+                // data is expected to be an allocator
+                GenTreeCall*    call     = prevTree->AsLclVarCommon()->Data()->AsCall();
+                CorInfoHelpFunc helperId = comp->eeGetHelperNum(call->gtCallMethHnd);
+
+                // We only handle the most popular allocators:
+                if ((helperId == CORINFO_HELP_NEWSFAST) || (helperId == CORINFO_HELP_READYTORUN_NEW))
+                {
+                    GenTree* clsArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+                    clsArg          = clsArg->OperIsPutArg() ? clsArg->gtGetOp1() : clsArg;
+
+                    // Make sure we don't write out of bounds of the object, for that, we need to know its size
+                    if (clsArg->IsIconHandle(GTF_ICON_CLASS_HDL) && (currData.index == nullptr) &&
+                        (currData.scale == 1))
+                    {
+                        CORINFO_CLASS_HANDLE cls = comp->gtGetHelperArgClassHandle(clsArg);
+
+                        // Now, calculate the size of the object (including pMT field):
+                        unsigned size = comp->info.compCompHnd->getClassSize(cls) + SIZEOF__CORINFO_Object;
+
+                        // And make sure our currently inspected write doesn't write out of bounds:
+                        if (currData.offset + genTypeSize(currData.targetType) <= size)
+                        {
+                            // Remove all the trees representing this redundant store (except the last one)
+                            BlockRange().Remove(currData.rangeStart, currData.rangeEnd->gtPrev);
+
+                            // Conver the last one to NOP so the callers can see a correct gtNext
+                            currData.rangeEnd->gtBashToNOP();
+                            continue;
+                        }
+                    }
+                }
+            }
+            return;
+        }
+
         // It's not a store - bail out.
         if ((prevTree == nullptr) || !prevTree->OperIs(GT_STOREIND, GT_STORE_BLK))
         {
@@ -8841,7 +8889,10 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 #endif
 
         LowerStoreIndirCoalescing(ind);
-        LowerStoreIndir(ind);
+        if (ind->isIndir())
+        {
+            LowerStoreIndir(ind);
+        }
     }
 }
 
