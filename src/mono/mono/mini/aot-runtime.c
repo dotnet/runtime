@@ -1087,7 +1087,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				uint32_t name_len = decode_value (p, &p);
 				const char *member_name = (const char*)p;
 				p += name_len + 1;
-				uint8_t inflated = decode_value (p, &p);
+				int32_t inflated = decode_value (p, &p);
 				if (inflated) {
 					MonoGenericContext ctx = {0,};
 					decode_generic_context (module, &ctx, p, &p, error);
