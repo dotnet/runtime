@@ -3966,14 +3966,6 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
 //
 // Arguments:
 //   killRefPosition - The RefPosition for the kill
-//   nextKill        - [in, out] Iterator for next kill ref position
-//
-// Return Value:
-//    None.
-//
-// Notes:
-//    This is used to ensure that we have no live GC refs in registers at an
-//    unmanaged call.
 //
 void LinearScan::processKills(RefPosition* killRefPosition)
 {
