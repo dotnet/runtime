@@ -307,9 +307,8 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     // null-check basic block
     GenTree* fastPathValue = gtNewIndir(TYP_I_IMPL, gtCloneExpr(slotPtrTree), GTF_IND_NONFAULTING);
     // Save dictionary slot to a local (to be used by fast path)
-    GenTree* fastPathValueClone =
-        opts.OptimizationEnabled() ? fgMakeMultiUse(&fastPathValue) : gtCloneExpr(fastPathValue);
-    GenTree* nullcheckOp = gtNewOperNode(GT_EQ, TYP_INT, fastPathValue, gtNewIconNode(0, TYP_I_IMPL));
+    GenTree* fastPathValueClone = fgMakeMultiUse(&fastPathValue);
+    GenTree* nullcheckOp        = gtNewOperNode(GT_EQ, TYP_INT, fastPathValue, gtNewIconNode(0, TYP_I_IMPL));
     nullcheckOp->gtFlags |= GTF_RELOP_JMP_USED;
 
     // nullcheckBb conditionally jumps to fallbackBb, but we need to initialize fallbackBb last
