@@ -82,7 +82,6 @@ GTNODE(IND              , GenTreeIndir       ,0,1,GTK_UNOP)                     
 GTNODE(STOREIND         , GenTreeStoreInd    ,0,1,GTK_BINOP|GTK_EXOP|GTK_NOVALUE|GTK_STORE) // Store indirection
 GTNODE(BLK              , GenTreeBlk         ,0,1,GTK_UNOP|GTK_EXOP)                        // Struct load
 GTNODE(STORE_BLK        , GenTreeBlk         ,0,1,GTK_BINOP|GTK_EXOP|GTK_NOVALUE|GTK_STORE) // Struct store
-GTNODE(STORE_DYN_BLK    , GenTreeStoreDynBlk ,0,1,GTK_SPECIAL|GTK_NOVALUE)                  // Dynamically sized block store, with native uint size
 GTNODE(NULLCHECK        , GenTreeIndir       ,0,1,GTK_UNOP|GTK_NOVALUE)                     // Null checks the source
 
 GTNODE(ARR_LENGTH       , GenTreeArrLen      ,0,0,GTK_UNOP|GTK_EXOP)            // single-dimension (SZ) array length
@@ -150,7 +149,6 @@ GTNODE(QMARK            , GenTreeQmark       ,0,1,GTK_BINOP|GTK_EXOP|DBK_NOTLIR)
 GTNODE(COLON            , GenTreeColon       ,0,1,GTK_BINOP|DBK_NOTLIR)
 
 GTNODE(INDEX_ADDR       , GenTreeIndexAddr   ,0,0,GTK_BINOP|GTK_EXOP)   // Address of SZ-array-element.
-GTNODE(MKREFANY         , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTLIR)
 GTNODE(LEA              , GenTreeAddrMode    ,0,0,GTK_BINOP|GTK_EXOP|DBK_NOTHIR)
 
 #if !defined(TARGET_64BIT)
@@ -284,9 +282,17 @@ GTNODE(START_PREEMPTGC  , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHI
 GTNODE(PROF_HOOK        , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Profiler Enter/Leave/TailCall hook.
 
 GTNODE(RETFILT          , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE) // End filter with TYP_I_IMPL return value.
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
 GTNODE(END_LFIN         , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // End locally-invoked finally.
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
+
+//-----------------------------------------------------------------------------
+//  Swift interop-specific nodes:
+//-----------------------------------------------------------------------------
+
+GTNODE(SWIFT_ERROR      , GenTree            ,0,0,GTK_LEAF)              // Error register value post-Swift call
+GTNODE(SWIFT_ERROR_RET  , GenTreeOp          ,0,1,GTK_BINOP|GTK_NOVALUE) // Returns normal return value, and SwiftError pseudolocal's value in REG_SWIFT_ERROR.
+																		 // op1 is the error value, and op2 is the return value (or null if the method returns void).
 
 //-----------------------------------------------------------------------------
 //  Nodes used by Lower to generate a closer CPU representation of other nodes

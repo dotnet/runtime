@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <!-- AD0001 : https://github.com/dotnet/runtime/issues/90356 -->
-    <NoWarn>$(NoWarn);AD0001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -176,15 +174,12 @@
     <Compile Include="System\Diagnostics\StackFrame.NativeAot.cs" />
     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
     <Compile Include="System\Diagnostics\StackTrace.NativeAot.cs" />
-    <Compile Include="System\Diagnostics\Eventing\EventPipe.NativeAot.cs" />
-    <Compile Include="System\Diagnostics\Eventing\NativeRuntimeEventSource.Threading.NativeSinks.NativeAot.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
     <Compile Include="System\Enum.NativeAot.cs" />
     <Compile Include="System\Environment.NativeAot.cs" />
     <Compile Include="System\GC.NativeAot.cs" />
     <Compile Include="System\Math.NativeAot.cs" />
     <Compile Include="System\MathF.NativeAot.cs" />
     <Compile Include="System\Object.NativeAot.cs" />
-    <Compile Include="System\Resources\ManifestBasedResourceGroveler.NativeAot.cs" />
     <Compile Include="System\RuntimeArgumentHandle.cs" />
     <Compile Include="System\RuntimeType.cs" />
     <Compile Include="System\Runtime\ControlledExecution.NativeAot.cs" />

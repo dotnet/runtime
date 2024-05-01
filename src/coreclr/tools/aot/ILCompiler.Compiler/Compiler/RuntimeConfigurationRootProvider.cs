@@ -51,7 +51,7 @@ namespace ILCompiler
 
             public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
             {
-                sb.Append(_blobName);
+                sb.Append(nameMangler.NodeMangler.ExternVariable(_blobName));
             }
 
             public override ObjectNodeSection GetSection(NodeFactory factory) =>
@@ -72,7 +72,7 @@ namespace ILCompiler
                 int valueIndex = 0;
                 foreach (string line in _runtimeOptions)
                 {
-                    int indexOfEquals = line.IndexOf("=");
+                    int indexOfEquals = line.IndexOf('=');
                     if (indexOfEquals > 0)
                     {
                         string key = line.Substring(0, indexOfEquals);

@@ -9,7 +9,7 @@
 // We mainly rely on TryLowerSwitchToBitTest in these heuristics, but jump tables can be useful
 // even without conversion to a bitmap test.
 #define SWITCH_MAX_DISTANCE ((TARGET_POINTER_SIZE * BITS_PER_BYTE) - 1)
-#define SWITCH_MIN_TESTS 3
+#define SWITCH_MIN_TESTS    3
 
 //-----------------------------------------------------------------------------
 //  optSwitchRecognition: Optimize range check for `x == cns1 || x == cns2 || x == cns3 ...`
@@ -161,9 +161,13 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
         // No more than SWITCH_MAX_TABLE_SIZE blocks are allowed (arbitrary limit in this context)
         int     testValueIndex                  = 0;
         ssize_t testValues[SWITCH_MAX_DISTANCE] = {};
-        testValues[testValueIndex++]            = cns;
+        testValues[testValueIndex]              = cns;
+        testValueIndex++;
 
-        const BasicBlock* prevBlock = firstBlock;
+        // Track likelihood of reaching the false block
+        //
+        weight_t          falseLikelihood = firstBlock->GetFalseEdge()->getLikelihood();
+        const BasicBlock* prevBlock       = firstBlock;
 
         // Now walk the next blocks and see if they are basically the same type of test
         for (const BasicBlock* currBb = firstBlock->Next(); currBb != nullptr; currBb = currBb->Next())
@@ -177,7 +181,7 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
             {
                 // Only the first conditional block can have multiple statements.
                 // Stop searching and process what we already have.
-                return optSwitchConvert(firstBlock, testValueIndex, testValues, variableNode);
+                return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
             }
 
             // Inspect secondary blocks
@@ -187,39 +191,41 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
                 if (currTrueTarget != trueTarget)
                 {
                     // This blocks jumps to a different target, stop searching and process what we already have.
-                    return optSwitchConvert(firstBlock, testValueIndex, testValues, variableNode);
+                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
                 }
 
                 if (!GenTree::Compare(currVariableNode, variableNode))
                 {
                     // A different variable node is used, stop searching and process what we already have.
-                    return optSwitchConvert(firstBlock, testValueIndex, testValues, variableNode);
+                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
                 }
 
                 if (currBb->GetUniquePred(this) != prevBlock)
                 {
                     // Multiple preds in a secondary block, stop searching and process what we already have.
-                    return optSwitchConvert(firstBlock, testValueIndex, testValues, variableNode);
+                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
                 }
 
                 if (!BasicBlock::sameEHRegion(prevBlock, currBb))
                 {
                     // Current block is in a different EH region, stop searching and process what we already have.
-                    return optSwitchConvert(firstBlock, testValueIndex, testValues, variableNode);
+                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
                 }
 
                 // Ok we can work with that, add the test value to the list
                 testValues[testValueIndex++] = currCns;
+                falseLikelihood *= currBb->GetFalseEdge()->getLikelihood();
+
                 if (testValueIndex == SWITCH_MAX_DISTANCE)
                 {
                     // Too many suitable tests found - stop and process what we already have.
-                    return optSwitchConvert(firstBlock, testValueIndex, testValues, variableNode);
+                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
                 }
 
                 if (isReversed)
                 {
                     // We only support reversed test (GT_NE) for the last block.
-                    return optSwitchConvert(firstBlock, testValueIndex, testValues, variableNode);
+                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
                 }
 
                 prevBlock = currBb;
@@ -227,7 +233,7 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
             else
             {
                 // Current block is not a suitable test, stop searching and process what we already have.
-                return optSwitchConvert(firstBlock, testValueIndex, testValues, variableNode);
+                return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
             }
         }
     }
@@ -245,12 +251,14 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
 //    firstBlock - First conditional block in the chain
 //    testsCount - Number of conditional blocks in the chain
 //    testValues - Array of constants that are tested against the variable
+//    falseLikelihood - Likelihood of control flow reaching the false block
 //    nodeToTest - Variable node that is tested against the constants
 //
 // Return Value:
 //    True if the conversion was successful, false otherwise
 //
-bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t* testValues, GenTree* nodeToTest)
+bool Compiler::optSwitchConvert(
+    BasicBlock* firstBlock, int testsCount, ssize_t* testValues, weight_t falseLikelihood, GenTree* nodeToTest)
 {
     assert(firstBlock->KindIs(BBJ_COND));
     assert(!varTypeIsSmall(nodeToTest));
@@ -319,6 +327,10 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     const bool  isTest       = IsConstantTestCondBlock(lastBlock, &blockIfTrue, &blockIfFalse, &isReversed);
     assert(isTest);
 
+    assert(firstBlock->TrueTargetIs(blockIfTrue));
+    FlowEdge* const trueEdge  = firstBlock->GetTrueEdge();
+    FlowEdge* const falseEdge = firstBlock->GetFalseEdge();
+
     // Convert firstBlock to a switch block
     firstBlock->SetSwitch(new (this, CMK_BasicBlock) BBswtDesc);
     firstBlock->bbCodeOffsEnd = lastBlock->bbCodeOffsEnd;
@@ -338,8 +350,9 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     gtUpdateStmtSideEffects(firstBlock->lastStmt());
 
     // Unlink and remove the whole chain of conditional blocks
-    BasicBlock* blockToRemove = firstBlock->Next();
-    fgRemoveRefPred(blockToRemove, firstBlock);
+    fgRemoveRefPred(falseEdge);
+    BasicBlock* blockToRemove = falseEdge->getDestinationBlock();
+    assert(firstBlock->NextIs(blockToRemove));
     while (!lastBlock->NextIs(blockToRemove))
     {
         blockToRemove = fgRemoveBlock(blockToRemove, true);
@@ -361,18 +374,20 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
         if (isReversed)
         {
             assert(lastBlock->FalseTargetIs(blockIfTrue));
-            fgRemoveRefPred(blockIfTrue, firstBlock);
+            fgRemoveRefPred(trueEdge);
             BasicBlock* targetBlock = blockIfTrue;
-            blockIfTrue             = fgNewBBafter(BBJ_ALWAYS, firstBlock, true, targetBlock);
+            blockIfTrue             = fgNewBBafter(BBJ_ALWAYS, firstBlock, true);
             FlowEdge* const newEdge = fgAddRefPred(targetBlock, blockIfTrue);
             skipPredRemoval         = true;
+            blockIfTrue->SetTargetEdge(newEdge);
         }
         else
         {
             assert(lastBlock->FalseTargetIs(blockIfFalse));
             BasicBlock* targetBlock = blockIfFalse;
-            blockIfFalse            = fgNewBBafter(BBJ_ALWAYS, firstBlock, true, targetBlock);
+            blockIfFalse            = fgNewBBafter(BBJ_ALWAYS, firstBlock, true);
             FlowEdge* const newEdge = fgAddRefPred(targetBlock, blockIfFalse);
+            blockIfFalse->SetTargetEdge(newEdge);
         }
     }
 
@@ -397,8 +412,10 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     // Unlink blockIfTrue from firstBlock, we're going to link it again in the loop below.
     if (!skipPredRemoval)
     {
-        fgRemoveRefPred(blockIfTrue, firstBlock);
+        fgRemoveRefPred(trueEdge);
     }
+
+    FlowEdge* switchTrueEdge = nullptr;
 
     for (unsigned i = 0; i < jumpCount; i++)
     {
@@ -407,11 +424,20 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
 
         FlowEdge* const newEdge = fgAddRefPred((isTrue ? blockIfTrue : blockIfFalse), firstBlock);
         jmpTab[i]               = newEdge;
+
+        if ((switchTrueEdge == nullptr) && isTrue)
+        {
+            switchTrueEdge = newEdge;
+        }
     }
 
     // Link the 'default' case
-    FlowEdge* const defaultEdge = fgAddRefPred(blockIfFalse, firstBlock);
-    jmpTab[jumpCount]           = defaultEdge;
+    FlowEdge* const switchDefaultEdge = fgAddRefPred(blockIfFalse, firstBlock);
+    jmpTab[jumpCount]                 = switchDefaultEdge;
+
+    // Fix likelihoods
+    switchDefaultEdge->setLikelihood(falseLikelihood);
+    switchTrueEdge->setLikelihood(1.0 - falseLikelihood);
 
     return true;
 }

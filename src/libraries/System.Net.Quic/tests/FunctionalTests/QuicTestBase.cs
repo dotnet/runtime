@@ -18,6 +18,8 @@ using Microsoft.Quic;
 
 namespace System.Net.Quic.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public abstract class QuicTestBase : IDisposable
     {
         public const long DefaultStreamErrorCodeClient = 123456;
@@ -31,8 +33,7 @@ namespace System.Net.Quic.Tests
         public static bool IsSupported => QuicListener.IsSupported && QuicConnection.IsSupported;
         public static bool IsNotArm32CoreClrStressTest => !(CoreClrConfigurationDetection.IsStressTest && PlatformDetection.IsArmProcess);
 
-        private static readonly Lazy<bool> _isIPv6Available = new Lazy<bool>(GetIsIPv6Available);
-        public static bool IsIPv6Available => _isIPv6Available.Value;
+        public static bool IsIPv6Available => Configuration.Sockets.IsIPv6LoopbackAvailable;
 
         public static SslApplicationProtocol ApplicationProtocol { get; } = new SslApplicationProtocol("quictest");
 
@@ -373,20 +374,6 @@ namespace System.Net.Quic.Tests
             finally
             {
                 ArrayPool<byte>.Shared.Return(buffer);
-            }
-        }
-
-        internal static bool GetIsIPv6Available()
-        {
-            try
-            {
-                using Socket s = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
-                s.Bind(new IPEndPoint(IPAddress.IPv6Loopback, 0));
-                return true;
-            }
-            catch (SocketException)
-            {
-                return false;
             }
         }
     }

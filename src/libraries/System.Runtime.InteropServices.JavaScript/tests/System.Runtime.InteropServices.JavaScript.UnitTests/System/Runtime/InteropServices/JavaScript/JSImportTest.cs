@@ -36,6 +36,20 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             instance1.Dispose();
         }
 
+        [Fact]
+        public void MissingImport()
+        {
+            var ex = Assert.Throws<JSException>(() => JavaScriptTestHelper.IntentionallyMissingImport());
+            Assert.Contains("intentionallyMissingImport must be a Function but was undefined", ex.Message);
+        }
+
+        [Fact]
+        public async Task MissingImportAsync()
+        {
+            var ex = await Assert.ThrowsAsync<JSException>(() => JavaScriptTestHelper.IntentionallyMissingImportAsync());
+            Assert.Contains("intentionallyMissingImportAsync must be a Function but was undefined", ex.Message);
+        }
+
 #if !FEATURE_WASM_MANAGED_THREADS // because in MT JSHost.ImportAsync is really async, it will finish before the caller could cancel it
         [Fact]
         public async Task CancelableImportAsync()
@@ -116,6 +130,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWasmBackgroundExecOrSingleThread))]
         public unsafe void OptimizedPaths()
         {
+            JavaScriptTestHelper.AssertWasmBackgroundExec();
             JavaScriptTestHelper.optimizedReached = 0;
             JavaScriptTestHelper.invoke0V();
             Assert.Equal(1, JavaScriptTestHelper.optimizedReached);
@@ -1320,6 +1335,23 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }, 42, 43);
             Assert.Equal(42, calledA);
             Assert.Equal(43, calledB);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        public void JsImportCallback_ActionIntLongDouble()
+        {
+            int calledA = -1;
+            long calledB = -1;
+            double calledC = -1;
+            JavaScriptTestHelper.back4_ActionIntLongDouble((a, b, c) =>
+            {
+                calledA = a;
+                calledB = b;
+                calledC = c;
+            }, 42, 43, 44.5);
+            Assert.Equal(42, calledA);
+            Assert.Equal(43, calledB);
+            Assert.Equal(44.5, calledC);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]

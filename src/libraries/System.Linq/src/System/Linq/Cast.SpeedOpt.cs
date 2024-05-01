@@ -8,11 +8,11 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        private sealed partial class CastICollectionIterator<TResult> : IPartition<TResult>
+        private sealed partial class CastICollectionIterator<TResult>
         {
-            public int GetCount(bool onlyIfCheap) => _source.Count;
+            public override int GetCount(bool onlyIfCheap) => _source.Count;
 
-            public TResult[] ToArray()
+            public override TResult[] ToArray()
             {
                 TResult[] array = new TResult[_source.Count];
 
@@ -25,7 +25,7 @@ namespace System.Linq
                 return array;
             }
 
-            public List<TResult> ToList()
+            public override List<TResult> ToList()
             {
                 List<TResult> list = new(_source.Count);
 
@@ -37,7 +37,7 @@ namespace System.Linq
                 return list;
             }
 
-            public TResult? TryGetElementAt(int index, out bool found)
+            public override TResult? TryGetElementAt(int index, out bool found)
             {
                 if (index >= 0)
                 {
@@ -65,7 +65,7 @@ namespace System.Linq
                 return default;
             }
 
-            public TResult? TryGetFirst(out bool found)
+            public override TResult? TryGetFirst(out bool found)
             {
                 IEnumerator e = _source.GetEnumerator();
                 try
@@ -85,7 +85,7 @@ namespace System.Linq
                 return default;
             }
 
-            public TResult? TryGetLast(out bool found)
+            public override TResult? TryGetLast(out bool found)
             {
                 IEnumerator e = _source.GetEnumerator();
                 try
@@ -110,13 +110,6 @@ namespace System.Linq
                     (e as IDisposable)?.Dispose();
                 }
             }
-
-            public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>
-                new SelectIPartitionIterator<TResult, TResult2>(this, selector);
-
-            public IPartition<TResult>? Skip(int count) => new EnumerablePartition<TResult>(this, count, -1);
-
-            public IPartition<TResult>? Take(int count) => new EnumerablePartition<TResult>(this, 0, count - 1);
         }
     }
 }

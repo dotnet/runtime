@@ -13,12 +13,12 @@ namespace System.Linq
 
         public static bool Contains<TSource>(this IEnumerable<TSource> source, TSource value, IEqualityComparer<TSource>? comparer)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (comparer == null)
+            if (comparer is null)
             {
                 foreach (TSource element in source)
                 {

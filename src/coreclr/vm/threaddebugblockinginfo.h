@@ -14,8 +14,8 @@
 // Different ways thread can block that the debugger will expose
 enum DebugBlockingItemType
 {
-    DebugBlock_MonitorCriticalSection,
-    DebugBlock_MonitorEvent,
+    DebugBlock_MonitorCriticalSection, // maps to ThreadBlockingInfo.ObjectKind.MonitorLock below and in managed code
+    DebugBlock_MonitorEvent, // maps to ThreadBlockingInfo.ObjectKind.MonitorWait below and in managed code
 };
 
 typedef DPTR(struct DebugBlockingItem) PTR_DebugBlockingItem;
@@ -65,15 +65,35 @@ public:
 };
 
 #ifndef DACCESS_COMPILE
+
+// This is the equivalent of the managed ThreadBlockingInfo (see ThreadBlockingInfo.cs), which is used for tracking blocking
+// info from the managed side, similarly to DebugBlockingItem
+struct ThreadBlockingInfo
+{
+    enum class ObjectKind : INT32
+    {
+        MonitorLock, // maps to DebugBlockingItemType::DebugBlock_MonitorCriticalSection
+        MonitorWait  // maps to DebugBlockingItemType::DebugBlock_MonitorEvent
+    };
+
+    void *objectPtr;
+    ObjectKind objectKind;
+    INT32 timeoutMs;
+    ThreadBlockingInfo *next;
+};
+
 class DebugBlockingItemHolder
 {
 private:
     Thread *m_pThread;
+    ThreadBlockingInfo **m_ppFirstBlockingInfo;
+    ThreadBlockingInfo m_blockingInfo;
 
 public:
     DebugBlockingItemHolder(Thread *pThread, DebugBlockingItem *pItem);
     ~DebugBlockingItemHolder();
 };
+
 #endif //!DACCESS_COMPILE
 
 #endif // __ThreadBlockingInfo__

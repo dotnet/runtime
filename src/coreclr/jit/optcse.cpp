@@ -164,6 +164,11 @@ bool Compiler::optUnmarkCSE(GenTree* tree)
         // 2. Unmark the CSE information in the node
 
         tree->gtCSEnum = NO_CSE;
+
+        // 3. Leave breadcrumbs so we know some dsc was altered
+
+        optCSEunmarks++;
+
         return true;
     }
     else
@@ -199,7 +204,9 @@ void Compiler::optCSE_GetMaskData(GenTree* tree, optCSE_MaskData* pMaskData)
             DoPreOrder = true,
         };
 
-        MaskDataWalker(Compiler* comp, optCSE_MaskData* maskData) : GenTreeVisitor(comp), m_maskData(maskData)
+        MaskDataWalker(Compiler* comp, optCSE_MaskData* maskData)
+            : GenTreeVisitor(comp)
+            , m_maskData(maskData)
         {
         }
 
@@ -391,7 +398,9 @@ void CSEdsc::ComputeNumLocals(Compiler* compiler)
         };
 
         LocalCountingVisitor(Compiler* compiler)
-            : GenTreeVisitor<LocalCountingVisitor>(compiler), m_count(0), m_occurrences(0)
+            : GenTreeVisitor<LocalCountingVisitor>(compiler)
+            , m_count(0)
+            , m_occurrences(0)
         {
         }
 
@@ -494,26 +503,11 @@ unsigned optCSEKeyToHashIndex(size_t key, size_t optCSEhashSize)
 //
 unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 {
-    size_t   key;
-    unsigned hval;
-    CSEdsc*  hashDsc;
-    bool     enableSharedConstCSE = false;
-    bool     isSharedConst        = false;
-    int      configValue          = JitConfig.JitConstCSE();
-
-#if defined(TARGET_ARMARCH)
-    // ARMARCH - allow to combine with nearby offsets, when config is not 2 or 4
-    if ((configValue != CONST_CSE_ENABLE_ARM_NO_SHARING) && (configValue != CONST_CSE_ENABLE_ALL_NO_SHARING))
-    {
-        enableSharedConstCSE = true;
-    }
-#endif // TARGET_ARMARCH
-
-    // All Platforms - also allow to combine with nearby offsets, when config is 3
-    if (configValue == CONST_CSE_ENABLE_ALL)
-    {
-        enableSharedConstCSE = true;
-    }
+    size_t     key;
+    unsigned   hval;
+    CSEdsc*    hashDsc;
+    const bool enableSharedConstCSE = optSharedConstantCSEEnabled();
+    bool       isSharedConst        = false;
 
     // We use the liberal Value numbers when building the set of CSE
     ValueNum vnLib     = tree->GetVN(VNK_Liberal);
@@ -1196,7 +1190,9 @@ class CSE_DataFlow
     EXPSET_TP m_preMergeOut;
 
 public:
-    CSE_DataFlow(Compiler* pCompiler) : m_comp(pCompiler), m_preMergeOut(BitVecOps::UninitVal())
+    CSE_DataFlow(Compiler* pCompiler)
+        : m_comp(pCompiler)
+        , m_preMergeOut(BitVecOps::UninitVal())
     {
     }
 
@@ -1752,36 +1748,15 @@ void Compiler::optValnumCSE_Availability()
 // Notes:
 //  This creates the basic CSE heuristic. It never does any CSEs.
 //
-CSE_HeuristicCommon::CSE_HeuristicCommon(Compiler* pCompiler) : m_pCompiler(pCompiler)
+CSE_HeuristicCommon::CSE_HeuristicCommon(Compiler* pCompiler)
+    : m_pCompiler(pCompiler)
 {
-    m_addCSEcount = 0; /* Count of the number of LclVars for CSEs that we added */
-    sortTab       = nullptr;
-    sortSiz       = 0;
-    madeChanges   = false;
-    codeOptKind   = m_pCompiler->compCodeOpt();
-
-    enableConstCSE = true;
-
-    int configValue = JitConfig.JitConstCSE();
-
-    // all platforms - disable CSE of constant values when config is 1
-    if (configValue == CONST_CSE_DISABLE_ALL)
-    {
-        enableConstCSE = false;
-    }
-
-#if !defined(TARGET_ARM64)
-    // non-ARM64 platforms - disable by default
-    //
-    enableConstCSE = false;
-
-    // Check for the two enable cases for all platforms
-    //
-    if ((configValue == CONST_CSE_ENABLE_ALL) || (configValue == CONST_CSE_ENABLE_ALL_NO_SHARING))
-    {
-        enableConstCSE = true;
-    }
-#endif
+    m_addCSEcount  = 0; /* Count of the number of LclVars for CSEs that we added */
+    sortTab        = nullptr;
+    sortSiz        = 0;
+    madeChanges    = false;
+    codeOptKind    = m_pCompiler->compCodeOpt();
+    enableConstCSE = Compiler::optConstantCSEEnabled();
 
 #ifdef DEBUG
     // Track the order of CSEs done (candidate number)
@@ -1823,7 +1798,7 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
     }
 
     // Don't allow non-SIMD struct CSEs under a return; we don't fully
-    // re-morph these if we introduce a CSE assignment, and so may create
+    // re-morph these if we introduce a CSE store, and so may create
     // IR that lower is not yet prepared to handle.
     //
     if (isReturn && varTypeIsStruct(tree->gtType) && !varTypeIsSIMD(tree->gtType))
@@ -1894,7 +1869,7 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
             // more exceptions (NullRef) so we abandon this CSE.
             // If we don't mark CALL ALLOC_HELPER as a CSE candidate, we are able
             // to use GT_IND(x) in [2] as a CSE def.
-            if ((call->gtCallType == CT_HELPER) &&
+            if (call->IsHelperCall() &&
                 Compiler::s_helperCallProperties.IsAllocator(m_pCompiler->eeGetHelperNum(call->gtCallMethHnd)))
             {
                 return false;
@@ -2106,7 +2081,8 @@ void CSE_HeuristicCommon::DumpMetrics()
 //  This creates the random CSE heuristic. It does CSEs randomly, with some
 //  predetermined likelihood (set by config or by stress).
 //
-CSE_HeuristicRandom::CSE_HeuristicRandom(Compiler* pCompiler) : CSE_HeuristicCommon(pCompiler)
+CSE_HeuristicRandom::CSE_HeuristicRandom(Compiler* pCompiler)
+    : CSE_HeuristicCommon(pCompiler)
 {
     m_cseRNG.Init(m_pCompiler->info.compMethodHash() ^ JitConfig.JitRandomCSE());
 }
@@ -2185,6 +2161,13 @@ void CSE_HeuristicRandom::ConsiderCandidates()
         JITDUMPEXEC(m_pCompiler->gtDispTree(candidate.Expr()));
         JITDUMP("\n");
 
+#ifdef DEBUG
+        if (m_pCompiler->optConfigDisableCSE2())
+        {
+            continue;
+        }
+#endif
+
         if (dsc->defExcSetPromise == ValueNumStore::NoVN)
         {
             JITDUMP("Abandoned " FMT_CSE " because we had defs with different Exc sets\n", candidate.CseIndex());
@@ -2225,7 +2208,8 @@ void CSE_HeuristicRandom::ConsiderCandidates()
 //  This creates the replay CSE heuristic. It does CSEs specifed by
 //  the ArrayConfig parsing of JitReplayCSE.
 //
-CSE_HeuristicReplay::CSE_HeuristicReplay(Compiler* pCompiler) : CSE_HeuristicCommon(pCompiler)
+CSE_HeuristicReplay::CSE_HeuristicReplay(Compiler* pCompiler)
+    : CSE_HeuristicCommon(pCompiler)
 {
 }
 
@@ -2317,7 +2301,8 @@ double CSE_HeuristicParameterized::s_defaultParameters[CSE_HeuristicParameterize
 // Arguments;
 //  pCompiler - compiler instance
 //
-CSE_HeuristicParameterized::CSE_HeuristicParameterized(Compiler* pCompiler) : CSE_HeuristicCommon(pCompiler)
+CSE_HeuristicParameterized::CSE_HeuristicParameterized(Compiler* pCompiler)
+    : CSE_HeuristicCommon(pCompiler)
 {
     // Default parameter values...
     //
@@ -2436,10 +2421,12 @@ void CSE_HeuristicParameterized::GreedyPolicy()
     //
     const int          numCandidates = m_pCompiler->optCSECandidateCount;
     ArrayStack<Choice> choices(m_pCompiler->getAllocator(CMK_CSE), numCandidates + 1);
+    unsigned           numUnmarked       = m_pCompiler->optCSEunmarks;
+    bool               recomputeFeatures = true;
 
     while (true)
     {
-        Choice&       choice = ChooseGreedy(choices);
+        Choice&       choice = ChooseGreedy(choices, recomputeFeatures);
         CSEdsc* const dsc    = choice.m_dsc;
 
 #ifdef DEBUG
@@ -2472,7 +2459,16 @@ void CSE_HeuristicParameterized::GreedyPolicy()
         JITDUMP("\n");
 
         PerformCSE(&candidate);
-        madeChanges = true;
+        madeChanges        = true;
+        choice.m_performed = true;
+
+        // If performing this CSE impacted other CSEs, we need to
+        // recompute all cse features.
+        //
+        unsigned newNumUnmarked = m_pCompiler->optCSEunmarks;
+        assert(newNumUnmarked >= numUnmarked);
+        recomputeFeatures = (numUnmarked != newNumUnmarked);
+        numUnmarked       = newNumUnmarked;
     }
 
     return;
@@ -2575,7 +2571,7 @@ void CSE_HeuristicParameterized::GetFeatures(CSEdsc* cse, double* features)
     unsigned       maxPostorderNum   = 0;
     BasicBlock*    minPostorderBlock = nullptr;
     BasicBlock*    maxPostorderBlock = nullptr;
-    for (treeStmtLst* treeList = cse->csdTreeList; treeList != nullptr && !isMakeCse; treeList = treeList->tslNext)
+    for (treeStmtLst* treeList = cse->csdTreeList; treeList != nullptr; treeList = treeList->tslNext)
     {
         BasicBlock* const treeBlock    = treeList->tslBlock;
         unsigned          postorderNum = treeBlock->bbPostorderNum;
@@ -2616,11 +2612,10 @@ void CSE_HeuristicParameterized::GetFeatures(CSEdsc* cse, double* features)
     // LSRA "is live across call"
     //
     bool isLiveAcrossCallLSRA = isLiveAcrossCall;
-
     if (!isLiveAcrossCallLSRA)
     {
         unsigned count = 0;
-        for (BasicBlock *block                                                            = minPostorderBlock;
+        for (BasicBlock* block                                                            = minPostorderBlock;
              block != nullptr && block != maxPostorderBlock && count < blockSpread; block = block->Next(), count++)
         {
             if (block->HasFlag(BBF_HAS_CALL))
@@ -2630,7 +2625,6 @@ void CSE_HeuristicParameterized::GetFeatures(CSEdsc* cse, double* features)
             }
         }
     }
-
     features[23] = booleanScale * isLiveAcrossCallLSRA;
 }
 
@@ -2748,6 +2742,10 @@ double CSE_HeuristicParameterized::StoppingPreference()
 // ChooseGreedy: examine candidates and choose the next CSE to perform
 //   via greedy policy
 //
+// Arguments:
+//   choices -- array of choices, possibly already filled in
+//   recompute -- if true, rebuild the choice array from scratch
+//
 // Returns:
 //   Choice of CSE to perform
 //
@@ -2755,10 +2753,25 @@ double CSE_HeuristicParameterized::StoppingPreference()
 //   Picks the most-preferred candidate.
 //   If there is a tie, picks stop, or the lowest cse index.
 //
-CSE_HeuristicParameterized::Choice& CSE_HeuristicParameterized::ChooseGreedy(ArrayStack<Choice>& choices)
+CSE_HeuristicParameterized::Choice& CSE_HeuristicParameterized::ChooseGreedy(ArrayStack<Choice>& choices,
+                                                                             bool                recompute)
 {
-    choices.Reset();
-    BuildChoices(choices);
+    if (recompute)
+    {
+        choices.Reset();
+        BuildChoices(choices);
+    }
+    else
+    {
+        // Always recompute the stopping preference as this
+        // reflects ambient state after each CSE.
+        //
+        // By convention, this is at TopRef(0).
+        //
+        Choice& stopping = choices.TopRef(0);
+        assert(stopping.m_dsc == nullptr);
+        stopping.m_preference = StoppingPreference();
+    }
 
     // Find the maximally preferred case.
     //
@@ -2766,8 +2779,14 @@ CSE_HeuristicParameterized::Choice& CSE_HeuristicParameterized::ChooseGreedy(Arr
 
     for (int i = 1; i < choices.Height(); i++)
     {
-        Choice& choice     = choices.TopRef(i);
-        Choice& bestChoice = choices.TopRef(choiceNum);
+        const Choice& choice = choices.TopRef(i);
+
+        if (choice.m_performed == true)
+        {
+            continue;
+        }
+
+        const Choice& bestChoice = choices.TopRef(choiceNum);
 
         const double delta = choice.m_preference - bestChoice.m_preference;
 
@@ -2811,6 +2830,8 @@ CSE_HeuristicParameterized::Choice& CSE_HeuristicParameterized::ChooseGreedy(Arr
 //
 void CSE_HeuristicParameterized::BuildChoices(ArrayStack<Choice>& choices)
 {
+    JITDUMP("Building choice array...\n");
+
     for (unsigned i = 0; i < m_pCompiler->optCSECandidateCount; i++)
     {
         CSEdsc* const dsc = sortTab[i];
@@ -2893,9 +2914,15 @@ void CSE_HeuristicParameterized::DumpChoices(ArrayStack<Choice>& choices, int hi
 {
     for (int i = 0; i < choices.Height(); i++)
     {
-        Choice&       choice = choices.TopRef(i);
-        CSEdsc* const cse    = choice.m_dsc;
-        const char*   msg    = i == highlight ? "=>" : "  ";
+        const Choice& choice = choices.TopRef(i);
+
+        if (choice.m_performed == true)
+        {
+            continue;
+        }
+
+        CSEdsc* const cse = choice.m_dsc;
+        const char*   msg = (i == highlight) ? "=>" : "  ";
         if (cse != nullptr)
         {
             printf("%s%2d: " FMT_CSE " preference %10.7f likelihood %10.7f\n", msg, i, cse->csdIndex,
@@ -2920,9 +2947,15 @@ void CSE_HeuristicParameterized::DumpChoices(ArrayStack<Choice>& choices, CSEdsc
 {
     for (int i = 0; i < choices.Height(); i++)
     {
-        Choice&       choice = choices.TopRef(i);
-        CSEdsc* const cse    = choice.m_dsc;
-        const char*   msg    = cse == highlight ? "=>" : "  ";
+        const Choice& choice = choices.TopRef(i);
+
+        if (choice.m_performed == true)
+        {
+            continue;
+        }
+
+        CSEdsc* const cse = choice.m_dsc;
+        const char*   msg = (cse == highlight) ? "=>" : "  ";
         if (cse != nullptr)
         {
             printf("%s%2d: " FMT_CSE " preference %10.7f likelihood %10.7f\n", msg, i, cse->csdIndex,
@@ -2963,7 +2996,10 @@ void CSE_HeuristicParameterized::DumpChoices(ArrayStack<Choice>& choices, CSEdsc
 //      Uses parameters from JitRLCSE to drive a deterministic greedy policy
 //
 CSE_HeuristicRL::CSE_HeuristicRL(Compiler* pCompiler)
-    : CSE_HeuristicParameterized(pCompiler), m_alpha(0.0), m_updateParameters(false), m_greedy(false)
+    : CSE_HeuristicParameterized(pCompiler)
+    , m_alpha(0.0)
+    , m_updateParameters(false)
+    , m_greedy(false)
 {
     // Set up the random state
     //
@@ -3633,7 +3669,8 @@ CSE_HeuristicRL::Choice* CSE_HeuristicRL::FindChoice(CSEdsc* dsc, ArrayStack<Cho
 // Notes:
 //  This creates the standard CSE heuristic.
 //
-CSE_Heuristic::CSE_Heuristic(Compiler* pCompiler) : CSE_HeuristicCommon(pCompiler)
+CSE_Heuristic::CSE_Heuristic(Compiler* pCompiler)
+    : CSE_HeuristicCommon(pCompiler)
 {
     aggressiveRefCnt = 0;
     moderateRefCnt   = 0;
@@ -4422,50 +4459,62 @@ bool CSE_HeuristicCommon::IsCompatibleType(var_types cseLclVarTyp, var_types exp
     return false;
 }
 
-// PerformCSE() takes a successful candidate and performs  the appropriate replacements:
+//------------------------------------------------------------------------
+// PerformCSE: takes a successful candidate and performs the appropriate replacements
 //
-// It will replace all of the CSE defs with assignments to a new "cse0" LclVar
+// Arguments:
+//    successfulCandidate - cse candidate to perform
+//
+// It will replace all of the CSE defs with writes to a new "cse0" LclVar
 // and will replace all of the CSE uses with reads of the "cse0" LclVar
 //
 // It will also put cse0 into SSA if there is just one def.
+//
 void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
 {
     AdjustHeuristic(successfulCandidate);
+    CSEdsc* const dsc = successfulCandidate->CseDsc();
 
 #ifdef DEBUG
     // Setup the message arg for lvaGrabTemp()
     //
-    const char* grabTempMessage = "CSE - unknown";
+    const char* heuristicTempMessage = "";
 
     if (successfulCandidate->IsAggressive())
     {
-        grabTempMessage = "CSE - aggressive";
+        heuristicTempMessage = ": aggressive";
     }
     else if (successfulCandidate->IsModerate())
     {
-        grabTempMessage = "CSE - moderate";
+        heuristicTempMessage = ": moderate";
     }
     else if (successfulCandidate->IsConservative())
     {
-        grabTempMessage = "CSE - conservative";
+        heuristicTempMessage = ": conservative";
     }
     else if (successfulCandidate->IsStressCSE())
     {
-        grabTempMessage = "CSE - stress mode";
+        heuristicTempMessage = ": stress";
     }
     else if (successfulCandidate->IsRandom())
     {
-        grabTempMessage = "CSE - random";
+        heuristicTempMessage = ": random";
     }
+
+    const char* const grabTempMessage = m_pCompiler->printfAlloc(FMT_CSE "%s", dsc->csdIndex, heuristicTempMessage);
+
+    // Add this candidate to the CSE sequence
+    //
+    m_sequence->push_back(dsc->csdIndex);
+
 #endif // DEBUG
 
-    /* Introduce a new temp for the CSE */
-
-    // we will create a  long lifetime temp for the new CSE LclVar
+    //  Allocate a CSE temp
+    //
     unsigned  cseLclVarNum = m_pCompiler->lvaGrabTemp(false DEBUGARG(grabTempMessage));
     var_types cseLclVarTyp = genActualType(successfulCandidate->Expr()->TypeGet());
 
-    LclVarDsc* lclDsc = m_pCompiler->lvaGetDesc(cseLclVarNum);
+    LclVarDsc* const lclDsc = m_pCompiler->lvaGetDesc(cseLclVarNum);
     if (cseLclVarTyp == TYP_STRUCT)
     {
         m_pCompiler->lvaSetStruct(cseLclVarNum, successfulCandidate->Expr()->GetLayout(m_pCompiler), false);
@@ -4474,21 +4523,20 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
     lclDsc->lvIsCSE = true;
 
     // Record that we created a new LclVar for use as a CSE temp
+    //
     m_addCSEcount++;
     m_pCompiler->optCSEcount++;
     m_pCompiler->Metrics.CseCount++;
 
-    //  Walk all references to this CSE, adding an assignment
-    //  to the CSE temp to all defs and changing all refs to
+    //  Walk all references to this CSE, adding an store to
+    //  the CSE temp to all defs and changing all refs to
     //  a simple use of the CSE temp.
     //
     //  Later we will unmark any nested CSE's for the CSE uses.
     //
-    CSEdsc* dsc = successfulCandidate->CseDsc();
-    INDEBUG(m_sequence->push_back(dsc->csdIndex));
-
     // If there's just a single def for the CSE, we'll put this
     // CSE into SSA form on the fly. We won't need any PHIs.
+    //
     unsigned      cseSsaNum = SsaConfig::RESERVED_SSA_NUM;
     LclSsaVarDsc* ssaVarDsc = nullptr;
 
@@ -4765,8 +4813,12 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
 
                             assert(vnStore->IsVNCompareCheckedBoundArith(oldCmpVN));
                             vnStore->GetCompareCheckedBoundArithInfo(oldCmpVN, &info);
-                            newCmpArgVN = vnStore->VNForFunc(vnStore->TypeOfVN(info.arrOp), (VNFunc)info.arrOper,
-                                                             info.arrOp, theConservativeVN);
+
+                            ValueNum arrOp1 = info.arrOpLHS ? info.arrOp : theConservativeVN;
+                            ValueNum arrOp2 = info.arrOpLHS ? theConservativeVN : info.arrOp;
+
+                            newCmpArgVN =
+                                vnStore->VNForFunc(vnStore->TypeOfVN(info.arrOp), (VNFunc)info.arrOper, arrOp1, arrOp2);
                         }
                         ValueNum newCmpVN = vnStore->VNForFunc(vnStore->TypeOfVN(oldCmpVN), (VNFunc)info.cmpOper,
                                                                info.cmpOp, newCmpArgVN);
@@ -4843,7 +4895,7 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
             if (!store->OperIs(GT_STORE_LCL_VAR))
             {
                 // This can only be the case for a struct in which the 'val' was a COMMA, so
-                // the assignment is sunk below it.
+                // the store is sunk below it.
                 store = store->gtEffectiveVal();
                 noway_assert(origStore->OperIs(GT_COMMA) && (origStore == val));
             }
@@ -4910,7 +4962,7 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
             /* Create a comma node for the CSE assignment */
             cse           = m_pCompiler->gtNewOperNode(GT_COMMA, expTyp, origStore, cseUse);
             cse->gtVNPair = cseUse->gtVNPair; // The comma's value is the same as 'val'
-            // as the assignment to the CSE LclVar
+            // as the store to the CSE LclVar
             // cannot add any new exceptions
         }
 
@@ -5343,7 +5395,7 @@ bool Compiler::optConfigDisableCSE2()
         {
             if (verbose)
             {
-                printf(" Disabled by jitNoCSE2 > totalCSEcount\n");
+                printf(" Disabled by jitNoCSE2 %d > totalCSEcount %d\n", jitNoCSE2, totalCSEcount);
             }
             return true;
         }
@@ -5387,6 +5439,56 @@ void Compiler::optCleanupCSEs()
             }
         }
     }
+}
+
+//---------------------------------------------------------------------------
+// optSharedConstantCSEEnabled: Returns `true` if shared constant CSE is enabled.
+//
+// Notes: see `optConstantCSEEnabled` for detecting if general constant CSE is enabled.
+//
+// static
+bool Compiler::optSharedConstantCSEEnabled()
+{
+    bool enableSharedConstCSE = false;
+    int  configValue          = JitConfig.JitConstCSE();
+
+    if (configValue == CONST_CSE_ENABLE_ALL)
+    {
+        enableSharedConstCSE = true;
+    }
+#if defined(TARGET_ARMARCH)
+    else if (configValue == CONST_CSE_ENABLE_ARM)
+    {
+        enableSharedConstCSE = true;
+    }
+#endif // TARGET_ARMARCH
+
+    return enableSharedConstCSE;
+}
+
+//---------------------------------------------------------------------------
+// optConstantCSEEnabled: Returns `true` if constant CSE is enabled.
+//
+// Notes: see `optSharedConstantCSEEnabled` for detecting if shared constant CSE is enabled.
+//
+// static
+bool Compiler::optConstantCSEEnabled()
+{
+    bool enableConstCSE = false;
+    int  configValue    = JitConfig.JitConstCSE();
+
+    if ((configValue == CONST_CSE_ENABLE_ALL) || (configValue == CONST_CSE_ENABLE_ALL_NO_SHARING))
+    {
+        enableConstCSE = true;
+    }
+#if defined(TARGET_ARMARCH)
+    else if ((configValue == CONST_CSE_ENABLE_ARM) || (configValue == CONST_CSE_ENABLE_ARM_NO_SHARING))
+    {
+        enableConstCSE = true;
+    }
+#endif
+
+    return enableConstCSE;
 }
 
 #ifdef DEBUG

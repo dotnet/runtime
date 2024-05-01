@@ -10,7 +10,7 @@ namespace System.Linq
     {
         public static int Count<TSource>(this IEnumerable<TSource> source)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -20,10 +20,12 @@ namespace System.Linq
                 return collectionoft.Count;
             }
 
-            if (source is IIListProvider<TSource> listProv)
+#if !OPTIMIZE_FOR_SIZE
+            if (source is Iterator<TSource> iterator)
             {
-                return listProv.GetCount(onlyIfCheap: false);
+                return iterator.GetCount(onlyIfCheap: false);
             }
+#endif
 
             if (source is ICollection collection)
             {
@@ -47,12 +49,12 @@ namespace System.Linq
 
         public static int Count<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (predicate == null)
+            if (predicate is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
@@ -94,7 +96,7 @@ namespace System.Linq
         /// </remarks>
         public static bool TryGetNonEnumeratedCount<TSource>(this IEnumerable<TSource> source, out int count)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -105,15 +107,17 @@ namespace System.Linq
                 return true;
             }
 
-            if (source is IIListProvider<TSource> listProv)
+#if !OPTIMIZE_FOR_SIZE
+            if (source is Iterator<TSource> iterator)
             {
-                int c = listProv.GetCount(onlyIfCheap: true);
+                int c = iterator.GetCount(onlyIfCheap: true);
                 if (c >= 0)
                 {
                     count = c;
                     return true;
                 }
             }
+#endif
 
             if (source is ICollection collection)
             {
@@ -127,7 +131,7 @@ namespace System.Linq
 
         public static long LongCount<TSource>(this IEnumerable<TSource> source)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -149,12 +153,12 @@ namespace System.Linq
 
         public static long LongCount<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (predicate == null)
+            if (predicate is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }

@@ -229,6 +229,11 @@ public:
     virtual PTR_VOID GetFramePointer(MethodInfo *   pMethodInfo,
                                      REGDISPLAY *   pRegisterSet) PURE_VIRTUAL
 
+#ifdef TARGET_X86
+    virtual uintptr_t GetResumeSp(MethodInfo *   pMethodInfo,
+                                  REGDISPLAY *   pRegisterSet) PURE_VIRTUAL
+#endif
+
     virtual void EnumGcRefs(MethodInfo *    pMethodInfo,
                             PTR_VOID        safePointAddress,
                             REGDISPLAY *    pRegisterSet,

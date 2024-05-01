@@ -1971,6 +1971,12 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	if (mono_aot_mode == MONO_AOT_MODE_NONE)
 		return;
 
+#ifdef HOST_BROWSER
+	// This indicates that we were not built for AOT, so there's no need to probe for AOT modules.
+	if (mono_aot_mode == MONO_AOT_MODE_INTERP_ONLY)
+		return;
+#endif
+
 	if (assembly->image->aot_module)
 		/*
 		 * Already loaded. This can happen because the assembly loading code might invoke
@@ -2480,7 +2486,7 @@ load_container_amodule (MonoAssemblyLoadContext *alc)
 
 	mono_loader_lock ();
 	// There might be several threads that passed the first check
-	// Adding another check to ensure single load of a container assembly due to race condition 
+	// Adding another check to ensure single load of a container assembly due to race condition
 	if (!container_amodule) {
 		ERROR_DECL (error);
 

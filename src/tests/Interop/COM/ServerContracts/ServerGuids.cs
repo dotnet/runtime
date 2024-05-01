@@ -11,6 +11,7 @@ namespace Server.Contract
         public const string NumericTesting = "53169A33-E85D-4E3C-B668-24E438D0929B";
         public const string ArrayTesting = "B99ABE6A-DFF6-440F-BFB6-55179B8FE18E";
         public const string StringTesting = "C73C83E8-51A2-47F8-9B5C-4284458E47A6";
+        public const string MiscTypesTesting = "CCFF894B-A27C-45E0-9B30-6C88D722E843";
         public const string ErrorMarshalTesting = "71CF5C45-106C-4B32-B418-43A463C6041F";
         public const string DispatchTesting = "0F8ACD0C-ECE0-4F2A-BD1B-6BFCA93A0726";
         public const string EventTesting = "4DBD9B61-E372-499F-84DE-EFC70AA8A009";

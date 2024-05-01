@@ -80,8 +80,6 @@ namespace ILCompiler
             }
             else if (architecture == TargetArchitecture.X86)
             {
-                if (potentialType.Name == "X64")
-                    potentialType = (MetadataType)potentialType.ContainingType;
                 if (potentialType.Name == "VL")
                     potentialType = (MetadataType)potentialType.ContainingType;
                 if (potentialType.Namespace != "System.Runtime.Intrinsics.X86")
@@ -99,13 +97,17 @@ namespace ILCompiler
                 if (potentialType.Namespace != "System.Runtime.Intrinsics.Arm")
                     return "";
             }
+            else if (architecture == TargetArchitecture.LoongArch64)
+            {
+                return "";
+            }
             else if (architecture == TargetArchitecture.RiscV64)
             {
                 return "";
             }
             else
             {
-                throw new InternalCompilerErrorException("Unknown architecture");
+                throw new InternalCompilerErrorException($"Unknown architecture '{architecture}'");
             }
 
             return potentialType.Name;
@@ -175,7 +177,7 @@ namespace ILCompiler
         private static Dictionary<TargetArchitecture, Dictionary<string, InstructionSet>> ComputeInstructionSetSupport()
         {
             var supportMatrix = new Dictionary<TargetArchitecture, Dictionary<string, InstructionSet>>();
-            foreach (TargetArchitecture arch in Enum.GetValues(typeof(TargetArchitecture)))
+            foreach (TargetArchitecture arch in Enum.GetValues<TargetArchitecture>())
             {
                 supportMatrix[arch] = ComputeInstructSetSupportForArch(arch);
             }
@@ -186,7 +188,7 @@ namespace ILCompiler
         private static Dictionary<TargetArchitecture, InstructionSetFlags> ComputeNonSpecifiableInstructionSetSupport()
         {
             var matrix = new Dictionary<TargetArchitecture, InstructionSetFlags>();
-            foreach (TargetArchitecture arch in Enum.GetValues(typeof(TargetArchitecture)))
+            foreach (TargetArchitecture arch in Enum.GetValues<TargetArchitecture>())
             {
                 matrix[arch] = ComputeNonSpecifiableInstructionSetSupportForArch(arch);
             }

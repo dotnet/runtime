@@ -74,9 +74,6 @@
 
   <!-- Wasm aot on all platforms -->
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true' and '$(RunAOTCompilation)' == 'true'">
-    <!-- https://github.com/dotnet/runtime/issues/95791 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\System.Numerics.Tensors.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\Net8Tests\System.Numerics.Tensors.Net8.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/66118 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\UnitTests\System.Text.RegularExpressions.Unit.Tests.csproj" />
     <!-- Normally run with HighAOT, but disabling there, and for AOT - https://github.com/dotnet/runtime/issues/71848 -->
@@ -138,8 +135,6 @@
     <!-- LibraryImportGenerator runtime tests build depends pulling down a pre-built nethost binary, which is not available for s390x. -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.Tests\LibraryImportGenerator.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\ComInterfaceGenerator.Tests\ComInterfaceGenerator.Tests.csproj" />
-    <!-- LibraryImportGenerator unit tests fail since NuGet 5.6.0 signature verification does not work on big-endian systems (needs >= 5.11.0). -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.UnitTests\LibraryImportGenerator.Unit.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\ComInterfaceGenerator.Unit.Tests\ComInterfaceGenerator.Unit.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\JSImportGenerator.UnitTest\JSImportGenerator.Unit.Tests.csproj" />
   </ItemGroup>
@@ -400,10 +395,8 @@
     <!-- Issue: https://github.com/dotnet/runtime/issues/95795 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\Hybrid\System.Globalization.Hybrid.WASM.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Calendars.Tests\Hybrid\System.Globalization.Calendars.Hybrid.WASM.Tests.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(WasmEnableThreads)' != 'true' and '$(RunDisabledWasmTests)' != 'true'">
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.UnitTests\BackgroundExec\System.Runtime.InteropServices.JavaScript.BackgroundExec.Tests.csproj" />
+    <!-- Issue: https://github.com/dotnet/runtime/issues/100932 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Reflection.Tests\System.Reflection.Tests.csproj" />
   </ItemGroup>
 
   <!-- Aggressive Trimming related failures -->
@@ -447,9 +440,9 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Roslyn4.4.Tests.csproj"
                       Condition="'$(TargetOS)' == 'linux'" />
 
-    <!-- https://github.com/dotnet/runtime/issues/98795 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Calendars.Tests\System.Globalization.Calendars.Tests.csproj"
-                      Condition="'$(TargetArchitecture)' == 'arm'" />
+    <!-- https://github.com/dotnet/runtime/issues/94653 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Threading.Tasks.Tests\System.Threading.Tasks.Tests.csproj"
+                       Condition="'$(TargetsLinuxMusl)' == 'true'" />
 
     <!-- Not applicable to NativeAOT -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.HostFactoryResolver\tests\Microsoft.Extensions.HostFactoryResolver.Tests.csproj" />
@@ -653,16 +646,19 @@
                       BuildInParallel="$(BuildTestInParallel)" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)testPackages\testPackages.proj"
                       Condition="'$(TestPackages)' == 'true'" />
+
+    <!-- We need to go over these disablements: https://github.com/dotnet/runtime/issues/101228 -->
+    <ProjectExclusions Condition="'$(RunNativeAotTestApps)' == 'true'" Include="$(MSBuildThisFileDirectory)\System.Linq.Queryable\tests\TrimmingTests\System.Linq.Queryable.TrimmingTests.proj" />
+    <ProjectExclusions Condition="'$(RunNativeAotTestApps)' == 'true'" Include="$(MSBuildThisFileDirectory)\System.Private.Xml.Linq\tests\TrimmingTests\System.Xml.Linq.TrimmingTests.proj" />
+    <ProjectExclusions Condition="'$(RunNativeAotTestApps)' == 'true'" Include="$(MSBuildThisFileDirectory)\System.Linq.Expressions\tests\TrimmingTests\System.Linq.Expressions.TrimmingTests.proj" />
+    <ProjectExclusions Condition="'$(RunNativeAotTestApps)' == 'true'" Include="$(MSBuildThisFileDirectory)\System.Private.Xml\tests\TrimmingTests\System.Private.Xml.TrimmingTests.proj" />
+    <ProjectExclusions Condition="'$(RunNativeAotTestApps)' == 'true'" Include="$(MSBuildThisFileDirectory)\System.Runtime\tests\System.Runtime.Tests\TrimmingTests\System.Runtime.TrimmingTests.proj" />
+
     <TrimmingTestProjects Include="$(MSBuildThisFileDirectory)*\tests\**\*.TrimmingTests.proj"
                       Exclude="@(ProjectExclusions)"
-                      Condition="'$(TestTrimming)' == 'true'"
+                      Condition="'$(TestTrimming)' == 'true' or '$(RunNativeAotTestApps)' == 'true'"
                       AdditionalProperties="%(AdditionalProperties);SkipTrimmingProjectsRestore=true" />
     <ProjectReference Include="@(TrimmingTestProjects)" />
-    <NativeAotTestAppProjects Include="$(MSBuildThisFileDirectory)*\tests\**\*.NativeAotTests.proj"
-                              Exclude="@(ProjectExclusions)"
-                              Condition="'$(RunNativeAotTestApps)' == 'true'"
-                              AdditionalProperties="%(AdditionalProperties);SkipTrimmingProjectsRestore=true" />
-    <ProjectReference Include="@(NativeAotTestAppProjects)" />
 
     <!-- wasm.build.tests are run on _WasmBuildTests job on CI, and with library tests locally. -->
     <ProjectReference Include="$(WasmProjectRoot)Wasm.Build.Tests\*.Tests.csproj"
@@ -762,7 +758,7 @@
                       BuildInParallel="$(Samples_BuildInParallel)" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' and '$(IsXUnitLogCheckerSupported)' == 'true'">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(IsXUnitLogCheckerSupported)' == 'true'">
     <ProjectReference
       Include="$(RepoRoot)src\tests\Common\XUnitLogChecker\XUnitLogChecker.csproj"
       AdditionalProperties="%(AdditionalProperties);Configuration=Release;OutDir=$(XUnitLogCheckerLibrariesOutDir)" />

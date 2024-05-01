@@ -133,6 +133,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Base64Decoder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Base64Validator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\FormattingHelpers.CountDigits.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\FormattingHelpers.CountDigits.Int128.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Constants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\FormattingHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\Utf8Formatter.Boolean.cs" />
@@ -268,6 +269,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\CodeAnalysis\ExperimentalAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\CodeAnalysis\FeatureGuardAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\CodeAnalysis\UnscopedRefAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\CodeAnalysis\RequiresAssemblyFilesAttribute.cs" />
@@ -452,7 +455,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\AhoCorasickBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\AhoCorasickNode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\CharacterFrequencyHelper.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\EightPackedReferences.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\RabinKarp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\StringSearchValuesHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\TeddyBucketizer.cs" />
@@ -470,6 +472,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\StringSearchValuesAhoCorasick.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\StringSearchValuesRabinKarp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOutOfRangeException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\InlineArrays.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\InsufficientExecutionStackException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\InsufficientMemoryException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Int16.cs" />
@@ -613,7 +616,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\OutOfMemoryException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\OverflowException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ParamArrayAttribute.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\ParamsArray.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ParseNumbers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\PasteArguments.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\PlatformID.cs" />
@@ -647,9 +649,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyMetadataAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyName.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyNameHelpers.StrongName.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyNameParser.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyNameFlags.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyNameFormatter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyNameProxy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyProductAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblySignatureKeyAttribute.cs" />
@@ -872,6 +872,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\NullableContextAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\NullablePublicOnlyAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ReferenceAssemblyAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ParamCollectionAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\PoolingAsyncValueTaskMethodBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\PoolingAsyncValueTaskMethodBuilderT.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\PreserveBaseOverridesAttribute.cs" />
@@ -1028,6 +1029,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\VarEnum.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\VariantWrapper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\WasmImportLinkageAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Enums.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\ISimdVector_2.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Scalar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\SimdVectorExtensions.cs" />
@@ -1084,6 +1086,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SByte.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\AllowPartiallyTrustedCallersAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\CryptographicException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Security\DynamicSecurityMethodAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\IPermission.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\ISecurityEncodable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\IStackWalk.cs" />
@@ -1262,6 +1265,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ProcessorIdCache.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadAbortException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadBlockingInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadExceptionEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadInt64PersistentCounter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadInterruptedException.cs" />
@@ -1426,6 +1430,9 @@
     <Compile Include="$(CommonPath)System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\Number.Formatting.Common.cs">
+      <Link>System\Number.Formatting.Common.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\Number.NumberBuffer.cs">
       <Link>System\Number.NumberBuffer.cs</Link>
     </Compile>
@@ -1465,8 +1472,29 @@
     <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs">
       <Link>Common\System\IO\PathInternal.CaseSensitivity.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Reflection\TypeNameParser.cs">
-      <Link>Common\System\Reflection\TypeNameParser.cs</Link>
+    <Compile Include="$(CommonPath)System\Reflection\TypeNameParser.Helpers.cs">
+      <Link>Common\System\Reflection\TypeNameParser.Helpers</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Reflection\AssemblyNameParser.cs">
+      <Link>Common\System\Reflection\AssemblyNameParser.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Reflection\AssemblyNameFormatter.cs">
+      <Link>Common\System\Reflection\AssemblyNameFormatter.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Reflection\Metadata\AssemblyNameInfo.cs">
+      <Link>Common\System\Reflection\Metadata\AssemblyNameInfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeName.cs">
+      <Link>Common\System\Reflection\Metadata\TypeName.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameParser.cs">
+      <Link>Common\System\Reflection\Metadata\TypeNameParser.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameParserHelpers.cs">
+      <Link>Common\System\Reflection\Metadata\TypeNameParserHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameParserOptions.cs">
+      <Link>Common\System\Reflection\Metadata\TypeNameParserOptions.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Runtime\Versioning\NonVersionableAttribute.cs">
       <Link>Common\System\Runtime\Versioning\NonVersionableAttribute.cs</Link>
@@ -1520,6 +1548,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventCounter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventDescriptor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventPipe.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventPipe.Internal.cs" Condition="'$(FeaturePerfTracing)' == 'true' and '$(FeatureMono)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventPipeEventDispatcher.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventPipeEventProvider.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventPipeMetadataGenerator.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
@@ -1533,6 +1562,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\NativeRuntimeEventSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\NativeRuntimeEventSource.Threading.cs" Condition="'$(FeaturePerfTracing)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\NativeRuntimeEventSource.Threading.NativeSinks.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\NativeRuntimeEventSource.Threading.NativeSinks.Internal.cs" Condition="'$(FeaturePerfTracing)' == 'true' and '$(FeatureMono)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\PollingCounter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\RuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\Winmeta.cs" />
@@ -2679,7 +2709,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.ThreadCounts.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.WaitThread.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.WorkerThread.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.WorkerThread.NonBrowser.cs" Condition="'$(TargetsBrowser)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.WorkerTracking.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or ('$(TargetsBrowser)' == 'true' and '$(FeatureWasmManagedThreads)' != 'true') or '$(TargetsWasi)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
@@ -2691,7 +2720,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.Portable.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphoreBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Portable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />

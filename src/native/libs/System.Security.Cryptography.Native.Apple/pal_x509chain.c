@@ -92,7 +92,10 @@ SecCertificateRef AppleCryptoNative_X509ChainGetCertificateAtIndex(SecTrustRef c
     if (chain == NULL || index < 0)
         return NULL;
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     return SecTrustGetCertificateAtIndex(chain, index);
+#pragma clang diagnostic pop
 }
 
 CFArrayRef AppleCryptoNative_X509ChainGetTrustResults(SecTrustRef chain)

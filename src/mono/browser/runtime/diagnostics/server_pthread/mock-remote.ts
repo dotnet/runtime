@@ -5,7 +5,7 @@ import monoDiagnosticsMock from "consts:monoDiagnosticsMock";
 import type { Mock } from "../mock";
 import { mock } from "../mock";
 
-export function importAndInstantiateMock(mockURL: string): Promise<Mock> {
+export function importAndInstantiateMock (mockURL: string): Promise<Mock> {
     if (monoDiagnosticsMock) {
         const mockPrefix = "mock:";
         const scriptURL = mockURL.substring(mockPrefix.length);

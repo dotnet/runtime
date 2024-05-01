@@ -107,34 +107,33 @@ enum CrstType
     CrstRetThunkCache = 89,
     CrstSavedExceptionInfo = 90,
     CrstSaveModuleProfileData = 91,
-    CrstSecurityStackwalkCache = 92,
-    CrstSigConvert = 93,
-    CrstSingleUseLock = 94,
-    CrstSpecialStatics = 95,
-    CrstStackSampler = 96,
-    CrstStaticBoxInit = 97,
-    CrstStressLog = 98,
-    CrstStubCache = 99,
-    CrstStubDispatchCache = 100,
-    CrstStubUnwindInfoHeapSegments = 101,
-    CrstSyncBlockCache = 102,
-    CrstSyncHashLock = 103,
-    CrstSystemBaseDomain = 104,
-    CrstSystemDomain = 105,
-    CrstSystemDomainDelayedUnloadList = 106,
-    CrstThreadIdDispenser = 107,
-    CrstThreadStore = 108,
-    CrstTieredCompilation = 109,
-    CrstTypeEquivalenceMap = 110,
-    CrstTypeIDMap = 111,
-    CrstUMEntryThunkCache = 112,
-    CrstUMEntryThunkFreeListLock = 113,
-    CrstUniqueStack = 114,
-    CrstUnresolvedClassLock = 115,
-    CrstUnwindInfoTableLock = 116,
-    CrstVSDIndirectionCellLock = 117,
-    CrstWrapperTemplate = 118,
-    kNumberOfCrstTypes = 119
+    CrstSigConvert = 92,
+    CrstSingleUseLock = 93,
+    CrstSpecialStatics = 94,
+    CrstStackSampler = 95,
+    CrstStaticBoxInit = 96,
+    CrstStressLog = 97,
+    CrstStubCache = 98,
+    CrstStubDispatchCache = 99,
+    CrstStubUnwindInfoHeapSegments = 100,
+    CrstSyncBlockCache = 101,
+    CrstSyncHashLock = 102,
+    CrstSystemBaseDomain = 103,
+    CrstSystemDomain = 104,
+    CrstSystemDomainDelayedUnloadList = 105,
+    CrstThreadIdDispenser = 106,
+    CrstThreadStore = 107,
+    CrstTieredCompilation = 108,
+    CrstTypeEquivalenceMap = 109,
+    CrstTypeIDMap = 110,
+    CrstUMEntryThunkCache = 111,
+    CrstUMEntryThunkFreeListLock = 112,
+    CrstUniqueStack = 113,
+    CrstUnresolvedClassLock = 114,
+    CrstUnwindInfoTableLock = 115,
+    CrstVSDIndirectionCellLock = 116,
+    CrstWrapperTemplate = 117,
+    kNumberOfCrstTypes = 118
 };
 
 #endif // __CRST_TYPES_INCLUDED
@@ -237,7 +236,6 @@ int g_rgCrstLevelMap[] =
     4,          // CrstRetThunkCache
     3,          // CrstSavedExceptionInfo
     0,          // CrstSaveModuleProfileData
-    0,          // CrstSecurityStackwalkCache
     4,          // CrstSigConvert
     5,          // CrstSingleUseLock
     0,          // CrstSpecialStatics
@@ -361,7 +359,6 @@ LPCSTR g_rgCrstNameMap[] =
     "CrstRetThunkCache",
     "CrstSavedExceptionInfo",
     "CrstSaveModuleProfileData",
-    "CrstSecurityStackwalkCache",
     "CrstSigConvert",
     "CrstSingleUseLock",
     "CrstSpecialStatics",

@@ -20,11 +20,6 @@
 #include "utils/mono-compiler.h"
 #include "mach-support.h"
 
-/* _mcontext.h now defines __darwin_mcontext32, not __darwin_mcontext, starting with Xcode 5.1 */
-#ifdef _STRUCT_MCONTEXT32
-       #define __darwin_mcontext       __darwin_mcontext32
-#endif
-
 int
 mono_mach_arch_get_mcontext_size (void)
 {

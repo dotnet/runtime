@@ -39,6 +39,14 @@ public unsafe class MemsetMemcpyNullref
         MemoryCopyByref(ref Unsafe.NullRef<byte>(), ref valid, 0);
         MemoryCopyByref(ref valid, ref Unsafe.NullRef<byte>(), 0);
         MemoryCopyByref(ref Unsafe.NullRef<byte>(), ref Unsafe.NullRef<byte>(), 0);
+
+        byte valid2 = 0;
+        MemoryInitByrefZeroLen(ref valid);
+        MemoryInitByrefZeroLen(ref Unsafe.NullRef<byte>());
+        MemoryCopyByrefZeroLen(ref valid, ref valid2);
+        MemoryCopyByrefZeroLen(ref valid, ref Unsafe.NullRef<byte>());
+        MemoryCopyByrefZeroLen(ref Unsafe.NullRef<byte>(), ref valid2);
+        MemoryCopyByrefZeroLen(ref Unsafe.NullRef<byte>(), ref Unsafe.NullRef<byte>());
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -61,4 +69,12 @@ public unsafe class MemsetMemcpyNullref
     {
         public fixed byte Data[20_000];
     }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void MemoryCopyByrefZeroLen(ref byte dst, ref byte src) => 
+        Unsafe.CopyBlockUnaligned(ref dst, ref src, 0);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void MemoryInitByrefZeroLen(ref byte dst) => 
+        Unsafe.InitBlockUnaligned(ref dst, 42, 0);
 }

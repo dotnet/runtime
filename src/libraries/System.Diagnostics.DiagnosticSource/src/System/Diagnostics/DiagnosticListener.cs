@@ -183,7 +183,7 @@ namespace System.Diagnostics
 
             // Indicate completion to all subscribers.
             DiagnosticSubscription? subscriber = null;
-            Interlocked.Exchange(ref subscriber, _subscriptions);
+            subscriber = Interlocked.Exchange(ref _subscriptions, subscriber);
             while (subscriber != null)
             {
                 subscriber.Observer.OnCompleted();
@@ -195,7 +195,7 @@ namespace System.Diagnostics
         /// <summary>
         /// When a DiagnosticListener is created it is given a name.   Return this.
         /// </summary>
-        public string Name { get; private set; }
+        public string Name { get; }
 
         /// <summary>
         /// Return the name for the ToString() to aid in debugging.

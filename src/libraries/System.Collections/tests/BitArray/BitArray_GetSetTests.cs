@@ -396,6 +396,18 @@ namespace System.Collections.Tests
             }
         }
 
+        // https://github.com/dotnet/runtime/issues/98813
+        [Fact]
+        public static void CopyToIntArray_Regression98813()
+        {
+            BitArray bitArray = new BitArray(256);
+            bitArray.Length = 32;
+            int[] expectedOutput = new int[] { 0 };
+            int[] actualOutput = new int[1];
+            bitArray.CopyTo(actualOutput, 0);
+            Assert.Equal(expectedOutput, actualOutput);
+        }
+
         // https://github.com/dotnet/runtime/issues/30440
         [Fact]
         public static void CopyToByteArray_Regression39929()
@@ -452,19 +464,13 @@ namespace System.Collections.Tests
         [InlineData(default(int), BitsPerInt32, 1, 1)]
         [InlineData(default(int), BitsPerInt32 * 4, 4 - 1, 0)]
         [InlineData(default(int), BitsPerInt32 * 4, 4, 1)]
-        public static void CopyTo_Size_Invalid<T>(T def, int bits, int arraySize, int index)
+        [InlineData(default(int), BitsPerInt32 + 1, 1, 0)]
+        public static void CopyTo_Size_Invalid<T>(T _, int bits, int arraySize, int index)
         {
             ICollection bitArray = new BitArray(bits);
             T[] array = (T[])Array.CreateInstance(typeof(T), arraySize);
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => bitArray.CopyTo(array, -1));
-            if (def is int)
-            {
-                AssertExtensions.Throws<ArgumentException>("destinationArray", string.Empty, () => bitArray.CopyTo(array, index));
-            }
-            else
-            {
-                AssertExtensions.Throws<ArgumentException>(null, () => bitArray.CopyTo(array, index));
-            }
+            AssertExtensions.Throws<ArgumentException>(null, () => bitArray.CopyTo(array, index));
         }
 
         [Fact]

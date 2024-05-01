@@ -11,6 +11,7 @@ using System.Reflection.PortableExecutable;
 using System.Reflection.Metadata;
 using System.Security.Cryptography;
 using System.Text;
+using System.Linq;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
@@ -32,6 +33,8 @@ internal static class Utils
     public static string WebcilInWasmExtension = ".wasm";
 
     private static readonly object s_SyncObj = new object();
+
+    private static readonly char[] s_charsToReplace = new[] { '.', '-', '+', '<', '>' };
 
     public static string GetEmbeddedResource(string file)
     {
@@ -410,5 +413,34 @@ internal static class Utils
         {
             return false;
         }
+    }
+
+    // Keep synced with mono_fixup_symbol_name from src/mono/mono/metadata/native-library.c
+    public static string FixupSymbolName(string name)
+    {
+        UTF8Encoding utf8 = new();
+        byte[] bytes = utf8.GetBytes(name);
+        StringBuilder sb = new();
+
+        foreach (byte b in bytes)
+        {
+            if ((b >= (byte)'0' && b <= (byte)'9') ||
+                (b >= (byte)'a' && b <= (byte)'z') ||
+                (b >= (byte)'A' && b <= (byte)'Z') ||
+                (b == (byte)'_'))
+            {
+                sb.Append((char)b);
+            }
+            else if (s_charsToReplace.Contains((char)b))
+            {
+                sb.Append('_');
+            }
+            else
+            {
+                sb.Append($"_{b:X}_");
+            }
+        }
+
+        return sb.ToString();
     }
 }

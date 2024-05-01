@@ -879,7 +879,7 @@ namespace ILCompiler
                 return false;
 
             TypeDesc type2 = ReadLdToken(ref reader, methodIL, flags);
-            if (type1 == null)
+            if (type2 == null)
                 return false;
 
             if (!ReadGetTypeFromHandle(ref reader, methodIL, flags))

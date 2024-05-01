@@ -14,7 +14,7 @@ namespace System
     {
         public static unsafe void ClearWithReferences(ref IntPtr ip, nuint pointerSizeLength)
         {
-            Debug.Assert((int)Unsafe.AsPointer(ref ip) % sizeof(IntPtr) == 0, "Should've been aligned on natural word boundary.");
+            Debug.Assert(Unsafe.IsOpportunisticallyAligned(ref ip, (uint)sizeof(IntPtr)), "Should've been aligned on natural word boundary.");
 
             // First write backward 8 natural words at a time.
             // Writing backward allows us to get away with only simple modifications to the
@@ -329,7 +329,6 @@ namespace System
             ReverseInner(ref elements, length);
         }
 
-#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void ReverseInner<T>(ref T elements, nuint length)
         {
@@ -346,6 +345,5 @@ namespace System
                 last = ref Unsafe.Subtract(ref last, 1);
             } while (Unsafe.IsAddressLessThan(ref first, ref last));
         }
-#pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
     }
 }

@@ -20,7 +20,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	// Note: the XML must be passed as an embedded resource named ILLink.Substitutions.xml,
 	// not as a separate substitution file, for it to work with NativeAot.
 	// Related: https://github.com/dotnet/runtime/issues/88647
-	[SetupCompileResource ("FeatureCheckDataFlowTestSubstitutions.xml", "ILLink.Substitutions.xml")]
+	[SetupCompileBefore ("TestFeatures.dll", new[] { "Dependencies/TestFeatures.cs" },
+		resources: new object[] { new [] { "FeatureCheckDataFlowTestSubstitutions.xml", "ILLink.Substitutions.xml" } })]
 	[IgnoreSubstitutions (false)]
 	public class FeatureCheckDataFlow
 	{
@@ -39,8 +40,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class CallFeatureUnguarded
 		{
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), Tool.Analyzer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), Tool.Analyzer | Tool.NativeAot, "")]
 			static void Unguarded ()
 			{
 				RequiresUnreferencedCode ();
@@ -49,8 +50,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), Tool.Analyzer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), Tool.Analyzer | Tool.NativeAot, "")]
 			static void UnguardedIf ()
 			{
 				if (!TestFeatures.IsUnreferencedCodeSupported) {
@@ -61,8 +62,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), Tool.Analyzer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), Tool.Analyzer | Tool.NativeAot, "")]
 			static void UnguardedElse ()
 			{
 				if (TestFeatures.IsUnreferencedCodeSupported)
@@ -98,8 +99,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), Tool.Analyzer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), Tool.Analyzer | Tool.NativeAot, "")]
 			static void UnguardedThrow ()
 			{
 				if (TestFeatures.IsUnreferencedCodeSupported)
@@ -113,8 +114,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), Tool.Analyzer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), Tool.Analyzer | Tool.NativeAot, "")]
 			static void UnguardedReturn ()
 			{
 				if (TestFeatures.IsUnreferencedCodeSupported)
@@ -204,8 +205,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				GuardedDoesNotReturnIfFalseCtor ();
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), Tool.Analyzer, "")]
+			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), Tool.Analyzer, "")]
 			static void GuardedIf ()
 			{
 				if (TestFeatures.IsUnreferencedCodeSupported) {
@@ -215,8 +216,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), Tool.Analyzer, "")]
+			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), Tool.Analyzer, "")]
 			static void GuardedElse ()
 			{
 				if (!TestFeatures.IsUnreferencedCodeSupported)
@@ -247,8 +248,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				var b = !TestFeatures.IsUnreferencedCodeSupported ? true : RequiresUnreferencedCodeBool ();
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), Tool.Analyzer, "")]
+			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), Tool.Analyzer, "")]
 			static void GuardedThrow ()
 			{
 				if (!TestFeatures.IsUnreferencedCodeSupported)
@@ -261,8 +262,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				RequiresAssemblyFiles ();
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), Tool.Analyzer, "")]
+			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), Tool.Analyzer, "")]
 			static void GuardedReturn ()
 			{
 				if (!TestFeatures.IsUnreferencedCodeSupported)
@@ -276,7 +277,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "")]
 			static void GuardedAssert ()
 			{
 				Debug.Assert (TestFeatures.IsUnreferencedCodeSupported);
@@ -285,7 +286,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "")]
 			static void GuardedDoesNotReturnIfTrue ()
 			{
 				DoesNotReturnIfTrue (!TestFeatures.IsUnreferencedCodeSupported);
@@ -294,7 +295,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "")]
 			static void GuardedDoesNotReturnIfFalse ()
 			{
 				DoesNotReturnIfFalse (TestFeatures.IsUnreferencedCodeSupported);
@@ -303,7 +304,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "")]
 			static void GuardedDoesNotReturn ()
 			{
 				if (!TestFeatures.IsUnreferencedCodeSupported)
@@ -313,7 +314,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "")]
 			static void GuardedDoesNotReturnIfFalseCtor ()
 			{
 				new DoesNotReturnIfFalseCtor (TestFeatures.IsUnreferencedCodeSupported);
@@ -325,8 +326,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class FeatureCheckBooleanExpressions
 		{
 			// Trimmer/NativeAot aren't able to optimize away the branch in this case.
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), Tool.NativeAot, "")]
 			static void And ()
 			{
 				if (TestFeatures.IsUnreferencedCodeSupported && RuntimeFeature.IsDynamicCodeSupported) {
@@ -336,7 +337,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), Tool.Analyzer | Tool.NativeAot, "")]
 			static void AndNot ()
 			{
 				if (!TestFeatures.IsUnreferencedCodeSupported && !RuntimeFeature.IsDynamicCodeSupported)
@@ -347,8 +348,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Trimmer/NativeAot aren't able to optimize away the branch in this case.
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), Tool.NativeAot, "")]
 			static void NotAnd ()
 			{
 				if (!(TestFeatures.IsUnreferencedCodeSupported && RuntimeFeature.IsDynamicCodeSupported))
@@ -359,7 +360,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), Tool.Analyzer | Tool.NativeAot, "")]
 			static void Or ()
 			{
 				if (TestFeatures.IsUnreferencedCodeSupported || RuntimeFeature.IsDynamicCodeSupported) {
@@ -369,8 +370,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Trimmer/NativeAot aren't able to optimize away the branch in this case.
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), Tool.NativeAot, "")]
 			static void OrNot ()
 			{
 				if (!TestFeatures.IsUnreferencedCodeSupported || !RuntimeFeature.IsDynamicCodeSupported)
@@ -381,7 +382,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), Tool.Analyzer | Tool.NativeAot, "")]
 			static void NotOr ()
 			{
 				if (!(TestFeatures.IsUnreferencedCodeSupported || RuntimeFeature.IsDynamicCodeSupported))
@@ -476,7 +477,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "")]
 			static void Contradiction ()
 			{
 				if (TestFeatures.IsUnreferencedCodeSupported && !TestFeatures.IsUnreferencedCodeSupported) {
@@ -525,14 +526,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				RequiresUnreferencedCode ();
 			}
 
-			static void CallTestRequiresDynamicCodeGuarded ()
+			static void CallTestDynamicCodeGuarded ()
 			{
 				if (RuntimeFeature.IsDynamicCodeSupported)
 					RequiresDynamicCode ();
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			static void CallTestRequiresDynamicCodeUnguarded ()
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), Tool.Analyzer | Tool.NativeAot, "")]
+			static void CallTestDynamicCodeUnguarded ()
 			{
 				RequiresDynamicCode ();
 			}
@@ -544,7 +545,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), Tool.Analyzer | Tool.NativeAot, "")]
 			static void CallTestAssemblyFilesUnguarded ()
 			{
 				RequiresAssemblyFiles ();
@@ -554,8 +555,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				CallTestUnreferencedCodeGuarded ();
 				CallTestUnreferencedCodeUnguarded ();
-				CallTestRequiresDynamicCodeGuarded ();
-				CallTestRequiresDynamicCodeUnguarded ();
+				CallTestDynamicCodeGuarded ();
+				CallTestDynamicCodeUnguarded ();
 				CallTestAssemblyFilesGuarded ();
 				CallTestAssemblyFilesUnguarded ();
 			}
@@ -563,9 +564,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class FeatureCheckCombinations
 		{
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), Tool.Analyzer, "")]
 			// Trimmer warns because IsDynamicCodeSupported is not a constant, so the call is reachable.
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Analyzer | Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Analyzer | Tool.Trimmer, "")]
 			static void MeetFeaturesEmptyIntersection (bool b = true)
 			{
 				if (b) {
@@ -581,7 +582,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			// Shows that ILLink has the same branch removal as NativeAot for this pattern, when
 			// the branches both use a feature check that's substituted by ILLink.
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), Tool.Analyzer, "")]
 			static void MeetFeaturesEmptyIntersection_IdenticalBranches (bool b = true)
 			{
 				if (b) {
@@ -595,7 +596,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				RequiresDynamicCode ();
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), Tool.Analyzer, "")]
 			static void MeetFeaturesIntersection (bool b = true)
 			{
 				if (b) {
@@ -621,7 +622,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), Tool.Analyzer, "")]
 			static void RemoveFeature ()
 			{
 				if (TestFeatures.IsUnreferencedCodeSupported) {
@@ -786,7 +787,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
 			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1), Tool.Trimmer | Tool.NativeAot, "")]
 			static void AssertInTryNoCatch () {
 				try {
 					Debug.Assert (TestFeatures.IsUnreferencedCodeSupported);
@@ -827,7 +828,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1))]
 			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2), Tool.Trimmer | Tool.NativeAot, "")]
 			static void AssertInFinally () {
 				try {
 					RequiresUnreferencedCode0 ();
@@ -842,8 +843,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2))]
 			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1), Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), Tool.Trimmer | Tool.NativeAot, "")]
 			static void AssertInTryNestedInTry ()
 			{
 				try {
@@ -884,8 +885,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1))]
 			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2), Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), Tool.Trimmer | Tool.NativeAot, "")]
 			static void AssertInTryNestedInFinally ()
 			{
 				try {
@@ -924,8 +925,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2))]
 			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1), Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), Tool.Trimmer | Tool.NativeAot, "")]
 			static void AssertInFinallyNestedInTry () {
 				try {
 					try {
@@ -943,8 +944,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2))]
 			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1), Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), Tool.Trimmer | Tool.NativeAot, "")]
 			static void AssertInFinallyWithCatchNestedInTry () {
 				try {
 					try {
@@ -964,8 +965,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1))]
 			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2), Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), Tool.Trimmer | Tool.NativeAot, "")]
 			static void AssertInFinallyNestedInFinally ()
 			{
 				try {
@@ -984,8 +985,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1))]
 			// Trimmer/NativeAot doesn't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2), Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), Tool.Trimmer | Tool.NativeAot, "")]
 			static void AssertInFinallyWithCatchNestedInFinally ()
 			{
 				try {
@@ -1055,8 +1056,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Trimmer,
-				CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer, "", CompilerGeneratedCode = true)]
 			static IEnumerable<int> StateFlowsAcrossYield ()
 			{
 				if (!TestFeatures.IsUnreferencedCodeSupported)
@@ -1075,8 +1075,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Trimmer | Tool.NativeAot,
-				CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
 			static async Task StateFlowsAcrossAwait ()
 			{
 				if (!TestFeatures.IsUnreferencedCodeSupported)
@@ -1096,8 +1095,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Trimmer | Tool.NativeAot,
-				CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
 			static async IAsyncEnumerable<int> StateFlowsAcrossAwaitAndYield ()
 			{
 				if (!TestFeatures.IsUnreferencedCodeSupported)
@@ -1154,6 +1152,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			public static void Test ()
 			{
+				// Use the IEnumerable to mark the IEnumerable methods
 				GuardInIterator ();
 				StateFlowsAcrossYield ();
 				GuardInAsync ();
@@ -1218,14 +1217,5 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		class RequiresAllGeneric<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] T> {}
-	}
-}
-
-namespace ILLink.RoslynAnalyzer
-{
-	class TestFeatures
-	{
-		public static bool IsUnreferencedCodeSupported => true;
-		public static bool IsAssemblyFilesSupported => true;
 	}
 }

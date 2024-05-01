@@ -104,8 +104,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
             try
             {
-                // when we arrive here, we are on the thread which owns the proxies
-                var ctx = arg_exc.AssertCurrentThreadContext();
+                // when we arrive here, we are on the thread which owns the proxies or on IO thread
+                var ctx = arg_exc.ToManagedContext;
                 ctx.ReleaseJSOwnedObjectByGCHandle(arg_1.slot.GCHandle);
             }
             catch (Exception ex)
@@ -123,14 +123,26 @@ namespace System.Runtime.InteropServices.JavaScript
             // arg_2 set by JS caller when there are arguments
             // arg_3 set by JS caller when there are arguments
             // arg_4 set by JS caller when there are arguments
+#if !FEATURE_WASM_MANAGED_THREADS
             try
             {
-#if FEATURE_WASM_MANAGED_THREADS
-                // when we arrive here, we are on the thread which owns the proxies
-                // if we need to dispatch the call to another thread in the future
-                // we may need to consider how to solve blocking of the synchronous call
-                // see also https://github.com/dotnet/runtime/issues/76958#issuecomment-1921418290
-                arg_exc.AssertCurrentThreadContext();
+#else
+            // when we arrive here, we are on the thread which owns the proxies
+            var ctx = arg_exc.AssertCurrentThreadContext();
+
+            try
+            {
+                if (ctx.IsMainThread)
+                {
+                    if (JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.ThrowWhenBlockingWait)
+                    {
+                        Thread.ThrowOnBlockingWaitOnJSInteropThread = true;
+                    }
+                    else if (JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.WarnWhenBlockingWait)
+                    {
+                        Thread.WarnOnBlockingWaitOnJSInteropThread = true;
+                    }
+                }
 #endif
 
                 GCHandle callback_gc_handle = (GCHandle)arg_1.slot.GCHandle;
@@ -148,8 +160,23 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 arg_exc.ToJS(ex);
             }
+#if FEATURE_WASM_MANAGED_THREADS
+            finally
+            {
+                if (ctx.IsMainThread)
+                {
+                    if (JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.ThrowWhenBlockingWait)
+                    {
+                        Thread.ThrowOnBlockingWaitOnJSInteropThread = false;
+                    }
+                    else if (JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.WarnWhenBlockingWait)
+                    {
+                        Thread.WarnOnBlockingWaitOnJSInteropThread = false;
+                    }
+                }
+            }
+#endif
         }
-
         // the marshaled signature is: void CompleteTask<T>(GCHandle holder, Exception? exceptionResult, T? result)
         public static void CompleteTask(JSMarshalerArgument* arguments_buffer)
         {
@@ -161,8 +188,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
             try
             {
-                // when we arrive here, we are on the thread which owns the proxies
-                var ctx = arg_exc.AssertCurrentThreadContext();
+                // when we arrive here, we are on the thread which owns the proxies or on IO thread
+                var ctx = arg_exc.ToManagedContext;
                 var holder = ctx.GetPromiseHolder(arg_1.slot.GCHandle);
                 JSHostImplementation.ToManagedCallback callback;
 
@@ -176,23 +203,16 @@ namespace System.Runtime.InteropServices.JavaScript
                     }
                 }
 
+                // it's also OK to block here, because we know we will only block shortly, as this is just race with the other thread.
                 if (holder.CallbackReady != null)
                 {
-#pragma warning disable CA1416 // Validate platform compatibility
-                    Thread.ForceBlockingWait(static (callbackReady) => ((ManualResetEventSlim)callbackReady!).Wait(), holder.CallbackReady);
-#pragma warning restore CA1416 // Validate platform compatibility
+                    Thread.ForceBlockingWait(static (b) => ((ManualResetEventSlim)b!).Wait(), holder.CallbackReady);
                 }
 
                 lock (ctx)
                 {
                     callback = holder.Callback!;
-                    // if Interop.Runtime.CancelPromisePost is in flight, we can't free the GCHandle, because it's needed in JS
-                    var isOutOfOrderCancellation = holder.IsCanceling && arg_res.slot.Type != MarshalerType.Discard;
-                    // FIXME: when it happens we are leaking GCHandle + holder
-                    if (!isOutOfOrderCancellation)
-                    {
-                        ctx.ReleasePromiseHolder(arg_1.slot.GCHandle);
-                    }
+                    ctx.ReleasePromiseHolder(arg_1.slot.GCHandle);
                 }
 #else
                 callback = holder.Callback!;
@@ -240,21 +260,17 @@ namespace System.Runtime.InteropServices.JavaScript
 
         // this is here temporarily, until JSWebWorker becomes public API
         [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicMethods, "System.Runtime.InteropServices.JavaScript.JSWebWorker", "System.Runtime.InteropServices.JavaScript")]
-        // the marshaled signature is: GCHandle InstallMainSynchronizationContext(nint jsNativeTID, JSThreadBlockingMode jsThreadBlockingMode, JSThreadInteropMode jsThreadInteropMode, MainThreadingMode mainThreadingMode)
+        // the marshaled signature is: GCHandle InstallMainSynchronizationContext(nint jsNativeTID, JSThreadBlockingMode jsThreadBlockingMode)
         public static void InstallMainSynchronizationContext(JSMarshalerArgument* arguments_buffer)
         {
             ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
             ref JSMarshalerArgument arg_res = ref arguments_buffer[1];// initialized and set by caller
             ref JSMarshalerArgument arg_1 = ref arguments_buffer[2];// initialized and set by caller
             ref JSMarshalerArgument arg_2 = ref arguments_buffer[3];// initialized and set by caller
-            ref JSMarshalerArgument arg_3 = ref arguments_buffer[4];// initialized and set by caller
-            ref JSMarshalerArgument arg_4 = ref arguments_buffer[5];// initialized and set by caller
 
             try
             {
                 JSProxyContext.ThreadBlockingMode = (JSHostImplementation.JSThreadBlockingMode)arg_2.slot.Int32Value;
-                JSProxyContext.ThreadInteropMode = (JSHostImplementation.JSThreadInteropMode)arg_3.slot.Int32Value;
-                JSProxyContext.MainThreadingMode = (JSHostImplementation.MainThreadingMode)arg_4.slot.Int32Value;
                 var jsSynchronizationContext = JSSynchronizationContext.InstallWebWorkerInterop(true, CancellationToken.None);
                 jsSynchronizationContext.ProxyContext.JSNativeTID = arg_1.slot.IntPtrValue;
                 arg_res.slot.GCHandle = jsSynchronizationContext.ProxyContext.ContextHandle;
@@ -275,7 +291,19 @@ namespace System.Runtime.InteropServices.JavaScript
             try
             {
                 var ctx = arg_exc.AssertCurrentThreadContext();
+                // note that this method is only executed when the caller is on another thread, via mono_wasm_invoke_jsexport_sync -> mono_wasm_install_js_worker_interop_wrapper
                 ctx.IsPendingSynchronousCall = true;
+                if (ctx.IsMainThread)
+                {
+                    if (JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.ThrowWhenBlockingWait)
+                    {
+                        Thread.ThrowOnBlockingWaitOnJSInteropThread = true;
+                    }
+                    else if (JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.WarnWhenBlockingWait)
+                    {
+                        Thread.WarnOnBlockingWaitOnJSInteropThread = true;
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -294,6 +322,17 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 var ctx = arg_exc.AssertCurrentThreadContext();
                 ctx.IsPendingSynchronousCall = false;
+                if (ctx.IsMainThread)
+                {
+                    if (JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.ThrowWhenBlockingWait)
+                    {
+                        Thread.ThrowOnBlockingWaitOnJSInteropThread = false;
+                    }
+                    else if (JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.WarnWhenBlockingWait)
+                    {
+                        Thread.WarnOnBlockingWaitOnJSInteropThread = false;
+                    }
+                }
             }
             catch (Exception ex)
             {

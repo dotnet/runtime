@@ -198,10 +198,10 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.DblRem:
-                    mangledName = "RhpDblRem";
+                    mangledName = "fmod";
                     break;
                 case ReadyToRunHelper.FltRem:
-                    mangledName = "RhpFltRem";
+                    mangledName = "fmodf";
                     break;
 
                 case ReadyToRunHelper.LMul:
@@ -346,14 +346,6 @@ namespace ILCompiler
                 return "RhpNewFinalizable";
 
             return "RhpNewFast";
-        }
-
-        public static string GetNewArrayHelperForType(TypeDesc type)
-        {
-            if (type.RequiresAlign8())
-                return "RhpNewArrayAlign8";
-
-            return "RhpNewArray";
         }
     }
 }

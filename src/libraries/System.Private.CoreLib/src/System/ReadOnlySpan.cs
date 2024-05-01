@@ -10,7 +10,8 @@ using System.Runtime.Versioning;
 using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
 using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
 
-#pragma warning disable 0809  //warning CS0809: Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
+#pragma warning disable 0809 // Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
+#pragma warning disable 8500 // address / sizeof of managed types
 
 namespace System
 {
@@ -107,7 +108,7 @@ namespace System
             if (length < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            _reference = ref Unsafe.As<byte, T>(ref *(byte*)pointer);
+            _reference = ref *(T*)pointer;
             _length = length;
         }
 
@@ -120,7 +121,6 @@ namespace System
             _length = 1;
         }
 
-#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         // Constructor for internal use only. It is not safe to expose publicly, and is instead exposed via the unsafe MemoryMarshal.CreateReadOnlySpan.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ReadOnlySpan(ref T reference, int length)
@@ -130,7 +130,6 @@ namespace System
             _reference = ref reference;
             _length = length;
         }
-#pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
         /// <summary>
         /// Returns the specified element of the read-only span.

@@ -215,12 +215,17 @@ internal static partial class Interop
             int result = Interop.Sys.GetFormatInfoForMountPoint(SysFsCgroupFileSystemPath, formatBuffer, MountPointFormatBufferSizeInBytes, &numericFormat);
             if (result == 0)
             {
-                cgroupVersion = numericFormat switch
+                if (numericFormat == (int)Interop.Sys.UnixFileSystemTypes.cgroup2fs)
                 {
-                    (int)Interop.Sys.UnixFileSystemTypes.cgroup2fs => CGroupVersion.CGroup2,
-                    (int)Interop.Sys.UnixFileSystemTypes.tmpfs => CGroupVersion.CGroup1,
-                    _ => CGroupVersion.None,
-                };
+                    cgroupVersion = CGroupVersion.CGroup2;
+                }
+                else
+                {
+                    // Assume that if /sys/fs/cgroup exists and the file system type is not cgroup2fs,
+                    // it is cgroup v1. Typically the file system type is tmpfs, but other values have
+                    // been seen in the wild.
+                    cgroupVersion = CGroupVersion.CGroup1;
+                }
             }
 
             return cgroupVersion;

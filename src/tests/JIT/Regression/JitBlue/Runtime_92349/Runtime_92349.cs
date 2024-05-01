@@ -22,7 +22,7 @@ public static class Runtime_92349
         if (Sse2.IsSupported)
         {
             ulong value = 0;
-            Test((byte*)Unsafe.AsPointer(ref value));
+            Test((byte*)&value);
             Assert.True(value == 246);
         }
     }
