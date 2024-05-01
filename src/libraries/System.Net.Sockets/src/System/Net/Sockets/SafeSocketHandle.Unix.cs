@@ -207,10 +207,7 @@ namespace System.Net.Sockets
                 // Unless the user requested a normal close using Socket.Shutdown.
                 if (type == (int)SocketType.Stream && !_hasShutdownSend)
                 {
-                    if (Interop.Sys.Disconnect(handle) == Interop.Error.EOPNOTSUPP)
-                    {
-                        Interop.Sys.Shutdown(handle, SocketShutdown.Both);
-                    }
+                    Interop.Sys.Disconnect(handle);
                 }
                 else
                 {
