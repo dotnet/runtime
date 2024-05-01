@@ -34,7 +34,7 @@ PTR_VOID GetThreadLocalStaticBaseNoCreate(Thread* pThread, TLSIndex index)
     if (pThreadLocalData == NULL)
         return NULL;
 
-    TADDR pTLSBaseAddress = NULL;
+    TADDR pTLSBaseAddress = (TADDR)NULL;
     if (index.GetTLSIndexType() == TLSIndexType::NonCollectible)
     {
         PTRARRAYREF tlsArray = (PTRARRAYREF)UNCHECKED_OBJECTREF_TO_OBJECTREF(pThreadLocalData->pNonCollectibleTlsReferenceData);
@@ -164,7 +164,7 @@ bool ReportTLSIndexCarefully(TLSIndex index, int32_t cLoaderHandles, PTR_LOADERH
 
     PTR_MethodTable pMT = LookupMethodTableAndFlagForThreadStatic(index, &isGCStatic, &isCollectible);
     _ASSERTE(index.GetTLSIndexType() == TLSIndexType::NonCollectible || (((pMT == NULL) || isCollectible) && index.GetTLSIndexType() == TLSIndexType::Collectible));
-    if (index.GetTLSIndexType() == TLSIndexType::Collectible && pLoaderHandles[index.GetIndexOffset()] == NULL)
+    if (index.GetTLSIndexType() == TLSIndexType::Collectible && pLoaderHandles[index.GetIndexOffset()] == (LOADERHANDLE)NULL)
     {
         // The TLS index is not in use. This either means that the TLS index was never used, or that it was
         // used for a collectible assembly, and that assembly has been freed. In the latter case, we may need to
@@ -445,10 +445,10 @@ void FreeLoaderAllocatorHandlesForTLSData(Thread *pThread)
             }
             else
             {
-                if (pThread->pLoaderHandles[entry.TlsIndex.GetIndexOffset()] != NULL)
+                if (pThread->pLoaderHandles[entry.TlsIndex.GetIndexOffset()] != (LOADERHANDLE)NULL)
                 {
                     entry.pMT->GetLoaderAllocator()->FreeHandle(pThread->pLoaderHandles[entry.TlsIndex.GetIndexOffset()]);
-                    pThread->pLoaderHandles[entry.TlsIndex.GetIndexOffset()] = NULL;
+                    pThread->pLoaderHandles[entry.TlsIndex.GetIndexOffset()] = (LOADERHANDLE)NULL;
                 }
             }
         }
@@ -541,7 +541,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
     struct
     {
         TADDR *ppTLSBaseAddress = NULL;
-        TADDR pTLSBaseAddress = NULL;
+        TADDR pTLSBaseAddress = (TADDR)NULL;
     } gcBaseAddresses;
     GCPROTECT_BEGININTERIOR(gcBaseAddresses);
 

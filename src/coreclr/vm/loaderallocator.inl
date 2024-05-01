@@ -19,7 +19,7 @@ inline LOADERALLOCATORREF LoaderAllocator::GetExposedObject()
 inline bool LoaderAllocator::IsExposedObjectLive()
 {
     LIMITED_METHOD_CONTRACT;
-    if (m_hLoaderAllocatorObjectHandle == NULL)
+    if (m_hLoaderAllocatorObjectHandle == 0)
         return false;
     return !ObjectHandleIsNull(m_hLoaderAllocatorObjectHandle);
 }

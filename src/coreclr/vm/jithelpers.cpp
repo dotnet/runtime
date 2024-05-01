@@ -1407,7 +1407,7 @@ __thread ThreadLocalData t_ThreadStatics;
 FORCEINLINE void* GetThreadLocalStaticBaseIfExistsAndInitialized(TLSIndex index)
 {
     LIMITED_METHOD_CONTRACT;
-    TADDR pTLSBaseAddress = NULL;
+    TADDR pTLSBaseAddress = (TADDR)NULL;
 
     if (index.GetTLSIndexType() == TLSIndexType::NonCollectible)
     {
