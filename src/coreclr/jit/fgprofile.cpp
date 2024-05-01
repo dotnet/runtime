@@ -2829,6 +2829,14 @@ PhaseStatus Compiler::fgInstrumentMethod()
 //
 PhaseStatus Compiler::fgIncorporateProfileData()
 {
+    // For now we only rely on profile data when optimizing.
+    //
+    if (!opts.OptimizationEnabled())
+    {
+        JITDUMP("not optimizing, so not incorproating any profile data\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     // Are we doing profile stress?
     //
     if (fgStressBBProf() > 0)
