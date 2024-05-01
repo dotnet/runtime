@@ -345,7 +345,8 @@ namespace System.IO.Pipelines
 
             foreach (var b in written)
             {
-                if ((byte)_validationOffset != b)
+                byte expected = (byte)(_validationOffset % 128);
+                if (expected != b)
                 {
                     if (_validationOffset < 16)
                     {
@@ -353,7 +354,7 @@ namespace System.IO.Pipelines
                         break;
                     }
 
-                    Environment.FailFast($"Pipe content validation failed at offset {_validationOffset}. Expected: 0x{(byte)_validationOffset:x2} Actual: {b:x2}");
+                    Environment.FailFast($"Pipe content validation failed at offset {_validationOffset}. Expected: 0x{expected:x2} Actual: {b:x2}");
                 }
 
                 _validationOffset++;
