@@ -4856,9 +4856,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Expose candidates for implicit byref last-use copy elision.
     DoPhase(this, PHASE_IMPBYREF_COPY_OMISSION, &Compiler::fgMarkImplicitByRefCopyOmissionCandidates);
 
-    // Locals tree list is no longer kept valid.
-    fgNodeThreading = NodeThreading::None;
-
     // Apply the type update to implicit byref parameters; also choose (based on address-exposed
     // analysis) which implicit byref promotions to keep (requires copy to initialize) or discard.
     //
@@ -4875,7 +4872,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Build post-order that morph will use, and remove dead blocks
         //
         DoPhase(this, PHASE_DFS_BLOCKS, &Compiler::fgDfsBlocksAndRemove);
+
+        // Find loops and annotations that morph will use for assertion prop
+        //
+        DoPhase(this, PHASE_FIND_LOOPS_BEFORE_MORPH, &Compiler::optFindLoopsBeforeMorph);
     }
+
+    // Locals tree list is no longer kept valid.
+    fgNodeThreading = NodeThreading::None;
 
     // Morph the trees in all the blocks of the method
     //

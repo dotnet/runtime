@@ -4760,6 +4760,7 @@ void Compiler::fgDebugCheckFlowGraphAnnotations()
     assert((m_loops == nullptr) || (m_loops->GetDfsTree() == m_dfsTree));
     assert((m_domTree == nullptr) || (m_domTree->GetDfsTree() == m_dfsTree));
     assert((m_reachabilitySets == nullptr) || (m_reachabilitySets->GetDfsTree() == m_dfsTree));
+    assert((m_loopDefinitions == nullptr) || (m_loopDefinitions->GetLoops() == m_loops));
 }
 
 /*****************************************************************************/

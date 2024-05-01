@@ -2460,6 +2460,40 @@ struct LoopSideEffects
     void AddModifiedElemType(Compiler* comp, CORINFO_CLASS_HANDLE structHnd);
 };
 
+typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, bool> LocalNumSet;
+
+class LoopDefinitions
+{
+    FlowGraphNaturalLoops* m_loops;
+    LocalNumSet** m_sets;
+
+    LoopDefinitions(FlowGraphNaturalLoops* loops);
+
+    LocalNumSet* GetOrCreate(FlowGraphNaturalLoop* loop);
+    void Add(FlowGraphNaturalLoop* loop, unsigned lclNum);
+    void IncludeIntoParent(FlowGraphNaturalLoop* loop);
+public:
+    FlowGraphNaturalLoops* GetLoops()
+    {
+        return m_loops;
+    }
+
+    template<typename Visitor>
+    void VisitDefinedLocalNums(FlowGraphNaturalLoop* loop, Visitor visitor)
+    {
+        LocalNumSet* set = m_sets[loop->GetIndex()];
+        if (set != nullptr)
+        {
+            for (unsigned lclNum : LocalNumSet::KeyIteration(set))
+            {
+                visitor(lclNum);
+            }
+        }
+    }
+
+    static LoopDefinitions* Find(FlowGraphNaturalLoops* loops);
+};
+
 //  The following holds information about instr offsets in terms of generated code.
 
 enum class IPmappingDscKind
@@ -5042,6 +5076,7 @@ public:
     // flow graph.
     FlowGraphNaturalLoops* m_loops;
     LoopSideEffects* m_loopSideEffects;
+    LoopDefinitions* m_loopDefinitions;
     BlockToNaturalLoopMap* m_blockToLoop;
     // Dominator tree used by SSA construction and copy propagation (the two are expected to use the same tree
     // in order to avoid the need for SSA reconstruction and an "out of SSA" phase).
@@ -6853,6 +6888,8 @@ public:
     PhaseStatus optSwitchRecognition();
     bool optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t* testValues, weight_t falseLikelihood, GenTree* nodeToTest);
     bool optSwitchDetectAndConvert(BasicBlock* firstBlock);
+
+    PhaseStatus optFindLoopsBeforeMorph();
 
     PhaseStatus optInvertLoops();    // Invert loops so they're entered at top and tested at bottom.
     PhaseStatus optOptimizeFlow();   // Simplify flow graph and do tail duplication

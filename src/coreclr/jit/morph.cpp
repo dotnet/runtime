@@ -13752,7 +13752,9 @@ void Compiler::fgMorphBlock(BasicBlock* block)
             }
             else
             {
-                bool hasPredAssertions = false;
+                bool                  hasPredAssertions = false;
+                FlowGraphNaturalLoop* loop              = nullptr;
+                bool                  searchedLoop      = false;
 
                 for (BasicBlock* const pred : block->PredBlocks())
                 {
@@ -13764,10 +13766,33 @@ void Compiler::fgMorphBlock(BasicBlock* block)
                     //
                     if (pred->bbPostorderNum <= block->bbPostorderNum)
                     {
-                        JITDUMP(FMT_BB " pred " FMT_BB " not processed; clearing assertions in\n", block->bbNum,
+                        if (!searchedLoop)
+                        {
+                            loop         = m_loops->GetLoopByHeader(block);
+                            searchedLoop = true;
+                        }
+
+                        if (loop == nullptr)
+                        {
+                            JITDUMP(FMT_BB " pred " FMT_BB " not processed; clearing assertions in\n", block->bbNum,
+                                    pred->bbNum);
+                            hasPredAssertions = false;
+                            break;
+                        }
+
+#ifdef DEBUG
+                        bool foundBackedge = false;
+                        for (FlowEdge* backedge : loop->BackEdges())
+                        {
+                            foundBackedge |= backedge->getSourceBlock() == pred;
+                        }
+
+                        assert(foundBackedge);
+#endif
+
+                        JITDUMP(FMT_BB " pred " FMT_BB " not processed, but is a backedge\n", block->bbNum,
                                 pred->bbNum);
-                        hasPredAssertions = false;
-                        break;
+                        continue;
                     }
 
                     // Yes, pred assertions are available.
@@ -13821,6 +13846,13 @@ void Compiler::fgMorphBlock(BasicBlock* block)
                     // Either no preds, or some preds w/o assertions.
                     //
                     canUsePredAssertions = false;
+                }
+                else if (loop != nullptr)
+                {
+                    // Kill all assertions about locals that will be stored inside the loop.
+                    m_loopDefinitions->VisitDefinedLocalNums(loop, [=](unsigned lclNum) {
+                        BitVecOps::DiffD(apTraits, apLocal, GetAssertionDep(lclNum));
+                    });
                 }
             }
 
@@ -15196,7 +15228,7 @@ PhaseStatus Compiler::fgRetypeImplicitByRefArgs()
                     GenTree* data  = (varDsc->TypeGet() == TYP_STRUCT) ? gtNewBlkIndir(varDsc->GetLayout(), addr)
                                                                        : gtNewIndir(varDsc->TypeGet(), addr);
                     GenTree* store = gtNewStoreLclVarNode(newLclNum, data);
-                    fgNewStmtAtBeg(fgFirstBB, store);
+                    fgInsertStmtAtBeg(fgFirstBB, fgNewStmtFromTree(store));
                 }
 
                 // Update the locals corresponding to the promoted fields.

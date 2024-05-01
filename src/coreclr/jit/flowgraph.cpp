@@ -4093,6 +4093,7 @@ void Compiler::fgInvalidateDfsTree()
 {
     m_dfsTree          = nullptr;
     m_loops            = nullptr;
+    m_loopDefinitions  = nullptr;
     m_domTree          = nullptr;
     m_reachabilitySets = nullptr;
     fgSsaValid         = false;

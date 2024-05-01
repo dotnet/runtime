@@ -2352,6 +2352,21 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 }
 
 //-----------------------------------------------------------------------------
+// optFindLoopsBeforeMorph: Find loops and loop definitions to be used by cross
+// block assertion prop in morph.
+//
+// Returns:
+//   Suitable phase status
+//
+PhaseStatus Compiler::optFindLoopsBeforeMorph()
+{
+    assert(m_dfsTree != nullptr);
+    m_loops           = FlowGraphNaturalLoops::Find(m_dfsTree);
+    m_loopDefinitions = LoopDefinitions::Find(m_loops);
+    return PhaseStatus::MODIFIED_NOTHING;
+}
+
+//-----------------------------------------------------------------------------
 // optInvertLoops: invert while loops in the method
 //
 // Returns:
@@ -4428,6 +4443,151 @@ void LoopSideEffects::AddModifiedElemType(Compiler* comp, CORINFO_CLASS_HANDLE s
         ArrayElemTypesModified = new (comp->getAllocatorLoopHoist()) ClassHandleSet(comp->getAllocatorLoopHoist());
     }
     ArrayElemTypesModified->Set(structHnd, true, ClassHandleSet::Overwrite);
+}
+
+//------------------------------------------------------------------------
+// LoopDefinitions::LoopDefinitions: Construct a new instance for the specified
+// collection of loops.
+//
+// Arguments:
+//   loops - The loops
+//
+LoopDefinitions::LoopDefinitions(FlowGraphNaturalLoops* loops)
+    : m_loops(loops)
+{
+    if (loops->NumLoops() == 0)
+    {
+        m_sets = nullptr;
+    }
+    else
+    {
+        m_sets = new (loops->GetDfsTree()->GetCompiler(), CMK_Loops) LocalNumSet* [loops->NumLoops()] {};
+    }
+}
+
+//------------------------------------------------------------------------
+// LoopDefinitions::GetOrCreate: Get or create the set of local definitions for
+// the specified loop.
+//
+// Arguments:
+//   loop - The loop
+//
+// Returns:
+//   Set of defined locals.
+//
+LocalNumSet* LoopDefinitions::GetOrCreate(FlowGraphNaturalLoop* loop)
+{
+    if (m_sets[loop->GetIndex()] == nullptr)
+    {
+        Compiler* comp           = m_loops->GetDfsTree()->GetCompiler();
+        m_sets[loop->GetIndex()] = new (comp, CMK_Loops) LocalNumSet(comp->getAllocator(CMK_Loops));
+    }
+
+    return m_sets[loop->GetIndex()];
+}
+
+//------------------------------------------------------------------------
+// LoopDefinitions::Add: Record that a local is defined in a loop.
+//
+// Arguments:
+//   loop   - The loop
+//   lclNum - The local being defined
+//
+void LoopDefinitions::Add(FlowGraphNaturalLoop* loop, unsigned lclNum)
+{
+    GetOrCreate(loop)->Set(lclNum, true, LocalNumSet::Overwrite);
+}
+
+//------------------------------------------------------------------------
+// LoopDefinitions::IncludeIntoParent: Include all definitions recorded to
+// happen inside "loop" into its parent loop.
+//
+// Arguments:
+//   loop - The loop
+//
+void LoopDefinitions::IncludeIntoParent(FlowGraphNaturalLoop* loop)
+{
+    if (loop->GetParent() == nullptr)
+    {
+        return;
+    }
+
+    if (m_sets[loop->GetIndex()] == nullptr)
+    {
+        return;
+    }
+
+    LocalNumSet* parentSet = GetOrCreate(loop->GetParent());
+
+    for (unsigned lclNum : LocalNumSet::KeyIteration(m_sets[loop->GetIndex()]))
+    {
+        parentSet->Set(lclNum, true, LocalNumSet::Overwrite);
+    }
+}
+
+//------------------------------------------------------------------------
+// LoopDefinitions::Find: Construct the data structure that tracks all local
+// definitions inside all loops.
+//
+// Arguments:
+//   loops - The loops
+//
+// Returns:
+//   Instance of the data structure.
+//
+LoopDefinitions* LoopDefinitions::Find(FlowGraphNaturalLoops* loops)
+{
+    const FlowGraphDfsTree* dfsTree = loops->GetDfsTree();
+    Compiler*               comp    = dfsTree->GetCompiler();
+
+    LoopDefinitions* result        = new (comp, CMK_Loops) LoopDefinitions(loops);
+    BitVecTraits     poTraits      = dfsTree->PostOrderTraits();
+    BitVec           visitedBlocks = BitVecOps::MakeEmpty(&poTraits);
+
+    assert(comp->fgNodeThreading == NodeThreading::AllLocals);
+
+    for (FlowGraphNaturalLoop* loop : loops->InPostOrder())
+    {
+        loop->VisitLoopBlocks([=, &poTraits, &visitedBlocks](BasicBlock* block) {
+            if (!BitVecOps::TryAddElemD(&poTraits, visitedBlocks, block->bbPostorderNum))
+            {
+                return BasicBlockVisit::Continue;
+            }
+
+            for (Statement* stmt : block->Statements())
+            {
+                for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+                {
+                    if (!lcl->OperIsLocalStore())
+                    {
+                        continue;
+                    }
+
+                    result->Add(loop, lcl->GetLclNum());
+
+                    LclVarDsc* lclDsc = comp->lvaGetDesc(lcl);
+                    if (lclDsc->lvPromoted)
+                    {
+                        for (unsigned i = 0; i < lclDsc->lvFieldCnt; i++)
+                        {
+                            unsigned fieldLclNum = lclDsc->lvFieldLclStart + i;
+                            result->Add(loop, fieldLclNum);
+                        }
+                    }
+                    else if (lclDsc->lvIsStructField)
+                    {
+                        result->Add(loop, lclDsc->lvParentLcl);
+                    }
+                }
+            }
+
+            return BasicBlockVisit::Continue;
+        });
+
+        result->IncludeIntoParent(loop);
+    }
+
+    return result;
 }
 
 //------------------------------------------------------------------------
