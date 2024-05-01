@@ -2266,7 +2266,7 @@ emit_array_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mo
 }
 
 static void
-emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoGenericContext *ctx, MonoUnsafeAccessorKind kind, const char *member_name)
+emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoUnsafeAccessorKind kind, const char *member_name)
 {
 	// Field access requires a single argument for target type and a return type.
 	g_assert (kind == MONO_UNSAFE_ACCESSOR_FIELD || kind == MONO_UNSAFE_ACCESSOR_STATIC_FIELD);
@@ -2315,7 +2315,7 @@ emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_
  * of the expected member method (ie, with the first arg removed)
  */
 static MonoMethodSignature *
-method_sig_from_accessor_sig (MonoMethodBuilder *mb, gboolean hasthis, MonoMethodSignature *accessor_sig, MonoGenericContext *ctx)
+method_sig_from_accessor_sig (MonoMethodBuilder *mb, gboolean hasthis, MonoMethodSignature *accessor_sig)
 {
 	MonoMethodSignature *ret = mono_metadata_signature_dup_full (get_method_image (mb->method), accessor_sig);
 	g_assert (ret->param_count > 0);
@@ -2332,7 +2332,7 @@ method_sig_from_accessor_sig (MonoMethodBuilder *mb, gboolean hasthis, MonoMetho
  * of the expected constructor method (same args, but return type is void).
  */
 static MonoMethodSignature *
-ctor_sig_from_accessor_sig (MonoMethodBuilder *mb, MonoMethodSignature *accessor_sig, MonoGenericContext *ctx)
+ctor_sig_from_accessor_sig (MonoMethodBuilder *mb, MonoMethodSignature *accessor_sig)
 {
 	MonoMethodSignature *ret = mono_metadata_signature_dup_full (get_method_image (mb->method), accessor_sig);
 	ret->hasthis = TRUE; /* ctors are considered instance methods */
@@ -2410,7 +2410,7 @@ inflate_method (MonoClass *klass, MonoMethod *method, MonoMethod *accessor_metho
 }
 
 static void
-emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoGenericContext *ctx, MonoUnsafeAccessorKind kind, const char *member_name)
+emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoUnsafeAccessorKind kind, const char *member_name)
 {
 	g_assert (kind == MONO_UNSAFE_ACCESSOR_CTOR);
 	// null or empty string member name is ok for a constructor
@@ -2434,7 +2434,7 @@ emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_m
 		sig =  update_signature(accessor_method);
 	}
 
-	MonoMethodSignature *member_sig = ctor_sig_from_accessor_sig (mb, sig, ctx);
+	MonoMethodSignature *member_sig = ctor_sig_from_accessor_sig (mb, sig);
 	
 	MonoClass *in_class = mono_class_get_generic_type_definition (target_class);
 
@@ -2459,7 +2459,7 @@ emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_m
 }
 
 static void
-emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoGenericContext *ctx, MonoUnsafeAccessorKind kind, const char *member_name)
+emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoUnsafeAccessorKind kind, const char *member_name)
 {
 	g_assert (kind == MONO_UNSAFE_ACCESSOR_METHOD || kind == MONO_UNSAFE_ACCESSOR_STATIC_METHOD);
 	g_assert (member_name != NULL);
@@ -2486,7 +2486,7 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor
 		sig =  update_signature(accessor_method);
 	}
 
-	MonoMethodSignature *member_sig = method_sig_from_accessor_sig (mb, hasthis, sig, ctx);
+	MonoMethodSignature *member_sig = method_sig_from_accessor_sig (mb, hasthis, sig);
 
 	MonoClass *in_class = mono_class_get_generic_type_definition (target_class);
 
@@ -2520,9 +2520,14 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor
 }
 
 static void
-emit_unsafe_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoGenericContext *ctx, MonoUnsafeAccessorKind kind, const char *member_name)
+emit_unsafe_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, gboolean to_be_inflated, MonoUnsafeAccessorKind kind, const char *member_name)
 {
-	if (accessor_method->is_generic || ctx != NULL) {
+	// to_be_inflated means we're emitting a non-generic accessor method belonging to a gtd
+	// that will be inflated by marshal.c
+	if (to_be_inflated)
+		g_assert (!accessor_method->is_inflated && !accessor_method->is_generic);
+	
+	if (accessor_method->is_generic || to_be_inflated) {
 		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_Generics");
 		return;
 	}
@@ -2535,14 +2540,14 @@ emit_unsafe_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *accessor_
 	switch (kind) {
 	case MONO_UNSAFE_ACCESSOR_FIELD:
 	case MONO_UNSAFE_ACCESSOR_STATIC_FIELD:
-		emit_unsafe_accessor_field_wrapper (mb, accessor_method, sig, ctx, kind, member_name);
+		emit_unsafe_accessor_field_wrapper (mb, accessor_method, sig, kind, member_name);
 		return;
 	case MONO_UNSAFE_ACCESSOR_CTOR:
-		emit_unsafe_accessor_ctor_wrapper (mb, accessor_method, sig, ctx, kind, member_name);
+		emit_unsafe_accessor_ctor_wrapper (mb, accessor_method, sig, kind, member_name);
 		return;
 	case MONO_UNSAFE_ACCESSOR_METHOD:
 	case MONO_UNSAFE_ACCESSOR_STATIC_METHOD:
-		emit_unsafe_accessor_method_wrapper (mb, accessor_method, sig, ctx, kind, member_name);
+		emit_unsafe_accessor_method_wrapper (mb, accessor_method, sig, kind, member_name);
 		return;
 	default:
 		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_InvalidKindValue");

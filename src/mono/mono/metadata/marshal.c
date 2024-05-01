@@ -5230,20 +5230,25 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 	MonoMethod *orig_method = NULL;
 	WrapperInfo *info;
 	gboolean is_generic = FALSE;
+	gboolean is_inflated = FALSE;
 
 	if (member_name == NULL && kind != MONO_UNSAFE_ACCESSOR_CTOR)
 		member_name = accessor_method->name;
+
+	printf("CAME IN: %s (generic = %d, inflated = %d)\n", mono_method_full_name(accessor_method, TRUE), accessor_method->is_generic?1:0, accessor_method->is_inflated?1:0);
 
 	if (accessor_method->is_generic) {
 		// FullAOT compilation with gshared or gsharedvt will get here.
 		/* got a generic method definition. need to make a generic method definition wrapper */
 		g_assert (!accessor_method->is_inflated);
 		is_generic = TRUE;
-	}
+	} else if (accessor_method->is_inflated) {
+		// FIXME: this always tries to compile a generic version of the accessor method and
+		// then inflate it.  But maybe we dont' want to do that (particularly for field
+		// accessors).  In particular if there is no method_inst, we're looking at an
+		// accessor method inside a generic class (alwayst a ginst? or sometimes a gtd?)
+		// In that case we might just want to compile the instance.
 
-	/* FIXME: Support generic methods too */
-	if (accessor_method->is_inflated) {
-		// non-full AOT may get here
 		g_assert (!is_generic);
 		orig_method = accessor_method;
 		ctx = &((MonoMethodInflated*)accessor_method)->context;
@@ -5252,13 +5257,21 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 		if (!container)
 			container = mono_class_try_get_generic_container (accessor_method->klass); //FIXME is this a case of a try?
 		g_assert (container);
+		is_inflated = TRUE;
 	}
+
+	printf("work on: %s (generic = %d, inflated = %d)\n", mono_method_full_name(accessor_method, TRUE), accessor_method->is_generic?1:0, accessor_method->is_inflated?1:0);
+
+	/*
+	 * the method is either a generic method definition, or it might be inflated, not both at
+         * the same time.
+	 */
+	g_assert (!(is_generic && is_inflated));
 
 	/*
 	 * Check cache
 	 */
-	if (ctx) {
-		/* FIXME get the right cache */
+	if (is_inflated) {
 		cache = get_cache (&((MonoMethodInflated*)orig_method)->owner->wrapper_caches.unsafe_accessor_cache , mono_aligned_addr_hash, NULL);
 		res = check_generic_wrapper_cache (cache, orig_method, orig_method, accessor_method);
 		if (res)
@@ -5268,10 +5281,13 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 		if ((res = mono_marshal_find_in_cache (cache, accessor_method)))
 			return res;
 	}
-
-
+	printf ("Cache miss\n");
+	
 	mb = mono_mb_new (accessor_method->klass, accessor_method->name, MONO_WRAPPER_OTHER);
 	if (is_generic) {
+		// If the accessor method was generic, make the wrapper generic, too.
+
+		// Load a copy of the generic params of the accessor method
 		mb->method->is_generic = is_generic;
 		container = mono_class_try_get_generic_container (accessor_method->klass);
 		container = mono_metadata_load_generic_params (m_class_get_image (accessor_method->klass), accessor_method->token, container, /*owner:*/mb->method);
@@ -5281,6 +5297,8 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 		inst_ctx.method_inst = container->context.method_inst;
 
 		ERROR_DECL (error);
+		// make a copy of the accessor signature, but replace the params of the accessor
+		// method, by the params we just loaded
 		sig = mono_inflate_generic_signature (mono_method_signature_internal (accessor_method), &inst_ctx, error);
 		mono_error_assert_ok (error); // FIXME
 	} else {
@@ -5291,14 +5309,15 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 	get_marshal_cb ()->mb_skip_visibility (mb);
 
 	// TODO: pass container, too
-	get_marshal_cb ()->emit_unsafe_accessor_wrapper (mb, accessor_method, sig, ctx, kind, member_name);
+	// TODO: passing the ctx is not super useful because accessor_method is always the generic version of the method, even if is_inflated == TRUE. pass `is_inflated` instead
+	get_marshal_cb ()->emit_unsafe_accessor_wrapper (mb, accessor_method, sig, is_inflated, kind, member_name);
 
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_UNSAFE_ACCESSOR);
 	info->d.unsafe_accessor.method = accessor_method;
 	info->d.unsafe_accessor.kind = kind;
 	info->d.unsafe_accessor.member_name = member_name;
 
-	if (ctx) {
+	if (is_inflated) {
 		MonoMethod *def;
 		def = mono_mb_create_and_cache_full (cache, accessor_method, mb, sig, sig->param_count + 16, info, NULL);
 		res = cache_generic_wrapper (cache, orig_method, def, ctx, orig_method);
