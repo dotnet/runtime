@@ -300,9 +300,10 @@ namespace HttpStress
                 int offset = 0;
                 while ((await context.Request.Body.ReadAsync(buffer)) != 0)
                 {
-                    if (buffer[0] != (byte)offset)
+                    byte expected = (byte)(offset % 128);
+                    if (buffer[0] != expected)
                     {
-                        Environment.FailFast($"Diverging at offset {offset}, expected 0x{(byte)offset:x2}, got 0x{buffer[0]:x2}");
+                        Environment.FailFast($"Diverging at offset {offset}, expected 0x{expected:x2}, got 0x{buffer[0]:x2}");
                     }
 
                     offset++;
