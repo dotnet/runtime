@@ -616,7 +616,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
         gcBaseAddresses.pTLSBaseAddress = *gcBaseAddresses.ppTLSBaseAddress;
     }
 
-    if (gcBaseAddresses.pTLSBaseAddress == NULL)
+    if (gcBaseAddresses.pTLSBaseAddress == (TADDR)NULL)
     {
         // Maybe it is in the InFlightData
         InFlightTLSData* pInFlightData = t_ThreadStatics.pInFlightData;
@@ -639,7 +639,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
             ppOldNextPtr = &pInFlightData->pNext;
             pInFlightData = pInFlightData->pNext;
         }
-        if (gcBaseAddresses.pTLSBaseAddress == NULL)
+        if (gcBaseAddresses.pTLSBaseAddress == (TADDR)NULL)
         {
             // Now we need to actually allocate the TLS data block
             struct 
