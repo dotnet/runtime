@@ -60,20 +60,6 @@ JITMETADATAMETRIC(ProfileInconsistentImporterBranchFold, int,              0)
 JITMETADATAMETRIC(ProfileInconsistentImporterSwitchFold, int,              0)
 JITMETADATAMETRIC(ProfileInconsistentChainedGDV,         int,              0)
 JITMETADATAMETRIC(ProfileInconsistentScratchBB,          int,              0)
-JITMETADATAMETRIC(NumRefTypeInvalid,                     int,              0)
-JITMETADATAMETRIC(NumRefTypeDef,                         int,              0)
-JITMETADATAMETRIC(NumRefTypeUse,                         int,              0)
-JITMETADATAMETRIC(NumRefTypeKill,                        int,              0)
-JITMETADATAMETRIC(NumRefTypeBB,                          int,              0)
-JITMETADATAMETRIC(NumRefTypeFixedReg,                    int,              0)
-JITMETADATAMETRIC(NumRefTypeExpUse,                      int,              0)
-JITMETADATAMETRIC(NumRefTypeParamDef,                    int,              0)
-JITMETADATAMETRIC(NumRefTypeDummyDef,                    int,              0)
-JITMETADATAMETRIC(NumRefTypeZeroInit,                    int,              0)
-JITMETADATAMETRIC(NumRefTypeUpperVectorSave,             int,              0)
-JITMETADATAMETRIC(NumRefTypeUpperVectorRestore,          int,              0)
-JITMETADATAMETRIC(NumRefTypeKillGCRefs,                  int,              0)
-
 
 #undef JITMETADATA
 #undef JITMETADATAINFO
