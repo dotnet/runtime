@@ -11807,8 +11807,8 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
         case IF_SVE_CH_2A: // ........xx...... ......nnnnnddddd -- SVE unpack vector elements
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V<4, 0>(id->idReg1());                      // ddddd
-            code |= insEncodeReg_V<9, 5>(id->idReg2());                      // nnnnn
+            code |= insEncodeReg_V<4, 0>(id->idReg1());                                     // ddddd
+            code |= insEncodeReg_V<9, 5>(id->idReg2());                                     // nnnnn
             code |= insEncodeSveElemsize(optGetSveElemsize((insOpts)(id->idInsOpt() + 1))); // xx
             dst += emitOutput_Instr(dst, code);
             break;
