@@ -177,6 +177,69 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<double> Add(Vector<double> left, Vector<double> right) => Add(left, right);
 
 
+        ///  AddAcross : Add reduction
+
+        /// <summary>
+        /// float64_t svaddv[_f64](svbool_t pg, svfloat64_t op)
+        ///   FADDV Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> AddAcross(Vector<double> value) => AddAcross(value);
+
+        /// <summary>
+        /// int64_t svaddv[_s16](svbool_t pg, svint16_t op)
+        ///   SADDV Dresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<long> AddAcross(Vector<short> value) => AddAcross(value);
+
+        /// <summary>
+        /// int64_t svaddv[_s32](svbool_t pg, svint32_t op)
+        ///   SADDV Dresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<long> AddAcross(Vector<int> value) => AddAcross(value);
+
+        /// <summary>
+        /// int64_t svaddv[_s8](svbool_t pg, svint8_t op)
+        ///   SADDV Dresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<long> AddAcross(Vector<sbyte> value) => AddAcross(value);
+
+        /// <summary>
+        /// int64_t svaddv[_s64](svbool_t pg, svint64_t op)
+        ///   UADDV Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> AddAcross(Vector<long> value) => AddAcross(value);
+
+        /// <summary>
+        /// float32_t svaddv[_f32](svbool_t pg, svfloat32_t op)
+        ///   FADDV Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> AddAcross(Vector<float> value) => AddAcross(value);
+
+        /// <summary>
+        /// uint64_t svaddv[_u8](svbool_t pg, svuint8_t op)
+        ///   UADDV Dresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<ulong> AddAcross(Vector<byte> value) => AddAcross(value);
+
+        /// <summary>
+        /// uint64_t svaddv[_u16](svbool_t pg, svuint16_t op)
+        ///   UADDV Dresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<ulong> AddAcross(Vector<ushort> value) => AddAcross(value);
+
+        /// <summary>
+        /// uint64_t svaddv[_u32](svbool_t pg, svuint32_t op)
+        ///   UADDV Dresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<ulong> AddAcross(Vector<uint> value) => AddAcross(value);
+
+        /// <summary>
+        /// uint64_t svaddv[_u64](svbool_t pg, svuint64_t op)
+        ///   UADDV Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> AddAcross(Vector<ulong> value) => AddAcross(value);
+
+
         ///  ConditionalSelect : Conditionally select elements
 
         /// <summary>
