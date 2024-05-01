@@ -47,7 +47,7 @@ class SuperPmiContext(BaseModel):
         self.test_methods = all_methods[:int(len(all_methods) * test_percent)]
         self.training_methods = all_methods[len(self.test_methods):]
 
-    def find_methods_and_split(self, test_percent:float):
+    def find_methods_and_split(self, test_percent:float) -> None:
         """Loads the SuperPmiContext from the specified arguments."""
         suitable_methods = []
         with SuperPmi(self) as superpmi:
