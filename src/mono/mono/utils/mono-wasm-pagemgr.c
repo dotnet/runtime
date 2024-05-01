@@ -197,9 +197,6 @@ void *
 mwpm_alloc_range (size_t size, uint8_t zeroed) {
 	mwpm_ensure_initialized ();
 
-	if (size < 32767)
-		g_assert_not_reached ();
-
 	void *result = NULL;
 	if (!size)
 		return result;
@@ -250,7 +247,7 @@ mwpm_alloc_range (size_t size, uint8_t zeroed) {
 		return NULL;
 	}
 
-	// g_print ("mwpm allocated %u bytes at %u\n", size, (uint32_t)result);
+	g_print ("mwpm allocated %u bytes at %u\n", size, (uint32_t)result);
 	return result;
 }
 
