@@ -135,7 +135,7 @@ jobs:
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
     # run ci-setup
-    - script: $(Python) $(PerformanceDirectory)\scripts\ci_setup.py $(SetupArguments) $(ExtraSetupArguments) --output-file $(WorkItemDirectory)\machine-setup.cmd
+    - script: $(Python) $(PerformanceDirectory)\scripts\ci_setup.py $(SetupArguments) $(ExtraSetupArguments) --dotnet-versions 9.0.100-preview.4.24215.2 --output-file $(WorkItemDirectory)\machine-setup.cmd # Temporarily add a specific dotnet-version as Windows runs are currently failing to install the dotnet version
       displayName: Run ci setup script (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
     - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments) $(ExtraSetupArguments) --output-file $(WorkItemDirectory)/machine-setup.sh

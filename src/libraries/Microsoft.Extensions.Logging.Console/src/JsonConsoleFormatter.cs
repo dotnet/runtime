@@ -81,7 +81,7 @@ namespace Microsoft.Extensions.Logging.Console
                     writer.WriteEndObject();
                     writer.Flush();
                 }
-#if NETCOREAPP
+#if NET
                 textWriter.Write(Encoding.UTF8.GetString(output.WrittenMemory.Span));
 #else
                 textWriter.Write(Encoding.UTF8.GetString(output.WrittenMemory.Span.ToArray()));
@@ -145,7 +145,7 @@ namespace Microsoft.Extensions.Logging.Console
                     writer.WriteNumber(key, sbyteValue);
                     break;
                 case char charValue:
-#if NETCOREAPP
+#if NET
                     writer.WriteString(key, MemoryMarshal.CreateSpan(ref charValue, 1));
 #else
                     writer.WriteString(key, charValue.ToString());

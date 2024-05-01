@@ -20,6 +20,10 @@ getNonPortableDistroRid()
         # shellcheck disable=SC1091
         if [ -e "${rootfsDir}/etc/os-release" ]; then
             . "${rootfsDir}/etc/os-release"
+            if [ "${ID}" = "rhel" ] || [ "${ID}" = "rocky" ] || [ "${ID}" = "alpine" ] || [ "${ID}" = "ol" ]; then
+                VERSION_ID="${VERSION_ID%.*}" # Remove the last version digit for these distros
+            fi
+
             if echo "${VERSION_ID:-}" | grep -qE '^([[:digit:]]|\.)+$'; then
                 nonPortableRid="${ID}.${VERSION_ID}-${targetArch}"
             else
@@ -44,7 +48,19 @@ getNonPortableDistroRid()
         nonPortableRid="android.$__android_sdk_version-${targetArch}"
     elif [ "$targetOs" = "illumos" ]; then
         __uname_version=$(uname -v)
-        nonPortableRid="illumos-${targetArch}"
+        case "$__uname_version" in
+            omnios-*)
+                __omnios_major_version=$(echo "$__uname_version" | cut -c9-10)
+                nonPortableRid="omnios.$__omnios_major_version-${targetArch}"
+                ;;
+            joyent_*)
+                __smartos_major_version=$(echo "$__uname_version" | cut -c9-10)
+                nonPortableRid="smartos.$__smartos_major_version-${targetArch}"
+                ;;
+            *)
+                nonPortableRid="illumos-${targetArch}"
+                ;;
+        esac
     elif [ "$targetOs" = "solaris" ]; then
         __uname_version=$(uname -v)
         __solaris_major_version=$(echo "$__uname_version" | cut -d'.' -f1)
