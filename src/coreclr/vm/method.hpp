@@ -1636,6 +1636,9 @@ public:
 
     // Returns true if the method has to have stable entrypoint always.
     BOOL RequiresStableEntryPoint(BOOL fEstimateForChunk = FALSE);
+private:
+    BOOL RequiresStableEntryPointCore(BOOL fEstimateForChunk);
+public:
 
     //
     // Backpatch method slots
@@ -1693,7 +1696,16 @@ protected:
     UINT16      m_wFlags3AndTokenRemainder;
 
     BYTE        m_chunkIndex;
+
+#ifndef HAS_COMPACT_ENTRYPOINTS
+    enum {
+        enum_flag4_ComputedRequiresStableEntryPoint         = 0x01,
+        enum_flag4_RequiresStableEntryPoint                 = 0x02,
+    };
+    BYTE        m_bFlags4; // Used to hold more flags
+#else
     BYTE        m_methodIndex; // Used to hold the index into the chunk of this MethodDesc. Currently all 8 bits are used, but we could likely work with only 7 bits
+#endif
 
     // The slot number of this MethodDesc in the vtable array.
     WORD m_wSlotNumber;
@@ -1707,6 +1719,7 @@ public:
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 
+#ifdef HAS_COMPACT_ENTRYPOINTS
     BYTE GetMethodDescIndex()
     {
         return m_methodIndex;
@@ -1717,6 +1730,7 @@ public:
         _ASSERTE(index <= 255);
         m_methodIndex = (BYTE)index;
     }
+#endif
 
 public:
     inline DWORD GetClassification() const

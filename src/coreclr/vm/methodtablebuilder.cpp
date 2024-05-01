@@ -7064,7 +7064,9 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
         MethodDesc * pMD = (MethodDesc *)((BYTE *)pChunk + offset);
 
         pMD->SetChunkIndex(pChunk);
+#ifdef HAS_COMPACT_ENTRYPOINTS
         pMD->SetMethodDescIndex(methodDescCount);
+#endif
 
         InitNewMethodDesc(pMDMethod, pMD);
 
@@ -7108,7 +7110,9 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
 
             // Reset the chunk index
             pUnboxedMD->SetChunkIndex(pChunk);
+#ifdef HAS_COMPACT_ENTRYPOINTS
             pUnboxedMD->SetMethodDescIndex(methodDescCount);
+#endif
 
             if (bmtGenerics->GetNumGenericArgs() == 0) {
                 pUnboxedMD->SetHasNonVtableSlot();

@@ -1760,7 +1760,9 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
         for (DWORD i = 0; i < count; i++)
         {
             pMD->SetChunkIndex(pChunk);
+#ifdef HAS_COMPACT_ENTRYPOINTS
             pMD->SetMethodDescIndex(i);
+#endif
 
             pMD->SetClassification(classification);
             if (fNonVtableSlot)
@@ -2322,6 +2324,27 @@ BOOL MethodDesc::RequiresMethodDescCallingConvention(BOOL fEstimateForChunk /*=F
 
 //*******************************************************************************
 BOOL MethodDesc::RequiresStableEntryPoint(BOOL fEstimateForChunk /*=FALSE*/)
+{
+#ifdef HAS_COMPACT_ENTRYPOINTS
+    return RequiresStableEntryPointCore(fEstimateForChunk);
+#else
+    BYTE bFlags4 = VolatileLoadWithoutBarrier(&m_bFlags4);
+    if (bFlags4 & enum_flag4_ComputedRequiresStableEntryPoint)
+    {
+        return (bFlags4 & enum_flag4_RequiresStableEntryPoint) != 0;
+    }
+    else
+    {
+        if (fEstimateForChunk)
+            return RequiresStableEntryPointCore(fEstimateForChunk);
+        BOOL fRequiresStableEntryPoint = RequiresStableEntryPointCore(FALSE);
+        VolatileStore(&m_bFlags4, (BYTE)(enum_flag4_ComputedRequiresStableEntryPoint | (fRequiresStableEntryPoint ? enum_flag4_RequiresStableEntryPoint : 0)));
+        return fRequiresStableEntryPoint;
+    }
+#endif
+}
+
+BOOL MethodDesc::RequiresStableEntryPointCore(BOOL fEstimateForChunk)
 {
     LIMITED_METHOD_CONTRACT;
 
