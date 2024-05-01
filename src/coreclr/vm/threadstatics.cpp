@@ -59,7 +59,7 @@ PTR_VOID GetThreadLocalStaticBaseNoCreate(Thread* pThread, TLSIndex index)
         TADDR pTLSArrayData = pThreadLocalData->pTLSArrayData;
         pTLSBaseAddress = *(dac_cast<PTR_TADDR>(pTLSArrayData) + index.GetIndexOffset());
     }
-    if (pTLSBaseAddress == NULL)
+    if (pTLSBaseAddress == (TADDR)NULL)
     {
         // Maybe it is in the InFlightData
         PTR_InFlightTLSData pInFlightData = pThreadLocalData->pInFlightData;
@@ -205,7 +205,7 @@ void ScanThreadStaticRoots(Thread* pThread, bool forGC, promote_func* fn, ScanCo
         {
             TLSIndex index(TLSIndexType::Collectible, i);
             PTR_LOADERHANDLE pLoaderHandle = pThread->pLoaderHandles + i;
-            if (*pLoaderHandle != NULL)
+            if (*pLoaderHandle != (LOADERHANDLE)NULL)
             {
                 bool isGCStatic;
                 bool isCollectible;
@@ -214,7 +214,7 @@ void ScanThreadStaticRoots(Thread* pThread, bool forGC, promote_func* fn, ScanCo
 
                 if (pMT == NULL || !pMT->GetLoaderAllocator()->IsExposedObjectLive())
                 {
-                    *pLoaderHandle = NULL;
+                    *pLoaderHandle = (LOADERHANDLE)NULL;
                 }
             }
         }
