@@ -2845,8 +2845,6 @@ bool emitter::emitNoGChelper(CorInfoHelpFunc helpFunc)
 
         // never present on stack at the time of GC
         case CORINFO_HELP_TAILCALL:
-
-        // called in prolog
         case CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER:
         case CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS:
 
@@ -2887,7 +2885,7 @@ bool emitter::emitNoGChelper(CORINFO_METHOD_HANDLE methHnd)
 void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, BasicBlock* prevBlock)
 {
     // if starting a new block that can be a target of a branch and the last instruction was GC-capable call.
-    if (prevBlock != NULL && emitComp->compCurBB->HasFlag(BBF_HAS_LABEL) && emitLastInsIsCallWithGC())
+    if ((prevBlock != nullptr) && emitComp->compCurBB->HasFlag(BBF_HAS_LABEL) && emitLastInsIsCallWithGC())
     {
         // no GC-capable calls expected in prolog
         assert(!emitIGisInEpilog(emitLastInsIG));
@@ -2897,7 +2895,7 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
         // We want to maintain the invariant that the GC info at IP after a GC-capable call is the same
         // regardless how it is reached.
         // One way to ensure that is by adding an instruction (NOP or BRK) after the call.
-        if (emitThisGCrefRegs != gcrefRegs || emitThisByrefRegs != byrefRegs ||
+        if ((emitThisGCrefRegs != gcrefRegs) || (emitThisByrefRegs != byrefRegs) ||
             !VarSetOps::Equal(emitComp, emitThisGCrefVars, GCvars))
         {
             if (prevBlock->KindIs(BBJ_THROW))
