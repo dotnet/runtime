@@ -278,9 +278,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__LazyMachState__m_CaptureRip
 ASMCONSTANTS_C_ASSERT(OFFSETOF__LazyMachState__m_CaptureRsp
                     == offsetof(LazyMachState, m_CaptureRsp));
 
-#define               OFFSETOF__MethodDesc__m_wFlags        DBG_FRE(0x2E, 0x06)
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodDesc__m_wFlags == offsetof(MethodDesc, m_wFlags));
-
 #define               OFFSETOF__VASigCookie__pNDirectILStub     0x8
 ASMCONSTANTS_C_ASSERT(OFFSETOF__VASigCookie__pNDirectILStub
                     == offsetof(VASigCookie, pNDirectILStub));

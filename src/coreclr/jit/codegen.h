@@ -284,7 +284,9 @@ protected:
     void genEnregisterOSRArgsAndLocals();
 #endif
 
+    void genHomeStackSegment(unsigned lclNum, const ABIPassingSegment& seg, regNumber initReg, bool* pInitRegZeroed);
     void genHomeSwiftStructParameters(bool handleStack);
+    void genHomeStackPartOfSplitParameter(regNumber initReg, bool* initRegStillZeroed);
 
     void genCheckUseBlockInit();
 #if defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)

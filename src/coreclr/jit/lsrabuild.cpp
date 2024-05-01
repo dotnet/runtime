@@ -1730,10 +1730,6 @@ int LinearScan::ComputeAvailableSrcCount(GenTree* node)
 //
 void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc)
 {
-    // The set of internal temporary registers used by this node are stored in the
-    // gtRsvdRegs register mask. Clear it out.
-    tree->gtRsvdRegs = RBM_NONE;
-
 #ifdef DEBUG
     if (VERBOSE)
     {

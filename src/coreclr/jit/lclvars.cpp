@@ -1885,6 +1885,42 @@ void Compiler::lvaClassifyParameterABI()
             }
         }
     }
+
+    for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+    {
+        const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
+
+        if (lvaIsImplicitByRefLocal(lclNum))
+        {
+            assert((abiInfo.NumSegments == 1) && (abiInfo.Segments[0].Size == TARGET_POINTER_SIZE));
+        }
+        else
+        {
+            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            {
+                const ABIPassingSegment& segment = abiInfo.Segments[i];
+                assert(segment.Size > 0);
+                assert(segment.Offset + segment.Size <= lvaLclExactSize(lclNum));
+
+                if (i > 0)
+                {
+                    assert(segment.Offset > abiInfo.Segments[i - 1].Offset);
+                }
+
+                for (unsigned j = 0; j < abiInfo.NumSegments; j++)
+                {
+                    if (i == j)
+                    {
+                        continue;
+                    }
+
+                    const ABIPassingSegment& otherSegment = abiInfo.Segments[j];
+                    assert((segment.Offset + segment.Size <= otherSegment.Offset) ||
+                           (segment.Offset >= otherSegment.Offset + otherSegment.Size));
+                }
+            }
+        }
+    }
 #endif // DEBUG
 }
 

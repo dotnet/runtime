@@ -6,7 +6,7 @@ using System.Buffers.Text;
 using System.Diagnostics;
 using System.Text.Encodings.Web;
 
-#if !NETCOREAPP
+#if !NET
 using System.Runtime.CompilerServices;
 #endif
 
@@ -42,7 +42,7 @@ namespace System.Text.Json
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // U+00F0..U+00FF
         ];
 
-#if NETCOREAPP
+#if NET
         private const string HexFormatString = "X4";
 #endif
 
@@ -290,7 +290,7 @@ namespace System.Text.Json
                     break;
                 default:
                     destination[written++] = 'u';
-#if NETCOREAPP
+#if NET
                     int intChar = value;
                     intChar.TryFormat(destination.Slice(written), out int charsWritten, HexFormatString);
                     Debug.Assert(charsWritten == 4);
@@ -302,7 +302,7 @@ namespace System.Text.Json
             }
         }
 
-#if !NETCOREAPP
+#if !NET
         private static int WriteHex(int value, Span<char> destination, int written)
         {
             destination[written++] = HexConverter.ToCharUpper(value >> 12);
