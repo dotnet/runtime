@@ -3826,7 +3826,8 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
             if (!opts.IsReadyToRun())
 #endif // FEATURE_READYTORUN
             {
-                if ((pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) || (pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2))
+                if ((pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
+                    (pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2))
                 {
                     typeIndex = info.compCompHnd->getThreadLocalFieldInfo(pResolvedToken->hField, false);
                 }

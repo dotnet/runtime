@@ -84,9 +84,9 @@ int32_t IndexOffsetToDirectThreadLocalIndex(int32_t indexOffset)
 {
     LIMITED_METHOD_CONTRACT;
     int32_t adjustedIndexOffset = indexOffset + OFFSETOF__CORINFO_Array__data;
-    _ASSERTE(adjustedIndexOffset >= offsetof(ThreadLocalData, ThreadBlockingInfo_First));
+    _ASSERTE(((uint32_t)adjustedIndexOffset) >= offsetof(ThreadLocalData, ThreadBlockingInfo_First));
     int32_t directThreadLocalIndex = adjustedIndexOffset - offsetof(ThreadLocalData, ThreadBlockingInfo_First);
-    _ASSERTE(directThreadLocalIndex < (sizeof(g_pMethodTablesForDirectThreadLocalData) / sizeof(g_pMethodTablesForDirectThreadLocalData[0])));
+    _ASSERTE(((uint32_t)directThreadLocalIndex) < (sizeof(g_pMethodTablesForDirectThreadLocalData) / sizeof(g_pMethodTablesForDirectThreadLocalData[0])));
     _ASSERTE(directThreadLocalIndex >= 0);
     return directThreadLocalIndex;
 }
