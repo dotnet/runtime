@@ -132,6 +132,7 @@ class PPOLogCallback(BaseCallback):
         self.save_dir = save_dir
 
         self._rewards = []
+        self._invalid_choices = []
         self._result_vs_heuristic = []
         self._result_vs_no_cse = []
         self._better_or_worse = []
@@ -153,6 +154,9 @@ class PPOLogCallback(BaseCallback):
                 self.last_model_next_save += self.last_model_freq
                 self._save_incremental(rew_mean, os.path.join(self.save_dir, f'ppo_{self.model.num_timesteps}.zip'))
 
+            if self._invalid_choices:
+                self.logger.record('results/invalid_choices', np.mean(self._invalid_choices))
+
             if self._result_vs_heuristic:
                 self.logger.record('results/vs_heuristic', np.mean(self._result_vs_heuristic))
 
@@ -165,6 +169,8 @@ class PPOLogCallback(BaseCallback):
             if self._choice_count:
                 self.logger.record('results/num_cse', np.mean(self._choice_count))
 
+            self._rewards.clear()
+            self._invalid_choices.clear()
             self._result_vs_heuristic.clear()
             self._result_vs_no_cse.clear()
             self._better_or_worse.clear()
