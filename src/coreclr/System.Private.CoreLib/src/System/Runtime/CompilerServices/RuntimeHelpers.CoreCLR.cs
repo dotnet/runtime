@@ -301,7 +301,7 @@ namespace System.Runtime.CompilerServices
             return rank;
         }
 
-        // Returns true iff the object has a component size;
+        // Returns true if the object has a component size;
         // i.e., is variable length like System.String or Array.
         // Callers are required to keep obj alive
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
