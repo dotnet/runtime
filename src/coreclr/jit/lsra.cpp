@@ -5874,6 +5874,8 @@ void LinearScan::allocateRegisters()
             continue;
         }
 
+        assert(!currentRefPosition.isPhysRegRef);
+
         // If this is an exposed use, do nothing - this is merely a placeholder to attempt to
         // ensure that a register is allocated for the full lifetime.  The resolution logic
         // will take care of moving to the appropriate register if needed.
@@ -13307,8 +13309,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*                current
 
             // If there is another fixed reference to this register before the use, change the candidates
             // on this RefPosition to include that of nextRefPos.
-            // TODO-Quirk: Should pass right type here, but previously this didn't consider TYP_DOUBLE case for arm32.
-            unsigned nextFixedRegRefLocation = linearScan->getNextFixedRef(defReg, TYP_I_IMPL);
+            unsigned nextFixedRegRefLocation = linearScan->getNextFixedRef(defReg, currentInterval->registerType);
             if (nextFixedRegRefLocation <= nextRefPos->getRefEndLocation())
             {
                 candidates |= nextRefPos->registerAssignment;
@@ -13768,7 +13769,7 @@ regMaskTP LinearScan::RegisterSelection::selectMinimal(Interval*                
 
             // If there is another fixed reference to this register before the use, change the candidates
             // on this RefPosition to include that of nextRefPos.
-            unsigned nextFixedRegRefLocation = linearScan->getNextFixedRef(defReg, TYP_I_IMPL);
+            unsigned nextFixedRegRefLocation = linearScan->getNextFixedRef(defReg, currentInterval->registerType);
             if (nextFixedRegRefLocation <= nextRefPos->getRefEndLocation())
             {
                 candidates |= nextRefPos->registerAssignment;
