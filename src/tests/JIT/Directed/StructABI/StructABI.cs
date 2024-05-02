@@ -668,6 +668,176 @@ struct Nested9
 	}
 }
 
+struct Empty
+{
+}
+
+struct LongEmptyDouble
+{
+	long FieldL;
+	Empty FieldE;
+	double FieldD;
+
+	public static LongEmptyDouble Get()
+	{
+		return new LongEmptyDouble { FieldL = 0xcafef00d, FieldD = 3.14159d };
+	}
+
+	public bool Equals(LongEmptyDouble other)
+	{
+		return FieldL == other.FieldL && FieldD.Equals(other.FieldD);
+	}
+}
+
+struct NestedEmpty
+{
+	struct InnerEmpty
+	{
+		Empty e;
+	}
+	InnerEmpty e;
+}
+
+struct NestedEmptyFloatDouble
+{
+	NestedEmpty FieldNE;
+	float FieldF;
+	double FieldD;
+
+	public static NestedEmptyFloatDouble Get()
+	{
+		return new NestedEmptyFloatDouble { FieldF = 3.14159f, FieldD = 3.14159 };
+	}
+
+	public bool Equals(NestedEmptyFloatDouble other)
+	{
+		return FieldF.Equals(other.FieldF) && FieldD.Equals(other.FieldD);
+	}
+}
+
+struct EmptyIntAndFloat
+{
+	struct EmptyInt
+	{
+		public Empty FieldE;
+		public int FieldI;
+	}
+	EmptyInt FieldEI;
+	float FieldF;
+
+	public static EmptyIntAndFloat Get()
+	{
+		return new EmptyIntAndFloat { FieldEI = new EmptyInt { FieldI = 0xcafe }, FieldF = 3.14159f };
+	}
+
+	public bool Equals(EmptyIntAndFloat other)
+	{
+		return FieldEI.FieldI == other.FieldEI.FieldI && FieldF.Equals(other.FieldF);
+	}
+}
+
+struct LongEmptyAndFloat
+{
+	struct LongEmpty
+	{
+		public long FieldL;
+		public Empty FieldE;
+	}
+	LongEmpty FieldLE;
+	float FieldF;
+
+	public static LongEmptyAndFloat Get()
+	{
+		return new LongEmptyAndFloat { FieldLE = new LongEmpty { FieldL = 0xcafef00d }, FieldF = 3.14159f };
+	}
+
+	public bool Equals(LongEmptyAndFloat other)
+	{
+		return FieldLE.FieldL == other.FieldLE.FieldL && FieldF.Equals(other.FieldF);
+	}
+}
+
+[InlineArray(1)]
+struct ArrayOfEmpties
+{
+	Empty e;
+};
+
+struct ArrayOfEmptiesFloatDouble
+{
+	ArrayOfEmpties FieldAoE;
+	float FieldF;
+	double FieldD;
+
+	public static ArrayOfEmptiesFloatDouble Get()
+	{
+		return new ArrayOfEmptiesFloatDouble { FieldF = 3.14159f, FieldD = 3.14159 };
+	}
+
+	public bool Equals(ArrayOfEmptiesFloatDouble other)
+	{
+		return FieldF.Equals(other.FieldF) && FieldD.Equals(other.FieldD);
+	}
+}
+
+struct Sixteen<T>
+{
+	T e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15, e16;
+}
+
+struct FloatEmptyMegabyteInt
+{
+	float FieldF;
+	Sixteen<Sixteen<Sixteen<Sixteen<Sixteen<Empty>>>>> FieldEmptyMegabyte;
+	int FieldI;
+
+	public static FloatEmptyMegabyteInt Get()
+	{
+		return new FloatEmptyMegabyteInt { FieldF = 3.14159f, FieldI = 0xcafe };
+	}
+
+	public bool Equals(FloatEmptyMegabyteInt other)
+	{
+		return FieldF.Equals(other.FieldF) && FieldI == other.FieldI;
+	}
+}
+
+[StructLayout(LayoutKind.Sequential, Pack=1)]
+struct PackedEmptyFloatLong
+{
+	Empty FieldE;
+	float FieldF;
+	long FieldL;
+
+	public static PackedEmptyFloatLong Get()
+	{
+		return new PackedEmptyFloatLong { FieldF = 3.14159f, FieldL = 0xcafef00d };
+	}
+
+	public bool Equals(PackedEmptyFloatLong other)
+	{
+		return FieldF.Equals(other.FieldF) && FieldL == other.FieldL;
+	}
+}
+
+[StructLayout(LayoutKind.Explicit)]
+struct ExplicitFloatLong
+{
+	[FieldOffset(1)] float FieldF;
+	[FieldOffset(5)] long FieldL;
+
+	public static ExplicitFloatLong Get()
+	{
+		return new ExplicitFloatLong { FieldF = 3.14159f, FieldL = 0xcafef00d };
+	}
+
+	public bool Equals(ExplicitFloatLong other)
+	{
+		return FieldF.Equals(other.FieldF) && FieldL == other.FieldL;
+	}
+}
+
+
 public static partial class StructABI
 {
 	[DllImport("StructABILib")]
@@ -798,6 +968,40 @@ public static partial class StructABI
 
 	[DllImport("StructABILib")]
 	static extern DoubleAndByte EnoughRegistersSysV4(double a, double b, double c, double d, double e, double f, double g, DoubleAndByte value);
+
+	[DllImport("StructABILib")]
+	static extern LongEmptyDouble EchoLongEmptyDoubleRiscV(LongEmptyDouble value);
+
+	[DllImport("StructABILib")]
+	static extern LongEmptyDouble EchoLongEmptyDoubleByImplicitRefRiscV(
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, LongEmptyDouble byRef);
+
+	[DllImport("StructABILib")]
+	static extern NestedEmptyFloatDouble EchoNestedEmptyFloatDoubleRiscV(NestedEmptyFloatDouble fa0_fa1);
+
+	[DllImport("StructABILib")]
+	static extern NestedEmptyFloatDouble EchoNestedEmptyFloatDoubleInIntegerRegsRiscV(
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, NestedEmptyFloatDouble a0_a1);
+
+	[DllImport("StructABILib")]
+	static extern EmptyIntAndFloat EchoEmptyIntAndFloatRiscV(EmptyIntAndFloat a0_fa0);
+
+	[DllImport("StructABILib")]
+	static extern  LongEmptyAndFloat EchoLongEmptyAndFloatRiscV(LongEmptyAndFloat a0_fa0);
+
+	[DllImport("StructABILib")]
+	static extern ArrayOfEmptiesFloatDouble EchoArrayOfEmptiesFloatDoubleInIntegerRegsRiscV(
+	ArrayOfEmptiesFloatDouble a0_a1);
+
+	[DllImport("StructABILib")]
+	static extern FloatEmptyMegabyteInt EchoFloatEmptyMegabyteIntRiscV(
+	FloatEmptyMegabyteInt fa0_a0);
+
+	[DllImport("StructABILib")]
+	static extern PackedEmptyFloatLong EchoPackedEmptyFloatLongRiscV(PackedEmptyFloatLong fa0_a0);
+
+	[DllImport("StructABILib")]
+	static extern ExplicitFloatLong EchoExplicitFloatLongRiscV(ExplicitFloatLong fa0_a0);
 
 	////////////////////////////////////////////////////////////////////////////
 	// Managed echo tests.
@@ -1060,6 +1264,70 @@ public static partial class StructABI
 	static DoubleAndByte EnoughRegistersSysV4Managed(double a, double b, double c, double d, double e, double f, double g, DoubleAndByte value)
 	{
 		return value;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	static LongEmptyDouble EchoLongEmptyDoubleRiscVManaged(LongEmptyDouble a0_fa0)
+	{
+		return a0_fa0;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	static LongEmptyDouble EchoLongEmptyDoubleByImplicitRefRiscVManaged(
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, LongEmptyDouble byRef)
+	{
+		return byRef;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	static NestedEmptyFloatDouble EchoNestedEmptyFloatDoubleRiscVManaged(NestedEmptyFloatDouble fa0_fa1)
+	{
+		return fa0_fa1;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	static NestedEmptyFloatDouble EchoNestedEmptyFloatDoubleInIntegerRegsRiscVManaged(
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, NestedEmptyFloatDouble a0_a1)
+	{
+		return a0_a1;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	static EmptyIntAndFloat EchoEmptyIntAndFloatRiscVManaged(EmptyIntAndFloat a0_fa0)
+	{
+		return a0_fa0;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	static LongEmptyAndFloat EchoLongEmptyAndFloatRiscVManaged(LongEmptyAndFloat a0_fa0)
+	{
+		return a0_fa0;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	static ArrayOfEmptiesFloatDouble EchoArrayOfEmptiesFloatDoubleInIntegerRegsRiscVManaged(
+		ArrayOfEmptiesFloatDouble a0_a1)
+	{
+		return a0_a1;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	static FloatEmptyMegabyteInt EchoFloatEmptyMegabyteIntRiscVManaged(
+		FloatEmptyMegabyteInt fa0_a0)
+	{
+		return fa0_a0;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	static PackedEmptyFloatLong EchoPackedEmptyFloatLongRiscVManaged(PackedEmptyFloatLong fa0_a0)
+	{
+		return fa0_a0;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	static ExplicitFloatLong EchoExplicitFloatLongRiscVManaged(ExplicitFloatLong fa0_a0)
+	{
+		return fa0_a0;
 	}
 
 	////////////////////////////////////////////////////////////////////////////
@@ -2154,6 +2422,226 @@ public static partial class StructABI
 		return ok;
 	}
 
+	static bool EchoLongEmptyDoubleRiscVWrapper()
+	{
+		bool ok = true;
+		LongEmptyDouble expected = LongEmptyDouble.Get();
+		LongEmptyDouble native = EchoLongEmptyDoubleRiscV(expected);
+		LongEmptyDouble managed = EchoLongEmptyDoubleRiscVManaged(expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoLongEmptyDoubleRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoLongEmptyDoubleRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoLongEmptyDoubleByImplicitRefRiscVWrapper()
+	{
+		bool ok = true;
+		LongEmptyDouble expected = LongEmptyDouble.Get();
+		LongEmptyDouble native = EchoLongEmptyDoubleByImplicitRefRiscV(0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected);
+		LongEmptyDouble managed = EchoLongEmptyDoubleByImplicitRefRiscVManaged(0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoLongEmptyDoubleByImplicitRefRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoLongEmptyDoubleByImplicitRefRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoNestedEmptyFloatDoubleRiscVWrapper()
+	{
+		bool ok = true;
+		NestedEmptyFloatDouble expected = NestedEmptyFloatDouble.Get();
+		NestedEmptyFloatDouble native = EchoNestedEmptyFloatDoubleRiscV(expected);
+		NestedEmptyFloatDouble managed = EchoNestedEmptyFloatDoubleRiscVManaged(expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoNestedEmptyFloatDoubleRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoNestedEmptyFloatDoubleRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoNestedEmptyFloatDoubleInIntegerRegsRiscVWrapper()
+	{
+		bool ok = true;
+		NestedEmptyFloatDouble expected = NestedEmptyFloatDouble.Get();
+		NestedEmptyFloatDouble native = EchoNestedEmptyFloatDoubleInIntegerRegsRiscV(0f, 1f, 2f, 3f, 4f, 5f, 6f, expected);
+		NestedEmptyFloatDouble managed = EchoNestedEmptyFloatDoubleInIntegerRegsRiscVManaged(0f, 1f, 2f, 3f, 4f, 5f, 6f, expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoNestedEmptyFloatDoubleInIntegerRegsRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoNestedEmptyFloatDoubleInIntegerRegsRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoEmptyIntAndFloatRiscVWrapper()
+	{
+		bool ok = true;
+		EmptyIntAndFloat expected = EmptyIntAndFloat.Get();
+		EmptyIntAndFloat native = EchoEmptyIntAndFloatRiscV(expected);
+		EmptyIntAndFloat managed = EchoEmptyIntAndFloatRiscVManaged(expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoEmptyIntAndFloatRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoEmptyIntAndFloatRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoLongEmptyAndFloatRiscVWrapper()
+	{
+		bool ok = true;
+		LongEmptyAndFloat expected = LongEmptyAndFloat.Get();
+		LongEmptyAndFloat native = EchoLongEmptyAndFloatRiscV(expected);
+		LongEmptyAndFloat managed = EchoLongEmptyAndFloatRiscVManaged(expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoLongEmptyAndFloatRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoLongEmptyAndFloatRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoArrayOfEmptiesFloatDoubleInIntegerRegsRiscVWrapper()
+	{
+		bool ok = true;
+		ArrayOfEmptiesFloatDouble expected = ArrayOfEmptiesFloatDouble.Get();
+		ArrayOfEmptiesFloatDouble native = EchoArrayOfEmptiesFloatDoubleInIntegerRegsRiscV(expected);
+		ArrayOfEmptiesFloatDouble managed = EchoArrayOfEmptiesFloatDoubleInIntegerRegsRiscVManaged(expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoArrayOfEmptiesFloatDoubleInIntegerRegs failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoArrayOfEmptiesFloatDoubleInIntegerRegs failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoFloatEmptyMegabyteIntRiscVWrapper()
+	{
+		bool ok = true;
+		FloatEmptyMegabyteInt expected = FloatEmptyMegabyteInt.Get();
+		FloatEmptyMegabyteInt native = EchoFloatEmptyMegabyteIntRiscV(expected);
+		FloatEmptyMegabyteInt managed = EchoFloatEmptyMegabyteIntRiscVManaged(expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoFloatEmptyMegabyteInt failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoFloatEmptyMegabyteInt failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoPackedEmptyFloatLongRiscVWrapper()
+	{
+		bool ok = true;
+		PackedEmptyFloatLong expected = PackedEmptyFloatLong.Get();
+		PackedEmptyFloatLong native = EchoPackedEmptyFloatLongRiscV(expected);
+		PackedEmptyFloatLong managed = EchoPackedEmptyFloatLongRiscVManaged(expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoPackedEmptyFloatLong failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoPackedEmptyFloatLong failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoExplicitFloatLongRiscVWrapper()
+	{
+		bool ok = true;
+		ExplicitFloatLong expected = ExplicitFloatLong.Get();
+		ExplicitFloatLong native = EchoExplicitFloatLongRiscV(expected);
+		ExplicitFloatLong managed = EchoExplicitFloatLongRiscVManaged(expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoExplicitFloatLong failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoExplicitFloatLong failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
 	[Fact]
 	public static int TestEntryPoint()
 	{
@@ -2202,6 +2690,15 @@ public static partial class StructABI
 		if (!EnoughRegistersSysV2Wrapper()) ok = false;
 		if (!EnoughRegistersSysV3Wrapper()) ok = false;
 		if (!EnoughRegistersSysV4Wrapper()) ok = false;
+		if (!EchoLongEmptyDoubleRiscVWrapper()) ok = false;
+		if (!EchoLongEmptyDoubleByImplicitRefRiscVWrapper()) ok = false;
+		if (!EchoNestedEmptyFloatDoubleInIntegerRegsRiscVWrapper()) ok = false;
+		if (!EchoEmptyIntAndFloatRiscVWrapper()) ok = false;
+		if (!EchoLongEmptyAndFloatRiscVWrapper()) ok = false;
+		if (!EchoArrayOfEmptiesFloatDoubleInIntegerRegsRiscVWrapper()) ok = false;
+		if (!EchoFloatEmptyMegabyteIntRiscVWrapper()) ok = false;
+		if (!EchoPackedEmptyFloatLongRiscVWrapper()) ok = false;
+		if (!EchoExplicitFloatLongRiscVWrapper()) ok = false;
 		
 		return ok ? 100 : -1;
 	}
