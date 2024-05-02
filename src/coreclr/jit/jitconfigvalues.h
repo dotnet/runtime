@@ -358,6 +358,9 @@ RELEASE_CONFIG_INTEGER(EnableEHWriteThru, W("EnableEHWriteThru"), 1)
 // Enable the enregistration of locals that are defined or used in a multireg context.
 RELEASE_CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1)
 
+// Disables inlining of all methods
+RELEASE_CONFIG_INTEGER(JitNoInline, W("JitNoInline"), 0)
+
 // Enable EVEX encoding for SIMD instructions when AVX-512VL is available.
 CONFIG_INTEGER(JitStressEvexEncoding, W("JitStressEvexEncoding"), 0)
 
