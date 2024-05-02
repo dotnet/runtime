@@ -4588,7 +4588,21 @@ void Compiler::fgDoReversePostOrderLayout()
 
     // The RPO will break up call-finally pairs, so save them before re-ordering
     //
-    BlockToBlockMap callFinallyPairs(getAllocator());
+    struct CallFinallyPair
+    {
+        BasicBlock* callFinally;
+        BasicBlock* callFinallyRet;
+
+        // Constructor provided so we can call ArrayStack::Emplace
+        //
+        CallFinallyPair(BasicBlock* first, BasicBlock* second)
+            : callFinally(first)
+            , callFinallyRet(second)
+        {
+        }
+    };
+
+    ArrayStack<CallFinallyPair> callFinallyPairs(getAllocator());
 
     for (EHblkDsc* const HBtab : EHClauses(this))
     {
@@ -4602,7 +4616,7 @@ void Compiler::fgDoReversePostOrderLayout()
                 assert(pred->KindIs(BBJ_CALLFINALLY));
                 if (pred->isBBCallFinallyPair())
                 {
-                    callFinallyPairs.Set(pred, pred->Next());
+                    callFinallyPairs.Emplace(pred, pred->Next());
                 }
             }
         }
@@ -4633,12 +4647,11 @@ void Compiler::fgDoReversePostOrderLayout()
 
     // Fix up call-finally pairs
     //
-    for (BlockToBlockMap::Node* const iter : BlockToBlockMap::KeyValueIteration(&callFinallyPairs))
+    for (int i = 0; i < callFinallyPairs.Height(); i++)
     {
-        BasicBlock* const callFinally    = iter->GetKey();
-        BasicBlock* const callFinallyRet = iter->GetValue();
-        fgUnlinkBlock(callFinallyRet);
-        fgInsertBBafter(callFinally, callFinallyRet);
+        const CallFinallyPair& pair = callFinallyPairs.BottomRef(i);
+        fgUnlinkBlock(pair.callFinallyRet);
+        fgInsertBBafter(pair.callFinally, pair.callFinallyRet);
     }
 
     // The RPO won't change the entry blocks of any EH regions, but reordering can change the last block in a region
@@ -4650,14 +4663,14 @@ void Compiler::fgDoReversePostOrderLayout()
     {
         if (block->hasTryIndex())
         {
-            EHLayoutInfo& layoutInfo       = regions.TopRef(block->getTryIndex());
+            EHLayoutInfo& layoutInfo       = regions.BottomRef(block->getTryIndex());
             layoutInfo.tryRegionEnd        = block;
             layoutInfo.tryRegionInMainBody = true;
         }
 
         if (block->hasHndIndex())
         {
-            regions.TopRef(block->getHndIndex()).hndRegionEnd = block;
+            regions.BottomRef(block->getHndIndex()).hndRegionEnd = block;
         }
     }
 
@@ -4665,12 +4678,12 @@ void Compiler::fgDoReversePostOrderLayout()
     {
         if (block->hasHndIndex())
         {
-            regions.TopRef(block->getHndIndex()).hndRegionEnd = block;
+            regions.BottomRef(block->getHndIndex()).hndRegionEnd = block;
         }
 
         if (block->hasTryIndex())
         {
-            EHLayoutInfo& layoutInfo = regions.TopRef(block->getTryIndex());
+            EHLayoutInfo& layoutInfo = regions.BottomRef(block->getTryIndex());
 
             if (!layoutInfo.tryRegionInMainBody)
             {
@@ -4682,11 +4695,11 @@ void Compiler::fgDoReversePostOrderLayout()
     // Now, update the EH descriptors, starting with the try regions
     //
     auto getTryLast = [&regions](const unsigned index) -> BasicBlock* {
-        return regions.TopRef(index).tryRegionEnd;
+        return regions.BottomRef(index).tryRegionEnd;
     };
 
     auto setTryLast = [&regions](const unsigned index, BasicBlock* const block) {
-        regions.TopRef(index).tryRegionEnd = block;
+        regions.BottomRef(index).tryRegionEnd = block;
     };
 
     ehUpdateTryLasts<decltype(getTryLast), decltype(setTryLast)>(getTryLast, setTryLast);
@@ -4698,7 +4711,7 @@ void Compiler::fgDoReversePostOrderLayout()
     {
         // The end of each handler region should have been visited by iterating the blocklist above
         //
-        BasicBlock* const hndEnd = regions.TopRef(XTnum++).hndRegionEnd;
+        BasicBlock* const hndEnd = regions.BottomRef(XTnum++).hndRegionEnd;
         assert(hndEnd != nullptr);
 
         // Update the end pointer of this handler region to the new last block
@@ -4710,7 +4723,7 @@ void Compiler::fgDoReversePostOrderLayout()
         //
         if (enclosingHndIndex != EHblkDsc::NO_ENCLOSING_INDEX)
         {
-            BasicBlock* const enclosingHndEnd = regions.TopRef(enclosingHndIndex).hndRegionEnd;
+            BasicBlock* const enclosingHndEnd = regions.BottomRef(enclosingHndIndex).hndRegionEnd;
             assert(enclosingHndEnd != nullptr);
 
             // If the enclosing region ends right before the nested region begins,
@@ -4719,7 +4732,7 @@ void Compiler::fgDoReversePostOrderLayout()
             BasicBlock* const hndBeg = HBtab->HasFilter() ? HBtab->ebdFilter : HBtab->ebdHndBeg;
             if (enclosingHndEnd->NextIs(hndBeg))
             {
-                regions.TopRef(enclosingHndIndex).hndRegionEnd = hndEnd;
+                regions.BottomRef(enclosingHndIndex).hndRegionEnd = hndEnd;
             }
         }
     }
