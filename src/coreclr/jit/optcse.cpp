@@ -3240,8 +3240,8 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
     features[i++] = cse->csdTree->GetCostSz();
     features[i++] = cse->csdUseCount;
     features[i++] = cse->csdDefCount;
-    features[i++] = cse->csdUseWtCnt;
-    features[i++] = cse->csdDefWtCnt;
+    features[i++] = (int)cse->csdUseWtCnt;
+    features[i++] = (int)cse->csdDefWtCnt;
     features[i++] = cse->numDistinctLocals;
     features[i++] = cse->numLocalOccurrences;
     features[i++] = numBBs;
