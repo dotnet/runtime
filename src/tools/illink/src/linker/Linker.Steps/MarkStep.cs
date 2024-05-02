@@ -61,7 +61,7 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		protected Queue<(MethodDefinition, DependencyInfo, MessageOrigin)> _methods;
+		private bool _completed;
 		protected Dictionary<MethodDefinition, MarkScopeStack.Scope> _interface_methods;
 		protected Queue<AttributeProviderPair> _assemblyLevelAttributes;
 		protected Queue<(AttributeProviderPair, DependencyInfo, MarkScopeStack.Scope)> _lateMarkedAttributes;
@@ -76,7 +76,7 @@ namespace Mono.Linker.Steps
 		// method body scanner.
 		readonly Dictionary<MethodBody, bool> _compilerGeneratedMethodRequiresScanner;
 		private readonly NodeFactory _nodeFactory;
-		private readonly DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory> _analyzer;
+		private readonly DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory> _dependencyGraph;
 
 		MarkStepContext? _markContext;
 		MarkStepContext MarkContext {
@@ -222,7 +222,7 @@ namespace Mono.Linker.Steps
 
 		public MarkStep ()
 		{
-			_methods = new Queue<(MethodDefinition, DependencyInfo, MessageOrigin)> ();
+			_completed = false;
 			_interface_methods = new Dictionary<MethodDefinition, MarkScopeStack.Scope> ();
 			_assemblyLevelAttributes = new Queue<AttributeProviderPair> ();
 			_lateMarkedAttributes = new Queue<(AttributeProviderPair, DependencyInfo, MarkScopeStack.Scope)> ();
@@ -234,7 +234,7 @@ namespace Mono.Linker.Steps
 			_entireTypesMarked = new HashSet<TypeDefinition> ();
 			_compilerGeneratedMethodRequiresScanner = new Dictionary<MethodBody, bool> ();
 			_nodeFactory = new NodeFactory (this);
-			_analyzer = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory> (_nodeFactory, null);
+			_dependencyGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory> (_nodeFactory, null);
 		}
 
 		public AnnotationStore Annotations => Context.Annotations;
@@ -380,14 +380,14 @@ namespace Mono.Linker.Steps
 
 		void Process ()
 		{
-			_analyzer.ComputeDependencyRoutine += (List<DependencyNodeCore<NodeFactory>> nodes) => {
+			_dependencyGraph.ComputeDependencyRoutine += (List<DependencyNodeCore<NodeFactory>> nodes) => {
 				foreach (DependencyNodeCore<NodeFactory> node in nodes) {
 					if (node is ProcessCallbackNode processNode)
 						processNode.Process ();
 				}
 			};
-			_analyzer.AddRoot (new ProcessCallbackNode (ProcessAllPendingItems), "start");
-			_analyzer.ComputeMarkedNodes ();
+			_dependencyGraph.AddRoot (new ProcessCallbackNode (ProcessAllPendingItems), "start");
+			_dependencyGraph.ComputeMarkedNodes ();
 
 			ProcessPendingTypeChecks ();
 
@@ -448,11 +448,11 @@ namespace Mono.Linker.Steps
 
 		bool ProcessPrimaryQueue ()
 		{
-			if (ReachedSteadyState ())
+			if (_completed)
 				return false;
 
-			while (!ReachedSteadyState ()) {
-				ProcessQueue ();
+			while (!_completed) {
+				_completed = true;
 				ProcessInterfaceMethods ();
 				ProcessMarkedTypesWithInterfaces ();
 				ProcessDynamicCastableImplementationInterfaces ();
@@ -526,21 +526,6 @@ namespace Mono.Linker.Steps
 
 				Context.LogMessage ($"Removing typecheck of '{type.FullName}' inside '{item.Body.Method.GetDisplayName ()}' method.");
 			}
-		}
-
-		void ProcessQueue ()
-		{
-			_methods.Clear ();
-		}
-
-		bool ReachedSteadyState ()
-		{
-			return _methods.Count == 0;
-		}
-
-		void EnqueueMethod (MethodDefinition method, in DependencyInfo reason, in MessageOrigin origin)
-		{
-			_methods.Enqueue ((method, reason, origin));
 		}
 
 		void ProcessInterfaceMethods ()
@@ -2028,16 +2013,10 @@ namespace Mono.Linker.Steps
 			if (CheckProcessed (type))
 				return type;
 
-			if (type.HasMethods) {
-				if (ShouldMarkTypeStaticConstructor (type) && reason.Kind != DependencyKind.TriggersCctorForCalledMethod) {
-					MarkStaticConstructor (type, new DependencyInfo (DependencyKind.CctorForType, type), ScopeStack.CurrentScope.Origin);
-				}
-			}
-
 			if (type.Scope is ModuleDefinition module)
 				MarkModule (module, new DependencyInfo (DependencyKind.ScopeOfType, type));
 
-			_analyzer.AddRoot (_nodeFactory.GetTypeNode (type), Enum.GetName(reason.Kind));
+			_dependencyGraph.AddRoot (_nodeFactory.GetTypeNode (type), Enum.GetName(reason.Kind));
 			return type;
 		}
 
@@ -2129,6 +2108,9 @@ namespace Mono.Linker.Steps
 						// For methods that must be preserved, blame the declaring type.
 						MarkMethod (method, new DependencyInfo (DependencyKind.VirtualNeededDueToPreservedScope, type), ScopeStack.CurrentScope.Origin);
 					}
+				}
+				if (ShouldMarkTypeStaticConstructor (type)) {
+					MarkStaticConstructor (type, new DependencyInfo (DependencyKind.CctorForType, type), ScopeStack.CurrentScope.Origin);
 				}
 			}
 
@@ -2799,7 +2781,7 @@ namespace Mono.Linker.Steps
 				if (argumentTypeDef == null)
 					continue;
 
-				_analyzer.AddRoot (_nodeFactory.GetTypeIsRelevantToVariantCastingNode (argumentTypeDef), "Generic Argument");
+				_dependencyGraph.AddRoot (_nodeFactory.GetTypeIsRelevantToVariantCastingNode (argumentTypeDef), "Generic Argument");
 
 				if (parameter.HasDefaultConstructorConstraint)
 					MarkDefaultConstructor (argumentTypeDef, new DependencyInfo (DependencyKind.DefaultCtorForNewConstrainedGenericArgument, instance));
@@ -3052,8 +3034,8 @@ namespace Mono.Linker.Steps
 
 			// We will only enqueue a method to be processed if it hasn't been processed yet.
 			if (!CheckProcessed (method))
-				EnqueueMethod (method, reason, origin);
-			_analyzer.AddRoot (_nodeFactory.GetMethodDefinitionNode (method, reason), Enum.GetName(reason.Kind));
+				_completed = false;
+			_dependencyGraph.AddRoot (_nodeFactory.GetMethodDefinitionNode (method, reason), Enum.GetName(reason.Kind));
 
 			return method;
 		}

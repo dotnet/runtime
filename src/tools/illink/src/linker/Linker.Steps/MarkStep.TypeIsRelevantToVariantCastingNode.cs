@@ -7,7 +7,6 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
-
 	public partial class MarkStep
 	{
 		internal sealed class TypeIsRelevantToVariantCastingNode : DependencyNodeCore<NodeFactory>
