@@ -16,10 +16,10 @@ using System.Collections.Immutable;
 namespace System.Reflection.Metadata
 {
     [DebuggerDisplay("{AssemblyQualifiedName}")]
-#if SYSTEM_PRIVATE_CORELIB
-    internal
-#else
+#if SYSTEM_REFLECTION_METADATA
     public
+#else
+    internal
 #endif
     sealed class TypeName
     {

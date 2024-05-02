@@ -2,6 +2,7 @@
   <assembly fullname="System.Private.CoreLib">
     <type fullname="System.Diagnostics.Tracing.EventSource" feature="System.Diagnostics.Tracing.EventSource.IsSupported" featurevalue="false">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+      <method signature="System.Void Finalize()" body="stub" />
       <method signature="System.Boolean IsEnabled()" body="stub" value="false" />
       <method signature="System.Boolean IsEnabled(System.Diagnostics.Tracing.EventLevel,System.Diagnostics.Tracing.EventKeywords)" body="stub" value="false" />
       <method signature="System.Boolean IsEnabled(System.Diagnostics.Tracing.EventLevel,System.Diagnostics.Tracing.EventKeywords,System.Diagnostics.Tracing.EventChannel)" body="stub" value="false" />
