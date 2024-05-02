@@ -3728,8 +3728,8 @@ extern const CExecutable executable;
 
 void * __cdecl operator new(size_t n, const CExecutable&);
 void * __cdecl operator new[](size_t n, const CExecutable&);
-void * __cdecl operator new(size_t n, const CExecutable&, std::nothrow_t);
-void * __cdecl operator new[](size_t n, const CExecutable&, std::nothrow_t);
+void * __cdecl operator new(size_t n, const CExecutable&, const std::nothrow_t&);
+void * __cdecl operator new[](size_t n, const CExecutable&, const std::nothrow_t&);
 
 
 //
