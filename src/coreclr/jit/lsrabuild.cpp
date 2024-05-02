@@ -4480,6 +4480,7 @@ int LinearScan::BuildCmpOperands(GenTree* tree)
     return srcCount;
 }
 
+#ifdef SWIFT_SUPPORT
 //------------------------------------------------------------------------
 // MarkSwiftErrorBusyForCall: Given a call set the appropriate RefTypeFixedReg
 // RefPosition for the Swift error register as delay free to ensure the error
@@ -4510,3 +4511,4 @@ void LinearScan::MarkSwiftErrorBusyForCall(GenTreeCall* call)
            (swiftErrorRegRecord->lastRefPosition->nodeLocation == currentLoc));
     setDelayFree(swiftErrorRegRecord->lastRefPosition);
 }
+#endif
