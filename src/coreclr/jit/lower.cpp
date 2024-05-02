@@ -8347,54 +8347,57 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
 #endif
 }
 
-struct StoreCoalescingData
-{
-    var_types targetType;
-    GenTree*  baseAddr;
-    GenTree*  index;
-    GenTree*  value;
-    uint32_t  scale;
-    int       offset;
-};
-
 //------------------------------------------------------------------------
-// GetStoreCoalescingData: given a STOREIND node, get the data needed to perform
-//    store coalescing including pointer to the previous node.
+// GetLoadStoreCoalescingData: given a STOREIND/IND node, get the data needed to perform
+//    store/load coalescing including pointer to the previous node.
 //
 // Arguments:
 //    comp     - the compiler instance
-//    ind      - the STOREIND node
-//    data     - [OUT] the data needed for store coalescing
+//    ind      - the STOREIND/IND node
+//    data     - [OUT] the data needed for store/load coalescing
 //
 // Return Value:
 //    true if the data was successfully retrieved, false otherwise.
-//    Basically, false means that we definitely can't do store coalescing.
 //
-static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCoalescingData* data)
+bool Lowering::GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescingData* data) const
 {
-    // Don't merge volatile stores.
+    // Don't merge volatile load/stores.
     if (ind->IsVolatile())
     {
         return false;
     }
 
-    // Data has to be INT_CNS, can be also VEC_CNS in future.
-    if (!ind->Data()->IsCnsIntOrI() && !ind->Data()->IsVectorConst())
-    {
-        return false;
-    }
+    const bool isStore = ind->OperIs(GT_STOREIND, GT_STORE_BLK);
+    const bool isLoad  = ind->OperIs(GT_IND);
 
     auto isNodeInvariant = [](Compiler* comp, GenTree* node, bool allowNull) {
         if (node == nullptr)
         {
             return allowNull;
         }
+        if (node->OperIsConst())
+        {
+            return true;
+        }
         // We can allow bigger trees here, but it's not clear if it's worth it.
         return node->OperIs(GT_LCL_VAR) && !comp->lvaVarAddrExposed(node->AsLclVar()->GetLclNum());
     };
 
+    if (isStore)
+    {
+        // For stores, Data() is expected to be an invariant node
+        if (!isNodeInvariant(comp, ind->Data(), false))
+        {
+            return false;
+        }
+    }
+    else if (!isLoad)
+    {
+        return false;
+    }
+
     data->targetType = ind->TypeGet();
-    data->value      = ind->Data();
+    data->value      = isStore ? ind->Data() : nullptr;
     if (ind->Addr()->OperIs(GT_LEA))
     {
         GenTree* base  = ind->Addr()->AsAddrMode()->Base();
@@ -8430,12 +8433,24 @@ static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCo
         // Address is not LEA or local.
         return false;
     }
+
+    bool isClosedRange = false;
+    // Make sure there are no other unexpected nodes in-between.
+    LIR::ReadOnlyRange range = BlockRange().GetTreeRange(ind, &isClosedRange);
+    if (!isClosedRange)
+    {
+        return false;
+    }
+
+    data->rangeStart = range.FirstNode();
+    data->rangeEnd   = range.LastNode();
+
     return true;
 }
 
 //------------------------------------------------------------------------
-// LowerStoreIndirCoalescing: If the given STOREIND node is followed by a similar
-//    STOREIND node, try to merge them into a single store of a twice wider type. Example:
+// LowerStoreIndirCoalescing: If the given IND/STOREIND node is followed by a similar
+//    IND/STOREIND node, try to merge them into a single store of a twice wider type. Example:
 //
 //    *  STOREIND  int
 //    +--*  LCL_VAR   byref  V00
@@ -8459,7 +8474,7 @@ static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCo
 // Arguments:
 //    ind - the current STOREIND node
 //
-void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
+void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
 {
 // LA, RISC-V and ARM32 more likely to recieve a terrible performance hit from
 // unaligned accesses making this optimization questionable.
@@ -8469,12 +8484,9 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         return;
     }
 
-    // TODO-ARM64-CQ: enable TYP_REF if we find a case where it's beneficial.
-    // The algorithm does support TYP_REF (with null value), but it seems to be not worth
-    // it on ARM64 where it's pretty efficient to do "stp xzr, xzr, [addr]" to clear two
-    // items at once. Although, it may be profitable to do "stp q0, q0, [addr]".
-    if (!varTypeIsIntegral(ind) && !varTypeIsSIMD(ind))
+    if (!ind->OperIs(GT_STOREIND, GT_STORE_BLK))
     {
+        // Load coalescing is not yet supported
         return;
     }
 
@@ -8492,24 +8504,16 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
     // to get a single store of 8 bytes.
     do
     {
-        StoreCoalescingData currData;
-        StoreCoalescingData prevData;
+        LoadStoreCoalescingData currData;
+        LoadStoreCoalescingData prevData;
 
         // Get coalescing data for the current STOREIND
-        if (!GetStoreCoalescingData(comp, ind, &currData))
+        if (!GetLoadStoreCoalescingData(ind, &currData))
         {
             return;
         }
 
-        bool isClosedRange = false;
-        // Now we need to find the very first LIR node representing the current STOREIND
-        // and make sure that there are no other unexpected nodes in-between.
-        LIR::ReadOnlyRange currIndRange = BlockRange().GetTreeRange(ind, &isClosedRange);
-        if (!isClosedRange)
-        {
-            return;
-        }
-        GenTree* prevTree = currIndRange.FirstNode()->gtPrev;
+        GenTree* prevTree = currData.rangeStart->gtPrev;
         // Now we need to find the previous STOREIND,
         // we can ignore any NOPs or IL_OFFSETs in-between
         while ((prevTree != nullptr) && prevTree->OperIs(GT_NOP, GT_IL_OFFSET))
@@ -8517,47 +8521,51 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
             prevTree = prevTree->gtPrev;
         }
 
-        // It's not a STOREIND - bail out.
-        if ((prevTree == nullptr) || !prevTree->OperIs(GT_STOREIND))
+        // It's not a store - bail out.
+        if ((prevTree == nullptr) || !prevTree->OperIs(GT_STOREIND, GT_STORE_BLK))
         {
             return;
         }
 
         // Get coalescing data for the previous STOREIND
-        GenTreeStoreInd* prevInd = prevTree->AsStoreInd();
-        if (!GetStoreCoalescingData(comp, prevInd->AsStoreInd(), &prevData))
+        GenTreeIndir* prevInd = prevTree->AsIndir();
+        if (!GetLoadStoreCoalescingData(prevInd, &prevData))
         {
             return;
         }
 
-        // Same for the previous STOREIND, make sure there are no unexpected nodes around.
-        LIR::ReadOnlyRange prevIndRange = BlockRange().GetTreeRange(prevInd, &isClosedRange);
-        if (!isClosedRange)
+        if (!currData.IsAddressEqual(prevData, /*ignoreOffset*/ true))
         {
+            // Non-offset part of the address is not the same - bail out.
             return;
         }
-
-        // STOREIND aren't value nodes.
-        LIR::Use use;
-        assert(!BlockRange().TryGetUse(prevInd, &use) && !BlockRange().TryGetUse(ind, &use));
-
-        // BaseAddr, Index, Scale and Type all have to match.
-        if ((prevData.scale != currData.scale) || (prevData.targetType != currData.targetType) ||
-            !GenTree::Compare(prevData.baseAddr, currData.baseAddr) ||
-            !GenTree::Compare(prevData.index, currData.index))
-        {
-            return;
-        }
-
-        // At this point we know that we have two consecutive STOREINDs with the same base address,
-        // index and scale, the only variable thing is the offset (constant)
 
         // The same offset means that we're storing to the same location of the same width.
         // Just remove the previous store then.
         if (prevData.offset == currData.offset)
         {
-            BlockRange().Remove(std::move(prevIndRange));
+            BlockRange().Remove(prevData.rangeStart, prevData.rangeEnd);
             continue;
+        }
+
+        // TODO-ARM64-CQ: enable TYP_REF if we find a case where it's beneficial.
+        // The algorithm does support TYP_REF (with null value), but it seems to be not worth
+        // it on ARM64 where it's pretty efficient to do "stp xzr, xzr, [addr]" to clear two
+        // items at once. Although, it may be profitable to do "stp q0, q0, [addr]".
+        if (!varTypeIsIntegral(ind) && !varTypeIsSIMD(ind))
+        {
+            return;
+        }
+
+        assert(ind->OperIs(GT_STOREIND));
+        assert(prevInd->OperIs(GT_STOREIND));
+        assert(prevData.IsStore());
+        assert(currData.IsStore());
+
+        // For now, only constants are supported for data.
+        if (!prevData.value->OperIsConst() || !currData.value->OperIsConst())
+        {
+            return;
         }
 
         // Otherwise, the difference between two offsets has to match the size of the type.
@@ -8702,11 +8710,11 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         }
 
         // We should not be here for stores requiring write barriers.
-        assert(!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind));
-        assert(!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(prevInd));
+        assert(!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind->AsStoreInd()));
+        assert(!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(prevInd->AsStoreInd()));
 
         // Delete previous STOREIND entirely
-        BlockRange().Remove(std::move(prevIndRange));
+        BlockRange().Remove(prevData.rangeStart, prevData.rangeEnd);
 
         // It's not expected to be contained yet, but just in case...
         ind->Data()->ClearContained();
@@ -8860,6 +8868,27 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
         if (ind->OperIs(GT_NULLCHECK) || ind->IsUnusedValue())
         {
             TransformUnusedIndirection(ind, comp, m_block);
+        }
+#endif
+
+#ifdef TARGET_ARM64
+        LIR::Use use;
+        if (ind->OperIs(GT_IND) && ind->IsVolatile() && varTypeIsFloating(ind) && BlockRange().TryGetUse(ind, &use))
+        {
+            // Convert "IND<float>(addr)" to "BitCast<float>(IND<int>(addr))"
+            // for volatile loads since there is no ldar for SIMD regs
+            var_types targetType = ind->TypeGet();
+            ind->ChangeType(ind->TypeIs(TYP_DOUBLE) ? TYP_LONG : TYP_INT);
+
+            // Now it might be eligible for some addressing modes with LDAPUR:
+            const bool isContainable = IsInvariantInRange(ind->Addr(), ind);
+            TryCreateAddrMode(ind->Addr(), isContainable, ind);
+
+            // Wrap the resulting IND into BITCAST:
+            GenTree* castOp = comp->gtNewBitCastNode(targetType, ind);
+            BlockRange().InsertAfter(ind, castOp);
+            use.ReplaceWith(castOp);
+            return castOp;
         }
 #endif
 
@@ -9413,6 +9442,7 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
     }
 
     LowerBlockStore(blkNode);
+    LowerStoreIndirCoalescing(blkNode);
 }
 
 //------------------------------------------------------------------------
@@ -9514,6 +9544,21 @@ void Lowering::TryRetypingFloatingPointStoreToIntegerStore(GenTree* store)
     {
         return;
     }
+
+    // Convert "STOREIND<float>(addr, floatVal)" to "STORIND<int>(addr, BitCast<int>(floatVal))"
+    // for volatile stores since there is no stlr for SIMD regs
+#ifdef TARGET_ARM64
+    if (store->OperIs(GT_STOREIND) && store->AsStoreInd()->IsVolatile())
+    {
+        GenTreeStoreInd* ind = store->AsStoreInd();
+        ind->ChangeType(ind->TypeIs(TYP_DOUBLE) ? TYP_LONG : TYP_INT);
+        GenTree* castOp = comp->gtNewBitCastNode(ind->TypeGet(), ind->Data());
+        BlockRange().InsertAfter(ind->Data(), castOp);
+        ind->Data() = castOp;
+        LowerNode(castOp);
+        return;
+    }
+#endif
 
     // We only want to transform memory stores, not definitions of candidate locals.
     //
