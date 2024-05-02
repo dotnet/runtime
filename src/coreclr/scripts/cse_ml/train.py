@@ -4,7 +4,7 @@
 import os
 import argparse
 
-from jitml import SuperPmiContext, JitCseEnv, JitCseModel, OptimalCseWrapper, NormalizeFeaturesWrapper
+from jitml import SuperPmiContext, JitCseModel, OptimalCseWrapper, NormalizeFeaturesWrapper
 
 def validate_core_root(core_root):
     """Validates and returns the core_root directory."""
