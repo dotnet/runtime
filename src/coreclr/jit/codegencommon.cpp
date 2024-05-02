@@ -62,10 +62,117 @@ CodeGenInterface* getCodeGenerator(Compiler* comp)
     return new (comp, CMK_Codegen) CodeGen(comp);
 }
 
+NodeInternalRegisters::NodeInternalRegisters(Compiler* comp)
+    : m_table(comp->getAllocator(CMK_LSRA))
+{
+}
+
+//------------------------------------------------------------------------
+// Add: Add internal allocated registers for the specified node.
+//
+// Parameters:
+//   tree - IR node to add internal allocated registers to
+//   regs - Registers to add
+//
+void NodeInternalRegisters::Add(GenTree* tree, regMaskTP regs)
+{
+    assert(regs != RBM_NONE);
+
+    regMaskTP* result = m_table.LookupPointerOrAdd(tree, RBM_NONE);
+    *result |= regs;
+}
+
+//------------------------------------------------------------------------
+// Extract: Find the lowest number temporary register from the gtRsvdRegs set
+// that is also in the optional given mask (typically, RBM_ALLINT or
+// RBM_ALLFLOAT), and return it. Remove this register from the temporary
+// register set, so it won't be returned again.
+//
+// Parameters:
+//   tree - IR node whose internal registers to extract
+//   mask - Mask of allowed registers that can be returned
+//
+// Returns:
+//   Register number.
+//
+regNumber NodeInternalRegisters::Extract(GenTree* tree, regMaskTP mask)
+{
+    regMaskTP* regs = m_table.LookupPointer(tree);
+    assert(regs != nullptr);
+
+    regMaskTP availableSet = *regs & mask;
+    assert(availableSet != RBM_NONE);
+
+    regNumber result = genFirstRegNumFromMask(availableSet);
+    *regs ^= genRegMask(result);
+
+    return result;
+}
+
+//------------------------------------------------------------------------
+// GetSingleTempReg: There is expected to be exactly one available temporary register
+// in the given mask in the internal register set. Get that register. No future calls to get
+// a temporary register are expected. Removes the register from the set, but only in
+// DEBUG to avoid doing unnecessary work in non-DEBUG builds.
+//
+// Parameters:
+//   tree - IR node whose internal registers to extract
+//   mask - Mask of allowed registers that can be returned
+//
+// Returns:
+//   Register number.
+//
+regNumber NodeInternalRegisters::GetSingle(GenTree* tree, regMaskTP mask)
+{
+    regMaskTP* regs = m_table.LookupPointer(tree);
+    assert(regs != nullptr);
+
+    regMaskTP availableSet = *regs & mask;
+    assert(genExactlyOneBit(availableSet));
+
+    regNumber result = genFirstRegNumFromMask(availableSet);
+    INDEBUG(*regs &= ~genRegMask(result));
+
+    return result;
+}
+
+//------------------------------------------------------------------------
+// GetAll: Get all internal registers for the specified IR node.
+//
+// Parameters:
+//   tree - IR node whose internal registers to query
+//
+// Returns:
+//   Mask of registers.
+//
+regMaskTP NodeInternalRegisters::GetAll(GenTree* tree)
+{
+    regMaskTP regs;
+    return m_table.Lookup(tree, &regs) ? regs : RBM_NONE;
+}
+
+//------------------------------------------------------------------------
+// Count: return the number of available temporary registers in the (optional)
+// given set (typically, RBM_ALLINT or RBM_ALLFLOAT).
+//
+// Parameters:
+//  tree - IR node whose internal registers to query
+//  mask - Mask of registers to count
+//
+// Returns:
+//   Count of nodes
+//
+unsigned NodeInternalRegisters::Count(GenTree* tree, regMaskTP mask)
+{
+    regMaskTP regs;
+    return m_table.Lookup(tree, &regs) ? genCountBits(regs & mask) : 0;
+}
+
 // CodeGen constructor
 CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
     : gcInfo(theCompiler)
     , regSet(theCompiler, gcInfo)
+    , internalRegisters(theCompiler)
     , compiler(theCompiler)
     , treeLifeUpdater(nullptr)
 {

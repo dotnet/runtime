@@ -904,7 +904,7 @@ namespace Microsoft.Extensions.Logging.Test
                 @"""FormattedMessage"":""Logger2 Event5 Critical bar 23 45") },
 
 // Starting in netcoreapp3.0 Exception.ToString() puts a newline before inner exceptions
-#if NETCOREAPP
+#if NET
             { "E5JS", (e) => VerifySingleEvent(e, "Logger2", EventTypes.MessageJson, 5, null, LogLevel.Critical,
                 @"""ArgumentsJson"":{""stringParam"":""bar"",""int1Param"":""23"",""int2Param"":""45""",
                 @$"""ExceptionJson"":{{""TypeName"":""System.Exception"",""Message"":""oops"",""HResult"":""-2146233088"",""VerboseMessage"":""System.Exception: oops{EscapedNewline()} ---\u003E System.Exception: inner oops") },
