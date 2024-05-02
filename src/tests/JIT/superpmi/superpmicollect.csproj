@@ -33,7 +33,7 @@
     <_SpmiTestProjects Include="..\Methodical\cctor\xassem\xprecise1_cs_do.csproj" />
     <_SpmiTestSupportProjects Include="..\Methodical\cctor\xassem\testlib_xassem.csproj" />
 
-    <ProjectReference Include="@(_SpmiTestProjects):@(_SpmiTestSupportProjects)">
+    <ProjectReference Include="@(_SpmiTestProjects);@(_SpmiTestSupportProjects)">
       <Targets>Build</Targets>
       <OutputItemType>_SpmiTest</OutputItemType>
       <TargetPath>%(FileName)</TargetPath>
