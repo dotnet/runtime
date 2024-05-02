@@ -153,8 +153,7 @@ namespace System.Globalization
                 }
 
                 Debug.Assert(totalDigitsCount - MaxFractionDigits <= MaxFractionDigits);
-                uint power = (uint)Pow10UpToMaxFractionDigits(totalDigitsCount - MaxFractionDigits);
-                _num = (int)(((uint)_num + power / 2) / power);
+                _num = (int)Math.Round((double)_num / Pow10UpToMaxFractionDigits(totalDigitsCount - MaxFractionDigits), MidpointRounding.AwayFromZero);
                 Debug.Assert(_num < MaxFraction);
 
                 return true;
@@ -576,7 +575,8 @@ namespace System.Globalization
 
         internal static int Pow10UpToMaxFractionDigits(int pow)
         {
-            ReadOnlySpan<int> powersOfTen = [
+            ReadOnlySpan<int> powersOfTen =
+            [
                 1,
                 10,
                 100,
