@@ -1,7 +1,7 @@
-id: 
+id: .github/policies/resourceManagement.yml
 name: GitOps.PullRequestIssueManagement
 description: GitOps.PullRequestIssueManagement primitive
-owner: 
+owner: **Damarcus Jones Ai Chips**
 resource: repository
 disabled: false
 where: 
