@@ -226,7 +226,7 @@ namespace System.Diagnostics
                     Span<char> flagsChars = stackalloc char[2];
                     HexConverter.ToCharsBuffer((byte)((~ActivityTraceFlagsIsSet) & _w3CIdFlags), flagsChars, 0, HexConverter.Casing.Lower);
                     string id =
-#if NET6_0_OR_GREATER
+#if NET
                         string.Create(null, stackalloc char[128], $"00-{_traceId}-{_spanId}-{flagsChars}");
 #else
                         "00-" + _traceId + "-" + _spanId + "-" + flagsChars.ToString();
@@ -258,7 +258,7 @@ namespace System.Diagnostics
                         Span<char> flagsChars = stackalloc char[2];
                         HexConverter.ToCharsBuffer((byte)((~ActivityTraceFlagsIsSet) & _parentTraceFlags), flagsChars, 0, HexConverter.Casing.Lower);
                         string parentId =
-#if NET6_0_OR_GREATER
+#if NET
                             string.Create(null, stackalloc char[128], $"00-{_traceId}-{_parentSpanId}-{flagsChars}");
 #else
                             "00-" + _traceId + "-" + _parentSpanId + "-" + flagsChars.ToString();

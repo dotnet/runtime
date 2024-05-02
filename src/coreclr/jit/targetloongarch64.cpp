@@ -161,6 +161,7 @@ ABIPassingInformation LoongArch64Classifier::Classify(Compiler*    comp,
             canPassArgInRegisters = m_floatRegs.Count() > 0;
             if (!canPassArgInRegisters)
             {
+                type = TYP_I_IMPL;
                 m_floatRegs.Clear();
                 canPassArgInRegisters = m_intRegs.Count() > 0;
             }

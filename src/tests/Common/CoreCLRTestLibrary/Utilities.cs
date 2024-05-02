@@ -101,7 +101,7 @@ namespace TestLibrary
         public static bool HasAssemblyFiles => !string.IsNullOrEmpty(typeof(Utilities).Assembly.Location);
         public static bool IsSingleFile => !HasAssemblyFiles;
 
-#if NETCOREAPP
+#if NET
         public static bool IsReflectionEmitSupported => RuntimeFeature.IsDynamicCodeSupported;
         public static bool IsNotReflectionEmitSupported => !IsReflectionEmitSupported;
 #else
