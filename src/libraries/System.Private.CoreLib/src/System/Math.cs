@@ -1195,21 +1195,11 @@ namespace System
         ///    <para>On ARM64 hardware this may use the <c>FRECPE</c> instruction which performs a single Newton-Raphson iteration.</para>
         ///    <para>On hardware without specialized support, this may just return <c>1.0 / d</c>.</para>
         /// </remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double ReciprocalEstimate(double d)
         {
-            if (Avx512F.IsSupported)
-            {
-                return Avx512F.Reciprocal14Scalar(Vector128.CreateScalarUnsafe(d)).ToScalar();
-            }
-            else if (AdvSimd.Arm64.IsSupported)
-            {
-                return AdvSimd.Arm64.ReciprocalEstimateScalar(Vector64.CreateScalar(d)).ToScalar();
-            }
-            else
-            {
-                return 1.0 / d;
-            }
+            return 1.0 / d;
         }
 
         /// <summary>Returns an estimate of the reciprocal square root of a specified number.</summary>
@@ -1219,21 +1209,11 @@ namespace System
         ///    <para>On ARM64 hardware this may use the <c>FRSQRTE</c> instruction which performs a single Newton-Raphson iteration.</para>
         ///    <para>On hardware without specialized support, this may just return <c>1.0 / Sqrt(d)</c>.</para>
         /// </remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double ReciprocalSqrtEstimate(double d)
         {
-            if (Avx512F.IsSupported)
-            {
-                return Avx512F.ReciprocalSqrt14Scalar(Vector128.CreateScalarUnsafe(d)).ToScalar();
-            }
-            else if (AdvSimd.Arm64.IsSupported)
-            {
-                return AdvSimd.Arm64.ReciprocalSquareRootEstimateScalar(Vector64.CreateScalar(d)).ToScalar();
-            }
-            else
-            {
-                return 1.0 / Sqrt(d);
-            }
+            return 1.0 / Sqrt(d);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
