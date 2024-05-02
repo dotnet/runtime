@@ -334,6 +334,17 @@ namespace System.Threading
                 return new ThreadId(0);
             }
 
+            //
+            // At this point, a full lock attempt has been made, and it's time to retry or wait for the lock.
+            //
+
+            // Notify the debugger that this thread is about to wait for a lock that is likely held by another thread. The
+            // debugger may choose to enable other threads to run to help resolve the dependency, or it may choose to abort the
+            // FuncEval here. The lock state is consistent here for an abort, whereas letting a FuncEval continue to run could
+            // lead to the FuncEval timing out and potentially aborting at an arbitrary place where the lock state may not be
+            // consistent.
+            Debugger.NotifyOfCrossThreadDependency();
+
             if (LazyInitializeOrEnter() == TryLockResult.Locked)
             {
                 goto Locked;
