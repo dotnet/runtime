@@ -215,15 +215,10 @@ namespace System.Runtime.Intrinsics.Arm
 
         /// <summary>
         /// svuint8_t svand[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
-        ///   AND Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   MOVPRFX Zresult, Zop1; AND Zresult.B, Pg/M, Zresult.B, Zop2.B
         /// svuint8_t svand[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
-        ///   AND Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   AND Ztied2.B, Pg/M, Ztied2.B, Zop1.B
-        ///   AND Zresult.D, Zop1.D, Zop2.D
         /// svuint8_t svand[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)
-        ///   MOVPRFX Zresult.B, Pg/Z, Zop1.B; AND Zresult.B, Pg/M, Zresult.B, Zop2.B
-        ///   MOVPRFX Zresult.B, Pg/Z, Zop2.B; AND Zresult.B, Pg/M, Zresult.B, Zop1.B
+        ///   AND Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   AND Zresult.D, Zop1.D, Zop2.D
         /// svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
         ///   AND Presult.B, Pg/Z, Pop1.B, Pop2.B
         /// </summary>
@@ -231,15 +226,10 @@ namespace System.Runtime.Intrinsics.Arm
 
         /// <summary>
         /// svint16_t svand[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
-        ///   AND Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        ///   MOVPRFX Zresult, Zop1; AND Zresult.H, Pg/M, Zresult.H, Zop2.H
         /// svint16_t svand[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
-        ///   AND Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        ///   AND Ztied2.H, Pg/M, Ztied2.H, Zop1.H
-        ///   AND Zresult.D, Zop1.D, Zop2.D
         /// svint16_t svand[_s16]_z(svbool_t pg, svint16_t op1, svint16_t op2)
-        ///   MOVPRFX Zresult.H, Pg/Z, Zop1.H; AND Zresult.H, Pg/M, Zresult.H, Zop2.H
-        ///   MOVPRFX Zresult.H, Pg/Z, Zop2.H; AND Zresult.H, Pg/M, Zresult.H, Zop1.H
+        ///   AND Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   AND Zresult.D, Zop1.D, Zop2.D
         /// svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
         ///   AND Presult.B, Pg/Z, Pop1.B, Pop2.B
         /// </summary>
@@ -247,15 +237,10 @@ namespace System.Runtime.Intrinsics.Arm
 
         /// <summary>
         /// svint32_t svand[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
-        ///   AND Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   MOVPRFX Zresult, Zop1; AND Zresult.S, Pg/M, Zresult.S, Zop2.S
         /// svint32_t svand[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
-        ///   AND Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   AND Ztied2.S, Pg/M, Ztied2.S, Zop1.S
-        ///   AND Zresult.D, Zop1.D, Zop2.D
         /// svint32_t svand[_s32]_z(svbool_t pg, svint32_t op1, svint32_t op2)
-        ///   MOVPRFX Zresult.S, Pg/Z, Zop1.S; AND Zresult.S, Pg/M, Zresult.S, Zop2.S
-        ///   MOVPRFX Zresult.S, Pg/Z, Zop2.S; AND Zresult.S, Pg/M, Zresult.S, Zop1.S
+        ///   AND Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   AND Zresult.D, Zop1.D, Zop2.D
         /// svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
         ///   AND Presult.B, Pg/Z, Pop1.B, Pop2.B
         /// </summary>
@@ -263,15 +248,10 @@ namespace System.Runtime.Intrinsics.Arm
 
         /// <summary>
         /// svint64_t svand[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
-        ///   AND Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   MOVPRFX Zresult, Zop1; AND Zresult.D, Pg/M, Zresult.D, Zop2.D
         /// svint64_t svand[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
-        ///   AND Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   AND Ztied2.D, Pg/M, Ztied2.D, Zop1.D
-        ///   AND Zresult.D, Zop1.D, Zop2.D
         /// svint64_t svand[_s64]_z(svbool_t pg, svint64_t op1, svint64_t op2)
-        ///   MOVPRFX Zresult.D, Pg/Z, Zop1.D; AND Zresult.D, Pg/M, Zresult.D, Zop2.D
-        ///   MOVPRFX Zresult.D, Pg/Z, Zop2.D; AND Zresult.D, Pg/M, Zresult.D, Zop1.D
+        ///   AND Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   AND Zresult.D, Zop1.D, Zop2.D
         /// svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
         ///   AND Presult.B, Pg/Z, Pop1.B, Pop2.B
         /// </summary>
@@ -279,15 +259,10 @@ namespace System.Runtime.Intrinsics.Arm
 
         /// <summary>
         /// svint8_t svand[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
-        ///   AND Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   MOVPRFX Zresult, Zop1; AND Zresult.B, Pg/M, Zresult.B, Zop2.B
         /// svint8_t svand[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
-        ///   AND Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   AND Ztied2.B, Pg/M, Ztied2.B, Zop1.B
-        ///   AND Zresult.D, Zop1.D, Zop2.D
         /// svint8_t svand[_s8]_z(svbool_t pg, svint8_t op1, svint8_t op2)
-        ///   MOVPRFX Zresult.B, Pg/Z, Zop1.B; AND Zresult.B, Pg/M, Zresult.B, Zop2.B
-        ///   MOVPRFX Zresult.B, Pg/Z, Zop2.B; AND Zresult.B, Pg/M, Zresult.B, Zop1.B
+        ///   AND Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   AND Zresult.D, Zop1.D, Zop2.D
         /// svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
         ///   AND Presult.B, Pg/Z, Pop1.B, Pop2.B
         /// </summary>
@@ -295,15 +270,10 @@ namespace System.Runtime.Intrinsics.Arm
 
         /// <summary>
         /// svuint16_t svand[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
-        ///   AND Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        ///   MOVPRFX Zresult, Zop1; AND Zresult.H, Pg/M, Zresult.H, Zop2.H
         /// svuint16_t svand[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
-        ///   AND Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        ///   AND Ztied2.H, Pg/M, Ztied2.H, Zop1.H
-        ///   AND Zresult.D, Zop1.D, Zop2.D
         /// svuint16_t svand[_u16]_z(svbool_t pg, svuint16_t op1, svuint16_t op2)
-        ///   MOVPRFX Zresult.H, Pg/Z, Zop1.H; AND Zresult.H, Pg/M, Zresult.H, Zop2.H
-        ///   MOVPRFX Zresult.H, Pg/Z, Zop2.H; AND Zresult.H, Pg/M, Zresult.H, Zop1.H
+        ///   AND Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   AND Zresult.D, Zop1.D, Zop2.D
         /// svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
         ///   AND Presult.B, Pg/Z, Pop1.B, Pop2.B
         /// </summary>
@@ -311,15 +281,10 @@ namespace System.Runtime.Intrinsics.Arm
 
         /// <summary>
         /// svuint32_t svand[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
-        ///   AND Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   MOVPRFX Zresult, Zop1; AND Zresult.S, Pg/M, Zresult.S, Zop2.S
         /// svuint32_t svand[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
-        ///   AND Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   AND Ztied2.S, Pg/M, Ztied2.S, Zop1.S
-        ///   AND Zresult.D, Zop1.D, Zop2.D
         /// svuint32_t svand[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)
-        ///   MOVPRFX Zresult.S, Pg/Z, Zop1.S; AND Zresult.S, Pg/M, Zresult.S, Zop2.S
-        ///   MOVPRFX Zresult.S, Pg/Z, Zop2.S; AND Zresult.S, Pg/M, Zresult.S, Zop1.S
+        ///   AND Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   AND Zresult.D, Zop1.D, Zop2.D
         /// svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
         ///   AND Presult.B, Pg/Z, Pop1.B, Pop2.B
         /// </summary>
@@ -327,15 +292,10 @@ namespace System.Runtime.Intrinsics.Arm
 
         /// <summary>
         /// svuint64_t svand[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
-        ///   AND Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   MOVPRFX Zresult, Zop1; AND Zresult.D, Pg/M, Zresult.D, Zop2.D
         /// svuint64_t svand[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
-        ///   AND Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   AND Ztied2.D, Pg/M, Ztied2.D, Zop1.D
-        ///   AND Zresult.D, Zop1.D, Zop2.D
         /// svuint64_t svand[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)
-        ///   MOVPRFX Zresult.D, Pg/Z, Zop1.D; AND Zresult.D, Pg/M, Zresult.D, Zop2.D
-        ///   MOVPRFX Zresult.D, Pg/Z, Zop2.D; AND Zresult.D, Pg/M, Zresult.D, Zop1.D
+        ///   AND Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   AND Zresult.D, Zop1.D, Zop2.D
         /// svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
         ///   AND Presult.B, Pg/Z, Pop1.B, Pop2.B
         /// </summary>
@@ -1259,15 +1219,10 @@ namespace System.Runtime.Intrinsics.Arm
 
         /// <summary>
         /// svuint8_t svorr[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
-        ///   ORR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   MOVPRFX Zresult, Zop1; ORR Zresult.B, Pg/M, Zresult.B, Zop2.B
         /// svuint8_t svorr[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
-        ///   ORR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   ORR Ztied2.B, Pg/M, Ztied2.B, Zop1.B
-        ///   ORR Zresult.D, Zop1.D, Zop2.D
         /// svuint8_t svorr[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)
-        ///   MOVPRFX Zresult.B, Pg/Z, Zop1.B; ORR Zresult.B, Pg/M, Zresult.B, Zop2.B
-        ///   MOVPRFX Zresult.B, Pg/Z, Zop2.B; ORR Zresult.B, Pg/M, Zresult.B, Zop1.B
+        ///   ORR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   ORR Zresult.D, Zop1.D, Zop2.D
         /// svbool_t svorr[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
         ///   ORR Presult.B, Pg/Z, Pop1.B, Pop2.B
         /// </summary>
@@ -1275,15 +1230,10 @@ namespace System.Runtime.Intrinsics.Arm
 
         /// <summary>
         /// svint16_t svorr[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
-        ///   ORR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        ///   MOVPRFX Zresult, Zop1; ORR Zresult.H, Pg/M, Zresult.H, Zop2.H
         /// svint16_t svorr[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
-        ///   ORR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        ///   ORR Ztied2.H, Pg/M, Ztied2.H, Zop1.H
-        ///   ORR Zresult.D, Zop1.D, Zop2.D
         /// svint16_t svorr[_s16]_z(svbool_t pg, svint16_t op1, svint16_t op2)
-        ///   MOVPRFX Zresult.H, Pg/Z, Zop1.H; ORR Zresult.H, Pg/M, Zresult.H, Zop2.H
-        ///   MOVPRFX Zresult.H, Pg/Z, Zop2.H; ORR Zresult.H, Pg/M, Zresult.H, Zop1.H
+        ///   ORR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   ORR Zresult.D, Zop1.D, Zop2.D
         /// svbool_t svorr[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
         ///   ORR Presult.B, Pg/Z, Pop1.B, Pop2.B
         /// </summary>
@@ -1291,15 +1241,10 @@ namespace System.Runtime.Intrinsics.Arm
 
         /// <summary>
         /// svint32_t svorr[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
-        ///   ORR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   MOVPRFX Zresult, Zop1; ORR Zresult.S, Pg/M, Zresult.S, Zop2.S
         /// svint32_t svorr[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
-        ///   ORR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   ORR Ztied2.S, Pg/M, Ztied2.S, Zop1.S
-        ///   ORR Zresult.D, Zop1.D, Zop2.D
         /// svint32_t svorr[_s32]_z(svbool_t pg, svint32_t op1, svint32_t op2)
-        ///   MOVPRFX Zresult.S, Pg/Z, Zop1.S; ORR Zresult.S, Pg/M, Zresult.S, Zop2.S
-        ///   MOVPRFX Zresult.S, Pg/Z, Zop2.S; ORR Zresult.S, Pg/M, Zresult.S, Zop1.S
+        ///   ORR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   ORR Zresult.D, Zop1.D, Zop2.D
         /// svbool_t svorr[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
         ///   ORR Presult.B, Pg/Z, Pop1.B, Pop2.B
         /// </summary>
@@ -1307,15 +1252,10 @@ namespace System.Runtime.Intrinsics.Arm
 
         /// <summary>
         /// svint64_t svorr[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
-        ///   ORR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   MOVPRFX Zresult, Zop1; ORR Zresult.D, Pg/M, Zresult.D, Zop2.D
         /// svint64_t svorr[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
-        ///   ORR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   ORR Ztied2.D, Pg/M, Ztied2.D, Zop1.D
-        ///   ORR Zresult.D, Zop1.D, Zop2.D
         /// svint64_t svorr[_s64]_z(svbool_t pg, svint64_t op1, svint64_t op2)
-        ///   MOVPRFX Zresult.D, Pg/Z, Zop1.D; ORR Zresult.D, Pg/M, Zresult.D, Zop2.D
-        ///   MOVPRFX Zresult.D, Pg/Z, Zop2.D; ORR Zresult.D, Pg/M, Zresult.D, Zop1.D
+        ///   ORR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   ORR Zresult.D, Zop1.D, Zop2.D
         /// svbool_t svorr[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
         ///   ORR Presult.B, Pg/Z, Pop1.B, Pop2.B
         /// </summary>
@@ -1323,15 +1263,10 @@ namespace System.Runtime.Intrinsics.Arm
 
         /// <summary>
         /// svint8_t svorr[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
-        ///   ORR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   MOVPRFX Zresult, Zop1; ORR Zresult.B, Pg/M, Zresult.B, Zop2.B
         /// svint8_t svorr[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
-        ///   ORR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   ORR Ztied2.B, Pg/M, Ztied2.B, Zop1.B
-        ///   ORR Zresult.D, Zop1.D, Zop2.D
         /// svint8_t svorr[_s8]_z(svbool_t pg, svint8_t op1, svint8_t op2)
-        ///   MOVPRFX Zresult.B, Pg/Z, Zop1.B; ORR Zresult.B, Pg/M, Zresult.B, Zop2.B
-        ///   MOVPRFX Zresult.B, Pg/Z, Zop2.B; ORR Zresult.B, Pg/M, Zresult.B, Zop1.B
+        ///   ORR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   ORR Zresult.D, Zop1.D, Zop2.D
         /// svbool_t svorr[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
         ///   ORR Presult.B, Pg/Z, Pop1.B, Pop2.B
         /// </summary>
@@ -1339,15 +1274,10 @@ namespace System.Runtime.Intrinsics.Arm
 
         /// <summary>
         /// svuint16_t svorr[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
-        ///   ORR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        ///   MOVPRFX Zresult, Zop1; ORR Zresult.H, Pg/M, Zresult.H, Zop2.H
         /// svuint16_t svorr[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
-        ///   ORR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        ///   ORR Ztied2.H, Pg/M, Ztied2.H, Zop1.H
-        ///   ORR Zresult.D, Zop1.D, Zop2.D
         /// svuint16_t svorr[_u16]_z(svbool_t pg, svuint16_t op1, svuint16_t op2)
-        ///   MOVPRFX Zresult.H, Pg/Z, Zop1.H; ORR Zresult.H, Pg/M, Zresult.H, Zop2.H
-        ///   MOVPRFX Zresult.H, Pg/Z, Zop2.H; ORR Zresult.H, Pg/M, Zresult.H, Zop1.H
+        ///   ORR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   ORR Zresult.D, Zop1.D, Zop2.D
         /// svbool_t svorr[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
         ///   ORR Presult.B, Pg/Z, Pop1.B, Pop2.B
         /// </summary>
@@ -1355,15 +1285,10 @@ namespace System.Runtime.Intrinsics.Arm
 
         /// <summary>
         /// svuint32_t svorr[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
-        ///   ORR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   MOVPRFX Zresult, Zop1; ORR Zresult.S, Pg/M, Zresult.S, Zop2.S
         /// svuint32_t svorr[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
-        ///   ORR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   ORR Ztied2.S, Pg/M, Ztied2.S, Zop1.S
-        ///   ORR Zresult.D, Zop1.D, Zop2.D
         /// svuint32_t svorr[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)
-        ///   MOVPRFX Zresult.S, Pg/Z, Zop1.S; ORR Zresult.S, Pg/M, Zresult.S, Zop2.S
-        ///   MOVPRFX Zresult.S, Pg/Z, Zop2.S; ORR Zresult.S, Pg/M, Zresult.S, Zop1.S
+        ///   ORR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   ORR Zresult.D, Zop1.D, Zop2.D
         /// svbool_t svorr[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
         ///   ORR Presult.B, Pg/Z, Pop1.B, Pop2.B
         /// </summary>
@@ -1371,15 +1296,10 @@ namespace System.Runtime.Intrinsics.Arm
 
         /// <summary>
         /// svuint64_t svorr[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
-        ///   ORR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   MOVPRFX Zresult, Zop1; ORR Zresult.D, Pg/M, Zresult.D, Zop2.D
         /// svuint64_t svorr[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
-        ///   ORR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   ORR Ztied2.D, Pg/M, Ztied2.D, Zop1.D
-        ///   ORR Zresult.D, Zop1.D, Zop2.D
         /// svuint64_t svorr[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)
-        ///   MOVPRFX Zresult.D, Pg/Z, Zop1.D; ORR Zresult.D, Pg/M, Zresult.D, Zop2.D
-        ///   MOVPRFX Zresult.D, Pg/Z, Zop2.D; ORR Zresult.D, Pg/M, Zresult.D, Zop1.D
+        ///   ORR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   ORR Zresult.D, Zop1.D, Zop2.D
         /// svbool_t svorr[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
         ///   ORR Presult.B, Pg/Z, Pop1.B, Pop2.B
         /// </summary>
@@ -1802,15 +1722,10 @@ namespace System.Runtime.Intrinsics.Arm
 
         /// <summary>
         /// svuint8_t sveor[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
-        ///   EOR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   MOVPRFX Zresult, Zop1; EOR Zresult.B, Pg/M, Zresult.B, Zop2.B
         /// svuint8_t sveor[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
-        ///   EOR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   EOR Ztied2.B, Pg/M, Ztied2.B, Zop1.B
-        ///   EOR Zresult.D, Zop1.D, Zop2.D
         /// svuint8_t sveor[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)
-        ///   MOVPRFX Zresult.B, Pg/Z, Zop1.B; EOR Zresult.B, Pg/M, Zresult.B, Zop2.B
-        ///   MOVPRFX Zresult.B, Pg/Z, Zop2.B; EOR Zresult.B, Pg/M, Zresult.B, Zop1.B
+        ///   EOR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   EOR Zresult.D, Zop1.D, Zop2.D
         /// svbool_t sveor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
         ///   EOR Presult.B, Pg/Z, Pop1.B, Pop2.B
         /// </summary>
@@ -1818,15 +1733,10 @@ namespace System.Runtime.Intrinsics.Arm
 
         /// <summary>
         /// svint16_t sveor[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
-        ///   EOR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        ///   MOVPRFX Zresult, Zop1; EOR Zresult.H, Pg/M, Zresult.H, Zop2.H
         /// svint16_t sveor[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
-        ///   EOR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        ///   EOR Ztied2.H, Pg/M, Ztied2.H, Zop1.H
-        ///   EOR Zresult.D, Zop1.D, Zop2.D
         /// svint16_t sveor[_s16]_z(svbool_t pg, svint16_t op1, svint16_t op2)
-        ///   MOVPRFX Zresult.H, Pg/Z, Zop1.H; EOR Zresult.H, Pg/M, Zresult.H, Zop2.H
-        ///   MOVPRFX Zresult.H, Pg/Z, Zop2.H; EOR Zresult.H, Pg/M, Zresult.H, Zop1.H
+        ///   EOR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   EOR Zresult.D, Zop1.D, Zop2.D
         /// svbool_t sveor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
         ///   EOR Presult.B, Pg/Z, Pop1.B, Pop2.B
         /// </summary>
@@ -1834,15 +1744,10 @@ namespace System.Runtime.Intrinsics.Arm
 
         /// <summary>
         /// svint32_t sveor[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
-        ///   EOR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   MOVPRFX Zresult, Zop1; EOR Zresult.S, Pg/M, Zresult.S, Zop2.S
         /// svint32_t sveor[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
-        ///   EOR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   EOR Ztied2.S, Pg/M, Ztied2.S, Zop1.S
-        ///   EOR Zresult.D, Zop1.D, Zop2.D
         /// svint32_t sveor[_s32]_z(svbool_t pg, svint32_t op1, svint32_t op2)
-        ///   MOVPRFX Zresult.S, Pg/Z, Zop1.S; EOR Zresult.S, Pg/M, Zresult.S, Zop2.S
-        ///   MOVPRFX Zresult.S, Pg/Z, Zop2.S; EOR Zresult.S, Pg/M, Zresult.S, Zop1.S
+        ///   EOR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   EOR Zresult.D, Zop1.D, Zop2.D
         /// svbool_t sveor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
         ///   EOR Presult.B, Pg/Z, Pop1.B, Pop2.B
         /// </summary>
@@ -1850,15 +1755,10 @@ namespace System.Runtime.Intrinsics.Arm
 
         /// <summary>
         /// svint64_t sveor[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
-        ///   EOR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   MOVPRFX Zresult, Zop1; EOR Zresult.D, Pg/M, Zresult.D, Zop2.D
         /// svint64_t sveor[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
-        ///   EOR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   EOR Ztied2.D, Pg/M, Ztied2.D, Zop1.D
-        ///   EOR Zresult.D, Zop1.D, Zop2.D
         /// svint64_t sveor[_s64]_z(svbool_t pg, svint64_t op1, svint64_t op2)
-        ///   MOVPRFX Zresult.D, Pg/Z, Zop1.D; EOR Zresult.D, Pg/M, Zresult.D, Zop2.D
-        ///   MOVPRFX Zresult.D, Pg/Z, Zop2.D; EOR Zresult.D, Pg/M, Zresult.D, Zop1.D
+        ///   EOR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   EOR Zresult.D, Zop1.D, Zop2.D
         /// svbool_t sveor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
         ///   EOR Presult.B, Pg/Z, Pop1.B, Pop2.B
         /// </summary>
@@ -1866,15 +1766,10 @@ namespace System.Runtime.Intrinsics.Arm
 
         /// <summary>
         /// svint8_t sveor[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
-        ///   EOR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   MOVPRFX Zresult, Zop1; EOR Zresult.B, Pg/M, Zresult.B, Zop2.B
         /// svint8_t sveor[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
-        ///   EOR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   EOR Ztied2.B, Pg/M, Ztied2.B, Zop1.B
-        ///   EOR Zresult.D, Zop1.D, Zop2.D
         /// svint8_t sveor[_s8]_z(svbool_t pg, svint8_t op1, svint8_t op2)
-        ///   MOVPRFX Zresult.B, Pg/Z, Zop1.B; EOR Zresult.B, Pg/M, Zresult.B, Zop2.B
-        ///   MOVPRFX Zresult.B, Pg/Z, Zop2.B; EOR Zresult.B, Pg/M, Zresult.B, Zop1.B
+        ///   EOR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   EOR Zresult.D, Zop1.D, Zop2.D
         /// svbool_t sveor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
         ///   EOR Presult.B, Pg/Z, Pop1.B, Pop2.B
         /// </summary>
@@ -1882,15 +1777,10 @@ namespace System.Runtime.Intrinsics.Arm
 
         /// <summary>
         /// svuint16_t sveor[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
-        ///   EOR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        ///   MOVPRFX Zresult, Zop1; EOR Zresult.H, Pg/M, Zresult.H, Zop2.H
         /// svuint16_t sveor[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
-        ///   EOR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        ///   EOR Ztied2.H, Pg/M, Ztied2.H, Zop1.H
-        ///   EOR Zresult.D, Zop1.D, Zop2.D
         /// svuint16_t sveor[_u16]_z(svbool_t pg, svuint16_t op1, svuint16_t op2)
-        ///   MOVPRFX Zresult.H, Pg/Z, Zop1.H; EOR Zresult.H, Pg/M, Zresult.H, Zop2.H
-        ///   MOVPRFX Zresult.H, Pg/Z, Zop2.H; EOR Zresult.H, Pg/M, Zresult.H, Zop1.H
+        ///   EOR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   EOR Zresult.D, Zop1.D, Zop2.D
         /// svbool_t sveor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
         ///   EOR Presult.B, Pg/Z, Pop1.B, Pop2.B
         /// </summary>
@@ -1898,15 +1788,10 @@ namespace System.Runtime.Intrinsics.Arm
 
         /// <summary>
         /// svuint32_t sveor[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
-        ///   EOR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   MOVPRFX Zresult, Zop1; EOR Zresult.S, Pg/M, Zresult.S, Zop2.S
         /// svuint32_t sveor[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
-        ///   EOR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   EOR Ztied2.S, Pg/M, Ztied2.S, Zop1.S
-        ///   EOR Zresult.D, Zop1.D, Zop2.D
         /// svuint32_t sveor[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)
-        ///   MOVPRFX Zresult.S, Pg/Z, Zop1.S; EOR Zresult.S, Pg/M, Zresult.S, Zop2.S
-        ///   MOVPRFX Zresult.S, Pg/Z, Zop2.S; EOR Zresult.S, Pg/M, Zresult.S, Zop1.S
+        ///   EOR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   EOR Zresult.D, Zop1.D, Zop2.D
         /// svbool_t sveor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
         ///   EOR Presult.B, Pg/Z, Pop1.B, Pop2.B
         /// </summary>
@@ -1914,15 +1799,10 @@ namespace System.Runtime.Intrinsics.Arm
 
         /// <summary>
         /// svuint64_t sveor[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
-        ///   EOR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   MOVPRFX Zresult, Zop1; EOR Zresult.D, Pg/M, Zresult.D, Zop2.D
         /// svuint64_t sveor[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
-        ///   EOR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   EOR Ztied2.D, Pg/M, Ztied2.D, Zop1.D
-        ///   EOR Zresult.D, Zop1.D, Zop2.D
         /// svuint64_t sveor[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)
-        ///   MOVPRFX Zresult.D, Pg/Z, Zop1.D; EOR Zresult.D, Pg/M, Zresult.D, Zop2.D
-        ///   MOVPRFX Zresult.D, Pg/Z, Zop2.D; EOR Zresult.D, Pg/M, Zresult.D, Zop1.D
+        ///   EOR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   EOR Zresult.D, Zop1.D, Zop2.D
         /// svbool_t sveor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
         ///   EOR Presult.B, Pg/Z, Pop1.B, Pop2.B
         /// </summary>
