@@ -2511,7 +2511,7 @@ emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_m
 }
 
 static void
-emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoUnsafeAccessorKind kind, const char *member_name)
+emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, gboolean to_be_inflated, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoUnsafeAccessorKind kind, const char *member_name)
 {
 	g_assert (kind == MONO_UNSAFE_ACCESSOR_METHOD || kind == MONO_UNSAFE_ACCESSOR_STATIC_METHOD);
 	g_assert (member_name != NULL);
@@ -2525,6 +2525,18 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor
 	}
 
 	MonoType *target_type = sig->params[0];
+
+	// Try to do a static lookup.  if the target type is G<T> (not
+	// just !T or !!T), we can get a method.  TODO: if it's !T we
+	// can get some System.Object methods, too.  Also if the type
+	// parameter is constrained we can call some of the methods
+	// from the constraint.
+	if ((accessor_method->is_generic || to_be_inflated) &&
+	    (target_type->type == MONO_TYPE_VAR || target_type->type == MONO_TYPE_MVAR)) {
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_Generics");
+		return;
+	};
+
 	gboolean hasthis = kind == MONO_UNSAFE_ACCESSOR_METHOD;
 	MonoClass *target_class = mono_class_from_mono_type_internal (target_type);
 
@@ -2534,13 +2546,13 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor
 	}
 
 	ERROR_DECL(find_method_error);
-	if (accessor_method->is_inflated) {
-		sig =  update_signature(accessor_method);
-	}
+	//if (accessor_method->is_inflated) {
+	//	sig =  update_signature(accessor_method);
+	//}
 
 	MonoMethodSignature *member_sig = method_sig_from_accessor_sig (mb, hasthis, sig);
 
-	MonoClass *in_class = mono_class_get_generic_type_definition (target_class);
+	MonoClass *in_class = target_class; // mono_class_get_generic_type_definition (target_class);
 
 	MonoMethod *target_method = NULL;
 	if (!ctor_as_method)
@@ -2599,12 +2611,7 @@ emit_unsafe_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *accessor_
 		return;
 	case MONO_UNSAFE_ACCESSOR_METHOD:
 	case MONO_UNSAFE_ACCESSOR_STATIC_METHOD:
-		if (accessor_method->is_generic || to_be_inflated) {
-			mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_Generics");
-			return;
-		}
-
-		emit_unsafe_accessor_method_wrapper (mb, accessor_method, sig, kind, member_name);
+		emit_unsafe_accessor_method_wrapper (mb, to_be_inflated, accessor_method, sig, kind, member_name);
 		return;
 	default:
 		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_InvalidKindValue");
