@@ -462,6 +462,71 @@ void Validate_Enumerator()
     ValidateReturnedEnumerator(&result);
 }
 
+void Validate_ParamCoerce_Type(ComSmartPtr<IDispatchCoerceTesting>& dispatchCoerceTesting, VARENUM type, int lcid, DISPID methodId)
+{
+    HRESULT hr;
+
+    DISPPARAMS params;
+    VARIANTARG arg;
+    params.cArgs = 1;
+    params.rgvarg = &arg;
+    params.cNamedArgs = 0;
+    params.rgdispidNamedArgs = nullptr;
+
+    VARIANT result;
+
+    V_VT(&arg) = type;
+
+    switch (type)
+    {
+        case VT_BSTR:
+        {
+            BSTR str = ::SysAllocString(L"123");
+            V_BSTR(&arg) = str;
+            break;
+        }
+        case VT_R4:
+        {
+            V_R4(&arg) = 1.23f;
+            break;
+        }
+        case VT_DATE:
+        case VT_R8:
+        {
+            V_R8(&arg) = 1.23;
+            break;
+        }
+        case VT_CY:
+        {
+            VarCyFromI4(123, &V_CY(&arg));
+            break;
+        }
+        case VT_DECIMAL:
+        {
+            VarDecFromI4(123, &V_DECIMAL(&arg));
+            break;
+        }
+        default:
+        {
+            V_I1(&arg) = 123;
+            break;
+        }
+    }
+
+    THROW_IF_FAILED(dispatchCoerceTesting->Invoke(
+        methodId,
+        IID_NULL,
+        lcid,
+        DISPATCH_METHOD,
+        &params,
+        &result,
+        nullptr,
+        nullptr
+    ));
+
+    THROW_FAIL_IF_FALSE(V_I4(&result) != 0);
+}
+
 void Validate_ParamCoerce()
 {
     HRESULT hr;
@@ -483,30 +548,24 @@ void Validate_ParamCoerce()
         lcid,
         &methodId));
     
-    {
-        DISPPARAMS params;
-        params.cArgs = 1;
-        params.rgvarg = new VARIANTARG[params.cArgs];
-        params.cNamedArgs = 0;
-        params.rgdispidNamedArgs = nullptr;
-
-        VARIANT result;
-
-        V_VT(&params.rgvarg[0]) = VT_I8;
-        V_I8(&params.rgvarg[0]) = 42;
-
-
-        THROW_IF_FAILED(dispatchCoerceTesting->Invoke(
-            methodId,
-            IID_NULL,
-            lcid,
-            DISPATCH_METHOD,
-            &params,
-            &result,
-            nullptr,
-            nullptr
-        ));
-
-        THROW_FAIL_IF_FALSE(V_I4(&result) == 42);
-    }
+    ::wprintf(W("Validating VT_I2\n"));
+    Validate_ParamCoerce_Type(dispatchCoerceTesting, VT_I2, lcid, methodId);
+    ::wprintf(W("Validating VT_I4\n"));
+    Validate_ParamCoerce_Type(dispatchCoerceTesting, VT_I4, lcid, methodId);
+    ::wprintf(W("Validating VT_R4\n"));
+    Validate_ParamCoerce_Type(dispatchCoerceTesting, VT_R4, lcid, methodId);
+    ::wprintf(W("Validating VT_R8\n"));
+    Validate_ParamCoerce_Type(dispatchCoerceTesting, VT_R8, lcid, methodId);
+    ::wprintf(W("Validating VT_CY\n"));
+    Validate_ParamCoerce_Type(dispatchCoerceTesting, VT_CY, lcid, methodId);
+    ::wprintf(W("Validating VT_DATE\n"));
+    Validate_ParamCoerce_Type(dispatchCoerceTesting, VT_DATE, lcid, methodId);
+    ::wprintf(W("Validating VT_BSTR\n"));
+    Validate_ParamCoerce_Type(dispatchCoerceTesting, VT_BSTR, lcid, methodId);
+    ::wprintf(W("Validating VT_ERROR\n"));
+    Validate_ParamCoerce_Type(dispatchCoerceTesting, VT_ERROR, lcid, methodId);
+    ::wprintf(W("Validating VT_BOOL\n"));
+    Validate_ParamCoerce_Type(dispatchCoerceTesting, VT_BOOL, lcid, methodId);
+    ::wprintf(W("Validating VT_DECIMAL\n"));
+    Validate_ParamCoerce_Type(dispatchCoerceTesting, VT_DECIMAL, lcid, methodId);
 }
