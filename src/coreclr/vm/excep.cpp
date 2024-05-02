@@ -4623,12 +4623,6 @@ LONG InternalUnhandledExceptionFilter_Worker(
     }
 #endif
 
-    // This shouldn't be possible, but MSVC re-installs us... for now, just bail if this happens.
-    if (g_fNoExceptions)
-    {
-        return EXCEPTION_CONTINUE_SEARCH;
-    }
-
     // Are we looking at a stack overflow here?
     if ((pThread !=  NULL) && !pThread->DetermineIfGuardPagePresent())
     {
@@ -5532,8 +5526,6 @@ static LONG ThreadBaseExceptionFilter_Worker(PEXCEPTION_POINTERS pExceptionInfo,
 
     ThreadBaseExceptionFilterParam *pParam = (ThreadBaseExceptionFilterParam *) pvParam;
     UnhandledExceptionLocation location = pParam->location;
-
-    _ASSERTE(!g_fNoExceptions);
 
     Thread* pThread = GetThread();
 
@@ -7393,8 +7385,8 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
     // WARNING WARNING WARNING WARNING WARNING WARNING WARNING
     //
 
-    // If exceptions (or runtime) have been disabled, then simply return.
-    if (g_fForbidEnterEE || g_fNoExceptions)
+    // If runtime have been disabled, then simply return.
+    if (g_fForbidEnterEE)
     {
         return EXCEPTION_CONTINUE_SEARCH;
     }

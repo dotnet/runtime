@@ -779,6 +779,8 @@ include_method (MonoMethod *method)
 		return false;
 	} else if (!m_method_is_wrapper (method)) {
 		return true;
+	} else if (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD){
+		return true;
 	} else {
 		WrapperInfo *wrapper = mono_marshal_get_wrapper_info (method);
 		return (wrapper && wrapper->subtype == WRAPPER_SUBTYPE_PINVOKE) ? true : false;
