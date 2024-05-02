@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -19,6 +18,21 @@ public struct TargetPointer
 
 public sealed unsafe class Target
 {
+    public record struct TypeInfo
+    {
+        public uint? Size;
+        public Dictionary<string, FieldInfo> Fields = [];
+
+        public TypeInfo() { }
+    }
+
+    public record struct FieldInfo
+    {
+        public int Offset;
+        public DataType Type;
+        public string? TypeName;
+    }
+
     private const int StackAllocByteThreshold = 1024;
 
     private readonly struct Configuration
@@ -32,6 +46,8 @@ public sealed unsafe class Target
 
     private readonly IReadOnlyDictionary<string, int> _contracts = new Dictionary<string, int>();
     private readonly IReadOnlyDictionary<string, (ulong Value, string? Type)> _globals = new Dictionary<string, (ulong, string?)>();
+    private readonly Dictionary<DataType, TypeInfo> _knownTypes = [];
+    private readonly Dictionary<string, TypeInfo> _types = [];
 
     public static bool TryCreate(ulong contractDescriptor, delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget, void* readContext, out Target? target)
     {
@@ -51,9 +67,38 @@ public sealed unsafe class Target
         _config = config;
         _reader = reader;
 
-        // TODO: [cdac] Read types
-        // note: we will probably want to store the globals and types into a more usable form
         _contracts = descriptor.Contracts ?? [];
+
+        // Read types and map to known data types
+        if (descriptor.Types is not null)
+        {
+            foreach ((string name, ContractDescriptorParser.TypeDescriptor type) in descriptor.Types)
+            {
+                TypeInfo typeInfo = new() { Size = type.Size };
+                if (type.Fields is not null)
+                {
+                    foreach ((string fieldName, ContractDescriptorParser.FieldDescriptor field) in type.Fields)
+                    {
+                        typeInfo.Fields[fieldName] = new FieldInfo()
+                        {
+                            Offset = field.Offset,
+                            Type = field.Type is null ? DataType.Unknown : GetDataType(field.Type),
+                            TypeName = field.Type
+                        };
+                    }
+                }
+
+                DataType dataType = GetDataType(name);
+                if (dataType is not DataType.Unknown)
+                {
+                    _knownTypes[dataType] = typeInfo;
+                }
+                else
+                {
+                    _types[name] = typeInfo;
+                }
+            }
+        }
 
         // Read globals and map indirect values to pointer data
         if (descriptor.Globals is not null)
@@ -159,9 +204,17 @@ public sealed unsafe class Target
         return true;
     }
 
-    public T Read<T>(ulong address, out T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+    private static DataType GetDataType(string type)
     {
-        if (!TryRead(address, out value))
+        if (Enum.TryParse(type, false, out DataType dataType) && Enum.IsDefined(dataType))
+            return dataType;
+
+        return DataType.Unknown;
+    }
+
+    public T Read<T>(ulong address) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+    {
+        if (!TryRead(address, out T value))
             throw new InvalidOperationException($"Failed to read {typeof(T)} at 0x{address:x8}.");
 
         return value;
@@ -281,6 +334,37 @@ public sealed unsafe class Target
 
         pointer = new TargetPointer(global.Value);
         return true;
+    }
+
+    public TypeInfo GetTypeInfo(DataType type)
+    {
+        if (!TryGetTypeInfo(type, out TypeInfo typeInfo))
+            throw new InvalidOperationException($"Failed to get type info for '{type}'");
+
+        return typeInfo;
+    }
+
+    public bool TryGetTypeInfo(DataType type, out TypeInfo typeInfo)
+        => _knownTypes.TryGetValue(type, out typeInfo);
+
+    public TypeInfo GetTypeInfo(string type)
+    {
+        if (!TryGetTypeInfo(type, out TypeInfo typeInfo))
+            throw new InvalidOperationException($"Failed to get type info for '{type}'");
+
+        return typeInfo;
+    }
+
+    public bool TryGetTypeInfo(string type, out TypeInfo typeInfo)
+    {
+        if (_types.TryGetValue(type, out typeInfo))
+            return true;
+
+        DataType dataType = GetDataType(type);
+        if (dataType is DataType.Unknown)
+            return false;
+
+        return TryGetTypeInfo(dataType, out typeInfo);
     }
 
     private sealed class Reader
