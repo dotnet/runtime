@@ -95,6 +95,12 @@ namespace System.Numerics.Tensors
 
             public static Vector128<T> Invoke(Vector128<T> x)
             {
+                if (Avx512F.VL.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return Avx512F.VL.Reciprocal14(x.AsSingle()).As<float, T>();
+                    if (typeof(T) == typeof(double)) return Avx512F.VL.Reciprocal14(x.AsDouble()).As<double, T>();
+                }
+
                 if (Sse.IsSupported)
                 {
                     if (typeof(T) == typeof(float)) return Sse.Reciprocal(x.AsSingle()).As<float, T>();
@@ -115,6 +121,12 @@ namespace System.Numerics.Tensors
 
             public static Vector256<T> Invoke(Vector256<T> x)
             {
+                if (Avx512F.VL.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return Avx512F.VL.Reciprocal14(x.AsSingle()).As<float, T>();
+                    if (typeof(T) == typeof(double)) return Avx512F.VL.Reciprocal14(x.AsDouble()).As<double, T>();
+                }
+
                 if (Avx.IsSupported)
                 {
                     if (typeof(T) == typeof(float)) return Avx.Reciprocal(x.AsSingle()).As<float, T>();
@@ -143,6 +155,12 @@ namespace System.Numerics.Tensors
 
             public static Vector128<T> Invoke(Vector128<T> x)
             {
+                if (Avx512F.VL.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return Avx512F.VL.ReciprocalSqrt14(x.AsSingle()).As<float, T>();
+                    if (typeof(T) == typeof(double)) return Avx512F.VL.ReciprocalSqrt14(x.AsDouble()).As<double, T>();
+                }
+
                 if (Sse.IsSupported)
                 {
                     if (typeof(T) == typeof(float)) return Sse.ReciprocalSqrt(x.AsSingle()).As<float, T>();
@@ -163,6 +181,12 @@ namespace System.Numerics.Tensors
 
             public static Vector256<T> Invoke(Vector256<T> x)
             {
+                if (Avx512F.VL.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return Avx512F.VL.ReciprocalSqrt14(x.AsSingle()).As<float, T>();
+                    if (typeof(T) == typeof(double)) return Avx512F.VL.ReciprocalSqrt14(x.AsDouble()).As<double, T>();
+                }
+
                 if (Avx.IsSupported)
                 {
                     if (typeof(T) == typeof(float)) return Avx.ReciprocalSqrt(x.AsSingle()).As<float, T>();
