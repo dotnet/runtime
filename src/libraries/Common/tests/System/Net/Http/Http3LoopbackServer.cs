@@ -100,8 +100,7 @@ namespace System.Net.Test.Common
 
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
-            await using Http3LoopbackConnection con = await EstablishHttp3ConnectionAsync()
-                .WaitAsync(TimeSpan.FromSeconds(10)).ConfigureAwait(false);
+            await using Http3LoopbackConnection con = await EstablishHttp3ConnectionAsync().ConfigureAwait(false);
             _output?.WriteLine($"{con} Connection established successfully!");
             return await con.HandleRequestAsync(statusCode, headers, content).ConfigureAwait(false);
         }

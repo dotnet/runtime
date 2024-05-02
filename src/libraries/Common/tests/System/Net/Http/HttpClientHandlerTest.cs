@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
+using TestUtilities;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -1015,6 +1016,8 @@ namespace System.Net.Http.Functional.Tests
                 // enableWasmStreaming makes only sense on Chrome
                 return;
             }
+
+            using TestEventListener listener = new TestEventListener(_output, TestEventListener.NetworkingEvents);
 
             var tcs = new TaskCompletionSource<bool>();
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
