@@ -75,7 +75,6 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task AltSvc_ConnectionFrame_UpgradeFrom20_Success()
         {
-            using TestEventListener listener = new TestEventListener(_output, TestEventListener.NetworkingEvents);
             using Http2LoopbackServer firstServer = Http2LoopbackServer.CreateServer();
             using Http3LoopbackServer secondServer = CreateHttp3LoopbackServer();
             using HttpClient client = CreateHttpClient(HttpVersion.Version20);

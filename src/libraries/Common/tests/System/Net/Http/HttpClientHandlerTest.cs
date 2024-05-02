@@ -1017,8 +1017,6 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            using TestEventListener listener = new TestEventListener(_output, TestEventListener.NetworkingEvents);
-
             var tcs = new TaskCompletionSource<bool>();
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {

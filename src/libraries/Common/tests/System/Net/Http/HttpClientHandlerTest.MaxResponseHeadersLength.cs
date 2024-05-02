@@ -74,7 +74,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(15)]
         public async Task LargeSingleHeader_ThrowsException(int maxResponseHeadersLength)
         {
-            using TestEventListener listener = new TestEventListener(_output, TestEventListener.NetworkingEvents);
+            TestEventListener? listener = null;
+            if (UseVersion == HttpVersion30)
+            {
+                listener = new TestEventListener(_output, TestEventListener.NetworkingEvents);
+            }
+
             using HttpClientHandler handler = CreateHttpClientHandler();
             handler.MaxResponseHeadersLength = maxResponseHeadersLength;
 
@@ -101,6 +106,8 @@ namespace System.Net.Http.Functional.Tests
                 catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad) {}
 #endif
             }, options: new() { TestOutputHelper = _output });
+
+            listener?.Dispose();
         }
 
         [Theory]
