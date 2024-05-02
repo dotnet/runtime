@@ -205,60 +205,6 @@ ClrDebugState *CLRInitDebugState()
 // use standard heap functions for AddressSanitizer and for the DAC build.
 #if !defined(HAS_ADDRESS_SANITIZER) && !defined(DACCESS_COMPILE)
 
-#ifdef HOST_WINDOWS
-static HANDLE g_hProcessHeap;
-#endif
-
-static FORCEINLINE void* ClrMalloc(size_t size)
-{
-    STATIC_CONTRACT_NOTHROW;
-
-    void* p;
-
-
-#ifdef HOST_WINDOWS
-    HANDLE hHeap = g_hProcessHeap;
-    if (hHeap == NULL)
-    {
-        InterlockedCompareExchangeT(&g_hProcessHeap, ::GetProcessHeap(), NULL);
-        hHeap = g_hProcessHeap;
-    }
-
-    p = HeapAlloc(hHeap, 0, size);
-#else
-    if (size == 0)
-    {
-        // Allocate at least one byte.
-        size = 1;
-    }
-    p = malloc(size);
-#endif
-
-#ifndef SELF_NO_HOST
-    if (p == NULL
-        // If we have not created StressLog ring buffer, we should not try to use it.
-        // StressLog is going to do a memory allocation.  We may enter an endless loop.
-        && StressLog::t_pCurrentThreadLog != NULL)
-    {
-        STRESS_LOG_OOM_STACK(size);
-    }
-#endif
-
-    return p;
-}
-
-FORCEINLINE void ClrFree(void* p)
-{
-    STATIC_CONTRACT_NOTHROW;
-
-#ifdef HOST_WINDOWS
-    if (p != NULL)
-        HeapFree(g_hProcessHeap, 0, p);
-#else
-    free(p);
-#endif
-}
-
 void * __cdecl
 operator new(size_t n)
 {
@@ -271,7 +217,7 @@ operator new(size_t n)
     STATIC_CONTRACT_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
 
-    void* result = ClrMalloc(n);
+    void* result = operator new(n, std::nothrow);
     if (result == NULL) {
         ThrowOutOfMemory();
     }
@@ -285,22 +231,72 @@ operator new[](size_t n)
 #ifdef _DEBUG_IMPL
     CLRThrowsExceptionWorker();
 #endif
-
+    
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
 
-    void* result = ClrMalloc(n);
+    void* result = operator new[](n, std::nothrow);
     if (result == NULL) {
         ThrowOutOfMemory();
     }
     TRASH_LASTERROR;
     return result;
-};
+}
 
+namespace
+{
+    FORCEINLINE void ReportOOM(size_t size)
+    {
+        STATIC_CONTRACT_NOTHROW;
+#ifndef SELF_NO_HOST
+        // If we have not created StressLog ring buffer, we should not try to use it.
+        // StressLog is going to do a memory allocation.  We may enter an endless loop.
+        if (StressLog::t_pCurrentThreadLog != NULL)
+        {
+            STRESS_LOG_OOM_STACK(size);
+        }
+#endif
+    }
+}
 
-void * __cdecl operator new(size_t n, const std::nothrow_t&) noexcept
+#ifdef HOST_WINDOWS
+// On Windows, use the process heap for new and delete operations.
+namespace
+{
+    HANDLE g_hProcessHeap;
+    FORCEINLINE void* ClrMalloc(size_t size)
+    {
+        STATIC_CONTRACT_NOTHROW;
+
+        void* p;
+
+        HANDLE hHeap = g_hProcessHeap;
+        if (hHeap == NULL)
+        {
+            InterlockedCompareExchangeT(&g_hProcessHeap, ::GetProcessHeap(), NULL);
+            hHeap = g_hProcessHeap;
+        }
+
+        p = HeapAlloc(hHeap, 0, size);
+        if (p == NULL)
+        {
+            ReportOOM(size);
+        }
+        return p;
+    }
+
+    FORCEINLINE void ClrFree(void* p)
+    {
+        STATIC_CONTRACT_NOTHROW;
+
+        if (p != NULL)
+            HeapFree(g_hProcessHeap, 0, p);
+    }
+}
+
+void* __cdecl operator new(size_t size, const std::nothrow_t&)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -309,12 +305,12 @@ void * __cdecl operator new(size_t n, const std::nothrow_t&) noexcept
 
     INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
 
-    void* result = ClrMalloc(n);
-	TRASH_LASTERROR;
+    void* result = ClrMalloc(size);
+    TRASH_LASTERROR;
     return result;
 }
 
-void * __cdecl operator new[](size_t n, const std::nothrow_t&) noexcept
+void* __cdecl operator new[](size_t size, const std::nothrow_t&)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -323,13 +319,12 @@ void * __cdecl operator new[](size_t n, const std::nothrow_t&) noexcept
 
     INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
 
-    void* result = ClrMalloc(n);
-	TRASH_LASTERROR;
+    void* result = ClrMalloc(size);
+    TRASH_LASTERROR;
     return result;
 }
 
-void __cdecl
-operator delete(void *p) noexcept
+void __cdecl operator delete(void* p) noexcept
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -340,16 +335,77 @@ operator delete(void *p) noexcept
     TRASH_LASTERROR;
 }
 
-void __cdecl
-operator delete[](void *p) noexcept
+void __cdecl operator delete[](void* p) noexcept
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
 
     ClrFree(p);
+
     TRASH_LASTERROR;
 }
+#elif !defined(SELF_NO_HOST)
+// If we have the CLR host, we should report OOMs to the StressLog.
+
+void* __cdecl operator new(size_t size, const std::nothrow_t&)
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_FAULT;
+    STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
+
+    INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
+
+    void* result = malloc(size == 0 ? 1 : size);
+    if (result == nullptr)
+    {
+        ReportOOM(size);
+    }
+    TRASH_LASTERROR;
+    return result;
+}
+
+void* __cdecl operator new[](size_t size, const std::nothrow_t&)
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_FAULT;
+    STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
+
+    INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
+
+    void* result = malloc(size == 0 ? 1 : size);
+    if (result == nullptr)
+    {
+        ReportOOM(size);
+    }
+    TRASH_LASTERROR;
+    return result;
+}
+
+void __cdecl operator delete(void* p) noexcept
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
+
+    free(p);
+
+    TRASH_LASTERROR;
+}
+
+void __cdecl operator delete[](void* p) noexcept
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
+
+    free(p);
+
+    TRASH_LASTERROR;
+}
+#endif
 
 #endif // !HAS_ADDRESS_SANITIZER && !DACCESS_COMPILE
 
@@ -482,7 +538,7 @@ void * __cdecl operator new[](size_t n, const CExecutable&, const std::nothrow_t
 BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length)
 {
 #if defined(TARGET_UNIX)
-    // No NX support on PAL or for crossgen compilations.
+    // No NX support on PAL
     return TRUE;
 #else // !(TARGET_UNIX)
     BYTE *regionStart = (BYTE*) ALIGN_DOWN((BYTE*)lpMem, GetOsPageSize());
