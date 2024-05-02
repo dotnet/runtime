@@ -2833,7 +2833,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
     //
     if (!opts.OptimizationEnabled())
     {
-        JITDUMP("not optimizing, so not incorproating any profile data\n");
+        JITDUMP("not optimizing, so not incorporating any profile data\n");
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
