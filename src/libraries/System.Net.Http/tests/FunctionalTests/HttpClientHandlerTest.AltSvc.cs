@@ -7,6 +7,7 @@ using Xunit;
 using Xunit.Abstractions;
 using System.Net.Test.Common;
 using System.Net.Quic;
+using TestUtilities;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -74,6 +75,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task AltSvc_ConnectionFrame_UpgradeFrom20_Success()
         {
+            using TestEventListener listener = new TestEventListener(_output, TestEventListener.NetworkingEvents);
             using Http2LoopbackServer firstServer = Http2LoopbackServer.CreateServer();
             using Http3LoopbackServer secondServer = CreateHttp3LoopbackServer();
             using HttpClient client = CreateHttpClient(HttpVersion.Version20);
@@ -88,7 +90,7 @@ namespace System.Net.Http.Functional.Tests
                 await connection.SendDefaultResponseAsync(streamId);
             });
 
-            await new[] { firstResponseTask, serverTask }.WhenAllOrAnyFailed(30_000);
+            await new[] { firstResponseTask, serverTask }.WhenAllOrAnyFailed(60_000); // Allow to fail due to hang and QuicException
 
             HttpResponseMessage firstResponse = firstResponseTask.Result;
             Assert.True(firstResponse.IsSuccessStatusCode);
