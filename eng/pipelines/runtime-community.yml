@@ -71,15 +71,16 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
-            extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-            extraStepsParameters:
-              creator: dotnet-bot
-              testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-              condition: >-
-                or(
-                eq(variables['librariesContainsChange'], true),
-                eq(variables['monoContainsChange'], true),
-                eq(variables['isRollingBuild'], true))
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+                  condition: >-
+                    or(
+                    eq(variables['librariesContainsChange'], true),
+                    eq(variables['monoContainsChange'], true),
+                    eq(variables['isRollingBuild'], true))
 
       #
       # Build the whole product using Mono
@@ -138,7 +139,8 @@ extends:
                 eq(variables['isRollingBuild'], true))
             ${{ if eq(variables['isRollingBuild'], true) }}:
               # extra steps, run tests
-              extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-              extraStepsParameters:
-                creator: dotnet-bot
-                testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+              postBuildSteps:
+                - template: /eng/pipelines/libraries/helix.yml
+                  parameters:
+                    creator: dotnet-bot
+                    testRunNamePrefixSuffix: Mono_$(_BuildConfig)
