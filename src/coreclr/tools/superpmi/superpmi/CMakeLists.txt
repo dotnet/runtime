@@ -61,7 +61,6 @@ target_precompile_headers(superpmi PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:standardpc
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(superpmi
         PRIVATE
-        utilcodestaticnohost
         mscorrc
         coreclrpal
         palrt
