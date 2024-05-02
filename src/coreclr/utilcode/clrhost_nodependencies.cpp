@@ -387,7 +387,7 @@ operator delete[](void *p) noexcept
     TRASH_LASTERROR;
 }
 
-#endif // HAS_ADDRESS_SANITIZER || DACCESS_COMPILE
+#endif // !HAS_ADDRESS_SANITIZER && !DACCESS_COMPILE
 
 /* ------------------------------------------------------------------------ *
  * New operator overloading for the executable heap
