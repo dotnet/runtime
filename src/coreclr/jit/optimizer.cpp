@@ -4566,6 +4566,16 @@ LoopDefinitions* LoopDefinitions::Find(FlowGraphNaturalLoops* loops)
                     result->Add(loop, lcl->GetLclNum());
 
                     LclVarDsc* lclDsc = comp->lvaGetDesc(lcl);
+                    if (comp->lvaIsImplicitByRefLocal(lcl->GetLclNum()) && lclDsc->lvPromoted)
+                    {
+                        // fgRetypeImplicitByRefArgs created a new promoted
+                        // struct local to represent this arg. The stores will
+                        // be rewritten by morph.
+                        assert(lclDsc->lvFieldLclStart != 0);
+                        result->Add(loop, lclDsc->lvFieldLclStart);
+                        lclDsc = comp->lvaGetDesc(lclDsc->lvFieldLclStart);
+                    }
+
                     if (lclDsc->lvPromoted)
                     {
                         for (unsigned i = 0; i < lclDsc->lvFieldCnt; i++)
