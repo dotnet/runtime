@@ -256,7 +256,7 @@ operator new[](size_t n)
     return ::operator new(n);
 }
 
-void* __cdecl operator new(size_t size, const std::nothrow_t&)
+void* __cdecl operator new(size_t size, const std::nothrow_t&) noexcept
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -274,7 +274,7 @@ void* __cdecl operator new(size_t size, const std::nothrow_t&)
     return result;
 }
 
-void* __cdecl operator new[](size_t size, const std::nothrow_t&)
+void* __cdecl operator new[](size_t size, const std::nothrow_t&) noexcept
 {
     return ::operator new(size, std::nothrow);
 }
