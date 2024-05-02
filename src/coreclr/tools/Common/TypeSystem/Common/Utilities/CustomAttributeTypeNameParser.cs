@@ -114,18 +114,22 @@ namespace Internal.TypeSystem
                         return null;
                 }
 
-                TypeDesc type = GetSimpleTypeFromModule(typeName, module);
-                if (type != null)
+                if (module != null)
                 {
-                    _referencedModules?.Add(module);
-                    return type;
+                    TypeDesc type = GetSimpleTypeFromModule(typeName, module);
+                    if (type != null)
+                    {
+                        _referencedModules?.Add(module);
+                        return type;
+                    }
                 }
 
+                // If it didn't resolve and wasn't assembly-qualified, we also try core library
                 if (topLevelTypeName.AssemblyName == null)
                 {
                     if (module != _context.SystemModule)
                     {
-                        type = GetSimpleTypeFromModule(typeName, _context.SystemModule);
+                        TypeDesc type = GetSimpleTypeFromModule(typeName, _context.SystemModule);
                         if (type != null)
                         {
                             _referencedModules?.Add(_context.SystemModule);
