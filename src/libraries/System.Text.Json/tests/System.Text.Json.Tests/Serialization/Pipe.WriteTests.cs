@@ -57,7 +57,7 @@ namespace System.Text.Json.Serialization.Tests
             await serializeTask;
 
             ReadResult result = await pipe.Reader.ReadAsync();
-            // Buffer: 012345679[0
+            // result.Buffer: 123456789[0
             Assert.Equal(11, result.Buffer.Length);
             pipe.Reader.AdvanceTo(result.Buffer.End);
 
