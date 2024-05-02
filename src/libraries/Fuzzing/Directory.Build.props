@@ -1,0 +1,7 @@
+﻿<Project>
+  <PropertyGroup>
+    <NetCoreAppCurrentVersion>9.0</NetCoreAppCurrentVersion>
+    <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
+    <ProductVersion>$(NetCoreAppCurrentVersion).0</ProductVersion>
+  </PropertyGroup>
+</Project>
