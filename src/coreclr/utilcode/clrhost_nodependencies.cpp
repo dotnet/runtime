@@ -204,14 +204,6 @@ ClrDebugState *CLRInitDebugState()
 
 // use standard heap functions for AddressSanitizer and for the DAC build.
 #if !defined(HAS_ADDRESS_SANITIZER) && !defined(DACCESS_COMPILE)
-#ifdef _DEBUG
-#ifdef TARGET_X86
-#define OS_HEAP_ALIGN 8
-#else
-#define OS_HEAP_ALIGN 16
-#endif
-#define CLRALLOC_TAG 0x2ce145f1
-#endif
 
 #ifdef HOST_WINDOWS
 static HANDLE g_hProcessHeap;
@@ -223,9 +215,6 @@ static FORCEINLINE void* ClrMalloc(size_t size)
 
     void* p;
 
-#ifdef _DEBUG
-    size += OS_HEAP_ALIGN;
-#endif
 
 #ifdef HOST_WINDOWS
     HANDLE hHeap = g_hProcessHeap;
@@ -245,15 +234,6 @@ static FORCEINLINE void* ClrMalloc(size_t size)
     p = malloc(size);
 #endif
 
-#ifdef _DEBUG
-    // Store the tag to detect heap contamination
-    if (p != NULL)
-    {
-        *((DWORD*)p) = CLRALLOC_TAG;
-        p = (BYTE*)p + OS_HEAP_ALIGN;
-    }
-#endif
-
 #ifndef SELF_NO_HOST
     if (p == NULL
         // If we have not created StressLog ring buffer, we should not try to use it.
@@ -270,17 +250,6 @@ static FORCEINLINE void* ClrMalloc(size_t size)
 FORCEINLINE void ClrFree(void* p)
 {
     STATIC_CONTRACT_NOTHROW;
-
-#ifdef _DEBUG
-    if (p != NULL)
-    {
-        // Check the heap handle to detect heap contamination
-        p = (BYTE*)p - OS_HEAP_ALIGN;
-        if (*((DWORD*)p) != CLRALLOC_TAG)
-            _ASSERTE(!"Heap contamination detected! HeapFree was called on a heap other than the one that memory was allocated from.\n"
-                "Possible cause: you used new (executable) to allocate the memory, but didn't use DeleteExecutable() to free it.");
-    }
-#endif
 
 #ifdef HOST_WINDOWS
     if (p != NULL)
