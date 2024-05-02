@@ -1672,8 +1672,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("BYREF_WRITE_BARRIER");
                     break;
 
-                case ReadyToRunHelper.AssignStruct:
-                    builder.Append("ASSIGN_STRUCT");
+                case ReadyToRunHelper.BulkWriteBarrier:
+                    builder.Append("BULK_WRITE_BARRIER");
                     break;
 
                 // Array helpers

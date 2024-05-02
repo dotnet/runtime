@@ -67,7 +67,7 @@ namespace ILCompiler
                 case ReadyToRunHelper.CheckedWriteBarrier:
                     mangledName = context.Target.Architecture == TargetArchitecture.ARM64 ? "RhpCheckedAssignRefArm64" : "RhpCheckedAssignRef";
                     break;
-                case ReadyToRunHelper.AssignStruct:
+                case ReadyToRunHelper.BulkWriteBarrier:
                    mangledName = "RhBuffer_BulkMoveWithWriteBarrier";
                    break;
                 case ReadyToRunHelper.ByRefWriteBarrier:

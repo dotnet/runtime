@@ -159,7 +159,7 @@ void ECall::PopulateManagedHelpers()
 
     pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__BUFFER__MEMCOPYGC));
     pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_ASSIGN_STRUCT, pDest);
+    SetJitHelperFunction(CORINFO_HELP_BULK_WRITEBARRIER, pDest);
 
     pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__ROUND));
     pDest = pMD->GetMultiCallableAddrOfCode();

@@ -8213,7 +8213,7 @@ void Lowering::ContainCheckBitCast(GenTree* node)
 }
 
 //------------------------------------------------------------------------
-// TryLowerBlockStoreAsGcBulkCopyCall: Lower a block store node as a CORINFO_HELP_ASSIGN_STRUCT call
+// TryLowerBlockStoreAsGcBulkCopyCall: Lower a block store node as a CORINFO_HELP_BULK_WRITEBARRIER call
 //
 // Arguments:
 //    blkNode - The block store node to lower
@@ -8225,7 +8225,7 @@ bool Lowering::TryLowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
         return false;
     }
 
-    // Replace STORE_BLK (struct copy) with CORINFO_HELP_ASSIGN_STRUCT which performs
+    // Replace STORE_BLK (struct copy) with CORINFO_HELP_BULK_WRITEBARRIER which performs
     // bulk copy for byrefs.
     const unsigned bulkCopyThreshold = 4;
     if (!blk->OperIs(GT_STORE_BLK) || blk->OperIsInitBlkOp() || (blk->GetLayout()->GetGCPtrCount() < bulkCopyThreshold))
@@ -8263,7 +8263,7 @@ bool Lowering::TryLowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
     GenTree* dataPlaceholder = comp->gtNewZeroConNode(genActualType(data));
     GenTree* sizePlaceholder = comp->gtNewZeroConNode(genActualType(size));
 
-    GenTreeCall* call = comp->gtNewHelperCallNode(CORINFO_HELP_ASSIGN_STRUCT, TYP_VOID, destPlaceholder,
+    GenTreeCall* call = comp->gtNewHelperCallNode(CORINFO_HELP_BULK_WRITEBARRIER, TYP_VOID, destPlaceholder,
                                                   dataPlaceholder, sizePlaceholder);
     comp->fgMorphArgs(call);
 

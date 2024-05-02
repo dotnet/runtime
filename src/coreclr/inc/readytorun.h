@@ -34,7 +34,7 @@
 // R2R Version 9.0 adds support for the Vector512 type
 // R2R Version 9.1 adds new helpers to allocate objects on frozen segments
 // R2R Version 9.2 adds MemZero and NativeMemSet helpers
-// R2R Version 9.3 adds AssignStruct helper
+// R2R Version 9.3 adds BulkWriteBarrier helper
 
 
 struct READYTORUN_CORE_HEADER
@@ -322,7 +322,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_WriteBarrier              = 0x30,
     READYTORUN_HELPER_CheckedWriteBarrier       = 0x31,
     READYTORUN_HELPER_ByRefWriteBarrier         = 0x32,
-    READYTORUN_HELPER_AssignStruct              = 0x33,
+    READYTORUN_HELPER_BulkWriteBarrier          = 0x33,
 
     // Array helpers
     READYTORUN_HELPER_Stelem_Ref                = 0x38,
