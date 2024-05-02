@@ -1380,27 +1380,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
 #ifdef SWIFT_SUPPORT
     if (call->HasSwiftErrorHandling())
     {
-        // Tree is a Swift call with error handling; error register should have been killed
-        assert((killMask & RBM_SWIFT_ERROR) != 0);
-
-        // After a Swift call that might throw returns, we expect the error register to be consumed
-        // by a GT_SWIFT_ERROR node. However, we want to ensure the error register won't be trashed
-        // before GT_SWIFT_ERROR can consume it.
-        // (For example, by LSRA allocating the call's result to the same register.)
-        // To do so, delay the freeing of the error register until the next node.
-        // This only works if the next node after the call is the GT_SWIFT_ERROR node.
-        // (LowerNonvirtPinvokeCall should have moved the GT_SWIFT_ERROR node.)
-        assert(call->gtNext != nullptr);
-        assert(call->gtNext->OperIs(GT_SWIFT_ERROR));
-
-        // Conveniently we model the zeroing of the register as a non-standard constant zero argument,
-        // which will have created a RefPosition corresponding to the use of the error at the location
-        // of the uses. Marking this RefPosition as delay freed has the effect of keeping the register
-        // busy at the location of the definition of the call.
-        RegRecord* swiftErrorRegRecord = getRegisterRecord(REG_SWIFT_ERROR);
-        assert((swiftErrorRegRecord != nullptr) && (swiftErrorRegRecord->lastRefPosition != nullptr) &&
-               (swiftErrorRegRecord->lastRefPosition->nodeLocation == currentLoc));
-        setDelayFree(swiftErrorRegRecord->lastRefPosition);
+        MarkSwiftErrorBusyForCall(call);
     }
 #endif // SWIFT_SUPPORT
 
