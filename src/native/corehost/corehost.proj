@@ -80,10 +80,10 @@
       <BuildArgs>$(BuildArgs) -cmakeargs "-DVERSION_FILE_PATH=$(NativeVersionFile)"</BuildArgs>
     </PropertyGroup>
     <PropertyGroup Condition="'$(CxxStandardLibrary)' != ''">
-      <BuildArgs>$(BuildArgs) -cmakeargs -DCLR_CMAKE_CXX_STANDARD_LIBRARY=libc++</BuildArgs>
+      <BuildArgs>$(BuildArgs) -cmakeargs -DCLR_CMAKE_CXX_STANDARD_LIBRARY=$(CxxStandardLibrary)</BuildArgs>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(CxxStandardLibraryStatic)' != ''">
+    <PropertyGroup Condition="'$(CxxStandardLibraryStatic)' == 'true'">
       <BuildArgs>$(BuildArgs) -cmakeargs -DCLR_CMAKE_CXX_STANDARD_LIBRARY_STATIC=ON</BuildArgs>
     </PropertyGroup>
 

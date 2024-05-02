@@ -55,7 +55,7 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(CxxStandardLibrary)' != ''">
-      <_CoreClrBuildArg Include="-cmakeargs -DCLR_CMAKE_CXX_STANDARD_LIBRARY=libc++" />
+      <_CoreClrBuildArg Include="-cmakeargs -DCLR_CMAKE_CXX_STANDARD_LIBRARY=$(CxxStandardLibrary)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(CxxStandardLibraryStatic)' == 'true'">
