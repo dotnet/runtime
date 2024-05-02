@@ -202,8 +202,6 @@ ClrDebugState *CLRInitDebugState()
 
 #endif //defined(_DEBUG_IMPL) && defined(ENABLE_CONTRACTS_IMPL)
 
-const NoThrow nothrow = { 0 };
-
 #if defined(HAS_ADDRESS_SANITIZER) || defined(DACCESS_COMPILE)
 // use standard heap functions for address sanitizer
 #else
@@ -341,7 +339,7 @@ operator new[](size_t n)
 
 #endif // HAS_ADDRESS_SANITIZER || DACCESS_COMPILE
 
-void * __cdecl operator new(size_t n, const NoThrow&) NOEXCEPT
+void * __cdecl operator new(size_t n, std::nothrow_t) noexcept
 {
 #if defined(HAS_ADDRESS_SANITIZER) || defined(DACCESS_COMPILE)
     // use standard heap functions for address sanitizer (which doesn't provide for NoThrow)
@@ -360,7 +358,7 @@ void * __cdecl operator new(size_t n, const NoThrow&) NOEXCEPT
     return result;
 }
 
-void * __cdecl operator new[](size_t n, const NoThrow&) NOEXCEPT
+void * __cdecl operator new[](size_t n, std::nothrow_t) noexcept
 {
 #if defined(HAS_ADDRESS_SANITIZER) || defined(DACCESS_COMPILE)
     // use standard heap functions for address sanitizer (which doesn't provide for NoThrow)
@@ -383,7 +381,7 @@ void * __cdecl operator new[](size_t n, const NoThrow&) NOEXCEPT
 // use standard heap functions for address sanitizer
 #else
 void __cdecl
-operator delete(void *p) NOEXCEPT
+operator delete(void *p) noexcept
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -395,7 +393,7 @@ operator delete(void *p) NOEXCEPT
 }
 
 void __cdecl
-operator delete[](void *p) NOEXCEPT
+operator delete[](void *p) noexcept
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -494,7 +492,7 @@ void * __cdecl operator new[](size_t n, const CExecutable&)
     return result;
 }
 
-void * __cdecl operator new(size_t n, const CExecutable&, const NoThrow&)
+void * __cdecl operator new(size_t n, const CExecutable&, std::nothrow_t)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -511,7 +509,7 @@ void * __cdecl operator new(size_t n, const CExecutable&, const NoThrow&)
     return result;
 }
 
-void * __cdecl operator new[](size_t n, const CExecutable&, const NoThrow&)
+void * __cdecl operator new[](size_t n, const CExecutable&, std::nothrow_t)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
