@@ -2829,14 +2829,6 @@ PhaseStatus Compiler::fgInstrumentMethod()
 //
 PhaseStatus Compiler::fgIncorporateProfileData()
 {
-    // For now we only rely on profile data when optimizing.
-    //
-    if (!opts.OptimizationEnabled())
-    {
-        JITDUMP("not optimizing, so not incorporating any profile data\n");
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
     // Are we doing profile stress?
     //
     if (fgStressBBProf() > 0)
@@ -2846,6 +2838,14 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         fgApplyProfileScale();
         ProfileSynthesis::Run(this, ProfileSynthesisOption::RepairLikelihoods);
         return PhaseStatus::MODIFIED_EVERYTHING;
+    }
+
+    // For now we only rely on profile data when optimizing.
+    //
+    if (!opts.OptimizationEnabled())
+    {
+        JITDUMP("not optimizing, so not incorporating any profile data\n");
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG

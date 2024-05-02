@@ -8056,6 +8056,7 @@ if (!inlineInfo &&
     compileFlags->Set(JitFlags::JIT_FLAG_MIN_OPT);
     compileFlags->Clear(JitFlags::JIT_FLAG_SIZE_OPT);
     compileFlags->Clear(JitFlags::JIT_FLAG_SPEED_OPT);
+    compileFlags->Clear(JitFlags::JIT_FLAG_BBOPT);
 
     goto START;
 }
