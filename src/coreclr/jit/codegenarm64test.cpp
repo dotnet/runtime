@@ -8909,7 +8909,7 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     // SUNPKLO <Zd>.<T>, <Zn>.<Tb>
     theEmitter->emitIns_R_R(INS_sve_sunpklo, EA_SCALABLE, REG_V1, REG_V5, INS_OPTS_SCALABLE_S);
     // UUNPKHI <Zd>.<T>, <Zn>.<Tb>
-    theEmitter->emitIns_R_R(INS_sve_uunpkhi, EA_SCALABLE, REG_V5, REG_V1, INS_OPTS_SCALABLE_D);
+    theEmitter->emitIns_R_R(INS_sve_uunpkhi, EA_SCALABLE, REG_V5, REG_V1, INS_OPTS_SCALABLE_B);
     // UUNPKLO <Zd>.<T>, <Zn>.<Tb>
     theEmitter->emitIns_R_R(INS_sve_uunpklo, EA_SCALABLE, REG_V8, REG_V6, INS_OPTS_SCALABLE_S);
 
