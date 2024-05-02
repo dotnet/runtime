@@ -557,6 +557,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
     private unsafe int HandleEventShutdownInitiatedByTransport(ref SHUTDOWN_INITIATED_BY_TRANSPORT_DATA data)
     {
+        if (NetEventSource.Log.IsEnabled() && data.Status == QUIC_STATUS_CONNECTION_IDLE && data.ErrorCode == 1) // Idle
+        {
+            Debug.Fail("Failing this");
+        }
+
         Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetExceptionForMsQuicStatus(data.Status, (long)data.ErrorCode));
         _connectedTcs.TrySetException(exception);
         _connectionCloseTcs.TrySetException(exception);
