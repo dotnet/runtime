@@ -2266,13 +2266,65 @@ emit_array_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mo
 }
 
 static void
-emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoUnsafeAccessorKind kind, const char *member_name)
+emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, gboolean to_be_inflated, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoUnsafeAccessorKind kind, const char *member_name)
 {
 	// Field access requires a single argument for target type and a return type.
 	g_assert (kind == MONO_UNSAFE_ACCESSOR_FIELD || kind == MONO_UNSAFE_ACCESSOR_STATIC_FIELD);
 	g_assert (member_name != NULL);
 
 	MonoType *target_type = sig->params[0]; // params[0] is the field's parent
+
+	// Try to do a static lookup.
+	// if the target type is G<T>  (not just !T or !!T), we can get a field token
+	if ((accessor_method->is_generic || to_be_inflated) &&
+	    (target_type->type == MONO_TYPE_VAR || target_type->type == MONO_TYPE_MVAR)) {
+		// this is the most dynamic version.
+		//
+		// it's not actually legal for fields (although I
+		// guess it might be legal with constraints)
+		//
+		//    [UnsafeAccessor(Field, Name="_x")]
+		//    ref SomeClass GetField<U>(ref U target) where U : BaseClass;
+		//
+		// class BaseClass {
+		//   private SomeClass _x;
+	        // }
+
+		// have to do an icall to get the field/method/ctor.
+		// and we need a new IL opcode mono_ldtypeof that takes a MonoClass
+		// and turns it into the runtime MonoClass that has gshared
+		// params replaced by the actual runtime instantiations.
+		//
+		// ldtypeof <klass>
+		//   should turn into:
+		// mini_emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS)
+
+		// Then we can emit this:
+
+		// ldtypeof <sig->params[0]>
+		// ldconst <accessor_kind>
+		// ldstr <target_name>
+		// <for i = 1; i < sig->param_count; i++>
+		//   ldtypeof <sig->params[i]>
+		// <endfor>
+		// icall <mono_marshal_unsafe_accessor_target_icall> // may throw
+		// <if (method||ctor)>
+		//   <for i = is_static ? 1 : 0; i < sig->param_count; i++>
+		//   ldarg <i>
+		//   <endfor>
+		//   calli // FIXME: method is top of stack?
+		//   ret
+		// <else>
+		//   ret // address of fielde
+		// <endif>
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_Generics");
+		return;
+	};
+
+	// otherwise target_type is something we can do lookups on.
+	// We can at least find the generic MonoClassField and then
+	// ldflda will handle the generic sharing.
+
 	MonoType *ret_type = sig->ret;
 	if (sig->param_count != 1 || target_type == NULL || sig->ret->type == MONO_TYPE_VOID) {
 		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
@@ -2524,14 +2576,9 @@ emit_unsafe_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *accessor_
 {
 	// to_be_inflated means we're emitting a non-generic accessor method belonging to a gtd
 	// that will be inflated by marshal.c
-	if (to_be_inflated)
-		g_assert (!accessor_method->is_inflated && !accessor_method->is_generic);
+	if (to_be_inflated && !accessor_method->is_generic)
+		g_assert (!accessor_method->is_inflated);
 	
-	if (accessor_method->is_generic || to_be_inflated) {
-		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_Generics");
-		return;
-	}
-
 	if (!m_method_is_static (accessor_method)) {
 		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_NonStatic");
 		return;
@@ -2540,13 +2587,23 @@ emit_unsafe_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *accessor_
 	switch (kind) {
 	case MONO_UNSAFE_ACCESSOR_FIELD:
 	case MONO_UNSAFE_ACCESSOR_STATIC_FIELD:
-		emit_unsafe_accessor_field_wrapper (mb, accessor_method, sig, kind, member_name);
+		emit_unsafe_accessor_field_wrapper (mb, to_be_inflated, accessor_method, sig, kind, member_name);
 		return;
 	case MONO_UNSAFE_ACCESSOR_CTOR:
+		if (accessor_method->is_generic || to_be_inflated) {
+			mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_Generics");
+			return;
+		}
+
 		emit_unsafe_accessor_ctor_wrapper (mb, accessor_method, sig, kind, member_name);
 		return;
 	case MONO_UNSAFE_ACCESSOR_METHOD:
 	case MONO_UNSAFE_ACCESSOR_STATIC_METHOD:
+		if (accessor_method->is_generic || to_be_inflated) {
+			mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_Generics");
+			return;
+		}
+
 		emit_unsafe_accessor_method_wrapper (mb, accessor_method, sig, kind, member_name);
 		return;
 	default:
