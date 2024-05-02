@@ -3125,7 +3125,15 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     // To be fixed in https://github.com/dotnet/runtime/pull/77465
     const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
 
-    if (!mustExpand && tier0opts)
+    if (tier0opts)
+    {
+        // The *Estimate APIs are allowed to differ in behavior across hardware
+        // so ensure we treat them as "betterToExpand" to get deterministic behavior
+
+        betterToExpand |= (ni == NI_System_Math_ReciprocalEstimate);
+        betterToExpand |= (ni == NI_System_Math_ReciprocalSqrtEstimate);
+    }
+    else if (!mustExpand)
     {
         switch (ni)
         {
@@ -3189,9 +3197,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
 
             default:
-                // Unsafe.* are all small enough to prefer expansions.
+                // Various intrinsics are all small enough to prefer expansions.
+                betterToExpand |= ni >= NI_SYSTEM_MATH_START && ni <= NI_SYSTEM_MATH_END;
                 betterToExpand |= ni >= NI_SRCS_UNSAFE_START && ni <= NI_SRCS_UNSAFE_END;
-                // Same for these
                 betterToExpand |= ni >= NI_PRIMITIVE_START && ni <= NI_PRIMITIVE_END;
                 break;
         }
