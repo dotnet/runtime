@@ -221,11 +221,6 @@ static FORCEINLINE void* ClrMalloc(size_t size)
 {
     STATIC_CONTRACT_NOTHROW;
 
-#ifdef FAILPOINTS_ENABLED
-    if (RFS_HashStack())
-        return NULL;
-#endif
-
     void* p;
 
 #ifdef _DEBUG
