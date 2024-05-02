@@ -5116,11 +5116,11 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                               INS_OPTS_SCALABLE_H); // FMINP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
 
     // IF_SVE_HJ_3A
-    theEmitter->emitIns_R_R_R(INS_sve_fadda, EA_2BYTE, REG_V21, REG_P6, REG_V14,
+    theEmitter->emitIns_R_R_R(INS_sve_fadda, EA_SCALABLE, REG_V21, REG_P6, REG_V14,
                               INS_OPTS_SCALABLE_H); // FADDA   <V><dn>, <Pg>, <V><dn>, <Zm>.<T>
-    theEmitter->emitIns_R_R_R(INS_sve_fadda, EA_4BYTE, REG_V22, REG_P5, REG_V13,
+    theEmitter->emitIns_R_R_R(INS_sve_fadda, EA_SCALABLE, REG_V22, REG_P5, REG_V13,
                               INS_OPTS_SCALABLE_S); // FADDA   <V><dn>, <Pg>, <V><dn>, <Zm>.<T>
-    theEmitter->emitIns_R_R_R(INS_sve_fadda, EA_8BYTE, REG_V23, REG_P4, REG_V12,
+    theEmitter->emitIns_R_R_R(INS_sve_fadda, EA_SCALABLE, REG_V23, REG_P4, REG_V12,
                               INS_OPTS_SCALABLE_D); // FADDA   <V><dn>, <Pg>, <V><dn>, <Zm>.<T>
 
     // IF_SVE_HL_3A
