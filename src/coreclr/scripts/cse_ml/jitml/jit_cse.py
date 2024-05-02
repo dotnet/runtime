@@ -26,16 +26,6 @@ class JitCseEnv(gym.Env):
             "local_occurrences", "enreg_count"
         ]
 
-    # Calculated using scripts/calculate_feature_norm.py
-    obs_subtract = np.array([0.0, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0,
-                             0.0, 0.0, 0.0], dtype=np.float32)
-    obs_scale = np.array([1.0, 1.0, 1.0, 1.0, 1, 1.0, 1.0, 1.0, 1.0, 1, 1.0, 1.0, 1.0, 0.012658227848101266,
-                       0.018867924528301886, 0.001763668430335097, 0.005291005291005291, 0.06988495589628721,
-                       0.07344255107610509, 0.2, 0.16666666666666666, 0.0013623978201634877], dtype=np.float32)
-    obs_log1p = np.array([False, False, False, False, False, False, False, False, False, False, False, False, False,
-                          False, False, False, False, True, True, False, False, False], dtype=bool)
-
-
     def __init__(self, context : SuperPmiContext, methods : Optional[List[int]] = None, **kwargs):
         super().__init__(**kwargs)
 
@@ -187,21 +177,6 @@ class JitCseEnv(gym.Env):
 
     @classmethod
     def get_observation(cls, method : MethodContext, fill=True):
-        """Builds the observation from a method."""
-        observation = cls.get_observation_without_norm(method, fill=fill)
-
-        # normalize the data
-        observation[:, cls.obs_log1p] = np.log1p(observation[:, cls.obs_log1p])
-        observation = (observation - cls.obs_subtract) * cls.obs_scale
-
-        # We still need to clip the data since there could be some values we didn't encounter when building
-        # the scaling factors
-        np.clip(observation, 0.0, 1.0, out=observation)
-
-        return observation
-
-    @classmethod
-    def get_observation_without_norm(cls, method : MethodContext, fill=True):
         """Builds the observation from a method without normalizing the data."""
         tensors = []
         for cse in method.cse_candidates:

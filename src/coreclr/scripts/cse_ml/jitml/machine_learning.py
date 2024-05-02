@@ -6,6 +6,7 @@
 
 import os
 import json
+from typing import List, Optional
 
 import torch
 import numpy as np
@@ -14,10 +15,10 @@ from stable_baselines3 import A2C, DQN, PPO
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import SubprocVecEnv
+import gymnasium as gym
 
 from .jit_cse import JitCseEnv
 from .superpmi import SuperPmiContext
-from .wrappers import RemoveFeaturesWrapper
 
 class JitCseModel:
     """The raw implementation of the machine learning agent."""
@@ -60,7 +61,7 @@ class JitCseModel:
         return probs.cpu().detach().numpy()[0]
 
     def train(self, pmi_context : SuperPmiContext, output_dir : str, iterations = None, parallel = None,
-              progress_bar = True) -> str:
+              progress_bar = True, wrappers : Optional[List[gym.Wrapper]] = None) -> str:
         """Trains a model from scratch.
 
         Args:
@@ -77,7 +78,9 @@ class JitCseModel:
 
         def default_make_env():
             env = JitCseEnv(pmi_context, pmi_context.training_methods)
-            env = RemoveFeaturesWrapper(env)
+            if wrappers:
+                for wrapper in wrappers:
+                    env = wrapper(env)
             return env
 
         make_env = self.make_env or default_make_env

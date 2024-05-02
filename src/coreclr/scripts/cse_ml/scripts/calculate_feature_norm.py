@@ -31,7 +31,7 @@ def get_feature_data(ctx : SuperPmiContext, save=True) -> DataFrame:
             if method is None:
                 continue
 
-            observation = JitCseEnv.get_observation_without_norm(method, fill=False)
+            observation = JitCseEnv.get_observation(method, fill=False)
             for features in observation:
                 for c, name in enumerate(column_names):
                     value = features[c]

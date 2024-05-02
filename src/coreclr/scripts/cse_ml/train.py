@@ -4,7 +4,7 @@
 import os
 import argparse
 
-from jitml import SuperPmiContext, JitCseEnv, JitCseModel, DeepCseRewardWrapper, RemoveFeaturesWrapper
+from jitml import SuperPmiContext, JitCseEnv, JitCseModel, OptimalCseWrapper, NormalizeFeaturesWrapper
 
 def validate_core_root(core_root):
     """Validates and returns the core_root directory."""
@@ -25,21 +25,12 @@ def parse_args():
     parser.add_argument("--algorithm", default="PPO", help="The algorithm to use. (default: PPO)")
     parser.add_argument("--test_percent", type=float, default=0.1,
                         help="The percentage of data to use for testing. (default: 0.1)")
-    parser.add_argument("--deep_rewards", action='store_true', help="Use smarter rewards. (default: False)")
+    parser.add_argument("--reward-optimal-cse", action='store_true', help="Use smarter rewards. (default: False)")
+    parser.add_argument("--normalize-features", action='store_true', help="Normalize features. (default: False)")
 
     args = parser.parse_args()
     args.core_root = validate_core_root(args.core_root)
     return args
-
-def deep_reward_make_env(spmi_ctx: SuperPmiContext):
-    """Returns a JitCseEnv with deep rewards."""
-    def make_env():
-        env = JitCseEnv(spmi_ctx, spmi_ctx.training_methods)
-        env = RemoveFeaturesWrapper(env)
-        env = DeepCseRewardWrapper(env)
-        return env
-
-    return make_env
 
 def main(args):
     """Main entry point."""
@@ -60,13 +51,19 @@ def main(args):
     print(f"Training with {len(ctx.training_methods)} methods, holding back {len(ctx.test_methods)} for testing.")
 
     # Define our own environment (with wrappers) if requested.
-    make_env = deep_reward_make_env(ctx) if args.deep_rewards else None
 
     # Train the model.
-    rl = JitCseModel(args.algorithm, make_env=make_env)
+    rl = JitCseModel(args.algorithm)
+
+    wrappers = []
+    if args.reward_optimal_cse:
+        wrappers.append(OptimalCseWrapper)
+
+    if args.normalize_features:
+        wrappers.append(NormalizeFeaturesWrapper)
 
     iterations = args.iterations if args.iterations is not None else 1_000_000
-    path = rl.train(ctx, output_dir, iterations=iterations, parallel=args.parallel)
+    path = rl.train(ctx, output_dir, iterations=iterations, parallel=args.parallel, wrappers=wrappers)
     print(f"Model saved to: {path}")
 
 if __name__ == "__main__":

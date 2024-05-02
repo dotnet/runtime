@@ -3,7 +3,7 @@ from .method_context import MethodContext, CseCandidate, JitType
 from .superpmi import SuperPmi, SuperPmiContext
 from .jit_cse import JitCseEnv
 from .machine_learning import JitCseModel
-from .wrappers import DeepCseRewardWrapper, RemoveFeaturesWrapper
+from .wrappers import OptimalCseWrapper, NormalizeFeaturesWrapper
 
 __all__ = [
     SuperPmi.__name__,
@@ -13,6 +13,6 @@ __all__ = [
     MethodContext.__name__,
     CseCandidate.__name__,
     JitType.__name__,
-    DeepCseRewardWrapper.__name__,
-    RemoveFeaturesWrapper.__name__,
+    OptimalCseWrapper.__name__,
+    NormalizeFeaturesWrapper.__name__,
 ]

@@ -13,7 +13,7 @@ OPTIMAL_BONUS = 0.05
 SUBOPTIMAL_PENALTY = -0.01
 NEUTRAL_PENALTY = -0.005
 
-class DeepCseRewardWrapper(gym.Wrapper):
+class OptimalCseWrapper(gym.Wrapper):
     """A wrapper for the CSE environment that provides rewards based not just on the change in
     performance score, but also on the quality of the CSE choices made."""
     def __init__(self, env : JitCseEnv):
@@ -76,8 +76,18 @@ class DeepCseRewardWrapper(gym.Wrapper):
         return all_cses
 
 
-class RemoveFeaturesWrapper(gym.ObservationWrapper):
+class NormalizeFeaturesWrapper(gym.ObservationWrapper):
     """Removes unused features from the observation space."""
+
+    # Calculated using scripts/calculate_feature_norm.py
+    obs_subtract = np.array([0.0, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+                             0.0, 0.0, 0.0], dtype=np.float32)
+    obs_scale = np.array([1.0, 1.0, 1.0, 1.0, 1, 1.0, 1.0, 1.0, 1.0, 1, 1.0, 1.0, 1.0, 0.012658227848101266,
+                       0.018867924528301886, 0.001763668430335097, 0.005291005291005291, 0.06988495589628721,
+                       0.07344255107610509, 0.2, 0.16666666666666666, 0.0013623978201634877], dtype=np.float32)
+    obs_log1p = np.array([False, False, False, False, False, False, False, False, False, False, False, False, False,
+                          False, False, False, False, True, True, False, False, False], dtype=bool)
+
 
     unused_features = ['shared_const', 'type_struct']
 
@@ -85,7 +95,7 @@ class RemoveFeaturesWrapper(gym.ObservationWrapper):
         super().__init__(env)
 
         # Remove the unused features from the observation space.
-        self.filter = np.array([name in RemoveFeaturesWrapper.unused_features for name in env.observation_columns],
+        self.filter = np.array([name in NormalizeFeaturesWrapper.unused_features for name in env.observation_columns],
                           dtype=bool)
 
         self.observation_space = gym.spaces.Box(
@@ -95,7 +105,13 @@ class RemoveFeaturesWrapper(gym.ObservationWrapper):
         )
 
     def observation(self, observation):
-        """Removes the unused features from the observation."""
+        """Builds the observation from a method."""
+        observation[:, self.obs_log1p] = np.log1p(observation[:, self.obs_log1p])
+        observation = (observation - self.obs_subtract) * self.obs_scale
+
+        # We still need to clip the data since there could be some values we didn't encounter when building
+        # the scaling factors
+        np.clip(observation, 0.0, 1.0, out=observation)
         return observation[:, self.filter]
 
-__all__ = [RemoveFeaturesWrapper.__name__, DeepCseRewardWrapper.__name__]
+__all__ = [NormalizeFeaturesWrapper.__name__, OptimalCseWrapper.__name__]
