@@ -1386,17 +1386,21 @@ int LinearScan::BuildCall(GenTreeCall* call)
         // After a Swift call that might throw returns, we expect the error register to be consumed
         // by a GT_SWIFT_ERROR node. However, we want to ensure the error register won't be trashed
         // before GT_SWIFT_ERROR can consume it.
-        // (For example, the PInvoke epilog comes before the error register store.)
+        // (For example, by LSRA allocating the call's result to the same register.)
         // To do so, delay the freeing of the error register until the next node.
         // This only works if the next node after the call is the GT_SWIFT_ERROR node.
-        // (InsertPInvokeCallEpilog should have moved the GT_SWIFT_ERROR node during lowering.)
+        // (LowerNonvirtPinvokeCall should have moved the GT_SWIFT_ERROR node.)
         assert(call->gtNext != nullptr);
         assert(call->gtNext->OperIs(GT_SWIFT_ERROR));
 
-        // We could use RefTypeKill, but RefTypeFixedReg is used less commonly, so the check for delayRegFree
-        // during register allocation should be cheaper in terms of TP.
-        RefPosition* pos = newRefPosition(REG_SWIFT_ERROR, currentLoc + 1, RefTypeFixedReg, call, RBM_SWIFT_ERROR);
-        setDelayFree(pos);
+        // Conveniently we model the zeroing of the register as a non-standard constant zero argument,
+        // which will have created a RefPosition corresponding to the use of the error at the location
+        // of the uses. Marking this RefPosition as delay freed has the effect of keeping the register
+        // busy at the location of the definition of the call.
+        RegRecord* swiftErrorRegRecord = getRegisterRecord(REG_SWIFT_ERROR);
+        assert((swiftErrorRegRecord != nullptr) && (swiftErrorRegRecord->lastRefPosition != nullptr) &&
+               (swiftErrorRegRecord->lastRefPosition->nodeLocation == currentLoc));
+        setDelayFree(swiftErrorRegRecord->lastRefPosition);
     }
 #endif // SWIFT_SUPPORT
 
