@@ -476,7 +476,7 @@ void * __cdecl operator new[](size_t n, const CExecutable&)
     return result;
 }
 
-void * __cdecl operator new(size_t n, const CExecutable&, const std::nothrow_t&)
+void * __cdecl operator new(size_t n, const CExecutable&, const std::nothrow_t&) noexcept
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -493,7 +493,7 @@ void * __cdecl operator new(size_t n, const CExecutable&, const std::nothrow_t&)
     return result;
 }
 
-void * __cdecl operator new[](size_t n, const CExecutable&, const std::nothrow_t&)
+void * __cdecl operator new[](size_t n, const CExecutable&, const std::nothrow_t&) noexcept
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
