@@ -205,47 +205,15 @@ ClrDebugState *CLRInitDebugState()
 // use standard heap functions for AddressSanitizer and for the DAC build.
 #if !defined(HAS_ADDRESS_SANITIZER) && !defined(DACCESS_COMPILE)
 
-void * __cdecl
-operator new(size_t n)
+#if defined(SELF_NO_HOST)
+namespace
 {
-#ifdef _DEBUG_IMPL
-    CLRThrowsExceptionWorker();
-#endif
-
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FAULT;
-    STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
-
-    void* result = operator new(n, std::nothrow);
-    if (result == NULL) {
-        ThrowOutOfMemory();
+    void ReportOOM(size_t size)
+    {
+        // With no host, we have nowhere to report the OOM.
     }
-    TRASH_LASTERROR;
-    return result;
 }
-
-void * __cdecl
-operator new[](size_t n)
-{
-#ifdef _DEBUG_IMPL
-    CLRThrowsExceptionWorker();
-#endif
-    
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FAULT;
-    STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
-
-    void* result = operator new[](n, std::nothrow);
-    if (result == NULL) {
-        ThrowOutOfMemory();
-    }
-    TRASH_LASTERROR;
-    return result;
-}
-
-#if !defined(SELF_NO_HOST)
+#else
 // If we have the CLR host, we should report OOMs to the StressLog.
 namespace
 {
@@ -259,6 +227,33 @@ namespace
             STRESS_LOG_OOM_STACK(size);
         }
     }
+}
+#endif
+
+void * __cdecl
+operator new(size_t n)
+{
+#ifdef _DEBUG_IMPL
+    CLRThrowsExceptionWorker();
+#endif
+
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_FAULT;
+    STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
+
+    void* result = malloc(n == 0 ? 1 : n);
+    if (result == NULL) {
+        ThrowOutOfMemory();
+    }
+    TRASH_LASTERROR;
+    return result;
+}
+
+void * __cdecl
+operator new[](size_t n)
+{
+    return ::operator new(n);
 }
 
 void* __cdecl operator new(size_t size, const std::nothrow_t&)
@@ -281,20 +276,7 @@ void* __cdecl operator new(size_t size, const std::nothrow_t&)
 
 void* __cdecl operator new[](size_t size, const std::nothrow_t&)
 {
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FAULT;
-    STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
-
-    INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
-
-    void* result = malloc(size == 0 ? 1 : size);
-    if (result == nullptr)
-    {
-        ReportOOM(size);
-    }
-    TRASH_LASTERROR;
-    return result;
+    return ::operator new(size, std::nothrow);
 }
 
 void __cdecl operator delete(void* p) noexcept
@@ -310,15 +292,8 @@ void __cdecl operator delete(void* p) noexcept
 
 void __cdecl operator delete[](void* p) noexcept
 {
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
-
-    free(p);
-
-    TRASH_LASTERROR;
+    ::operator delete(p);
 }
-#endif
 
 #endif // !HAS_ADDRESS_SANITIZER && !DACCESS_COMPILE
 
