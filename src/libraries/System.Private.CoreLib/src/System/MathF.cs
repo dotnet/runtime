@@ -316,7 +316,11 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float ReciprocalEstimate(float x)
         {
-            if (Sse.IsSupported)
+            if (Avx512F.IsSupported)
+            {
+                return Avx512F.Reciprocal14Scalar(Vector128.CreateScalarUnsafe(x)).ToScalar();
+            }
+            else if (Sse.IsSupported)
             {
                 return Sse.ReciprocalScalar(Vector128.CreateScalarUnsafe(x)).ToScalar();
             }
@@ -341,7 +345,11 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float ReciprocalSqrtEstimate(float x)
         {
-            if (Sse.IsSupported)
+            if (Avx512F.IsSupported)
+            {
+                return Avx512F.ReciprocalSqrt14Scalar(Vector128.CreateScalarUnsafe(x)).ToScalar();
+            }
+            else if (Sse.IsSupported)
             {
                 return Sse.ReciprocalSqrtScalar(Vector128.CreateScalarUnsafe(x)).ToScalar();
             }

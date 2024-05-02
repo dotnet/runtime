@@ -1198,9 +1198,11 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double ReciprocalEstimate(double d)
         {
-            // x86 doesn't provide an estimate instruction for double-precision reciprocal
-
-            if (AdvSimd.Arm64.IsSupported)
+            if (Avx512F.IsSupported)
+            {
+                return Avx512F.Reciprocal14Scalar(Vector128.CreateScalarUnsafe(d)).ToScalar();
+            }
+            else if (AdvSimd.Arm64.IsSupported)
             {
                 return AdvSimd.Arm64.ReciprocalEstimateScalar(Vector64.CreateScalar(d)).ToScalar();
             }
@@ -1220,9 +1222,11 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double ReciprocalSqrtEstimate(double d)
         {
-            // x86 doesn't provide an estimate instruction for double-precision reciprocal square root
-
-            if (AdvSimd.Arm64.IsSupported)
+            if (Avx512F.IsSupported)
+            {
+                return Avx512F.ReciprocalSqrt14Scalar(Vector128.CreateScalarUnsafe(d)).ToScalar();
+            }
+            else if (AdvSimd.Arm64.IsSupported)
             {
                 return AdvSimd.Arm64.ReciprocalSquareRootEstimateScalar(Vector64.CreateScalar(d)).ToScalar();
             }
