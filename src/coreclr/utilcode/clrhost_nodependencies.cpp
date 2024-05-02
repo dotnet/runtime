@@ -245,108 +245,21 @@ operator new[](size_t n)
     return result;
 }
 
+#if !defined(SELF_NO_HOST)
+// If we have the CLR host, we should report OOMs to the StressLog.
 namespace
 {
     FORCEINLINE void ReportOOM(size_t size)
     {
         STATIC_CONTRACT_NOTHROW;
-#ifndef SELF_NO_HOST
         // If we have not created StressLog ring buffer, we should not try to use it.
         // StressLog is going to do a memory allocation.  We may enter an endless loop.
         if (StressLog::t_pCurrentThreadLog != NULL)
         {
             STRESS_LOG_OOM_STACK(size);
         }
-#endif
     }
 }
-
-#ifdef HOST_WINDOWS
-// On Windows, use the process heap for new and delete operations.
-namespace
-{
-    HANDLE g_hProcessHeap;
-    FORCEINLINE void* ClrMalloc(size_t size)
-    {
-        STATIC_CONTRACT_NOTHROW;
-
-        void* p;
-
-        HANDLE hHeap = g_hProcessHeap;
-        if (hHeap == NULL)
-        {
-            InterlockedCompareExchangeT(&g_hProcessHeap, ::GetProcessHeap(), NULL);
-            hHeap = g_hProcessHeap;
-        }
-
-        p = HeapAlloc(hHeap, 0, size);
-        if (p == NULL)
-        {
-            ReportOOM(size);
-        }
-        return p;
-    }
-
-    FORCEINLINE void ClrFree(void* p)
-    {
-        STATIC_CONTRACT_NOTHROW;
-
-        if (p != NULL)
-            HeapFree(g_hProcessHeap, 0, p);
-    }
-}
-
-void* __cdecl operator new(size_t size, const std::nothrow_t&)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FAULT;
-    STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
-
-    INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
-
-    void* result = ClrMalloc(size);
-    TRASH_LASTERROR;
-    return result;
-}
-
-void* __cdecl operator new[](size_t size, const std::nothrow_t&)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FAULT;
-    STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
-
-    INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
-
-    void* result = ClrMalloc(size);
-    TRASH_LASTERROR;
-    return result;
-}
-
-void __cdecl operator delete(void* p) noexcept
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
-
-    ClrFree(p);
-
-    TRASH_LASTERROR;
-}
-
-void __cdecl operator delete[](void* p) noexcept
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
-
-    ClrFree(p);
-
-    TRASH_LASTERROR;
-}
-#elif !defined(SELF_NO_HOST)
-// If we have the CLR host, we should report OOMs to the StressLog.
 
 void* __cdecl operator new(size_t size, const std::nothrow_t&)
 {
