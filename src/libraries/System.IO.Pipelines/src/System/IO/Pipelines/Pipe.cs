@@ -1,3 +1,4 @@
+#define DEBUG
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -278,6 +279,10 @@ namespace System.IO.Pipelines
         {
             if (_bufferSegmentPool.TryPop(out BufferSegment? segment))
             {
+                if (segment.End != 0)
+                {
+                    Environment.FailFast($"segment.End is not 0");
+                }
                 return segment;
             }
 
