@@ -256,5 +256,6 @@
     <!-- installer version, for testing workloads -->
     <MicrosoftDotnetSdkInternalVersion>9.0.100-preview.4.24215.2</MicrosoftDotnetSdkInternalVersion>
     <SdkVersionForWorkloadTesting>$(MicrosoftDotnetSdkInternalVersion)</SdkVersionForWorkloadTesting>
+    <WasmExperimentalNativeAOTLLVMILCompilerVersion>9.0.0-alpha.1.24173.1</WasmExperimentalNativeAOTLLVMILCompilerVersion>
   </PropertyGroup>
 </Project>
