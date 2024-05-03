@@ -22,7 +22,7 @@
 #endif
 
 // 64KB (WASM page size)
-#define MWPM_PAGE_SIZE (64UL * 1024UL)
+#define MWPM_PAGE_SIZE (64 * 1024)
 // 4GB (even though JS can't consistently handle addresses above 2GB)
 // System.Text.JSON.Tests needs to allocate more than 2GB...
 #define MWPM_MAX_MEMORY ((1024UL * 1024UL * 1024UL) * 4UL)
@@ -31,8 +31,8 @@
 // When allocating new zeroed pages, always allocate at least this many.
 // This ensures that we don't waste a bunch of time allocating 1-2 pages at once.
 // sbrk() also doesn't return page-aligned addresses, so this produces fewer
-//  wasted page fragments.
-#define MWPM_MINIMUM_PAGE_COUNT 16
+//  wasted page fragments and in general ensures we can service larger allocations.
+#define MWPM_MINIMUM_PAGE_COUNT 128
 
 typedef enum {
 	// We don't know the state of this page

@@ -18,8 +18,9 @@ static uint32_t
 	last_controlled_page_index = 0,
 	// When we scan for free pages we keep track of where the scan ended,
 	//  and start the next scan there.
-	free_page_scan_start = UINT32_MAX,
-	total_wasted_bytes = 0;
+	free_page_scan_start = UINT32_MAX;
+static uint8_t *prev_waste_start = NULL,
+	*prev_waste_end = NULL;
 
 static inline void *
 address_from_page_index (uint32_t page_index) {
@@ -80,41 +81,84 @@ transition_page_states (mwpm_page_state from_state, mwpm_page_state to_state, ui
 	return result;
 }
 
+static void
+print_stats () {
+	uint32_t in_use = 0, free = 0, unallocated = 0;
+	for (uint32_t i = first_controlled_page_index; i <= last_controlled_page_index; i++) {
+		switch (page_table[i]) {
+			case MWPM_ALLOCATED:
+				in_use++;
+				break;
+			case MWPM_FREE_DIRTY:
+			case MWPM_FREE_ZEROED:
+				free++;
+				break;
+			default:
+				unallocated++;
+				break;
+		}
+	}
+	uint32_t total = in_use + free; // + unallocated;
+	g_print (
+		"%u pages allocated (%f%%), %u pages free, %u pages unknown\n",
+		in_use, in_use * 100.0 / total, free, unallocated
+	);
+}
+
 static void *
 acquire_new_pages_initialized (uint32_t page_count) {
 	if (page_count < 1)
 		return NULL;
-	// HACK: Add an extra page because sbrk doesn't return page-aligned addresses.
-	// Sigh...
-	page_count += 1;
-	// NOTE: If we change MWPM_PAGE_SIZE to != the WASM page size, we will need
-	//  to round this up to an integral number of WASM pages.
-	uint64_t bytes = page_count * MWPM_PAGE_SIZE;
+	uint64_t bytes = (page_count + 1) * MWPM_PAGE_SIZE;
+	uint32_t recovered_bytes = 0;
 	if (bytes >= UINT32_MAX)
 		return NULL;
 	// We know that on WASM, sbrk grows the heap by a set number of pages,
 	//  and returns the start of the new allocation.
-	void *result = sbrk ((uint32_t)bytes);
-	// Unfortunately emscripten libc doesn't page-align sbrk's return value.
-	uint32_t unalignment = ((uint64_t)result) % MWPM_PAGE_SIZE;
-	if (unalignment != 0) {
-		result = (void *)((uint8_t *)result + (MWPM_PAGE_SIZE - unalignment));
-		g_assert ((((uint64_t)result) % MWPM_PAGE_SIZE) == 0);
-		// We lost a page due to alignment.
-		page_count -= 1;
-		bytes = page_count * MWPM_PAGE_SIZE;
+	uint8_t *allocation = sbrk ((uint32_t)bytes),
+		*allocation_end = allocation + bytes;
+
+	if (!allocation) {
+		g_print ("mwpm failed to acquire memory\n");
+		return NULL;
 	}
+
+	g_assert (allocation_end != allocation);
+
+	// If nobody else has called sbrk since we did, stitch the allocations together
+	//  to eliminate the wasted page in the middle.
+	if (prev_waste_start && (prev_waste_end == allocation)) {
+		recovered_bytes = allocation - prev_waste_start;
+		allocation = prev_waste_start;
+	}
+
+	uint8_t *result = allocation;
+	// Unfortunately emscripten libc doesn't page-align sbrk's return value.
+	uint32_t realignment = MWPM_PAGE_SIZE - (((uint64_t)result) % MWPM_PAGE_SIZE);
+	if (realignment < MWPM_PAGE_SIZE) {
+		result += realignment;
+		g_assert ((((uint64_t)result) % MWPM_PAGE_SIZE) == 0);
+	}
+
+	// Figure out how many wasted bytes are hanging off the end of our last page.
+	page_count = (allocation_end - result) / MWPM_PAGE_SIZE;
+	g_assert (page_count);
+	// Record the region of wasted bytes we allocated, so we can try to use it later.
+	prev_waste_start = result + (page_count * MWPM_PAGE_SIZE);
+	prev_waste_end = allocation_end;
+
 	// Mark all the allocated pages as free and zeroed
 	uint32_t first_page_index = first_page_from_address (result),
-		last_page_index = first_page_index + page_count - 1,
-		wasted_bytes = (MWPM_PAGE_SIZE - unalignment) + (bytes % MWPM_PAGE_SIZE);
+		last_page_index = first_page_index + page_count - 1;
+
 	if ((first_page_index >= MWPM_MAX_PAGES) || (last_page_index >= MWPM_MAX_PAGES)) {
 		g_print ("mwpm failed to acquire pages because resulting page index was out of range: %u-%u\n", first_page_index, last_page_index);
 		return NULL;
 	}
-	total_wasted_bytes += wasted_bytes;
-	g_print ("mwpm acquired %u page(s) (%u bytes) of zeroed memory starting at #%u %u (%u bytes wasted)\n", page_count, (uint32_t)bytes, first_page_index, (uint32_t)result, wasted_bytes);
+
+	g_print ("mwpm allocated %u bytes (%u pages) starting at @%u (%u recovered)\n", (uint32_t)bytes, page_count, (uint32_t)allocation, recovered_bytes);
 	uint32_t pages_transitioned = transition_page_states (MWPM_UNKNOWN, MWPM_FREE_ZEROED, first_page_index, page_count);
+	print_stats ();
 	g_assert (pages_transitioned == page_count);
 	last_controlled_page_index = last_page_index;
 	return result;
@@ -164,8 +208,11 @@ find_n_free_pages_in_range (uint32_t start_scan_where, uint32_t end_scan_where, 
 // Scans all controlled pages to look for at least page_count free pages.
 static uint32_t
 find_n_free_pages (uint32_t page_count) {
-	// Start scanning from the last place we allocated
-	uint32_t result = find_n_free_pages_in_range (free_page_scan_start, last_controlled_page_index, page_count);
+	// Start scanning from the beginning. This ensures we will try to grab small allocations
+	//  from the front of the page table, and large allocations from anywhere we can find.
+	// This does make scans slower though.
+	uint32_t result = find_n_free_pages_in_range (first_controlled_page_index, last_controlled_page_index, page_count);
+	/*
 	// If we didn't find anything, scan the remaining pages we didn't check
 	if (result == UINT32_MAX)
 		result = find_n_free_pages_in_range (first_controlled_page_index, free_page_scan_start, page_count);
@@ -174,6 +221,7 @@ find_n_free_pages (uint32_t page_count) {
 		free_page_scan_start = result + page_count;
 	else
 		free_page_scan_start = first_controlled_page_index;
+	*/
 
 	return result;
 }
@@ -212,6 +260,7 @@ mwpm_alloc_range (size_t size, uint8_t zeroed) {
 
 	// If we didn't find existing pages to service our alloc,
 	if (first_existing_page == UINT32_MAX) {
+		g_print ("mwpm could not find %u free pages\n", page_count);
 		if (allocation_page_count < MWPM_MINIMUM_PAGE_COUNT)
 			allocation_page_count = MWPM_MINIMUM_PAGE_COUNT;
 		// Ensure we have space for the whole allocation
@@ -226,6 +275,7 @@ mwpm_alloc_range (size_t size, uint8_t zeroed) {
 		}
 	} else {
 		result = address_from_page_index (first_existing_page);
+		// g_print ("mwpm found %u free pages at %u\n", page_count, (uint32_t) result);
 	}
 
 	if (!result)
