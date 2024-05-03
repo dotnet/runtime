@@ -465,10 +465,6 @@ int main(int argc, char* argv[])
     }
 #endif
 
-#ifdef _DEBUG
-    DisableThrowCheck();
-#endif
-
     int     iCommandLineParsed = 0;
     WCHAR*  wzCommandLine = NULL;
     char*   szCommandLine = NULL;

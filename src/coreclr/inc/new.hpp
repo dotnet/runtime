@@ -11,8 +11,4 @@
 
 using std::nothrow;
 
-#ifdef _DEBUG
-void DisableThrowCheck();
-#endif
-
 #endif
