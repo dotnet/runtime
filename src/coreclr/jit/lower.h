@@ -315,6 +315,35 @@ private:
     }
 #endif // defined(TARGET_XARCH)
 
+    struct LoadStoreCoalescingData
+    {
+        var_types targetType;
+        GenTree*  baseAddr;
+        GenTree*  index;
+        GenTree*  value;
+        uint32_t  scale;
+        int       offset;
+        GenTree*  rangeStart;
+        GenTree*  rangeEnd;
+
+        bool IsStore() const
+        {
+            return value != nullptr;
+        }
+
+        bool IsAddressEqual(const LoadStoreCoalescingData& other, bool ignoreOffset) const
+        {
+            if ((scale != other.scale) || (targetType != other.targetType) ||
+                !GenTree::Compare(baseAddr, other.baseAddr) || !GenTree::Compare(index, other.index))
+            {
+                return false;
+            }
+            return ignoreOffset || (offset == other.offset);
+        }
+    };
+
+    bool GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescingData* data) const;
+
     // Per tree node member functions
     void     LowerStoreIndirCommon(GenTreeStoreInd* ind);
     GenTree* LowerIndir(GenTreeIndir* ind);
@@ -323,7 +352,7 @@ private:
     void     MarkTree(GenTree* root);
     void     UnmarkTree(GenTree* root);
     void     LowerStoreIndir(GenTreeStoreInd* node);
-    void     LowerStoreIndirCoalescing(GenTreeStoreInd* node);
+    void     LowerStoreIndirCoalescing(GenTreeIndir* node);
     GenTree* LowerAdd(GenTreeOp* node);
     GenTree* LowerMul(GenTreeOp* mul);
     bool     TryLowerAndNegativeOne(GenTreeOp* node, GenTree** nextNode);

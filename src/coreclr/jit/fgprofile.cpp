@@ -18,26 +18,15 @@
 //   true if so
 //
 // Note:
-//   This now returns true for inlinees. We might consider preserving the
-//   old behavior for crossgen, since crossgen BBINSTRs still do inlining
-//   and don't instrument the inlinees.
+//   In most cases it is more appropriate to call fgHaveProfileWeights,
+//   since that tells you if blocks have profile-based weights.
 //
-//   Thus if BBINSTR and BBOPT do the same inlines (which can happen)
-//   profile data for an inlinee (if available) will not fully reflect
-//   the behavior of the inlinee when called from this method.
+//   This method literally checks if the runtime had a profile schema,
+//   from which we can derive weights.
 //
-//   If this inlinee was not inlined by the BBINSTR run then the
-//   profile data for the inlinee will reflect this method's influence.
-//
-//   * for ALWAYS_INLINE and FORCE_INLINE cases it is unlikely we'll find
-//     any profile data, as BBINSTR and BBOPT callers will both inline;
-//     only indirect callers will invoke the instrumented version to run.
-//   * for DISCRETIONARY_INLINE cases we may or may not find relevant
-//     data, depending, but chances are the data is relevant.
-//
-//  TieredPGO data comes from Tier0 methods, which currently do not do
-//  any inlining; thus inlinee profile data should be available and
-//  representative.
+//   Schema-based data comes from Tier0 methods, which currently do not do
+//   any inlining; thus inlinee profile data should be available and
+//   representative.
 //
 bool Compiler::fgHaveProfileData()
 {
@@ -46,6 +35,9 @@ bool Compiler::fgHaveProfileData()
 
 //------------------------------------------------------------------------
 // fgHaveProfileWeights: Check if we have a profile that has weights.
+//
+// Notes:
+//    These weights may come from instrumentation or from synthesis.
 //
 bool Compiler::fgHaveProfileWeights()
 {
@@ -2848,6 +2840,14 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
 
+    // For now we only rely on profile data when optimizing.
+    //
+    if (!opts.OptimizationEnabled())
+    {
+        JITDUMP("not optimizing, so not incorporating any profile data\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
 #ifdef DEBUG
     // Optionally run synthesis
     //
@@ -2885,6 +2885,14 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         else
         {
             JITDUMP("BBOPT not set\n");
+        }
+
+        // Is dynamic PGO active? If so, run synthesis.
+        //
+        if (fgPgoDynamic)
+        {
+            JITDUMP("Dynamic PGO active, synthesizing profile data\n");
+            ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoods);
         }
 
         // Scale the "synthetic" block weights.

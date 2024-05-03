@@ -754,6 +754,9 @@ RELEASE_CONFIG_INTEGER(JitEnablePhysicalPromotion, W("JitEnablePhysicalPromotion
 // Enable cross-block local assertion prop
 RELEASE_CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, W("JitEnableCrossBlockLocalAssertionProp"), 1)
 
+// Do greedy RPO-based layout in Compiler::fgReorderBlocks.
+RELEASE_CONFIG_INTEGER(JitDoReversePostOrderLayout, W("JitDoReversePostOrderLayout"), 0);
+
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the
 // file, certain other JIT config variables will be active. If the currently compiled function is not in the file,
 // the specific JIT config variables will not be active.

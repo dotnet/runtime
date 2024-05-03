@@ -807,7 +807,7 @@ public:
 #endif //!STRESS_LOG_READONLY && !STRESS_LOG_ANALYZER
 
 #if defined(MEMORY_MAPPED_STRESSLOG) && !defined(STRESS_LOG_ANALYZER)
-    void* __cdecl operator new(size_t n, const NoThrow&) NOEXCEPT;
+    void* __cdecl operator new(size_t n, const std::nothrow_t&) noexcept;
     void __cdecl operator delete (void * chunk);
 #endif
 
