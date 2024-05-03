@@ -8575,13 +8575,11 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
         CORINFO_METHOD_HANDLE ftn          = pParam->fncHandle;
         InlineResult* const   inlineResult = pParam->result;
 
-#ifdef DEBUG
         if (JitConfig.JitNoInline())
         {
             inlineResult->NoteFatal(InlineObservation::CALLEE_IS_JIT_NOINLINE);
             return;
         }
-#endif
 
         JITDUMP("\nCheckCanInline: fetching method info for inline candidate %s -- context %p\n",
                 compiler->eeGetMethodName(ftn), compiler->dspPtr(pParam->exactContextHnd));

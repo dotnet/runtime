@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace System.Numerics.Tensors.Tests
 {
@@ -72,8 +73,18 @@ namespace System.Numerics.Tensors.Tests
             {
                 return (T?)(object)halfTolerance;
             }
+            else if (typeof(T) == typeof(NFloat))
+            {
+                if (IntPtr.Size == 8 && doubleTolerance != null)
+                {
+                    return (T?)(object)(NFloat)doubleTolerance;
+                }
+                else if (IntPtr.Size == 4 && floatTolerance != null)
+                {
+                    return (T?)(object)(NFloat)doubleTolerance;
+                }
+            }
 #endif
-
             return null;
         }
     }
