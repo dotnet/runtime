@@ -69,6 +69,10 @@ Abstract:
 #include "gcinfo.h"
 #include "eexcp.h"
 
+#if defined(TARGET_ARM64) || defined(TARGET_LINUX)
+#include <arm_sve.h>
+#endif
+
 class MethodDesc;
 class ICorJitCompiler;
 class IJitManager;
@@ -1912,15 +1916,21 @@ public:
         return m_CPUCompileFlags;
     }
 
-#ifdef __GNUC__
+#if defined(TARGET_ARM64)
+#if defined(TARGET_LINUX)
     __attribute__((target("sve")))
-#endif
-    inline UINT64 GetSystemVectorLength()
+    inline UINT64 GetSveLengthFromOS()
     {
-        UINT64 size;
-        __asm__ __volatile__("cntb %0" : "=r"(size));
-        return size;
+        return svcntb();
     }
+#elif defined(TARGET_WINDOWS)
+    inline UINT64 GetSveLengthFromOS()
+    {
+        //TODO-SVE: SVE vector length is hardcoded to 128-bits on Windows until a suitable method is available.
+        return 16;
+    }
+#endif  // TARGET_LINUX
+#endif  // TARGET_ARM64
 
 private:
     bool m_storeRichDebugInfo;

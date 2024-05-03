@@ -1525,14 +1525,12 @@ void EEJitManager::SetCpuInfo()
 
     if (((cpuFeatures & ARM64IntrinsicConstants_Sve) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Sve))
     {
-        int maxVectorLength = (maxVectorTBitWidth >> 3);
-        uint64_t systemVectorTLength = GetSystemVectorLength();
+        uint32_t maxVectorTLength = (maxVectorTBitWidth / 8);
+        uint64_t sveLengthFromOS = GetSveLengthFromOS();
 
-        if (maxVectorLength >= systemVectorTLength)
+        // Do not enable SVE when the user specified vector length is smaller than the one offered by underlying OS.
+        if ((maxVectorTLength >= sveLengthFromOS) || (maxVectorTBitWidth == 0))
         {
-            // Enable SVE only when user specified vector length larger than or equal to the system
-            // vector length. When eabled, SVE would use full vector length available to the process.
-            // For a 256-bit machine, if user provides DOTNET_MaxVectorTBitWidth=128, disable SVE.
             CPUCompileFlags.Set(InstructionSet_Sve);
         }
     }
