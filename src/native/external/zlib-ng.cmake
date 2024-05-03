@@ -146,11 +146,16 @@ endif()
 addprefix(ZLIBNG_SOURCES "${CMAKE_CURRENT_LIST_DIR}/zlib-ng"  "${ZLIBNG_SOURCES_BASE}")
 
 # enable custom zlib allocator
-set(ZLIBNG_COMPILE_DEFINITIONS "MY_ZCALLOC")
+set(ZLIBNG_COMPILE_DEFINITIONS "MY_ZCALLOC") # TODO: who's using this?
 
 # Compile for zlib-compatible APIs instead of zlib-ng APIs
-set(ZLIB_COMPILE_OPTIONS "/zlib-compat")
+set(ZLIBNG_COMPILE_OPTIONS "/zlib-compat")
 
 if(HOST_WIN32 OR CLR_CMAKE_TARGET_WIN32)
-    set(ZLIB_COMPILE_OPTIONS "${ZLIB_COMPILE_OPTIONS};/wd4127;/wd4131")
+    set(ZLIBNG_COMPILE_OPTIONS "${ZLIBNG_COMPILE_OPTIONS};/wd4127;/wd4131")
 endif()
+
+# TODO: Do i need to pass other arguments or import this directory in a different way?
+# also, are the files in this subdirectory getting correctly modified with the necessary
+# zlibng-compile-definitions and zlibng-compile-options?
+add_subdirectory(zlib-ng)

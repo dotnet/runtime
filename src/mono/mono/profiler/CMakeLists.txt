@@ -12,6 +12,7 @@ include_directories(
 if(NOT DISABLE_LIBS)
   if(HOST_ANDROID OR HOST_IOS OR HOST_TVOS OR HOST_S390X)
     # Build the logging profiler only for certain platforms
+    # TODO: why are we not doing all we do in configure_zlib_ng?
     set_source_files_properties(${ZLIBNG_SOURCES} PROPERTIES COMPILE_DEFINITIONS "${ZLIBNG_COMPILE_DEFINITIONS}")
     set_source_files_properties(${ZLIBNG_SOURCES} PROPERTIES COMPILE_OPTIONS "${ZLIBNG_COMPILE_OPTIONS}")
     add_library(mono-profiler-log SHARED helper.c log.c log-args.c ${ZLIBNG_SOURCES})

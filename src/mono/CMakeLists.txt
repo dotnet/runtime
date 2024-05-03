@@ -515,6 +515,7 @@ endif()
 if(NOT DISABLE_EMBEDDED_PDB OR NOT DISABLE_LOG_PROFILER_GZ)
   if(INTERNAL_ZLIBNG)
     # defines ZLIBNG_SOURCES
+    # TODO: why is this not calling doing the configure_zlib_ng work?
     include(${CLR_SRC_NATIVE_DIR}/external/zlib-ng.cmake)
   else()
     # if we're not on a platform where we use the in-tree zlib-ng, require system zlib

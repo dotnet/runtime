@@ -9,7 +9,11 @@ macro(append_extra_compression_libs NativeLibsExtra)
   elseif (CLR_CMAKE_TARGET_SUNOS OR HOST_SOLARIS)
       set(ZLIBNG_LIBRARIES z m)
   else ()
-      find_package(ZLIBNG REQUIRED)
+      # TODO: We don't want zlib anymore, but if I change it to ZLIBNG REQUIRED or ZLIB-NG REQUIRED,
+      # this is unable to find zlib-ng in my linux machine. It seems zlib-ng is not available by default in
+      # the package manager in Ubuntu, unlike zlib.
+      # So do we still want to keep this? If yes, how should I get this to work?
+      # find_package(ZLIB REQUIRED)
       set(ZLIBNG_LIBRARIES ${ZLIBNG_LIBRARIES} m)
   endif ()
   list(APPEND ${NativeLibsExtra} ${ZLIBNG_LIBRARIES})

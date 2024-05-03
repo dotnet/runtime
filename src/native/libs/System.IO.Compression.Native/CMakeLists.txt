@@ -2,6 +2,13 @@ project(System.IO.Compression.Native C)
 
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
 
+function(configure_zlib_ng)
+    add_definitions(-DINTERNAL_ZLIBNG) # Used by pal_zlib.c
+    set_source_files_properties(${ZLIBNG_SOURCES} PROPERTIES COMPILE_DEFINITIONS "${ZLIBNG_COMPILE_DEFINITIONS}")
+    set_source_files_properties(${ZLIBNG_SOURCES} PROPERTIES COMPILE_OPTIONS "${ZLIBNG_COMPILE_OPTIONS}")
+    set(NATIVECOMPRESSION_SOURCES ${ZLIBNG_SOURCES} ${NATIVECOMPRESSION_SOURCES})
+endfunction()
+
 set(NATIVECOMPRESSION_SOURCES
     pal_zlib.c
 )
@@ -31,10 +38,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
 
     if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         include(${CLR_SRC_NATIVE_DIR}/external/zlib-ng.cmake)
-        add_definitions(-DINTERNAL_ZLIBNG)
-        set_source_files_properties(${ZLIBNG_SOURCES} PROPERTIES COMPILE_DEFINITIONS "${ZLIBNG_COMPILE_DEFINITIONS}")
-        set_source_files_properties(${ZLIB_NsG_SOURCES} PROPERTIES COMPILE_OPTIONS "${ZLIBNG_COMPILE_OPTIONS}")
-        set(NATIVECOMPRESSION_SOURCES ${ZLIBNG_SOURCES} ${NATIVECOMPRESSION_SOURCES})
+        configure_zlib_ng()
     endif()
 
     # Disable implicit fallthrough warning for Zlib and Brotli
@@ -103,11 +107,7 @@ else ()
     endif ()
 
     include(${CLR_SRC_NATIVE_DIR}/external/zlib-ng.cmake)
-
-    add_definitions(-DINTERNAL_ZLIBNG)
-    set_source_files_properties(${ZLIBNG_SOURCES} PROPERTIES COMPILE_DEFINITIONS "${ZLIBNG_COMPILE_DEFINITIONS}")
-    set_source_files_properties(${ZLIBNG_SOURCES} PROPERTIES COMPILE_OPTIONS "${ZLIBNG_COMPILE_OPTIONS}")
-    set(NATIVECOMPRESSION_SOURCES ${ZLIBNG_SOURCES} ${NATIVECOMPRESSION_SOURCES})
+    configure_zlib_ng()
 
     if (GEN_SHARED_LIB)
         add_definitions(-DVER_FILEDESCRIPTION_STR="System.IO.Compression.Native")
