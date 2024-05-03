@@ -255,6 +255,25 @@ void Compiler::getHWIntrinsicImmOps(NamedIntrinsic    intrinsic,
             imm2Pos = 0;
             break;
 
+        case NI_Sve_SaturatingDecrementBy16BitElementCount:
+        case NI_Sve_SaturatingDecrementBy32BitElementCount:
+        case NI_Sve_SaturatingDecrementBy64BitElementCount:
+        case NI_Sve_SaturatingDecrementBy8BitElementCount:
+        case NI_Sve_SaturatingIncrementBy16BitElementCount:
+        case NI_Sve_SaturatingIncrementBy32BitElementCount:
+        case NI_Sve_SaturatingIncrementBy64BitElementCount:
+        case NI_Sve_SaturatingIncrementBy8BitElementCount:
+        case NI_Sve_SaturatingDecrementBy16BitElementCountScalar:
+        case NI_Sve_SaturatingDecrementBy32BitElementCountScalar:
+        case NI_Sve_SaturatingDecrementBy64BitElementCountScalar:
+        case NI_Sve_SaturatingIncrementBy16BitElementCountScalar:
+        case NI_Sve_SaturatingIncrementBy32BitElementCountScalar:
+        case NI_Sve_SaturatingIncrementBy64BitElementCountScalar:
+            assert(sig->numArgs == 3);
+            imm1Pos = 1;
+            imm2Pos = 0;
+            break;
+
         default:
             assert(sig->numArgs > 0);
             imm1Pos = 0;
@@ -434,6 +453,33 @@ void HWIntrinsicInfo::lookupImmBounds(
             case NI_Sve_Count8BitElements:
                 immLowerBound = (int)SVE_PATTERN_POW2;
                 immUpperBound = (int)SVE_PATTERN_ALL;
+                break;
+
+            case NI_Sve_SaturatingDecrementBy16BitElementCount:
+            case NI_Sve_SaturatingDecrementBy32BitElementCount:
+            case NI_Sve_SaturatingDecrementBy64BitElementCount:
+            case NI_Sve_SaturatingDecrementBy8BitElementCount:
+            case NI_Sve_SaturatingIncrementBy16BitElementCount:
+            case NI_Sve_SaturatingIncrementBy32BitElementCount:
+            case NI_Sve_SaturatingIncrementBy64BitElementCount:
+            case NI_Sve_SaturatingIncrementBy8BitElementCount:
+            case NI_Sve_SaturatingDecrementBy16BitElementCountScalar:
+            case NI_Sve_SaturatingDecrementBy32BitElementCountScalar:
+            case NI_Sve_SaturatingDecrementBy64BitElementCountScalar:
+            case NI_Sve_SaturatingIncrementBy16BitElementCountScalar:
+            case NI_Sve_SaturatingIncrementBy32BitElementCountScalar:
+            case NI_Sve_SaturatingIncrementBy64BitElementCountScalar:
+                if (immNumber == 1)
+                {
+                    immLowerBound = 1;
+                    immUpperBound = 16;
+                }
+                else
+                {
+                    assert(immNumber == 2);
+                    immLowerBound = (int)SVE_PATTERN_POW2;
+                    immUpperBound = (int)SVE_PATTERN_ALL;
+                }
                 break;
 
             default:

@@ -2436,6 +2436,588 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> OrAcross(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
 
 
+        /// Saturating decrement by number of halfword elements
+
+        /// <summary>
+        /// int32_t svqdech_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQDECH Xtied, Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe int SaturatingDecrementBy16BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t svqdech_pat[_n_s64](int64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQDECH Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe long SaturatingDecrementBy16BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t svqdech_pat[_n_u32](uint32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQDECH Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe uint SaturatingDecrementBy16BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svqdech_pat[_n_u64](uint64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQDECH Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementBy16BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svqdech_pat[_s16](svint16_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQDECH Ztied.H, pattern, MUL #imm_factor
+        ///   MOVPRFX Zresult, Zop; SQDECH Zresult.H, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe Vector<short> SaturatingDecrementBy16BitElementCount(Vector<short> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svqdech_pat[_u16](svuint16_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQDECH Ztied.H, pattern, MUL #imm_factor
+        ///   MOVPRFX Zresult, Zop; UQDECH Zresult.H, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe Vector<ushort> SaturatingDecrementBy16BitElementCount(Vector<ushort> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+
+        /// Saturating decrement by number of word elements
+
+        /// <summary>
+        /// int32_t svqdecw_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQDECW Xtied, Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe int SaturatingDecrementBy32BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t svqdecw_pat[_n_s64](int64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQDECW Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe long SaturatingDecrementBy32BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t svqdecw_pat[_n_u32](uint32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQDECW Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe uint SaturatingDecrementBy32BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svqdecw_pat[_n_u64](uint64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQDECW Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementBy32BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqdecw_pat[_s32](svint32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQDECW Ztied.S, pattern, MUL #imm_factor
+        ///   MOVPRFX Zresult, Zop; SQDECW Zresult.S, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe Vector<int> SaturatingDecrementBy32BitElementCount(Vector<int> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svqdecw_pat[_u32](svuint32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQDECW Ztied.S, pattern, MUL #imm_factor
+        ///   MOVPRFX Zresult, Zop; UQDECW Zresult.S, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe Vector<uint> SaturatingDecrementBy32BitElementCount(Vector<uint> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+
+        /// Saturating decrement by number of doubleword elements
+
+        /// <summary>
+        /// int32_t svqdecd_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQDECD Xtied, Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe int SaturatingDecrementBy64BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t svqdecd_pat[_n_s64](int64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQDECD Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe long SaturatingDecrementBy64BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t svqdecd_pat[_n_u32](uint32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQDECD Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe uint SaturatingDecrementBy64BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svqdecd_pat[_n_u64](uint64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQDECD Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementBy64BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqdecd_pat[_s64](svint64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQDECD Ztied.D, pattern, MUL #imm_factor
+        ///   MOVPRFX Zresult, Zop; SQDECD Zresult.D, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe Vector<long> SaturatingDecrementBy64BitElementCount(Vector<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svqdecd_pat[_u64](svuint64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQDECD Ztied.D, pattern, MUL #imm_factor
+        ///   MOVPRFX Zresult, Zop; UQDECD Zresult.D, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe Vector<ulong> SaturatingDecrementBy64BitElementCount(Vector<ulong> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+
+        /// Saturating decrement by number of byte elements
+
+        /// <summary>
+        /// int32_t svqdecb_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQDECB Xtied, Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe int SaturatingDecrementBy8BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t svqdecb_pat[_n_s64](int64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQDECB Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe long SaturatingDecrementBy8BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t svqdecb_pat[_n_u32](uint32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQDECB Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe uint SaturatingDecrementBy8BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svqdecb_pat[_n_u64](uint64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQDECB Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementBy8BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+
+        /// Saturating decrement by active element count
+
+        /// <summary>
+        /// int32_t svqdecp[_n_s32]_b8(int32_t op, svbool_t pg)
+        ///   SQDECP Xtied, Pg.B, Wtied
+        /// </summary>
+        public static unsafe int SaturatingDecrementByActiveElementCount(int value, Vector<byte> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t svqdecp[_n_s64]_b8(int64_t op, svbool_t pg)
+        ///   SQDECP Xtied, Pg.B
+        /// </summary>
+        public static unsafe long SaturatingDecrementByActiveElementCount(long value, Vector<byte> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t svqdecp[_n_u32]_b8(uint32_t op, svbool_t pg)
+        ///   UQDECP Wtied, Pg.B
+        /// </summary>
+        public static unsafe uint SaturatingDecrementByActiveElementCount(uint value, Vector<byte> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svqdecp[_n_u64]_b8(uint64_t op, svbool_t pg)
+        ///   UQDECP Xtied, Pg.B
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementByActiveElementCount(ulong value, Vector<byte> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svqdecp[_s16](svint16_t op, svbool_t pg)
+        ///   SQDECP Ztied.H, Pg
+        ///   MOVPRFX Zresult, Zop; SQDECP Zresult.H, Pg
+        /// </summary>
+        public static unsafe Vector<short> SaturatingDecrementByActiveElementCount(Vector<short> value, Vector<short> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqdecp[_s32](svint32_t op, svbool_t pg)
+        ///   SQDECP Ztied.S, Pg
+        ///   MOVPRFX Zresult, Zop; SQDECP Zresult.S, Pg
+        /// </summary>
+        public static unsafe Vector<int> SaturatingDecrementByActiveElementCount(Vector<int> value, Vector<int> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqdecp[_s64](svint64_t op, svbool_t pg)
+        ///   SQDECP Ztied.D, Pg
+        ///   MOVPRFX Zresult, Zop; SQDECP Zresult.D, Pg
+        /// </summary>
+        public static unsafe Vector<long> SaturatingDecrementByActiveElementCount(Vector<long> value, Vector<long> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32_t svqdecp[_n_s32]_b16(int32_t op, svbool_t pg)
+        ///   SQDECP Xtied, Pg.H, Wtied
+        /// </summary>
+        public static unsafe int SaturatingDecrementByActiveElementCount(int value, Vector<ushort> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t svqdecp[_n_s64]_b16(int64_t op, svbool_t pg)
+        ///   SQDECP Xtied, Pg.H
+        /// </summary>
+        public static unsafe long SaturatingDecrementByActiveElementCount(long value, Vector<ushort> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t svqdecp[_n_u32]_b16(uint32_t op, svbool_t pg)
+        ///   UQDECP Wtied, Pg.H
+        /// </summary>
+        public static unsafe uint SaturatingDecrementByActiveElementCount(uint value, Vector<ushort> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svqdecp[_n_u64]_b16(uint64_t op, svbool_t pg)
+        ///   UQDECP Xtied, Pg.H
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementByActiveElementCount(ulong value, Vector<ushort> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svqdecp[_u16](svuint16_t op, svbool_t pg)
+        ///   UQDECP Ztied.H, Pg
+        ///   MOVPRFX Zresult, Zop; UQDECP Zresult.H, Pg
+        /// </summary>
+        public static unsafe Vector<ushort> SaturatingDecrementByActiveElementCount(Vector<ushort> value, Vector<ushort> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32_t svqdecp[_n_s32]_b32(int32_t op, svbool_t pg)
+        ///   SQDECP Xtied, Pg.S, Wtied
+        /// </summary>
+        public static unsafe int SaturatingDecrementByActiveElementCount(int value, Vector<uint> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t svqdecp[_n_s64]_b32(int64_t op, svbool_t pg)
+        ///   SQDECP Xtied, Pg.S
+        /// </summary>
+        public static unsafe long SaturatingDecrementByActiveElementCount(long value, Vector<uint> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t svqdecp[_n_u32]_b32(uint32_t op, svbool_t pg)
+        ///   UQDECP Wtied, Pg.S
+        /// </summary>
+        public static unsafe uint SaturatingDecrementByActiveElementCount(uint value, Vector<uint> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svqdecp[_n_u64]_b32(uint64_t op, svbool_t pg)
+        ///   UQDECP Xtied, Pg.S
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementByActiveElementCount(ulong value, Vector<uint> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svqdecp[_u32](svuint32_t op, svbool_t pg)
+        ///   UQDECP Ztied.S, Pg
+        ///   MOVPRFX Zresult, Zop; UQDECP Zresult.S, Pg
+        /// </summary>
+        public static unsafe Vector<uint> SaturatingDecrementByActiveElementCount(Vector<uint> value, Vector<uint> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32_t svqdecp[_n_s32]_b64(int32_t op, svbool_t pg)
+        ///   SQDECP Xtied, Pg.D, Wtied
+        /// </summary>
+        public static unsafe int SaturatingDecrementByActiveElementCount(int value, Vector<ulong> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t svqdecp[_n_s64]_b64(int64_t op, svbool_t pg)
+        ///   SQDECP Xtied, Pg.D
+        /// </summary>
+        public static unsafe long SaturatingDecrementByActiveElementCount(long value, Vector<ulong> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t svqdecp[_n_u32]_b64(uint32_t op, svbool_t pg)
+        ///   UQDECP Wtied, Pg.D
+        /// </summary>
+        public static unsafe uint SaturatingDecrementByActiveElementCount(uint value, Vector<ulong> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svqdecp[_n_u64]_b64(uint64_t op, svbool_t pg)
+        ///   UQDECP Xtied, Pg.D
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementByActiveElementCount(ulong value, Vector<ulong> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svqdecp[_u64](svuint64_t op, svbool_t pg)
+        ///   UQDECP Ztied.D, Pg
+        ///   MOVPRFX Zresult, Zop; UQDECP Zresult.D, Pg
+        /// </summary>
+        public static unsafe Vector<ulong> SaturatingDecrementByActiveElementCount(Vector<ulong> value, Vector<ulong> from) { throw new PlatformNotSupportedException(); }
+
+
+        /// Saturating increment by number of halfword elements
+
+        /// <summary>
+        /// int32_t svqinch_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQINCH Xtied, Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe int SaturatingIncrementBy16BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t svqinch_pat[_n_s64](int64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQINCH Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe long SaturatingIncrementBy16BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t svqinch_pat[_n_u32](uint32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQINCH Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe uint SaturatingIncrementBy16BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svqinch_pat[_n_u64](uint64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQINCH Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementBy16BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svqinch_pat[_s16](svint16_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQINCH Ztied.H, pattern, MUL #imm_factor
+        ///   MOVPRFX Zresult, Zop; SQINCH Zresult.H, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe Vector<short> SaturatingIncrementBy16BitElementCount(Vector<short> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svqinch_pat[_u16](svuint16_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQINCH Ztied.H, pattern, MUL #imm_factor
+        ///   MOVPRFX Zresult, Zop; UQINCH Zresult.H, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe Vector<ushort> SaturatingIncrementBy16BitElementCount(Vector<ushort> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+
+        /// Saturating increment by number of word elements
+
+        /// <summary>
+        /// int32_t svqincw_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQINCW Xtied, Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe int SaturatingIncrementBy32BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t svqincw_pat[_n_s64](int64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQINCW Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe long SaturatingIncrementBy32BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t svqincw_pat[_n_u32](uint32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQINCW Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe uint SaturatingIncrementBy32BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svqincw_pat[_n_u64](uint64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQINCW Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementBy32BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqincw_pat[_s32](svint32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQINCW Ztied.S, pattern, MUL #imm_factor
+        ///   MOVPRFX Zresult, Zop; SQINCW Zresult.S, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe Vector<int> SaturatingIncrementBy32BitElementCount(Vector<int> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svqincw_pat[_u32](svuint32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQINCW Ztied.S, pattern, MUL #imm_factor
+        ///   MOVPRFX Zresult, Zop; UQINCW Zresult.S, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe Vector<uint> SaturatingIncrementBy32BitElementCount(Vector<uint> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+
+        /// Saturating increment by number of doubleword elements
+
+        /// <summary>
+        /// int32_t svqincd_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQINCD Xtied, Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe int SaturatingIncrementBy64BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t svqincd_pat[_n_s64](int64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQINCD Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe long SaturatingIncrementBy64BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t svqincd_pat[_n_u32](uint32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQINCD Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe uint SaturatingIncrementBy64BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svqincd_pat[_n_u64](uint64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQINCD Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementBy64BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqincd_pat[_s64](svint64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQINCD Ztied.D, pattern, MUL #imm_factor
+        ///   MOVPRFX Zresult, Zop; SQINCD Zresult.D, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe Vector<long> SaturatingIncrementBy64BitElementCount(Vector<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svqincd_pat[_u64](svuint64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQINCD Ztied.D, pattern, MUL #imm_factor
+        ///   MOVPRFX Zresult, Zop; UQINCD Zresult.D, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe Vector<ulong> SaturatingIncrementBy64BitElementCount(Vector<ulong> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+
+        /// Saturating increment by number of byte elements
+
+        /// <summary>
+        /// int32_t svqincb_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQINCB Xtied, Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe int SaturatingIncrementBy8BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t svqincb_pat[_n_s64](int64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQINCB Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe long SaturatingIncrementBy8BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t svqincb_pat[_n_u32](uint32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQINCB Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe uint SaturatingIncrementBy8BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svqincb_pat[_n_u64](uint64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQINCB Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementBy8BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+
+        /// Saturating increment by active element count
+
+        /// <summary>
+        /// int32_t svqincp[_n_s32]_b8(int32_t op, svbool_t pg)
+        ///   SQINCP Xtied, Pg.B, Wtied
+        /// </summary>
+        public static unsafe int SaturatingIncrementByActiveElementCount(int value, Vector<byte> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t svqincp[_n_s64]_b8(int64_t op, svbool_t pg)
+        ///   SQINCP Xtied, Pg.B
+        /// </summary>
+        public static unsafe long SaturatingIncrementByActiveElementCount(long value, Vector<byte> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t svqincp[_n_u32]_b8(uint32_t op, svbool_t pg)
+        ///   UQINCP Wtied, Pg.B
+        /// </summary>
+        public static unsafe uint SaturatingIncrementByActiveElementCount(uint value, Vector<byte> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svqincp[_n_u64]_b8(uint64_t op, svbool_t pg)
+        ///   UQINCP Xtied, Pg.B
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementByActiveElementCount(ulong value, Vector<byte> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svqincp[_s16](svint16_t op, svbool_t pg)
+        ///   SQINCP Ztied.H, Pg
+        ///   MOVPRFX Zresult, Zop; SQINCP Zresult.H, Pg
+        /// </summary>
+        public static unsafe Vector<short> SaturatingIncrementByActiveElementCount(Vector<short> value, Vector<short> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqincp[_s32](svint32_t op, svbool_t pg)
+        ///   SQINCP Ztied.S, Pg
+        ///   MOVPRFX Zresult, Zop; SQINCP Zresult.S, Pg
+        /// </summary>
+        public static unsafe Vector<int> SaturatingIncrementByActiveElementCount(Vector<int> value, Vector<int> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqincp[_s64](svint64_t op, svbool_t pg)
+        ///   SQINCP Ztied.D, Pg
+        ///   MOVPRFX Zresult, Zop; SQINCP Zresult.D, Pg
+        /// </summary>
+        public static unsafe Vector<long> SaturatingIncrementByActiveElementCount(Vector<long> value, Vector<long> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32_t svqincp[_n_s32]_b16(int32_t op, svbool_t pg)
+        ///   SQINCP Xtied, Pg.H, Wtied
+        /// </summary>
+        public static unsafe int SaturatingIncrementByActiveElementCount(int value, Vector<ushort> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t svqincp[_n_s64]_b16(int64_t op, svbool_t pg)
+        ///   SQINCP Xtied, Pg.H
+        /// </summary>
+        public static unsafe long SaturatingIncrementByActiveElementCount(long value, Vector<ushort> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t svqincp[_n_u32]_b16(uint32_t op, svbool_t pg)
+        ///   UQINCP Wtied, Pg.H
+        /// </summary>
+        public static unsafe uint SaturatingIncrementByActiveElementCount(uint value, Vector<ushort> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svqincp[_n_u64]_b16(uint64_t op, svbool_t pg)
+        ///   UQINCP Xtied, Pg.H
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementByActiveElementCount(ulong value, Vector<ushort> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svqincp[_u16](svuint16_t op, svbool_t pg)
+        ///   UQINCP Ztied.H, Pg
+        ///   MOVPRFX Zresult, Zop; UQINCP Zresult.H, Pg
+        /// </summary>
+        public static unsafe Vector<ushort> SaturatingIncrementByActiveElementCount(Vector<ushort> value, Vector<ushort> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32_t svqincp[_n_s32]_b32(int32_t op, svbool_t pg)
+        ///   SQINCP Xtied, Pg.S, Wtied
+        /// </summary>
+        public static unsafe int SaturatingIncrementByActiveElementCount(int value, Vector<uint> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t svqincp[_n_s64]_b32(int64_t op, svbool_t pg)
+        ///   SQINCP Xtied, Pg.S
+        /// </summary>
+        public static unsafe long SaturatingIncrementByActiveElementCount(long value, Vector<uint> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t svqincp[_n_u32]_b32(uint32_t op, svbool_t pg)
+        ///   UQINCP Wtied, Pg.S
+        /// </summary>
+        public static unsafe uint SaturatingIncrementByActiveElementCount(uint value, Vector<uint> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svqincp[_n_u64]_b32(uint64_t op, svbool_t pg)
+        ///   UQINCP Xtied, Pg.S
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementByActiveElementCount(ulong value, Vector<uint> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svqincp[_u32](svuint32_t op, svbool_t pg)
+        ///   UQINCP Ztied.S, Pg
+        ///   MOVPRFX Zresult, Zop; UQINCP Zresult.S, Pg
+        /// </summary>
+        public static unsafe Vector<uint> SaturatingIncrementByActiveElementCount(Vector<uint> value, Vector<uint> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32_t svqincp[_n_s32]_b64(int32_t op, svbool_t pg)
+        ///   SQINCP Xtied, Pg.D, Wtied
+        /// </summary>
+        public static unsafe int SaturatingIncrementByActiveElementCount(int value, Vector<ulong> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t svqincp[_n_s64]_b64(int64_t op, svbool_t pg)
+        ///   SQINCP Xtied, Pg.D
+        /// </summary>
+        public static unsafe long SaturatingIncrementByActiveElementCount(long value, Vector<ulong> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t svqincp[_n_u32]_b64(uint32_t op, svbool_t pg)
+        ///   UQINCP Wtied, Pg.D
+        /// </summary>
+        public static unsafe uint SaturatingIncrementByActiveElementCount(uint value, Vector<ulong> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svqincp[_n_u64]_b64(uint64_t op, svbool_t pg)
+        ///   UQINCP Xtied, Pg.D
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementByActiveElementCount(ulong value, Vector<ulong> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svqincp[_u64](svuint64_t op, svbool_t pg)
+        ///   UQINCP Ztied.D, Pg
+        ///   MOVPRFX Zresult, Zop; UQINCP Zresult.D, Pg
+        /// </summary>
+        public static unsafe Vector<ulong> SaturatingIncrementByActiveElementCount(Vector<ulong> value, Vector<ulong> from) { throw new PlatformNotSupportedException(); }
+
+
         ///  SignExtend16 : Sign-extend the low 16 bits
 
         /// <summary>

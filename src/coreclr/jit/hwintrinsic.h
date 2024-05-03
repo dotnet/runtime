@@ -232,10 +232,12 @@ enum HWIntrinsicFlag : unsigned int
     // The intrinsic has an enum operand. Using this implies HW_Flag_HasImmediateOperand.
     HW_Flag_HasEnumOperand = 0x1000000,
 
+    HW_Flag_HasScalarVariant = 0x2000000,
+
 #endif // TARGET_XARCH
 
     // The intrinsic is a FusedMultiplyAdd intrinsic
-    HW_Flag_FmaIntrinsic = 0x20000000,
+    HW_Flag_FmaIntrinsic = 0x40000000,
 
     HW_Flag_CanBenefitFromConstantProp = 0x80000000,
 };
@@ -913,6 +915,39 @@ struct HWIntrinsicInfo
     {
         const HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_HasEnumOperand) != 0;
+    }
+
+    static bool HasScalarVariant(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_HasScalarVariant) != 0;
+    }
+
+    static NamedIntrinsic GetScalarVariant(NamedIntrinsic id)
+    {
+        switch (id)
+        {
+            case NI_Sve_SaturatingDecrementBy16BitElementCount:
+                return NI_Sve_SaturatingDecrementBy16BitElementCountScalar;
+
+            case NI_Sve_SaturatingDecrementBy32BitElementCount:
+                return NI_Sve_SaturatingDecrementBy32BitElementCountScalar;
+
+            case NI_Sve_SaturatingDecrementBy64BitElementCount:
+                return NI_Sve_SaturatingDecrementBy64BitElementCountScalar;
+
+            case NI_Sve_SaturatingIncrementBy16BitElementCount:
+                return NI_Sve_SaturatingIncrementBy16BitElementCountScalar;
+
+            case NI_Sve_SaturatingIncrementBy32BitElementCount:
+                return NI_Sve_SaturatingIncrementBy32BitElementCountScalar;
+
+            case NI_Sve_SaturatingIncrementBy64BitElementCount:
+                return NI_Sve_SaturatingIncrementBy64BitElementCountScalar;
+
+            default:
+                unreached();
+        }
     }
 
 #endif // TARGET_ARM64

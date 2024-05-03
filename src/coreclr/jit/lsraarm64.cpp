@@ -1471,6 +1471,24 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         needBranchTargetReg = !intrin.op1->isContainedIntOrIImmed();
                         break;
 
+                    case NI_Sve_SaturatingDecrementBy16BitElementCount:
+                    case NI_Sve_SaturatingDecrementBy32BitElementCount:
+                    case NI_Sve_SaturatingDecrementBy64BitElementCount:
+                    case NI_Sve_SaturatingDecrementBy8BitElementCount:
+                    case NI_Sve_SaturatingIncrementBy16BitElementCount:
+                    case NI_Sve_SaturatingIncrementBy32BitElementCount:
+                    case NI_Sve_SaturatingIncrementBy64BitElementCount:
+                    case NI_Sve_SaturatingIncrementBy8BitElementCount:
+                    case NI_Sve_SaturatingDecrementBy16BitElementCountScalar:
+                    case NI_Sve_SaturatingDecrementBy32BitElementCountScalar:
+                    case NI_Sve_SaturatingDecrementBy64BitElementCountScalar:
+                    case NI_Sve_SaturatingIncrementBy16BitElementCountScalar:
+                    case NI_Sve_SaturatingIncrementBy32BitElementCountScalar:
+                    case NI_Sve_SaturatingIncrementBy64BitElementCountScalar:
+                        assert(intrin.op2->isContainedIntOrIImmed());
+                        assert(intrin.op4->isContainedIntOrIImmed());
+                        break;
+
                     default:
                         unreached();
                 }

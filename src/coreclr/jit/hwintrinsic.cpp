@@ -1241,7 +1241,26 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             unsigned int sizeBytes;
 
             simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(clsHnd, &sizeBytes);
-            assert((category == HW_Category_Special) || (category == HW_Category_Helper) || (sizeBytes != 0));
+
+#if defined(TARGET_ARM64)
+            if (simdBaseJitType == CORINFO_TYPE_UNDEF && HWIntrinsicInfo::HasScalarVariant(intrinsic))
+            {
+                // Did not find a valid vector type. The intrinsic has alternate scalar version. Switch to that.
+
+                assert(sizeBytes == 0);
+                intrinsic = HWIntrinsicInfo::GetScalarVariant(intrinsic);
+                category  = HWIntrinsicInfo::lookupCategory(intrinsic);
+                isa       = HWIntrinsicInfo::lookupIsa(intrinsic);
+
+                simdBaseJitType = sig->retType;
+                assert(simdBaseJitType != CORINFO_TYPE_VOID);
+                assert(simdBaseJitType != CORINFO_TYPE_UNDEF);
+            }
+            else
+#endif
+            {
+                assert((category == HW_Category_Special) || (category == HW_Category_Helper) || (sizeBytes != 0));
+            }
         }
     }
 
