@@ -1411,7 +1411,7 @@ FORCEINLINE void* GetThreadLocalStaticBaseIfExistsAndInitialized(TLSIndex index)
 
     if (index.GetTLSIndexType() == TLSIndexType::NonCollectible)
     {
-        PTRARRAYREF tlsArray = (PTRARRAYREF)UNCHECKED_OBJECTREF_TO_OBJECTREF(t_ThreadStatics.pNonCollectibleTlsReferenceData);
+        PTRARRAYREF tlsArray = (PTRARRAYREF)UNCHECKED_OBJECTREF_TO_OBJECTREF(t_ThreadStatics.pNonCollectibleTlsArrayData);
         if (t_ThreadStatics.cNonCollectibleTlsData <= index.GetIndexOffset())
         {
             return NULL;
@@ -1424,14 +1424,14 @@ FORCEINLINE void* GetThreadLocalStaticBaseIfExistsAndInitialized(TLSIndex index)
     }
     else
     {
-        int32_t cTLSData = t_ThreadStatics.cTLSData;
-        if (cTLSData <= index.GetIndexOffset())
+        int32_t cCollectibleTlsData = t_ThreadStatics.cCollectibleTlsData;
+        if (cCollectibleTlsData <= index.GetIndexOffset())
         {
             return NULL;
         }
 
-        TADDR pTLSArrayData = t_ThreadStatics.pTLSArrayData;
-        pTLSBaseAddress = *reinterpret_cast<TADDR*>(reinterpret_cast<uintptr_t*>(pTLSArrayData) + index.GetIndexOffset());
+        TADDR pCollectibleTlsArrayData = t_ThreadStatics.pCollectibleTlsArrayData;
+        pTLSBaseAddress = *reinterpret_cast<TADDR*>(reinterpret_cast<uintptr_t*>(pCollectibleTlsArrayData) + index.GetIndexOffset());
     }
     return reinterpret_cast<void*>(pTLSBaseAddress);
 }
