@@ -108,7 +108,7 @@ namespace System
             {
                 if (destination.Length > 4)
                 {
-                    ulong fals_val = BitConverter.IsLittleEndian ? 0x73006C00610046ul : 0x460061006C0073ul; // "Fals"
+                    ulong fals_val = BitConverter.IsLittleEndian ? 0x73006C00610046ul : 0x460061006C0073ul; // "False"
                     MemoryMarshal.Write(MemoryMarshal.AsBytes(destination), in fals_val);
                     destination[4] = 'e';
                     charsWritten = 5;
