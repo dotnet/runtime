@@ -1459,7 +1459,7 @@ public:
                 _ASSERTE(*pSlot == GetTemporaryEntryPoint());
                 // We may be in a race with another thread that will be setting HasStableEntryPoint
                 // Just set it now along with HasPrecode
-                InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint | enum_flag3_HasPrecode, FALSE);
+                InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint | enum_flag3_HasPrecode, TRUE);
             }
         }
     }
