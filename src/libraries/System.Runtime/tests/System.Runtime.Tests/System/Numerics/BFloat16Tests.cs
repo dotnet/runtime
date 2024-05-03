@@ -13,12 +13,28 @@ namespace System.Numerics.Tests
 
         private static BFloat16 UInt16BitsToBFloat16(ushort value) => Unsafe.BitCast<ushort, BFloat16>(value);
 
-        private static bool IsNaN(BFloat16 value) => float.IsNaN(BitConverter.Int32BitsToSingle(BFloat16ToUInt16Bits(value) << 16));
-
         [Fact]
         public static void Epsilon()
         {
             Assert.Equal(0x0001u, BFloat16ToUInt16Bits(BFloat16.Epsilon));
+        }
+
+        [Fact]
+        public static void PositiveInfinity()
+        {
+            Assert.Equal(0x7F80u, BFloat16ToUInt16Bits(BFloat16.PositiveInfinity));
+        }
+
+        [Fact]
+        public static void NegativeInfinity()
+        {
+            Assert.Equal(0xFF80u, BFloat16ToUInt16Bits(BFloat16.NegativeInfinity));
+        }
+
+        [Fact]
+        public static void NaN()
+        {
+            Assert.Equal(0xFFC0u, BFloat16ToUInt16Bits(BFloat16.NaN));
         }
 
         [Fact]
@@ -60,18 +76,18 @@ namespace System.Numerics.Tests
             yield return new object[] { BFloat16.Epsilon, UInt16BitsToBFloat16(0x8001), 1 };
             yield return new object[] { BFloat16.MaxValue, UInt16BitsToBFloat16(0x0000), 1 };
             yield return new object[] { BFloat16.MaxValue, BFloat16.Epsilon, 1 };
-            // yield return new object[] { BFloat16.MaxValue, BFloat16.PositiveInfinity, -1 };
+            yield return new object[] { BFloat16.MaxValue, BFloat16.PositiveInfinity, -1 };
             yield return new object[] { BFloat16.MinValue, BFloat16.MaxValue, -1 };
-            // yield return new object[] { BFloat16.MaxValue, BFloat16.NaN, 1 };
-            // yield return new object[] { BFloat16.NaN, BFloat16.NaN, 0 };
-            // yield return new object[] { BFloat16.NaN, UInt16BitsToBFloat16(0x0000), -1 };
+            yield return new object[] { BFloat16.MaxValue, BFloat16.NaN, 1 };
+            yield return new object[] { BFloat16.NaN, BFloat16.NaN, 0 };
+            yield return new object[] { BFloat16.NaN, UInt16BitsToBFloat16(0x0000), -1 };
             yield return new object[] { BFloat16.MaxValue, null, 1 };
-            // yield return new object[] { BFloat16.MinValue, BFloat16.NegativeInfinity, 1 };
-            // yield return new object[] { BFloat16.NegativeInfinity, BFloat16.MinValue, -1 };
-            // yield return new object[] { UInt16BitsToBFloat16(0x8000), BFloat16.NegativeInfinity, 1 }; // Negative zero
-            // yield return new object[] { BFloat16.NegativeInfinity, UInt16BitsToBFloat16(0x8000), -1 }; // Negative zero
-            // yield return new object[] { BFloat16.NegativeInfinity, BFloat16.NegativeInfinity, 0 };
-            // yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, 0 };
+            yield return new object[] { BFloat16.MinValue, BFloat16.NegativeInfinity, 1 };
+            yield return new object[] { BFloat16.NegativeInfinity, BFloat16.MinValue, -1 };
+            yield return new object[] { UInt16BitsToBFloat16(0x8000), BFloat16.NegativeInfinity, 1 }; // Negative zero
+            yield return new object[] { BFloat16.NegativeInfinity, UInt16BitsToBFloat16(0x8000), -1 }; // Negative zero
+            yield return new object[] { BFloat16.NegativeInfinity, BFloat16.NegativeInfinity, 0 };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, 0 };
             yield return new object[] { (BFloat16)(-180f), (BFloat16)(-180f), 0 };
             yield return new object[] { (BFloat16)(180f), (BFloat16)(180f), 0 };
             yield return new object[] { (BFloat16)(-180f), (BFloat16)(180f), -1 };
@@ -87,7 +103,7 @@ namespace System.Numerics.Tests
             {
                 Assert.Equal(expected, Math.Sign(value.CompareTo(other)));
 
-                if (IsNaN(value) || IsNaN(other))
+                if (BFloat16.IsNaN(value) || BFloat16.IsNaN(other))
                 {
                     Assert.False(value >= other);
                     Assert.False(value > other);
@@ -150,10 +166,10 @@ namespace System.Numerics.Tests
                 (UInt16BitsToBFloat16(0b1_01111011_1001101), -0.10009765625f), // -0.1ish
                 (UInt16BitsToBFloat16(0b0_10000100_0101000), 42f), // 42
                 (UInt16BitsToBFloat16(0b1_10000100_0101000), -42f), // -42
-                // (BFloat16.PositiveInfinity, float.PositiveInfinity), // PosInfinity
-                // (BFloat16.NegativeInfinity, float.NegativeInfinity), // NegInfinity
+                (BFloat16.PositiveInfinity, float.PositiveInfinity), // PosInfinity
+                (BFloat16.NegativeInfinity, float.NegativeInfinity), // NegInfinity
                 (UInt16BitsToBFloat16(0b0_11111111_1000000), BitConverter.UInt32BitsToSingle(0x7FC00000)), // Positive Quiet NaN
-                // (BFloat16.NaN, float.NaN), // Negative Quiet NaN
+                (BFloat16.NaN, float.NaN), // Negative Quiet NaN
                 (UInt16BitsToBFloat16(0b0_11111111_1010101), BitConverter.UInt32BitsToSingle(0x7FD50000)), // Positive Signalling NaN - Should preserve payload
                 (UInt16BitsToBFloat16(0b1_11111111_1010101), BitConverter.UInt32BitsToSingle(0xFFD50000)), // Negative Signalling NaN - Should preserve payload
                 (BFloat16.Epsilon, BitConverter.UInt32BitsToSingle(0x00010000)), // PosEpsilon = 9.1835E-41
@@ -202,9 +218,9 @@ namespace System.Numerics.Tests
                 (-MathF.E, UInt16BitsToBFloat16(0b1_10000000_0101110)), // -2.71875
                 (float.MaxValue, UInt16BitsToBFloat16(0b0_11111111_0000000)), // Overflow
                 (float.MinValue, UInt16BitsToBFloat16(0b1_11111111_0000000)), // Overflow
-                //(float.PositiveInfinity, BFloat16.PositiveInfinity), // Overflow
-                //(float.NegativeInfinity, BFloat16.NegativeInfinity), // Overflow
-                //(float.NaN, BFloat16.NaN), // Quiet Negative NaN
+                (float.PositiveInfinity, BFloat16.PositiveInfinity), // Overflow
+                (float.NegativeInfinity, BFloat16.NegativeInfinity), // Overflow
+                (float.NaN, BFloat16.NaN), // Quiet Negative NaN
                 (BitConverter.UInt32BitsToSingle(0x7FC00000), UInt16BitsToBFloat16(0b0_11111111_1000000)), // Quiet Positive NaN
                 (BitConverter.UInt32BitsToSingle(0xFFD55555), UInt16BitsToBFloat16(0b1_11111111_1010101)), // Signalling Negative NaN
                 (BitConverter.UInt32BitsToSingle(0x7FD55555), UInt16BitsToBFloat16(0b0_11111111_1010101)), // Signalling Positive NaN
