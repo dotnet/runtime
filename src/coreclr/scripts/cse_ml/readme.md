@@ -28,7 +28,7 @@ python src/coreclr/scripts/superpmi.py download
 
 ## Python Setup
 
-This was developed and tested with Python 3.10 (3.11 on Windows).  This is the default in Ubuntu 22.
+This was developed and tested with Python 3.10 (3.11 on Windows).  Python 3.10 is the default Python version in Ubuntu 22.
 
 First, install all dependencies from requirements.txt in this directory:
 
@@ -54,10 +54,15 @@ usage: train.py [-h] [--core_root CORE_ROOT] [--parallel PARALLEL] [--iterations
 ```
 
 **algorithm** - PPO, A2C, or DQN.  PPO is the default and currently the only one that seems to converge to a solution.  Still working on getting A2C and DQN to work.
+
 **iterations** - The number of iterations (individual CSE choices) to train on.  PPO builds a decent model at around 1 million iterations (the default).  It starts getting close to to the default CSE Heuristic at around 3-5 million iterations.
+
 **parallel** - Use multiprocessing to train in parallel.  This specifies the number of processes (default is 1).
+
 **test-percent** - What percentage of the .mch file to reserve for testing the model (default is .1, 10%).
+
 **reward-optimal-cse** - Attempt to find the "optimal" choice at each iteration step and reward the model for picking the best option.  This does have a positive impact, but slows down training by 4x.
+
 **normalize-features** - Performs normalization on features, currently causes the model to not train.  (So don't use it, still investigating why.)
 
 ## Evaluating a Model
