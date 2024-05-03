@@ -8228,7 +8228,8 @@ bool Lowering::TryLowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
     // Replace STORE_BLK (struct copy) with CORINFO_HELP_BULK_WRITEBARRIER which performs
     // bulk copy for byrefs.
     const unsigned bulkCopyThreshold = 4;
-    if (!blk->OperIs(GT_STORE_BLK) || blk->OperIsInitBlkOp() || (blk->GetLayout()->GetGCPtrCount() < bulkCopyThreshold))
+    if (!blk->OperIs(GT_STORE_BLK) || blk->OperIsInitBlkOp() || blk->IsVolatile() ||
+        (blk->GetLayout()->GetGCPtrCount() < bulkCopyThreshold))
     {
         return false;
     }
@@ -8238,6 +8239,11 @@ bool Lowering::TryLowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
 
     if (data->OperIs(GT_IND))
     {
+        if (data->AsIndir()->IsVolatile())
+        {
+            return false;
+        }
+
         // Drop GT_IND nodes
         BlockRange().Remove(data);
         data = data->AsIndir()->Addr();
