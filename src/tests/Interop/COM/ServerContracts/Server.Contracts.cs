@@ -331,6 +331,8 @@ namespace Server.Contract
         System.Reflection.Missing ReturnToManaged_Missing();
 
         DBNull ReturnToManaged_DBNull();
+
+        string BoolToString();
     }
 
     [ComVisible(true)]

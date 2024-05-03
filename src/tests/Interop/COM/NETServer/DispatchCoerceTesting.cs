@@ -31,4 +31,9 @@ public class DispatchCoerceTesting : Server.Contract.IDispatchCoerceTesting
     {
         return DBNull.Value;
     }
+
+    public string BoolToString()
+    {
+        throw new NotImplementedException();
+    }
 }

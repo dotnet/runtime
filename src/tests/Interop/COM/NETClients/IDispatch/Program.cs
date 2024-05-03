@@ -268,6 +268,10 @@ namespace NetClient
             Assert.Throws<InvalidCastException>(() => dispatchCoerceTesting.ReturnToManaged((short)VarEnum.VT_UNKNOWN));
             Console.WriteLine("Converting VT_NULL to int should fail from VariantChangeTypeEx.");
             Assert.Throws<InvalidCastException>(() => dispatchCoerceTesting.ReturnToManaged((short)VarEnum.VT_NULL));
+
+            // LOCAL_BOOL
+            Console.WriteLine("VARIANT_BOOL should convert to non-numeric string.");
+            Assert.NotEqual("-1", dispatchCoerceTesting.BoolToString());
         }
 
         [Fact]

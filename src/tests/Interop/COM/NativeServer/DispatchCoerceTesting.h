@@ -102,6 +102,10 @@ public: // IDispatch
             {
                 return ReturnToManaged_DBNull_Dispatch(pDispParams, pVarResult);
             }
+            case 5:
+            {
+                return BoolToString_Dispatch(pDispParams, pVarResult);
+            }
             }
 
             return E_NOTIMPL;
@@ -245,6 +249,21 @@ private:
         return S_OK;
     }
 
+    HRESULT BoolToString_Dispatch(_In_ DISPPARAMS *pDispParams, _Inout_ VARIANT *pVarResult)
+    {
+        HRESULT hr;
+
+        size_t expectedArgCount = 0;
+        RETURN_IF_FAILED(VerifyValues(uint32_t(expectedArgCount), pDispParams->cArgs));
+
+        if (pVarResult == nullptr)
+            return E_POINTER;
+
+        V_VT(pVarResult) = VT_BOOL;
+        V_BOOL(pVarResult) = VARIANT_TRUE;
+        return S_OK;
+    }
+
 public: // IUnknown
     STDMETHOD(QueryInterface)(
         /* [in] */ REFIID riid,
@@ -262,7 +281,8 @@ const WCHAR * const DispatchCoerceTesting::Names[] =
     W("ReturnToManaged"),
     W("ManagedArgument"),
     W("ReturnToManaged_Missing"),
-    W("ReturnToManaged_DBNull")
+    W("ReturnToManaged_DBNull"),
+    W("BoolToString")
 };
 
 const int DispatchCoerceTesting::NamesCount = ARRAY_SIZE(DispatchCoerceTesting::Names);
