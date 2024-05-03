@@ -145,6 +145,109 @@ namespace System.Numerics.Tests
             yield return new object[] { BFloat16.PositiveInfinity, false };                  // Positive Infinity
         }
 
+        [Theory]
+        [MemberData(nameof(IsNegative_TestData))]
+        public static void IsNegative(BFloat16 value, bool expected)
+        {
+            Assert.Equal(expected, BFloat16.IsNegative(value));
+        }
+
+        public static IEnumerable<object[]> IsNegativeInfinity_TestData()
+        {
+            yield return new object[] { BFloat16.NegativeInfinity, true };                   // Negative Infinity
+            yield return new object[] { BFloat16.MinValue, false };                          // Min Negative Normal
+            yield return new object[] { UInt16BitsToBFloat16(0x8080), false };  // Max Negative Normal
+            yield return new object[] { UInt16BitsToBFloat16(0x807F), false };  // Min Negative Subnormal
+            yield return new object[] { UInt16BitsToBFloat16(0x8001), false };  // Max Negative Subnormal (Negative Epsilon)
+            yield return new object[] { UInt16BitsToBFloat16(0x8000), false };  // Negative Zero
+            yield return new object[] { BFloat16.NaN, false };                               // NaN
+            yield return new object[] { UInt16BitsToBFloat16(0x0000), false };  // Positive Zero
+            yield return new object[] { BFloat16.Epsilon, false };                           // Min Positive Subnormal (Positive Epsilon)
+            yield return new object[] { UInt16BitsToBFloat16(0x007F), false };  // Max Positive Subnormal
+            yield return new object[] { UInt16BitsToBFloat16(0x0080), false };  // Min Positive Normal
+            yield return new object[] { BFloat16.MaxValue, false };                          // Max Positive Normal
+            yield return new object[] { BFloat16.PositiveInfinity, false };                  // Positive Infinity
+        }
+
+        [Theory]
+        [MemberData(nameof(IsNegativeInfinity_TestData))]
+        public static void IsNegativeInfinity(BFloat16 value, bool expected)
+        {
+            Assert.Equal(expected, BFloat16.IsNegativeInfinity(value));
+        }
+
+        public static IEnumerable<object[]> IsNormal_TestData()
+        {
+            yield return new object[] { BFloat16.NegativeInfinity, false };                  // Negative Infinity
+            yield return new object[] { BFloat16.MinValue, true };                           // Min Negative Normal
+            yield return new object[] { UInt16BitsToBFloat16(0x8080), true };   // Max Negative Normal
+            yield return new object[] { UInt16BitsToBFloat16(0x807F), false };  // Min Negative Subnormal
+            yield return new object[] { UInt16BitsToBFloat16(0x8001), false };  // Max Negative Subnormal
+            yield return new object[] { UInt16BitsToBFloat16(0x8000), false };  // Negative Zero
+            yield return new object[] { BFloat16.NaN, false };                               // NaN
+            yield return new object[] { UInt16BitsToBFloat16(0x0000), false };  // Positive Zero
+            yield return new object[] { BFloat16.Epsilon, false };                           // Min Positive Subnormal
+            yield return new object[] { UInt16BitsToBFloat16(0x007F), false };  // Max Positive Subnormal
+            yield return new object[] { UInt16BitsToBFloat16(0x0080), true };   // Min Positive Normal
+            yield return new object[] { BFloat16.MaxValue, true };                           // Max Positive Normal
+            yield return new object[] { BFloat16.PositiveInfinity, false };                  // Positive Infinity
+        }
+
+        [Theory]
+        [MemberData(nameof(IsNormal_TestData))]
+        public static void IsNormal(BFloat16 value, bool expected)
+        {
+            Assert.Equal(expected, BFloat16.IsNormal(value));
+        }
+
+        public static IEnumerable<object[]> IsPositiveInfinity_TestData()
+        {
+            yield return new object[] { BFloat16.NegativeInfinity, false };                  // Negative Infinity
+            yield return new object[] { BFloat16.MinValue, false };                          // Min Negative Normal
+            yield return new object[] { UInt16BitsToBFloat16(0x8080), false };  // Max Negative Normal
+            yield return new object[] { UInt16BitsToBFloat16(0x807F), false };  // Min Negative Subnormal
+            yield return new object[] { UInt16BitsToBFloat16(0x8001), false };  // Max Negative Subnormal (Negative Epsilon)
+            yield return new object[] { UInt16BitsToBFloat16(0x8000), false };  // Negative Zero
+            yield return new object[] { BFloat16.NaN, false };                               // NaN
+            yield return new object[] { UInt16BitsToBFloat16(0x0000), false };  // Positive Zero
+            yield return new object[] { BFloat16.Epsilon, false };                           // Min Positive Subnormal (Positive Epsilon)
+            yield return new object[] { UInt16BitsToBFloat16(0x007F), false };  // Max Positive Subnormal
+            yield return new object[] { UInt16BitsToBFloat16(0x0080), false };  // Min Positive Normal
+            yield return new object[] { BFloat16.MaxValue, false };                          // Max Positive Normal
+            yield return new object[] { BFloat16.PositiveInfinity, true };                   // Positive Infinity
+        }
+
+        [Theory]
+        [MemberData(nameof(IsPositiveInfinity_TestData))]
+        public static void IsPositiveInfinity(BFloat16 value, bool expected)
+        {
+            Assert.Equal(expected, BFloat16.IsPositiveInfinity(value));
+        }
+
+        public static IEnumerable<object[]> IsSubnormal_TestData()
+        {
+            yield return new object[] { BFloat16.NegativeInfinity, false };                  // Negative Infinity
+            yield return new object[] { BFloat16.MinValue, false };                          // Min Negative Normal
+            yield return new object[] { UInt16BitsToBFloat16(0x8080), false };  // Max Negative Normal
+            yield return new object[] { UInt16BitsToBFloat16(0x807F), true };   // Min Negative Subnormal
+            yield return new object[] { UInt16BitsToBFloat16(0x8001), true };   // Max Negative Subnormal
+            yield return new object[] { UInt16BitsToBFloat16(0x8000), false };  // Negative Zero
+            yield return new object[] { BFloat16.NaN, false };                               // NaN
+            yield return new object[] { UInt16BitsToBFloat16(0x0000), false };  // Positive Zero
+            yield return new object[] { BFloat16.Epsilon, true };                            // Min Positive Subnormal
+            yield return new object[] { UInt16BitsToBFloat16(0x007F), true };   // Max Positive Subnormal
+            yield return new object[] { UInt16BitsToBFloat16(0x0080), false };  // Min Positive Normal
+            yield return new object[] { BFloat16.MaxValue, false };                          // Max Positive Normal
+            yield return new object[] { BFloat16.PositiveInfinity, false };                  // Positive Infinity
+        }
+
+        [Theory]
+        [MemberData(nameof(IsSubnormal_TestData))]
+        public static void IsSubnormal(BFloat16 value, bool expected)
+        {
+            Assert.Equal(expected, BFloat16.IsSubnormal(value));
+        }
+
         public static IEnumerable<object[]> CompareTo_ThrowsArgumentException_TestData()
         {
             yield return new object[] { "a" };
