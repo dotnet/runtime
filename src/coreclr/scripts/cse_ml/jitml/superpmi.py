@@ -91,7 +91,7 @@ class SuperPmi:
         self.context = context
         self.verbose = verbosity
 
-        if os.uname().sysname == 'Windows':
+        if os.name == 'nt':
             self.superpmi_path = os.path.join(context.core_root, 'superpmi.exe')
             self.jit_path = os.path.join(context.core_root, context.jit if context.jit else 'clrjit.dll')
         else:
