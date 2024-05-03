@@ -3102,7 +3102,7 @@ void Compiler::fgLinkBasicBlocks()
 //   jumpTarget -- [in] bit vector of jump targets found by fgFindJumpTargets
 //
 // Notes:
-//   Invoked for prejited and jitted methods, and for all inlinees.
+//   Invoked for prejitted and jitted methods, and for all inlinees.
 //   Sets fgReturnCount and fgThrowCount
 //
 void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, FixedBitVect* jumpTarget)

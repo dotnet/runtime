@@ -688,7 +688,7 @@ private:
                         if (target->KindIs(BBJ_ALWAYS))
                         {
                             repairWasComplete =
-                                alternate->KindIs(BBJ_ALWAYS) && (alternate->GetTarget() == target->GetTarget());
+                                alternate->KindIs(BBJ_ALWAYS) && alternate->TargetIs(target->GetTarget());
                         }
                     }
 
