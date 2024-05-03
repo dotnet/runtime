@@ -134,87 +134,301 @@ namespace System
                 return CreateChangeTypeArgumentException(srcEEType, dstEEType);
             }
 
+            EETypeElementType srcElementType = srcEEType->ElementType;
+
+            // This switch supports the conversions present in the table below, in 'CanPrimitiveWiden'
             switch (dstElementType)
             {
+                // Boolean (W = BOOL)
                 case EETypeElementType.Boolean:
-                    dstObject = Convert.ToBoolean(srcObject);
+
+                    // Can only be bool here
+                    dstObject = srcObject;
                     break;
 
+                // Char (W = U2, CHAR, I4, U4, I8, U8, R4, R8)
                 case EETypeElementType.Char:
-                    char charValue = Convert.ToChar(srcObject);
+                    char charValue;
+                    switch (srcElementType)
+                    {
+                        case EETypeElementType.UInt16:
+                            charValue = (char)(ushort)srcObject;
+                            break;
+                        case EETypeElementType.Char:
+                            charValue = (char)srcObject;
+                            break;
+                        case EETypeElementType.Int32:
+                            charValue = (char)(int)srcObject;
+                            break;
+                        case EETypeElementType.UInt32:
+                            charValue = (char)(uint)srcObject;
+                            break;
+                        case EETypeElementType.Int64:
+                            charValue = (char)(long)srcObject;
+                            break;
+                        case EETypeElementType.UInt64:
+                            charValue = (char)(ulong)srcObject;
+                            break;
+                        case EETypeElementType.Single:
+                            charValue = (char)(float)srcObject;
+                            break;
+                        case EETypeElementType.Double:
+                            charValue = (char)(double)srcObject;
+                            break;
+                        default:
+                            goto Failure;
+                    }
                     dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, charValue) : charValue;
                     break;
 
+                // SByte (W = I1, I2, I4, I8, R4, R8)
                 case EETypeElementType.SByte:
-                    sbyte sbyteValue = Convert.ToSByte(srcObject);
+                    sbyte sbyteValue;
+                    switch (srcElementType)
+                    {
+                        case EETypeElementType.SByte:
+                            sbyteValue = (sbyte)srcObject;
+                            break;
+                        case EETypeElementType.Int16:
+                            sbyteValue = (sbyte)(short)srcObject;
+                            break;
+                        case EETypeElementType.Int32:
+                            sbyteValue = (sbyte)(int)srcObject;
+                            break;
+                        case EETypeElementType.Int64:
+                            sbyteValue = (sbyte)(long)srcObject;
+                            break;
+                        case EETypeElementType.Single:
+                            sbyteValue = (sbyte)(float)srcObject;
+                            break;
+                        case EETypeElementType.Double:
+                            sbyteValue = (sbyte)(double)srcObject;
+                            break;
+                        default:
+                            goto Failure;
+                    }
                     dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, sbyteValue) : sbyteValue;
                     break;
 
-                case EETypeElementType.Int16:
-                    short shortValue = Convert.ToInt16(srcObject);
-                    dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, shortValue) : shortValue;
-                    break;
-
-                case EETypeElementType.Int32:
-                    int intValue = Convert.ToInt32(srcObject);
-                    dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, intValue) : intValue;
-                    break;
-
-                case EETypeElementType.Int64:
-                    long longValue = Convert.ToInt64(srcObject);
-                    dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, longValue) : longValue;
-                    break;
-
+                // Byte (W = CHAR, U1, I2, U2, I4, U4, I8, U8, R4, R8)
                 case EETypeElementType.Byte:
-                    byte byteValue = Convert.ToByte(srcObject);
+                    byte byteValue;
+                    switch (srcElementType)
+                    {
+                        case EETypeElementType.Char:
+                            byteValue = (byte)(char)srcObject;
+                            break;
+                        case EETypeElementType.Byte:
+                            byteValue = (byte)srcObject;
+                            break;
+                        case EETypeElementType.Int16:
+                            byteValue = (byte)(short)srcObject;
+                            break;
+                        case EETypeElementType.UInt16:
+                            byteValue = (byte)(ushort)srcObject;
+                            break;
+                        case EETypeElementType.Int32:
+                            byteValue = (byte)(int)srcObject;
+                            break;
+                        case EETypeElementType.UInt32:
+                            byteValue = (byte)(uint)srcObject;
+                            break;
+                        case EETypeElementType.Int64:
+                            byteValue = (byte)(long)srcObject;
+                            break;
+                        case EETypeElementType.UInt64:
+                            byteValue = (byte)(ulong)srcObject;
+                            break;
+                        case EETypeElementType.Single:
+                            byteValue = (byte)(float)srcObject;
+                            break;
+                        case EETypeElementType.Double:
+                            byteValue = (byte)(double)srcObject;
+                            break;
+                        default:
+                            goto Failure;
+                    }
                     dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, byteValue) : byteValue;
                     break;
 
+                // Int16 (W = I2, I4, I8, R4, R8)
+                case EETypeElementType.Int16:
+                    short shortValue;
+                    switch (srcElementType)
+                    {
+                        case EETypeElementType.Int16:
+                            shortValue = (short)srcObject;
+                            break;
+                        case EETypeElementType.Int32:
+                            shortValue = (short)(int)srcObject;
+                            break;
+                        case EETypeElementType.Int64:
+                            shortValue = (short)(long)srcObject;
+                            break;
+                        case EETypeElementType.Single:
+                            shortValue = (short)(float)srcObject;
+                            break;
+                        case EETypeElementType.Double:
+                            shortValue = (short)(double)srcObject;
+                            break;
+                        default:
+                            goto Failure;
+                    }
+                    dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, shortValue) : shortValue;
+                    break;
+
+                // UInt16 (W = U2, CHAR, I4, U4, I8, U8, R4, R8)
                 case EETypeElementType.UInt16:
-                    ushort ushortValue = Convert.ToUInt16(srcObject);
+                    ushort ushortValue;
+                    switch (srcElementType)
+                    {
+                        case EETypeElementType.UInt16:
+                            ushortValue = (ushort)srcObject;
+                            break;
+                        case EETypeElementType.Char:
+                            ushortValue = (ushort)(char)srcObject;
+                            break;
+                        case EETypeElementType.Int32:
+                            ushortValue = (ushort)(int)srcObject;
+                            break;
+                        case EETypeElementType.UInt32:
+                            ushortValue = (ushort)(uint)srcObject;
+                            break;
+                        case EETypeElementType.Int64:
+                            ushortValue = (ushort)(long)srcObject;
+                            break;
+                        case EETypeElementType.UInt64:
+                            ushortValue = (ushort)(ulong)srcObject;
+                            break;
+                        case EETypeElementType.Single:
+                            ushortValue = (ushort)(float)srcObject;
+                            break;
+                        case EETypeElementType.Double:
+                            ushortValue = (ushort)(double)srcObject;
+                            break;
+                        default:
+                            goto Failure;
+                    }
                     dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, ushortValue) : ushortValue;
                     break;
 
+                // Int32 (W = I4, I8, R4, R8)
+                case EETypeElementType.Int32:
+                    int intValue;
+                    switch (srcElementType)
+                    {
+                        case EETypeElementType.Int32:
+                            intValue = (int)srcObject;
+                            break;
+                        case EETypeElementType.Int64:
+                            intValue = (int)(long)srcObject;
+                            break;
+                        case EETypeElementType.Single:
+                            intValue = (int)(float)srcObject;
+                            break;
+                        case EETypeElementType.Double:
+                            intValue = (int)(double)srcObject;
+                            break;
+                        default:
+                            goto Failure;
+                    }
+                    dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, intValue) : intValue;
+                    break;
+
+                // UInt32 (W = U4, I8, R4, R8)
                 case EETypeElementType.UInt32:
-                    uint uintValue = Convert.ToUInt32(srcObject);
+                    uint uintValue;
+                    switch (srcElementType)
+                    {
+                        case EETypeElementType.UInt32:
+                            uintValue = (uint)srcObject;
+                            break;
+                        case EETypeElementType.Int64:
+                            uintValue = (uint)(long)srcObject;
+                            break;
+                        case EETypeElementType.Single:
+                            uintValue = (uint)(float)srcObject;
+                            break;
+                        case EETypeElementType.Double:
+                            uintValue = (uint)(double)srcObject;
+                            break;
+                        default:
+                            goto Failure;
+                    }
                     dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, uintValue) : uintValue;
                     break;
 
+                // Int64 (W = I8, R4, R8)
+                case EETypeElementType.Int64:
+                    long longValue;
+                    switch (srcElementType)
+                    {
+                        case EETypeElementType.Int64:
+                            longValue = (long)srcObject;
+                            break;
+                        case EETypeElementType.Single:
+                            longValue = (long)(float)srcObject;
+                            break;
+                        case EETypeElementType.Double:
+                            longValue = (long)(double)srcObject;
+                            break;
+                        default:
+                            goto Failure;
+                    }
+                    dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, longValue) : longValue;
+                    break;
+
+                // UInt64 (W = U8, R4, R8)
                 case EETypeElementType.UInt64:
-                    ulong ulongValue = Convert.ToUInt64(srcObject);
+                    ulong ulongValue;
+                    switch (srcElementType)
+                    {
+                        case EETypeElementType.UInt64:
+                            ulongValue = (ulong)srcObject;
+                            break;
+                        case EETypeElementType.Single:
+                            ulongValue = (ulong)(float)srcObject;
+                            break;
+                        case EETypeElementType.Double:
+                            ulongValue = (ulong)(double)srcObject;
+                            break;
+                        default:
+                            goto Failure;
+                    }
                     dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, (long)ulongValue) : ulongValue;
                     break;
 
+                // Single (W = R4, R8)
                 case EETypeElementType.Single:
-                    if (new EETypePtr(srcEEType).CorElementType == CorElementType.ELEMENT_TYPE_CHAR)
+                    if (srcElementType == EETypeElementType.Single)
                     {
-                        dstObject = (float)(char)srcObject;
+                        dstObject = (float)srcObject;
                     }
                     else
                     {
-                        dstObject = Convert.ToSingle(srcObject);
+                        // Can only be double here
+                        dstObject = (float)(double)srcObject;
                     }
                     break;
 
+                // Double (W = R8)
                 case EETypeElementType.Double:
-                    if (new EETypePtr(srcEEType).CorElementType == CorElementType.ELEMENT_TYPE_CHAR)
-                    {
-                        dstObject = (double)(char)srcObject;
-                    }
-                    else
-                    {
-                        dstObject = Convert.ToDouble(srcObject);
-                    }
+
+                    // Can only be double here
+                    dstObject = (double)srcObject;
                     break;
 
                 default:
-                    Debug.Fail("Unexpected CorElementType: " + dstElementType + ": Not a valid widening target.");
-                    dstObject = null;
-                    return CreateChangeTypeException(srcEEType, dstEEType, semantics);
+                    goto Failure;
             }
 
             Debug.Assert(dstObject.GetMethodTable() == dstEEType);
             return null;
+
+            Failure:
+            Debug.Fail("Unexpected CorElementType: " + dstElementType + ": Not a valid widening target.");
+            dstObject = null;
+            return CreateChangeTypeException(srcEEType, dstEEType, semantics);
         }
 
         private static bool CanPrimitiveWiden(EETypeElementType destType, EETypeElementType srcType)
