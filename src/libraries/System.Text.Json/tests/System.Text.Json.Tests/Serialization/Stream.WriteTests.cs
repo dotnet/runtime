@@ -288,6 +288,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(10, false, false)]
         [InlineData(100, false, false)]
         [InlineData(1000, false, false)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Massive memory leak / heap fragmentation")]
         public async Task VeryLargeJsonFileTest(int payloadSize, bool ignoreNull, bool writeIndented)
         {
             List<Order> list = Order.PopulateLargeObject(payloadSize);
@@ -541,9 +542,9 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(65536)]
         public async Task FlushThresholdTest(int bufferSize)
         {
-            // bufferSize * 0.9 is the threshold size from codebase, subtract 2 for [" characters, then create a 
-            // string containing (threshold - 2) amount of char 'a' which when written into output buffer produces buffer 
-            // which size equal to or very close to threshold size, then adding the string to the list, then adding a big 
+            // bufferSize * 0.9 is the threshold size from codebase, subtract 2 for [" characters, then create a
+            // string containing (threshold - 2) amount of char 'a' which when written into output buffer produces buffer
+            // which size equal to or very close to threshold size, then adding the string to the list, then adding a big
             // object to the list which changes depth of written json and should cause buffer flush
             int thresholdSize = (int)(bufferSize * 0.9 - 2);
             FlushThresholdTestClass serializeObject = new FlushThresholdTestClass(GenerateListOfSize(bufferSize));
@@ -565,12 +566,12 @@ namespace System.Text.Json.Serialization.Tests
 
                 List<object> deserializedList = JsonSerializer.Deserialize<List<object>>(json, options);
                 Assert.Equal(stringOfThresholdSize, ((JsonElement)deserializedList[0]).GetString());
-                JsonElement obj = (JsonElement)deserializedList[1];             
+                JsonElement obj = (JsonElement)deserializedList[1];
                 Assert.Equal(stringOfThresholdSize, obj.GetProperty("StringProperty").GetString());
             }
         }
 
-        private class FlushThresholdTestClass 
+        private class FlushThresholdTestClass
         {
             public string StringProperty { get; set; }
             public List<int> ListOfInts { get; set; }
