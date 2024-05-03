@@ -1370,6 +1370,7 @@ namespace System.Text.Json.Tests
 
         [Theory]
         [MemberData(nameof(JsonOptions_TestData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "Massive memory leak / heap fragmentation")]
         public async Task WriteLargeToStream(JsonWriterOptions options)
         {
             var stream = new MemoryStream();
@@ -2744,6 +2745,7 @@ namespace System.Text.Json.Tests
 
         [Theory]
         [MemberData(nameof(JsonOptions_TestData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "Massive memory leak / heap fragmentation")]
         public void WritingTooDeep(JsonWriterOptions options)
         {
             var output = new ArrayBufferWriter<byte>(1024);
@@ -2760,6 +2762,7 @@ namespace System.Text.Json.Tests
 
         [Theory]
         [MemberData(nameof(JsonOptions_TestData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "Massive memory leak / heap fragmentation")]
         public void WritingTooDeepProperty(JsonWriterOptions options)
         {
             var capacity = 3 + 1000 * (11 + 1001 * options.IndentSize / 2);

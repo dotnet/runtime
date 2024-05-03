@@ -32,7 +32,7 @@
 // This ensures that we don't waste a bunch of time allocating 1-2 pages at once.
 // sbrk() also doesn't return page-aligned addresses, so this produces fewer
 //  wasted page fragments and in general ensures we can service larger allocations.
-#define MWPM_MINIMUM_PAGE_COUNT 128
+#define MWPM_MINIMUM_PAGE_COUNT 256
 
 typedef enum {
 	// We don't know the state of this page

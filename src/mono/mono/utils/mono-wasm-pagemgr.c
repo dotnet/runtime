@@ -46,11 +46,6 @@ last_page_of_range (void *addr, size_t size) {
 	return first_page + page_count_rounded_up - 1;
 }
 
-static inline uint32_t
-page_count_from_range (void *addr, size_t size) {
-	return last_page_of_range (addr, size) - first_page_from_address (addr) + 1;
-}
-
 // returns the number of pages in the range that were successfully transitioned.
 static uint32_t
 transition_page_states (mwpm_page_state from_state, mwpm_page_state to_state, uint32_t first_page, uint32_t page_count) {
@@ -83,25 +78,35 @@ transition_page_states (mwpm_page_state from_state, mwpm_page_state to_state, ui
 
 static void
 print_stats () {
-	uint32_t in_use = 0, free = 0, unallocated = 0;
+	uint32_t in_use = 0, free = 0, unallocated = 0,
+		max_run = 0, current_run = 0;
+
 	for (uint32_t i = first_controlled_page_index; i <= last_controlled_page_index; i++) {
 		switch (page_table[i]) {
 			case MWPM_ALLOCATED:
 				in_use++;
+				current_run = 0;
 				break;
+
 			case MWPM_FREE_DIRTY:
 			case MWPM_FREE_ZEROED:
 				free++;
+				current_run++;
+				if (current_run > max_run)
+					max_run = current_run;
 				break;
+
 			default:
 				unallocated++;
+				current_run = 0;
 				break;
 		}
 	}
+
 	uint32_t total = in_use + free; // + unallocated;
 	g_print (
-		"%u pages allocated (%f%%), %u pages free, %u pages unknown\n",
-		in_use, in_use * 100.0 / total, free, unallocated
+		"%u pages in use (%f%%), %u pages free, %u pages unknown. largest possible allocation: %u pages\n",
+		in_use, in_use * 100.0 / total, free, unallocated, max_run
 	);
 }
 
@@ -156,7 +161,7 @@ acquire_new_pages_initialized (uint32_t page_count) {
 		return NULL;
 	}
 
-	g_print ("mwpm allocated %u bytes (%u pages) starting at @%u (%u recovered)\n", (uint32_t)bytes, page_count, (uint32_t)allocation, recovered_bytes);
+	// g_print ("mwpm allocated %u bytes (%u pages) starting at @%u (%u recovered)\n", (uint32_t)bytes, page_count, (uint32_t)allocation, recovered_bytes);
 	uint32_t pages_transitioned = transition_page_states (MWPM_UNKNOWN, MWPM_FREE_ZEROED, first_page_index, page_count);
 	print_stats ();
 	g_assert (pages_transitioned == page_count);
@@ -260,7 +265,7 @@ mwpm_alloc_range (size_t size, uint8_t zeroed) {
 
 	// If we didn't find existing pages to service our alloc,
 	if (first_existing_page == UINT32_MAX) {
-		g_print ("mwpm could not find %u free pages\n", page_count);
+		// g_print ("mwpm could not find %u free pages\n", page_count);
 		if (allocation_page_count < MWPM_MINIMUM_PAGE_COUNT)
 			allocation_page_count = MWPM_MINIMUM_PAGE_COUNT;
 		// Ensure we have space for the whole allocation
@@ -311,8 +316,12 @@ mwpm_free_range (void *base, size_t size) {
 	mwpm_ensure_initialized ();
 
 	uint32_t first_page = first_page_from_address (base),
-		page_count = page_count_from_range (base, size);
+		page_count = page_count_from_size (size);
 	free_pages_initialized (first_page, page_count);
+	if (page_count >= 32) {
+		g_print ("Just freed %u pages\n", page_count);
+		print_stats ();
+	}
 	if (first_page < free_page_scan_start)
 		free_page_scan_start = first_page;
 
