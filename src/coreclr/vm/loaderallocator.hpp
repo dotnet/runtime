@@ -306,8 +306,10 @@ protected:
     BYTE                m_PrecodeHeapInstance[sizeof(CodeFragmentHeap)];
     BYTE                m_FixupPrecodeHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_NewStubPrecodeHeapInstance[sizeof(LoaderHeap)];
+    BYTE                m_StaticsHeapInstance[sizeof(LoaderHeap)];
     PTR_LoaderHeap      m_pLowFrequencyHeap;
     PTR_LoaderHeap      m_pHighFrequencyHeap;
+    PTR_LoaderHeap      m_pStaticsHeap;
     PTR_LoaderHeap      m_pStubHeap; // stubs for PInvoke, remoting, etc
     PTR_CodeFragmentHeap m_pPrecodeHeap;
     PTR_LoaderHeap      m_pExecutableHeap;
@@ -588,6 +590,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_pHighFrequencyHeap;
+    }
+
+    PTR_LoaderHeap GetStaticsHeap()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pStaticsHeap;
     }
 
     PTR_LoaderHeap GetStubHeap()

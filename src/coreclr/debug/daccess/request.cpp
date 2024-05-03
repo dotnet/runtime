@@ -3562,6 +3562,7 @@ static const char *LoaderAllocatorLoaderHeapNames[] =
 {
     "LowFrequencyHeap",
     "HighFrequencyHeap",
+    "StaticsHeap",
     "StubHeap",
     "ExecutableHeap",
     "FixupPrecodeHeap",
@@ -3596,6 +3597,7 @@ HRESULT ClrDataAccess::GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocatorAd
             int i = 0;
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetLowFrequencyHeap());
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetHighFrequencyHeap());
+            pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetStaticsHeap());
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetStubHeap());
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetExecutableHeap());
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetFixupPrecodeHeap());

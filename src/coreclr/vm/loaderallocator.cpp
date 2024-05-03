@@ -1078,6 +1078,7 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
 
     DWORD dwLowFrequencyHeapReserveSize;
     DWORD dwHighFrequencyHeapReserveSize;
+    DWORD dwStaticsHeapReserveSize;
     DWORD dwStubHeapReserveSize;
     DWORD dwExecutableHeapReserveSize;
     DWORD dwCodeHeapReserveSize;
@@ -1092,12 +1093,14 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
         dwStubHeapReserveSize          = COLLECTIBLE_STUB_HEAP_SIZE;
         dwCodeHeapReserveSize          = COLLECTIBLE_CODEHEAP_SIZE;
         dwVSDHeapReserveSize           = COLLECTIBLE_VIRTUALSTUBDISPATCH_HEAP_SPACE;
+        dwStaticsHeapReserveSize       = 0;
     }
     else
     {
         dwLowFrequencyHeapReserveSize  = LOW_FREQUENCY_HEAP_RESERVE_SIZE;
         dwHighFrequencyHeapReserveSize = HIGH_FREQUENCY_HEAP_RESERVE_SIZE;
         dwStubHeapReserveSize          = STUB_HEAP_RESERVE_SIZE;
+        dwStaticsHeapReserveSize       = STATIC_FIELD_HEAP_RESERVE_SIZE;
 
         // Non-collectible assemblies do not reserve space for these heaps.
         dwCodeHeapReserveSize = 0;
@@ -1116,6 +1119,7 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
 
     DWORD dwTotalReserveMemSize = dwLowFrequencyHeapReserveSize
                                 + dwHighFrequencyHeapReserveSize
+                                + dwStaticsHeapReserveSize
                                 + dwStubHeapReserveSize
                                 + dwCodeHeapReserveSize
                                 + dwVSDHeapReserveSize
@@ -1180,6 +1184,19 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
 #if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
     m_pHighFrequencyHeap->m_fPermitStubsWithUnwindInfo = TRUE;
 #endif
+
+    if (dwStaticsHeapReserveSize != 0)
+    {
+        m_pStaticsHeap = new (&m_StaticsHeapInstance) LoaderHeap(STATIC_FIELD_HEAP_RESERVE_SIZE,
+                                                                 STATIC_FIELD_HEAP_COMMIT_SIZE,
+                                                                 initReservedMem,
+                                                                 dwStaticsHeapReserveSize);
+        initReservedMem += dwStaticsHeapReserveSize;
+    }
+    else
+    {
+        m_pStaticsHeap = m_pHighFrequencyHeap;
+    }
 
     m_pStubHeap = new (&m_StubHeapInstance) LoaderHeap(STUB_HEAP_RESERVE_SIZE,
                                                        STUB_HEAP_COMMIT_SIZE,
@@ -1378,6 +1395,12 @@ void LoaderAllocator::Terminate()
         m_pHighFrequencyHeap = NULL;
     }
 
+    if ((m_pStaticsHeap != NULL) && m_pStaticsHeap != m_pHighFrequencyHeap)
+    {
+        m_pStaticsHeap->~LoaderHeap();
+        m_pStaticsHeap = NULL;
+    }
+
     if (m_pStubHeap != NULL)
     {
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
@@ -1462,6 +1485,10 @@ void LoaderAllocator::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         m_pHighFrequencyHeap->EnumMemoryRegions(flags);
     }
+    if (m_pStaticsHeap.IsValid())
+    {
+        m_pStaticsHeap->EnumMemoryRegions(flags);
+    }
     if (m_pStubHeap.IsValid())
     {
         m_pStubHeap->EnumMemoryRegions(flags);
@@ -1501,6 +1528,8 @@ SIZE_T LoaderAllocator::EstimateSize()
     SIZE_T retval=0;
     if(m_pHighFrequencyHeap)
         retval+=m_pHighFrequencyHeap->GetSize();
+    if(m_pStaticsHeap)
+        retval+=m_pStaticsHeap->GetSize();
     if(m_pLowFrequencyHeap)
         retval+=m_pLowFrequencyHeap->GetSize();
     if(m_pStubHeap)
@@ -2286,7 +2315,7 @@ void LoaderAllocator::AllocateBytesForStaticVariables(DynamicStaticsInfo* pStati
                 // Always allocate in multiples of pointer size
                 cbMem = ALIGN_UP(cbMem, sizeof(TADDR));
             }
-            uint8_t* pbMem = (uint8_t*)(void*)GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbMem));
+            uint8_t* pbMem = (uint8_t*)(void*)GetStaticsHeap()->AllocMem(S_SIZE_T(cbMem));
 #ifndef TARGET_64BIT // Second part of alignment work
             if (initialcbMem >= 8)
             {
