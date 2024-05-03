@@ -1132,7 +1132,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         /// svuint8_t svmax[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
         /// svuint8_t svmax[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
-        /// svuint8_t svmax[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)        
+        /// svuint8_t svmax[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)
         ///   UMAX Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         ///   UMAX Ztied2.B, Pg/M, Ztied2.B, Zop1.B
         /// </summary>
@@ -1150,7 +1150,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         /// svint16_t svmax[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
         /// svint16_t svmax[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
-        /// svint16_t svmax[_s16]_z(svbool_t pg, svint16_t op1, svint16_t op2)        
+        /// svint16_t svmax[_s16]_z(svbool_t pg, svint16_t op1, svint16_t op2)
         ///   SMAX Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         ///   SMAX Ztied2.H, Pg/M, Ztied2.H, Zop1.H
         /// </summary>
