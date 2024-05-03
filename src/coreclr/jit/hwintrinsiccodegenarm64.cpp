@@ -550,6 +550,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         // and `embMaskOp2Reg` is the second operand.
                         GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg, opt);
                     }
+                    else
+                    {
+                        // Just perform the actual "predicated" operation so that `targetReg` is the first operand
+                        // and `embMaskOp2Reg` is the second operand.
+                        GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg, opt);
+                    }
 
                     break;
 
