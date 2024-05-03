@@ -650,6 +650,16 @@ namespace System
         [Intrinsic]
         public static float Ceiling(float x) => MathF.Ceiling(x);
 
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToInteger{TInteger}(TSelf)" />
+        [Intrinsic]
+        public static TInteger ConvertToInteger<TInteger>(float value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
+        [Intrinsic]
+        public static TInteger ConvertToIntegerNative<TInteger>(float value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
         [Intrinsic]
         public static float Floor(float x) => MathF.Floor(x);

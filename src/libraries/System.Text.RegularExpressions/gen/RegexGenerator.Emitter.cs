@@ -5405,7 +5405,7 @@ namespace System.Text.RegularExpressions.Generator
         {
 #pragma warning disable CA1850 // SHA256.HashData isn't available on netstandard2.0
             using SHA256 sha = SHA256.Create();
-            return $"{prefix}{ToHexStringNoDashes(Encoding.UTF8.GetBytes(toEncode))}";
+            return $"{prefix}{ToHexStringNoDashes(sha.ComputeHash(Encoding.UTF8.GetBytes(toEncode)))}";
 #pragma warning restore CA1850
         }
 
@@ -5602,7 +5602,7 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         private static string ToHexStringNoDashes(byte[] bytes) =>
-#if NETCOREAPP
+#if NET
             Convert.ToHexString(bytes);
 #else
             BitConverter.ToString(bytes).Replace("-", "");

@@ -529,7 +529,7 @@ bool ns::MakeAssemblyQualifiedName(                                        // tr
 
     int iCopyMax = 0;
     _ASSERTE(pBuffer);
-    *pBuffer = NULL;
+    *pBuffer = W('\0');
 
     if (szTypeName && *szTypeName != W('\0'))
     {

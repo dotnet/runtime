@@ -33,7 +33,7 @@ namespace System.Diagnostics.Metrics
             // Get the delta best associated with the current thread, preferring to use core ID rather than
             // thread ID to reduce contention.
             ref PaddedDouble delta = ref deltas[
-#if NETCOREAPP2_1_OR_GREATER
+#if NET
                 Thread.GetCurrentProcessorId()
 #else
                 Environment.CurrentManagedThreadId

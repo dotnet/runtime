@@ -252,8 +252,6 @@ namespace System
     {
         internal const int DecimalPrecision = 29; // Decimal.DecCalc also uses this value
 
-        private const int CharStackBufferSize = 32;
-
         /// <summary>The non-inclusive upper bound of <see cref="s_smallNumberCache"/>.</summary>
         /// <remarks>
         /// This is a semi-arbitrary bound. For mono, which is often used for more size-constrained workloads,

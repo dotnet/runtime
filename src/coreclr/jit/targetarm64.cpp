@@ -154,7 +154,7 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
         {
             info.NumSegments  = slots;
             info.Segments     = new (comp, CMK_ABI) ABIPassingSegment[slots];
-            unsigned slotSize = varTypeIsStruct(type) ? TARGET_POINTER_SIZE : genTypeSize(type);
+            unsigned slotSize = min(passedSize, (unsigned)TARGET_POINTER_SIZE);
             info.Segments[0]  = ABIPassingSegment::InRegister(regs->Dequeue(), 0, slotSize);
             if (slots == 2)
             {

@@ -198,6 +198,7 @@ namespace NativeExports
         [DNNE.C99DeclCode("struct INativeObject;")]
         public static void SumAndSetData([DNNE.C99Type("struct INativeObject*")] NativeObjectInterface* obj, int* values, int numValues, int* oldValue)
         {
+            Debug.Assert(*oldValue == default);
             obj->VTable->sumAndSetData(obj, values, numValues, oldValue);
         }
 
@@ -205,6 +206,7 @@ namespace NativeExports
         [DNNE.C99DeclCode("struct INativeObject;")]
         public static void SumAndSetDataWithRef([DNNE.C99Type("struct INativeObject*")] NativeObjectInterface* obj, int** values, int numValues, int* oldValue)
         {
+            Debug.Assert(*oldValue == default);
             obj->VTable->sumAndSetDataWithRef(obj, values, numValues, oldValue);
         }
 
