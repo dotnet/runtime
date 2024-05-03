@@ -20,6 +20,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "compilerbitsettraits.hpp"
 
+#include "algorithm.h"
+
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -687,6 +689,15 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func, const bool
         case BBJ_SWITCH:
         {
             Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(this);
+
+            if (useProfile)
+            {
+                jitstd::sort(sd.nonDuplicates, (sd.nonDuplicates + sd.numDistinctSuccs),
+                             [](FlowEdge* const lhs, FlowEdge* const rhs) {
+                    return (lhs->getLikelihood() * lhs->getDupCount()) < (rhs->getLikelihood() * rhs->getDupCount());
+                });
+            }
+
             for (unsigned i = 0; i < sd.numDistinctSuccs; i++)
             {
                 RETURN_ON_ABORT(func(sd.nonDuplicates[i]->getDestinationBlock()));
