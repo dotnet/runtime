@@ -43,7 +43,9 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        useContainerLibcxx: true
+        cxxStandardLibrary: libc++
+        cxxStandardLibraryStatic: true
+        cxxAbiLibrary: libstdc++
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux armv6
@@ -113,7 +115,9 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        useContainerLibcxx: true
+        cxxStandardLibrary: libc++
+        cxxStandardLibraryStatic: true
+        cxxAbiLibrary: libstdc++
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux musl arm
@@ -136,7 +140,9 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        useContainerLibcxx: true
+        cxxStandardLibrary: libc++
+        cxxStandardLibraryStatic: true
+        cxxAbiLibrary: libstdc++
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux musl arm64
@@ -159,7 +165,9 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        useContainerLibcxx: true
+        cxxStandardLibrary: libc++
+        cxxStandardLibraryStatic: true
+        cxxAbiLibrary: libstdc++
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux Bionic arm
@@ -256,7 +264,9 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
         ${{ if eq(parameters.container, '') }}:
-          useContainerLibcxx: true
+          cxxStandardLibrary: libc++
+          cxxStandardLibraryStatic: true
+          cxxAbiLibrary: libstdc++
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux x86
@@ -278,7 +288,9 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        useContainerLibcxx: true
+        cxxStandardLibrary: libc++
+        cxxStandardLibraryStatic: true
+        cxxAbiLibrary: libstdc++
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Runtime-dev-innerloop build
