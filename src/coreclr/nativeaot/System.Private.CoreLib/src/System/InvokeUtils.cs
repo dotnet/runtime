@@ -436,7 +436,7 @@ namespace System
                 0xC540, // Int16 (W = I2, I4, I8, R4, R8)
                 0xCF88, // UInt16 (W = U2, CHAR, I4, U4, I8, U8, R4, R8)
                 0xC500, // Int32 (W = I4, I8, R4, R8)
-                0xCE00, // UInt32 (W = U4, I8, R4, R8)
+                0xCE0B, // UInt32 (W = U4, I8, U8, R4, R8)
                 0xC400, // Int64 (W = I8, R4, R8)
                 0xC800, // UInt64 (W = U8, R4, R8)
                 0x0000, // IntPtr
