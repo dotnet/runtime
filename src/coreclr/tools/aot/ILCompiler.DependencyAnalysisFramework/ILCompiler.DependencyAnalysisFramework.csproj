@@ -1,4 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
+  <PropertyGroup>
+    <PlatformName>AnyCPU</PlatformName>
+  </PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <RootNamespace>ILCompiler.DependencyAnalysisFramework</RootNamespace>
@@ -54,4 +58,5 @@
       <Link>Sorting\MergeSortCore.cs</Link>
     </Compile>
   </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 </Project>
