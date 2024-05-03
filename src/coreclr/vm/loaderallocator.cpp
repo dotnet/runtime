@@ -1385,6 +1385,12 @@ void LoaderAllocator::Terminate()
         m_pLowFrequencyHeap = NULL;
     }
 
+    if ((m_pStaticsHeap != NULL) && (m_pStaticsHeap != m_pHighFrequencyHeap))
+    {
+        m_pStaticsHeap->~LoaderHeap();
+        m_pStaticsHeap = NULL;
+    }
+
     if (m_pHighFrequencyHeap != NULL)
     {
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
@@ -1393,12 +1399,6 @@ void LoaderAllocator::Terminate()
 
         m_pHighFrequencyHeap->~LoaderHeap();
         m_pHighFrequencyHeap = NULL;
-    }
-
-    if ((m_pStaticsHeap != NULL) && m_pStaticsHeap != m_pHighFrequencyHeap)
-    {
-        m_pStaticsHeap->~LoaderHeap();
-        m_pStaticsHeap = NULL;
     }
 
     if (m_pStubHeap != NULL)
