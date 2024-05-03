@@ -1,7 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if NETFRAMEWORK || NETCOREAPP
+#if NETFRAMEWORK || NET
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 CacheEntry entry = _cache.GetOrAdd(
                     key,
-#if NETCOREAPP
+#if NET
                     static (TKey key, Func<TKey, TValue> valueFactory) => new(valueFactory(key)),
                     valueFactory);
 #else
