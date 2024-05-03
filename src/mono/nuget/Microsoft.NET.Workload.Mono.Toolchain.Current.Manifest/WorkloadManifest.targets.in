@@ -204,7 +204,7 @@
       <!-- Overrides for wasm threading support -->
       <RuntimePackNamePatterns Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnableThreads)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.multithread.**RID**</RuntimePackNamePatterns>
     </KnownRuntimePack>
-    <KnownFrameworkReference Update="Microsoft.NETCore.App">
+    <KnownFrameworkReference Update="Microsoft.NETCore.App" Condition="'$(_IsUsingNativeAOT)' != 'true'">
       <TargetingPackVersion Condition="'$(TargetsCurrent)' == 'true'">$(_MonoWorkloadRuntimePackPackageVersion)</TargetingPackVersion>
     </KnownFrameworkReference>
     <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
