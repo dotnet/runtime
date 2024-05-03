@@ -1009,7 +1009,7 @@ protected:
     class HWIntrinsicImmOpHelper final
     {
     public:
-        HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin);
+        HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin, int immNum = 1);
 
         void EmitBegin();
         void EmitCaseEnd();

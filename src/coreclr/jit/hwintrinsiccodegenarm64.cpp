@@ -35,7 +35,10 @@
 //       This allows to combine logic for cases when immOp->isContainedIntOrIImmed() is either true or false in a form
 //       of a for-loop.
 //
-CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin)
+CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen*            codeGen,
+                                                        GenTree*            immOp,
+                                                        GenTreeHWIntrinsic* intrin,
+                                                        int                 immNumber /* = 1 */)
     : codeGen(codeGen)
     , endLabel(nullptr)
     , nonZeroLabel(nullptr)
@@ -75,12 +78,12 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTre
 
             const unsigned int indexedElementSimdSize = genTypeSize(indexedElementOpType);
             HWIntrinsicInfo::lookupImmBounds(intrin->GetHWIntrinsicId(), indexedElementSimdSize,
-                                             intrin->GetSimdBaseType(), &immLowerBound, &immUpperBound);
+                                             intrin->GetSimdBaseType(), immNumber, &immLowerBound, &immUpperBound);
         }
         else
         {
             HWIntrinsicInfo::lookupImmBounds(intrin->GetHWIntrinsicId(), intrin->GetSimdSize(),
-                                             intrin->GetSimdBaseType(), &immLowerBound, &immUpperBound);
+                                             intrin->GetSimdBaseType(), immNumber, &immLowerBound, &immUpperBound);
         }
 
         nonConstImmReg = immOp->GetRegNum();
