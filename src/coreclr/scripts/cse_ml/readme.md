@@ -2,7 +2,7 @@
 
 This project is a Reinforcement Learning gymnasium used to train a machine learning model to choose when to apply the Common Subexpression Elimination optimization in the JIT.
 
-Currently, it *almost* matches the the default, hand-written CSE heuristic in the JIT with a simple reward function and features which are not normalized or smartly chosen.  This is intended to be a playground to try to find a optimal features, reward function, neural network, and architecture for a fine-tuned CSE model.
+Currently, it *almost* matches the default, hand-written CSE heuristic in the JIT, and does so with a simple reward function and features which are not normalized or smartly chosen.  This is intended to be a playground to try to find optimal features, reward function, neural network, and architecture for a fine-tuned CSE model.
 
 This project works best/easiest on Ubuntu 22 (WSL2 is fine), but it also works on Windows.
 
@@ -100,6 +100,8 @@ Both A2C and PPO provide extra metrics on the Tensorboard to see if the model is
 Typically, the `rollout/ep_rew_mean`, `results/vs_heuristic`, and `results/vs_no_cse` metrics should all trend upwards over time from a lower value if the model is learning.
 
 Once you see that a model is training successfully, use `evaluate.py` to see how much better or worse it is over the baseline.
+
+**NOTE:** The `results/` metrics are a rolling average of comparisons versus baseline since the last metric datapoint was emitted.  This metric crossing 0 into the positive does not necessarily mean that the model is performing better than the baseline heuristic in a general sense.  Only that it did better on the small subset of training functions it just recently attempted to optimize.  Whether or not the model actually performs better than baseline is left to `evaluate.py` after it is finished training.
 
 ## SuperPMI
 
