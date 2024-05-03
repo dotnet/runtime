@@ -153,7 +153,8 @@ namespace System.Globalization
                 }
 
                 Debug.Assert(totalDigitsCount - MaxFractionDigits <= MaxFractionDigits);
-                _num = (int)Math.Round((double)_num / Pow10UpToMaxFractionDigits(totalDigitsCount - MaxFractionDigits), MidpointRounding.AwayFromZero);
+                uint power = (uint)Pow10UpToMaxFractionDigits(totalDigitsCount - MaxFractionDigits);
+                _num = (int)(((uint)_num + power / 2) / power);
                 Debug.Assert(_num < MaxFraction);
 
                 return true;
