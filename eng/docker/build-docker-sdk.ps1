@@ -50,6 +50,8 @@ if ($buildWindowsContainers)
                      -Destination $dockerContext\microsoft.netcore.app.runtime.win-x64
   Copy-Item -Recurse -Path $binArtifacts\testhost `
                      -Destination $dockerContext\testhost
+  Copy-Item -Recurse -Path $binArtifacts\System.IO.Pipelines/$configuration/net9.0/System.IO.Pipelines.dll `
+                     -Destination $dockerContext
   Copy-Item -Recurse -Path $REPO_ROOT_DIR\eng\targetingpacks.targets `
                      -Destination $dockerContext\targetingpacks.targets
   Copy-Item -Recurse -Path $REPO_ROOT_DIR\src\libraries\System.Net.Quic\src\System\Net\Quic\Interop `
