@@ -105,8 +105,8 @@ print_stats () {
 
 	uint32_t total = in_use + free; // + unallocated;
 	g_print (
-		"%u pages in use (%f%%), %u pages free, %u pages unknown. largest possible allocation: %u pages\n",
-		in_use, in_use * 100.0 / total, free, unallocated, max_run
+		"sbrk(0)==%u. %u pages in use (%f%%), %u pages free, %u pages unknown. largest possible allocation: %u pages\n",
+		(uint32_t)sbrk(0), in_use, in_use * 100.0 / total, free, unallocated, max_run
 	);
 }
 
