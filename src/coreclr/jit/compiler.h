@@ -2793,6 +2793,9 @@ public:
     EHblkDsc* ehIsBlockHndLast(BasicBlock* block);
     bool ehIsBlockEHLast(BasicBlock* block);
 
+    template <typename GetTryLast, typename SetTryLast>
+    void ehUpdateTryLasts(GetTryLast getTryLast, SetTryLast setTryLast);
+
     bool ehBlockHasExnFlowDsc(BasicBlock* block);
 
     // Return the region index of the most nested EH region this block is in.
@@ -6054,6 +6057,8 @@ public:
     bool fgComputeCalledCount(weight_t returnWeight);
 
     bool fgReorderBlocks(bool useProfile);
+    void fgDoReversePostOrderLayout();
+    void fgMoveColdBlocks();
 
     bool fgFuncletsAreCold();
 
@@ -6074,9 +6079,10 @@ public:
     PhaseStatus fgSetBlockOrder();
     bool fgHasCycleWithoutGCSafePoint();
 
-    template<typename VisitPreorder, typename VisitPostorder, typename VisitEdge>
+    template <typename VisitPreorder, typename VisitPostorder, typename VisitEdge, const bool useProfile = false>
     unsigned fgRunDfs(VisitPreorder assignPreorder, VisitPostorder assignPostorder, VisitEdge visitEdge);
 
+    template <const bool useProfile = false>
     FlowGraphDfsTree* fgComputeDfs();
     void fgInvalidateDfsTree();
 

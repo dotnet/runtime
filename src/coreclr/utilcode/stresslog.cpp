@@ -963,7 +963,7 @@ void* StressLog::AllocMemoryMapped(size_t n)
     return nullptr;
 }
 
-void* __cdecl ThreadStressLog::operator new(size_t n, const NoThrow&) NOEXCEPT
+void* __cdecl ThreadStressLog::operator new(size_t n, const std::nothrow_t&) noexcept
 {
     if (StressLogChunk::s_memoryMapped)
         return StressLog::AllocMemoryMapped(n);

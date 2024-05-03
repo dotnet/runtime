@@ -26,7 +26,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			GetMethod_Name_BindingAttr.TestUnknownNameAndWrongBindingFlags ("Unknown");
 			GetMethod_Name_BindingAttr_Binder_Types_Modifiers.TestNameBindingFlagsAndParameterModifier ();
 			GetMethod_Name_BindingAttr_Binder_CallConvention_Types_Modifiers.TestNameBindingFlagsCallingConventionParameterModifier ();
-#if NETCOREAPP
+#if NET
 			GetMethod_Name_BindingAttr_Types.TestNameBindingFlagsAndTypes ();
 			GetMethod_Name_GenericParameterCount_Types.TestNameWithIntAndType ();
 			GetMethod_Name_GenericParameterCount_Types_Modifiers.TestNameWithIntAndTypeAndModifiers ();
@@ -391,7 +391,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 		}
 
-#if NETCOREAPP
+#if NET
 		// GetMethod(string name, BindingFlags bindingAttr, Type[] types)
 		[Kept]
 		class GetMethod_Name_BindingAttr_Types
