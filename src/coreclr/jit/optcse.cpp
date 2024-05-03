@@ -3363,7 +3363,6 @@ CSE_HeuristicRL::CSE_HeuristicRL(Compiler* pCompiler)
         // Reward
         //
         ConfigDoubleArray rewards;
-
         rewards.EnsureInit(JitConfig.JitReplayCSEReward());
         const unsigned rewardsLength = rewards.GetLength();
 
