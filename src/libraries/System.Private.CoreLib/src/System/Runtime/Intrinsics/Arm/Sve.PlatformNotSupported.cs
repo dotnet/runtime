@@ -211,6 +211,148 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> AddAcross(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
 
 
+        ///  And : Bitwise AND
+
+        /// <summary>
+        /// svuint8_t svand[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svand[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svand[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   AND Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   AND Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   AND Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<byte> And(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svand[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svand[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svand[_s16]_z(svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   AND Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   AND Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   AND Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<short> And(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svand[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svand[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svand[_s32]_z(svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   AND Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   AND Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   AND Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<int> And(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svand[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svand[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svand[_s64]_z(svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   AND Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   AND Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   AND Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<long> And(Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svand[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svand[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svand[_s8]_z(svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   AND Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   AND Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   AND Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> And(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svand[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svand[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svand[_u16]_z(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   AND Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   AND Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   AND Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<ushort> And(Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svand[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svand[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svand[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   AND Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   AND Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   AND Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<uint> And(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svand[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svand[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svand[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   AND Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   AND Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   AND Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<ulong> And(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+
+        ///  AndAcross : Bitwise AND reduction to scalar
+
+        /// <summary>
+        /// uint8_t svandv[_u8](svbool_t pg, svuint8_t op)
+        ///   ANDV Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<byte> AndAcross(Vector<byte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16_t svandv[_s16](svbool_t pg, svint16_t op)
+        ///   ANDV Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<short> AndAcross(Vector<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32_t svandv[_s32](svbool_t pg, svint32_t op)
+        ///   ANDV Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> AndAcross(Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t svandv[_s64](svbool_t pg, svint64_t op)
+        ///   ANDV Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> AndAcross(Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8_t svandv[_s8](svbool_t pg, svint8_t op)
+        ///   ANDV Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<sbyte> AndAcross(Vector<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16_t svandv[_u16](svbool_t pg, svuint16_t op)
+        ///   ANDV Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<ushort> AndAcross(Vector<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t svandv[_u32](svbool_t pg, svuint32_t op)
+        ///   ANDV Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> AndAcross(Vector<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svandv[_u64](svbool_t pg, svuint64_t op)
+        ///   ANDV Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> AndAcross(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
+
+
         ///  ConditionalSelect : Conditionally select elements
 
         /// <summary>
@@ -1072,6 +1214,149 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<double> Multiply(Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
 
+
+        ///  Or : Bitwise inclusive OR
+
+        /// <summary>
+        /// svuint8_t svorr[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svorr[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svorr[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   ORR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   ORR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svorr[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   ORR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<byte> Or(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svorr[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svorr[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svorr[_s16]_z(svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   ORR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   ORR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svorr[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   ORR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<short> Or(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svorr[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svorr[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svorr[_s32]_z(svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   ORR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   ORR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svorr[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   ORR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<int> Or(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svorr[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svorr[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svorr[_s64]_z(svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   ORR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   ORR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svorr[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   ORR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<long> Or(Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svorr[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svorr[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svorr[_s8]_z(svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   ORR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   ORR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svorr[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   ORR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> Or(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svorr[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svorr[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svorr[_u16]_z(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   ORR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   ORR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svorr[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   ORR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<ushort> Or(Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svorr[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svorr[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svorr[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   ORR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   ORR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svorr[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   ORR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<uint> Or(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svorr[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svorr[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svorr[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   ORR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   ORR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svorr[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   ORR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<ulong> Or(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+
+        ///  OrAcross : Bitwise inclusive OR reduction to scalar
+
+        /// <summary>
+        /// uint8_t svorv[_u8](svbool_t pg, svuint8_t op)
+        ///   ORV Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<byte> OrAcross(Vector<byte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16_t svorv[_s16](svbool_t pg, svint16_t op)
+        ///   ORV Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<short> OrAcross(Vector<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32_t svorv[_s32](svbool_t pg, svint32_t op)
+        ///   ORV Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> OrAcross(Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t svorv[_s64](svbool_t pg, svint64_t op)
+        ///   ORV Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> OrAcross(Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8_t svorv[_s8](svbool_t pg, svint8_t op)
+        ///   ORV Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<sbyte> OrAcross(Vector<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16_t svorv[_u16](svbool_t pg, svuint16_t op)
+        ///   ORV Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<ushort> OrAcross(Vector<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t svorv[_u32](svbool_t pg, svuint32_t op)
+        ///   ORV Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> OrAcross(Vector<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svorv[_u64](svbool_t pg, svuint64_t op)
+        ///   ORV Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> OrAcross(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
+
+
         ///  SignExtend16 : Sign-extend the low 16 bits
 
         /// <summary>
@@ -1431,6 +1716,149 @@ namespace System.Runtime.Intrinsics.Arm
         /// svbool_t svuzp2_b64(svbool_t op1, svbool_t op2)
         /// </summary>
         public static unsafe Vector<ulong> UnzipOdd(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+
+        ///  Xor : Bitwise exclusive OR
+
+        /// <summary>
+        /// svuint8_t sveor[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t sveor[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t sveor[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   EOR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   EOR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t sveor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   EOR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<byte> Xor(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t sveor[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t sveor[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t sveor[_s16]_z(svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   EOR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   EOR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t sveor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   EOR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<short> Xor(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t sveor[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t sveor[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t sveor[_s32]_z(svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   EOR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   EOR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t sveor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   EOR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<int> Xor(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t sveor[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t sveor[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t sveor[_s64]_z(svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   EOR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   EOR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t sveor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   EOR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<long> Xor(Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t sveor[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t sveor[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t sveor[_s8]_z(svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   EOR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   EOR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t sveor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   EOR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> Xor(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t sveor[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t sveor[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t sveor[_u16]_z(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   EOR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   EOR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t sveor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   EOR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<ushort> Xor(Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t sveor[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t sveor[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t sveor[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   EOR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   EOR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t sveor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   EOR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<uint> Xor(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t sveor[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t sveor[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t sveor[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   EOR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   EOR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t sveor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   EOR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<ulong> Xor(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+
+        ///  XorAcross : Bitwise exclusive OR reduction to scalar
+
+        /// <summary>
+        /// uint8_t sveorv[_u8](svbool_t pg, svuint8_t op)
+        ///   EORV Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<byte> XorAcross(Vector<byte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16_t sveorv[_s16](svbool_t pg, svint16_t op)
+        ///   EORV Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<short> XorAcross(Vector<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32_t sveorv[_s32](svbool_t pg, svint32_t op)
+        ///   EORV Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> XorAcross(Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t sveorv[_s64](svbool_t pg, svint64_t op)
+        ///   EORV Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> XorAcross(Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8_t sveorv[_s8](svbool_t pg, svint8_t op)
+        ///   EORV Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<sbyte> XorAcross(Vector<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16_t sveorv[_u16](svbool_t pg, svuint16_t op)
+        ///   EORV Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<ushort> XorAcross(Vector<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t sveorv[_u32](svbool_t pg, svuint32_t op)
+        ///   EORV Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> XorAcross(Vector<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t sveorv[_u64](svbool_t pg, svuint64_t op)
+        ///   EORV Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> XorAcross(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
+
 
         ///  ZeroExtend16 : Zero-extend the low 16 bits
 
