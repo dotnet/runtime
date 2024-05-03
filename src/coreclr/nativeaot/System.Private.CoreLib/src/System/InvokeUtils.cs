@@ -418,7 +418,7 @@ namespace System
             Failure:
             Debug.Fail("Unexpected CorElementType: " + dstElementType + ": Not a valid widening target.");
             dstObject = null;
-            return CreateChangeTypeException(srcEEType, dstEEType, semantics);
+            return null; // This code can never be reached
         }
 
         private static bool CanPrimitiveWiden(EETypeElementType destType, EETypeElementType srcType)
