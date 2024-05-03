@@ -8,6 +8,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6DDAE3F1-325F-468C-92DB-5947A3AD757E}"
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
+		..\..\..\eng\pipelines\libraries\fuzzing\deploy-to-onefuzz.yml = ..\..\..\eng\pipelines\libraries\fuzzing\deploy-to-onefuzz.yml
 		Directory.Build.props = Directory.Build.props
 		Directory.Build.targets = Directory.Build.targets
 		nuget.config = nuget.config

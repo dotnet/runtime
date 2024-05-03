@@ -39,13 +39,14 @@ extends:
           displayName: Build runtime (checked + debug)
 
         - powershell: |
-            $(dotnetPath) tool install --global SharpFuzz.CommandLine
-          displayName: Install SharpFuzz.CommandLine
-
-        - powershell: |
             cd $(fuzzerProject)
             $(dotnetPath) publish -o publish
           displayName: Build Fuzzing targets
+
+        - powershell: |
+            cd $(fuzzerProject)
+            $(dotnetPath) tool install --tool-path . SharpFuzz.CommandLine
+          displayName: Install SharpFuzz.CommandLine
 
         - powershell: |
             cd $(fuzzerProject)
