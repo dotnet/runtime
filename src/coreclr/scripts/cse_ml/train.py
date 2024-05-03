@@ -23,7 +23,7 @@ def parse_args():
     parser.add_argument("--parallel", type=int, default=None, help="The number of parallel environments to use.")
     parser.add_argument("--iterations", type=int, default=None, help="The number of iterations to train for.")
     parser.add_argument("--algorithm", default="PPO", help="The algorithm to use. (default: PPO)")
-    parser.add_argument("--test_percent", type=float, default=0.1,
+    parser.add_argument("--test-percent", type=float, default=0.1,
                         help="The percentage of data to use for testing. (default: 0.1)")
     parser.add_argument("--reward-optimal-cse", action='store_true', help="Use smarter rewards. (default: False)")
     parser.add_argument("--normalize-features", action='store_true', help="Normalize features. (default: False)")
