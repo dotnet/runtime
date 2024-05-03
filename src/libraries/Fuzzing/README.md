@@ -5,6 +5,12 @@ Targets are instrumented using [SharpFuzz](https://github.com/Metalnem/sharpfuzz
 
 The runtime and fuzzing targets are rebuilt once a day and published to OneFuzz via [deploy-to-onefuzz.yml](../../../eng/pipelines/libraries/fuzzing/deploy-to-onefuzz.yml).
 
+Useful links:
+- [libFuzzer documentation](https://llvm.org/docs/LibFuzzer.html)
+- [libFuzzer tutorial with examples](https://github.com/google/fuzzing/blob/master/tutorial/libFuzzerTutorial.md)
+- [More SharpFuzz samples](https://github.com/Metalnem/dotnet-fuzzers)
+- [OneFuzz documentation](https://aka.ms/onefuzz)
+
 ## Running locally
 
 > [!NOTE]
