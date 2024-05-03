@@ -139,14 +139,12 @@ namespace System
             // This switch supports the conversions present in the table below, in 'CanPrimitiveWiden'
             switch (dstElementType)
             {
-                // Boolean (W = BOOL)
                 case EETypeElementType.Boolean:
 
                     // Can only be bool here
                     dstObject = srcObject;
                     break;
 
-                // Char (W = U2, CHAR, I4, U4, I8, U8, R4, R8)
                 case EETypeElementType.Char:
                     char charValue;
                     switch (srcElementType)
@@ -181,7 +179,6 @@ namespace System
                     dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, charValue) : charValue;
                     break;
 
-                // SByte (W = I1, I2, I4, I8, R4, R8)
                 case EETypeElementType.SByte:
                     sbyte sbyteValue;
                     switch (srcElementType)
@@ -210,7 +207,6 @@ namespace System
                     dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, sbyteValue) : sbyteValue;
                     break;
 
-                // Byte (W = CHAR, U1, I2, U2, I4, U4, I8, U8, R4, R8)
                 case EETypeElementType.Byte:
                     byte byteValue;
                     switch (srcElementType)
@@ -251,7 +247,6 @@ namespace System
                     dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, byteValue) : byteValue;
                     break;
 
-                // Int16 (W = I2, I4, I8, R4, R8)
                 case EETypeElementType.Int16:
                     short shortValue;
                     switch (srcElementType)
@@ -277,7 +272,6 @@ namespace System
                     dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, shortValue) : shortValue;
                     break;
 
-                // UInt16 (W = U2, CHAR, I4, U4, I8, U8, R4, R8)
                 case EETypeElementType.UInt16:
                     ushort ushortValue;
                     switch (srcElementType)
@@ -312,7 +306,6 @@ namespace System
                     dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, ushortValue) : ushortValue;
                     break;
 
-                // Int32 (W = I4, I8, R4, R8)
                 case EETypeElementType.Int32:
                     int intValue;
                     switch (srcElementType)
@@ -335,7 +328,6 @@ namespace System
                     dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, intValue) : intValue;
                     break;
 
-                // UInt32 (W = U4, I8, R4, R8)
                 case EETypeElementType.UInt32:
                     uint uintValue;
                     switch (srcElementType)
@@ -358,7 +350,6 @@ namespace System
                     dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, uintValue) : uintValue;
                     break;
 
-                // Int64 (W = I8, R4, R8)
                 case EETypeElementType.Int64:
                     long longValue;
                     switch (srcElementType)
@@ -378,7 +369,6 @@ namespace System
                     dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, longValue) : longValue;
                     break;
 
-                // UInt64 (W = U8, R4, R8)
                 case EETypeElementType.UInt64:
                     ulong ulongValue;
                     switch (srcElementType)
@@ -398,7 +388,6 @@ namespace System
                     dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, (long)ulongValue) : ulongValue;
                     break;
 
-                // Single (W = R4, R8)
                 case EETypeElementType.Single:
                     if (srcElementType == EETypeElementType.Single)
                     {
@@ -411,7 +400,6 @@ namespace System
                     }
                     break;
 
-                // Double (W = R8)
                 case EETypeElementType.Double:
 
                     // Can only be double here
