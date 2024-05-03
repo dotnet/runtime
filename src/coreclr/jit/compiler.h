@@ -7536,7 +7536,6 @@ public:
 public:
     // Data structures for assertion prop
     BitVecTraits* apTraits;
-    ASSERT_TP     apFull;
     ASSERT_TP     apLocal;
     ASSERT_TP     apLocalIfTrue;
 
@@ -7889,6 +7888,8 @@ public:
                                       bool             helperCallArgs = false);
 
     AssertionIndex optFinalizeCreatingAssertion(AssertionDsc* assertion);
+
+    void optRemoveCopyAssertions(ASSERT_TP& assertions);
 
     bool optTryExtractSubrangeAssertion(GenTree* source, IntegralRange* pRange);
 

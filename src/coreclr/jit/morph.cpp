@@ -13853,6 +13853,11 @@ void Compiler::fgMorphBlock(BasicBlock* block)
                     m_loopDefinitions->VisitDefinedLocalNums(loop, [=](unsigned lclNum) {
                         BitVecOps::DiffD(apTraits, apLocal, GetAssertionDep(lclNum));
                     });
+
+                    // Kill all copy prop assertions. Copy propagation into
+                    // loops creates long-lived lifetimes that has very mixed
+                    // benefits.
+                    optRemoveCopyAssertions(apLocal);
                 }
             }
 

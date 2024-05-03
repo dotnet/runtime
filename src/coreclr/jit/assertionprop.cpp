@@ -603,7 +603,6 @@ ASSERT_TP& Compiler::GetAssertionDep(unsigned lclNum)
 void Compiler::optAssertionTraitsInit(AssertionIndex assertionCount)
 {
     apTraits = new (this, CMK_AssertionProp) BitVecTraits(assertionCount, this);
-    apFull   = BitVecOps::MakeFull(apTraits);
 }
 
 /*****************************************************************************
@@ -1608,6 +1607,28 @@ AssertionIndex Compiler::optFinalizeCreatingAssertion(AssertionDsc* assertion)
     noway_assert((assertion->op1.kind == O1K_ARR_BND) || (assertion->op2.kind != O2K_INVALID));
 
     return optAddAssertion(assertion);
+}
+
+//------------------------------------------------------------------------
+// optRemoveCopyAssertions: Clear all indices that represent copy assertions in
+// the specified bit set of assertions.
+//
+// Arguments:
+//    assertions - Bitset of assertions
+//
+void Compiler::optRemoveCopyAssertions(ASSERT_TP& assertions)
+{
+    BitVecOps::Iter iter(apTraits, assertions);
+    unsigned        bvIndex = 0;
+    while (iter.NextElem(&bvIndex))
+    {
+        AssertionIndex const index     = GetAssertionIndex(bvIndex);
+        AssertionDsc* const  assertion = optGetAssertion(index);
+        if (assertion->IsCopyAssertion())
+        {
+            BitVecOps::RemoveElemD(apTraits, assertions, bvIndex);
+        }
+    }
 }
 
 /*****************************************************************************
@@ -6253,7 +6274,7 @@ ASSERT_TP* Compiler::optInitAssertionDataflowFlags()
     // The local assertion gen phase may have created unreachable blocks.
     // They will never be visited in the dataflow propagation phase, so they need to
     // be initialized correctly. This means that instead of setting their sets to
-    // apFull (i.e. all possible bits set), we need to set the bits only for valid
+    // all possible bits set, we need to set the bits only for valid
     // assertions (note that at this point we are not creating any new assertions).
     // Also note that assertion indices start from 1.
     ASSERT_TP apValidFull = BitVecOps::MakeEmpty(apTraits);
