@@ -5284,6 +5284,7 @@ public:
 
     // The number of separate return points in the method.
     unsigned fgReturnCount;
+    unsigned fgThrowCount;
 
     PhaseStatus fgAddInternal();
 
@@ -6228,7 +6229,7 @@ protected:
 
     void fgLinkBasicBlocks();
 
-    unsigned fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, FixedBitVect* jumpTarget);
+    void fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, FixedBitVect* jumpTarget);
 
     void fgCheckBasicBlockControlFlow();
 
