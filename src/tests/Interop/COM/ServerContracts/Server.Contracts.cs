@@ -327,6 +327,10 @@ namespace Server.Contract
         int ReturnToManaged(short vt);
 
         int ManagedArgument(int arg);
+
+        System.Reflection.Missing ReturnToManaged_Missing();
+
+        DBNull ReturnToManaged_DBNull();
     }
 
     [ComVisible(true)]

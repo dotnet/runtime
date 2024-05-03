@@ -94,6 +94,14 @@ public: // IDispatch
             {
                 return ManagedArgument_Dispatch(pDispParams, pVarResult);
             }
+            case 3:
+            {
+                return ReturnToManaged_Missing_Dispatch(pDispParams, pVarResult);
+            }
+            case 4:
+            {
+                return ReturnToManaged_DBNull_Dispatch(pDispParams, pVarResult);
+            }
             }
 
             return E_NOTIMPL;
@@ -164,6 +172,11 @@ private:
                 V_I4(pVarResult) = DISP_E_PARAMNOTFOUND;
                 break;
             }
+            case VT_UNKNOWN:
+            {
+                V_UNKNOWN(pVarResult) = static_cast<IUnknown *>(this);
+                break;
+            }
             default:
             {
                 V_I1(pVarResult) = 123;
@@ -202,6 +215,36 @@ private:
         return S_OK;
     }
 
+    HRESULT ReturnToManaged_Missing_Dispatch(_In_ DISPPARAMS *pDispParams, _Inout_ VARIANT *pVarResult)
+    {
+        HRESULT hr;
+
+        size_t expectedArgCount = 0;
+        RETURN_IF_FAILED(VerifyValues(uint32_t(expectedArgCount), pDispParams->cArgs));
+
+        if (pVarResult == nullptr)
+            return E_POINTER;
+
+        V_VT(pVarResult) = VT_I4;
+        V_I4(pVarResult) = 1234;
+        return S_OK;
+    }
+
+    HRESULT ReturnToManaged_DBNull_Dispatch(_In_ DISPPARAMS *pDispParams, _Inout_ VARIANT *pVarResult)
+    {
+        HRESULT hr;
+
+        size_t expectedArgCount = 0;
+        RETURN_IF_FAILED(VerifyValues(uint32_t(expectedArgCount), pDispParams->cArgs));
+
+        if (pVarResult == nullptr)
+            return E_POINTER;
+
+        V_VT(pVarResult) = VT_I4;
+        V_I4(pVarResult) = 1234;
+        return S_OK;
+    }
+
 public: // IUnknown
     STDMETHOD(QueryInterface)(
         /* [in] */ REFIID riid,
@@ -217,7 +260,9 @@ const WCHAR * const DispatchCoerceTesting::Names[] =
 {
     W("__RESERVED__"),
     W("ReturnToManaged"),
-    W("ManagedArgument")
+    W("ManagedArgument"),
+    W("ReturnToManaged_Missing"),
+    W("ReturnToManaged_DBNull")
 };
 
 const int DispatchCoerceTesting::NamesCount = ARRAY_SIZE(DispatchCoerceTesting::Names);

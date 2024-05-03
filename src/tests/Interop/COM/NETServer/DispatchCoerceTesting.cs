@@ -21,4 +21,14 @@ public class DispatchCoerceTesting : Server.Contract.IDispatchCoerceTesting
     {
         return arg;
     }
+
+    public System.Reflection.Missing ReturnToManaged_Missing()
+    {
+        return Type.Missing;
+    }
+
+    public DBNull ReturnToManaged_DBNull()
+    {
+        return DBNull.Value;
+    }
 }
