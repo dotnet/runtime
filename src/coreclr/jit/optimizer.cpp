@@ -234,7 +234,7 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
     for (BasicBlock* const curBlk : BasicBlockRangeList(begBlk, endBlk))
     {
         // Don't change the block weight if it came from profile data.
-        if (curBlk->hasProfileWeight() && fgHaveProfileData())
+        if (curBlk->hasProfileWeight() && fgHaveProfileWeights())
         {
             reportBlockWeight(curBlk, "; unchanged: has profile weight");
             continue;
