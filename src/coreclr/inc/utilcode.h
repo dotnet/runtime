@@ -55,6 +55,8 @@
 #define CoreLibSatelliteName_A "System.Private.CoreLib.resources"
 #define CoreLibSatelliteNameLen 32
 
+bool ValidateModuleName(LPCWSTR pwzModuleName);
+
 class StringArrayList;
 
 #if !defined(_DEBUG_IMPL) && defined(_DEBUG) && !defined(DACCESS_COMPILE)
