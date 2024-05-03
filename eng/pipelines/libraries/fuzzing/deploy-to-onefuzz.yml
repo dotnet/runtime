@@ -53,12 +53,10 @@ extends:
             publish/DotnetFuzzing.exe prepare-onefuzz deployment
           displayName: Prepare OneFuzz deployment
 
-        - publish: $(fuzzerProject)/deployment
-          artifact: Deployment
-
-#       - task: onefuzz-task@0
-#         inputs:
-#           onefuzzOSes: 'Windows'
-#         env:
-#           onefuzzDropDirectory: $(fuzzerProject)/deployment
-#           SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send to OneFuzz
