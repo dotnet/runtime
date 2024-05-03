@@ -79,7 +79,7 @@ Use `evaluate.py` to evaluate a model's performance.  Simply pass in the model p
 
 [optcse.cpp](../../jit/optcse.cpp) - This contains the implementation of `CSE_HeuristicRLHook` used to give the agent the ability to control CSE optimization choices.  Specifically `CSE_HeuristicRLHook::GetFeatures` and `CSE_HeuristicRLHook::s_featureNameAndType` are the raw feature building blocks used by `JitCseEnv` to build the observation that the model is trained on.
 
-[constants.py](jitml/method_context.py) - This contains the Python classes that mirror the features produced by `CSE_HeuristicRLHook`.  This needs to be kept in sync with optcse.cpp.
+[method_context.py](jitml/method_context.py) - This contains the Python classes that mirror the features produced by `CSE_HeuristicRLHook`.  This needs to be kept in sync with optcse.cpp.
 
 ## Making Changes
 
