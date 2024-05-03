@@ -23,14 +23,14 @@ static uint32_t
 
 static inline void *
 address_from_page_index (uint32_t page_index) {
-	uint64_t address = (page_index * MWPM_PAGE_SIZE);
+	uint64_t address = ((uint64_t)page_index * MWPM_PAGE_SIZE);
 	g_assert (address < UINT32_MAX);
 	return (void *)(uint32_t)address;
 }
 
 static inline uint32_t
 first_page_from_address (void *addr) {
-	return ((uint32_t)addr) / MWPM_PAGE_SIZE;
+	return ((uint64_t)addr) / MWPM_PAGE_SIZE;
 }
 
 static inline uint32_t

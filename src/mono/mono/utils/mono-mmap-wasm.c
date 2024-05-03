@@ -36,7 +36,7 @@
 int
 mono_pagesize (void)
 {
-	return 65536;
+	return MWPM_PAGE_SIZE;
 }
 
 int
