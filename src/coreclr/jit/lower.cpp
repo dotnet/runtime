@@ -8871,6 +8871,27 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
         }
 #endif
 
+#ifdef TARGET_ARM64
+        LIR::Use use;
+        if (ind->OperIs(GT_IND) && ind->IsVolatile() && varTypeIsFloating(ind) && BlockRange().TryGetUse(ind, &use))
+        {
+            // Convert "IND<float>(addr)" to "BitCast<float>(IND<int>(addr))"
+            // for volatile loads since there is no ldar for SIMD regs
+            var_types targetType = ind->TypeGet();
+            ind->ChangeType(ind->TypeIs(TYP_DOUBLE) ? TYP_LONG : TYP_INT);
+
+            // Now it might be eligible for some addressing modes with LDAPUR:
+            const bool isContainable = IsInvariantInRange(ind->Addr(), ind);
+            TryCreateAddrMode(ind->Addr(), isContainable, ind);
+
+            // Wrap the resulting IND into BITCAST:
+            GenTree* castOp = comp->gtNewBitCastNode(targetType, ind);
+            BlockRange().InsertAfter(ind, castOp);
+            use.ReplaceWith(castOp);
+            return castOp;
+        }
+#endif
+
         // TODO-Cleanup: We're passing isContainable = true but ContainCheckIndir rejects
         // address containment in some cases so we end up creating trivial (reg + offfset)
         // or (reg + reg) LEAs that are not necessary.
@@ -9523,6 +9544,21 @@ void Lowering::TryRetypingFloatingPointStoreToIntegerStore(GenTree* store)
     {
         return;
     }
+
+    // Convert "STOREIND<float>(addr, floatVal)" to "STORIND<int>(addr, BitCast<int>(floatVal))"
+    // for volatile stores since there is no stlr for SIMD regs
+#ifdef TARGET_ARM64
+    if (store->OperIs(GT_STOREIND) && store->AsStoreInd()->IsVolatile())
+    {
+        GenTreeStoreInd* ind = store->AsStoreInd();
+        ind->ChangeType(ind->TypeIs(TYP_DOUBLE) ? TYP_LONG : TYP_INT);
+        GenTree* castOp = comp->gtNewBitCastNode(ind->TypeGet(), ind->Data());
+        BlockRange().InsertAfter(ind->Data(), castOp);
+        ind->Data() = castOp;
+        LowerNode(castOp);
+        return;
+    }
+#endif
 
     // We only want to transform memory stores, not definitions of candidate locals.
     //
