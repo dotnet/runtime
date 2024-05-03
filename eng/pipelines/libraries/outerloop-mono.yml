@@ -39,11 +39,12 @@ extends:
               timeoutInMinutes: 180
               includeAllPlatforms: ${{ variables['isRollingBuild'] }}
               # extra steps, run tests
-              extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-              extraStepsParameters:
-                testScope: outerloop
-                creator: dotnet-bot
-                testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+              postBuildSteps:
+                - template: /eng/pipelines/libraries/helix.yml
+                  parameters:
+                    testScope: outerloop
+                    creator: dotnet-bot
+                    testRunNamePrefixSuffix: Mono_$(_BuildConfig)
 
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
@@ -60,10 +61,11 @@ extends:
               timeoutInMinutes: 180
               includeAllPlatforms: ${{ variables['isRollingBuild'] }}
               # extra steps, run tests
-              extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-              extraStepsParameters:
-                scenarios:
-                - normal
-                testScope: outerloop
-                creator: dotnet-bot
-                testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+              postBuildSteps:
+                - template: /eng/pipelines/libraries/helix.yml
+                  parameters:
+                    scenarios:
+                    - normal
+                    testScope: outerloop
+                    creator: dotnet-bot
+                    testRunNamePrefixSuffix: Mono_$(_BuildConfig)

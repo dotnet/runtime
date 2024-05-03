@@ -14,7 +14,6 @@ parameters:
   dependsOn: []
   dependOnEvaluatePaths: false
   crossBuild: false
-  pgoType: ''
 
 ### Build managed test components (native components are getting built as part
 ### of the product build job).
@@ -149,6 +148,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_AnyOS_AnyCPU_$(buildConfig)_${{ parameters.testGroup }}'
+        artifactName: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_Attempt$(System.JobAttempt)_AnyOS_AnyCPU_$(buildConfig)_${{ parameters.testGroup }}'
       continueOnError: true
       condition: always()

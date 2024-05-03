@@ -155,3 +155,24 @@ extends:
             readyToRun: true
             displayNameArgs: R2R_CG2
             liveLibrariesBuildConfig: Release
+
+      #
+      # PAL Tests
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: Debug
+          platforms:
+          - linux_x64
+          - linux_musl_x64
+          - linux_arm64
+          - linux_musl_arm64
+          - osx_x64
+          - osx_arm64
+          jobParameters:
+            buildArgs: -s clr.paltests+clr.paltestlist
+            nameSuffix: PALTests
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/run-paltests-step.yml

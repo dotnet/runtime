@@ -951,7 +951,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (isDedup)
         {
             foreach (var aItem in _assembliesToCompile!)
-                processArgs.Add(aItem.ItemSpec);
+                processArgs.Add($"\"{aItem.ItemSpec}\"");
         }
         else
         {
