@@ -137,7 +137,7 @@ IF_DEF(SVE_2BS, IS_NONE, NONE) // Instruction has 2  possible encoding types, ty
 *           x       -- element size
 *****************************************************************************/
 
-IF_DEF(SVE_AA_3A,   IS_NONE, NONE) // SVE_AA_3A  ........xx...... ...gggmmmmmddddd  -- SVE bitwise logical operations (predicated)
+IF_DEF(SVE_AA_3A,   IS_NONE, NONE) // SVE_AA_3A  ........xx...... ...gggmmmmmddddd  -- SVE bitwise logical operations + SVE integer add/subtract/multiply vectors + SVE integer min/max/difference + SVE bitwise shift by vector + SVE2 integer halving add/subtract + SVE2 integer pairwise arithmetic + SVE2 saturating add/subtract + SVE2 saturating/rounding bitwise shift left (predicated)
 IF_DEF(SVE_AB_3B,   IS_NONE, NONE) // SVE_AB_3B  ................ ...gggmmmmmddddd  -- SVE integer add/subtract vectors (predicated)
 IF_DEF(SVE_AC_3A,   IS_NONE, NONE) // SVE_AC_3A  ........xx...... ...gggmmmmmddddd  -- SVE integer divide vectors (predicated)
 IF_DEF(SVE_AF_3A,   IS_NONE, NONE) // SVE_AF_3A  ........xx...... ...gggnnnnnddddd  -- SVE bitwise logical reduction (predicated)

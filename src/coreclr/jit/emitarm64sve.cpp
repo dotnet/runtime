@@ -9897,10 +9897,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
     switch (fmt)
     {
         // Scalable.
-        case IF_SVE_AA_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise logical operations + SVE integer
-                           // add/subtract/multiply vectors + SVE integer min/max/difference + SVE bitwise shift by
-                           // vector + SVE2 integer halving add/subtract + SVE2 integer pairwise arithmetic + SVE2
-                           // saturating add/subtract + SVE2 saturating/rounding bitwise shift left (predicated)
+        case IF_SVE_AA_3A: // ........xx...... ...gggmmmmmddddd
         case IF_SVE_AC_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer divide vectors (predicated)
         case IF_SVE_AF_3A: // ........xx...... ...gggnnnnnddddd -- SVE bitwise logical reduction (predicated)
         case IF_SVE_AG_3A: // ........xx...... ...gggnnnnnddddd -- SVE bitwise logical reduction (quadwords)
@@ -12542,10 +12539,7 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
             break;
 
         // Scalable.
-        case IF_SVE_AA_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise logical operations + SVE integer
-                           // add/subtract/multiply vectors + SVE integer min/max/difference + SVE bitwise shift by
-                           // vector + SVE2 integer halving add/subtract + SVE2 integer pairwise arithmetic + SVE2
-                           // saturating add/subtract + SVE2 saturating/rounding bitwise shift left (predicated)
+        case IF_SVE_AA_3A: // ........xx...... ...gggmmmmmddddd
         case IF_SVE_CM_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally broadcast element to vector
             assert(insOptsScalableStandard(id->idInsOpt())); // xx
             assert(isVectorRegister(id->idReg1()));          // ddddd
@@ -14464,10 +14458,7 @@ void emitter::emitDispInsSveHelp(instrDesc* id)
         bitMaskImm bmi;
 
         //  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
-        case IF_SVE_AA_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise logical operations + SVE integer
-                           // add/subtract/multiply vectors + SVE integer min/max/difference + SVE bitwise shift by
-                           // vector + SVE2 integer halving add/subtract + SVE2 integer pairwise arithmetic + SVE2
-                           // saturating add/subtract + SVE2 saturating/rounding bitwise shift left (predicated)
+        case IF_SVE_AA_3A: // ........xx...... ...gggmmmmmddddd
         case IF_SVE_AC_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer divide vectors (predicated)
         case IF_SVE_GR_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 floating-point pairwise operations
         case IF_SVE_HL_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
@@ -16315,10 +16306,7 @@ void emitter::getInsSveExecutionCharacteristics(instrDesc* id, insExecutionChara
     instruction ins = id->idIns();
     switch (id->idInsFmt())
     {
-        case IF_SVE_AA_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise logical operations + SVE integer
-                           // add/subtract/multiply vectors + SVE integer min/max/difference + SVE bitwise shift by
-                           // vector + SVE2 integer halving add/subtract + SVE2 integer pairwise arithmetic + SVE2
-                           // saturating add/subtract + SVE2 saturating/rounding bitwise shift left (predicated)
+        case IF_SVE_AA_3A: // ........xx...... ...gggmmmmmddddd
             switch (ins)
             {
                 case INS_sve_add:
