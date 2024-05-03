@@ -273,7 +273,7 @@ sgen_report_internal_mem_usage (void)
 void
 sgen_init_internal_allocator (void)
 {
-	int i, size;
+	int i;
 
 	for (i = 0; i < INTERNAL_MEM_MAX; ++i)
 		fixed_type_allocator_indexes [i] = -1;
@@ -287,7 +287,7 @@ sgen_init_internal_allocator (void)
 	// FIXME: This whole algorithm is broken on WASM due to its 64KB page size.
 	// Previously SB_MAX_SIZE was < mono_pagesize, so none of this ran.
 #ifndef HOST_WASM
-	for (size = mono_pagesize (); size <= LOCK_FREE_ALLOC_SB_MAX_SIZE; size <<= 1) {
+	for (int size = mono_pagesize (); size <= LOCK_FREE_ALLOC_SB_MAX_SIZE; size <<= 1) {
 		int max_size = (LOCK_FREE_ALLOC_SB_USABLE_SIZE (size) / 2) & ~(SIZEOF_VOID_P - 1);
 		/*
 		 * we assert that allocator_sizes contains the biggest possible object size
