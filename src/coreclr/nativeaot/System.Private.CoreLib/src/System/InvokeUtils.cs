@@ -136,6 +136,22 @@ namespace System
 
             EETypeElementType srcElementType = srcEEType->ElementType;
 
+            void* rawDstValue = null;
+
+            Unsafe.SkipInit(out char charValue);
+            Unsafe.SkipInit(out sbyte sbyteValue);
+            Unsafe.SkipInit(out byte byteValue);
+            Unsafe.SkipInit(out short shortValue);
+            Unsafe.SkipInit(out ushort ushortValue);
+            Unsafe.SkipInit(out int intValue);
+            Unsafe.SkipInit(out uint uintValue);
+            Unsafe.SkipInit(out long longValue);
+            Unsafe.SkipInit(out ulong ulongValue);
+            Unsafe.SkipInit(out float floatValue);
+            Unsafe.SkipInit(out double doubleValue);
+
+            Unsafe.SkipInit(out dstObject);
+
             // This switch supports the conversions present in the table below, in 'CanPrimitiveWiden'
             switch (dstElementType)
             {
@@ -146,7 +162,6 @@ namespace System
                     break;
 
                 case EETypeElementType.Char:
-                    char charValue;
                     switch (srcElementType)
                     {
                         case EETypeElementType.Char:
@@ -161,25 +176,24 @@ namespace System
                         default:
                             goto Failure;
                     }
-                    dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, charValue) : charValue;
+                    rawDstValue = &charValue;
                     break;
 
                 case EETypeElementType.SByte:
 
                     // Can only be sbyte here
-                    sbyte sbyteValue = RuntimeHelpers.FastUnbox<sbyte>(srcObject);
-                    dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, sbyteValue) : sbyteValue;
+                    sbyteValue = RuntimeHelpers.FastUnbox<sbyte>(srcObject);
+                    rawDstValue = &sbyteValue;
                     break;
 
                 case EETypeElementType.Byte:
 
                     // Can only be byte here
-                    byte byteValue = RuntimeHelpers.FastUnbox<byte>(srcObject);
-                    dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, byteValue) : byteValue;
+                    byteValue = RuntimeHelpers.FastUnbox<byte>(srcObject);
+                    rawDstValue = &byteValue;
                     break;
 
                 case EETypeElementType.Int16:
-                    short shortValue;
                     switch (srcElementType)
                     {
                         case EETypeElementType.SByte:
@@ -194,11 +208,10 @@ namespace System
                         default:
                             goto Failure;
                     }
-                    dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, shortValue) : shortValue;
+                    rawDstValue = &shortValue;
                     break;
 
                 case EETypeElementType.UInt16:
-                    ushort ushortValue;
                     switch (srcElementType)
                     {
                         case EETypeElementType.Char:
@@ -213,11 +226,10 @@ namespace System
                         default:
                             goto Failure;
                     }
-                    dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, ushortValue) : ushortValue;
+                    rawDstValue = &ushortValue;
                     break;
 
                 case EETypeElementType.Int32:
-                    int intValue;
                     switch (srcElementType)
                     {
                         case EETypeElementType.Char:
@@ -241,11 +253,10 @@ namespace System
                         default:
                             goto Failure;
                     }
-                    dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, intValue) : intValue;
+                    rawDstValue = &intValue;
                     break;
 
                 case EETypeElementType.UInt32:
-                    uint uintValue;
                     switch (srcElementType)
                     {
                         case EETypeElementType.Char:
@@ -263,11 +274,10 @@ namespace System
                         default:
                             goto Failure;
                     }
-                    dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, uintValue) : uintValue;
+                    rawDstValue = &uintValue;
                     break;
 
                 case EETypeElementType.Int64:
-                    long longValue;
                     switch (srcElementType)
                     {
                         case EETypeElementType.Char:
@@ -297,11 +307,10 @@ namespace System
                         default:
                             goto Failure;
                     }
-                    dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, longValue) : longValue;
+                    rawDstValue = &longValue;
                     break;
 
                 case EETypeElementType.UInt64:
-                    ulong ulongValue;
                     switch (srcElementType)
                     {
                         case EETypeElementType.Char:
@@ -322,11 +331,10 @@ namespace System
                         default:
                             goto Failure;
                     }
-                    dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, (long)ulongValue) : ulongValue;
+                    rawDstValue = &ulongValue;
                     break;
 
                 case EETypeElementType.Single:
-                    float floatValue;
                     switch (srcElementType)
                     {
                         case EETypeElementType.Char:
@@ -362,11 +370,10 @@ namespace System
                         default:
                             goto Failure;
                     }
-                    dstObject = floatValue;
+                    rawDstValue = &floatValue;
                     break;
 
                 case EETypeElementType.Double:
-                    double doubleValue;
                     switch (srcElementType)
                     {
                         case EETypeElementType.Char:
@@ -405,11 +412,54 @@ namespace System
                         default:
                             goto Failure;
                     }
-                    dstObject = doubleValue;
+                    rawDstValue = &doubleValue;
                     break;
 
                 default:
                     goto Failure;
+            }
+
+            if (rawDstValue != null)
+            {
+                if (dstEEType->IsEnum)
+                {
+                    long rawEnumValue;
+                    switch (dstElementType)
+                    {
+                        case EETypeElementType.Char:
+                            rawEnumValue = (long)charValue;
+                            break;
+                        case EETypeElementType.SByte:
+                            rawEnumValue = (long)sbyteValue;
+                            break;
+                        case EETypeElementType.Byte:
+                            rawEnumValue = (long)byteValue;
+                            break;
+                        case EETypeElementType.Int16:
+                            rawEnumValue = (long)shortValue;
+                            break;
+                        case EETypeElementType.UInt16:
+                            rawEnumValue = (long)ushortValue;
+                            break;
+                        case EETypeElementType.Int32:
+                            rawEnumValue = (long)intValue;
+                            break;
+                        case EETypeElementType.UInt32:
+                            rawEnumValue = (long)uintValue;
+                            break;
+                        case EETypeElementType.Int64:
+                            rawEnumValue = longValue;
+                            break;
+                        default:
+                            rawEnumValue = (long)ulongValue;
+                            break;
+                    }
+                    dstObject = Enum.ToObject(dstEEType, rawEnumValue);
+                }
+                else
+                {
+                    dstObject = RuntimeHelpers.Box(ref *(byte*)&rawDstValue, new RuntimeTypeHandle(dstEEType));
+                }
             }
 
             Debug.Assert(dstObject.GetMethodTable() == dstEEType);
