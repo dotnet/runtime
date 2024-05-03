@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using static System.Reflection.Emit.TypeNameBuilder;
 
 namespace System.Numerics
 {
@@ -392,7 +393,7 @@ namespace System.Numerics
         /// <summary>
         /// Returns a string representation of the current value.
         /// </summary>
-        public override string ToString() => ((float)this).ToString();
+        public override string ToString() => Number.FormatFloat(this, null, NumberFormatInfo.CurrentInfo);
 
         /// <summary>
         /// Returns a string representation of the current value using the specified <paramref name="format"/>.

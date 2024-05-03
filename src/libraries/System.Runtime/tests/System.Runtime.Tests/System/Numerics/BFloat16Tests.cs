@@ -400,6 +400,62 @@ namespace System.Numerics.Tests
             float f = (float)value;
             AssertExtensions.Equal(expected, f);
         }
+
+        public static IEnumerable<object[]> ExplicitConversion_ToDouble_TestData()
+        {
+            (BFloat16 Original, double Expected)[] data =
+            {
+                (UInt16BitsToBFloat16(0b0_01111_0000000000), 1d), // 1
+                (UInt16BitsToBFloat16(0b1_01111_0000000000), -1d), // -1
+                (BFloat16.MaxValue, BitConverter.UInt64BitsToDouble(0x47EFE000_00000000)), // 3.3895314E+38
+                (BFloat16.MinValue, BitConverter.UInt64BitsToDouble(0xC7EFE000_00000000)), // -3.3895314E+38
+                (UInt16BitsToBFloat16(0b0_01111011_1001101), 0.10009765625d), // 0.1ish
+                (UInt16BitsToBFloat16(0b1_01111011_1001101), -0.10009765625d), // -0.1ish
+                (UInt16BitsToBFloat16(0b0_10000100_0101000), 42d), // 42
+                (UInt16BitsToBFloat16(0b1_10000100_0101000), -42d), // -42
+                (BFloat16.PositiveInfinity, double.PositiveInfinity), // PosInfinity
+                (BFloat16.NegativeInfinity, double.NegativeInfinity), // NegInfinity
+                (UInt16BitsToBFloat16(0b0_11111111_1000000), BitConverter.UInt64BitsToDouble(0x7FF80000_00000000)), // Positive Quiet NaN
+                (BFloat16.NaN, double.NaN), // Negative Quiet NaN
+                (UInt16BitsToBFloat16(0b0_11111111_1010101), BitConverter.UInt64BitsToDouble(0x7FFAA000_00000000)), // Positive Signalling NaN - Should preserve payload
+                (UInt16BitsToBFloat16(0b1_11111111_1010101), BitConverter.UInt64BitsToDouble(0xFFFAA000_00000000)), // Negative Signalling NaN - Should preserve payload
+                (BFloat16.Epsilon, BitConverter.UInt64BitsToDouble(0x37A00000_00000000)), // PosEpsilon = 9.1835E-41
+                (UInt16BitsToBFloat16(0), 0d), // 0
+                (UInt16BitsToBFloat16(0b1_00000000_0000000), -0d), // -0
+                (UInt16BitsToBFloat16(0b0_10000000_1001001), 3.140625d), // 3.140625
+                (UInt16BitsToBFloat16(0b1_10000000_1001001), -3.140625d), // -3.140625
+                (UInt16BitsToBFloat16(0b0_10000000_0101110), 2.71875d), // 2.71875
+                (UInt16BitsToBFloat16(0b1_10000000_0101110), -2.71875d), // -2.71875
+                (UInt16BitsToBFloat16(0b0_01111111_1000000), 1.5d), // 1.5
+                (UInt16BitsToBFloat16(0b1_01111111_1000000), -1.5d), // -1.5
+                (UInt16BitsToBFloat16(0b0_01111111_1000001), 1.5078125d), // 1.5078125
+                (UInt16BitsToBFloat16(0b1_01111111_1000001), -1.5078125d), // -1.5078125
+                (UInt16BitsToBFloat16(0b0_00000001_0000000), BitConverter.UInt64BitsToDouble(0x3810000000000000)), // smallest normal
+                (UInt16BitsToBFloat16(0b0_00000000_1111111), BitConverter.UInt64BitsToDouble(0x380FC00000000000)), // largest subnormal
+                (UInt16BitsToBFloat16(0b0_00000000_1000000), BitConverter.UInt64BitsToDouble(0x3800000000000000)), // middle subnormal
+                (UInt16BitsToBFloat16(0b0_00000000_0111111), BitConverter.UInt64BitsToDouble(0x37FF800000000000)), // just below middle subnormal
+                (UInt16BitsToBFloat16(0b0_00000000_0000001), BitConverter.UInt64BitsToDouble(0x37A0000000000000)), // smallest subnormal
+                (UInt16BitsToBFloat16(0b1_00000000_0000001), BitConverter.UInt64BitsToDouble(0xB7A0000000000000)), // highest negative subnormal
+                (UInt16BitsToBFloat16(0b1_00000000_0111111), BitConverter.UInt64BitsToDouble(0xB7FF800000000000)), // just above negative middle subnormal
+                (UInt16BitsToBFloat16(0b1_00000000_1000000), BitConverter.UInt64BitsToDouble(0xB800000000000000)), // negative middle subnormal
+                (UInt16BitsToBFloat16(0b1_00000000_1111111), BitConverter.UInt64BitsToDouble(0xB80FC00000000000)), // lowest negative subnormal
+                (UInt16BitsToBFloat16(0b1_00000001_0000000), BitConverter.UInt64BitsToDouble(0xB810000000000000)) // highest negative normal
+            };
+
+            foreach ((BFloat16 original, double expected) in data)
+            {
+                yield return new object[] { original, expected };
+            }
+        }
+
+        [MemberData(nameof(ExplicitConversion_ToDouble_TestData))]
+        [Theory]
+        public static void ExplicitConversion_ToDouble(BFloat16 value, double expected) // Check the underlying bits for verifying NaNs
+        {
+            double d = (double)value;
+            AssertExtensions.Equal(expected, d);
+        }
+
         public static IEnumerable<object[]> ExplicitConversion_FromSingle_TestData()
         {
             (float, BFloat16)[] data =
