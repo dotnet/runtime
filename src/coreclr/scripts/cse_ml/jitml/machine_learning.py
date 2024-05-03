@@ -93,7 +93,7 @@ class JitCseModel:
             self._model = self._create(env, tensorboard_log=os.path.join(output_dir, 'logs'))
 
             iterations = 100_000 if iterations is None else iterations
-            callback = PPOLogCallback(self._model, output_dir) if self.algorithm == 'PPO' else None
+            callback = LogCallback(self._model, output_dir) if self.algorithm in ('PPO', 'A2C') else None
             self._model.learn(iterations, progress_bar=progress_bar, callback=callback)
 
             save_path = os.path.join(output_dir, self.algorithm.lower() +'.zip')
@@ -121,11 +121,11 @@ class JitCseModel:
             case _:
                 raise ValueError(f"Unknown algorithm {self.algorithm}.  Must be one of: PPO, A2C, DQN")
 
-class PPOLogCallback(BaseCallback):
+class LogCallback(BaseCallback):
     """A callback to log reward values to tensorboard and save the best models."""
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, model : PPO, save_dir : str, last_model_freq = 500_000):
+    def __init__(self, model : PPO | A2C, save_dir : str, last_model_freq = 500_000):
         super().__init__()
 
         self.model = model
