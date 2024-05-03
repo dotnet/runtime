@@ -245,7 +245,17 @@
                     StressLog::LogMsgOL("OOM on alloc of size %x \n", (void*)(size_t)(size));     \
                     StressLog::LogCallStack ("OOM");                                              \
                 }                                                                                 \
+            } while (0)
+
+#define STRESS_LOG_OOM_STACK_NO_SIZE() do {                                                       \
+                CantAllocHolder caHolder;                                                         \
+                if (StressLog::LogOn(LF_EEMEM, LL_ALWAYS))                                        \
+                {                                                                                 \
+                    StressLog::LogMsgOL("OOM on alloc\n");                                        \
+                    StressLog::LogCallStack ("OOM");                                              \
+                }                                                                                 \
             } while(0)
+
 #define STRESS_LOG_GC_STACK do {                                                                  \
                 if (StressLog::LogOn(LF_GC |LF_GCINFO, LL_ALWAYS))                                \
                 {                                                                                 \
@@ -256,6 +266,7 @@
 
 #else //!_DEBUG
 #define STRESS_LOG_OOM_STACK(size)
+#define STRESS_LOG_OOM_STACK_NO_SIZE()
 #define STRESS_LOG_GC_STACK
 #endif //_DEBUG
 
