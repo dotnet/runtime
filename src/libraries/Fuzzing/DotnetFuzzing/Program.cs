@@ -248,7 +248,7 @@ public static class Program
                     "Org": "dnceng",
                     "Project": "internal",
                     "AssignedTo": "{{fuzzer.BlameAlias}}@microsoft.com",
-                    "AreaPath": "internal",
+                    "AreaPath": "internal\\.NET Libraries",
                     "IterationPath": "internal"
                   }
                 }
