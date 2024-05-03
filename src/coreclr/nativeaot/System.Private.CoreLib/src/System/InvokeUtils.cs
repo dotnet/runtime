@@ -419,47 +419,11 @@ namespace System
                     goto Failure;
             }
 
+            // The only case where 'rawDstValue' is not set is for bool values, which set 'dstObject'
+            // directly. In all other cases, 'rawDstValue' is guaranteed to not be null.
             if (rawDstValue != null)
             {
-                if (dstEEType->IsEnum)
-                {
-                    long rawEnumValue;
-                    switch (dstElementType)
-                    {
-                        case EETypeElementType.Char:
-                            rawEnumValue = (long)charValue;
-                            break;
-                        case EETypeElementType.SByte:
-                            rawEnumValue = (long)sbyteValue;
-                            break;
-                        case EETypeElementType.Byte:
-                            rawEnumValue = (long)byteValue;
-                            break;
-                        case EETypeElementType.Int16:
-                            rawEnumValue = (long)shortValue;
-                            break;
-                        case EETypeElementType.UInt16:
-                            rawEnumValue = (long)ushortValue;
-                            break;
-                        case EETypeElementType.Int32:
-                            rawEnumValue = (long)intValue;
-                            break;
-                        case EETypeElementType.UInt32:
-                            rawEnumValue = (long)uintValue;
-                            break;
-                        case EETypeElementType.Int64:
-                            rawEnumValue = longValue;
-                            break;
-                        default:
-                            rawEnumValue = (long)ulongValue;
-                            break;
-                    }
-                    dstObject = Enum.ToObject(dstEEType, rawEnumValue);
-                }
-                else
-                {
-                    dstObject = RuntimeHelpers.Box(ref *(byte*)&rawDstValue, new RuntimeTypeHandle(dstEEType));
-                }
+                dstObject = RuntimeHelpers.Box(ref *(byte*)&rawDstValue, new RuntimeTypeHandle(dstEEType));
             }
 
             Debug.Assert(dstObject.GetMethodTable() == dstEEType);
@@ -467,7 +431,6 @@ namespace System
 
             Failure:
             Debug.Fail("Unexpected CorElementType: " + dstElementType + ": Not a valid widening target.");
-            dstObject = null;
             return null; // This code can never be reached
         }
 
