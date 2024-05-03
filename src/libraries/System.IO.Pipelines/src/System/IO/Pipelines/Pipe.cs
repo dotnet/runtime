@@ -469,6 +469,7 @@ namespace System.IO.Pipelines
             {
                 if ((uint)bytes > (uint)_writingHeadMemory.Length)
                 {
+                    System.Console.WriteLine("Out of Range exception");
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes);
                 }
 
