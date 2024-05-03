@@ -128,9 +128,9 @@ private:
         }
 
         VARENUM resultType = (VARENUM)*args[0];
-        V_VT(pVarResult) = resultType;
+        V_VT(pVarResult) = resultType & 0x7FFF;
 
-        switch (resultType)
+        switch ((uint16_t)resultType)
         {
             case VT_BSTR:
             {
@@ -157,6 +157,11 @@ private:
             case VT_DECIMAL:
             {
                 VarDecFromI4(123, &V_DECIMAL(pVarResult));
+                break;
+            }
+            case ((VT_ERROR | 0x8000)):
+            {
+                V_I4(pVarResult) = DISP_E_PARAMNOTFOUND;
                 break;
             }
             default:

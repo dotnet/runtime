@@ -242,6 +242,14 @@ namespace NetClient
                 int result = dispatchCoerceTesting.ReturnToManaged((short)vt);
                 Assert.NotEqual(0, result);
             }
+
+            // DISP_E_PARAMNOTFOUND: Converts to Missing, rejected by VariantChangeTypeEx
+            var comException = Assert.Throws<COMException>(() => dispatchCoerceTesting.ReturnToManaged(unchecked((short)((short)VarEnum.VT_ERROR | 0x8000))));
+            Assert.Equal(unchecked((int)0x80020005), comException.HResult);
+
+            // Invalid: Rejected before reaching coerce
+            var variantException = Assert.Throws<InvalidOleVariantTypeException>(() => dispatchCoerceTesting.ReturnToManaged(0x7FFF));
+            Assert.Equal(unchecked((int)0x80131531), variantException.HResult);
         }
 
         [Fact]
