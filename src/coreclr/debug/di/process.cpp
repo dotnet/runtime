@@ -11430,7 +11430,10 @@ HRESULT CordbProcess::SetEnableCustomNotification(ICorDebugClass * pClass, BOOL 
     _ASSERTE (pAppDomain != NULL);
     CordbModule *pModule = pCordbClass->GetModule();
 
-    pProcess->InitIPCEvent(&event, DB_IPCE_CUSTOM_NOTIFICATION, true, pAppDomain->GetADToken());
+    pProcess->InitIPCEvent(&event,
+                           DB_IPCE_SET_ENABLE_CUSTOM_NOTIFICATION,
+                           true,
+                           pAppDomain->GetADToken());
     event.CustomNotificationData.vmModule = pModule->GetRuntimeModule();
     event.CustomNotificationData.classMetadataToken = pCordbClass->MDToken();
     event.CustomNotificationData.Enabled = fEnable;
@@ -11439,7 +11442,7 @@ HRESULT CordbProcess::SetEnableCustomNotification(ICorDebugClass * pClass, BOOL 
     hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event, sizeof(DebuggerIPCEvent));
     lockHolder.Acquire();
 
-    _ASSERTE(event.type == DB_IPCE_DISABLE_OPTS_RESULT);
+    _ASSERTE(event.type == DB_IPCE_SET_ENABLE_CUSTOM_NOTIFICATION_RESULT);
 
     return event.hr;
 } // CordbProcess::SetEnableCustomNotification
