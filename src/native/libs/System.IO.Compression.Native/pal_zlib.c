@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include "pal_zlib.h"
 
-#ifdef INTERNAL_ZLIB_NG
+#ifdef INTERNAL_ZLIBNG
     #ifdef  _WIN32
         #define c_static_assert(e) static_assert((e),"")
     #endif

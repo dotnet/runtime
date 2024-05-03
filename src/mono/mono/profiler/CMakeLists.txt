@@ -12,9 +12,9 @@ include_directories(
 if(NOT DISABLE_LIBS)
   if(HOST_ANDROID OR HOST_IOS OR HOST_TVOS OR HOST_S390X)
     # Build the logging profiler only for certain platforms
-    set_source_files_properties(${ZLIB_NG_SOURCES} PROPERTIES COMPILE_DEFINITIONS "${ZLIB_NG_COMPILE_DEFINITIONS}")
-    set_source_files_properties(${ZLIB_NG_SOURCES} PROPERTIES COMPILE_OPTIONS "${ZLIB_NG_COMPILE_OPTIONS}")
-    add_library(mono-profiler-log SHARED helper.c log.c log-args.c ${ZLIB_NG_SOURCES})
+    set_source_files_properties(${ZLIBNG_SOURCES} PROPERTIES COMPILE_DEFINITIONS "${ZLIBNG_COMPILE_DEFINITIONS}")
+    set_source_files_properties(${ZLIBNG_SOURCES} PROPERTIES COMPILE_OPTIONS "${ZLIBNG_COMPILE_OPTIONS}")
+    add_library(mono-profiler-log SHARED helper.c log.c log-args.c ${ZLIBNG_SOURCES})
     target_compile_definitions(mono-profiler-log PRIVATE -DMONO_DLL_EXPORT)
     target_link_libraries(mono-profiler-log PRIVATE monosgen-shared monoapi eglib_objects)
     if(HOST_ANDROID)

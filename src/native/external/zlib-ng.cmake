@@ -1,6 +1,6 @@
 # IMPORTANT: do not use add_compile_options(), add_definitions() or similar functions here since it will leak to the including projects
 
-set(ZLIB_NG_SOURCES_BASE
+set(ZLIBNG_SOURCES_BASE
 # Base *.c
     adler32_fold.c
     adler32.c
@@ -138,15 +138,15 @@ set(ZLIB_NG_SOURCES_BASE
 )
 
 if(HOST_WIN32 OR CLR_CMAKE_TARGET_WIN32)
-    set(ZLIB_NG_SOURCES_BASE ${ZLIB_NG_SOURCES_BASE} ../../libs/System.IO.Compression.Native/zlib_ng_allocator_win.c)
+    set(ZLIBNG_SOURCES_BASE ${ZLIBNG_SOURCES_BASE} ../../libs/System.IO.Compression.Native/zlibng_allocator_win.c)
 else()
-    set(ZLIB_NG_SOURCES_BASE ${ZLIB_NG_SOURCES_BASE} ../../libs/System.IO.Compression.Native/zlib_ng_allocator_unix.c)
+    set(ZLIBNG_SOURCES_BASE ${ZLIBNG_SOURCES_BASE} ../../libs/System.IO.Compression.Native/zlibng_allocator_unix.c)
 endif()
 
-addprefix(ZLIB_NG_SOURCES "${CMAKE_CURRENT_LIST_DIR}/zlib-ng"  "${ZLIB_NG_SOURCES_BASE}")
+addprefix(ZLIBNG_SOURCES "${CMAKE_CURRENT_LIST_DIR}/zlib-ng"  "${ZLIBNG_SOURCES_BASE}")
 
 # enable custom zlib allocator
-set(ZLIB_NG_COMPILE_DEFINITIONS "MY_ZCALLOC")
+set(ZLIBNG_COMPILE_DEFINITIONS "MY_ZCALLOC")
 
 # Compile for zlib-compatible APIs instead of zlib-ng APIs
 set(ZLIB_COMPILE_OPTIONS "/zlib-compat")

@@ -70,7 +70,7 @@ static void WriteAllocCookieUnaligned(void* pDest, DOTNET_ALLOC_COOKIE vCookie)
 const size_t DOTNET_ALLOC_HEADER_COOKIE_SIZE_WITH_PADDING = (sizeof(DOTNET_ALLOC_COOKIE) + MEMORY_ALLOCATION_ALIGNMENT - 1) & ~((size_t)MEMORY_ALLOCATION_ALIGNMENT  - 1);
 const size_t DOTNET_ALLOC_TRAILER_COOKIE_SIZE = sizeof(DOTNET_ALLOC_COOKIE);
 
-voidpf ZLIB_NG_INTERNAL zcalloc(opaque, items, size)
+voidpf ZLIBNG_INTERNAL zcalloc(opaque, items, size)
     voidpf opaque;
     unsigned items;
     unsigned size;
@@ -119,7 +119,7 @@ static void zcfree_trash_cookie(void* pCookie)
     memset(pCookie, 0, sizeof(DOTNET_ALLOC_COOKIE));
 }
 
-void ZLIB_NG_INTERNAL zcfree(opaque, ptr)
+void ZLIBNG_INTERNAL zcfree(opaque, ptr)
     voidpf opaque;
     voidpf ptr;
 {

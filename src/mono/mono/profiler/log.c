@@ -72,7 +72,7 @@
 #include <sys/socket.h>
 #endif
 #ifndef DISABLE_LOG_PROFILER_GZ
-#ifdef INTERNAL_ZLIB_NG
+#ifdef INTERNAL_ZLIBNG
 #include <external/zlib-ng/zlib-ng.h>
 #else
 #include <zlib.h>
