@@ -172,13 +172,13 @@
                       Condition="'$(UseQuicTransportPackage)' == 'true'"
                       GeneratePathProperty="true" />
 
-    <PackageReference Include="Microsoft.Native.Quic.MsQuic.Schannel"
+    <PackageReference Include="Microsoft.Native.Quic.MsQuic.OpenSSL"
                       Version="$(MicrosoftNativeQuicMsQuicSchannelVersion)"
                       PrivateAssets="all"
                       Condition="'$(UseQuicTransportPackage)' != 'true'"
                       GeneratePathProperty="true" />
 
-    <NativeBinPlaceItem Include="$(PkgMicrosoft_Native_Quic_MsQuic_Schannel)\build\native\bin\$(TargetArchitecture)\*"
+    <NativeBinPlaceItem Include="$(PkgMicrosoft_Native_Quic_MsQuic_OpenSSL)\build\native\bin\$(TargetArchitecture)\*"
                         Condition="'$(UseQuicTransportPackage)' != 'true'" />
     <NativeBinPlaceItem Include="$(PkgRuntime_win-x64_runtime_native_System_Net_MsQuic_Transport)\runtimes\win-$(TargetArchitecture)\native\*"
                         Condition="'$(UseQuicTransportPackage)' == 'true'" />
