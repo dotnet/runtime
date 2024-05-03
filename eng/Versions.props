@@ -136,6 +136,8 @@
     <SystemSecurityCryptographyOpenSslVersion>5.0.0</SystemSecurityCryptographyOpenSslVersion>
     <SystemSecurityPrincipalWindowsVersion>5.0.0</SystemSecurityPrincipalWindowsVersion>
     <SystemSecurityPermissionsVersion>7.0.0</SystemSecurityPermissionsVersion>
+    <!-- The JSON version that's present in minimum MSBuild / VS version that this release is supported on -->
+    <SystemTextJsonToolsetVersion>7.0.3</SystemTextJsonToolsetVersion>
     <SystemTextJsonVersion>8.0.0-rc.1.23406.6</SystemTextJsonVersion>
     <SystemRuntimeCompilerServicesUnsafeVersion>6.0.0</SystemRuntimeCompilerServicesUnsafeVersion>
     <SystemThreadingAccessControlVersion>7.0.0</SystemThreadingAccessControlVersion>
