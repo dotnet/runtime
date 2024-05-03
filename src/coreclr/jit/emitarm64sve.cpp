@@ -2919,7 +2919,10 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
 
             if (sopt == INS_SCALABLE_OPTS_UNPREDICATED)
             {
-                assert(opt == INS_OPTS_SCALABLE_D);
+                // The instruction only has a .D variant. However, this doesn't matter as
+                // it operates on bits not lanes. Effectively this means all standard opt
+                // sizes are supported.
+                assert(insOptsScalableStandard(opt));
                 assert(isVectorRegister(reg2)); // nnnnn
                 fmt = IF_SVE_AU_3A;
             }
@@ -3728,7 +3731,7 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             else if (sopt == INS_SCALABLE_OPTS_WITH_SIMD_SCALAR)
             {
                 assert(isFloatReg(reg1));
-                assert(isValidVectorElemsize(size));
+                assert(isScalableVectorSize(size));
                 fmt = IF_SVE_CN_3A;
             }
             else
@@ -3748,7 +3751,7 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             if (sopt == INS_SCALABLE_OPTS_UNPREDICATED)
             {
                 assert(ins == INS_sve_mov);
-                assert(opt == INS_OPTS_SCALABLE_D);
+                assert(insOptsScalableStandard(opt));
                 assert(isVectorRegister(reg1)); // ddddd
                 assert(isVectorRegister(reg2)); // nnnnn
                 assert(isVectorRegister(reg3)); // mmmmm
@@ -11817,6 +11820,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeSveElemsize(optGetSveElemsize((insOpts)(id->idInsOpt() + 1))); // xx
             dst += emitOutput_Instr(dst, code);
             break;
+
         case IF_SVE_BF_2A: // ........xx.xxiii ......nnnnnddddd -- SVE bitwise shift by immediate (unpredicated)
         case IF_SVE_FT_2A: // ........xx.xxiii ......nnnnnddddd -- SVE2 bitwise shift and insert
         case IF_SVE_FU_2A: // ........xx.xxiii ......nnnnnddddd -- SVE2 bitwise shift right and accumulate
@@ -12618,7 +12622,7 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1()));          // ddddd
             assert(isLowPredicateRegister(id->idReg2()));    // ggg
             assert(isVectorRegister(id->idReg3()));          // mmmmm
-            assert(isValidVectorElemsize(id->idOpSize()));
+            assert(isScalableVectorSize(id->idOpSize()));
             break;
 
         // Scalable to FP SIMD scalar.
@@ -14389,8 +14393,13 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_BJ_2A: // ........xx...... ......nnnnnddddd -- SVE floating-point exponential accelerator
-        case IF_SVE_CH_2A: // ........xx...... ......nnnnnddddd -- SVE unpack vector elements
         case IF_SVE_HF_2A: // ........xx...... ......nnnnnddddd -- SVE floating-point reciprocal estimate (unpredicated)
+            assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            break;
+
+        case IF_SVE_CH_2A: // ........xx...... ......nnnnnddddd -- SVE unpack vector elements
             assert(insOptsScalableWide(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
