@@ -149,29 +149,14 @@ namespace System
                     char charValue;
                     switch (srcElementType)
                     {
-                        case EETypeElementType.UInt16:
-                            charValue = (char)(ushort)srcObject;
-                            break;
                         case EETypeElementType.Char:
                             charValue = (char)srcObject;
                             break;
-                        case EETypeElementType.Int32:
-                            charValue = (char)(int)srcObject;
+                        case EETypeElementType.Byte:
+                            charValue = (char)(byte)srcObject;
                             break;
-                        case EETypeElementType.UInt32:
-                            charValue = (char)(uint)srcObject;
-                            break;
-                        case EETypeElementType.Int64:
-                            charValue = (char)(long)srcObject;
-                            break;
-                        case EETypeElementType.UInt64:
-                            charValue = (char)(ulong)srcObject;
-                            break;
-                        case EETypeElementType.Single:
-                            charValue = (char)(float)srcObject;
-                            break;
-                        case EETypeElementType.Double:
-                            charValue = (char)(double)srcObject;
+                        case EETypeElementType.UInt16:
+                            charValue = (char)(ushort)srcObject;
                             break;
                         default:
                             goto Failure;
@@ -180,70 +165,16 @@ namespace System
                     break;
 
                 case EETypeElementType.SByte:
-                    sbyte sbyteValue;
-                    switch (srcElementType)
-                    {
-                        case EETypeElementType.SByte:
-                            sbyteValue = (sbyte)srcObject;
-                            break;
-                        case EETypeElementType.Int16:
-                            sbyteValue = (sbyte)(short)srcObject;
-                            break;
-                        case EETypeElementType.Int32:
-                            sbyteValue = (sbyte)(int)srcObject;
-                            break;
-                        case EETypeElementType.Int64:
-                            sbyteValue = (sbyte)(long)srcObject;
-                            break;
-                        case EETypeElementType.Single:
-                            sbyteValue = (sbyte)(float)srcObject;
-                            break;
-                        case EETypeElementType.Double:
-                            sbyteValue = (sbyte)(double)srcObject;
-                            break;
-                        default:
-                            goto Failure;
-                    }
+
+                    // Can only be sbyte here
+                    sbyte sbyteValue = (sbyte)srcObject;
                     dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, sbyteValue) : sbyteValue;
                     break;
 
                 case EETypeElementType.Byte:
-                    byte byteValue;
-                    switch (srcElementType)
-                    {
-                        case EETypeElementType.Char:
-                            byteValue = (byte)(char)srcObject;
-                            break;
-                        case EETypeElementType.Byte:
-                            byteValue = (byte)srcObject;
-                            break;
-                        case EETypeElementType.Int16:
-                            byteValue = (byte)(short)srcObject;
-                            break;
-                        case EETypeElementType.UInt16:
-                            byteValue = (byte)(ushort)srcObject;
-                            break;
-                        case EETypeElementType.Int32:
-                            byteValue = (byte)(int)srcObject;
-                            break;
-                        case EETypeElementType.UInt32:
-                            byteValue = (byte)(uint)srcObject;
-                            break;
-                        case EETypeElementType.Int64:
-                            byteValue = (byte)(long)srcObject;
-                            break;
-                        case EETypeElementType.UInt64:
-                            byteValue = (byte)(ulong)srcObject;
-                            break;
-                        case EETypeElementType.Single:
-                            byteValue = (byte)(float)srcObject;
-                            break;
-                        case EETypeElementType.Double:
-                            byteValue = (byte)(double)srcObject;
-                            break;
-                        default:
-                            goto Failure;
-                    }
+
+                    // Can only be byte here
+                    byte byteValue = (byte)srcObject;
                     dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, byteValue) : byteValue;
                     break;
 
@@ -251,20 +182,14 @@ namespace System
                     short shortValue;
                     switch (srcElementType)
                     {
+                        case EETypeElementType.SByte:
+                            shortValue = (short)(sbyte)srcObject;
+                            break;
+                        case EETypeElementType.Byte:
+                            shortValue = (short)(byte)srcObject;
+                            break;
                         case EETypeElementType.Int16:
                             shortValue = (short)srcObject;
-                            break;
-                        case EETypeElementType.Int32:
-                            shortValue = (short)(int)srcObject;
-                            break;
-                        case EETypeElementType.Int64:
-                            shortValue = (short)(long)srcObject;
-                            break;
-                        case EETypeElementType.Single:
-                            shortValue = (short)(float)srcObject;
-                            break;
-                        case EETypeElementType.Double:
-                            shortValue = (short)(double)srcObject;
                             break;
                         default:
                             goto Failure;
@@ -276,29 +201,14 @@ namespace System
                     ushort ushortValue;
                     switch (srcElementType)
                     {
-                        case EETypeElementType.UInt16:
-                            ushortValue = (ushort)srcObject;
-                            break;
                         case EETypeElementType.Char:
                             ushortValue = (ushort)(char)srcObject;
                             break;
-                        case EETypeElementType.Int32:
-                            ushortValue = (ushort)(int)srcObject;
+                        case EETypeElementType.Byte:
+                            ushortValue = (ushort)(byte)srcObject;
                             break;
-                        case EETypeElementType.UInt32:
-                            ushortValue = (ushort)(uint)srcObject;
-                            break;
-                        case EETypeElementType.Int64:
-                            ushortValue = (ushort)(long)srcObject;
-                            break;
-                        case EETypeElementType.UInt64:
-                            ushortValue = (ushort)(ulong)srcObject;
-                            break;
-                        case EETypeElementType.Single:
-                            ushortValue = (ushort)(float)srcObject;
-                            break;
-                        case EETypeElementType.Double:
-                            ushortValue = (ushort)(double)srcObject;
+                        case EETypeElementType.UInt16:
+                            ushortValue = (ushort)srcObject;
                             break;
                         default:
                             goto Failure;
@@ -310,17 +220,23 @@ namespace System
                     int intValue;
                     switch (srcElementType)
                     {
+                        case EETypeElementType.Char:
+                            intValue = (int)(char)srcObject;
+                            break;
+                        case EETypeElementType.SByte:
+                            intValue = (int)(sbyte)srcObject;
+                            break;
+                        case EETypeElementType.Byte:
+                            intValue = (int)(byte)srcObject;
+                            break;
+                        case EETypeElementType.Int16:
+                            intValue = (int)(short)srcObject;
+                            break;
+                        case EETypeElementType.UInt16:
+                            intValue = (int)(ushort)srcObject;
+                            break;
                         case EETypeElementType.Int32:
                             intValue = (int)srcObject;
-                            break;
-                        case EETypeElementType.Int64:
-                            intValue = (int)(long)srcObject;
-                            break;
-                        case EETypeElementType.Single:
-                            intValue = (int)(float)srcObject;
-                            break;
-                        case EETypeElementType.Double:
-                            intValue = (int)(double)srcObject;
                             break;
                         default:
                             goto Failure;
@@ -332,17 +248,17 @@ namespace System
                     uint uintValue;
                     switch (srcElementType)
                     {
+                        case EETypeElementType.Char:
+                            uintValue = (uint)(char)srcObject;
+                            break;
+                        case EETypeElementType.Byte:
+                            uintValue = (uint)(byte)srcObject;
+                            break;
+                        case EETypeElementType.UInt16:
+                            uintValue = (uint)(ushort)srcObject;
+                            break;
                         case EETypeElementType.UInt32:
                             uintValue = (uint)srcObject;
-                            break;
-                        case EETypeElementType.Int64:
-                            uintValue = (uint)(long)srcObject;
-                            break;
-                        case EETypeElementType.Single:
-                            uintValue = (uint)(float)srcObject;
-                            break;
-                        case EETypeElementType.Double:
-                            uintValue = (uint)(double)srcObject;
                             break;
                         default:
                             goto Failure;
@@ -354,14 +270,29 @@ namespace System
                     long longValue;
                     switch (srcElementType)
                     {
+                        case EETypeElementType.Char:
+                            longValue = (long)(char)srcObject;
+                            break;
+                        case EETypeElementType.SByte:
+                            longValue = (long)(sbyte)srcObject;
+                            break;
+                        case EETypeElementType.Byte:
+                            longValue = (long)(byte)srcObject;
+                            break;
+                        case EETypeElementType.Int16:
+                            longValue = (long)(short)srcObject;
+                            break;
+                        case EETypeElementType.UInt16:
+                            longValue = (long)(ushort)srcObject;
+                            break;
+                        case EETypeElementType.Int32:
+                            longValue = (long)(int)srcObject;
+                            break;
+                        case EETypeElementType.UInt32:
+                            longValue = (long)(uint)srcObject;
+                            break;
                         case EETypeElementType.Int64:
                             longValue = (long)srcObject;
-                            break;
-                        case EETypeElementType.Single:
-                            longValue = (long)(float)srcObject;
-                            break;
-                        case EETypeElementType.Double:
-                            longValue = (long)(double)srcObject;
                             break;
                         default:
                             goto Failure;
@@ -373,14 +304,20 @@ namespace System
                     ulong ulongValue;
                     switch (srcElementType)
                     {
+                        case EETypeElementType.Char:
+                            ulongValue = (ulong)(char)srcObject;
+                            break;
+                        case EETypeElementType.Byte:
+                            ulongValue = (ulong)(byte)srcObject;
+                            break;
+                        case EETypeElementType.UInt16:
+                            ulongValue = (ulong)(ushort)srcObject;
+                            break;
+                        case EETypeElementType.UInt32:
+                            ulongValue = (ulong)(uint)srcObject;
+                            break;
                         case EETypeElementType.UInt64:
                             ulongValue = (ulong)srcObject;
-                            break;
-                        case EETypeElementType.Single:
-                            ulongValue = (ulong)(float)srcObject;
-                            break;
-                        case EETypeElementType.Double:
-                            ulongValue = (ulong)(double)srcObject;
                             break;
                         default:
                             goto Failure;
@@ -389,21 +326,86 @@ namespace System
                     break;
 
                 case EETypeElementType.Single:
-                    if (srcElementType == EETypeElementType.Single)
+                    float floatValue;
+                    switch (srcElementType)
                     {
-                        dstObject = (float)srcObject;
+                        case EETypeElementType.Char:
+                            floatValue = (float)(char)srcObject;
+                            break;
+                        case EETypeElementType.SByte:
+                            floatValue = (float)(sbyte)srcObject;
+                            break;
+                        case EETypeElementType.Byte:
+                            floatValue = (float)(byte)srcObject;
+                            break;
+                        case EETypeElementType.Int16:
+                            floatValue = (float)(short)srcObject;
+                            break;
+                        case EETypeElementType.UInt16:
+                            floatValue = (float)(ushort)srcObject;
+                            break;
+                        case EETypeElementType.Int32:
+                            floatValue = (float)(int)srcObject;
+                            break;
+                        case EETypeElementType.UInt32:
+                            floatValue = (float)(uint)srcObject;
+                            break;
+                        case EETypeElementType.Int64:
+                            floatValue = (float)(long)srcObject;
+                            break;
+                        case EETypeElementType.UInt64:
+                            floatValue = (float)(ulong)srcObject;
+                            break;
+                        case EETypeElementType.Single:
+                            floatValue = (float)srcObject;
+                            break;
+                        default:
+                            goto Failure;
                     }
-                    else
-                    {
-                        // Can only be double here
-                        dstObject = (float)(double)srcObject;
-                    }
+                    dstObject = floatValue;
                     break;
 
                 case EETypeElementType.Double:
-
-                    // Can only be double here
-                    dstObject = (double)srcObject;
+                    double doubleValue;
+                    switch (srcElementType)
+                    {
+                        case EETypeElementType.Char:
+                            doubleValue = (double)(char)srcObject;
+                            break;
+                        case EETypeElementType.SByte:
+                            doubleValue = (double)(sbyte)srcObject;
+                            break;
+                        case EETypeElementType.Byte:
+                            doubleValue = (double)(byte)srcObject;
+                            break;
+                        case EETypeElementType.Int16:
+                            doubleValue = (double)(short)srcObject;
+                            break;
+                        case EETypeElementType.UInt16:
+                            doubleValue = (double)(ushort)srcObject;
+                            break;
+                        case EETypeElementType.Int32:
+                            doubleValue = (double)(int)srcObject;
+                            break;
+                        case EETypeElementType.UInt32:
+                            doubleValue = (double)(uint)srcObject;
+                            break;
+                        case EETypeElementType.Int64:
+                            doubleValue = (double)(long)srcObject;
+                            break;
+                        case EETypeElementType.UInt64:
+                            doubleValue = (double)(ulong)srcObject;
+                            break;
+                        case EETypeElementType.Single:
+                            doubleValue = (double)(float)srcObject;
+                            break;
+                        case EETypeElementType.Double:
+                            doubleValue = (double)srcObject;
+                            break;
+                        default:
+                            goto Failure;
+                    }
+                    dstObject = doubleValue;
                     break;
 
                 default:
