@@ -28,8 +28,9 @@
 // infrastructure to support this. Detect which way we're building and provide a
 // very simple abstraction layer (handles allocating bytes only).
 #ifdef _BLD_CLR
-#include "new.hpp"
+#include <new>
 
+using std::nothrow;
 
 #define NEW_NOTHROW(_bytes) new (nothrow) BYTE[_bytes]
 #define NEW_THROWS(_bytes) new BYTE[_bytes]

@@ -17,7 +17,9 @@
 #include <clrversion.h>
 #include "resource.h"
 
-#include "new.hpp"
+#include <new>
+
+using std::nothrow;
 
 #define MODE_DUMP_ALL               0
 #define MODE_DUMP_CLASS             1
