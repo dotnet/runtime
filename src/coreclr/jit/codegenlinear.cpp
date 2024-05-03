@@ -600,8 +600,19 @@ void CodeGen::genCodeForBBlist()
         /* Both stacks should always be empty on exit from a basic block */
         noway_assert(genStackLevel == 0);
 
-#ifdef TARGET_AMD64
-        bool emitNopBeforeEHRegion = false;
+        bool emitNop = false;
+
+#ifdef FEATURE_EH_WINDOWS_X86
+        // If a try region is not succeeded by its handler, it might fall into its non-EH successor.
+        // If the try region ends with a call instruction, and we don't emit a jump to the non-EH successor,
+        // make sure we emit a NOP instead so the call instruction's return address is within the try region.
+        //
+        if (!compiler->UsesFunclets() && block->hasTryIndex() && GetEmitter()->emitIsLastInsCall())
+        {
+            EHblkDsc* const HBtab = compiler->ehGetDsc(block->getTryIndex());
+            emitNop               = (HBtab->ebdTryLast == block) && HBtab->HasCatchHandler();
+        }
+#elif defined(TARGET_AMD64)
         // On AMD64, we need to generate a NOP after a call that is the last instruction of the block, in several
         // situations, to support proper exception handling semantics. This is mostly to ensure that when the stack
         // walker computes an instruction pointer for a frame, that instruction pointer is in the correct EH region.
@@ -626,7 +637,7 @@ void CodeGen::genCodeForBBlist()
                     case BBJ_ALWAYS:
                         // We might skip generating the jump via a peephole optimization.
                         // If that happens, make sure a NOP is emitted as the last instruction in the block.
-                        emitNopBeforeEHRegion = true;
+                        emitNop = true;
                         break;
 
                     case BBJ_THROW:
@@ -651,7 +662,7 @@ void CodeGen::genCodeForBBlist()
                 }
             }
         }
-#endif // TARGET_AMD64
+#endif // defined(TARGET_AMD64)
 
 #if FEATURE_LOOP_ALIGN
         auto SetLoopAlignBackEdge = [=](const BasicBlock* block, const BasicBlock* target) {
@@ -772,12 +783,12 @@ void CodeGen::genCodeForBBlist()
                 // If this block jumps to the next one, we might be able to skip emitting the jump
                 if (block->CanRemoveJumpToNext(compiler))
                 {
-#ifdef TARGET_AMD64
-                    if (emitNopBeforeEHRegion)
+#if defined(TARGET_AMD64) || defined(FEATURE_EH_WINDOWS_X86)
+                    if (emitNop)
                     {
                         instGen(INS_nop);
                     }
-#endif // TARGET_AMD64
+#endif // defined(TARGET_AMD64) || defined(FEATURE_EH_WINDOWS_X86)
 
                     removedJmp = true;
                     break;

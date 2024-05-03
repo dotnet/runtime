@@ -922,10 +922,10 @@ void emitIns_Call(EmitCallType          callType,
                   bool                  isJump   = false);
 // clang-format on
 
-#ifdef TARGET_AMD64
 // Is the last instruction emitted a call instruction?
 bool emitIsLastInsCall();
 
+#ifdef TARGET_AMD64
 // Insert a NOP at the end of the current instruction group if the last emitted instruction was a 'call',
 // because the next instruction group will be an epilog.
 void emitOutputPreEpilogNOP();
