@@ -137,14 +137,17 @@ void FlowEdge::addLikelihood(weight_t addedLikelihood)
 //  AllSuccessorEnumerator: Construct an instance of the enumerator.
 //
 //  Arguments:
-//     comp  - Compiler instance
-//     block - The block whose successors are to be iterated
+//     comp       - Compiler instance
+//     block      - The block whose successors are to be iterated
+//     useProfile - If true, determines the order of successors visited using profile data
 //
-AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block)
+AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block, const bool useProfile /* = false */)
     : m_block(block)
 {
     m_numSuccs = 0;
-    block->VisitAllSuccs(comp, [this](BasicBlock* succ) {
+    block->VisitAllSuccs(
+        comp,
+        [this](BasicBlock* succ) {
         if (m_numSuccs < ArrLen(m_successors))
         {
             m_successors[m_numSuccs] = succ;
@@ -152,18 +155,22 @@ AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block
 
         m_numSuccs++;
         return BasicBlockVisit::Continue;
-    });
+    },
+        useProfile);
 
     if (m_numSuccs > ArrLen(m_successors))
     {
         m_pSuccessors = new (comp, CMK_BasicBlock) BasicBlock*[m_numSuccs];
 
         unsigned numSuccs = 0;
-        block->VisitAllSuccs(comp, [this, &numSuccs](BasicBlock* succ) {
+        block->VisitAllSuccs(
+            comp,
+            [this, &numSuccs](BasicBlock* succ) {
             assert(numSuccs < m_numSuccs);
             m_pSuccessors[numSuccs++] = succ;
             return BasicBlockVisit::Continue;
-        });
+        },
+            useProfile);
 
         assert(numSuccs == m_numSuccs);
     }
