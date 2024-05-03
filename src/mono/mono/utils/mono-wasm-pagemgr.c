@@ -15,10 +15,7 @@ static uint32_t
 	first_controlled_page_index = UINT32_MAX,
 	// The index of the last page we've allocated. Not all pages between this
 	//  and first_controlled_page_index belong to us, but scans can end here.
-	last_controlled_page_index = 0,
-	// When we scan for free pages we keep track of where the scan ended,
-	//  and start the next scan there.
-	free_page_scan_start = UINT32_MAX;
+	last_controlled_page_index = 0;
 static uint8_t *prev_waste_start = NULL,
 	*prev_waste_end = NULL;
 
@@ -215,19 +212,8 @@ static uint32_t
 find_n_free_pages (uint32_t page_count) {
 	// Start scanning from the beginning. This ensures we will try to grab small allocations
 	//  from the front of the page table, and large allocations from anywhere we can find.
-	// This does make scans slower though.
+	// This does make scans slower, but other approaches I tried have much worse fragmentation.
 	uint32_t result = find_n_free_pages_in_range (first_controlled_page_index, last_controlled_page_index, page_count);
-	/*
-	// If we didn't find anything, scan the remaining pages we didn't check
-	if (result == UINT32_MAX)
-		result = find_n_free_pages_in_range (first_controlled_page_index, free_page_scan_start, page_count);
-
-	if (result != UINT32_MAX)
-		free_page_scan_start = result + page_count;
-	else
-		free_page_scan_start = first_controlled_page_index;
-	*/
-
 	return result;
 }
 
@@ -239,7 +225,6 @@ mwpm_init () {
 	void *first_controlled_page_address = acquire_new_pages_initialized (MWPM_MINIMUM_PAGE_COUNT);
 	g_assert (first_controlled_page_address);
 	first_controlled_page_index = first_page_from_address (first_controlled_page_address);
-	free_page_scan_start = first_controlled_page_index;
 	is_initialized = 1;
 }
 
@@ -322,8 +307,5 @@ mwpm_free_range (void *base, size_t size) {
 		g_print ("Just freed %u pages\n", page_count);
 		print_stats ();
 	}
-	if (first_page < free_page_scan_start)
-		free_page_scan_start = first_page;
-
 	// g_print ("mwpm freed %u bytes at %u\n", size, (uint32_t)base);
 }

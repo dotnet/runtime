@@ -30,11 +30,16 @@
 // I tested with 16KB pages and it wasn't an improvement over 64KB.
 // 8KB pages produces a slight reduction in total memory usage (1.3%). 4KB is worse.
 #define MWPM_PAGE_SIZE (64 * 1024)
+
 // 4GB (even though JS can't consistently handle addresses above 2GB)
 // System.Text.JSON.Tests needs to allocate more than 2GB...
 #define MWPM_MAX_MEMORY ((1024UL * 1024UL * 1024UL) * 4UL)
+
+// The proper definition compiles down to 0 for some reason even if I put typecasts
+//  around it
 // #define MWPM_MAX_PAGES (uint32_t)(MWPM_MAX_MEMORY / MWPM_PAGE_SIZE)
-#define MWPM_MAX_PAGES (1024 * 1024)
+#define MWPM_MAX_PAGES (64 * 1024)
+
 // When allocating new zeroed pages, always allocate at least this many.
 // This ensures that we don't waste a bunch of time allocating 1-2 pages at once.
 // sbrk() also doesn't return page-aligned addresses, so this produces fewer
