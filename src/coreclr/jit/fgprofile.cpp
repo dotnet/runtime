@@ -18,26 +18,15 @@
 //   true if so
 //
 // Note:
-//   This now returns true for inlinees. We might consider preserving the
-//   old behavior for crossgen, since crossgen BBINSTRs still do inlining
-//   and don't instrument the inlinees.
+//   In most cases it is more appropriate to call fgHaveProfileWeights,
+//   since that tells you if blocks have profile-based weights.
 //
-//   Thus if BBINSTR and BBOPT do the same inlines (which can happen)
-//   profile data for an inlinee (if available) will not fully reflect
-//   the behavior of the inlinee when called from this method.
+//   This method literally checks if the runtime had a profile schema,
+//   from which we can derive weights.
 //
-//   If this inlinee was not inlined by the BBINSTR run then the
-//   profile data for the inlinee will reflect this method's influence.
-//
-//   * for ALWAYS_INLINE and FORCE_INLINE cases it is unlikely we'll find
-//     any profile data, as BBINSTR and BBOPT callers will both inline;
-//     only indirect callers will invoke the instrumented version to run.
-//   * for DISCRETIONARY_INLINE cases we may or may not find relevant
-//     data, depending, but chances are the data is relevant.
-//
-//  TieredPGO data comes from Tier0 methods, which currently do not do
-//  any inlining; thus inlinee profile data should be available and
-//  representative.
+//   Schema-based data comes from Tier0 methods, which currently do not do
+//   any inlining; thus inlinee profile data should be available and
+//   representative.
 //
 bool Compiler::fgHaveProfileData()
 {
@@ -46,6 +35,9 @@ bool Compiler::fgHaveProfileData()
 
 //------------------------------------------------------------------------
 // fgHaveProfileWeights: Check if we have a profile that has weights.
+//
+// Notes:
+//    These weights may come from instrumentation or from synthesis.
 //
 bool Compiler::fgHaveProfileWeights()
 {
@@ -1689,16 +1681,42 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
         {
             BasicBlock* intermediary = m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true);
             intermediary->SetFlags(BBF_IMPORTED);
-            intermediary->inheritWeight(block);
             FlowEdge* const newEdge = m_comp->fgAddRefPred(block, intermediary);
             intermediary->SetTargetEdge(newEdge);
             NewRelocatedProbe(intermediary, probe->source, probe->target, &leader);
             SetModifiedFlow();
 
+            // Redirect flow and figure out profile impact.
+            //
+            // We don't expect to see mixtures of profiled and unprofiled preds,
+            // but if we do, fall back to our old default behavior.
+            //
+            weight_t weight              = 0;
+            bool     allPredsHaveProfile = true;
+
             while (criticalPreds.Height() > 0)
             {
                 BasicBlock* const pred = criticalPreds.Pop();
                 m_comp->fgReplaceJumpTarget(pred, block, intermediary);
+
+                if (pred->hasProfileWeight())
+                {
+                    FlowEdge* const predIntermediaryEdge = m_comp->fgGetPredForBlock(intermediary, pred);
+                    weight += predIntermediaryEdge->getLikelyWeight();
+                }
+                else
+                {
+                    allPredsHaveProfile = false;
+                }
+            }
+
+            if (allPredsHaveProfile)
+            {
+                intermediary->setBBProfileWeight(weight);
+            }
+            else
+            {
+                intermediary->inheritWeight(block);
             }
         }
     }
@@ -2822,6 +2840,14 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
 
+    // For now we only rely on profile data when optimizing.
+    //
+    if (!opts.OptimizationEnabled())
+    {
+        JITDUMP("not optimizing, so not incorporating any profile data\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
 #ifdef DEBUG
     // Optionally run synthesis
     //
@@ -2859,6 +2885,14 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         else
         {
             JITDUMP("BBOPT not set\n");
+        }
+
+        // Is dynamic PGO active? If so, run synthesis.
+        //
+        if (fgPgoDynamic)
+        {
+            JITDUMP("Dynamic PGO active, synthesizing profile data\n");
+            ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoods);
         }
 
         // Scale the "synthetic" block weights.
@@ -2992,21 +3026,10 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 //
 // Notes:
 //   Does inlinee scaling.
-//   Handles handler entry special case.
 //
 void Compiler::fgSetProfileWeight(BasicBlock* block, weight_t profileWeight)
 {
     block->setBBProfileWeight(profileWeight);
-
-#if HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
-    // Handle a special case -- some handler entries can't have zero profile count.
-    //
-    if (this->bbIsHandlerBeg(block) && block->isRunRarely())
-    {
-        JITDUMP("Suppressing zero count for " FMT_BB " as it is a handler entry\n", block->bbNum);
-        block->makeBlockHot();
-    }
-#endif
 }
 
 //------------------------------------------------------------------------
@@ -4773,6 +4796,19 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
             verifyIncoming = false;
         }
 
+        // Original entries in OSR methods that also are
+        // loop headers.
+        //
+        // These will frequently have a profile imbalance as
+        // synthesis will have injected profile weight for
+        // method entry, but when we transform flow for OSR,
+        // only the loop back edges remain.
+        //
+        if (block == fgEntryBB)
+        {
+            verifyIncoming = false;
+        }
+
         // Handler entries
         //
         if (block->hasEHBoundaryIn())
@@ -4924,6 +4960,15 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
         }
 
         foundPreds = true;
+    }
+
+    // We almost certainly won't get the likelihoods on a BBJ_EHFINALLYRET right,
+    // so special-case BBJ_CALLFINALLYRET incoming flow.
+    //
+    if (block->isBBCallFinallyPairTail())
+    {
+        incomingLikelyWeight = block->Prev()->bbWeight;
+        foundEHPreds         = false;
     }
 
     // We almost certainly won't get the likelihoods on a BBJ_EHFINALLYRET right,

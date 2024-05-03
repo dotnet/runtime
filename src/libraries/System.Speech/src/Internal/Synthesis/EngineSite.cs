@@ -175,7 +175,7 @@ namespace System.Speech.Internal.Synthesis
                     MemoryStream memStream = new(cLen);
                     byte[] ab = new byte[cLen];
 
-#if NET7_0_OR_GREATER
+#if NET
                     stream.ReadExactly(ab);
 #else
                     int totalRead = 0;

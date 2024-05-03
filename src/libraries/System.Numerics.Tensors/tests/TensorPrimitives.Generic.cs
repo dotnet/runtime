@@ -480,8 +480,11 @@ namespace System.Numerics.Tensors.Tests
 #pragma warning disable xUnit1026 // Theory methods should use all of their parameters
         [Theory]
         [MemberData(nameof(SpanDestinationFunctionsToTest))]
-        public void SpanDestinationFunctions_ThrowsForTooShortDestination(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> _, T? __ = null)
+        public void SpanDestinationFunctions_ThrowsForTooShortDestination(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> expectedMethod, T? tolerance = null)
         {
+            _ = expectedMethod;
+            _ = tolerance;
+
             Assert.All(Helpers.TensorLengths, tensorLength =>
             {
                 using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
@@ -493,8 +496,11 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanDestinationFunctionsToTest))]
-        public void SpanDestinationFunctions_ThrowsForOverlapppingInputsWithOutputs(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> _, T? __ = null)
+        public void SpanDestinationFunctions_ThrowsForOverlapppingInputsWithOutputs(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> expectedMethod, T? tolerance = null)
         {
+            _ = expectedMethod;
+            _ = tolerance;
+
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(array.AsSpan(1, 2), array.AsSpan(0, 2)));
             AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(array.AsSpan(1, 2), array.AsSpan(2, 2)));
@@ -511,6 +517,8 @@ namespace System.Numerics.Tensors.Tests
             yield return Create(TensorPrimitives.Hypot, T.Hypot);
             yield return Create(TensorPrimitives.Ieee754Remainder, T.Ieee754Remainder);
             yield return Create(TensorPrimitives.Log, T.Log);
+            yield return Create(TensorPrimitives.MaxNumber, T.MaxNumber);
+            yield return Create(TensorPrimitives.MinNumber, T.MinNumber);
             yield return Create(TensorPrimitives.Pow, T.Pow, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13, floatTolerance: 1e-5f));
 
             static object[] Create(SpanSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T> expectedMethod, T? tolerance = null)
@@ -644,8 +652,10 @@ namespace System.Numerics.Tensors.Tests
             yield return Create(TensorPrimitives.Log, T.Log);
             yield return Create(TensorPrimitives.Max, T.Max);
             yield return Create(TensorPrimitives.MaxMagnitude, T.MaxMagnitude);
+            yield return Create(TensorPrimitives.MaxNumber, T.MaxNumber);
             yield return Create(TensorPrimitives.Min, T.Min);
             yield return Create(TensorPrimitives.MinMagnitude, T.MinMagnitude);
+            yield return Create(TensorPrimitives.MinNumber, T.MinNumber);
 
             static object[] Create(SpanScalarDestinationDelegate<T, T, T> tensorPrimitivesMethod, Func<T, T, T> expectedMethod, T? tolerance = null)
                 => new object[] { tensorPrimitivesMethod, expectedMethod, tolerance };
@@ -942,15 +952,15 @@ namespace System.Numerics.Tensors.Tests
         {
             yield return Create(TensorPrimitives.FusedMultiplyAdd, T.FusedMultiplyAdd);
             yield return Create(TensorPrimitives.Lerp, T.Lerp);
-            yield return Create(TensorPrimitives.MultiplyAddEstimate, T.FusedMultiplyAdd); // TODO: Change T.FusedMultiplyAdd to T.MultiplyAddEstimate when available
+            yield return Create(TensorPrimitives.MultiplyAddEstimate, T.FusedMultiplyAdd, T.CreateTruncating(Helpers.DefaultToleranceForEstimates)); // TODO: Change T.FusedMultiplyAdd to T.MultiplyAddEstimate when available
 
-            static object[] Create(SpanSpanSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod)
-                => new object[] { tensorPrimitivesMethod, expectedMethod };
+            static object[] Create(SpanSpanSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
+                => new object[] { tensorPrimitivesMethod, expectedMethod, tolerance };
         }
 
         [Theory]
         [MemberData(nameof(SpanSpanSpanDestinationFunctionsToTest))]
-        public void SpanSpanSpanDestination_AllLengths(SpanSpanSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod)
+        public void SpanSpanSpanDestination_AllLengths(SpanSpanSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
         {
             Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
             {
@@ -962,14 +972,14 @@ namespace System.Numerics.Tensors.Tests
                 tensorPrimitivesMethod(x, y, z, destination);
                 for (int i = 0; i < tensorLength; i++)
                 {
-                    AssertEqualTolerance(expectedMethod(x[i], y[i], z[i]), destination[i]);
+                    AssertEqualTolerance(expectedMethod(x[i], y[i], z[i]), destination[i], tolerance);
                 }
             });
         }
 
         [Theory]
         [MemberData(nameof(SpanSpanSpanDestinationFunctionsToTest))]
-        public void SpanSpanSpanDestination_InPlace(SpanSpanSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod)
+        public void SpanSpanSpanDestination_InPlace(SpanSpanSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
         {
             Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
             {
@@ -980,14 +990,14 @@ namespace System.Numerics.Tensors.Tests
 
                 for (int i = 0; i < tensorLength; i++)
                 {
-                    AssertEqualTolerance(expectedMethod(xOrig[i], xOrig[i], xOrig[i]), x[i]);
+                    AssertEqualTolerance(expectedMethod(xOrig[i], xOrig[i], xOrig[i]), x[i], tolerance);
                 }
             });
         }
 
         [Theory]
         [MemberData(nameof(SpanSpanSpanDestinationFunctionsToTest))]
-        public void SpanSpanSpanDestination_SpecialValues(SpanSpanSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod)
+        public void SpanSpanSpanDestination_SpecialValues(SpanSpanSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
         {
             Assert.All(Helpers.TensorLengths, tensorLength =>
             {
@@ -1001,7 +1011,7 @@ namespace System.Numerics.Tensors.Tests
                     tensorPrimitivesMethod(x.Span, y.Span, z.Span, destination.Span);
                     for (int i = 0; i < tensorLength; i++)
                     {
-                        AssertEqualTolerance(expectedMethod(x[i], y[i], z[i]), destination[i]);
+                        AssertEqualTolerance(expectedMethod(x[i], y[i], z[i]), destination[i], tolerance);
                     }
                 }, x);
 
@@ -1010,7 +1020,7 @@ namespace System.Numerics.Tensors.Tests
                     tensorPrimitivesMethod(x.Span, y.Span, z.Span, destination.Span);
                     for (int i = 0; i < tensorLength; i++)
                     {
-                        AssertEqualTolerance(expectedMethod(x[i], y[i], z[i]), destination[i]);
+                        AssertEqualTolerance(expectedMethod(x[i], y[i], z[i]), destination[i], tolerance);
                     }
                 }, y);
 
@@ -1019,7 +1029,7 @@ namespace System.Numerics.Tensors.Tests
                     tensorPrimitivesMethod(x.Span, y.Span, z.Span, destination.Span);
                     for (int i = 0; i < tensorLength; i++)
                     {
-                        AssertEqualTolerance(expectedMethod(x[i], y[i], z[i]), destination[i]);
+                        AssertEqualTolerance(expectedMethod(x[i], y[i], z[i]), destination[i], tolerance);
                     }
                 }, z);
             });
@@ -1027,8 +1037,11 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanSpanSpanDestinationFunctionsToTest))]
-        public void SpanSpanSpanDestination_ThrowsForMismatchedLengths(SpanSpanSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> _)
+        public void SpanSpanSpanDestination_ThrowsForMismatchedLengths(SpanSpanSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
         {
+            _ = expectedMethod;
+            _ = tolerance;
+
             Assert.All(Helpers.TensorLengths, tensorLength =>
             {
                 using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
@@ -1047,8 +1060,11 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanSpanSpanDestinationFunctionsToTest))]
-        public void SpanSpanSpanDestination_ThrowsForTooShortDestination(SpanSpanSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> _)
+        public void SpanSpanSpanDestination_ThrowsForTooShortDestination(SpanSpanSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
         {
+            _ = expectedMethod;
+            _ = tolerance;
+
             Assert.All(Helpers.TensorLengths, tensorLength =>
             {
                 using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
@@ -1062,8 +1078,11 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanSpanSpanDestinationFunctionsToTest))]
-        public void SpanSpanSpanDestination_ThrowsForOverlapppingInputsWithOutputs(SpanSpanSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> _)
+        public void SpanSpanSpanDestination_ThrowsForOverlapppingInputsWithOutputs(SpanSpanSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
         {
+            _ = expectedMethod;
+            _ = tolerance;
+
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(array.AsSpan(1, 2), array.AsSpan(5, 2), array.AsSpan(7, 2), array.AsSpan(0, 2)));
             AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(array.AsSpan(1, 2), array.AsSpan(5, 2), array.AsSpan(7, 2), array.AsSpan(2, 2)));
@@ -1078,15 +1097,15 @@ namespace System.Numerics.Tensors.Tests
         {
             yield return Create(TensorPrimitives.FusedMultiplyAdd, T.FusedMultiplyAdd);
             yield return Create(TensorPrimitives.Lerp, T.Lerp);
-            yield return Create(TensorPrimitives.MultiplyAddEstimate, T.FusedMultiplyAdd); // TODO: Change T.FusedMultiplyAdd to T.MultiplyAddEstimate when available
+            yield return Create(TensorPrimitives.MultiplyAddEstimate, T.FusedMultiplyAdd, T.CreateTruncating(Helpers.DefaultToleranceForEstimates)); // TODO: Change T.FusedMultiplyAdd to T.MultiplyAddEstimate when available
 
-            static object[] Create(SpanSpanScalarDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod)
-                => new object[] { tensorPrimitivesMethod, expectedMethod };
+            static object[] Create(SpanSpanScalarDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
+                => new object[] { tensorPrimitivesMethod, expectedMethod, tolerance };
         }
 
         [Theory]
         [MemberData(nameof(SpanSpanScalarDestinationFunctionsToTest))]
-        public void SpanSpanScalarDestination_AllLengths(SpanSpanScalarDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod)
+        public void SpanSpanScalarDestination_AllLengths(SpanSpanScalarDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
         {
             Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
             {
@@ -1099,14 +1118,14 @@ namespace System.Numerics.Tensors.Tests
 
                 for (int i = 0; i < tensorLength; i++)
                 {
-                    AssertEqualTolerance(expectedMethod(x[i], y[i], z), destination[i]);
+                    AssertEqualTolerance(expectedMethod(x[i], y[i], z), destination[i], tolerance);
                 }
             });
         }
 
         [Theory]
         [MemberData(nameof(SpanSpanScalarDestinationFunctionsToTest))]
-        public void SpanSpanScalarDestination_InPlace(SpanSpanScalarDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod)
+        public void SpanSpanScalarDestination_InPlace(SpanSpanScalarDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
         {
             Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
             {
@@ -1118,14 +1137,14 @@ namespace System.Numerics.Tensors.Tests
 
                 for (int i = 0; i < tensorLength; i++)
                 {
-                    AssertEqualTolerance(expectedMethod(xOrig[i], xOrig[i], z), x[i]);
+                    AssertEqualTolerance(expectedMethod(xOrig[i], xOrig[i], z), x[i], tolerance);
                 }
             });
         }
 
         [Theory]
         [MemberData(nameof(SpanSpanScalarDestinationFunctionsToTest))]
-        public void SpanSpanScalarDestination_SpecialValues(SpanSpanScalarDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod)
+        public void SpanSpanScalarDestination_SpecialValues(SpanSpanScalarDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
         {
             Assert.All(Helpers.TensorLengths, tensorLength =>
             {
@@ -1139,7 +1158,7 @@ namespace System.Numerics.Tensors.Tests
                     tensorPrimitivesMethod(x.Span, y.Span, z, destination.Span);
                     for (int i = 0; i < tensorLength; i++)
                     {
-                        AssertEqualTolerance(expectedMethod(x[i], y[i], z), destination[i]);
+                        AssertEqualTolerance(expectedMethod(x[i], y[i], z), destination[i], tolerance);
                     }
                 }, x);
 
@@ -1148,7 +1167,7 @@ namespace System.Numerics.Tensors.Tests
                     tensorPrimitivesMethod(x.Span, y.Span, z, destination.Span);
                     for (int i = 0; i < tensorLength; i++)
                     {
-                        AssertEqualTolerance(expectedMethod(x[i], y[i], z), destination[i]);
+                        AssertEqualTolerance(expectedMethod(x[i], y[i], z), destination[i], tolerance);
                     }
                 }, y);
             });
@@ -1156,8 +1175,11 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanSpanScalarDestinationFunctionsToTest))]
-        public void SpanSpanScalarDestination_ThrowsForTooShortDestination(SpanSpanScalarDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> _)
+        public void SpanSpanScalarDestination_ThrowsForTooShortDestination(SpanSpanScalarDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
         {
+            _ = expectedMethod;
+            _ = tolerance;
+
             Assert.All(Helpers.TensorLengths, tensorLength =>
             {
                 using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
@@ -1171,8 +1193,11 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanSpanScalarDestinationFunctionsToTest))]
-        public void SpanSpanScalarDestination_ThrowsForOverlapppingInputsWithOutputs(SpanSpanScalarDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> _)
+        public void SpanSpanScalarDestination_ThrowsForOverlapppingInputsWithOutputs(SpanSpanScalarDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
         {
+            _ = expectedMethod;
+            _ = tolerance;
+
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(array.AsSpan(1, 2), array.AsSpan(4, 2), default, array.AsSpan(0, 2)));
             AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(array.AsSpan(1, 2), array.AsSpan(4, 2), default, array.AsSpan(2, 2)));
@@ -1186,15 +1211,15 @@ namespace System.Numerics.Tensors.Tests
         {
             yield return Create(TensorPrimitives.FusedMultiplyAdd, T.FusedMultiplyAdd);
             yield return Create(TensorPrimitives.Lerp, T.Lerp);
-            yield return Create(TensorPrimitives.MultiplyAddEstimate, T.FusedMultiplyAdd); // TODO: Change T.FusedMultiplyAdd to T.MultiplyAddEstimate when available
+            yield return Create(TensorPrimitives.MultiplyAddEstimate, T.FusedMultiplyAdd, T.CreateTruncating(Helpers.DefaultToleranceForEstimates)); // TODO: Change T.FusedMultiplyAdd to T.MultiplyAddEstimate when available
 
-            static object[] Create(SpanScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod)
+            static object[] Create(SpanScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
                 => new object[] { tensorPrimitivesMethod, expectedMethod };
         }
 
         [Theory]
         [MemberData(nameof(SpanScalarSpanDestinationFunctionsToTest))]
-        public void SpanScalarSpanDestination_AllLengths(SpanScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod)
+        public void SpanScalarSpanDestination_AllLengths(SpanScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
         {
             Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
             {
@@ -1207,14 +1232,14 @@ namespace System.Numerics.Tensors.Tests
 
                 for (int i = 0; i < tensorLength; i++)
                 {
-                    AssertEqualTolerance(expectedMethod(x[i], y, z[i]), destination[i]);
+                    AssertEqualTolerance(expectedMethod(x[i], y, z[i]), destination[i], tolerance);
                 }
             });
         }
 
         [Theory]
         [MemberData(nameof(SpanScalarSpanDestinationFunctionsToTest))]
-        public void SpanScalarSpanDestination_InPlace(SpanScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod)
+        public void SpanScalarSpanDestination_InPlace(SpanScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
         {
             Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
             {
@@ -1226,14 +1251,14 @@ namespace System.Numerics.Tensors.Tests
 
                 for (int i = 0; i < tensorLength; i++)
                 {
-                    AssertEqualTolerance(expectedMethod(xOrig[i], y, xOrig[i]), x[i]);
+                    AssertEqualTolerance(expectedMethod(xOrig[i], y, xOrig[i]), x[i], tolerance);
                 }
             });
         }
 
         [Theory]
         [MemberData(nameof(SpanScalarSpanDestinationFunctionsToTest))]
-        public void SpanScalarSpanDestination_SpecialValues(SpanScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod)
+        public void SpanScalarSpanDestination_SpecialValues(SpanScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
         {
             Assert.All(Helpers.TensorLengths, tensorLength =>
             {
@@ -1247,7 +1272,7 @@ namespace System.Numerics.Tensors.Tests
                     tensorPrimitivesMethod(x.Span, y, z.Span, destination.Span);
                     for (int i = 0; i < tensorLength; i++)
                     {
-                        AssertEqualTolerance(expectedMethod(x[i], y, z[i]), destination[i]);
+                        AssertEqualTolerance(expectedMethod(x[i], y, z[i]), destination[i], tolerance);
                     }
                 }, x);
 
@@ -1256,7 +1281,7 @@ namespace System.Numerics.Tensors.Tests
                     tensorPrimitivesMethod(x.Span, y, z.Span, destination.Span);
                     for (int i = 0; i < tensorLength; i++)
                     {
-                        AssertEqualTolerance(expectedMethod(x[i], y, z[i]), destination[i]);
+                        AssertEqualTolerance(expectedMethod(x[i], y, z[i]), destination[i], tolerance);
                     }
                 }, z);
             });
@@ -1264,8 +1289,11 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanScalarSpanDestinationFunctionsToTest))]
-        public void SpanScalarSpanDestination_ThrowsForTooShortDestination(SpanScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> _)
+        public void SpanScalarSpanDestination_ThrowsForTooShortDestination(SpanScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
         {
+            _ = expectedMethod;
+            _ = tolerance;
+
             Assert.All(Helpers.TensorLengths, tensorLength =>
             {
                 using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
@@ -1279,8 +1307,11 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanScalarSpanDestinationFunctionsToTest))]
-        public void SpanScalarSpanDestination_ThrowsForOverlapppingInputsWithOutputs(SpanScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> _)
+        public void SpanScalarSpanDestination_ThrowsForOverlapppingInputsWithOutputs(SpanScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
         {
+            _ = expectedMethod;
+            _ = tolerance;
+
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(array.AsSpan(1, 2), default, array.AsSpan(4, 2), array.AsSpan(0, 2)));
             AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(array.AsSpan(1, 2), default, array.AsSpan(4, 2), array.AsSpan(2, 2)));
@@ -1806,8 +1837,10 @@ namespace System.Numerics.Tensors.Tests
             yield return Create(TensorPrimitives.BitwiseOr, (x, y) => x | y);
             yield return Create(TensorPrimitives.Max, T.Max);
             yield return Create(TensorPrimitives.MaxMagnitude, T.MaxMagnitude);
+            yield return Create(TensorPrimitives.MaxNumber, T.MaxNumber);
             yield return Create(TensorPrimitives.Min, T.Min);
             yield return Create(TensorPrimitives.MinMagnitude, T.MinMagnitude);
+            yield return Create(TensorPrimitives.MinNumber, T.MinNumber);
             yield return Create(TensorPrimitives.Xor, (x, y) => x ^ y);
 
             static object[] Create(SpanScalarDestinationDelegate<T, T, T> tensorPrimitivesMethod, Func<T, T, T> expectedMethod)
