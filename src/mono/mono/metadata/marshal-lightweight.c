@@ -2355,6 +2355,8 @@ unsafe_accessor_target_type_forbidden (MonoType *target_type)
 	case MONO_TYPE_VOID:
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
 		return TRUE;
 	default:
 		return FALSE;
@@ -2422,16 +2424,17 @@ emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_m
 	}
 
 	MonoType *target_type = sig->ret; // for constructors the return type is the target type
-	if (target_type == NULL || m_type_is_byref (target_type) || unsafe_accessor_target_type_forbidden (target_type)) {
-		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
-		return;
-	}
-
 	MonoClass *target_class = mono_class_from_mono_type_internal (target_type);
 
 	ERROR_DECL(find_method_error);
 	if (accessor_method->is_inflated) {
 		sig =  update_signature(accessor_method);
+		target_type = sig->ret;
+	}
+
+	if (target_type == NULL || m_type_is_byref (target_type) || unsafe_accessor_target_type_forbidden (target_type)) {
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
+		return;
 	}
 
 	MonoMethodSignature *member_sig = ctor_sig_from_accessor_sig (mb, sig, ctx);
@@ -2467,10 +2470,7 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor
 	// We explicitly allow calling a constructor as if it was an instance method, but we need some hacks in a couple of places
 	gboolean ctor_as_method = !strcmp (member_name, ".ctor");
 
-	if (sig->param_count < 1 || sig->params[0] == NULL || unsafe_accessor_target_type_forbidden (sig->params[0])) {
-		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
-		return;
-	}
+	
 
 	MonoType *target_type = sig->params[0];
 	gboolean hasthis = kind == MONO_UNSAFE_ACCESSOR_METHOD;
@@ -2484,6 +2484,12 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor
 	ERROR_DECL(find_method_error);
 	if (accessor_method->is_inflated) {
 		sig =  update_signature(accessor_method);
+		target_type = sig->params[0];
+	}
+
+	if (sig->param_count < 1 || target_type == NULL || unsafe_accessor_target_type_forbidden (target_type)) {
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
+		return;
 	}
 
 	MonoMethodSignature *member_sig = method_sig_from_accessor_sig (mb, hasthis, sig, ctx);
