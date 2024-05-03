@@ -5641,7 +5641,7 @@ void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNu
     }
     else
     {
-        regNumber tmpReg = tmpRegProvider->GetSingleTempReg();
+        regNumber tmpReg = codeGen->internalRegisters.GetSingle(tmpRegProvider);
         assert(isFloatReg(tmpReg));
 
         // Extract upper 4 bytes from data
@@ -10102,7 +10102,7 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName) con
                 suffix = 'd';
                 goto APPEND_SUFFIX;
             }
-            rbc        = (rbc + 1) % 2;
+            rbc ^= 1;
             rb[rbc][0] = 'e';
             rb[rbc][1] = rn[1];
             rb[rbc][2] = rn[2];
@@ -10133,7 +10133,7 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName) con
             {
                 suffix = 'b';
             APPEND_SUFFIX:
-                rbc        = (rbc + 1) % 2;
+                rbc ^= 1;
                 rb[rbc][0] = rn[0];
                 rb[rbc][1] = rn[1];
                 if (rn[2])
@@ -10151,7 +10151,7 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName) con
             }
             else
             {
-                rbc        = (rbc + 1) % 2;
+                rbc ^= 1;
                 rb[rbc][0] = rn[1];
                 if (reg < 4)
                 {
@@ -10168,7 +10168,7 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName) con
 #endif // TARGET_AMD64
 
 #if defined(TARGET_X86)
-            rbc        = (rbc + 1) % 2;
+            rbc ^= 1;
             rb[rbc][0] = rn[1];
             rb[rbc][1] = 'l';
             strcpy_s(&rb[rbc][2], sizeof(rb[0]) - 2, rn + 3);

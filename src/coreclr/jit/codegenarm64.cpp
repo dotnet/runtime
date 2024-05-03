@@ -2372,7 +2372,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             else
             {
                 // Get a temp integer register to compute long address.
-                regNumber addrReg = tree->GetSingleTempReg();
+                regNumber addrReg = internalRegisters.GetSingle(tree);
 
                 // We must load the FP constant from the constant pool
                 // Emit a data section constant for the float or double constant.
@@ -2407,7 +2407,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                     else
                     {
                         // Get a temp integer register to compute long address.
-                        regNumber addrReg = tree->GetSingleTempReg();
+                        regNumber addrReg = internalRegisters.GetSingle(tree);
 
                         simd8_t constValue;
                         memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd8_t));
@@ -2431,7 +2431,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                     else
                     {
                         // Get a temp integer register to compute long address.
-                        regNumber addrReg = tree->GetSingleTempReg();
+                        regNumber addrReg = internalRegisters.GetSingle(tree);
 
                         simd16_t constValue = {};
                         memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd12_t));
@@ -2455,7 +2455,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                     else
                     {
                         // Get a temp integer register to compute long address.
-                        regNumber addrReg = tree->GetSingleTempReg();
+                        regNumber addrReg = internalRegisters.GetSingle(tree);
 
                         simd16_t constValue;
                         memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd16_t));
@@ -3132,12 +3132,12 @@ void CodeGen::genLclHeap(GenTree* tree)
         // since we don't need any internal registers.
         if (compiler->info.compInitMem)
         {
-            assert(tree->AvailableTempRegCount() == 0);
+            assert(internalRegisters.Count(tree) == 0);
             regCnt = targetReg;
         }
         else
         {
-            regCnt = tree->ExtractTempReg();
+            regCnt = internalRegisters.Extract(tree);
             inst_Mov(size->TypeGet(), regCnt, targetReg, /* canSkip */ true);
         }
 
@@ -3254,12 +3254,12 @@ void CodeGen::genLclHeap(GenTree* tree)
         assert(regCnt == REG_NA);
         if (compiler->info.compInitMem)
         {
-            assert(tree->AvailableTempRegCount() == 0);
+            assert(internalRegisters.Count(tree) == 0);
             regCnt = targetReg;
         }
         else
         {
-            regCnt = tree->ExtractTempReg();
+            regCnt = internalRegisters.Extract(tree);
         }
         instGen_Set_Reg_To_Imm(((unsigned int)amount == amount) ? EA_4BYTE : EA_8BYTE, regCnt, amount);
     }
@@ -3323,7 +3323,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         //
 
         // Setup the regTmp
-        regNumber regTmp = tree->GetSingleTempReg();
+        regNumber regTmp = internalRegisters.GetSingle(tree);
 
         BasicBlock* loop = genCreateTempLabel();
         BasicBlock* done = genCreateTempLabel();
@@ -3668,7 +3668,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     unsigned     slots  = layout->GetSlotCount();
 
     // Temp register(s) used to perform the sequence of loads and stores.
-    regNumber tmpReg  = cpObjNode->ExtractTempReg(RBM_ALLINT);
+    regNumber tmpReg  = internalRegisters.Extract(cpObjNode, RBM_ALLINT);
     regNumber tmpReg2 = REG_NA;
 
     assert(genIsValidIntReg(tmpReg));
@@ -3677,7 +3677,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 
     if (slots > 1)
     {
-        tmpReg2 = cpObjNode->ExtractTempReg(RBM_ALLINT);
+        tmpReg2 = internalRegisters.Extract(cpObjNode, RBM_ALLINT);
         assert(tmpReg2 != tmpReg);
         assert(genIsValidIntReg(tmpReg2));
         assert(tmpReg2 != REG_WRITE_BARRIER_DST_BYREF);
@@ -3730,8 +3730,8 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         regNumber tmpSimdReg2 = REG_NA;
         if ((slots >= 4) && compiler->IsBaselineSimdIsaSupported())
         {
-            tmpSimdReg1 = cpObjNode->ExtractTempReg(RBM_ALLFLOAT);
-            tmpSimdReg2 = cpObjNode->ExtractTempReg(RBM_ALLFLOAT);
+            tmpSimdReg1 = internalRegisters.Extract(cpObjNode, RBM_ALLFLOAT);
+            tmpSimdReg2 = internalRegisters.Extract(cpObjNode, RBM_ALLFLOAT);
         }
 
         unsigned i = 0;
@@ -3810,7 +3810,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
     regNumber idxReg  = treeNode->AsOp()->gtOp1->GetRegNum();
     regNumber baseReg = treeNode->AsOp()->gtOp2->GetRegNum();
 
-    regNumber tmpReg = treeNode->GetSingleTempReg();
+    regNumber tmpReg = internalRegisters.GetSingle(treeNode);
 
     // load the ip-relative offset (which is relative to start of fgFirstBB)
     GetEmitter()->emitIns_R_R_R(INS_ldr, EA_4BYTE, baseReg, baseReg, idxReg, INS_OPTS_LSL);
@@ -3869,7 +3869,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
             case GT_XAND:
             {
                 // Grab a temp reg to perform `MVN` for dataReg first.
-                regNumber tempReg = treeNode->GetSingleTempReg();
+                regNumber tempReg = internalRegisters.GetSingle(treeNode);
                 GetEmitter()->emitIns_R_R(INS_mvn, dataSize, tempReg, dataReg);
                 GetEmitter()->emitIns_R_R_R(INS_ldclral, dataSize, tempReg, (targetReg == REG_NA) ? REG_ZR : targetReg,
                                             addrReg);
@@ -3902,9 +3902,10 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
         // These are imported normally if Atomics aren't supported.
         assert(!treeNode->OperIs(GT_XORR, GT_XAND));
 
-        regNumber exResultReg  = treeNode->ExtractTempReg(RBM_ALLINT);
-        regNumber storeDataReg = (treeNode->OperGet() == GT_XCHG) ? dataReg : treeNode->ExtractTempReg(RBM_ALLINT);
-        regNumber loadReg      = (targetReg != REG_NA) ? targetReg : storeDataReg;
+        regNumber exResultReg = internalRegisters.Extract(treeNode, RBM_ALLINT);
+        regNumber storeDataReg =
+            (treeNode->OperGet() == GT_XCHG) ? dataReg : internalRegisters.Extract(treeNode, RBM_ALLINT);
+        regNumber loadReg = (targetReg != REG_NA) ? targetReg : storeDataReg;
 
         // Check allocator assumptions
         //
@@ -4055,7 +4056,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     }
     else
     {
-        regNumber exResultReg = treeNode->ExtractTempReg(RBM_ALLINT);
+        regNumber exResultReg = internalRegisters.Extract(treeNode, RBM_ALLINT);
 
         // Check allocator assumptions
         //
@@ -4600,7 +4601,7 @@ void CodeGen::genCkfinite(GenTree* treeNode)
     emitter* emit = GetEmitter();
 
     // Extract exponent into a register.
-    regNumber intReg = treeNode->GetSingleTempReg();
+    regNumber intReg = internalRegisters.GetSingle(treeNode);
     regNumber fpReg  = genConsumeReg(op1);
 
     inst_Mov(targetType, intReg, fpReg, /* canSkip */ false, emitActualTypeSize(treeNode));
@@ -5351,7 +5352,7 @@ void CodeGen::genStoreIndTypeSimd12(GenTreeStoreInd* treeNode)
     regNumber dataReg = genConsumeReg(data);
 
     // Need an additional integer register to extract upper 4 bytes from data.
-    regNumber tmpReg = treeNode->GetSingleTempReg();
+    regNumber tmpReg = internalRegisters.GetSingle(treeNode);
 
     // 8-byte write
     GetEmitter()->emitIns_R_R(INS_str, EA_8BYTE, dataReg, addrReg);
@@ -5386,7 +5387,7 @@ void CodeGen::genLoadIndTypeSimd12(GenTreeIndir* treeNode)
     regNumber addrReg = genConsumeReg(addr);
 
     // Need an additional int register to read upper 4 bytes, which is different from targetReg
-    regNumber tmpReg = treeNode->GetSingleTempReg();
+    regNumber tmpReg = internalRegisters.GetSingle(treeNode);
 
     // 8-byte read
     GetEmitter()->emitIns_R_R(INS_ldr, EA_8BYTE, tgtReg, addrReg);

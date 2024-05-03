@@ -16,7 +16,7 @@ namespace System.IO.Hashing
     /// For methods that persist the computed numerical hash value as bytes,
     /// the value is written in the Big Endian byte order.
     /// </remarks>
-#if NET5_0_OR_GREATER
+#if NET
     [SkipLocalsInit]
 #endif
     public sealed unsafe class XxHash3 : NonCryptographicHashAlgorithm
@@ -50,7 +50,7 @@ namespace System.IO.Hashing
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is null.</exception>
         public static byte[] Hash(byte[] source, long seed)
         {
-#if NET6_0_OR_GREATER
+#if NET
             ArgumentNullException.ThrowIfNull(source);
 #else
             if (source is null)

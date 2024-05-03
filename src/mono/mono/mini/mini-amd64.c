@@ -127,7 +127,7 @@ static const char * const single_xmmregs [] = {
 const char*
 mono_arch_fregname (int reg)
 {
-	if (reg < AMD64_XMM_NREG)
+	if (reg >= 0 && reg < AMD64_XMM_NREG)
 		return single_xmmregs [reg];
 	else
 		return "unknown";
@@ -136,7 +136,7 @@ mono_arch_fregname (int reg)
 const char *
 mono_arch_xregname (int reg)
 {
-	if (reg < AMD64_XMM_NREG)
+	if (reg >= 0 && reg < AMD64_XMM_NREG)
 		return packed_xmmregs [reg];
 	else
 		return "unknown";

@@ -99,7 +99,7 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTre
             // using the same approach as in hwintrinsicxarch.cpp - adding an additional indirection level in form of a
             // branch table.
             assert(!HWIntrinsicInfo::GeneratesMultipleIns(intrin->GetHWIntrinsicId()));
-            branchTargetReg = intrin->GetSingleTempReg();
+            branchTargetReg = codeGen->internalRegisters.GetSingle(intrin);
         }
 
         endLabel = codeGen->genCreateTempLabel();
@@ -448,14 +448,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         if (intrin.op3->isContained())
                         {
                             assert(intrin.op3->IsVectorZero());
-                            if (intrin.op1->isContained())
+                            if (intrin.op1->isContained() || intrin.op1->IsMaskAllBitsSet())
                             {
                                 // We already skip importing ConditionalSelect if op1 == trueAll, however
                                 // if we still see it here, it is because we wrapped the predicated instruction
                                 // inside ConditionalSelect.
                                 // As such, no need to move the `falseReg` to `targetReg`
                                 // because the predicated instruction will eventually set it.
-                                assert(intrin.op1->IsMaskAllBitsSet());
                             }
                             else
                             {
@@ -511,11 +510,30 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         if (falseReg != embMaskOp1Reg)
                         {
-                            // None of targetReg, embMaskOp1Reg and falseReg are same. In such case, use the
-                            // "unpredicated" version of the instruction and then use "sel" to select the active lanes.
+                            // At the point, targetReg != embMaskOp1Reg != falseReg
+                            if (HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(intrinEmbMask.id))
+                            {
+                                // If the embedded instruction supports optional mask operation, use the "unpredicated"
+                                // version of the instruction, followed by "sel" to select the active lanes.
+                                GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, embMaskOp1Reg,
+                                                            embMaskOp2Reg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
+                            }
+                            else
+                            {
+                                // If the instruction just has "predicated" version, then move the "embMaskOp1Reg"
+                                // into targetReg. Next, do the predicated operation on the targetReg and last,
+                                // use "sel" to select the active lanes based on mask, and set inactive lanes
+                                // to falseReg.
 
-                            GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, embMaskOp1Reg, embMaskOp2Reg,
-                                                        opt, INS_SCALABLE_OPTS_UNPREDICATED);
+                                assert(targetReg != embMaskOp2Reg);
+                                assert(HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinEmbMask.id));
+
+                                GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, embMaskOp1Reg);
+
+                                GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
+                                                            opt);
+                            }
+
                             GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,
                                                           falseReg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
                             break;
@@ -1187,7 +1205,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         if (intrin.op1->OperIsLocal())
                         {
                             unsigned varNum = intrin.op1->AsLclVarCommon()->GetLclNum();
-                            baseReg         = node->ExtractTempReg();
+                            baseReg         = internalRegisters.Extract(node);
 
                             // Load the address of varNum
                             GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, baseReg, varNum, 0);
@@ -1207,7 +1225,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         unsigned simdInitTempVarNum = compiler->lvaSIMDInitTempVarNum;
                         noway_assert(simdInitTempVarNum != BAD_VAR_NUM);
 
-                        baseReg = node->ExtractTempReg();
+                        baseReg = internalRegisters.Extract(node);
 
                         // Load the address of simdInitTempVarNum
                         GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, baseReg, simdInitTempVarNum, 0);
