@@ -90,13 +90,13 @@
       <Sha>45dd3a73dd5b64b010c4251303b3664bb30df029</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100" Version="8.0.5">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100" Version="8.0.6">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>71359b18c2d83c01a68bf155244a65962a7e8c8e</Sha>
+      <Sha>a1cd44fdc64aa1f1c4630ddcd95580800d229180</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.emsdk" Version="8.0.5-servicing.24211.3">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.emsdk" Version="8.0.6-servicing.24252.3">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>71359b18c2d83c01a68bf155244a65962a7e8c8e</Sha>
+      <Sha>a1cd44fdc64aa1f1c4630ddcd95580800d229180</Sha>
       <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="8.0.0-alpha.1.24163.3">
@@ -104,9 +104,9 @@
       <Sha>79827eed138fd2575a8b24820b4f385ee4ffb6e6</Sha>
       <SourceBuild RepoName="source-build-reference-packages" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="8.0.0-alpha.1.24175.3">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="8.0.0-alpha.1.24216.1">
       <Uri>https://github.com/dotnet/source-build-externals</Uri>
-      <Sha>300e99190e6ae1983681694dbdd5f75f0c692081</Sha>
+      <Sha>908177a58a41532b3302c17f1e1a8cf1c1234545</Sha>
       <SourceBuild RepoName="source-build-externals" ManagedOnly="true" />
     </Dependency>
   </ProductDependencies>
@@ -354,9 +354,9 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>67613417f5e1af250e6ddfba79f8f2885d8e90fb</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="8.0.0-alpha.0.24210.1">
+    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="8.0.0-alpha.0.24229.2">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
-      <Sha>85d6e21ac1d4e0977dfd1321131be0c912d70d80</Sha>
+      <Sha>61f137aacabdbd8f279415287a2dd70e150f5eb1</Sha>
     </Dependency>
     <Dependency Name="System.Runtime.Numerics.TestData" Version="8.0.0-beta.24211.2">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>

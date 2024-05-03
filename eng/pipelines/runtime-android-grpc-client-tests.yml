@@ -43,8 +43,9 @@ extends:
             buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunGrpcTestsOnly=true /p:BuildGrpcServerDockerImage=true
             timeoutInMinutes: 180
             # extra steps, run tests
-            extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-            extraStepsParameters:
-              creator: dotnet-bot
-              extraHelixArguments: /p:RunGrpcTestsOnly=true /p:BuildGrpcServerDockerImage=true
-              testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  extraHelixArguments: /p:RunGrpcTestsOnly=true /p:BuildGrpcServerDockerImage=true
+                  testRunNamePrefixSuffix: Mono_$(_BuildConfig)

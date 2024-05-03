@@ -5,7 +5,6 @@ parameters:
   osSubgroup: ''
   nameSuffix: ''
   platform: ''
-  pgoType: ''
   runtimeVariant: ''
   librariesBinArtifactName: ''
   isOfficialBuild: false
@@ -32,7 +31,7 @@ steps:
       tarCompression: $(tarCompression)
       includeRootFolder: false
       archiveExtension: $(archiveExtension)
-      artifactName: CoreCLRProduct_${{ parameters.pgoType }}_${{ parameters.runtimeVariant }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
+      artifactName: CoreCLRProduct_${{ parameters.runtimeVariant }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
       displayName: 'CoreCLR product build'
 
   # Zip Test Build
