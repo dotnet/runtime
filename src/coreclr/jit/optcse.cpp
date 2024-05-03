@@ -3109,7 +3109,6 @@ void CSE_HeuristicRLHook::DumpMetrics()
     }
 }
 
-
 //------------------------------------------------------------------------
 // GetFeatures: extract features for this CSE
 // Arguments:
@@ -3227,7 +3226,7 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
 #endif
 #endif
 
-    int i = 0;
+    int i         = 0;
     features[i++] = type;
     features[i++] = cse->IsViable() ? 1 : 0;
     features[i++] = cse->csdLiveAcrossCall ? 1 : 0;
@@ -3258,27 +3257,12 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
 
 // These need to match the features above, and match the field name of MethodContext
 // in src/coreclr/scripts/cse_ml/jitml/method_context.py
-const char* const CSE_HeuristicRLHook::s_featureNameAndType[] =
-{
-    "type",
-    "viable",
-    "live_across_call",
-    "const",
-    "shared_const",
-    "make_cse",
-    "has_call",
-    "containable",
-    "cost_ex",
-    "cost_sz",
-    "use_count",
-    "def_count",
-    "use_wt_cnt",
-    "def_wt_cnt",
-    "distinct_locals",
-    "local_occurrences",
-    "bb_count",
-    "block_spread",
-    "enreg_count",
+const char* const CSE_HeuristicRLHook::s_featureNameAndType[] = {
+    "type",         "viable",       "live_across_call", "const",
+    "shared_const", "make_cse",     "has_call",         "containable",
+    "cost_ex",      "cost_sz",      "use_count",        "def_count",
+    "use_wt_cnt",   "def_wt_cnt",   "distinct_locals",  "local_occurrences",
+    "bb_count",     "block_spread", "enreg_count",
 };
 
 //------------------------------------------------------------------------

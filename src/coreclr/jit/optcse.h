@@ -236,13 +236,13 @@ private:
 
     enum
     {
-        rlHookTypeOther = 0,
-        rlHookTypeInt = 1,
-        rlHookTypeLong = 2,
-        rlHookTypeFloat = 3,
+        rlHookTypeOther  = 0,
+        rlHookTypeInt    = 1,
+        rlHookTypeLong   = 2,
+        rlHookTypeFloat  = 3,
         rlHookTypeDouble = 4,
         rlHookTypeStruct = 5,
-        rlHookTypeSimd = 6,
+        rlHookTypeSimd   = 6,
     };
 
 public:
