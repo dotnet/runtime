@@ -138,7 +138,6 @@ CONFIG_INTEGER(JitNoForceFallback, W("JitNoForceFallback"), 0) // Set to non-zer
                                                                // flags.
 CONFIG_INTEGER(JitNoForwardSub, W("JitNoForwardSub"), 0)       // Disables forward sub
 CONFIG_INTEGER(JitNoHoist, W("JitNoHoist"), 0)
-CONFIG_INTEGER(JitNoInline, W("JitNoInline"), 0)                   // Disables inlining of all methods
 CONFIG_INTEGER(JitNoMemoryBarriers, W("JitNoMemoryBarriers"), 0)   // If 1, don't generate memory barriers
 CONFIG_INTEGER(JitNoStructPromotion, W("JitNoStructPromotion"), 0) // Disables struct promotion 1 - for all, 2 - for
                                                                    // params.
@@ -357,6 +356,9 @@ RELEASE_CONFIG_INTEGER(EnableEHWriteThru, W("EnableEHWriteThru"), 1)
 
 // Enable the enregistration of locals that are defined or used in a multireg context.
 RELEASE_CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1)
+
+// Disables inlining of all methods
+RELEASE_CONFIG_INTEGER(JitNoInline, W("JitNoInline"), 0)
 
 // Enable EVEX encoding for SIMD instructions when AVX-512VL is available.
 CONFIG_INTEGER(JitStressEvexEncoding, W("JitStressEvexEncoding"), 0)
