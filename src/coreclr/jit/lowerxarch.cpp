@@ -10150,6 +10150,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                         {
                                             // When we are merging with zero, we can specialize
                                             // and avoid instantiating the vector constant.
+
+                                            assert(!op2->TypeIs(TYP_MASK));
                                             MakeSrcContained(node, op1);
                                         }
                                         break;

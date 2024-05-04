@@ -19912,7 +19912,25 @@ bool GenTree::isEmbeddedMaskingCompatibleHWIntrinsic() const
     if (OperIsHWIntrinsic())
     {
 #if defined(TARGET_XARCH)
-        return HWIntrinsicInfo::IsEmbMaskingCompatible(AsHWIntrinsic()->GetHWIntrinsicId());
+        NamedIntrinsic intrinsicId  = AsHWIntrinsic()->GetHWIntrinsicId();
+        var_types      simdBaseType = AsHWIntrinsic()->GetSimdBaseType();
+
+        switch (intrinsicId)
+        {
+            case NI_AVX512F_ConvertToVector256Int32:
+            case NI_AVX512F_ConvertToVector256UInt32:
+            case NI_AVX512F_ConvertToVector512Int32:
+            case NI_AVX512F_ConvertToVector512UInt32:
+            case NI_AVX512F_VL_ConvertToVector128UInt32:
+            {
+                return varTypeIsFloating(simdBaseType);
+            }
+
+            default:
+            {
+                return HWIntrinsicInfo::IsEmbMaskingCompatible(intrinsicId);
+            }
+        }
 #elif defined(TARGET_ARM64)
         return HWIntrinsicInfo::IsEmbeddedMaskedOperation(AsHWIntrinsic()->GetHWIntrinsicId()) ||
                HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(AsHWIntrinsic()->GetHWIntrinsicId());
@@ -26727,7 +26745,24 @@ bool GenTreeHWIntrinsic::OperIsMemoryStoreOrBarrier() const
 bool GenTreeHWIntrinsic::OperIsEmbBroadcastCompatible() const
 {
 #if defined(TARGET_XARCH)
-    return HWIntrinsicInfo::IsEmbBroadcastCompatible(GetHWIntrinsicId());
+    NamedIntrinsic intrinsicId  = GetHWIntrinsicId();
+    var_types      simdBaseType = GetSimdBaseType();
+
+    switch (intrinsicId)
+    {
+        case NI_AVX512F_ConvertToVector256Int32:
+        case NI_AVX512F_ConvertToVector256UInt32:
+        case NI_AVX512F_VL_ConvertToVector128UInt32:
+        {
+            return varTypeIsFloating(simdBaseType);
+        }
+
+        default:
+        {
+            return !varTypeIsSmall(simdBaseType)
+                && HWIntrinsicInfo::IsEmbBroadcastCompatible(intrinsicId);
+        }
+    }
 #else
     return false;
 #endif // TARGET_XARCH
