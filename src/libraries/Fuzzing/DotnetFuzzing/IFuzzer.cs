@@ -19,6 +19,9 @@ internal interface IFuzzer
     /// If the code under test is outside CoreLib, you may return an empty array.</summary>
     string[] TargetCoreLibPrefixes { get; }
 
+    /// <summary>Optional name of the dictionary to use to better guide the fuzzer.</summary>
+    string? Dictionary => null;
+
     /// <summary>Entry point for the fuzzer. Should exercise code paths in <see cref="TargetAssemblies"/> and/or <see cref="TargetCoreLibPrefixes"/>.</summary>
     void FuzzTarget(ReadOnlySpan<byte> bytes);
 }

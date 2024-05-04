@@ -86,6 +86,15 @@ public static class Program
 
     private static async Task PrepareOneFuzzDeploymentAsync(IFuzzer[] fuzzers, string publishDirectory, string outputDirectory)
     {
+        string[] dictionaries = Directory.GetFiles(Path.Combine(publishDirectory, "Dictionaries"))
+            .Select(Path.GetFileName)
+            .ToArray()!;
+
+        if (dictionaries.FirstOrDefault(dict => !fuzzers.Any(f => f.Dictionary == dict)) is { } unusedDictionary)
+        {
+            throw new Exception($"Dictionary '{unusedDictionary}' is not referenced by any fuzzer.");
+        }
+
         Directory.CreateDirectory(outputDirectory);
 
         await DownloadArtifactAsync(
@@ -106,13 +115,24 @@ public static class Program
                 File.Copy(file, Path.Combine(fuzzerDirectory, Path.GetFileName(file)), overwrite: true);
             }
 
+            if (fuzzer.Dictionary is string dict)
+            {
+                if (!dictionaries.Contains(dict, StringComparer.Ordinal))
+                {
+                    throw new Exception($"Fuzzer '{fuzzer.Name}' is referencing a dictionary '{fuzzer.Dictionary}' that does not exist in the publish directory.");
+                }
+
+                Directory.CreateDirectory(Path.Combine(fuzzerDirectory, "Dictionaries"));
+                File.Copy(Path.Combine(publishDirectory, "Dictionaries", dict), Path.Combine(fuzzerDirectory, "Dictionaries", dict), overwrite: true);
+            }
+
             InstrumentAssemblies(fuzzer, fuzzerDirectory);
 
             Console.WriteLine("Generating OneFuzzConfig.json");
             File.WriteAllText(Path.Combine(fuzzerDirectory, "OneFuzzConfig.json"), GenerateOneFuzzConfigJson(fuzzer));
 
             Console.WriteLine("Generating local-run.bat");
-            File.WriteAllText(Path.Combine(fuzzerDirectory, "local-run.bat"), $"%~dp0/libfuzzer-dotnet.exe --target_path=%~dp0/DotnetFuzzing.exe --target_arg={fuzzer.Name} %*");
+            File.WriteAllText(Path.Combine(fuzzerDirectory, "local-run.bat"), GenerateLocalRunHelperScript(fuzzer));
 
             Console.WriteLine();
         }
@@ -233,6 +253,10 @@ public static class Program
 
     private static string GenerateOneFuzzConfigJson(IFuzzer fuzzer)
     {
+        string? dictionaryArgument = fuzzer.Dictionary is string dict
+            ? $"\"-dict=Dictionaries/{dict}\""
+            : null;
+
         return
             $$"""
             {
@@ -257,6 +281,9 @@ public static class Program
                       "TargetOptions": [
                         "--target_path=DotnetFuzzing.exe",
                         "--target_arg={{fuzzer.Name}}"
+                      ],
+                      "FuzzingTargetOptions": [
+                        {{dictionaryArgument}}
                       ]
                     }
                   ],
@@ -274,5 +301,20 @@ public static class Program
               ]
             }
             """;
+    }
+
+    private static string GenerateLocalRunHelperScript(IFuzzer fuzzer)
+    {
+        string script = $"%~dp0/libfuzzer-dotnet.exe --target_path=%~dp0/DotnetFuzzing.exe --target_arg={fuzzer.Name}";
+
+        if (fuzzer.Dictionary is string dict)
+        {
+            script += $" -dict=%~dp0Dictionaries/{dict}";
+        }
+
+        // Pass any additional arguments to the fuzzer.
+        script += " %*";
+
+        return script;
     }
 }
