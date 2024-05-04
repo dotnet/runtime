@@ -301,7 +301,7 @@ jobs:
     - evaluate_paths
   - ${{ parameters.dependsOn }}
   - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-    - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}{6}',
+    - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}',
         parameters.runtimeFlavor,
         parameters.runtimeVariant,
         parameters.osGroup,
