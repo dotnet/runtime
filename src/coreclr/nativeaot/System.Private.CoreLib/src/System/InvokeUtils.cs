@@ -433,7 +433,7 @@ namespace System
             // directly. In all other cases, 'rawDstValue' is guaranteed to not be null.
             if (rawDstValue != null)
             {
-                dstObject = RuntimeHelpers.Box(ref *(byte*)&rawDstValue, new RuntimeTypeHandle(dstEEType));
+                dstObject = RuntimeImports.RhBox(dstEEType, ref *(byte*)rawDstValue);
             }
 
             Debug.Assert(dstObject.GetMethodTable() == dstEEType);
