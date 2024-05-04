@@ -7,8 +7,8 @@ namespace DotnetFuzzing;
 
 internal sealed class PooledBoundedMemory<T> : IDisposable where T : unmanaged
 {
-    // Default libFuzzer max_len for inputs.
-    private const int MaxLength = 4096;
+    // Default libFuzzer max_len for inputs is 4096.
+    private const int MaxLength = 4096 * 2;
 
     private static readonly PooledBoundedMemory<T>?[] s_memoryWithPoisonBefore = new PooledBoundedMemory<T>?[MaxLength + 1];
     private static readonly PooledBoundedMemory<T>?[] s_memoryWithPoisonAfter = new PooledBoundedMemory<T>?[MaxLength + 1];
