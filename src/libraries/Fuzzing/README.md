@@ -74,9 +74,9 @@ As an example, let's test that `IPAddress.TryParse` never throws on invalid inpu
 ```c#
 internal sealed class IPAddressFuzzer : IFuzzer
 {
+    public string BlameAlias => "your-alias";
     public string[] TargetAssemblies => ["System.Net.Primitives"];
     public string[] TargetCoreLibPrefixes => [];
-    public string BlameAlias => "your-alias";
 
     public void FuzzTarget(ReadOnlySpan<byte> bytes)
     {
@@ -85,9 +85,9 @@ internal sealed class IPAddressFuzzer : IFuzzer
 }
 ```
 
+- `BlameAlias` specifies who should be assigned work items if automated fuzzing discovers a bug.
 - `TargetAssemblies` is a list of assemblies where the tested code lives and that must be instrumented.
 - `TargetCoreLibPrefixes` is the same, but for types/namespaces in `System.Private.CoreLib`.
-- `BlameAlias` specifies who should be assigned work items if automated fuzzing discovers a bug.
 - `FuzzTarget` is the logic that the fuzzer will run for every test input. It should exercise code from the target assemblies.
 
 Once you've created the new target, you can follow instructions above to run it locally.
