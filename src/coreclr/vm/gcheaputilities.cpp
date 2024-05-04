@@ -224,8 +224,8 @@ HRESULT LoadAndInitializeGC(LPCWSTR standaloneGCName, LPCWSTR standaloneGCPath)
     {
         HRESULT err = GetLastError();
 #ifdef LOGGING
-        LPCWSTR standaloneGCNameLogging = standaloneGCName ? standaloneGCName : L"";
-        LPCWSTR standaloneGCPathLogging = standaloneGCPath ? standaloneGCPath : L"";
+        LPCWSTR standaloneGCNameLogging = standaloneGCName ? standaloneGCName : W("");
+        LPCWSTR standaloneGCPathLogging = standaloneGCPath ? standaloneGCPath : W("");
         MAKE_UTF8PTR_FROMWIDE(standaloneGCNameUtf8, standaloneGCNameLogging);
         MAKE_UTF8PTR_FROMWIDE(standaloneGCPathUtf8, standaloneGCPathLogging);
         LOG((LF_GC, LL_FATALERROR, "Load of %s or %s failed\n", standaloneGCNameUtf8, standaloneGCPathUtf8));
