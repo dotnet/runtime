@@ -166,6 +166,22 @@ public static class Program
                 throw new Exception($"Assembly {path} not found. Make sure to run the tool from the publish directory.");
             }
 
+            byte[] current = File.ReadAllBytes(path);
+            string previousOriginal = $"{path}.original";
+            string previousInstrumented = $"{path}.instrumented";
+
+            if (File.Exists(previousOriginal) &&
+                File.Exists(previousInstrumented) &&
+                File.ReadAllBytes(previousOriginal).AsSpan().SequenceEqual(current))
+            {
+                // The assembly hasn't changed since the previous invocation of SharpFuzz.
+                File.Copy(previousInstrumented, path, overwrite: true);
+                continue;
+            }
+
+            File.Delete(previousOriginal);
+            File.Delete(previousInstrumented);
+
             using Process sharpfuzz = new()
             {
                 StartInfo = new ProcessStartInfo
@@ -191,6 +207,9 @@ public static class Program
             {
                 throw new Exception($"Failed to instrument {path}");
             }
+
+            File.WriteAllBytes(previousOriginal, current);
+            File.Copy(path, previousInstrumented);
         }
     }
 
