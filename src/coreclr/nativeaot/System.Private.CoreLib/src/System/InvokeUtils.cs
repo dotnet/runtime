@@ -131,7 +131,6 @@ namespace System
             EETypeElementType srcElementType = srcEEType->ElementType;
 
             bool boolValue;
-            char charValue;
             sbyte sbyteValue;
             byte byteValue;
             short shortValue;
@@ -158,24 +157,6 @@ namespace System
                             goto Failure;
                     }
                     rawDstValue = &boolValue;
-                    break;
-
-                case EETypeElementType.Char:
-                    switch (srcElementType)
-                    {
-                        case EETypeElementType.Char:
-                            charValue = Unsafe.As<byte, char>(ref rawSrcValue);
-                            break;
-                        case EETypeElementType.Byte:
-                            charValue = (char)rawSrcValue;
-                            break;
-                        case EETypeElementType.UInt16:
-                            charValue = (char)Unsafe.As<byte, ushort>(ref rawSrcValue);
-                            break;
-                        default:
-                            goto Failure;
-                    }
-                    rawDstValue = &charValue;
                     break;
 
                 case EETypeElementType.SByte:
@@ -221,15 +202,14 @@ namespace System
                     break;
 
                 case EETypeElementType.UInt16:
+                case EETypeElementType.Char:
                     switch (srcElementType)
                     {
-                        case EETypeElementType.Char:
-                            ushortValue = (ushort)Unsafe.As<byte, char>(ref rawSrcValue);
-                            break;
                         case EETypeElementType.Byte:
                             ushortValue = (ushort)rawSrcValue;
                             break;
                         case EETypeElementType.UInt16:
+                        case EETypeElementType.Char:
                             ushortValue = Unsafe.As<byte, ushort>(ref rawSrcValue);
                             break;
                         default:
@@ -241,9 +221,6 @@ namespace System
                 case EETypeElementType.Int32:
                     switch (srcElementType)
                     {
-                        case EETypeElementType.Char:
-                            intValue = (int)Unsafe.As<byte, char>(ref rawSrcValue);
-                            break;
                         case EETypeElementType.SByte:
                             intValue = (int)Unsafe.As<byte, sbyte>(ref rawSrcValue);
                             break;
@@ -254,6 +231,7 @@ namespace System
                             intValue = (int)Unsafe.As<byte, short>(ref rawSrcValue);
                             break;
                         case EETypeElementType.UInt16:
+                        case EETypeElementType.Char:
                             intValue = (int)Unsafe.As<byte, ushort>(ref rawSrcValue);
                             break;
                         case EETypeElementType.Int32:
@@ -268,13 +246,11 @@ namespace System
                 case EETypeElementType.UInt32:
                     switch (srcElementType)
                     {
-                        case EETypeElementType.Char:
-                            uintValue = (uint)Unsafe.As<byte, char>(ref rawSrcValue);
-                            break;
                         case EETypeElementType.Byte:
                             uintValue = (uint)rawSrcValue;
                             break;
                         case EETypeElementType.UInt16:
+                        case EETypeElementType.Char:
                             uintValue = (uint)Unsafe.As<byte, ushort>(ref rawSrcValue);
                             break;
                         case EETypeElementType.UInt32:
@@ -289,9 +265,6 @@ namespace System
                 case EETypeElementType.Int64:
                     switch (srcElementType)
                     {
-                        case EETypeElementType.Char:
-                            longValue = (long)Unsafe.As<byte, char>(ref rawSrcValue);
-                            break;
                         case EETypeElementType.SByte:
                             longValue = (long)Unsafe.As<byte, sbyte>(ref rawSrcValue);
                             break;
@@ -302,6 +275,7 @@ namespace System
                             longValue = (long)Unsafe.As<byte, short>(ref rawSrcValue);
                             break;
                         case EETypeElementType.UInt16:
+                         case EETypeElementType.Char:
                             longValue = (long)Unsafe.As<byte, ushort>(ref rawSrcValue);
                             break;
                         case EETypeElementType.Int32:
@@ -322,13 +296,11 @@ namespace System
                 case EETypeElementType.UInt64:
                     switch (srcElementType)
                     {
-                        case EETypeElementType.Char:
-                            ulongValue = (ulong)Unsafe.As<byte, char>(ref rawSrcValue);
-                            break;
                         case EETypeElementType.Byte:
                             ulongValue = (ulong)rawSrcValue;
                             break;
                         case EETypeElementType.UInt16:
+                        case EETypeElementType.Char:
                             ulongValue = (ulong)Unsafe.As<byte, ushort>(ref rawSrcValue);
                             break;
                         case EETypeElementType.UInt32:
@@ -346,9 +318,6 @@ namespace System
                 case EETypeElementType.Single:
                     switch (srcElementType)
                     {
-                        case EETypeElementType.Char:
-                            floatValue = (float)Unsafe.As<byte, char>(ref rawSrcValue);
-                            break;
                         case EETypeElementType.SByte:
                             floatValue = (float)Unsafe.As<byte, sbyte>(ref rawSrcValue);
                             break;
@@ -359,6 +328,7 @@ namespace System
                             floatValue = (float)Unsafe.As<byte, short>(ref rawSrcValue);
                             break;
                         case EETypeElementType.UInt16:
+                        case EETypeElementType.Char:
                             floatValue = (float)Unsafe.As<byte, ushort>(ref rawSrcValue);
                             break;
                         case EETypeElementType.Int32:
@@ -385,9 +355,6 @@ namespace System
                 case EETypeElementType.Double:
                     switch (srcElementType)
                     {
-                        case EETypeElementType.Char:
-                            doubleValue = (double)Unsafe.As<byte, char>(ref rawSrcValue);
-                            break;
                         case EETypeElementType.SByte:
                             doubleValue = (double)Unsafe.As<byte, sbyte>(ref rawSrcValue);
                             break;
@@ -398,6 +365,7 @@ namespace System
                             doubleValue = (double)Unsafe.As<byte, short>(ref rawSrcValue);
                             break;
                         case EETypeElementType.UInt16:
+                        case EETypeElementType.Char:
                             doubleValue = (double)Unsafe.As<byte, ushort>(ref rawSrcValue);
                             break;
                         case EETypeElementType.Int32:
