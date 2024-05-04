@@ -1758,7 +1758,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 *pDstCount = dstCount;
                 break;
             }
-
             default:
                 noway_assert(!"Not a supported as multiple consecutive register intrinsic");
         }
