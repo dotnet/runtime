@@ -130,8 +130,7 @@ namespace System
             EETypeElementType dstElementType = dstEEType->ElementType;
             EETypeElementType srcElementType = srcEEType->ElementType;
 
-            void* rawDstValue = null;
-
+            bool boolValue;
             char charValue;
             sbyte sbyteValue;
             byte byteValue;
@@ -144,8 +143,7 @@ namespace System
             float floatValue;
             double doubleValue;
 
-            Unsafe.SkipInit(out dstObject);
-
+            void* rawDstValue;
             ref byte rawSrcValue = ref RuntimeHelpers.GetRawData(srcObject);
 
             switch (dstElementType)
@@ -154,11 +152,12 @@ namespace System
                     switch (srcElementType)
                     {
                         case EETypeElementType.Boolean:
-                            dstObject = srcObject;
+                            boolValue = Unsafe.As<byte, bool>(ref rawSrcValue);
                             break;
                         default:
                             goto Failure;
                     }
+                    rawDstValue = &boolValue;
                     break;
 
                 case EETypeElementType.Char:
@@ -429,13 +428,7 @@ namespace System
                     goto Failure;
             }
 
-            // The only case where 'rawDstValue' is not set is for bool values, which set 'dstObject'
-            // directly. In all other cases, 'rawDstValue' is guaranteed to not be null.
-            if (rawDstValue != null)
-            {
-                dstObject = RuntimeImports.RhBox(dstEEType, ref *(byte*)rawDstValue);
-            }
-
+            dstObject = RuntimeImports.RhBox(dstEEType, ref *(byte*)rawDstValue);
             Debug.Assert(dstObject.GetMethodTable() == dstEEType);
             return null;
 
