@@ -132,17 +132,17 @@ namespace System
 
             void* rawDstValue = null;
 
-            Unsafe.SkipInit(out char charValue);
-            Unsafe.SkipInit(out sbyte sbyteValue);
-            Unsafe.SkipInit(out byte byteValue);
-            Unsafe.SkipInit(out short shortValue);
-            Unsafe.SkipInit(out ushort ushortValue);
-            Unsafe.SkipInit(out int intValue);
-            Unsafe.SkipInit(out uint uintValue);
-            Unsafe.SkipInit(out long longValue);
-            Unsafe.SkipInit(out ulong ulongValue);
-            Unsafe.SkipInit(out float floatValue);
-            Unsafe.SkipInit(out double doubleValue);
+            char charValue;
+            sbyte sbyteValue;
+            byte byteValue;
+            short shortValue;
+            ushort ushortValue;
+            int intValue;
+            uint uintValue;
+            long longValue;
+            ulong ulongValue;
+            float floatValue;
+            double doubleValue;
 
             Unsafe.SkipInit(out dstObject);
 
