@@ -22,6 +22,7 @@
 #include "mono-proclib.h"
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/atomic.h>
+#include <mono/utils/options.h>
 
 #include "mono-wasm-pagemgr.h"
 
@@ -36,7 +37,22 @@
 int
 mono_pagesize (void)
 {
-	return MWPM_PAGE_SIZE;
+	if (mono_opt_wasm_mmap)
+		return MWPM_PAGE_SIZE;
+
+	static int saved_pagesize = 0;
+
+	if (saved_pagesize)
+		return saved_pagesize;
+
+	// Prefer sysconf () as it's signal safe.
+#if defined (HAVE_SYSCONF) && defined (_SC_PAGESIZE)
+	saved_pagesize = sysconf (_SC_PAGESIZE);
+#else
+	saved_pagesize = getpagesize ();
+#endif
+
+	return saved_pagesize;
 }
 
 int
@@ -84,20 +100,33 @@ static void*
 valloc_impl (void *addr, size_t size, int flags, MonoMemAccountType type)
 {
 	void *ptr;
+	int mflags = 0;
+	int prot = prot_from_flags (flags);
 
 	if (!mono_valloc_can_alloc (size))
 		return NULL;
 
-	// FIXME: Make this work if the requested address range is free
-	if ((flags & MONO_MMAP_FIXED) && addr)
+	if (size == 0)
+		/* emscripten throws an exception on 0 length */
 		return NULL;
 
+	mflags |= MAP_ANONYMOUS;
+	mflags |= MAP_PRIVATE;
+
 	BEGIN_CRITICAL_SECTION;
-	// FIXME: Implement requesting a specific address
-	ptr = mwpm_alloc_range (size, 1);
+	if (mono_opt_wasm_mmap) {
+		// FIXME: Make this work if the requested address range is free
+		if ((flags & MONO_MMAP_FIXED) && addr)
+			return NULL;
+
+		ptr = mwpm_alloc_range (size, 1);
+		if (!ptr)
+			return NULL;
+	} else
+		ptr = mmap (addr, size, prot, mflags, -1, 0);
 	END_CRITICAL_SECTION;
 
-	if (!ptr)
+	if (ptr == MAP_FAILED)
 		return NULL;
 
 	mono_account_mem (type, (ssize_t)size);
@@ -118,6 +147,8 @@ mono_valloc (void *addr, size_t size, int flags, MonoMemAccountType type)
 #endif
 }
 
+static GHashTable *valloc_hash;
+
 typedef struct {
 	void *addr;
 	int size;
@@ -127,10 +158,10 @@ void*
 mono_valloc_aligned (size_t size, size_t alignment, int flags, MonoMemAccountType type)
 {
 	// We don't need padding if the alignment is compatible with the page size
-	if ((MWPM_PAGE_SIZE % alignment) == 0)
-		return mono_valloc (NULL, size, flags, type);
+	if (mono_opt_wasm_mmap && ((MWPM_PAGE_SIZE % alignment) == 0))
+		return valloc_impl (NULL, size, flags, type);
 
-	/* Allocate extra memory to be able to put the block on an aligned address */
+	/* Allocate twice the memory to be able to put the block on an aligned address */
 	char *mem = (char *) valloc_impl (NULL, size + alignment, flags, type);
 	char *aligned;
 
@@ -139,15 +170,49 @@ mono_valloc_aligned (size_t size, size_t alignment, int flags, MonoMemAccountTyp
 
 	aligned = mono_aligned_address (mem, size, alignment);
 
+	/* The mmap implementation in emscripten cannot unmap parts of regions */
+	/* Free the other two parts in when 'aligned' is freed */
+	// FIXME: This doubles the memory usage
+	if (!valloc_hash)
+		valloc_hash = g_hash_table_new (NULL, NULL);
+	VallocInfo *info = g_new0 (VallocInfo, 1);
+	info->addr = mem;
+	info->size = size + alignment;
+	g_hash_table_insert (valloc_hash, aligned, info);
+
 	return aligned;
 }
 
 int
 mono_vfree (void *addr, size_t length, MonoMemAccountType type)
 {
-	BEGIN_CRITICAL_SECTION;
-	mwpm_free_range (addr, length);
-	END_CRITICAL_SECTION;
+	VallocInfo *info = (VallocInfo*)(valloc_hash ? g_hash_table_lookup (valloc_hash, addr) : NULL);
+
+	if (info) {
+		/*
+		 * We are passed the aligned address in the middle of the mapping allocated by
+		 * mono_valloc_align (), free the original mapping.
+		 */
+		BEGIN_CRITICAL_SECTION;
+		if (mono_opt_wasm_mmap)
+			mwpm_free_range (info->addr, info->size);
+		else
+			munmap (info->addr, info->size);
+		END_CRITICAL_SECTION;
+		g_free (info);
+		g_hash_table_remove (valloc_hash, addr);
+	} else {
+		// FIXME: We could be trying to unmap part of an aligned mapping, in which case the
+		//  hash lookup failed because addr isn't exactly the start of the mapping.
+		// Ideally if the custom page manager is enabled, we won't have done aligned alloc.
+		BEGIN_CRITICAL_SECTION;
+		if (mono_opt_wasm_mmap)
+			mwpm_free_range (addr, length);
+		else
+			munmap (addr, length);
+		END_CRITICAL_SECTION;
+	}
+
 	mono_account_mem (type, -(ssize_t)length);
 
 	return 0;

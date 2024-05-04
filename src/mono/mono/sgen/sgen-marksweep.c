@@ -33,6 +33,7 @@
 #include "mono/sgen/sgen-client.h"
 #include "mono/utils/mono-memory-model.h"
 #include "mono/utils/mono-proclib.h"
+#include "mono/utils/options.h"
 
 static int ms_block_size;
 
@@ -2138,6 +2139,9 @@ major_free_swept_blocks (size_t section_reserve)
 		 * sgen_free_os_memory () asserts in mono_vfree () because windows doesn't like freeing the middle of
 		 * a VirtualAlloc ()-ed block.
 		 */
+		return;
+#elif defined(HOST_WASM)
+	if (!mono_opt_wasm_mmap)
 		return;
 #endif
 

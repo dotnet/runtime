@@ -59,6 +59,7 @@ DEFINE_BOOL_READONLY(readonly_flag, "readonly-flag", FALSE, "Example")
 
 DEFINE_BOOL(wasm_exceptions, "wasm-exceptions", FALSE, "Enable codegen for WASM exceptions")
 DEFINE_BOOL(aot_lazy_assembly_load, "aot-lazy-assembly-load", FALSE, "Load assemblies referenced by AOT images lazily")
+DEFINE_BOOL(wasm_mmap, "wasm-mmap", TRUE, "Enable custom memory manager for WASM")
 
 #if HOST_BROWSER
 DEFINE_BOOL(interp_pgo_recording, "interp-pgo-recording", FALSE, "Record interpreter tiering information for automatic PGO")

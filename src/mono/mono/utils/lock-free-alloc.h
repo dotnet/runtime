@@ -45,11 +45,8 @@ typedef struct {
 	MonoMemAccountType account_type;
 } MonoLockFreeAllocator;
 
-#ifdef HOST_WASM
-#define LOCK_FREE_ALLOC_SB_MAX_SIZE					65536
-#else
+// FIXME: On WASM the page size is 64KB, so this isn't enough.
 #define LOCK_FREE_ALLOC_SB_MAX_SIZE					16384
-#endif
 #define LOCK_FREE_ALLOC_SB_HEADER_SIZE				(sizeof (gpointer))
 #define LOCK_FREE_ALLOC_SB_USABLE_SIZE(block_size)	((block_size) - LOCK_FREE_ALLOC_SB_HEADER_SIZE)
 
