@@ -128,12 +128,6 @@ namespace System
             }
 
             EETypeElementType dstElementType = dstEEType->ElementType;
-            if (!CanPrimitiveWiden(dstElementType, srcEEType->ElementType))
-            {
-                dstObject = null;
-                return CreateChangeTypeArgumentException(srcEEType, dstEEType);
-            }
-
             EETypeElementType srcElementType = srcEEType->ElementType;
 
             void* rawDstValue = null;
@@ -152,13 +146,31 @@ namespace System
 
             Unsafe.SkipInit(out dstObject);
 
-            // This switch supports the conversions present in the table below, in 'CanPrimitiveWiden'
+            // This is the table of all supported widening conversions:
+            //
+            // Boolean (W = BOOL)
+            // Char (W = U2, CHAR, I4, U4, I8, U8, R4, R8)
+            // SByte (W = I1, I2, I4, I8, R4, R8)
+            // Byte (W = CHAR, U1, I2, U2, I4, U4, I8, U8, R4, R8)
+            // Int16 (W = I2, I4, I8, R4, R8)
+            // UInt16 (W = U2, CHAR, I4, U4, I8, U8, R4, R8)
+            // Int32 (W = I4, I8, R4, R8)
+            // UInt32 (W = U4, I8, U8, R4, R8)
+            // Int64 (W = I8, R4, R8)
+            // UInt64 (W = U8, R4, R8)
+            // Single (W = R4, R8)
+            // Double (W = R8)
             switch (dstElementType)
             {
                 case EETypeElementType.Boolean:
-
-                    // Can only be bool here
-                    dstObject = srcObject;
+                    switch (srcElementType)
+                    {
+                        case EETypeElementType.Boolean:
+                            dstObject = srcObject;
+                            break;
+                        default:
+                            goto Failure;
+                    }
                     break;
 
                 case EETypeElementType.Char:
@@ -430,36 +442,8 @@ namespace System
             return null;
 
             Failure:
-            Debug.Fail("Unexpected CorElementType: " + dstElementType + ": Not a valid widening target.");
-            return null; // This code can never be reached
-        }
-
-        private static bool CanPrimitiveWiden(EETypeElementType destType, EETypeElementType srcType)
-        {
-            Debug.Assert(destType is < EETypeElementType.ValueType and >= EETypeElementType.Boolean);
-            Debug.Assert(srcType is < EETypeElementType.ValueType and >= EETypeElementType.Boolean);
-
-            ReadOnlySpan<ushort> primitiveAttributes = [
-                0x0000, // Unknown
-                0x0000, // Void
-                0x0004, // Boolean (W = BOOL)
-                0xCf88, // Char (W = U2, CHAR, I4, U4, I8, U8, R4, R8)
-                0xC550, // SByte (W = I1, I2, I4, I8, R4, R8)
-                0xCFE8, // Byte (W = CHAR, U1, I2, U2, I4, U4, I8, U8, R4, R8)
-                0xC540, // Int16 (W = I2, I4, I8, R4, R8)
-                0xCF88, // UInt16 (W = U2, CHAR, I4, U4, I8, U8, R4, R8)
-                0xC500, // Int32 (W = I4, I8, R4, R8)
-                0xCE0B, // UInt32 (W = U4, I8, U8, R4, R8)
-                0xC400, // Int64 (W = I8, R4, R8)
-                0xC800, // UInt64 (W = U8, R4, R8)
-                0x0000, // IntPtr
-                0x0000, // UIntPtr
-                0xC000, // Single (W = R4, R8)
-                0x8000, // Double (W = R8)
-            ];
-
-            ushort mask = (ushort)(1 << (byte)destType);
-            return (primitiveAttributes[(int)srcType & 0xF] & mask) != 0;
+            dstObject = null;
+            return CreateChangeTypeArgumentException(srcEEType, dstEEType);
         }
 
         private static Exception ConvertPointerIfPossible(object srcObject, MethodTable* dstEEType, CheckArgumentSemantics semantics, out object dstPtr)
