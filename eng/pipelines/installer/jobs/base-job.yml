@@ -307,7 +307,7 @@ jobs:
         parameters.osGroup,
         parameters.osSubgroup,
         parameters.archType,
-        parameters.liveRuntimeBuildConfig }}
+        parameters.liveRuntimeBuildConfig) }}
   - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
     - libraries_build_${{ format('{0}{1}_{2}_{3}',
         parameters.osGroup,
