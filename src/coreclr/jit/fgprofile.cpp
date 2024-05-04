@@ -141,22 +141,39 @@ void Compiler::fgApplyProfileScale()
         JITDUMP("   ... no callee profile data, will use non-pgo weight to scale\n");
     }
 
-    // Ostensibly this should be fgCalledCount for the callee, but that's not available
-    // as it requires some analysis.
+    // Determine the weight of the first block preds, if any.
+    // (only happens if the first block is a loop head).
     //
-    // For most callees it will be the same as the entry block count.
-    //
-    // Note when/if we early do normalization this may need to change.
+    weight_t firstBlockPredWeight = 0;
+    for (FlowEdge* const firstBlockPred : fgFirstBB->PredEdges())
+    {
+        firstBlockPredWeight += firstBlockPred->getLikelyWeight();
+    }
+
+    // Determine the "input" weight for the callee
     //
     weight_t calleeWeight = fgFirstBB->bbWeight;
 
-    // Callee entry weight is nonzero?
+    // Callee entry weight is zero or negative (taking backedges into account)?
     // If so, just choose the smallest plausible weight.
     //
-    if (calleeWeight == BB_ZERO_WEIGHT)
+    if (calleeWeight <= firstBlockPredWeight)
     {
         calleeWeight = fgHaveProfileWeights() ? 1.0 : BB_UNITY_WEIGHT;
-        JITDUMP("   ... callee entry has weight zero, will use weight of " FMT_WT " to scale\n", calleeWeight);
+        JITDUMP("   ... callee entry has zero or negative weight, will use weight of " FMT_WT " to scale\n",
+                calleeWeight);
+        JITDUMP("Profile data could not be scaled consistently. Data %s inconsistent.\n",
+                fgPgoConsistent ? "is now" : "was already");
+
+        if (fgPgoConsistent)
+        {
+            Metrics.ProfileInconsistentInlineeScale++;
+            fgPgoConsistent = false;
+        }
+    }
+    else
+    {
+        calleeWeight -= firstBlockPredWeight;
     }
 
     // Call site has profile weight?
@@ -2829,6 +2846,14 @@ PhaseStatus Compiler::fgInstrumentMethod()
 //
 PhaseStatus Compiler::fgIncorporateProfileData()
 {
+    // For now we only rely on profile data when optimizing.
+    //
+    if (!opts.OptimizationEnabled())
+    {
+        JITDUMP("not optimizing, so not incorporating any profile data\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     // Are we doing profile stress?
     //
     if (fgStressBBProf() > 0)
