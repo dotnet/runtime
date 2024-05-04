@@ -429,7 +429,6 @@ namespace System
             }
 
             dstObject = RuntimeImports.RhBox(dstEEType, ref *(byte*)rawDstValue);
-            Debug.Assert(dstObject.GetMethodTable() == dstEEType);
             return null;
 
             Failure:
