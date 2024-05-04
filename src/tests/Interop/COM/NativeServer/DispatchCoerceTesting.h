@@ -5,17 +5,6 @@
 
 #include "Servers.h"
 
-/*template<typename T>
-HRESULT VerifyValues(_In_ const T expected, _In_ const T actual)
-{
-    return (expected == actual) ? S_OK : E_INVALIDARG;
-}
-
-VARIANTARG *NextArg(_In_ VARIANTARG *args, _Inout_ size_t &currIndex)
-{
-    return (args + (currIndex--));
-}*/
-
 class DispatchCoerceTesting : public UnknownImpl, public IDispatchCoerceTesting
 {
 private:

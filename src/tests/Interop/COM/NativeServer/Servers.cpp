@@ -3,7 +3,6 @@
 
 #include "stdafx.h"
 #include "Servers.h"
-#include <stdio.h>
 
 namespace
 {

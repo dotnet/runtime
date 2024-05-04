@@ -14,7 +14,7 @@ public class DispatchCoerceTesting : Server.Contract.IDispatchCoerceTesting
 {
     public int ReturnToManaged(short vt)
     {
-        return 42;
+        throw new NotImplementedException();
     }
 
     public int ManagedArgument(int arg)
