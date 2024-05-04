@@ -50,8 +50,7 @@ Note that this command must be ran on the published artifacts (won't work with `
 ```cmd
 cd src/libraries/Fuzzing/DotnetFuzzing
 
-dotnet publish -o publish
-publish/DotnetFuzzing.exe prepare-onefuzz deployment
+dotnet publish -o publish && publish/DotnetFuzzing.exe prepare-onefuzz deployment
 ```
 
 You can now start fuzzing by running the `local-run.bat` script in the folder of the fuzzer you are interested in.
