@@ -192,16 +192,26 @@ namespace System
                     break;
 
                 case EETypeElementType.SByte:
-
-                    // Can only be sbyte here
-                    sbyteValue = RuntimeHelpers.FastUnbox<sbyte>(srcObject);
+                    switch (srcElementType)
+                    {
+                        case EETypeElementType.SByte:
+                            sbyteValue = RuntimeHelpers.FastUnbox<sbyte>(srcObject);
+                            break;
+                        default:
+                            goto Failure;
+                    }
                     rawDstValue = &sbyteValue;
                     break;
 
                 case EETypeElementType.Byte:
-
-                    // Can only be byte here
-                    byteValue = RuntimeHelpers.FastUnbox<byte>(srcObject);
+                    switch (srcElementType)
+                    {
+                        case EETypeElementType.Byte:
+                            byteValue = RuntimeHelpers.FastUnbox<byte>(srcObject);
+                            break;
+                        default:
+                            goto Failure;
+                    }
                     rawDstValue = &byteValue;
                     break;
 
