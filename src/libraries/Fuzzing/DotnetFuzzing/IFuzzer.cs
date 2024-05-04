@@ -9,7 +9,7 @@ internal interface IFuzzer
     string Name => GetType().Name;
 
     /// <summary>Alias to assign crash report work items to.</summary>
-    string BlameAlias => "mizupan";
+    string BlameAlias { get; }
 
     /// <summary>List of assemblies that should be instrumented.
     /// If the code under test is only in CoreLib, you may return an empty array.</summary>
