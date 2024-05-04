@@ -370,7 +370,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Massive memory leak / heap fragmentation")]
         public async Task Number_AsCollectionElement_RoundTrip()
         {
             await RunAsCollectionElementTest(JsonNumberTestData.Bytes);

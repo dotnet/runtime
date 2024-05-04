@@ -47,13 +47,13 @@ namespace System.Text.Json.Tests
 {
   /*Comment before first object property*/
   /*Multiple comment line*/
-  "property1":
+  "property1": 
   /*Comment of string property value*/"stringValue",
-  "property2":
+  "property2": 
   /*Comment of object property value*/
   {}
   /*Comment in the middle of object*/,
-  "property3":
+  "property3": 
   /*Comment of array property value*/
   []
   /*Comment after the last property*/
@@ -1370,11 +1370,10 @@ namespace System.Text.Json.Tests
 
         [Theory]
         [MemberData(nameof(JsonOptions_TestData))]
-        [SkipOnPlatform(TestPlatforms.Browser, "Massive memory leak / heap fragmentation")]
         public async Task WriteLargeToStream(JsonWriterOptions options)
         {
             var stream = new MemoryStream();
-
+            
             await WriteLargeToStreamHelper(stream, options);
 
             string expectedString = GetExpectedLargeString(options);
@@ -1389,7 +1388,7 @@ namespace System.Text.Json.Tests
         {
             const int InitialGrowthSize = 256;
             var output = new FixedSizedBufferWriter(InitialGrowthSize);
-
+            
             byte[] utf8String = "this is a string long enough to overflow the buffer and cause an exception to be thrown."u8.ToArray();
 
             using var jsonUtf8 = new Utf8JsonWriter(output, options);
@@ -2745,7 +2744,6 @@ namespace System.Text.Json.Tests
 
         [Theory]
         [MemberData(nameof(JsonOptions_TestData))]
-        [SkipOnPlatform(TestPlatforms.Browser, "Massive memory leak / heap fragmentation")]
         public void WritingTooDeep(JsonWriterOptions options)
         {
             var output = new ArrayBufferWriter<byte>(1024);
@@ -2762,7 +2760,6 @@ namespace System.Text.Json.Tests
 
         [Theory]
         [MemberData(nameof(JsonOptions_TestData))]
-        [SkipOnPlatform(TestPlatforms.Browser, "Massive memory leak / heap fragmentation")]
         public void WritingTooDeepProperty(JsonWriterOptions options)
         {
             var capacity = 3 + 1000 * (11 + 1001 * options.IndentSize / 2);
@@ -3138,7 +3135,7 @@ namespace System.Text.Json.Tests
         {
             string expectedStr = "123456789012345";
 
-
+            
             var output = new ArrayBufferWriter<byte>(1024);
             using var jsonUtf8 = new Utf8JsonWriter(output, options);
 
@@ -3163,7 +3160,7 @@ namespace System.Text.Json.Tests
             ReadOnlySpan<byte> utf8PropertyName = "message"u8;
             ReadOnlySpan<byte> utf8Value = "Hello, World!"u8;
 
-
+            
             for (int i = 0; i < 32; i++)
             {
                 var output = new ArrayBufferWriter<byte>(32);
@@ -3349,7 +3346,7 @@ namespace System.Text.Json.Tests
             string propertyName = "mess><age";
             string value = "Hello,>< World!";
             string expectedStr = GetHelloWorldExpectedString(options, propertyName, value);
-
+            
             ReadOnlySpan<char> propertyNameSpan = propertyName.AsSpan();
             ReadOnlySpan<char> valueSpan = value.AsSpan();
             ReadOnlySpan<byte> propertyNameSpanUtf8 = Encoding.UTF8.GetBytes(propertyName);
@@ -3548,7 +3545,7 @@ namespace System.Text.Json.Tests
         [MemberData(nameof(JsonOptions_TestData))]
         public void WritePartialHelloWorld(JsonWriterOptions options)
         {
-
+            
             var output = new ArrayBufferWriter<byte>(10);
             using var jsonUtf8 = new Utf8JsonWriter(output, options);
 
@@ -4176,7 +4173,7 @@ namespace System.Text.Json.Tests
         {
             string value = "temp";
             string expectedStr = GetStringsExpectedString(options, value);
-
+            
             for (int i = 0; i < 3; i++)
             {
                 var output = new ArrayBufferWriter<byte>(1024);
@@ -4877,7 +4874,7 @@ namespace System.Text.Json.Tests
         {
             string expectedStr = GetStartEndWithPropertyArrayExpectedString(options);
 
-
+            
             for (int i = 0; i < 3; i++)
             {
                 var output = new ArrayBufferWriter<byte>(1024);
@@ -5126,7 +5123,6 @@ namespace System.Text.Json.Tests
 
         [Theory]
         [MemberData(nameof(WriteValue_TestData))]
-        [SkipOnPlatform(TestPlatforms.Browser, "Massive memory leak / heap fragmentation")]
         public void WriteNullValue(JsonWriterOptions options, string keyString)
         {
             string expectedStr = GetNullExpectedString(options, keyString, escape: true);
@@ -5763,7 +5759,6 @@ namespace System.Text.Json.Tests
 
         [Theory]
         [MemberData(nameof(WriteValue_TestData))]
-        [SkipOnPlatform(TestPlatforms.Browser, "Massive memory leak / heap fragmentation")]
         public void WriteGuidsValue(JsonWriterOptions options, string keyString)
         {
             const int numberOfItems = 1_000;
@@ -5818,7 +5813,6 @@ namespace System.Text.Json.Tests
 
         [Theory]
         [MemberData(nameof(WriteValue_TestData))]
-        [SkipOnPlatform(TestPlatforms.Browser, "Massive memory leak / heap fragmentation")]
         public void WriteDateTimesValue(JsonWriterOptions options, string keyString)
         {
             var random = new Random(42);
@@ -5875,7 +5869,6 @@ namespace System.Text.Json.Tests
 
         [Theory]
         [MemberData(nameof(WriteValue_TestData))]
-        [SkipOnPlatform(TestPlatforms.Browser, "Massive memory leak / heap fragmentation")]
         public void WriteDateTimeOffsetsValue(JsonWriterOptions options, string keyString)
         {
             var random = new Random(42);
@@ -5985,7 +5978,7 @@ namespace System.Text.Json.Tests
         {
             try
             {
-
+                
                 Span<byte> key;
                 Span<byte> value;
 
@@ -6015,7 +6008,7 @@ namespace System.Text.Json.Tests
         {
             try
             {
-
+                
                 Span<byte> key;
                 Span<byte> value;
 
@@ -7066,7 +7059,7 @@ namespace System.Text.Json.Tests
 
             json.WritePropertyName("property1");
 
-            CompensateWhitespaces(options.Indented, json, streamWriter);
+            CompensateWhitespaces(options.Indented, json, streamWriter); 
             CompensateNewLine(options.Indented, json, streamWriter);
             CompensateWhitespaces(options.Indented, json, streamWriter);
 
