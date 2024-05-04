@@ -19737,13 +19737,6 @@ bool GenTree::isContainableHWIntrinsic() const
             return true;
         }
 
-        case NI_Vector128_get_Zero:
-        case NI_Vector256_get_Zero:
-        {
-            // These HWIntrinsic operations are contained as part of Sse41.Insert
-            return true;
-        }
-
         case NI_SSE3_MoveAndDuplicate:
         case NI_AVX_BroadcastScalarToVector128:
         case NI_AVX2_BroadcastScalarToVector128:
@@ -27056,6 +27049,9 @@ void GenTreeHWIntrinsic::SetHWIntrinsicId(NamedIntrinsic intrinsicId)
 
     // We'll choose to trust the programmer here.
     assert((oldOperandCount == static_cast<size_t>(newOperandCount)) || newCountUnknown);
+
+    // All ids being set must be valid
+    assert(!HWIntrinsicInfo::IsInvalidNodeId(intrinsicId));
 #endif // DEBUG
 
     gtHWIntrinsicId = intrinsicId;

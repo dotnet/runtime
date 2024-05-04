@@ -82,7 +82,8 @@ enum HWIntrinsicFlag : unsigned int
     // - should be transformed in the compiler front-end, cannot reach CodeGen
     HW_Flag_NoCodeGen = 0x2,
 
-    // UNUSED = 0x4,
+    // The intrinsic is invalid as the ID of a gtNode
+    HW_Flag_InvalidNodeId = 0x4,
 
     // Select base type using the first argument type
     HW_Flag_BaseTypeFromFirstArg = 0x8,
@@ -655,7 +656,7 @@ struct HWIntrinsicInfo
     static bool RequiresCodegen(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_NoCodeGen) == 0;
+        return (flags & (HW_Flag_NoCodeGen | HW_Flag_InvalidNodeId)) == 0;
     }
 
     static bool SupportsContainment(NamedIntrinsic id)
@@ -789,7 +790,13 @@ struct HWIntrinsicInfo
     static bool HasSpecialImport(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_SpecialImport) != 0;
+        return (flags & (HW_Flag_SpecialImport | HW_Flag_InvalidNodeId)) != 0;
+    }
+
+    static bool IsInvalidNodeId(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_InvalidNodeId) != 0;
     }
 
     static bool IsMultiReg(NamedIntrinsic id)
