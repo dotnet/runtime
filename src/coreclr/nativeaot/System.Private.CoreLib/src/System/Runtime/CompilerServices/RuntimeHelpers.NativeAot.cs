@@ -206,11 +206,6 @@ namespace System.Runtime.CompilerServices
         internal static ref byte GetRawData(this object obj) =>
             ref Unsafe.As<RawData>(obj).Data;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static T FastUnbox<T>(this object obj)
-            where T : unmanaged =>
-            Unsafe.As<byte, T>(ref Unsafe.As<RawData>(obj).Data);
-
         internal static unsafe nuint GetRawObjectDataSize(this object obj)
         {
             MethodTable* pMT = GetMethodTable(obj);

@@ -146,6 +146,8 @@ namespace System
 
             Unsafe.SkipInit(out dstObject);
 
+            ref byte rawSrcValue = ref RuntimeHelpers.GetRawData(srcObject);
+
             // This is the table of all supported widening conversions:
             //
             // Boolean (W = BOOL)
@@ -177,13 +179,13 @@ namespace System
                     switch (srcElementType)
                     {
                         case EETypeElementType.Char:
-                            charValue = RuntimeHelpers.FastUnbox<char>(srcObject);
+                            charValue = Unsafe.As<byte, char>(ref rawSrcValue);
                             break;
                         case EETypeElementType.Byte:
-                            charValue = (char)RuntimeHelpers.FastUnbox<byte>(srcObject);
+                            charValue = (char)rawSrcValue;
                             break;
                         case EETypeElementType.UInt16:
-                            charValue = (char)RuntimeHelpers.FastUnbox<ushort>(srcObject);
+                            charValue = (char)Unsafe.As<byte, ushort>(ref rawSrcValue);
                             break;
                         default:
                             goto Failure;
@@ -195,7 +197,7 @@ namespace System
                     switch (srcElementType)
                     {
                         case EETypeElementType.SByte:
-                            sbyteValue = RuntimeHelpers.FastUnbox<sbyte>(srcObject);
+                            sbyteValue = Unsafe.As<byte, sbyte>(ref rawSrcValue);
                             break;
                         default:
                             goto Failure;
@@ -207,7 +209,7 @@ namespace System
                     switch (srcElementType)
                     {
                         case EETypeElementType.Byte:
-                            byteValue = RuntimeHelpers.FastUnbox<byte>(srcObject);
+                            byteValue = rawSrcValue;
                             break;
                         default:
                             goto Failure;
@@ -219,13 +221,13 @@ namespace System
                     switch (srcElementType)
                     {
                         case EETypeElementType.SByte:
-                            shortValue = (short)RuntimeHelpers.FastUnbox<sbyte>(srcObject);
+                            shortValue = (short)Unsafe.As<byte, sbyte>(ref rawSrcValue);
                             break;
                         case EETypeElementType.Byte:
-                            shortValue = (short)RuntimeHelpers.FastUnbox<byte>(srcObject);
+                            shortValue = (short)rawSrcValue;
                             break;
                         case EETypeElementType.Int16:
-                            shortValue = RuntimeHelpers.FastUnbox<short>(srcObject);
+                            shortValue = Unsafe.As<byte, short>(ref rawSrcValue);
                             break;
                         default:
                             goto Failure;
@@ -237,13 +239,13 @@ namespace System
                     switch (srcElementType)
                     {
                         case EETypeElementType.Char:
-                            ushortValue = (ushort)RuntimeHelpers.FastUnbox<char>(srcObject);
+                            ushortValue = (ushort)Unsafe.As<byte, char>(ref rawSrcValue);
                             break;
                         case EETypeElementType.Byte:
-                            ushortValue = (ushort)RuntimeHelpers.FastUnbox<byte>(srcObject);
+                            ushortValue = (ushort)rawSrcValue;
                             break;
                         case EETypeElementType.UInt16:
-                            ushortValue = RuntimeHelpers.FastUnbox<ushort>(srcObject);
+                            ushortValue = Unsafe.As<byte, ushort>(ref rawSrcValue);
                             break;
                         default:
                             goto Failure;
@@ -255,22 +257,22 @@ namespace System
                     switch (srcElementType)
                     {
                         case EETypeElementType.Char:
-                            intValue = (int)RuntimeHelpers.FastUnbox<char>(srcObject);
+                            intValue = (int)Unsafe.As<byte, char>(ref rawSrcValue);
                             break;
                         case EETypeElementType.SByte:
-                            intValue = (int)RuntimeHelpers.FastUnbox<sbyte>(srcObject);
+                            intValue = (int)Unsafe.As<byte, sbyte>(ref rawSrcValue);
                             break;
                         case EETypeElementType.Byte:
-                            intValue = (int)RuntimeHelpers.FastUnbox<byte>(srcObject);
+                            intValue = (int)rawSrcValue;
                             break;
                         case EETypeElementType.Int16:
-                            intValue = (int)RuntimeHelpers.FastUnbox<short>(srcObject);
+                            intValue = (int)Unsafe.As<byte, short>(ref rawSrcValue);
                             break;
                         case EETypeElementType.UInt16:
-                            intValue = (int)RuntimeHelpers.FastUnbox<ushort>(srcObject);
+                            intValue = (int)Unsafe.As<byte, ushort>(ref rawSrcValue);
                             break;
                         case EETypeElementType.Int32:
-                            intValue = RuntimeHelpers.FastUnbox<int>(srcObject);
+                            intValue = Unsafe.As<byte, int>(ref rawSrcValue);
                             break;
                         default:
                             goto Failure;
@@ -282,16 +284,16 @@ namespace System
                     switch (srcElementType)
                     {
                         case EETypeElementType.Char:
-                            uintValue = (uint)RuntimeHelpers.FastUnbox<char>(srcObject);
+                            uintValue = (uint)Unsafe.As<byte, char>(ref rawSrcValue);
                             break;
                         case EETypeElementType.Byte:
-                            uintValue = (uint)RuntimeHelpers.FastUnbox<byte>(srcObject);
+                            uintValue = (uint)rawSrcValue;
                             break;
                         case EETypeElementType.UInt16:
-                            uintValue = (uint)RuntimeHelpers.FastUnbox<ushort>(srcObject);
+                            uintValue = (uint)Unsafe.As<byte, ushort>(ref rawSrcValue);
                             break;
                         case EETypeElementType.UInt32:
-                            uintValue = RuntimeHelpers.FastUnbox<uint>(srcObject);
+                            uintValue = Unsafe.As<byte, uint>(ref rawSrcValue);
                             break;
                         default:
                             goto Failure;
@@ -303,28 +305,28 @@ namespace System
                     switch (srcElementType)
                     {
                         case EETypeElementType.Char:
-                            longValue = (long)RuntimeHelpers.FastUnbox<char>(srcObject);
+                            longValue = (long)Unsafe.As<byte, char>(ref rawSrcValue);
                             break;
                         case EETypeElementType.SByte:
-                            longValue = (long)RuntimeHelpers.FastUnbox<sbyte>(srcObject);
+                            longValue = (long)Unsafe.As<byte, sbyte>(ref rawSrcValue);
                             break;
                         case EETypeElementType.Byte:
-                            longValue = (long)RuntimeHelpers.FastUnbox<byte>(srcObject);
+                            longValue = (long)rawSrcValue;
                             break;
                         case EETypeElementType.Int16:
-                            longValue = (long)RuntimeHelpers.FastUnbox<short>(srcObject);
+                            longValue = (long)Unsafe.As<byte, short>(ref rawSrcValue);
                             break;
                         case EETypeElementType.UInt16:
-                            longValue = (long)RuntimeHelpers.FastUnbox<ushort>(srcObject);
+                            longValue = (long)Unsafe.As<byte, ushort>(ref rawSrcValue);
                             break;
                         case EETypeElementType.Int32:
-                            longValue = (long)RuntimeHelpers.FastUnbox<int>(srcObject);
+                            longValue = (long)Unsafe.As<byte, int>(ref rawSrcValue);
                             break;
                         case EETypeElementType.UInt32:
-                            longValue = (long)RuntimeHelpers.FastUnbox<uint>(srcObject);
+                            longValue = (long)Unsafe.As<byte, uint>(ref rawSrcValue);
                             break;
                         case EETypeElementType.Int64:
-                            longValue = RuntimeHelpers.FastUnbox<long>(srcObject);
+                            longValue = Unsafe.As<byte, long>(ref rawSrcValue);
                             break;
                         default:
                             goto Failure;
@@ -336,19 +338,19 @@ namespace System
                     switch (srcElementType)
                     {
                         case EETypeElementType.Char:
-                            ulongValue = (ulong)RuntimeHelpers.FastUnbox<char>(srcObject);
+                            ulongValue = (ulong)Unsafe.As<byte, char>(ref rawSrcValue);
                             break;
                         case EETypeElementType.Byte:
-                            ulongValue = (ulong)RuntimeHelpers.FastUnbox<byte>(srcObject);
+                            ulongValue = (ulong)rawSrcValue;
                             break;
                         case EETypeElementType.UInt16:
-                            ulongValue = (ulong)RuntimeHelpers.FastUnbox<ushort>(srcObject);
+                            ulongValue = (ulong)Unsafe.As<byte, ushort>(ref rawSrcValue);
                             break;
                         case EETypeElementType.UInt32:
-                            ulongValue = (ulong)RuntimeHelpers.FastUnbox<uint>(srcObject);
+                            ulongValue = (ulong)Unsafe.As<byte, uint>(ref rawSrcValue);
                             break;
                         case EETypeElementType.UInt64:
-                            ulongValue = RuntimeHelpers.FastUnbox<ulong>(srcObject);
+                            ulongValue = Unsafe.As<byte, ulong>(ref rawSrcValue);
                             break;
                         default:
                             goto Failure;
@@ -360,34 +362,34 @@ namespace System
                     switch (srcElementType)
                     {
                         case EETypeElementType.Char:
-                            floatValue = (float)RuntimeHelpers.FastUnbox<char>(srcObject);
+                            floatValue = (float)Unsafe.As<byte, char>(ref rawSrcValue);
                             break;
                         case EETypeElementType.SByte:
-                            floatValue = (float)RuntimeHelpers.FastUnbox<sbyte>(srcObject);
+                            floatValue = (float)Unsafe.As<byte, sbyte>(ref rawSrcValue);
                             break;
                         case EETypeElementType.Byte:
-                            floatValue = (float)RuntimeHelpers.FastUnbox<byte>(srcObject);
+                            floatValue = (float)rawSrcValue;
                             break;
                         case EETypeElementType.Int16:
-                            floatValue = (float)RuntimeHelpers.FastUnbox<short>(srcObject);
+                            floatValue = (float)Unsafe.As<byte, short>(ref rawSrcValue);
                             break;
                         case EETypeElementType.UInt16:
-                            floatValue = (float)RuntimeHelpers.FastUnbox<ushort>(srcObject);
+                            floatValue = (float)Unsafe.As<byte, ushort>(ref rawSrcValue);
                             break;
                         case EETypeElementType.Int32:
-                            floatValue = (float)RuntimeHelpers.FastUnbox<int>(srcObject);
+                            floatValue = (float)Unsafe.As<byte, int>(ref rawSrcValue);
                             break;
                         case EETypeElementType.UInt32:
-                            floatValue = (float)RuntimeHelpers.FastUnbox<uint>(srcObject);
+                            floatValue = (float)Unsafe.As<byte, uint>(ref rawSrcValue);
                             break;
                         case EETypeElementType.Int64:
-                            floatValue = (float)RuntimeHelpers.FastUnbox<long>(srcObject);
+                            floatValue = (float)Unsafe.As<byte, long>(ref rawSrcValue);
                             break;
                         case EETypeElementType.UInt64:
-                            floatValue = (float)RuntimeHelpers.FastUnbox<ulong>(srcObject);
+                            floatValue = (float)Unsafe.As<byte, ulong>(ref rawSrcValue);
                             break;
                         case EETypeElementType.Single:
-                            floatValue = RuntimeHelpers.FastUnbox<float>(srcObject);
+                            floatValue = Unsafe.As<byte, float>(ref rawSrcValue);
                             break;
                         default:
                             goto Failure;
@@ -399,37 +401,37 @@ namespace System
                     switch (srcElementType)
                     {
                         case EETypeElementType.Char:
-                            doubleValue = (double)RuntimeHelpers.FastUnbox<char>(srcObject);
+                            doubleValue = (double)Unsafe.As<byte, char>(ref rawSrcValue);
                             break;
                         case EETypeElementType.SByte:
-                            doubleValue = (double)RuntimeHelpers.FastUnbox<sbyte>(srcObject);
+                            doubleValue = (double)Unsafe.As<byte, sbyte>(ref rawSrcValue);
                             break;
                         case EETypeElementType.Byte:
-                            doubleValue = (double)RuntimeHelpers.FastUnbox<byte>(srcObject);
+                            doubleValue = (double)rawSrcValue;
                             break;
                         case EETypeElementType.Int16:
-                            doubleValue = (double)RuntimeHelpers.FastUnbox<short>(srcObject);
+                            doubleValue = (double)Unsafe.As<byte, short>(ref rawSrcValue);
                             break;
                         case EETypeElementType.UInt16:
-                            doubleValue = (double)RuntimeHelpers.FastUnbox<ushort>(srcObject);
+                            doubleValue = (double)Unsafe.As<byte, ushort>(ref rawSrcValue);
                             break;
                         case EETypeElementType.Int32:
-                            doubleValue = (double)RuntimeHelpers.FastUnbox<int>(srcObject);
+                            doubleValue = (double)Unsafe.As<byte, int>(ref rawSrcValue);
                             break;
                         case EETypeElementType.UInt32:
-                            doubleValue = (double)RuntimeHelpers.FastUnbox<uint>(srcObject);
+                            doubleValue = (double)Unsafe.As<byte, uint>(ref rawSrcValue);
                             break;
                         case EETypeElementType.Int64:
-                            doubleValue = (double)RuntimeHelpers.FastUnbox<long>(srcObject);
+                            doubleValue = (double)Unsafe.As<byte, long>(ref rawSrcValue);
                             break;
                         case EETypeElementType.UInt64:
-                            doubleValue = (double)RuntimeHelpers.FastUnbox<ulong>(srcObject);
+                            doubleValue = (double)Unsafe.As<byte, ulong>(ref rawSrcValue);
                             break;
                         case EETypeElementType.Single:
-                            doubleValue = (double)RuntimeHelpers.FastUnbox<float>(srcObject);
+                            doubleValue = (double)Unsafe.As<byte, float>(ref rawSrcValue);
                             break;
                         case EETypeElementType.Double:
-                            doubleValue = RuntimeHelpers.FastUnbox<double>(srcObject);
+                            doubleValue = Unsafe.As<byte, double>(ref rawSrcValue);
                             break;
                         default:
                             goto Failure;
