@@ -19912,10 +19912,7 @@ bool GenTree::isEmbeddedMaskingCompatibleHWIntrinsic() const
     if (OperIsHWIntrinsic())
     {
 #if defined(TARGET_XARCH)
-        // TODO-AVX512F-CQ: Expand this to the full set of APIs and make it table driven
-        // using IsEmbMaskingCompatible. For now, however, limit it to some explicit ids
-        // for prototyping purposes.
-        return (AsHWIntrinsic()->GetHWIntrinsicId() == NI_AVX512F_Add);
+        return HWIntrinsicInfo::IsEmbMaskingCompatible(AsHWIntrinsic()->GetHWIntrinsicId());
 #elif defined(TARGET_ARM64)
         return HWIntrinsicInfo::IsEmbeddedMaskedOperation(AsHWIntrinsic()->GetHWIntrinsicId()) ||
                HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(AsHWIntrinsic()->GetHWIntrinsicId());

@@ -228,8 +228,8 @@ enum HWIntrinsicFlag : unsigned int
     // The intrinsic is an embedded rounding compatible intrinsic
     HW_Flag_EmbRoundingCompatible = 0x10000000,
 
-    // The intrinsic is an embedded masking incompatible intrinsic
-    HW_Flag_EmbMaskingIncompatible = 0x20000000,
+    // The intrinsic is an embedded masking compatible intrinsic
+    HW_Flag_EmbMaskingCompatible = 0x20000000,
 #elif defined(TARGET_ARM64)
 
     // The intrinsic has an enum operand. Using this implies HW_Flag_HasImmediateOperand.
@@ -631,7 +631,7 @@ struct HWIntrinsicInfo
     static bool IsEmbMaskingCompatible(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_EmbMaskingIncompatible) == 0;
+        return (flags & HW_Flag_EmbMaskingCompatible) != 0;
     }
 #endif // TARGET_XARCH
 
