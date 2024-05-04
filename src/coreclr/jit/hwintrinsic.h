@@ -82,9 +82,7 @@ enum HWIntrinsicFlag : unsigned int
     // - should be transformed in the compiler front-end, cannot reach CodeGen
     HW_Flag_NoCodeGen = 0x2,
 
-    // Multi-instruction
-    // - that one intrinsic can generate multiple instructions
-    HW_Flag_MultiIns = 0x4,
+    // UNUSED = 0x4,
 
     // Select base type using the first argument type
     HW_Flag_BaseTypeFromFirstArg = 0x8,
@@ -660,12 +658,6 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_NoCodeGen) == 0;
     }
 
-    static bool GeneratesMultipleIns(NamedIntrinsic id)
-    {
-        HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_MultiIns) != 0;
-    }
-
     static bool SupportsContainment(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
@@ -984,7 +976,7 @@ struct HWIntrinsic final
     {
         // TODO-Arm64-Cleanup - make more categories to the table-driven framework
         bool isTableDrivenCategory = category != HW_Category_Helper;
-        bool isTableDrivenFlag = !HWIntrinsicInfo::GeneratesMultipleIns(id) && !HWIntrinsicInfo::HasSpecialCodegen(id);
+        bool isTableDrivenFlag = !HWIntrinsicInfo::HasSpecialCodegen(id);
 
         return isTableDrivenCategory && isTableDrivenFlag;
     }
