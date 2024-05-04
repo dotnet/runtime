@@ -1024,7 +1024,7 @@ public:
             }
             else
             {
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
                 assert(varTypeUsesIntReg(this) || varTypeUsesMaskReg(this));
 #else
                 assert(varTypeUsesIntReg(this));
