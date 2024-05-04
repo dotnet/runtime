@@ -222,25 +222,26 @@ namespace NetClient
             Console.WriteLine($"Calling {nameof(DispatchCoerceTesting.ReturnToManaged)} ...");
             
             // Supported types
-            VarEnum[] supportedTypes =
+            (VarEnum type, int expectedValue)[] supportedTypes =
             {
-                VarEnum.VT_I2,
-                VarEnum.VT_I4,
-                VarEnum.VT_R4,
-                VarEnum.VT_R8,
-                VarEnum.VT_CY,
-                VarEnum.VT_DATE,
-                VarEnum.VT_BSTR,
-                VarEnum.VT_ERROR,
-                VarEnum.VT_BOOL,
-                VarEnum.VT_DECIMAL,
+                (VarEnum.VT_EMPTY, 0),
+                (VarEnum.VT_I2, 123),
+                (VarEnum.VT_I4, 123),
+                (VarEnum.VT_R4, 1),
+                (VarEnum.VT_R8, 1),
+                (VarEnum.VT_CY, 123),
+                (VarEnum.VT_DATE, 1),
+                (VarEnum.VT_BSTR, 123),
+                (VarEnum.VT_ERROR, 123),
+                (VarEnum.VT_BOOL, -1),
+                (VarEnum.VT_DECIMAL, 123),
             };
 
-            foreach (VarEnum vt in supportedTypes)
+            foreach (var (vt, expected) in supportedTypes)
             {
                 Console.WriteLine($"Converting {vt} to int should be supported.");
                 int result = dispatchCoerceTesting.ReturnToManaged((short)vt);
-                Assert.NotEqual(0, result);
+                Assert.Equal(expected, result);
             }
 
             // Invalid: Rejected before reaching coerce
@@ -271,7 +272,7 @@ namespace NetClient
 
             // LOCAL_BOOL
             Console.WriteLine("VARIANT_BOOL should convert to non-numeric string.");
-            Assert.NotEqual("-1", dispatchCoerceTesting.BoolToString());
+            Assert.Equal("True", dispatchCoerceTesting.BoolToString());
         }
 
         [Fact]

@@ -129,6 +129,7 @@ private:
         }
 
         VARENUM resultType = (VARENUM)*args[0];
+        VariantInit(pVarResult);
         V_VT(pVarResult) = resultType & 0x7FFF;
 
         switch ((uint16_t)resultType)
