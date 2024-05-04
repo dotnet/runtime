@@ -19,4 +19,9 @@
     <FrameworkReference Update="Microsoft.NETCore.App" RuntimeFrameworkVersion="$(ProductVersion)-dev" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="$(TestUtilities)\System\Buffers\BoundedMemory.*" Link="TestUtilities\%(Filename)%(Extension)" />
+    <Compile Include="$(TestUtilities)\System\Buffers\PoisonPagePlacement.cs" Link="TestUtilities\PoisonPagePlacement.cs" />
+  </ItemGroup>
+
 </Project>
