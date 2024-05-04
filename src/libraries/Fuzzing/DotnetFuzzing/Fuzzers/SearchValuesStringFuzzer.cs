@@ -25,15 +25,20 @@ internal sealed class SearchValuesStringFuzzer : IFuzzer
         ReadOnlySpan<char> haystack = chars.Slice(newLine + 1);
         string[] needles = chars.Slice(0, newLine).ToString().Split(',');
 
-        Test(haystack, needles, StringComparison.Ordinal);
-        Test(haystack, needles, StringComparison.OrdinalIgnoreCase);
+        using var haystack0 = PooledBoundedMemory<char>.Rent(haystack, PoisonPagePlacement.Before);
+        using var haystack1 = PooledBoundedMemory<char>.Rent(haystack, PoisonPagePlacement.After);
+
+        Test(haystack0.Span, haystack1.Span, needles, StringComparison.Ordinal);
+        Test(haystack0.Span, haystack1.Span, needles, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static void Test(ReadOnlySpan<char> haystack, string[] needles, StringComparison comparisonType)
+    private static void Test(ReadOnlySpan<char> haystack, ReadOnlySpan<char> haystackCopy, string[] needles, StringComparison comparisonType)
     {
         SearchValues<string> searchValues = SearchValues.Create(needles, comparisonType);
 
-        Assert.Equal(IndexOfAnyReferenceImpl(haystack, needles, comparisonType), haystack.IndexOfAny(searchValues));
+        int index = haystack.IndexOfAny(searchValues);
+        Assert.Equal(index, haystackCopy.IndexOfAny(searchValues));
+        Assert.Equal(index, IndexOfAnyReferenceImpl(haystack, needles, comparisonType));
     }
 
     private static int IndexOfAnyReferenceImpl(ReadOnlySpan<char> haystack, string[] needles, StringComparison comparisonType)

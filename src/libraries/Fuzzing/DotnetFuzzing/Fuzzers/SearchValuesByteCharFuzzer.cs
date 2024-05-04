@@ -24,18 +24,29 @@ internal sealed class SearchValuesByteCharFuzzer : IFuzzer
         ReadOnlySpan<byte> haystack = bytes.Slice(newLine + 1);
         ReadOnlySpan<byte> values = bytes.Slice(0, newLine);
 
-        Test(haystack, values, SearchValues.Create(values));
+        using var byteHaystack0 = PooledBoundedMemory<byte>.Rent(haystack, PoisonPagePlacement.Before);
+        using var byteHaystack1 = PooledBoundedMemory<byte>.Rent(haystack, PoisonPagePlacement.After);
 
-        Test(MemoryMarshal.Cast<byte, char>(haystack), MemoryMarshal.Cast<byte, char>(values), SearchValues.Create(MemoryMarshal.Cast<byte, char>(values)));
+        Test(byteHaystack0.Span, byteHaystack1.Span, values, SearchValues.Create(values));
+
+        using var charHaystack0 = PooledBoundedMemory<char>.Rent(MemoryMarshal.Cast<byte, char>(haystack), PoisonPagePlacement.Before);
+        using var charHaystack1 = PooledBoundedMemory<char>.Rent(MemoryMarshal.Cast<byte, char>(haystack), PoisonPagePlacement.After);
+
+        Test(charHaystack0.Span, charHaystack1.Span, MemoryMarshal.Cast<byte, char>(values), SearchValues.Create(MemoryMarshal.Cast<byte, char>(values)));
     }
 
-    private static void Test<T>(ReadOnlySpan<T> haystack, ReadOnlySpan<T> values, SearchValues<T> searchValues)
+    private static void Test<T>(ReadOnlySpan<T> haystack, ReadOnlySpan<T> haystackCopy, ReadOnlySpan<T> values, SearchValues<T> searchValues)
         where T : struct, INumber<T>, IMinMaxValue<T>
     {
         int indexOfAny = haystack.IndexOfAny(searchValues);
         int indexOfAnyExcept = haystack.IndexOfAnyExcept(searchValues);
         int lastIndexOfAny = haystack.LastIndexOfAny(searchValues);
         int lastIndexOfAnyExcept = haystack.LastIndexOfAnyExcept(searchValues);
+
+        Assert.Equal(indexOfAny, haystackCopy.IndexOfAny(searchValues));
+        Assert.Equal(indexOfAnyExcept, haystackCopy.IndexOfAnyExcept(searchValues));
+        Assert.Equal(lastIndexOfAny, haystackCopy.LastIndexOfAny(searchValues));
+        Assert.Equal(lastIndexOfAnyExcept, haystackCopy.LastIndexOfAnyExcept(searchValues));
 
         Assert.Equal(IndexOfAnyScalar(haystack, searchValues), indexOfAny);
         Assert.Equal(IndexOfAnyExceptScalar(haystack, searchValues), indexOfAnyExcept);
@@ -48,8 +59,11 @@ internal sealed class SearchValuesByteCharFuzzer : IFuzzer
         Assert.Equal(indexOfAny >= 0, haystack.ContainsAny(searchValues));
         Assert.Equal(indexOfAnyExcept >= 0, haystack.ContainsAnyExcept(searchValues));
 
-        Assert.Equal(0, values.IndexOfAny(searchValues));
-        Assert.Equal(-1, values.IndexOfAnyExcept(searchValues));
+        if (!values.IsEmpty)
+        {
+            Assert.Equal(0, values.IndexOfAny(searchValues));
+            Assert.Equal(-1, values.IndexOfAnyExcept(searchValues));
+        }
     }
 
     private static int IndexOfAnyScalar<T>(ReadOnlySpan<T> haystack, SearchValues<T> values)
