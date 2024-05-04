@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace DotnetFuzzing;
@@ -35,6 +36,23 @@ internal static class Assert
 
             throw new AssertException($"Expected={expected[diffIndex]} Actual={actual[diffIndex]} at index {diffIndex}");
         }
+    }
+
+    public static void SequenceEqual<T>(IEnumerable<T>? expected, IEnumerable<T>? actual)
+    {
+        Equal(expected is null, actual is null);
+
+        if (expected is not null)
+        {
+            SequenceEqual<T>(expected.ToArray().AsSpan(), actual!.ToArray().AsSpan());
+        }
+    }
+
+    public static void SequenceEqual<T>(List<T>? expected, List<T>? actual)
+    {
+        Equal(expected is null, actual is null);
+
+        SequenceEqual<T>(CollectionsMarshal.AsSpan(expected), CollectionsMarshal.AsSpan(actual));
     }
 
     public static void SequenceEqual(ReadOnlySpan<char> expected, StringBuilder actual)
