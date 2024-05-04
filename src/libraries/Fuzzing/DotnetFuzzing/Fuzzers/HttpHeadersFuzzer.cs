@@ -33,6 +33,10 @@ internal sealed class HttpHeadersFuzzer : IFuzzer
         "X-Frame-Options", "X-MSEdge-Ref", "X-Powered-By", "X-Request-ID", "X-UA-Compatible", "X-XSS-Protection"
     ];
 
+    private static readonly HttpRequestHeaders s_requestHeaders = new HttpRequestMessage().Headers;
+    private static readonly HttpContentHeaders s_contentHeaders = new ByteArrayContent([]).Headers;
+    private static readonly HttpResponseHeaders s_responseHeaders = new HttpResponseMessage().Headers;
+
     public void FuzzTarget(ReadOnlySpan<byte> bytes)
     {
         if (bytes.IsEmpty)
@@ -43,12 +47,14 @@ internal sealed class HttpHeadersFuzzer : IFuzzer
         string name = s_knownHeaderNames[bytes[0] % s_knownHeaderNames.Length];
         string value = MemoryMarshal.Cast<byte, char>(bytes.Slice(1)).ToString();
 
-        Test(new HttpRequestMessage().Headers, name, value);
-        Test(new ByteArrayContent([]).Headers, name, value);
-        Test(new HttpResponseMessage().Headers, name, value);
+        Test(s_requestHeaders, name, value);
+        Test(s_contentHeaders, name, value);
+        Test(s_responseHeaders, name, value);
 
         static void Test(HttpHeaders headers, string name, string value)
         {
+            headers.Clear();
+
             if (headers.TryAddWithoutValidation(name, value))
             {
                 // Enumerating the header collection should never throw,
