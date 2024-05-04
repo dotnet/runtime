@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include <glib.h>
 
+// #define MWPM_LOGGING
+
 static uint8_t page_table[MWPM_MAX_PAGES];
 static uint8_t is_initialized = 0;
 static uint32_t
@@ -75,6 +77,7 @@ transition_page_states (mwpm_page_state from_state, mwpm_page_state to_state, ui
 
 static void
 print_stats () {
+#ifdef MWPM_LOGGING
 	uint32_t in_use = 0, free = 0, unallocated = 0,
 		max_run = 0, current_run = 0;
 
@@ -105,6 +108,7 @@ print_stats () {
 		"sbrk(0)==%u. %u pages in use (%f%%), %u pages free, %u pages unknown. largest possible allocation: %u pages\n",
 		(uint32_t)sbrk(0), in_use, in_use * 100.0 / total, free, unallocated, max_run
 	);
+#endif
 }
 
 static void *
@@ -121,7 +125,9 @@ acquire_new_pages_initialized (uint32_t page_count) {
 		*allocation_end = allocation + bytes;
 
 	if (!allocation) {
+#ifdef MWPM_LOGGING
 		g_print ("mwpm failed to acquire memory\n");
+#endif
 		return NULL;
 	}
 
@@ -154,7 +160,9 @@ acquire_new_pages_initialized (uint32_t page_count) {
 		last_page_index = first_page_index + page_count - 1;
 
 	if ((first_page_index >= MWPM_MAX_PAGES) || (last_page_index >= MWPM_MAX_PAGES)) {
+#ifdef MWPM_LOGGING
 		g_print ("mwpm failed to acquire pages because resulting page index was out of range: %u-%u\n", first_page_index, last_page_index);
+#endif
 		return NULL;
 	}
 
@@ -260,8 +268,10 @@ mwpm_alloc_range (size_t size, uint8_t zeroed) {
 			//  before it that we can use to reduce fragmentation
 			result = start_of_new_pages;
 		} else {
+#ifdef MWPM_LOGGING
 			g_print ("mwpm failed to acquire new pages\n");
-			return result;
+#endif
+			return NULL;
 		}
 	} else {
 		result = address_from_page_index (first_existing_page);
@@ -269,7 +279,7 @@ mwpm_alloc_range (size_t size, uint8_t zeroed) {
 	}
 
 	if (!result)
-		return result;
+		return NULL;
 
 	uint32_t first_result_page = first_page_from_address (result),
 		zeroed_pages = transition_page_states (MWPM_FREE_ZEROED, MWPM_ALLOCATED, first_result_page, page_count),
@@ -287,12 +297,11 @@ mwpm_alloc_range (size_t size, uint8_t zeroed) {
 	}
 	nonzeroed_pages = transition_page_states (MWPM_FREE_DIRTY, MWPM_ALLOCATED, first_result_page, page_count);
 
-	if ((nonzeroed_pages + zeroed_pages) != page_count) {
-		g_print ("nwpm failed to allocate because zeroed + nonzeroed pages != page_count. OOM?\n");
-		return NULL;
-	}
+	g_assert ((nonzeroed_pages + zeroed_pages) == page_count);
 
-	// g_print ("mwpm allocated %u bytes at %u\n", size, (uint32_t)result);
+#ifdef MWPM_LOGGING
+	g_print ("mwpm allocated %u bytes at %u\n", size, (uint32_t)result);
+#endif
 	return result;
 }
 
@@ -303,9 +312,7 @@ mwpm_free_range (void *base, size_t size) {
 	uint32_t first_page = first_page_from_address (base),
 		page_count = page_count_from_size (size);
 	free_pages_initialized (first_page, page_count);
-	if (page_count >= 32) {
-		g_print ("Just freed %u pages\n", page_count);
-		print_stats ();
-	}
-	// g_print ("mwpm freed %u bytes at %u\n", size, (uint32_t)base);
+#ifdef MWPM_LOGGING
+	g_print ("mwpm freed %u bytes at %u\n", size, (uint32_t)base);
+#endif
 }

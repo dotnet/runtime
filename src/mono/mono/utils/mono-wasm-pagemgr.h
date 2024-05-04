@@ -11,15 +11,11 @@
 
 // Note that pages mapped by MWPM can't be unmapped by libc, and vice versa.
 
+#ifndef __MONO_UTILS_WASM_PAGEMGR_H__
+#define __MONO_UTILS_WASM_PAGEMGR_H__
+
 #include <stddef.h>
 #include <stdint.h>
-
-#ifdef ENABLE_CHECKED_BUILD
-#define MWPM_CHECKED
-#else
-// HACK
-#define MWPM_CHECKED
-#endif
 
 // 64KB (WASM native page size)
 // NOTE: emscripten sbrk() allows you to allocate less than 1 page, and doesn't
@@ -82,3 +78,5 @@ mwpm_alloc_range (size_t size, uint8_t zeroed);
 // base must be a multiple of MWPM_PAGE_SIZE.
 void
 mwpm_free_range (void *base, size_t size);
+
+#endif
