@@ -222,6 +222,7 @@ namespace NetClient
             Console.WriteLine($"Calling {nameof(DispatchCoerceTesting.ReturnToManaged)} ...");
             
             // Supported types
+            // See returned values in DispatchCoerceTesting.h
             (VarEnum type, int expectedValue)[] supportedTypes =
             {
                 (VarEnum.VT_EMPTY, 0),
