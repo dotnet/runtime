@@ -148,20 +148,6 @@ namespace System
 
             ref byte rawSrcValue = ref RuntimeHelpers.GetRawData(srcObject);
 
-            // This is the table of all supported widening conversions:
-            //
-            // Boolean (W = BOOL)
-            // Char (W = U2, CHAR, I4, U4, I8, U8, R4, R8)
-            // SByte (W = I1, I2, I4, I8, R4, R8)
-            // Byte (W = CHAR, U1, I2, U2, I4, U4, I8, U8, R4, R8)
-            // Int16 (W = I2, I4, I8, R4, R8)
-            // UInt16 (W = U2, CHAR, I4, U4, I8, U8, R4, R8)
-            // Int32 (W = I4, I8, R4, R8)
-            // UInt32 (W = U4, I8, U8, R4, R8)
-            // Int64 (W = I8, R4, R8)
-            // UInt64 (W = U8, R4, R8)
-            // Single (W = R4, R8)
-            // Double (W = R8)
             switch (dstElementType)
             {
                 case EETypeElementType.Boolean:
