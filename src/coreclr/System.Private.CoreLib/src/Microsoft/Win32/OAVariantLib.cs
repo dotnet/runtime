@@ -30,10 +30,6 @@ namespace Microsoft.Win32
         #region Constants
 
         // Constants for VariantChangeType from OleAuto.h
-        public const int NoValueProp = 0x01;
-        public const int AlphaBool = 0x02;
-        public const int NoUserOverride = 0x04;
-        public const int CalendarHijri = 0x08;
         public const int LocalBool = 0x10;
 
         private static readonly Dictionary<Type, VarEnum> ClassTypes = new Dictionary<Type, VarEnum>
@@ -140,7 +136,6 @@ namespace Microsoft.Win32
             return input switch
             {
                 string str => ComVariant.Create(str),
-                char ch => ComVariant.Create(ch.ToString()), // We should override the VTtoVT default of VT_UI2 for this case.
                 DateTime dateTime => ComVariant.Create(dateTime),
                 bool b => ComVariant.Create(b),
                 decimal d => ComVariant.Create(d),
@@ -154,19 +149,9 @@ namespace Microsoft.Win32
                 ulong u8 => ComVariant.Create(u8),
                 float r4 => ComVariant.Create(r4),
                 double r8 => ComVariant.Create(r8),
-                TimeSpan => throw new NotSupportedException(SR.NotSupported_ChangeType),
-                Enum => throw new NotSupportedException(SR.NotSupported_ChangeType),
                 null => default,
                 Missing => throw new NotSupportedException(SR.NotSupported_ChangeType),
                 DBNull => ComVariant.Null,
-                UnknownWrapper wrapper => GetComIPFromObjectRef(wrapper.WrappedObject),
-                DispatchWrapper wrapper => GetComIPFromObjectRef(wrapper.WrappedObject),
-#pragma warning disable 0618 // CurrencyWrapper is obsolete
-                CurrencyWrapper wrapper => GetComIPFromObjectRef(wrapper.WrappedObject),
-#pragma warning restore 0618
-                BStrWrapper wrapper => GetComIPFromObjectRef(wrapper.WrappedObject),
-                _ when Variant.IsSystemDrawingColor(input.GetType())
-                    => ComVariant.Create(Variant.ConvertSystemColorToOleColor(ObjectHandleOnStack.Create(ref input))),
                 _ => GetComIPFromObjectRef(input) // Convert the object to an IDispatch/IUnknown pointer.
             };
         }
@@ -186,7 +171,6 @@ namespace Microsoft.Win32
                 VarEnum.VT_BSTR => input.As<string>(),
                 VarEnum.VT_DATE => input.As<DateTime>(),
                 VarEnum.VT_BOOL => input.As<bool>(),
-                VarEnum.VT_CY => null,
                 VarEnum.VT_DECIMAL => input.As<decimal>(),
                 VarEnum.VT_I1 => input.As<sbyte>(),
                 VarEnum.VT_UI1 => input.As<byte>(),
@@ -199,7 +183,6 @@ namespace Microsoft.Win32
                 VarEnum.VT_R4 => input.As<float>(),
                 VarEnum.VT_R8 => input.As<double>(),
                 VarEnum.VT_EMPTY => null,
-                VarEnum.VT_NULL => DBNull.Value,
                 VarEnum.VT_UNKNOWN or VarEnum.VT_VARIANT => Marshal.GetObjectForIUnknown(input.GetRawDataRef<IntPtr>()),
                 VarEnum.VT_VOID => null,
                 _ => throw new NotSupportedException(SR.NotSupported_ChangeType),
