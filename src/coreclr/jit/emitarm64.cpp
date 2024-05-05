@@ -4248,6 +4248,28 @@ void emitter::emitIns_Mov(
             break;
         }
 
+        case INS_sve_mov:
+        {
+            if (isPredicateRegister(dstReg) && isPredicateRegister(srcReg))
+            {
+                assert(insOptsNone(opt));
+
+                opt  = INS_OPTS_SCALABLE_B;
+                attr = EA_SCALABLE;
+
+                if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
+                {
+                    return;
+                }
+                fmt = IF_SVE_CZ_4A_L;
+            }
+            else
+            {
+                unreached();
+            }
+
+            break;
+        }
         default:
         {
             unreached();
@@ -16352,6 +16374,7 @@ bool emitter::IsMovInstruction(instruction ins)
         case INS_sxtw:
         case INS_uxtb:
         case INS_uxth:
+        case INS_sve_mov:
         {
             return true;
         }
@@ -16400,7 +16423,7 @@ bool emitter::IsMovInstruction(instruction ins)
 
 bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip)
 {
-    assert(ins == INS_mov);
+    assert((ins == INS_mov) || (ins == INS_sve_mov));
 
     if (canSkip && (dst == src))
     {
