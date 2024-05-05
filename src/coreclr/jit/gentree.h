@@ -557,9 +557,9 @@ enum GenTreeFlags : unsigned int
 
     GTF_MDARRLOWERBOUND_NONFAULTING = 0x20000000, // GT_MDARR_LOWER_BOUND -- An MD array lower bound operation that cannot fault. Same as GT_IND_NONFAULTING.
 
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+#ifdef FEATURE_HW_INTRINSICS
     GTF_HW_EM_OP                  = 0x10000000, // GT_HWINTRINSIC -- node is used as an operand to an embedded mask
-#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
+#endif // FEATURE_HW_INTRINSICS
 };
 
 inline constexpr GenTreeFlags operator ~(GenTreeFlags a)
@@ -955,12 +955,6 @@ public:
 #endif // defined(DEBUG)
 
     ValueNumPair gtVNPair;
-
-    regMaskSmall gtRsvdRegs; // set of fixed trashed  registers
-
-    unsigned  AvailableTempRegCount(regMaskTP mask = (regMaskTP)-1) const;
-    regNumber GetSingleTempReg(regMaskTP mask = (regMaskTP)-1);
-    regNumber ExtractTempReg(regMaskTP mask = (regMaskTP)-1);
 
     void SetVNsFromNode(GenTree* tree)
     {
@@ -1465,7 +1459,7 @@ public:
     bool isContainableHWIntrinsic() const;
     bool isRMWHWIntrinsic(Compiler* comp);
     bool isEvexCompatibleHWIntrinsic() const;
-    bool isEvexEmbeddedMaskingCompatibleHWIntrinsic() const;
+    bool isEmbeddedMaskingCompatibleHWIntrinsic() const;
 #else
     bool isCommutativeHWIntrinsic() const
     {
@@ -1487,7 +1481,7 @@ public:
         return false;
     }
 
-    bool isEvexEmbeddedMaskingCompatibleHWIntrinsic() const
+    bool isEmbeddedMaskingCompatibleHWIntrinsic() const
     {
         return false;
     }
@@ -1770,6 +1764,7 @@ public:
     inline bool IsVectorZero() const;
     inline bool IsVectorCreate() const;
     inline bool IsVectorAllBitsSet() const;
+    inline bool IsMaskAllBitsSet() const;
     inline bool IsVectorConst();
 
     inline uint64_t GetIntegralVectorConstElement(size_t index, var_types simdBaseType);
@@ -2226,7 +2221,7 @@ public:
         gtFlags &= ~GTF_ICON_HDL_MASK;
     }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+#ifdef FEATURE_HW_INTRINSICS
 
     bool IsEmbMaskOp()
     {
@@ -2240,7 +2235,7 @@ public:
         gtFlags |= GTF_HW_EM_OP;
     }
 
-#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
+#endif // FEATURE_HW_INTRINSICS
 
     static bool HandleKindDataIsInvariant(GenTreeFlags flags);
 
@@ -9235,6 +9230,32 @@ inline bool GenTree::IsVectorAllBitsSet() const
     }
 #endif // FEATURE_SIMD
 
+    return false;
+}
+
+inline bool GenTree::IsMaskAllBitsSet() const
+{
+#ifdef TARGET_ARM64
+    static_assert_no_msg(AreContiguous(NI_Sve_CreateTrueMaskByte, NI_Sve_CreateTrueMaskDouble,
+                                       NI_Sve_CreateTrueMaskInt16, NI_Sve_CreateTrueMaskInt32,
+                                       NI_Sve_CreateTrueMaskInt64, NI_Sve_CreateTrueMaskSByte,
+                                       NI_Sve_CreateTrueMaskSingle, NI_Sve_CreateTrueMaskUInt16,
+                                       NI_Sve_CreateTrueMaskUInt32, NI_Sve_CreateTrueMaskUInt64));
+
+    if (OperIsHWIntrinsic())
+    {
+        NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
+        if (id == NI_Sve_ConvertMaskToVector)
+        {
+            GenTree* op1 = AsHWIntrinsic()->Op(1);
+            assert(op1->OperIsHWIntrinsic());
+            id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
+        }
+        return ((id == NI_Sve_CreateTrueMaskAll) ||
+                ((id >= NI_Sve_CreateTrueMaskByte) && (id <= NI_Sve_CreateTrueMaskUInt64)));
+    }
+
+#endif
     return false;
 }
 

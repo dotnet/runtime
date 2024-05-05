@@ -101,6 +101,16 @@ private:
         }
     }
 
+#if defined(TARGET_ARM64)
+    regNumber getNextSIMDRegWithWraparound(regNumber reg)
+    {
+        regNumber nextReg = REG_NEXT(reg);
+
+        // Wraparound if necessary, REG_V0 comes next after REG_V31.
+        return (nextReg > REG_V31) ? REG_V0 : nextReg;
+    }
+#endif // defined(TARGET_ARM64)
+
     static GenTreeIndir    indirForm(var_types type, GenTree* base);
     static GenTreeStoreInd storeIndirForm(var_types type, GenTree* base, GenTree* data);
 
@@ -274,7 +284,9 @@ protected:
     void genEnregisterOSRArgsAndLocals();
 #endif
 
+    void genHomeStackSegment(unsigned lclNum, const ABIPassingSegment& seg, regNumber initReg, bool* pInitRegZeroed);
     void genHomeSwiftStructParameters(bool handleStack);
+    void genHomeStackPartOfSplitParameter(regNumber initReg, bool* initRegStillZeroed);
 
     void genCheckUseBlockInit();
 #if defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)
@@ -437,7 +449,7 @@ protected:
 
     FuncletFrameInfoDsc genFuncletInfo;
 
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     // A set of information that is used by funclet prolog and epilog generation.
     // It is collected once, before funclet prologs and epilogs are generated,
@@ -448,26 +460,6 @@ protected:
         int fiFunction_CallerSP_to_FP_delta; // Delta between caller SP and the frame pointer in the parent function
                                              // (negative)
         int fiSP_to_CalleeSaved_delta;       // CalleeSaved register save offset from SP (positive)
-        int fiCalleeSavedPadding;            // CalleeSaved offset padding (positive)
-        int fiSP_to_PSP_slot_delta;          // PSP slot offset from SP (positive)
-        int fiCallerSP_to_PSP_slot_delta;    // PSP slot offset from Caller SP (negative)
-        int fiSpDelta;                       // Stack pointer delta (negative)
-    };
-
-    FuncletFrameInfoDsc genFuncletInfo;
-
-#elif defined(TARGET_RISCV64)
-
-    // A set of information that is used by funclet prolog and epilog generation.
-    // It is collected once, before funclet prologs and epilogs are generated,
-    // and used by all funclet prologs and epilogs, which must all be the same.
-    struct FuncletFrameInfoDsc
-    {
-        regMaskTP fiSaveRegs;                // Set of callee-saved registers saved in the funclet prolog (includes RA)
-        int fiFunction_CallerSP_to_FP_delta; // Delta between caller SP and the frame pointer in the parent function
-                                             // (negative)
-        int fiSP_to_CalleeSaved_delta;       // CalleeSaved register save offset from SP (positive)
-        int fiCalleeSavedPadding;            // CalleeSaved offset padding (positive)
         int fiSP_to_PSP_slot_delta;          // PSP slot offset from SP (positive)
         int fiCallerSP_to_PSP_slot_delta;    // PSP slot offset from Caller SP (negative)
         int fiSpDelta;                       // Stack pointer delta (negative)
@@ -1272,7 +1264,6 @@ protected:
     void        genJmpMethod(GenTree* jmp);
     BasicBlock* genCallFinally(BasicBlock* block);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // TODO: refactor for LA.
     void genCodeForJumpCompare(GenTreeOpCC* tree);
 #endif
 #if defined(TARGET_ARM64)

@@ -260,6 +260,8 @@
       <EmccCompileOptimizationFlag Condition="'$(EmccCompileOptimizationFlag)' == ''">$(_EmccOptimizationFlagDefault)</EmccCompileOptimizationFlag>
       <!-- FIXME: which one should take precedence? -->
       <WasmCompileOptimizationFlag>$(EmccCompileOptimizationFlag)</WasmCompileOptimizationFlag>
+      <WasmBitcodeCompileOptimizationFlag Condition="'$(WasmBitcodeCompileOptimizationFlag)' == '' and '$(Configuration)' == 'Release'">-O2</WasmBitcodeCompileOptimizationFlag>
+      <WasmBitcodeCompileOptimizationFlag Condition="'$(WasmBitcodeCompileOptimizationFlag)' == '' ">$(WasmCompileOptimizationFlag)</WasmBitcodeCompileOptimizationFlag>
       <EmccLinkOptimizationFlag    Condition="'$(EmccLinkOptimizationFlag)' == '' and '$(Configuration)' == 'Release'">-O2</EmccLinkOptimizationFlag>
       <EmccLinkOptimizationFlag    Condition="'$(EmccLinkOptimizationFlag)' == ''"   >$(WasmCompileOptimizationFlag)</EmccLinkOptimizationFlag>
       <WasmLinkOptimizationFlag>$(EmccLinkOptimizationFlag)</WasmLinkOptimizationFlag>
@@ -406,8 +408,9 @@
 
   <Target Name="_BrowserWasmBeforeWriteCompileBitcodeRsp" BeforeTargets="_WasmWriteRspForCompilingBitcode">
     <ItemGroup>
-      <_BitcodeLDFlags Include="@(_EmccLDFlags)" />
-      <_BitcodeLDFlags Include="$(EmccExtraBitcodeLDFlags)" />
+      <_BitcodeCompileFlags Include="$(WasmBitcodeCompileOptimizationFlag)" />
+      <_BitcodeCompileFlags Include="@(_EmccCommonFlags)" />
+      <_BitcodeCompileFlags Include="$(EmccExtraBitcodeCompilationFlags)" />
     </ItemGroup>
   </Target>
 

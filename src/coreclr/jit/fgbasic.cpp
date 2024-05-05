@@ -50,6 +50,7 @@ void Compiler::fgInit()
     fgDomBBcount            = 0;
     fgBBVarSetsInited       = false;
     fgReturnCount           = 0;
+    fgThrowCount            = 0;
 
     m_dfsTree          = nullptr;
     m_loops            = nullptr;
@@ -233,8 +234,16 @@ bool Compiler::fgEnsureFirstBBisScratch()
             {
                 // If the result is clearly nonsensical, just inherit
                 //
-                JITDUMP("\fgEnsureFirstBBisScratch: Profile data could not be locally repaired. Data %s inconsisent.\n",
-                        fgPgoConsistent ? "is now" : "was already");
+                JITDUMP(
+                    "\fgEnsureFirstBBisScratch: Profile data could not be locally repaired. Data %s inconsistent.\n",
+                    fgPgoConsistent ? "is now" : "was already");
+
+                if (fgPgoConsistent)
+                {
+                    Metrics.ProfileInconsistentScratchBB++;
+                    fgPgoConsistent = false;
+                }
+
                 block->inheritWeight(fgFirstBB);
             }
             else
@@ -3092,19 +3101,18 @@ void Compiler::fgLinkBasicBlocks()
 //   codeSize -- length of the IL stream
 //   jumpTarget -- [in] bit vector of jump targets found by fgFindJumpTargets
 //
-// Returns:
-//   number of return blocks (BBJ_RETURN) in the method (may be zero)
-//
 // Notes:
-//   Invoked for prejited and jitted methods, and for all inlinees
-
-unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, FixedBitVect* jumpTarget)
+//   Invoked for prejitted and jitted methods, and for all inlinees.
+//   Sets fgReturnCount and fgThrowCount
+//
+void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, FixedBitVect* jumpTarget)
 {
-    unsigned    retBlocks = 0;
-    const BYTE* codeBegp  = codeAddr;
-    const BYTE* codeEndp  = codeAddr + codeSize;
-    bool        tailCall  = false;
-    unsigned    curBBoffs = 0;
+    unsigned    retBlocks   = 0;
+    unsigned    throwBlocks = 0;
+    const BYTE* codeBegp    = codeAddr;
+    const BYTE* codeEndp    = codeAddr + codeSize;
+    bool        tailCall    = false;
+    unsigned    curBBoffs   = 0;
     BasicBlock* curBBdesc;
 
     // Keep track of where we are in the scope lists, as we will also
@@ -3305,7 +3313,8 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
                     // can be dispatched as tail calls from the caller.
                     compInlineResult->NoteFatal(InlineObservation::CALLEE_EXPLICIT_TAIL_PREFIX);
                     retBlocks++;
-                    return retBlocks;
+                    fgReturnCount = retBlocks;
+                    return;
                 }
 
                 FALLTHROUGH;
@@ -3408,6 +3417,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
 
             case CEE_THROW:
             case CEE_RETHROW:
+                throwBlocks++;
                 jmpKind = BBJ_THROW;
                 break;
 
@@ -3590,7 +3600,8 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
 
     fgLinkBasicBlocks();
 
-    return retBlocks;
+    fgReturnCount = retBlocks;
+    fgThrowCount  = throwBlocks;
 }
 
 /*****************************************************************************
@@ -3702,7 +3713,7 @@ void Compiler::fgFindBasicBlocks()
 
     /* Now create the basic blocks */
 
-    fgReturnCount = fgMakeBasicBlocks(info.compCode, info.compILCodeSize, jumpTarget);
+    fgMakeBasicBlocks(info.compCode, info.compILCodeSize, jumpTarget);
 
     if (compIsForInlining())
     {
@@ -4262,7 +4273,7 @@ void Compiler::fgFixEntryFlowForOSR()
     //
     if ((fgEntryBB->bbPreds != nullptr) && (fgEntryBB != fgOSREntryBB))
     {
-        JITDUMP("OSR: profile data could not be locally repaired. Data %s inconsisent.\n",
+        JITDUMP("OSR: profile data could not be locally repaired. Data %s inconsistent.\n",
                 fgPgoConsistent ? "is now" : "was already");
         fgPgoConsistent = false;
     }

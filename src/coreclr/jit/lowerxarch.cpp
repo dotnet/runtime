@@ -457,6 +457,12 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
         if (doCpObj)
         {
+            // Try to use bulk copy helper
+            if (TryLowerBlockStoreAsGcBulkCopyCall(blkNode))
+            {
+                return;
+            }
+
             assert((dstAddr->TypeGet() == TYP_BYREF) || (dstAddr->TypeGet() == TYP_I_IMPL));
 
             // If we have a long enough sequence of slots that do not require write barriers then
@@ -2970,7 +2976,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
 }
 
 //----------------------------------------------------------------------------------------------
-// Lowering::LowerHWIntrinsicCndSel: Lowers an AVX512 TernaryLogic call
+// Lowering::LowerHWIntrinsicTernaryLogic: Lowers an AVX512 TernaryLogic call
 //
 //  Arguments:
 //     node - The hardware intrinsic node.
@@ -10137,7 +10143,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 // contained and not a memory operand and know to invoke the special handling
                                 // so that the embedded masking can work as expected.
 
-                                if (op2->isEvexEmbeddedMaskingCompatibleHWIntrinsic())
+                                if (op2->isEmbeddedMaskingCompatibleHWIntrinsic())
                                 {
                                     uint32_t maskSize = genTypeSize(simdBaseType);
                                     uint32_t operSize = genTypeSize(op2->AsHWIntrinsic()->GetSimdBaseType());

@@ -5136,9 +5136,14 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
         // We are unlikely to be able to repair the profile.
         // For now we don't even try.
         //
-        JITDUMP("\nimpResetLeaveBlock: Profile data could not be locally repaired. Data %s inconsisent.\n",
+        JITDUMP("\nimpResetLeaveBlock: Profile data could not be locally repaired. Data %s inconsistent.\n",
                 fgPgoConsistent ? "is now" : "was already");
-        fgPgoConsistent = false;
+
+        if (fgPgoConsistent)
+        {
+            Metrics.ProfileInconsistentResetLeave++;
+            fgPgoConsistent = false;
+        }
     }
 }
 
@@ -7319,6 +7324,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                         fgRemoveRefPred(removedEdge);
                         block->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
+                        Metrics.ImporterBranchFold++;
 
                         // If we removed an edge carrying profile, try to do a local repair.
                         //
@@ -7369,7 +7375,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             {
                                 JITDUMP("Profile data could not be locally repaired. Data %s inconsistent.\n",
                                         fgPgoConsistent ? "is now" : "was already");
-                                fgPgoConsistent = false;
+
+                                if (fgPgoConsistent)
+                                {
+                                    Metrics.ProfileInconsistentImporterBranchFold++;
+                                    fgPgoConsistent = false;
+                                }
                             }
                         }
                     }
@@ -7615,6 +7626,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     unsigned   jumpCnt   = block->GetSwitchTargets()->bbsCount;
                     FlowEdge** jumpTab   = block->GetSwitchTargets()->bbsDstTab;
                     bool       foundVal  = false;
+                    Metrics.ImporterSwitchFold++;
 
                     for (unsigned val = 0; val < jumpCnt; val++, jumpTab++)
                     {
@@ -7653,9 +7665,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // We are unlikely to be able to repair the profile.
                         // For now we don't even try.
                         //
-                        JITDUMP("Profile data could not be locally repaired. Data %s inconsisent.\n",
+                        JITDUMP("Profile data could not be locally repaired. Data %s inconsistent.\n",
                                 fgPgoConsistent ? "is now" : "was already");
-                        fgPgoConsistent = false;
+
+                        if (fgPgoConsistent)
+                        {
+                            Metrics.ProfileInconsistentImporterSwitchFold++;
+                            fgPgoConsistent = false;
+                        }
                     }
 
                     // Create a NOP node
