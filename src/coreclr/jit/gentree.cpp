@@ -26759,8 +26759,7 @@ bool GenTreeHWIntrinsic::OperIsEmbBroadcastCompatible() const
 
         default:
         {
-            return !varTypeIsSmall(simdBaseType)
-                && HWIntrinsicInfo::IsEmbBroadcastCompatible(intrinsicId);
+            return !varTypeIsSmall(simdBaseType) && HWIntrinsicInfo::IsEmbBroadcastCompatible(intrinsicId);
         }
     }
 #else
