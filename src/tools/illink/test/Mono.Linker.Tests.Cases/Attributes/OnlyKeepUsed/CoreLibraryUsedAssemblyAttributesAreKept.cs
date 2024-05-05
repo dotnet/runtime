@@ -10,7 +10,7 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
 	[SetupLinkerTrimMode ("link")]
 	[SetupLinkerArgument ("--used-attrs-only", "true")]
 	[KeptAttributeInAssembly (PlatformAssemblies.CoreLib, typeof (AssemblyDescriptionAttribute))]
-#if !NETCOREAPP
+#if !NET
 	[KeptAttributeInAssembly ("System.dll", typeof (AssemblyDescriptionAttribute))]
 #endif
 	public class CoreLibraryUsedAssemblyAttributesAreKept

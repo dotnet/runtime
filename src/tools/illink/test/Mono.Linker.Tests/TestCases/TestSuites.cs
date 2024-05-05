@@ -52,7 +52,7 @@ namespace Mono.Linker.Tests.TestCases
 			if (Environment.OSVersion.Platform == PlatformID.Win32NT)
 				Assert.Ignore ("These tests are not valid when trimming .NET Framework");
 
-#if NETCOREAPP
+#if NET
 			Assert.Ignore ("These tests are not valid when trimming .NET Core");
 #endif
 			Run (testCase);

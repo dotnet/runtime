@@ -123,7 +123,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		// https://github.com/dotnet/linker/issues/2632
 		// This second warning should not be generated, the value of typeWithMethods should have PublicMethods
 		// after the call with out parameter.
-		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods), ProducedBy = Tool.Analyzer)]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods), Tool.Analyzer, "")]
 		static void TestReadFromRefParameter_MismatchOnInput ()
 		{
 			Type typeWithMethods = GetTypeWithFields ();
@@ -136,7 +136,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		// https://github.com/dotnet/linker/issues/2632
 		// This third warning should not be generated, the value of typeWithMethods should have PublicMethods
 		// after the call with ref parameter.
-		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods), ProducedBy = Tool.Analyzer)]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods), Tool.Analyzer, "")]
 		static void TestReadFromRefParameter_MismatchOnInput_PassedTwice ()
 		{
 			Type typeWithMethods = GetTypeWithFields ();
@@ -269,7 +269,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TryGetAnnotatedValueOut (out TypeWithMethodsProperty);
 		}
 
-		[ExpectedWarning ("IL2072", nameof (TryGetAnnotatedValue), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		[ExpectedWarning ("IL2072", nameof (TryGetAnnotatedValue), Tool.Trimmer | Tool.NativeAot, "")]
 		static void TestPassingRefProperty_Mismatch ()
 		{
 			TryGetAnnotatedValue (ref TypeWithFieldsProperty);
@@ -316,8 +316,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		// https://github.com/dotnet/linker/issues/2158
-		[ExpectedWarning ("IL2068", nameof (TryGetAnnotatedValue), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-		[ExpectedWarning ("IL2072", nameof (TryGetAnnotatedValue), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		[ExpectedWarning ("IL2068", nameof (TryGetAnnotatedValue), Tool.Trimmer | Tool.NativeAot, "")]
+		[ExpectedWarning ("IL2072", nameof (TryGetAnnotatedValue), Tool.Trimmer | Tool.NativeAot, "")]
 		static void TestPassingRefIndexer_Mismatch ()
 		{
 			var indexer = new RefIndexer_PublicFields ();
@@ -325,7 +325,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		// https://github.com/dotnet/linker/issues/2158
-		[ExpectedWarning ("IL2068", nameof (TryGetAnnotatedValue), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		[ExpectedWarning ("IL2068", nameof (TryGetAnnotatedValue), Tool.Trimmer | Tool.NativeAot, "")]
 		static void TestPassingRefIndexer_OutParameter_Mismatch ()
 		{
 			var indexer = new RefIndexer_PublicFields ();

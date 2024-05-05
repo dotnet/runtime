@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-#if NET7_0_OR_GREATER
+#if NET
 using System.Runtime.InteropServices.Marshalling;
 #endif
 
@@ -13,11 +13,11 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Gdi32, EntryPoint = "ResetDCW", SetLastError = true)]
         internal static partial IntPtr /*HDC*/ ResetDC(
-#if NET7_0_OR_GREATER
+#if NET
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
             HandleRef hDC,
-#if NET7_0_OR_GREATER
+#if NET
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
             HandleRef /*DEVMODE*/ lpDevMode);

@@ -40,10 +40,7 @@ namespace System.Buffers
         /// <summary>Allocate a new <see cref="SharedArrayPoolPartitions"/> and try to store it into the <see cref="_buckets"/> array.</summary>
         private unsafe SharedArrayPoolPartitions CreatePerCorePartitions(int bucketIndex)
         {
-#pragma warning disable 8500 // sizeof of managed types
-            int elementSize = sizeof(T);
-#pragma warning restore 8500
-            var inst = new SharedArrayPoolPartitions(elementSize);
+            var inst = new SharedArrayPoolPartitions();
             return Interlocked.CompareExchange(ref _buckets[bucketIndex], inst, null) ?? inst;
         }
 
@@ -199,7 +196,7 @@ namespace System.Buffers
             SharedArrayPoolPartitions?[] perCoreBuckets = _buckets;
             for (int i = 0; i < perCoreBuckets.Length; i++)
             {
-                perCoreBuckets[i]?.Trim(currentMilliseconds, Id, pressure, Utilities.GetMaxSizeForBucket(i));
+                perCoreBuckets[i]?.Trim(currentMilliseconds, Id, pressure);
             }
 
             // Trim each of the TLS buckets. Note that threads may be modifying their TLS slots concurrently with
@@ -323,14 +320,13 @@ namespace System.Buffers
         private readonly Partition[] _partitions;
 
         /// <summary>Initializes the partitions.</summary>
-        /// <param name="elementSize">The size of the elements stored in arrays.</param>
-        public SharedArrayPoolPartitions(int elementSize)
+        public SharedArrayPoolPartitions()
         {
             // Create the partitions.  We create as many as there are processors, limited by our max.
             var partitions = new Partition[SharedArrayPoolStatics.s_partitionCount];
             for (int i = 0; i < partitions.Length; i++)
             {
-                partitions[i] = new Partition(elementSize);
+                partitions[i] = new Partition();
             }
             _partitions = partitions;
         }
@@ -374,23 +370,20 @@ namespace System.Buffers
             return null;
         }
 
-        public void Trim(int currentMilliseconds, int id, Utilities.MemoryPressure pressure, int bucketSize)
+        public void Trim(int currentMilliseconds, int id, Utilities.MemoryPressure pressure)
         {
             Partition[] partitions = _partitions;
             for (int i = 0; i < partitions.Length; i++)
             {
-                partitions[i].Trim(currentMilliseconds, id, pressure, bucketSize);
+                partitions[i].Trim(currentMilliseconds, id, pressure);
             }
         }
 
         /// <summary>Provides a simple, bounded stack of arrays, protected by a lock.</summary>
-        /// <param name="elementSize">The size of the elements stored in arrays.</param>
-        private sealed class Partition(int elementSize)
+        private sealed class Partition
         {
             /// <summary>The arrays in the partition.</summary>
             private readonly Array?[] _arrays = new Array[SharedArrayPoolStatics.s_maxArraysPerPartition];
-            /// <summary>The size of the elements stored in arrays.</summary>
-            private readonly int _elementSize = elementSize;
             /// <summary>Number of arrays stored in <see cref="_arrays"/>.</summary>
             private int _count;
             /// <summary>Timestamp set by Trim when it sees this as 0.</summary>
@@ -437,19 +430,10 @@ namespace System.Buffers
                 return arr;
             }
 
-            public void Trim(int currentMilliseconds, int id, Utilities.MemoryPressure pressure, int bucketSize)
+            public void Trim(int currentMilliseconds, int id, Utilities.MemoryPressure pressure)
             {
                 const int TrimAfterMS = 60 * 1000;                                  // Trim after 60 seconds for low/moderate pressure
                 const int HighTrimAfterMS = 10 * 1000;                              // Trim after 10 seconds for high pressure
-
-                const int LargeBucket = 16384;                                      // If the bucket is larger than this we'll trim an extra when under high pressure
-
-                const int ModerateTypeSize = 16;                                    // If T is larger than this we'll trim an extra when under high pressure
-                const int LargeTypeSize = 32;                                       // If T is larger than this we'll trim an extra (additional) when under high pressure
-
-                const int LowTrimCount = 1;                                         // Trim one item when pressure is low
-                const int MediumTrimCount = 2;                                      // Trim two items when pressure is moderate
-                int HighTrimCount = SharedArrayPoolStatics.s_maxArraysPerPartition; // Trim all items when pressure is high
 
                 if (_count == 0)
                 {
@@ -477,38 +461,16 @@ namespace System.Buffers
                     }
 
                     // We've elapsed enough time since the first item went into the partition.
-                    // Drop the top item so it can be collected and make the partition look a little newer.
+                    // Drop the top item(s) so they can be collected.
+
+                    int trimCount = pressure switch
+                    {
+                        Utilities.MemoryPressure.High => SharedArrayPoolStatics.s_maxArraysPerPartition,
+                        Utilities.MemoryPressure.Medium => 2,
+                        _ => 1,
+                    };
 
                     ArrayPoolEventSource log = ArrayPoolEventSource.Log;
-                    int trimCount = LowTrimCount;
-                    switch (pressure)
-                    {
-                        case Utilities.MemoryPressure.High:
-                            trimCount = HighTrimCount;
-
-                            // When pressure is high, aggressively trim larger arrays.
-                            if (bucketSize > LargeBucket)
-                            {
-                                trimCount++;
-                            }
-
-                            if (_elementSize > ModerateTypeSize)
-                            {
-                                trimCount++;
-
-                                if (_elementSize > LargeTypeSize)
-                                {
-                                    trimCount++;
-                                }
-                            }
-
-                            break;
-
-                        case Utilities.MemoryPressure.Medium:
-                            trimCount = MediumTrimCount;
-                            break;
-                    }
-
                     while (_count > 0 && trimCount-- > 0)
                     {
                         Array? array = _arrays[--_count];

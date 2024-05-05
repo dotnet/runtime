@@ -932,7 +932,8 @@ namespace System
                     if (MdToken.IsNullToken(tkDeclaringType))
                         return;
 
-                    MetadataImport scope = RuntimeTypeHandle.GetMetadataImport(declaringType);
+                    RuntimeModule module = declaringType.GetRuntimeModule();
+                    MetadataImport scope = module.MetadataImport;
 
                     scope.EnumFields(tkDeclaringType, out MetadataEnumResult tkFields);
 
@@ -976,6 +977,7 @@ namespace System
                             list.Add(runtimeFieldInfo);
                         }
                     }
+                    GC.KeepAlive(module);
                 }
 
                 private void AddSpecialInterface(
@@ -1102,7 +1104,7 @@ namespace System
                     ListBuilder<RuntimeType> list = default;
 
                     ModuleHandle moduleHandle = new ModuleHandle(RuntimeTypeHandle.GetModule(declaringType));
-                    MetadataImport scope = ModuleHandle.GetMetadataImport(moduleHandle.GetRuntimeModule());
+                    MetadataImport scope = moduleHandle.GetRuntimeModule().MetadataImport;
 
                     scope.EnumNestedTypes(tkEnclosingType, out MetadataEnumResult tkNestedClasses);
 
@@ -1174,7 +1176,8 @@ namespace System
                     if (MdToken.IsNullToken(tkDeclaringType))
                         return;
 
-                    MetadataImport scope = RuntimeTypeHandle.GetMetadataImport(declaringType);
+                    RuntimeModule module = declaringType.GetRuntimeModule();
+                    MetadataImport scope = module.MetadataImport;
 
                     scope.EnumEvents(tkDeclaringType, out MetadataEnumResult tkEvents);
 
@@ -1220,6 +1223,7 @@ namespace System
 
                         list.Add(eventInfo);
                     }
+                    GC.KeepAlive(module);
                 }
 
                 private RuntimePropertyInfo[] PopulateProperties(Filter filter)
@@ -1286,7 +1290,8 @@ namespace System
                     if (MdToken.IsNullToken(tkDeclaringType))
                         return;
 
-                    MetadataImport scope = RuntimeTypeHandle.GetMetadataImport(declaringType);
+                    RuntimeModule module = declaringType.GetRuntimeModule();
+                    MetadataImport scope = module.MetadataImport;
 
                     scope.EnumProperties(tkDeclaringType, out MetadataEnumResult tkProperties);
 
@@ -1304,7 +1309,7 @@ namespace System
 
                         if (filter.RequiresStringComparison())
                         {
-                            MdUtf8String name = declaringType.GetRuntimeModule().MetadataImport.GetName(tkProperty);
+                            MdUtf8String name = scope.GetName(tkProperty);
 
                             if (!filter.Match(name))
                                 continue;
@@ -1399,6 +1404,7 @@ namespace System
 
                         list.Add(propertyInfo);
                     }
+                    GC.KeepAlive(module);
                 }
                 #endregion
 
@@ -1571,7 +1577,9 @@ namespace System
                     while (type.IsNested)
                         type = type.DeclaringType!;
 
-                    m_namespace = RuntimeTypeHandle.GetMetadataImport((RuntimeType)type).GetNamespace(type.MetadataToken).ToString();
+                    RuntimeModule module = ((RuntimeType)type).GetRuntimeModule();
+                    m_namespace = module.MetadataImport.GetNamespace(type.MetadataToken).ToString();
+                    GC.KeepAlive(module);
                 }
 
                 return m_namespace;
@@ -3499,8 +3507,9 @@ namespace System
                 if (!IsGenericParameter)
                     throw new InvalidOperationException(SR.Arg_NotGenericParameter);
 
-
-                RuntimeTypeHandle.GetMetadataImport(this).GetGenericParamProps(MetadataToken, out GenericParameterAttributes attributes);
+                RuntimeModule module = GetRuntimeModule();
+                module.MetadataImport.GetGenericParamProps(MetadataToken, out GenericParameterAttributes attributes);
+                GC.KeepAlive(module);
 
                 return attributes;
             }

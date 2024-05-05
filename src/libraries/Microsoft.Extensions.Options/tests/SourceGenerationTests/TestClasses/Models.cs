@@ -76,7 +76,7 @@ namespace TestClasses.OptionsValidation
 
     public class RangeAttributeModelDate
     {
-#if NETCOREAPP3_1_OR_GREATER
+#if NET
         [Range(typeof(DateTime), "1/2/2004", "3/4/2004", ParseLimitsInInvariantCulture = true)]
 #else
         [Range(typeof(DateTime), "1/2/2004", "3/4/2004")]

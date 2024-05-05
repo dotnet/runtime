@@ -39,32 +39,31 @@ namespace System.Reflection
                 return null;
             }
 
-            return new TypeNameParser(typeName)
+            Metadata.TypeName? parsed = Metadata.TypeNameParser.Parse(typeName, throwOnError: throwOnError);
+            if (parsed is null)
+            {
+                return null;
+            }
+
+            return new TypeNameParser()
             {
                 _assemblyResolver = assemblyResolver,
                 _typeResolver = typeResolver,
                 _throwOnError = throwOnError,
                 _ignoreCase = ignoreCase,
                 _stackMark = Unsafe.AsPointer(ref stackMark)
-            }.Parse();
+            }.Resolve(parsed);
         }
 
-        private static bool CheckTopLevelAssemblyQualifiedName()
+        private Assembly? ResolveAssembly(AssemblyName name)
         {
-            return true;
-        }
-
-        private Assembly? ResolveAssembly(string assemblyName)
-        {
-            var name = new AssemblyName(assemblyName);
-
             Assembly? assembly;
             if (_assemblyResolver is not null)
             {
                 assembly = _assemblyResolver(name);
                 if (assembly is null && _throwOnError)
                 {
-                    throw new FileNotFoundException(SR.Format(SR.FileNotFound_ResolveAssembly, assemblyName));
+                    throw new FileNotFoundException(SR.Format(SR.FileNotFound_ResolveAssembly, name.FullName));
                 }
             }
             else
@@ -96,13 +95,11 @@ namespace System.Reflection
             Justification = "TypeNameParser.GetType is marked as RequiresUnreferencedCode.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "TypeNameParser.GetType is marked as RequiresUnreferencedCode.")]
-        private Type? GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, string? assemblyNameIfAny)
+        private Type? GetType(string escapedTypeName, ReadOnlySpan<string> nestedTypeNames, Metadata.TypeName parsedName)
         {
-            Assembly? assembly = (assemblyNameIfAny is not null) ? ResolveAssembly(assemblyNameIfAny) : null;
+            Assembly? assembly = (parsedName.AssemblyName is not null) ? ResolveAssembly(parsedName.AssemblyName.ToAssemblyName()) : null;
 
             // Both the external type resolver and the default type resolvers expect escaped type names
-            string escapedTypeName = EscapeTypeName(typeName);
-
             Type? type;
 
             // Resolve the top level type.
@@ -153,7 +150,7 @@ namespace System.Reflection
                     if (_throwOnError)
                     {
                         throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveNestedType,
-                            nestedTypeNames[i], (i > 0) ? nestedTypeNames[i - 1] : typeName));
+                            nestedTypeNames[i], (i > 0) ? nestedTypeNames[i - 1] : escapedTypeName));
                     }
                     return null;
                 }

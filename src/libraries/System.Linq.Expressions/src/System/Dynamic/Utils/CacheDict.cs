@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Threading;
 
 namespace System.Dynamic.Utils
@@ -40,25 +41,9 @@ namespace System.Dynamic.Utils
         /// <param name="size">The maximum number of elements to store will be this number aligned to next ^2.</param>
         internal CacheDict(int size)
         {
-            int alignedSize = AlignSize(size);
+            int alignedSize = (int)BitOperations.RoundUpToPowerOf2((uint)size);
             _mask = alignedSize - 1;
             _entries = new Entry[alignedSize];
-        }
-
-        private static int AlignSize(int size)
-        {
-            Debug.Assert(size > 0);
-
-            size--;
-            size |= size >> 1;
-            size |= size >> 2;
-            size |= size >> 4;
-            size |= size >> 8;
-            size |= size >> 16;
-            size++;
-
-            Debug.Assert((size & (~size + 1)) == size, "aligned size should be a power of 2");
-            return size;
         }
 
         /// <summary>

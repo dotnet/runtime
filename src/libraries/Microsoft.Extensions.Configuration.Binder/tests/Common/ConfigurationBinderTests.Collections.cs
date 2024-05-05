@@ -1532,7 +1532,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Yo2", options.ISetNoSetter.ElementAt(1));
         }
 
-#if NETCOREAPP
+#if NET
         [Fact]
         public void CanBindInstantiatedIReadOnlySet()
         {
@@ -2291,7 +2291,7 @@ namespace Microsoft.Extensions
             Assert.True(3 == options.UnInstantiatedISet.Count(), $"UnInstantiatedISet count is {options.UnInstantiatedISet.Count()} .. {options.UnInstantiatedISet.ElementAt(options.UnInstantiatedISet.Count() - 1)}");
             Assert.Equal(new string[] { "a", "A", "B" }, options.UnInstantiatedISet);
 
-#if NETCOREAPP
+#if NET
             Assert.True(3 == options.InstantiatedIReadOnlySet.Count(), $"InstantiatedIReadOnlySet count is {options.InstantiatedIReadOnlySet.Count()} .. {options.InstantiatedIReadOnlySet.ElementAt(options.InstantiatedIReadOnlySet.Count() - 1)}");
             Assert.Equal(new string[] { "a", "b", "Z" }, options.InstantiatedIReadOnlySet);
             Assert.False(options.IsSameInstantiatedIReadOnlySet());

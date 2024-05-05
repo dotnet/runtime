@@ -51,7 +51,7 @@ namespace System.Security.Cryptography.Tests.Asymmetric
             }
         }
 
-#if NETCOREAPP
+#if NET
         [Fact]
         public static void ClearCallsDispose()
         {

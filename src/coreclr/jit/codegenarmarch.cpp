@@ -910,9 +910,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             // in ARM64/ARM
             // Setup loReg (and hiReg) from the internal registers that we reserved in lower.
             //
-            regNumber loReg = treeNode->ExtractTempReg();
+            regNumber loReg = internalRegisters.Extract(treeNode);
 #ifdef TARGET_ARM64
-            regNumber hiReg = treeNode->GetSingleTempReg();
+            regNumber hiReg = internalRegisters.GetSingle(treeNode);
 #endif // TARGET_ARM64
 
             GenTreeLclVarCommon* srcLclNode = nullptr;
@@ -1268,7 +1268,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             regNumber allocatedValueReg = REG_NA;
             if (treeNode->gtNumRegs == 1)
             {
-                allocatedValueReg = treeNode->ExtractTempReg();
+                allocatedValueReg = internalRegisters.Extract(treeNode);
             }
 
             // Pick a register to store intermediate values in for the to-stack
@@ -1640,19 +1640,19 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
     {
         // Arm supports unaligned access only for integer types,
         // load the floating data as 1 or 2 integer registers and convert them to float.
-        regNumber addr = tree->ExtractTempReg();
+        regNumber addr = internalRegisters.Extract(tree);
         emit->emitIns_R_S(INS_lea, EA_PTRSIZE, addr, varNum, offs);
 
         if (targetType == TYP_FLOAT)
         {
-            regNumber floatAsInt = tree->GetSingleTempReg();
+            regNumber floatAsInt = internalRegisters.GetSingle(tree);
             emit->emitIns_R_R(INS_ldr, EA_4BYTE, floatAsInt, addr);
             emit->emitIns_Mov(INS_vmov_i2f, EA_4BYTE, targetReg, floatAsInt, /* canSkip */ false);
         }
         else
         {
-            regNumber halfdoubleAsInt1 = tree->ExtractTempReg();
-            regNumber halfdoubleAsInt2 = tree->GetSingleTempReg();
+            regNumber halfdoubleAsInt1 = internalRegisters.Extract(tree);
+            regNumber halfdoubleAsInt2 = internalRegisters.GetSingle(tree);
             emit->emitIns_R_R_I(INS_ldr, EA_4BYTE, halfdoubleAsInt1, addr, 0);
             emit->emitIns_R_R_I(INS_ldr, EA_4BYTE, halfdoubleAsInt2, addr, 4);
             emit->emitIns_R_R_R(INS_vmov_i2d, EA_8BYTE, targetReg, halfdoubleAsInt1, halfdoubleAsInt2);
@@ -1694,7 +1694,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     // The index is never contained, even if it is a constant.
     assert(index->isUsedFromReg());
 
-    const regNumber tmpReg = node->ExtractTempReg();
+    const regNumber tmpReg = internalRegisters.Extract(node);
 
     regNumber indexReg = index->GetRegNum();
 
@@ -1742,7 +1742,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
 #ifdef TARGET_ARM64
         if (!index->TypeIs(TYP_I_IMPL))
         {
-            const regNumber tmpReg2 = node->ExtractTempReg();
+            const regNumber tmpReg2 = internalRegisters.Extract(node);
             GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg2, indexReg, /* canSkip */ false);
             indexReg = tmpReg2;
         }
@@ -2662,7 +2662,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         const int dstOffsetAdjustment = helper.GetDstOffset() - dstRegAddrAlignment;
         dstRegAddrAlignment           = 0;
 
-        const regNumber tempReg = node->ExtractTempReg(RBM_ALLINT);
+        const regNumber tempReg = internalRegisters.Extract(node, RBM_ALLINT);
         genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg, dstReg, dstOffsetAdjustment, tempReg);
         dstReg = tempReg;
 
@@ -2684,7 +2684,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 
     if (shouldUse16ByteWideInstrs)
     {
-        const regNumber simdReg = node->GetSingleTempReg(RBM_ALLFLOAT);
+        const regNumber simdReg = internalRegisters.GetSingle(node, RBM_ALLFLOAT);
 
         const int initValue = (src->AsIntCon()->IconValue() & 0xFF);
         emit->emitIns_R_I(INS_movi, EA_16BYTE, simdReg, initValue, INS_OPTS_16B);
@@ -2967,23 +2967,23 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
     if ((srcOffsetAdjustment != 0) && (dstOffsetAdjustment != 0))
     {
-        const regNumber tempReg1 = node->ExtractTempReg(RBM_ALLINT);
+        const regNumber tempReg1 = internalRegisters.Extract(node, RBM_ALLINT);
         genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg1, srcReg, srcOffsetAdjustment, tempReg1);
         srcReg = tempReg1;
 
-        const regNumber tempReg2 = node->ExtractTempReg(RBM_ALLINT);
+        const regNumber tempReg2 = internalRegisters.Extract(node, RBM_ALLINT);
         genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg2, dstReg, dstOffsetAdjustment, tempReg2);
         dstReg = tempReg2;
     }
     else if (srcOffsetAdjustment != 0)
     {
-        const regNumber tempReg = node->ExtractTempReg(RBM_ALLINT);
+        const regNumber tempReg = internalRegisters.Extract(node, RBM_ALLINT);
         genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg, srcReg, srcOffsetAdjustment, tempReg);
         srcReg = tempReg;
     }
     else if (dstOffsetAdjustment != 0)
     {
-        const regNumber tempReg = node->ExtractTempReg(RBM_ALLINT);
+        const regNumber tempReg = internalRegisters.Extract(node, RBM_ALLINT);
         genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg, dstReg, dstOffsetAdjustment, tempReg);
         dstReg = tempReg;
     }
@@ -2991,16 +2991,16 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     regNumber intReg1 = REG_NA;
     regNumber intReg2 = REG_NA;
 
-    const unsigned intRegCount = node->AvailableTempRegCount(RBM_ALLINT);
+    const unsigned intRegCount = internalRegisters.Count(node, RBM_ALLINT);
 
     if (intRegCount >= 2)
     {
-        intReg1 = node->ExtractTempReg(RBM_ALLINT);
-        intReg2 = node->ExtractTempReg(RBM_ALLINT);
+        intReg1 = internalRegisters.Extract(node, RBM_ALLINT);
+        intReg2 = internalRegisters.Extract(node, RBM_ALLINT);
     }
     else if (intRegCount == 1)
     {
-        intReg1 = node->GetSingleTempReg(RBM_ALLINT);
+        intReg1 = internalRegisters.GetSingle(node, RBM_ALLINT);
         intReg2 = rsGetRsvdReg();
     }
     else
@@ -3010,8 +3010,8 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
     if (shouldUse16ByteWideInstrs)
     {
-        const regNumber simdReg1 = node->ExtractTempReg(RBM_ALLFLOAT);
-        const regNumber simdReg2 = node->GetSingleTempReg(RBM_ALLFLOAT);
+        const regNumber simdReg1 = internalRegisters.Extract(node, RBM_ALLFLOAT);
+        const regNumber simdReg2 = internalRegisters.GetSingle(node, RBM_ALLFLOAT);
 
         helper.Unroll(FP_REGSIZE_BYTES, intReg1, simdReg1, simdReg2, srcReg, dstReg, GetEmitter());
     }
@@ -3022,7 +3022,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 #endif // TARGET_ARM64
 
 #ifdef TARGET_ARM
-    const regNumber tempReg = node->ExtractTempReg(RBM_ALLINT);
+    const regNumber tempReg = internalRegisters.Extract(node, RBM_ALLINT);
 
     for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, srcOffset += regSize, dstOffset += regSize)
     {
@@ -3147,13 +3147,13 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
     if (size >= simdSize)
     {
         // Number of SIMD regs needed to save the whole src to regs.
-        const unsigned numberOfSimdRegs = tree->AvailableTempRegCount(RBM_ALLFLOAT);
+        const unsigned numberOfSimdRegs = internalRegisters.Count(tree, RBM_ALLFLOAT);
 
         // Pop all temp regs to a local array, currently, this impl is limited with LSRA's MaxInternalCount
         regNumber tempRegs[LinearScan::MaxInternalCount] = {};
         for (unsigned i = 0; i < numberOfSimdRegs; i++)
         {
-            tempRegs[i] = tree->ExtractTempReg(RBM_ALLFLOAT);
+            tempRegs[i] = internalRegisters.Extract(tree, RBM_ALLFLOAT);
         }
 
         auto emitSimdLoadStore = [&](bool load) {
@@ -3190,15 +3190,15 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
         const unsigned loadStoreSize = 1 << BitOperations::Log2(size);
         if (loadStoreSize == size)
         {
-            const regNumber tmpReg = tree->GetSingleTempReg(RBM_ALLINT);
+            const regNumber tmpReg = internalRegisters.GetSingle(tree, RBM_ALLINT);
             emitLoadStore(/* load */ true, loadStoreSize, tmpReg, 0);
             emitLoadStore(/* load */ false, loadStoreSize, tmpReg, 0);
         }
         else
         {
-            assert(tree->AvailableTempRegCount() == 2);
-            const regNumber tmpReg1 = tree->ExtractTempReg(RBM_ALLINT);
-            const regNumber tmpReg2 = tree->ExtractTempReg(RBM_ALLINT);
+            assert(internalRegisters.Count(tree) == 2);
+            const regNumber tmpReg1 = internalRegisters.Extract(tree, RBM_ALLINT);
+            const regNumber tmpReg2 = internalRegisters.Extract(tree, RBM_ALLINT);
             emitLoadStore(/* load */ true, loadStoreSize, tmpReg1, 0);
             emitLoadStore(/* load */ true, loadStoreSize, tmpReg2, size - loadStoreSize);
             emitLoadStore(/* load */ false, loadStoreSize, tmpReg1, 0);
@@ -3258,7 +3258,7 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
         // Extend liveness of dstReg in case if it gets killed by the store.
         gcInfo.gcMarkRegPtrVal(dstReg, dstNode->TypeGet());
 
-        const regNumber offsetReg = initBlkNode->GetSingleTempReg();
+        const regNumber offsetReg = internalRegisters.GetSingle(initBlkNode);
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, offsetReg, size - TARGET_POINTER_SIZE);
 
         BasicBlock* loop = genCreateTempLabel();
@@ -3342,7 +3342,7 @@ void CodeGen::genCall(GenTreeCall* call)
         const regNumber regThis = genGetThisArgReg(call);
 
 #if defined(TARGET_ARM)
-        const regNumber tmpReg = call->ExtractTempReg();
+        const regNumber tmpReg = internalRegisters.Extract(call);
         GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, tmpReg, regThis, 0);
 #elif defined(TARGET_ARM64)
         GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, REG_ZR, regThis, 0);
@@ -3368,7 +3368,7 @@ void CodeGen::genCall(GenTreeCall* call)
                    (call->IsVirtualStubRelativeIndir() && (call->gtEntryPoint.accessType == IAT_VALUE)));
             assert(call->gtControlExpr == nullptr);
 
-            regNumber tmpReg = call->GetSingleTempReg();
+            regNumber tmpReg = internalRegisters.GetSingle(call);
             // Register where we save call address in should not be overridden by epilog.
             assert((genRegMask(tmpReg) & (RBM_INT_CALLEE_TRASH & ~RBM_LR)) == genRegMask(tmpReg));
 
@@ -3376,7 +3376,7 @@ void CodeGen::genCall(GenTreeCall* call)
                 call->IsVirtualStubRelativeIndir() ? compiler->virtualStubParamInfo->GetReg() : REG_R2R_INDIRECT_PARAM;
             GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, callAddrReg);
             // We will use this again when emitting the jump in genCallInstruction in the epilog
-            call->gtRsvdRegs |= genRegMask(tmpReg);
+            internalRegisters.Add(call, genRegMask(tmpReg));
         }
 #endif
 
@@ -3666,15 +3666,25 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         if (callThroughIndirReg != REG_NA)
         {
             assert(call->IsR2ROrVirtualStubRelativeIndir());
-            regNumber targetAddrReg = call->GetSingleTempReg();
+            regNumber targetAddrReg;
             // For fast tailcalls we have already loaded the call target when processing the call node.
             if (!call->IsFastTailCall())
             {
+#ifdef TARGET_ARM
+                // For arm32 we've allocated an internal register to load the target into.
+                // Loading into lr takes 4 bytes (instead of potentially 2 with another register).
+                targetAddrReg = internalRegisters.GetSingle(call);
+#else
+                // For arm64 we just use lr and skip the internal register.
+                targetAddrReg = REG_LR;
+#endif
+
                 GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), targetAddrReg,
                                           callThroughIndirReg);
             }
             else
             {
+                targetAddrReg = internalRegisters.GetSingle(call);
                 // Register where we save call address in should not be overridden by epilog.
                 assert((genRegMask(targetAddrReg) & (RBM_INT_CALLEE_TRASH & ~RBM_LR)) == genRegMask(targetAddrReg));
             }
@@ -3731,7 +3741,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 #ifdef TARGET_ARM
             if (!validImmForBL((ssize_t)addr))
             {
-                regNumber tmpReg = call->GetSingleTempReg();
+                regNumber tmpReg = internalRegisters.GetSingle(call);
                 instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, tmpReg, (ssize_t)addr);
                 // clang-format off
                 genEmitCall(emitter::EC_INDIR_R,
@@ -4721,7 +4731,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
 
         if (offset != 0)
         {
-            regNumber tmpReg = lea->GetSingleTempReg();
+            regNumber tmpReg = internalRegisters.GetSingle(lea);
 
             // When generating fully interruptible code we have to use the "large offset" sequence
             // when calculating a EA_BYREF as we can't report a byref that points outside of the object
@@ -4803,7 +4813,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
         else
         {
             // We require a tmpReg to hold the offset
-            regNumber tmpReg = lea->GetSingleTempReg();
+            regNumber tmpReg = internalRegisters.GetSingle(lea);
 
             // First load tmpReg with the large offset constant
             instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);

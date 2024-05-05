@@ -1907,7 +1907,7 @@ namespace System.Text.Json.Serialization.Tests
 
     public static class ReflectionExtensions
     {
-#if NET6_0_OR_GREATER
+#if NET
         [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public static Type WithConstructors(
             [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]

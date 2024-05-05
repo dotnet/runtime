@@ -158,6 +158,10 @@ export class HostBuilder implements DotnetHostBuilder {
                 interpreterPgo: value,
                 interpreterPgoSaveDelay: autoSaveDelay
             });
+            if (monoConfig.runtimeOptions)
+                monoConfig.runtimeOptions.push("--interp-pgo-recording");
+            else
+                monoConfig.runtimeOptions = ["--interp-pgo-recording"];
             return this;
         } catch (err) {
             mono_exit(1, err);
@@ -268,9 +272,10 @@ export class HostBuilder implements DotnetHostBuilder {
     withRuntimeOptions (runtimeOptions: string[]): DotnetHostBuilder {
         try {
             mono_assert(runtimeOptions && Array.isArray(runtimeOptions), "must be array of strings");
-            deep_merge_config(monoConfig, {
-                runtimeOptions
-            });
+            if (monoConfig.runtimeOptions)
+                monoConfig.runtimeOptions.push(...runtimeOptions);
+            else
+                monoConfig.runtimeOptions = runtimeOptions;
             return this;
         } catch (err) {
             mono_exit(1, err);

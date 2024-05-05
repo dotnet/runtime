@@ -59,7 +59,7 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         /// <param name="value">The measurement value.</param>
         /// <param name="tags">A span of key-value pair tags associated with the measurement.</param>
-        public void Record(T value, ReadOnlySpan<KeyValuePair<string, object?>> tags) => RecordMeasurement(value, tags);
+        public void Record(T value, /*params*/ ReadOnlySpan<KeyValuePair<string, object?>> tags) => RecordMeasurement(value, tags);
 
         /// <summary>
         /// Record a measurement value.

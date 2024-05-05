@@ -14,7 +14,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	[ExpectedNoWarnings]
 	public class InlineArrayDataflow
 	{
-		public static void Main()
+		public static void Main ()
 		{
 			AccessPrimitiveTypeArray ();
 			AccessUnannotatedTypeArray ();
@@ -63,7 +63,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		// Currently tracking of annotations on inline array values is not implemented
-		[ExpectedWarning("IL2065", "GetProperty")]
+		[ExpectedWarning ("IL2065", "GetProperty")]
 		static void AccessAnnotatedTypeArray ()
 		{
 			AnnotatedTypeArray a = new AnnotatedTypeArray ();

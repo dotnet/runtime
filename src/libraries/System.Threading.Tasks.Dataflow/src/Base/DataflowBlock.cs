@@ -1470,7 +1470,7 @@ namespace System.Threading.Tasks.Dataflow
                 {
                     // When cancellation is requested, unlink the target from the source and cancel the target.
                     target._ctr = cancellationToken.Register(
-#if NET6_0_OR_GREATER
+#if NET
                         OutputAvailableAsyncTarget<TOutput>.CancelAndUnlink,
 #else
                         static state => OutputAvailableAsyncTarget<TOutput>.CancelAndUnlink(state, default),

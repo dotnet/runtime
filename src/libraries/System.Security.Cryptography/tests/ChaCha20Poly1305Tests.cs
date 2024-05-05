@@ -475,7 +475,7 @@ namespace System.Security.Cryptography.Tests
             }
             else if (PlatformDetection.IsOSX)
             {
-                // CryptoKit is supported on macOS 10.15+, which is our minimum target.
+                // CryptoKit is supported on macOS 10.15+, which is lower than our minimum target.
                 expectedIsSupported = true;
             }
             else if (PlatformDetection.OpenSslPresentOnSystem && PlatformDetection.IsOpenSslSupported)

@@ -126,7 +126,7 @@ namespace System.Threading
             nuint offset = Unsafe.OpportunisticMisalignment(ref location1, sizeof(uint));
             ref uint alignedRef = ref Unsafe.As<ushort, uint>(ref Unsafe.SubtractByteOffset(ref location1, offset));
             int bitOffset =
-                (int)((BitConverter.IsLittleEndian ? offset : sizeof(uint) - offset - sizeof(byte)) * 8); // to bit offset
+                (int)((BitConverter.IsLittleEndian ? offset : sizeof(uint) - offset - sizeof(ushort)) * 8); // to bit offset
             Debug.Assert(bitOffset is 0 or 16);
             uint mask = ~((uint)ushort.MaxValue << bitOffset);
             uint shiftedValue = (uint)value << bitOffset;
@@ -308,7 +308,7 @@ namespace System.Threading
             nuint offset = Unsafe.OpportunisticMisalignment(ref location1, sizeof(uint));
             ref uint alignedRef = ref Unsafe.As<ushort, uint>(ref Unsafe.SubtractByteOffset(ref location1, offset));
             int bitOffset =
-                (int)((BitConverter.IsLittleEndian ? offset : sizeof(uint) - offset - sizeof(byte)) * 8); // to bit offset
+                (int)((BitConverter.IsLittleEndian ? offset : sizeof(uint) - offset - sizeof(ushort)) * 8); // to bit offset
             Debug.Assert(bitOffset is 0 or 16);
             uint mask = ~((uint)ushort.MaxValue << bitOffset);
             uint shiftedValue = (uint)value << bitOffset;

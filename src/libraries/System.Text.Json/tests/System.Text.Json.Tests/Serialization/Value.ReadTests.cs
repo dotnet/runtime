@@ -391,7 +391,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private static int SingleToInt32Bits(float value)
         {
-#if NETCOREAPP
+#if NET
             return BitConverter.SingleToInt32Bits(value);
 #else
             return Unsafe.As<float, int>(ref value);
@@ -470,7 +470,7 @@ namespace System.Text.Json.Serialization.Tests
             string json;
             char fillChar = 'x';
 
-#if NETCOREAPP
+#if NET
             json = string.Create(stringLength, fillChar, (chars, fillChar) =>
             {
                 chars.Fill(fillChar);
@@ -566,7 +566,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TimeSpan>(json));
         }
 
-#if NETCOREAPP
+#if NET
         [Theory]
         [InlineData("1970-01-01")]
         [InlineData("2002-02-13")]

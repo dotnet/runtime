@@ -7,6 +7,9 @@
     <Optimize>True</Optimize>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <GCStressIncompatible>True</GCStressIncompatible>
+
+    <!-- Not even printf is AOT compatible in F# -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Runtime_72845.fs" />

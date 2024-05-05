@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Internal
         /// <returns>The <see cref="CancellationToken"/> registration.</returns>
         internal static IDisposable UnsafeRegisterChangeCallback<T>(Action<object?> callback, object? state, CancellationToken token, Action<T> onFailure, T onFailureState)
         {
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
             try
             {
                 return token.UnsafeRegister(callback, state);

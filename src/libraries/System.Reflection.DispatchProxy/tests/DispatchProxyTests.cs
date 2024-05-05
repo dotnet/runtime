@@ -557,7 +557,7 @@ namespace DispatchProxyTests
             Assert.NotNull(propertyInfo);
         }
 
-#if NETCOREAPP
+#if NET
         [Fact]
         public static void Invoke_Event_Add_And_Remove_And_Raise_Invokes_Correct_Methods_Generic_And_Non_Generic_Tests()
         {

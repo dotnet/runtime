@@ -10,7 +10,7 @@ namespace Mono.Linker.Tests.Cases.Extensibility
 	[ExpectedNoWarnings]
 	public class CustomWarningUsage
 	{
-		[ExpectedWarning ("IL2026", "--RUCMethod--", ProducedBy = Tool.Analyzer)]
+		[ExpectedWarning ("IL2026", "--RUCMethod--", Tool.Analyzer, "")]
 		public static void Main ()
 		{
 			new KnownTypeThatShouldWarn ();

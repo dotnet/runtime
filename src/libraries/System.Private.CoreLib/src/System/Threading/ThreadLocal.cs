@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 
 // A class that provides a simple, lightweight implementation of thread-local lazy-initialization, where a value is initialized once per accessing
 // thread; this provides an alternative to using a ThreadStatic static variable and having
@@ -552,40 +553,15 @@ namespace System.Threading
             }
             Debug.Assert(minSize > 0);
 
-            //
-            // Round up the size to the next power of 2
-            //
-            // The algorithm takes three steps:
-            // input -> subtract one -> propagate 1-bits to the right -> add one
-            //
-            // Let's take a look at the 3 steps in both interesting cases: where the input
-            // is (Example 1) and isn't (Example 2) a power of 2.
-            //
-            // Example 1: 100000 -> 011111 -> 011111 -> 100000
-            // Example 2: 011010 -> 011001 -> 011111 -> 100000
-            //
-            int newSize = minSize;
-
-            // Step 1: Decrement
-            newSize--;
-
-            // Step 2: Propagate 1-bits to the right.
-            newSize |= newSize >> 1;
-            newSize |= newSize >> 2;
-            newSize |= newSize >> 4;
-            newSize |= newSize >> 8;
-            newSize |= newSize >> 16;
-
-            // Step 3: Increment
-            newSize++;
+            uint newSize = BitOperations.RoundUpToPowerOf2((uint)minSize);
 
             // Don't set newSize to more than Array.MaxArrayLength
-            if ((uint)newSize > Array.MaxLength)
+            if (newSize > Array.MaxLength)
             {
-                newSize = Array.MaxLength;
+                newSize = (uint)Array.MaxLength;
             }
 
-            return newSize;
+            return (int)newSize;
         }
 
         /// <summary>

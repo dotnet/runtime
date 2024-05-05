@@ -27,7 +27,7 @@ namespace System.Globalization
             new EraInfo(1, 1912, 1, 1, 1911, 1, GregorianCalendar.MaxYear - 1911)    // era #, start year/month/day, yearOffset, minEraYear
         };
 
-        private static volatile Calendar? s_defaultInstance;
+        private static Calendar? s_defaultInstance;
 
         private readonly GregorianCalendarHelper _helper;
 

@@ -2,6 +2,9 @@
   <PropertyGroup>
     <!-- Needed for JitOptimizationSensitive -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+
+    <!-- Not even printf is AOT compatible in F# -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <NoStandardLib>True</NoStandardLib>

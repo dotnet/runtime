@@ -5,14 +5,22 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <!-- 
+    These are win/linux OS specific ways how shell variables are expanded. 
+    They are NOT the actual values, they are variable NAMES.
+    They will get expanded when the shell script is running, typically on Helix 
+  -->
   <PropertyGroup Condition="'$(BrowserHost)' != 'windows'">
-    <ExecXHarnessCmd>$HARNESS_RUNNER</ExecXHarnessCmd>
-    <XHarnessOutput>$XHARNESS_OUT</XHarnessOutput>
+    <ExecXHarnessVar>$HARNESS_RUNNER</ExecXHarnessVar>
+    <XHarnessOutputVar>$XHARNESS_OUT</XHarnessOutputVar>
+    <XHarnessCommandVar>$XHARNESS_COMMAND</XHarnessCommandVar>
+    <WasmXHarnessArgsVar>$XHARNESS_ARGS</WasmXHarnessArgsVar>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(BrowserHost)' == 'windows'">
-    <ExecXHarnessCmd>%HARNESS_RUNNER%</ExecXHarnessCmd>
-    <XHarnessOutput>%XHARNESS_OUT%</XHarnessOutput>
+    <ExecXHarnessVar>%HARNESS_RUNNER%</ExecXHarnessVar>
+    <XHarnessOutputVar>%XHARNESS_OUT%</XHarnessOutputVar>
+    <XHarnessCommandVar>%XHARNESS_COMMAND%</XHarnessCommandVar>
+    <WasmXHarnessArgsVar>%XHARNESS_ARGS%</WasmXHarnessArgsVar>
   </PropertyGroup>
 
   <Import Project="..\Directory.Build.props"/>

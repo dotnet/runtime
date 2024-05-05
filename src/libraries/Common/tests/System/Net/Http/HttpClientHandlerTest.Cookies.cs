@@ -44,7 +44,7 @@ namespace System.Net.Http.Functional.Tests
         private static string GetCookieHeaderValue(string cookieName, string cookieValue) => $"{cookieName}={cookieValue}";
 
         [Fact]
-        public async Task GetAsync_DefaultCoookieContainer_NoCookieSent()
+        public virtual async Task GetAsync_DefaultCoookieContainer_NoCookieSent()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
@@ -216,10 +216,15 @@ namespace System.Net.Http.Functional.Tests
             return cookieHeaderValue;
         }
 
-        [Fact]
+        [ConditionalFact]
         [SkipOnPlatform(TestPlatforms.Browser, "CookieContainer is not supported on Browser")]
         public async Task GetAsync_SetCookieContainerAndCookieHeader_BothCookiesSent()
         {
+            if (UseVersion == HttpVersion30)
+            {
+                throw new SkipTestException("https://github.com/dotnet/runtime/issues/101377");
+            }
+
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
@@ -313,7 +318,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient(handler))
                 {
                     client.DefaultRequestHeaders.ConnectionClose = true; // to avoid issues with connection pooling
-                        await client.GetAsync(url1);
+                    await client.GetAsync(url1);
                 }
             },
             async server =>

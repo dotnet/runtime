@@ -230,18 +230,16 @@ bool Compiler::optCopyProp(
             continue;
         }
 
-        if (tree->OperIs(GT_LCL_VAR))
+        var_types newLclType = newLclVarDsc->TypeGet();
+        if (!newLclVarDsc->lvNormalizeOnLoad())
         {
-            var_types newLclType = newLclVarDsc->TypeGet();
-            if (!newLclVarDsc->lvNormalizeOnLoad())
-            {
-                newLclType = genActualType(newLclType);
-            }
+            newLclType = genActualType(newLclType);
+        }
 
-            if (newLclType != tree->TypeGet())
-            {
-                continue;
-            }
+        var_types oldLclType = tree->OperIs(GT_LCL_VAR) ? tree->TypeGet() : varDsc->TypeGet();
+        if (newLclType != oldLclType)
+        {
+            continue;
         }
 
 #ifdef DEBUG

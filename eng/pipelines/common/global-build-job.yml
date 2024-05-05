@@ -34,6 +34,7 @@ parameters:
   extraVariablesTemplates: []
   preBuildSteps: []
   templatePath: 'templates'
+  templateContext: ''
 
 jobs:
 - template: /eng/common/${{ parameters.templatePath }}/job/job.yml
@@ -50,6 +51,9 @@ jobs:
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     enablePublishTestResults: ${{ parameters.enablePublishTestResults }}
     testResultsFormat: ${{ parameters.testResultsFormat }}
+
+    ${{ if ne(parameters.templateContext, '') }}:
+      templateContext: ${{ parameters.templateContext }}
 
     artifacts:
       publish:

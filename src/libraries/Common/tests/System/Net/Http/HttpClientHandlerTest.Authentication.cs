@@ -546,7 +546,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> EchoServersData()
         {
-            foreach (Uri serverUri in Configuration.Http.EchoServerList)
+            foreach (Uri serverUri in Configuration.Http.GetEchoServerList())
             {
                 yield return new object[] { serverUri };
             }

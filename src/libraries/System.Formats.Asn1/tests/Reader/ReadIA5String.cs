@@ -678,7 +678,7 @@ namespace System.Formats.Asn1.Tests.Reader
 
             Assert.Equal(val1.ByteArrayToHex(), val2.ByteArrayToHex());
 
-#if NETCOREAPP
+#if NET
             string expected = Encoding.ASCII.GetString(val1.Span);
 #else
             string expected = Encoding.ASCII.GetString(val1.ToArray());

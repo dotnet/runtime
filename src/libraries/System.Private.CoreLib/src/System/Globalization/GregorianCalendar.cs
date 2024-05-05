@@ -26,7 +26,7 @@ namespace System.Globalization
 
         internal static ReadOnlySpan<int> DaysToMonth366 => [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366];
 
-        private static volatile Calendar? s_defaultInstance;
+        private static Calendar? s_defaultInstance;
 
         public override DateTime MinSupportedDateTime => DateTime.MinValue;
 

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-#if !NETCOREAPP
+#if !NET
 using System.Diagnostics;
 #endif
 using System.IO;
@@ -90,7 +90,7 @@ namespace System.Net.Http.Functional.Tests
                 _expectedVersion = expectedVersion;
             }
 
-#if NETCOREAPP
+#if NET
             protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
             {
                 if (request.Version != _expectedVersion)
@@ -138,7 +138,7 @@ namespace System.Net.Http.Functional.Tests
             }
             else
             {
-#if NETCOREAPP
+#if NET
                 // Note that the sync call must be done on a different thread because it blocks until the server replies.
                 // However, the server-side of the request handling is in many cases invoked after the client, thus deadlocking the test.
                 return Task.Run(() => client.Send(request, completionOption, cancellationToken));
@@ -159,7 +159,7 @@ namespace System.Net.Http.Functional.Tests
             }
             else
             {
-#if NETCOREAPP
+#if NET
                 // Note that the sync call must be done on a different thread because it blocks until the server replies.
                 // However, the server-side of the request handling is in many cases invoked after the client, thus deadlocking the test.
                 return Task.Run(() => invoker.Send(request, cancellationToken));
@@ -176,7 +176,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (async)
             {
-#if NETCOREAPP
+#if NET
                 // No CancellationToken accepting overload on NETFX.
                 return content.ReadAsStreamAsync(cancellationToken);
 #else
@@ -186,7 +186,7 @@ namespace System.Net.Http.Functional.Tests
             }
             else
             {
-#if NETCOREAPP
+#if NET
                 return Task.FromResult(content.ReadAsStream(cancellationToken));
 #else
                 // Framework won't ever have the sync API.
@@ -199,7 +199,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static Task<byte[]> GetByteArrayAsync(this HttpClient client, bool async, bool useCopyTo, Uri uri)
         {
-#if NETCOREAPP
+#if NET
             return Task.Run(async () =>
             {
                 var m = new HttpRequestMessage(HttpMethod.Get, uri);

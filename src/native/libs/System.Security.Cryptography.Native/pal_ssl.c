@@ -701,6 +701,11 @@ int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, int con
     return retValue;
 }
 
+int CryptoNative_SslCtxRemoveSession(SSL_CTX* ctx, SSL_SESSION* session)
+{
+    return SSL_CTX_remove_session(ctx, session);
+}
+
 const char* CryptoNative_SslGetServerName(SSL* ssl)
 {
     return SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name);

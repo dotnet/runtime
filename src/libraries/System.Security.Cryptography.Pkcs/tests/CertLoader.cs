@@ -14,7 +14,7 @@ namespace Test.Cryptography
         // Prefer ephemeral when available
         private static X509KeyStorageFlags GetBestKeyStorageFlags()
         {
-#if NETCOREAPP
+#if NET
             if (OperatingSystem.IsWindows())
             {
                 // On Windows 7 ephemeral keys with a key usage embedded in the PFX
@@ -176,7 +176,7 @@ namespace Test.Cryptography
 
         internal override CertLoader CloneAsEphemeralLoader()
         {
-#if NETCOREAPP
+#if NET
             return new CertLoaderFromRawData(CerData, PfxData, Password)
             {
                 KeyStorageFlags = X509KeyStorageFlags.EphemeralKeySet,

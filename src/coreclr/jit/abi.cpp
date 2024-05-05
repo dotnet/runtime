@@ -258,14 +258,20 @@ bool ABIPassingInformation::HasExactlyOneStackSegment() const
 //
 bool ABIPassingInformation::IsSplitAcrossRegistersAndStack() const
 {
-    bool anyReg   = false;
-    bool anyStack = false;
-    for (unsigned i = 0; i < NumSegments; i++)
+    if (NumSegments < 2)
     {
-        anyReg |= Segments[i].IsPassedInRegister();
-        anyStack |= Segments[i].IsPassedOnStack();
+        return false;
     }
-    return anyReg && anyStack;
+
+    bool isFirstInReg = Segments[0].IsPassedInRegister();
+    for (unsigned i = 1; i < NumSegments; i++)
+    {
+        if (isFirstInReg != Segments[i].IsPassedInRegister())
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 //-----------------------------------------------------------------------------
@@ -415,6 +421,9 @@ ABIPassingInformation SwiftABIClassifier::Classify(Compiler*    comp,
             {
                 ABIPassingSegment newSegment = elemInfo.Segments[j];
                 newSegment.Offset += lowering->offsets[i];
+                // Adjust the tail size if necessary; the lowered sequence can
+                // pass the tail as a larger type than the tail size.
+                newSegment.Size = min(newSegment.Size, structLayout->GetSize() - newSegment.Offset);
                 segments.Push(newSegment);
             }
         }

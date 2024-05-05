@@ -3,7 +3,7 @@
 
 using System.Diagnostics;
 
-#if !NETCOREAPP
+#if !NET
 using System.Buffers;
 #endif
 
@@ -29,7 +29,7 @@ namespace System.IO
                 // if slicing is required, call TextWriter.Write(ROS<char>) if available;
                 // otherwise rent an array and implement the Write routine ourselves
                 ReadOnlySpan<char> sliced = value.AsSpan(offset, count);
-#if NETCOREAPP
+#if NET
                 writer.Write(sliced);
 #else
                 char[] rented = ArrayPool<char>.Shared.Rent(sliced.Length);

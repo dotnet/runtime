@@ -488,7 +488,7 @@ namespace System.Resources
                 if (typeName.StartsWith("ResourceTypeCode.", StringComparison.Ordinal))
                 {
                     typeName = typeName.Substring(17);  // Remove through '.'
-#if NETCOREAPP
+#if NET
                     ResourceTypeCode typeCode = Enum.Parse<ResourceTypeCode>(typeName);
 #else
                     ResourceTypeCode typeCode = (ResourceTypeCode)Enum.Parse(typeof(ResourceTypeCode), typeName);

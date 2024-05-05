@@ -951,12 +951,12 @@ namespace ILLink.Shared.TrimAnalysis
             => RequiresDataflowAnalysisDueToSignature(method.Method);
 
 #pragma warning disable CA1822 // Other partial implementations are not in the ilc project
-        internal partial MethodReturnValue GetMethodReturnValue(MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+        internal partial MethodReturnValue GetMethodReturnValue(MethodProxy method, bool isNewObj, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 #pragma warning restore CA1822 // Mark members as static
-            => new MethodReturnValue(method.Method, dynamicallyAccessedMemberTypes);
+            => new MethodReturnValue(method.Method, isNewObj, dynamicallyAccessedMemberTypes);
 
-        internal partial MethodReturnValue GetMethodReturnValue(MethodProxy method)
-            => GetMethodReturnValue(method, GetReturnParameterAnnotation(method.Method));
+        internal partial MethodReturnValue GetMethodReturnValue(MethodProxy method, bool isNewObj)
+            => GetMethodReturnValue(method, isNewObj, GetReturnParameterAnnotation(method.Method));
 
         internal partial GenericParameterValue GetGenericParameterValue(GenericParameterProxy genericParameter)
             => new GenericParameterValue(genericParameter.GenericParameter, GetGenericParameterAnnotation(genericParameter.GenericParameter));

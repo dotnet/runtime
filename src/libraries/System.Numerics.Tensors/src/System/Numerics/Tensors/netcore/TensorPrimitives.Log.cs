@@ -161,7 +161,7 @@ namespace System.Numerics.Tensors
         private readonly struct LogBaseOperator<T> : IBinaryOperator<T>
             where T : ILogarithmicFunctions<T>
         {
-            public static bool Vectorizable => LogOperator<T>.Vectorizable;
+            public static bool Vectorizable => false; //LogOperator<T>.Vectorizable; // TODO: https://github.com/dotnet/runtime/issues/100535
             public static T Invoke(T x, T y) => T.Log(x, y);
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => LogOperator<T>.Invoke(x) / LogOperator<T>.Invoke(y);
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => LogOperator<T>.Invoke(x) / LogOperator<T>.Invoke(y);

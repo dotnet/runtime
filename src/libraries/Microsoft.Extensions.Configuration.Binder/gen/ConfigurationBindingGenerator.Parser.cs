@@ -57,6 +57,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     ConfigTypes = _createdTypeSpecs.Values.OrderBy(s => s.TypeRef.FullyQualifiedName).ToImmutableEquatableArray(),
                     EmitEnumParseMethod = _emitEnumParseMethod,
                     EmitGenericParseEnum = _emitGenericParseEnum,
+                    EmitNotNullIfNotNull = _typeSymbols.NotNullIfNotNullAttribute is not null,
                     EmitThrowIfNullMethod = IsThrowIfNullMethodToBeEmitted()
                 };
             }
@@ -660,6 +661,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         if (member is IPropertySymbol { IsIndexer: false, IsImplicitlyDeclared: false } property && !IsUnsupportedType(property.Type))
                         {
                             string propertyName = property.Name;
+
+                            if (property.IsOverride || properties?.ContainsKey(propertyName) is true)
+                            {
+                                continue;
+                            }
+
                             TypeRef propertyTypeRef = EnqueueTransitiveType(typeParseInfo, property.Type, DiagnosticDescriptors.PropertyNotSupported, propertyName);
 
                             AttributeData? attributeData = property.GetAttributes().FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.ConfigurationKeyNameAttribute));

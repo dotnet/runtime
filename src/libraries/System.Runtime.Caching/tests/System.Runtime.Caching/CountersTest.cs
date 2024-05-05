@@ -73,7 +73,7 @@ namespace MonoTests.System.Runtime.Caching
         {
             MemoryCacheCounterValues counters = new MemoryCacheCounterValues();
 
-#if NETCOREAPP
+#if NET
             var events = new ConcurrentQueue<EventWrittenEventArgs>();
             using (var listener = new TestEventListener("System.Runtime.Caching." + cacheName, EventLevel.Verbose, eventCounterInterval: 0.1d))
             {
@@ -134,7 +134,7 @@ namespace MonoTests.System.Runtime.Caching
             return counters;
         }
 
-#if NETCOREAPP
+#if NET
         private static async Task WaitForEventCountersAsync(ConcurrentQueue<EventWrittenEventArgs> events)
         {
             DateTime startTime = DateTime.UtcNow;

@@ -206,6 +206,7 @@ if(CLR_CMAKE_HOST_UNIX)
   # warnings and errors to be suppressed.
   # Suppress these warnings here to avoid breaking the build.
   add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>:-Wno-null-arithmetic>)
+  add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,Clang>:-Wno-sync-alignment>)
   add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,GNU>:-Wno-conversion-null>)
   add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,GNU>:-Wno-pointer-arith>)
 

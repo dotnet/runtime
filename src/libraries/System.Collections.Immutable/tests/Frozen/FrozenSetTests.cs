@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Xunit;
-using System.Numerics;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 
@@ -298,7 +297,7 @@ namespace System.Collections.Frozen.Tests
 
         private sealed class EmptySet :
             ISet<T>
-#if NET5_0_OR_GREATER
+#if NET
             , IReadOnlySet<T>
 #endif
         {
@@ -337,6 +336,35 @@ namespace System.Collections.Frozen.Tests
             byte[] bytes1 = new byte[stringLength];
             rand.NextBytes(bytes1);
             return Convert.ToBase64String(bytes1);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(25)]
+        [InlineData(50)]
+        [InlineData(75)]
+        [InlineData(100)]
+        public void Contains_WithNonAscii(int percentageWithNonAscii)
+        {
+            Random rand = new(42);
+
+            HashSet<string> expected = new(GetIEqualityComparer());
+            for (int i = 0; i < 100; i++)
+            {
+                int stringLength = rand.Next(4, 30);
+                byte[] bytes = new byte[stringLength];
+                rand.NextBytes(bytes);
+                string value = Convert.ToBase64String(bytes);
+                if (rand.Next(100) < percentageWithNonAscii)
+                {
+                    value = value.Replace(value[rand.Next(value.Length)], '\u05D0');
+                }
+                expected.Add(value);
+            }
+
+            FrozenSet<string> actual = expected.ToFrozenSet(GetIEqualityComparer());
+
+            Assert.All(expected, s => actual.Contains(s));
         }
     }
 

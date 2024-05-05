@@ -622,9 +622,13 @@ bool MethodContextReader::IsMethodExcluded(MethodContext* mc)
 
 void MethodContextReader::Reset(const int* newIndexes, int newIndexCount)
 {
-    Indexes = newIndexes;
-    IndexCount = newIndexCount;
+    __int64 pos    = 0;
+    BOOL    result = SetFilePointerEx(fileHandle, *(PLARGE_INTEGER)&pos, NULL, FILE_BEGIN);
+    assert(result);
+    
+    Indexes     = newIndexes;
+    IndexCount  = newIndexCount;
     curIndexPos = 0;
-    curMCIndex = 0;
+    curMCIndex  = 0;
     curTOCIndex = 0;
 }

@@ -64,6 +64,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public INamedTypeSymbol? MemberInfo  { get; }
         public INamedTypeSymbol? ParameterInfo { get; }
         public INamedTypeSymbol? Delegate   { get; }
+        public INamedTypeSymbol? NotNullIfNotNullAttribute { get; }
 
         public KnownTypeSymbols(CSharpCompilation compilation)
         {
@@ -132,6 +133,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             IntPtr = Compilation.GetSpecialType(SpecialType.System_IntPtr);
             UIntPtr = Compilation.GetSpecialType(SpecialType.System_UIntPtr);
             Delegate = Compilation.GetSpecialType(SpecialType.System_Delegate);
+
+            // Only generate nullable attributes if available
+            NotNullIfNotNullAttribute = compilation.GetBestTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute");
         }
     }
 }

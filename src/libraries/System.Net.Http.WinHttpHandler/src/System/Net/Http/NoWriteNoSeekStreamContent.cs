@@ -29,7 +29,7 @@ namespace System.Net.Http
             SerializeToStreamAsync(stream, context, CancellationToken.None);
 
 #pragma warning disable IDE0060
-#if NETCOREAPP
+#if NET
         protected override
 #else
         internal

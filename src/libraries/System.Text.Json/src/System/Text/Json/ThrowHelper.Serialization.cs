@@ -412,7 +412,7 @@ namespace System.Text.Json
             string message = ex.Message;
 
             // Insert the "Path" portion before "LineNumber" and "BytePositionInLine".
-#if NETCOREAPP
+#if NET
             int iPos = message.AsSpan().LastIndexOf(" LineNumber: ");
 #else
             int iPos = message.LastIndexOf(" LineNumber: ", StringComparison.Ordinal);

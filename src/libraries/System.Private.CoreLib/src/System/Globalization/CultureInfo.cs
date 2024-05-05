@@ -126,8 +126,8 @@ namespace System.Globalization
             s_currentThreadUICulture = args.CurrentValue;
         }
 
-        private static volatile Dictionary<string, CultureInfo>? s_cachedCulturesByName;
-        private static volatile Dictionary<int, CultureInfo>? s_cachedCulturesByLcid;
+        private static Dictionary<string, CultureInfo>? s_cachedCulturesByName;
+        private static Dictionary<int, CultureInfo>? s_cachedCulturesByLcid;
 
         // The parent culture.
         private CultureInfo? _parent;

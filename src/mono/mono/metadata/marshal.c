@@ -5749,7 +5749,7 @@ MonoMarshalType *
 mono_marshal_load_type_info (MonoClass* klass)
 {
 	int j, count = 0;
-	guint32 native_size = 0, min_align = 1, packing;
+	guint32 native_size = 0, min_align = 1, packing, explicit_size = 0;
 	MonoMarshalType *info;
 	MonoClassField* field;
 	gpointer iter;
@@ -5793,7 +5793,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 	info->num_fields = count;
 
 	/* Try to find a size for this type in metadata */
-	mono_metadata_packing_from_typedef (m_class_get_image (klass), m_class_get_type_token (klass), NULL, &native_size);
+	explicit_size = mono_metadata_packing_from_typedef (m_class_get_image (klass), m_class_get_type_token (klass), NULL, &native_size);
 
 	if (m_class_get_parent (klass)) {
 		int parent_size = mono_class_native_size (m_class_get_parent (klass), NULL);
@@ -5879,6 +5879,9 @@ mono_marshal_load_type_info (MonoClass* klass)
 				align_size = FALSE;
 			else
 				min_align = MIN (min_align, packing);
+		} else if (layout == TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT) {
+			if (explicit_size && native_size == info->native_size)
+				align_size = FALSE;
 		}
 	}
 

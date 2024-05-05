@@ -48,8 +48,8 @@
 
     <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == ''">$(RepoRoot)src\mono\wasi\wasi-sdk\</WASI_SDK_PATH>
     <WasiBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasi', 'build'))</WasiBuildTargetsDir>
-    <WasiSdkDirForHelixPayload>$(HelixDependenciesStagingPath)\wasi-sdk</WasiSdkDirForHelixPayload>
-    <WasmtimeDirForHelixPayload>$(HelixDependenciesStagingPath)\wasmtime</WasmtimeDirForHelixPayload>
+    <WasiSdkDirForHelixPayload>$(HelixDependenciesStagingPath)$(WorkItemPrefix)wasi-sdk</WasiSdkDirForHelixPayload>
+    <WasmtimeDirForHelixPayload>$(HelixDependenciesStagingPath)$(WorkItemPrefix)wasmtime</WasmtimeDirForHelixPayload>
 
     <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
     <NeedsWasiSdk Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsWasiSdk>
@@ -104,10 +104,12 @@
   <Import Project="$(RepositoryEngineeringDir)testing\wasi-provisioning.targets" />
 
   <Target Name="PrepareHelixCorrelationPayload_Wasi">
+    <Error Condition="'$(Scenario)' != 'WasmTestOnWasmtime' and 
+                      '$(Scenario)' != 'BuildWasmApps'"
+                      Text="Only supported scenarios are WasmTestOnWasmtime and BuildWasmApps at the moment. It was $(Scenario)." />
+
     <Error Condition="'$(Scenario)' == '' or '$(Scenario)' == 'normal'" Text="Only supported scenario is WasmTestOnWasmtime and BuildWasmApps at the moment." />
     <Error Text="Cannot find %24(WasmtimeDir)=$(WasmtimeDir)" Condition="'$(WasmtimeDir)' == '' or !Exists($(WasmtimeDir))" />
-    <Exec Command="ls -lsa $(WasmtimeDir)" Condition="'$(HostOS)' == 'linux'" />
-    <Exec Command="ls -lsa $(WasmtimeDirForHelixPayload)" Condition="'$(HostOS)' == 'linux'" />
     <ItemGroup>
       <HelixCorrelationPayload Include="$(WasmtimeDirForHelixPayload)" Destination="wasmtime" Condition="'$(NeedsWasmtime)' == 'true'" />
 

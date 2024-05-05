@@ -138,10 +138,8 @@ IF_DEF(SVE_2BS, IS_NONE, NONE) // Instruction has 2  possible encoding types, ty
 *****************************************************************************/
 
 IF_DEF(SVE_AA_3A,   IS_NONE, NONE) // SVE_AA_3A  ........xx...... ...gggmmmmmddddd  -- SVE bitwise logical operations (predicated)
-IF_DEF(SVE_AB_3A,   IS_NONE, NONE) // SVE_AB_3A  ........xx...... ...gggmmmmmddddd  -- SVE integer add/subtract vectors (predicated)
 IF_DEF(SVE_AB_3B,   IS_NONE, NONE) // SVE_AB_3B  ................ ...gggmmmmmddddd  -- SVE integer add/subtract vectors (predicated)
 IF_DEF(SVE_AC_3A,   IS_NONE, NONE) // SVE_AC_3A  ........xx...... ...gggmmmmmddddd  -- SVE integer divide vectors (predicated)
-IF_DEF(SVE_AD_3A,   IS_NONE, NONE) // SVE_AD_3A  ........xx...... ...gggmmmmmddddd  -- SVE integer min/max/difference (predicated)
 IF_DEF(SVE_AE_3A,   IS_NONE, NONE) // SVE_AE_3A  ........xx...... ...gggmmmmmddddd  -- SVE integer multiply vectors (predicated)
 IF_DEF(SVE_AF_3A,   IS_NONE, NONE) // SVE_AF_3A  ........xx...... ...gggnnnnnddddd  -- SVE bitwise logical reduction (predicated)
 IF_DEF(SVE_AG_3A,   IS_NONE, NONE) // SVE_AG_3A  ........xx...... ...gggnnnnnddddd  -- SVE bitwise logical reduction (quadwords)

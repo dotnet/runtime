@@ -109,6 +109,7 @@ set(CORECLR_LIBRARIES
     interop
     coreclrminipal
     gc_pal
+    cdac_contract_descriptor
 )
 
 if(CLR_CMAKE_TARGET_ARCH_AMD64)

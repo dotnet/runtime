@@ -643,7 +643,8 @@ public:
             PgoInstrumentationSchema** pSchema, /* OUT */
             uint32_t* pCountSchemaItems, /* OUT */
             uint8_t**pInstrumentationData, /* OUT */
-            PgoSource *pPgoSource /* OUT */
+            PgoSource *pPgoSource, /* OUT */
+            bool* pDynamicPgo /* OUT */
             ) override final;
 
     void recordCallSite(

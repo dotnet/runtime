@@ -3,6 +3,7 @@
 
 #include "pedecoder.h"
 #include "executableallocator.h"
+#include <configuration.h>
 
 #if USE_LAZY_PREFERRED_RANGE
 // Preferred region to allocate the code in.
@@ -260,7 +261,7 @@ HRESULT ExecutableAllocator::StaticInitialize(FatalErrorHandler fatalErrorHandle
 #endif
 
     g_fatalErrorHandler = fatalErrorHandler;
-    g_isWXorXEnabled = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableWriteXorExecute) != 0;
+    g_isWXorXEnabled = Configuration::GetKnobBooleanValue(W("System.Runtime.EnableWriteXorExecute"), CLRConfig::EXTERNAL_EnableWriteXorExecute);
     g_instance = new (nothrow) ExecutableAllocator();
     if (g_instance == NULL)
     {

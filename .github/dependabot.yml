@@ -1,0 +1,12 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 5
+    labels:
+      - area-codeflow
+    ignore:
+      - dependency-name: "actions/checkout"
+        update-types: ["version-update:semver-patch","version-update:semver-minor"]

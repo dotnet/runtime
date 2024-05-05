@@ -233,6 +233,9 @@ namespace Microsoft.NET.Build.Tasks
                 case "riscv64":
                     architecture = Architecture.RiscV64;
                     break;
+                case "loongarch64":
+                    architecture = Architecture.LoongArch64;
+                    break;
                 default:
                     return false;
             }
@@ -391,6 +394,7 @@ namespace Microsoft.NET.Build.Tasks
                 Architecture.Arm => "arm",
                 Architecture.Arm64 => "arm64",
                 Architecture.RiscV64 => "riscv64",
+                Architecture.LoongArch64 => "loongarch64",
                 _ => null
             };
         }

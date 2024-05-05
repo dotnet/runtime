@@ -7,7 +7,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
     {
         ECDsa Create();
         ECDsa Create(int keySize);
-#if NETCOREAPP
+#if NET
         ECDsa Create(ECCurve curve);
 #endif
         bool IsCurveValid(Oid oid);
@@ -26,7 +26,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             return s_provider.Create(keySize);
         }
 
-#if NETCOREAPP
+#if NET
         public static ECDsa Create(ECCurve curve)
         {
             return s_provider.Create(curve);

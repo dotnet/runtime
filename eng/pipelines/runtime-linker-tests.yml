@@ -135,3 +135,4 @@ extends:
               - template: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
                 parameters:
                     extraTestArgs: '/p:WasmBuildNative=false'
+                    runAotTests: false

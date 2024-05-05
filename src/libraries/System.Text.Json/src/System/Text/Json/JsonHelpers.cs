@@ -76,7 +76,7 @@ namespace System.Text.Json
             }
         }
 
-#if !NETCOREAPP
+#if !NET
         /// <summary>
         /// Returns <see langword="true"/> if <paramref name="value"/> is a valid Unicode scalar
         /// value, i.e., is in [ U+0000..U+D7FF ], inclusive; or [ U+E000..U+10FFFF ], inclusive.
@@ -165,7 +165,7 @@ namespace System.Text.Json
         /// <returns></returns>
         public static string Utf8GetString(ReadOnlySpan<byte> bytes)
         {
-#if NETCOREAPP
+#if NET
             return Encoding.UTF8.GetString(bytes);
 #else
             if (bytes.Length == 0)
@@ -191,7 +191,7 @@ namespace System.Text.Json
             IEqualityComparer<TKey> comparer)
             where TKey : notnull
         {
-#if !NETCOREAPP
+#if !NET
             var dictionary = new Dictionary<TKey, TValue>(comparer);
 
             foreach (KeyValuePair<TKey, TValue> item in collection)
@@ -207,7 +207,7 @@ namespace System.Text.Json
 
         public static bool IsFinite(double value)
         {
-#if NETCOREAPP
+#if NET
             return double.IsFinite(value);
 #else
             return !(double.IsNaN(value) || double.IsInfinity(value));
@@ -216,7 +216,7 @@ namespace System.Text.Json
 
         public static bool IsFinite(float value)
         {
-#if NETCOREAPP
+#if NET
             return float.IsFinite(value);
 #else
             return !(float.IsNaN(value) || float.IsInfinity(value));
@@ -254,7 +254,7 @@ namespace System.Text.Json
         private const string IntegerRegexPattern = @"^\s*(\+|\-)?[0-9]+\s*$";
         private const int IntegerRegexTimeoutMs = 200;
 
-#if NETCOREAPP
+#if NET
         [GeneratedRegex(IntegerRegexPattern, RegexOptions.None, matchTimeoutMilliseconds: IntegerRegexTimeoutMs)]
         private static partial Regex CreateIntegerRegex();
 #else

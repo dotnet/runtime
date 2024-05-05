@@ -80,7 +80,6 @@ dn_simdhash_ght_replaced (dn_simdhash_ght_data data, void * old_key, void * new_
 #define DN_SIMDHASH_NO_DEFAULT_NEW 1
 
 #include "dn-simdhash-specialization.h"
-#include "dn-simdhash-ght-compatible.h"
 
 dn_simdhash_ght_t *
 dn_simdhash_ght_new (

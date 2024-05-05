@@ -21,7 +21,7 @@ namespace System.Runtime.Caching.Configuration
        </system.caching>
     */
 
-#if NETCOREAPP
+#if NET
     [UnsupportedOSPlatform("browser")]
 #endif
     internal sealed class MemoryCacheSection : ConfigurationSection

@@ -148,6 +148,8 @@
 
       <WasiClangCompileOptimizationFlag Condition="'$(WasiClangCompileOptimizationFlag)' == ''">$(_WasiClangOptimizationFlagDefault)</WasiClangCompileOptimizationFlag>
       <WasmCompileOptimizationFlag>$(WasiClangCompileOptimizationFlag)</WasmCompileOptimizationFlag>
+      <WasiBitcodeCompileOptimizationFlag Condition="'$(WasiBitcodeCompileOptimizationFlag)' == '' and '$(Configuration)' == 'Release'">-O2</WasiBitcodeCompileOptimizationFlag>
+      <WasiBitcodeCompileOptimizationFlag Condition="'$(WasiBitcodeCompileOptimizationFlag)' == ''"   >$(WasiClangCompileOptimizationFlag)</WasiBitcodeCompileOptimizationFlag>
       <WasiClangLinkOptimizationFlag    Condition="'$(WasiClangLinkOptimizationFlag)' == '' and '$(Configuration)' == 'Release'">-O2</WasiClangLinkOptimizationFlag>
       <WasiClangLinkOptimizationFlag    Condition="'$(WasiClangLinkOptimizationFlag)' == ''"   >$(WasiClangCompileOptimizationFlag)</WasiClangLinkOptimizationFlag>
       <WasmLinkOptimizationFlag>$(WasiClangLinkOptimizationFlag)</WasmLinkOptimizationFlag>
@@ -265,8 +267,9 @@
   <!-- FIXME: merge with some other target -->
   <Target Name="_WasiBeforeWriteRspForCompilingBitcodeRsp" BeforeTargets="_WasmWriteRspForCompilingBitcode">
     <ItemGroup>
-      <_BitcodeLDFlags Include="@(_WasiClangLDFlags)" />
-      <_BitcodeLDFlags Include="$(WasiClangExtraBitcodeLDFlags)" />
+      <_BitcodeCompileFlags Include="@(WasiBitcodeCompileOptimizationFlag)" />
+      <_BitcodeCompileFlags Include="@(_WasiClangCommonFlags)" />
+      <_BitcodeCompileFlags Include="$(WasiClangExtraBitcodeCompileFlags)" />
     </ItemGroup>
   </Target>
 

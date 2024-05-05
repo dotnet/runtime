@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using ILCompiler.Dataflow;
 using ILLink.Shared.DataFlow;
@@ -16,9 +17,10 @@ namespace ILLink.Shared.TrimAnalysis
     /// </summary>
     internal partial record MethodReturnValue
     {
-        public MethodReturnValue(MethodDesc method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+        public MethodReturnValue(MethodDesc method, bool isNewObj, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
         {
-            StaticType = method.Signature.ReturnType;
+            Debug.Assert(!isNewObj || method.IsConstructor, "isNewObj can only be true for constructors");
+            StaticType = isNewObj ? method.OwningType : method.Signature.ReturnType;
             Method = method;
             DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
         }

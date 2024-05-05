@@ -36,7 +36,7 @@ The general rule we follow is "use Visual Studio defaults".
 
 An [EditorConfig](https://editorconfig.org "EditorConfig homepage") file (`.editorconfig`) has been provided at the root of the runtime repository, enabling C# auto-formatting conforming to the above guidelines.
 
-We also use the [.NET Codeformatter Tool](https://github.com/dotnet/codeformatter) to ensure the code base maintains a consistent style over time, the tool automatically fixes the code base to conform to the guidelines outlined above.
+We also use the [dotnet-format tool](https://learn.microsoft.com/dotnet/core/tools/dotnet-format) to ensure the code base maintains a consistent style over time, the tool automatically fixes the code base to conform to the guidelines outlined above.
 
 ### Example File:
 

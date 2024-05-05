@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         internal static bool CanDeriveNewPublicKey { get; }
             = EcDiffieHellman.Tests.ECDiffieHellmanFactory.CanDeriveNewPublicKey;
 
-#if NETCOREAPP
+#if NET
         [Fact]
         public static void DiminishedCoordsRoundtrip()
         {

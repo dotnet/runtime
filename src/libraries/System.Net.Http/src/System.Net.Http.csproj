@@ -164,6 +164,8 @@
              Link="Common\System\Text\ValueStringBuilder.AppendSpanFormattable.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
+    <Compile Include="$(CommonPath)System\Net\CredentialCacheKey.cs"
+             Link="Common\System\Net\CredentialCacheKey.cs" />
   </ItemGroup>
 
   <!-- SocketsHttpHandler implementation -->
@@ -216,6 +218,7 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\IHttpTrace.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\IMultiWebProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\MultiProxy.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\PreAuthCredentialCache.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\RawConnectionStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\RedirectHandler.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpConnectionContext.cs" />

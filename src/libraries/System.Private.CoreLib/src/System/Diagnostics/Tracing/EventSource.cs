@@ -1461,6 +1461,8 @@ namespace System.Diagnostics.Tracing
         /// <param name="disposing">True if called from Dispose(), false if called from the finalizer.</param>
         protected virtual void Dispose(bool disposing)
         {
+            // NOTE: If !IsSupported, we use ILLink.Substitutions to nop out the finalizer.
+            //       Do not add any code before this line (or you'd need to delete the substitution).
             if (!IsSupported)
             {
                 return;
@@ -1504,6 +1506,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         ~EventSource()
         {
+            // NOTE: we nop out this method body if !IsSupported using ILLink.Substitutions.
             this.Dispose(false);
         }
 #endregion

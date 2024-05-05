@@ -36,7 +36,7 @@ namespace System.Reflection.Internal
             return bytesRead;
         }
 
-#if NETCOREAPP
+#if NET
         // Duplicate the Read(byte[]) logic here instead of refactoring both to use Spans
         // so we don't affect perf on .NET Framework.
         public override int Read(Span<byte> buffer)

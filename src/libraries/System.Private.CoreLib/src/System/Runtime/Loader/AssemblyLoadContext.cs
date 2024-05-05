@@ -30,7 +30,7 @@ namespace System.Runtime.Loader
             Unloading
         }
 
-        private static volatile Dictionary<long, WeakReference<AssemblyLoadContext>>? s_allContexts;
+        private static Dictionary<long, WeakReference<AssemblyLoadContext>>? s_allContexts;
         private static long s_nextId;
 
         [MemberNotNull(nameof(s_allContexts))]

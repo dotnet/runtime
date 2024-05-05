@@ -8,6 +8,8 @@ using Xunit.Abstractions;
 using System.Net.Test.Common;
 using System.Net.Quic;
 
+using Microsoft.DotNet.XUnitExtensions;
+
 namespace System.Net.Http.Functional.Tests
 {
     public abstract class HttpClientHandler_AltSvc_Test : HttpClientHandlerTestBase
@@ -27,10 +29,15 @@ namespace System.Net.Http.Functional.Tests
             return client;
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(AltSvcHeaderUpgradeVersions))]
         public async Task AltSvc_Header_Upgrade_Success(Version fromVersion, bool overrideHost)
         {
+            if (UseVersion == HttpVersion30 && fromVersion == HttpVersion.Version11 && overrideHost)
+            {
+                throw new SkipTestException("https://github.com/dotnet/runtime/issues/91757");
+            }
+
             // The test makes a request to a HTTP/1 or HTTP/2 server first, which supplies an Alt-Svc header pointing to the second server.
             using GenericLoopbackServer firstServer =
                 fromVersion.Major switch
@@ -71,9 +78,14 @@ namespace System.Net.Http.Functional.Tests
                 { HttpVersion.Version20, false }
             };
 
-        [Fact]
+        [ConditionalFact]
         public async Task AltSvc_ConnectionFrame_UpgradeFrom20_Success()
         {
+            if (UseVersion == HttpVersion30)
+            {
+                throw new SkipTestException("https://github.com/dotnet/runtime/issues/101376");
+            }
+
             using Http2LoopbackServer firstServer = Http2LoopbackServer.CreateServer();
             using Http3LoopbackServer secondServer = CreateHttp3LoopbackServer();
             using HttpClient client = CreateHttpClient(HttpVersion.Version20);

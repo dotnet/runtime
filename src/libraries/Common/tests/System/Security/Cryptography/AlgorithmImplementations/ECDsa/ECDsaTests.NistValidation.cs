@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         // FIPS 186-4 ECDSA test vectors
         // 186-3ecdsatestvectors.zip
         // SigGen.txt
-#if NETCOREAPP
+#if NET
         [Fact]
         public void ValidateNistP256Sha256()
         {

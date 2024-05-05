@@ -914,7 +914,7 @@ void CodeGen::genCodeForLongUMod(GenTreeOp* node)
     //   xor edx, edx
     //   div divisor->GetRegNum()
     //   mov eax, temp
-    const regNumber tempReg = node->GetSingleTempReg();
+    const regNumber tempReg = internalRegisters.GetSingle(node);
     inst_Mov(TYP_INT, tempReg, REG_EAX, /* canSkip */ false);
     inst_Mov(TYP_INT, REG_EAX, REG_EDX, /* canSkip */ false);
     instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_EDX);
@@ -1761,7 +1761,7 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
     inst_JMP(EJ_je, skipLabel);
 
     // emit the call to the EE-helper that stops for GC (or other reasons)
-    regNumber tmpReg = tree->GetSingleTempReg(RBM_ALLINT);
+    regNumber tmpReg = internalRegisters.GetSingle(tree, RBM_ALLINT);
     assert(genIsValidIntReg(tmpReg));
 
     genEmitHelperCall(CORINFO_HELP_STOP_FOR_GC, 0, EA_UNKNOWN, tmpReg);
@@ -2334,7 +2334,7 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
         }
         else
         {
-            regNumber tempXmm = lclNode->GetSingleTempReg();
+            regNumber tempXmm = internalRegisters.GetSingle(lclNode);
             assert(tempXmm != targetReg);
             inst_Mov(TYP_FLOAT, tempXmm, reg1, /* canSkip */ false);
             GetEmitter()->emitIns_SIMD_R_R_R(INS_punpckldq, size, targetReg, targetReg, tempXmm);
@@ -2675,7 +2675,7 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
     if ((size >= simdSize) && (simdSize > 0))
     {
         // Number of SIMD regs needed to save the whole src to regs.
-        unsigned numberOfSimdRegs = tree->AvailableTempRegCount(RBM_ALLFLOAT);
+        unsigned numberOfSimdRegs = internalRegisters.Count(tree, RBM_ALLFLOAT);
 
         // Lowering takes care to only introduce this node such that we will always have enough
         // temporary SIMD registers to fully load the source and avoid any potential issues with overlap.
@@ -2685,7 +2685,7 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
         regNumber tempRegs[LinearScan::MaxInternalCount] = {};
         for (unsigned i = 0; i < numberOfSimdRegs; i++)
         {
-            tempRegs[i] = tree->ExtractTempReg(RBM_ALLFLOAT);
+            tempRegs[i] = internalRegisters.Extract(tree, RBM_ALLFLOAT);
         }
 
         auto emitSimdLoadStore = [&](bool load) {
@@ -2770,15 +2770,15 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
         unsigned loadStoreSize = 1 << BitOperations::Log2(size);
         if (loadStoreSize == size)
         {
-            regNumber tmpReg = tree->GetSingleTempReg(RBM_ALLINT);
+            regNumber tmpReg = internalRegisters.GetSingle(tree, RBM_ALLINT);
             emitScalarLoadStore(/* load */ true, loadStoreSize, tmpReg, 0);
             emitScalarLoadStore(/* load */ false, loadStoreSize, tmpReg, 0);
         }
         else
         {
-            assert(tree->AvailableTempRegCount() == 2);
-            regNumber tmpReg1 = tree->ExtractTempReg(RBM_ALLINT);
-            regNumber tmpReg2 = tree->ExtractTempReg(RBM_ALLINT);
+            assert(internalRegisters.Count(tree) == 2);
+            regNumber tmpReg1 = internalRegisters.Extract(tree, RBM_ALLINT);
+            regNumber tmpReg2 = internalRegisters.Extract(tree, RBM_ALLINT);
             emitScalarLoadStore(/* load */ true, loadStoreSize, tmpReg1, 0);
             emitScalarLoadStore(/* load */ true, loadStoreSize, tmpReg2, size - loadStoreSize);
             emitScalarLoadStore(/* load */ false, loadStoreSize, tmpReg1, 0);
@@ -2855,12 +2855,12 @@ void CodeGen::genLclHeap(GenTree* tree)
         // since we don't need any internal registers.
         if (compiler->info.compInitMem)
         {
-            assert(tree->AvailableTempRegCount() == 0);
+            assert(internalRegisters.Count(tree) == 0);
             regCnt = targetReg;
         }
         else
         {
-            regCnt = tree->GetSingleTempReg();
+            regCnt = internalRegisters.GetSingle(tree);
 
             // Above, we put the size in targetReg. Now, copy it to our new temp register if necessary.
             inst_Mov(size->TypeGet(), regCnt, targetReg, /* canSkip */ true);
@@ -2954,7 +2954,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         // via BLK explicitly, so just bump the stack pointer.
         if ((amount >= compiler->eeGetPageSize()) || (TARGET_POINTER_SIZE == 4))
         {
-            regCnt = tree->GetSingleTempReg();
+            regCnt = internalRegisters.GetSingle(tree);
             instGen_Set_Reg_To_Imm(EA_PTRSIZE, regCnt, -(ssize_t)amount);
             genStackPointerDynamicAdjustmentWithProbe(regCnt);
             // lastTouchDelta is dynamic, and can be up to a page. So if we have outgoing arg space,
@@ -2971,7 +2971,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     }
 
     // We should not have any temp registers at this point.
-    assert(tree->AvailableTempRegCount() == 0);
+    assert(internalRegisters.Count(tree) == 0);
 
     if (compiler->info.compInitMem)
     {
@@ -3234,7 +3234,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 #ifdef FEATURE_SIMD
     if (willUseSimdMov)
     {
-        regNumber srcXmmReg = node->GetSingleTempReg(RBM_ALLFLOAT);
+        regNumber srcXmmReg = internalRegisters.GetSingle(node, RBM_ALLFLOAT);
         unsigned  regSize   = compiler->roundDownSIMDSize(size);
         var_types loadType  = compiler->getSIMDTypeForSize(regSize);
         simd_t    vecCon;
@@ -3392,7 +3392,7 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
         // Extend liveness of dstReg in case if it gets killed by the store.
         gcInfo.gcMarkRegPtrVal(dstReg, dstNode->TypeGet());
 
-        const regNumber offsetReg = initBlkNode->GetSingleTempReg();
+        const regNumber offsetReg = internalRegisters.GetSingle(initBlkNode);
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, offsetReg, size - TARGET_POINTER_SIZE);
 
         BasicBlock* loop = genCreateTempLabel();
@@ -3531,7 +3531,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
     if ((size >= regSize) && (regSize > 0))
     {
-        regNumber tempReg = node->GetSingleTempReg(RBM_ALLFLOAT);
+        regNumber tempReg = internalRegisters.GetSingle(node, RBM_ALLFLOAT);
 
         instruction simdMov = simdUnalignedMovIns();
 
@@ -3593,7 +3593,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     // Fill the remainder with normal loads/stores
     if (size > 0)
     {
-        regNumber tempReg = node->GetSingleTempReg(RBM_ALLINT);
+        regNumber tempReg = internalRegisters.GetSingle(node, RBM_ALLINT);
 
 #ifdef TARGET_AMD64
         unsigned regSize = REGSIZE_BYTES;
@@ -3878,11 +3878,11 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
     if (loadSize >= XMM_REGSIZE_BYTES)
 #endif
     {
-        xmmTmpReg = putArgNode->GetSingleTempReg(RBM_ALLFLOAT);
+        xmmTmpReg = internalRegisters.GetSingle(putArgNode, RBM_ALLFLOAT);
     }
     if ((loadSize % XMM_REGSIZE_BYTES) != 0)
     {
-        intTmpReg = putArgNode->GetSingleTempReg(RBM_ALLINT);
+        intTmpReg = internalRegisters.GetSingle(putArgNode, RBM_ALLINT);
     }
 
 #ifdef TARGET_X86
@@ -3934,7 +3934,7 @@ void CodeGen::genStructPutArgRepMovs(GenTreePutArgStk* putArgNode)
 
     // Make sure we got the arguments of the cpblk operation in the right registers, and that
     // 'src' is contained as expected.
-    assert(putArgNode->gtRsvdRegs == (RBM_RDI | RBM_RCX | RBM_RSI));
+    assert(internalRegisters.GetAll(putArgNode) == (RBM_RDI | RBM_RCX | RBM_RSI));
     assert(src->isContained());
 
     genConsumePutStructArgStk(putArgNode, REG_RDI, REG_RSI, REG_RCX);
@@ -4219,7 +4219,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         {
             // If the destination of the CpObj is on the stack, make sure we allocated
             // RCX to emit the movsp (alias for movsd or movsq for 32 and 64 bits respectively).
-            assert((cpObjNode->gtRsvdRegs & RBM_RCX) != 0);
+            assert((internalRegisters.GetAll(cpObjNode) & RBM_RCX) != 0);
 
             GetEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, slots);
             instGen(INS_r_movsp);
@@ -4269,7 +4269,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
                 {
                     // Otherwise, we can save code-size and improve CQ by emitting
                     // rep movsp (alias for movsd/movsq for x86/x64)
-                    assert((cpObjNode->gtRsvdRegs & RBM_RCX) != 0);
+                    assert((internalRegisters.GetAll(cpObjNode) & RBM_RCX) != 0);
 
                     GetEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, nonGcSlotCount);
                     instGen(INS_r_movsp);
@@ -4300,7 +4300,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
     regNumber idxReg  = treeNode->AsOp()->gtOp1->GetRegNum();
     regNumber baseReg = treeNode->AsOp()->gtOp2->GetRegNum();
 
-    regNumber tmpReg = treeNode->GetSingleTempReg();
+    regNumber tmpReg = internalRegisters.GetSingle(treeNode);
 
     // load the ip-relative offset (which is relative to start of fgFirstBB)
     GetEmitter()->emitIns_R_ARX(INS_mov, EA_4BYTE, baseReg, baseReg, idxReg, 4, 0);
@@ -4427,7 +4427,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
             // Extend liveness of addr
             gcInfo.gcMarkRegPtrVal(addr->GetRegNum(), addr->TypeGet());
 
-            const regNumber tmpReg = node->GetSingleTempReg();
+            const regNumber tmpReg = internalRegisters.GetSingle(node);
             GetEmitter()->emitIns_R_AR(INS_mov, size, REG_RAX, addr->GetRegNum(), 0);
             BasicBlock* loop = genCreateTempLabel();
             genDefineTempLabel(loop);
@@ -5306,7 +5306,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
 
     regNumber tmpReg = REG_NA;
 #ifdef TARGET_64BIT
-    tmpReg = node->GetSingleTempReg();
+    tmpReg = internalRegisters.GetSingle(node);
 #endif
 
     // Generate the bounds check if necessary.
@@ -5356,7 +5356,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
             // The VM doesn't allow such large array elements but let's be sure.
             noway_assert(scale <= INT32_MAX);
 #else  // !TARGET_64BIT
-            tmpReg = node->GetSingleTempReg();
+            tmpReg = internalRegisters.GetSingle(node);
 #endif // !TARGET_64BIT
 
             GetEmitter()->emitIns_R_I(emitter::inst3opImulForReg(tmpReg), EA_PTRSIZE, indexReg,
@@ -7239,7 +7239,7 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
             // We need to check if the value is not greater than 0xFFFFFFFF but this value
             // cannot be encoded in an immediate operand. Use a right shift to test if the
             // upper 32 bits are zero. This requires a temporary register.
-            const regNumber tempReg = cast->GetSingleTempReg();
+            const regNumber tempReg = internalRegisters.GetSingle(cast);
             assert(tempReg != reg);
             GetEmitter()->emitIns_Mov(INS_mov, EA_8BYTE, tempReg, reg, /* canSkip */ false);
             GetEmitter()->emitIns_R_I(INS_shr_N, EA_8BYTE, tempReg, 32);
@@ -7255,7 +7255,7 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
         case GenIntCastDesc::CHECK_INT_RANGE:
         {
             // Emit "if ((long)(int)x != x) goto OVERFLOW"
-            const regNumber regTmp = cast->GetSingleTempReg();
+            const regNumber regTmp = internalRegisters.GetSingle(cast);
             GetEmitter()->emitIns_Mov(INS_movsxd, EA_8BYTE, regTmp, reg, true);
             GetEmitter()->emitIns_R_R(INS_cmp, EA_8BYTE, reg, regTmp);
             genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
@@ -7666,7 +7666,7 @@ void CodeGen::genCkfinite(GenTree* treeNode)
     regNumber targetReg  = treeNode->GetRegNum();
 
     // Extract exponent into a register.
-    regNumber tmpReg = treeNode->GetSingleTempReg();
+    regNumber tmpReg = internalRegisters.GetSingle(treeNode);
 
     genConsumeReg(op1);
 
@@ -8357,17 +8357,17 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
     unsigned  prevFieldOffset = currentOffset;
     regNumber intTmpReg       = REG_NA;
     regNumber simdTmpReg      = REG_NA;
-    if (putArgStk->AvailableTempRegCount() != 0)
+    if (internalRegisters.Count(putArgStk) != 0)
     {
-        regMaskTP rsvdRegs = putArgStk->gtRsvdRegs;
+        regMaskTP rsvdRegs = internalRegisters.GetAll(putArgStk);
         if ((rsvdRegs & RBM_ALLINT) != 0)
         {
-            intTmpReg = putArgStk->GetSingleTempReg(RBM_ALLINT);
+            intTmpReg = internalRegisters.GetSingle(putArgStk, RBM_ALLINT);
             assert(genIsValidIntReg(intTmpReg));
         }
         if ((rsvdRegs & RBM_ALLFLOAT) != 0)
         {
-            simdTmpReg = putArgStk->GetSingleTempReg(RBM_ALLFLOAT);
+            simdTmpReg = internalRegisters.GetSingle(putArgStk, RBM_ALLFLOAT);
             assert(genIsValidFloatReg(simdTmpReg));
         }
         assert(genCountBits(rsvdRegs) == (unsigned)((intTmpReg == REG_NA) ? 0 : 1) + ((simdTmpReg == REG_NA) ? 0 : 1));

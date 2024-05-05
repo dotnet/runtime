@@ -1,8 +1,14 @@
 parameters:
   archType: ''
   extraTestArgs: ''
+  runAotTests: true
 
 steps:
   # Execute tests
   - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) -s libs.tests -c $(_BuildConfig) $(crossArg) /p:TestAssemblies=false /p:TestTrimming=true $(_officialBuildParameter) /bl:$(Build.SourcesDirectory)/artifacts/log/$(buildConfigUpper)/TrimmingTests.binlog ${{ parameters.extraTestArgs }}
     displayName: Run Trimming Tests
+
+  # Execute AOT test app tests
+  - ${{ if eq(parameters.runAotTests, true) }}:
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) -s libs.tests -c $(_BuildConfig) $(crossArg) /p:TestAssemblies=false /p:RunNativeAotTestApps=true $(_officialBuildParameter) /bl:$(Build.SourcesDirectory)/artifacts/log/$(buildConfigUpper)/NativeAotTestAppTests.binlog ${{ parameters.extraTestArgs }}
+      displayName: Run Native AOT Test App Tests

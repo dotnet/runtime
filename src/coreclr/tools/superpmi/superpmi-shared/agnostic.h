@@ -519,6 +519,7 @@ struct Agnostic_GetPgoInstrumentationResults
     DWORD dataByteCount;
     DWORD result;
     DWORD pgoSource;
+    DWORD dynamicPgo;
 };
 
 struct Agnostic_GetProfilingHandle

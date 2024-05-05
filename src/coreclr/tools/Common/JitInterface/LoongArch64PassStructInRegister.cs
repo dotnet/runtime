@@ -29,12 +29,6 @@ namespace Internal.JitInterface
                 return (uint)StructFloatFieldInfoFlags.STRUCT_NO_FLOAT_FIELD;
             }
 
-            //// The SIMD Intrinsic types are meant to be handled specially and should not be passed as struct registers
-            if (typeDesc.IsIntrinsic)
-            {
-                throw new NotImplementedException("For LoongArch64, SIMD would be implemented later");
-            }
-
             MetadataType mdType = typeDesc as MetadataType;
             Debug.Assert(mdType != null);
 

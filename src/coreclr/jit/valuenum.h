@@ -905,6 +905,9 @@ public:
     // of the length argument to a GT_BOUNDS_CHECK node.
     bool IsVNCheckedBound(ValueNum vn);
 
+    // Returns true if the VN is known to be a cast to ulong
+    bool IsVNCastToULong(ValueNum vn, ValueNum* castedOp);
+
     // Record that a VN is known to appear as the conservative value number of the length
     // argument to a GT_BOUNDS_CHECK node.
     void SetVNIsCheckedBound(ValueNum vn);

@@ -8,7 +8,9 @@
     <win_ChromeRevision>1250580</win_ChromeRevision>
     <win_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/1250586</win_ChromeBaseSnapshotUrl>
     <win_V8Version>12.3.219</win_V8Version>
-    <linux_FirefoxRevision>124.0.2</linux_FirefoxRevision>
+    <linux_FirefoxRevision>125.0.1</linux_FirefoxRevision>
     <linux_GeckoDriverRevision>0.34.0</linux_GeckoDriverRevision>
+    <win_FirefoxRevision>125.0.1</win_FirefoxRevision>
+    <win_GeckoDriverRevision>0.34.0</win_GeckoDriverRevision>
   </PropertyGroup>
 </Project>

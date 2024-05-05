@@ -146,9 +146,12 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     m_comp->fgPgoSynthesized = true;
     m_comp->fgPgoConsistent  = !m_approximate;
 
+    m_comp->Metrics.ProfileSynthesizedBlendedOrRepaired++;
+
     if (m_approximate)
     {
         JITDUMP("Profile is inconsistent. Bypassing post-phase consistency checks.\n");
+        m_comp->Metrics.ProfileInconsistentInitially++;
     }
 
 #ifdef DEBUG

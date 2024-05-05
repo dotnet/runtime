@@ -780,6 +780,9 @@
   <data name="InvalidOperation_UnsupportedBlockSize" xml:space="preserve">
     <value>The algorithm's block size is not supported.</value>
   </data>
+  <data name="InvalidOperation_AlreadyReading" xml:space="preserve">
+    <value>This operation is not supported once the algorithm has started reading.</value>
+  </data>
   <data name="NotSupported_ECDsa_Csp" xml:space="preserve">
     <value>CryptoApi ECDsa keys are not supported.</value>
   </data>

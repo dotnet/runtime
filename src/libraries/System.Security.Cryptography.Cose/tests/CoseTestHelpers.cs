@@ -588,7 +588,7 @@ namespace System.Security.Cryptography.Cose.Tests
 
             w.WriteDouble(default);
             yield return ReturnDataAndReset(w);
-#if NETCOREAPP
+#if NET
             w.WriteHalf(default);
             yield return ReturnDataAndReset(w);
 #endif

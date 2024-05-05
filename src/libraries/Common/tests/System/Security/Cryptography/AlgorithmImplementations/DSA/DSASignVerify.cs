@@ -75,7 +75,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
     }
 
-#if NETCOREAPP
+#if NET
     [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
     public sealed class DSASignVerify_Span : DSASignVerify
     {

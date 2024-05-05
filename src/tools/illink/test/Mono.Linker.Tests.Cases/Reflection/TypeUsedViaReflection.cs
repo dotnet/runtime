@@ -331,9 +331,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		// Small difference in formatting between analyzer/NativeAOT/linker
-		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName,Assembly>, Func<Assembly,String,Boolean,Type>, Boolean, Boolean)'", ProducedBy = Tool.Trimmer)]
-		[ExpectedWarning ("IL2096", "'System.Type.GetType(String,Func`2<AssemblyName,Assembly>,Func`4<Assembly,String,Boolean,Type>,Boolean,Boolean)'", ProducedBy = Tool.NativeAot)]
-		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean, Boolean)'", ProducedBy = Tool.Analyzer)]
+		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName,Assembly>, Func<Assembly,String,Boolean,Type>, Boolean, Boolean)'", Tool.Trimmer, "")]
+		[ExpectedWarning ("IL2096", "'System.Type.GetType(String,Func`2<AssemblyName,Assembly>,Func`4<Assembly,String,Boolean,Type>,Boolean,Boolean)'", Tool.NativeAot, "")]
+		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean, Boolean)'", Tool.Analyzer, "")]
 		static void TestTypeOverloadWith5ParametersWithIgnoreCase ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+OverloadWith5ParametersWithIgnoreCase";
@@ -384,9 +384,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		// Small difference in formatting between analyzer/NativeAOT/linker
-		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName,Assembly>, Func<Assembly,String,Boolean,Type>, Boolean, Boolean)'", ProducedBy = Tool.Trimmer)]
-		[ExpectedWarning ("IL2096", "'System.Type.GetType(String,Func`2<AssemblyName,Assembly>,Func`4<Assembly,String,Boolean,Type>,Boolean,Boolean)'", ProducedBy = Tool.NativeAot)]
-		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean, Boolean)'", ProducedBy = Tool.Analyzer)]
+		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName,Assembly>, Func<Assembly,String,Boolean,Type>, Boolean, Boolean)'", Tool.Trimmer, "")]
+		[ExpectedWarning ("IL2096", "'System.Type.GetType(String,Func`2<AssemblyName,Assembly>,Func`4<Assembly,String,Boolean,Type>,Boolean,Boolean)'", Tool.NativeAot, "")]
+		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean, Boolean)'", Tool.Analyzer, "")]
 		static void TestUnknownIgnoreCase5Params (int num)
 		{
 			const string reflectionTypeKeptString = "mono.linker.tests.cases.reflection.TypeUsedViaReflection+CaseUnknown2, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";

@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
 using Xunit;
 
 namespace System.Tests
@@ -355,6 +356,172 @@ namespace System.Tests
         //
         // IFloatingPoint
         //
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
+        public static void ConvertToIntegerTest()
+        {
+            // Signed Values
+
+            Assert.Equal(0, FloatingPointHelper<double>.ConvertToInteger<short>(double.MinValue));
+            Assert.Equal(int.MinValue, FloatingPointHelper<double>.ConvertToInteger<int>(double.MinValue));
+            Assert.Equal(long.MinValue, FloatingPointHelper<double>.ConvertToInteger<long>(double.MinValue));
+            Assert.Equal(Int128.MinValue, FloatingPointHelper<double>.ConvertToInteger<Int128>(double.MinValue));
+            Assert.Equal(nint.MinValue, FloatingPointHelper<double>.ConvertToInteger<nint>(double.MinValue));
+            Assert.Equal(0, FloatingPointHelper<double>.ConvertToInteger<sbyte>(double.MinValue));
+
+            Assert.Equal(2, FloatingPointHelper<double>.ConvertToInteger<short>(2.6));
+            Assert.Equal(2, FloatingPointHelper<double>.ConvertToInteger<int>(2.6));
+            Assert.Equal(2, FloatingPointHelper<double>.ConvertToInteger<long>(2.6));
+            Assert.Equal(2, FloatingPointHelper<double>.ConvertToInteger<Int128>(2.6));
+            Assert.Equal(2, FloatingPointHelper<double>.ConvertToInteger<nint>(2.6));
+            Assert.Equal(2, FloatingPointHelper<double>.ConvertToInteger<sbyte>(2.6));
+
+            Assert.Equal(-1, FloatingPointHelper<double>.ConvertToInteger<short>(double.MaxValue));
+            Assert.Equal(int.MaxValue, FloatingPointHelper<double>.ConvertToInteger<int>(double.MaxValue));
+            Assert.Equal(long.MaxValue, FloatingPointHelper<double>.ConvertToInteger<long>(double.MaxValue));
+            Assert.Equal(Int128.MaxValue, FloatingPointHelper<double>.ConvertToInteger<Int128>(double.MaxValue));
+            Assert.Equal(nint.MaxValue, FloatingPointHelper<double>.ConvertToInteger<nint>(double.MaxValue));
+            Assert.Equal(-1, FloatingPointHelper<double>.ConvertToInteger<sbyte>(double.MaxValue));
+
+            // Unsigned Values
+
+            Assert.Equal(byte.MinValue, FloatingPointHelper<double>.ConvertToInteger<byte>(double.MinValue));
+            Assert.Equal(ushort.MinValue, FloatingPointHelper<double>.ConvertToInteger<ushort>(double.MinValue));
+            Assert.Equal(uint.MinValue, FloatingPointHelper<double>.ConvertToInteger<uint>(double.MinValue));
+            Assert.Equal(ulong.MinValue, FloatingPointHelper<double>.ConvertToInteger<ulong>(double.MinValue));
+            Assert.Equal(UInt128.MinValue, FloatingPointHelper<double>.ConvertToInteger<UInt128>(double.MinValue));
+            Assert.Equal(nuint.MinValue, FloatingPointHelper<double>.ConvertToInteger<nuint>(double.MinValue));
+
+            Assert.Equal(2u, FloatingPointHelper<double>.ConvertToInteger<byte>(2.6));
+            Assert.Equal(2u, FloatingPointHelper<double>.ConvertToInteger<ushort>(2.6));
+            Assert.Equal(2u, FloatingPointHelper<double>.ConvertToInteger<uint>(2.6));
+            Assert.Equal(2u, FloatingPointHelper<double>.ConvertToInteger<ulong>(2.6));
+            Assert.Equal(2u, FloatingPointHelper<double>.ConvertToInteger<UInt128>(2.6));
+            Assert.Equal(2u, FloatingPointHelper<double>.ConvertToInteger<nuint>(2.6));
+
+            Assert.Equal(byte.MaxValue, FloatingPointHelper<double>.ConvertToInteger<byte>(double.MaxValue));
+            Assert.Equal(ushort.MaxValue, FloatingPointHelper<double>.ConvertToInteger<ushort>(double.MaxValue));
+            Assert.Equal(uint.MaxValue, FloatingPointHelper<double>.ConvertToInteger<uint>(double.MaxValue));
+            Assert.Equal(ulong.MaxValue, FloatingPointHelper<double>.ConvertToInteger<ulong>(double.MaxValue));
+            Assert.Equal(UInt128.MaxValue, FloatingPointHelper<double>.ConvertToInteger<UInt128>(double.MaxValue));
+            Assert.Equal(nuint.MaxValue, FloatingPointHelper<double>.ConvertToInteger<nuint>(double.MaxValue));
+        }
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
+        public static void ConvertToIntegerNativeTest()
+        {
+            // Signed Values
+
+            Assert.Equal(0, FloatingPointHelper<double>.ConvertToIntegerNative<short>(double.MinValue));
+            Assert.Equal(int.MinValue, FloatingPointHelper<double>.ConvertToIntegerNative<int>(double.MinValue));
+            Assert.Equal(long.MinValue, FloatingPointHelper<double>.ConvertToIntegerNative<long>(double.MinValue));
+            Assert.Equal(Int128.MinValue, FloatingPointHelper<double>.ConvertToIntegerNative<Int128>(double.MinValue));
+            Assert.Equal(nint.MinValue, FloatingPointHelper<double>.ConvertToIntegerNative<nint>(double.MinValue));
+            Assert.Equal(0, FloatingPointHelper<double>.ConvertToIntegerNative<sbyte>(double.MinValue));
+
+            Assert.Equal(2, FloatingPointHelper<double>.ConvertToIntegerNative<short>(2.6));
+            Assert.Equal(2, FloatingPointHelper<double>.ConvertToIntegerNative<int>(2.6));
+            Assert.Equal(2, FloatingPointHelper<double>.ConvertToIntegerNative<long>(2.6));
+            Assert.Equal(2, FloatingPointHelper<double>.ConvertToIntegerNative<Int128>(2.6));
+            Assert.Equal(2, FloatingPointHelper<double>.ConvertToIntegerNative<nint>(2.6));
+            Assert.Equal(2, FloatingPointHelper<double>.ConvertToIntegerNative<sbyte>(2.6));
+
+            if (Sse2.IsSupported)
+            {
+                // On Xarch:
+                // * Conversion to int is natively supported and returns 0x8000_0000
+                // * Conversion to long is natively supported on 64-bit and returns 0x8000_0000_0000_0000
+
+                Assert.Equal(0, FloatingPointHelper<double>.ConvertToIntegerNative<short>(double.MaxValue));
+                Assert.Equal(int.MinValue, FloatingPointHelper<double>.ConvertToIntegerNative<int>(double.MaxValue));
+                Assert.Equal(nint.MinValue, FloatingPointHelper<double>.ConvertToIntegerNative<nint>(double.MaxValue));
+                Assert.Equal(0, FloatingPointHelper<double>.ConvertToIntegerNative<sbyte>(double.MaxValue));
+
+                if (Environment.Is64BitProcess)
+                {
+                    Assert.Equal(long.MinValue, FloatingPointHelper<double>.ConvertToIntegerNative<long>(double.MaxValue));
+                }
+                else
+                {
+                    Assert.Equal(long.MaxValue, FloatingPointHelper<double>.ConvertToIntegerNative<long>(double.MaxValue));
+                }
+            }
+            else
+            {
+                Assert.Equal(-1, FloatingPointHelper<double>.ConvertToIntegerNative<short>(double.MaxValue));
+                Assert.Equal(int.MaxValue, FloatingPointHelper<double>.ConvertToIntegerNative<int>(double.MaxValue));
+                Assert.Equal(long.MaxValue, FloatingPointHelper<double>.ConvertToIntegerNative<long>(double.MaxValue));
+                Assert.Equal(nint.MaxValue, FloatingPointHelper<double>.ConvertToIntegerNative<nint>(double.MaxValue));
+                Assert.Equal(-1, FloatingPointHelper<double>.ConvertToIntegerNative<sbyte>(double.MaxValue));
+            }
+            Assert.Equal(Int128.MaxValue, FloatingPointHelper<double>.ConvertToIntegerNative<Int128>(double.MaxValue));
+
+            // Unsigned Values
+
+            if (Sse2.IsSupported)
+            {
+                // On Xarch:
+                // * Conversion to uint is natively supported w/ Avx512 and returns 0xFFFF_FFFF
+                // * Conversion to ulong is natively supported on 64-bit w/ Avx512 and returns 0xFFFF_FFFF_FFFF_FFFF
+
+                if (Avx512F.IsSupported)
+                {
+                    Assert.Equal(uint.MaxValue, FloatingPointHelper<double>.ConvertToIntegerNative<uint>(double.MinValue));
+                    Assert.Equal(nuint.MaxValue, FloatingPointHelper<double>.ConvertToIntegerNative<nuint>(double.MinValue));
+                }
+                else
+                {
+                    Assert.Equal(uint.MinValue, FloatingPointHelper<double>.ConvertToIntegerNative<uint>(double.MinValue));
+                    Assert.Equal(nuint.MinValue, FloatingPointHelper<double>.ConvertToIntegerNative<nuint>(double.MinValue));
+                }
+
+                if (Environment.Is64BitProcess && Avx512F.IsSupported)
+                {
+                    Assert.Equal(ulong.MaxValue, FloatingPointHelper<double>.ConvertToIntegerNative<ulong>(double.MinValue));
+                }
+                else
+                {
+                    Assert.Equal(ulong.MinValue, FloatingPointHelper<double>.ConvertToIntegerNative<ulong>(double.MinValue));
+                }
+            }
+            else
+            {
+                Assert.Equal(uint.MinValue, FloatingPointHelper<double>.ConvertToIntegerNative<uint>(double.MinValue));
+                Assert.Equal(ulong.MinValue, FloatingPointHelper<double>.ConvertToIntegerNative<ulong>(double.MinValue));
+                Assert.Equal(nuint.MinValue, FloatingPointHelper<double>.ConvertToIntegerNative<nuint>(double.MinValue));
+            }
+            Assert.Equal(byte.MinValue, FloatingPointHelper<double>.ConvertToIntegerNative<byte>(double.MinValue));
+            Assert.Equal(ushort.MinValue, FloatingPointHelper<double>.ConvertToIntegerNative<ushort>(double.MinValue));
+            Assert.Equal(UInt128.MinValue, FloatingPointHelper<double>.ConvertToIntegerNative<UInt128>(double.MinValue));
+
+            Assert.Equal(2u, FloatingPointHelper<double>.ConvertToIntegerNative<byte>(2.6));
+            Assert.Equal(2u, FloatingPointHelper<double>.ConvertToIntegerNative<ushort>(2.6));
+            Assert.Equal(2u, FloatingPointHelper<double>.ConvertToIntegerNative<uint>(2.6));
+            Assert.Equal(2u, FloatingPointHelper<double>.ConvertToIntegerNative<ulong>(2.6));
+            Assert.Equal(2u, FloatingPointHelper<double>.ConvertToIntegerNative<UInt128>(2.6));
+            Assert.Equal(2u, FloatingPointHelper<double>.ConvertToIntegerNative<nuint>(2.6));
+
+            if (Sse2.IsSupported)
+            {
+                // On Xarch:
+                // * Conversion to uint is natively supported w/ Avx512 and returns 0xFFFF_FFFF
+                // * Conversion to ulong is natively supported on 64-bit w/ Avx512 and returns 0xFFFF_FFFF_FFFF_FFFF
+
+                Assert.Equal(byte.MinValue, FloatingPointHelper<double>.ConvertToIntegerNative<byte>(double.MaxValue));
+                Assert.Equal(ushort.MinValue, FloatingPointHelper<double>.ConvertToIntegerNative<ushort>(double.MaxValue));
+            }
+            else
+            {
+                Assert.Equal(byte.MaxValue, FloatingPointHelper<double>.ConvertToIntegerNative<byte>(double.MaxValue));
+                Assert.Equal(ushort.MaxValue, FloatingPointHelper<double>.ConvertToIntegerNative<ushort>(double.MaxValue));
+            }
+            Assert.Equal(uint.MaxValue, FloatingPointHelper<double>.ConvertToIntegerNative<uint>(double.MaxValue));
+            Assert.Equal(ulong.MaxValue, FloatingPointHelper<double>.ConvertToIntegerNative<ulong>(double.MaxValue));
+            Assert.Equal(UInt128.MaxValue, FloatingPointHelper<double>.ConvertToIntegerNative<UInt128>(double.MaxValue));
+            Assert.Equal(nuint.MaxValue, FloatingPointHelper<double>.ConvertToIntegerNative<nuint>(double.MaxValue));
+        }
 
         [Fact]
         public static void GetExponentByteCountTest()
@@ -1055,7 +1222,7 @@ namespace System.Tests
             AssertBitwiseEqual(-0.0, NumberBaseHelper<double>.CreateChecked<decimal>(-0.0m));
             AssertBitwiseEqual(+0.0, NumberBaseHelper<double>.CreateChecked<decimal>(+0.0m));
             AssertBitwiseEqual(+1.0, NumberBaseHelper<double>.CreateChecked<decimal>(+1.0m));
-            AssertBitwiseEqual(+79228162514264337593543950335.0, NumberBaseHelper<double>.CreateChecked<decimal>(decimal.MaxValue));   
+            AssertBitwiseEqual(+79228162514264337593543950335.0, NumberBaseHelper<double>.CreateChecked<decimal>(decimal.MaxValue));
         }
 
         [Fact]

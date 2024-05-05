@@ -164,6 +164,10 @@ jobs:
       - src/tools/illink/*
       - global.json
 
+    - subset: tools_cdacreader
+      include:
+      - src/native/managed/cdacreader/*
+
     - subset: installer
       include:
       exclude:

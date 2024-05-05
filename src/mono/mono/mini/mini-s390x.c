@@ -464,7 +464,7 @@ mono_arch_fregname (int reg)
 const char *
 mono_arch_xregname (int reg)
 {
-	if (reg < s390_VR_NREG)
+	if (reg >= 0 && reg < s390_VR_NREG)
 		return vrNames [reg];
 	else
 		return "unknown";
@@ -1580,7 +1580,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 						inst->inst_offset  = offset + (8 - size);
 				}
 			}
-			offset += MAX(size, 8);
+			offset += 8;
 		}
 		curinst++;
 	}

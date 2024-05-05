@@ -737,7 +737,7 @@ namespace System.Diagnostics.Metrics
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < quantiles.Length; i++)
                 {
-#if NETCOREAPP
+#if NET
                     sb.Append(CultureInfo.InvariantCulture, $"{quantiles[i].Quantile}={quantiles[i].Value}");
 #else
                     sb.AppendFormat(CultureInfo.InvariantCulture, "{0}={1}", quantiles[i].Quantile, quantiles[i].Value);

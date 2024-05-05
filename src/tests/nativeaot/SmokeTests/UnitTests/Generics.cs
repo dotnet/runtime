@@ -55,6 +55,7 @@ class Generics
         TestRecursionThroughGenericLookups.Run();
         TestRecursionInFields.Run();
         TestGvmLookupDependency.Run();
+        Test99198Regression.Run();
         TestInvokeMemberCornerCaseInGenerics.Run();
         TestRefAny.Run();
         TestNullableCasting.Run();
@@ -3477,6 +3478,80 @@ class Generics
         {
             CatConcepts<Technique, int>();
             CatConcepts<Technique, object>();
+        }
+    }
+
+    class Test99198Regression
+    {
+        delegate void Set<T>(ref T t, IFoo ifoo);
+
+        interface IFoo
+        {
+            void Do<T>();
+        }
+
+        class Atom { }
+
+        struct Foo<T> : IFoo
+        {
+            public nint Cookie1;
+            public nint Cookie2;
+
+            public void Do<T1>()
+            {
+                Cookie1 = 42;
+            }
+        }
+
+        class C<T> where T : IFoo
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static void Set(ref T t, IFoo ifoo)
+            {
+                t.Do<T>();
+                ifoo.Do<T>();
+            }
+        }
+
+        public static void RunDynamic<T>()
+        {
+            static Type GetObject() => typeof(Foo<T>);
+            var s = typeof(C<>).MakeGenericType(GetObject()).GetMethod("Set").CreateDelegate<Set<Foo<T>>>();
+
+            Foo<T> ob = default;
+            IFoo boxed = ob;
+
+            s(ref ob, boxed);
+
+            if (ob.Cookie1 != 42 || ob.Cookie2 != 0)
+                throw new Exception();
+
+            ob = (Foo<T>)boxed;
+            if (ob.Cookie1 != 42 || ob.Cookie2 != 0)
+                throw new Exception();
+        }
+
+        public static void Run()
+        {
+            new C<Foo<string>>().ToString();
+
+            static Type GetObject() => typeof(Foo<object>);
+            var s = typeof(C<>).MakeGenericType(GetObject()).GetMethod("Set").CreateDelegate<Set<Foo<object>>>();
+
+            Foo<object> ob = default;
+            IFoo boxed = ob;
+
+            s(ref ob, boxed);
+
+            if (ob.Cookie1 != 42 || ob.Cookie2 != 0)
+                throw new Exception();
+
+            ob = (Foo<object>)boxed;
+            if (ob.Cookie1 != 42 || ob.Cookie2 != 0)
+                throw new Exception();
+
+            static Type GetAtom() => typeof(Atom);
+            typeof(Test99198Regression).GetMethod(nameof(RunDynamic)).MakeGenericMethod(GetAtom()).Invoke(null, []);
         }
     }
 

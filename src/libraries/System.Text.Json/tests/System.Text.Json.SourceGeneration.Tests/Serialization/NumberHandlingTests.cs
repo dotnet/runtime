@@ -244,7 +244,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(List<decimal>))]
         [JsonSerializable(typeof(Queue<decimal>))]
         [JsonSerializable(typeof(ImmutableList<decimal>))]
-#if NETCOREAPP
+#if NET
         [JsonSerializable(typeof(Int128))]
         [JsonSerializable(typeof(Int128[]))]
         [JsonSerializable(typeof(ConcurrentQueue<Int128>))]
@@ -694,7 +694,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(List<short>))]
         [JsonSerializable(typeof(List<int>))]
         [JsonSerializable(typeof(List<long>))]
-#if NETCOREAPP
+#if NET
         [JsonSerializable(typeof(Int128))]
         [JsonSerializable(typeof(Int128[]))]
         [JsonSerializable(typeof(ConcurrentQueue<Int128>))]

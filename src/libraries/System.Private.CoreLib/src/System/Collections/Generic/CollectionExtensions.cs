@@ -82,7 +82,7 @@ namespace System.Collections.Generic
         /// <param name="list">The list to which the elements should be added.</param>
         /// <param name="source">The span whose elements should be added to the end of the <see cref="List{T}"/>.</param>
         /// <exception cref="ArgumentNullException">The <paramref name="list"/> is null.</exception>
-        public static void AddRange<T>(this List<T> list, ReadOnlySpan<T> source)
+        public static void AddRange<T>(this List<T> list, /*params*/ ReadOnlySpan<T> source)
         {
             if (list is null)
             {
@@ -109,7 +109,7 @@ namespace System.Collections.Generic
         /// <param name="source">The span whose elements should be added to the <see cref="List{T}"/>.</param>
         /// <exception cref="ArgumentNullException">The <paramref name="list"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is less than 0 or greater than <paramref name="list"/>'s <see cref="List{T}.Count"/>.</exception>
-        public static void InsertRange<T>(this List<T> list, int index, ReadOnlySpan<T> source)
+        public static void InsertRange<T>(this List<T> list, int index, /*params*/ ReadOnlySpan<T> source)
         {
             if (list is null)
             {

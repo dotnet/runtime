@@ -174,7 +174,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                 {
                     var env = hostContext.HostingEnvironment;
                     Assert.Equal(Environments.Production, env.EnvironmentName);
-#if NETCOREAPP
+#if NET
                     Assert.NotNull(env.ApplicationName);
 #elif NETFRAMEWORK
                     // Note GetEntryAssembly returns null for the net4x console test runner.
@@ -190,7 +190,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             {
                 var env = host.Services.GetRequiredService<IHostEnvironment>();
                 Assert.Equal(Environments.Production, env.EnvironmentName);
-#if NETCOREAPP
+#if NET
                 Assert.NotNull(env.ApplicationName);
 #elif NETFRAMEWORK
                 // Note GetEntryAssembly returns null for the net4x console test runner.

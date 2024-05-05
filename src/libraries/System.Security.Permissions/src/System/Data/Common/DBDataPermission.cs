@@ -6,7 +6,7 @@ using System.Security.Permissions;
 
 namespace System.Data.Common
 {
-#if NETCOREAPP
+#if NET
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     public abstract class DBDataPermission : CodeAccessPermission, IUnrestrictedPermission

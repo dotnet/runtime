@@ -23,7 +23,7 @@ namespace System.Text.Json.Serialization.Metadata
                 static MemberAccessor Initialize()
                 {
                     MemberAccessor value =
-#if NETCOREAPP
+#if NET
                         // if dynamic code isn't supported, fallback to reflection
                         RuntimeFeature.IsDynamicCodeSupported ?
                             new ReflectionEmitCachingMemberAccessor() :

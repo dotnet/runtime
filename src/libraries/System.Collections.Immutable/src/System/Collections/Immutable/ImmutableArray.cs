@@ -87,7 +87,7 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of element stored in the array.</typeparam>
         /// <param name="items">The elements to store in the array.</param>
         /// <returns>An immutable array containing the specified items.</returns>
-        public static ImmutableArray<T> Create<T>(ReadOnlySpan<T> items)
+        public static ImmutableArray<T> Create<T>(/*params*/ ReadOnlySpan<T> items)
         {
             if (items.IsEmpty)
             {

@@ -73,7 +73,7 @@ namespace System.Security.Cryptography.Pkcs
         {
         }
 
-#if NETCOREAPP
+#if NET
         [Obsolete(Obsoletions.CmsSignerCspParamsCtorMessage, DiagnosticId = Obsoletions.CmsSignerCspParamsCtorDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
         [EditorBrowsable(EditorBrowsableState.Never)]

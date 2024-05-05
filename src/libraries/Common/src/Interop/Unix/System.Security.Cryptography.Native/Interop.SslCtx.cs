@@ -39,6 +39,9 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetCaching")]
         internal static unsafe partial int SslCtxSetCaching(SafeSslContextHandle ctx, int mode, int cacheSize, int contextIdLength, Span<byte> contextId, delegate* unmanaged<IntPtr, IntPtr, int> neewSessionCallback, delegate* unmanaged<IntPtr, IntPtr, void> removeSessionCallback);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxRemoveSession")]
+        internal static unsafe partial void SslCtxRemoveSession(SafeSslContextHandle ctx, IntPtr session);
+
         internal static bool AddExtraChainCertificates(SafeSslContextHandle ctx, ReadOnlyCollection<X509Certificate2> chain)
         {
             // send pre-computed list of intermediates.
@@ -142,18 +145,29 @@ namespace Microsoft.Win32.SafeHandles
                 // This will use strdup() so it is safe to pass in raw pointer.
                 Interop.Ssl.SessionSetHostname(session, namePtr);
 
+                IntPtr oldSession = IntPtr.Zero;
+
                 lock (_sslSessions)
                 {
                     if (!_sslSessions.TryAdd(targetName, session))
                     {
-                        if (_sslSessions.Remove(targetName, out IntPtr oldSession))
-                        {
-                            Interop.Ssl.SessionFree(oldSession);
-                        }
-
+                        // session to this target host exists, replace it
+                        _sslSessions.Remove(targetName, out oldSession);
                         bool added = _sslSessions.TryAdd(targetName, session);
                         Debug.Assert(added);
                     }
+                }
+
+                if (oldSession != IntPtr.Zero)
+                {
+                    // remove old session also from the internal OpenSSL cache
+                    // and drop reference count. Since SSL_CTX_remove_session
+                    // will call session_remove_cb, we need to do this outside
+                    // of _sslSessions lock to avoid deadlock with another thread
+                    // which could be holding SSL_CTX lock and trying to acquire
+                    // _sslSessions lock.
+                    Interop.Ssl.SslCtxRemoveSession(this, oldSession);
+                    Interop.Ssl.SessionFree(oldSession);
                 }
 
                 return true;
@@ -162,7 +176,7 @@ namespace Microsoft.Win32.SafeHandles
             return false;
         }
 
-        internal void RemoveSession(IntPtr namePtr)
+        internal void RemoveSession(IntPtr namePtr, IntPtr session)
         {
             Debug.Assert(_sslSessions != null);
 
@@ -171,11 +185,14 @@ namespace Microsoft.Win32.SafeHandles
 
             if (_sslSessions != null && targetName != null)
             {
-                IntPtr oldSession;
-                bool removed;
+                IntPtr oldSession = IntPtr.Zero;
+                bool removed = false;
                 lock (_sslSessions)
                 {
-                    removed = _sslSessions.Remove(targetName, out oldSession);
+                    if (_sslSessions.TryGetValue(targetName, out IntPtr existingSession) && existingSession == session)
+                    {
+                        removed = _sslSessions.Remove(targetName, out oldSession);
+                    }
                 }
 
                 if (removed)
@@ -209,7 +226,6 @@ namespace Microsoft.Win32.SafeHandles
                     // This will increase reference count on the session as needed.
                     // We need to hold lock here to prevent session being deleted before the call is done.
                     Interop.Ssl.SslSetSession(sslHandle, session);
-
                     return true;
                 }
             }

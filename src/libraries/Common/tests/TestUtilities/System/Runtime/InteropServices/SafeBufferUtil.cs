@@ -19,7 +19,7 @@ namespace System.Runtime.InteropServices
         {
             public AllocHGlobalSafeHandle(nuint cb) : base(ownsHandle: true)
             {
-#if !NETCOREAPP
+#if !NET
                 RuntimeHelpers.PrepareConstrainedRegions();
 #endif
                 try

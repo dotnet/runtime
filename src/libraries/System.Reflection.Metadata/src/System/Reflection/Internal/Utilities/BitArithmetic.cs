@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-#if NETCOREAPP
+#if NET
 using System.Numerics;
 #endif
 
@@ -17,7 +17,7 @@ namespace System.Reflection.Internal
 
         internal static int CountBits(uint v)
         {
-#if NETCOREAPP
+#if NET
             return BitOperations.PopCount(v);
 #else
             unchecked
@@ -31,7 +31,7 @@ namespace System.Reflection.Internal
 
         internal static int CountBits(ulong v)
         {
-#if NETCOREAPP
+#if NET
             return BitOperations.PopCount(v);
 #else
             const ulong Mask01010101 = 0x5555555555555555UL;

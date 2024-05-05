@@ -334,7 +334,7 @@ namespace System.IO.Hashing.Tests
 
             internal static string ToHexString(ReadOnlySpan<byte> input)
             {
-#if NETCOREAPP
+#if NET
                 return Convert.ToHexString(input);
 #else
                 var builder = new global::System.Text.StringBuilder(input.Length * 2);
@@ -350,7 +350,7 @@ namespace System.IO.Hashing.Tests
 
             internal static byte[] FromHexString(string hexString)
             {
-#if NETCOREAPP
+#if NET
                 return Convert.FromHexString(hexString);
 #else
                 byte[] bytes = new byte[hexString.Length / 2];
@@ -420,7 +420,7 @@ namespace System.IO.Hashing.Tests
 
             public IEnumerable<ReadOnlyMemory<byte>> EnumerateDataChunks()
             {
-#if NET5_0_OR_GREATER
+#if NET
                 byte[] chunk = GC.AllocateUninitializedArray<byte>(1024 * 1024);
 #else
                 byte[] chunk = new byte[1024 * 1024];

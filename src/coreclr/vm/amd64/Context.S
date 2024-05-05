@@ -51,8 +51,9 @@ NESTED_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT, NoHandler
         // exception handling, iret and ret can't be used because their shadow stack enforcement would not allow that transition,
         // and using them would require writing to the shadow stack, which is not preferable. Instead, iret is partially
         // simulated.
+        mov     rax, [r10 + OFFSETOF__CONTEXT__Rip]
         mov     rsp, [r10 + OFFSETOF__CONTEXT__Rsp]
-        jmp     qword ptr [r10 + OFFSETOF__CONTEXT__Rip]
+        jmp     rax
     Done_Restore_CONTEXT_CONTROL:
     
         // The function was not asked to restore the control registers so we return back to the caller

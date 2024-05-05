@@ -197,8 +197,8 @@ jobs:
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       alwaysRun: true
       scenarios:
-        - WasmTestOnV8
         - WasmTestOnChrome
+        - WasmTestOnFirefox
         - WasmTestOnNodeJS
 
   # Hybrid Globalization AOT tests
@@ -214,7 +214,6 @@ jobs:
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       alwaysRun: true
       scenarios:
-        - WasmTestOnV8
         - WasmTestOnChrome
         - WasmTestOnNodeJS
 
@@ -321,4 +320,4 @@ jobs:
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       scenarios:
-        - WasmTestOnV8
+        - WasmTestOnWasmtime

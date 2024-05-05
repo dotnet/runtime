@@ -240,7 +240,7 @@ namespace System.Text.Json
                 // Note: Array.MaxLength exists only on .NET 6 or greater,
                 // so for the other versions value is hardcoded
                 const int MaxArrayLength = 0x7FFFFFC7;
-#if NET6_0_OR_GREATER
+#if NET
                 Debug.Assert(MaxArrayLength == Array.MaxLength);
 #endif
 

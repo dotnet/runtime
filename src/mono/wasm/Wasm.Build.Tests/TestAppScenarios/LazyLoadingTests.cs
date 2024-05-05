@@ -23,7 +23,7 @@ public class LazyLoadingTests : AppTestBase
     [Fact]
     public async Task LoadLazyAssemblyBeforeItIsNeeded()
     {
-        CopyTestAsset("WasmBasicTestApp", "LazyLoadingTests");
+        CopyTestAsset("WasmBasicTestApp", "LazyLoadingTests", "App");
         PublishProject("Debug");
 
         var result = await RunSdkStyleAppForPublish(new(Configuration: "Debug", TestScenario: "LazyLoadingTest"));
@@ -33,7 +33,7 @@ public class LazyLoadingTests : AppTestBase
     [Fact]
     public async Task FailOnMissingLazyAssembly()
     {
-        CopyTestAsset("WasmBasicTestApp", "LazyLoadingTests");
+        CopyTestAsset("WasmBasicTestApp", "LazyLoadingTests", "App");
         PublishProject("Debug");
 
         var result = await RunSdkStyleAppForPublish(new(

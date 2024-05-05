@@ -202,12 +202,8 @@ ClrDebugState *CLRInitDebugState()
 
 #endif //defined(_DEBUG_IMPL) && defined(ENABLE_CONTRACTS_IMPL)
 
-const NoThrow nothrow = { 0 };
-
-#if defined(HAS_ADDRESS_SANITIZER) || defined(DACCESS_COMPILE)
-// use standard heap functions for address sanitizer
-#else
-
+// use standard heap functions for AddressSanitizer and for the DAC build.
+#if !defined(HAS_ADDRESS_SANITIZER) && !defined(DACCESS_COMPILE)
 #ifdef _DEBUG
 #ifdef TARGET_X86
 #define OS_HEAP_ALIGN 8
@@ -221,7 +217,7 @@ const NoThrow nothrow = { 0 };
 static HANDLE g_hProcessHeap;
 #endif
 
-FORCEINLINE void* ClrMalloc(size_t size)
+static FORCEINLINE void* ClrMalloc(size_t size)
 {
     STATIC_CONTRACT_NOTHROW;
 
@@ -339,14 +335,9 @@ operator new[](size_t n)
     return result;
 };
 
-#endif // HAS_ADDRESS_SANITIZER || DACCESS_COMPILE
 
-void * __cdecl operator new(size_t n, const NoThrow&) NOEXCEPT
+void * __cdecl operator new(size_t n, const std::nothrow_t&) noexcept
 {
-#if defined(HAS_ADDRESS_SANITIZER) || defined(DACCESS_COMPILE)
-    // use standard heap functions for address sanitizer (which doesn't provide for NoThrow)
-	void * result = operator new(n);
-#else
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FAULT;
@@ -355,17 +346,12 @@ void * __cdecl operator new(size_t n, const NoThrow&) NOEXCEPT
     INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
 
     void* result = ClrMalloc(n);
-#endif // HAS_ADDRESS_SANITIZER || DACCESS_COMPILE
 	TRASH_LASTERROR;
     return result;
 }
 
-void * __cdecl operator new[](size_t n, const NoThrow&) NOEXCEPT
+void * __cdecl operator new[](size_t n, const std::nothrow_t&) noexcept
 {
-#if defined(HAS_ADDRESS_SANITIZER) || defined(DACCESS_COMPILE)
-    // use standard heap functions for address sanitizer (which doesn't provide for NoThrow)
-	void * result = operator new[](n);
-#else
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FAULT;
@@ -374,16 +360,12 @@ void * __cdecl operator new[](size_t n, const NoThrow&) NOEXCEPT
     INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
 
     void* result = ClrMalloc(n);
-#endif // HAS_ADDRESS_SANITIZER || DACCESS_COMPILE
 	TRASH_LASTERROR;
     return result;
 }
 
-#if defined(HAS_ADDRESS_SANITIZER) || defined(DACCESS_COMPILE)
-// use standard heap functions for address sanitizer
-#else
 void __cdecl
-operator delete(void *p) NOEXCEPT
+operator delete(void *p) noexcept
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -395,7 +377,7 @@ operator delete(void *p) NOEXCEPT
 }
 
 void __cdecl
-operator delete[](void *p) NOEXCEPT
+operator delete[](void *p) noexcept
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -405,7 +387,7 @@ operator delete[](void *p) NOEXCEPT
     TRASH_LASTERROR;
 }
 
-#endif // HAS_ADDRESS_SANITIZER || DACCESS_COMPILE
+#endif // !HAS_ADDRESS_SANITIZER && !DACCESS_COMPILE
 
 /* ------------------------------------------------------------------------ *
  * New operator overloading for the executable heap
@@ -494,7 +476,7 @@ void * __cdecl operator new[](size_t n, const CExecutable&)
     return result;
 }
 
-void * __cdecl operator new(size_t n, const CExecutable&, const NoThrow&)
+void * __cdecl operator new(size_t n, const CExecutable&, const std::nothrow_t&) noexcept
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -511,7 +493,7 @@ void * __cdecl operator new(size_t n, const CExecutable&, const NoThrow&)
     return result;
 }
 
-void * __cdecl operator new[](size_t n, const CExecutable&, const NoThrow&)
+void * __cdecl operator new[](size_t n, const CExecutable&, const std::nothrow_t&) noexcept
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;

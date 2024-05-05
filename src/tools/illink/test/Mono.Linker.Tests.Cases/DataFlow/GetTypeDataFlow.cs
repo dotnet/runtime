@@ -169,8 +169,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public void Method2 () { }
 
 			// https://github.com/dotnet/linker/issues/2273
-			[ExpectedWarning ("IL2026", "--Method1--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2026", "--Method2--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "--Method1--", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", "--Method2--", Tool.Trimmer | Tool.NativeAot, "")]
 			public static void Test ()
 			{
 				Type.GetType ("Mono.Linker.Tests.Cases.DataFlow." + nameof (GetTypeDataFlow) + "+" + nameof (TypeWithWarnings)).RequiresPublicMethods ();
@@ -185,7 +185,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public void Method1 () { }
 
 			// https://github.com/dotnet/linker/issues/2273
-			[ExpectedWarning ("IL2026", "--Method1--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "--Method1--", Tool.Trimmer | Tool.NativeAot, "")]
 			public static void Test ()
 			{
 				Type.GetType (s_ConstTypeName).RequiresPublicMethods ();

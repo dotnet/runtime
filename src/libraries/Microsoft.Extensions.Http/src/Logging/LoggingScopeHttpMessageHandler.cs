@@ -63,7 +63,7 @@ namespace Microsoft.Extensions.Http.Logging
                     Log.RequestPipelineStart(_logger, request, shouldRedactHeaderValue);
                     HttpResponseMessage response = useAsync
                         ? await base.SendAsync(request, cancellationToken).ConfigureAwait(false)
-#if NET5_0_OR_GREATER
+#if NET
                         : base.Send(request, cancellationToken);
 #else
                         : throw new NotImplementedException("Unreachable code");
@@ -80,7 +80,7 @@ namespace Microsoft.Extensions.Http.Logging
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             => SendCoreAsync(request, useAsync: true, cancellationToken);
 
-#if NET5_0_OR_GREATER
+#if NET
         /// <inheritdoc />
         /// <remarks>Logs the request to and response from the sent <see cref="HttpRequestMessage"/>.</remarks>
         protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)

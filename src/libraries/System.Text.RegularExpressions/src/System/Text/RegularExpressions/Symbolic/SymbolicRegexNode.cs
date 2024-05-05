@@ -243,7 +243,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 Debug.Assert(context < CharKind.ContextLimit);
 
-                // If nullablity has been computed for the given context then return it
+                // If nullability has been computed for the given context then return it
                 byte b = Volatile.Read(ref _nullabilityCache[context]);
                 if (b != UndefinedByte)
                 {

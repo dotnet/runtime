@@ -314,7 +314,7 @@ namespace System.Media
                 int streamLen = (int)_stream.Length;
                 _currentPos = 0;
                 _streamData = new byte[streamLen];
-#if NET7_0_OR_GREATER
+#if NET
                 _stream.ReadExactly(_streamData);
 #else
                 int totalRead = 0;

@@ -316,10 +316,10 @@ _Ret_bytecap_(n) void * __cdecl
 operator new[](size_t n);
 
 void __cdecl
-operator delete(void *p) NOEXCEPT;
+operator delete(void *p) noexcept;
 
 void __cdecl
-operator delete[](void *p) NOEXCEPT;
+operator delete[](void *p) noexcept;
 
 #ifdef _DEBUG_IMPL
 HRESULT _OutOfMemory(LPCSTR szFile, int iLine);
@@ -3728,8 +3728,8 @@ extern const CExecutable executable;
 
 void * __cdecl operator new(size_t n, const CExecutable&);
 void * __cdecl operator new[](size_t n, const CExecutable&);
-void * __cdecl operator new(size_t n, const CExecutable&, const NoThrow&);
-void * __cdecl operator new[](size_t n, const CExecutable&, const NoThrow&);
+void * __cdecl operator new(size_t n, const CExecutable&, const std::nothrow_t&) noexcept;
+void * __cdecl operator new[](size_t n, const CExecutable&, const std::nothrow_t&) noexcept;
 
 
 //

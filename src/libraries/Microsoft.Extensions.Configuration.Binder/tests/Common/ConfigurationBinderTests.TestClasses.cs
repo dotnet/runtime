@@ -743,7 +743,7 @@ namespace Microsoft.Extensions
             public Uri Prop25 { get; set; }
             public Version Prop26 { get; set; }
             public DayOfWeek Prop27 { get; set; }
-#if NETCOREAPP
+#if NET
             public Int128 Prop7 { get; set; }
             public Half Prop11 { get; set; }
             public UInt128 Prop12 { get; set; }
@@ -928,6 +928,65 @@ namespace Microsoft.Extensions
         {
             public string A { get; set; }
             public string B { get; set; }
+        }
+
+        public class BaseForHiddenMembers
+        {
+            public string A { get; set; }
+            public string B { get; set; }
+            public TestSettingsEnum E {get; set;}
+
+            public virtual string C { get => CBase; set => CBase = value; }
+
+            public string CBase;
+
+            public virtual string D { get; }
+
+            public virtual string F { get => FBase; set => FBase = value; }
+            public string FBase;
+
+
+            public virtual int X { get => XBase; set => XBase = value; }
+            public int XBase;
+        }
+
+        public enum TestSettingsEnum2
+        {
+            // Note - the reflection binder will try to bind to every member
+            Option1 = TestSettingsEnum.Option1,
+            Option2 = TestSettingsEnum.Option2,
+        }
+
+        public class IntermediateDerivedClass : BaseForHiddenMembers
+        {
+            public new virtual string D { get => DBase; set => DBase = value; }
+            public string DBase;
+
+            public override string F { get => "IF"; }
+
+        }
+
+        public class DerivedClassWithHiddenMembers : IntermediateDerivedClass
+        {
+            public new string A { get; } = "ADerived";
+            public new int B { get; set; }
+            public new TestSettingsEnum2 E
+            {
+                get => (TestSettingsEnum2)base.E;
+                set => base.E = (TestSettingsEnum)value;
+            }
+
+            // only override get
+            public override string C { get => "DC"; }
+
+            // override new only get
+            public override string D { get => "DD"; }
+
+            // two overrides of only get
+            public override string F { get => "DF"; }
+
+            // override only set
+            public override int X { set => base.X = value + 1; }
         }
 
     }

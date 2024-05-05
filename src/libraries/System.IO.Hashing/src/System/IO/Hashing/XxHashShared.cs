@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if NET7_0_OR_GREATER
+#if NET
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
@@ -15,7 +15,7 @@ using System.Runtime.Intrinsics.X86;
 namespace System.IO.Hashing
 {
     /// <summary>Shared implementation of the XXH3 hash algorithm for 64-bit in <see cref="XxHash3"/> and <see cref="XxHash128"/> version.</summary>
-#if NET5_0_OR_GREATER
+#if NET
     [SkipLocalsInit]
 #endif
     internal static unsafe class XxHashShared
@@ -333,7 +333,7 @@ namespace System.IO.Hashing
         {
             fixed (ulong* stateAccumulators = state.Accumulators)
             {
-#if NET7_0_OR_GREATER
+#if NET
                 if (Vector256.IsHardwareAccelerated)
                 {
                     Vector256.Store(Vector256.Load(stateAccumulators), accumulators);
@@ -390,7 +390,7 @@ namespace System.IO.Hashing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void InitializeAccumulators(ulong* accumulators)
         {
-#if NET7_0_OR_GREATER
+#if NET
             if (Vector256.IsHardwareAccelerated)
             {
                 Vector256.Store(Vector256.Create(Prime32_3, Prime64_1, Prime64_2, Prime64_3), accumulators);
@@ -452,7 +452,7 @@ namespace System.IO.Hashing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong Multiply64To128(ulong left, ulong right, out ulong lower)
         {
-#if NET5_0_OR_GREATER
+#if NET
             return Math.BigMul(left, right, out lower);
 #else
             ulong lowerLow = Multiply32To64((uint)left, (uint)right);
@@ -479,7 +479,7 @@ namespace System.IO.Hashing
         {
             fixed (byte* defaultSecret = &MemoryMarshal.GetReference(DefaultSecret))
             {
-#if NET7_0_OR_GREATER
+#if NET
                 if (Vector256.IsHardwareAccelerated && BitConverter.IsLittleEndian)
                 {
                     Vector256<ulong> seedVec = Vector256.Create(seed, 0u - seed, seed, 0u - seed);
@@ -515,7 +515,7 @@ namespace System.IO.Hashing
             byte* secretForAccumulate = secret;
             byte* secretForScramble = secret + (SecretLengthBytes - StripeLengthBytes);
 
-#if NET7_0_OR_GREATER
+#if NET
             if (Vector256.IsHardwareAccelerated && BitConverter.IsLittleEndian)
             {
                 Vector256<ulong> acc1 = Vector256.Load(accumulators);
@@ -620,7 +620,7 @@ namespace System.IO.Hashing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void Accumulate512Inlined(ulong* accumulators, byte* source, byte* secret)
         {
-#if NET7_0_OR_GREATER
+#if NET
             if (Vector256.IsHardwareAccelerated && BitConverter.IsLittleEndian)
             {
                 for (int i = 0; i < AccumulatorCount / Vector256<ulong>.Count; i++)
@@ -659,7 +659,7 @@ namespace System.IO.Hashing
             }
         }
 
-#if NET7_0_OR_GREATER
+#if NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<ulong> Accumulate256(Vector256<ulong> accVec, byte* source, Vector256<uint> secret)
         {
@@ -714,7 +714,7 @@ namespace System.IO.Hashing
 
         private static void ScrambleAccumulators(ulong* accumulators, byte* secret)
         {
-#if NET7_0_OR_GREATER
+#if NET
             if (Vector256.IsHardwareAccelerated && BitConverter.IsLittleEndian)
             {
                 for (int i = 0; i < AccumulatorCount / Vector256<ulong>.Count; i++)
@@ -752,7 +752,7 @@ namespace System.IO.Hashing
             }
         }
 
-#if NET7_0_OR_GREATER
+#if NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<ulong> ScrambleAccumulator256(Vector256<ulong> accVec, Vector256<ulong> secret)
         {

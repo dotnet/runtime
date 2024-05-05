@@ -30,6 +30,8 @@
 #include <dactablerva.h>
 #else
 extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress);
+// cDAC depends on symbol lookup to find the contract descriptor
+#define CAN_USE_CDAC
 #endif
 
 #include "dwbucketmanager.hpp"
@@ -3036,7 +3038,7 @@ private:
 //----------------------------------------------------------------------------
 
 ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget/*=0*/)
-    : m_cdac{CDAC::Invalid()}
+    : m_cdac{}
 {
     SUPPORTS_DAC_HOST_ONLY;     // ctor does no marshalling - don't check with DacCop
 
@@ -5493,15 +5495,16 @@ ClrDataAccess::Initialize(void)
     IfFailRet(GetDacGlobalValues());
     IfFailRet(DacGetHostVtPtrs());
 
+// TODO: [cdac] TryGetSymbol is only implemented for Linux, OSX, and Windows.
+#ifdef CAN_USE_CDAC
     CLRConfigNoCache enable = CLRConfigNoCache::Get("ENABLE_CDAC");
     if (enable.IsSet())
     {
         DWORD val;
         if (enable.TryAsInteger(10, val) && val == 1)
         {
-            // TODO: [cdac] Get contract descriptor from exported symbol
             uint64_t contractDescriptorAddr = 0;
-            //if (TryGetSymbol(m_pTarget, m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
+            if (TryGetSymbol(m_pTarget, m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
             {
                 m_cdac = CDAC::Create(contractDescriptorAddr, m_pTarget);
                 if (m_cdac.IsValid())
@@ -5514,6 +5517,7 @@ ClrDataAccess::Initialize(void)
             }
         }
     }
+#endif
 
     //
     // DAC is now setup and ready to use
@@ -6946,7 +6950,7 @@ GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG6
         return E_INVALIDARG;
     }
 #endif
-    // On MacOS, FreeBSD or NetBSD use the RVA include file
+    // On FreeBSD, NetBSD, or SunOS use the RVA include file
     *dacTableAddress = baseAddress + DAC_TABLE_RVA;
 #else
     // Otherwise, try to get the dac table address via the export symbol

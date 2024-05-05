@@ -56,7 +56,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 string? testDisplayName = fileOptions.TestDisplayName();
                 if (assemblyPath is not null && testDisplayName is not null)
                 {
-                    return ImmutableArray.Create<ITestInfo>(new OutOfProcessTest(testDisplayName, assemblyPath));
+                    return ImmutableArray.Create<ITestInfo>(new OutOfProcessTest(testDisplayName, assemblyPath, fileOptions.TestBuildMode()));
                 }
             }
 

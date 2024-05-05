@@ -233,13 +233,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__FrameHandlerExRecord__m_pEntryFrame == offsetof(
 
 #endif
 
-
-#define MethodDesc_m_wFlags                   DBG_FRE(0x1a, 0x06)
-ASMCONSTANTS_C_ASSERT(MethodDesc_m_wFlags == offsetof(MethodDesc, m_wFlags))
-
-#define MethodDesc_mdcClassification          7
-ASMCONSTANTS_C_ASSERT(MethodDesc_mdcClassification == mdcClassification)
-
 #define ComPlusCallMethodDesc__m_pComPlusCallInfo DBG_FRE(0x1C, 0x8)
 ASMCONSTANTS_C_ASSERT(ComPlusCallMethodDesc__m_pComPlusCallInfo == offsetof(ComPlusCallMethodDesc, m_pComPlusCallInfo))
 

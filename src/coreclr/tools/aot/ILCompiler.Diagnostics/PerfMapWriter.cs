@@ -136,6 +136,7 @@ namespace ILCompiler.Diagnostics
                 TargetArchitecture.X64 => PerfMapArchitectureToken.X64,
                 TargetArchitecture.X86 => PerfMapArchitectureToken.X86,
                 TargetArchitecture.RiscV64 => PerfMapArchitectureToken.RiscV64,
+                TargetArchitecture.LoongArch64 => PerfMapArchitectureToken.LoongArch64,
                 _ => throw new NotImplementedException(details.Architecture.ToString())
             };
 

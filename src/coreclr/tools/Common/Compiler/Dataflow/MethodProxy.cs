@@ -66,6 +66,8 @@ namespace ILLink.Shared.TypeSystemProxy
             return builder.ToImmutableArray();
         }
 
+        internal partial bool IsConstructor() => Method.IsConstructor;
+
         internal partial bool IsStatic() => Method.Signature.IsStatic;
 
         internal partial bool HasImplicitThis() => !Method.Signature.IsStatic;

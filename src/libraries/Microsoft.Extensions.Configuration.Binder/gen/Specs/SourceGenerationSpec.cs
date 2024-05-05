@@ -12,6 +12,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public required ImmutableEquatableArray<TypeSpec> ConfigTypes { get; init; }
         public required bool EmitEnumParseMethod { get; set; }
         public required bool EmitGenericParseEnum { get; set; }
+        public required bool EmitNotNullIfNotNull { get; set; }
         public required bool EmitThrowIfNullMethod { get; set; }
     }
 }

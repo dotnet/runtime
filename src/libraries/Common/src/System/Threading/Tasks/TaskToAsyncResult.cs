@@ -31,7 +31,7 @@ namespace System.Threading.Tasks
         /// </remarks>
         public static IAsyncResult Begin(Task task, AsyncCallback? callback, object? state)
         {
-#if NET6_0_OR_GREATER
+#if NET
             ArgumentNullException.ThrowIfNull(task);
 #else
             if (task is null)
@@ -68,7 +68,7 @@ namespace System.Threading.Tasks
         /// <exception cref="ArgumentException"><paramref name="asyncResult"/> was not produced by a call to <see cref="Begin"/>.</exception>
         public static Task Unwrap(IAsyncResult asyncResult)
         {
-#if NET6_0_OR_GREATER
+#if NET
             ArgumentNullException.ThrowIfNull(asyncResult);
 #else
             if (asyncResult is null)
@@ -97,7 +97,7 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task<TResult> Unwrap<TResult>(IAsyncResult asyncResult)
         {
-#if NET6_0_OR_GREATER
+#if NET
             ArgumentNullException.ThrowIfNull(asyncResult);
 #else
             if (asyncResult is null)

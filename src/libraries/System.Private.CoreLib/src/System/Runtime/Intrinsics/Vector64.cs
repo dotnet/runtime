@@ -339,7 +339,7 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Converts a <see cref="Vector64{Single}" /> to a <see cref="Vector64{Int32}" />.</summary>
+        /// <summary>Converts a <see cref="Vector64{Single}" /> to a <see cref="Vector64{Int32}" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -357,7 +357,14 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Converts a <see cref="Vector64{Double}" /> to a <see cref="Vector64{Int64}" />.</summary>
+        /// <summary>Converts a <see cref="Vector64{Single}" /> to a <see cref="Vector64{Int32}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<int> ConvertToInt32Native(Vector64<float> vector) => ConvertToInt32(vector);
+
+        /// <summary>Converts a <see cref="Vector64{Double}" /> to a <see cref="Vector64{Int64}" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -374,6 +381,13 @@ namespace System.Runtime.Intrinsics
 
             return result;
         }
+
+        /// <summary>Converts a <see cref="Vector64{Double}" /> to a <see cref="Vector64{Int64}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<long> ConvertToInt64Native(Vector64<double> vector) => ConvertToInt64(vector);
 
         /// <summary>Converts a <see cref="Vector64{Int32}" /> to a <see cref="Vector64{Single}" />.</summary>
         /// <param name="vector">The vector to convert.</param>
@@ -412,7 +426,7 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Converts a <see cref="Vector64{Single}" /> to a <see cref="Vector64{UInt32}" />.</summary>
+        /// <summary>Converts a <see cref="Vector64{Single}" /> to a <see cref="Vector64{UInt32}" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -431,7 +445,15 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Converts a <see cref="Vector64{Double}" /> to a <see cref="Vector64{UInt64}" />.</summary>
+        /// <summary>Converts a <see cref="Vector64{Single}" /> to a <see cref="Vector64{UInt32}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<uint> ConvertToUInt32Native(Vector64<float> vector) => ConvertToUInt32(vector);
+
+        /// <summary>Converts a <see cref="Vector64{Double}" /> to a <see cref="Vector64{UInt64}" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -449,6 +471,14 @@ namespace System.Runtime.Intrinsics
 
             return result;
         }
+
+        /// <summary>Converts a <see cref="Vector64{Double}" /> to a <see cref="Vector64{UInt64}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<ulong> ConvertToUInt64Native(Vector64<double> vector) => ConvertToUInt64(vector);
 
         /// <summary>Copies a <see cref="Vector64{T}" /> to a given array.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>

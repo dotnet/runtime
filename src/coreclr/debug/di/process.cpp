@@ -10734,6 +10734,7 @@ HRESULT CordbRCEventThread::WaitForIPCEventFromProcess(CordbProcess * pProcess,
                                                        CordbAppDomain * pAppDomain,
                                                        DebuggerIPCEvent * pEvent)
 {
+
     CORDBRequireProcessStateOKAndSync(pProcess, pAppDomain);
 
     DWORD dwStatus;

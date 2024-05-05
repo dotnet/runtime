@@ -325,7 +325,7 @@ namespace System.Numerics
             }
         }
 
-        /// <summary>Converts a <see cref="Vector{Single}" /> to a <see cref="Vector{Int32}" />.</summary>
+        /// <summary>Converts a <see cref="Vector{Single}" /> to a <see cref="Vector{Int32}" /> using saturation on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -342,7 +342,13 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Converts a <see cref="Vector{Double}" /> to a <see cref="Vector{Int64}" />.</summary>
+        /// <summary>Converts a <see cref="Vector{Single}" /> to a <see cref="Vector{Int32}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="value">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        public static Vector<int> ConvertToInt32Native(Vector<float> value) => ConvertToInt32(value);
+
+        /// <summary>Converts a <see cref="Vector{Double}" /> to a <see cref="Vector{Int64}" /> using saturation on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -358,6 +364,12 @@ namespace System.Numerics
 
             return result;
         }
+
+        /// <summary>Converts a <see cref="Vector{Double}" /> to a <see cref="Vector{Int64}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="value">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        public static Vector<long> ConvertToInt64Native(Vector<double> value) => ConvertToInt64(value);
 
         /// <summary>Converts a <see cref="Vector{Int32}" /> to a <see cref="Vector{Single}" />.</summary>
         /// <param name="value">The vector to convert.</param>
@@ -396,7 +408,7 @@ namespace System.Numerics
             }
         }
 
-        /// <summary>Converts a <see cref="Vector{Single}" /> to a <see cref="Vector{UInt32}" />.</summary>
+        /// <summary>Converts a <see cref="Vector{Single}" /> to a <see cref="Vector{UInt32}" /> using saturation on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -414,7 +426,14 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Converts a <see cref="Vector{Double}" /> to a <see cref="Vector{UInt64}" />.</summary>
+        /// <summary>Converts a <see cref="Vector{Single}" /> to a <see cref="Vector{UInt32}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="value">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector<uint> ConvertToUInt32Native(Vector<float> value) => ConvertToUInt32(value);
+
+        /// <summary>Converts a <see cref="Vector{Double}" /> to a <see cref="Vector{UInt64}" /> using saturation on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -431,6 +450,13 @@ namespace System.Numerics
 
             return result;
         }
+
+        /// <summary>Converts a <see cref="Vector{Double}" /> to a <see cref="Vector{UInt64}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="value">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector<ulong> ConvertToUInt64Native(Vector<double> value) => ConvertToUInt64(value);
 
         /// <summary>Creates a new <see cref="Vector{T}" /> instance where the elements begin at a specified value and which are spaced apart according to another specified value.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>

@@ -172,7 +172,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             pubKey.Dispose();
         }
 
-#if NETCOREAPP
+#if NET
         private static ECDiffieHellman OpenKnownKey()
         {
             ECParameters ecParams = new ECParameters
