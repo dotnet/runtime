@@ -429,7 +429,7 @@ static int run(const configuration& config)
         result = coreclr_execute_func(
             CurrentClrInstance,
             CurrentAppDomainId,
-            config.entry_assembly_argc,
+            -config.entry_assembly_argc, // We pass a negative argc to indicate that the first argument in argv is the original argv[0]
             argv_utf8.get(),
             entry_assembly_utf8.c_str(),
             (uint32_t*)&exit_code);
@@ -509,12 +509,13 @@ static bool parse_args(
             config.entry_assembly_fullpath = pal::get_absolute_path(argv[i]);
             i++; // Move to next argument.
 
-            config.entry_assembly_argc = argc - i;
+            config.entry_assembly_argc = argc - i + 1;
             config.entry_assembly_argv = (const char_t**)::malloc(config.entry_assembly_argc * sizeof(const char_t*));
             assert(config.entry_assembly_argv != nullptr);
-            for (int c = 0; c < config.entry_assembly_argc; ++c)
+            config.entry_assembly_argv[0] = pal::strdup(argv[0]);
+            for (int c = 1; c < config.entry_assembly_argc; ++c)
             {
-                config.entry_assembly_argv[c] = pal::strdup(argv[i + c]);
+                config.entry_assembly_argv[c] = pal::strdup(argv[i + c - 1]);
             }
 
             // Successfully parsed arguments.

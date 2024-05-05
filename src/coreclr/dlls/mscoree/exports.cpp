@@ -487,7 +487,18 @@ int coreclr_execute_assembly(
     ICLRRuntimeHost4* host = reinterpret_cast<ICLRRuntimeHost4*>(hostHandle);
 
     ConstWStringArrayHolder argvW;
-    argvW.Set(StringArrayToUnicode(argc, argv), argc);
+    // If argc is negative, it means that argv[0] is the real argv[0]
+    // so we want to pass this information to ExecuteAssembly while transforming all arguments
+    if (argc < 0)
+    {
+        argc = -argc;
+        argvW.Set(StringArrayToUnicode(argc, argv), argc);
+        argc = -argc;
+    }
+    else
+    {
+        argvW.Set(StringArrayToUnicode(argc, argv), argc);
+    }
 
     ConstWStringHolder managedAssemblyPathW = StringToUnicode(managedAssemblyPath);
 

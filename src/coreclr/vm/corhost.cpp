@@ -239,10 +239,22 @@ static PTRARRAYREF SetCommandLineArgs(PCWSTR pwzAssemblyPath, int argc, PCWSTR* 
     }
     CONTRACTL_END;
 
+    // If argc is negative if argv includes the original argv[0]
+    PCWSTR exePath;
+    if (argc < 0)
+    {
+        argc = -argc;
+        exePath = argv[0];
+        argv++; // We skip the exePath
+        argc--;
+    }
+    else
+    {
+        exePath = Bundle::AppIsBundle() ? static_cast<PCWSTR>(Bundle::AppBundle->Path()) : pwzAssemblyPath;
+    }
+
     // Record the command line.
     SaveManagedCommandLine(pwzAssemblyPath, argc, argv);
-
-    PCWSTR exePath = Bundle::AppIsBundle() ? static_cast<PCWSTR>(Bundle::AppBundle->Path()) : pwzAssemblyPath;
 
     PTRARRAYREF result;
     PREPARE_NONVIRTUAL_CALLSITE(METHOD__ENVIRONMENT__INITIALIZE_COMMAND_LINE_ARGS);
@@ -281,12 +293,7 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
     if(!pwzAssemblyPath)
         return E_POINTER;
 
-    if(argc < 0)
-    {
-        return E_INVALIDARG;
-    }
-
-    if(argc > 0 && argv == NULL)
+    if(argc != 0 && argv == NULL)
     {
         return E_INVALIDARG;
     }
