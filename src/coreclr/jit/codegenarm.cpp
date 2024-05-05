@@ -173,9 +173,9 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
 //------------------------------------------------------------------------
 // instGen_Set_Reg_To_Imm: Move an immediate value into an integer register.
 //
-void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
-                                     regNumber reg,
-                                     ssize_t   imm,
+void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
+                                     regNumber      reg,
+                                     ssize_t        imm,
                                      insFlags flags DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     // reg cannot be a FP register
@@ -280,7 +280,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             if (targetType == TYP_FLOAT)
             {
                 // Get a temp integer register
-                regNumber tmpReg = tree->GetSingleTempReg();
+                regNumber tmpReg = internalRegisters.GetSingle(tree);
 
                 float f = forceCastToFloat(constValue);
                 instGen_Set_Reg_To_Imm(EA_4BYTE, tmpReg, *((int*)(&f)));
@@ -293,8 +293,8 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 unsigned* cv = (unsigned*)&constValue;
 
                 // Get two temp integer registers
-                regNumber tmpReg1 = tree->ExtractTempReg();
-                regNumber tmpReg2 = tree->GetSingleTempReg();
+                regNumber tmpReg1 = internalRegisters.Extract(tree);
+                regNumber tmpReg2 = internalRegisters.GetSingle(tree);
 
                 instGen_Set_Reg_To_Imm(EA_4BYTE, tmpReg1, cv[0]);
                 instGen_Set_Reg_To_Imm(EA_4BYTE, tmpReg2, cv[1]);
@@ -431,9 +431,9 @@ void CodeGen::genLclHeap(GenTree* tree)
     }
 
     // Setup the regTmp, if there is one.
-    if (tree->AvailableTempRegCount() > 0)
+    if (internalRegisters.Count(tree) > 0)
     {
-        regTmp = tree->ExtractTempReg();
+        regTmp = internalRegisters.Extract(tree);
     }
 
     // If we have an outgoing arg area then we must adjust the SP by popping off the
@@ -833,7 +833,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_DST_BYREF, dstAddr->TypeGet());
 
     // Temp register used to perform the sequence of loads and stores.
-    regNumber tmpReg = cpObjNode->ExtractTempReg();
+    regNumber tmpReg = internalRegisters.Extract(cpObjNode);
     assert(genIsValidIntReg(tmpReg));
 
     if (cpObjNode->IsVolatile())
@@ -1026,18 +1026,18 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     {
         // Arm supports unaligned access only for integer types,
         // convert the storing floating data into 1 or 2 integer registers and write them as int.
-        regNumber addr = tree->ExtractTempReg();
+        regNumber addr = internalRegisters.Extract(tree);
         emit->emitIns_R_S(INS_lea, EA_PTRSIZE, addr, varNum, offset);
         if (targetType == TYP_FLOAT)
         {
-            regNumber floatAsInt = tree->GetSingleTempReg();
+            regNumber floatAsInt = internalRegisters.GetSingle(tree);
             emit->emitIns_Mov(INS_vmov_f2i, EA_4BYTE, floatAsInt, dataReg, /* canSkip */ false);
             emit->emitIns_R_R(INS_str, EA_4BYTE, floatAsInt, addr);
         }
         else
         {
-            regNumber halfdoubleAsInt1 = tree->ExtractTempReg();
-            regNumber halfdoubleAsInt2 = tree->GetSingleTempReg();
+            regNumber halfdoubleAsInt1 = internalRegisters.Extract(tree);
+            regNumber halfdoubleAsInt2 = internalRegisters.GetSingle(tree);
             emit->emitIns_R_R_R(INS_vmov_d2i, EA_8BYTE, halfdoubleAsInt1, halfdoubleAsInt2, dataReg);
             emit->emitIns_R_R_I(INS_str, EA_4BYTE, halfdoubleAsInt1, addr, 0);
             emit->emitIns_R_R_I(INS_str, EA_4BYTE, halfdoubleAsInt1, addr, 4);
@@ -1209,7 +1209,7 @@ void CodeGen::genCkfinite(GenTree* treeNode)
 
     emitter*  emit       = GetEmitter();
     var_types targetType = treeNode->TypeGet();
-    regNumber intReg     = treeNode->GetSingleTempReg();
+    regNumber intReg     = internalRegisters.GetSingle(treeNode);
     regNumber fpReg      = genConsumeReg(treeNode->AsOp()->gtOp1);
     regNumber targetReg  = treeNode->GetRegNum();
 
@@ -1592,7 +1592,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
 
     genConsumeOperands(treeNode->AsOp());
 
-    regNumber tmpReg = treeNode->GetSingleTempReg();
+    regNumber tmpReg = internalRegisters.GetSingle(treeNode);
 
     assert(insVcvt != INS_invalid);
     GetEmitter()->emitIns_R_R(insVcvt, dstSize, tmpReg, op1->GetRegNum());
@@ -1651,7 +1651,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                                    callTargetReg, // ireg
                                    REG_NA, 0, 0,  // xreg, xmul, disp
                                    false          // isJump
-                                   );
+        );
     }
     else
     {
@@ -1660,7 +1660,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                                    gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur, DebugInfo(), REG_NA, REG_NA, 0,
                                    0,    /* ilOffset, ireg, xreg, xmul, disp */
                                    false /* isJump */
-                                   );
+        );
     }
 
     regSet.verifyRegistersUsed(RBM_CALLEE_TRASH);
@@ -1710,7 +1710,10 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
                       0,           // argSize. Again, we have to lie about it
                       EA_UNKNOWN); // retSize
 
-    if (initReg == argReg)
+    // If initReg is trashed, either because it was an arg to the enter
+    // callback, or because the enter callback itself trashes it, then it needs
+    // to be zero'ed again before using.
+    if (((RBM_PROFILER_ENTER_TRASH | RBM_PROFILER_ENTER_ARG) & genRegMask(initReg)) != RBM_NONE)
     {
         *pInitRegZeroed = false;
     }
@@ -2149,7 +2152,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 {
     assert(compiler->compGeneratingEpilog);
 
-    regMaskTP maskPopRegs      = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskTP maskPopRegs      = regSet.rsGetModifiedCalleeSavedRegsMask();
     regMaskTP maskPopRegsFloat = maskPopRegs & RBM_ALLFLOAT;
     regMaskTP maskPopRegsInt   = maskPopRegs & ~maskPopRegsFloat;
 

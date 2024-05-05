@@ -84,8 +84,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 			foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers)
 			{
-				if (requiresAnalyzer.CheckAndCreateRequiresDiagnostic(Operation, CalledMethod, OwningSymbol, context, FeatureContext, out Diagnostic? diag))
-					diagnosticContext.AddDiagnostic(diag);
+				if (requiresAnalyzer.CheckAndCreateRequiresDiagnostic (Operation, CalledMethod, OwningSymbol, context, FeatureContext, out Diagnostic? diag)
+					&& !requiresAnalyzer.IsIntrinsicallyHandled (CalledMethod, Instance, Arguments))
+				{
+					diagnosticContext.AddDiagnostic (diag);
+				}
 			}
 
 			return diagnosticContext.Diagnostics;

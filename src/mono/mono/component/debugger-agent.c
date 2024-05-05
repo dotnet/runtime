@@ -470,8 +470,6 @@ static void emit_thread_start (gpointer key, gpointer value, gpointer user_data)
 
 static void invalidate_each_thread (gpointer key, gpointer value, gpointer user_data);
 
-static void assembly_load (MonoProfiler *prof, MonoAssembly *assembly);
-
 static void assembly_unload (MonoProfiler *prof, MonoAssembly *assembly);
 
 static void gc_finalizing (MonoProfiler *prof);
@@ -804,7 +802,7 @@ mono_debugger_agent_init_internal (void)
 	mono_profiler_set_domain_loaded_callback (prof, appdomain_load);
 	mono_profiler_set_domain_unloading_callback (prof, appdomain_start_unload);
 	mono_profiler_set_domain_unloaded_callback (prof, appdomain_unload);
-	mono_profiler_set_assembly_loaded_callback (prof, assembly_load);
+	mono_profiler_set_assembly_loaded_callback (prof, mono_dbg_assembly_load);
 	mono_profiler_set_assembly_unloading_callback (prof, assembly_unload);
 	mono_profiler_set_jit_failed_callback (prof, jit_failed);
 	mono_profiler_set_gc_finalizing_callback (prof, gc_finalizing);
@@ -4005,8 +4003,8 @@ invalidate_each_thread (gpointer key, gpointer value, gpointer user_data)
 	invalidate_frames ((DebuggerTlsData *)value);
 }
 
-static void
-assembly_load (MonoProfiler *prof, MonoAssembly *assembly)
+void
+mono_dbg_assembly_load (MonoProfiler *prof, MonoAssembly *assembly)
 {
 	/* Sent later in jit_end () */
 	dbg_lock ();
@@ -4127,7 +4125,7 @@ jit_end (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
 			if (!CHECK_ICORDBG (TRUE) || tls->invoke == NULL) {
 				process_profiler_event (EVENT_KIND_ASSEMBLY_LOAD, assembly);
 			} else {
-				assembly_load(prof, assembly); //send later
+				mono_dbg_assembly_load (prof, assembly); //send later
 				break;
 			}
 		} else {

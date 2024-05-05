@@ -59,7 +59,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.IsType<JsonDynamicNumber>(obj);
 
             double dbl = (double)obj;
-#if !NETCOREAPP
+#if !NET
             string temp = dbl.ToString(System.Globalization.CultureInfo.InvariantCulture);
             // The reader uses "G17" format which causes temp to be 4.2000000000000002 in this case.
             dbl = double.Parse(temp, System.Globalization.CultureInfo.InvariantCulture);

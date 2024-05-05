@@ -77,7 +77,6 @@ public class SslStreamCertificateContextOcspLinuxTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/97836")]
     public async Task FetchOcspResponse_FirstInvalidThenValid()
     {
         await SimpleTest(PkiOptions.OcspEverywhere, async (root, intermediate, endEntity, ctxFactory, responder) =>
@@ -95,7 +94,6 @@ public class SslStreamCertificateContextOcspLinuxTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/97779")]
     public async Task RefreshOcspResponse_BeforeExpiration()
     {
         await SimpleTest(PkiOptions.OcspEverywhere, async (root, intermediate, endEntity, ctxFactory, responder) =>
@@ -110,12 +108,12 @@ public class SslStreamCertificateContextOcspLinuxTests
 
             intermediate.RevocationExpiration = DateTimeOffset.UtcNow.AddDays(1);
 
-            // first call will dispatch a download and return the cached response, the first call after
-            // the pending download finishes will return the updated response
-            byte[] ocsp2 = ctx.GetOcspResponseNoWaiting();
-            Assert.Equal(ocsp, ocsp2);
+            // First call will dispatch a download. It most likely will return the
+            // previous cached response, but if the current thread gets delayed
+            // it may actually return the fresh OCSP staple so we won't check the result
+            ctx.GetOcspResponseNoWaiting();
 
-            // The download should succeed
+            // The pending download should eventually succeed
             byte[] ocsp3 = await ctx.WaitForPendingOcspFetchAsync();
             Assert.NotNull(ocsp3);
             Assert.NotEqual(ocsp, ocsp3);
@@ -123,7 +121,6 @@ public class SslStreamCertificateContextOcspLinuxTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/97779")]
     public async Task RefreshOcspResponse_AfterExpiration()
     {
         await SimpleTest(PkiOptions.OcspEverywhere, async (root, intermediate, endEntity, ctxFactory, responder) =>
@@ -139,13 +136,14 @@ public class SslStreamCertificateContextOcspLinuxTests
 
             intermediate.RevocationExpiration = DateTimeOffset.UtcNow.AddDays(1);
 
-            // The cached OCSP is expired, so the first call will dispatch a download and return the cached response,
-            byte[] ocsp = ctx.GetOcspResponseNoWaiting();
-            Assert.Null(ocsp);
+            // The cached OCSP is expired, so the first call will dispatch a download.
+            // It most likely will return null, but if the current thread gets delayed
+            // it may actually return the fresh OCSP staple so we won't check the result
+            ctx.GetOcspResponseNoWaiting();
 
-            // The download should succeed
-            byte[] ocsp2 = await ctx.WaitForPendingOcspFetchAsync();
-            Assert.NotNull(ocsp2);
+            // The pending download should eventually succeed
+            byte[] ocsp = await ctx.WaitForPendingOcspFetchAsync();
+            Assert.NotNull(ocsp);
         });
     }
 

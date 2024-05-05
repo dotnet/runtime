@@ -290,129 +290,129 @@ emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
     const static insFormat formatEncode11A[11] = {IF_SVE_JD_4B,   IF_SVE_JD_4C,   IF_SVE_JI_3A_A, IF_SVE_JJ_4A,
                                                   IF_SVE_JJ_4A_B, IF_SVE_JJ_4A_C, IF_SVE_JJ_4A_D, IF_SVE_JJ_4B,
                                                   IF_SVE_JJ_4B_E, IF_SVE_JN_3B,   IF_SVE_JN_3C};
-    const static insFormat formatEncode9A[9] = {IF_SVE_HW_4A,   IF_SVE_HW_4A_A, IF_SVE_HW_4A_B,
-                                                IF_SVE_HW_4A_C, IF_SVE_HW_4B,   IF_SVE_HW_4B_D,
-                                                IF_SVE_HX_3A_E, IF_SVE_IJ_3A_F, IF_SVE_IK_4A_G};
-    const static insFormat formatEncode9B[9] = {IF_SVE_HW_4A,   IF_SVE_HW_4A_A, IF_SVE_HW_4A_B,
-                                                IF_SVE_HW_4A_C, IF_SVE_HW_4B,   IF_SVE_HW_4B_D,
-                                                IF_SVE_HX_3A_E, IF_SVE_IJ_3A_G, IF_SVE_IK_4A_I};
-    const static insFormat formatEncode9C[9] = {IF_SVE_HW_4A,   IF_SVE_HW_4A_A, IF_SVE_HW_4A_B,
-                                                IF_SVE_HW_4A_C, IF_SVE_HW_4B,   IF_SVE_HW_4B_D,
-                                                IF_SVE_HX_3A_E, IF_SVE_IH_3A_F, IF_SVE_II_4A_H};
-    const static insFormat formatEncode9D[9] = {IF_SVE_IH_3A,   IF_SVE_IH_3A_A, IF_SVE_II_4A,
-                                                IF_SVE_II_4A_B, IF_SVE_IU_4A,   IF_SVE_IU_4A_C,
-                                                IF_SVE_IU_4B,   IF_SVE_IU_4B_D, IF_SVE_IV_3A};
-    const static insFormat formatEncode9E[9] = {IF_SVE_JD_4A,   IF_SVE_JI_3A_A, IF_SVE_JJ_4A,
-                                                IF_SVE_JJ_4A_B, IF_SVE_JJ_4A_C, IF_SVE_JJ_4A_D,
-                                                IF_SVE_JJ_4B,   IF_SVE_JJ_4B_E, IF_SVE_JN_3A};
-    const static insFormat formatEncode9F[9] = {IF_SVE_JD_4C,   IF_SVE_JD_4C_A, IF_SVE_JJ_4A,
-                                                IF_SVE_JJ_4A_B, IF_SVE_JJ_4B,   IF_SVE_JJ_4B_C,
-                                                IF_SVE_JL_3A,   IF_SVE_JN_3C,   IF_SVE_JN_3C_D};
-    const static insFormat formatEncode8A[8] = {IF_SVE_CE_2A, IF_SVE_CE_2B, IF_SVE_CE_2C, IF_SVE_CE_2D,
-                                                IF_SVE_CF_2A, IF_SVE_CF_2B, IF_SVE_CF_2C, IF_SVE_CF_2D};
-    const static insFormat formatEncode8B[8] = {IF_SVE_HW_4A, IF_SVE_HW_4A_A, IF_SVE_HW_4A_B, IF_SVE_HW_4A_C,
-                                                IF_SVE_HW_4B, IF_SVE_HW_4B_D, IF_SVE_HX_3A_E, IF_SVE_IG_4A_F};
-    const static insFormat formatEncode8C[8] = {IF_SVE_HW_4A, IF_SVE_HW_4A_A, IF_SVE_HW_4A_B, IF_SVE_HW_4A_C,
-                                                IF_SVE_HW_4B, IF_SVE_HW_4B_D, IF_SVE_HX_3A_E, IF_SVE_IG_4A_G};
-    const static insFormat formatEncode7A[7] = {IF_SVE_IJ_3A, IF_SVE_IK_4A,   IF_SVE_IU_4A, IF_SVE_IU_4A_A,
-                                                IF_SVE_IU_4B, IF_SVE_IU_4B_B, IF_SVE_IV_3A};
-    const static insFormat formatEncode6A[6] = {IF_SVE_AE_3A, IF_SVE_BD_3A, IF_SVE_EE_1A,
-                                                IF_SVE_FD_3A, IF_SVE_FD_3B, IF_SVE_FD_3C};
-    const static insFormat formatEncode6B[6] = {IF_SVE_GY_3A, IF_SVE_GY_3B,   IF_SVE_GY_3B_D,
-                                                IF_SVE_HA_3A, IF_SVE_HA_3A_E, IF_SVE_HA_3A_F};
-    const static insFormat formatEncode6C[6] = {IF_SVE_HW_4A,   IF_SVE_HW_4A_A, IF_SVE_HW_4B,
-                                                IF_SVE_HX_3A_B, IF_SVE_IJ_3A_D, IF_SVE_IK_4A_F};
-    const static insFormat formatEncode6D[6] = {IF_SVE_HW_4A,   IF_SVE_HW_4A_A, IF_SVE_HW_4B,
-                                                IF_SVE_HX_3A_B, IF_SVE_IJ_3A_E, IF_SVE_IK_4A_H};
-    const static insFormat formatEncode6E[6] = {IF_SVE_HY_3A,   IF_SVE_HY_3A_A, IF_SVE_HY_3B,
-                                                IF_SVE_HZ_2A_B, IF_SVE_IA_2A,   IF_SVE_IB_3A};
-    const static insFormat formatEncode6F[6] = {IF_SVE_IG_4A, IF_SVE_IU_4A,   IF_SVE_IU_4A_A,
-                                                IF_SVE_IU_4B, IF_SVE_IU_4B_B, IF_SVE_IV_3A};
-    const static insFormat formatEncode6G[6] = {IF_SVE_JD_4A,   IF_SVE_JI_3A_A, IF_SVE_JK_4A,
-                                                IF_SVE_JK_4A_B, IF_SVE_JK_4B,   IF_SVE_JN_3A};
-    const static insFormat formatEncode5A[5] = {IF_SVE_AM_2A, IF_SVE_AN_3A, IF_SVE_AO_3A, IF_SVE_BF_2A, IF_SVE_BG_3A};
-    const static insFormat formatEncode5B[5] = {IF_SVE_GX_3A, IF_SVE_GX_3B, IF_SVE_HK_3A, IF_SVE_HL_3A, IF_SVE_HM_2A};
-    const static insFormat formatEncode5C[5] = {IF_SVE_EF_3A, IF_SVE_EG_3A, IF_SVE_EH_3A, IF_SVE_EY_3A, IF_SVE_EY_3B};
-    const static insFormat formatEncode5D[5] = {IF_SVE_HW_4A, IF_SVE_HW_4A_A, IF_SVE_HW_4B, IF_SVE_HX_3A_B,
-                                                IF_SVE_IG_4A_D};
-    const static insFormat formatEncode5E[5] = {IF_SVE_HW_4A, IF_SVE_HW_4A_A, IF_SVE_HW_4B, IF_SVE_HX_3A_B,
-                                                IF_SVE_IG_4A_E};
-    const static insFormat formatEncode4A[4]  = {IF_SVE_AA_3A, IF_SVE_AU_3A, IF_SVE_BS_1A, IF_SVE_CZ_4A};
-    const static insFormat formatEncode4B[4]  = {IF_SVE_BU_2A, IF_SVE_BV_2B, IF_SVE_EA_1A, IF_SVE_EB_1B};
-    const static insFormat formatEncode4E[4]  = {IF_SVE_BE_3A, IF_SVE_FI_3A, IF_SVE_FI_3B, IF_SVE_FI_3C};
-    const static insFormat formatEncode4F[4]  = {IF_SVE_EM_3A, IF_SVE_FK_3A, IF_SVE_FK_3B, IF_SVE_FK_3C};
-    const static insFormat formatEncode4G[4]  = {IF_SVE_AR_4A, IF_SVE_FF_3A, IF_SVE_FF_3B, IF_SVE_FF_3C};
-    const static insFormat formatEncode4H[4]  = {IF_SVE_GM_3A, IF_SVE_GN_3A, IF_SVE_GZ_3A, IF_SVE_HB_3A};
-    const static insFormat formatEncode4I[4]  = {IF_SVE_AX_1A, IF_SVE_AY_2A, IF_SVE_AZ_2A, IF_SVE_BA_3A};
-    const static insFormat formatEncode4J[4]  = {IF_SVE_BV_2A, IF_SVE_BV_2A_A, IF_SVE_CP_3A, IF_SVE_CQ_3A};
-    const static insFormat formatEncode4K[4]  = {IF_SVE_IF_4A, IF_SVE_IF_4A_A, IF_SVE_IM_3A, IF_SVE_IN_4A};
-    const static insFormat formatEncode4L[4]  = {IF_SVE_IZ_4A, IF_SVE_IZ_4A_A, IF_SVE_JB_4A, IF_SVE_JM_3A};
-    const static insFormat formatEncode3A[3]  = {IF_SVE_AB_3A, IF_SVE_AT_3A, IF_SVE_EC_1A};
-    const static insFormat formatEncode3B[3]  = {IF_SVE_BH_3A, IF_SVE_BH_3B, IF_SVE_BH_3B_A};
-    const static insFormat formatEncode3C[3]  = {IF_SVE_BW_2A, IF_SVE_CB_2A, IF_SVE_EB_1A};
-    const static insFormat formatEncode3D[3]  = {IF_SVE_BR_3A, IF_SVE_BR_3B, IF_SVE_CI_3A};
-    const static insFormat formatEncode3E[3]  = {IF_SVE_AT_3A, IF_SVE_EC_1A, IF_SVE_ET_3A};
-    const static insFormat formatEncode3F[3]  = {IF_SVE_GU_3A, IF_SVE_GU_3B, IF_SVE_HU_4A};
-    const static insFormat formatEncode3G[3]  = {IF_SVE_GH_3A, IF_SVE_GH_3B, IF_SVE_GH_3B_B};
-    const static insFormat formatEncode3H[3]  = {IF_SVE_HK_3A, IF_SVE_HL_3A, IF_SVE_HM_2A};
-    const static insFormat formatEncode3I[3]  = {IF_SVE_CM_3A, IF_SVE_CN_3A, IF_SVE_CO_3A};
-    const static insFormat formatEncode3J[3]  = {IF_SVE_CX_4A, IF_SVE_CX_4A_A, IF_SVE_CY_3A};
-    const static insFormat formatEncode3K[3]  = {IF_SVE_CX_4A, IF_SVE_CX_4A_A, IF_SVE_CY_3B};
-    const static insFormat formatEncode3L[3]  = {IF_SVE_DT_3A, IF_SVE_DX_3A, IF_SVE_DY_3A};
-    const static insFormat formatEncode3M[3]  = {IF_SVE_EJ_3A, IF_SVE_FA_3A, IF_SVE_FA_3B};
-    const static insFormat formatEncode3N[3]  = {IF_SVE_EK_3A, IF_SVE_FB_3A, IF_SVE_FB_3B};
-    const static insFormat formatEncode3O[3]  = {IF_SVE_EK_3A, IF_SVE_FC_3A, IF_SVE_FC_3B};
-    const static insFormat formatEncode3P[3]  = {IF_SVE_EL_3A, IF_SVE_FG_3A, IF_SVE_FG_3B};
-    const static insFormat formatEncode3Q[3]  = {IF_SVE_EO_3A, IF_SVE_FJ_3A, IF_SVE_FJ_3B};
-    const static insFormat formatEncode3R[3]  = {IF_SVE_FE_3A, IF_SVE_FE_3B, IF_SVE_FN_3A};
-    const static insFormat formatEncode3S[3]  = {IF_SVE_FH_3A, IF_SVE_FH_3B, IF_SVE_FN_3A};
-    const static insFormat formatEncode3T[3]  = {IF_SVE_GX_3C, IF_SVE_HK_3B, IF_SVE_HL_3B};
-    const static insFormat formatEncode3U[3]  = {IF_SVE_IM_3A, IF_SVE_IN_4A, IF_SVE_IX_4A};
-    const static insFormat formatEncode3V[3]  = {IF_SVE_JA_4A, IF_SVE_JB_4A, IF_SVE_JM_3A};
-    const static insFormat formatEncode2AA[2] = {IF_SVE_ID_2A, IF_SVE_IE_2A};
-    const static insFormat formatEncode2AB[2] = {IF_SVE_JG_2A, IF_SVE_JH_2A};
-    const static insFormat formatEncode2AC[2] = {IF_SVE_AD_3A, IF_SVE_ED_1A};
-    const static insFormat formatEncode2AD[2] = {IF_SVE_AB_3B, IF_SVE_AT_3B};
-    const static insFormat formatEncode2AE[2] = {IF_SVE_CG_2A, IF_SVE_CJ_2A};
-    const static insFormat formatEncode2AF[2] = {IF_SVE_AE_3A, IF_SVE_BD_3A};
-    const static insFormat formatEncode2AG[2] = {IF_SVE_BS_1A, IF_SVE_CZ_4A};
-    const static insFormat formatEncode2AH[2] = {IF_SVE_BQ_2A, IF_SVE_BQ_2B};
-    const static insFormat formatEncode2AI[2] = {IF_SVE_AM_2A, IF_SVE_EU_3A};
-    const static insFormat formatEncode2AJ[2] = {IF_SVE_HI_3A, IF_SVE_HT_4A};
-    const static insFormat formatEncode2AK[2] = {IF_SVE_BZ_3A, IF_SVE_BZ_3A_A};
-    const static insFormat formatEncode2AL[2] = {IF_SVE_GG_3A, IF_SVE_GG_3B};
-    const static insFormat formatEncode2AM[2] = {IF_SVE_HL_3A, IF_SVE_HM_2A};
-    const static insFormat formatEncode2AN[2] = {IF_SVE_EI_3A, IF_SVE_EZ_3A};
-    const static insFormat formatEncode2AO[2] = {IF_SVE_GT_4A, IF_SVE_GV_3A};
-    const static insFormat formatEncode2AP[2] = {IF_SVE_GY_3B, IF_SVE_HA_3A};
-    const static insFormat formatEncode2AQ[2] = {IF_SVE_GO_3A, IF_SVE_HC_3A};
-    const static insFormat formatEncode2AR[2] = {IF_SVE_AP_3A, IF_SVE_CZ_4A};
-    const static insFormat formatEncode2AT[2] = {IF_SVE_AB_3A, IF_SVE_EC_1A};
-    const static insFormat formatEncode2AU[2] = {IF_SVE_AH_3A, IF_SVE_BI_2A};
-    const static insFormat formatEncode2AV[2] = {IF_SVE_BM_1A, IF_SVE_BN_1A};
-    const static insFormat formatEncode2AW[2] = {IF_SVE_BO_1A, IF_SVE_BP_1A};
-    const static insFormat formatEncode2AX[2] = {IF_SVE_CC_2A, IF_SVE_CD_2A};
-    const static insFormat formatEncode2AY[2] = {IF_SVE_CR_3A, IF_SVE_CS_3A};
-    const static insFormat formatEncode2AZ[2] = {IF_SVE_CV_3A, IF_SVE_CV_3B};
-    const static insFormat formatEncode2BA[2] = {IF_SVE_CW_4A, IF_SVE_CZ_4A};
-    const static insFormat formatEncode2BB[2] = {IF_SVE_CZ_4A, IF_SVE_CZ_4A_A};
-    const static insFormat formatEncode2BC[2] = {IF_SVE_DE_1A, IF_SVE_DZ_1A};
-    const static insFormat formatEncode2BD[2] = {IF_SVE_DG_2A, IF_SVE_DH_1A};
-    const static insFormat formatEncode2BE[2] = {IF_SVE_DK_3A, IF_SVE_DL_2A};
-    const static insFormat formatEncode2BF[2] = {IF_SVE_DM_2A, IF_SVE_DN_2A};
-    const static insFormat formatEncode2BG[2] = {IF_SVE_DO_2A, IF_SVE_DP_2A};
-    const static insFormat formatEncode2BH[2] = {IF_SVE_DW_2A, IF_SVE_DW_2B};
-    const static insFormat formatEncode2BI[2] = {IF_SVE_FN_3A, IF_SVE_FN_3B};
-    const static insFormat formatEncode2BJ[2] = {IF_SVE_GQ_3A, IF_SVE_HG_2A};
-    const static insFormat formatEncode2BK[2] = {IF_SVE_GU_3C, IF_SVE_HU_4B};
-    const static insFormat formatEncode2BL[2] = {IF_SVE_GZ_3A, IF_SVE_HB_3A};
-    const static insFormat formatEncode2BM[2] = {IF_SVE_HK_3B, IF_SVE_HL_3B};
-    const static insFormat formatEncode2BN[2] = {IF_SVE_IF_4A, IF_SVE_IF_4A_A};
-    const static insFormat formatEncode2BO[2] = {IF_SVE_IO_3A, IF_SVE_IP_4A};
-    const static insFormat formatEncode2BP[2] = {IF_SVE_IQ_3A, IF_SVE_IR_4A};
-    const static insFormat formatEncode2BQ[2] = {IF_SVE_IS_3A, IF_SVE_IT_4A};
-    const static insFormat formatEncode2BR[2] = {IF_SVE_JC_4A, IF_SVE_JO_3A};
-    const static insFormat formatEncode2BS[2] = {IF_SVE_JE_3A, IF_SVE_JF_4A};
+    const static insFormat formatEncode9A[9]   = {IF_SVE_HW_4A,   IF_SVE_HW_4A_A, IF_SVE_HW_4A_B,
+                                                  IF_SVE_HW_4A_C, IF_SVE_HW_4B,   IF_SVE_HW_4B_D,
+                                                  IF_SVE_HX_3A_E, IF_SVE_IJ_3A_F, IF_SVE_IK_4A_G};
+    const static insFormat formatEncode9B[9]   = {IF_SVE_HW_4A,   IF_SVE_HW_4A_A, IF_SVE_HW_4A_B,
+                                                  IF_SVE_HW_4A_C, IF_SVE_HW_4B,   IF_SVE_HW_4B_D,
+                                                  IF_SVE_HX_3A_E, IF_SVE_IJ_3A_G, IF_SVE_IK_4A_I};
+    const static insFormat formatEncode9C[9]   = {IF_SVE_HW_4A,   IF_SVE_HW_4A_A, IF_SVE_HW_4A_B,
+                                                  IF_SVE_HW_4A_C, IF_SVE_HW_4B,   IF_SVE_HW_4B_D,
+                                                  IF_SVE_HX_3A_E, IF_SVE_IH_3A_F, IF_SVE_II_4A_H};
+    const static insFormat formatEncode9D[9]   = {IF_SVE_IH_3A,   IF_SVE_IH_3A_A, IF_SVE_II_4A,
+                                                  IF_SVE_II_4A_B, IF_SVE_IU_4A,   IF_SVE_IU_4A_C,
+                                                  IF_SVE_IU_4B,   IF_SVE_IU_4B_D, IF_SVE_IV_3A};
+    const static insFormat formatEncode9E[9]   = {IF_SVE_JD_4A,   IF_SVE_JI_3A_A, IF_SVE_JJ_4A,
+                                                  IF_SVE_JJ_4A_B, IF_SVE_JJ_4A_C, IF_SVE_JJ_4A_D,
+                                                  IF_SVE_JJ_4B,   IF_SVE_JJ_4B_E, IF_SVE_JN_3A};
+    const static insFormat formatEncode9F[9]   = {IF_SVE_JD_4C,   IF_SVE_JD_4C_A, IF_SVE_JJ_4A,
+                                                  IF_SVE_JJ_4A_B, IF_SVE_JJ_4B,   IF_SVE_JJ_4B_C,
+                                                  IF_SVE_JL_3A,   IF_SVE_JN_3C,   IF_SVE_JN_3C_D};
+    const static insFormat formatEncode8A[8]   = {IF_SVE_CE_2A, IF_SVE_CE_2B, IF_SVE_CE_2C, IF_SVE_CE_2D,
+                                                  IF_SVE_CF_2A, IF_SVE_CF_2B, IF_SVE_CF_2C, IF_SVE_CF_2D};
+    const static insFormat formatEncode8B[8]   = {IF_SVE_HW_4A, IF_SVE_HW_4A_A, IF_SVE_HW_4A_B, IF_SVE_HW_4A_C,
+                                                  IF_SVE_HW_4B, IF_SVE_HW_4B_D, IF_SVE_HX_3A_E, IF_SVE_IG_4A_F};
+    const static insFormat formatEncode8C[8]   = {IF_SVE_HW_4A, IF_SVE_HW_4A_A, IF_SVE_HW_4A_B, IF_SVE_HW_4A_C,
+                                                  IF_SVE_HW_4B, IF_SVE_HW_4B_D, IF_SVE_HX_3A_E, IF_SVE_IG_4A_G};
+    const static insFormat formatEncode7A[7]   = {IF_SVE_IJ_3A, IF_SVE_IK_4A,   IF_SVE_IU_4A, IF_SVE_IU_4A_A,
+                                                  IF_SVE_IU_4B, IF_SVE_IU_4B_B, IF_SVE_IV_3A};
+    const static insFormat formatEncode6A[6]   = {IF_SVE_AE_3A, IF_SVE_BD_3A, IF_SVE_EE_1A,
+                                                  IF_SVE_FD_3A, IF_SVE_FD_3B, IF_SVE_FD_3C};
+    const static insFormat formatEncode6B[6]   = {IF_SVE_GY_3A, IF_SVE_GY_3B,   IF_SVE_GY_3B_D,
+                                                  IF_SVE_HA_3A, IF_SVE_HA_3A_E, IF_SVE_HA_3A_F};
+    const static insFormat formatEncode6C[6]   = {IF_SVE_HW_4A,   IF_SVE_HW_4A_A, IF_SVE_HW_4B,
+                                                  IF_SVE_HX_3A_B, IF_SVE_IJ_3A_D, IF_SVE_IK_4A_F};
+    const static insFormat formatEncode6D[6]   = {IF_SVE_HW_4A,   IF_SVE_HW_4A_A, IF_SVE_HW_4B,
+                                                  IF_SVE_HX_3A_B, IF_SVE_IJ_3A_E, IF_SVE_IK_4A_H};
+    const static insFormat formatEncode6E[6]   = {IF_SVE_HY_3A,   IF_SVE_HY_3A_A, IF_SVE_HY_3B,
+                                                  IF_SVE_HZ_2A_B, IF_SVE_IA_2A,   IF_SVE_IB_3A};
+    const static insFormat formatEncode6F[6]   = {IF_SVE_IG_4A, IF_SVE_IU_4A,   IF_SVE_IU_4A_A,
+                                                  IF_SVE_IU_4B, IF_SVE_IU_4B_B, IF_SVE_IV_3A};
+    const static insFormat formatEncode6G[6]   = {IF_SVE_JD_4A,   IF_SVE_JI_3A_A, IF_SVE_JK_4A,
+                                                  IF_SVE_JK_4A_B, IF_SVE_JK_4B,   IF_SVE_JN_3A};
+    const static insFormat formatEncode5A[5]   = {IF_SVE_AM_2A, IF_SVE_AN_3A, IF_SVE_AO_3A, IF_SVE_BF_2A, IF_SVE_BG_3A};
+    const static insFormat formatEncode5B[5]   = {IF_SVE_GX_3A, IF_SVE_GX_3B, IF_SVE_HK_3A, IF_SVE_HL_3A, IF_SVE_HM_2A};
+    const static insFormat formatEncode5C[5]   = {IF_SVE_EF_3A, IF_SVE_EG_3A, IF_SVE_EH_3A, IF_SVE_EY_3A, IF_SVE_EY_3B};
+    const static insFormat formatEncode5D[5]   = {IF_SVE_HW_4A, IF_SVE_HW_4A_A, IF_SVE_HW_4B, IF_SVE_HX_3A_B,
+                                                  IF_SVE_IG_4A_D};
+    const static insFormat formatEncode5E[5]   = {IF_SVE_HW_4A, IF_SVE_HW_4A_A, IF_SVE_HW_4B, IF_SVE_HX_3A_B,
+                                                  IF_SVE_IG_4A_E};
+    const static insFormat formatEncode4A[4]   = {IF_SVE_AA_3A, IF_SVE_AU_3A, IF_SVE_BS_1A, IF_SVE_CZ_4A};
+    const static insFormat formatEncode4B[4]   = {IF_SVE_BU_2A, IF_SVE_BV_2B, IF_SVE_EA_1A, IF_SVE_EB_1B};
+    const static insFormat formatEncode4E[4]   = {IF_SVE_BE_3A, IF_SVE_FI_3A, IF_SVE_FI_3B, IF_SVE_FI_3C};
+    const static insFormat formatEncode4F[4]   = {IF_SVE_EM_3A, IF_SVE_FK_3A, IF_SVE_FK_3B, IF_SVE_FK_3C};
+    const static insFormat formatEncode4G[4]   = {IF_SVE_AR_4A, IF_SVE_FF_3A, IF_SVE_FF_3B, IF_SVE_FF_3C};
+    const static insFormat formatEncode4H[4]   = {IF_SVE_GM_3A, IF_SVE_GN_3A, IF_SVE_GZ_3A, IF_SVE_HB_3A};
+    const static insFormat formatEncode4I[4]   = {IF_SVE_AX_1A, IF_SVE_AY_2A, IF_SVE_AZ_2A, IF_SVE_BA_3A};
+    const static insFormat formatEncode4J[4]   = {IF_SVE_BV_2A, IF_SVE_BV_2A_A, IF_SVE_CP_3A, IF_SVE_CQ_3A};
+    const static insFormat formatEncode4K[4]   = {IF_SVE_IF_4A, IF_SVE_IF_4A_A, IF_SVE_IM_3A, IF_SVE_IN_4A};
+    const static insFormat formatEncode4L[4]   = {IF_SVE_IZ_4A, IF_SVE_IZ_4A_A, IF_SVE_JB_4A, IF_SVE_JM_3A};
+    const static insFormat formatEncode3A[3]   = {IF_SVE_AA_3A, IF_SVE_AT_3A, IF_SVE_EC_1A};
+    const static insFormat formatEncode3B[3]   = {IF_SVE_BH_3A, IF_SVE_BH_3B, IF_SVE_BH_3B_A};
+    const static insFormat formatEncode3C[3]   = {IF_SVE_BW_2A, IF_SVE_CB_2A, IF_SVE_EB_1A};
+    const static insFormat formatEncode3D[3]   = {IF_SVE_BR_3A, IF_SVE_BR_3B, IF_SVE_CI_3A};
+    const static insFormat formatEncode3E[3]   = {IF_SVE_AT_3A, IF_SVE_EC_1A, IF_SVE_ET_3A};
+    const static insFormat formatEncode3F[3]   = {IF_SVE_GU_3A, IF_SVE_GU_3B, IF_SVE_HU_4A};
+    const static insFormat formatEncode3G[3]   = {IF_SVE_GH_3A, IF_SVE_GH_3B, IF_SVE_GH_3B_B};
+    const static insFormat formatEncode3H[3]   = {IF_SVE_HK_3A, IF_SVE_HL_3A, IF_SVE_HM_2A};
+    const static insFormat formatEncode3I[3]   = {IF_SVE_CM_3A, IF_SVE_CN_3A, IF_SVE_CO_3A};
+    const static insFormat formatEncode3J[3]   = {IF_SVE_CX_4A, IF_SVE_CX_4A_A, IF_SVE_CY_3A};
+    const static insFormat formatEncode3K[3]   = {IF_SVE_CX_4A, IF_SVE_CX_4A_A, IF_SVE_CY_3B};
+    const static insFormat formatEncode3L[3]   = {IF_SVE_DT_3A, IF_SVE_DX_3A, IF_SVE_DY_3A};
+    const static insFormat formatEncode3M[3]   = {IF_SVE_EJ_3A, IF_SVE_FA_3A, IF_SVE_FA_3B};
+    const static insFormat formatEncode3N[3]   = {IF_SVE_EK_3A, IF_SVE_FB_3A, IF_SVE_FB_3B};
+    const static insFormat formatEncode3O[3]   = {IF_SVE_EK_3A, IF_SVE_FC_3A, IF_SVE_FC_3B};
+    const static insFormat formatEncode3P[3]   = {IF_SVE_EL_3A, IF_SVE_FG_3A, IF_SVE_FG_3B};
+    const static insFormat formatEncode3Q[3]   = {IF_SVE_EO_3A, IF_SVE_FJ_3A, IF_SVE_FJ_3B};
+    const static insFormat formatEncode3R[3]   = {IF_SVE_FE_3A, IF_SVE_FE_3B, IF_SVE_FN_3A};
+    const static insFormat formatEncode3S[3]   = {IF_SVE_FH_3A, IF_SVE_FH_3B, IF_SVE_FN_3A};
+    const static insFormat formatEncode3T[3]   = {IF_SVE_GX_3C, IF_SVE_HK_3B, IF_SVE_HL_3B};
+    const static insFormat formatEncode3U[3]   = {IF_SVE_IM_3A, IF_SVE_IN_4A, IF_SVE_IX_4A};
+    const static insFormat formatEncode3V[3]   = {IF_SVE_JA_4A, IF_SVE_JB_4A, IF_SVE_JM_3A};
+    const static insFormat formatEncode2AA[2]  = {IF_SVE_ID_2A, IF_SVE_IE_2A};
+    const static insFormat formatEncode2AB[2]  = {IF_SVE_JG_2A, IF_SVE_JH_2A};
+    const static insFormat formatEncode2AC[2]  = {IF_SVE_AA_3A, IF_SVE_ED_1A};
+    const static insFormat formatEncode2AD[2]  = {IF_SVE_AB_3B, IF_SVE_AT_3B};
+    const static insFormat formatEncode2AE[2]  = {IF_SVE_CG_2A, IF_SVE_CJ_2A};
+    const static insFormat formatEncode2AF[2]  = {IF_SVE_AE_3A, IF_SVE_BD_3A};
+    const static insFormat formatEncode2AG[2]  = {IF_SVE_BS_1A, IF_SVE_CZ_4A};
+    const static insFormat formatEncode2AH[2]  = {IF_SVE_BQ_2A, IF_SVE_BQ_2B};
+    const static insFormat formatEncode2AI[2]  = {IF_SVE_AM_2A, IF_SVE_EU_3A};
+    const static insFormat formatEncode2AJ[2]  = {IF_SVE_HI_3A, IF_SVE_HT_4A};
+    const static insFormat formatEncode2AK[2]  = {IF_SVE_BZ_3A, IF_SVE_BZ_3A_A};
+    const static insFormat formatEncode2AL[2]  = {IF_SVE_GG_3A, IF_SVE_GG_3B};
+    const static insFormat formatEncode2AM[2]  = {IF_SVE_HL_3A, IF_SVE_HM_2A};
+    const static insFormat formatEncode2AN[2]  = {IF_SVE_EI_3A, IF_SVE_EZ_3A};
+    const static insFormat formatEncode2AO[2]  = {IF_SVE_GT_4A, IF_SVE_GV_3A};
+    const static insFormat formatEncode2AP[2]  = {IF_SVE_GY_3B, IF_SVE_HA_3A};
+    const static insFormat formatEncode2AQ[2]  = {IF_SVE_GO_3A, IF_SVE_HC_3A};
+    const static insFormat formatEncode2AR[2]  = {IF_SVE_AP_3A, IF_SVE_CZ_4A};
+    const static insFormat formatEncode2AT[2]  = {IF_SVE_AA_3A, IF_SVE_EC_1A};
+    const static insFormat formatEncode2AU[2]  = {IF_SVE_AH_3A, IF_SVE_BI_2A};
+    const static insFormat formatEncode2AV[2]  = {IF_SVE_BM_1A, IF_SVE_BN_1A};
+    const static insFormat formatEncode2AW[2]  = {IF_SVE_BO_1A, IF_SVE_BP_1A};
+    const static insFormat formatEncode2AX[2]  = {IF_SVE_CC_2A, IF_SVE_CD_2A};
+    const static insFormat formatEncode2AY[2]  = {IF_SVE_CR_3A, IF_SVE_CS_3A};
+    const static insFormat formatEncode2AZ[2]  = {IF_SVE_CV_3A, IF_SVE_CV_3B};
+    const static insFormat formatEncode2BA[2]  = {IF_SVE_CW_4A, IF_SVE_CZ_4A};
+    const static insFormat formatEncode2BB[2]  = {IF_SVE_CZ_4A, IF_SVE_CZ_4A_A};
+    const static insFormat formatEncode2BC[2]  = {IF_SVE_DE_1A, IF_SVE_DZ_1A};
+    const static insFormat formatEncode2BD[2]  = {IF_SVE_DG_2A, IF_SVE_DH_1A};
+    const static insFormat formatEncode2BE[2]  = {IF_SVE_DK_3A, IF_SVE_DL_2A};
+    const static insFormat formatEncode2BF[2]  = {IF_SVE_DM_2A, IF_SVE_DN_2A};
+    const static insFormat formatEncode2BG[2]  = {IF_SVE_DO_2A, IF_SVE_DP_2A};
+    const static insFormat formatEncode2BH[2]  = {IF_SVE_DW_2A, IF_SVE_DW_2B};
+    const static insFormat formatEncode2BI[2]  = {IF_SVE_FN_3A, IF_SVE_FN_3B};
+    const static insFormat formatEncode2BJ[2]  = {IF_SVE_GQ_3A, IF_SVE_HG_2A};
+    const static insFormat formatEncode2BK[2]  = {IF_SVE_GU_3C, IF_SVE_HU_4B};
+    const static insFormat formatEncode2BL[2]  = {IF_SVE_GZ_3A, IF_SVE_HB_3A};
+    const static insFormat formatEncode2BM[2]  = {IF_SVE_HK_3B, IF_SVE_HL_3B};
+    const static insFormat formatEncode2BN[2]  = {IF_SVE_IF_4A, IF_SVE_IF_4A_A};
+    const static insFormat formatEncode2BO[2]  = {IF_SVE_IO_3A, IF_SVE_IP_4A};
+    const static insFormat formatEncode2BP[2]  = {IF_SVE_IQ_3A, IF_SVE_IR_4A};
+    const static insFormat formatEncode2BQ[2]  = {IF_SVE_IS_3A, IF_SVE_IT_4A};
+    const static insFormat formatEncode2BR[2]  = {IF_SVE_JC_4A, IF_SVE_JO_3A};
+    const static insFormat formatEncode2BS[2]  = {IF_SVE_JE_3A, IF_SVE_JF_4A};
 
     code_t    code           = BAD_CODE;
     insFormat insFmt         = emitInsFormat(ins);
@@ -2185,7 +2185,7 @@ void emitter::emitInsSve_R_R(instruction     ins,
         case INS_sve_uunpkhi:
         case INS_sve_uunpklo:
             assert(insScalableOptsNone(sopt));
-            assert(insOptsScalableAtLeastHalf(opt));
+            assert(insOptsScalableWide(opt));
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isScalableVectorSize(size));
@@ -2919,7 +2919,10 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
 
             if (sopt == INS_SCALABLE_OPTS_UNPREDICATED)
             {
-                assert(opt == INS_OPTS_SCALABLE_D);
+                // The instruction only has a .D variant. However, this doesn't matter as
+                // it operates on bits not lanes. Effectively this means all standard opt
+                // sizes are supported.
+                assert(insOptsScalableStandard(opt));
                 assert(isVectorRegister(reg2)); // nnnnn
                 fmt = IF_SVE_AU_3A;
             }
@@ -2947,7 +2950,7 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             {
                 assert(isLowPredicateRegister(reg2));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_AB_3A;
+                fmt = IF_SVE_AA_3A;
             }
             break;
 
@@ -2994,7 +2997,7 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             assert(isVectorRegister(reg3));
             assert(insOptsScalableStandard(opt));
             assert(insScalableOptsNone(sopt));
-            fmt = IF_SVE_AD_3A;
+            fmt = IF_SVE_AA_3A;
             break;
 
         case INS_sve_mul:
@@ -3060,11 +3063,19 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             break;
 
         case INS_sve_saddv:
-        case INS_sve_uaddv:
             assert(isFloatReg(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableWide(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_AI_3A;
+            break;
+
+        case INS_sve_uaddv:
+            assert(isFloatReg(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableStandard(opt));
             assert(insScalableOptsNone(sopt));
             fmt = IF_SVE_AI_3A;
             break;
@@ -3720,7 +3731,7 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             else if (sopt == INS_SCALABLE_OPTS_WITH_SIMD_SCALAR)
             {
                 assert(isFloatReg(reg1));
-                assert(isValidVectorElemsize(size));
+                assert(isScalableVectorSize(size));
                 fmt = IF_SVE_CN_3A;
             }
             else
@@ -3740,7 +3751,7 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             if (sopt == INS_SCALABLE_OPTS_UNPREDICATED)
             {
                 assert(ins == INS_sve_mov);
-                assert(opt == INS_OPTS_SCALABLE_D);
+                assert(insOptsScalableStandard(opt));
                 assert(isVectorRegister(reg1)); // ddddd
                 assert(isVectorRegister(reg2)); // nnnnn
                 assert(isVectorRegister(reg3)); // mmmmm
@@ -4059,7 +4070,7 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableFloat(opt));
-            assert(isValidVectorElemsizeSveFloat(size));
+            assert(isScalableVectorSize(size));
             assert(insScalableOptsNone(sopt));
             fmt = IF_SVE_HE_3A;
             break;
@@ -4069,7 +4080,7 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableFloat(opt));
-            assert(isValidVectorElemsizeSveFloat(size));
+            assert(isScalableVectorSize(size));
             assert(insScalableOptsNone(sopt));
             fmt = IF_SVE_HJ_3A;
             break;
@@ -4349,8 +4360,11 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             break;
 
         case INS_sve_ld1b:
+        case INS_sve_ld1sb:
         case INS_sve_ld1h:
+        case INS_sve_ld1sh:
         case INS_sve_ld1w:
+        case INS_sve_ld1sw:
         case INS_sve_ld1d:
             return emitIns_R_R_R_I(ins, size, reg1, reg2, reg3, 0, opt);
 
@@ -8006,11 +8020,9 @@ void emitter::emitIns_PRFOP_R_R_I(instruction ins,
         case IF_SVE_HP_3B:
         case IF_SVE_AR_4A:
         case IF_SVE_BV_2A_A:
-        case IF_SVE_AB_3A:
         case IF_SVE_ET_3A:
         case IF_SVE_HU_4A:
         case IF_SVE_HL_3B:
-        case IF_SVE_AD_3A:
         case IF_SVE_AB_3B:
         case IF_SVE_AE_3A:
         case IF_SVE_EU_3A:
@@ -9894,10 +9906,9 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
     switch (fmt)
     {
         // Scalable.
-        case IF_SVE_AA_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise logical operations (predicated)
-        case IF_SVE_AB_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer add/subtract vectors (predicated)
+        case IF_SVE_AA_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise logical operations + integer add/subtract
+                           // vectors + SVE integer min/max/difference (predicated)
         case IF_SVE_AC_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer divide vectors (predicated)
-        case IF_SVE_AD_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer min/max/difference (predicated)
         case IF_SVE_AE_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer multiply vectors (predicated)
         case IF_SVE_AF_3A: // ........xx...... ...gggnnnnnddddd -- SVE bitwise logical reduction (predicated)
         case IF_SVE_AG_3A: // ........xx...... ...gggnnnnnddddd -- SVE bitwise logical reduction (quadwords)
@@ -10416,18 +10427,18 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
         case IF_SVE_AX_1A: // ........xx.iiiii ......iiiiiddddd -- SVE index generation (immediate start, immediate
                            // increment)
-            {
-                ssize_t imm1;
-                ssize_t imm2;
-                insSveDecodeTwoSimm5(emitGetInsSC(id), &imm1, &imm2);
-                code = emitInsCodeSve(ins, fmt);
-                code |= insEncodeReg_V<4, 0>(id->idReg1());                   // ddddd
-                code |= insEncodeSimm<9, 5>(imm1);                            // iiiii
-                code |= insEncodeSimm<20, 16>(imm2);                          // iiiii
-                code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
-                dst += emitOutput_Instr(dst, code);
-                break;
-            }
+        {
+            ssize_t imm1;
+            ssize_t imm2;
+            insSveDecodeTwoSimm5(emitGetInsSC(id), &imm1, &imm2);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V<4, 0>(id->idReg1());                   // ddddd
+            code |= insEncodeSimm<9, 5>(imm1);                            // iiiii
+            code |= insEncodeSimm<20, 16>(imm2);                          // iiiii
+            code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+        }
 
         case IF_SVE_AY_2A: // ........xx.mmmmm ......iiiiiddddd -- SVE index generation (immediate start, register
                            // increment)
@@ -11451,16 +11462,16 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
         case IF_SVE_HM_2A: // ........xx...... ...ggg....iddddd -- SVE floating-point arithmetic with immediate
                            // (predicated)
-            {
-                imm  = emitGetInsSC(id);
-                code = emitInsCodeSve(ins, fmt);
-                code |= insEncodeReg_V<4, 0>(id->idReg1());                      // ddddd
-                code |= insEncodeReg_P<12, 10>(id->idReg2());                    // ggg
-                code |= insEncodeSveSmallFloatImm(imm);                          // i
-                code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
-                dst += emitOutput_Instr(dst, code);
-            }
-            break;
+        {
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V<4, 0>(id->idReg1());                      // ddddd
+            code |= insEncodeReg_P<12, 10>(id->idReg2());                    // ggg
+            code |= insEncodeSveSmallFloatImm(imm);                          // i
+            code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+        }
+        break;
 
         case IF_SVE_HN_2A: // ........xx...iii ......mmmmmddddd -- SVE floating-point trig multiply-add coefficient
             imm  = emitGetInsSC(id);
@@ -11794,12 +11805,19 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
         case IF_SVE_BJ_2A: // ........xx...... ......nnnnnddddd -- SVE floating-point exponential accelerator
         case IF_SVE_CG_2A: // ........xx...... ......nnnnnddddd -- SVE reverse vector elements
-        case IF_SVE_CH_2A: // ........xx...... ......nnnnnddddd -- SVE unpack vector elements
         case IF_SVE_HF_2A: // ........xx...... ......nnnnnddddd -- SVE floating-point reciprocal estimate (unpredicated)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                      // ddddd
             code |= insEncodeReg_V<9, 5>(id->idReg2());                      // nnnnn
             code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_CH_2A: // ........xx...... ......nnnnnddddd -- SVE unpack vector elements
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V<4, 0>(id->idReg1());                                     // ddddd
+            code |= insEncodeReg_V<9, 5>(id->idReg2());                                     // nnnnn
+            code |= insEncodeSveElemsize(optGetSveElemsize((insOpts)(id->idInsOpt() + 1))); // xx
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -12539,9 +12557,8 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
             break;
 
         // Scalable.
-        case IF_SVE_AA_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise logical operations (predicated)
-        case IF_SVE_AB_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer add/subtract vectors (predicated)
-        case IF_SVE_AD_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer min/max/difference (predicated)
+        case IF_SVE_AA_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise logical operations + integer add/subtract
+                           // vectors + SVE integer min/max/difference (predicated)
         case IF_SVE_AE_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer multiply vectors (predicated)
         case IF_SVE_AN_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise shift by vector (predicated)
         case IF_SVE_CM_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally broadcast element to vector
@@ -12605,7 +12622,7 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1()));          // ddddd
             assert(isLowPredicateRegister(id->idReg2()));    // ggg
             assert(isVectorRegister(id->idReg3()));          // mmmmm
-            assert(isValidVectorElemsize(id->idOpSize()));
+            assert(isScalableVectorSize(id->idOpSize()));
             break;
 
         // Scalable to FP SIMD scalar.
@@ -12615,7 +12632,7 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1()));       // ddddd
             assert(isLowPredicateRegister(id->idReg2())); // ggg
             assert(isVectorRegister(id->idReg3()));       // mmmmm
-            assert(isValidVectorElemsizeSveFloat(id->idOpSize()));
+            assert(isScalableVectorSize(id->idOpSize()));
             break;
 
         // Scalable to general register.
@@ -13208,11 +13225,20 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
 
         // Scalable, widening to scalar SIMD.
         case IF_SVE_AI_3A: // ........xx...... ...gggnnnnnddddd -- SVE integer add reduction (predicated)
-            assert(insOptsScalableWide(id->idInsOpt()));  // xx
+            switch (id->idIns())
+            {
+                case INS_sve_saddv:
+                    assert(insOptsScalableWide(id->idInsOpt())); // xx
+                    break;
+
+                default:
+                    assert(insOptsScalableStandard(id->idInsOpt())); // xx
+                    break;
+            }
             assert(isVectorRegister(id->idReg1()));       // ddddd
             assert(isLowPredicateRegister(id->idReg2())); // ggg
             assert(isVectorRegister(id->idReg3()));       // mmmmm
-            assert(isValidVectorElemsizeWidening(id->idOpSize()));
+            assert(isScalableVectorSize(id->idOpSize()));
             break;
 
         // Scalable, possibly FP.
@@ -13350,8 +13376,8 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
         case IF_SVE_DP_2A: // ........xx...... .......MMMMddddd -- SVE saturating inc/dec vector by predicate count
         case IF_SVE_DN_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec vector by predicate count
             assert(insOptsScalableAtLeastHalf(id->idInsOpt())); // xx
-            assert(isPredicateRegister(id->idReg1()));          // MMMM
-            assert(isVectorRegister(id->idReg2()));             // ddddd
+            assert(isVectorRegister(id->idReg1()));             // ddddd
+            assert(isPredicateRegister(id->idReg2()));          // MMMM
             assert(isScalableVectorSize(id->idOpSize()));
             break;
 
@@ -13443,17 +13469,17 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
 
         case IF_SVE_AX_1A: // ........xx.iiiii ......iiiiiddddd -- SVE index generation (immediate start, immediate
                            // increment)
-            {
-                ssize_t imm1;
-                ssize_t imm2;
-                insSveDecodeTwoSimm5(emitGetInsSC(id), &imm1, &imm2);
-                assert(insOptsScalableStandard(id->idInsOpt()));
-                assert(isVectorRegister(id->idReg1()));                           // ddddd
-                assert(isValidSimm<5>(imm1));                                     // iiiii
-                assert(isValidSimm<5>(imm2));                                     // iiiii
-                assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
-                break;
-            }
+        {
+            ssize_t imm1;
+            ssize_t imm2;
+            insSveDecodeTwoSimm5(emitGetInsSC(id), &imm1, &imm2);
+            assert(insOptsScalableStandard(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));                           // ddddd
+            assert(isValidSimm<5>(imm1));                                     // iiiii
+            assert(isValidSimm<5>(imm2));                                     // iiiii
+            assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
+            break;
+        }
 
         case IF_SVE_AY_2A: // ........xx.mmmmm ......iiiiiddddd -- SVE index generation (immediate start, register
                            // increment)
@@ -14367,9 +14393,14 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_BJ_2A: // ........xx...... ......nnnnnddddd -- SVE floating-point exponential accelerator
-        case IF_SVE_CH_2A: // ........xx...... ......nnnnnddddd -- SVE unpack vector elements
         case IF_SVE_HF_2A: // ........xx...... ......nnnnnddddd -- SVE floating-point reciprocal estimate (unpredicated)
             assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            break;
+
+        case IF_SVE_CH_2A: // ........xx...... ......nnnnnddddd -- SVE unpack vector elements
+            assert(insOptsScalableWide(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
             break;
@@ -14458,10 +14489,9 @@ void emitter::emitDispInsSveHelp(instrDesc* id)
         bitMaskImm bmi;
 
         //  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
-        case IF_SVE_AA_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise logical operations (predicated)
-        case IF_SVE_AB_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer add/subtract vectors (predicated)
+        case IF_SVE_AA_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise logical operations + integer add/subtract
+                           // vectors + SVE integer min/max/difference (predicated)
         case IF_SVE_AC_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer divide vectors (predicated)
-        case IF_SVE_AD_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer min/max/difference (predicated)
         case IF_SVE_AE_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer multiply vectors (predicated)
         case IF_SVE_AN_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise shift by vector (predicated)
         case IF_SVE_EP_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 integer halving add/subtract (predicated)
@@ -14579,37 +14609,37 @@ void emitter::emitDispInsSveHelp(instrDesc* id)
         // <Zd>.<T>, #<imm1>, #<imm2>
         case IF_SVE_AX_1A: // ........xx.iiiii ......iiiiiddddd -- SVE index generation (immediate start, immediate
                            // increment)
-            {
-                ssize_t imm1;
-                ssize_t imm2;
-                insSveDecodeTwoSimm5(emitGetInsSC(id), &imm1, &imm2);
-                emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
-                emitDispImm(imm1, true);                            // iiiii
-                emitDispImm(imm2, false);                           // iiiii
-                break;
-            }
+        {
+            ssize_t imm1;
+            ssize_t imm2;
+            insSveDecodeTwoSimm5(emitGetInsSC(id), &imm1, &imm2);
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            emitDispImm(imm1, true);                            // iiiii
+            emitDispImm(imm2, false);                           // iiiii
+            break;
+        }
 
         // <Zd>.<T>, #<imm>, <R><m>
         case IF_SVE_AY_2A: // ........xx.mmmmm ......iiiiiddddd -- SVE index generation (immediate start, register
                            // increment)
-            {
-                const emitAttr intRegSize = (id->idInsOpt() == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
-                emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
-                emitDispImm(emitGetInsSC(id), true);                // iiiii
-                emitDispReg(id->idReg2(), intRegSize, false);       // mmmmm
-                break;
-            }
+        {
+            const emitAttr intRegSize = (id->idInsOpt() == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            emitDispImm(emitGetInsSC(id), true);                // iiiii
+            emitDispReg(id->idReg2(), intRegSize, false);       // mmmmm
+            break;
+        }
 
         // <Zd>.<T>, <R><n>, #<imm>
         case IF_SVE_AZ_2A: // ........xx.iiiii ......nnnnnddddd -- SVE index generation (register start, immediate
                            // increment)
-            {
-                const emitAttr intRegSize = (id->idInsOpt() == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
-                emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
-                emitDispReg(id->idReg2(), intRegSize, true);        // mmmmm
-                emitDispImm(emitGetInsSC(id), false);               // iiiii
-                break;
-            }
+        {
+            const emitAttr intRegSize = (id->idInsOpt() == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            emitDispReg(id->idReg2(), intRegSize, true);        // mmmmm
+            emitDispImm(emitGetInsSC(id), false);               // iiiii
+            break;
+        }
 
         // <Zda>.H, <Zn>.B, <Zm>.B
         case IF_SVE_GN_3A:   // ...........mmmmm ......nnnnnddddd -- SVE2 FP8 multiply-add long
@@ -16211,8 +16241,8 @@ void emitter::emitDispInsSveHelp(instrDesc* id)
         case IF_SVE_HH_2A: // ................ ......nnnnnddddd -- SVE2 FP8 upconverts
         // <Zd>.<T>, <Zn>.<Tb>
         case IF_SVE_CH_2A: // ........xx...... ......nnnnnddddd -- SVE unpack vector elements
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
-            emitDispSveReg(id->idReg2(), (insOpts)((unsigned)id->idInsOpt() - 1), false);
+            emitDispSveReg(id->idReg1(), (insOpts)(id->idInsOpt() + 1), true);
+            emitDispSveReg(id->idReg2(), id->idInsOpt(), false);
             break;
 
         // <Zd>.<T>, <Zn>.<T>
@@ -16316,16 +16346,32 @@ void emitter::getInsSveExecutionCharacteristics(instrDesc* id, insExecutionChara
     switch (id->idInsFmt())
     {
         // Predicate logical
-        case IF_SVE_AA_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise logical operations (predicated)
-            result.insLatency    = PERFSCORE_LATENCY_1C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+        case IF_SVE_AA_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise logical operations + integer add/subtract
+                           // vectors + SVE integer min/max/difference (predicated)
+            switch (ins)
+            {
+                case INS_sve_add:
+                case INS_sve_sub:
+                case INS_sve_subr:
+                case INS_sve_sabd:
+                case INS_sve_smax:
+                case INS_sve_smin:
+                case INS_sve_uabd:
+                case INS_sve_umax:
+                case INS_sve_umin:
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    break;
+
+                default:
+                    result.insLatency    = PERFSCORE_LATENCY_1C;
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    break;
+            }
             break;
 
         // Arithmetic, basic
-        case IF_SVE_AB_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer add/subtract vectors (predicated)
         case IF_SVE_EP_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 integer halving add/subtract (predicated)
-        // Max/min, basic and pairwise
-        case IF_SVE_AD_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer min/max/difference (predicated)
             result.insLatency    = PERFSCORE_LATENCY_2C;
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             break;

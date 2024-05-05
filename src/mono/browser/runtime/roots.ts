@@ -4,7 +4,7 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import cwraps from "./cwraps";
-import { Module, mono_assert } from "./globals";
+import { Module, mono_assert, runtimeHelpers } from "./globals";
 import { VoidPtr, ManagedPointer, NativePointer } from "./types/emscripten";
 import { MonoObjectRef, MonoObjectRefNull, MonoObject, is_nullish, WasmRoot, WasmRootBuffer } from "./types/internal";
 import { _zero_region, localHeapViewU32 } from "./memory";
@@ -24,6 +24,7 @@ const _external_root_free_instances: WasmExternalRoot<any>[] = [];
  * For small numbers of roots, it is preferable to use the mono_wasm_new_root and mono_wasm_new_roots APIs instead.
  */
 export function mono_wasm_new_root_buffer (capacity: number, name?: string): WasmRootBuffer {
+    if (WasmEnableThreads && runtimeHelpers.disableManagedTransition) throw new Error("External roots are not supported when threads are enabled");
     if (capacity <= 0)
         throw new Error("capacity >= 1");
 
@@ -44,6 +45,7 @@ export function mono_wasm_new_root_buffer (capacity: number, name?: string): Was
  * Releasing this root will not de-allocate the root space. You still need to call .release().
  */
 export function mono_wasm_new_external_root<T extends MonoObject> (address: VoidPtr | MonoObjectRef): WasmRoot<T> {
+    if (WasmEnableThreads && runtimeHelpers.disableManagedTransition) throw new Error("External roots are not supported in multithreaded mode");
     let result: WasmExternalRoot<T>;
 
     if (!address)
@@ -67,6 +69,7 @@ export function mono_wasm_new_external_root<T extends MonoObject> (address: Void
  * When you are done using the root you must call its .release() method.
  */
 export function mono_wasm_new_root<T extends MonoObject> (value: T | undefined = undefined): WasmRoot<T> {
+    if (WasmEnableThreads && runtimeHelpers.disableManagedTransition) throw new Error("External roots are not supported in multithreaded mode");
     let result: WasmRoot<T>;
 
     if (_scratch_root_free_instances.length > 0) {
