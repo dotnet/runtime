@@ -103,7 +103,7 @@ static int32_t ConfigureSignVerifyTransform(SecTransformRef xform, CFDataRef cfD
 #endif
 
 // Legacy algorithm identifiers
-const SecKeyAlgorithm kSecKeyAlgorithmRSASignatureDigestPKCS1v15MD5 = CFSTR("algid:sign:RSA:digest-PKCS1v15:MD5");
+static const SecKeyAlgorithm kSecKeyAlgorithmRSASignatureDigestPKCS1v15MD5 = CFSTR("algid:sign:RSA:digest-PKCS1v15:MD5");
 
 static CFStringRef GetSignatureAlgorithmIdentifier(PAL_HashAlgorithm hashAlgorithm,
                                                    PAL_SignatureAlgorithm signatureAlgorithm)
