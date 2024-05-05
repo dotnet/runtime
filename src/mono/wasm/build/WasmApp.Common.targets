@@ -44,6 +44,8 @@
 
       - $(EmccLinkOptimizationFlag)         - Optimization flag to use for the link step
       - $(EmccCompileOptimizationFlag)      - Optimization flag to use for compiling native files
+      - $(WasmBitcodeCompileOptimizationFlag)
+                                            - Optimization flag to use for compiling bitcode files
 
       - $(EmccFlags)                        - Emcc flags used for both compiling native files, and linking
       - $(EmccExtraLDFlags)                 - Extra emcc flags for linking
@@ -294,6 +296,11 @@
       <_WasmShouldAOT Condition="'$(RunAOTCompilationAfterBuild)' == 'true' and '$(RunAOTCompilation)' == 'true'">true</_WasmShouldAOT>
       <_WasmShouldAOT Condition="'$(_WasmShouldAOT)' == ''">false</_WasmShouldAOT>
     </PropertyGroup>
+
+    <ItemGroup>
+      <_ExistingNativeLibrary Include="@(NativeLibrary->Exists())" />
+      <NativeFileReference Include="@(_ExistingNativeLibrary->'%(Identity)')" />
+    </ItemGroup>
 
     <ItemGroup Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' == ''">
       <!-- find the path with the assemblies, so we don't have to hardcode the tfm.
@@ -800,11 +807,11 @@
   <Target Name="_WasmSelectRuntimeComponentsForLinking" Condition="'$(WasmIsWorkloadAvailable)' == 'true'" DependsOnTargets="_MonoSelectRuntimeComponents" />
 
   <!--
-    Inputs: @(_BitcodeLDFlags), $(_WasmCompileBitcodeRsp)
+    Inputs: @(_BitcodeCompileFlags), $(_WasmCompileBitcodeRsp)
     Outputs: file @(_WasmCompileBitcodeRsp
   -->
   <Target Name="_WasmWriteRspForCompilingBitcode">
-    <WriteLinesToFile Lines="@(_BitcodeLDFlags)" File="$(_WasmCompileBitcodeRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile Lines="@(_BitcodeCompileFlags)" File="$(_WasmCompileBitcodeRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <ItemGroup>
       <FileWrites Include="$(_WasmCompileBitcodeRsp)" />
     </ItemGroup>

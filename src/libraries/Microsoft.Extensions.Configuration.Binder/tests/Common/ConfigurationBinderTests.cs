@@ -326,11 +326,15 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         [Fact]
         public void GetNullValue()
         {
-            var dic = new Dictionary<string, string>
+            #nullable enable
+            #pragma warning disable IDE0004 // Cast is redundant
+
+            var dic = new Dictionary<string, string?>
             {
                 {"Integer", null},
                 {"Boolean", null},
                 {"Nested:Integer", null},
+                {"String", null},
                 {"Object", null }
             };
             var configurationBuilder = new ConfigurationBuilder();
@@ -341,13 +345,16 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.False(config.GetValue<bool>("Boolean"));
             Assert.Equal(0, config.GetValue<int>("Integer"));
             Assert.Equal(0, config.GetValue<int>("Nested:Integer"));
+            Assert.Null(config.GetValue<string>("String"));
             Assert.Null(config.GetValue<ComplexOptions>("Object"));
 
             // Generic overloads with default value.
-            Assert.True(config.GetValue("Boolean", true));
-            Assert.Equal(1, config.GetValue("Integer", 1));
-            Assert.Equal(1, config.GetValue("Nested:Integer", 1));
-            Assert.Equal(new NestedConfig(""), config.GetValue("Object", new NestedConfig("")));
+            Assert.True((bool)config.GetValue("Boolean", true));
+            Assert.Equal(1, (int)config.GetValue("Integer", 1));
+            Assert.Equal(1, (int)config.GetValue("Nested:Integer", 1));
+            // [NotNullIfNotNull] avoids CS8600: Converting possible null value to non-nullable type.
+            Assert.Equal("s", (string)config.GetValue("String", "s"));
+            Assert.Equal(new NestedConfig(""), (NestedConfig)config.GetValue("Object", new NestedConfig("")));
 
             // Type overloads.
             Assert.Null(config.GetValue(typeof(bool), "Boolean"));
@@ -356,16 +363,22 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Null(config.GetValue(typeof(ComplexOptions), "Object"));
 
             // Type overloads with default value.
+            // [NotNullIfNotNull] avoids CS8605: Unboxing a possibly null value.
             Assert.True((bool)config.GetValue(typeof(bool), "Boolean", true));
             Assert.Equal(1, (int)config.GetValue(typeof(int), "Integer", 1));
             Assert.Equal(1, (int)config.GetValue(typeof(int), "Nested:Integer", 1));
-            Assert.Equal(new NestedConfig(""), config.GetValue("Object", new NestedConfig("")));
+            // [NotNullIfNotNull] avoids CS8600: Converting possible null value to non-nullable type.
+            Assert.Equal("s", (string)config.GetValue(typeof(string), "String", "s"));
+            Assert.Equal(new NestedConfig(""), (NestedConfig)config.GetValue("Object", new NestedConfig("")));
 
             // GetSection tests.
             Assert.False(config.GetSection("Boolean").Get<bool>());
             Assert.Equal(0, config.GetSection("Integer").Get<int>());
             Assert.Equal(0, config.GetSection("Nested:Integer").Get<int>());
             Assert.Null(config.GetSection("Object").Get<ComplexOptions>());
+
+            #pragma warning restore IDE0004
+            #nullable restore
         }
 
         [Fact]
@@ -1958,7 +1971,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 #endif
             Assert.Equal(CultureInfo.GetCultureInfo("yo-NG"), obj.Prop17);
 
-#if NETCOREAPP
+#if NET
             data = @"{
                 ""Prop7"": 9,
                 ""Prop11"": 65500,
@@ -2133,10 +2146,10 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             TraceSwitch ts = new(displayName: "TraceSwitch", description: "This switch is set via config.");
             ConfigurationBinder.Bind(config, "TraceSwitch", ts);
             Assert.Equal(TraceLevel.Info, ts.Level);
-#if NETCOREAPP
+#if NET
             // Value property is not publicly exposed in .NET Framework.
             Assert.Equal("Info", ts.Value);
-#endif // NETCOREAPP
+#endif // NET
         }
 #endif
 
@@ -2470,6 +2483,68 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             IConfigurationSection IConfiguration.GetSection(string key) =>
                 this[key] is null ? null : new ConfigurationSection(this, key);
+        }
+
+        [Fact]
+        public void CanBindToClassWithNewProperties()
+        {
+            /// the source generator will bind to the most derived property only.
+            /// the reflection binder will bind the same data to all properties (including hidden).
+            
+            var config = TestHelpers.GetConfigurationFromJsonString("""
+                {
+                    "A": "AVal",
+                    "B": "5",
+                    "C": "CVal",
+                    "D": "DVal",
+                    "E": "Option2",
+                    "F": "FVal",
+                    "X": "52"
+                }
+                """);
+            var obj = new DerivedClassWithHiddenMembers();
+
+            config.Bind(obj);
+
+            BaseForHiddenMembers baseObj = obj;
+            IntermediateDerivedClass intermediateObj = obj;
+
+            Assert.Equal("ADerived", obj.A);
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            // source generator will not set hidden property
+            Assert.Null(baseObj.A);
+#else
+            // reflection binder will set hidden property
+            Assert.Equal("AVal", baseObj.A);
+#endif
+
+            Assert.Equal(5, obj.B);
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            // source generator will not set hidden property
+            Assert.Null(baseObj.B);
+#else
+            // reflection binder will set hidden property
+            Assert.Equal("5", baseObj.B);
+#endif
+
+            Assert.Equal(TestSettingsEnum2.Option2, obj.E);
+            Assert.Equal(TestSettingsEnum.Option2, baseObj.E);
+
+            Assert.Equal("DC", obj.C);
+            // The setter should still be called, even when only getter is overridden.
+            Assert.Equal("CVal", obj.CBase);
+
+            // can hide a readonly property with r/w property
+            Assert.Null(baseObj.D);
+            Assert.Equal("DD", obj.D);
+            // The setter should still be called, even when only getter is overridden.
+            Assert.Equal("DVal", obj.DBase);
+
+            Assert.Equal("DF", obj.F);
+            Assert.Equal("FVal", obj.FBase);
+
+            Assert.Equal(53, obj.X);
+            Assert.Equal(53, obj.XBase);
         }
     }
 }

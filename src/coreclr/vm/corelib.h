@@ -583,6 +583,10 @@ END_ILLINK_FEATURE_SWITCH()
 DEFINE_CLASS(MONITOR,               Threading,              Monitor)
 DEFINE_METHOD(MONITOR,              ENTER,                  Enter,                      SM_Obj_RetVoid)
 
+DEFINE_CLASS(THREAD_BLOCKING_INFO,  Threading,              ThreadBlockingInfo)
+DEFINE_FIELD(THREAD_BLOCKING_INFO,  OFFSET_OF_LOCK_OWNER_OS_THREAD_ID, s_monitorObjectOffsetOfLockOwnerOSThreadId)
+DEFINE_FIELD(THREAD_BLOCKING_INFO,  FIRST,                  t_first)
+
 DEFINE_CLASS(PARAMETER,             Reflection,             ParameterInfo)
 
 DEFINE_CLASS(PARAMETER_MODIFIER,    Reflection,             ParameterModifier)
@@ -887,6 +891,7 @@ DEFINE_METHOD(DEBUGGER,             BREAK,                  Break,              
 DEFINE_CLASS(BUFFER,                System,                 Buffer)
 DEFINE_METHOD(BUFFER,               MEMCPY_PTRBYTE_ARRBYTE, Memcpy,                 SM_PtrByte_Int_ArrByte_Int_Int_RetVoid)
 DEFINE_METHOD(BUFFER,               MEMCPY,                 Memcpy,                 SM_PtrByte_PtrByte_Int_RetVoid)
+DEFINE_METHOD(BUFFER,               MEMCOPYGC,              BulkMoveWithWriteBarrier, SM_RefByte_RefByte_UIntPtr_RetVoid)
 
 DEFINE_CLASS(STUBHELPERS,           StubHelpers,            StubHelpers)
 DEFINE_METHOD(STUBHELPERS,          GET_DELEGATE_TARGET,    GetDelegateTarget,          SM_Delegate_RetIntPtr)
