@@ -103,7 +103,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public void PopulateSelfContained(MockedComponent mock, Action<NetCoreAppBuilder> customizer = null)
         {
-            var builder = NetCoreAppBuilder.ForNETCoreApp(Name, TestContext.TargetRID);
+            var builder = NetCoreAppBuilder.ForNETCoreApp(Name, TestContext.BuildRID);
 
             // Update the .runtimeconfig.json - add included framework and remove any existing NETCoreApp framework
             builder.WithRuntimeConfig(c =>
@@ -114,7 +114,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             builder.WithProject(p => p.WithAssemblyGroup(null, g => g.WithMainAssembly()));
 
             // Add runtime libraries and assets
-            builder.WithRuntimePack($"{Constants.MicrosoftNETCoreApp}.Runtime.{TestContext.TargetRID}", TestContext.MicrosoftNETCoreAppVersion, l =>
+            builder.WithRuntimePack($"{Constants.MicrosoftNETCoreApp}.Runtime.{TestContext.BuildRID}", TestContext.MicrosoftNETCoreAppVersion, l =>
             {
                 if (mock == MockedComponent.None)
                 {

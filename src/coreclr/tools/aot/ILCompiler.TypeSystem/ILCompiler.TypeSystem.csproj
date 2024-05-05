@@ -5,6 +5,7 @@
     <AssemblyName>ILCompiler.TypeSystem</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <NoWarn>$(NoWarn);CA1866</NoWarn>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Platforms>x64;x86</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -197,8 +198,8 @@
     <Compile Include="..\..\Common\TypeSystem\Common\Utilities\CustomAttributeTypeNameParser.cs">
       <Link>Utilities\CustomAttributeTypeNameParser.cs</Link>
     </Compile>
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\TypeNameParser.cs">
-      <Link>Utilities\TypeNameParser.cs</Link>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\TypeNameParser.Helpers.cs">
+      <Link>Utilities\CustomAttributeTypeNameParser.Helpers</Link>
     </Compile>
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\ValueStringBuilder.cs">
       <Link>Utilities\ValueStringBuilder.cs</Link>
@@ -711,6 +712,10 @@
 
   <ItemGroup>
     <AdditionalFiles Include="BannedSymbols.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
   </ItemGroup>
 
   <ItemGroup>

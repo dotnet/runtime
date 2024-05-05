@@ -202,11 +202,10 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         var page = await runner.RunAsync(
             runCommand,
             runArgs,
-            onPageLoaded: runOptions.OnPageLoaded,
             onConsoleMessage: OnConsoleMessage,
             onServerMessage: runOptions.OnServerMessage,
             onError: OnErrorMessage,
-            modifyBrowserUrl: browserUrl => browserUrl + runOptions.BrowserPath + runOptions.QueryString);
+            modifyBrowserUrl: browserUrl => new Uri(new Uri(browserUrl), runOptions.BrowserPath + runOptions.QueryString).ToString());
 
         _testOutput.WriteLine("Waiting for page to load");
         await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded, new () { Timeout = 1 * 60 * 1000 });

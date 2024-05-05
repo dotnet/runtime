@@ -578,6 +578,12 @@ bool interceptor_ICJI::isExactType(
     return original_ICorJitInfo->isExactType(cls);
 }
 
+TypeCompareState interceptor_ICJI::isNullableType(
+          CORINFO_CLASS_HANDLE cls)
+{
+    return original_ICorJitInfo->isNullableType(cls);
+}
+
 TypeCompareState interceptor_ICJI::isEnum(
           CORINFO_CLASS_HANDLE cls,
           CORINFO_CLASS_HANDLE* underlyingType)
@@ -1200,9 +1206,10 @@ JITINTERFACE_HRESULT interceptor_ICJI::getPgoInstrumentationResults(
           ICorJitInfo::PgoInstrumentationSchema** pSchema,
           uint32_t* pCountSchemaItems,
           uint8_t** pInstrumentationData,
-          ICorJitInfo::PgoSource* pgoSource)
+          ICorJitInfo::PgoSource* pPgoSource,
+          bool* pDynamicPgo)
 {
-    return original_ICorJitInfo->getPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pgoSource);
+    return original_ICorJitInfo->getPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource, pDynamicPgo);
 }
 
 JITINTERFACE_HRESULT interceptor_ICJI::allocPgoInstrumentationBySchema(

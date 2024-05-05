@@ -67,6 +67,9 @@ namespace ILCompiler
                 case ReadyToRunHelper.CheckedWriteBarrier:
                     mangledName = context.Target.Architecture == TargetArchitecture.ARM64 ? "RhpCheckedAssignRefArm64" : "RhpCheckedAssignRef";
                     break;
+                case ReadyToRunHelper.BulkWriteBarrier:
+                   mangledName = "RhBuffer_BulkMoveWithWriteBarrier";
+                   break;
                 case ReadyToRunHelper.ByRefWriteBarrier:
                     mangledName = context.Target.Architecture == TargetArchitecture.ARM64 ? "RhpByRefAssignRefArm64" : "RhpByRefAssignRef";
                     break;
@@ -198,10 +201,10 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.DblRem:
-                    mangledName = "RhpDblRem";
+                    mangledName = "fmod";
                     break;
                 case ReadyToRunHelper.FltRem:
-                    mangledName = "RhpFltRem";
+                    mangledName = "fmodf";
                     break;
 
                 case ReadyToRunHelper.LMul:

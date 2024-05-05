@@ -299,7 +299,7 @@ namespace System.Data.Common
                 [In] IntPtr pUnkOuter,
                 [In] IntPtr cOptColumns,
                 [In] SafeHandle rgOptColumns,
-                [In] ref Guid riid,
+                [In] in Guid riid,
                 [In] int cPropertySets,
                 [In] IntPtr rgPropertySets,
                 [Out, MarshalAs(UnmanagedType.Interface)] out IRowset ppColRowset);
@@ -367,7 +367,7 @@ namespace System.Data.Common
             [PreserveSig]
             System.Data.OleDb.OleDbHResult Execute(
                 [In] IntPtr pUnkOuter,
-                [In] ref Guid riid,
+                [In] in Guid riid,
                 [In] System.Data.OleDb.tagDBPARAMS? pDBParams,
                 [Out] out IntPtr pcRowsAffected,
                 [Out, MarshalAs(UnmanagedType.Interface)] out object ppRowset);
@@ -383,7 +383,7 @@ namespace System.Data.Common
             );*/
             [PreserveSig]
             System.Data.OleDb.OleDbHResult SetCommandText(
-                [In] ref Guid rguidDialect,
+                [In] in Guid rguidDialect,
                 [In, MarshalAs(UnmanagedType.LPWStr)] string pwszCommand);
         }
 
@@ -486,10 +486,10 @@ namespace System.Data.Common
             [PreserveSig]
             System.Data.OleDb.OleDbHResult GetRowset(
                 [In] IntPtr pUnkOuter,
-                [In] ref Guid rguidSchema,
+                [In] in Guid rguidSchema,
                 [In] int cRestrictions,
                 [In, MarshalAs(UnmanagedType.LPArray)] object?[] rgRestrictions,
-                [In] ref Guid riid,
+                [In] in Guid riid,
                 [In] int cPropertySets,
                 [In] IntPtr rgPropertySets,
                 [Out, MarshalAs(UnmanagedType.Interface)] out IRowset ppRowset);
@@ -549,7 +549,7 @@ namespace System.Data.Common
             [PreserveSig]
             System.Data.OleDb.OleDbHResult GetCustomErrorObject( // may return E_NOINTERFACE when asking for IID_ISQLErrorInfo
                 [In] int ulRecordNum,
-                [In] ref Guid riid,
+                [In] in Guid riid,
                 [Out, MarshalAs(UnmanagedType.Interface)] out ISQLErrorInfo ppObject);
 
             [return: MarshalAs(UnmanagedType.Interface)]
@@ -603,7 +603,7 @@ namespace System.Data.Common
             System.Data.OleDb.OleDbHResult GetResult(
                 [In] IntPtr pUnkOuter,
                 [In] IntPtr lResultFlag,
-                [In] ref Guid riid,
+                [In] in Guid riid,
                 [Out] out IntPtr pcRowsAffected,
                 [Out, MarshalAs(UnmanagedType.Interface)] out object ppRowset);
         }
@@ -631,7 +631,7 @@ namespace System.Data.Common
                 [In] IntPtr pUnkOuter,
                 [In] System.Data.OleDb.tagDBID pTableID,
                 [In] IntPtr pIndexID,
-                [In] ref Guid riid,
+                [In] in Guid riid,
                 [In] int cPropertySets,
                 [In] IntPtr rgPropertySets,
                 [Out, MarshalAs(UnmanagedType.Interface)] out object ppRowset);
@@ -718,7 +718,7 @@ namespace System.Data.Common
             [PreserveSig]
             System.Data.OleDb.OleDbHResult GetReferencedRowset(
                 [In] IntPtr iOrdinal,
-                [In] ref Guid riid,
+                [In] in Guid riid,
                 [Out, MarshalAs(UnmanagedType.Interface)] out IRowset? ppRowset);
 
             //[PreserveSig]

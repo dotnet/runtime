@@ -496,7 +496,7 @@ namespace CorUnix
     class CPalSynchronizationManager : public IPalSynchronizationManager
     {
         friend class CPalSynchMgrController;
-        template <class T> friend T *CorUnix::InternalNew();
+        template <class T, class... Ts> friend T *CorUnix::InternalNew(Ts... args);
 
     public:
         // types

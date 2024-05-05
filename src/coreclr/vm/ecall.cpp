@@ -156,6 +156,18 @@ void ECall::PopulateManagedHelpers()
     pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__SPAN_HELPERS__MEMCOPY));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_MEMCPY, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__BUFFER__MEMCOPYGC));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_BULK_WRITEBARRIER, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__ROUND));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBLROUND, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATHF__ROUND));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_FLTROUND, pDest);
 }
 
 static CrstStatic gFCallLock;
@@ -608,7 +620,6 @@ MethodDesc* ECall::MapTargetBackToMethod(PCODE pTarg, PCODE * ppAdjustedEntryPoi
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;

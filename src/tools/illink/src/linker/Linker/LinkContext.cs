@@ -108,6 +108,8 @@ namespace Mono.Linker
 
 		public bool LinkSymbols { get; set; }
 
+		public bool KeepComInterfaces { get; set; }
+
 		public bool KeepMembersForDebugger { get; set; } = true;
 
 		public bool IgnoreUnresolved { get; set; } = true;
@@ -267,7 +269,7 @@ namespace Mono.Linker
 
 		public TypeDefinition? GetType (string fullName)
 		{
-			int pos = fullName.IndexOf (",");
+			int pos = fullName.IndexOf (',');
 			fullName = TypeReferenceExtensions.ToCecilName (fullName);
 			if (pos == -1) {
 				foreach (AssemblyDefinition asm in GetReferencedAssemblies ()) {

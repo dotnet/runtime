@@ -29,12 +29,11 @@ For an example of a Native AOT shared library invoked through JNI from Java see 
 
 ## Known issues
 
-If you hit `error : version script assignment of 'V1.0' to symbol '_init' failed: symbol not defined` - this is a known issue https://github.com/dotnet/runtime/issues/92272, you can add following lines to your csproj to work around:
+If you hit `error : version script assignment of 'V1.0' to symbol '_init' failed: symbol not defined` - this is a known issue with .NET 8 release https://github.com/dotnet/runtime/issues/92272, you can add following lines to your csproj to work around:
 
 ```xml
-<ItemGroup Condition="'$(RuntimeIdentifier)' == 'linux-bionic'">
-  <LinkerArg Include="-Wl,--defsym,_init=__libc_init" />
-  <LinkerArg Include="-Wl,--defsym,_fini=__libc_fini" />
+<ItemGroup Condition="$(RuntimeIdentifier.StartsWith('linux-bionic'))">
+  <LinkerArg Include="-Wl,--undefined-version" />
 </ItemGroup>
 ```
 

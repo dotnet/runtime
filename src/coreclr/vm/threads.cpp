@@ -330,7 +330,7 @@ bool Thread::DetectHandleILStubsForDebugger()
             // Check for M2U transition frames.  See the comment at the beginning of this function.
             else if (pFrame->GetFrameType() == Frame::TYPE_EXIT)
             {
-                if (pFrame->GetReturnAddress() == NULL)
+                if (pFrame->GetReturnAddress() == (PCODE)NULL)
                 {
                     // If the return address is NULL, then the frame has not been initialized yet.
                     // We may see InlinedCallFrame in ordinary methods as well. Have to do
@@ -5153,7 +5153,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
 ThreadStore::ThreadStore()
            : m_Crst(CrstThreadStore, (CrstFlags) (CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD)),
              m_ThreadCount(0),
-             m_MaxThreadCount(0),
              m_UnstartedThreadCount(0),
              m_BackgroundThreadCount(0),
              m_PendingThreadCount(0),
@@ -5272,8 +5271,6 @@ void ThreadStore::AddThread(Thread *newThread)
     s_pThreadStore->m_ThreadList.InsertTail(newThread);
 
     s_pThreadStore->m_ThreadCount++;
-    if (s_pThreadStore->m_MaxThreadCount < s_pThreadStore->m_ThreadCount)
-        s_pThreadStore->m_MaxThreadCount = s_pThreadStore->m_ThreadCount;
 
     if (newThread->IsUnstarted())
         s_pThreadStore->m_UnstartedThreadCount++;
@@ -7651,7 +7648,7 @@ TADDR Thread::GetStaticFieldAddrNoCreate(FieldDesc *pFD)
     }
 
     if (base == NULL)
-        return NULL;
+        return (TADDR)NULL;
 
     DWORD offset = pFD->GetOffset();
     _ASSERTE(offset <= FIELD_OFFSET_LAST_REAL_OFFSET);
@@ -7665,7 +7662,7 @@ TADDR Thread::GetStaticFieldAddrNoCreate(FieldDesc *pFD)
         _ASSERTE(result != NULL);
         PTR_Object obj = *PTR_UNCHECKED_OBJECTREF(result);
         if (obj == NULL)
-            return NULL;
+            return (TADDR)NULL;
         result = dac_cast<TADDR>(obj->GetData());
     }
 
@@ -7770,7 +7767,7 @@ OBJECTREF Thread::GetCulture(BOOL bUICulture)
 
     // This is the case when we're building CoreLib and haven't yet created
     // the system assembly.
-    if (SystemDomain::System()->SystemAssembly()==NULL || g_fForbidEnterEE) {
+    if (SystemDomain::System()->SystemAssembly()==NULL) {
         return NULL;
     }
 
@@ -7890,32 +7887,6 @@ INT32 Thread::ResetManagedThreadObjectInCoopMode(INT32 nPriority)
     }
 
     return nPriority;
-}
-
-BOOL Thread::IsRealThreadPoolResetNeeded()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    if(!IsBackground())
-        return TRUE;
-
-    THREADBASEREF pObject = (THREADBASEREF)ObjectFromHandle(m_ExposedObject);
-
-    if(pObject != NULL)
-    {
-        INT32 nPriority = pObject->GetPriority();
-
-        if(nPriority != ThreadNative::PRIORITY_NORMAL)
-            return TRUE;
-    }
-
-    return FALSE;
 }
 
 void Thread::InternalReset(BOOL fNotFinalizerThread, BOOL fThreadObjectResetNeeded, BOOL fResetAbort)

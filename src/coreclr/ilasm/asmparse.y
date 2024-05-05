@@ -693,7 +693,7 @@ memberRef               : methodSpec methodRef               { $$ = $2;
                                                                PASM->SetMemberRefFixup($$,iOpcodeLen); }
                         | FIELD_ type dottedName
                                                              { $2->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD);
-                                                               $$ = PASM->MakeMemberRef(NULL, $3, $2);
+                                                               $$ = PASM->MakeMemberRef(mdTokenNil, $3, $2);
                                                                PASM->SetMemberRefFixup($$,iOpcodeLen); }
                         | FIELD_ TYPEDEF_F                   { $$ = $2->m_tkTypeSpec;
                                                                PASM->SetMemberRefFixup($$,iOpcodeLen); }
@@ -916,13 +916,13 @@ methodDecl              : _EMITBYTE int32                   { PASM->EmitByte($2)
                         | _VTENTRY int32 ':' int32          { PASM->m_pCurMethod->m_wVTEntry = (WORD)$2;
                                                               PASM->m_pCurMethod->m_wVTSlot = (WORD)$4; }
                         | _OVERRIDE typeSpec DCOLON methodName
-                                                            { PASM->AddMethodImpl($2,$4,NULL,NULL,NULL,NULL); }
+                                                            { PASM->AddMethodImpl($2,$4,NULL,mdTokenNil,NULL,NULL); }
 
                         | _OVERRIDE METHOD_ callConv type typeSpec DCOLON methodName genArity '(' sigArgs0 ')'
                                                             { PASM->AddMethodImpl($5,$7,
                                                               ($8==0 ? parser->MakeSig($3,$4,$10) :
                                                               parser->MakeSig($3| IMAGE_CEE_CS_CALLCONV_GENERIC,$4,$10,$8))
-                                                              ,NULL,NULL,NULL);
+                                                              ,mdTokenNil,NULL,NULL);
                                                               PASM->ResetArgNameList();
                                                             }
                         | scopeBlock

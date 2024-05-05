@@ -1,15 +1,15 @@
 diff -ru browser-frame/Program.cs browser-frame/Program.cs
 --- a/browser-frame/Program.cs	2024-03-07 09:00:37
 +++ b/browser-frame/Program.cs	2024-03-05 15:38:42
-@@ -1,6 +1,8 @@
- using System;
+@@ -3,6 +3,8 @@
  using System.Runtime.InteropServices.JavaScript;
+ using System.Threading.Tasks;
  
 +BrowserBench.FrameApp.ReachedManaged();
 +
  Console.WriteLine("Hello, Browser!");
  
- public partial class MyClass
+ if (args.Length == 1 && args[0] == "start")
 diff -ru browser-frame/wwwroot/index.html browser-frame/wwwroot/index.html
 --- a/browser-frame/wwwroot/index.html	2024-03-07 09:00:37
 +++ b/browser-frame/wwwroot/index.html	2024-03-05 15:38:42

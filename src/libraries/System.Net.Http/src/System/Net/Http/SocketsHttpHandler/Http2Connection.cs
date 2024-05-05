@@ -1365,7 +1365,7 @@ namespace System.Net.Http
             if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(name)}={name}, {nameof(values)}={string.Join(", ", values.ToArray())}");
 
             int bytesWritten;
-            while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewName(name, values, HttpHeaderParser.DefaultSeparator, valueEncoding, headerBuffer.AvailableSpan, out bytesWritten))
+            while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewName(name, values, HttpHeaderParser.DefaultSeparatorBytes, valueEncoding, headerBuffer.AvailableSpan, out bytesWritten))
             {
                 headerBuffer.Grow();
             }
@@ -1373,9 +1373,9 @@ namespace System.Net.Http
             headerBuffer.Commit(bytesWritten);
         }
 
-        private void WriteLiteralHeaderValues(ReadOnlySpan<string> values, string? separator, Encoding? valueEncoding, ref ArrayBuffer headerBuffer)
+        private void WriteLiteralHeaderValues(ReadOnlySpan<string> values, byte[]? separator, Encoding? valueEncoding, ref ArrayBuffer headerBuffer)
         {
-            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(values)}={string.Join(separator, values.ToArray())}");
+            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(values)}={string.Join(Encoding.ASCII.GetString(separator ?? []), values.ToArray())}");
 
             int bytesWritten;
             while (!HPackEncoder.EncodeStringLiterals(values, separator, valueEncoding, headerBuffer.AvailableSpan, out bytesWritten))
@@ -1464,19 +1464,8 @@ namespace System.Net.Http
 
                         // For all other known headers, send them via their pre-encoded name and the associated value.
                         WriteBytes(knownHeader.Http2EncodedName, ref headerBuffer);
-                        string? separator = null;
-                        if (headerValues.Length > 1)
-                        {
-                            HttpHeaderParser? parser = header.Key.Parser;
-                            if (parser != null && parser.SupportsMultipleValues)
-                            {
-                                separator = parser.Separator;
-                            }
-                            else
-                            {
-                                separator = HttpHeaderParser.DefaultSeparator;
-                            }
-                        }
+
+                        byte[]? separator = headerValues.Length > 1 ? header.Key.SeparatorBytes : null;
 
                         WriteLiteralHeaderValues(headerValues, separator, valueEncoding, ref headerBuffer);
                     }
@@ -1495,27 +1484,7 @@ namespace System.Net.Http
         {
             if (NetEventSource.Log.IsEnabled()) Trace("");
 
-            // HTTP2 does not support Transfer-Encoding: chunked, so disable this on the request.
-            if (request.HasHeaders && request.Headers.TransferEncodingChunked == true)
-            {
-                request.Headers.TransferEncodingChunked = false;
-            }
-
-            HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
-
-            // Method is normalized so we can do reference equality here.
-            if (ReferenceEquals(normalizedMethod, HttpMethod.Get))
-            {
-                WriteIndexedHeader(H2StaticTable.MethodGet, ref headerBuffer);
-            }
-            else if (ReferenceEquals(normalizedMethod, HttpMethod.Post))
-            {
-                WriteIndexedHeader(H2StaticTable.MethodPost, ref headerBuffer);
-            }
-            else
-            {
-                WriteIndexedHeader(H2StaticTable.MethodGet, normalizedMethod.Method, ref headerBuffer);
-            }
+            WriteBytes(request.Method.Http2EncodedBytes, ref headerBuffer);
 
             WriteIndexedHeader(_pool.IsSecure ? H2StaticTable.SchemeHttps : H2StaticTable.SchemeHttp, ref headerBuffer);
 
@@ -1543,6 +1512,12 @@ namespace System.Net.Http
 
             if (request.HasHeaders)
             {
+                // HTTP2 does not support Transfer-Encoding: chunked, so disable this on the request.
+                if (request.Headers.TransferEncodingChunked == true)
+                {
+                    request.Headers.TransferEncodingChunked = false;
+                }
+
                 if (request.Headers.Protocol is string protocol)
                 {
                     WriteBytes(ProtocolLiteralHeaderBytes, ref headerBuffer);
@@ -1571,7 +1546,7 @@ namespace System.Net.Http
             {
                 // Write out Content-Length: 0 header to indicate no body,
                 // unless this is a method that never has a body.
-                if (normalizedMethod.MustHaveRequestBody)
+                if (request.Method.MustHaveRequestBody)
                 {
                     WriteBytes(KnownHeaders.ContentLength.Http2EncodedName, ref headerBuffer);
                     WriteLiteralHeaderValue("0", valueEncoding: null, ref headerBuffer);
@@ -1586,7 +1561,7 @@ namespace System.Net.Http
             // The headerListSize is an approximation of the total header length.
             // This is acceptable as long as the value is always >= the actual length.
             // We must avoid ever sending more than the server allowed.
-            // This approach must be revisted if we ever support the dynamic table or compression when sending requests.
+            // This approach must be revisited if we ever support the dynamic table or compression when sending requests.
             headerListSize += headerBuffer.ActiveLength;
 
             uint maxHeaderListSize = _maxHeaderListSize;

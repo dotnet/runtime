@@ -770,7 +770,7 @@ DebuggerControllerPatch *DebuggerPatchTable::GetNextPatch(DebuggerControllerPatc
 #ifdef _DEBUG
 void DebuggerPatchTable::CheckPatchTable()
 {
-    if (NULL != m_pcEntries)
+    if ((TADDR)NULL != m_pcEntries)
     {
         LOG((LF_CORDB,LL_INFO1000, "DPT:CPT: %u\n", m_iEntries));
         DebuggerControllerPatch *dcp;
@@ -793,7 +793,7 @@ int DebuggerPatchTable::GetNumberOfPatches()
 {
     int total = 0;
 
-    if (NULL != m_pcEntries)
+    if ((TADDR)NULL != m_pcEntries)
     {
         DebuggerControllerPatch *dcp;
         ULONG i = 0;
@@ -2069,7 +2069,7 @@ BOOL DebuggerController::AddBindAndActivatePatchForMethodDesc(MethodDesc *fd,
                             kind,
                             fp,
                             pAppDomain,
-                            NULL,
+                            0,
                             dji);
 
     if (DebuggerController::BindPatch(patch, fd, NULL))
@@ -7110,7 +7110,7 @@ TP_RESULT DebuggerStepper::TriggerPatch(DebuggerControllerPatch *patch,
                         dji = g_pDebugger->GetJitInfoFromAddr((TADDR) traceManagerRetAddr);
 
                         MethodDesc* mdNative = NULL;
-                        PCODE pcodeNative = NULL;
+                        PCODE pcodeNative = (PCODE)NULL;
                         if (dji != NULL)
                         {
                             mdNative = dji->m_nativeCodeVersion.GetMethodDesc();

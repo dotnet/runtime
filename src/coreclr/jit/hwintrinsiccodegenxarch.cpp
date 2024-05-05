@@ -317,14 +317,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         case 1:
                         {
-                            regNumber targetReg = node->GetRegNum();
-                            GenTree*  rmOp      = node->Op(1);
-                            auto emitSwCase     = [&](int8_t i) {
+                            regNumber targetReg  = node->GetRegNum();
+                            GenTree*  rmOp       = node->Op(1);
+                            auto      emitSwCase = [&](int8_t i) {
                                 insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
                                 genHWIntrinsic_R_RM(node, ins, simdSize, targetReg, rmOp, newInstOptions);
                             };
-                            regNumber baseReg = node->ExtractTempReg();
-                            regNumber offsReg = node->GetSingleTempReg();
+                            regNumber baseReg = internalRegisters.Extract(node);
+                            regNumber offsReg = internalRegisters.GetSingle(node);
                             genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg,
                                                             emitSwCase);
                             break;
@@ -335,8 +335,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
                                 genHWIntrinsic_R_R_RM(node, ins, simdSize, newInstOptions);
                             };
-                            regNumber baseReg = node->ExtractTempReg();
-                            regNumber offsReg = node->GetSingleTempReg();
+                            regNumber baseReg = internalRegisters.Extract(node);
+                            regNumber offsReg = internalRegisters.GetSingle(node);
                             genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg,
                                                             emitSwCase);
                             break;
@@ -524,8 +524,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         // Reflection. However, it
                         // can also occur if the consumer calls it directly and just doesn't pass a
                         // constant value.
-                        regNumber baseReg = node->ExtractTempReg();
-                        regNumber offsReg = node->GetSingleTempReg();
+                        regNumber baseReg = internalRegisters.Extract(node);
+                        regNumber offsReg = internalRegisters.GetSingle(node);
                         genHWIntrinsicJumpTableFallback(intrinsicId, op2Reg, baseReg, offsReg, emitSwCase);
                     }
                 }
@@ -559,7 +559,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 if (HWIntrinsicInfo::isImmOp(intrinsicId, op3))
                 {
-                    auto emitSwCase = [&](int8_t i) { genHWIntrinsic_R_R_RM_I(node, ins, simdSize, i); };
+                    auto emitSwCase = [&](int8_t i) {
+                        genHWIntrinsic_R_R_RM_I(node, ins, simdSize, i);
+                    };
 
                     if (op3->IsCnsIntOrI())
                     {
@@ -572,8 +574,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         // We emit a fallback case for the scenario when the imm-op is not a constant. This should
                         // normally happen when the intrinsic is called indirectly, such as via Reflection. However, it
                         // can also occur if the consumer calls it directly and just doesn't pass a constant value.
-                        regNumber baseReg = node->ExtractTempReg();
-                        regNumber offsReg = node->GetSingleTempReg();
+                        regNumber baseReg = internalRegisters.Extract(node);
+                        regNumber offsReg = internalRegisters.GetSingle(node);
                         genHWIntrinsicJumpTableFallback(intrinsicId, op3Reg, baseReg, offsReg, emitSwCase);
                     }
                 }
@@ -653,7 +655,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 if (HWIntrinsicInfo::isImmOp(intrinsicId, op4))
                 {
-                    auto emitSwCase = [&](int8_t i) { genHWIntrinsic_R_R_R_RM_I(node, ins, simdSize, i); };
+                    auto emitSwCase = [&](int8_t i) {
+                        genHWIntrinsic_R_R_R_RM_I(node, ins, simdSize, i);
+                    };
 
                     if (op4->IsCnsIntOrI())
                     {
@@ -666,8 +670,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         // We emit a fallback case for the scenario when the imm-op is not a constant. This should
                         // normally happen when the intrinsic is called indirectly, such as via Reflection. However, it
                         // can also occur if the consumer calls it directly and just doesn't pass a constant value.
-                        regNumber baseReg = node->ExtractTempReg();
-                        regNumber offsReg = node->GetSingleTempReg();
+                        regNumber baseReg = internalRegisters.Extract(node);
+                        regNumber offsReg = internalRegisters.GetSingle(node);
                         genHWIntrinsicJumpTableFallback(intrinsicId, op4Reg, baseReg, offsReg, emitSwCase);
                     }
                 }
@@ -1208,10 +1212,10 @@ void CodeGen::genHWIntrinsic_R_R_R_RM_I(GenTreeHWIntrinsic* node, instruction in
 
         if (op2->isContained())
         {
-// op2 is never selected by the table so
-// we can contain and ignore any register
-// allocated to it resulting in better
-// non-RMW based codegen.
+            // op2 is never selected by the table so
+            // we can contain and ignore any register
+            // allocated to it resulting in better
+            // non-RMW based codegen.
 
 #if defined(DEBUG)
             NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
@@ -1364,13 +1368,13 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
         {
             // This intrinsic has several overloads, only the ones with floating number inputs should reach this part.
             assert(varTypeIsFloating(baseType));
-            GenTree* rmOp   = node->Op(1);
-            auto emitSwCase = [&](int8_t i) {
+            GenTree* rmOp       = node->Op(1);
+            auto     emitSwCase = [&](int8_t i) {
                 insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
                 genHWIntrinsic_R_RM(node, ins, attr, targetReg, rmOp, newInstOptions);
             };
-            regNumber baseReg = node->ExtractTempReg();
-            regNumber offsReg = node->GetSingleTempReg();
+            regNumber baseReg = internalRegisters.Extract(node);
+            regNumber offsReg = internalRegisters.GetSingle(node);
             genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg, emitSwCase);
             break;
         }
@@ -1390,8 +1394,8 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
                 insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
                 genHWIntrinsic_R_RM(node, ins, attr, targetReg, rmOp, newInstOptions);
             };
-            regNumber baseReg = node->ExtractTempReg();
-            regNumber offsReg = node->GetSingleTempReg();
+            regNumber baseReg = internalRegisters.Extract(node);
+            regNumber offsReg = internalRegisters.GetSingle(node);
             genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg, emitSwCase);
             break;
         }
@@ -1404,8 +1408,8 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
                 insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
                 genHWIntrinsic_R_R_RM(node, ins, EA_8BYTE, newInstOptions);
             };
-            regNumber baseReg = node->ExtractTempReg();
-            regNumber offsReg = node->GetSingleTempReg();
+            regNumber baseReg = internalRegisters.Extract(node);
+            regNumber offsReg = internalRegisters.GetSingle(node);
             genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg, emitSwCase);
             break;
         }
@@ -1436,8 +1440,8 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
                 insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
                 genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, op1Reg, op2Reg, op3, newInstOptions);
             };
-            regNumber baseReg = node->ExtractTempReg();
-            regNumber offsReg = node->GetSingleTempReg();
+            regNumber baseReg = internalRegisters.Extract(node);
+            regNumber offsReg = internalRegisters.GetSingle(node);
             genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg, emitSwCase);
             break;
         }
@@ -2055,7 +2059,9 @@ void CodeGen::genSSE41Intrinsic(GenTreeHWIntrinsic* node)
             instruction ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
             emitAttr    attr = emitActualTypeSize(node->TypeGet());
 
-            auto emitSwCase = [&](int8_t i) { inst_RV_TT_IV(ins, attr, targetReg, op1, i); };
+            auto emitSwCase = [&](int8_t i) {
+                inst_RV_TT_IV(ins, attr, targetReg, op1, i);
+            };
 
             if (op2->IsCnsIntOrI())
             {
@@ -2068,8 +2074,8 @@ void CodeGen::genSSE41Intrinsic(GenTreeHWIntrinsic* node)
                 // We emit a fallback case for the scenario when the imm-op is not a constant. This should
                 // normally happen when the intrinsic is called indirectly, such as via Reflection. However, it
                 // can also occur if the consumer calls it directly and just doesn't pass a constant value.
-                regNumber baseReg = node->ExtractTempReg();
-                regNumber offsReg = node->GetSingleTempReg();
+                regNumber baseReg = internalRegisters.Extract(node);
+                regNumber offsReg = internalRegisters.GetSingle(node);
                 genHWIntrinsicJumpTableFallback(intrinsicId, op2->GetRegNum(), baseReg, offsReg, emitSwCase);
             }
             break;
@@ -2219,7 +2225,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             regNumber op2Reg       = op2->GetRegNum();
             regNumber addrBaseReg  = REG_NA;
             regNumber addrIndexReg = REG_NA;
-            regNumber maskReg      = node->ExtractTempReg(RBM_ALLFLOAT);
+            regNumber maskReg      = internalRegisters.Extract(node, RBM_ALLFLOAT);
 
             if (numArgs == 5)
             {
@@ -2896,7 +2902,7 @@ void CodeGen::genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptio
                 assert(op3Reg != op1Reg);
                 assert(op3Reg != targetReg);
                 assert(op3Reg != REG_EDX);
-                lowReg = node->GetSingleTempReg();
+                lowReg = internalRegisters.GetSingle(node);
                 assert(op3Reg != lowReg);
                 assert(lowReg != targetReg);
             }

@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.SymbolStore;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
@@ -23,6 +25,45 @@ namespace System.Reflection.Emit
 
             return DefineEnumCore(name, visibility, underlyingType);
         }
+
+        /// <summary>
+        /// Defines a document for source.
+        /// </summary>
+        /// <param name="url">The URL for the document.</param>
+        /// <param name="language">The GUID that identifies the document language. This can be Empty</param>
+        /// <param name="languageVendor">The GUID that identifies the document language vendor. This is not used.</param>
+        /// <param name="documentType">The GUID that identifies the document language vendor. This is not used.</param>
+        /// <returns>The defined document.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="url"/> is <see langword="null"/>.</exception>
+        /// <exception cref="InvalidOperationException">This method is called on a dynamic module that is not a persisted module.</exception>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public ISymbolDocumentWriter DefineDocument(string url, Guid language, Guid languageVendor, Guid documentType) =>
+            DefineDocument(url, language);
+
+        /// <summary>
+        /// Defines a document for source.
+        /// </summary>
+        /// <param name="url">The URL for the document.</param>
+        /// <param name="language">The GUID that identifies the document language. This is optional</param>
+        /// <returns>The defined document.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="url"/> is <see langword="null"/>.</exception>
+        /// <exception cref="InvalidOperationException">This method is called on a dynamic module that is not a persisted module.</exception>
+        public ISymbolDocumentWriter DefineDocument(string url, Guid language = default)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(url);
+
+            return DefineDocumentCore(url, language);
+        }
+
+        /// <summary>
+        /// When override in a derived class, defines a document for source.
+        /// </summary>
+        /// <param name="url">The URL for the document.</param>
+        /// <param name="language">The GUID that identifies the document language. This is optional</param>
+        /// <returns>The defined document.</returns>
+        /// <exception cref="InvalidOperationException">This method is called on a dynamic module that is not a debug module.</exception>
+        protected virtual ISymbolDocumentWriter DefineDocumentCore(string url, Guid language = default) =>
+            throw new InvalidOperationException(SR.InvalidOperation_NotADebugModule);
 
         protected abstract EnumBuilder DefineEnumCore(string name, TypeAttributes visibility, Type underlyingType);
 
