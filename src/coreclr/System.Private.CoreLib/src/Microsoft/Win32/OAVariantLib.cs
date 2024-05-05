@@ -117,11 +117,11 @@ namespace Microsoft.Win32
                     throw new OutOfMemoryException();
                 case unchecked((int)0x80020008): // DISP_E_BADVARTYPE
                     throw new NotSupportedException(SR.NotSupported_OleAutBadVarType);
-                case HResults.COR_E_DIVIDEBYZERO:
+                case unchecked((int)0x80020012): // DISP_E_DIVBYZERO
                     throw new DivideByZeroException();
-                case HResults.COR_E_OVERFLOW:
+                case unchecked((int)0x8002000A): // DISP_E_OVERFLOW
                     throw new OverflowException();
-                case HResults.TYPE_E_TYPEMISMATCH:
+                case unchecked((int)0x80020005): // DISP_E_TYPEMISMATCH
                     throw new InvalidCastException(SR.InvalidCast_OATypeMismatch);
                 case HResults.E_INVALIDARG:
                     throw new ArgumentException();
