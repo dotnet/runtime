@@ -154,7 +154,8 @@ namespace System.Globalization
 
                 Debug.Assert(totalDigitsCount - MaxFractionDigits <= MaxFractionDigits);
                 uint power = (uint)Pow10UpToMaxFractionDigits(totalDigitsCount - MaxFractionDigits);
-                _num = (int)(((uint)_num + power / 2) / power); // Rounding integer divsion, (midpint rounds up).
+                // Unsigned integer division, rounding away from zero
+                _num = (int)(((uint)_num + power / 2) / power);
                 Debug.Assert(_num < MaxFraction);
 
                 return true;
