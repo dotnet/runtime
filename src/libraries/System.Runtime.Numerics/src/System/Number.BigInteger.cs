@@ -295,9 +295,9 @@ namespace System
         //
 #if DEBUG
         // Mutable for unit testing...
-        internal static
+        public static
 #else
-        internal const
+        public const
 #endif
         int
             BigIntegerParseNaiveThreshold = 1233,
