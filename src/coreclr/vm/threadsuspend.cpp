@@ -2103,17 +2103,14 @@ void Thread::RareDisablePreemptiveGC()
         goto Exit;
     }
 
-    // A thread that performs GC may switch modes inside GC and come here.
-    // We will not try suspending a thread that is responsible for the suspension.
-    if (this == ThreadSuspend::GetSuspensionThread())
-    {
-        goto Exit;
-    }
-
     if (ThreadStore::HoldingThreadStore(this))
     {
-        // In theory threads should not try entering coop mode while holding TS lock,
-        // but some scenarios like GCCoopHackNoThread and GCX_COOP_NO_THREAD_BROKEN end up here
+        // A thread that performs GC may switch modes inside GC and come here. We would not want to
+        // suspend the thread that is responsible for the suspension.
+        // Ideally that would be the only the case when a thread that holds thread store lock
+        // may want to enter coop mode, but we have a number of other scenarios where TSL is acquired
+        // in coop mode or when TSL-owning thread tries to swtch to coop.
+        // We will handle all cases in the same way - by allowing the thread into coop mode without a wait.
         goto Exit;
     }
 
