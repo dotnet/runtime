@@ -1795,7 +1795,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             }
         }
 
-        if ((intrin.id == NI_Sve_ConditionalSelect) && (intrin.op2->IsEmbMaskOp()) && (intrin.op2->isRMWHWIntrinsic(compiler)))
+        if ((intrin.id == NI_Sve_ConditionalSelect) && (intrin.op2->IsEmbMaskOp()) &&
+            (intrin.op2->isRMWHWIntrinsic(compiler)))
         {
             // For ConditionalSelect, if there is an embedded operation, and the operation has RMW semantics
             // then record delay-free for them.

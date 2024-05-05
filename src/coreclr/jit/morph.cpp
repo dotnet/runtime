@@ -10711,7 +10711,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             GenTree* op1 = node->Op(1);
             GenTree* op2 = node->Op(2);
 
-            if (!op1->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll) && !op2->OperIsHWIntrinsic(NI_Sve_ConvertMaskToVector))
+            if (!op1->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll) &&
+                !op2->OperIsHWIntrinsic(NI_Sve_ConvertMaskToVector))
             {
                 break;
             }

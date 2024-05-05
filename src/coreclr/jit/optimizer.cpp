@@ -4196,7 +4196,7 @@ bool Compiler::optIsProfitableToHoistTree(GenTree* tree, FlowGraphNaturalLoop* l
         }
 #endif
     }
-#ifdef FEATURE_MASKED_HW_INTRINSICS 
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     else if (varTypeUsesMaskReg(tree))
     {
         hoistedExprCount = hoistCtxt->m_hoistedMskExprCount;
