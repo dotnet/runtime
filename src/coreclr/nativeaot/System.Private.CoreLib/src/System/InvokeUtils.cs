@@ -130,278 +130,246 @@ namespace System
             EETypeElementType dstElementType = dstEEType->ElementType;
             EETypeElementType srcElementType = srcEEType->ElementType;
 
-            bool boolValue;
-            sbyte sbyteValue;
-            byte byteValue;
-            short shortValue;
-            ushort ushortValue;
-            int intValue;
-            uint uintValue;
-            long longValue;
-            ulong ulongValue;
-            float floatValue;
-            double doubleValue;
-
-            void* rawDstValue;
-            ref byte rawSrcValue = ref RuntimeHelpers.GetRawData(srcObject);
-
-            switch (dstElementType)
+            if (dstElementType == srcElementType)
             {
-                case EETypeElementType.Boolean:
-                    switch (srcElementType)
+                // Rebox the value if the EETypeElementTypes match
+                dstObject = RuntimeImports.RhBox(dstEEType, ref srcObject.GetRawData());
+            }
+            else
+            {
+                if (!CanPrimitiveWiden(dstElementType, srcElementType))
+                {
+                    dstObject = null;
+                    return CreateChangeTypeArgumentException(srcEEType, dstEEType);
+                }
+
+                dstObject = RuntimeImports.RhNewObject(dstEEType);
+                PrimitiveWiden(dstElementType, srcElementType, ref dstObject.GetRawData(), ref srcObject.GetRawData());
+            }
+            return null;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // Two callers, one of them is potentially perf sensitive
+        internal static void PrimitiveWiden(EETypeElementType dstType, EETypeElementType srcType, ref byte dstValue, ref byte srcValue)
+        {
+            // Caller must check that the conversion is valid and the source/destination types are different
+            Debug.Assert(CanPrimitiveWiden(dstType, srcType) && dstType != srcType);
+
+            switch (srcType)
+            {
+                case EETypeElementType.Byte:
+                    switch (dstType)
                     {
-                        case EETypeElementType.Boolean:
-                            boolValue = Unsafe.As<byte, bool>(ref rawSrcValue);
+                        case EETypeElementType.Single:
+                            Unsafe.As<byte, float>(ref dstValue) = srcValue;
+                            break;
+                        case EETypeElementType.Double:
+                            Unsafe.As<byte, double>(ref dstValue) = srcValue;
+                            break;
+                        case EETypeElementType.Char:
+                        case EETypeElementType.Int16:
+                        case EETypeElementType.UInt16:
+                            Unsafe.As<byte, short>(ref dstValue) = srcValue;
+                            break;
+                        case EETypeElementType.Int32:
+                        case EETypeElementType.UInt32:
+                            Unsafe.As<byte, int>(ref dstValue) = srcValue;
+                            break;
+                        case EETypeElementType.Int64:
+                        case EETypeElementType.UInt64:
+                            Unsafe.As<byte, long>(ref dstValue) = srcValue;
                             break;
                         default:
-                            goto Failure;
+                            Debug.Fail("Expected to be unreachable");
+                            break;
                     }
-                    rawDstValue = &boolValue;
                     break;
 
                 case EETypeElementType.SByte:
-                    switch (srcElementType)
+                    switch (dstType)
                     {
-                        case EETypeElementType.SByte:
-                            sbyteValue = Unsafe.As<byte, sbyte>(ref rawSrcValue);
-                            break;
-                        default:
-                            goto Failure;
-                    }
-                    rawDstValue = &sbyteValue;
-                    break;
-
-                case EETypeElementType.Byte:
-                    switch (srcElementType)
-                    {
-                        case EETypeElementType.Byte:
-                            byteValue = rawSrcValue;
-                            break;
-                        default:
-                            goto Failure;
-                    }
-                    rawDstValue = &byteValue;
-                    break;
-
-                case EETypeElementType.Int16:
-                    switch (srcElementType)
-                    {
-                        case EETypeElementType.SByte:
-                            shortValue = (short)Unsafe.As<byte, sbyte>(ref rawSrcValue);
-                            break;
-                        case EETypeElementType.Byte:
-                            shortValue = (short)rawSrcValue;
-                            break;
                         case EETypeElementType.Int16:
-                            shortValue = Unsafe.As<byte, short>(ref rawSrcValue);
+                            Unsafe.As<byte, short>(ref dstValue) = Unsafe.As<byte, sbyte>(ref srcValue);
+                            break;
+                        case EETypeElementType.Int32:
+                            Unsafe.As<byte, int>(ref dstValue) = Unsafe.As<byte, sbyte>(ref srcValue);
+                            break;
+                        case EETypeElementType.Int64:
+                            Unsafe.As<byte, long>(ref dstValue) = Unsafe.As<byte, sbyte>(ref srcValue);
+                            break;
+                        case EETypeElementType.Single:
+                            Unsafe.As<byte, float>(ref dstValue) = Unsafe.As<byte, sbyte>(ref srcValue);
+                            break;
+                        case EETypeElementType.Double:
+                            Unsafe.As<byte, double>(ref dstValue) = Unsafe.As<byte, sbyte>(ref srcValue);
                             break;
                         default:
-                            goto Failure;
+                            Debug.Fail("Expected to be unreachable");
+                            break;
                     }
-                    rawDstValue = &shortValue;
                     break;
 
                 case EETypeElementType.UInt16:
                 case EETypeElementType.Char:
-                    switch (srcElementType)
+                    switch (dstType)
                     {
-                        case EETypeElementType.Byte:
-                            ushortValue = (ushort)rawSrcValue;
+                        case EETypeElementType.Single:
+                            Unsafe.As<byte, float>(ref dstValue) = Unsafe.As<byte, ushort>(ref srcValue);
+                            break;
+                        case EETypeElementType.Double:
+                            Unsafe.As<byte, double>(ref dstValue) = Unsafe.As<byte, ushort>(ref srcValue);
                             break;
                         case EETypeElementType.UInt16:
                         case EETypeElementType.Char:
-                            ushortValue = Unsafe.As<byte, ushort>(ref rawSrcValue);
+                            Unsafe.As<byte, ushort>(ref dstValue) = Unsafe.As<byte, ushort>(ref srcValue);
+                            break;
+                        case EETypeElementType.Int32:
+                        case EETypeElementType.UInt32:
+                            Unsafe.As<byte, uint>(ref dstValue) = Unsafe.As<byte, ushort>(ref srcValue);
+                            break;
+                        case EETypeElementType.Int64:
+                        case EETypeElementType.UInt64:
+                            Unsafe.As<byte, ulong>(ref dstValue) = Unsafe.As<byte, ushort>(ref srcValue);
                             break;
                         default:
-                            goto Failure;
+                            Debug.Fail("Expected to be unreachable");
+                            break;
                     }
-                    rawDstValue = &ushortValue;
+                    break;
+
+                case EETypeElementType.Int16:
+                    switch (dstType)
+                    {
+                        case EETypeElementType.Int32:
+                            Unsafe.As<byte, int>(ref dstValue) = Unsafe.As<byte, short>(ref srcValue);
+                            break;
+                        case EETypeElementType.Int64:
+                            Unsafe.As<byte, long>(ref dstValue) = Unsafe.As<byte, short>(ref srcValue);
+                            break;
+                        case EETypeElementType.Single:
+                            Unsafe.As<byte, float>(ref dstValue) = Unsafe.As<byte, short>(ref srcValue);
+                            break;
+                        case EETypeElementType.Double:
+                            Unsafe.As<byte, double>(ref dstValue) = Unsafe.As<byte, short>(ref srcValue);
+                            break;
+                        default:
+                            Debug.Fail("Expected to be unreachable");
+                            break;
+                    }
                     break;
 
                 case EETypeElementType.Int32:
-                    switch (srcElementType)
+                    switch (dstType)
                     {
-                        case EETypeElementType.SByte:
-                            intValue = (int)Unsafe.As<byte, sbyte>(ref rawSrcValue);
+                        case EETypeElementType.Int64:
+                            Unsafe.As<byte, long>(ref dstValue) = Unsafe.As<byte, int>(ref srcValue);
                             break;
-                        case EETypeElementType.Byte:
-                            intValue = (int)rawSrcValue;
+                        case EETypeElementType.Single:
+                            Unsafe.As<byte, float>(ref dstValue) = (float)Unsafe.As<byte, int>(ref srcValue);
                             break;
-                        case EETypeElementType.Int16:
-                            intValue = (int)Unsafe.As<byte, short>(ref rawSrcValue);
-                            break;
-                        case EETypeElementType.UInt16:
-                        case EETypeElementType.Char:
-                            intValue = (int)Unsafe.As<byte, ushort>(ref rawSrcValue);
-                            break;
-                        case EETypeElementType.Int32:
-                            intValue = Unsafe.As<byte, int>(ref rawSrcValue);
+                        case EETypeElementType.Double:
+                            Unsafe.As<byte, double>(ref dstValue) = Unsafe.As<byte, int>(ref srcValue);
                             break;
                         default:
-                            goto Failure;
+                            Debug.Fail("Expected to be unreachable");
+                            break;
                     }
-                    rawDstValue = &intValue;
                     break;
 
                 case EETypeElementType.UInt32:
-                    switch (srcElementType)
+                    switch (dstType)
                     {
-                        case EETypeElementType.Byte:
-                            uintValue = (uint)rawSrcValue;
+                        case EETypeElementType.Int64:
+                        case EETypeElementType.UInt64:
+                            Unsafe.As<byte, long>(ref dstValue) = Unsafe.As<byte, uint>(ref srcValue);
                             break;
-                        case EETypeElementType.UInt16:
-                        case EETypeElementType.Char:
-                            uintValue = (uint)Unsafe.As<byte, ushort>(ref rawSrcValue);
+                        case EETypeElementType.Single:
+                            Unsafe.As<byte, float>(ref dstValue) = (float)Unsafe.As<byte, uint>(ref srcValue);
                             break;
-                        case EETypeElementType.UInt32:
-                            uintValue = Unsafe.As<byte, uint>(ref rawSrcValue);
+                        case EETypeElementType.Double:
+                            Unsafe.As<byte, double>(ref dstValue) = Unsafe.As<byte, uint>(ref srcValue);
                             break;
                         default:
-                            goto Failure;
+                            Debug.Fail("Expected to be unreachable");
+                            break;
                     }
-                    rawDstValue = &uintValue;
                     break;
 
                 case EETypeElementType.Int64:
-                    switch (srcElementType)
+                    switch (dstType)
                     {
-                        case EETypeElementType.SByte:
-                            longValue = (long)Unsafe.As<byte, sbyte>(ref rawSrcValue);
+                        case EETypeElementType.Single:
+                            Unsafe.As<byte, float>(ref dstValue) = (float)Unsafe.As<byte, long>(ref srcValue);
                             break;
-                        case EETypeElementType.Byte:
-                            longValue = (long)rawSrcValue;
-                            break;
-                        case EETypeElementType.Int16:
-                            longValue = (long)Unsafe.As<byte, short>(ref rawSrcValue);
-                            break;
-                        case EETypeElementType.UInt16:
-                         case EETypeElementType.Char:
-                            longValue = (long)Unsafe.As<byte, ushort>(ref rawSrcValue);
-                            break;
-                        case EETypeElementType.Int32:
-                            longValue = (long)Unsafe.As<byte, int>(ref rawSrcValue);
-                            break;
-                        case EETypeElementType.UInt32:
-                            longValue = (long)Unsafe.As<byte, uint>(ref rawSrcValue);
-                            break;
-                        case EETypeElementType.Int64:
-                            longValue = Unsafe.As<byte, long>(ref rawSrcValue);
+                        case EETypeElementType.Double:
+                            Unsafe.As<byte, double>(ref dstValue) = (double)Unsafe.As<byte, long>(ref srcValue);
                             break;
                         default:
-                            goto Failure;
+                            Debug.Fail("Expected to be unreachable");
+                            break;
                     }
-                    rawDstValue = &longValue;
                     break;
 
                 case EETypeElementType.UInt64:
-                    switch (srcElementType)
+                    switch (dstType)
                     {
-                        case EETypeElementType.Byte:
-                            ulongValue = (ulong)rawSrcValue;
+                        case EETypeElementType.Single:
+                            Unsafe.As<byte, float>(ref dstValue) = (float)Unsafe.As<byte, ulong>(ref srcValue);
                             break;
-                        case EETypeElementType.UInt16:
-                        case EETypeElementType.Char:
-                            ulongValue = (ulong)Unsafe.As<byte, ushort>(ref rawSrcValue);
-                            break;
-                        case EETypeElementType.UInt32:
-                            ulongValue = (ulong)Unsafe.As<byte, uint>(ref rawSrcValue);
-                            break;
-                        case EETypeElementType.UInt64:
-                            ulongValue = Unsafe.As<byte, ulong>(ref rawSrcValue);
+                        case EETypeElementType.Double:
+                            Unsafe.As<byte, double>(ref dstValue) = (double)Unsafe.As<byte, ulong>(ref srcValue);
                             break;
                         default:
-                            goto Failure;
+                            Debug.Fail("Expected to be unreachable");
+                            break;
                     }
-                    rawDstValue = &ulongValue;
                     break;
 
                 case EETypeElementType.Single:
-                    switch (srcElementType)
+                    switch (dstType)
                     {
-                        case EETypeElementType.SByte:
-                            floatValue = (float)Unsafe.As<byte, sbyte>(ref rawSrcValue);
-                            break;
-                        case EETypeElementType.Byte:
-                            floatValue = (float)rawSrcValue;
-                            break;
-                        case EETypeElementType.Int16:
-                            floatValue = (float)Unsafe.As<byte, short>(ref rawSrcValue);
-                            break;
-                        case EETypeElementType.UInt16:
-                        case EETypeElementType.Char:
-                            floatValue = (float)Unsafe.As<byte, ushort>(ref rawSrcValue);
-                            break;
-                        case EETypeElementType.Int32:
-                            floatValue = (float)Unsafe.As<byte, int>(ref rawSrcValue);
-                            break;
-                        case EETypeElementType.UInt32:
-                            floatValue = (float)Unsafe.As<byte, uint>(ref rawSrcValue);
-                            break;
-                        case EETypeElementType.Int64:
-                            floatValue = (float)Unsafe.As<byte, long>(ref rawSrcValue);
-                            break;
-                        case EETypeElementType.UInt64:
-                            floatValue = (float)Unsafe.As<byte, ulong>(ref rawSrcValue);
-                            break;
-                        case EETypeElementType.Single:
-                            floatValue = Unsafe.As<byte, float>(ref rawSrcValue);
-                            break;
-                        default:
-                            goto Failure;
-                    }
-                    rawDstValue = &floatValue;
-                    break;
-
-                case EETypeElementType.Double:
-                    switch (srcElementType)
-                    {
-                        case EETypeElementType.SByte:
-                            doubleValue = (double)Unsafe.As<byte, sbyte>(ref rawSrcValue);
-                            break;
-                        case EETypeElementType.Byte:
-                            doubleValue = (double)rawSrcValue;
-                            break;
-                        case EETypeElementType.Int16:
-                            doubleValue = (double)Unsafe.As<byte, short>(ref rawSrcValue);
-                            break;
-                        case EETypeElementType.UInt16:
-                        case EETypeElementType.Char:
-                            doubleValue = (double)Unsafe.As<byte, ushort>(ref rawSrcValue);
-                            break;
-                        case EETypeElementType.Int32:
-                            doubleValue = (double)Unsafe.As<byte, int>(ref rawSrcValue);
-                            break;
-                        case EETypeElementType.UInt32:
-                            doubleValue = (double)Unsafe.As<byte, uint>(ref rawSrcValue);
-                            break;
-                        case EETypeElementType.Int64:
-                            doubleValue = (double)Unsafe.As<byte, long>(ref rawSrcValue);
-                            break;
-                        case EETypeElementType.UInt64:
-                            doubleValue = (double)Unsafe.As<byte, ulong>(ref rawSrcValue);
-                            break;
-                        case EETypeElementType.Single:
-                            doubleValue = (double)Unsafe.As<byte, float>(ref rawSrcValue);
-                            break;
                         case EETypeElementType.Double:
-                            doubleValue = Unsafe.As<byte, double>(ref rawSrcValue);
+                            Unsafe.As<byte, double>(ref dstValue) = Unsafe.As<byte, float>(ref srcValue);
                             break;
                         default:
-                            goto Failure;
+                            Debug.Fail("Expected to be unreachable");
+                            break;
                     }
-                    rawDstValue = &doubleValue;
                     break;
 
                 default:
-                    goto Failure;
+                    Debug.Fail("Expected to be unreachable");
+                    break;
             }
+        }
 
-            dstObject = RuntimeImports.RhBox(dstEEType, ref *(byte*)rawDstValue);
-            return null;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // Two callers, one of them is potentially perf sensitive
+        internal static bool CanPrimitiveWiden(EETypeElementType dstType, EETypeElementType srcType)
+        {
+            Debug.Assert(dstType is < EETypeElementType.ValueType and >= EETypeElementType.Boolean);
+            Debug.Assert(srcType is < EETypeElementType.ValueType and >= EETypeElementType.Boolean);
 
-            Failure:
-            dstObject = null;
-            return CreateChangeTypeArgumentException(srcEEType, dstEEType);
+            ReadOnlySpan<ushort> primitiveAttributes = [
+                0x0000, // Unknown
+                0x0000, // Void
+                0x0004, // Boolean (W = BOOL)
+                0xCf88, // Char (W = U2, CHAR, I4, U4, I8, U8, R4, R8)
+                0xC550, // SByte (W = I1, I2, I4, I8, R4, R8)
+                0xCFE8, // Byte (W = CHAR, U1, I2, U2, I4, U4, I8, U8, R4, R8)
+                0xC540, // Int16 (W = I2, I4, I8, R4, R8)
+                0xCF88, // UInt16 (W = U2, CHAR, I4, U4, I8, U8, R4, R8)
+                0xC500, // Int32 (W = I4, I8, R4, R8)
+                0xCE00, // UInt32 (W = U4, I8, U8, R4, R8)
+                0xC400, // Int64 (W = I8, R4, R8)
+                0xC800, // UInt64 (W = U8, R4, R8)
+                0x0000, // IntPtr
+                0x0000, // UIntPtr
+                0xC000, // Single (W = R4, R8)
+                0x8000, // Double (W = R8)
+            ];
+
+            ushort mask = (ushort)(1 << (byte)dstType);
+            return (primitiveAttributes[(int)srcType & 0xF] & mask) != 0;
         }
 
         private static Exception ConvertPointerIfPossible(object srcObject, MethodTable* dstEEType, CheckArgumentSemantics semantics, out object dstPtr)
