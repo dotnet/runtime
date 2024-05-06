@@ -47,6 +47,7 @@ enum MonoILGenWrapperDataKind
 {
 	MONO_MB_ILGEN_WRAPPER_DATA_NONE = 0,
 	MONO_MB_ILGEN_WRAPPER_DATA_FIELD,
+	MONO_MB_ILGEN_WRAPPER_DATA_METHOD,
 };
 
 // index in MonoMethodWrapper:wrapper_data where the inflate info will be stored

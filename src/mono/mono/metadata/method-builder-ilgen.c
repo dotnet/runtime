@@ -753,6 +753,14 @@ mono_mb_inflate_generic_wrapper_data (MonoGenericContext *context, gpointer *met
 			*pdata = inflated_field;
 			break;
 		}
+		case MONO_MB_ILGEN_WRAPPER_DATA_METHOD: {
+			MonoMethod *method = (MonoMethod*)*pdata;
+			MonoMethod *inflated_method = mono_class_inflate_generic_method_checked (method, context, error);
+			if (!is_ok (error))
+				return FALSE;
+			*pdata = inflated_method;
+			break;
+		}
 		default:
 			g_assert_not_reached();
 		}
