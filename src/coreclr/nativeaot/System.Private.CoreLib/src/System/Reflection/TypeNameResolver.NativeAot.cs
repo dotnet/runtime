@@ -3,15 +3,16 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Reflection.Metadata;
 using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.General;
 
 namespace System.Reflection
 {
     //
-    // Parser for type names passed to GetType() apis.
+    // Resolver for type names passed to GetType() apis.
     //
-    internal partial struct TypeNameParser
+    internal partial struct TypeNameResolver
     {
         private Func<AssemblyName, Assembly?>? _assemblyResolver;
         private Func<Assembly?, string, bool, Type?>? _typeResolver;
@@ -51,13 +52,13 @@ namespace System.Reflection
                 return null;
             }
 
-            Metadata.TypeName? parsed = Metadata.TypeNameParser.Parse(typeName, throwOnError);
+            TypeName? parsed = TypeNameParser.Parse(typeName, throwOnError);
             if (parsed is null)
             {
                 return null;
             }
 
-            return new TypeNameParser()
+            return new TypeNameResolver()
             {
                 _assemblyResolver = assemblyResolver,
                 _typeResolver = typeResolver,
@@ -74,7 +75,7 @@ namespace System.Reflection
             bool ignoreCase,
             Assembly topLevelAssembly)
         {
-            Metadata.TypeName? parsed = Metadata.TypeNameParser.Parse(typeName, throwOnError);
+            TypeName? parsed = TypeNameParser.Parse(typeName, throwOnError);
 
             if (parsed is null)
             {
@@ -85,7 +86,7 @@ namespace System.Reflection
                 return throwOnError ? throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly) : null;
             }
 
-            return new TypeNameParser()
+            return new TypeNameResolver()
             {
                 _throwOnError = throwOnError,
                 _ignoreCase = ignoreCase,
@@ -117,7 +118,7 @@ namespace System.Reflection
             Justification = "GetType APIs are marked as RequiresUnreferencedCode.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "GetType APIs are marked as RequiresUnreferencedCode.")]
-        private Type? GetType(string escapedTypeName, ReadOnlySpan<string> nestedTypeNames, Metadata.TypeName parsedName)
+        private Type? GetType(string escapedTypeName, ReadOnlySpan<string> nestedTypeNames, TypeName parsedName)
         {
             Assembly? assembly;
 
@@ -156,7 +157,7 @@ namespace System.Reflection
                 {
                     if (assembly is RuntimeAssemblyInfo runtimeAssembly)
                     {
-                        type = runtimeAssembly.GetTypeCore(UnescapeTypeName(escapedTypeName), throwOnError: _throwOnError, ignoreCase: _ignoreCase);
+                        type = runtimeAssembly.GetTypeCore(TypeNameHelpers.Unescape(escapedTypeName), throwOnError: _throwOnError, ignoreCase: _ignoreCase);
                     }
                     else
                     {
@@ -171,7 +172,7 @@ namespace System.Reflection
                 }
                 else
                 {
-                    string? unescapedTypeName = UnescapeTypeName(escapedTypeName);
+                    string? unescapedTypeName = TypeNameHelpers.Unescape(escapedTypeName);
 
                     RuntimeAssemblyInfo? defaultAssembly = null;
                     if (_defaultAssemblyName != null)
@@ -233,7 +234,7 @@ namespace System.Reflection
                     if (_throwOnError)
                     {
                         throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveNestedType,
-                            nestedTypeNames[i], (i > 0) ? nestedTypeNames[i - 1] : escapedTypeName));
+                            nestedTypeNames[i], (i > 0) ? nestedTypeNames[i - 1] : TypeNameHelpers.Unescape(escapedTypeName)));
                     }
                     return null;
                 }

@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
-
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -390,7 +388,7 @@ namespace System.Reflection.Metadata
         /// </remarks>
         public
 #if SYSTEM_PRIVATE_CORELIB
-        IReadOnlyList<TypeName> GetGenericArguments() => _genericArguments is null ? Array.Empty<TypeName>() : _genericArguments;
+        ReadOnlySpan<TypeName> GetGenericArguments() => CollectionsMarshal.AsSpan(_genericArguments);
 #else
         ImmutableArray<TypeName> GetGenericArguments() => _genericArguments;
 #endif
